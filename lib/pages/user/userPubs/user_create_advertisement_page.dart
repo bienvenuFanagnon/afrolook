@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
-import '../../../widgets/ios_purchase_unavailable.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:image_picker/image_picker.dart';
@@ -419,7 +419,17 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     final currentBalance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    if (!isAdmin && currentBalance < price) {
+    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+    final payWithCoins = kIsAppleStore && !isAdmin;
+    if (payWithCoins) {
+      final paid = await CoinCheckout.pay(context,
+          kind: 'ad',
+          priceFcfa: price.toDouble(),
+          label: _combineWithProfile ? 'Publicité + boost de profil' : 'Publicité',
+          weeks: _selectedDurationWeeks,
+          combined: _combineWithProfile);
+      if (!paid || !mounted) return;
+    } else if (!isAdmin && currentBalance < price) {
       _showInsufficientBalanceDialog();
       return;
     }
@@ -428,7 +438,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
     try {
       // 1. Débiter sur le solde de dépôts (sauf admin)
-      if (!isAdmin) {
+      if (!isAdmin && !payWithCoins) {
         await FirebaseFirestore.instance.collection('Users').doc(authProvider.loginUserData.id).update({
           'votre_solde_depot': FieldValue.increment(-price),
         });
@@ -726,7 +736,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   // ========== BUILD ==========
   @override
   Widget build(BuildContext context) {
-    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Publicité');
     _c = AppColors.of(context);
     return Scaffold(
       backgroundColor: _c.background,
@@ -952,7 +961,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   label: Column(
                     children: [
                       Text(_getDurationLabel(weeks), style: TextStyle(fontSize: 12)),
-                      Text('${_durationPrices[weeks]} FCFA', style: TextStyle(fontSize: 10)),
+                      Text(_shortPrice(_durationPrices[weeks] ?? 0), style: TextStyle(fontSize: 10)),
                     ],
                   ),
                   selected: isSelected,
@@ -1182,7 +1191,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                         style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
                       Text(
                         _combineWithProfile
-                          ? '+ $_bonusLabel FCFA (+50%) inclus'
+                          ? '+ ${_fmtPrice(int.parse(_bonusLabel))} (+50%) inclus'
                           : 'Ajouter $entityLabel à cette pub',
                         style: TextStyle(
                           color: _combineWithProfile ? _secondaryColor : _c.textSecondary,
@@ -1218,7 +1227,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Total', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
-                      Text('$_finalPrice FCFA',
+                      Text(_fmtPrice(_finalPrice),
                         style: TextStyle(color: _secondaryColor, fontWeight: FontWeight.w900, fontSize: 16)),
                     ],
                   ),
@@ -1259,7 +1268,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: TextStyle(color: _c.textSecondary, fontSize: 13)),
-        Text('$amount FCFA',
+        Text(_fmtPrice(amount),
           style: TextStyle(
             color: accent ? _secondaryColor : _c.textPrimary,
             fontWeight: accent ? FontWeight.w700 : FontWeight.normal,
@@ -1269,6 +1278,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     );
   }
 
+  // iPhone : prix en pièces avec l'équivalent FCFA ; ailleurs en FCFA.
+  String _fmtPrice(int fcfa) => kIsAppleStore ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
+  String _shortPrice(int fcfa) => kIsAppleStore ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '$fcfa FCFA';
+
   String get _bonusLabel {
     if (_basePrice <= 0) return '0';
     return '${(_basePrice * 0.5).round()}';
@@ -1276,7 +1289,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
   Widget _buildSubmitButton() {
     final priceLabel = _selectedDurationWeeks != null
-        ? ' · $_finalPrice FCFA'
+        ? ' · ${_fmtPrice(_finalPrice)}'
         : '';
     return ElevatedButton(
       onPressed: _publishAdvertisement,

@@ -11,6 +11,8 @@ import 'package:afrotok/providers/postProvider.dart';
 import 'package:auto_animated/auto_animated.dart';
 
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -644,7 +646,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
     final currentBalance = (userDoc.data()?['votre_solde_principal'] ?? 0).toDouble();
 
-    if (currentBalance < subscriptionPrice) {
+    if (!kIsAppleStore && currentBalance < subscriptionPrice) {
       _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
       return;
     }
@@ -703,11 +705,19 @@ class _CanalDetailsState extends State<CanalDetails> {
     });
 
     try {
-      // Déduire le montant du solde utilisateur
-      final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
-
-      if (!deductionSuccess) {
-        throw Exception('Échec de la déduction du solde');
+      // Déduire le montant (en pièces sur iPhone : règle App Store 3.1.1)
+      if (kIsAppleStore) {
+        final paid = await CoinCheckout.pay(context,
+            kind: 'canal', refId: widget.canal.id, priceFcfa: price, label: 'Abonnement au canal');
+        if (!paid) {
+          if (mounted) setState(() => _isProcessingSubscription = false);
+          return;
+        }
+      } else {
+        final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
+        if (!deductionSuccess) {
+          throw Exception('Échec de la déduction du solde');
+        }
       }
 
       // Diviser le montant (70% créateur, 30% application)

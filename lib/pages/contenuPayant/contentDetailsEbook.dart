@@ -11,6 +11,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/widgets/ios_purchase_unavailable.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -307,7 +310,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
               SizedBox(height: 20),
               Text('Convaincu ? Débloquez l\'intégralité de cet ebook !', style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${widget.content.price.toInt()} Afrcoins seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} Afrcoins'} seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('Votre soutien permet aux auteurs de créer plus de contenu', style: TextStyle(color: _colors.textSecondary, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),
@@ -977,6 +980,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Contenu');
     _colors = AppColors.of(context);
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);

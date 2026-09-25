@@ -2,6 +2,7 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitListe.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
@@ -9,13 +10,19 @@ import '../../../models/payment_config.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/payment_methods_config_service.dart';
 import '../../../services/retraitService.dart';
+import '../../../theme/app_colors.dart';
 
+/// Formulaire de demande de retrait (thèmes clair et sombre via [AppColors]).
+/// La demande est enregistrée dans Firestore puis traitée manuellement.
 class UserDemandeRetraitPage extends StatefulWidget {
   @override
   _UserDemandeRetraitPageState createState() => _UserDemandeRetraitPageState();
 }
 
 class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
+  static const double _minRetrait = 2500;
+  static final NumberFormat _moneyFmt = NumberFormat('#,##0.##', 'fr');
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _montantController = TextEditingController();
   final TextEditingController _numeroController = TextEditingController();
@@ -31,6 +38,13 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
   void initState() {
     super.initState();
     _loadCountries();
+  }
+
+  @override
+  void dispose() {
+    _montantController.dispose();
+    _numeroController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCountries() async {
@@ -82,216 +96,201 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
   void _onCountryChanged(PaymentConfig? newCountry) {
     setState(() {
       _selectedCountry = newCountry;
-      _selectedMethod = null; // Réinitialiser la méthode
-      _numeroController.clear(); // Réinitialiser le numéro
+      _selectedMethod = null;
+      _numeroController.clear();
     });
   }
 
-  Widget _buildHorairesInfo() {
-    return Container(
-      margin: EdgeInsets.only(top: 8),
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.blueGrey[800],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.access_time, color: Colors.yellow[700], size: 16),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Retraits possibles : lun-ven 8h-17h, sam 8h-14h (fermé dimanche)',
-              style: TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── UI ─────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final authProvider = context.watch<UserAuthProvider>();
     final userData = authProvider.loginUserData;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.background,
       appBar: AppBar(
-        title: Text(
-          'Demande de Retrait',
-          style: TextStyle(color: Colors.yellow[700]),
-        ),
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.yellow[700]),
+        title: Text('Demande de retrait',
+            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
+        backgroundColor: c.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: c.textPrimary),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.receipt_long_rounded, color: c.textPrimary),
+            tooltip: 'Mes retraits',
+            onPressed: () => Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => UserRetraitListPage())),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildSoldeCard(userData!),
-            SizedBox(height: 20),
-            Expanded(
-              child: CenteredContent(child: SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      _buildCountrySelector(),
-                      SizedBox(height: 16),
-                      _buildMontantField(),
-                      SizedBox(height: 16),
-                      if (_selectedCountry != null) ...[
-                        _buildMethodDropdown(),
-                        SizedBox(height: 16),
-                        _buildNumeroField(),
-                      ],
-                      SizedBox(height: 16),
-                      _buildConditionsCheckbox(),
-                      SizedBox(height: 24),
-                      _buildSubmitButton(authProvider),
-                      SizedBox(height: 20),
-                      _buildDetailedInfoContact(),
-                    ],
-                  ),
-                ),
-              )),
-            ),
-          ],
+      body: CenteredContent(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            children: [
+              _buildSoldeCard(userData, c),
+              const SizedBox(height: 20),
+              _buildCountrySelector(c),
+              const SizedBox(height: 14),
+              _buildMontantField(c),
+              if (_selectedCountry != null) ...[
+                const SizedBox(height: 14),
+                _buildMethodDropdown(c),
+                const SizedBox(height: 14),
+                _buildNumeroField(c),
+              ],
+              const SizedBox(height: 16),
+              _buildConditionsCheckbox(c),
+              const SizedBox(height: 16),
+              _buildSubmitButton(authProvider, c),
+              const SizedBox(height: 20),
+              _buildProcedure(c),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSoldeCard(UserData userData) {
+  Widget _buildSoldeCard(UserData userData, AppColors c) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green[800]!, Colors.green[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.3),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: c.primary.withOpacity(0.35)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text('Gains à retirer', style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+          const SizedBox(height: 2),
           Text(
-            'Solde Principal Disponible',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+            '${_moneyFmt.format(userData.votre_solde_principal ?? 0)} FCFA',
+            style: TextStyle(
+              color: c.primary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
-          SizedBox(height: 8),
-          Text(
-            '${userData.votre_solde_principal?.toStringAsFixed(2) ?? '0.00'} FCFA',
-            style: TextStyle(color: Colors.yellow[700], fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Solde minimum de retrait: 2 500 FCFA',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          _buildHorairesInfo(),
+          const SizedBox(height: 10),
+          _infoLine(c, Icons.south_rounded, 'Minimum de retrait : 2 500 FCFA'),
+          const SizedBox(height: 4),
+          _infoLine(c, Icons.schedule_rounded, 'Lun-ven 8h-17h · sam 8h-14h · fermé le dimanche'),
         ],
       ),
     );
   }
 
-  Widget _buildCountrySelector() {
+  Widget _infoLine(AppColors c, IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: c.textSecondary),
+        const SizedBox(width: 6),
+        Expanded(child: Text(text, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+      ],
+    );
+  }
+
+  Widget _label(AppColors c, String text, {Widget? trailing}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 6),
+      child: Row(
+        children: [
+          Text(text, style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+          if (trailing != null) ...[const SizedBox(width: 8), trailing],
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(AppColors c, {String? hint, IconData? icon, String? suffix, String? helper, String? prefix}) {
+    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: c.textSecondary),
+      helperText: helper,
+      helperStyle: TextStyle(color: c.textSecondary, fontSize: 11),
+      filled: true,
+      fillColor: c.surface,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      prefixIcon: icon != null ? Icon(icon, color: c.textSecondary, size: 20) : null,
+      prefixText: prefix,
+      prefixStyle: TextStyle(color: c.textPrimary, fontSize: 15),
+      suffixText: suffix,
+      suffixStyle: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w600),
+      border: border(c.border),
+      enabledBorder: border(c.border),
+      focusedBorder: border(c.primary, 1.5),
+      errorBorder: border(c.danger),
+      focusedErrorBorder: border(c.danger, 1.5),
+    );
+  }
+
+  Widget _buildCountrySelector(AppColors c) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Pays de retrait',
-          style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.green),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedCountry?.countryCode,
-              isExpanded: true,
-              dropdownColor: Colors.grey[900],
-              style: TextStyle(color: Colors.white, fontSize: 16),
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              items: _availableCountries.map((country) {
-                return DropdownMenuItem<String>(
-                  value: country.countryCode,
-                  child: Row(
-                    children: [
-                      Icon(Icons.flag, color: Colors.yellow[700], size: 20),
-                      SizedBox(width: 12),
-                      Text(country.countryName),
-                      SizedBox(width: 8),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '+${country.phoneCode}',
-                          style: TextStyle(color: Colors.grey[400], fontSize: 10),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? countryCode) {
-                if (countryCode != null) {
-                  final newCountry = _availableCountries.firstWhere(
-                        (c) => c.countryCode == countryCode,
-                    orElse: () => _availableCountries.first,
-                  );
-                  _onCountryChanged(newCountry);
-                }
-              },
-            ),
-          ),
+        _label(c, 'Pays de retrait'),
+        DropdownButtonFormField<String>(
+          value: _selectedCountry?.countryCode,
+          isExpanded: true,
+          dropdownColor: c.surface,
+          style: TextStyle(color: c.textPrimary, fontSize: 15),
+          iconEnabledColor: c.textSecondary,
+          decoration: _inputDecoration(c, icon: Icons.public_rounded),
+          items: _availableCountries.map((country) {
+            return DropdownMenuItem<String>(
+              value: country.countryCode,
+              child: Row(
+                children: [
+                  Flexible(child: Text(country.countryName, overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: 8),
+                  Text('+${country.phoneCode}', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (String? countryCode) {
+            if (countryCode != null) {
+              final newCountry = _availableCountries.firstWhere(
+                (x) => x.countryCode == countryCode,
+                orElse: () => _availableCountries.first,
+              );
+              _onCountryChanged(newCountry);
+            }
+          },
         ),
       ],
     );
   }
-  Widget _buildMontantField() {
+
+  Widget _buildMontantField(AppColors c) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Montant à retirer',
-          style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        SizedBox(height: 8),
+        _label(c, 'Montant à retirer'),
         TextFormField(
           controller: _montantController,
           keyboardType: TextInputType.number,
-          style: TextStyle(color: Colors.white, fontSize: 16),
-          decoration: InputDecoration(
-            hintText: 'Entrez le montant en FCFA',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.yellow)),
-            prefixIcon: Icon(Icons.money, color: Colors.green),
-            suffixText: 'FCFA',
-            suffixStyle: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-          ),
+          style: TextStyle(color: c.textPrimary, fontSize: 15),
+          decoration: _inputDecoration(c, hint: 'Montant en FCFA', icon: Icons.payments_outlined, suffix: 'FCFA'),
+          onChanged: (_) => setState(() {}),
           validator: (value) {
             if (value == null || value.isEmpty) return 'Veuillez entrer un montant';
             final montant = double.tryParse(value);
-            if (montant == null || montant < 2500) return 'Le montant minimum est de 2 500 FCFA';
+            if (montant == null || montant < _minRetrait) return 'Le montant minimum est de 2 500 FCFA';
             return null;
           },
         ),
@@ -299,34 +298,27 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
     );
   }
 
-  Widget _buildMethodDropdown() {
+  Widget _buildMethodDropdown(AppColors c) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Méthode de retrait',
-          style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        SizedBox(height: 8),
+        _label(c, 'Méthode de retrait'),
         DropdownButtonFormField<PaymentMethod>(
           value: _selectedMethod,
-          hint: Text('Sélectionnez une méthode', style: TextStyle(color: Colors.grey[500])),
-          dropdownColor: Colors.grey[900],
-          style: TextStyle(color: Colors.white, fontSize: 16),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.yellow)),
-            prefixIcon: Icon(Icons.payment, color: Colors.green),
-          ),
+          isExpanded: true,
+          hint: Text('Sélectionnez une méthode', style: TextStyle(color: c.textSecondary)),
+          dropdownColor: c.surface,
+          style: TextStyle(color: c.textPrimary, fontSize: 15),
+          iconEnabledColor: c.textSecondary,
+          decoration: _inputDecoration(c, icon: Icons.account_balance_wallet_outlined),
           items: _selectedCountry!.paymentMethods.map((method) {
             return DropdownMenuItem(
               value: method,
               child: Row(
                 children: [
-                  Icon(method.icon, color: Colors.yellow[700], size: 20),
-                  SizedBox(width: 12),
-                  Text(method.name),
+                  Icon(method.icon, color: c.primary, size: 18),
+                  const SizedBox(width: 10),
+                  Flexible(child: Text(method.name, overflow: TextOverflow.ellipsis)),
                 ],
               ),
             );
@@ -338,46 +330,33 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
     );
   }
 
-  Widget _buildNumeroField() {
+  Widget _buildNumeroField(AppColors c) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Numéro de retrait',
-              style: TextStyle(color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
+        _label(
+          c,
+          'Numéro de retrait',
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: c.surfaceVariant,
+              borderRadius: BorderRadius.circular(6),
             ),
-            SizedBox(width: 8),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.yellow[700]!.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                _selectedCountry!.countryName,
-                style: TextStyle(color: Colors.yellow[700], fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
+            child: Text(_selectedCountry!.countryName,
+                style: TextStyle(color: c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w700)),
+          ),
         ),
-        SizedBox(height: 8),
         TextFormField(
           controller: _numeroController,
           keyboardType: TextInputType.phone,
-          style: TextStyle(color: Colors.white, fontSize: 16),
-          decoration: InputDecoration(
-            hintText: '+${_selectedCountry!.phoneCode} XX XX XX XX',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            helperText: 'Format: ${_selectedCountry!.phoneCode} suivi de ${_selectedCountry!.phoneLength} chiffres',
-            helperStyle: TextStyle(color: Colors.grey[500], fontSize: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.yellow)),
-            prefixIcon: Icon(Icons.phone_android, color: Colors.green),
-            prefixText: '+',
-            prefixStyle: TextStyle(color: Colors.green, fontSize: 16),
+          style: TextStyle(color: c.textPrimary, fontSize: 15),
+          decoration: _inputDecoration(
+            c,
+            hint: '${_selectedCountry!.phoneCode} XX XX XX XX',
+            icon: Icons.phone_android_rounded,
+            prefix: '+',
+            helper: 'Indicatif ${_selectedCountry!.phoneCode} suivi de ${_selectedCountry!.phoneLength} chiffres',
           ),
           onChanged: (value) {
             // Auto-formatage
@@ -390,6 +369,7 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
                 );
               }
             }
+            setState(() {});
           },
           validator: (value) => _validatePhoneNumber(value),
         ),
@@ -397,45 +377,59 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
     );
   }
 
-  Widget _buildConditionsCheckbox() {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.yellow[700]!.withOpacity(0.5)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Transform.scale(
-            scale: 1.2,
-            child: Checkbox(
+  Widget _buildConditionsCheckbox(AppColors c) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => setState(() => _hasAcceptedConditions = !_hasAcceptedConditions),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(4, 6, 12, 8),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _hasAcceptedConditions ? c.primary.withOpacity(0.5) : c.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
               value: _hasAcceptedConditions,
               onChanged: (value) => setState(() => _hasAcceptedConditions = value ?? false),
-              activeColor: Colors.yellow[700],
-              checkColor: Colors.black,
+              activeColor: c.primary,
+              checkColor: c.onPrimary,
+              side: BorderSide(color: c.textSecondary),
+              visualDensity: VisualDensity.compact,
             ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('J\'ai lu et j\'accepte les conditions', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                SizedBox(height: 4),
-                GestureDetector(
-                  onTap: _showConditionsDetails,
-                  child: Text('Cliquez ici pour lire les instructions importantes', style: TextStyle(color: Colors.yellow[700], fontSize: 12, decoration: TextDecoration.underline)),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("J'ai lu et j'accepte les conditions",
+                        style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 3),
+                    GestureDetector(
+                      onTap: _showConditionsDetails,
+                      child: Text('Lire les instructions importantes',
+                          style: TextStyle(
+                            color: c.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                            decorationColor: c.primary,
+                          )),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSubmitButton(UserAuthProvider authProvider) {
+  Widget _buildSubmitButton(UserAuthProvider authProvider, AppColors c) {
     final bool isFormValid = _selectedCountry != null &&
         _selectedMethod != null &&
         _hasAcceptedConditions &&
@@ -446,188 +440,201 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
       children: [
         SizedBox(
           width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
+          height: 50,
+          child: FilledButton(
             onPressed: _isLoading ? null : () => _submitRetrait(authProvider),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isFormValid ? Colors.yellow[700] : Colors.grey[600],
-              foregroundColor: Colors.black,
+            style: FilledButton.styleFrom(
+              backgroundColor: isFormValid ? c.primary : c.surfaceVariant,
+              foregroundColor: isFormValid ? c.onPrimary : c.textSecondary,
+              disabledBackgroundColor: c.surfaceVariant,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: _isLoading
-                ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.send, size: 20),
-              SizedBox(width: 8),
-              Text('SOUMETTRE LA DEMANDE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ]),
+                ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: c.primary, strokeWidth: 2))
+                : const Text('Soumettre la demande', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           ),
         ),
         if (!_hasAcceptedConditions) ...[
-          SizedBox(height: 8),
-          Text('Veuillez accepter les conditions pour continuer', style: TextStyle(color: Colors.orange, fontSize: 12)),
+          const SizedBox(height: 8),
+          Text('Accepte les conditions pour continuer', style: TextStyle(color: c.warning, fontSize: 12)),
         ],
       ],
     );
   }
 
-  Widget _buildDetailedInfoContact() {
+  Widget _buildProcedure(AppColors c) {
+    const steps = [
+      'Sélectionne ton pays et ta méthode de paiement',
+      'Entre ton numéro au bon format',
+      'Soumets la demande et note le numéro de transaction',
+      'Contacte le service client avec ce numéro',
+      'Reçois ton paiement sous 24 à 48 h',
+    ];
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.yellow[700]!),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(Icons.contact_support, color: Colors.yellow[700], size: 24),
-            SizedBox(width: 8),
-            Text('Procédure de Retrait', style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold, fontSize: 16)),
-          ]),
-          SizedBox(height: 12),
-          _buildStepItem('1', 'Sélectionnez votre pays'),
-          _buildStepItem('2', 'Choisissez votre méthode de paiement'),
-          _buildStepItem('3', 'Entrez votre numéro au format valide'),
-          _buildStepItem('4', 'Soumettez votre demande de retrait'),
-          _buildStepItem('5', 'Notez votre numéro de transaction'),
-          _buildStepItem('6', 'Contactez notre service client'),
-          _buildStepItem('7', 'Recevez votre paiement sous 24-48h'),
-          SizedBox(height: 12),
+          Text('Comment ça marche',
+              style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+          const SizedBox(height: 10),
+          for (var i = 0; i < steps.length; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(color: c.primary.withOpacity(0.15), shape: BoxShape.circle),
+                    child: Center(
+                      child: Text('${i + 1}',
+                          style: TextStyle(color: c.primary, fontSize: 11, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(steps[i], style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35))),
+                ],
+              ),
+            ),
+          const SizedBox(height: 8),
           Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green)),
-            child: Row(children: [
-              Icon(Icons.warning_amber, color: Colors.orange, size: 16),
-              SizedBox(width: 8),
-              Expanded(child: Text('Assurez-vous que votre numéro est correct. Les fonds seront envoyés sur ce numéro.', style: TextStyle(color: Colors.orange, fontSize: 12))),
-            ]),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: c.warning.withOpacity(c.isDark ? 0.14 : 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.warning_amber_rounded, color: c.warning, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Vérifie bien ton numéro : les fonds seront envoyés dessus.',
+                      style: TextStyle(color: c.textPrimary, fontSize: 12, height: 1.3)),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepItem(String step, String text) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(color: Colors.yellow[700], shape: BoxShape.circle),
-            child: Center(child: Text(step, style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold))),
-          ),
-          SizedBox(width: 12),
-          Expanded(child: Text(text, style: TextStyle(color: Colors.grey[300], fontSize: 13))),
         ],
       ),
     );
   }
 
   void _showConditionsDetails() {
+    final c = AppColors.of(context);
+    const items = [
+      'Contacter le service client dans les 24 h suivant ta demande',
+      'Fournir le numéro de transaction généré',
+      'Le traitement prend généralement 24 à 48 heures',
+      'Vérifier que ton numéro de retrait est correct',
+      'Vérifier que le pays et la méthode sont corrects',
+      'Les demandes non finalisées sous 7 jours sont annulées automatiquement',
+    ];
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Row(children: [
-          Icon(Icons.security, color: Colors.yellow[700]),
-          SizedBox(width: 8),
-          Text('Instructions Importantes', style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold)),
-        ]),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('Instructions importantes',
+            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Pour finaliser votre retrait, vous devez :', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
-              SizedBox(height: 12),
-              _buildConditionItem('📞 Contacter notre service client dans les 24h suivant votre demande'),
-              _buildConditionItem('🔢 Fournir le numéro de transaction généré'),
-              _buildConditionItem('⏰ Le traitement prend généralement 24 à 48 heures'),
-              _buildConditionItem('💰 Vérifier que votre numéro de retrait est correct'),
-              _buildConditionItem('🌍 Vérifier que le pays et la méthode sont corrects'),
-              _buildConditionItem('❌ Les demandes non finalisées sous 7 jours seront annulées automatiquement'),
-              SizedBox(height: 16),
+              Text('Pour finaliser ton retrait, tu dois :',
+                  style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              for (final text in items)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: c.primary, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(text, style: TextStyle(color: c.textSecondary, fontSize: 13))),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 12),
               Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)),
-                child: Text('Important : Votre retrait ne sera traité qu\'après contact avec notre service client.', style: TextStyle(color: Colors.red, fontSize: 12)),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: c.danger.withOpacity(c.isDark ? 0.16 : 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text("Ton retrait ne sera traité qu'après contact avec le service client.",
+                    style: TextStyle(color: c.danger, fontSize: 12)),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('FERMER', style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () { setState(() => _hasAcceptedConditions = true); Navigator.pop(context); },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black),
-            child: Text('J\'AI COMPRIS'),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Fermer', style: TextStyle(color: c.textSecondary)),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConditionItem(String text) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.check_circle, color: Colors.green, size: 16),
-          SizedBox(width: 8),
-          Expanded(child: Text(text, style: TextStyle(color: Colors.grey[300], fontSize: 13))),
+          FilledButton(
+            onPressed: () {
+              setState(() => _hasAcceptedConditions = true);
+              Navigator.pop(ctx);
+            },
+            style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
+            child: const Text("J'ai compris"),
+          ),
         ],
       ),
     );
   }
 
   void _showHorairesModal() {
+    final c = AppColors.of(context);
+    Widget line(String day, String hours, {bool closed = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Row(
+            children: [
+              Expanded(child: Text(day, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600))),
+              Text(hours, style: TextStyle(color: closed ? c.danger : c.textSecondary)),
+            ],
+          ),
+        );
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.yellow[700]!, width: 2)),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(children: [
-          Icon(Icons.access_time, color: Colors.yellow[700], size: 28),
-          SizedBox(width: 12),
-          Text('Horaires de retrait', style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold)),
+          Icon(Icons.schedule_rounded, color: c.primary, size: 24),
+          const SizedBox(width: 10),
+          Text('Horaires de retrait',
+              style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
         ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('📅 Lundi au Vendredi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
-            Text('⏰ 8h00 - 17h00', style: TextStyle(color: Colors.grey[300])),
-            SizedBox(height: 12),
-            Text('📅 Samedi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
-            Text('⏰ 8h00 - 14h00', style: TextStyle(color: Colors.grey[300])),
-            SizedBox(height: 12),
-            Text('📅 Dimanche', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
-            Text('🚫 Fermé (aucun retrait)', style: TextStyle(color: Colors.red[400])),
-            SizedBox(height: 16),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.blueGrey[800], borderRadius: BorderRadius.circular(12)),
-              child: Row(children: [
-                Icon(Icons.info, color: Colors.yellow[700], size: 20),
-                SizedBox(width: 8),
-                Expanded(child: Text('Les demandes hors de ces créneaux ne seront pas acceptées.', style: TextStyle(color: Colors.white70))),
-              ]),
-            ),
+            line('Lundi au vendredi', '8h00 - 17h00'),
+            line('Samedi', '8h00 - 14h00'),
+            line('Dimanche', 'Fermé', closed: true),
+            const SizedBox(height: 12),
+            Text('Les demandes hors de ces créneaux ne sont pas acceptées.',
+                style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Fermer', style: TextStyle(color: Colors.grey[400]))),
-          ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black), child: Text('J\'ai compris')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
+            child: const Text("J'ai compris"),
+          ),
         ],
       ),
     );
@@ -642,15 +649,17 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
     if (!_formKey.currentState!.validate()) return;
 
     if (!_hasAcceptedConditions) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Veuillez accepter les conditions de retrait'), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Veuillez accepter les conditions de retrait')));
       return;
     }
 
     final montant = double.parse(_montantController.text);
-    final userData = authProvider.loginUserData!;
+    final userData = authProvider.loginUserData;
 
-    if (userData.votre_solde_principal! < montant) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Solde insuffisant pour effectuer ce retrait'), backgroundColor: Colors.red));
+    if ((userData.votre_solde_principal ?? 0) < montant) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Solde insuffisant pour effectuer ce retrait')));
       return;
     }
 
@@ -670,11 +679,14 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
       );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Demande de retrait soumise avec succès !'), backgroundColor: Colors.green, duration: Duration(seconds: 4)));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Demande de retrait envoyée'), duration: Duration(seconds: 4)));
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserRetraitListPage()));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Erreur: ${e.toString()}'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : ${e.toString()}')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

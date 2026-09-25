@@ -5,6 +5,7 @@ import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 import 'package:provider/provider.dart';
 
 class BoostedContentStripWidget extends StatelessWidget {
@@ -12,6 +13,7 @@ class BoostedContentStripWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const SizedBox.shrink(); // contenus payants masqués sur iPhone
     final colors = AppColors.of(context);
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance

@@ -5,7 +5,7 @@ import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:flutter/material.dart';
 import '../../utils/platform_guard.dart';
-import '../../widgets/ios_purchase_unavailable.dart';
+import '../../services/coin_checkout.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
@@ -94,7 +94,6 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Abonnement');
     final colors = AppColors.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final user = authProvider.loginUserData!;
@@ -233,9 +232,11 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       AfrolookAbonnement? abonnement, bool isPremium, bool isGold) {
     final depot = user.votre_solde_depot ?? 0.0;
     final principal = user.votre_solde_principal ?? 0.0;
-    final solde = _selectedBalancePremium == 'votre_solde_depot' ? depot : principal;
+    final solde = kIsAppleStore
+        ? (user.giftCoinsBalance ?? 0).toDouble()
+        : (_selectedBalancePremium == 'votre_solde_depot' ? depot : principal);
     final prixFinal = _getPrixPremium(_dureePremium);
-    final soldeInsuffisant = solde < prixFinal;
+    final soldeInsuffisant = solde < (kIsAppleStore ? CoinCheckout.coinsFor(prixFinal) : prixFinal);
 
     // Si Gold actif : afficher info upgrade impossible (déjà au dessus)
     if (isGold) {
@@ -303,7 +304,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 16),
           _buildPriceSummary(colors, _offresPremium, _dureePremium, const Color(0xFFFDB813)),
           const SizedBox(height: 16),
-          _buildAbonnementBalanceSelector(
+          if (!kIsAppleStore) _buildAbonnementBalanceSelector(
             colors: colors,
             user: user,
             selectedBalance: _selectedBalancePremium,
@@ -315,9 +316,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: _selectedBalancePremium == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains',
+            soldeLabel: kIsAppleStore ? 'Solde de pièces' : (_selectedBalancePremium == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
             accentColor: const Color(0xFFFF416C),
-            btnLabel: '⭐ DEVENIR PREMIUM — ${prixFinal.toInt()} FCFA',
+            btnLabel: '⭐ DEVENIR PREMIUM — ${_px(prixFinal)}',
             onPay: () => _souscrire(user, 'premium', _dureePremium, balanceKey: _selectedBalancePremium),
           ),
         ],
@@ -352,7 +353,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       AfrolookAbonnement? abonnement, bool isGold) {
     final depot = user.votre_solde_depot ?? 0.0;
     final principal = user.votre_solde_principal ?? 0.0;
-    final solde = _selectedBalanceGold == 'votre_solde_depot' ? depot : principal;
+    final solde = kIsAppleStore
+        ? (user.giftCoinsBalance ?? 0).toDouble()
+        : (_selectedBalanceGold == 'votre_solde_depot' ? depot : principal);
     final prixFinal = _getPrixGold(_dureeGold);
     final soldeInsuffisant = solde < prixFinal;
 
@@ -413,7 +416,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 16),
           _buildPriceSummary(colors, _offresGold, _dureeGold, const Color(0xFFFFD700)),
           const SizedBox(height: 16),
-          _buildAbonnementBalanceSelector(
+          if (!kIsAppleStore) _buildAbonnementBalanceSelector(
             colors: colors,
             user: user,
             selectedBalance: _selectedBalanceGold,
@@ -425,9 +428,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: _selectedBalanceGold == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains',
+            soldeLabel: kIsAppleStore ? 'Solde de pièces' : (_selectedBalanceGold == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
             accentColor: const Color(0xFFFFD700),
-            btnLabel: '👑 DEVENIR GOLD — ${prixFinal.toInt()} FCFA',
+            btnLabel: '👑 DEVENIR GOLD — ${_px(prixFinal)}',
             onPay: () => _souscrire(user, 'gold', _dureeGold, balanceKey: _selectedBalanceGold),
             btnTextColor: Colors.black,
           ),
@@ -527,7 +530,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                     : null),
             if (montantPaye != null) ...[
               const SizedBox(height: 6),
-              _infoRow(colors, 'Montant payé', '${montantPaye.toInt()} FCFA',
+              _infoRow(colors, 'Montant payé', _px(montantPaye),
                   valueColor: const Color(0xFFFDB813)),
             ],
           ],
@@ -551,6 +554,10 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     );
   }
 
+  /// Prix en pièces sur iPhone (achat via l'App Store), en FCFA ailleurs.
+  String _px(num fcfa) =>
+      kIsAppleStore ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '${fcfa.toInt()} FCFA';
+
   Widget _buildPlanHeader(AppColors colors, String name, String prefix,
       int basePrice, Color accentColor) {
     return Row(
@@ -565,7 +572,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                       color: accentColor,
                       fontSize: 22,
                       fontWeight: FontWeight.w800)),
-              Text('$prefix ${basePrice.toString()} FCFA/mois',
+              Text('$prefix ${_px(basePrice)}/mois',
                   style: TextStyle(color: colors.textSecondary, fontSize: 13)),
             ],
           ),
@@ -701,12 +708,12 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text('$prixMois F/mois',
+                      Text('${_px(prixMois)}/mois',
                           style: TextStyle(
                               color: isSelected ? Colors.black87 : accentColor,
                               fontSize: 11)),
                       const SizedBox(height: 4),
-                      Text('${prixFinal.toInt()} F',
+                      Text(_px(prixFinal),
                           style: TextStyle(
                               color: isSelected ? Colors.black : colors.textPrimary,
                               fontSize: 18,
@@ -721,7 +728,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: Colors.green),
                           ),
-                          child: Text('-${reduction.toInt()} F',
+                          child: Text('-${_px(reduction)}',
                               style: const TextStyle(
                                   color: Colors.green,
                                   fontSize: 10,
@@ -758,10 +765,10 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           _infoRow(colors, 'Durée', '$selected mois'),
           if (reduction > 0) ...[
             const SizedBox(height: 8),
-            _infoRow(colors, 'Prix de base', '${prixBase.toInt()} F',
+            _infoRow(colors, 'Prix de base', _px(prixBase),
                 valueColor: colors.textSecondary),
             const SizedBox(height: 8),
-            _infoRow(colors, 'Réduction', '-${reduction.toInt()} F',
+            _infoRow(colors, 'Réduction', '-${_px(reduction)}',
                 valueColor: Colors.green),
           ],
           Divider(color: colors.border, height: 20),
@@ -773,7 +780,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                       color: colors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600)),
-              Text('${prixFinal.toInt()} FCFA',
+              Text(_px(prixFinal),
                   style: TextStyle(
                       color: accentColor, fontSize: 26, fontWeight: FontWeight.bold)),
             ],
@@ -823,7 +830,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                   children: [
                     Text(soldeLabel,
                         style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                    Text('${solde.toInt()} FCFA',
+                    Text(kIsAppleStore ? '${solde.toInt()} pièces' : '${solde.toInt()} FCFA',
                         style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: 18,
@@ -1227,7 +1234,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         await Provider.of<UserAuthProvider>(context, listen: false).refreshUserData();
         if (!mounted) return;
         _showSuccessDialog(planType);
-      } else {
+      } else if (result['cancelled'] != true) {
         _showErrorDialog(result['message'] ?? 'Erreur inconnue');
       }
     } catch (e) {
@@ -1293,11 +1300,11 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                             style: TextStyle(
                                 color: accentColor, fontWeight: FontWeight.bold)),
                       ),
-                      title: Text('${prixFinal.toInt()} FCFA',
+                      title: Text(_px(prixFinal),
                           style: TextStyle(
                               color: colors.textPrimary, fontWeight: FontWeight.bold)),
                       subtitle: Text(
-                          'soit ${(prixFinal / mois).round()} F/mois',
+                          'soit ${_px(prixFinal / mois)}/mois',
                           style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                       trailing: Icon(Icons.arrow_forward_ios,
                           color: colors.textSecondary, size: 16),

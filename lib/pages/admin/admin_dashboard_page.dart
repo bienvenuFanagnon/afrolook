@@ -13,6 +13,7 @@ import 'admin_email_screen.dart';
 import 'dating/admin_dating_profiles_page.dart';
 import 'influencer_requests_page.dart';
 import 'official_accounts_page.dart';
+import 'moderation_reports_page.dart';
 import 'remuneration_admin_page.dart';
 import '../contenuPayant/admin_content_page.dart';
 import '../pronostics/admin_pronostics_page.dart';
@@ -917,6 +918,14 @@ class _ModulesGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modules = [
+      _ModuleItem(
+        icon: Icons.gavel_rounded,
+        label: 'Modération',
+        desc: 'Signalements et blocages à traiter sous 24 h',
+        iconBg: const Color(0xFFFDECEA),
+        iconColor: Colors.red,
+        page: const ModerationReportsPage(),
+      ),
       _ModuleItem(
         icon: Icons.groups_rounded,
         label: 'Groupe Afrolook',

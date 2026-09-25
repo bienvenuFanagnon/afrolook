@@ -4,6 +4,9 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/contenuPayant/userAbonnerInfos.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/widgets/ios_purchase_unavailable.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 
 import 'package:provider/provider.dart';
 
@@ -317,7 +320,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
               SizedBox(height: 20),
               Text('Convaincu ? Débloquez l\'intégralité de ce contenu !', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${widget.content.price.toInt()} Afrcoins seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} Afrcoins'} seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('Votre soutien permet aux artistes de créer plus de contenu', style: TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),
@@ -811,6 +814,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Contenu');
     final contentProvider = Provider.of<ContentProvider>(context, listen: false);
     final userProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final isAdminOrOwner = userProvider.loginUserData?.role == UserRole.ADM.name ||
@@ -944,7 +948,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(foregroundColor: _colors.background, backgroundColor: _colors.accent, padding: EdgeInsets.symmetric(vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             onPressed: _isPurchasing ? null : _handlePurchase,
-                            child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _colors.background, strokeWidth: 2)) : Text('SOUTENIR LES CRÉATEURS - ${widget.content.price.toInt()} F', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: _isPurchasing ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: _colors.background, strokeWidth: 2)) : Text('SOUTENIR LES CRÉATEURS - ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} F'}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         )
                       else if (canWatch && _isFullVideoReady && _chewieController != null)

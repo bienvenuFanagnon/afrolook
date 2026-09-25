@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
+import '../../utils/platform_guard.dart';
+import '../../utils/tx_amount.dart';
 import 'mes_gains_post_page.dart';
+import 'mes_gains_publicite_page.dart';
 import '../coins/coin_recharge_screen.dart';
 import '../paiement/newDepot.dart';
 import '../paiement/feexpay/pendingTransactionsScreen.dart';
@@ -24,6 +27,9 @@ class _MonetisationPageState extends State<MonetisationPage> {
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   Stream<UserData>? userStream;
+  Stream<List<TransactionSolde>>? _txStream;
+  String _txFilter = 'tous';
+  bool _viewsExpanded = false;
 
   @override
   void initState() {
@@ -36,6 +42,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
   void refreshUser() {
     setState(() {
       userStream = authProvider.getUserStream();
+      _txStream = null;
     });
   }
 
@@ -83,9 +90,6 @@ class _MonetisationPageState extends State<MonetisationPage> {
           }
 
           final user = snapshot.data!;
-          final double soldePrincipal = user.votre_solde_principal ?? 0;
-          final double soldeDepot = user.votre_solde_depot ?? 0;
-          final int giftCoinsBalance = user.giftCoinsBalance ?? 0;
           final double creatorScore = user.creatorScore ?? 0.0;
           final int totalViews = user.totalPostUniqueViews ?? 0;
           final int creditedViews = user.totalViewsEarningsCredited ?? 0;
@@ -95,18 +99,12 @@ class _MonetisationPageState extends State<MonetisationPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSoldePrincipalCard(soldePrincipal, colors, t),
-                const SizedBox(height: 16),
-                _buildSoldeDepotCard(soldeDepot, colors),
-                const SizedBox(height: 16),
+                _buildWallet(user, colors),
+                const SizedBox(height: 20),
                 _buildViewEarningsCard(creatorScore, totalViews, creditedViews, colors),
-                const SizedBox(height: 16),
-                _buildCoinsCard(giftCoinsBalance, colors, t),
-                const SizedBox(height: 16),
-                _buildConversionSection(giftCoinsBalance, colors, t),
                 const SizedBox(height: 24),
                 _buildTransactionHeader(colors, t),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 _buildTransactionList(user.id!, colors, t),
               ],
             ),
@@ -150,234 +148,212 @@ class _MonetisationPageState extends State<MonetisationPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tierColor.withOpacity(0.35)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: tierColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.play_circle_outline, color: tierColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'REVENUS DES VUES',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
+          // En-tête (repliable)
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => setState(() => _viewsExpanded = !_viewsExpanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: tierColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.play_circle_outline_rounded, color: tierColor, size: 18),
                   ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: tierColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  tierLabel,
-                  style: TextStyle(
-                    color: tierColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Taux actuel
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${(myRate * 1000).toInt()} FCFA',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: tierColor,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  'RPM',
-                  style: TextStyle(fontSize: 13, color: colors.textSecondary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Score créateur : ${creatorScore.toStringAsFixed(1)} pts  ·  ${(multiplier * 100).toStringAsFixed(0)}% du taux de base (RPM max : 1 000 FCFA)',
-            style: TextStyle(fontSize: 11, color: colors.textSecondary),
-          ),
-
-          const SizedBox(height: 14),
-          Divider(color: colors.divider, height: 1),
-          const SizedBox(height: 14),
-
-          // Statistiques vues
-          Row(
-            children: [
-              Expanded(
-                child: _viewStat(
-                  icon: Icons.remove_red_eye_outlined,
-                  label: 'Vues totales',
-                  value: totalViews.toString(),
-                  color: colors.textSecondary,
-                  colors: colors,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _viewStat(
-                  icon: Icons.schedule_outlined,
-                  label: 'Non encaissées',
-                  value: pendingViews.toString(),
-                  color: tierColor,
-                  colors: colors,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _viewStat(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: 'À encaisser',
-                  value: '${pendingEarnings.toStringAsFixed(2)} F',
-                  color: tierColor,
-                  colors: colors,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // Paliers
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Paliers de rémunération',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: colors.textSecondary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ..._scoreTiers.map((t) {
-                  final tColor = Color(t['color'] as int);
-                  final tMulti = t['multiplier'] as double;
-                  final tLabel = t['label'] as String;
-                  final tMin = t['minScore'] as double;
-                  final isActive = tierLabel == tLabel;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 8, height: 8,
-                          decoration: BoxDecoration(
-                            color: isActive ? tColor : tColor.withOpacity(0.4),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '$tLabel  (score ≥ ${tMin.toStringAsFixed(0)})',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isActive ? colors.textPrimary : colors.textSecondary,
-                              fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                        Row(
+                          children: [
+                            Text('Revenus des vues',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: tierColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(tierLabel,
+                                  style: TextStyle(color: tierColor, fontWeight: FontWeight.w700, fontSize: 10.5)),
                             ),
-                          ),
+                          ],
                         ),
+                        const SizedBox(height: 2),
                         Text(
-                          '${((tMulti * baseRate) * 1000).toInt()} FCFA RPM',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isActive ? tColor : colors.textSecondary,
-                            fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
-                          ),
+                          '${(myRate * 1000).toInt()} FCFA RPM · à encaisser : ${pendingEarnings.toStringAsFixed(2)} F',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
                         ),
                       ],
                     ),
-                  );
-                }),
-              ],
+                  ),
+                  Icon(_viewsExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                      color: colors.textSecondary, size: 22),
+                ],
+              ),
             ),
           ),
 
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MesGainsPage(userId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id!),
-                ),
-              ),
-              icon: Icon(Icons.account_balance_wallet_outlined, size: 16, color: tierColor),
-              label: Text(
-                'Voir mes gains & encaisser',
-                style: TextStyle(color: tierColor, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: tierColor.withOpacity(0.5)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+          if (_viewsExpanded) ...[
+            Divider(height: 1, thickness: 0.5, color: colors.border),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Score créateur : ${creatorScore.toStringAsFixed(1)} pts  ·  ${(multiplier * 100).toStringAsFixed(0)}% du taux de base (RPM max : 1 000 FCFA)',
+                    style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                  ),
+                  const SizedBox(height: 12),
+                  // Statistiques vues
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _viewStat(
+                          icon: Icons.remove_red_eye_outlined,
+                          label: 'Vues totales',
+                          value: totalViews.toString(),
+                          color: colors.textSecondary,
+                          colors: colors,
+                        ),
+                      ),
+                      Expanded(
+                        child: _viewStat(
+                          icon: Icons.schedule_outlined,
+                          label: 'Non encaissées',
+                          value: pendingViews.toString(),
+                          color: tierColor,
+                          colors: colors,
+                        ),
+                      ),
+                      Expanded(
+                        child: _viewStat(
+                          icon: Icons.account_balance_wallet_outlined,
+                          label: 'À encaisser',
+                          value: '${pendingEarnings.toStringAsFixed(2)} F',
+                          color: tierColor,
+                          colors: colors,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Paliers
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Paliers de rémunération',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        ..._scoreTiers.map((t) {
+                          final tColor = Color(t['color'] as int);
+                          final tMulti = t['multiplier'] as double;
+                          final tLabel = t['label'] as String;
+                          final tMin = t['minScore'] as double;
+                          final isActive = tierLabel == tLabel;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 7, height: 7,
+                                  decoration: BoxDecoration(
+                                    color: isActive ? tColor : tColor.withOpacity(0.4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '$tLabel  (score ≥ ${tMin.toStringAsFixed(0)})',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isActive ? colors.textPrimary : colors.textSecondary,
+                                      fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${((tMulti * baseRate) * 1000).toInt()} FCFA RPM',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isActive ? tColor : colors.textSecondary,
+                                    fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Tes gains s\'accumulent selon tes vues et ton palier. '
+                    'Le RPM maximum est de 1 000 FCFA (pour 1 000 vues) et peut être ajusté par Afrolook. '
+                    'Améliore ton score en publiant du contenu apprécié.',
+                    style: TextStyle(fontSize: 10.5, color: colors.textSecondary, height: 1.4),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.info_outline, size: 13, color: colors.textSecondary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Tes gains s\'accumulent selon tes vues et ton palier. Encaisse-les quand tu veux depuis la page ci-dessus. '
-                  'Le RPM maximum est de 1 000 FCFA (pour 1 000 vues) et peut être ajusté par Afrolook. '
-                  'Améliore ton score en publiant du contenu apprécié.',
-                  style: TextStyle(fontSize: 10, color: colors.textSecondary, height: 1.4),
+          ],
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MesGainsPage(userId: Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id!),
+                  ),
+                ),
+                icon: Icon(Icons.account_balance_wallet_outlined, size: 16, color: tierColor),
+                label: Text(
+                  'Voir mes gains & encaisser',
+                  style: TextStyle(color: tierColor, fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: tierColor.withOpacity(0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -412,411 +388,351 @@ class _MonetisationPageState extends State<MonetisationPage> {
     );
   }
 
-  Widget _buildSoldeDepotCard(double soldeDepot, AppColors colors) {
-    const green = Color(0xFF34C759);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: green.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: green.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.savings_rounded, color: green, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'SOLDE DE DÉPÔT',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '${soldeDepot.toStringAsFixed(2)} FCFA',
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: green,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Abonnements · Pièces · Canaux · Groupes',
-            style: TextStyle(fontSize: 12, color: colors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          Divider(color: colors.divider, height: 1),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DepositScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_circle_outline, size: 18, color: Colors.white),
-                  SizedBox(width: 6),
-                  Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Portefeuille ──────────────────────────────────────────────────────────
+  // Bloc 1 « Mes pièces » : pièces de dépôt (achetées, dépensables) et pièces gagnées
+  // (convertibles en argent) — même calcul que le serveur (coin_locks.ts).
+  // Bloc 2 « Mon argent » : gains à retirer + dépôt FCFA (Android uniquement).
 
-  Widget _buildSoldePrincipalCard(double soldePrincipal, AppColors colors, AppLocalizations t) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors.primary.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.account_balance_wallet, color: colors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                t.monetMainBalance,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "${soldePrincipal.toStringAsFixed(2)} FCFA",
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: colors.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Divider(color: colors.divider, height: 1),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => UserRetraitListPage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.danger,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.arrow_upward, size: 18, color: Colors.white),
-                  const SizedBox(width: 6),
-                  Text(t.monetWithdraw, style: const TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => PendingTransactionsScreen()),
-                );
-              },
-              icon: const Icon(Icons.pending_actions, size: 18),
-              label: Text(t.monetPendingTx, style: const TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.warning,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  static final NumberFormat _moneyFmt = NumberFormat('#,##0.##', 'fr');
+  String _money(double v) => '${_moneyFmt.format(v)} FCFA';
 
-  Widget _buildCoinsCard(int giftCoinsBalance, AppColors colors, AppLocalizations t) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors.accent.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  Widget _buildWallet(UserData user, AppColors c) {
+    final depotCoins = user.lockedGiftCoins;
+    final gagnees = user.convertibleGiftCoins;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _walletTitle(c, 'Mes pièces'),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.accent.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text('🪙', style: TextStyle(fontSize: 20)),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                t.monetCoinsBalance,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
+              Expanded(
+                child: _coinTile(
+                  c,
+                  icon: Icons.toll_rounded,
+                  color: c.supportAccent,
+                  title: 'Pièces de dépôt',
+                  coins: depotCoins,
+                  caption: 'Pour acheter, offrir et voter',
+                  action: 'Recharger',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoinRechargeScreen())),
                 ),
               ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CoinRechargeScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.accent,
-                  foregroundColor: colors.onAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  elevation: 0,
-                ),
-                icon: Icon(Icons.add, size: 18, color: colors.onAccent),
-                label: Text(
-                  t.monetRecharge,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: colors.onAccent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _coinTile(
+                  c,
+                  icon: Icons.emoji_events_rounded,
+                  color: c.primary,
+                  title: 'Pièces gagnées',
+                  coins: gagnees,
+                  caption: 'Convertibles en argent',
+                  action: 'Convertir',
+                  onTap: gagnees > 0
+                      ? () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CoinConversionPage()),
+                          );
+                          if (result == true) refreshUser();
+                        }
+                      : null,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        ),
+        const SizedBox(height: 20),
+        _walletTitle(c, 'Mon argent'),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.border),
+          ),
+          child: Column(
             children: [
-              Text(
-                giftCoinsBalance.toString(),
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: colors.accent),
+              _moneyRow(
+                c,
+                icon: Icons.account_balance_wallet_rounded,
+                color: c.primary,
+                title: 'Gains à retirer',
+                value: _money(user.votre_solde_principal ?? 0),
+                action: 'Retirer',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserDemandeRetraitPage())),
               ),
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  t.monetCoins,
-                  style: TextStyle(color: colors.textSecondary, fontSize: 14),
+              // Dépôt FCFA : Android uniquement (argent déjà versé par Mobile Money,
+              // utilisable pour recharger les pièces de dépôt).
+              if (!kIsAppleStore) ...[
+                Divider(height: 1, thickness: 0.5, indent: 60, color: c.border),
+                _moneyRow(
+                  c,
+                  icon: Icons.savings_rounded,
+                  color: c.info,
+                  title: 'Dépôt FCFA',
+                  value: _money(user.votre_solde_depot ?? 0),
+                  action: 'Convertir en pièces',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoinRechargeScreen())),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConversionSection(int giftCoinsBalance, AppColors colors, AppLocalizations t) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.accent.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.swap_horiz, color: colors.accent, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                t.monetConvertTitle,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            t.monetConvertRate,
-            style: TextStyle(color: colors.textSecondary, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.accent.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(t.monetAvailableBalance, style: TextStyle(color: colors.textSecondary)),
-                Row(
-                  children: [
-                    const Text('🪙', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Text(
-                      giftCoinsBalance.toString(),
-                      style: TextStyle(
-                        color: colors.accent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(60, 0, 8, 6),
+                  child: Row(
+                    children: [
+                      _linkButton(c, Icons.add_rounded, 'Recharger',
+                          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DepositScreen()))),
+                      _linkButton(c, Icons.pending_actions_rounded, 'En attente',
+                          () => Navigator.push(context, MaterialPageRoute(builder: (_) => PendingTransactionsScreen()))),
+                    ],
+                  ),
                 ),
               ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _walletTitle(c, 'Mes revenus'),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.border),
+          ),
+          child: Column(
+            children: [
+              _linkRow(c, Icons.article_rounded, c.primary, 'Rémunération des posts',
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesGainsPage(userId: user.id!)))),
+              Divider(height: 1, thickness: 0.5, indent: 52, color: c.border),
+              _linkRow(c, Icons.campaign_rounded, c.info, 'Gains publicitaires',
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesGainsPublicitePage(userId: user.id!)))),
+              Divider(height: 1, thickness: 0.5, indent: 52, color: c.border),
+              _linkRow(c, Icons.receipt_long_rounded, c.warning, 'Historique des retraits',
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserRetraitListPage()))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _linkRow(AppColors c, IconData icon, Color color, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary)),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.textSecondary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _walletTitle(AppColors c, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      child: Text(title.toUpperCase(),
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: c.textSecondary)),
+    );
+  }
+
+  Widget _coinTile(
+    AppColors c, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required int coins,
+    required String caption,
+    required String action,
+    required VoidCallback? onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.textPrimary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              TxAmount.fmt(coins),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: c.textPrimary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+          Text('pièces · ≈ ${TxAmount.fmt(coins / 2.5)} FCFA',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: c.textSecondary)),
+          const SizedBox(height: 6),
+          Text(caption, style: TextStyle(fontSize: 11, color: c.textSecondary, height: 1.3)),
+          const Spacer(),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CoinConversionPage()),
-                );
-                if (result == true) refreshUser();
-              },
-              icon: Icon(Icons.swap_horiz, color: colors.onAccent),
-              label: Text(
-                t.monetConvertBtn,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.onAccent),
+            height: 34,
+            child: FilledButton(
+              onPressed: onTap,
+              style: FilledButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: color == c.primary ? c.onPrimary : c.onAccent,
+                disabledBackgroundColor: c.surfaceVariant,
+                disabledForegroundColor: c.textSecondary,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.accent,
-                foregroundColor: colors.onAccent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
+              child: Text(action, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            t.monetConvertMin,
-            style: TextStyle(color: colors.textSecondary, fontSize: 11),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionHeader(AppColors colors, AppLocalizations t) {
+  Widget _moneyRow(
+    AppColors c, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String value,
+    required String action,
+    required VoidCallback onTap,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(4),
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: colors.primary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
+              color: color.withOpacity(c.isDark ? 0.18 : 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.history, color: colors.primary, size: 16),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 8),
-          Text(
-            t.monetTxHistory,
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.1,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                const SizedBox(height: 1),
+                Text(value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: c.textPrimary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    )),
+              ],
             ),
+          ),
+          OutlinedButton(
+            onPressed: onTap,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: color,
+              side: BorderSide(color: color.withOpacity(0.5)),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(0, 34),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text(action, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _linkButton(AppColors c, IconData icon, String label, VoidCallback onTap) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 16, color: c.textSecondary),
+      label: Text(label, style: TextStyle(fontSize: 12, color: c.textSecondary, fontWeight: FontWeight.w600)),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+
+  // ── Historique ────────────────────────────────────────────────────────────
+
+  /// Transaction liée aux pièces (sinon : argent FCFA).
+  static bool _isCoinTx(TransactionSolde t) {
+    final type = t.type?.toUpperCase() ?? '';
+    return TxAmount.storedInCoins(t) || type == 'ACHAT_PIECES' || type == 'CONVERSION_PIECES';
+  }
+
+  Widget _buildTransactionHeader(AppColors c, AppLocalizations t) {
+    const filters = {'tous': 'Tout', 'pieces': 'Pièces', 'argent': 'Argent'};
+    return Row(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(t.monetTxHistory.toUpperCase(),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: c.textSecondary)),
+          ),
+        ),
+        for (final e in filters.entries) ...[
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => setState(() => _txFilter = e.key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: _txFilter == e.key ? c.textPrimary : c.surfaceVariant,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(e.value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _txFilter == e.key ? c.background : c.textSecondary,
+                  )),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   Widget _buildTransactionList(String userId, AppColors colors, AppLocalizations t) {
     return StreamBuilder<List<TransactionSolde>>(
-      stream: postProvider.getTransactionsSoldes(userId),
+      stream: _txStream ??= postProvider.getTransactionsSoldes(userId),
       builder: (context, snapshotTx) {
         if (snapshotTx.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(colors.primary)));
@@ -824,17 +740,24 @@ class _MonetisationPageState extends State<MonetisationPage> {
         if (snapshotTx.hasError) {
           return Center(child: Text(t.commonLoadingError, style: TextStyle(color: colors.danger)));
         }
-        final transactions = snapshotTx.data ?? [];
+        final transactions = (snapshotTx.data ?? []).where((tx) {
+          if (_txFilter == 'pieces') return _isCoinTx(tx);
+          if (_txFilter == 'argent') return !_isCoinTx(tx);
+          return true;
+        }).toList();
         if (transactions.isEmpty) {
-          return Center(
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.receipt_long, size: 48, color: colors.textSecondary),
-              const SizedBox(height: 16),
-              Text(t.monetNoTx, style: TextStyle(color: colors.textSecondary)),
-            ]),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.receipt_long_rounded, size: 40, color: colors.textSecondary),
+                const SizedBox(height: 10),
+                Text(t.monetNoTx, style: TextStyle(color: colors.textSecondary)),
+              ]),
+            ),
           );
         }
-        return _TxGroupedList(transactions: transactions, colors: colors);
+        return _TxGroupedList(key: ValueKey(_txFilter), transactions: transactions, colors: colors);
       },
     );
   }
@@ -845,41 +768,42 @@ class _MonetisationPageState extends State<MonetisationPage> {
 class _TxGroupedList extends StatefulWidget {
   final List<TransactionSolde> transactions;
   final AppColors colors;
-  const _TxGroupedList({required this.transactions, required this.colors});
+  const _TxGroupedList({super.key, required this.transactions, required this.colors});
   @override
   State<_TxGroupedList> createState() => _TxGroupedListState();
 }
 
 class _TxGroupedListState extends State<_TxGroupedList> {
   static const _groups = {
-    'Gains':       ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
+    'Entrées':     ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
     'Dépenses':    ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
     'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
     'Conversions': ['CONVERSION_PIECES'],
   };
   static const _groupIcons = {
-    'Gains':       Icons.trending_up,
-    'Dépenses':    Icons.shopping_cart_outlined,
-    'Retraits':    Icons.arrow_upward,
-    'Conversions': Icons.swap_horiz,
-  };
-  static const _groupColors = {
-    'Gains':       Color(0xFF0F6E56),
-    'Dépenses':    Color(0xFFE53935),
-    'Retraits':    Color(0xFFFF9800),
-    'Conversions': Color(0xFF5B9CFA),
+    'Entrées':     Icons.south_west_rounded,
+    'Dépenses':    Icons.north_east_rounded,
+    'Retraits':    Icons.account_balance_rounded,
+    'Conversions': Icons.swap_horiz_rounded,
   };
 
-  final Map<String, bool> _expanded = {
-    'Gains': false, 'Dépenses': false, 'Retraits': false, 'Conversions': false,
-  };
+  final Map<String, bool> _expanded = {};
   final Map<String, int> _visible = {};
 
   String _groupFor(String? type) {
     for (final e in _groups.entries) {
       if (e.value.contains(type?.toUpperCase())) return e.key;
     }
-    return 'Gains';
+    return 'Entrées';
+  }
+
+  Color _groupColor(String group, AppColors c) {
+    switch (group) {
+      case 'Entrées':  return c.success;
+      case 'Dépenses': return c.danger;
+      case 'Retraits': return c.warning;
+      default:         return c.info;
+    }
   }
 
   @override
@@ -899,263 +823,233 @@ class _TxGroupedListState extends State<_TxGroupedList> {
 
   @override
   Widget build(BuildContext context) {
-    final sortedGroups = _sortedGroups();
-    return ListView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: sortedGroups.map((group) {
-        final items = widget.transactions
-            .where((tx) => _groupFor(tx.type) == group)
-            .toList()
-          ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-        if (items.isEmpty) return const SizedBox.shrink();
-        final isOpen = _expanded[group] ?? false;
-        final groupColor = _groupColors[group] ?? widget.colors.primary;
-        final visible = _visible[group] ?? 2;
-        return Column(
-          children: [
+    final c = AppColors.of(context);
+    final groups = _sortedGroups()
+        .map((group) {
+          final items = widget.transactions.where((tx) => _groupFor(tx.type) == group).toList()
+            ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+          return MapEntry(group, items);
+        })
+        .where((e) => e.value.isNotEmpty)
+        .toList();
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        children: [
+          for (var gi = 0; gi < groups.length; gi++) ...[
+            if (gi > 0) Divider(height: 1, thickness: 1, color: c.border),
+            _buildGroup(groups[gi].key, groups[gi].value, c),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroup(String group, List<TransactionSolde> items, AppColors c) {
+    final isOpen = _expanded[group] ?? false;
+    final color = _groupColor(group, c);
+    final visible = _visible[group] ?? 5;
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded[group] = !isOpen),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
+              children: [
+                Icon(_groupIcons[group], color: color, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(group,
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: c.textPrimary)),
+                ),
+                Text('${items.length}',
+                    style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w600, fontSize: 12)),
+                const SizedBox(width: 4),
+                Icon(isOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    color: c.textSecondary, size: 20),
+              ],
+            ),
+          ),
+        ),
+        if (isOpen) ...[
+          for (final tx in items.take(visible)) ...[
+            Divider(height: 1, thickness: 0.5, indent: 60, color: c.border),
+            TransactionWidget(transaction: tx),
+          ],
+          if (visible < items.length)
             InkWell(
-              onTap: () => setState(() => _expanded[group] = !isOpen),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: widget.colors.surface,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        color: groupColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(_groupIcons[group], color: groupColor, size: 16),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(group,
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: widget.colors.textPrimary)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: groupColor.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text('${items.length}',
-                          style: TextStyle(color: groupColor, fontWeight: FontWeight.w700, fontSize: 12)),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(isOpen ? Icons.expand_less : Icons.expand_more,
-                        color: widget.colors.textSecondary, size: 20),
-                  ],
+              onTap: () => setState(() => _visible[group] = visible + 10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Center(
+                  child: Text('Voir plus (${items.length - visible})',
+                      style: TextStyle(color: c.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
                 ),
               ),
             ),
-            if (isOpen) ...[
-              ...items.take(visible).map((tx) => TransactionWidget(transaction: tx)),
-              if (visible < items.length)
-                TextButton.icon(
-                  onPressed: () => setState(() => _visible[group] = visible + 5),
-                  icon: Icon(Icons.expand_more, size: 16, color: groupColor),
-                  label: Text('Voir plus (${items.length - visible})',
-                      style: TextStyle(color: groupColor, fontSize: 12)),
-                ),
-            ],
-            Divider(height: 1, color: widget.colors.border.withOpacity(0.3)),
-          ],
-        );
-      }).toList(),
+        ],
+      ],
     );
   }
 }
 
+/// Ligne compacte d'une transaction. Sur iPhone, tout est affiché en pièces
+/// avec l'équivalent FCFA en dessous (sauf retraits et conversions, en argent réel).
 class TransactionWidget extends StatelessWidget {
   final TransactionSolde transaction;
-  const TransactionWidget({required this.transaction});
+  const TransactionWidget({super.key, required this.transaction});
 
-  String formatDate(DateTime date) {
-    return DateFormat('dd MMM yyyy, HH:mm').format(date);
-  }
+  static const _labels = {
+    'DEPOT': 'Dépôt',
+    'DEPOTADMIN': 'Dépôt (admin)',
+    'RETRAIT': 'Retrait',
+    'RETRAITADMIN': 'Retrait (admin)',
+    'GAIN': 'Gain',
+    'GAIN_PIECES': 'Gain en pièces',
+    'DEPENSE': 'Achat',
+    'ACHAT_PIECES': 'Achat de pièces',
+    'CONVERSION_PIECES': 'Conversion en FCFA',
+    'CADEAU_PIECES': 'Cadeau envoyé',
+    'CADEAU_PIECES_RECU': 'Cadeau reçu',
+    'LIKE_PIECES': 'Like envoyé',
+  };
 
-  String getTransactionLabel(String type) {
+  static const _icons = {
+    'DEPOT': Icons.add_card_rounded,
+    'DEPOTADMIN': Icons.add_card_rounded,
+    'RETRAIT': Icons.account_balance_rounded,
+    'RETRAITADMIN': Icons.account_balance_rounded,
+    'GAIN': Icons.trending_up_rounded,
+    'GAIN_PIECES': Icons.emoji_events_rounded,
+    'DEPENSE': Icons.shopping_bag_rounded,
+    'ACHAT_PIECES': Icons.toll_rounded,
+    'CONVERSION_PIECES': Icons.swap_horiz_rounded,
+    'CADEAU_PIECES': Icons.card_giftcard_rounded,
+    'CADEAU_PIECES_RECU': Icons.card_giftcard_rounded,
+    'LIKE_PIECES': Icons.favorite_rounded,
+  };
+
+  /// true = crédit (argent ou pièces qui entrent), false = débit.
+  static bool _isCredit(String type, TransactionSolde t) {
     switch (type) {
-      case "DEPOT":            return "Dépôt";
-      case "DEPOTADMIN":       return "Dépôt Admin";
-      case "RETRAIT":          return "Retrait";
-      case "RETRAITADMIN":     return "Retrait Admin";
-      case "GAIN":             return "Gain";
-      case "GAIN_PIECES":      return "Gain en pièces";
-      case "DEPENSE":          return "Dépense";
-      case "ACHAT_PIECES":     return "Achat de pièces";
-      case "CONVERSION_PIECES":return "Conversion pièces → FCFA";
-      case "CADEAU_PIECES":    return "Cadeau envoyé";
-      case "CADEAU_PIECES_RECU":return "Cadeau reçu";
-      case "LIKE_PIECES":      return "Like envoyé";
-      default:                 return type;
+      case 'DEPOT':
+      case 'DEPOTADMIN':
+      case 'GAIN':
+      case 'GAIN_PIECES':
+      case 'CADEAU_PIECES_RECU':
+      case 'CONVERSION_PIECES':
+        return true;
+      // Achat via l'App Store : des pièces entrent sur le compte
+      case 'ACHAT_PIECES':
+        return t.methode_paiement == 'apple_iap';
+      default:
+        return false;
     }
   }
 
-  IconData getIcon(String type) {
-    switch (type) {
-      case "DEPOT":
-      case "DEPOTADMIN":        return Icons.account_balance_wallet;
-      case "RETRAIT":
-      case "RETRAITADMIN":      return Icons.arrow_upward;
-      case "GAIN":
-      case "GAIN_PIECES":       return Icons.trending_up;
-      case "DEPENSE":           return Icons.shopping_cart;
-      case "ACHAT_PIECES":      return Icons.shopping_bag;
-      case "CONVERSION_PIECES": return Icons.swap_horiz;
-      case "CADEAU_PIECES":
-      case "CADEAU_PIECES_RECU":return Icons.card_giftcard;
-      case "LIKE_PIECES":       return Icons.favorite;
-      default:                  return Icons.help_outline;
-    }
-  }
-
-  Color _resolveColor(String type, AppColors colors) {
-    switch (type) {
-      case "DEPOT":
-      case "DEPOTADMIN":
-      case "GAIN":
-      case "GAIN_PIECES":
-      case "CADEAU_PIECES_RECU": return colors.primary;
-      case "RETRAIT":
-      case "RETRAITADMIN":
-      case "DEPENSE":
-      case "ACHAT_PIECES":
-      case "CADEAU_PIECES":
-      case "LIKE_PIECES":        return colors.danger;
-      case "CONVERSION_PIECES":  return colors.accent;
-      default:                   return colors.textSecondary;
-    }
-  }
-
-  String getPrefix(String type) {
-    switch (type) {
-      case "DEPOT":
-      case "DEPOTADMIN":
-      case "GAIN":
-      case "GAIN_PIECES":
-      case "CADEAU_PIECES_RECU": return "+ ";
-      case "RETRAIT":
-      case "RETRAITADMIN":
-      case "DEPENSE":
-      case "ACHAT_PIECES":
-      case "CADEAU_PIECES":
-      case "LIKE_PIECES":        return "- ";
-      case "CONVERSION_PIECES":  return "→ ";
-      default:                   return "";
-    }
+  String _date(int ms) {
+    final d = DateTime.fromMillisecondsSinceEpoch(ms);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final hm = DateFormat('HH:mm').format(d);
+    if (!d.isBefore(today)) return "Aujourd'hui · $hm";
+    if (!d.isBefore(today.subtract(const Duration(days: 1)))) return 'Hier · $hm';
+    return DateFormat('d MMM yyyy · HH:mm', 'fr').format(d);
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
+    final c = AppColors.of(context);
+    final type = transaction.type?.toUpperCase() ?? '';
+    final credit = _isCredit(type, transaction);
+    final isWithdrawal = type == 'RETRAIT' || type == 'RETRAITADMIN';
+    final tint = credit ? c.success : (isWithdrawal ? c.warning : c.danger);
+    final equivalent = TxAmount.equivalent(transaction);
+    final desc = transaction.description?.trim() ?? '';
+    final label = _labels[type] ?? type;
 
-    final isValide = transaction.statut == StatutTransaction.VALIDER.name;
-    final color = _resolveColor(transaction.type!, colors);
-    final icon = getIcon(transaction.type!);
-    final prefix = getPrefix(transaction.type!);
-    final label = getTransactionLabel(transaction.type!);
+    final statut = transaction.statut?.toUpperCase() ?? '';
+    final String? statutLabel = statut == 'ENCOURS'
+        ? 'En cours'
+        : statut == 'ANNULER'
+            ? 'Annulée'
+            : null;
+    final statutColor = statut == 'ANNULER' ? c.danger : c.warning;
 
-    final bool isCoinAchatTransaction =
-        transaction.type == TypeTransaction.ACHAT_PIECES.name ||
-        transaction.type == TypeTransaction.CONVERSION_PIECES.name;
-
-    final bool isCoinTransaction =
-        transaction.type == TypeTransaction.ACHAT_PIECES.name ||
-        transaction.type == TypeTransaction.CADEAU_PIECES.name ||
-        transaction.type == TypeTransaction.CADEAU_PIECES_RECU.name ||
-        transaction.type == TypeTransaction.LIKE_PIECES.name ||
-        transaction.type == TypeTransaction.GAIN_PIECES.name;
-
-    final String amountDisplay;
-    if (isCoinAchatTransaction) {
-      amountDisplay = "$prefix${transaction.montant!.toStringAsFixed(2)} FCFA";
-    } else if (isCoinTransaction) {
-      amountDisplay = "$prefix${transaction.montant!.toStringAsFixed(2)} 🪙";
-    } else {
-      amountDisplay = "$prefix${transaction.montant!.toStringAsFixed(2)} FCFA";
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+              color: tint.withOpacity(c.isDark ? 0.18 : 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(_icons[type] ?? Icons.receipt_long_rounded, color: tint, size: 18),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colors.textPrimary),
+                  desc.isNotEmpty ? desc : label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: c.textPrimary),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  amountDisplay,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
-                ),
-                if (transaction.description != null && transaction.description!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      transaction.description!,
-                      style: TextStyle(color: colors.textSecondary, fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '$label · ${_date(transaction.createdAt ?? 0)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11, color: c.textSecondary),
+                      ),
                     ),
-                  ),
+                    if (statutLabel != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: statutColor.withOpacity(0.14),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(statutLabel,
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: statutColor)),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                formatDate(DateTime.fromMillisecondsSinceEpoch(transaction.createdAt!)),
-                style: TextStyle(fontSize: 11, color: colors.textSecondary),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isValide
-                      ? colors.primary.withOpacity(0.15)
-                      : colors.warning.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  transaction.statut!.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isValide ? colors.primary : colors.warning,
-                  ),
+                '${credit ? '+' : '−'}${TxAmount.main(transaction)}',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: credit ? c.success : c.textPrimary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
+              if (equivalent != null)
+                Text(equivalent, style: TextStyle(fontSize: 10.5, color: c.textSecondary)),
             ],
           ),
         ],

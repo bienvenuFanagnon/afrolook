@@ -10,6 +10,8 @@ import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
 import '../../services/apple_iap_service.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/tx_amount.dart';
+import '../../widgets/coin_balances_row.dart';
 
 /// Boutique iOS : pièces vendues via In-App Purchase (règle App Store 3.1.1).
 class AppleCoinStoreView extends StatefulWidget {
@@ -88,7 +90,7 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final coins = Provider.of<CoinGiftUserProvider>(context).giftCoinsBalance;
+    final user = Provider.of<CoinGiftUserProvider>(context).currentUser;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -109,7 +111,10 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
             children: [
-              _balanceCard(colors, coins),
+              CoinBalancesRow(
+                user: user,
+                note: 'Les pièces achetées vont dans tes Pièces de dépôt.',
+              ),
               const SizedBox(height: 18),
               Text('Choisis un pack',
                   style: TextStyle(color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
@@ -117,39 +122,15 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
               ..._content(colors),
               const SizedBox(height: 18),
               Text(
-                "Paiement sécurisé par l'App Store. Les pièces achetées servent aux cadeaux, votes, "
-                "participations et DÉFI. Elles ne sont pas convertibles en argent : seules les pièces "
-                "gagnées (cadeaux reçus, récompenses, gains de DÉFI) peuvent être converties.",
+                "Paiement sécurisé par l'App Store. Les pièces achetées servent à tout payer dans l'app : "
+                "abonnements, cadeaux, votes, DÉFI, lives, groupes, canaux, pronostics, publicités et boosts. "
+                "Elles ne sont pas convertibles en argent : seules les pièces gagnées (cadeaux reçus, likes, "
+                "récompenses, gains de DÉFI) peuvent être converties.",
                 style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _balanceCard(AppColors colors, int coins) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border.withOpacity(0.5)),
-      ),
-      child: Row(
-        children: [
-          const Text('🪙', style: TextStyle(fontSize: 30)),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Mon solde', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-              Text('$coins pièces',
-                  style: TextStyle(color: colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -214,7 +195,7 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${pack.coins} pièces',
+                Text('${TxAmount.fmt(pack.coins)} pièces',
                     style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                 Text(pack.popularLabel ?? pack.label,
                     style: TextStyle(color: colors.textSecondary, fontSize: 12)),

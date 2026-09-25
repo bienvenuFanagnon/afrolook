@@ -1,5 +1,7 @@
 ﻿import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/coin_checkout.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -833,6 +835,14 @@ class ContentProvider with ChangeNotifier {
         return PurchaseResult.alreadyPurchased;
       }
 
+      // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1).
+      final paidWithCoins = kIsAppleStore;
+      if (paidWithCoins) {
+        final paid = await CoinCheckout.pay(context,
+            kind: 'content', refId: contentPaie.id, priceFcfa: contentPaie.price, label: 'Contenu payant');
+        if (!paid) return PurchaseResult.insufficientBalance;
+      }
+
       // 🔹 Récupérer le solde en temps réel depuis Firestore
       final userDoc =
       await _firestore.collection('Users').doc(currentUser.id).get();
@@ -847,7 +857,7 @@ class ContentProvider with ChangeNotifier {
       (userData['votre_solde_principal'] ?? 0).toDouble();
 
       // Vérifier le solde
-      if (soldeActuel < contentPaie.price) {
+      if (!paidWithCoins && soldeActuel < contentPaie.price) {
         _showInsufficientBalanceModal(context, contentPaie.price - soldeActuel);
         return PurchaseResult.insufficientBalance;
       }
@@ -863,9 +873,11 @@ class ContentProvider with ChangeNotifier {
         _firestore.collection('AppData').doc(appId);
 
         // 🔹 Débiter l'acheteur
-        transaction.update(userRef, {
-          'votre_solde_principal': FieldValue.increment(-contentPaie.price),
-        });
+        if (!paidWithCoins) {
+          transaction.update(userRef, {
+            'votre_solde_principal': FieldValue.increment(-contentPaie.price),
+          });
+        }
 
         // 🔹 Créditer le créateur
         transaction.update(ownerRef, {
@@ -873,9 +885,11 @@ class ContentProvider with ChangeNotifier {
         });
 
         // 🔹 Créditer la plateforme
-        transaction.update(appDataRef, {
-          'solde_gain': FieldValue.increment(platformEarnings),
-        });
+        if (!paidWithCoins) {
+          transaction.update(appDataRef, {
+            'solde_gain': FieldValue.increment(platformEarnings),
+          });
+        }
 
         // 🔹 Enregistrer l’achat
         final purchase = ContentPurchase(
@@ -893,7 +907,7 @@ class ContentProvider with ChangeNotifier {
 
         // 🔹 Créer la transaction "DEPENSE" pour l’acheteur
         final depenseRef = _firestore.collection("TransactionSoldes").doc();
-        transaction.set(depenseRef, {
+        if (!paidWithCoins) transaction.set(depenseRef, {
           "id": depenseRef.id,
           "user_id": currentUser.id,
           "type": "DEPENSE",

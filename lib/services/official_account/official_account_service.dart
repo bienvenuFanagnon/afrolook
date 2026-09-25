@@ -245,7 +245,9 @@ class OfficialAccountService {
   ///
   /// Retourne `true` si le paiement a réussi, `false` si le solde est insuffisant.
   /// Lance une exception en cas d'erreur Firestore.
-  Future<bool> paySubscription(String userId) async {
+  /// [paidWithCoins] : déjà payé en pièces via payWithCoins (iPhone) — pas de débit FCFA ici,
+  /// et pas de renouvellement automatique (il serait prélevé hors App Store).
+  Future<bool> paySubscription(String userId, {bool paidWithCoins = false}) async {
     final userRef = _db.collection('Users').doc(userId);
     final txRef = _db.collection('TransactionSoldes').doc();
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -256,7 +258,7 @@ class OfficialAccountService {
       final userSnap = await tx.get(userRef);
       final balance = (userSnap.data()?['votre_solde_principal'] ?? 0.0) as num;
 
-      if (balance < _kSubscriptionAmount) {
+      if (!paidWithCoins && balance < _kSubscriptionAmount) {
         success = false;
         return;
       }
@@ -266,20 +268,20 @@ class OfficialAccountService {
         active: true,
         lastPaidAt: DateTime.now(),
         nextDueAt: nextDue,
-        autoPayEnabled: true,
+        autoPayEnabled: !paidWithCoins,
       );
 
       // Débit solde
       tx.update(userRef, {
-        'votre_solde_principal': FieldValue.increment(-_kSubscriptionAmount),
+        if (!paidWithCoins) 'votre_solde_principal': FieldValue.increment(-_kSubscriptionAmount),
         'officialSubscription': sub.toJson(),
         'officialAccountStatus': 'approved',
         'officialBadge': true,
         'isVerify': true,
       });
 
-      // Transaction
-      tx.set(txRef, {
+      // Transaction (en pièces, elle est déjà enregistrée par payWithCoins)
+      if (!paidWithCoins) tx.set(txRef, {
         'id': txRef.id,
         'user_id': userId,
         'type': TypeTransaction.ABONNEMENT_OFFICIEL.name,

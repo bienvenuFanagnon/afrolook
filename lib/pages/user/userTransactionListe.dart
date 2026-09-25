@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
+import '../../utils/tx_amount.dart';
 
 // ── Palette (même charte que UserManagementPage) ──────────────────────────────
 const _bg      = Color(0xFF0D0D14);
@@ -85,9 +86,11 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
   static bool _isCoins(String? type) =>
       _meta[type?.toUpperCase()]?.tab == _TabFilter.pieces;
 
-  String _unit(String? type) => _isCoins(type) ? 'pièces' : 'FCFA';
+  // Montant en pièces : types « pièces » + achats payés en pièces (TxAmount)
+  bool _inCoins(TransactionSolde t) => _isCoins(t.type) || TxAmount.storedInCoins(t);
+  String _unit(TransactionSolde t) => _inCoins(t) ? 'pièces' : 'FCFA';
   String _amount(TransactionSolde t) {
-    if (_isCoins(t.type)) {
+    if (_inCoins(t)) {
       return '${t.montant?.toInt() ?? 0}';
     }
     return (t.montant ?? 0.0).toStringAsFixed(2);
@@ -341,7 +344,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
     for (final t in _filteredTx) {
       final m = _metaFor(t.type);
-      if (_isCoins(t.type)) {
+      if (_inCoins(t)) {
         final v = (t.montant ?? 0).toInt();
         m.isCredit ? coinsIn  += v : coinsOut += v;
       } else {
@@ -464,7 +467,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
                 tx: _displayedTx[i],
                 meta: _metaFor(_displayedTx[i].type),
                 amount: _amount(_displayedTx[i]),
-                unit: _unit(_displayedTx[i].type),
+                unit: _unit(_displayedTx[i]),
                 onTap: () => _showDetails(_displayedTx[i]),
               );
             },
@@ -491,7 +494,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
         expand: false,
         builder: (_, ctrl) => _TxDetailSheet(
           tx: t, meta: m,
-          amount: _amount(t), unit: _unit(t.type),
+          amount: _amount(t), unit: _unit(t),
           userData: _userData,
           scrollController: ctrl,
         ),

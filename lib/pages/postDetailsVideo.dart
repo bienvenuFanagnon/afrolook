@@ -34,6 +34,7 @@ import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
 import '../services/media_cache_service.dart';
 
@@ -1985,6 +1986,17 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   _buildMenuOption(Icons.category_outlined, 'Contenu hors catégorie', sheetColors.textSecondary,
                       () => _reportPostWithScore(_currentPost, isAdmin: false, reportType: 'wrong_category', sheetContext: context)),
               ],
+              if (_currentPost.user_id != null)
+                _buildMenuOption(Icons.block, 'Bloquer cet utilisateur', Colors.red, () async {
+                  Navigator.pop(context);
+                  final blocked = await confirmAndBlockUser(
+                    this.context,
+                    userId: _currentPost.user_id!,
+                    pseudo: _currentPost.user?.pseudo,
+                    postId: _currentPost.id,
+                  );
+                  if (blocked && mounted) Navigator.pop(this.context);
+                }),
             ],
             if (_currentPost.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
               _buildMenuOption(Icons.delete, 'Supprimer', Colors.red, () {

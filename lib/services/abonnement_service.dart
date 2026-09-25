@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
+import '../utils/platform_guard.dart';
+import 'coin_checkout.dart';
 
 
 class AbonnementService {
@@ -94,6 +96,29 @@ class AbonnementService {
     String balanceKey = 'votre_solde_depot',
   }) async {
     final prixTotal = nouvelAbonnement.prix;
+
+    // iPhone (règle App Store 3.1.1) : paiement en pièces achetées via l'App Store.
+    // La Cloud Function recalcule le prix, débite les pièces et enregistre la transaction.
+    if (kIsAppleStore) {
+      final planType = sousType == 'ABONNEMENT_GOLD' ? 'gold' : 'premium';
+      final paid = await CoinCheckout.pay(
+        context,
+        kind: planType,
+        priceFcfa: prixTotal,
+        label: 'Abonnement $descriptionLabel — ${nouvelAbonnement.dureeMois} mois',
+        dureeMois: nouvelAbonnement.dureeMois,
+      );
+      if (!paid) return {'success': false, 'message': '', 'cancelled': true};
+      await _firestore.collection('Users').doc(user.id).update({
+        'abonnement': nouvelAbonnement.toJson(),
+      });
+      return {
+        'success': true,
+        'message': 'Abonnement $descriptionLabel activé avec succès !',
+        'abonnement': nouvelAbonnement,
+      };
+    }
+
     final solde = (balanceKey == 'votre_solde_depot'
         ? user.votre_solde_depot
         : user.votre_solde_principal) ?? 0.0;

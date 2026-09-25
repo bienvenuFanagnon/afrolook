@@ -9,6 +9,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
 import '../../widgets/smart_video_player.dart';
 import 'package:path_provider/path_provider.dart';
@@ -350,9 +351,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     return false;
   }
 
+  void _onBlockListChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    BlockService.instance.addListener(_onBlockListChanged);
     _voteAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -2809,6 +2815,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   @override
   void dispose() {
+    BlockService.instance.removeListener(_onBlockListChanged);
     _voteAnimController.dispose();
     _quickCommentController.dispose();
     _visibilityTimer?.cancel();
@@ -2825,6 +2832,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   @override
   Widget build(BuildContext context) {
+    if (BlockService.instance.isBlocked(widget.post.user_id)) return const SizedBox.shrink();
     super.build(context);
     final colors = AppColors.of(context);
     final isAdCard = widget.post.isAdvertisement == true;

@@ -1,6 +1,7 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/coin_balances_row.dart';
 import 'package:provider/provider.dart';
 import '../../models/coin_pack.dart';
 import '../../models/model_data.dart';
@@ -150,105 +151,10 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   // ── En-tête soldes ────────────────────────────────────────────────────────
 
   Widget _buildBalanceHeader(AppColors colors, UserData? user, double depot, double principal) {
-    final coins = user?.giftCoinsBalance ?? 0;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: colors.accent.withOpacity(0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: colors.accent.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Pièces actuelles
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colors.accent.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Text('🪙', style: TextStyle(fontSize: 28)),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Votre solde de pièces',
-                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatNumber(coins),
-                    style: TextStyle(
-                      color: colors.accent,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Divider(color: colors.divider, height: 1),
-          const SizedBox(height: 14),
-          // Deux soldes FCFA
-          Row(
-            children: [
-              Expanded(
-                child: _buildMiniBalance(
-                  colors,
-                  label: 'Dépôt',
-                  amount: depot,
-                  color: const Color(0xFF34C759),
-                  icon: Icons.savings_rounded,
-                ),
-              ),
-              Container(width: 1, height: 36, color: colors.divider),
-              Expanded(
-                child: _buildMiniBalance(
-                  colors,
-                  label: 'Gains',
-                  amount: principal,
-                  color: colors.warning,
-                  icon: Icons.account_balance_wallet_rounded,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniBalance(AppColors colors, {
-    required String label,
-    required double amount,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-        const SizedBox(height: 2),
-        Text(
-          '${amount.toStringAsFixed(0)} FCFA',
-          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-      ],
+    return CoinBalancesRow(
+      user: user,
+      note: "Les pièces achetées vont dans tes Pièces de dépôt : elles servent à tout payer dans l'app, "
+          "mais ne sont pas convertibles en argent.",
     );
   }
 
@@ -273,7 +179,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             Expanded(
               child: _buildBalanceOption(
                 colors: colors,
-                label: 'Solde Dépôt',
+                label: 'Dépôt FCFA',
                 amount: depot,
                 color: green,
                 icon: Icons.savings_rounded,
@@ -285,7 +191,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             Expanded(
               child: _buildBalanceOption(
                 colors: colors,
-                label: 'Solde Gains',
+                label: 'Gains à retirer',
                 amount: principal,
                 color: colors.warning,
                 icon: Icons.account_balance_wallet_rounded,
@@ -295,6 +201,31 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             ),
           ],
         ),
+        if (_selectedBalance == 'votre_solde_principal') ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colors.warning.withOpacity(colors.isDark ? 0.14 : 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.warning.withOpacity(0.35)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.warning_amber_rounded, color: colors.warning, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Attention : l'argent de tes Gains à retirer transformé en pièces ne pourra plus être retiré. "
+                    "Les pièces achetées ne sont pas convertibles en argent.",
+                    style: TextStyle(color: colors.textPrimary, fontSize: 12, height: 1.35),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -810,7 +741,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '10 FCFA = 25 pièces · Minimum 500 pièces · Recharge instantanée',
+              '10 FCFA = 25 pièces · Minimum 500 pièces · Recharge instantanée · Pièces achetées non convertibles en argent',
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
             ),
           ),

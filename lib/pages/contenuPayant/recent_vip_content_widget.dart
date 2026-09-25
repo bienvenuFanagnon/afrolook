@@ -13,6 +13,7 @@ import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -189,6 +190,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const SizedBox.shrink(); // contenus payants masqués sur iPhone
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context);
 

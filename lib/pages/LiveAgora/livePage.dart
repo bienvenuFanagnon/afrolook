@@ -9,6 +9,8 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -489,12 +491,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       final amount = widget.postLive.participationFee;
       final userProvider = context.read<UserAuthProvider>();
 
-      if (userProvider.loginUserData!.votre_solde_principal! < amount) {
+      if (!kIsAppleStore && userProvider.loginUserData!.votre_solde_principal! < amount) {
         _showInsufficientBalanceDialog();
         return;
       }
 
-      final paymentSuccess = await userProvider.deductFromBalance(context, amount);
+      // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+      final paymentSuccess = kIsAppleStore
+          ? await CoinCheckout.pay(context,
+              kind: 'live_entry', refId: widget.liveId, priceFcfa: amount.toDouble(), label: 'Accès au live')
+          : await userProvider.deductFromBalance(context, amount);
 
       if (paymentSuccess) {
         final hostShare = amount * 0.7;
@@ -1389,15 +1395,19 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         return;
       }
 
-      if (authProvider.loginUserData!.votre_solde_principal! < 100) {
+      if (!kIsAppleStore && authProvider.loginUserData!.votre_solde_principal! < 100) {
         _showPaymentRequiredDialog();
         return;
       }
 
-      final paymentSuccess = await authProvider.deductFromBalance(context, 100.0);
+      // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+      final paymentSuccess = kIsAppleStore
+          ? await CoinCheckout.pay(context,
+              kind: 'live_participant', refId: widget.liveId, priceFcfa: 100, label: 'Participer au live')
+          : await authProvider.deductFromBalance(context, 100.0);
 
       if (paymentSuccess) {
-        authProvider.incrementAppGain(100);
+        if (!kIsAppleStore) authProvider.incrementAppGain(100);
         await liveProvider.joinAsParticipant(widget.liveId, authProvider.userId!);
         setState(() => _isParticipant = true);
         await _reinitializeAgora();

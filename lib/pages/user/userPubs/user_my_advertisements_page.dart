@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
 import '../../../services/ad_config_service.dart';
+import '../../../services/coin_checkout.dart';
+import '../../../utils/platform_guard.dart';
 import '../../paiement/newDepot.dart';
 import 'user_ad_detail_page.dart';
 import 'user_create_advertisement_page.dart';
@@ -145,13 +147,19 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
     final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    if (!isAdmin && currentBalance < price) {
+    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+    final payWithCoins = kIsAppleStore && !isAdmin;
+    if (payWithCoins) {
+      final paid = await CoinCheckout.pay(context,
+          kind: 'ad_renew', priceFcfa: price.toDouble(), label: 'Renouvellement de publicité', weeks: weeks);
+      if (!paid || !mounted) return;
+    } else if (!isAdmin && currentBalance < price) {
       _showInsufficientBalanceDialog();
       return;
     }
 
     try {
-      if (!isAdmin) {
+      if (!isAdmin && !payWithCoins) {
         await FirebaseFirestore.instance
             .collection('Users')
             .doc(authProvider.loginUserData.id)
@@ -346,7 +354,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
                                 color: sel ? _colors.supportAccent : _colors.textPrimary,
                                 fontWeight: sel ? FontWeight.bold : FontWeight.normal,
                                 fontSize: 13)),
-                        Text('${_durationPrices[week]} FCFA',
+                        Text(kIsAppleStore ? CoinCheckout.priceLabel(_durationPrices[week] ?? 0) : '${_durationPrices[week]} FCFA',
                             style: TextStyle(
                                 color: sel ? _colors.supportAccent : _colors.textSecondary,
                                 fontSize: 11)),

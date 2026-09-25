@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
-import '../../../widgets/ios_purchase_unavailable.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -44,7 +44,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
     if (!mounted) return;
     setState(() {
       _sub = sub;
-      _balance = ((balanceSnap.data()?['votre_solde_principal'] ?? 0) as num).toDouble();
+      _balance = ((balanceSnap.data()?[kIsAppleStore ? 'giftCoinsBalance' : 'votre_solde_principal'] ?? 0) as num).toDouble();
       _fetching = false;
     });
   }
@@ -53,7 +53,13 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
     final me = context.read<UserAuthProvider>().loginUserData;
     setState(() => _loading = true);
     try {
-      final ok = await OfficialAccountService.instance.paySubscription(me.id ?? '');
+      // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+      if (kIsAppleStore) {
+        final paid = await CoinCheckout.pay(context,
+            kind: 'official', priceFcfa: 5000, label: 'Compte officiel — 1 mois');
+        if (!paid || !mounted) return;
+      }
+      final ok = await OfficialAccountService.instance.paySubscription(me.id ?? '', paidWithCoins: kIsAppleStore);
       if (!mounted) return;
       if (ok) {
         await _fetchData();
@@ -93,7 +99,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
           ],
         ),
         content: Text(
-          'Votre solde est insuffisant pour renouveler l\'abonnement (5 000 FCFA requis).\n\n'
+          'Votre solde est insuffisant pour renouveler l\'abonnement (${kIsAppleStore ? '12 500 pièces' : '5 000 FCFA'} requis).\n\n'
           'Rechargez votre compte pour maintenir votre statut de compte officiel.',
           style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
         ),
@@ -120,7 +126,6 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Compte officiel');
     final colors = AppColors.of(context);
     final fmt = DateFormat('dd/MM/yyyy');
 
@@ -168,7 +173,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
                             Text('Votre solde',
                                 style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                             Text(
-                              '${_balance?.toStringAsFixed(0) ?? '0'} FCFA',
+                              '${_balance?.toStringAsFixed(0) ?? '0'} ${kIsAppleStore ? 'pièces' : 'FCFA'}',
                               style: TextStyle(
                                   color: colors.textPrimary,
                                   fontWeight: FontWeight.w700,
@@ -201,8 +206,8 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
                                   strokeWidth: 2.5, color: Colors.white))
                           : Text(
                               _sub?.active == true
-                                  ? 'Renouveler maintenant (5 000 FCFA)'
-                                  : 'Activer l\'abonnement (5 000 FCFA)',
+                                  ? 'Renouveler maintenant (${kIsAppleStore ? '12 500 pièces' : '5 000 FCFA'})'
+                                  : 'Activer l\'abonnement (${kIsAppleStore ? '12 500 pièces' : '5 000 FCFA'})',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,

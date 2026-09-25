@@ -7,6 +7,7 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
@@ -665,6 +666,22 @@ class _OtherUserPageState extends State<OtherUserPage> {
           case 'unfollow': _toggleAbonnement(); break;
           case 'share':    _shareProfile(); break;
           case 'report':   _reportUser(); break;
+          case 'block':
+            final blocked = await confirmAndBlockUser(
+              context,
+              userId: widget.otherUser.id!,
+              pseudo: widget.otherUser.pseudo,
+            );
+            if (blocked && mounted) Navigator.pop(context);
+            break;
+          case 'unblock':
+            await BlockService.instance.unblock(widget.otherUser.id!);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('@${widget.otherUser.pseudo ?? ''} est débloqué.')),
+              );
+            }
+            break;
           case 'chat':     _openDirectChat(); break;
           case 'email':    _showConfirmReminderDialog(); break;
           case 'suspend':  isSuspended ? _showLiftSuspensionDialog() : _showSuspendDialog(); break;
@@ -679,6 +696,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
             PopupMenuItem(value: 'unfollow', child: _menuItem(Icons.person_remove_outlined, 'Se désabonner', colors)),
           PopupMenuItem(value: 'share',  child: _menuItem(Icons.share_outlined,       'Partager le profil',       colors)),
           PopupMenuItem(value: 'report', child: _menuItem(Icons.flag_outlined,         'Signaler ce profil',       colors, danger: true)),
+          if (widget.otherUser.id != null)
+            BlockService.instance.isBlocked(widget.otherUser.id)
+                ? PopupMenuItem(value: 'unblock', child: _menuItem(Icons.lock_open_rounded, 'Débloquer', colors))
+                : PopupMenuItem(value: 'block', child: _menuItem(Icons.block, 'Bloquer cet utilisateur', colors, danger: true)),
         ],
         if (isAdmin) ...[
           const PopupMenuDivider(),

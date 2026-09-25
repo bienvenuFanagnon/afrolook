@@ -13,7 +13,7 @@ import 'package:afrotok/services/pronostic_payment_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/platform_guard.dart';
-import '../../widgets/ios_purchase_unavailable.dart';
+import '../../services/coin_checkout.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:iconsax/iconsax.dart';
@@ -376,13 +376,19 @@ class _PronosticDetailPageState extends State<PronosticDetailPage> with SingleTi
       }
 
       if (pronostic.typeAcces == 'PAYANT' && kIsAppleStore) {
-        setState(() => _isParticipating = false);
-        showIosPurchaseUnavailable(context);
-        return;
-
-      }
-
-      if (pronostic.typeAcces == 'PAYANT') {
+        // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+        final paid = await CoinCheckout.pay(
+          context,
+          kind: 'pronostic',
+          refId: pronostic.id,
+          priceFcfa: pronostic.prixParticipation,
+          label: 'Participation au pronostic',
+        );
+        if (!paid) {
+          setState(() => _isParticipating = false);
+          return;
+        }
+      } else if (pronostic.typeAcces == 'PAYANT') {
         bool confirm = await _showPaymentConfirmation(pronostic, userId);
         if (!confirm) {
           setState(() => _isParticipating = false);

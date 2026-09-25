@@ -2,6 +2,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
@@ -43,7 +45,7 @@ class PaymentRequiredDialog extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Ce live est payant. Payez ${live.participationFee.toInt()} FCFA pour continuer à regarder.',
+              'Ce live est payant. Payez ${kIsAppleStore ? '${CoinCheckout.coinsFor(live.participationFee.toDouble())} pièces' : '${live.participationFee.toInt()} FCFA'} pour continuer à regarder.',
               style: TextStyle(color: Colors.white70),
               textAlign: TextAlign.center,
             ),
@@ -73,7 +75,7 @@ class PaymentRequiredDialog extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      'Payer ${live.participationFee.toInt()} FCFA',
+                      'Payer ${kIsAppleStore ? '${CoinCheckout.coinsFor(live.participationFee.toDouble())} pièces' : '${live.participationFee.toInt()} FCFA'}',
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -152,7 +154,7 @@ class JoinLiveDialog extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      '🎤 Participant (100 FCFA)',
+                      kIsAppleStore ? '🎤 Participant (250 pièces)' : '🎤 Participant (100 FCFA)',
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ),

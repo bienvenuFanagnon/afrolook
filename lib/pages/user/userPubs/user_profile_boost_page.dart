@@ -9,7 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
-import '../../../widgets/ios_purchase_unavailable.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -119,6 +119,9 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
         .set(tx.toJson());
   }
 
+  // iPhone : prix en pièces avec l'équivalent FCFA ; ailleurs en FCFA.
+  String _fmtPrice(int fcfa) => kIsAppleStore ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
+
   Future<void> _submit() async {
     if (_selectedActionType == null) { _showError('Choisissez un type d\'action'); return; }
     if (_selectedDurationWeeks == null) { _showError('Choisissez la durée'); return; }
@@ -134,7 +137,14 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     final isAdmin = userData.role == UserRole.ADM.name;
     final balance = userData.votre_solde_depot ?? 0;
 
-    if (!isAdmin && balance < price) {
+    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+    final payWithCoins = kIsAppleStore && !isAdmin;
+    if (payWithCoins) {
+      final paid = await CoinCheckout.pay(context,
+          kind: 'profile_boost', priceFcfa: price.toDouble(), label: 'Boost de profil',
+          weeks: _selectedDurationWeeks);
+      if (!paid || !mounted) return;
+    } else if (!isAdmin && balance < price) {
       _showInsufficientBalanceDialog(price, balance); return;
     }
 
@@ -147,7 +157,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
           : _selectedCountries.map((c) => c.code).toList();
 
       // Débiter le solde + enregistrer la transaction
-      if (!isAdmin) {
+      if (!isAdmin && !payWithCoins) {
         await FirebaseFirestore.instance.collection('Users').doc(userData.id).update({
           'votre_solde_depot': FieldValue.increment(-price),
         });
@@ -387,7 +397,6 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Booster mon profil');
     _c = AppColors.of(context);
     final entityLabel = _isGroup ? 'groupe' : _isCanal ? 'canal' : 'profil';
     final entityName = _isGroup
@@ -459,7 +468,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
                       ),
                       child: Text(
                         _selectedDurationWeeks != null
-                            ? 'BOOSTER · ${_prices[_selectedDurationWeeks!]} FCFA'
+                            ? 'BOOSTER · ${_fmtPrice(_prices[_selectedDurationWeeks!] ?? 0)}'
                             : 'BOOSTER MON ${entityLabel.toUpperCase()}',
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -611,7 +620,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
               return ChoiceChip(
                 label: Column(children: [
                   Text(AdConfigService.labelFor(d.weeks, _durations), style: const TextStyle(fontSize: 12)),
-                  Text('${d.price} FCFA', style: const TextStyle(fontSize: 10)),
+                  Text(kIsAppleStore ? '${CoinCheckout.coinsFor(d.price.toDouble())} pièces' : '${d.price} FCFA', style: const TextStyle(fontSize: 10)),
                 ]),
                 selected: isSelected,
                 onSelected: (v) => setState(() => _selectedDurationWeeks = v ? d.weeks : null),

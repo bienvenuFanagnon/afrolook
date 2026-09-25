@@ -9,7 +9,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
-import '../../../widgets/ios_purchase_unavailable.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:image_picker/image_picker.dart';
@@ -611,7 +611,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Prix : ${price.toStringAsFixed(0)} Afrcoins / mois',
+              kIsAppleStore
+                  ? 'Prix : ${CoinCheckout.coinsFor(price)} pièces / mois'
+                  : 'Prix : ${price.toStringAsFixed(0)} Afrcoins / mois',
               style: const TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w700, fontSize: 15),
             ),
             const SizedBox(height: 4),
@@ -644,10 +646,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Future<void> _payGroupSubscription(Map<String, dynamic> groupData, double price) async {
-    if (kIsAppleStore) {
-      showIosPurchaseUnavailable(context);
-      return;
-    }
     // Verrou anti-double-paiement
     if (_isPaymentProcessing) return;
     if (mounted) setState(() => _isPaymentProcessing = true);
@@ -658,7 +656,15 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final myUser = _auth.loginUserData;
     final solde = myUser.votre_solde_principal ?? 0.0;
 
-    if (solde < price) {
+    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+    if (kIsAppleStore) {
+      final paid = await CoinCheckout.pay(context,
+          kind: 'group', refId: widget.groupId, priceFcfa: price, label: 'Abonnement au groupe — 1 mois');
+      if (!paid) {
+        if (mounted) setState(() => _isPaymentProcessing = false);
+        return;
+      }
+    } else if (solde < price) {
       if (mounted) {
         setState(() => _isPaymentProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -678,10 +684,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final now = DateTime.now();
       final expiryMs = now.add(const Duration(days: 30)).millisecondsSinceEpoch;
 
-      // Débiter l'utilisateur
-      await _firestore.collection('Users').doc(myId).update({
-        'votre_solde_principal': FieldValue.increment(-price),
-      });
+      // Débiter l'utilisateur (en pièces sur iPhone : déjà fait par payWithCoins)
+      if (!kIsAppleStore) {
+        await _firestore.collection('Users').doc(myId).update({
+          'votre_solde_principal': FieldValue.increment(-price),
+        });
+      }
 
       // 70% au propriétaire du groupe
       if (ownerId != null) {
@@ -691,7 +699,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       }
 
       // 30% à l'app
-      if (_auth.appDefaultData.id != null) {
+      if (!kIsAppleStore && _auth.appDefaultData.id != null) {
         await _firestore.collection('AppData').doc(_auth.appDefaultData.id).update({
           'solde_gain': FieldValue.increment(appShare),
         });

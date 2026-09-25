@@ -1,6 +1,7 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/apple_iap_service.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -21,7 +22,6 @@ import 'package:afrotok/pages/home/homeLooks.dart';
 
 import 'package:afrotok/pages/home/listTopModal.dart';
 
-import 'package:animated_icon/animated_icon.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
@@ -102,7 +102,9 @@ import '../user/amis/pageMesInvitations.dart';
 import '../user/inviteAmis.dart';
 import '../user/monetisation.dart';
 import '../user/account_deletion_page.dart';
-import '../user/remuneration_home_page.dart';
+import '../coins/coin_recharge_screen.dart';
+import '../user/UserRetrait/userRetraitForm.dart';
+import '../../utils/tx_amount.dart';
 import '../userPosts/favorites_posts.dart';
 import '../vibe/vibesPage.dart';
 import '../widgetGlobal.dart';
@@ -549,526 +551,191 @@ class _MyHomePageState extends State<MyHomePage>
             Expanded(
               child: ListView(
                 children: [
-                  // ── Mon Profil (épinglé, toujours visible) ─────────────────
-                  ListTile(
-                    trailing: Icon(Icons.arrow_right_outlined, color: colors.primary),
-                    leading: Icon(Icons.supervised_user_circle, size: 30, color: colors.primary),
-                    title: TextCustomerMenu(
-                      titre: l10n.menuProfile,
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/home_profile_user');
-                    },
-                  ),
-                  const Divider(height: 1),
+                  // ── Raccourcis : portefeuille, recharge, retrait ──────────
+                  _drawerShortcuts(context, colors),
 
-                  // ── GROUPE 1 : Applications ────────────────────────────────
-                  ExpansionTile(
-                    initiallyExpanded: true,
-                    leading: Icon(Icons.apps_rounded, color: colors.primary),
-                    title: TextCustomerMenu(
-                      titre: 'Applications',
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
+                  // ── Épinglés ───────────────────────────────────────────────
+                  _dItem(context, colors,
+                      icon: Icons.account_circle_rounded,
+                      label: l10n.menuProfile,
+                      onTap: () => Navigator.pushNamed(context, '/home_profile_user')),
+                  _dItem(context, colors,
+                      icon: Icons.account_balance_wallet_rounded,
+                      label: 'Mon portefeuille',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
+
+                  // ── Applications ───────────────────────────────────────────
+                  _dSection(colors, 'Applications'),
+                  // Afro Love — masqué sur iOS (App Store)
+                  if (!kIsAppleStore)
+                    _dItem(context, colors,
+                        icon: Fontisto.tinder,
+                        iconColor: Colors.red,
+                        label: 'Afro Love',
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSwipePage()))),
+                  // AfroShop Market — mis en avant
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: colors.primary.withOpacity(0.4)),
                     ),
-                    iconColor: colors.primary,
-                    collapsedIconColor: colors.textSecondary,
-                    children: [
-                      // Afro Love — masqué sur iOS (App Store)
-                      if (!kIsAppleStore) ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Fontisto.tinder, size: 24, color: Colors.red),
-                        title: TextCustomerMenu(
-                          titre: 'Afro Love',
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => DatingSwipePage(),
-                          ));
-                        },
-                      ),
-                      // AfroShop Market — mis en avant
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: colors.primary.withOpacity(0.4)),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          child: ListTile(
-                          leading: Icon(Icons.store_mall_directory, size: 28, color: colors.primary),
-                          title: TextCustomerMenu(
-                            titre: l10n.menuAfroshopMarket,
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: colors.primary,
-                            fontWeight: FontWeight.w800,
+                    child: _dItem(context, colors,
+                        icon: Icons.store_mall_directory_rounded,
+                        label: l10n.menuAfroshopMarket,
+                        labelColor: colors.primary,
+                        bold: true,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0A500),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0A500),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'VIDÉOS',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
+                          child: const Text(
+                            'VIDÉOS',
+                            style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                          ),
+                        ),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: '')))),
+                  ),
+                  _dItem(context, colors,
+                      icon: Icons.handyman_rounded,
+                      label: l10n.menuServicesJobs,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage()))),
+                  _dItem(context, colors,
+                      icon: MaterialIcons.sports_soccer,
+                      label: l10n.menuPronosticsBetting,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PronosticsFeedPage()))),
+
+                  // ── Communauté ─────────────────────────────────────────────
+                  _dSection(colors, 'Communauté'),
+                  _dItem(context, colors,
+                      icon: Icons.group_rounded,
+                      label: l10n.menuFriends,
+                      onTap: () => Navigator.pushNamed(context, '/amis')),
+                  _dItem(context, colors,
+                      icon: FontAwesome.forumbee,
+                      label: l10n.menuCanaux,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
+                  _dItem(context, colors,
+                      icon: Icons.search_rounded,
+                      label: l10n.menuSearchUsers,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddListAmis()))),
+                  _dItem(context, colors,
+                      icon: Entypo.trophy,
+                      label: l10n.menuTopStars,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserClassement()))),
+                  _dItem(context, colors,
+                      icon: Icons.trending_up_rounded,
+                      iconColor: const Color(0xFFFFD700),
+                      label: 'Top posts de la semaine',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopPostsPage()))),
+                  _dItem(context, colors,
+                      icon: Icons.forum_rounded,
+                      label: 'Top commentateurs de la semaine',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage()))),
+
+                  // ── Mes contenus ───────────────────────────────────────────
+                  _dSection(colors, 'Mes contenus'),
+                  _dItem(context, colors,
+                      icon: FontAwesome.tv,
+                      label: l10n.menuMyLives,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage()))),
+                  _dItem(context, colors,
+                      icon: Icons.history_toggle_off_sharp,
+                      label: l10n.menuMyChroniques,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyChroniquesPage()))),
+                  _dItem(context, colors,
+                      icon: Icons.bookmark_rounded,
+                      label: l10n.menuFavorites,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FavoritePostsPage()))),
+
+                  // ── Business (contenus payants masqués sur iPhone) ─────────
+                  if (!kIsAppleStore) ...[
+                    _dSection(colors, 'Business'),
+                    _dItem(context, colors,
+                        icon: Icons.play_lesson_outlined,
+                        iconColor: const Color(0xFFFFD400),
+                        label: 'Contenu Business',
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen()))),
+                  ],
+
+                  // ── Paramètres ─────────────────────────────────────────────
+                  _dSection(colors, 'Paramètres'),
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, _) => _dItem(context, colors,
+                        icon: colors.isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                        iconColor: colors.supportAccent,
+                        label: colors.isDark ? l10n.menuDarkMode : l10n.menuLightMode,
+                        closeDrawer: false,
+                        trailing: Switch(
+                          value: themeProvider.themeMode == ThemeMode.dark,
+                          activeColor: colors.primary,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (value) => themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light),
+                        ),
+                        onTap: () => themeProvider.toggleTheme()),
+                  ),
+                  Consumer<LocaleProvider>(
+                    builder: (context, localeProvider, _) => _dItem(context, colors,
+                        icon: Icons.language_rounded,
+                        label: l10n.menuLanguage,
+                        closeDrawer: false,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: colors.primary, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷 Français',
+                                style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 13),
                               ),
-                            ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.expand_more, color: colors.primary, size: 16),
+                            ],
                           ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(context, MaterialPageRoute(
-                              builder: (context) => HomeAfroshopPage(title: ''),
-                            ));
+                        ),
+                        onTap: () => _showLanguagePicker(context, localeProvider)),
+                  ),
+                  _dItem(context, colors,
+                      icon: Icons.info_rounded,
+                      label: l10n.menuNewsInfo,
+                      onTap: () => Navigator.pushNamed(context, '/app_info')),
+                  _dItem(context, colors,
+                      icon: Icons.gavel_rounded,
+                      label: 'Règles & Confidentialité',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReglesConfidentialitePage()))),
+                  _dItem(context, colors,
+                      icon: Icons.cleaning_services_outlined,
+                      label: 'Vider le cache des posts',
+                      closeDrawer: false,
+                      onTap: () => _clearCacheAndRefresh(context)),
+                  _dItem(context, colors,
+                      icon: Icons.contact_mail_rounded,
+                      label: l10n.menuContacts,
+                      onTap: () => Navigator.pushNamed(context, '/contact')),
+                  _dItem(context, colors,
+                      icon: Icons.ios_share_rounded,
+                      label: l10n.menuShareApp,
+                      closeDrawer: false,
+                      onTap: () async {
+                        final box = context.findRenderObject() as RenderBox?;
+                        await authProvider.getAppData().then(
+                          (value) async {
+                            await Share.shareUri(
+                              Uri.parse('${authProvider.appDefaultData.app_link}'),
+                              sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+                            );
                           },
-                        ),
-                        ),
-                      ),
-                      // Services & Jobs
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: AnimateIcon(
-                          key: UniqueKey(),
-                          onTap: () {},
-                          iconType: IconType.continueAnimation,
-                          height: 24,
-                          width: 24,
-                          color: colors.primary,
-                          animateIcon: AnimateIcons.settings,
-                        ),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuServicesJobs,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => UserServiceListPage(),
-                          ));
-                        },
-                      ),
-                      // Pronostics
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(MaterialIcons.sports_soccer, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuPronosticsBetting,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => PronosticsFeedPage(),
-                          ));
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // ── GROUPE 2 : Communauté ──────────────────────────────────
-                  ExpansionTile(
-                    leading: Icon(Icons.group, color: colors.primary),
-                    title: TextCustomerMenu(
-                      titre: 'Communauté',
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    iconColor: colors.primary,
-                    collapsedIconColor: colors.textSecondary,
-                    children: [
-                      // Amis
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.group, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuFriends,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/amis');
-                        },
-                      ),
-                      // Canaux
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(FontAwesome.forumbee, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuCanaux,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => CanalListPage(isUserCanals: false),
-                          ));
-                        },
-                      ),
-                      // Rechercher
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.search, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuSearchUsers,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => AddListAmis(),
-                          ));
-                        },
-                      ),
-                      // Top Stars
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Entypo.trophy, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuTopStars,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => UserClassement(),
-                          ));
-                        },
-                      ),
-                      // Top Posts de la semaine
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.trending_up, size: 24, color: const Color(0xFFFFD700)),
-                        title: TextCustomerMenu(
-                          titre: 'Top Posts de la semaine',
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => const WeeklyTopPostsPage(),
-                          ));
-                        },
-                      ),
-                      // Top Commentateurs de la semaine
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: const Text('💬', style: TextStyle(fontSize: 20)),
-                        title: TextCustomerMenu(
-                          titre: 'Top Commentateurs de la semaine',
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => const WeeklyTopCommentatorsPage(),
-                          ));
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // ── GROUPE 3 : Mes contenus ────────────────────────────────
-                  ExpansionTile(
-                    leading: Icon(Icons.person_outline, color: colors.primary),
-                    title: TextCustomerMenu(
-                      titre: 'Mes contenus',
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    iconColor: colors.primary,
-                    collapsedIconColor: colors.textSecondary,
-                    children: [
-                      // Mes Lives
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(FontAwesome.tv, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuMyLives,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => UserLivesPage(),
-                          ));
-                        },
-                      ),
-                      // Mes Chroniques
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.history_toggle_off_sharp, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuMyChroniques,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w900,
-                        ),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => MyChroniquesPage(),
-                          ));
-                        },
-                      ),
-                      // Favoris
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.bookmark_outlined, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuFavorites,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => FavoritePostsPage(),
-                          ));
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // ── GROUPE 4 : Business & Revenus ──────────────────────────
-                  ExpansionTile(
-                    leading: Icon(Icons.monetization_on, color: colors.primary),
-                    title: TextCustomerMenu(
-                      titre: 'Business & Revenus',
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    iconColor: colors.primary,
-                    collapsedIconColor: colors.textSecondary,
-                    children: [
-                      // Rémunération
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.monetization_on, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.profileMenuRemunerationSpace,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!),
-                          ));
-                        },
-                      ),
-                      // Contenu Business
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.play_lesson_outlined, size: 24, color: const Color(0xFFFFD400)),
-                        title: TextCustomerMenu(
-                          titre: 'Contenu Business',
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => DashboardContentScreen(),
-                          ));
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // ── GROUPE 5 : Paramètres ──────────────────────────────────
-                  ExpansionTile(
-                    leading: Icon(Icons.settings_outlined, color: colors.primary),
-                    title: TextCustomerMenu(
-                      titre: 'Paramètres',
-                      fontSize: SizeText.homeProfileTextSize,
-                      couleur: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    iconColor: colors.primary,
-                    collapsedIconColor: colors.textSecondary,
-                    children: [
-                      // Thème
-                      Consumer<ThemeProvider>(
-                        builder: (context, themeProvider, _) => ListTile(
-                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                          leading: Icon(
-                            colors.isDark ? Icons.dark_mode : Icons.light_mode,
-                            color: colors.accent,
-                          ),
-                          title: TextCustomerMenu(
-                            titre: colors.isDark ? l10n.menuDarkMode : l10n.menuLightMode,
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          trailing: Switch(
-                            value: themeProvider.themeMode == ThemeMode.dark,
-                            activeColor: colors.primary,
-                            onChanged: (value) {
-                              themeProvider.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
-                            },
-                          ),
-                          onTap: () => themeProvider.toggleTheme(),
-                        ),
-                      ),
-                      // Langue
-                      Consumer<LocaleProvider>(
-                        builder: (context, localeProvider, _) => ListTile(
-                          contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                          leading: Icon(Icons.language, color: colors.primary),
-                          title: TextCustomerMenu(
-                            titre: l10n.menuLanguage,
-                            fontSize: SizeText.homeProfileTextSize,
-                            couleur: colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          trailing: GestureDetector(
-                            onTap: () => _showLanguagePicker(context, localeProvider),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceVariant,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: colors.primary, width: 1),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    kSupportedLocales[localeProvider.locale.languageCode] ?? '🇫🇷 Français',
-                                    style: TextStyle(
-                                      color: colors.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(Icons.expand_more, color: colors.primary, size: 16),
-                                ],
-                              ),
-                            ),
-                          ),
-                          onTap: () => _showLanguagePicker(context, localeProvider),
-                        ),
-                      ),
-                      // Infos & MàJ
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.info, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuNewsInfo,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/app_info');
-                        },
-                      ),
-                      // Règles & Confidentialité
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.gavel, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: 'Règles & Confidentialité',
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => const ReglesConfidentialitePage(),
-                          ));
-                        },
-                      ),
-                      // Vider le cache des posts
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.cleaning_services_outlined, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: 'Vider le cache des posts',
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () => _clearCacheAndRefresh(context),
-                      ),
-                      // Contacts
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.contact_mail, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuContacts,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/contact');
-                        },
-                      ),
-                      // Partager l'app
-                      ListTile(
-                        contentPadding: const EdgeInsets.only(left: 32, right: 16),
-                        leading: Icon(Icons.smartphone, size: 24, color: colors.primary),
-                        title: TextCustomerMenu(
-                          titre: l10n.menuShareApp,
-                          fontSize: SizeText.homeProfileTextSize,
-                          couleur: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onTap: () async {
-                          final box = context.findRenderObject() as RenderBox?;
-                          await authProvider.getAppData().then(
-                            (value) async {
-                              await Share.shareUri(
-                                Uri.parse('${authProvider.appDefaultData.app_link}'),
-                                sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                        );
+                      }),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -1376,6 +1043,8 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     // Achats App Store interrompus (iOS) : Apple les redonne à l'écoute, ils sont vérifiés puis crédités.
     AppleIapService.instance.start();
+    // Utilisateurs bloqués : leurs contenus sont masqués immédiatement dans le fil.
+    BlockService.instance.start();
     _headerCtrl = AnimationController(
       vsync: this,
       value: 1.0,
@@ -1591,7 +1260,8 @@ class _MyHomePageState extends State<MyHomePage>
         }
         break;
       case 'contenu':
-        if (dest.content != null) {
+        // Contenus payants masqués sur iPhone pour le moment
+        if (dest.content != null && !kIsAppleStore) {
           _navigateViaNotifications(() => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => ContentDetailPage(content: dest.content!)),
@@ -2015,7 +1685,7 @@ class _MyHomePageState extends State<MyHomePage>
                             },
                           ),
                         ),
-                        GestureDetector(
+                        if (!kIsAppleStore) GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen())),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -2695,7 +2365,7 @@ class _MyHomePageState extends State<MyHomePage>
                     ),
                   ),
                   // Business
-                  _sidebarItem(
+                  if (!kIsAppleStore) _sidebarItem(
                     context: context,
                     icon: Icons.business_center_outlined,
                     label: 'Business',
@@ -3080,8 +2750,8 @@ class _MyHomePageState extends State<MyHomePage>
 
                 // ── Business & Monétisation ──────────────────────────
                 _rpSection(colors, 'Business'),
-                _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: 'Contenu Business', onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
-                _rpItem(context, colors, icon: Icons.monetization_on,                      label: l10n.profileMenuRemunerationSpace, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RemunerationHomePage(user: authProvider.loginUserData)))),
+                if (!kIsAppleStore) _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: 'Contenu Business', onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
+                _rpItem(context, colors, icon: Icons.account_balance_wallet_rounded, label: 'Mon portefeuille', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
 
                 // ── Découverte ───────────────────────────────────────
                 _rpSection(colors, 'Découverte'),
@@ -3174,6 +2844,112 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   /// Section header dans le panneau droit.
+  // ── Menu latéral (mobile) ─────────────────────────────────────────────────
+
+  /// Titre de section du menu (liste dépliée, sans sections repliables).
+  Widget _dSection(AppColors colors, String title) => Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
+        child: Text(title.toUpperCase(),
+            style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.0)),
+      );
+
+  /// Entrée du menu : ferme le menu puis exécute [onTap] (sauf si [closeDrawer] = false).
+  Widget _dItem(
+    BuildContext context,
+    AppColors colors, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? iconColor,
+    Color? labelColor,
+    bool bold = false,
+    bool closeDrawer = true,
+    Widget? trailing,
+  }) {
+    return InkWell(
+      onTap: () {
+        if (closeDrawer) Navigator.pop(context);
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, size: 21, color: iconColor ?? colors.primary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  color: labelColor ?? colors.textPrimary,
+                  fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+                ),
+              ),
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Raccourcis en haut du menu : Portefeuille (solde de pièces), Recharger, Retirer.
+  Widget _drawerShortcuts(BuildContext context, AppColors colors) {
+    final coins = authProvider.loginUserData.giftCoinsBalance ?? 0;
+    Widget tile(IconData icon, String title, String subtitle, Color color, Widget Function() page) {
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => page()));
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: colors.border),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, color: color, size: 22),
+                const SizedBox(height: 4),
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+                Text(subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10.5, color: colors.textSecondary)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+      child: Row(
+        children: [
+          tile(Icons.account_balance_wallet_rounded, 'Portefeuille', '${TxAmount.fmt(coins)} pièces',
+              colors.primary, () => MonetisationPage()),
+          const SizedBox(width: 8),
+          tile(Icons.add_circle_rounded, 'Recharger', 'Acheter des pièces', colors.supportAccent,
+              () => CoinRechargeScreen()),
+          const SizedBox(width: 8),
+          tile(Icons.north_east_rounded, 'Retirer', 'Mes gains', colors.warning,
+              () => UserDemandeRetraitPage()),
+        ],
+      ),
+    );
+  }
+
   Widget _rpSection(AppColors colors, String title) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
     child: Text(title, style: TextStyle(color: colors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),

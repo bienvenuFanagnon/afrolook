@@ -5,70 +5,51 @@ import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitForm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/retraitService.dart';
+import '../../../theme/app_colors.dart';
 
+/// Liste des demandes de retrait de l'utilisateur (thèmes clair et sombre via [AppColors]).
 class UserRetraitListPage extends StatefulWidget {
   @override
   State<UserRetraitListPage> createState() => _UserRetraitListPageState();
 }
 
 class _UserRetraitListPageState extends State<UserRetraitListPage> {
+  static final NumberFormat _moneyFmt = NumberFormat('#,##0.##', 'fr');
 
-  // Méthode pour naviguer vers la page de contact
-  void _navigateToContactPage(BuildContext context) {
-    // Remplacez par votre navigation vers la page de contact
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ContactPage(), // Votre page de contact
-      ),
-    );
-
-    // Ou ouvrir un URL/email/téléphone directement
-    // _launchContactUrl();
+  void _openContact() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage()));
   }
 
-  // Méthode pour lancer les contacts (optionnel)
-  void _launchContactUrl() async {
-    // Exemple: ouvrir WhatsApp
-    // const url = 'https://wa.me/228XXXXXXXXX';
-    // if (await canLaunch(url)) {
-    //   await launch(url);
-    // } else {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(content: Text('Impossible d\'ouvrir le lien de contact')),
-    //   );
-    // }
+  void _openNewRequest() {
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => UserDemandeRetraitPage()));
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<UserAuthProvider>();
-    final userId = authProvider.userId;
+    final c = AppColors.of(context);
+    final userId = context.watch<UserAuthProvider>().userId;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.background,
       appBar: AppBar(
-        title: Text(
-          'Mes Demandes de Retrait',
-          style: TextStyle(color: Colors.yellow[700]),
-        ),
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.yellow[700]),
+        title: Text('Mes retraits',
+            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
+        backgroundColor: c.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: c.textPrimary),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => UserDemandeRetraitPage()),
-              );
-            },
+            icon: Icon(Icons.add_rounded, color: c.primary),
+            tooltip: 'Nouvelle demande',
+            onPressed: _openNewRequest,
           ),
         ],
       ),
@@ -76,328 +57,216 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
         stream: RetraitService.getRetraitsUtilisateur(userId!),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: Colors.yellow[700]));
+            return Center(child: CircularProgressIndicator(color: c.primary));
           }
-
           if (snapshot.hasError) {
             printVm("snapshot.hasError : ${snapshot.error.toString()}");
-            return Center(
-              child: Text(
-                'Erreur de chargement',
-                style: TextStyle(color: Colors.red),
-              ),
-            );
+            return Center(child: Text('Erreur de chargement', style: TextStyle(color: c.danger)));
           }
 
           final retraits = snapshot.data ?? [];
+          if (retraits.isEmpty) return _buildEmptyState(c);
 
-          if (retraits.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          // Vérifier s'il y a des retraits en attente
-          final hasPendingRetraits = retraits.any((retrait) => retrait.isEnAttente);
-
-          return Column(
-            children: [
-              // Bannière pour les retraits en attente
-              if (hasPendingRetraits) _buildPendingRetraitBanner(context),
-
-              // Liste des retraits
-              Expanded(
-                child: CenteredContent(child: ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: retraits.length,
-                  itemBuilder: (context, index) {
-                    return _buildRetraitCard(retraits[index], context);
-                  },
-                )),
-              ),
-            ],
+          final hasPending = retraits.any((r) => r.isEnAttente);
+          return CenteredContent(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              children: [
+                if (hasPending) ...[
+                  _buildPendingBanner(c),
+                  const SizedBox(height: 12),
+                ],
+                for (final r in retraits) _buildRetraitCard(r, c),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  // Bannière pour les retraits en attente
-  Widget _buildPendingRetraitBanner(BuildContext context) {
+  // Bannière : des retraits attendent un contact avec le service client
+  Widget _buildPendingBanner(AppColors c) {
     return Container(
-      width: double.infinity,
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.orange[800]!, Colors.orange[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: c.warning.withOpacity(c.isDark ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.warning.withOpacity(0.4)),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.white, size: 24),
-          SizedBox(width: 12),
+          Icon(Icons.info_outline_rounded, color: c.warning, size: 22),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Action Requise',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Contactez notre service client pour finaliser vos retraits en attente',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                ),
+                Text('Action requise',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text('Contacte le service client pour finaliser tes retraits en attente.',
+                    style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.3)),
               ],
             ),
           ),
-          SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => _navigateToContactPage(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.orange[800],
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: _openContact,
+            style: FilledButton.styleFrom(
+              backgroundColor: c.warning,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 34),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: const StadiumBorder(),
             ),
-            child: Text(
-              'Contacter',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text('Contacter', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppColors c) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.money_off, size: 64, color: Colors.grey[600]),
-          SizedBox(height: 16),
-          Text(
-            'Aucune demande de retrait',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 18,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.account_balance_rounded, size: 52, color: c.textSecondary),
+            const SizedBox(height: 14),
+            Text('Aucune demande de retrait',
+                style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text('Tes demandes apparaîtront ici.',
+                style: TextStyle(color: c.textSecondary, fontSize: 13)),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: _openNewRequest,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Faire une demande', style: TextStyle(fontWeight: FontWeight.w700)),
+              style: FilledButton.styleFrom(
+                backgroundColor: c.primary,
+                foregroundColor: c.onPrimary,
+                shape: const StadiumBorder(),
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Faites votre première demande de retrait',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildRetraitCard(TransactionRetrait retrait, BuildContext context) {
+  Widget _buildRetraitCard(TransactionRetrait retrait, AppColors c) {
+    final statutColor = retrait.statutColor;
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: retrait.statutColor.withOpacity(0.5),
-          width: 2,
-        ),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête avec montant et statut
+          // Montant + statut
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${retrait.montant!.toStringAsFixed(2)} FCFA',
-                style: TextStyle(
-                  color: Colors.yellow[700],
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: retrait.statutColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: retrait.statutColor),
-                ),
+              Expanded(
                 child: Text(
-                  retrait.statutText,
+                  '${_moneyFmt.format(retrait.montant ?? 0)} FCFA',
                   style: TextStyle(
-                    color: retrait.statutColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    color: c.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statutColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(retrait.statutText,
+                    style: TextStyle(color: statutColor, fontSize: 11.5, fontWeight: FontWeight.w700)),
+              ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
+          _detailRow(c, 'Méthode', retrait.methodPaiement ?? 'Non spécifiée'),
+          _detailRow(c, 'Compte', retrait.numeroCompte ?? 'Non spécifié'),
+          _detailRow(c, 'Date', _formatDate(retrait.createdAt!)),
 
-          // Détails
-          _buildDetailRow('Méthode', retrait.methodPaiement ?? 'Non spécifié'),
-          _buildDetailRow('Compte', retrait.numeroCompte ?? 'Non spécifié'),
-          _buildDetailRow('Date', _formatDate(retrait.createdAt!)),
-
-          // Numéro de transaction
+          // Numéro de transaction (copiable)
           if (retrait.numeroTransaction != null) ...[
-            SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => _copyTransactionId(retrait.numeroTransaction!, context),
+            const SizedBox(height: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => _copyTransactionId(retrait.numeroTransaction!),
               child: Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green),
+                  color: c.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.copy, size: 16, color: Colors.green),
-                    SizedBox(width: 8),
+                    Icon(Icons.tag_rounded, size: 15, color: c.textSecondary),
+                    const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        'ID: ${retrait.numeroTransaction!}',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 12,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      child: Text(retrait.numeroTransaction!,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: c.textPrimary, fontSize: 12, fontFamily: 'monospace')),
                     ),
-                    Text(
-                      'Copier',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Icon(Icons.copy_rounded, size: 15, color: c.primary),
+                    const SizedBox(width: 4),
+                    Text('Copier', style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
             ),
           ],
 
-          // Message spécial pour les retraits en attente
+          // Retrait en attente : finaliser avec le service client
           if (retrait.isEnAttente) ...[
-            SizedBox(height: 12),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.phone, size: 16, color: Colors.orange),
-                      SizedBox(width: 8),
-                      Text(
-                        'Finalisez votre retrait',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Contactez notre service client avec votre numéro de transaction pour terminer le processus.',
-                    style: TextStyle(
-                      color: Colors.orange[200],
-                      fontSize: 12,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 36,
-                    child: ElevatedButton(
-                      onPressed: () => _navigateToContactPage(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.contact_support, size: 16),
-                          SizedBox(width: 6),
-                          Text(
-                            'Contacter le Service',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 10),
+            Text(
+              'Contacte le service client avec ton numéro de transaction pour terminer le retrait.',
+              style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 36,
+              child: OutlinedButton.icon(
+                onPressed: _openContact,
+                icon: Icon(Icons.support_agent_rounded, size: 17, color: c.warning),
+                label: Text('Contacter le service client',
+                    style: TextStyle(color: c.warning, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: c.warning.withOpacity(0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
               ),
             ),
           ],
 
           // Motif d'annulation
           if (retrait.isAnnule && retrait.motifAnnulation != null) ...[
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Container(
-              padding: EdgeInsets.all(8),
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red),
+                color: c.danger.withOpacity(c.isDark ? 0.16 : 0.08),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
-                'Motif: ${retrait.motifAnnulation!}',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 12,
-                ),
-              ),
+              child: Text('Motif : ${retrait.motifAnnulation!}',
+                  style: TextStyle(color: c.danger, fontSize: 12)),
             ),
           ],
         ],
@@ -405,25 +274,19 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _detailRow(AppColors c, String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
+          SizedBox(
+            width: 72,
+            child: Text(label, style: TextStyle(color: c.textSecondary, fontSize: 12)),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+          Expanded(
+            child: Text(value,
+                style: TextStyle(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -432,18 +295,13 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
 
   String _formatDate(int timestamp) {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return '${date.day}/${date.month}/${date.year} à ${date.hour}h${date.minute.toString().padLeft(2, '0')}';
+    return DateFormat("d MMM yyyy 'à' HH'h'mm", 'fr').format(date);
   }
 
-  void _copyTransactionId(String transactionId, BuildContext context) {
+  void _copyTransactionId(String transactionId) {
     Clipboard.setData(ClipboardData(text: transactionId));
-
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Numéro de transaction copié!'),
-        backgroundColor: Colors.green,
-      ),
+      const SnackBar(content: Text('Numéro de transaction copié')),
     );
   }
 }
-

@@ -15,6 +15,7 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { queueModerationReport } from "../moderation/moderation";
 
 // ─── Recalcul en temps réel à chaque love ou commentaire ────────────────────
 
@@ -243,6 +244,20 @@ export const reportPost = onCall(
     }
 
     await postRef.update(updates);
+
+    if (!isAdminReport) {
+      try {
+        await queueModerationReport({
+          type: "post_report",
+          reporterId: uid,
+          targetUserId: userId,
+          postId,
+          reason: reportType,
+        });
+      } catch (err) {
+        console.error("[reportPost] File de modération :", err);
+      }
+    }
 
     // Propager la pénalité vers creatorScore et canalScore
     const scoreDelta = newPostScore - currentScore; // toujours négatif

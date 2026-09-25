@@ -20,9 +20,11 @@ export const secureBoost = onCall(
       throw new HttpsError("unauthenticated", "Authentification requise.");
     }
 
-    const { contentId, durationDays } = request.data as {
+    const { contentId, durationDays, payWithCoins } = request.data as {
       contentId?: string;
       durationDays?: number;
+      // iPhone (règle App Store 3.1.1) : paiement en pièces achetées via l'App Store
+      payWithCoins?: boolean;
     };
     if (!contentId || !durationDays) {
       throw new HttpsError("invalid-argument", "contentId et durationDays requis.");
@@ -60,7 +62,17 @@ export const secureBoost = onCall(
       const now = Date.now();
       const endDate = now + durationDays * 24 * 60 * 60 * 1000;
 
-      if (!isAdmin && price > 0) {
+      if (!isAdmin && price > 0 && payWithCoins) {
+        const coins = Math.ceil(price * 2.5);
+        const coinBalance = ((userDoc.data()?.giftCoinsBalance ?? 0) as number);
+        if (coinBalance < coins) {
+          throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins, balance: coinBalance });
+        }
+        tx.update(userRef, {
+          giftCoinsBalance: FieldValue.increment(-coins),
+          totalGiftCoinsSpent: FieldValue.increment(coins),
+        });
+      } else if (!isAdmin && price > 0) {
         const balance = ((userDoc.data()?.votre_solde_principal ?? 0) as number);
         if (balance < price) {
           throw new HttpsError(
@@ -96,10 +108,12 @@ export const securePurchase = onCall(
       throw new HttpsError("unauthenticated", "Authentification requise.");
     }
 
-    const { contentId, promoCodeId, affiliateId } = request.data as {
+    const { contentId, promoCodeId, affiliateId, payWithCoins } = request.data as {
       contentId?: string;
       promoCodeId?: string;
       affiliateId?: string;
+      // iPhone (règle App Store 3.1.1) : paiement en pièces achetées via l'App Store
+      payWithCoins?: boolean;
     };
     if (!contentId) {
       throw new HttpsError("invalid-argument", "contentId requis.");
@@ -187,17 +201,29 @@ export const securePurchase = onCall(
         }
       }
 
-      // Vérification et déduction du solde acheteur
-      const balance = ((buyerDoc.data()?.votre_solde_principal ?? 0) as number);
-      if (balance < paid) {
-        throw new HttpsError(
-          "resource-exhausted",
-          `Solde insuffisant — ${balance} FCFA disponibles, ${Math.ceil(paid)} FCFA requis.`
-        );
+      // Vérification et déduction du solde acheteur (pièces sur iPhone : prix FCFA × 2,5)
+      if (payWithCoins) {
+        const coins = Math.ceil(paid * 2.5);
+        const coinBalance = ((buyerDoc.data()?.giftCoinsBalance ?? 0) as number);
+        if (coinBalance < coins) {
+          throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins, balance: coinBalance });
+        }
+        tx.update(buyerRef, {
+          giftCoinsBalance: FieldValue.increment(-coins),
+          totalGiftCoinsSpent: FieldValue.increment(coins),
+        });
+      } else {
+        const balance = ((buyerDoc.data()?.votre_solde_principal ?? 0) as number);
+        if (balance < paid) {
+          throw new HttpsError(
+            "resource-exhausted",
+            `Solde insuffisant — ${balance} FCFA disponibles, ${Math.ceil(paid)} FCFA requis.`
+          );
+        }
+        tx.update(buyerRef, {
+          votre_solde_principal: FieldValue.increment(-paid),
+        });
       }
-      tx.update(buyerRef, {
-        votre_solde_principal: FieldValue.increment(-paid),
-      });
 
       // Calcul splits (12% app, jamais affiché côté client)
       const creatorBaseRate = 0.88;

@@ -17,8 +17,9 @@ import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/widgets/ios_purchase_unavailable.dart';
 import '../../utils/platform_guard.dart';
-import '../../widgets/ios_purchase_unavailable.dart';
+import '../../services/coin_checkout.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -459,10 +460,6 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
   }
 
   Future<void> _buy() async {
-    if (kIsAppleStore) {
-      showIosPurchaseUnavailable(context);
-      return;
-    }
     if (_content.id == null || _content.ownerId == null) return;
 
     setState(() => _buying = true);
@@ -473,6 +470,8 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
         'contentId': _content.id,
         if (_appliedPromoCode?.id != null) 'promoCodeId': _appliedPromoCode!.id,
         if (_affiliateId != null) 'affiliateId': _affiliateId,
+        // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+        if (kIsAppleStore) 'payWithCoins': true,
       });
 
       // Nettoyage du lien d'affiliation
@@ -501,7 +500,9 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
       _showResultDialog(
         success: false,
         message: isInsufficient
-            ? 'Solde insuffisant pour effectuer cet achat.\nRechargez votre solde et réessayez.'
+            ? (kIsAppleStore
+                ? 'Solde de pièces insuffisant pour cet achat.\nAchète des pièces et réessaie.'
+                : 'Solde insuffisant pour effectuer cet achat.\nRechargez votre solde et réessayez.')
             : (raw.isNotEmpty ? raw : 'Erreur lors de l\'achat.'),
         insufficientBalance: isInsufficient,
       );
@@ -589,6 +590,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const IosPurchaseUnavailableScreen(title: 'Contenu');
     return Scaffold(
       backgroundColor: _colors.background,
       body: CustomScrollView(
@@ -1553,7 +1555,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                   children: [
                     if (_appliedPromoCode != null)
                       Text(
-                        '${_content.effectivePrice.toInt()} F',
+                        kIsAppleStore ? '${CoinCheckout.coinsFor(_content.effectivePrice)} pièces' : '${_content.effectivePrice.toInt()} F',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -1562,7 +1564,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                         ),
                       ),
                     Text(
-                      '${_finalPrice.toInt()} F',
+                      kIsAppleStore ? '${CoinCheckout.coinsFor(_finalPrice)} pièces' : '${_finalPrice.toInt()} F',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -2177,7 +2179,7 @@ class _EpisodeRow extends StatelessWidget {
                 Text(
                   episode.isFree
                       ? 'Gratuit'
-                      : '${episode.price.toInt()} F',
+                      : (kIsAppleStore ? '${CoinCheckout.coinsFor(episode.price)} pièces' : '${episode.price.toInt()} F'),
                   style: TextStyle(
                       fontSize: 10,
                       color: episode.isFree

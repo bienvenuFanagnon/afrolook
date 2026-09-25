@@ -36,6 +36,7 @@ import 'package:flutter/gestures.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
 import '../services/media_cache_service.dart';
 
@@ -3003,6 +3004,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                     onTap: () => _reportPostWithScore(post, isAdmin: false, reportType: 'wrong_category'),
                   ).animate().fadeIn(duration: 200.ms, delay: 60.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
               ],
+              if (post.user_id != null)
+                ListTile(
+                  leading: Icon(Icons.block, color: colors.danger),
+                  title: Text('Bloquer cet utilisateur', style: TextStyle(color: colors.danger)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final blocked = await confirmAndBlockUser(
+                      this.context,
+                      userId: post.user_id!,
+                      pseudo: post.user?.pseudo,
+                      postId: post.id,
+                    );
+                    if (blocked && mounted) Navigator.pop(this.context);
+                  },
+                ).animate().fadeIn(duration: 200.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
             ],
 
             if (post.user_id == authProvider.loginUserData.id ||

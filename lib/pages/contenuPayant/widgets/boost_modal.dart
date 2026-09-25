@@ -5,7 +5,7 @@ import 'package:afrotok/theme/app_colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
-import '../../../widgets/ios_purchase_unavailable.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:provider/provider.dart';
 
 class BoostModal extends StatefulWidget {
@@ -61,11 +61,9 @@ class _BoostModalState extends State<BoostModal> {
   }
 
   Future<void> _confirm() async {
-    if (kIsAppleStore) {
-      showIosPurchaseUnavailable(context);
-      return;
-    }
     if (widget.content.id == null) return;
+    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+    final payWithCoins = kIsAppleStore && !widget.isAdmin;
     // Capturer le messenger AVANT l'await — le contexte de la BottomSheet
     // peut devenir invalide après la fermeture, et le SnackBar resterait invisible.
     final messenger = ScaffoldMessenger.of(context);
@@ -76,7 +74,9 @@ class _BoostModalState extends State<BoostModal> {
       await callable.call({
         'contentId': widget.content.id,
         'durationDays': _selectedDays,
+        if (payWithCoins) 'payWithCoins': true,
       });
+      if (payWithCoins && mounted) await CoinCheckout.refreshBalance(context);
       if (mounted) Navigator.pop(context);
       messenger.showSnackBar(SnackBar(
         content: Text(widget.isAdmin
@@ -85,6 +85,10 @@ class _BoostModalState extends State<BoostModal> {
         backgroundColor: const Color(0xFF25D366),
       ));
     } on FirebaseFunctionsException catch (e) {
+      if (payWithCoins && e.code == 'resource-exhausted' && mounted) {
+        await CoinCheckout.insufficient(context, CoinCheckout.coinsFor((_prices[_selectedDays] ?? 0).toDouble()));
+        return;
+      }
       if (mounted) Navigator.pop(context);
       messenger.showSnackBar(SnackBar(
         content: Text(e.message ?? 'Erreur lors du boost.'),
@@ -218,6 +222,8 @@ class _BoostModalState extends State<BoostModal> {
                         Text(
                           widget.isAdmin
                               ? 'Gratuit'
+                              : kIsAppleStore
+                              ? '${CoinCheckout.coinsFor(price.toDouble())} pièces'
                               : '${price.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]} ')} F',
                           style: const TextStyle(
                               fontSize: 11,
@@ -257,7 +263,9 @@ class _BoostModalState extends State<BoostModal> {
                   Text(
                     widget.isAdmin
                         ? 'Gratuit'
-                        : '−${prices[_selectedDays] ?? 0} F de votre solde',
+                        : kIsAppleStore
+                            ? '−${CoinCheckout.priceLabel(prices[_selectedDays] ?? 0)}'
+                            : '−${prices[_selectedDays] ?? 0} F de votre solde',
                     style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -281,7 +289,9 @@ class _BoostModalState extends State<BoostModal> {
               label: Text(
                 widget.isAdmin
                     ? 'Booster gratuitement'
-                    : 'Confirmer — ${prices[_selectedDays] ?? 0} F',
+                    : kIsAppleStore
+                        ? 'Confirmer — ${CoinCheckout.coinsFor((prices[_selectedDays] ?? 0).toDouble())} pièces'
+                        : 'Confirmer — ${prices[_selectedDays] ?? 0} F',
                 style: const TextStyle(
                     color: Colors.black, fontWeight: FontWeight.w800),
               ),

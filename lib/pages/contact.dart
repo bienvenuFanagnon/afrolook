@@ -1,486 +1,258 @@
-﻿import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-
 import 'package:url_launcher/url_launcher.dart';
 
-class ContactPage extends StatefulWidget {
+import '../theme/app_colors.dart';
+
+/// Page « Contact » : support WhatsApp, e-mails et réseaux officiels.
+/// S'adapte aux thèmes clair et sombre via [AppColors].
+class ContactPage extends StatelessWidget {
   const ContactPage({Key? key}) : super(key: key);
 
-  @override
-  State<ContactPage> createState() => _AidePageState();
-}
+  static const _whatsappNumber = '22871645403';
+  static const _whatsappDisplay = '+228 71 64 54 03';
+  static const _whatsappGreen = Color(0xFF25D366);
+  static const _facebookBlue = Color(0xFF1877F2);
+  static const _youtubeRed = Color(0xFFFF0033);
 
-class _AidePageState extends State<ContactPage> {
-  List<String> attachments = [];
+  // ── Actions ────────────────────────────────────────────────────────────────
 
-  String _nom = '';
-  String _email = 'mykeys@my-keys.com';
-  String _message = '';
-  bool tap = false;
+  Future<void> _open(BuildContext context, String url) async {
+    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) _snack(context, "Impossible d'ouvrir le lien");
+  }
 
-  final _formKey = GlobalKey<FormState>();
-
-  bool isHTML = false;
-
-  final _subjectController = TextEditingController(text: "Demande d'information");
-
-  final _bodyController = TextEditingController();
-
-  final _recipientController = TextEditingController(
-    text: 'mykeys@my-keys.com',
-  );
-
-  Future sendEmail(String emailText) async {
-    final Email email = Email(
-      body: '${_bodyController.text}',
-      subject: _subjectController.text,
-      recipients: [emailText],
-      attachmentPaths: attachments,
-      isHTML: isHTML,
-    );
-
-    String platformResponse;
-
+  Future<void> _email(BuildContext context, String address, String subject) async {
     try {
-      var response = await FlutterEmailSender.send(email);
-      platformResponse = 'success';
-      _bodyController.text = '';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Votre message a été envoyé.', style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.green[800],
-        ),
-      );
-    } catch (error) {
-      printVm(error);
-      platformResponse = error.toString();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Message non envoyé', style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-
-    if (!mounted) return;
-  }
-
-  Future<void> launchWhatsApp(String phone) async {
-    String url = "https://wa.me/$phone";
-    if (!await launchUrl(Uri.parse(url))) {
-      final snackBar = SnackBar(
-        duration: Duration(seconds: 2),
-        content: Text("Impossible d'ouvrir WhatsApp", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      throw Exception('Impossible d\'ouvrir WhatsApp');
+      await FlutterEmailSender.send(Email(recipients: [address], subject: subject, body: ''));
+    } catch (e) {
+      printVm(e);
+      // Pas d'application mail configurée : on tente le lien mailto
+      final ok = await launchUrl(Uri(scheme: 'mailto', path: address, query: 'subject=${Uri.encodeComponent(subject)}'));
+      if (!ok && context.mounted) {
+        await Clipboard.setData(ClipboardData(text: address));
+        if (context.mounted) _snack(context, 'Adresse copiée : $address');
+      }
     }
   }
 
-  Future<void> _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Impossible d\'ouvrir le lien', style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  void _snack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _email = 'mykeys@my-keys.com';
-  }
+  // ── UI ─────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    final c = AppColors.of(context);
     return Scaffold(
+      backgroundColor: c.background,
       appBar: AppBar(
-        title: const Text('Contactez-nous', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.green),
+        title: Text('Contact', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
+        backgroundColor: c.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: c.textPrimary),
       ),
-      backgroundColor: Colors.black,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
-              Center(
-                child: Text(
-                  'Comment pouvons-nous vous aider?',
-                  style: TextStyle(fontSize: 20.0, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              SizedBox(height: 20),
-
-              // NOUVEAU: WhatsApp Support en première position
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green[800]!, Colors.green[600]!],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withOpacity(0.4),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(FontAwesome.whatsapp, size: 40, color: Colors.white),
-                    SizedBox(height: 10),
-                    Text(
-                      'Support WhatsApp Direct',
-                      style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      '+228 71 64 54 03',
-                      style: TextStyle(fontSize: 16, color: Colors.yellow[700], fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Contactez-nous directement sur WhatsApp pour une assistance rapide',
-                      style: TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      icon: Icon(FontAwesome.whatsapp, color: Colors.white),
-                      label: Text('Écrire sur WhatsApp'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.green[700],
-                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () {
-                        launchWhatsApp('22871645403');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // Canal WhatsApp Officiel
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.green[900],
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.notifications, size: 35, color: Colors.white),
-                    SizedBox(height: 10),
-                    Text(
-                      'Canal WhatsApp Officiel',
-                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Restez informé des dernières actualités',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      icon: Icon(FontAwesome.whatsapp, color: Colors.white, size: 18),
-                      label: Text('Rejoindre le Canal'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.green[700],
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () {
-                        _launchURL('https://whatsapp.com/channel/0029VaxfuwYISTkF3o42e60V');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // Bouton Facebook
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.blue[900],
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.4),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(FontAwesome.facebook, size: 40, color: Colors.white),
-                    SizedBox(height: 10),
-                    Text(
-                      'Vous préférez nous écrire sur Facebook?',
-                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Notre équipe répond rapidement à vos messages sur notre page Facebook',
-                      style: TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      icon: Icon(FontAwesome.facebook, color: Colors.white),
-                      label: Text('Écrire sur Facebook'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.blue[700],
-                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () {
-                        _launchURL('https://www.facebook.com/profile.php?id=61554481360821');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 30),
-
-              // Section YouTube
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.red[900],
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(FontAwesome.youtube_play, size: 40, color: Colors.white),
-                    SizedBox(height: 10),
-                    Text(
-                      'Chaîne YouTube Officielle',
-                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Regardez nos tutoriels et guides vidéo',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      icon: Icon(FontAwesome.youtube_play, color: Colors.white, size: 18),
-                      label: Text('Voir les Tutoriels'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.red[700],
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () {
-                        _launchURL('https://youtube.com/@afrolookstudioofficiel?si=3wWf802tZbGVEeC_');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 30),
-
-              Text(
-                'Ou contactez-nous par email:',
-                style: TextStyle(fontSize: 16.0, color: Colors.grey),
-              ),
-              SizedBox(height: 20),
-
-              // Option 1: Support général
-              Card(
-                color: Colors.green[900],
-                child: ListTile(
-                  leading: Icon(Icons.email, color: Colors.white),
-                  title: Text('Support général', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  subtitle: Text('Informations générales, signaler un problème', style: TextStyle(color: Colors.white70)),
-                  onTap: () {
-                    sendEmail('officiel.afrolook@gmail.com');
-                  },
-                ),
-              ),
-              SizedBox(height: 15),
-
-              // Option 2: Investissements
-              Card(
-                color: Colors.green[800],
-                child: ListTile(
-                  leading: Icon(Icons.attach_money, color: Colors.white),
-                  title: Text('Investissements', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  subtitle: Text('Informations pour les investisseurs', style: TextStyle(color: Colors.white70)),
-                  onTap: () {
-                    sendEmail('officiel.afrolook.investissement@gmail.com');
-                  },
-                ),
-              ),
-              SizedBox(height: 15),
-
-              // Option 3: Publicité
-              Card(
-                color: Colors.green[700],
-                child: ListTile(
-                  leading: Icon(Icons.campaign, color: Colors.white),
-                  title: Text('Publicité Afrolook Ads', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  subtitle: Text('Pour vos campagnes publicitaires', style: TextStyle(color: Colors.white70)),
-                  onTap: () {
-                    sendEmail('officiel.afrolook.annonce@gmail.com');
-                  },
-                ),
-              ),
-              SizedBox(height: 30),
-
-              // Section Réseaux sociaux
-              Center(
-                child: Text(
-                  'Rejoignez-nous sur les réseaux sociaux',
-                  style: TextStyle(fontSize: 18.0, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              SizedBox(height: 15),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Groupe Facebook
-                  Column(
-                    children: [
-                      IconButton(
-                        icon: Icon(FontAwesome.facebook, color: Colors.blue, size: 40),
-                        onPressed: () {
-                          _launchURL('https://facebook.com/groups/28745647531687196/');
-                        },
-                      ),
-                      Text('Groupe Facebook', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                  // Page Facebook
-                  Column(
-                    children: [
-                      IconButton(
-                        icon: Icon(FontAwesome.facebook_square, color: Colors.blue, size: 40),
-                        onPressed: () {
-                          _launchURL('https://www.facebook.com/profile.php?id=61554481360821');
-                        },
-                      ),
-                      Text('Page Facebook', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                  // Twitter/X
-                  Column(
-                    children: [
-                      IconButton(
-                        icon: Icon(FontAwesome.twitter, color: Colors.lightBlue, size: 40),
-                        onPressed: () {
-                          _launchURL('https://x.com/Afrolook2?t=_Sv_PF1PnaE58CnlqiSKuQ&s=09');
-                        },
-                      ),
-                      Text('Twitter/X', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-
-              // Section pour ceux qui ont des difficultés
-              Container(
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Vous avez des difficultés?',
-                      style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Rejoignez notre communauté sur Facebook pour obtenir de l\'aide:',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                    SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      icon: Icon(FontAwesome.facebook, color: Colors.white),
-                      label: Text('Rejoindre le groupe Facebook'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.blue[800],
-                      ),
-                      onPressed: () {
-                        _launchURL('https://facebook.com/groups/28745647531687196/');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 20),
+              Text('Besoin d\'aide ?',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.textPrimary)),
+              const SizedBox(height: 4),
+              Text('Écris-nous, notre équipe te répond rapidement.',
+                  style: TextStyle(fontSize: 13, color: c.textSecondary)),
+              const SizedBox(height: 16),
+              _whatsappCard(context, c),
+              _section(c, 'Par e-mail'),
+              _group(c, [
+                _row(context, c,
+                    icon: Icons.support_agent_rounded,
+                    color: c.primary,
+                    title: 'Support général',
+                    subtitle: 'officiel.afrolook@gmail.com',
+                    onTap: () => _email(context, 'officiel.afrolook@gmail.com', "Demande d'aide")),
+                _row(context, c,
+                    icon: Icons.campaign_rounded,
+                    color: c.warning,
+                    title: 'Publicité',
+                    subtitle: 'officiel.afrolook.annonce@gmail.com',
+                    onTap: () => _email(context, 'officiel.afrolook.annonce@gmail.com', 'Publicité Afrolook')),
+                _row(context, c,
+                    icon: Icons.handshake_rounded,
+                    color: c.info,
+                    title: 'Investissements',
+                    subtitle: 'officiel.afrolook.investissement@gmail.com',
+                    onTap: () => _email(context, 'officiel.afrolook.investissement@gmail.com', 'Investissement Afrolook')),
+              ]),
+              _section(c, 'Suis-nous'),
+              _group(c, [
+                _row(context, c,
+                    icon: FontAwesome.whatsapp,
+                    color: _whatsappGreen,
+                    title: 'Canal WhatsApp',
+                    subtitle: 'Les dernières actualités',
+                    onTap: () => _open(context, 'https://whatsapp.com/channel/0029VaxfuwYISTkF3o42e60V')),
+                _row(context, c,
+                    icon: FontAwesome.facebook_square,
+                    color: _facebookBlue,
+                    title: 'Page Facebook',
+                    subtitle: 'Écris-nous en message privé',
+                    onTap: () => _open(context, 'https://www.facebook.com/profile.php?id=61554481360821')),
+                _row(context, c,
+                    icon: FontAwesome.users,
+                    color: _facebookBlue,
+                    title: 'Groupe Facebook',
+                    subtitle: "Entraide entre membres",
+                    onTap: () => _open(context, 'https://facebook.com/groups/28745647531687196/')),
+                _row(context, c,
+                    icon: FontAwesome.youtube_play,
+                    color: _youtubeRed,
+                    title: 'YouTube',
+                    subtitle: 'Tutoriels et guides vidéo',
+                    onTap: () => _open(context, 'https://youtube.com/@afrolookstudioofficiel?si=3wWf802tZbGVEeC_')),
+                _row(context, c,
+                    icon: FontAwesome.twitter,
+                    color: c.textPrimary,
+                    title: 'X (Twitter)',
+                    subtitle: '@Afrolook2',
+                    onTap: () => _open(context, 'https://x.com/Afrolook2?t=_Sv_PF1PnaE58CnlqiSKuQ&s=09')),
+              ]),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _whatsappCard(BuildContext context, AppColors c) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: _whatsappGreen.withOpacity(c.isDark ? 0.14 : 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _whatsappGreen.withOpacity(0.35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(color: _whatsappGreen, shape: BoxShape.circle),
+            child: const Icon(FontAwesome.whatsapp, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Support WhatsApp',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: c.textPrimary)),
+                const SizedBox(height: 2),
+                Text(_whatsappDisplay,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: c.textSecondary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    )),
+              ],
+            ),
+          ),
+          FilledButton(
+            onPressed: () => _open(context, 'https://wa.me/$_whatsappNumber'),
+            style: FilledButton.styleFrom(
+              backgroundColor: _whatsappGreen,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              minimumSize: const Size(0, 38),
+              shape: const StadiumBorder(),
+            ),
+            child: const Text('Écrire', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _section(AppColors c, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 22, 4, 8),
+      child: Text(title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            color: c.textSecondary,
+          )),
+    );
+  }
+
+  Widget _group(AppColors c, List<Widget> rows) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) Divider(height: 1, thickness: 0.5, indent: 58, color: c.border),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _row(
+    BuildContext context,
+    AppColors c, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withOpacity(c.isDark ? 0.18 : 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, color: color, size: 17),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary)),
+                  const SizedBox(height: 1),
+                  Text(subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.textSecondary, size: 20),
+          ],
         ),
       ),
     );

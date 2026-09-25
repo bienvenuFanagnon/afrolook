@@ -3,6 +3,7 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
 import '../../../constant/logo.dart';
@@ -20,7 +21,7 @@ import '../../canaux/listCanauxByUser.dart';
 import '../../contenuPayant/profileScreenContent.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
-import '../remuneration_home_page.dart';
+import '../monetisation.dart';
 import '../userAbonnementPage.dart';
 import '../userPubs/user_my_advertisements_page.dart';
 import '../userPubs/user_profile_boost_page.dart';
@@ -435,11 +436,11 @@ class _UserProfilState extends State<UserProfil> {
                           },
                         ),
                         _buildMenuButton(
-                          icon: Icons.monetization_on,
-                          label: l10n.profileMenuRemunerationSpace,
+                          icon: Icons.account_balance_wallet_rounded,
+                          label: 'Mon portefeuille',
                           color: Colors.green,
                           onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => RemunerationHomePage(user: authProvider.loginUserData!,)));
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage()));
                           },
                         ),
                       ],
@@ -501,7 +502,7 @@ class _UserProfilState extends State<UserProfil> {
                             ));
                           },
                         ),
-                        if (authProvider.loginUserData.isCreatorProfileEnabled == true)
+                        if (authProvider.loginUserData.isCreatorProfileEnabled == true && !kIsAppleStore)
                           _buildMenuButton(
                             icon: Icons.storefront_rounded,
                             label: 'Mon Business',

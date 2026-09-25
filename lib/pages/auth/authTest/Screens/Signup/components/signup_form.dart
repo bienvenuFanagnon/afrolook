@@ -3,6 +3,7 @@ import 'package:afrotok/layout/branding_carousel_panel.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/theme/theme_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/pages/auth/eula_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -84,6 +85,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void initState() {
     super.initState();
+    // Règle App Store 1.2 : conditions acceptées avant toute connexion ou inscription.
+    WidgetsBinding.instance.addPostFrameCallback((_) => EulaGate.ensureAccepted(context));
     authProvider.initializeData();
     is_open = false;
   }

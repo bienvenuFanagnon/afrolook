@@ -15,6 +15,7 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
 
 import 'package:flutter/widgets.dart';
 
@@ -513,7 +514,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
     }
   }
   Future<void> _boostProduct() async {
-    if (article == null) return;
+    if (article == null || kIsAppleStore) return;
 
     // Vérifications en temps réel avec Firestore
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id!).get();
@@ -1031,6 +1032,8 @@ class _ProduitDetailState extends State<ProduitDetail> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     if (!isOwner && !isAdmin) return SizedBox();
+    // Boost payé en FCFA : masqué sur iPhone (règle App Store 3.1.1)
+    if (kIsAppleStore) return const SizedBox.shrink();
 
     final isBoosted = article?.estBoosted == true;
     final boostEndDate = article?.boostEndDate != null
@@ -1715,7 +1718,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
           ),
 
           // Modal de boost - DOIT ÊTRE DANS LE STACK
-          if (showBoostModal)
+          if (showBoostModal && !kIsAppleStore)
             Container(
               color: Colors.black54, // Fond semi-transparent
               child: _buildBoostModal(),

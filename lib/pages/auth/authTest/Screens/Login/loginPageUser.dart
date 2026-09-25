@@ -70,6 +70,8 @@ class _LoginPageUserState extends State<LoginPageUser> {
   @override
   void initState() {
     super.initState();
+    // Règle App Store 1.2 : conditions acceptées avant toute connexion ou inscription.
+    WidgetsBinding.instance.addPostFrameCallback((_) => EulaGate.ensureAccepted(context));
     if (kIsWeb) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showInstallModal(context);

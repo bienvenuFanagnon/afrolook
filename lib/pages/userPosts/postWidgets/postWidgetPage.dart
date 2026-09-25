@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -305,9 +306,14 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 // Nettoyer les ressources audio quand le widget est détruit
   // 🔥 S'assurer d'avoir authProvider et appDefaultData
   late AppDefaultData appDefaultData;
+  void _onBlockListChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    BlockService.instance.addListener(_onBlockListChanged);
     _voteAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -642,6 +648,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   }
   @override
   void dispose() {
+    BlockService.instance.removeListener(_onBlockListChanged);
     _voteAnimController.dispose();
     _quickCommentController.dispose();
     _previewTimer?.cancel();
@@ -971,6 +978,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   @override
   Widget build(BuildContext context) {
+    if (BlockService.instance.isBlocked(widget.post.user_id)) return const SizedBox.shrink();
     super.build(context);
     final colors = AppColors.of(context);
     final h = MediaQuery.of(context).size.height;
@@ -3316,18 +3324,46 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 "Signaler",
                 colors.textPrimary,
                     () async {
-                  post.status = PostStatus.SIGNALER.name;
-                  final value = await postProvider.updateVuePost(post, context);
                   Navigator.pop(context);
+                  // Même Cloud Function que les pages de détail : le signalement entre dans la
+                  // file de modération et les admins sont prévenus (règle App Store 1.2).
+                  bool value;
+                  try {
+                    await FirebaseFunctions.instanceFor(region: 'europe-west1')
+                        .httpsCallable('reportPost')
+                        .call({'postId': post.id, 'isAdminReport': false, 'reportType': 'standard'});
+                    value = true;
+                  } on FirebaseFunctionsException catch (e) {
+                    value = e.code == 'already-exists';
+                  } catch (_) {
+                    value = false;
+                  }
+                  if (!mounted) return;
 
                   final snackBar = SnackBar(
                     content: Text(
-                      value ? 'Post signalé !' : 'Échec du signalement !',
+                      value ? 'Post signalé, merci ! Notre équipe va l\'examiner.' : 'Échec du signalement, réessaie.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: value ? AppColors.of(context).primary : AppColors.of(context).danger),
                     ),
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+              ),
+
+            if (post.user_id != null && post.user_id != authProvider.loginUserData.id)
+              _buildMenuOption(
+                Icons.block,
+                "Bloquer cet utilisateur",
+                colors.danger,
+                () {
+                  Navigator.pop(context);
+                  confirmAndBlockUser(
+                    context,
+                    userId: post.user_id!,
+                    pseudo: post.user?.pseudo,
+                    postId: post.id,
+                  );
                 },
               ),
 

@@ -3,6 +3,8 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 
 import 'package:provider/provider.dart';
 
@@ -204,7 +206,7 @@ class _CanalListPageState extends State<CanalListPage> {
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
     final currentBalance = userDoc.data()?['votre_solde_principal'] ?? 0;
 
-    if (currentBalance < subscriptionPrice) {
+    if (!kIsAppleStore && currentBalance < subscriptionPrice) {
       _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
       return;
     }
@@ -213,11 +215,11 @@ class _CanalListPageState extends State<CanalListPage> {
     String confirmationMessage = '';
     if (isAlreadySubscribed && _requirePaymentForExistingSubscribers) {
       confirmationMessage = 'Ce canal est devenu privé. Pour continuer à y accéder, '
-          'vous devez payer l\'abonnement de ${subscriptionPrice}FCFA.\n\n'
+          'vous devez payer l\'abonnement de ${kIsAppleStore ? "${CoinCheckout.coinsFor(subscriptionPrice.toDouble())} pièces" : "${subscriptionPrice}FCFA"}.\n\n'
           // '50% ira au créateur et 50% à l\'application.\n\n'
           'Confirmez-vous le paiement?';
     } else {
-      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${subscriptionPrice}FCFA.\n\n'
+      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${kIsAppleStore ? "${CoinCheckout.coinsFor(subscriptionPrice.toDouble())} pièces" : "${subscriptionPrice}FCFA"}.\n\n'
           // '50% ira au créateur et 50% à l\'application.\n\n'
           'Confirmez-vous l\'abonnement?';
     }
@@ -264,11 +266,19 @@ class _CanalListPageState extends State<CanalListPage> {
     });
 
     try {
-      // Déduire le montant du solde utilisateur
-      final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
-
-      if (!deductionSuccess) {
-        throw Exception('Échec de la déduction du solde');
+      // Déduire le montant (en pièces sur iPhone : règle App Store 3.1.1)
+      if (kIsAppleStore) {
+        final paid = await CoinCheckout.pay(context,
+            kind: 'canal', refId: canal.id, priceFcfa: price, label: 'Abonnement au canal');
+        if (!paid) {
+          if (mounted) setState(() => _isLoading = false);
+          return;
+        }
+      } else {
+        final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
+        if (!deductionSuccess) {
+          throw Exception('Échec de la déduction du solde');
+        }
       }
 
       // // Diviser le montant (50% créateur, 50% application)
@@ -702,7 +712,7 @@ class _CanalListPageState extends State<CanalListPage> {
                                 Icon(Icons.attach_money, color: _colors.accent, size: 14),
                                 SizedBox(width: 4),
                                 Text(
-                                  '${canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'} FCFA',
+                                  kIsAppleStore ? '${CoinCheckout.coinsFor(canal.subscriptionPrice ?? 0)} pièces' : '${canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'} FCFA',
                                   style: TextStyle(color: _colors.accent, fontSize: 12),
                                 ),
                               ],

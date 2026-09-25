@@ -40,6 +40,9 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/coin_checkout.dart';
+import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/block_service.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/services.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
@@ -1238,14 +1241,14 @@ class _DetailsPostState extends State<DetailsPost>
                                   color: sel ? _colors.primary : _colors.textPrimary,
                                   fontWeight: sel ? FontWeight.bold : FontWeight.normal,
                                   fontSize: 13)),
-                          Text('${priceMap[d.weeks] ?? d.price} Afrcoins',
+                          Text(kIsAppleStore ? CoinCheckout.priceLabel(priceMap[d.weeks] ?? d.price) : '${priceMap[d.weeks] ?? d.price} Afrcoins',
                               style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
                         ]),
                       ),
                     );
                   }).toList(),
                 ),
-                if (selectedWeeks != null) ...[
+                if (selectedWeeks != null && !kIsAppleStore) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -1291,7 +1294,13 @@ class _DetailsPostState extends State<DetailsPost>
     final balance = authProvider.loginUserData.votre_solde_principal ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    if (!isAdmin && balance < price) {
+    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+    final payWithCoins = kIsAppleStore && !isAdmin;
+    if (payWithCoins) {
+      final paid = await CoinCheckout.pay(context,
+          kind: 'ad_renew', priceFcfa: price.toDouble(), label: 'Renouvellement de publicité', weeks: weeks);
+      if (!paid || !mounted) return;
+    } else if (!isAdmin && balance < price) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Solde insuffisant ($balance Afrcoins). Vous avez besoin de $price Afrcoins.'),
@@ -1306,7 +1315,7 @@ class _DetailsPostState extends State<DetailsPost>
           ? now + weeks * 7 * 24 * 60 * 60 * 1000000
           : ad.endDate! + weeks * 7 * 24 * 60 * 60 * 1000000;
 
-      if (!isAdmin) {
+      if (!isAdmin && !payWithCoins) {
         await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
           'votre_solde_principal': FieldValue.increment(-price.toDouble()),
         });
@@ -4524,6 +4533,22 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     () => _reportPostWithScore(post, isAdmin: false, reportType: 'wrong_category'),
                   ),
               ],
+              if (post.user_id != null)
+                _buildMenuOption(
+                  Icons.block,
+                  "Bloquer cet utilisateur",
+                  _colors.danger,
+                  () async {
+                    Navigator.pop(context);
+                    final blocked = await confirmAndBlockUser(
+                      context,
+                      userId: post.user_id!,
+                      pseudo: post.user?.pseudo,
+                      postId: post.id,
+                    );
+                    if (blocked && mounted) Navigator.pop(context);
+                  },
+                ),
             ],
             if (post.user!.id == authProvider.loginUserData.id ||
                 authProvider.loginUserData.role == UserRole.ADM.name)
