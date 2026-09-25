@@ -1241,7 +1241,7 @@ class _DetailsPostState extends State<DetailsPost>
                                   color: sel ? _colors.primary : _colors.textPrimary,
                                   fontWeight: sel ? FontWeight.bold : FontWeight.normal,
                                   fontSize: 13)),
-                          Text(kIsAppleStore ? CoinCheckout.priceLabel(priceMap[d.weeks] ?? d.price) : '${priceMap[d.weeks] ?? d.price} Afrcoins',
+                          Text(kIsAppleStore ? CoinCheckout.priceLabel(priceMap[d.weeks] ?? d.price) : '${priceMap[d.weeks] ?? d.price} FCFA',
                               style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
                         ]),
                       ),
@@ -1257,7 +1257,7 @@ class _DetailsPostState extends State<DetailsPost>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Solde actuel : ${authProvider.loginUserData.votre_solde_principal?.toStringAsFixed(0) ?? 0} Afrcoins',
+                      'Solde actuel : ${authProvider.loginUserData.votre_solde_depot?.toStringAsFixed(0) ?? 0} FCFA (dépôt)',
                       style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ),
@@ -1291,7 +1291,7 @@ class _DetailsPostState extends State<DetailsPost>
     final durations = await AdConfigService.getDurations();
     final priceMap = AdConfigService.toMap(durations);
     final price = priceMap[weeks] ?? 0;
-    final balance = authProvider.loginUserData.votre_solde_principal ?? 0;
+    final balance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
@@ -1303,7 +1303,7 @@ class _DetailsPostState extends State<DetailsPost>
     } else if (!isAdmin && balance < price) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Solde insuffisant ($balance Afrcoins). Vous avez besoin de $price Afrcoins.'),
+        content: Text('Dépôt FCFA insuffisant ($balance FCFA). Il faut $price FCFA.'),
         backgroundColor: _colors.danger,
       ));
       return;
@@ -1317,9 +1317,9 @@ class _DetailsPostState extends State<DetailsPost>
 
       if (!isAdmin && !payWithCoins) {
         await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
-          'votre_solde_principal': FieldValue.increment(-price.toDouble()),
+          'votre_solde_depot': FieldValue.increment(-price.toDouble()),
         });
-        authProvider.loginUserData.votre_solde_principal = balance - price;
+        authProvider.loginUserData.votre_solde_depot = balance - price;
         // Log transaction
         final tx = TransactionSolde()
           ..id = firestore.collection('TransactionSoldes').doc().id
@@ -1328,7 +1328,7 @@ class _DetailsPostState extends State<DetailsPost>
           ..statut = StatutTransaction.VALIDER.name
           ..description = 'Renouvellement publicité ${AdConfigService.labelFor(weeks, durations)}'
           ..montant = price.toDouble()
-          ..methode_paiement = 'solde'
+          ..methode_paiement = 'solde_depot'
           ..createdAt = DateTime.now().millisecondsSinceEpoch
           ..updatedAt = DateTime.now().millisecondsSinceEpoch;
         await firestore.collection('TransactionSoldes').doc(tx.id).set(tx.toJson());

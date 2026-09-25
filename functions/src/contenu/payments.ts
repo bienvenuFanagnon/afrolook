@@ -73,7 +73,7 @@ export const secureBoost = onCall(
           totalGiftCoinsSpent: FieldValue.increment(coins),
         });
       } else if (!isAdmin && price > 0) {
-        const balance = ((userDoc.data()?.votre_solde_principal ?? 0) as number);
+        const balance = ((userDoc.data()?.votre_solde_depot ?? 0) as number);
         if (balance < price) {
           throw new HttpsError(
             "resource-exhausted",
@@ -81,7 +81,7 @@ export const secureBoost = onCall(
           );
         }
         tx.update(userRef, {
-          votre_solde_principal: FieldValue.increment(-price),
+          votre_solde_depot: FieldValue.increment(-price),
         });
       }
 

@@ -265,7 +265,7 @@ class _BoostModalState extends State<BoostModal> {
                         ? 'Gratuit'
                         : kIsAppleStore
                             ? '−${CoinCheckout.priceLabel(prices[_selectedDays] ?? 0)}'
-                            : '−${prices[_selectedDays] ?? 0} F de votre solde',
+                            : '−${prices[_selectedDays] ?? 0} F de votre dépôt FCFA',
                     style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,

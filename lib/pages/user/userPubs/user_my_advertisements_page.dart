@@ -144,7 +144,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
   Future<void> _renewAd(Advertisement ad, int weeks) async {
     final int price = _durationPrices[weeks]!;
     final int daysToAdd = weeks * 7;
-    final currentBalance = authProvider.loginUserData.votre_solde_principal ?? 0;
+    final currentBalance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
@@ -163,10 +163,10 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
         await FirebaseFirestore.instance
             .collection('Users')
             .doc(authProvider.loginUserData.id)
-            .update({'votre_solde_principal': FieldValue.increment(-price)});
+            .update({'votre_solde_depot': FieldValue.increment(-price)});
         setState(() {
-          authProvider.loginUserData.votre_solde_principal =
-              (authProvider.loginUserData.votre_solde_principal ?? 0) - price;
+          authProvider.loginUserData.votre_solde_depot =
+              (authProvider.loginUserData.votre_solde_depot ?? 0) - price;
         });
         await _createTransaction(
             price, 'Renouvellement publicité ${ad.id} (${_getDurationLabel(weeks)})');
@@ -229,7 +229,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
         title: Text('Solde insuffisant',
             style: TextStyle(color: _colors.warning, fontWeight: FontWeight.bold)),
         content: Text(
-          'Vous n\'avez pas assez de crédits pour ce renouvellement.',
+          'Ton dépôt FCFA est insuffisant pour ce renouvellement.',
           style: TextStyle(color: _colors.textSecondary),
         ),
         actions: [
