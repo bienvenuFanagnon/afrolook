@@ -311,6 +311,38 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     }
   }
 
+  /// Crée le compte PUIS envoie la photo : les règles Storage exigent un utilisateur
+  /// connecté (request.auth != null). Si l'upload échoue, le compte tout juste créé
+  /// est supprimé pour que l'utilisateur puisse réessayer avec le même e-mail.
+  Future<UserCredential> _createAccountWithPhoto(String email, String password) async {
+    final userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+    try {
+      authProvider.registerUser.imageUrl = await _uploadImage();
+      return userCredential;
+    } catch (e) {
+      await _rollbackAccount(userCredential);
+      rethrow;
+    }
+  }
+
+  /// Annule une inscription inachevée : supprime la photo envoyée (si besoin) puis le compte.
+  Future<void> _rollbackAccount(UserCredential userCredential) async {
+    final imageUrl = authProvider.registerUser.imageUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+      } catch (e) {
+        printVm("Suppression de la photo impossible : $e");
+      }
+      authProvider.registerUser.imageUrl = null;
+    }
+    try {
+      await userCredential.user?.delete();
+    } catch (e) {
+      printVm("Suppression du compte inachevé impossible : $e");
+    }
+  }
+
   // Méthode pour uploader l'image (compatible web et mobile)
   Future<String> _uploadImage() async {
     try {
@@ -339,7 +371,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         );
       } else {
         // Pour mobile : upload avec le fichier
-        uploadTask = storageReference.putFile(_imageFile!);
+        uploadTask = storageReference.putFile(
+          _imageFile!,
+          SettableMetadata(contentType: 'image/jpeg'),
+        );
       }
 
       TaskSnapshot snapshot = await uploadTask;
@@ -412,10 +447,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         ..updatedAt = DateTime.now().millisecondsSinceEpoch
         ..createdAt = DateTime.now().millisecondsSinceEpoch;
 
-      // Upload de l'image
-      String imageUrl = await _uploadImage();
-      authProvider.registerUser.imageUrl = imageUrl;
-
       // Configuration des autres données
       authProvider.registerUser.adresse = adresseController.text;
       authProvider.registerUser.apropos = aproposController.text;
@@ -428,15 +459,12 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
       // Gestion du parrainage
       if (authProvider.registerUser.codeParrain!.isNotEmpty) {
+        // Création du compte + photo AVANT de chercher le parrain : les règles Firestore
+        // n'autorisent la lecture de Users qu'à un utilisateur connecté.
+        final UserCredential userCredential = await _createAccountWithPhoto(email, password);
         final UserData? parrain = await verifierParrain(authProvider.registerUser.codeParrain!);
 
         if (parrain != null) {
-          // Création du compte avec parrainage
-          final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
-
           id = userCredential.user!.uid;
 
           // Configuration des données
@@ -455,7 +483,10 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           _showSuccessAndNavigate();
 
         } else {
-          // Code de parrainage invalide
+          // Code de parrainage invalide : on annule le compte tout juste créé
+          // pour que l'utilisateur puisse corriger le code et réessayer.
+          await _rollbackAccount(userCredential);
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: _colors.danger,
@@ -466,11 +497,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           return;
         }
       } else {
-        // Création du compte sans parrainage
-        final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+        // Création du compte sans parrainage, puis upload de la photo
+        final UserCredential userCredential = await _createAccountWithPhoto(email, password);
 
         id = userCredential.user!.uid;
 
