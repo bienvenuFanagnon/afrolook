@@ -1,4 +1,5 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();
@@ -31,6 +32,16 @@ function getMultiplierForScore(
   return { multiplier: 0.20, label: "Débutant" };
 }
 
+/** Barème unique (CRON + encaissement manuel) : /config/monetization, sinon valeurs par défaut. */
+async function loadMonetizationConfig(): Promise<{ baseViewRate: number; scoreTiers: ScoreTier[] }> {
+  const configSnap = await db.collection("config").doc("monetization").get();
+  const configData = configSnap.data() ?? {};
+  return {
+    baseViewRate: configData.baseViewRate ?? DEFAULT_BASE_RATE,
+    scoreTiers: (configData.scoreTiers as ScoreTier[] | undefined) ?? DEFAULT_TIERS,
+  };
+}
+
 /**
  * CRON quotidien — crédite les gains de vues dans votre_solde_principal.
  *
@@ -46,11 +57,7 @@ export const computeViewEarnings = onSchedule(
   { schedule: "every 24 hours", region: "europe-west1" },
   async () => {
     // 1. Lire la config de monétisation
-    const configSnap = await db.collection("config").doc("monetization").get();
-    const configData = configSnap.data() ?? {};
-    const baseViewRate: number = configData.baseViewRate ?? DEFAULT_BASE_RATE;
-    const scoreTiers: ScoreTier[] =
-      (configData.scoreTiers as ScoreTier[] | undefined) ?? DEFAULT_TIERS;
+    const { baseViewRate, scoreTiers } = await loadMonetizationConfig();
 
     // 2. Récupérer tous les créateurs qui ont des vues non créditées
     const usersSnap = await db
@@ -92,13 +99,12 @@ export const computeViewEarnings = onSchedule(
         totalViewsEarningsCredited: totalViews,
       });
 
-      // Transaction dans le sous-collection de l'utilisateur
-      const txRef = db
-        .collection("Users")
-        .doc(doc.id)
-        .collection("transactionsSolde")
-        .doc();
+      // Transaction visible dans l'historique de l'utilisateur (TransactionSoldes)
+      const txRef = db.collection("TransactionSoldes").doc();
       batch.set(txRef, {
+        id: txRef.id,
+        user_id: doc.id,
+        methode_paiement: "vues_posts",
         type: "GAIN",
         montant: earnings,
         description: `Vues posts · ${pendingViews} vue${pendingViews > 1 ? "s" : ""} × ${ratePerView.toFixed(2)} FCFA (tier ${label})`,
@@ -116,5 +122,73 @@ export const computeViewEarnings = onSchedule(
 
     await flushBatch();
     console.log(`[computeViewEarnings] ${credited} créateurs crédités`);
+  }
+);
+
+const MIN_CASH_FCFA = 1000;
+const CASH_COOLDOWN_MS = 60 * 1000;
+
+/**
+ * cashViewEarnings — encaissement manuel des gains de vues (page « Mes gains »).
+ *
+ * Utilise le MÊME compteur que le CRON (totalViewsEarningsCredited) : une vue payée par
+ * l'un ne peut plus être payée par l'autre. Avant ce correctif, l'encaissement manuel
+ * calculait totalPostUniqueViews × taux − postViewsTotalCashed et ignorait les vues déjà
+ * créditées par le CRON (double paiement).
+ */
+export const cashViewEarnings = onCall(
+  { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Authentification requise.");
+    const uid = request.auth.uid;
+    const amount = Number((request.data as { amount?: unknown })?.amount);
+    if (!Number.isFinite(amount) || amount < MIN_CASH_FCFA) {
+      throw new HttpsError("invalid-argument", `Montant minimum : ${MIN_CASH_FCFA} FCFA.`);
+    }
+
+    const { baseViewRate, scoreTiers } = await loadMonetizationConfig();
+    const userRef = db.collection("Users").doc(uid);
+
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(userRef);
+      if (!snap.exists) throw new HttpsError("not-found", "Compte introuvable.");
+      const data = snap.data()!;
+      const now = Date.now();
+      if (now - (data.lastViewCashAt ?? 0) < CASH_COOLDOWN_MS) {
+        throw new HttpsError("resource-exhausted", "Encaissement déjà en cours, réessaie dans une minute.");
+      }
+
+      const totalViews: number = data.totalPostUniqueViews ?? 0;
+      const credited: number = data.totalViewsEarningsCredited ?? 0;
+      const pendingViews = Math.max(0, totalViews - credited);
+      const { multiplier } = getMultiplierForScore(data.creatorScore ?? 0, scoreTiers);
+      const rate = baseViewRate * multiplier;
+      const available = Math.floor(pendingViews * rate * 100) / 100;
+      if (rate <= 0 || amount > available) {
+        throw new HttpsError("failed-precondition", "Montant supérieur aux gains disponibles.", { available });
+      }
+
+      const viewsUsed = Math.min(pendingViews, Math.ceil(amount / rate));
+      tx.update(userRef, {
+        votre_solde_principal: admin.firestore.FieldValue.increment(amount),
+        votre_solde: admin.firestore.FieldValue.increment(amount),
+        postViewsTotalCashed: admin.firestore.FieldValue.increment(amount),
+        totalViewsEarningsCredited: admin.firestore.FieldValue.increment(viewsUsed),
+        lastViewCashAt: now,
+      });
+      const txRef = db.collection("TransactionSoldes").doc();
+      tx.set(txRef, {
+        id: txRef.id,
+        user_id: uid,
+        type: "ENCAISSEMENT_VUES_POST",
+        statut: "VALIDER",
+        montant: amount,
+        description: `Encaissement ${Math.round(amount)} FCFA — ${viewsUsed} vues posts`,
+        methode_paiement: "solde_principal",
+        createdAt: now,
+        updatedAt: now,
+      });
+      return { success: true, amount, viewsUsed };
+    });
   }
 );

@@ -1,6 +1,7 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +10,6 @@ import '../../l10n/app_localizations.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../services/postService/post_view_service.dart';
-import '../../services/remuneration_service.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
@@ -37,6 +37,15 @@ double _fcfaPerView(double creatorScore) {
   return _baseViewRate * (t['multiplier'] as double);
 }
 
+/// Vues pas encore payées. Compteur partagé avec le paiement automatique quotidien
+/// (computeViewEarnings) : une vue n'est payée qu'une seule fois.
+int _pendingViews(UserData user) =>
+    ((user.totalPostUniqueViews ?? 0) - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
+
+/// Gains encaissables (FCFA) — même calcul que la Cloud Function cashViewEarnings.
+double _availableEarnings(UserData user) =>
+    (_pendingViews(user) * _fcfaPerView(user.creatorScore ?? 0) * 100).floorToDouble() / 100;
+
 class MesGainsPage extends StatefulWidget {
   final String userId;
   final bool isAdminView;
@@ -48,7 +57,6 @@ class MesGainsPage extends StatefulWidget {
 
 class _MesGainsPageState extends State<MesGainsPage> {
   final _firestore = FirebaseFirestore.instance;
-  final _remuService = RemunerationService();
   final _amountController = TextEditingController();
 
   bool _isMigrating = false;
@@ -160,50 +168,31 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
   Future<void> _encaisser(UserData user, AppLocalizations t, AppColors colors) async {
     final input = double.tryParse(_amountController.text.trim()) ?? 0;
-    final totalViews = user.totalPostUniqueViews ?? 0;
-    final cashed     = user.postViewsTotalCashed  ?? 0;
-    final rate       = _fcfaPerView(user.creatorScore ?? 0);
-    final available  = ((totalViews * rate) - cashed).clamp(0.0, double.infinity);
+    final available = _availableEarnings(user);
 
     if (input < _minEncaissement) { _snack(t.gainsErrMin, colors.danger); return; }
     if (input > available)        { _snack(t.gainsErrMax, colors.danger); return; }
 
-    final enCours = await _remuService.isEncaissementEnCours(widget.userId);
-    if (enCours) { _snack(t.gainsErrCooldown, colors.danger); return; }
-
     setState(() => _isEncashing = true);
     try {
-      await _firestore.runTransaction((tx) async {
-        final ref  = _firestore.collection('Users').doc(widget.userId);
-        final snap = await tx.get(ref);
-        final views = (snap.data()?['totalPostUniqueViews'] as num?)?.toInt() ?? 0;
-        final cur   = (snap.data()?['postViewsTotalCashed'] as num?)?.toDouble() ?? 0;
-        final score = (snap.data()?['creatorScore'] as num?)?.toDouble() ?? 0;
-        final curRate = _fcfaPerView(score);
-        final curAvailable = ((views * curRate) - cur).clamp(0.0, double.infinity);
-        if (input > curAvailable) throw Exception('solde_insuffisant');
-        tx.update(ref, {
-          'postViewsTotalCashed':  FieldValue.increment(input),
-          'votre_solde_principal': FieldValue.increment(input),
-          'votre_solde':           FieldValue.increment(input),
-        });
-        tx.set(_firestore.collection('TransactionSoldes').doc(), {
-          'user_id': widget.userId,
-          'type': 'ENCAISSEMENT_VUES_POST',
-          'statut': 'VALIDER',
-          'montant': input,
-          'description': 'Encaissement ${input.toInt()} FCFA — vues posts',
-          'methode_paiement': 'solde_principal',
-          'createdAt': DateTime.now().millisecondsSinceEpoch,
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        });
-      });
+      // Calcul et crédit côté serveur (même compteur que le paiement automatique)
+      await FirebaseFunctions.instanceFor(region: 'europe-west1')
+          .httpsCallable('cashViewEarnings')
+          .call({'amount': input});
       _amountController.clear();
       await Provider.of<UserAuthProvider>(context, listen: false).refreshUserData();
       await _loadHistory();
       _snack(t.gainsSuccess(input.toInt()), colors.primary);
-    } on Exception catch (e) {
-      _snack(e.toString().contains('solde_insuffisant') ? t.gainsErrInsuff : t.gainsErrGeneral, colors.danger);
+    } on FirebaseFunctionsException catch (e) {
+      final msg = switch (e.code) {
+        'failed-precondition' => t.gainsErrInsuff,
+        'resource-exhausted' => t.gainsErrCooldown,
+        'invalid-argument' => t.gainsErrMin,
+        _ => t.gainsErrGeneral,
+      };
+      _snack(msg, colors.danger);
+    } catch (_) {
+      _snack(t.gainsErrGeneral, colors.danger);
     } finally {
       if (mounted) setState(() => _isEncashing = false);
     }
@@ -481,8 +470,8 @@ class _MesGainsPageState extends State<MesGainsPage> {
     final tierLabel  = tier['label'] as String;
     final tierColor  = Color(tier['color'] as int);
     final totalViews = user.totalPostUniqueViews ?? 0;
-    final cashed     = user.postViewsTotalCashed  ?? 0;
-    final available  = ((totalViews * rate) - cashed).clamp(0.0, double.infinity);
+    final available  = _availableEarnings(user);
+    final cashed     = user.postViewsTotalCashed ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -534,7 +523,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, tierColor, colors,
-                subtitle: '${rate > 0 ? (available / rate).toInt() : 0} vues dispo')),
+                subtitle: '${_pendingViews(user)} vues dispo')),
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
           ]),
@@ -573,10 +562,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
   // ── Carte encaissement ────────────────────────────────────
   Widget _encaissCard(UserData user, AppColors colors, AppLocalizations t) {
-    final rate       = _fcfaPerView(user.creatorScore ?? 0);
-    final totalViews = user.totalPostUniqueViews ?? 0;
-    final cashed     = user.postViewsTotalCashed  ?? 0;
-    final available  = ((totalViews * rate) - cashed).clamp(0.0, double.infinity);
+    final available  = _availableEarnings(user);
     final canEncash = available >= _minEncaissement;
 
     return Container(
