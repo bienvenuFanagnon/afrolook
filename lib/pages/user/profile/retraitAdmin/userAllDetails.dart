@@ -3,6 +3,7 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:flutter/material.dart';
+import '../../../admin/admin_palette.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -16,17 +17,17 @@ import '../../mes_gains_post_page.dart';
 import '../../userTransactionListe.dart';
 
 // ── Palette admin ────────────────────────────────────────────────────────────
-const _bg      = Color(0xFF0D0D14);
-const _surface = Color(0xFF16161F);
-const _card    = Color(0xFF1C1C27);
-const _border  = Color(0xFF2A2A3A);
-const _gold    = Color(0xFFF0B429);
-const _green   = Color(0xFF34C759);
-const _amber   = Color(0xFFFF9F0A);
-const _blue    = Color(0xFF3B82F6);
-const _red     = Color(0xFFFF453A);
-const _textP   = Color(0xFFE8E8F0);
-const _textS   = Color(0xFF8891A6);
+Color get _bg      => AdminPalette.bg;
+Color get _surface => AdminPalette.surface;
+Color get _card    => AdminPalette.card;
+Color get _border  => AdminPalette.border;
+Color get _gold    => AdminPalette.gold;
+Color get _green   => AdminPalette.green;
+Color get _amber   => AdminPalette.amber;
+Color get _blue    => AdminPalette.blue;
+Color get _red     => AdminPalette.red;
+Color get _textP   => AdminPalette.textP;
+Color get _textS   => AdminPalette.textS;
 
 class UserManagementPage extends StatefulWidget {
   final String userId;
@@ -79,18 +80,18 @@ class _UserManagementPageState extends State<UserManagementPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           newValue ? 'Certifier ce compte ?' : 'Retirer la certification ?',
-          style: const TextStyle(color: _textP, fontWeight: FontWeight.w700),
+          style: TextStyle(color: _textP, fontWeight: FontWeight.w700),
         ),
         content: Text(
           newValue
               ? 'Le compte @$pseudo sera certifié. Un badge ✓ apparaîtra sur son profil et une notification lui sera envoyée.'
               : 'Le badge de vérification du compte @$pseudo sera retiré. Une notification lui sera envoyée.',
-          style: const TextStyle(color: _textS, height: 1.5, fontSize: 14),
+          style: TextStyle(color: _textS, height: 1.5, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler', style: TextStyle(color: _textS)),
+            child: Text('Annuler', style: TextStyle(color: _textS)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -221,32 +222,62 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   // ── Opérations pièces ─────────────────────────────────────────────────────
 
-  Future<void> _updateCoinsBalance(int amount, String raison) async {
+  /// Crédit / débit de pièces par l'admin.
+  /// [depot] = true : Pièces de dépôt (non convertibles, même calcul que coin_locks.ts) ;
+  /// false : Pièces gagnées (convertibles en argent).
+  Future<void> _updateCoinsBalance(int amount, String raison, {required bool depot}) async {
     if (_userData == null) return;
     final adminId = Provider.of<UserAuthProvider>(context, listen: false).userId;
+    final userRef = _firestore.collection('Users').doc(widget.userId);
     setState(() => _isUpdating = true);
     try {
-      await _firestore.collection('Users').doc(widget.userId).update({
-        'giftCoinsBalance': FieldValue.increment(amount),
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      });
-      await _firestore.collection('TransactionSoldes').add({
-        'user_id': _userData!.id,
-        'montant': amount.abs(),
-        'type': amount > 0 ? 'GAIN_PIECES' : 'DEBIT_PIECES',
-        'description': amount > 0 ? 'Crédit pièces (admin)' : 'Débit pièces (admin)',
-        'raison': raison,
-        'balance_field': 'giftCoinsBalance',
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'statut': StatutTransaction.VALIDER.name,
-        'processed_by': adminId,
+      final updated = await _firestore.runTransaction<UserData>((tx) async {
+        final snap = await tx.get(userRef);
+        final u = UserData.fromJson(snap.data() ?? {});
+        final balance = u.giftCoinsBalance ?? 0;
+        final locked = u.lockedGiftCoins;
+        final convertible = u.convertibleGiftCoins;
+        if (amount < 0 && -amount > (depot ? locked : convertible)) {
+          throw Exception(depot
+              ? 'Pièces de dépôt insuffisantes (${depot ? locked : convertible})'
+              : 'Pièces gagnées insuffisantes ($convertible)');
+        }
+        // Le verrou est « figé » à la valeur actuelle puis ajusté pour les pièces de dépôt.
+        final newLocked = depot ? (locked + amount).clamp(0, 1 << 40) : locked;
+        tx.update(userRef, {
+          'giftCoinsBalance': FieldValue.increment(amount),
+          'lockedCoins': newLocked,
+          'lockedCoinsSpentBaseline': u.totalGiftCoinsSpent ?? 0,
+          'updated_at': DateTime.now().millisecondsSinceEpoch,
+        });
+        final label = depot ? 'pièces de dépôt' : 'pièces gagnées';
+        tx.set(_firestore.collection('TransactionSoldes').doc(), {
+          'user_id': _userData!.id,
+          'montant': amount.abs(),
+          // DEPENSE + « pieces » : montant lu en pièces dans l'historique (TxAmount)
+          'type': amount > 0 ? 'GAIN_PIECES' : 'DEPENSE',
+          'methode_paiement': amount > 0 ? (depot ? 'admin_depot' : 'admin_gagnees') : 'pieces',
+          'description': amount > 0 ? 'Crédit $label (admin)' : 'Débit $label (admin)',
+          'raison': raison,
+          'balance_field': 'giftCoinsBalance',
+          'createdAt': DateTime.now().millisecondsSinceEpoch,
+          'statut': StatutTransaction.VALIDER.name,
+          'processed_by': adminId,
+        });
+        return u
+          ..giftCoinsBalance = balance + amount
+          ..lockedCoins = newLocked
+          ..lockedCoinsSpentBaseline = u.totalGiftCoinsSpent ?? 0;
       });
       setState(() {
-        _userData!.giftCoinsBalance = (_userData!.giftCoinsBalance ?? 0) + amount;
+        _userData!
+          ..giftCoinsBalance = updated.giftCoinsBalance
+          ..lockedCoins = updated.lockedCoins
+          ..lockedCoinsSpentBaseline = updated.lockedCoinsSpentBaseline;
       });
-      _showSnack('${amount > 0 ? '+' : ''}$amount pièce(s) appliqués !', _gold);
+      _showSnack('${amount > 0 ? '+' : ''}$amount pièce(s) appliquée(s)', _gold);
     } catch (e) {
-      _showSnack('Erreur : $e', _red);
+      _showSnack('Erreur : ${e.toString().replaceFirst('Exception: ', '')}', _red);
     } finally {
       setState(() => _isUpdating = false);
     }
@@ -260,12 +291,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
     final descCtrl        = TextEditingController();
     final isDepotField    = field == 'votre_solde_depot';
     final color           = isDeposit ? _green : _amber;
-    final label           = isDepotField ? 'Dépôt' : 'Gains';
+    final label           = isDepotField ? 'Dépôt FCFA' : 'Gains à retirer';
 
     showDialog(
       context: context,
       builder: (_) => _AdminDialog(
-        title: isDeposit ? 'Dépôt — Solde $label' : 'Retrait — Solde $label',
+        title: isDeposit ? 'Crédit — $label' : 'Débit — $label',
         accentColor: color,
         icon: isDeposit ? Iconsax.add_circle : Iconsax.minus_cirlce,
         currentAmount: isDepotField
@@ -290,7 +321,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 
-  void _showCoinsDialog({required bool isDeposit}) {
+  void _showCoinsDialog({required bool isDeposit, required bool depot}) {
     final montantCtrl = TextEditingController();
     final raisonCtrl  = TextEditingController();
     final descCtrl    = TextEditingController();
@@ -298,15 +329,15 @@ class _UserManagementPageState extends State<UserManagementPage> {
     showDialog(
       context: context,
       builder: (_) => _AdminDialog(
-        title: isDeposit ? 'Crédit pièces' : 'Débit pièces',
-        accentColor: _gold,
+        title: '${isDeposit ? 'Crédit' : 'Débit'} — ${depot ? 'Pièces de dépôt' : 'Pièces gagnées'}',
+        accentColor: depot ? _gold : _green,
         icon: isDeposit ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded,
-        currentAmount: (_userData!.giftCoinsBalance ?? 0).toString(),
+        currentAmount: (depot ? _userData!.lockedGiftCoins : _userData!.convertibleGiftCoins).toString(),
         unit: 'pièces',
         onConfirm: (montant, raison, desc) {
           final val = int.tryParse(montant) ?? 0;
           if (val <= 0) return;
-          _updateCoinsBalance(isDeposit ? val : -val, raison);
+          _updateCoinsBalance(isDeposit ? val : -val, raison, depot: depot);
         },
         montantCtrl: montantCtrl,
         raisonCtrl: raisonCtrl,
@@ -341,8 +372,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    AdminPalette.of(context);
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: _bg,
         body: Center(child: CircularProgressIndicator(color: _gold)),
       );
@@ -351,7 +383,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
       return Scaffold(
         backgroundColor: _bg,
         appBar: AppBar(backgroundColor: _bg, foregroundColor: _textP),
-        body: const Center(
+        body: Center(
           child: Text('Utilisateur introuvable', style: TextStyle(color: _textS)),
         ),
       );
@@ -361,7 +393,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
       backgroundColor: _bg,
       appBar: _buildAppBar(),
       body: _isUpdating
-          ? const Center(child: CircularProgressIndicator(color: _gold))
+          ? Center(child: CircularProgressIndicator(color: _gold))
           : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               child: Column(
@@ -399,9 +431,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('@$pseudo',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textP)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textP)),
           Text('Gestion utilisateur',
-              style: const TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w400)),
+              style: TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w400)),
         ],
       ),
       actions: [
@@ -449,7 +481,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
       child: Row(children: [
         Icon(icon, size: 18, color: _textS),
         const SizedBox(width: 12),
-        Text(label, style: const TextStyle(color: _textP, fontSize: 14)),
+        Text(label, style: TextStyle(color: _textP, fontSize: 14)),
       ]),
     );
   }
@@ -482,7 +514,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
               radius: 36,
               backgroundColor: _surface,
               backgroundImage: imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null,
-              child: imgUrl.isEmpty ? const Icon(Icons.person, size: 36, color: _textS) : null,
+              child: imgUrl.isEmpty ? Icon(Icons.person, size: 36, color: _textS) : null,
             ),
           ),
           const SizedBox(width: 16),
@@ -492,14 +524,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
               children: [
                 Text(
                   _userData!.pseudo ?? '—',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18, fontWeight: FontWeight.w800, color: _textP, height: 1.1),
                 ),
                 const SizedBox(height: 3),
                 if ((_userData!.email ?? '').isNotEmpty)
-                  Text(_userData!.email!, style: const TextStyle(fontSize: 12, color: _textS)),
+                  Text(_userData!.email!, style: TextStyle(fontSize: 12, color: _textS)),
                 if ((_userData!.numeroDeTelephone ?? '').isNotEmpty)
-                  Text(_userData!.numeroDeTelephone!, style: const TextStyle(fontSize: 12, color: _textS)),
+                  Text(_userData!.numeroDeTelephone!, style: TextStyle(fontSize: 12, color: _textS)),
                 const SizedBox(height: 10),
                 Wrap(spacing: 6, runSpacing: 6, children: [
                   _StatusChip(
@@ -581,7 +613,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       isVerified
                           ? 'Badge ✓ visible sur le profil public'
                           : 'Aucun badge de vérification',
-                      style: const TextStyle(color: _textS, fontSize: 12),
+                      style: TextStyle(color: _textS, fontSize: 12),
                     ),
                   ],
                 ),
@@ -621,28 +653,29 @@ class _UserManagementPageState extends State<UserManagementPage> {
   // ── Soldes ────────────────────────────────────────────────────────────────
 
   Widget _buildBalancesSection() {
-    final depot    = _userData!.votre_solde_depot    ?? 0.0;
-    final gains    = _userData!.votre_solde_principal ?? 0.0;
-    final pieces   = _userData!.giftCoinsBalance     ?? 0;
+    final depot  = _userData!.votre_solde_depot     ?? 0.0;
+    final gains  = _userData!.votre_solde_principal ?? 0.0;
+    final pDepot = _userData!.lockedGiftCoins;
+    final pGagne = _userData!.convertibleGiftCoins;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('SOLDES'),
+        _sectionLabel('ARGENT (FCFA)'),
         const SizedBox(height: 10),
         Row(children: [
           Expanded(child: _BalanceCard(
-            label: 'Dépôt',
+            label: 'Dépôt FCFA',
             amount: depot.toStringAsFixed(2),
             unit: 'FCFA',
-            accentColor: _green,
+            accentColor: _blue,
             isNegative: depot < 0,
             onAdd:    () => _showBalanceDialog(isDeposit: true,  field: 'votre_solde_depot'),
             onRemove: () => _showBalanceDialog(isDeposit: false, field: 'votre_solde_depot'),
           )),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(child: _BalanceCard(
-            label: 'Gains',
+            label: 'Gains à retirer',
             amount: gains.toStringAsFixed(2),
             unit: 'FCFA',
             accentColor: _amber,
@@ -651,17 +684,30 @@ class _UserManagementPageState extends State<UserManagementPage> {
             onRemove: () => _showBalanceDialog(isDeposit: false, field: 'votre_solde_principal'),
           )),
         ]),
-        const SizedBox(height: 12),
-        _BalanceCard(
-          label: 'Pièces',
-          amount: '$pieces',
-          unit: 'pièces',
-          accentColor: _gold,
-          emoji: '🪙',
-          isNegative: false,
-          onAdd:    () => _showCoinsDialog(isDeposit: true),
-          onRemove: () => _showCoinsDialog(isDeposit: false),
-        ),
+        const SizedBox(height: 16),
+        _sectionLabel('PIÈCES'),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: _BalanceCard(
+            label: 'Pièces de dépôt',
+            amount: '$pDepot',
+            unit: 'non convertibles',
+            accentColor: _gold,
+            isNegative: false,
+            onAdd:    () => _showCoinsDialog(isDeposit: true,  depot: true),
+            onRemove: () => _showCoinsDialog(isDeposit: false, depot: true),
+          )),
+          const SizedBox(width: 10),
+          Expanded(child: _BalanceCard(
+            label: 'Pièces gagnées',
+            amount: '$pGagne',
+            unit: 'convertibles',
+            accentColor: _green,
+            isNegative: false,
+            onAdd:    () => _showCoinsDialog(isDeposit: true,  depot: false),
+            onRemove: () => _showCoinsDialog(isDeposit: false, depot: false),
+          )),
+        ]),
       ],
     );
   }
@@ -850,7 +896,7 @@ class _BalanceCard extends StatelessWidget {
               const SizedBox(width: 6),
             ],
             Text(label.toUpperCase(),
-                style: const TextStyle(fontSize: 10, color: _textS,
+                style: TextStyle(fontSize: 10, color: _textS,
                     fontWeight: FontWeight.w700, letterSpacing: 1.2)),
             const Spacer(),
             _ActionBtn(icon: Icons.remove_rounded, color: displayColor, onTap: onRemove),
@@ -869,11 +915,11 @@ class _BalanceCard extends StatelessWidget {
             ),
           ),
           Text(unit,
-              style: const TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w500)),
+              style: TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w500)),
           if (isNegative)
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Row(children: const [
+              child: Row(children: [
                 Icon(Icons.warning_amber_rounded, size: 12, color: _red),
                 SizedBox(width: 4),
                 Text('Solde négatif', style: TextStyle(fontSize: 10, color: _red)),
@@ -929,10 +975,10 @@ class _StatCell extends StatelessWidget {
           Icon(icon, size: 18, color: _textS),
           const SizedBox(height: 6),
           Text(value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
                   color: _textP, fontFeatures: [FontFeature.tabularFigures()])),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 10, color: _textS),
+          Text(label, style: TextStyle(fontSize: 10, color: _textS),
               textAlign: TextAlign.center),
         ]),
       ),
@@ -956,7 +1002,7 @@ class _InfoRow extends StatelessWidget {
           SizedBox(
             width: 130,
             child: Text(label,
-                style: const TextStyle(fontSize: 13, color: _textS, fontWeight: FontWeight.w500)),
+                style: TextStyle(fontSize: 13, color: _textS, fontWeight: FontWeight.w500)),
           ),
           Expanded(
             child: Text(
@@ -1037,7 +1083,7 @@ class _AdminDialog extends StatelessWidget {
                 border: Border.all(color: accentColor.withOpacity(0.2)),
               ),
               child: Row(children: [
-                const Text('Solde actuel', style: TextStyle(color: _textS, fontSize: 12)),
+                Text('Solde actuel', style: TextStyle(color: _textS, fontSize: 12)),
                 const Spacer(),
                 Text('$currentAmount $unit',
                     style: TextStyle(color: accentColor, fontWeight: FontWeight.w700, fontSize: 14)),
@@ -1076,7 +1122,7 @@ class _AdminDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler', style: TextStyle(color: _textS)),
+          child: Text('Annuler', style: TextStyle(color: _textS)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -1121,16 +1167,16 @@ class _DialogField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: _textS, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+        Text(label, style: TextStyle(color: _textS, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(color: _textP, fontSize: 14),
+          style: TextStyle(color: _textP, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: _textS, fontSize: 13),
+            hintStyle: TextStyle(color: _textS, fontSize: 13),
             suffixText: suffix,
             suffixStyle: TextStyle(color: accentColor, fontWeight: FontWeight.w600),
             filled: true,

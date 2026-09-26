@@ -8,6 +8,9 @@ class AppColors {
 
   const AppColors._(this.brightness);
 
+  /// Palette sombre fixe (valeur par défaut avant d'avoir un BuildContext).
+  static const AppColors dark = AppColors._(Brightness.dark);
+
   static AppColors of(BuildContext context) {
     return AppColors._(Theme.of(context).brightness);
   }

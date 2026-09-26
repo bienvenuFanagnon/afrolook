@@ -1,6 +1,7 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
+import '../admin/admin_palette.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -10,20 +11,20 @@ import '../../../models/model_data.dart';
 import '../../utils/tx_amount.dart';
 
 // ── Palette (même charte que UserManagementPage) ──────────────────────────────
-const _bg      = Color(0xFF0D0D14);
-const _surface = Color(0xFF16161F);
-const _card    = Color(0xFF1C1C27);
-const _border  = Color(0xFF2A2A3A);
-const _gold    = Color(0xFFF0B429);
-const _green   = Color(0xFF34C759);
-const _amber   = Color(0xFFFF9F0A);
-const _blue    = Color(0xFF3B82F6);
-const _purple  = Color(0xFFBF5AF2);
-const _teal    = Color(0xFF30B0C7);
-const _pink    = Color(0xFFFF2D55);
-const _red     = Color(0xFFFF453A);
-const _textP   = Color(0xFFE8E8F0);
-const _textS   = Color(0xFF8891A6);
+Color get _bg      => AdminPalette.bg;
+Color get _surface => AdminPalette.surface;
+Color get _card    => AdminPalette.card;
+Color get _border  => AdminPalette.border;
+Color get _gold    => AdminPalette.gold;
+Color get _green   => AdminPalette.green;
+Color get _amber   => AdminPalette.amber;
+Color get _blue    => AdminPalette.blue;
+Color get _purple  => AdminPalette.purple;
+Color get _teal    => AdminPalette.teal;
+Color get _pink    => AdminPalette.pink;
+Color get _red     => AdminPalette.red;
+Color get _textP   => AdminPalette.textP;
+Color get _textS   => AdminPalette.textS;
 
 // ── Catégorie de filtre ────────────────────────────────────────────────────────
 enum _TabFilter { tous, argent, pieces }
@@ -55,13 +56,13 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
   DateTime?  _startDate;
   DateTime?  _endDate;
 
-  static const _pageSize = 15;
+  static final _pageSize = 15;
   int  _page       = 0;
   bool _hasMore    = true;
 
   // ── Métadonnées par type ───────────────────────────────────────────────────
 
-  static const _meta = {
+  static final _meta = {
     // ─ FCFA ─────────────────────────────────────────────────────────────────
     'DEPOT':              _TxMeta('Dépôt',               _green,  Iconsax.arrow_down,        _TabFilter.argent, true),
     'DEPOTADMIN':         _TxMeta('Dépôt Admin',          _green,  Iconsax.arrow_circle_down, _TabFilter.argent, true),
@@ -81,7 +82,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   static _TxMeta _metaFor(String? type) =>
       _meta[type?.toUpperCase()] ??
-      const _TxMeta('Inconnu', _textS, Iconsax.transaction_minus, _TabFilter.tous, false);
+      _TxMeta('Inconnu', _textS, Iconsax.transaction_minus, _TabFilter.tous, false);
 
   static bool _isCoins(String? type) =>
       _meta[type?.toUpperCase()]?.tab == _TabFilter.pieces;
@@ -194,6 +195,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   @override
   Widget build(BuildContext context) {
+    AdminPalette.of(context);
     return Scaffold(
       backgroundColor: _bg,
       appBar: _buildAppBar(),
@@ -217,11 +219,11 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       elevation: 0,
       centerTitle: false,
       title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Transactions',
+        Text('Transactions',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textP)),
         if (_userData != null)
           Text('@${_userData!.pseudo ?? ''}',
-              style: const TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w400)),
+              style: TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w400)),
       ]),
       actions: [
         IconButton(
@@ -231,7 +233,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
         ),
         if (_startDate != null || _endDate != null)
           IconButton(
-            icon: const Icon(Icons.clear_rounded, color: _red, size: 20),
+            icon: Icon(Icons.clear_rounded, color: _red, size: 20),
             tooltip: 'Effacer les dates',
             onPressed: () {
               setState(() { _startDate = null; _endDate = null; });
@@ -249,7 +251,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
     if (_isLoadingUser) {
       return Container(
         height: 70, color: _surface,
-        child: const Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
+        child: Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
       );
     }
     if (_userData == null) return const SizedBox.shrink();
@@ -263,14 +265,14 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
           radius: 22,
           backgroundColor: _card,
           backgroundImage: imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null,
-          child: imgUrl.isEmpty ? const Icon(Icons.person, color: _textS, size: 22) : null,
+          child: imgUrl.isEmpty ? Icon(Icons.person, color: _textS, size: 22) : null,
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(_userData!.pseudo ?? '—',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _textP)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _textP)),
           if ((_userData!.email ?? '').isNotEmpty)
-            Text(_userData!.email!, style: const TextStyle(fontSize: 11, color: _textS)),
+            Text(_userData!.email!, style: TextStyle(fontSize: 11, color: _textS)),
         ])),
         // Soldes compacts
         _MiniBalance(label: 'Dépôt',  value: '${(_userData!.votre_solde_depot    ?? 0).toStringAsFixed(0)} F', color: _green),
@@ -423,18 +425,18 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   Widget _buildBody() {
     if (_isLoadingTx) {
-      return const Center(child: CircularProgressIndicator(color: _gold));
+      return Center(child: CircularProgressIndicator(color: _gold));
     }
     if (_filteredTx.isEmpty) {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Iconsax.receipt, size: 64, color: _border),
+        Icon(Iconsax.receipt, size: 64, color: _border),
         const SizedBox(height: 16),
-        const Text('Aucune transaction', style: TextStyle(color: _textP, fontSize: 16, fontWeight: FontWeight.w600)),
+        Text('Aucune transaction', style: TextStyle(color: _textP, fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         Text(
           _typeFilter == 'TOUS' ? 'Cet utilisateur n\'a pas encore de transactions'
               : 'Aucune transaction de ce type sur la période',
-          style: const TextStyle(color: _textS, fontSize: 13),
+          style: TextStyle(color: _textS, fontSize: 13),
           textAlign: TextAlign.center,
         ),
       ]));
@@ -445,9 +447,9 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text('${_displayedTx.length} / ${_filteredTx.length} transactions',
-              style: const TextStyle(color: _textS, fontSize: 11)),
+              style: TextStyle(color: _textS, fontSize: 11)),
           Text('Total : ${_filteredTx.length}',
-              style: const TextStyle(color: _textS, fontSize: 11)),
+              style: TextStyle(color: _textS, fontSize: 11)),
         ]),
       ),
       Expanded(
@@ -458,7 +460,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
             itemCount: _displayedTx.length + (_isLoadingMore ? 1 : 0),
             itemBuilder: (_, i) {
               if (i == _displayedTx.length) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.all(20),
                   child: Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2)),
                 );
@@ -633,7 +635,7 @@ class _StatBadge extends StatelessWidget {
           Text(value, style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w800,
               fontFeatures: const [FontFeature.tabularFigures()])),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 9, color: _textS, fontWeight: FontWeight.w500),
+          Text(label, style: TextStyle(fontSize: 9, color: _textS, fontWeight: FontWeight.w500),
               maxLines: 1, overflow: TextOverflow.ellipsis),
         ]),
       ),
@@ -735,10 +737,10 @@ class _TxCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 if ((tx.description ?? '').isNotEmpty)
                   Text(tx.description!, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: _textS)),
+                      style: TextStyle(fontSize: 12, color: _textS)),
                 const SizedBox(height: 3),
                 Text(_fmtDate(tx.createdAt ?? 0),
-                    style: const TextStyle(fontSize: 10, color: _textS)),
+                    style: TextStyle(fontSize: 10, color: _textS)),
               ]),
             ),
           ),
@@ -753,7 +755,7 @@ class _TxCard extends StatelessWidget {
                     color: signColor,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   )),
-              Text(unit, style: const TextStyle(fontSize: 10, color: _textS)),
+              Text(unit, style: TextStyle(fontSize: 10, color: _textS)),
             ]),
           ),
         ]),
@@ -818,7 +820,7 @@ class _TxDetailSheet extends StatelessWidget {
                     fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               TextSpan(text: '  $unit',
-                  style: const TextStyle(fontSize: 14, color: _textS, fontWeight: FontWeight.w500)),
+                  style: TextStyle(fontSize: 14, color: _textS, fontWeight: FontWeight.w500)),
             ])),
             if ((tx.statut ?? '').isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -901,7 +903,7 @@ class _SectionTitle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(text.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: _textS,
+          style: TextStyle(fontSize: 10, color: _textS,
               fontWeight: FontWeight.w700, letterSpacing: 1.4)),
     );
   }
@@ -920,7 +922,7 @@ class _Row extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(width: 120,
-            child: Text(label, style: const TextStyle(fontSize: 13, color: _textS, fontWeight: FontWeight.w500))),
+            child: Text(label, style: TextStyle(fontSize: 13, color: _textS, fontWeight: FontWeight.w500))),
         Expanded(
           child: Row(children: [
             Expanded(
@@ -931,7 +933,7 @@ class _Row extends StatelessWidget {
             ),
             if (tapLabel != null) ...[
               const SizedBox(width: 8),
-              Text(tapLabel!, style: const TextStyle(fontSize: 11, color: _blue)),
+              Text(tapLabel!, style: TextStyle(fontSize: 11, color: _blue)),
             ],
           ]),
         ),

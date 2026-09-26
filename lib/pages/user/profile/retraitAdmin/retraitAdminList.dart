@@ -2,6 +2,7 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminDetails.dart';
 import 'package:flutter/material.dart';
+import '../../../admin/admin_palette.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../models/model_data.dart';
@@ -28,20 +29,21 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
 
   @override
   Widget build(BuildContext context) {
+    AdminPalette.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AdminPalette.bg,
       appBar: AppBar(
         title: Text(
           'Gestion des Retraits',
-          style: TextStyle(color: Colors.yellow[700]),
+          style: TextStyle(color: AdminPalette.gold),
         ),
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.yellow[700]),
+        backgroundColor: AdminPalette.bg,
+        iconTheme: IconThemeData(color: AdminPalette.gold),
         elevation: 0,
         actions: [
           // Filtres
           PopupMenuButton<String>(
-            icon: Icon(Icons.filter_list, color: Colors.yellow[700]),
+            icon: Icon(Icons.filter_list, color: AdminPalette.gold),
             onSelected: (value) {
               setState(() {
                 _selectedFilter = value;
@@ -88,14 +90,14 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                 Text(
                   'Rechercher par:',
                   style: TextStyle(
-                    color: Colors.grey[400],
+                    color: AdminPalette.textS,
                     fontSize: 12,
                   ),
                 ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.grey[800],
+                    color: AdminPalette.border,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -113,10 +115,10 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
           // Barre de recherche
           TextField(
             controller: _searchController,
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: AdminPalette.textP),
             decoration: InputDecoration(
               hintText: _getSearchHintText(),
-              hintStyle: TextStyle(color: Colors.grey[600]),
+              hintStyle: TextStyle(color: AdminPalette.textS),
               prefixIcon: Icon(Icons.search, color: Colors.green),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -128,11 +130,11 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.yellow),
+                borderSide: BorderSide(color: AdminPalette.gold),
               ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                icon: Icon(Icons.clear, color: Colors.grey),
+                icon: Icon(Icons.clear, color: AdminPalette.textS),
                 onPressed: () {
                   _searchController.clear();
                   setState(() => _isSearching = false);
@@ -162,16 +164,16 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.yellow[700] : Colors.transparent,
+          color: isSelected ? AdminPalette.gold : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.yellow.shade700 : Colors.grey.shade600,
+            color: isSelected ? AdminPalette.gold : AdminPalette.textS,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : Colors.white,
+            color: isSelected ? Colors.black : AdminPalette.textP,
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -204,12 +206,12 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
               label: Text(
                 _getFilterText(filter),
                 style: TextStyle(
-                  color: isSelected ? Colors.black : Colors.white,
+                  color: isSelected ? Colors.black : AdminPalette.textP,
                 ),
               ),
               selected: isSelected,
-              backgroundColor: Colors.grey[800],
-              selectedColor: Colors.yellow[700],
+              backgroundColor: AdminPalette.border,
+              selectedColor: AdminPalette.gold,
               onSelected: (selected) {
                 setState(() {
                   _selectedFilter = selected ? filter : 'TOUS';
@@ -229,7 +231,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
           : RetraitService.getAllRetraits(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: Colors.yellow[700]));
+          return Center(child: CircularProgressIndicator(color: AdminPalette.gold));
         }
 
         if (snapshot.hasError) {
@@ -292,7 +294,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
 
   Widget _buildRetraitCard(TransactionRetrait retrait) {
     return Card(
-      color: Colors.grey[900],
+      color: AdminPalette.card,
       margin: EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -328,7 +330,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                         Text(
                           '${retrait.montant!.toStringAsFixed(2)} FCFA',
                           style: TextStyle(
-                            color: Colors.yellow[700],
+                            color: AdminPalette.gold,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -390,7 +392,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                     child: Text(
                       '@${retrait.userPseudo ?? 'Utilisateur'}',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AdminPalette.textP,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -410,7 +412,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                     child: Text(
                       '${retrait.methodPaiement} - ${retrait.numeroCompte}',
                       style: TextStyle(
-                        color: Colors.grey[400],
+                        color: AdminPalette.textS,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -430,7 +432,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                       child: Text(
                         retrait.userEmail!,
                         style: TextStyle(
-                          color: Colors.grey[400],
+                          color: AdminPalette.textS,
                           fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -447,7 +449,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                   Text(
                     _formatDate(retrait.createdAt!),
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: AdminPalette.textS,
                       fontSize: 11,
                     ),
                   ),
@@ -494,12 +496,12 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.money_off, size: 64, color: Colors.grey[600]),
+          Icon(Icons.money_off, size: 64, color: AdminPalette.textS),
           SizedBox(height: 16),
           Text(
             _isSearching ? 'Aucun résultat' : 'Aucune demande de retrait',
             style: TextStyle(
-              color: Colors.grey[400],
+              color: AdminPalette.textS,
               fontSize: 18,
             ),
           ),
@@ -510,7 +512,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                   ? 'Aucun utilisateur trouvé avec cet email'
                   : 'Aucune transaction trouvée avec ce numéro',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: AdminPalette.textS,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,

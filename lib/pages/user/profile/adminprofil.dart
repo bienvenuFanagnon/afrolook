@@ -1,16 +1,13 @@
-﻿import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminList.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:afrotok/pages/user/profile/retraitAdmin/searchUserAdmin.dart';
-import 'package:afrotok/providers/authProvider.dart';
 
 import 'package:flutter/material.dart';
+import '../../admin/admin_palette.dart';
+import '../../../utils/tx_amount.dart';
 
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:intl/intl.dart';
 
-import 'package:provider/provider.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -18,1027 +15,8 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
 
-import '../../admin/ad_admin_page.dart';
 
-import '../../admin/remuneration_admin_page.dart';
 
-import '../monetisation.dart';
-
-class AdminHubPage extends StatefulWidget {
-  @override
-  _AdminHubPageState createState() => _AdminHubPageState();
-}
-
-class _AdminHubPageState extends State<AdminHubPage> {
-  late UserAuthProvider appDataProvider;
-  bool _showDetailedStats = false;
-  Map<String, int> _retraitStats = {
-    'total': 0,
-    'en_attente': 0,
-    'valider': 0,
-    'annule': 0
-  };
-
-  Stream<AppDefaultData>? appDataStream;
-
-  @override
-  void initState() {
-    super.initState();
-    appDataProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    appDataStream = appDataProvider.getAppDataStream();
-    _loadRetraitStats();
-  }
-
-  Future<void> _loadRetraitStats() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('TransactionRetraits')
-          .get();
-
-      int total = snapshot.docs.length;
-      int enAttente = 0;
-      int valider = 0;
-      int annule = 0;
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final statut = data['statut']?.toString().toLowerCase();
-
-        switch (statut) {
-          case 'en_attente':
-            enAttente++;
-            break;
-          case 'valider':
-            valider++;
-            break;
-          case 'annule':
-            annule++;
-            break;
-        }
-      }
-
-      setState(() {
-        _retraitStats = {
-          'total': total,
-          'en_attente': enAttente,
-          'valider': valider,
-          'annule': annule
-        };
-      });
-    } catch (e) {
-      printVm('Erreur chargement stats retraits: $e');
-    }
-  }
-
-  void refreshData() {
-    setState(() {
-      appDataStream = appDataProvider.getAppDataStream();
-      _loadRetraitStats();
-    });
-  }
-
-  Future<int> getUsersCount() async {
-    final aggregateQuery = await FirebaseFirestore.instance
-        .collection("Users")
-        .count()
-        .get();
-    return aggregateQuery.count ?? 0;
-  }
-
-  // Helpers pour les stats financières
-  Widget _buildCompactStat({
-    required String label,
-    required double value,
-    required IconData icon,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.grey[400], size: 12),
-          SizedBox(height: 4),
-          Text(
-            "${(value / 1000).toStringAsFixed(2)}K",
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 8,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPiecesDetailRow({
-    required String label,
-    required double value,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[400],
-          ),
-        ),
-        Text(
-          "${value.ceil()} 🪙",
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-  Widget _buildDetailRow({
-    required String label,
-    required double value,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[400],
-          ),
-        ),
-        Text(
-          "${value.toStringAsFixed(0)} FCFA",
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text(
-          'ADMIN HUB',
-          style: TextStyle(
-            color: Color(0xFFFFD700),
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.black,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Iconsax.refresh, color: Colors.white),
-            onPressed: refreshData,
-            tooltip: "Actualiser",
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black, Color(0xFFFFD700), Colors.black],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: StreamBuilder<AppDefaultData>(
-        stream: appDataStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700))));
-          }
-
-          final appData = snapshot.data ?? AppDefaultData();
-
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // En-tête avec bienvenue
-                _buildWelcomeHeader(),
-                SizedBox(height: 24),
-
-                // 📊 SECTION FINANCIÈRE (ce qui était dans AppInfoPage)
-                Text(
-                  'STATISTIQUES FINANCIÈRES',
-                  style: TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 16),
-
-                // Carte des soldes (version compacte/détaillée)
-                _buildSoldesCard(appData),
-                SizedBox(height: 24),
-
-                // 📊 STATISTIQUES GÉNÉRALES
-                Text(
-                  'STATISTIQUES GÉNÉRALES',
-                  style: TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 16),
-
-                // Grille des stats générales
-                _buildStatsGenerales(appData),
-                SizedBox(height: 24),
-
-                // 📊 DEMANDES DE RETRAIT
-                _buildRetraitSummary(),
-                SizedBox(height: 24),
-
-                // 🎯 SECTIONS ADMINISTRATION
-                Text(
-                  'SECTIONS ADMINISTRATION',
-                  style: TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                SizedBox(height: 16),
-
-                // Grille des modules admin
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.1,
-                  children: [
-                    _buildAdminCard(
-                      titre: 'RÉMUNÉRATION',
-                      sousTitre: 'Gains & statistiques',
-                      icon: Icons.monetization_on,
-                      couleur: Color(0xFFFFD700),
-                      page: RemunerationAdminPage(),
-                    ),
-                    _buildAdminCard(
-                      titre: 'RETRAITS',
-                      sousTitre: '${_retraitStats['en_attente']} en attente',
-                      icon: Iconsax.money_send,
-                      couleur: Colors.blue,
-                      page: AdminRetraitListPage(),
-                    ),
-                    _buildAdminCard(
-                      titre: 'PUBLICITÉS',
-                      sousTitre: 'Gestion des annonces',
-                      icon: Iconsax.video_play,
-                      couleur: Colors.purple,
-                      page: AdAdminPage(),
-                    ),
-                    _buildAdminCard(
-                      titre: 'UTILISATEURS',
-                      sousTitre: 'Recherche & gestion',
-                      icon: Iconsax.profile_2user,
-                      couleur: Colors.orange,
-                      page: UserSearchPage(),
-                    ),
-                    _buildAdminCard(
-                      titre: 'TRANSACTIONS',
-                      sousTitre: 'Historique complet',
-                      icon: Iconsax.receipt,
-                      couleur: Colors.teal,
-                      page: TransactionsListPage(),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24),
-
-                // ℹ️ INFORMATIONS DE VERSION
-                _buildVersionInfo(appData),
-                SizedBox(height: 24),
-
-                // 💰 TARIFS
-                _buildTarifsInfo(appData),
-                SizedBox(height: 24),
-
-                // 🎯 POINTS PAR DÉFAUT
-                _buildPointsInfo(appData),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildWelcomeHeader() {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1A1A), Colors.black],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Color(0xFFFFD700).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.admin_panel_settings,
-              color: Color(0xFFFFD700),
-              size: 30,
-            ),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ESPACE ADMINISTRATEUR',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Gérez tous les aspects de l\'application',
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSoldesCard(AppDefaultData appData) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade800),
-      ),
-      child: Column(
-        children: [
-          // En-tête avec bouton expand
-          GestureDetector(
-            onTap: () => setState(() => _showDetailedStats = !_showDetailedStats),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.analytics, color: Colors.grey[400], size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      "STATS FINANCIÈRES",
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  _showDetailedStats ? Icons.expand_less : Icons.expand_more,
-                  color: Colors.grey[500],
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-
-          // Vue réduite (toujours visible)
-          SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildCompactStat(
-                label: "Principal",
-                value: appData.solde_principal ?? 0,
-                icon: Icons.account_balance_wallet,
-              ),
-              Container(width: 1, height: 20, color: Colors.grey[800]),
-              _buildCompactStat(
-                label: "Gains",
-                value: appData.solde_gain ?? 0,
-                icon: Icons.monetization_on,
-              ),
-              Container(width: 1, height: 20, color: Colors.grey[800]),
-              _buildCompactStat(
-                label: "Affiliation",
-                value: appData.solde_affiliation ?? 0,
-                icon: Icons.group,
-              ),
-              Container(width: 1, height: 20, color: Colors.grey[800]),
-              _buildCompactStat(
-                label: "Gains pieces",
-                value: appData.solde_gain_pieces ?? 0,
-                icon: Icons.monetization_on,
-              ),
-            ],
-          ),
-
-          // Vue détaillée (si expand)
-          if (_showDetailedStats) ...[
-            SizedBox(height: 12),
-            Divider(color: Colors.grey[800], height: 1),
-            SizedBox(height: 12),
-            Column(
-              children: [
-                _buildDetailRow(
-                  label: "Solde Principal",
-                  value: appData.solde_principal ?? 0,
-                ),
-                SizedBox(height: 8),
-                _buildDetailRow(
-                  label: "Gains Totaux",
-                  value: appData.solde_gain ?? 0,
-                ),
-                SizedBox(height: 8),
-                _buildDetailRow(
-                  label: "Affiliation",
-                  value: appData.solde_affiliation ?? 0,
-                ),
-                SizedBox(height: 8),
-                _buildPiecesDetailRow(
-                  label: "Gains pieces",
-                  value: appData.solde_gain_pieces ?? 0,
-                ),
-                SizedBox(height: 8),
-                _buildDetailRow(
-                  label: "Total Général",
-                  value: (appData.solde_principal ?? 0) +
-                      (appData.solde_gain ?? 0) +
-                      (appData.solde_affiliation ?? 0) +(0.4*
-                      (appData.solde_gain_pieces ?? 0)),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGenerales(AppDefaultData appData) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.2,
-      children: [
-        FutureBuilder<int>(
-          future: getUsersCount(),
-          builder: (context, snapshot) {
-            return _buildStatCard(
-              title: "Utilisateurs",
-              value: _formatNumber(snapshot.data ?? 0),
-              icon: Iconsax.profile_2user,
-              color: Color(0xFF00CC66),
-            );
-          },
-        ),
-        _buildStatCard(
-          title: "Abonnés",
-          value: _formatNumber(appData.nbr_abonnes ?? 0),
-          icon: Iconsax.people,
-          color: Color(0xFF007AFF),
-        ),
-
-        _buildStatCard(
-          title: "Likes",
-          value: _formatNumber(appData.nbr_likes ?? 0),
-          icon: Iconsax.like_1,
-          color: Color(0xFFFF2D55),
-        ),
-        _buildStatCard(
-          title: "Commentaires",
-          value: _formatNumber(appData.nbr_comments ?? 0),
-          icon: Iconsax.message,
-          color: Color(0xFFFF9500),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({required String title, required String value, required IconData icon, required Color color}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdminCard({
-    required String titre,
-    required String sousTitre,
-    required IconData icon,
-    required Color couleur,
-    required Widget page,
-  }) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => page),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: couleur.withOpacity(0.3)),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -10,
-              bottom: -10,
-              child: Icon(
-                icon,
-                size: 60,
-                color: couleur.withOpacity(0.1),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: couleur.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, color: couleur, size: 24),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    titre,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    sousTitre,
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 11,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRetraitSummary() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1a237e), Color(0xFF283593)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.4),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "DEMANDES DE RETRAIT",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => AdminRetraitListPage()),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        "Gérer",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(Iconsax.arrow_right_3, size: 14, color: Colors.white),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-
-          // Statistiques en ligne
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildRetraitStatItem(
-                "Total",
-                _retraitStats['total']!.toString(),
-                Iconsax.money_send,
-                Colors.white,
-              ),
-              _buildRetraitStatItem(
-                "En Attente",
-                _retraitStats['en_attente']!.toString(),
-                Iconsax.clock,
-                Colors.orange,
-              ),
-              _buildRetraitStatItem(
-                "Validés",
-                _retraitStats['valider']!.toString(),
-                Iconsax.tick_circle,
-                Colors.green,
-              ),
-              _buildRetraitStatItem(
-                "Annulés",
-                _retraitStats['annule']!.toString(),
-                Iconsax.close_circle,
-                Colors.red,
-              ),
-            ],
-          ),
-
-          if (_retraitStats['total']! > 0) ...[
-            SizedBox(height: 12),
-            // Barre de progression
-            Container(
-              height: 6,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Row(
-                children: [
-                  if (_retraitStats['en_attente']! > 0)
-                    Expanded(
-                      flex: _retraitStats['en_attente']!,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.orange,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(3),
-                            bottomLeft: Radius.circular(3),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (_retraitStats['valider']! > 0)
-                    Expanded(
-                      flex: _retraitStats['valider']!,
-                      child: Container(
-                        color: Colors.green,
-                      ),
-                    ),
-                  if (_retraitStats['annule']! > 0)
-                    Expanded(
-                      flex: _retraitStats['annule']!,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(3),
-                            bottomRight: Radius.circular(3),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '${_retraitStats['en_attente']!} demande(s) en attente de traitement',
-              style: TextStyle(
-                color: _retraitStats['en_attente']! > 0 ? Colors.orange : Colors.white70,
-                fontSize: 12,
-                fontWeight: _retraitStats['en_attente']! > 0 ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRetraitStatItem(String title, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.white70,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVersionInfo(AppDefaultData appData) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "INFORMATIONS DE VERSION",
-            style: TextStyle(
-                color: Color(0xFFFFD700),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1
-            ),
-          ),
-          SizedBox(height: 16),
-          _buildInfoRow(
-            "Version actuelle",
-            "${appData.app_version_code ?? 0}",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Version officielle",
-            "${appData.app_version_code_officiel ?? 0}",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Vérification Google",
-            appData.googleVerification == true ? "Activée" : "Désactivée",
-            valueColor: appData.googleVerification == true
-                ? Color(0xFF00CC66)
-                : Color(0xFFFF3B30),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTarifsInfo(AppDefaultData appData) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "TARIFS",
-            style: TextStyle(
-                color: Color(0xFFFFD700),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1
-            ),
-          ),
-          SizedBox(height: 16),
-          _buildInfoRow(
-            "PubliCash",
-            "${appData.tarifPubliCash?.toStringAsFixed(2) ?? '0.00'}",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Conversion PubliCash",
-            "${appData.tarifPubliCash_to_xof?.toStringAsFixed(2) ?? '0.00'} FCFA",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Image",
-            "${appData.tarifImage?.toStringAsFixed(2) ?? '0.00'}",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Vidéo",
-            "${appData.tarifVideo?.toStringAsFixed(2) ?? '0.00'}",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Par jour",
-            "${appData.tarifjour?.toStringAsFixed(2) ?? '0.00'}",
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPointsInfo(AppDefaultData appData) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "POINTS PAR DÉFAUT",
-            style: TextStyle(
-                color: Color(0xFFFFD700),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1
-            ),
-          ),
-          SizedBox(height: 16),
-          _buildInfoRow(
-            "Nouvel utilisateur",
-            "${appData.default_point_new_user ?? 0} pts",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Nouveau like",
-            "${appData.default_point_new_like ?? 0} pts",
-          ),
-          SizedBox(height: 12),
-          _buildInfoRow(
-            "Nouveau love",
-            "${appData.default_point_new_love ?? 0} pts",
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String title, String value, {Color? valueColor}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatNumber(int number) {
-    if (number >= 1000000) {
-      double result = number / 1000000;
-      return '${result.toStringAsFixed(1)}M';
-    } else if (number >= 1000) {
-      double result = number / 1000;
-      return '${result.toStringAsFixed(1)}k';
-    }
-    return number.toString();
-  }
-}
 
 // ==================== TRANSACTIONS LIST PAGE AVEC PAGINATION FIRESTORE ====================
 
@@ -1415,22 +393,23 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
   @override
   Widget build(BuildContext context) {
+    AdminPalette.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: AdminPalette.bg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Transactions",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AdminPalette.textP, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: AdminPalette.bg,
         centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: DropdownButton<String>(
               value: _selectedType,
-              dropdownColor: Colors.black87,
-              icon: const Icon(Icons.filter_list, color: Colors.white),
+              dropdownColor: AdminPalette.card,
+              icon: Icon(Icons.filter_list, color: AdminPalette.textP),
               underline: const SizedBox(),
               items: _getTypeDropdownItems(),
               onChanged: (val) {
@@ -1496,7 +475,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
             const SizedBox(width: 8),
             Text(
               type == "TOUS" ? "TOUS" : _formatTransactionType(type),
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              style: TextStyle(color: AdminPalette.textP, fontSize: 12),
             ),
           ],
         ),
@@ -1507,25 +486,25 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey[800],
+      color: AdminPalette.border,
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _emailController,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: AdminPalette.textP, fontSize: 14),
               decoration: InputDecoration(
                 hintText: "Rechercher par email...",
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: TextStyle(color: AdminPalette.textS),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[700],
+                fillColor: AdminPalette.border,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.clear, color: Colors.grey[400], size: 20),
+                  icon: Icon(Icons.clear, color: AdminPalette.textS, size: 20),
                   onPressed: () {
                     _emailController.clear();
                     setState(() {
@@ -1539,7 +518,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: Icon(Icons.search, color: Colors.yellow[700]),
+            icon: Icon(Icons.search, color: AdminPalette.gold),
             onPressed: _searchUserByEmail,
           ),
         ],
@@ -1550,7 +529,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   Widget _buildDateFilters() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey[900],
+      color: AdminPalette.card,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -1613,10 +592,10 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         children: [
           Text(
             "Filtré par utilisateur ID: $_selectedUserId",
-            style: TextStyle(color: Colors.blue[200], fontSize: 12),
+            style: TextStyle(color: AdminPalette.blue, fontSize: 12),
           ),
           IconButton(
-            icon: Icon(Icons.close, size: 16, color: Colors.blue[200]),
+            icon: Icon(Icons.close, size: 16, color: AdminPalette.blue),
             onPressed: () {
               setState(() {
                 _selectedUserId = null;
@@ -1632,24 +611,24 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
   Widget _buildTransactionList() {
     if (_isInitialLoad && _isLoading) {
-      return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700))));
+      return Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AdminPalette.gold)));
     }
 
     if (_transactions.isEmpty && !_isLoading && !_isLoadingMore) {
       return Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.search_off, color: Colors.grey, size: 60),
+          Icon(Icons.search_off, color: AdminPalette.textS, size: 60),
           const SizedBox(height: 16),
-          Text("Aucune transaction", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          Text("Aucune transaction", style: TextStyle(color: AdminPalette.textS, fontSize: 16)),
           const SizedBox(height: 8),
           Text(
             _selectedUserId != null ? "Cet utilisateur n'a aucune transaction" : "Aucune transaction trouvée",
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: AdminPalette.textS, fontSize: 12),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _resetFilters,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow[700], foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: AdminPalette.gold, foregroundColor: Colors.black),
             child: const Text("Réinitialiser les filtres"),
           ),
         ]),
@@ -1672,6 +651,10 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       },
     );
   }
+
+  String _amountLabel(TransactionSolde t) => TxAmount.storedInCoins(t)
+      ? '${TxAmount.fmt(t.montant ?? 0)} pièces'
+      : '${NumberFormat('#,##0.##', 'fr').format(t.montant ?? 0)} FCFA';
 
   static const _coinTypes = {
     'GAIN_PIECES', 'CADEAU_PIECES', 'CADEAU_PIECES_RECU', 'LIKE_PIECES',
@@ -1700,7 +683,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
           if (realCount == 0 && allLoaded.isEmpty) return const SizedBox.shrink();
 
           final isOpen = _txGroupExpanded[group] ?? false;
-          final groupColor = _txGroupColors[group] ?? Colors.grey;
+          final groupColor = _txGroupColors[group] ?? AdminPalette.textS;
           final shown = _txGroupShownCount[group] ?? 2;
           final visibleItems = allLoaded.take(shown).toList();
           final hasMoreLoaded = allLoaded.length > shown;
@@ -1711,7 +694,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
           int totalCoins = 0;
           for (final tx in allLoaded) {
             final t = tx.type?.toUpperCase() ?? '';
-            if (_coinTypes.contains(t)) {
+            if (_coinTypes.contains(t) || TxAmount.storedInCoins(tx)) {
               totalCoins += (tx.montant?.toInt() ?? 0);
             } else {
               totalFcfa += (tx.montant ?? 0);
@@ -1816,8 +799,8 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: _isLoadingMore
-            ? const CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+            ? CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AdminPalette.gold),
         )
             : const SizedBox.shrink(),
       ),
@@ -1830,25 +813,14 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     final typeText = _formatTransactionType(transaction.type);
     final isDepot = transaction.type == 'DEPOT' || transaction.type == 'DEPOTADMIN';
     final isGain = transaction.type == 'GAIN' || transaction.type == 'GAIN_PIECES';
-    final isCoinTransaction = transaction.type == 'ACHAT_PIECES' ||
-        transaction.type == 'CADEAU_PIECES' ||
-        transaction.type == 'CADEAU_PIECES_RECU' ||
-        transaction.type == 'LIKE_PIECES' ||
-        transaction.type == 'GAIN_PIECES';
 
-    String amountDisplay;
-    if (isCoinTransaction && transaction.type != 'ACHAT_PIECES') {
-      amountDisplay = "${transaction.montant?.toInt()} 🪙";
-    } else if (transaction.type == 'ACHAT_PIECES') {
-      amountDisplay = "${transaction.montant?.toStringAsFixed(2)} FCFA";
-    } else {
-      amountDisplay = "${transaction.montant?.toStringAsFixed(2)} FCFA";
-    }
+    // Unité réelle du montant (pièces ou FCFA), y compris les achats payés en pièces
+    final String amountDisplay = _amountLabel(transaction);
 
     final prefix = isDepot || isGain ? "+ " : "- ";
 
     return Card(
-      color: Colors.grey[900],
+      color: AdminPalette.card,
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 2,
       child: ListTile(
@@ -1899,7 +871,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
               Text(
                 transaction.description!,
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: AdminPalette.textS,
                   fontSize: 12,
                 ),
                 maxLines: 2,
@@ -1909,7 +881,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
             Text(
               _formatDate(transaction.createdAt ?? 0),
               style: TextStyle(
-                color: Colors.grey[500],
+                color: AdminPalette.textS,
                 fontSize: 11,
               ),
             ),
@@ -1917,7 +889,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         ),
         trailing: Icon(
           Icons.arrow_forward_ios,
-          color: Colors.grey[600],
+          color: AdminPalette.textS,
           size: 16,
         ),
         onTap: () => _showTransactionDetails(transaction),
@@ -1946,14 +918,14 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: AdminPalette.card,
         title: Row(
           children: [
-            Icon(Icons.receipt_long, color: Colors.yellow[700]),
+            Icon(Icons.receipt_long, color: AdminPalette.gold),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               "Détails de la transaction",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AdminPalette.textP, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -1968,7 +940,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
                 const SizedBox(height: 16),
               ],
               _buildDetailItem("Type", _formatTransactionType(transaction.type)),
-              _buildDetailItem("Montant", "${transaction.montant?.toStringAsFixed(2) ?? '0.00'} ${transaction.type == 'ACHAT_PIECES' ? 'FCFA' : '🪙'}"),
+              _buildDetailItem("Montant", _amountLabel(transaction)),
               if (transaction.frais != null && transaction.frais! > 0)
                 _buildDetailItem("Frais", "${transaction.frais?.toStringAsFixed(2) ?? '0.00'} FCFA"),
               if (transaction.description != null && transaction.description!.isNotEmpty)
@@ -1986,7 +958,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               "Fermer",
-              style: TextStyle(color: Colors.yellow[700]),
+              style: TextStyle(color: AdminPalette.gold),
             ),
           ),
         ],
@@ -2005,7 +977,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
             child: Text(
               "$label:",
               style: TextStyle(
-                color: Colors.grey[400],
+                color: AdminPalette.textS,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
@@ -2015,8 +987,8 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: AdminPalette.textP,
                 fontSize: 12,
               ),
             ),
@@ -2049,7 +1021,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       case 'CADEAU_PIECES_RECU':
         return Colors.pink;
       default:
-        return Colors.grey;
+        return AdminPalette.textS;
     }
   }
 

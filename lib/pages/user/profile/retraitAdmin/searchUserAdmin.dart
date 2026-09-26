@@ -3,6 +3,7 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:flutter/material.dart';
+import '../../../admin/admin_palette.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -248,41 +249,26 @@ class _UserSearchPageState extends State<UserSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    AdminPalette.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AdminPalette.bg,
       appBar: AppBar(
-        title: Text(
-          'Gestion Utilisateurs',
-          style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.yellow[700]),
+        title: Text('Utilisateurs',
+            style: TextStyle(color: AdminPalette.textP, fontWeight: FontWeight.w700, fontSize: 17)),
+        backgroundColor: AdminPalette.surface,
+        iconTheme: IconThemeData(color: AdminPalette.textP),
         elevation: 0,
+        scrolledUnderElevation: 0,
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black, Colors.yellow.shade700!, Colors.black],
-              ),
-            ),
-          ),
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: AdminPalette.border),
         ),
       ),
       body: Column(
         children: [
-          // Barre de recherche et filtres
           _buildSearchBar(),
-
-          // Indicateur de nombre d'utilisateurs
-          if (!_isLoading && !_isSearching && _searchController.text.isEmpty)
-            _buildUserCountHeader(),
-
-          // Résultats
-          Expanded(
-            child: _buildContent(),
-          ),
+          if (!_isLoading && !_isSearching && _searchController.text.isEmpty) _buildUserCountHeader(),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
@@ -290,123 +276,62 @@ class _UserSearchPageState extends State<UserSearchPage> {
 
   Widget _buildSearchBar() {
     return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
+      color: AdminPalette.surface,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
         children: [
-          // Ligne des filtres
+          TextField(
+            controller: _searchController,
+            style: TextStyle(color: AdminPalette.textP, fontSize: 15),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: _getSearchHintText(),
+              hintStyle: TextStyle(color: AdminPalette.textS),
+              prefixIcon: Icon(Iconsax.search_normal, color: AdminPalette.textS, size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Iconsax.close_circle, color: AdminPalette.textS, size: 20),
+                      onPressed: _clearSearch,
+                    )
+                  : null,
+              filled: true,
+              fillColor: AdminPalette.field,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AdminPalette.gold, width: 1.5),
+              ),
+            ),
+            onSubmitted: (value) => _searchUsers(value.trim()),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
-              // Sélecteur de type de recherche
-              Expanded(
-                flex: 2,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildSearchTypeChip('email', 'Email'),
-                      _buildSearchTypeChip('pseudo', 'Pseudo'),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 12),
-              // Sélecteur de limite
-              Expanded(
-                flex: 1,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      value: _selectedLimit,
-                      dropdownColor: Colors.grey[900],
-                      icon: Icon(Iconsax.arrow_down, color: Colors.yellow[700], size: 18),
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                      items: _limitOptions.map((limit) {
-                        return DropdownMenuItem(
-                          value: limit,
-                          child: Text('$limit utilisateurs'),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedLimit = value;
-                          });
-                          _loadRecentUsers();
-                        }
-                      },
-                    ),
-                  ),
+              _buildSearchTypeChip('pseudo', 'Pseudo'),
+              const SizedBox(width: 6),
+              _buildSearchTypeChip('email', 'E-mail'),
+              const Spacer(),
+              DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _selectedLimit,
+                  isDense: true,
+                  dropdownColor: AdminPalette.card,
+                  icon: Icon(Iconsax.arrow_down_1, color: AdminPalette.textS, size: 16),
+                  style: TextStyle(color: AdminPalette.textP, fontSize: 12.5),
+                  items: _limitOptions
+                      .map((limit) => DropdownMenuItem(value: limit, child: Text('$limit derniers')))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedLimit = value);
+                      _loadRecentUsers();
+                    }
+                  },
                 ),
               ),
             ],
-          ),
-          SizedBox(height: 16),
-
-          // Barre de recherche
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.yellow[700]!.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              style: TextStyle(color: Colors.white, fontSize: 16),
-              decoration: InputDecoration(
-                hintText: _getSearchHintText(),
-                hintStyle: TextStyle(color: Colors.grey[600]),
-                prefixIcon: Icon(
-                  Iconsax.search_normal,
-                  color: Colors.yellow[700],
-                  size: 22,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: Icon(Iconsax.close_circle, color: Colors.grey),
-                  onPressed: _clearSearch,
-                )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(color: Colors.yellow[700]!, width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey[800],
-                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
-              onSubmitted: (value) => _searchUsers(value.trim()),
-            ),
           ),
         ],
       ),
@@ -416,936 +341,247 @@ class _UserSearchPageState extends State<UserSearchPage> {
   Widget _buildSearchTypeChip(String type, String label) {
     final isSelected = _searchType == type;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _searchType = type;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      onTap: () => setState(() => _searchType = type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.yellow[700]! : Colors.transparent,
+          color: isSelected ? AdminPalette.textP : AdminPalette.field,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.black : Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        child: Text(label,
+            style: TextStyle(
+              color: isSelected ? AdminPalette.bg : AdminPalette.textS,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            )),
       ),
     );
   }
 
   Widget _buildUserCountHeader() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey[900],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Derniers utilisateurs inscrits',
-            style: TextStyle(
-              color: Colors.yellow[700],
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.yellow[700]!.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${_displayedUsers.length} affichés',
+          Text('DERNIERS INSCRITS',
               style: TextStyle(
-                color: Colors.yellow[700],
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+                  color: AdminPalette.textS, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
+          const Spacer(),
+          Text('${_displayedUsers.length} affichés', style: TextStyle(color: AdminPalette.textS, fontSize: 12)),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
-    if (_isLoading) {
-      return Center(
+  Widget _centerMessage(IconData icon, String title, String subtitle, {Widget? action}) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(
-              color: Colors.yellow[700],
-              strokeWidth: 3,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Chargement des utilisateurs...',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
+            Icon(icon, size: 52, color: AdminPalette.textS),
+            const SizedBox(height: 14),
+            Text(title,
+                style: TextStyle(color: AdminPalette.textP, fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(subtitle, textAlign: TextAlign.center, style: TextStyle(color: AdminPalette.textS, fontSize: 13)),
+            if (action != null) ...[const SizedBox(height: 16), action],
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    if (_isSearching) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              color: Colors.yellow[700],
-              strokeWidth: 3,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Recherche en cours...',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-          ],
-        ),
-      );
+  Widget _buildContent() {
+    if (_isLoading || _isSearching) {
+      return Center(child: CircularProgressIndicator(color: AdminPalette.gold, strokeWidth: 2.5));
     }
 
     if (_displayedUsers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _hasSearched ? Iconsax.search_status : Iconsax.people,
-              size: 80,
-              color: Colors.grey[600],
-            ),
-            SizedBox(height: 20),
-            Text(
-              _hasSearched ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              _hasSearched
-                  ? 'Essayez avec d\'autres critères'
-                  : 'Les utilisateurs apparaîtront ici',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            if (_hasSearched) ...[
-              SizedBox(height: 20),
-              ElevatedButton.icon(
+      return _centerMessage(
+        _hasSearched ? Iconsax.search_status : Iconsax.people,
+        _hasSearched ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur',
+        _hasSearched ? "Essaie avec d'autres critères" : 'Les utilisateurs apparaîtront ici',
+        action: _hasSearched
+            ? OutlinedButton.icon(
                 onPressed: _clearSearch,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[700],
-                  foregroundColor: Colors.white,
-                ),
-                icon: Icon(Iconsax.refresh),
-                label: Text('Voir tous les utilisateurs'),
-              ),
-            ],
-          ],
-        ),
+                icon: const Icon(Iconsax.refresh, size: 18),
+                label: const Text('Voir les derniers inscrits'),
+                style: OutlinedButton.styleFrom(foregroundColor: AdminPalette.textP),
+              )
+            : null,
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       controller: _scrollController,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
       itemCount: _displayedUsers.length + (_isLoadingMore ? 1 : 0),
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        if (index == _displayedUsers.length) {
-          return _buildLoadingMoreIndicator();
-        }
+        if (index == _displayedUsers.length) return _buildLoadingMoreIndicator();
         return _buildUserCard(_displayedUsers[index]);
       },
     );
   }
 
   Widget _buildLoadingMoreIndicator() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Center(
-        child: Column(
-          children: [
-            CircularProgressIndicator(
-              color: Colors.yellow[700],
-              strokeWidth: 2,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Chargement...',
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(child: CircularProgressIndicator(color: AdminPalette.gold, strokeWidth: 2)),
+    );
+  }
+
+  Widget _buildUserCard(UserData user) {
+    return Material(
+      color: AdminPalette.card,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => _navigateToUserManagement(user.id!),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AdminPalette.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _getUserStatusColor(user), width: 2),
+                    ),
+                    child: ClipOval(
+                      child: user.imageUrl != null && user.imageUrl!.isNotEmpty
+                          ? Image.network(user.imageUrl!,
+                              fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildDefaultAvatar(user))
+                          : _buildDefaultAvatar(user),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(user.pseudo ?? 'Non renseigné',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: AdminPalette.textP, fontSize: 14.5, fontWeight: FontWeight.w700)),
+                            ),
+                            if (user.isVerify == true) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.verified_rounded, size: 15, color: AdminPalette.blue),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 1),
+                        Text(user.email ?? 'Aucun e-mail',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: AdminPalette.textS, fontSize: 12)),
+                        Text('Inscrit le ${_formatDate(user.createdAt ?? 0)}',
+                            style: TextStyle(color: AdminPalette.textS, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _buildStatusBadge(
+                        user.isBlocked == true ? 'Bloqué' : 'Actif',
+                        user.isBlocked == true ? AdminPalette.red : AdminPalette.green,
+                      ),
+                      if (user.role != null && user.role!.isNotEmpty && user.role!.toUpperCase() != 'USER') ...[
+                        const SizedBox(height: 4),
+                        _buildStatusBadge(user.role!.toUpperCase(), AdminPalette.blue),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Les 4 soldes : argent (FCFA) et pièces
+              Row(
+                children: [
+                  _balance('Dépôt', '${(user.votre_solde_depot ?? 0).toStringAsFixed(0)} F', AdminPalette.blue),
+                  _balance('Gains', '${(user.votre_solde_principal ?? 0).toStringAsFixed(0)} F', AdminPalette.amber),
+                  _balance('P. dépôt', '${user.lockedGiftCoins}', AdminPalette.gold),
+                  _balance('P. gagnées', '${user.convertibleGiftCoins}', AdminPalette.green),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildUserCard(UserData user) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+  Widget _balance(String label, String value, Color color) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, maxLines: 1, style: TextStyle(color: AdminPalette.textS, fontSize: 10.5)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                )),
           ),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _navigateToUserManagement(user.id!),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _getUserStatusColor(user),
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: user.imageUrl != null && user.imageUrl!.isNotEmpty
-                        ? Image.network(
-                      user.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildDefaultAvatar(user);
-                      },
-                    )
-                        : _buildDefaultAvatar(user),
-                  ),
-                ),
-                SizedBox(width: 16),
-
-                // Informations utilisateur
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.pseudo ?? 'Non renseigné',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        user.email ?? 'Aucun email',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Inscription: ${_formatDate(user.createdAt??0)}',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 11,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-
-                      // Badges de statut
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          _buildStatusBadge(
-                            'Vérifié',
-                            user.isVerify == true ? Colors.green : Colors.grey,
-                          ),
-                          _buildStatusBadge(
-                            user.isBlocked == true ? 'Bloqué' : 'Actif',
-                            user.isBlocked == true ? Colors.red : Colors.green,
-                          ),
-                          _buildStatusBadge(
-                            '${user.votre_solde_principal?.toStringAsFixed(0) ?? '0'} FCFA',
-                            Colors.yellow[700]!,
-                          ),
-                          if (user.role != null && user.role!.isNotEmpty)
-                            _buildStatusBadge(
-                              user.role!.toUpperCase(),
-                              Colors.blue,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Flèche de navigation
-                Icon(
-                  Iconsax.arrow_right_3,
-                  color: Colors.yellow[700],
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
 
   Widget _buildDefaultAvatar(UserData user) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          user.pseudo != null && user.pseudo!.isNotEmpty
-              ? user.pseudo![0].toUpperCase()
-              : '?',
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      color: AdminPalette.field,
+      alignment: Alignment.center,
+      child: Text(
+        user.pseudo != null && user.pseudo!.isNotEmpty ? user.pseudo![0].toUpperCase() : '?',
+        style: TextStyle(color: AdminPalette.textS, fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
 
   Widget _buildStatusBadge(String text, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.5)),
+        color: color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+      child: Text(text, style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w700)),
     );
   }
 
   Color _getUserStatusColor(UserData user) {
-    if (user.isBlocked == true) return Colors.red;
-    if (user.isVerify == true) return Colors.green;
-    return Colors.yellow[700]!;
+    if (user.isBlocked == true) return AdminPalette.red;
+    if (user.isVerify == true) return AdminPalette.green;
+    return AdminPalette.gold;
   }
 
   void _navigateToUserManagement(String userId) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => UserManagementPage(userId: userId),
-      ),
+      MaterialPageRoute(builder: (context) => UserManagementPage(userId: userId)),
     );
   }
 }
-// class UserSearchPage extends StatefulWidget {
-//   const UserSearchPage({Key? key}) : super(key: key);
-//
-//   @override
-//   _UserSearchPageState createState() => _UserSearchPageState();
-// }
-//
-// class _UserSearchPageState extends State<UserSearchPage> {
-//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-//   final TextEditingController _searchController = TextEditingController();
-//   List<UserData> _searchResults = [];
-//   bool _isSearching = false;
-//   bool _hasSearched = false;
-//   String _searchType = 'email'; // 'email' ou 'pseudo'
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       appBar: AppBar(
-//         title: Text(
-//           'Recherche Utilisateur',
-//           style: TextStyle(color: Colors.yellow[700], fontWeight: FontWeight.bold),
-//         ),
-//         backgroundColor: Colors.black,
-//         iconTheme: IconThemeData(color: Colors.yellow[700]),
-//         elevation: 0,
-//       ),
-//       body: Column(
-//         children: [
-//           // Barre de recherche
-//           _buildSearchBar(),
-//
-//           // Résultats ou état vide
-//           Expanded(
-//             child: _buildSearchResults(),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildSearchBar() {
-//     return Container(
-//       padding: EdgeInsets.all(16),
-//       decoration: BoxDecoration(
-//         color: Colors.grey[900],
-//         borderRadius: BorderRadius.only(
-//           bottomLeft: Radius.circular(20),
-//           bottomRight: Radius.circular(20),
-//         ),
-//       ),
-//       child: Column(
-//         children: [
-//           // Sélecteur de type de recherche
-//           Container(
-//             width: double.infinity,
-//             padding: EdgeInsets.symmetric(vertical: 8),
-//             child: Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 Text(
-//                   'Rechercher par:',
-//                   style: TextStyle(
-//                     color: Colors.grey[400],
-//                     fontSize: 14,
-//                     fontWeight: FontWeight.w500,
-//                   ),
-//                 ),
-//                 Container(
-//                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//                   decoration: BoxDecoration(
-//                     color: Colors.grey[800],
-//                     borderRadius: BorderRadius.circular(20),
-//                   ),
-//                   child: Row(
-//                     children: [
-//                       _buildSearchTypeChip('email', 'Email'),
-//                       SizedBox(width: 8),
-//                       _buildSearchTypeChip('pseudo', 'Pseudo'),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           SizedBox(height: 12),
-//
-//           // Barre de recherche
-//           Container(
-//             decoration: BoxDecoration(
-//               color: Colors.black,
-//               borderRadius: BorderRadius.circular(15),
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: Colors.yellow[700]!.withOpacity(0.1),
-//                   blurRadius: 10,
-//                   offset: Offset(0, 3),
-//                 ),
-//               ],
-//             ),
-//             child: TextField(
-//               controller: _searchController,
-//               style: TextStyle(color: Colors.white, fontSize: 16),
-//               decoration: InputDecoration(
-//                 hintText: _getSearchHintText(),
-//                 hintStyle: TextStyle(color: Colors.grey[600]),
-//                 prefixIcon: Icon(
-//                   Iconsax.search_normal,
-//                   color: Colors.yellow[700],
-//                   size: 22,
-//                 ),
-//                 suffixIcon: _searchController.text.isNotEmpty
-//                     ? IconButton(
-//                   icon: Icon(Iconsax.close_circle, color: Colors.grey),
-//                   onPressed: _clearSearch,
-//                 )
-//                     : null,
-//                 border: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(15),
-//                   borderSide: BorderSide.none,
-//                 ),
-//                 enabledBorder: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(15),
-//                   borderSide: BorderSide.none,
-//                 ),
-//                 focusedBorder: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(15),
-//                   borderSide: BorderSide(color: Colors.yellow[700]!, width: 2),
-//                 ),
-//                 filled: true,
-//                 fillColor: Colors.grey[800],
-//                 contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-//               ),
-//               onSubmitted: (value) => _searchUsers(value.trim()),
-//               onChanged: (value) {
-//                 if (value.isEmpty) {
-//                   _clearSearch();
-//                 }
-//               },
-//             ),
-//           ),
-//           SizedBox(height: 8),
-//
-//           // Bouton de recherche
-//           if (_searchController.text.isNotEmpty)
-//             SizedBox(
-//               width: double.infinity,
-//               child: ElevatedButton.icon(
-//                 onPressed: _isSearching ? null : () => _searchUsers(_searchController.text.trim()),
-//                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: Colors.yellow[700],
-//                   foregroundColor: Colors.black,
-//                   padding: EdgeInsets.symmetric(vertical: 14),
-//                   shape: RoundedRectangleBorder(
-//                     borderRadius: BorderRadius.circular(12),
-//                   ),
-//                   elevation: 2,
-//                 ),
-//                 icon: Icon(Iconsax.search_normal, size: 20),
-//                 label: Text(
-//                   'RECHERCHER',
-//                   style: TextStyle(
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildSearchTypeChip(String type, String label) {
-//     final isSelected = _searchType == type;
-//     return GestureDetector(
-//       onTap: () {
-//         setState(() {
-//           _searchType = type;
-//           _clearSearch();
-//         });
-//       },
-//       child: Container(
-//         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//         decoration: BoxDecoration(
-//           color: isSelected ? Colors.yellow[700]! : Colors.transparent,
-//           borderRadius: BorderRadius.circular(20),
-//           border: Border.all(
-//             color: isSelected ? Colors.yellow.shade700! : Colors.grey.shade600,
-//           ),
-//         ),
-//         child: Text(
-//           label,
-//           style: TextStyle(
-//             color: isSelected ? Colors.black : Colors.white,
-//             fontSize: 12,
-//             fontWeight: FontWeight.w500,
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildSearchResults() {
-//     if (_isSearching) {
-//       return _buildLoadingState();
-//     }
-//
-//     if (!_hasSearched) {
-//       return _buildInitialState();
-//     }
-//
-//     if (_searchResults.isEmpty) {
-//       return _buildEmptyState();
-//     }
-//
-//     return _buildResultsList();
-//   }
-//
-//   Widget _buildInitialState() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(
-//             Iconsax.people,
-//             size: 80,
-//             color: Colors.grey[600],
-//           ),
-//           SizedBox(height: 20),
-//           Text(
-//             'Recherchez un utilisateur',
-//             style: TextStyle(
-//               color: Colors.grey[400],
-//               fontSize: 18,
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
-//           SizedBox(height: 8),
-//           Text(
-//             _searchType == 'email'
-//                 ? 'Entrez un email pour commencer la recherche'
-//                 : 'Entrez un pseudo pour commencer la recherche',
-//             style: TextStyle(
-//               color: Colors.grey[600],
-//               fontSize: 14,
-//             ),
-//             textAlign: TextAlign.center,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildLoadingState() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           CircularProgressIndicator(
-//             color: Colors.yellow[700],
-//             strokeWidth: 3,
-//           ),
-//           SizedBox(height: 16),
-//           Text(
-//             'Recherche en cours...',
-//             style: TextStyle(
-//               color: Colors.grey[400],
-//               fontSize: 16,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildEmptyState() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(
-//             Iconsax.search_status,
-//             size: 80,
-//             color: Colors.grey[600],
-//           ),
-//           SizedBox(height: 20),
-//           Text(
-//             'Aucun utilisateur trouvé',
-//             style: TextStyle(
-//               color: Colors.grey[400],
-//               fontSize: 18,
-//               fontWeight: FontWeight.w500,
-//             ),
-//           ),
-//           SizedBox(height: 8),
-//           Text(
-//             _searchType == 'email'
-//                 ? 'Aucun utilisateur avec cet email'
-//                 : 'Aucun utilisateur avec ce pseudo',
-//             style: TextStyle(
-//               color: Colors.grey[600],
-//               fontSize: 14,
-//             ),
-//             textAlign: TextAlign.center,
-//           ),
-//           SizedBox(height: 20),
-//           ElevatedButton.icon(
-//             onPressed: _clearSearch,
-//             style: ElevatedButton.styleFrom(
-//               backgroundColor: Colors.grey[700],
-//               foregroundColor: Colors.white,
-//             ),
-//             icon: Icon(Iconsax.refresh),
-//             label: Text('Nouvelle recherche'),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildResultsList() {
-//     return ListView.builder(
-//       padding: EdgeInsets.all(16),
-//       itemCount: _searchResults.length,
-//       itemBuilder: (context, index) {
-//         final user = _searchResults[index];
-//         return _buildUserCard(user);
-//       },
-//     );
-//   }
-//
-//   Widget _buildUserCard(UserData user) {
-//     return Container(
-//       margin: EdgeInsets.only(bottom: 12),
-//       decoration: BoxDecoration(
-//         color: Colors.grey[900],
-//         borderRadius: BorderRadius.circular(16),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.3),
-//             blurRadius: 8,
-//             offset: Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Material(
-//         color: Colors.transparent,
-//         child: InkWell(
-//           onTap: () => _navigateToUserManagement(user.id!),
-//           borderRadius: BorderRadius.circular(16),
-//           child: Padding(
-//             padding: EdgeInsets.all(16),
-//             child: Row(
-//               children: [
-//                 // Avatar
-//                 Container(
-//                   width: 60,
-//                   height: 60,
-//                   decoration: BoxDecoration(
-//                     shape: BoxShape.circle,
-//                     border: Border.all(
-//                       color: _getUserStatusColor(user),
-//                       width: 2,
-//                     ),
-//                   ),
-//                   child: ClipOval(
-//                     child: user.imageUrl != null && user.imageUrl!.isNotEmpty
-//                         ? Image.network(
-//                       user.imageUrl!,
-//                       fit: BoxFit.cover,
-//                       errorBuilder: (context, error, stackTrace) {
-//                         return _buildDefaultAvatar(user);
-//                       },
-//                     )
-//                         : _buildDefaultAvatar(user),
-//                   ),
-//                 ),
-//                 SizedBox(width: 16),
-//
-//                 // Informations utilisateur
-//                 Expanded(
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         user.pseudo ?? 'Non renseigné',
-//                         style: TextStyle(
-//                           color: Colors.white,
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                         maxLines: 1,
-//                         overflow: TextOverflow.ellipsis,
-//                       ),
-//                       SizedBox(height: 4),
-//                       Text(
-//                         user.email ?? 'Aucun email',
-//                         style: TextStyle(
-//                           color: Colors.grey[400],
-//                           fontSize: 14,
-//                         ),
-//                         maxLines: 1,
-//                         overflow: TextOverflow.ellipsis,
-//                       ),
-//                       SizedBox(height: 4),
-//                       Text(
-//                         user.numeroDeTelephone ?? 'Aucun numéro',
-//                         style: TextStyle(
-//                           color: Colors.grey[500],
-//                           fontSize: 12,
-//                         ),
-//                       ),
-//                       SizedBox(height: 8),
-//
-//                       // Badges de statut
-//                       Row(
-//                         children: [
-//                           _buildStatusBadge(
-//                             'Vérifié',
-//                             user.isVerify == true ? Colors.green : Colors.grey,
-//                           ),
-//                           SizedBox(width: 6),
-//                           _buildStatusBadge(
-//                             user.isBlocked == true ? 'Bloqué' : 'Actif',
-//                             user.isBlocked == true ? Colors.red : Colors.green,
-//                           ),
-//                           SizedBox(width: 6),
-//                           _buildStatusBadge(
-//                             '${user.votre_solde_principal?.toStringAsFixed(0) ?? '0'} FCFA',
-//                             Colors.yellow[700]!,
-//                           ),
-//                         ],
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//
-//                 // Flèche de navigation
-//                 Icon(
-//                   Iconsax.arrow_right_3,
-//                   color: Colors.yellow[700],
-//                   size: 20,
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildDefaultAvatar(UserData user) {
-//     return Container(
-//       decoration: BoxDecoration(
-//         color: Colors.grey[800],
-//         shape: BoxShape.circle,
-//       ),
-//       child: Icon(
-//         Iconsax.profile_circle,
-//         color: Colors.grey[400],
-//         size: 30,
-//       ),
-//     );
-//   }
-//
-//   Widget _buildStatusBadge(String text, Color color) {
-//     return Container(
-//       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//       decoration: BoxDecoration(
-//         color: color.withOpacity(0.2),
-//         borderRadius: BorderRadius.circular(12),
-//         border: Border.all(color: color.withOpacity(0.5)),
-//       ),
-//       child: Text(
-//         text,
-//         style: TextStyle(
-//           color: color,
-//           fontSize: 10,
-//           fontWeight: FontWeight.w500,
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Color _getUserStatusColor(UserData user) {
-//     if (user.isBlocked == true) return Colors.red;
-//     if (user.isVerify == true) return Colors.green;
-//     return Colors.yellow[700]!;
-//   }
-//
-//   String _getSearchHintText() {
-//     switch (_searchType) {
-//       case 'email':
-//         return 'Rechercher par email...';
-//       case 'pseudo':
-//         return 'Rechercher par pseudo...';
-//       default:
-//         return 'Rechercher...';
-//     }
-//   }
-//
-//   Future<void> _searchUsers(String query) async {
-//     if (query.isEmpty) return;
-//
-//     setState(() {
-//       _isSearching = true;
-//       _hasSearched = true;
-//       _searchResults.clear();
-//     });
-//
-//     try {
-//       QuerySnapshot snapshot;
-//
-//       if (_searchType == 'email') {
-//         // Recherche par email (correspondance exacte)
-//         snapshot = await _firestore
-//             .collection('Users')
-//             .where('email', isEqualTo: query.toLowerCase())
-//             .limit(20)
-//             .get();
-//       } else {
-//         // Recherche par pseudo (recherche partielle)
-//         snapshot = await _firestore
-//             .collection('Users')
-//             .where('pseudo', isGreaterThanOrEqualTo: query)
-//             .where('pseudo', isLessThan: query + 'z')
-//             .limit(20)
-//             .get();
-//       }
-//
-//       final results = snapshot.docs.map((doc) {
-//         final data = doc.data() as Map<String, dynamic>;
-//         data['id'] = doc.id;
-//         return UserData.fromJson(data);
-//       }).toList();
-//
-//       setState(() {
-//         _searchResults = results;
-//         _isSearching = false;
-//       });
-//     } catch (e) {
-//       printVm('Erreur recherche: $e');
-//       setState(() => _isSearching = false);
-//
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text('Erreur lors de la recherche'),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//     }
-//   }
-//
-//   void _clearSearch() {
-//     setState(() {
-//       _searchController.clear();
-//       _searchResults.clear();
-//       _hasSearched = false;
-//       _isSearching = false;
-//     });
-//   }
-//
-//   void _navigateToUserManagement(String userId) {
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => UserManagementPage(userId: userId),
-//       ),
-//     );
-//   }
-//
-//   @override
-//   void dispose() {
-//     _searchController.dispose();
-//     super.dispose();
-//   }
-// }

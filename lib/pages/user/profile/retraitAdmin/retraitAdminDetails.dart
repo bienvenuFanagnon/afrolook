@@ -1,6 +1,7 @@
 // pages/retrait/admin_retrait_detail_page.dart
 import 'package:afrotok/pages/user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:flutter/material.dart';
+import '../../../admin/admin_palette.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../models/model_data.dart';
@@ -40,18 +41,19 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    AdminPalette.of(context);
     final authProvider = context.watch<UserAuthProvider>();
     final adminId = authProvider.userId;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AdminPalette.bg,
       appBar: AppBar(
         title: Text(
           'Détail du Retrait admin',
-          style: TextStyle(color: Colors.yellow[700]),
+          style: TextStyle(color: AdminPalette.gold),
         ),
-        backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.yellow[700]),
+        backgroundColor: AdminPalette.bg,
+        iconTheme: IconThemeData(color: AdminPalette.gold),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -79,11 +81,8 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
       width: double.infinity,
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green[800]!, Colors.green[600]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AdminPalette.card,
+        border: Border.all(color: AdminPalette.green.withOpacity(0.45)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -91,7 +90,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           Text(
             '${widget.retrait.montant!.toStringAsFixed(2)} FCFA',
             style: TextStyle(
-              color: Colors.yellow[700],
+              color: AdminPalette.gold,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -100,7 +99,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
+              color: AdminPalette.field,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -127,9 +126,9 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: AdminPalette.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.yellow[700]!),
+        border: Border.all(color: AdminPalette.gold),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +139,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
               Text(
                 'Informations Utilisateur',
                 style: TextStyle(
-                  color: Colors.yellow[700],
+                  color: AdminPalette.gold,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -181,7 +180,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: AdminPalette.card,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -189,7 +188,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           Text(
             'Actions Administrateur',
             style: TextStyle(
-              color: Colors.yellow[700],
+              color: AdminPalette.gold,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -236,7 +235,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           // NOUVEAU: Bouton pour gérer l'utilisateur
           if (widget.retrait.userId != null) ...[
             SizedBox(height: 12),
-            Divider(color: Colors.grey[700]),
+            Divider(color: AdminPalette.border),
             SizedBox(height: 8),
             Text(
               'Gestion Utilisateur',
@@ -277,7 +276,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           Text(
             '$label: ',
             style: TextStyle(
-              color: Colors.white70,
+              color: AdminPalette.textS,
               fontSize: 14,
             ),
           ),
@@ -285,7 +284,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
             child: Text(
               value,
               style: TextStyle(
-                color: Colors.white,
+                color: AdminPalette.textP,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -306,7 +305,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
             child: Text(
               '$label:',
               style: TextStyle(
-                color: Colors.grey[400],
+                color: AdminPalette.textS,
                 fontSize: 14,
               ),
             ),
@@ -315,7 +314,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
             child: Text(
               value,
               style: TextStyle(
-                color: Colors.white,
+                color: AdminPalette.textP,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -362,26 +361,26 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: AdminPalette.card,
         title: Text(
           'Annuler le retrait',
-          style: TextStyle(color: Colors.yellow[700]),
+          style: TextStyle(color: AdminPalette.gold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Veuillez saisir le motif d\'annulation:',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AdminPalette.textP),
             ),
             SizedBox(height: 16),
             TextField(
               controller: _motifController,
               maxLines: 3,
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AdminPalette.textP),
               decoration: InputDecoration(
                 hintText: 'Motif d\'annulation...',
-                hintStyle: TextStyle(color: Colors.grey[600]),
+                hintStyle: TextStyle(color: AdminPalette.textS),
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.red),
                 ),
@@ -398,7 +397,7 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('ANNULER', style: TextStyle(color: Colors.grey)),
+            child: Text('ANNULER', style: TextStyle(color: AdminPalette.textS)),
           ),
           ElevatedButton(
             onPressed: _motifController.text.isEmpty ? null : () => _annulerRetrait(context),
