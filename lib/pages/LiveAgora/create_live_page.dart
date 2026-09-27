@@ -61,6 +61,72 @@ class _CreateLivePageState extends State<CreateLivePage> {
   void initState() {
     super.initState();
     _loadLiveRestrictions();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkActiveLive());
+  }
+
+  /// Un seul live actif par hôte : dès l'ouverture de la page, proposer de reprendre
+  /// le live en cours ou de le terminer pour en créer un nouveau.
+  Future<void> _checkActiveLive() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      final snap = await _firestore
+          .collection('lives')
+          .where('hostId', isEqualTo: user.uid)
+          .where('isLive', isEqualTo: true)
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty || !mounted) return;
+      final doc = snap.docs.first;
+      final data = doc.data();
+      final title = (data['title'] as String?)?.trim();
+
+      final choice = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text('Tu as déjà un live en cours'),
+          content: Text(
+            (title != null && title.isNotEmpty ? '« $title » est toujours en direct. ' : 'Un de tes lives est toujours en direct. ') +
+                'Un seul live à la fois est possible : reprends-le, ou termine-le pour en créer un nouveau.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, 'fermer'), child: const Text('Annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx, 'terminer'), child: const Text('Terminer ce live')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, 'reprendre'), child: const Text('Reprendre')),
+          ],
+        ),
+      );
+      if (!mounted) return;
+
+      if (choice == 'reprendre') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LivePage(
+              liveId: doc.id,
+              isHost: true,
+              hostName: data['hostName'] ?? 'Hôte',
+              hostImage: data['hostImage'] ?? '',
+              isInvited: false,
+              postLive: PostLive.fromMap(data),
+            ),
+          ),
+        );
+      } else if (choice == 'terminer') {
+        await doc.reference.update({'isLive': false, 'endTime': DateTime.now()});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Live terminé : tu peux en créer un nouveau.')),
+          );
+        }
+      } else {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      printVm('Vérification live actif : $e');
+    }
   }
 
   @override
@@ -1674,6 +1740,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
       return;
     }
 
+    // Verrou posé tout de suite (avant tout await) : les taps multiples ne créent qu'un seul live
+    setState(() => _isCreating = true);
+    var created = false;
+    try {
     final User? user = _auth.currentUser;
     if (user == null) {
       printVm('❌ Utilisateur non authentifié');
@@ -1698,15 +1768,6 @@ class _CreateLivePageState extends State<CreateLivePage> {
       );
       return;
     }
-
-    setState(() => _isCreating = true);
-
-    _creationTimer = Timer(Duration(seconds: 10), () {
-      if (mounted) {
-        setState(() => _isCreating = false);
-        printVm('🔓 Verrouillage automatique libéré après 10 secondes');
-      }
-    });
 
     try {
       // Vérifier si l'utilisateur a déjà un live actif
@@ -1790,7 +1851,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
       // Envoyer les notifications
       _sendNotifications(authProvider, newLive);
 
-      // Navigation vers le live
+      // Navigation vers le live (le verrou reste posé jusqu'à la fermeture de la page)
+      created = true;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -1814,9 +1876,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
           duration: Duration(seconds: 4),
         ),
       );
+    }
     } finally {
-      _creationTimer?.cancel();
-      if (mounted) {
+      // Libéré seulement en cas d'échec ou d'abandon, jamais sur un délai
+      if (!created && mounted) {
         setState(() => _isCreating = false);
       }
     }

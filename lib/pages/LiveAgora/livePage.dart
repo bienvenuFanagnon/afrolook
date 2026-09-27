@@ -132,6 +132,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   // HEARTBEAT (host uniquement — maintient le live actif)
   Timer? _heartbeatTimer;
+  // Durée maximale du live (30 min, 60 min admin) et fin détectée à distance
+  Timer? _durationTimer;
+  bool _durationWarned = false;
+  bool _endHandled = false;
 
   // ANIMATIONS
   final List<GiftEffect> _giftEffects = [];
@@ -189,7 +193,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _isFollowing = authProvider.loginUserData.followingIds?.contains(widget.postLive.hostId) == true;
 
-    if (widget.isHost) _startHeartbeat();
+    if (widget.isHost) {
+      _startHeartbeat();
+      _startDurationLimit();
+    }
 
     // Vérification de la session Firebase avant toute connexion Agora/Firestore
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1025,6 +1032,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshots().listen((snapshot) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
+        if (data['isLive'] == false && !_endHandled) {
+          _onLiveEndedRemotely();
+          return;
+        }
         // Leaderboard donateurs
         final leaderboardMap = Map<String, dynamic>.from(data['giftLeaderboard'] ?? {});
         final metaMap = Map<String, dynamic>.from(data['giftLeaderboardMeta'] ?? {});
@@ -1292,6 +1303,56 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _heartbeatTimer = Timer.periodic(const Duration(minutes: 2), (_) => _sendHeartbeat());
   }
 
+  /// Termine le live à la fin de sa durée maximale, avec un avertissement 2 minutes avant.
+  void _startDurationLimit() {
+    final endAt = widget.postLive.startTime.add(Duration(minutes: widget.postLive.safeLiveDurationMinutes));
+    _durationTimer = Timer.periodic(const Duration(seconds: 15), (t) {
+      if (!mounted || _endHandled) { t.cancel(); return; }
+      final remaining = endAt.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        t.cancel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Durée maximale atteinte (${widget.postLive.safeLiveDurationMinutes} min) : fin du live.')),
+        );
+        _endLive();
+      } else if (remaining <= const Duration(minutes: 2) && !_durationWarned) {
+        _durationWarned = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 6),
+            backgroundColor: Colors.orange,
+            content: Text('Ton live se termine dans 2 minutes (durée maximale : ${widget.postLive.safeLiveDurationMinutes} min).'),
+          ),
+        );
+      }
+    });
+  }
+
+  /// Le live a été terminé ailleurs (durée maximale, inactivité, nouveau live de l'hôte).
+  Future<void> _onLiveEndedRemotely() async {
+    if (_endHandled) return;
+    _endHandled = true;
+    _durationTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    try {
+      await _engine.leaveChannel();
+    } catch (_) {}
+    if (!mounted) return;
+    if (widget.isHost) {
+      _showLiveEndStats();
+      return;
+    }
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Live terminé'),
+        content: const Text('Ce live est terminé. Merci d\'avoir regardé !'),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      ),
+    );
+    if (mounted) Navigator.pop(context);
+  }
+
   void _sendHeartbeat() {
     _firestore.collection('lives').doc(widget.liveId).update({
       'lastHeartbeatAt': FieldValue.serverTimestamp(),
@@ -1299,6 +1360,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _endLive() async {
+    if (_endHandled) return;
+    _endHandled = true;
+    _durationTimer?.cancel();
     try {
       await _firestore.collection('lives').doc(widget.liveId).update({
         'isLive': false,
@@ -2692,6 +2756,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void dispose() {
     _removeUserFromSpectators();
     _heartbeatTimer?.cancel();
+    _durationTimer?.cancel();
     _trialTimer?.cancel();
     _typingTimer?.cancel();
     _liveSubscription?.cancel();
