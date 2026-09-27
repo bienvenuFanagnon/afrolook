@@ -420,7 +420,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kIsAppleStore && !isAdmin;
+    final payWithCoins = kPayInCoins && !isAdmin;
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
           kind: 'ad',
@@ -1279,8 +1279,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   }
 
   // iPhone : prix en pièces avec l'équivalent FCFA ; ailleurs en FCFA.
-  String _fmtPrice(int fcfa) => kIsAppleStore ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
-  String _shortPrice(int fcfa) => kIsAppleStore ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '$fcfa FCFA';
+  String _fmtPrice(int fcfa) => kPayInCoins ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
+  String _shortPrice(int fcfa) => kPayInCoins ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '$fcfa FCFA';
 
   String get _bonusLabel {
     if (_basePrice <= 0) return '0';

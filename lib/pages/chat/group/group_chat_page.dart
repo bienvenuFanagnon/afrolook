@@ -611,9 +611,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              kIsAppleStore
-                  ? 'Prix : ${CoinCheckout.coinsFor(price)} pièces / mois'
-                  : 'Prix : ${price.toStringAsFixed(0)} Afrcoins / mois',
+              'Prix : ${CoinCheckout.coinsLabel(CoinCheckout.creatorCoins(groupData['subscription_price_coins'] as num?, price))} / mois',
               style: const TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w700, fontSize: 15),
             ),
             const SizedBox(height: 4),
@@ -653,57 +651,21 @@ class _GroupChatPageState extends State<GroupChatPage> {
     Navigator.pop(context); // fermer le dialog
 
     final myId = _auth.loginUserData.id!;
-    final myUser = _auth.loginUserData;
-    final solde = myUser.votre_solde_principal ?? 0.0;
 
-    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    if (kIsAppleStore) {
-      final paid = await CoinCheckout.pay(context,
-          kind: 'group', refId: widget.groupId, priceFcfa: price, label: 'Abonnement au groupe — 1 mois');
-      if (!paid) {
-        if (mounted) setState(() => _isPaymentProcessing = false);
-        return;
-      }
-    } else if (solde < price) {
-      if (mounted) {
-        setState(() => _isPaymentProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Solde insuffisant. Manque ${(price - solde).toStringAsFixed(0)} Afrcoins'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    // Paiement en pièces (serveur) : débit, 70 % au propriétaire en Pièces gagnées, parrainages, part de l'app
+    final paid = await CoinCheckout.pay(context,
+        kind: 'group',
+        refId: widget.groupId,
+        coins: CoinCheckout.creatorCoins(groupData['subscription_price_coins'] as num?, price),
+        label: 'Abonnement au groupe — 1 mois');
+    if (!paid) {
+      if (mounted) setState(() => _isPaymentProcessing = false);
       return;
     }
 
     try {
-      final ownerId = groupData['owner_id'] as String?;
-      final ownerShare = price * 0.70;
-      final appShare = price * 0.30;
       final now = DateTime.now();
       final expiryMs = now.add(const Duration(days: 30)).millisecondsSinceEpoch;
-
-      // Débiter l'utilisateur (en pièces sur iPhone : déjà fait par payWithCoins)
-      if (!kIsAppleStore) {
-        await _firestore.collection('Users').doc(myId).update({
-          'votre_solde_principal': FieldValue.increment(-price),
-        });
-      }
-
-      // 70% au propriétaire du groupe
-      if (ownerId != null) {
-        await _firestore.collection('Users').doc(ownerId).update({
-          'votre_solde_principal': FieldValue.increment(ownerShare),
-        });
-      }
-
-      // 30% à l'app
-      if (!kIsAppleStore && _auth.appDefaultData.id != null) {
-        await _firestore.collection('AppData').doc(_auth.appDefaultData.id).update({
-          'solde_gain': FieldValue.increment(appShare),
-        });
-      }
 
       // Mettre à jour paid_subscribers
       await _firestore.collection('GroupChats').doc(widget.groupId).update({
@@ -727,24 +689,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
           'member_count': FieldValue.increment(1),
         });
       }
-
-      // Transaction
-      final ref = _firestore.collection('TransactionSoldes').doc();
-      await ref.set({
-        'id': ref.id,
-        'user_id': myId,
-        'type': 'DEPENSE',
-        'statut': 'VALIDER',
-        'description': 'Abonnement groupe "${groupData['name']}" - 1 mois',
-        'montant': price,
-        'montant_total': price,
-        'methode_paiement': 'SOLDE',
-        'sous_type': 'ABONNEMENT_GROUPE',
-        'group_id': widget.groupId,
-        'createdAt': now.millisecondsSinceEpoch,
-        'updatedAt': now.millisecondsSinceEpoch,
-        'reference': 'GRP_${now.millisecondsSinceEpoch}',
-      });
 
       if (mounted) {
         setState(() => _isPaymentProcessing = false);

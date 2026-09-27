@@ -45,7 +45,7 @@ class PaymentRequiredDialog extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Ce live est payant. Payez ${kIsAppleStore ? '${CoinCheckout.coinsFor(live.participationFee.toDouble())} pièces' : '${live.participationFee.toInt()} FCFA'} pour continuer à regarder.',
+              'Ce live est privé. Payez ${CoinCheckout.coinsLabel(live.participationFeeCoins)} pour continuer à regarder.',
               style: TextStyle(color: Colors.white70),
               textAlign: TextAlign.center,
             ),
@@ -75,7 +75,7 @@ class PaymentRequiredDialog extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      'Payer ${kIsAppleStore ? '${CoinCheckout.coinsFor(live.participationFee.toDouble())} pièces' : '${live.participationFee.toInt()} FCFA'}',
+                      'Payer ${CoinCheckout.fmt(live.participationFeeCoins)} pièces',
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -154,7 +154,7 @@ class JoinLiveDialog extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      kIsAppleStore ? '🎤 Participant (250 pièces)' : '🎤 Participant (100 FCFA)',
+                      '🎤 Participant (250 pièces)',
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ),

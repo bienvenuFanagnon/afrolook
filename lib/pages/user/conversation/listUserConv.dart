@@ -11,6 +11,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/material.dart';
+import '../../../services/coin_checkout.dart';
 
 import 'package:flutter/cupertino.dart';
 
@@ -1467,7 +1468,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                     ],
                   ),
                   Text(
-                    '$memberCount membres${isPrivate && price > 0 ? ' · ${price.toStringAsFixed(0)} FCFA/mois' : ''}',
+                    '$memberCount membres${isPrivate && price > 0 ? ' · ${CoinCheckout.fmt(CoinCheckout.creatorCoins(group['subscription_price_coins'] as num?, group['subscription_price'] as num?))} pièces/mois' : ''}',
                     style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                   ),
                 ],

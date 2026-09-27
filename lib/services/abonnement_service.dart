@@ -99,7 +99,7 @@ class AbonnementService {
 
     // iPhone (règle App Store 3.1.1) : paiement en pièces achetées via l'App Store.
     // La Cloud Function recalcule le prix, débite les pièces et enregistre la transaction.
-    if (kIsAppleStore) {
+    if (kPayInCoins) {
       final planType = sousType == 'ABONNEMENT_GOLD' ? 'gold' : 'premium';
       final paid = await CoinCheckout.pay(
         context,

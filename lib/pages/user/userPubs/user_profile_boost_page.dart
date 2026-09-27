@@ -120,7 +120,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
   }
 
   // iPhone : prix en pièces avec l'équivalent FCFA ; ailleurs en FCFA.
-  String _fmtPrice(int fcfa) => kIsAppleStore ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
+  String _fmtPrice(int fcfa) => kPayInCoins ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
 
   Future<void> _submit() async {
     if (_selectedActionType == null) { _showError('Choisissez un type d\'action'); return; }
@@ -138,7 +138,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     final balance = userData.votre_solde_depot ?? 0;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kIsAppleStore && !isAdmin;
+    final payWithCoins = kPayInCoins && !isAdmin;
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
           kind: 'profile_boost', priceFcfa: price.toDouble(), label: 'Boost de profil',
@@ -620,7 +620,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
               return ChoiceChip(
                 label: Column(children: [
                   Text(AdConfigService.labelFor(d.weeks, _durations), style: const TextStyle(fontSize: 12)),
-                  Text(kIsAppleStore ? '${CoinCheckout.coinsFor(d.price.toDouble())} pièces' : '${d.price} FCFA', style: const TextStyle(fontSize: 10)),
+                  Text(kPayInCoins ? '${CoinCheckout.coinsFor(d.price.toDouble())} pièces' : '${d.price} FCFA', style: const TextStyle(fontSize: 10)),
                 ]),
                 selected: isSelected,
                 onSelected: (v) => setState(() => _selectedDurationWeeks = v ? d.weeks : null),

@@ -1,15 +1,35 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { APP_DATA_DOC } from "../posts/defiShared";
 
 /**
- * payWithCoins — paiement en pièces des achats numériques sur iPhone (règle App Store 3.1.1) :
- * les pièces sont achetées via l'App Store, donc tout contenu débloqué avec elles l'est via
- * un achat intégré. Le prix est TOUJOURS recalculé ici depuis la base (jamais celui du
- * téléphone), converti au taux de la recharge : pièces = prix FCFA × 2,5.
- * Le débit est fait ici ; l'app active ensuite l'accès comme pour un paiement FCFA.
+ * payWithCoins — paiement en pièces de TOUS les achats de l'app (Android et iPhone),
+ * sauf les contenus payants (encore en FCFA, voir securePurchase).
+ *
+ * - Le prix est TOUJOURS recalculé ici depuis la base (jamais celui du téléphone).
+ * - Prix fixés par les créateurs (groupe, canal, live privé, pronostic) : champ en pièces
+ *   (`*_coins` / `*Coins`) ; à défaut, ancien prix FCFA × 2,5 (taux de la recharge).
+ * - Prix de l'app (Premium, Gold, compte officiel, pubs, boosts) : barème FCFA × 2,5.
+ * - Part du créateur (groupe, canal, live privé) : 70 % versés en Pièces gagnées
+ *   (convertibles en argent) ; le reste va à l'app (AppData.solde_gain_pieces).
+ * - Parrainages (règle unique, prise sur la part de l'app) : 2,5 % au parrain de celui
+ *   qui paie, 2,5 % au parrain du créateur, en Pièces gagnées.
  */
-const COINS_PER_FCFA = 2.5; // 25 pièces pour 10 FCFA (CoinGiftService.coinsPerFcfa / fcfaBase)
+const COINS_PER_FCFA = 2.5; // 25 pièces pour 10 FCFA
+const CREATOR_SHARE = 0.7;
+const SPONSOR_SHARE = 0.025;
+
+/** Parrain d'un utilisateur (champ code_parrain → Users.code_parrainage), hors lui-même. */
+async function sponsorOf(userId: string | undefined): Promise<string | undefined> {
+  if (!userId) return undefined;
+  const u = await db.collection("Users").doc(userId).get();
+  const code = u.data()?.code_parrain as string | undefined;
+  if (!code) return undefined;
+  const q = await db.collection("Users").where("code_parrainage", "==", code).limit(1).get();
+  const id = q.docs[0]?.id;
+  return id && id !== userId ? id : undefined;
+}
 
 // Grille Premium / Gold : identique à AfrolookAbonnement (lib/models/model_data.dart).
 const PREMIUM_BASE = 200;
@@ -19,12 +39,34 @@ const GOLD_REDUCTIONS: Record<number, number> = { 2: 50, 3: 150, 6: 500, 12: 150
 const OFFICIAL_ACCOUNT_PRICE = 5000; // _kSubscriptionAmount (official_account_service.dart)
 const LIVE_PARTICIPANT_PRICE = 100;  // rejoindre un live comme participant (livePage.dart)
 
-type Kind = "premium" | "gold" | "official" | "group" | "content" | "pronostic" | "canal"
-  | "live_entry" | "live_participant" | "ad" | "ad_renew" | "profile_boost";
-
 // Tarifs publicité / boost de profil : AdConfig/pricing.durations (AdConfigService), sinon défauts.
 const AD_DEFAULT_PRICES: Record<number, number> = { 1: 1500, 2: 2500, 4: 4500, 12: 10000, 24: 18000, 52: 30000 };
 const AD_COMBINED_FACTOR = 1.5; // publicité + boost de profil (user_create_advertisement_page)
+
+type Kind = "premium" | "gold" | "official" | "group" | "content" | "pronostic" | "canal"
+  | "live_entry" | "live_participant" | "ad" | "ad_renew" | "profile_boost" | "product_boost";
+
+const LABELS: Record<Kind, string> = {
+  premium: "Abonnement Premium",
+  gold: "Abonnement Gold",
+  official: "Compte officiel",
+  group: "Abonnement à un groupe",
+  content: "Contenu payant",
+  pronostic: "Participation à un pronostic",
+  canal: "Abonnement à un canal",
+  live_entry: "Accès à un live privé",
+  live_participant: "Participation à un live",
+  ad: "Publicité",
+  ad_renew: "Renouvellement de publicité",
+  profile_boost: "Boost de profil",
+  product_boost: "Boost de produit",
+};
+
+function num(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+const toCoins = (fcfa: number) => Math.ceil(fcfa * COINS_PER_FCFA);
 
 async function adPrice(weeks: number): Promise<number> {
   let prices = AD_DEFAULT_PRICES;
@@ -39,55 +81,54 @@ async function adPrice(weeks: number): Promise<number> {
   return price;
 }
 
-const LABELS: Record<Kind, string> = {
-  premium: "Abonnement Premium",
-  gold: "Abonnement Gold",
-  official: "Compte officiel",
-  group: "Abonnement à un groupe",
-  content: "Contenu payant",
-  pronostic: "Participation à un pronostic",
-  canal: "Abonnement à un canal",
-  live_entry: "Accès à un live",
-  live_participant: "Participation à un live",
-  ad: "Publicité",
-  ad_renew: "Renouvellement de publicité",
-  profile_boost: "Boost de profil",
-};
-
-function num(v: unknown): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+/** Boost de produit Afroshop : 500 F par tranche de 10 jours, réduction 10/15/20 % (produit_details.dart). */
+function productBoostFcfa(days: number): number {
+  if (![10, 20, 30, 40].includes(days)) throw new HttpsError("invalid-argument", "Durée invalide.");
+  const base = (days / 10) * 500;
+  const reduction = ({ 20: 10, 30: 15, 40: 20 } as Record<number, number>)[days] ?? 0;
+  return base - (base * reduction) / 100;
 }
 
-async function docField(collection: string, id: string | undefined, field: string): Promise<number> {
+interface Priced {
+  coins: number;
+  ownerId?: string; // bénéficiaire des 70 % (créateur)
+}
+
+async function creatorPrice(
+  collection: string, id: string | undefined, coinsField: string, fcfaField: string, ownerField?: string,
+): Promise<Priced> {
   if (!id) throw new HttpsError("invalid-argument", "Référence manquante.");
   const doc = await db.collection(collection).doc(id).get();
-  if (!doc.exists) throw new HttpsError("not-found", "Contenu introuvable.");
-  return num(doc.data()![field]);
+  if (!doc.exists) throw new HttpsError("not-found", "Introuvable.");
+  const d = doc.data()!;
+  const coins = num(d[coinsField]) > 0 ? Math.ceil(num(d[coinsField])) : toCoins(num(d[fcfaField]));
+  return { coins, ownerId: ownerField ? (d[ownerField] as string | undefined) : undefined };
 }
 
-async function priceFcfa(kind: Kind, refId: string | undefined, dureeMois: number,
-  weeks: number, combined: boolean): Promise<number> {
+async function priceOf(kind: Kind, refId: string | undefined, dureeMois: number,
+  weeks: number, combined: boolean, days: number): Promise<Priced> {
   switch (kind) {
     case "premium":
     case "gold": {
       if (![1, 2, 3, 4, 6, 12].includes(dureeMois)) throw new HttpsError("invalid-argument", "Durée invalide.");
       const base = kind === "premium" ? PREMIUM_BASE : GOLD_BASE;
       const reductions = kind === "premium" ? PREMIUM_REDUCTIONS : GOLD_REDUCTIONS;
-      return dureeMois * base - (reductions[dureeMois] ?? 0);
+      return { coins: toCoins(dureeMois * base - (reductions[dureeMois] ?? 0)) };
     }
-    case "official": return OFFICIAL_ACCOUNT_PRICE;
-    case "group": return docField("GroupChats", refId, "subscription_price");
-    case "content": return docField("ContentPaies", refId, "price");
-    case "pronostic": return docField("Pronostics", refId, "prixParticipation");
-    case "canal": return docField("Canaux", refId, "subscriptionPrice");
-    case "live_entry": return docField("lives", refId, "participationFee");
-    case "live_participant": return LIVE_PARTICIPANT_PRICE;
+    case "official": return { coins: toCoins(OFFICIAL_ACCOUNT_PRICE) };
+    case "group": return creatorPrice("GroupChats", refId, "subscription_price_coins", "subscription_price", "owner_id");
+    case "canal": return creatorPrice("Canaux", refId, "subscriptionPriceCoins", "subscriptionPrice", "userId");
+    case "live_entry": return creatorPrice("lives", refId, "participationFeeCoins", "participationFee", "hostId");
+    case "pronostic": return creatorPrice("Pronostics", refId, "prixParticipationCoins", "prixParticipation");
+    case "content": return creatorPrice("ContentPaies", refId, "priceCoins", "price");
+    case "live_participant": return { coins: toCoins(LIVE_PARTICIPANT_PRICE) };
     case "ad": {
       const base = await adPrice(weeks);
-      return combined ? Math.round(base * AD_COMBINED_FACTOR) : base;
+      return { coins: toCoins(combined ? Math.round(base * AD_COMBINED_FACTOR) : base) };
     }
     case "ad_renew":
-    case "profile_boost": return adPrice(weeks);
+    case "profile_boost": return { coins: toCoins(await adPrice(weeks)) };
+    case "product_boost": return { coins: toCoins(productBoostFcfa(days)) };
   }
 }
 
@@ -96,37 +137,55 @@ export const payWithCoins = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentification requise.");
     const uid = request.auth.uid;
-    const { kind, refId, dureeMois, weeks, combined } = request.data as {
-      kind?: string; refId?: string; dureeMois?: number; weeks?: number; combined?: boolean;
+    const { kind, refId, dureeMois, weeks, combined, days } = request.data as {
+      kind?: string; refId?: string; dureeMois?: number; weeks?: number; combined?: boolean; days?: number;
     };
     if (!kind || !(kind in LABELS)) throw new HttpsError("invalid-argument", "Achat inconnu.");
 
-    const price = await priceFcfa(kind as Kind, refId, Math.floor(num(dureeMois)) || 1,
-      Math.floor(num(weeks)), combined === true);
-    if (price <= 0) throw new HttpsError("failed-precondition", "Ce contenu est gratuit.");
-    const coins = Math.ceil(price * COINS_PER_FCFA);
+    const { coins, ownerId } = await priceOf(kind as Kind, refId, Math.floor(num(dureeMois)) || 1,
+      Math.floor(num(weeks)), combined === true, Math.floor(num(days)));
+    if (coins <= 0) throw new HttpsError("failed-precondition", "Ce contenu est gratuit.");
+
+    // Part du créateur (70 %), sauf s'il paie lui-même
+    const creatorId = ownerId && ownerId !== uid ? ownerId : undefined;
+    const creatorCoins = creatorId ? Math.floor(coins * CREATOR_SHARE) : 0;
+
+    // Parrainages (hors transaction : requêtes non permises dedans)
+    const [payerSponsor, creatorSponsor] = await Promise.all([sponsorOf(uid), sponsorOf(creatorId)]);
+    const sponsors: { id: string; coins: number; role: string }[] = [];
+    if (payerSponsor) sponsors.push({ id: payerSponsor, coins: Math.floor(coins * SPONSOR_SHARE), role: "filleul acheteur" });
+    if (creatorSponsor) sponsors.push({ id: creatorSponsor, coins: Math.floor(coins * SPONSOR_SHARE), role: "filleul créateur" });
+    const sponsorCoins = sponsors.reduce((s, p) => s + p.coins, 0);
+    const appCoins = coins - creatorCoins - sponsorCoins;
+
     const userRef = db.collection("Users").doc(uid);
+    const label = LABELS[kind as Kind];
 
     return db.runTransaction(async (tx) => {
       const userDoc = await tx.get(userRef);
       if (!userDoc.exists) throw new HttpsError("not-found", "Compte introuvable.");
+      const creatorRef = creatorId ? db.collection("Users").doc(creatorId) : null;
+      const creatorDoc = creatorRef ? await tx.get(creatorRef) : null;
+
       const balance = num(userDoc.data()!["giftCoinsBalance"]);
       if (balance < coins) {
         throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins, balance });
       }
       const now = Date.now();
+
+      // 1. Payeur
       tx.update(userRef, {
         giftCoinsBalance: FieldValue.increment(-coins),
         totalGiftCoinsSpent: FieldValue.increment(coins),
         updatedAt: now,
       });
-      const txRef = db.collection("TransactionSoldes").doc();
-      tx.set(txRef, {
-        id: txRef.id,
+      const payerTx = db.collection("TransactionSoldes").doc();
+      tx.set(payerTx, {
+        id: payerTx.id,
         user_id: uid,
         type: "DEPENSE",
         statut: "VALIDER",
-        description: `${LABELS[kind as Kind]} — ${coins} pièces`,
+        description: `${label} — ${coins} pièces`,
         montant: coins,
         frais: 0,
         montant_total: coins,
@@ -135,9 +194,74 @@ export const payWithCoins = onCall(
         updatedAt: now,
         purchaseKind: kind,
         purchaseRefId: refId ?? null,
-        priceFcfa: price,
+        priceFcfaEquivalent: coins / COINS_PER_FCFA,
       });
-      return { success: true, coins, priceFcfa: price };
+
+      // 2. Créateur : 70 % en Pièces gagnées (convertibles)
+      if (creatorRef && creatorDoc?.exists && creatorCoins > 0) {
+        tx.update(creatorRef, {
+          giftCoinsBalance: FieldValue.increment(creatorCoins),
+          totalCoinsEarnedFromSales: FieldValue.increment(creatorCoins),
+        });
+        const creatorTx = db.collection("TransactionSoldes").doc();
+        tx.set(creatorTx, {
+          id: creatorTx.id,
+          user_id: creatorId,
+          type: "GAIN_PIECES",
+          statut: "VALIDER",
+          description: `${label} — ${creatorCoins} pièces reçues`,
+          montant: creatorCoins,
+          frais: 0,
+          montant_total: creatorCoins,
+          methode_paiement: "pieces",
+          createdAt: now,
+          updatedAt: now,
+          purchaseKind: kind,
+          purchaseRefId: refId ?? null,
+          payerId: uid,
+        });
+      }
+
+      // 3. Parrains : 2,5 % chacun, en Pièces gagnées
+      for (const s of sponsors) {
+        if (s.coins <= 0) continue;
+        tx.update(db.collection("Users").doc(s.id), {
+          giftCoinsBalance: FieldValue.increment(s.coins),
+          totalCoinsEarnedFromSponsorship: FieldValue.increment(s.coins),
+        });
+        const sTx = db.collection("TransactionSoldes").doc();
+        tx.set(sTx, {
+          id: sTx.id,
+          user_id: s.id,
+          type: "GAIN_PIECES",
+          statut: "VALIDER",
+          description: `Commission de parrainage (${s.role}) — ${label} — ${s.coins} pièces`,
+          montant: s.coins,
+          frais: 0,
+          montant_total: s.coins,
+          methode_paiement: "commission_parrainage",
+          createdAt: now,
+          updatedAt: now,
+          purchaseKind: kind,
+          purchaseRefId: refId ?? null,
+        });
+      }
+
+      // 4. Live privé : total encaissé par l'hôte (statistique du live, en pièces)
+      if (kind === "live_entry" && refId) {
+        tx.update(db.collection("lives").doc(refId), {
+          paidParticipationTotal: FieldValue.increment(creatorCoins),
+        });
+      }
+
+      // 5. App
+      if (appCoins > 0) {
+        tx.update(db.collection("AppData").doc(APP_DATA_DOC), {
+          solde_gain_pieces: FieldValue.increment(appCoins),
+        });
+      }
+
+      return { success: true, coins, creatorCoins, priceFcfaEquivalent: coins / COINS_PER_FCFA };
     });
   }
 );

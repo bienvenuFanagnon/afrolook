@@ -488,41 +488,15 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _processParticipationPayment() async {
     try {
-      final amount = widget.postLive.participationFee;
-      final userProvider = context.read<UserAuthProvider>();
 
-      if (!kIsAppleStore && userProvider.loginUserData!.votre_solde_principal! < amount) {
-        _showInsufficientBalanceDialog();
-        return;
-      }
-
-      // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-      final paymentSuccess = kIsAppleStore
-          ? await CoinCheckout.pay(context,
-              kind: 'live_entry', refId: widget.liveId, priceFcfa: amount.toDouble(), label: 'Accès au live')
-          : await userProvider.deductFromBalance(context, amount);
+      // Paiement en pièces (serveur) : débit, 70 % à l'hôte en Pièces gagnées, parrainages, part de l'app
+      final paymentSuccess = await CoinCheckout.pay(context,
+          kind: 'live_entry',
+          refId: widget.liveId,
+          coins: widget.postLive.participationFeeCoins,
+          label: 'Accès au live privé');
 
       if (paymentSuccess) {
-        final hostShare = amount * 0.7;
-
-        // CORRECTION : Distribution correcte des fonds
-        await _firestore.collection('lives').doc(widget.liveId).update({
-          'paidParticipationTotal': FieldValue.increment(hostShare),
-        });
-
-        if(userProvider.loginUserData!.codeParrain!=null){
-          final appShare = amount * 0.25;
-          userProvider.incrementAppGain(appShare);
-          userProvider.ajouterCadeauCommissionParrain(codeParrainage: userProvider.loginUserData!.codeParrain!, montant: amount);
-          userProvider.ajouterCommissionParrainViaUserId(userId: widget.postLive.hostId!, montant: amount);
-
-        }else{
-          final appShare = amount * 0.75;
-          userProvider.incrementAppGain(appShare);
-          userProvider.ajouterCommissionParrainViaUserId(userId: widget.postLive.hostId!, montant: amount);
-
-        }
-
 
         final currentUserId = _auth.currentUser?.uid;
         if (currentUserId != null) {
@@ -555,33 +529,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       );
     }
   }
-
-  void _showInsufficientBalanceDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
-        content: Text('Votre solde est insuffisant. Voulez-vous recharger?',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard', style: TextStyle(color: Colors.white70)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
-            },
-            child: Text('Recharger', style: TextStyle(color: Color(0xFFF9A825))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== GESTION AGORA ====================
 
   Future<void> _setupCamera() async {
     try {
@@ -1395,19 +1342,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         return;
       }
 
-      if (!kIsAppleStore && authProvider.loginUserData!.votre_solde_principal! < 100) {
-        _showPaymentRequiredDialog();
-        return;
-      }
-
-      // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-      final paymentSuccess = kIsAppleStore
-          ? await CoinCheckout.pay(context,
-              kind: 'live_participant', refId: widget.liveId, priceFcfa: 100, label: 'Participer au live')
-          : await authProvider.deductFromBalance(context, 100.0);
+      // Paiement en pièces (serveur)
+      final paymentSuccess = await CoinCheckout.pay(context,
+          kind: 'live_participant', refId: widget.liveId, priceFcfa: 100, label: 'Participer au live');
 
       if (paymentSuccess) {
-        if (!kIsAppleStore) authProvider.incrementAppGain(100);
         await liveProvider.joinAsParticipant(widget.liveId, authProvider.userId!);
         setState(() => _isParticipant = true);
         await _reinitializeAgora();
@@ -1444,68 +1383,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ),
     );
   }
-
-  void _showPaymentRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text('Solde insuffisant', style: TextStyle(color: Colors.white)),
-        content: Text('Vous avez besoin de 100 Afrcoins pour participer au live.',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: TextStyle(color: Color(0xFFF9A825))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== GESTION FIN DE LIVE ====================
-
-  // void _startPaymentTimer() {
-  //   _paymentWarningTimer = Timer(const Duration(minutes: 30), () {
-  //     _requestPayment();
-  //   });
-  // }
-  //
-  // void _requestPayment() async {
-  //   try {
-  //     await _firestore.collection('lives').doc(widget.liveId).update({
-  //       'paymentRequired': true,
-  //       'paymentRequestTime': DateTime.now(),
-  //     });
-  //
-  //     setState(() => _showPaymentWarning = true);
-  //   } catch (e) {
-  //     printVm("❌ Erreur demande paiement: $e");
-  //   }
-  // }
-  //
-  // void _handlePayment() async {
-  //   try {
-  //     final userProvider = context.read<UserAuthProvider>();
-  //     bool paymentSuccess = await userProvider.deductFromBalance(context, 100.0);
-  //
-  //     if (paymentSuccess) {
-  //       userProvider.incrementAppGain(100);
-  //
-  //       await _firestore.collection('lives').doc(widget.liveId).update({
-  //         'paymentRequired': false,
-  //         'paymentRequestTime': null,
-  //       });
-  //
-  //       setState(() => _showPaymentWarning = false);
-  //       _startPaymentTimer();
-  //     } else {
-  //       _endLive();
-  //     }
-  //   } catch (e) {
-  //     printVm("❌ Erreur traitement paiement: $e");
-  //   }
-  // }
 
   void _confirmEndLive() {
     showDialog(
@@ -2820,7 +2697,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             ),
             SizedBox(height: 12),
             Text(
-              'Payez ${widget.postLive.participationFee.toInt()} Afrcoins pour continuer à regarder',
+              'Payez ${CoinCheckout.coinsLabel(widget.postLive.participationFeeCoins)} pour continuer à regarder',
               style: TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -2832,7 +2709,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
               child: Text(
-                'Payer ${widget.postLive.participationFee.toInt()} Afrcoins',
+                'Payer ${CoinCheckout.fmt(widget.postLive.participationFeeCoins)} pièces',
                 style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
               ),
             ),

@@ -1,42 +1,79 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../pages/coins/apple_coin_store_view.dart';
+import '../pages/coins/coin_recharge_screen.dart';
 import '../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
+import '../theme/app_colors.dart';
 
-/// Paiement en pièces des achats numériques sur iPhone (règle App Store 3.1.1).
+/// Paiement en pièces de tous les achats de l'app (Android et iPhone), sauf contenus payants.
 /// Le prix est recalculé par la Cloud Function payWithCoins ; ici on n'affiche qu'une estimation.
 class CoinCheckout {
-  /// Même taux que la recharge : 25 pièces pour 10 FCFA.
-  static int coinsFor(double fcfa) => (fcfa * 2.5).ceil();
+  /// Taux de la recharge : 25 pièces pour 10 FCFA.
+  static const double coinsPerFcfa = 2.5;
+  static final NumberFormat _n = NumberFormat.decimalPattern('fr');
 
-  /// Prix affiché sur iPhone : « X pièces (≈ Y FCFA) ».
-  static String priceLabel(num fcfa) => '${coinsFor(fcfa.toDouble())} pièces (≈ ${fcfa.round()} FCFA)';
+  static int coinsFor(double fcfa) => (fcfa * coinsPerFcfa).ceil();
+  static double fcfaFor(int coins) => coins / coinsPerFcfa;
+  static String fmt(num v) => _n.format(v.round());
+
+  /// « X pièces (≈ Y FCFA) » à partir d'un prix FCFA (prix de l'app).
+  static String priceLabel(num fcfa) => coinsLabel(coinsFor(fcfa.toDouble()));
+
+  /// « X pièces (≈ Y FCFA) » à partir d'un prix en pièces ; l'équivalent FCFA est indicatif.
+  static String coinsLabel(int coins) => '${fmt(coins)} pièces (≈ ${fmt(fcfaFor(coins))} FCFA)';
+
+  /// Prix en pièces d'un élément créé par un utilisateur : champ en pièces, sinon ancien prix FCFA × 2,5.
+  static int creatorCoins(num? coinsField, num? fcfaField) =>
+      (coinsField ?? 0) > 0 ? coinsField!.ceil() : coinsFor((fcfaField ?? 0).toDouble());
 
   /// Demande confirmation, débite les pièces côté serveur, et retourne true si le paiement est fait.
-  /// [kind] : premium, gold, official, group, content, pronostic, canal, live_entry, live_participant,
-  /// ad (publicité, [weeks] + [combined]), ad_renew et profile_boost ([weeks]).
+  /// [coins] : prix en pièces (sinon calculé depuis [priceFcfa]).
+  /// [kind] : premium, gold, official, group, canal, live_entry, live_participant, content,
+  /// ad (publicité, [weeks] + [combined]), ad_renew et profile_boost ([weeks]), product_boost ([days]).
   static Future<bool> pay(
     BuildContext context, {
     required String kind,
-    required double priceFcfa,
     required String label,
+    int? coins,
+    double? priceFcfa,
     String? refId,
     int? dureeMois,
     int? weeks,
     bool? combined,
+    int? days,
   }) async {
-    final coins = coinsFor(priceFcfa);
+    final price = coins ?? coinsFor(priceFcfa ?? 0);
+    final balance = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.giftCoinsBalance ?? 0;
+    if (balance < price) {
+      await insufficient(context, price);
+      return false;
+    }
+
+    final c = AppColors.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(label),
-        content: Text('Payer $coins pièces (≈ ${priceFcfa.round()} FCFA) ?'),
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(label, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${fmt(price)} pièces',
+              style: TextStyle(color: c.textPrimary, fontSize: 24, fontWeight: FontWeight.w800)),
+          Text('≈ ${fmt(fcfaFor(price))} FCFA', style: TextStyle(color: c.textSecondary, fontSize: 13)),
+          const SizedBox(height: 10),
+          Text('Solde après achat : ${fmt(balance - price)} pièces',
+              style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+        ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Payer $coins 🪙')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
+            child: const Text('Payer'),
+          ),
         ],
       ),
     );
@@ -49,13 +86,15 @@ class CoinCheckout {
         if (dureeMois != null) 'dureeMois': dureeMois,
         if (weeks != null) 'weeks': weeks,
         if (combined != null) 'combined': combined,
+        if (days != null) 'days': days,
       });
       if (context.mounted) await refreshBalance(context);
       return true;
     } on FirebaseFunctionsException catch (e) {
       if (!context.mounted) return false;
       if (e.code == 'resource-exhausted') {
-        await insufficient(context, coins);
+        await refreshBalance(context);
+        if (context.mounted) await insufficient(context, price);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Le paiement n'a pas pu être effectué. Tu n'as pas été débité.")),
@@ -72,26 +111,51 @@ class CoinCheckout {
     }
   }
 
+  /// Rafraîchit le solde de pièces (fournisseur des pièces + utilisateur connecté).
   static Future<void> refreshBalance(BuildContext context) async {
     try {
-      final uid = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
-      if (uid != null) await Provider.of<CoinGiftUserProvider>(context, listen: false).refreshBalance(uid);
+      final auth = Provider.of<UserAuthProvider>(context, listen: false);
+      final uid = auth.loginUserData.id;
+      if (uid != null) {
+        await Provider.of<CoinGiftUserProvider>(context, listen: false).refreshBalance(uid);
+        await auth.refreshUserData();
+      }
     } catch (_) {}
   }
 
+  /// Fenêtre « pas assez de pièces » : solde, prix, ce qui manque, bouton d'achat.
   static Future<void> insufficient(BuildContext context, int coins) {
+    final c = AppColors.of(context);
+    final balance = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.giftCoinsBalance ?? 0;
+    final missing = (coins - balance).clamp(0, coins);
+    Widget row(String k, String v, {Color? color}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            Expanded(child: Text(k, style: TextStyle(color: c.textSecondary, fontSize: 13.5))),
+            Text(v, style: TextStyle(color: color ?? c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+          ]),
+        );
     return showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Solde de pièces insuffisant'),
-        content: Text('Il te faut $coins pièces pour cet achat. Achète des pièces pour continuer.'),
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('Pas assez de pièces',
+            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          row('Prix', '${fmt(coins)} pièces'),
+          row('Ton solde', '${fmt(balance)} pièces'),
+          Divider(color: c.border),
+          row('Il te manque', '${fmt(missing)} pièces', color: c.danger),
+        ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer')),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const AppleCoinStoreView()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => CoinRechargeScreen()));
             },
+            style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
             child: const Text('Acheter des pièces'),
           ),
         ],

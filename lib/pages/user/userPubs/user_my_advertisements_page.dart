@@ -148,7 +148,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kIsAppleStore && !isAdmin;
+    final payWithCoins = kPayInCoins && !isAdmin;
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
           kind: 'ad_renew', priceFcfa: price.toDouble(), label: 'Renouvellement de publicité', weeks: weeks);
@@ -354,7 +354,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
                                 color: sel ? _colors.supportAccent : _colors.textPrimary,
                                 fontWeight: sel ? FontWeight.bold : FontWeight.normal,
                                 fontSize: 13)),
-                        Text(kIsAppleStore ? CoinCheckout.priceLabel(_durationPrices[week] ?? 0) : '${_durationPrices[week]} FCFA',
+                        Text(kPayInCoins ? CoinCheckout.priceLabel(_durationPrices[week] ?? 0) : '${_durationPrices[week]} FCFA',
                             style: TextStyle(
                                 color: sel ? _colors.supportAccent : _colors.textSecondary,
                                 fontSize: 11)),

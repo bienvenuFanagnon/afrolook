@@ -232,11 +232,11 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       AfrolookAbonnement? abonnement, bool isPremium, bool isGold) {
     final depot = user.votre_solde_depot ?? 0.0;
     final principal = user.votre_solde_principal ?? 0.0;
-    final solde = kIsAppleStore
+    final solde = kPayInCoins
         ? (user.giftCoinsBalance ?? 0).toDouble()
         : (_selectedBalancePremium == 'votre_solde_depot' ? depot : principal);
     final prixFinal = _getPrixPremium(_dureePremium);
-    final soldeInsuffisant = solde < (kIsAppleStore ? CoinCheckout.coinsFor(prixFinal) : prixFinal);
+    final soldeInsuffisant = solde < (kPayInCoins ? CoinCheckout.coinsFor(prixFinal) : prixFinal);
 
     // Si Gold actif : afficher info upgrade impossible (déjà au dessus)
     if (isGold) {
@@ -304,7 +304,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 16),
           _buildPriceSummary(colors, _offresPremium, _dureePremium, const Color(0xFFFDB813)),
           const SizedBox(height: 16),
-          if (!kIsAppleStore) _buildAbonnementBalanceSelector(
+          if (!kPayInCoins) _buildAbonnementBalanceSelector(
             colors: colors,
             user: user,
             selectedBalance: _selectedBalancePremium,
@@ -316,7 +316,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: kIsAppleStore ? 'Solde de pièces' : (_selectedBalancePremium == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
+            soldeLabel: kPayInCoins ? 'Solde de pièces' : (_selectedBalancePremium == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
             accentColor: const Color(0xFFFF416C),
             btnLabel: '⭐ DEVENIR PREMIUM — ${_px(prixFinal)}',
             onPay: () => _souscrire(user, 'premium', _dureePremium, balanceKey: _selectedBalancePremium),
@@ -353,7 +353,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       AfrolookAbonnement? abonnement, bool isGold) {
     final depot = user.votre_solde_depot ?? 0.0;
     final principal = user.votre_solde_principal ?? 0.0;
-    final solde = kIsAppleStore
+    final solde = kPayInCoins
         ? (user.giftCoinsBalance ?? 0).toDouble()
         : (_selectedBalanceGold == 'votre_solde_depot' ? depot : principal);
     final prixFinal = _getPrixGold(_dureeGold);
@@ -416,7 +416,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 16),
           _buildPriceSummary(colors, _offresGold, _dureeGold, const Color(0xFFFFD700)),
           const SizedBox(height: 16),
-          if (!kIsAppleStore) _buildAbonnementBalanceSelector(
+          if (!kPayInCoins) _buildAbonnementBalanceSelector(
             colors: colors,
             user: user,
             selectedBalance: _selectedBalanceGold,
@@ -428,7 +428,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: kIsAppleStore ? 'Solde de pièces' : (_selectedBalanceGold == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
+            soldeLabel: kPayInCoins ? 'Solde de pièces' : (_selectedBalanceGold == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
             accentColor: const Color(0xFFFFD700),
             btnLabel: '👑 DEVENIR GOLD — ${_px(prixFinal)}',
             onPay: () => _souscrire(user, 'gold', _dureeGold, balanceKey: _selectedBalanceGold),
@@ -556,7 +556,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   /// Prix en pièces sur iPhone (achat via l'App Store), en FCFA ailleurs.
   String _px(num fcfa) =>
-      kIsAppleStore ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '${fcfa.toInt()} FCFA';
+      kPayInCoins ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '${fcfa.toInt()} FCFA';
 
   Widget _buildPlanHeader(AppColors colors, String name, String prefix,
       int basePrice, Color accentColor) {
@@ -830,7 +830,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                   children: [
                     Text(soldeLabel,
                         style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                    Text(kIsAppleStore ? '${solde.toInt()} pièces' : '${solde.toInt()} FCFA',
+                    Text(kPayInCoins ? '${solde.toInt()} pièces' : '${solde.toInt()} FCFA',
                         style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: 18,

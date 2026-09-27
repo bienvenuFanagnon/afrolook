@@ -4,6 +4,7 @@ import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
+import 'coin_checkout.dart';
 import 'package:app_links/app_links.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -562,7 +563,7 @@ class AppLinkService {
             Text('$memberCount membre${memberCount > 1 ? 's' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
             if (isPrivate && price > 0) ...[
               const SizedBox(height: 8),
-              Text('Groupe privé · ${price.toStringAsFixed(0)} FCFA/mois', style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w600)),
+              Text('Groupe privé · ${CoinCheckout.fmt(CoinCheckout.creatorCoins(groupData['subscription_price_coins'] as num?, groupData['subscription_price'] as num?))} pièces/mois', style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w600)),
             ],
             const SizedBox(height: 12),
             Text('Voulez-vous rejoindre ce groupe ?', style: TextStyle(color: colors.textPrimary, fontSize: 15)),

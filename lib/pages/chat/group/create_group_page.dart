@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -203,7 +204,9 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         'member_ids': allMemberIds,
         'is_frozen': false,
         'is_private': _isPrivate && isGold,
-        'subscription_price': subscriptionPrice,
+        // Prix en pièces (+ équivalent FCFA pour les anciennes versions de l'app)
+        'subscription_price_coins': subscriptionPrice.round(),
+        'subscription_price': subscriptionPrice / CoinCheckout.coinsPerFcfa,
         'join_code': joinCode,
         'join_code_expires_at': joinCodeExpiresAt,
         'paid_subscribers': {},
@@ -507,7 +510,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
             if (isGold && _isPrivate) ...[
               const SizedBox(height: 10),
               Text(
-                'Prix d\'abonnement mensuel (FCFA)',
+                'Prix d\'abonnement mensuel (pièces)',
                 style: TextStyle(color: _colors.textSecondary, fontSize: 12),
               ),
               const SizedBox(height: 6),
@@ -519,7 +522,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                 decoration: InputDecoration(
                   hintText: 'ex: 500',
                   hintStyle: TextStyle(color: _colors.textSecondary),
-                  suffix: Text('FCFA/mois', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                  suffix: Text('pièces/mois', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: _colors.border),

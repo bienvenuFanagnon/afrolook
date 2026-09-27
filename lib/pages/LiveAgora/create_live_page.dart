@@ -26,7 +26,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   // Contrôleurs pour live payant
-  final TextEditingController _participationFeeController = TextEditingController(text: '100');
+  final TextEditingController _participationFeeController = TextEditingController(text: '250');
   final TextEditingController _freeTrialController = TextEditingController(text: '1');
 
   // Variables pour les paramètres
@@ -647,7 +647,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   'Interactions en temps réel',
                   'Expérience optimale',
                 ],
-                price: '200 FCFA/mois',
+                price: '500 pièces/mois',
                 isPremium: true,
               ),
 
@@ -669,7 +669,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Économisez jusqu\'à 500 FCFA',
+                            'Économisez jusqu\'à 1 250 pièces',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -1118,9 +1118,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
       style: TextStyle(color: Colors.white),
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        labelText: 'Prix de participation (FCFA)',
+        labelText: "Prix d'entrée du live privé (pièces)",
         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
-        hintText: '100',
+        hintText: '250',
+        suffixText: 'pièces',
+        helperText: '1 FCFA = 2,5 pièces',
         hintStyle: TextStyle(color: Colors.grey[600]),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF2E7D32)),
@@ -1143,11 +1145,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
           if (price == null) {
             return 'Prix invalide';
           }
-          if (price < 10) {
-            return 'Minimum 10 FCFA';
+          if (price < 25) {
+            return 'Minimum 25 pièces';
           }
-          if (price > 100000) {
-            return 'Maximum 100 000 FCFA';
+          if (price > 250000) {
+            return 'Maximum 250 000 pièces';
           }
         }
         return null;
@@ -1448,7 +1450,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   Icon(Icons.monetization_on, color: Color(0xFFF9A825), size: 16),
                   SizedBox(width: 8),
                   Text(
-                    _isPaidLive ? 'Live payant • ${_participationFeeController.text}FCFA' : 'Live gratuit',
+                    _isPaidLive ? 'Live privé • ${_participationFeeController.text} pièces' : 'Live gratuit',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -1759,7 +1761,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
         coverImage: _coverImageUrl,
         // Paramètres live payant
         isPaidLive: _isPaidLive,
-        participationFee: _isPaidLive ? double.parse(_participationFeeController.text) : 0.0,
+        // Prix saisi en pièces (+ équivalent FCFA pour les anciennes versions de l'app)
+        participationFeeCoinsRaw: _isPaidLive ? (double.tryParse(_participationFeeController.text) ?? 0).round() : 0,
+        participationFee: _isPaidLive ? (double.tryParse(_participationFeeController.text) ?? 0) / 2.5 : 0.0,
         freeTrialMinutes: _isPaidLive ? int.parse(_freeTrialController.text) : 0,
 
         // Comportement après essai

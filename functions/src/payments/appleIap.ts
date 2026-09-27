@@ -15,15 +15,11 @@ const BUNDLE_ID = "com.afrotok.afrotok";
 // Produits consommables App Store Connect → pièces créditées. Source de vérité côté serveur :
 // le nombre de pièces ne vient jamais de l'app. Doit correspondre à CoinPack.appleProducts (Flutter).
 export const APPLE_COIN_PRODUCTS: Record<string, number> = {
-  "com.afrotok.afrotok.coins500": 500,
-  "com.afrotok.afrotok.coins1200": 1200,
-  "com.afrotok.afrotok.coins2600": 2600,
-  "com.afrotok.afrotok.coins5500": 5500,
-  "com.afrotok.afrotok.coins14500": 14500,
-  "com.afrotok.afrotok.coins32000": 32000,
-  "com.afrotok.afrotok.coins70000": 70000,
-  "com.afrotok.afrotok.coins190000": 190000,
-  "com.afrotok.afrotok.coins420000": 420000,
+  // Grille 2026-09-27 (prix Mobile Money + 30 % Apple) : l'identifiant garde l'ancien nombre,
+  // les pièces livrées sont celles-ci.
+  "com.afrotok.afrotok.coins1200": 1000, // 0,99 $
+  "com.afrotok.afrotok.coins5500": 4000, // 3,99 $
+  "com.afrotok.afrotok.coins14500": 10000, // 9,99 $
 };
 
 type AppleTransaction = {

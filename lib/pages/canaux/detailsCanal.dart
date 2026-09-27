@@ -112,6 +112,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         widget.canal.isPrivate = full.isPrivate;
         widget.canal.isVerify = full.isVerify;
         widget.canal.subscriptionPrice = full.subscriptionPrice;
+        widget.canal.subscriptionPriceCoinsRaw = full.subscriptionPriceCoinsRaw;
         widget.canal.subscriptionType = full.subscriptionType;
         widget.canal.monthlySubscriptions = full.monthlySubscriptions;
         widget.canal.adminIds = full.adminIds;
@@ -262,7 +263,7 @@ class _CanalDetailsState extends State<CanalDetails> {
               SizedBox(height: 8),
               if (isPrivate)
                 Text(
-                  '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${subscriptionPrice} Afrcoins pour y accéder à nouveau.',
+                  '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)} pièces pour y accéder à nouveau.',
                   style: TextStyle(
                     color: colors.accent,
                     fontSize: 12,
@@ -646,7 +647,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
     final currentBalance = (userDoc.data()?['votre_solde_principal'] ?? 0).toDouble();
 
-    if (!kIsAppleStore && currentBalance < subscriptionPrice) {
+    if (!kPayInCoins && currentBalance < subscriptionPrice) {
       _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
       return;
     }
@@ -657,14 +658,14 @@ class _CanalDetailsState extends State<CanalDetails> {
     if (_monthlySubscriptionExpired) {
       dialogTitle = 'Renouveler l\'abonnement';
       confirmationMessage = 'Votre abonnement mensuel a expiré.\n\n'
-          'Renouvelez pour ${subscriptionPrice.toStringAsFixed(0)} Afrcoins/mois et continuez à accéder à ce canal.';
+          'Renouvelez pour ${CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)} par mois et continuez à accéder à ce canal.';
     } else if (isMensuel) {
       dialogTitle = 'Abonnement Mensuel';
-      confirmationMessage = 'Ce canal est privé — abonnement mensuel à ${subscriptionPrice.toStringAsFixed(0)} Afrcoins/mois.\n\n'
+      confirmationMessage = 'Ce canal est privé — abonnement mensuel à ${CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)} par mois.\n\n'
           'L\'accès est valable 30 jours, puis renouvelable.';
     } else {
       dialogTitle = 'Abonnement Unique';
-      confirmationMessage = 'Ce canal est privé. L\'accès à vie coûte ${subscriptionPrice.toStringAsFixed(0)} Afrcoins.\n\n'
+      confirmationMessage = 'Ce canal est privé. L\'accès à vie coûte ${CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)}.\n\n'
           'Confirmez-vous l\'abonnement ?';
     }
 
@@ -685,7 +686,7 @@ class _CanalDetailsState extends State<CanalDetails> {
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
               child: Text(
-                isMensuel ? 'S\'abonner — ${subscriptionPrice.toStringAsFixed(0)} Afrcoins/mois' : 'Confirmer',
+                isMensuel ? 'S\'abonner — ${CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)} pièces/mois' : 'Confirmer',
                 style: TextStyle(color: colors.onPrimary),
               ),
             ),
@@ -705,45 +706,13 @@ class _CanalDetailsState extends State<CanalDetails> {
     });
 
     try {
-      // Déduire le montant (en pièces sur iPhone : règle App Store 3.1.1)
-      if (kIsAppleStore) {
-        final paid = await CoinCheckout.pay(context,
-            kind: 'canal', refId: widget.canal.id, priceFcfa: price, label: 'Abonnement au canal');
-        if (!paid) {
-          if (mounted) setState(() => _isProcessingSubscription = false);
-          return;
-        }
-      } else {
-        final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
-        if (!deductionSuccess) {
-          throw Exception('Échec de la déduction du solde');
-        }
+      // Paiement en pièces (serveur) : débit, 70 % au créateur en Pièces gagnées, parrainages, part de l'app
+      final paid = await CoinCheckout.pay(context,
+          kind: 'canal', refId: widget.canal.id, coins: widget.canal.subscriptionPriceCoins, label: 'Abonnement au canal');
+      if (!paid) {
+        if (mounted) setState(() => _isProcessingSubscription = false);
+        return;
       }
-
-      // Diviser le montant (70% créateur, 30% application)
-      final double creatorShare = price * 0.7;
-       double appShare = price * 0.3;
-
-      // Créditer le créateur du canal
-      await _creditCreator(creatorShare);
-      if(authProvider.loginUserData!.codeParrain!=null){
-         appShare = price * 0.25;
-        authProvider.incrementAppGain(appShare);
-        authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: price);
-        authProvider.ajouterCommissionParrainViaUserId(userId: widget.canal.userId!, montant: price);
-
-      }else{
-         appShare = price * 0.75;
-        authProvider.incrementAppGain(appShare);
-        authProvider.ajouterCommissionParrainViaUserId(userId: widget.canal.userId!, montant: price);
-
-      }
-
-      // // Créditer l'application
-      // await authProvider.incrementAppGain(appShare);
-
-      // Enregistrer les transactions
-      await _recordTransactions(price, creatorShare, appShare, isAlreadySubscribed);
 
       // Pour abonnement mensuel : enregistrer la date d'expiration (+30 jours)
       if (widget.canal.subscriptionType == 'mensuel') {
@@ -796,59 +765,6 @@ class _CanalDetailsState extends State<CanalDetails> {
         _isProcessingSubscription = false;
       });
     }
-  }
-
-  Future<void> _creditCreator(double amount) async {
-    try {
-      await firestore.collection('Users').doc(widget.canal.userId).update({
-        'votre_solde_principal': FieldValue.increment(amount),
-      });
-
-      // Enregistrer la transaction pour le créateur
-      await firestore.collection('TransactionSoldes').add({
-        'user_id': widget.canal.userId!,
-        'montant': amount,
-        'type': TypeTransaction.GAIN.name,
-        'description': 'Revenu abonnement canal ${widget.canal.id}',
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'statut': StatutTransaction.VALIDER.name,
-        'canal_id': widget.canal.id,
-      });
-    } catch (e) {
-      printVm('Erreur crédit créateur: $e');
-      throw e;
-    }
-  }
-
-  Future<void> _recordTransactions(double totalAmount, double creatorShare, double appShare, bool isAlreadySubscribed) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-    String description = isAlreadySubscribed && _requirePaymentForExistingSubscribers
-        ? 'Maintien accès canal privé devenu payant: ${widget.canal.titre}'
-        : 'Abonnement canal privé: ${widget.canal.titre}';
-
-    // Transaction pour l'utilisateur qui paye
-    await firestore.collection('TransactionSoldes').add({
-      'user_id': authProvider.loginUserData.id!,
-      'montant': totalAmount,
-      'type': TypeTransaction.DEPENSE.name,
-      'description': description,
-      'createdAt': timestamp,
-      'statut': StatutTransaction.VALIDER.name,
-      'canal_id': widget.canal.id,
-      'is_existing_subscriber': isAlreadySubscribed,
-    });
-
-    // Transaction pour l'application
-    await firestore.collection('AppTransactions').add({
-      'montant': appShare,
-      'type': 'GAIN_ABONNEMENT',
-      'description': 'Commission $description',
-      'user_id': authProvider.loginUserData.id!,
-      'canal_id': widget.canal.id,
-      'createdAt': timestamp,
-      'is_existing_subscriber': isAlreadySubscribed,
-    });
   }
 
   Future<void> _followPublicCanal() async {
@@ -1207,8 +1123,8 @@ class _CanalDetailsState extends State<CanalDetails> {
                             SizedBox(width: 16),
                             _buildStatItem(
                               icon: Icons.attach_money,
-                              value: '${widget.canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'}',
-                              label: 'Afrcoins',
+                              value: CoinCheckout.fmt(widget.canal.subscriptionPriceCoins),
+                              label: 'pièces',
                               color: _colors.accent,
                             ),
                           ],

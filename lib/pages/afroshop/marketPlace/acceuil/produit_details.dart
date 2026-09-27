@@ -15,7 +15,7 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:flutter/material.dart';
-import 'package:afrotok/utils/platform_guard.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 
 import 'package:flutter/widgets.dart';
 
@@ -514,7 +514,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
     }
   }
   Future<void> _boostProduct() async {
-    if (article == null || kIsAppleStore) return;
+    if (article == null) return;
 
     // Vérifications en temps réel avec Firestore
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id!).get();
@@ -547,7 +547,8 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
     // Calculer le coût réel basé sur la durée sélectionnée
     final boostCost = _calculateBoostCost(selectedBoostDays);
-    final hasEnoughBalance = (userData.votre_solde_principal ?? 0.0) >= boostCost;
+    // Payé en pièces (serveur) : le solde est vérifié par CoinCheckout.pay
+    const hasEnoughBalance = true;
 
     // Vérifications de sécurité
     if (!isAdmin && !hasEnoughBalance && !(hasPremiumSubscription && canBoostPremium)) {
@@ -567,23 +568,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
       final boostEndDate = DateTime.now().add(Duration(days: selectedBoostDays));
 
       if (!isAdmin && !hasPremiumSubscription) {
-        // Déduction du solde avec le montant calculé
-        await firestore.collection('Users').doc(authProvider.loginUserData.id!).update({
-          'votre_solde_principal': FieldValue.increment(-boostCost),
-        });
-
-        // Ajout au gain de l'app avec le montant calculé
-        await authProvider.incrementAppGain(boostCost);
-
-        // Enregistrement transaction avec le montant calculé
-        await firestore.collection('TransactionSoldes').add({
-          'user_id': authProvider.loginUserData.id,
-          'montant': boostCost,
-          'type': TypeTransaction.DEPENSE.name,
-          'description': 'Boost produit ($selectedBoostDays jours)',
-          'createdAt': DateTime.now().millisecondsSinceEpoch,
-          'statut': StatutTransaction.VALIDER.name,
-        });
+        // Paiement en pièces (serveur) : prix recalculé, débit, transaction, part de l'app
+        final paid = await CoinCheckout.pay(context,
+            kind: 'product_boost',
+            days: selectedBoostDays,
+            priceFcfa: boostCost,
+            label: 'Boost produit ($selectedBoostDays jours)');
+        if (!paid) return;
       }
 
       // Mise à jour du produit
@@ -632,7 +623,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.green,
-            content: Text('Produit boosté pour $selectedBoostDays jours (${boostCost.toInt()} FCFA)'),
+            content: Text('Produit boosté pour $selectedBoostDays jours (${CoinCheckout.fmt(CoinCheckout.coinsFor(boostCost))} pièces)'),
           ),
         );
       }
@@ -1032,8 +1023,6 @@ class _ProduitDetailState extends State<ProduitDetail> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     if (!isOwner && !isAdmin) return SizedBox();
-    // Boost payé en FCFA : masqué sur iPhone (règle App Store 3.1.1)
-    if (kIsAppleStore) return const SizedBox.shrink();
 
     final isBoosted = article?.estBoosted == true;
     final boostEndDate = article?.boostEndDate != null
@@ -1081,7 +1070,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                 backgroundColor: CustomConstants.kPrimaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: Text("Booster le produit - 500 FCFA/20j"),
+              child: Text("Booster le produit - 1 250 pièces / 20 j"),
             ),
           ],
         ],
@@ -1175,7 +1164,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                     final baseCost = (days / 10 * 500).toDouble();
                     final finalCost = baseCost - (baseCost * reduction / 100);
 
-                    String displayText = "$days jours - ${finalCost.toInt()} FCFA";
+                    String displayText = "$days jours - ${CoinCheckout.fmt(CoinCheckout.coinsFor((finalCost).toDouble()))} pièces";
                     if (reduction > 0) {
                       displayText += " (-$reduction%)";
                     }
@@ -1191,7 +1180,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
-                                "Économisez ${(baseCost - finalCost).toInt()} FCFA",
+                                "Économisez ${CoinCheckout.fmt(CoinCheckout.coinsFor((baseCost - finalCost).toDouble()))} pièces",
                                 style: TextStyle(color: Colors.green, fontSize: 10),
                               ),
                             ),
@@ -1216,7 +1205,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                         Icon(Icons.money, color: CustomConstants.kPrimaryColor),
                         SizedBox(width: 8),
                         Text(
-                          "Coût: ${_calculateBoostCost(selectedBoostDays).toInt()} FCFA",
+                          "Coût : ${CoinCheckout.priceLabel(_calculateBoostCost(selectedBoostDays))}",
                           style: TextStyle(fontWeight: FontWeight.bold, color: CustomConstants.kPrimaryColor),
                         ),
                       ],
@@ -1225,13 +1214,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          "Économie de ${_calculateSavings(selectedBoostDays).toInt()} FCFA (${_getReductionPercentage(selectedBoostDays)}% de réduction)",
+                          "Économie de ${CoinCheckout.fmt(CoinCheckout.coinsFor((_calculateSavings(selectedBoostDays)).toDouble()))} pièces (${_getReductionPercentage(selectedBoostDays)}% de réduction)",
                           style: TextStyle(color: Colors.green, fontSize: 12),
                         ),
                       ),
                     SizedBox(height: 4),
                     Text(
-                      "Soit ${_calculateCostPerDay(selectedBoostDays).toStringAsFixed(2)} FCFA/jour",
+                      "Soit ${CoinCheckout.fmt(CoinCheckout.coinsFor((_calculateCostPerDay(selectedBoostDays)).toDouble()))} pièces / jour",
                       style: TextStyle(color: Colors.grey[400], fontSize: 11),
                     ),
                   ],
@@ -1315,7 +1304,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                   final baseCost = (days / 10 * 500).toDouble(); // 10 jours = 500 FCFA
                   final finalCost = baseCost - (baseCost * reduction / 100);
 
-                  String displayText = "$days jours - ${finalCost.toInt()} FCFA";
+                  String displayText = "$days jours - ${CoinCheckout.fmt(CoinCheckout.coinsFor((finalCost).toDouble()))} pièces";
                   if (reduction > 0) {
                     displayText += " (-$reduction%)";
                   }
@@ -1331,7 +1320,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              "Économisez ${(baseCost - finalCost).toInt()} FCFA",
+                              "Économisez ${CoinCheckout.fmt(CoinCheckout.coinsFor((baseCost - finalCost).toDouble()))} pièces",
                               style: TextStyle(color: Colors.green, fontSize: 10),
                             ),
                           ),
@@ -1356,7 +1345,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                       Icon(Icons.money, color: CustomConstants.kPrimaryColor),
                       SizedBox(width: 8),
                       Text(
-                        "Coût: ${_calculateBoostCost(selectedBoostDays).toInt()} FCFA",
+                        "Coût : ${CoinCheckout.priceLabel(_calculateBoostCost(selectedBoostDays))}",
                         style: TextStyle(fontWeight: FontWeight.bold, color: CustomConstants.kPrimaryColor),
                       ),
                     ],
@@ -1365,13 +1354,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        "Économie de ${_calculateSavings(selectedBoostDays).toInt()} FCFA (${_getReductionPercentage(selectedBoostDays)}% de réduction)",
+                        "Économie de ${CoinCheckout.fmt(CoinCheckout.coinsFor((_calculateSavings(selectedBoostDays)).toDouble()))} pièces (${_getReductionPercentage(selectedBoostDays)}% de réduction)",
                         style: TextStyle(color: Colors.green, fontSize: 12),
                       ),
                     ),
                   SizedBox(height: 4),
                   Text(
-                    "Soit ${_calculateCostPerDay(selectedBoostDays).toStringAsFixed(2)} FCFA/jour",
+                    "Soit ${CoinCheckout.fmt(CoinCheckout.coinsFor((_calculateCostPerDay(selectedBoostDays)).toDouble()))} pièces / jour",
                     style: TextStyle(color: Colors.grey[400], fontSize: 11),
                   ),
                 ],
@@ -1718,7 +1707,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
           ),
 
           // Modal de boost - DOIT ÊTRE DANS LE STACK
-          if (showBoostModal && !kIsAppleStore)
+          if (showBoostModal)
             Container(
               color: Colors.black54, // Fond semi-transparent
               child: _buildBoostModal(),

@@ -145,7 +145,7 @@ class LiveEndedPage extends StatelessWidget {
                                 const Text('Entrées payantes', style: TextStyle(color: Colors.white70, fontSize: 13)),
                                 const Spacer(),
                                 Text(
-                                  '${live.paidParticipationTotal.toStringAsFixed(0)} FCFA',
+                                  '${live.paidParticipationTotal.toStringAsFixed(0)} pièces',
                                   style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w700, fontSize: 14),
                                 ),
                               ],

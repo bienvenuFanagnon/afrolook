@@ -255,9 +255,11 @@ class _NewCanalState extends State<NewCanal> {
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               style: TextStyle(color: _colors.textPrimary),
               decoration: InputDecoration(
-                labelText: _l10n.canalSubscriptionPrice,
+                labelText: "Prix de l'abonnement (pièces)",
+                suffixText: 'pièces',
+                helperText: '1 FCFA = 2,5 pièces',
                 labelStyle: TextStyle(color: _colors.accent),
-                prefixIcon: Icon(Icons.attach_money, color: _colors.accent),
+                prefixIcon: Icon(Icons.toll_rounded, color: _colors.accent),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: _colors.accent),
@@ -615,7 +617,9 @@ class _NewCanalState extends State<NewCanal> {
             createdAt: DateTime.now().microsecondsSinceEpoch,
             usersSuiviId: [],
             isPrivate: _isPrivate,
-            subscriptionPrice: _isPrivate ? double.parse(_priceController.text) : 0.0,
+            // Prix saisi en pièces (+ équivalent FCFA pour les anciennes versions de l'app)
+            subscriptionPriceCoinsRaw: _isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0,
+            subscriptionPrice: _isPrivate ? (double.tryParse(_priceController.text) ?? 0) / 2.5 : 0.0,
             subscriptionType: _isPrivate ? _subscriptionType : 'gratuit',
             monthlySubscriptions: {},
             subscribersId: [],

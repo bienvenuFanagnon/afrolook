@@ -30,8 +30,15 @@ class PostLive {
 
   // NOUVEAUX CHAMPS POUR LIVE PAYANT
   final bool isPaidLive;
-  final double participationFee;
+  final double participationFee; // équivalent FCFA (anciennes versions de l'app)
+  /// Prix d'entrée du live privé en pièces (tout se paie en pièces depuis le 2026-09-27).
+  final int? participationFeeCoinsRaw;
   final int freeTrialMinutes;
+
+  /// Prix d'entrée en pièces : champ en pièces, sinon ancien prix FCFA × 2,5.
+  int get participationFeeCoins => (participationFeeCoinsRaw ?? 0) > 0
+      ? participationFeeCoinsRaw!
+      : (participationFee * 2.5).ceil();
 
   // NOUVEAUX CHAMPS POUR COMPORTEMENT APRÈS ESSAI
   final String audioBehaviorAfterTrial;
@@ -93,6 +100,7 @@ class PostLive {
     // Nouveaux champs avec valeurs par défaut
     this.isPaidLive = false,
     this.participationFee = 100.0,
+    this.participationFeeCoinsRaw,
     this.freeTrialMinutes = 1,
 
     // Comportement après essai
@@ -152,6 +160,7 @@ class PostLive {
       // Nouveaux champs
       'isPaidLive': isPaidLive,
       'participationFee': participationFee,
+      if (participationFeeCoinsRaw != null) 'participationFeeCoins': participationFeeCoinsRaw,
       'freeTrialMinutes': freeTrialMinutes,
       'audioBehaviorAfterTrial': audioBehaviorAfterTrial,
       'audioReductionPercent': audioReductionPercent,
@@ -218,6 +227,7 @@ class PostLive {
       // Nouveaux champs
       isPaidLive: map['isPaidLive'] ?? false,
       participationFee: map['participationFee']?.toDouble() ?? 100.0,
+      participationFeeCoinsRaw: (map['participationFeeCoins'] as num?)?.toInt(),
       freeTrialMinutes: map['freeTrialMinutes'] ?? 1,
       audioBehaviorAfterTrial: map['audioBehaviorAfterTrial'] ?? 'reduce',
       audioReductionPercent: map['audioReductionPercent'] ?? 50,
@@ -279,6 +289,7 @@ class PostLive {
       totalspectateurs: totalspectateurs,
       isPaidLive: isPaidLive,
       participationFee: participationFee,
+      participationFeeCoinsRaw: participationFeeCoinsRaw,
       freeTrialMinutes: freeTrialMinutes,
       audioBehaviorAfterTrial: audioBehaviorAfterTrial,
       audioReductionPercent: audioReductionPercent,

@@ -76,7 +76,7 @@ class _EditCanalState extends State<EditCanal> {
     _subscriptionType = widget.canal.subscriptionType;
     _selectedMainCategory = widget.canal.mainCategory;
     if (_isPrivate) {
-      _priceController.text = widget.canal.subscriptionPrice?.toString() ?? '0';
+      _priceController.text = '${widget.canal.subscriptionPriceCoins}';
     }
   }
 
@@ -320,9 +320,11 @@ class _EditCanalState extends State<EditCanal> {
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               style: TextStyle(color: _colors.textPrimary),
               decoration: InputDecoration(
-                labelText: _l10n.canalSubscriptionPrice,
+                labelText: "Prix de l'abonnement (pièces)",
+                suffixText: 'pièces',
+                helperText: '1 FCFA = 2,5 pièces',
                 labelStyle: TextStyle(color: _colors.accent),
-                prefixIcon: Icon(Icons.attach_money, color: _colors.accent),
+                prefixIcon: Icon(Icons.toll_rounded, color: _colors.accent),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: _colors.accent),
@@ -791,7 +793,7 @@ class _EditCanalState extends State<EditCanal> {
         widget.canal.titre = _titreController.text;
         widget.canal.description = _descriptionController.text;
         widget.canal.isPrivate = _isPrivate;
-        widget.canal.subscriptionPrice = _isPrivate ? double.parse(_priceController.text) : 0.0;
+        widget.canal.setPriceCoins(_isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0);
         widget.canal.subscriptionType = _isPrivate ? _subscriptionType : 'gratuit';
         widget.canal.updatedAt = DateTime.now().microsecondsSinceEpoch;
         // Mettre à jour mainCategory seulement si le cooldown est passé et valeur changée

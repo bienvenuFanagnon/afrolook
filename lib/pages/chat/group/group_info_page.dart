@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../../services/coin_checkout.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -1222,7 +1223,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
         if (isPrivate && subscriptionPrice > 0) ...[
           const SizedBox(height: 4),
           Text(
-            '${subscriptionPrice.toStringAsFixed(0)} Afrcoins / mois',
+            '${CoinCheckout.coinsLabel(CoinCheckout.creatorCoins(_groupData['subscription_price_coins'] as num?, _groupData['subscription_price'] as num?))} / mois',
             style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
@@ -1397,7 +1398,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             title: 'Groupe privé payant',
             subtitle: isGold
                 ? (isPrivate
-                    ? 'Actif · ${price > 0 ? '${price.toStringAsFixed(0)} Afrcoins/mois' : 'Prix non défini'}'
+                    ? 'Actif · ${price > 0 ? '${CoinCheckout.fmt(CoinCheckout.creatorCoins(_groupData['subscription_price_coins'] as num?, _groupData['subscription_price'] as num?))} pièces/mois' : 'Prix non défini'}'
                     : 'Non activé · définissez un prix d\'accès mensuel')
                 : 'Rendez votre groupe payant avec abonnement mensuel pour les membres',
             isGold: isGold,
@@ -1419,7 +1420,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Prix mensuel : ${price > 0 ? '${price.toStringAsFixed(0)} Afrcoins' : 'Non défini'}',
+                      'Prix mensuel : ${price > 0 ? CoinCheckout.coinsLabel(CoinCheckout.creatorCoins(_groupData['subscription_price_coins'] as num?, _groupData['subscription_price'] as num?)) : 'Non défini'}',
                       style: const TextStyle(color: Color(0xFFFFD700), fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -1797,6 +1798,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
         'is_private': value,
         if (!value) 'subscription_price': 0.0,
+        if (!value) 'subscription_price_coins': 0,
       });
       if (mounted) setState(() => _groupData['is_private'] = value);
       if (value && currentPrice <= 0) await _showEditPriceSheet();
@@ -1805,9 +1807,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
   Future<void> _showEditPriceSheet() async {
     final controller = TextEditingController(
-      text: ((_groupData['subscription_price'] as num?)?.toDouble() ?? 0.0) > 0
-          ? (_groupData['subscription_price'] as num).toStringAsFixed(0)
-          : '',
+      text: CoinCheckout.creatorCoins(_groupData['subscription_price_coins'] as num?, _groupData['subscription_price'] as num?) > 0 ? '${CoinCheckout.creatorCoins(_groupData['subscription_price_coins'] as num?, _groupData['subscription_price'] as num?)}' : '',
     );
     await showResponsiveBottomSheet(
       context: context,
@@ -1844,7 +1844,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 decoration: InputDecoration(
                   hintText: 'ex: 500',
                   hintStyle: TextStyle(color: _colors.textSecondary),
-                  suffix: const Text('FCFA/mois', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w600)),
+                  suffix: const Text('pièces/mois', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.w600)),
                   filled: true,
                   fillColor: _colors.surfaceVariant,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -1856,10 +1856,17 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    final price = double.tryParse(controller.text.trim()) ?? 0.0;
-                    await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({'subscription_price': price});
+                    final coins = int.tryParse(controller.text.trim()) ?? 0;
+                    final fcfa = coins / CoinCheckout.coinsPerFcfa;
+                    await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
+                      'subscription_price_coins': coins,
+                      'subscription_price': fcfa,
+                    });
                     if (mounted) {
-                      setState(() => _groupData['subscription_price'] = price);
+                      setState(() {
+                        _groupData['subscription_price_coins'] = coins;
+                        _groupData['subscription_price'] = fcfa;
+                      });
                       Navigator.pop(context);
                     }
                   },

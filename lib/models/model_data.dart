@@ -3302,7 +3302,20 @@ class Canal {
 
   // Nouveaux champs pour canal privé
   bool isPrivate;
-  double subscriptionPrice;
+  double subscriptionPrice; // équivalent FCFA (anciennes versions de l'app)
+  /// Prix en pièces saisi par le créateur (tout se paie en pièces depuis le 2026-09-27).
+  int? subscriptionPriceCoinsRaw;
+
+  /// Prix en pièces : champ en pièces, sinon ancien prix FCFA × 2,5.
+  int get subscriptionPriceCoins => (subscriptionPriceCoinsRaw ?? 0) > 0
+      ? subscriptionPriceCoinsRaw!
+      : (subscriptionPrice * 2.5).ceil();
+
+  /// Fixe le prix en pièces (et l'équivalent FCFA).
+  void setPriceCoins(int coins) {
+    subscriptionPriceCoinsRaw = coins;
+    subscriptionPrice = coins / 2.5;
+  }
   // 'gratuit' | 'unique' | 'mensuel'
   String subscriptionType;
   // userId -> expiresAtMs (utilisé uniquement pour le type 'mensuel')
@@ -3342,6 +3355,7 @@ class Canal {
     this.isVerify = false,
     this.allowAllMembersToPost = false,
     this.subscriptionPrice = 0.0,
+    this.subscriptionPriceCoinsRaw,
     this.subscriptionType = 'unique',
     this.monthlySubscriptions,
     this.subscribersId,
@@ -3376,6 +3390,7 @@ class Canal {
       updatedAt: json['updatedAt'],
       isPrivate: isPrivate,
       subscriptionPrice: price,
+      subscriptionPriceCoinsRaw: (json['subscriptionPriceCoins'] as num?)?.toInt(),
       subscriptionType: subType,
       monthlySubscriptions: json['monthlySubscriptions'] != null
           ? Map<String, dynamic>.from(json['monthlySubscriptions'])
@@ -3409,6 +3424,7 @@ class Canal {
       'updatedAt': updatedAt,
       'isPrivate': isPrivate,
       'subscriptionPrice': subscriptionPrice,
+      if (subscriptionPriceCoinsRaw != null) 'subscriptionPriceCoins': subscriptionPriceCoinsRaw,
       'subscriptionType': subscriptionType,
       'monthlySubscriptions': monthlySubscriptions,
       'subscribersId': subscribersId,

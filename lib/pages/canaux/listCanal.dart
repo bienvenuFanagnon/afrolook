@@ -206,7 +206,7 @@ class _CanalListPageState extends State<CanalListPage> {
     final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
     final currentBalance = userDoc.data()?['votre_solde_principal'] ?? 0;
 
-    if (!kIsAppleStore && currentBalance < subscriptionPrice) {
+    if (!kPayInCoins && currentBalance < subscriptionPrice) {
       _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
       return;
     }
@@ -215,11 +215,11 @@ class _CanalListPageState extends State<CanalListPage> {
     String confirmationMessage = '';
     if (isAlreadySubscribed && _requirePaymentForExistingSubscribers) {
       confirmationMessage = 'Ce canal est devenu privé. Pour continuer à y accéder, '
-          'vous devez payer l\'abonnement de ${kIsAppleStore ? "${CoinCheckout.coinsFor(subscriptionPrice.toDouble())} pièces" : "${subscriptionPrice}FCFA"}.\n\n'
+          'vous devez payer l\'abonnement de ${CoinCheckout.coinsLabel(canal.subscriptionPriceCoins)}.\n\n'
           // '50% ira au créateur et 50% à l\'application.\n\n'
           'Confirmez-vous le paiement?';
     } else {
-      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${kIsAppleStore ? "${CoinCheckout.coinsFor(subscriptionPrice.toDouble())} pièces" : "${subscriptionPrice}FCFA"}.\n\n'
+      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${CoinCheckout.coinsLabel(canal.subscriptionPriceCoins)}.\n\n'
           // '50% ira au créateur et 50% à l\'application.\n\n'
           'Confirmez-vous l\'abonnement?';
     }
@@ -266,52 +266,13 @@ class _CanalListPageState extends State<CanalListPage> {
     });
 
     try {
-      // Déduire le montant (en pièces sur iPhone : règle App Store 3.1.1)
-      if (kIsAppleStore) {
-        final paid = await CoinCheckout.pay(context,
-            kind: 'canal', refId: canal.id, priceFcfa: price, label: 'Abonnement au canal');
-        if (!paid) {
-          if (mounted) setState(() => _isLoading = false);
-          return;
-        }
-      } else {
-        final bool deductionSuccess = await authProvider.deductFromBalance(context, price);
-        if (!deductionSuccess) {
-          throw Exception('Échec de la déduction du solde');
-        }
+      // Paiement en pièces (serveur) : débit, 70 % au créateur en Pièces gagnées, parrainages, part de l'app
+      final paid = await CoinCheckout.pay(context,
+          kind: 'canal', refId: canal.id, coins: canal.subscriptionPriceCoins, label: 'Abonnement au canal');
+      if (!paid) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
       }
-
-      // // Diviser le montant (50% créateur, 50% application)
-      // final double creatorShare = price / 2;
-      // final double appShare = price / 2;
-      //
-      // // Créditer le créateur du canal
-      // await _creditCreator(canal.userId!, creatorShare, canal.id!);
-      //
-      // // Créditer l'application
-      // await authProvider.incrementAppGain(appShare);
-
-      // Diviser le montant (70% créateur, 30% application)
-      final double creatorShare = price * 0.7;
-      double appShare = price * 0.3;
-
-      // Créditer le créateur du canal
-      await _creditCreator(canal.userId!, creatorShare, canal.id!);
-      if(authProvider.loginUserData!.codeParrain!=null){
-        appShare = price * 0.25;
-        authProvider.incrementAppGain(appShare);
-        authProvider.ajouterCadeauCommissionParrain(codeParrainage: authProvider.loginUserData!.codeParrain!, montant: price);
-        authProvider.ajouterCommissionParrainViaUserId(userId: canal.userId!, montant: price);
-
-      }else{
-        appShare = price * 0.75;
-        authProvider.incrementAppGain(appShare);
-        authProvider.ajouterCommissionParrainViaUserId(userId: canal.userId!, montant: price);
-
-      }
-
-      // Enregistrer les transactions
-      await _recordTransactions(canal, price, creatorShare, appShare, isAlreadySubscribed);
 
       // Suivre le canal (ou maintenir l'abonnement)
       if (!isAlreadySubscribed) {
@@ -349,59 +310,6 @@ class _CanalListPageState extends State<CanalListPage> {
         _isLoading = false;
       });
     }
-  }
-
-  Future<void> _creditCreator(String creatorId, double amount, String canalId) async {
-    try {
-      await firestore.collection('Users').doc(creatorId).update({
-        'votre_solde_principal': FieldValue.increment(amount),
-      });
-
-      // Enregistrer la transaction pour le créateur
-      await firestore.collection('TransactionSoldes').add({
-        'user_id': creatorId,
-        'montant': amount,
-        'type': TypeTransaction.GAIN.name,
-        'description': 'Revenu abonnement canal $canalId',
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'statut': StatutTransaction.VALIDER.name,
-        'canal_id': canalId,
-      });
-    } catch (e) {
-      printVm('Erreur crédit créateur: $e');
-      throw e;
-    }
-  }
-
-  Future<void> _recordTransactions(Canal canal, double totalAmount, double creatorShare, double appShare, bool isAlreadySubscribed) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-    String description = isAlreadySubscribed && _requirePaymentForExistingSubscribers
-        ? 'Maintien accès canal privé devenu payant: ${canal.titre}'
-        : 'Abonnement canal privé: ${canal.titre}';
-
-    // Transaction pour l'utilisateur qui paye
-    await firestore.collection('TransactionSoldes').add({
-      'user_id': authProvider.loginUserData.id!,
-      'montant': totalAmount,
-      'type': TypeTransaction.DEPENSE.name,
-      'description': description,
-      'createdAt': timestamp,
-      'statut': StatutTransaction.VALIDER.name,
-      'canal_id': canal.id,
-      'is_existing_subscriber': isAlreadySubscribed,
-    });
-
-    // Transaction pour l'application
-    await firestore.collection('AppTransactions').add({
-      'montant': appShare,
-      'type': 'GAIN_ABONNEMENT',
-      'description': 'Commission $description',
-      'user_id': authProvider.loginUserData.id!,
-      'canal_id': canal.id,
-      'createdAt': timestamp,
-      'is_existing_subscriber': isAlreadySubscribed,
-    });
   }
 
   Future<void> _followPublicCanal(Canal canal) async {
@@ -712,7 +620,7 @@ class _CanalListPageState extends State<CanalListPage> {
                                 Icon(Icons.attach_money, color: _colors.accent, size: 14),
                                 SizedBox(width: 4),
                                 Text(
-                                  kIsAppleStore ? '${CoinCheckout.coinsFor(canal.subscriptionPrice ?? 0)} pièces' : '${canal.subscriptionPrice?.toStringAsFixed(0) ?? '0'} FCFA',
+                                  '${CoinCheckout.fmt(canal.subscriptionPriceCoins)} pièces',
                                   style: TextStyle(color: _colors.accent, fontSize: 12),
                                 ),
                               ],

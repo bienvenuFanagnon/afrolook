@@ -1241,14 +1241,14 @@ class _DetailsPostState extends State<DetailsPost>
                                   color: sel ? _colors.primary : _colors.textPrimary,
                                   fontWeight: sel ? FontWeight.bold : FontWeight.normal,
                                   fontSize: 13)),
-                          Text(kIsAppleStore ? CoinCheckout.priceLabel(priceMap[d.weeks] ?? d.price) : '${priceMap[d.weeks] ?? d.price} FCFA',
+                          Text(kPayInCoins ? CoinCheckout.priceLabel(priceMap[d.weeks] ?? d.price) : '${priceMap[d.weeks] ?? d.price} FCFA',
                               style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
                         ]),
                       ),
                     );
                   }).toList(),
                 ),
-                if (selectedWeeks != null && !kIsAppleStore) ...[
+                if (selectedWeeks != null && !kPayInCoins) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -1295,7 +1295,7 @@ class _DetailsPostState extends State<DetailsPost>
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kIsAppleStore && !isAdmin;
+    final payWithCoins = kPayInCoins && !isAdmin;
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
           kind: 'ad_renew', priceFcfa: price.toDouble(), label: 'Renouvellement de publicité', weeks: weeks);

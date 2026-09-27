@@ -44,7 +44,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
     if (!mounted) return;
     setState(() {
       _sub = sub;
-      _balance = ((balanceSnap.data()?[kIsAppleStore ? 'giftCoinsBalance' : 'votre_solde_principal'] ?? 0) as num).toDouble();
+      _balance = ((balanceSnap.data()?[kPayInCoins ? 'giftCoinsBalance' : 'votre_solde_principal'] ?? 0) as num).toDouble();
       _fetching = false;
     });
   }
@@ -54,12 +54,12 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
     setState(() => _loading = true);
     try {
       // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-      if (kIsAppleStore) {
+      if (kPayInCoins) {
         final paid = await CoinCheckout.pay(context,
             kind: 'official', priceFcfa: 5000, label: 'Compte officiel — 1 mois');
         if (!paid || !mounted) return;
       }
-      final ok = await OfficialAccountService.instance.paySubscription(me.id ?? '', paidWithCoins: kIsAppleStore);
+      final ok = await OfficialAccountService.instance.paySubscription(me.id ?? '', paidWithCoins: kPayInCoins);
       if (!mounted) return;
       if (ok) {
         await _fetchData();
@@ -99,7 +99,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
           ],
         ),
         content: Text(
-          'Votre solde est insuffisant pour renouveler l\'abonnement (${kIsAppleStore ? '12 500 pièces' : '5 000 FCFA'} requis).\n\n'
+          'Votre solde est insuffisant pour renouveler l\'abonnement (${kPayInCoins ? '12 500 pièces' : '5 000 FCFA'} requis).\n\n'
           'Rechargez votre compte pour maintenir votre statut de compte officiel.',
           style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
         ),
@@ -173,7 +173,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
                             Text('Votre solde',
                                 style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                             Text(
-                              '${_balance?.toStringAsFixed(0) ?? '0'} ${kIsAppleStore ? 'pièces' : 'FCFA'}',
+                              '${_balance?.toStringAsFixed(0) ?? '0'} ${kPayInCoins ? 'pièces' : 'FCFA'}',
                               style: TextStyle(
                                   color: colors.textPrimary,
                                   fontWeight: FontWeight.w700,
@@ -206,8 +206,8 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
                                   strokeWidth: 2.5, color: Colors.white))
                           : Text(
                               _sub?.active == true
-                                  ? 'Renouveler maintenant (${kIsAppleStore ? '12 500 pièces' : '5 000 FCFA'})'
-                                  : 'Activer l\'abonnement (${kIsAppleStore ? '12 500 pièces' : '5 000 FCFA'})',
+                                  ? 'Renouveler maintenant (${kPayInCoins ? '12 500 pièces' : '5 000 FCFA'})'
+                                  : 'Activer l\'abonnement (${kPayInCoins ? '12 500 pièces' : '5 000 FCFA'})',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,

@@ -6,6 +6,8 @@ class CoinPack {
   final String label;
   final bool isPopular;
   final String? popularLabel;
+  /// Identifiant App Store Connect (produits Apple uniquement).
+  final String? appleId;
 
   CoinPack({
     required this.coins,
@@ -14,6 +16,7 @@ class CoinPack {
     this.label = '',
     this.isPopular = false,
     this.popularLabel,
+    this.appleId,
   });
 
   String get displayLabel => label.isNotEmpty ? label : '$coins pièces';
@@ -26,10 +29,20 @@ class CoinPack {
 
   /// Identifiant du produit consommable App Store Connect pour ce pack.
   /// Doit correspondre à APPLE_COIN_PRODUCTS (functions/src/payments/appleIap.ts).
-  String get appleProductId => 'com.afrotok.afrotok.coins$coins';
+  String get appleProductId => appleId ?? 'com.afrotok.afrotok.coins$coins';
 
-  /// Packs vendus via In-App Purchase sur iOS (mêmes quantités que la recharge).
-  static List<CoinPack> get appleProducts => rechargePacks;
+  /// Packs vendus via In-App Purchase sur iOS.
+  /// Grille 2026-09-27 : prix Mobile Money + 30 % (part d'Apple, payée par l'utilisateur),
+  /// soit au moins 0,40 F net par pièce pour l'app. Les identifiants App Store restent ceux
+  /// d'origine (coins1200…) ; seul le nombre de pièces livrées change.
+  static List<CoinPack> get appleProducts => [
+    CoinPack(coins: 1000, priceFcfa: 600, icon: '⭐', label: 'Pack Starter',
+        appleId: 'com.afrotok.afrotok.coins1200'),
+    CoinPack(coins: 4000, priceFcfa: 2400, icon: '🔥', label: 'Pack Silver',
+        isPopular: true, popularLabel: 'POPULAIRE', appleId: 'com.afrotok.afrotok.coins5500'),
+    CoinPack(coins: 10000, priceFcfa: 6000, icon: '💎', label: 'Pack Gold',
+        appleId: 'com.afrotok.afrotok.coins14500'),
+  ];
 
   static List<CoinPack> get defaultPacks => [
     CoinPack(coins: 5, priceFcfa: 2, icon: '🌟', label: 'Mini'),
@@ -48,39 +61,21 @@ class CoinPack {
     CoinPack(coins: 250000, priceFcfa: 100000, icon: '💎', label: 'Trésor'),
   ];
 
-  // Packs pour la recharge (avec mise en avant)
+  // Packs pour la recharge avec le Dépôt FCFA (Mobile Money).
+  // Grille 2026-09-27 : de 0,50 F à 0,40 F minimum par pièce (plancher de marge de l'app ;
+  // la conversion des pièces gagnées reste à 25 pièces = 10 F).
   static List<CoinPack> get rechargePacks => [
     CoinPack(coins: 500, priceFcfa: 250, icon: '🪙', label: 'Pack Découverte'),
-
-    CoinPack(coins: 1200, priceFcfa: 500, icon: '⭐', label: 'Pack Starter'),
-
-    CoinPack(coins: 2600, priceFcfa: 1000, icon: '🌟', label: 'Pack Bronze'),
-
-    CoinPack(
-      coins: 5500,
-      priceFcfa: 2000,
-      icon: '🔥',
-      label: 'Pack Silver',
-      isPopular: true,
-      popularLabel: 'POPULAIRE',
-    ),
-
-    CoinPack(
-      coins: 14500,
-      priceFcfa: 5000,
-      icon: '💎',
-      label: 'Pack Gold',
-      isPopular: true,
-      popularLabel: '⭐ RECOMMANDÉ',
-    ),
-
-    CoinPack(coins: 32000, priceFcfa: 10000, icon: '👑', label: 'Pack Platinum'),
-
-    CoinPack(coins: 70000, priceFcfa: 20000, icon: '🏆', label: 'Pack Diamond'),
-
-    CoinPack(coins: 190000, priceFcfa: 50000, icon: '💎', label: 'Pack Legend'),
-
-    CoinPack(coins: 420000, priceFcfa: 100000, icon: '👑', label: 'Pack Ultimate'),
+    CoinPack(coins: 1000, priceFcfa: 480, icon: '⭐', label: 'Pack Starter'),
+    CoinPack(coins: 2500, priceFcfa: 1150, icon: '🌟', label: 'Pack Bronze'),
+    CoinPack(coins: 5000, priceFcfa: 2200, icon: '🔥', label: 'Pack Silver',
+        isPopular: true, popularLabel: 'POPULAIRE'),
+    CoinPack(coins: 12000, priceFcfa: 5000, icon: '💎', label: 'Pack Gold',
+        isPopular: true, popularLabel: '⭐ RECOMMANDÉ'),
+    CoinPack(coins: 25000, priceFcfa: 10000, icon: '👑', label: 'Pack Platinum'),
+    CoinPack(coins: 50000, priceFcfa: 20000, icon: '🏆', label: 'Pack Diamond'),
+    CoinPack(coins: 125000, priceFcfa: 50000, icon: '💎', label: 'Pack Legend'),
+    CoinPack(coins: 250000, priceFcfa: 100000, icon: '👑', label: 'Pack Ultimate'),
   ];
 
   // static List<CoinPack> get giftPacks => [
