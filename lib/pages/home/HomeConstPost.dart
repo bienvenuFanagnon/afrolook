@@ -31,7 +31,6 @@ import '../contenuPayant/recent_vip_content_widget.dart';
 import '../contenuPayant/widgets/boosted_content_strip.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../postDetailsVideo.dart';
-import '../pronostics/pronostics_carousel_widget.dart';
 import '../pub/rewarded_interstitial_ad_widget.dart';
 import '../user/userAbonnementPage.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';

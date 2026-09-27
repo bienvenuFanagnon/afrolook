@@ -980,92 +980,23 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (currentUser == null) return;
 
       final coinsAmount = gift.price.toInt();
-      final senderRef = _firestore.collection('Users').doc(currentUser.uid);
-      final hostRef = _firestore.collection('Users').doc(widget.postLive.hostId);
-      final liveRef = _firestore.collection('lives').doc(widget.liveId);
-      final appDataRef = _firestore.collection('AppData').doc(authProvider.appDefaultData.id);
-      final now = DateTime.now().millisecondsSinceEpoch;
 
-      // Vérifier le solde
-      final senderDoc = await senderRef.get();
-      final senderCoins = (senderDoc.data()?['giftCoinsBalance'] ?? 0) as int;
-      if (senderCoins < coinsAmount) {
-        _showInsufficientCoinsDialog();
-        return;
+      // Débit, 70 % à l'hôte, parrainages et part de l'app : calculés par le serveur (sendLiveGift)
+      try {
+        await FirebaseFunctions.instance.httpsCallable('sendLiveGift').call({
+          'liveId': widget.liveId,
+          'coins': coinsAmount,
+          'giftIcon': gift.icon,
+          'giftName': gift.name,
+        });
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code == 'resource-exhausted') {
+          if (mounted) await CoinCheckout.insufficient(context, coinsAmount);
+          return;
+        }
+        rethrow;
       }
-
-      final hostDoc = await hostRef.get();
-      final hostCodeParrain = hostDoc.data()?['code_parrain'] as String?;
-      final hostName = hostDoc.data()?['pseudo'] as String? ?? '';
-      final me = authProvider.loginUserData;
-
-      // Répartition :
-      //   host a un parrain → host=75%, parrain=5%, app=~20%
-      //   host sans parrain → host=70%, app=~30%
-      final bool hasParrain = hostCodeParrain != null && hostCodeParrain.isNotEmpty;
-      final int hostCoins = hasParrain
-          ? (coinsAmount * 0.75).floor()
-          : (coinsAmount * 0.70).floor();
-      final int parrainCoins = hasParrain ? (coinsAmount * 0.05).floor() : 0;
-      final int appCoins = coinsAmount - hostCoins - parrainCoins;
-
-      await _firestore.runTransaction((tx) async {
-        // 1. Débiter l'expéditeur
-        tx.update(senderRef, {
-          'giftCoinsBalance': FieldValue.increment(-coinsAmount),
-          'totalGiftCoinsSpent': FieldValue.increment(coinsAmount),
-        });
-        // 2. Créditer le host
-        tx.update(hostRef, {
-          'giftCoinsBalance': FieldValue.increment(hostCoins),
-          'totalCoinsEarnedFromGifts': FieldValue.increment(hostCoins),
-        });
-        // 3. Créditer l'application
-        tx.update(appDataRef, {'solde_gain_pieces': FieldValue.increment(appCoins)});
-        // 4. Mettre à jour le live
-        tx.update(liveRef, {
-          'giftCoinsTotal': FieldValue.increment(coinsAmount),
-          'giftCount': FieldValue.increment(1),
-          'giftLeaderboard.${currentUser.uid}': FieldValue.increment(coinsAmount),
-          'giftLeaderboardMeta.${currentUser.uid}': {
-            'pseudo': me.pseudo ?? '',
-            'imageUrl': me.imageUrl ?? '',
-          },
-        });
-        // 5. Transaction expéditeur (débit)
-        final txSenderRef = _firestore.collection('TransactionSoldes').doc();
-        tx.set(txSenderRef, (TransactionSolde()
-          ..id = txSenderRef.id
-          ..user_id = currentUser.uid
-          ..type = TypeTransaction.CADEAU_PIECES.name
-          ..statut = StatutTransaction.VALIDER.name
-          ..description = 'Cadeau ${gift.icon} ${gift.name} ($coinsAmount pcs) en live à @$hostName'
-          ..montant = coinsAmount.toDouble()
-          ..methode_paiement = 'pieces'
-          ..createdAt = now
-          ..updatedAt = now).toJson());
-        // 6. Transaction host (crédit)
-        final txHostRef = _firestore.collection('TransactionSoldes').doc();
-        tx.set(txHostRef, (TransactionSolde()
-          ..id = txHostRef.id
-          ..user_id = widget.postLive.hostId
-          ..type = TypeTransaction.CADEAU_PIECES_RECU.name
-          ..statut = StatutTransaction.VALIDER.name
-          ..description = 'Cadeau ${gift.icon} reçu de @${me.pseudo ?? ''} en live ($hostCoins pcs)'
-          ..montant = hostCoins.toDouble()
-          ..methode_paiement = 'pieces'
-          ..createdAt = now
-          ..updatedAt = now).toJson());
-      });
-
-      // Paiement parrain en arrière-plan (avec sa propre transaction)
-      if (hasParrain && parrainCoins > 0) {
-        _payCommissionWithTx(
-          codeParrain: hostCodeParrain!,
-          coins: parrainCoins,
-          sourceDescription: 'Commission parrainage sur cadeau live de $coinsAmount pcs',
-        );
-      }
+      if (mounted) CoinCheckout.refreshBalance(context);
 
       _sendComment(
         'a envoyé ${gift.name} ${gift.icon} ($coinsAmount pcs)',
@@ -1084,62 +1015,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     } catch (e) {
       printVm('❌ Erreur envoi cadeau: $e');
     }
-  }
-
-  void _payCommissionWithTx({
-    required String codeParrain,
-    required int coins,
-    required String sourceDescription,
-  }) {
-    Future.microtask(() async {
-      try {
-        final q = await _firestore
-            .collection('Users')
-            .where('code_parrainage', isEqualTo: codeParrain)
-            .limit(1)
-            .get();
-        if (q.docs.isEmpty) return;
-        final parrainDoc = q.docs.first;
-        final parrainId = parrainDoc.id;
-        final now = DateTime.now().millisecondsSinceEpoch;
-
-        await _firestore.runTransaction((tx) async {
-          tx.update(parrainDoc.reference, {
-            'giftCoinsBalance': FieldValue.increment(coins),
-            'totalCoinsEarnedFromSponsorship': FieldValue.increment(coins),
-          });
-          final txRef = _firestore.collection('TransactionSoldes').doc();
-          tx.set(txRef, (TransactionSolde()
-            ..id = txRef.id
-            ..user_id = parrainId
-            ..type = TypeTransaction.GAIN_PIECES.name
-            ..statut = StatutTransaction.VALIDER.name
-            ..description = '$sourceDescription ($coins pcs)'
-            ..montant = coins.toDouble()
-            ..methode_paiement = 'commission_parrainage'
-            ..createdAt = now
-            ..updatedAt = now).toJson());
-        });
-      } catch (_) {}
-    });
-  }
-
-  void _showInsufficientCoinsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text('Pièces insuffisantes', style: TextStyle(color: Colors.white)),
-        content: Text('Vous n\'avez pas assez de pièces pour envoyer ce cadeau.',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: TextStyle(color: Color(0xFFF9A825))),
-          ),
-        ],
-      ),
-    );
   }
 
   // ==================== GESTION FIREBASE STREAM ====================

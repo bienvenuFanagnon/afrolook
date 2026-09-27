@@ -32,7 +32,6 @@ import '../../providers/authProvider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../listeUserLikepage.dart';
 import '../postDetailsVideo.dart';
-import '../pronostics/pronostics_carousel_widget.dart';
 
 import '../user/userAbonnementPage.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
@@ -2916,7 +2915,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (!_hasChroniques) contentWidgets.add(const FeedLiveSection());
 
     if (finalPosts.isNotEmpty) {
-      contentWidgets.add(const PronosticsCarouselWidget());
     }
 
     final bool _showShopPromo = _articles.isNotEmpty;

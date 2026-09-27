@@ -18,7 +18,6 @@ import 'package:afrotok/pages/paiement/depotPaiment.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
-import 'package:afrotok/pages/pronostics/pronostic_detail_page.dart';
 import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
@@ -1291,22 +1290,14 @@ class _DetailsPostState extends State<DetailsPost>
     final durations = await AdConfigService.getDurations();
     final priceMap = AdConfigService.toMap(durations);
     final price = priceMap[weeks] ?? 0;
-    final balance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kPayInCoins && !isAdmin;
+    final payWithCoins = !isAdmin; // tout se paie en pièces (admins : gratuit)
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
           kind: 'ad_renew', priceFcfa: price.toDouble(), label: 'Renouvellement de publicité', weeks: weeks);
       if (!paid || !mounted) return;
-    } else if (!isAdmin && balance < price) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Dépôt FCFA insuffisant ($balance FCFA). Il faut $price FCFA.'),
-        backgroundColor: _colors.danger,
-      ));
-      return;
     }
 
     try {
@@ -1315,24 +1306,6 @@ class _DetailsPostState extends State<DetailsPost>
           ? now + weeks * 7 * 24 * 60 * 60 * 1000000
           : ad.endDate! + weeks * 7 * 24 * 60 * 60 * 1000000;
 
-      if (!isAdmin && !payWithCoins) {
-        await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
-          'votre_solde_depot': FieldValue.increment(-price.toDouble()),
-        });
-        authProvider.loginUserData.votre_solde_depot = balance - price;
-        // Log transaction
-        final tx = TransactionSolde()
-          ..id = firestore.collection('TransactionSoldes').doc().id
-          ..user_id = authProvider.loginUserData.id
-          ..type = TypeTransaction.DEPENSE.name
-          ..statut = StatutTransaction.VALIDER.name
-          ..description = 'Renouvellement publicité ${AdConfigService.labelFor(weeks, durations)}'
-          ..montant = price.toDouble()
-          ..methode_paiement = 'solde_depot'
-          ..createdAt = DateTime.now().millisecondsSinceEpoch
-          ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-        await firestore.collection('TransactionSoldes').doc(tx.id).set(tx.toJson());
-      }
 
       await firestore.collection('Advertisements').doc(ad.id).update({
         'endDate': newEndDate,
@@ -2034,9 +2007,7 @@ class _DetailsPostState extends State<DetailsPost>
       _startCarouselAutoPlay();
     });
     _startSuggestionModalTimer();
-    if (widget.post!=null&&widget.post.type == PostType.PRONOSTIC.name) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PronosticDetailPage(postId: widget.post.id!),));
-    } else if(widget.post!=null&&widget.post.type == PostDataType.VIDEO .name){
+    if(widget.post!=null&&widget.post.type == PostDataType.VIDEO .name){
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (widget.post.isPortrait == true) {
           Navigator.pushReplacement(
@@ -3641,308 +3612,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     }
   }
 
-  Future<void> _sendGift(double amount) async {
-    try {
-      setState(() => _isLoading = true);
-
-      final firestore = FirebaseFirestore.instance;
-      await authProvider.getAppData();
-      final senderSnap = await firestore
-          .collection('Users')
-          .doc(authProvider.loginUserData.id)
-          .get();
-      if (!senderSnap.exists) {
-        throw Exception("Utilisateur expéditeur introuvable");
-      }
-      final senderData = senderSnap.data() as Map<String, dynamic>;
-      final double senderBalance =
-          (senderData['votre_solde_principal'] ?? 0.0).toDouble();
-
-      if (senderBalance >= amount) {
-        final double gainDestinataire = amount * 0.7;
-
-        await firestore
-            .collection('Users')
-            .doc(authProvider.loginUserData.id)
-            .update({
-          'votre_solde_principal': FieldValue.increment(-amount),
-        });
-
-        await firestore.collection('Users').doc(widget.post.user!.id).update({
-          'votre_solde_principal': FieldValue.increment(gainDestinataire),
-        });
-
-        String appDataId = authProvider.appDefaultData.id!;
-
-        if (widget.post.user!.codeParrain != null) {
-          if (authProvider.loginUserData!.codeParrain != null) {
-            final double gainApplication = amount * 0.25;
-
-            await firestore.collection('AppData').doc(appDataId).update({
-              'solde_gain': FieldValue.increment(gainApplication),
-            });
-            authProvider.ajouterCadeauCommissionParrain(
-                codeParrainage: authProvider.loginUserData!.codeParrain!,
-                montant: amount);
-            authProvider.ajouterCadeauCommissionParrain(
-                codeParrainage: widget.post.user!.codeParrain!,
-                montant: amount);
-          } else {
-            final double gainApplication = amount * 0.25;
-
-            await firestore.collection('AppData').doc(appDataId).update({
-              'solde_gain': FieldValue.increment(gainApplication),
-            });
-            authProvider.ajouterCommissionParrain(
-                codeParrainage: widget.post.user!.codeParrain!,
-                montant: amount);
-          }
-        } else {
-          if (authProvider.loginUserData!.codeParrain != null) {
-            final double gainApplication = amount * 0.25;
-
-            await firestore.collection('AppData').doc(appDataId).update({
-              'solde_gain': FieldValue.increment(gainApplication),
-            });
-            authProvider.ajouterCommissionParrain(
-                codeParrainage: authProvider.loginUserData!.codeParrain!,
-                montant: amount);
-          } else {
-            final double gainApplication = amount * 0.3;
-
-            await firestore.collection('AppData').doc(appDataId).update({
-              'solde_gain': FieldValue.increment(gainApplication),
-            });
-          }
-        }
-
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'users_cadeau_id':
-              FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(5),
-        });
-
-        await _createTransaction(
-            TypeTransaction.DEPENSE.name,
-            amount,
-            "Cadeau envoyé à @${widget.post.user!.pseudo}",
-            authProvider.loginUserData.id!);
-        await _createTransaction(
-            TypeTransaction.GAIN.name,
-            gainDestinataire,
-            "Cadeau reçu de @${authProvider.loginUserData.pseudo}",
-            widget.post.user_id!);
-        FeedInteractionService.onPostLoved(
-            widget.post, authProvider.loginUserData.id!);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: _colors.success,
-            content: Text(
-              '🎁 Cadeau de ${amount.toInt()} Afrcoins envoyé avec succès!',
-              style: TextStyle(color: _colors.onPrimary),
-            ),
-          ),
-        );
-        await authProvider.sendNotification(
-          userIds: [widget.post.user!.oneIgnalUserid!],
-          smallImage: "",
-          send_user_id: "",
-          recever_user_id: "${widget.post.user_id!}",
-          message: "🎁 Vous avez reçu un cadeau de ${amount.toInt()} Afrcoins !",
-          type_notif: NotificationType.POST.name,
-          post_id: "${widget.post!.id!}",
-          post_type: PostDataType.IMAGE.name,
-          chat_id: '',
-        );
-      } else {
-        _showInsufficientBalanceDialog();
-      }
-    } catch (e) {
-      printVm("Erreur envoi cadeau: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: _colors.danger,
-          content: Text(
-            'Erreur lors de l\'envoi du cadeau',
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-  void _showGiftDialog() {
-    _handleGift();
-  }
-  void _handleGift() {
-    showDialog(
-      context: context,
-      builder: (context) => CoinGiftDialog(
-        receiverId: widget.post.user_id!,
-        receiverName: widget.post.user?.pseudo ?? 'Créateur',
-        receiverAvatar: widget.post.user?.imageUrl ?? '',
-        post: widget.post,
-        onGiftSuccess: () async {
-          // Mettre à jour l'affichage local du compteur de cadeaux
-          setState(() {
-            widget.post.users_cadeau_id ??= [];
-            if (!widget.post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
-              widget.post.users_cadeau_id!.add(authProvider.loginUserData.id!);
-            }
-          });
-
-          // Rafraîchir le provider pour mettre à jour le solde
-          final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-          await coinProvider.refreshBalance(authProvider.loginUserData.id!);
-
-          // Afficher un snackbar de confirmation
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('🎁 Cadeau envoyé avec succès !'),
-              backgroundColor: _colors.success,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-
-          // 🔥 Appeler le callback parent si existant
-          // widget.onGiftSuccess?.call();
-        },
-      ),
-    );
-  }
-
-  void _showGiftDialog2() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final height = MediaQuery.of(context).size.height * 0.6;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: _colors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: _colors.accent, width: 2),
-              ),
-              child: Container(
-                height: height,
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      'Envoyer un Cadeau',
-                      style: TextStyle(
-                        color: _colors.accent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Choisissez le montant en Afrcoins',
-                      style: TextStyle(color: _colors.textPrimary),
-                    ),
-                    SizedBox(height: 12),
-                    Expanded(
-                      child: GridView.builder(
-                        physics: BouncingScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.8,
-                        ),
-                        itemCount: giftPrices.length,
-                        itemBuilder: (context, index) {
-                          return GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedGiftIndex = index),
-                            child: Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: _selectedGiftIndex == index
-                                    ? _colors.success
-                                    : _colors.surfaceVariant,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: _selectedGiftIndex == index
-                                      ? _colors.accent
-                                      : Colors.transparent,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    giftIcons[index],
-                                    style: TextStyle(fontSize: 24),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    '${giftPrices[index].toInt()} Afrcoins',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: _colors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Votre solde: ${authProvider.loginUserData.votre_solde_principal?.toInt() ?? 0} Afrcoins',
-                      style: TextStyle(
-                        color: _colors.accent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Annuler',
-                              style: TextStyle(color: _colors.textPrimary)),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _sendGift(giftPrices[_selectedGiftIndex]);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _colors.success,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Text(
-                            'Envoyer',
-                            style: TextStyle(color: _colors.onPrimary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   List<double> giftPrices = [
     10,
     25,
@@ -3989,79 +3658,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     '🚗'
   ];
 
-  Future<void> _repostForCash() async {
-    try {
-      setState(() => _isLoading = true);
-
-      final firestore = FirebaseFirestore.instance;
-
-      final userDoc = await firestore
-          .collection('Users')
-          .doc(authProvider.loginUserData.id)
-          .get();
-      final userData = userDoc.data();
-      if (userData == null) throw Exception("Utilisateur introuvable !");
-      final double soldeActuel =
-          (userData['votre_solde_principal'] ?? 0.0).toDouble();
-
-      if (soldeActuel >= _selectedRepostPrice) {
-        await firestore
-            .collection('Users')
-            .doc(authProvider.loginUserData.id)
-            .update({
-          'votre_solde_principal': FieldValue.increment(-_selectedRepostPrice),
-        });
-
-        await firestore
-            .collection('AppData')
-            .doc(authProvider.appDefaultData.id!)
-            .update({
-          'solde_gain': FieldValue.increment(_selectedRepostPrice),
-        });
-
-        await firestore.collection('Posts').doc(widget.post.id).update({
-          'users_republier_id':
-              FieldValue.arrayUnion([authProvider.loginUserData.id]),
-          'popularity': FieldValue.increment(4),
-          'created_at': DateTime.now().microsecondsSinceEpoch,
-          'updated_at': DateTime.now().microsecondsSinceEpoch,
-        });
-
-        await _createTransaction(
-          TypeTransaction.DEPENSE.name,
-          _selectedRepostPrice.toDouble(),
-          "Republication du post ${widget.post.id}",
-          authProvider.loginUserData.id!,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: _colors.success,
-            content: Text(
-              '🔝 Post republié pour $_selectedRepostPrice Afrcoins!',
-              style: TextStyle(color: _colors.onPrimary),
-            ),
-          ),
-        );
-      } else {
-        _showInsufficientBalanceDialog();
-      }
-    } catch (e) {
-      printVm("Erreur republication: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: _colors.danger,
-          content: Text(
-            'Erreur lors de la republication',
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   void _showInsufficientBalanceDialog() {
     showDialog(
       context: context,
@@ -4098,48 +3694,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 backgroundColor: _colors.success,
               ),
               child: Text('Recharger', style: TextStyle(color: _colors.onPrimary)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showRepostDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: _colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: _colors.accent, width: 2),
-          ),
-          title: Text(
-            'Republier le Post',
-            style: TextStyle(
-              color: _colors.accent,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Republier ce post le mettra en avant dans le fil d\'actualité. Coût: 25 Afrcoins.',
-            style: TextStyle(color: _colors.textPrimary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Annuler', style: TextStyle(color: _colors.textPrimary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _repostForCash();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _colors.success,
-              ),
-              child: Text('Republier', style: TextStyle(color: _colors.onPrimary)),
             ),
           ],
         );

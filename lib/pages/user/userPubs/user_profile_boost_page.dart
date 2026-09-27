@@ -101,24 +101,6 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     return 'Boost profil';
   }
 
-  Future<void> _createTransaction(int price, String label) async {
-    final userData = _auth.loginUserData;
-    final tx = TransactionSolde()
-      ..id = FirebaseFirestore.instance.collection('TransactionSoldes').doc().id
-      ..user_id = userData.id
-      ..type = TypeTransaction.DEPENSE.name
-      ..statut = StatutTransaction.VALIDER.name
-      ..description = label
-      ..montant = price.toDouble()
-      ..methode_paiement = 'solde_depot'
-      ..createdAt = DateTime.now().millisecondsSinceEpoch
-      ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-    await FirebaseFirestore.instance
-        .collection('TransactionSoldes')
-        .doc(tx.id)
-        .set(tx.toJson());
-  }
-
   // iPhone : prix en pièces avec l'équivalent FCFA ; ailleurs en FCFA.
   String _fmtPrice(int fcfa) => kPayInCoins ? CoinCheckout.priceLabel(fcfa) : '$fcfa FCFA';
 
@@ -135,17 +117,14 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     final price = _prices[_selectedDurationWeeks!] ?? 0;
     final userData = _auth.loginUserData;
     final isAdmin = userData.role == UserRole.ADM.name;
-    final balance = userData.votre_solde_depot ?? 0;
 
-    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kPayInCoins && !isAdmin;
+    // Paiement en pièces (serveur)
+    final payWithCoins = !isAdmin; // tout se paie en pièces (admins : gratuit)
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
-          kind: 'profile_boost', priceFcfa: price.toDouble(), label: 'Boost de profil',
+          kind: 'profile_boost', priceFcfa: price.toDouble(), label: _transactionLabel(),
           weeks: _selectedDurationWeeks);
       if (!paid || !mounted) return;
-    } else if (!isAdmin && balance < price) {
-      _showInsufficientBalanceDialog(price, balance); return;
     }
 
     setState(() => _isSubmitting = true);
@@ -156,14 +135,6 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
           ? AfricanCountry.allCountries.map((c) => c.code).toList()
           : _selectedCountries.map((c) => c.code).toList();
 
-      // Débiter le solde + enregistrer la transaction
-      if (!isAdmin && !payWithCoins) {
-        await FirebaseFirestore.instance.collection('Users').doc(userData.id).update({
-          'votre_solde_depot': FieldValue.increment(-price),
-        });
-        _auth.loginUserData.votre_solde_depot = (balance) - price;
-        await _createTransaction(price, _transactionLabel());
-      }
 
       // Snapshot des 3 derniers posts
       List<Map<String, dynamic>> ownerRecentPosts = [];
@@ -318,23 +289,6 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
-  }
-
-  void _showInsufficientBalanceDialog(int price, double balance) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: _c.surface,
-        title: Text('Solde insuffisant', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Votre solde (${balance.toStringAsFixed(0)} FCFA) est insuffisant pour cette durée ($price FCFA).',
-          style: TextStyle(color: _c.textSecondary),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Fermer', style: TextStyle(color: _red))),
-        ],
-      ),
-    );
   }
 
   void _showSuccessDialog() {

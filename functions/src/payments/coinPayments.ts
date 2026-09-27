@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
-import { APP_DATA_DOC } from "../posts/defiShared";
+import { CREATOR_SHARE, CommissionSource, creditSponsors, recordAppCommission, resolveSponsors } from "./coinShares";
 
 /**
  * payWithCoins — paiement en pièces de TOUS les achats de l'app (Android et iPhone),
@@ -17,20 +17,6 @@ import { APP_DATA_DOC } from "../posts/defiShared";
  *   qui paie, 2,5 % au parrain du créateur, en Pièces gagnées.
  */
 const COINS_PER_FCFA = 2.5; // 25 pièces pour 10 FCFA
-const CREATOR_SHARE = 0.7;
-const SPONSOR_SHARE = 0.025;
-
-/** Parrain d'un utilisateur (champ code_parrain → Users.code_parrainage), hors lui-même. */
-async function sponsorOf(userId: string | undefined): Promise<string | undefined> {
-  if (!userId) return undefined;
-  const u = await db.collection("Users").doc(userId).get();
-  const code = u.data()?.code_parrain as string | undefined;
-  if (!code) return undefined;
-  const q = await db.collection("Users").where("code_parrainage", "==", code).limit(1).get();
-  const id = q.docs[0]?.id;
-  return id && id !== userId ? id : undefined;
-}
-
 // Grille Premium / Gold : identique à AfrolookAbonnement (lib/models/model_data.dart).
 const PREMIUM_BASE = 200;
 const GOLD_BASE = 500;
@@ -43,8 +29,25 @@ const LIVE_PARTICIPANT_PRICE = 100;  // rejoindre un live comme participant (liv
 const AD_DEFAULT_PRICES: Record<number, number> = { 1: 1500, 2: 2500, 4: 4500, 12: 10000, 24: 18000, 52: 30000 };
 const AD_COMBINED_FACTOR = 1.5; // publicité + boost de profil (user_create_advertisement_page)
 
-type Kind = "premium" | "gold" | "official" | "group" | "content" | "pronostic" | "canal"
-  | "live_entry" | "live_participant" | "ad" | "ad_renew" | "profile_boost" | "product_boost";
+type Kind = "premium" | "gold" | "official" | "group" | "content" | "canal"
+  | "live_entry" | "live_participant" | "ad" | "ad_renew" | "profile_boost" | "product_boost"
+  | "entreprise_premium";
+
+const SOURCES: Record<Kind, CommissionSource> = {
+  premium: "premium",
+  gold: "gold",
+  official: "compte_officiel",
+  group: "groupes",
+  content: "contenus",
+  canal: "canaux",
+  live_entry: "lives_prives",
+  live_participant: "participation_live",
+  ad: "pubs_boosts",
+  ad_renew: "pubs_boosts",
+  profile_boost: "pubs_boosts",
+  product_boost: "pubs_boosts",
+  entreprise_premium: "abonnement_entreprise",
+};
 
 const LABELS: Record<Kind, string> = {
   premium: "Abonnement Premium",
@@ -52,7 +55,6 @@ const LABELS: Record<Kind, string> = {
   official: "Compte officiel",
   group: "Abonnement à un groupe",
   content: "Contenu payant",
-  pronostic: "Participation à un pronostic",
   canal: "Abonnement à un canal",
   live_entry: "Accès à un live privé",
   live_participant: "Participation à un live",
@@ -60,6 +62,7 @@ const LABELS: Record<Kind, string> = {
   ad_renew: "Renouvellement de publicité",
   profile_boost: "Boost de profil",
   product_boost: "Boost de produit",
+  entreprise_premium: "Abonnement entreprise Premium",
 };
 
 function num(v: unknown): number {
@@ -87,6 +90,14 @@ function productBoostFcfa(days: number): number {
   const base = (days / 10) * 500;
   const reduction = ({ 20: 10, 30: 15, 40: 20 } as Record<number, number>)[days] ?? 0;
   return base - (base * reduction) / 100;
+}
+
+/** Abonnement entreprise Premium (Afroshop) : 2000 F / 30 j, -4 % jusqu'à 60 j, -10 % au-delà (Subscription.dart). */
+function entreprisePremiumFcfa(days: number): number {
+  if (days < 30 || days > 365) throw new HttpsError("invalid-argument", "Durée invalide.");
+  if (days <= 30) return 2000;
+  if (days <= 60) return 2000 * (days / 30) * 0.96;
+  return 2000 * (days / 30) * 0.9;
 }
 
 interface Priced {
@@ -119,7 +130,6 @@ async function priceOf(kind: Kind, refId: string | undefined, dureeMois: number,
     case "group": return creatorPrice("GroupChats", refId, "subscription_price_coins", "subscription_price", "owner_id");
     case "canal": return creatorPrice("Canaux", refId, "subscriptionPriceCoins", "subscriptionPrice", "userId");
     case "live_entry": return creatorPrice("lives", refId, "participationFeeCoins", "participationFee", "hostId");
-    case "pronostic": return creatorPrice("Pronostics", refId, "prixParticipationCoins", "prixParticipation");
     case "content": return creatorPrice("ContentPaies", refId, "priceCoins", "price");
     case "live_participant": return { coins: toCoins(LIVE_PARTICIPANT_PRICE) };
     case "ad": {
@@ -129,6 +139,7 @@ async function priceOf(kind: Kind, refId: string | undefined, dureeMois: number,
     case "ad_renew":
     case "profile_boost": return { coins: toCoins(await adPrice(weeks)) };
     case "product_boost": return { coins: toCoins(productBoostFcfa(days)) };
+    case "entreprise_premium": return { coins: toCoins(entreprisePremiumFcfa(days)) };
   }
 }
 
@@ -151,11 +162,8 @@ export const payWithCoins = onCall(
     const creatorCoins = creatorId ? Math.floor(coins * CREATOR_SHARE) : 0;
 
     // Parrainages (hors transaction : requêtes non permises dedans)
-    const [payerSponsor, creatorSponsor] = await Promise.all([sponsorOf(uid), sponsorOf(creatorId)]);
-    const sponsors: { id: string; coins: number; role: string }[] = [];
-    if (payerSponsor) sponsors.push({ id: payerSponsor, coins: Math.floor(coins * SPONSOR_SHARE), role: "filleul acheteur" });
-    if (creatorSponsor) sponsors.push({ id: creatorSponsor, coins: Math.floor(coins * SPONSOR_SHARE), role: "filleul créateur" });
-    const sponsorCoins = sponsors.reduce((s, p) => s + p.coins, 0);
+    const sponsors = await resolveSponsors(uid, creatorId, coins);
+    const sponsorCoins = sponsors.reduce((sum, p) => sum + p.coins, 0);
     const appCoins = coins - creatorCoins - sponsorCoins;
 
     const userRef = db.collection("Users").doc(uid);
@@ -223,29 +231,7 @@ export const payWithCoins = onCall(
       }
 
       // 3. Parrains : 2,5 % chacun, en Pièces gagnées
-      for (const s of sponsors) {
-        if (s.coins <= 0) continue;
-        tx.update(db.collection("Users").doc(s.id), {
-          giftCoinsBalance: FieldValue.increment(s.coins),
-          totalCoinsEarnedFromSponsorship: FieldValue.increment(s.coins),
-        });
-        const sTx = db.collection("TransactionSoldes").doc();
-        tx.set(sTx, {
-          id: sTx.id,
-          user_id: s.id,
-          type: "GAIN_PIECES",
-          statut: "VALIDER",
-          description: `Commission de parrainage (${s.role}) — ${label} — ${s.coins} pièces`,
-          montant: s.coins,
-          frais: 0,
-          montant_total: s.coins,
-          methode_paiement: "commission_parrainage",
-          createdAt: now,
-          updatedAt: now,
-          purchaseKind: kind,
-          purchaseRefId: refId ?? null,
-        });
-      }
+      creditSponsors(tx, sponsors, label, now, { purchaseKind: kind, purchaseRefId: refId ?? null });
 
       // 4. Live privé : total encaissé par l'hôte (statistique du live, en pièces)
       if (kind === "live_entry" && refId) {
@@ -254,12 +240,8 @@ export const payWithCoins = onCall(
         });
       }
 
-      // 5. App
-      if (appCoins > 0) {
-        tx.update(db.collection("AppData").doc(APP_DATA_DOC), {
-          solde_gain_pieces: FieldValue.increment(appCoins),
-        });
-      }
+      // 5. App : part restante, enregistrée par source (page admin « Commissions »)
+      recordAppCommission(tx, SOURCES[kind as Kind], appCoins, now);
 
       return { success: true, coins, creatorCoins, priceFcfaEquivalent: coins / COINS_PER_FCFA };
     });

@@ -1,3 +1,4 @@
+import { recordAppCommission } from "../payments/coinShares";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue, Transaction, DocumentReference } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
@@ -91,11 +92,8 @@ function chargeFee(tx: Transaction, params: {
     updatedAt: now,
   });
 
-  if (appShare > 0) {
-    tx.update(db.collection("AppData").doc(APP_DATA_DOC), {
-      solde_gain_pieces: FieldValue.increment(appShare),
-    });
-  }
+  // Part de l'app, enregistrée par source (page admin « Commissions »)
+  recordAppCommission(tx, "defi", appShare, now);
 
   const payerTxRef = db.collection("TransactionSoldes").doc();
   tx.set(payerTxRef, {

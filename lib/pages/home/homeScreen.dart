@@ -94,7 +94,6 @@ import '../postDetailsVideo.dart';
 import '../post_video_format_tel_details.dart';
 import '../feed/unified_feed_page.dart';
 import '../../services/feed/feed_repository.dart' show FeedType;
-import '../pronostics/pronostics_feed_page.dart';
 import '../splashChargement.dart';
 import '../user/amis/addListAmis.dart';
 import '../user/amis/ami.dart';
@@ -603,10 +602,6 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.handyman_rounded,
                       label: l10n.menuServicesJobs,
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage()))),
-                  _dItem(context, colors,
-                      icon: MaterialIcons.sports_soccer,
-                      label: l10n.menuPronosticsBetting,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PronosticsFeedPage()))),
 
                   // ── Communauté ─────────────────────────────────────────────
                   _dSection(colors, 'Communauté'),
@@ -2756,7 +2751,6 @@ class _MyHomePageState extends State<MyHomePage>
                 // ── Découverte ───────────────────────────────────────
                 _rpSection(colors, 'Découverte'),
                 _rpItem(context, colors, icon: Entypo.trophy,                              label: l10n.menuTopStars,        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserClassement()))),
-                _rpItem(context, colors, icon: MaterialIcons.sports_soccer,                label: l10n.menuPronosticsBetting, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PronosticsFeedPage()))),
                 _rpItem(context, colors, icon: FontAwesome.forumbee,                       label: l10n.menuCanaux,          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
                 _rpItem(context, colors, icon: Icons.store_mall_directory,                 label: l10n.menuAfroshopMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
                 _rpItem(context, colors, icon: Icons.settings_outlined,                    label: l10n.menuServicesJobs,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage()))),

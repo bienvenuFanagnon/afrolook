@@ -1603,60 +1603,6 @@ class UserAuthProvider extends ChangeNotifier {
     } catch (e) {
       printVm('❌ Erreur: $e');
     }
-  }  Future<void> sendPushNotificationToUsersPronostic({
-    required UserData sender,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-    String? smallImage,
-    bool isChannel = false,
-    String? channelTitle,
-    Canal? canal,
-  })
-  async {
-    try {
-      // Déterminer le type de cible
-      String targetType = "all";
-      List<String>? specificUserIds;
-
-      // if (sender.role == UserRole.ADM.name) {
-      //   targetType = "all";
-      // } else if (isChannel && canal != null) {
-      //   targetType = "channel";
-      // }
-
-      // ✅ Appel à la fonction cloud - tout est géré côté serveur
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('sendBulkNotification')
-          .call({
-        'senderId': sender.id,
-        'message': message,
-        'typeNotif': typeNotif,
-        'postId': postId,
-        'postType': postType,
-        'chatId': chatId,
-        'smallImage': smallImage,
-        'isChannel': isChannel,
-        'channelTitle': channelTitle,
-        'canalId': canal?.id,
-        'targetType': targetType,
-        'specificUserIds': specificUserIds,
-      });
-
-      printVm('✅ Notifications traitées: ${result.data}');
-
-      // Afficher les stats
-      final data = result.data as Map;
-      printVm('📊 Statistiques:');
-      printVm('   - Notifications enregistrées: ${data['notificationsSaved']}');
-      printVm('   - Push notifications envoyées: ${data['pushSent']}');
-      printVm('   - Push limitées (1h): ${data['pushLimited']}');
-
-    } catch (e) {
-      printVm('❌ Erreur: $e');
-    }
   }
   Future<void> incrementCreatorCoins({
     required String postId,

@@ -201,15 +201,6 @@ class _CanalListPageState extends State<CanalListPage> {
       return;
     }
 
-    // Vérifier le solde de l'utilisateur
-
-    final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
-    final currentBalance = userDoc.data()?['votre_solde_principal'] ?? 0;
-
-    if (!kPayInCoins && currentBalance < subscriptionPrice) {
-      _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
-      return;
-    }
 
     // Message de confirmation différent selon la configuration
     String confirmationMessage = '';
@@ -380,114 +371,6 @@ class _CanalListPageState extends State<CanalListPage> {
     }
 
     setState(() {});
-  }
-
-  void _showInsufficientBalanceDialog({
-    required double userBalance,
-    required double subscriptionPrice,
-  }) {
-    final double missingAmount = (subscriptionPrice - userBalance).clamp(0, double.infinity);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        final colors = AppColors.of(context);
-        final l10n = AppLocalizations.of(context);
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: colors.background,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [colors.background, colors.surface],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 🟡 Icône en haut
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.accent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.warning_amber_rounded, color: colors.onAccent, size: 40),
-                ),
-                const SizedBox(height: 16),
-
-                // Titre
-                Text(
-                  l10n.canalInsufficientBalance,
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Message
-                Text(
-                  'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} FCFA.\n'
-                      'Il vous manque ${missingAmount.toStringAsFixed(0)} FCFA pour vous abonner '
-                      'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} FCFA.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: colors.textSecondary, height: 1.5, fontSize: 15),
-                ),
-                const SizedBox(height: 20),
-
-                // Boutons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        l10n.canalLater,
-                        style: TextStyle(color: colors.accent, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        elevation: 3,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.account_balance_wallet, color: colors.onPrimary),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.canalRecharge,
-                            style: TextStyle(
-                              color: colors.onPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Widget _buildCanalCard(Canal canal) {

@@ -123,7 +123,7 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
               const SizedBox(height: 18),
               Text(
                 "Paiement sécurisé par l'App Store. Les pièces achetées servent à tout payer dans l'app : "
-                "abonnements, cadeaux, votes, DÉFI, lives, groupes, canaux, pronostics, publicités et boosts. "
+                "abonnements, cadeaux, votes, DÉFI, lives, groupes, canaux, publicités et boosts. "
                 "Elles ne sont pas convertibles en argent : seules les pièces gagnées (cadeaux reçus, likes, "
                 "récompenses, gains de DÉFI) peuvent être converties.",
                 style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),

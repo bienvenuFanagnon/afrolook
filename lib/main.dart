@@ -74,7 +74,6 @@ import 'package:afrotok/providers/gold_groups_provider.dart';
 import 'package:afrotok/providers/mixed_feed_service_provider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/providers/profilLikeProvider.dart';
-import 'package:afrotok/providers/pronostic_provider.dart';
 import 'package:afrotok/providers/recent_posts_provider.dart';
 import 'package:afrotok/providers/sound_provider.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -420,7 +419,6 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
         ChangeNotifierProvider(create: (_) => GoldGroupsProvider()),
-        ChangeNotifierProvider(create: (_) => PronosticProvider()),
         ChangeNotifierProvider(create: (_) => SoundProvider()),
         ChangeNotifierProvider(create: (_) => StreakProvider()),
         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(

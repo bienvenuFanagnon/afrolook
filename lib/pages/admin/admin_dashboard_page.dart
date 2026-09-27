@@ -9,7 +9,6 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../contenuPayant/admin_content_page.dart';
-import '../pronostics/admin_pronostics_page.dart';
 import '../user/profile/adminprofil.dart';
 import '../user/profile/retraitAdmin/retraitAdminList.dart';
 import '../user/profile/retraitAdmin/searchUserAdmin.dart';
@@ -18,6 +17,7 @@ import 'AfrolookPub/afrolookAdminPubPage.dart';
 import 'ad_admin_page.dart';
 import 'admin_email_screen.dart';
 import 'afrolook_group_migration_page.dart';
+import 'commissions_admin_page.dart';
 import 'dating/admin_dating_profiles_page.dart';
 import 'influencer_requests_page.dart';
 import 'moderation_reports_page.dart';
@@ -358,7 +358,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         children: [
           Row(children: [
             Expanded(child: _metric(c, 'Solde principal', _money(principal), Icons.account_balance_wallet_rounded, c.primary)),
-            Expanded(child: _metric(c, 'Gains', _money(gain), Icons.monetization_on_rounded, c.supportAccent)),
+            Expanded(child: _metric(c, 'Ancien compteur gains', _money(gain), Icons.history_rounded, c.textSecondary)),
           ]),
           const SizedBox(height: 12),
           Row(children: [
@@ -383,10 +383,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 4),
               child: Text(
-                'Total = solde principal + gains + affiliation + 40 % des gains en pièces (valeur en FCFA).',
+                'Total = solde principal + ancien compteur + affiliation + 40 % des gains en pièces (valeur en FCFA). '
+                "L'ancien compteur de gains était faussé (parts des canaux et lives > 100 %) : il est conservé en historique. "
+                'Les vrais gains de l\'app, par source, sont dans « Commissions ».',
                 style: TextStyle(color: c.textSecondary, fontSize: 11.5, height: 1.35),
               ),
             ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _push(const CommissionsAdminPage()),
+              icon: const Icon(Icons.pie_chart_rounded, size: 18),
+              label: const Text('Voir les commissions'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: c.primary,
+                side: BorderSide(color: c.primary.withOpacity(0.5)),
+                minimumSize: const Size(0, 38),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -475,9 +491,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.star_rounded, 'Influenceurs', c.supportAccent, _influencerPending, const InfluencerRequestsPage()),
       _Module(Icons.campaign_rounded, 'Publicités', const Color(0xFF8E3CC4), _boostsPending, const AdvertisementManagementPage()),
       _Module(Icons.ondemand_video_rounded, 'Pub Appodeal', const Color(0xFF8E3CC4), 0, AdAdminPage()),
+      _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),
-      _Module(Icons.sports_soccer_rounded, 'Pronostics', c.danger, 0, AdminPronosticsPage()),
       _Module(Icons.favorite_rounded, 'Afrolove', const Color(0xFFD6204A), 0, AdminDatingProfilesPage()),
       _Module(Icons.mail_rounded, 'Emailing', c.textSecondary, 0, AdminEmailScreen()),
       _Module(Icons.payment_rounded, 'Moyens de paiement', c.primary, 0, const PaymentMethodsAdminPage()),

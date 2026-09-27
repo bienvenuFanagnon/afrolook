@@ -21,7 +21,6 @@ import '../pages/component/consoleWidget.dart';
 import '../pages/contenuPayant/contentDetails.dart';
 import '../pages/postDetails.dart';
 import '../pages/postDetailsVideo.dart';
-import '../pages/pronostics/pronostic_detail_page.dart';
 import '../providers/authProvider.dart';
 import '../providers/postProvider.dart';
 import '../providers/userProvider.dart';
@@ -812,15 +811,7 @@ class AppLinkService {
     try {
       await postProvider.getPostsImagesById(postId).then((posts) {
         if (posts.isNotEmpty) {
-          if(posts.first.type ==PostType.PRONOSTIC.name){
-
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => PronosticDetailPage(postId: posts.first.id!,)
-                )
-            );
-          }else{
+          {
             if(posts.first.dataType ==PostDataType.VIDEO.name){
 
               Navigator.push(

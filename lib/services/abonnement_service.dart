@@ -3,11 +3,8 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../models/model_data.dart';
-import '../providers/authProvider.dart';
-import '../utils/platform_guard.dart';
 import 'coin_checkout.dart';
 
 
@@ -97,63 +94,20 @@ class AbonnementService {
   }) async {
     final prixTotal = nouvelAbonnement.prix;
 
-    // iPhone (règle App Store 3.1.1) : paiement en pièces achetées via l'App Store.
-    // La Cloud Function recalcule le prix, débite les pièces et enregistre la transaction.
-    if (kPayInCoins) {
-      final planType = sousType == 'ABONNEMENT_GOLD' ? 'gold' : 'premium';
-      final paid = await CoinCheckout.pay(
-        context,
-        kind: planType,
-        priceFcfa: prixTotal,
-        label: 'Abonnement $descriptionLabel — ${nouvelAbonnement.dureeMois} mois',
-        dureeMois: nouvelAbonnement.dureeMois,
-      );
-      if (!paid) return {'success': false, 'message': '', 'cancelled': true};
-      await _firestore.collection('Users').doc(user.id).update({
-        'abonnement': nouvelAbonnement.toJson(),
-      });
-      return {
-        'success': true,
-        'message': 'Abonnement $descriptionLabel activé avec succès !',
-        'abonnement': nouvelAbonnement,
-      };
-    }
-
-    final solde = (balanceKey == 'votre_solde_depot'
-        ? user.votre_solde_depot
-        : user.votre_solde_principal) ?? 0.0;
-    final soldeLabel = balanceKey == 'votre_solde_depot' ? 'dépôt' : 'gains';
-
-    if (solde < prixTotal) {
-      return {
-        'success': false,
-        'message': 'Solde de $soldeLabel insuffisant (${prixTotal.toStringAsFixed(0)} FCFA requis)',
-        'soldeManquant': prixTotal - solde,
-      };
-    }
-
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final nouveauSolde = solde - prixTotal;
-
+    // Paiement en pièces (serveur) : la Cloud Function recalcule le prix, débite les pièces,
+    // enregistre la transaction et la part de l'app. Le solde FCFA n'est plus utilisé.
+    final planType = sousType == 'ABONNEMENT_GOLD' ? 'gold' : 'premium';
+    final paid = await CoinCheckout.pay(
+      context,
+      kind: planType,
+      priceFcfa: prixTotal,
+      label: 'Abonnement $descriptionLabel — ${nouvelAbonnement.dureeMois} mois',
+      dureeMois: nouvelAbonnement.dureeMois,
+    );
+    if (!paid) return {'success': false, 'message': '', 'cancelled': true};
     await _firestore.collection('Users').doc(user.id).update({
-      balanceKey: nouveauSolde,
       'abonnement': nouvelAbonnement.toJson(),
     });
-
-    await _firestore
-        .collection('AppData')
-        .doc(authProvider.appDefaultData.id)
-        .update({'solde_gain': FieldValue.increment(prixTotal)});
-
-    await _enregistrerTransaction(
-      userId: user.id!,
-      montant: prixTotal,
-      dureeMois: nouvelAbonnement.dureeMois,
-      sousType: sousType,
-      descriptionLabel: descriptionLabel,
-      balanceKey: balanceKey,
-    );
-
     return {
       'success': true,
       'message': 'Abonnement $descriptionLabel activé avec succès !',
@@ -183,46 +137,6 @@ class AbonnementService {
       }
     } catch (e) {
       printVm('❌ Erreur vérification abonnement: $e');
-    }
-  }
-
-  // ── Enregistrement transaction ────────────────────────────────────────────
-
-  Future<void> _enregistrerTransaction({
-    required String userId,
-    required double montant,
-    required int dureeMois,
-    required String sousType,
-    required String descriptionLabel,
-    String balanceKey = 'votre_solde_depot',
-  }) async {
-    try {
-      final ref = _firestore.collection('TransactionSoldes').doc();
-      final now = DateTime.now();
-      await ref.set({
-        'id': ref.id,
-        'user_id': userId,
-        'type': TypeTransaction.DEPENSE.name,
-        'statut': 'VALIDER',
-        'description': 'Abonnement $descriptionLabel $dureeMois mois - $montant FCFA',
-        'montant': montant,
-        'montant_total': montant,
-        'numero_depot': null,
-        'methode_paiement': balanceKey,
-        'frais': 0,
-        'frais_operateur': 0,
-        'frais_gain': 0,
-        'id_transaction_paygate': null,
-        'sous_type': sousType,
-        'duree_mois': dureeMois,
-        'createdAt': now.millisecondsSinceEpoch,
-        'updatedAt': now.millisecondsSinceEpoch,
-        'reference': 'ABON_${now.millisecondsSinceEpoch}',
-      });
-      printVm('✅ Transaction $descriptionLabel enregistrée — $dureeMois mois');
-    } catch (e) {
-      printVm('❌ Erreur transaction abonnement: $e');
-      throw Exception('Échec enregistrement transaction');
     }
   }
 

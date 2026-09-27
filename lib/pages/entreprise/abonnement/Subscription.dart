@@ -4,6 +4,7 @@ import 'package:afrotok/services/sessions/session_checker_service.dart';
 
 import 'package:cinetpay/cinetpay.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 
 import 'package:provider/provider.dart';
 
@@ -45,7 +46,6 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
   double minProductCount = 15.0; // 15 posts pour 30 jours
   double maxProductCount = 100.0; // 100 posts pour 365 jours
   bool _sessionChecked = false;
-  String _selectedBalance = 'votre_solde_depot';
 
   @override
   void didChangeDependencies() {
@@ -67,10 +67,8 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
   Widget build(BuildContext context) {
     final totalPrice = _calculateTotalPrice();
     final productCount = _calculateProductCount();
-    final currentBalance = (_selectedBalance == 'votre_solde_depot'
-        ? widget.user.votre_solde_depot
-        : widget.user.votre_solde_principal) ?? 0.0;
-    final hasEnoughBalance = currentBalance >= totalPrice;
+    // Payé en pièces : le solde est vérifié par CoinCheckout.pay (fenêtre commune)
+    const hasEnoughBalance = true;
     final canSubscribe = _canSubscribeToPremium(widget.entreprise?.abonnement);
 
     return Scaffold(
@@ -492,7 +490,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                   ),
                   SizedBox(height: 16),
 
-                  _buildPriceRow('Prix total', '${totalPrice.toInt()} FCFA'),
+                  _buildPriceRow('Prix total', CoinCheckout.priceLabel(totalPrice)),
                   SizedBox(height: 8),
                   _buildPriceRow('Posts par mois', '~${(productCount / (selectedDays / 30)).roundToDouble().toInt()}'),
 
@@ -610,7 +608,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
             ),
             SizedBox(height: 16),
             _buildDetailRow('Durée de l\'abonnement', '$selectedDays jours'),
-            _buildDetailRow('Prix total', '${totalPrice.toInt()} FCFA'),
+            _buildDetailRow('Prix total', CoinCheckout.priceLabel(totalPrice)),
             _buildDetailRow('Nombre total de posts', '${productCount.toInt()}'),
             _buildDetailRow('Posts par mois', '~${(productCount / (selectedDays / 30)).roundToDouble().toInt()}'),
             _buildDetailRow('Produits boostés inclus', '5'),
@@ -649,56 +647,9 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
   }
 
   Widget _buildSubscribeButton(double totalPrice, bool hasEnoughBalance, bool canSubscribe) {
-    const green = Color(0xFF34C759);
-    final depot = widget.user.votre_solde_depot ?? 0.0;
-    final principal = widget.user.votre_solde_principal ?? 0.0;
-    final currentBalance = _selectedBalance == 'votre_solde_depot' ? depot : principal;
-    final manquant = totalPrice - currentBalance;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sélecteur de solde
-        const Text(
-          'PAYER AVEC',
-          style: TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: _buildEntrepriseBalanceOption('Dépôt', depot, green, Icons.savings_rounded, _selectedBalance == 'votre_solde_depot', () => setState(() => _selectedBalance = 'votre_solde_depot'))),
-            const SizedBox(width: 8),
-            Expanded(child: _buildEntrepriseBalanceOption('Gains', principal, Colors.amber.shade700, Icons.account_balance_wallet_rounded, _selectedBalance == 'votre_solde_principal', () => setState(() => _selectedBalance = 'votre_solde_principal'))),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (!hasEnoughBalance)
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12),
-            margin: EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.warning, color: Colors.red, size: 16),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Solde insuffisant. Il vous manque ${manquant.toInt()} FCFA',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -719,10 +670,6 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                 _showCannotSubscribeDialog();
                 return;
               }
-              if (!hasEnoughBalance) {
-                _showInsufficientBalanceDialog(totalPrice);
-                return;
-              }
               _subscribeToPremium();
             },
             child: isLoading
@@ -740,7 +687,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                 Icon(Icons.star, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'S\'ABONNER - ${totalPrice.toInt()} FCFA',
+                  'S\'ABONNER - ${CoinCheckout.fmt(CoinCheckout.coinsFor(totalPrice))} pièces',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -809,62 +756,6 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
     );
   }
 
-  Widget _buildEntrepriseBalanceOption(String label, double amount, Color color, IconData icon, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? color : Colors.grey.shade300, width: isSelected ? 1.5 : 1),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: isSelected ? color : Colors.grey, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(color: isSelected ? color : Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
-                  Text('${amount.toStringAsFixed(0)} F', style: TextStyle(color: isSelected ? color : Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: color, size: 14),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showInsufficientBalanceDialog(double requiredAmount) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Solde insuffisant', style: TextStyle(color: Colors.black87)),
-        content: Text('Votre solde sélectionné (${((_selectedBalance == 'votre_solde_depot' ? widget.user.votre_solde_depot : widget.user.votre_solde_principal) ?? 0).toInt()} FCFA) '
-            'est insuffisant pour cet abonnement (${requiredAmount.toInt()} FCFA). '
-            'Voulez-vous recharger votre compte ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => DepositScreen()));
-            },
-            child: Text('Recharger', style: TextStyle(color: Color(0xFF2ECC71))),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _subscribeToPremium() async {
     if (widget.entreprise == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -878,17 +769,12 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
     try {
       final totalPrice = _calculateTotalPrice();
       final productCount = _calculateProductCount().toInt();
-      final userDoc = await firestore.collection('Users').doc(widget.user.id!).get();
-
-      if (!userDoc.exists) throw Exception('Utilisateur non trouvé');
-
-      final userData = UserData.fromJson(userDoc.data()!);
-
-      final payerBalance = (_selectedBalance == 'votre_solde_depot'
-          ? userData.votre_solde_depot
-          : userData.votre_solde_principal) ?? 0.0;
-      if (payerBalance < totalPrice) {
-        _showInsufficientBalanceDialog(totalPrice);
+      final paid = await CoinCheckout.pay(context,
+          kind: 'entreprise_premium',
+          days: selectedDays,
+          priceFcfa: totalPrice,
+          label: 'Abonnement entreprise Premium — $selectedDays jours');
+      if (!paid) {
         setState(() { isLoading = false; });
         return;
       }
@@ -914,21 +800,6 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
         ..isFinished = false
         ..dispo_afrolook = false
         ..produistIdBoosted = [];
-
-      await firestore.collection('Users').doc(widget.user.id!).update({
-        _selectedBalance: FieldValue.increment(-totalPrice),
-      });
-
-      await authProvider.incrementAppGain(totalPrice);
-
-      await firestore.collection('TransactionSoldes').add({
-        'user_id': widget.user.id,
-        'montant': totalPrice,
-        'type': TypeTransaction.DEPENSE.name,
-        'description': 'Abonnement Premium - $selectedDays jours',
-        'createdAt': now.millisecondsSinceEpoch,
-        'statut': StatutTransaction.VALIDER.name,
-      });
 
       await firestore.collection('Entreprises').doc(widget.entreprise!.id!).update({
         'abonnement': abonnement.toJson(),

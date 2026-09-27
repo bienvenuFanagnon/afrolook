@@ -416,11 +416,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     if (!_selectAllCountries && _selectedCountries.isEmpty) { _showError('Sélectionnez au moins un pays'); return; }
 
     final int price = _finalPrice;
-    final currentBalance = authProvider.loginUserData.votre_solde_depot ?? 0;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
-    // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-    final payWithCoins = kPayInCoins && !isAdmin;
+    // Paiement en pièces (serveur)
+    final payWithCoins = !isAdmin; // tout se paie en pièces (admins : gratuit)
     if (payWithCoins) {
       final paid = await CoinCheckout.pay(context,
           kind: 'ad',
@@ -429,25 +428,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           weeks: _selectedDurationWeeks,
           combined: _combineWithProfile);
       if (!paid || !mounted) return;
-    } else if (!isAdmin && currentBalance < price) {
-      _showInsufficientBalanceDialog();
-      return;
     }
 
     setState(() => _isUploading = true);
 
     try {
-      // 1. Débiter sur le solde de dépôts (sauf admin)
-      if (!isAdmin && !payWithCoins) {
-        await FirebaseFirestore.instance.collection('Users').doc(authProvider.loginUserData.id).update({
-          'votre_solde_depot': FieldValue.increment(-price),
-        });
-        authProvider.loginUserData.votre_solde_depot = (authProvider.loginUserData.votre_solde_depot ?? 0) - price;
-        final label = _combineWithProfile
-            ? 'Pub combinée (post + profil) ${_getDurationLabel(_selectedDurationWeeks!)}'
-            : 'Publicité ${_getDurationLabel(_selectedDurationWeeks!)}';
-        await _createTransaction(price, label);
-      }
 
       final now = DateTime.now().microsecondsSinceEpoch;
       final String actionUrl = _selectedActionType == 'whatsapp'
@@ -610,20 +595,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     }
   }
 
-  Future<void> _createTransaction(int amount, String reason) async {
-    final transaction = TransactionSolde()
-      ..id = FirebaseFirestore.instance.collection('TransactionSoldes').doc().id
-      ..user_id = authProvider.loginUserData.id
-      ..type = TypeTransaction.DEPENSE.name
-      ..statut = StatutTransaction.VALIDER.name
-      ..description = reason
-      ..montant = amount.toDouble()
-      ..methode_paiement = "publicité"
-      ..createdAt = DateTime.now().millisecondsSinceEpoch
-      ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-    await FirebaseFirestore.instance.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
-  }
-
   Future<void> _sendAdminNotificationEmail({required int durationWeeks, required int pricePaid}) async {
     final userData = authProvider.loginUserData;
     final ownerName = ('${userData.prenom ?? ''} ${userData.nom ?? ''}'.trim().isNotEmpty
@@ -639,27 +610,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     } catch (e) {
       debugPrint('notifyAdminBoostSubmission error (non-fatal): $e');
     }
-  }
-
-  void _showInsufficientBalanceDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _c.surface,
-        title: Text('Solde insuffisant', style: TextStyle(color: _secondaryColor)),
-        content: Text('Crédits insuffisants. Veuillez recharger.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context) => DepositScreen()));
-            },
-            child: Text('Recharger'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showSuccessDialog() {

@@ -242,7 +242,6 @@ class _CanalDetailsState extends State<CanalDetails> {
       context: context,
       builder: (BuildContext context) {
         final isPrivate = widget.canal.isPrivate == true;
-        final subscriptionPrice = widget.canal.subscriptionPrice ?? 0;
 
         final colors = AppColors.of(context);
         final l10n = AppLocalizations.of(context);
@@ -643,14 +642,6 @@ class _CanalDetailsState extends State<CanalDetails> {
       return;
     }
 
-    // Vérifier le solde de l'utilisateur
-    final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
-    final currentBalance = (userDoc.data()?['votre_solde_principal'] ?? 0).toDouble();
-
-    if (!kPayInCoins && currentBalance < subscriptionPrice) {
-      _showInsufficientBalanceDialog(userBalance: currentBalance, subscriptionPrice: subscriptionPrice);
-      return;
-    }
 
     // Libellés adaptés au type d'abonnement
     final String dialogTitle;
@@ -846,104 +837,6 @@ class _CanalDetailsState extends State<CanalDetails> {
     });
   }
 
-  void _showInsufficientBalanceDialog({
-    required double userBalance,
-    required double subscriptionPrice,
-  }) {
-    final double missingAmount = (subscriptionPrice - userBalance).clamp(0, double.infinity);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        final colors = AppColors.of(context);
-        final l10n = AppLocalizations.of(context);
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: colors.background,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [colors.background, colors.surface],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.accent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.warning_amber_rounded, color: colors.onAccent, size: 40),
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  l10n.canalInsufficientBalance,
-                  style: TextStyle(
-                    color: colors.primary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                Text(
-                  'Votre solde actuel est de ${userBalance.toStringAsFixed(0)} Afrcoins.\n'
-                      'Il vous manque ${missingAmount.toStringAsFixed(0)} Afrcoins pour vous abonner '
-                      'à ce canal privé coûtant ${subscriptionPrice.toStringAsFixed(0)} Afrcoins.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: colors.textSecondary, height: 1.5, fontSize: 15),
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        l10n.canalLater,
-                        style: TextStyle(color: colors.accent, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        elevation: 3,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.account_balance_wallet, color: colors.onPrimary),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.canalRecharge,
-                            style: TextStyle(color: colors.onPrimary, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
   Widget _buildHeaderSection() {
     final isPrivate = widget.canal.isPrivate == true;
     final isOwner = authProvider.loginUserData.id == widget.canal.userId;
