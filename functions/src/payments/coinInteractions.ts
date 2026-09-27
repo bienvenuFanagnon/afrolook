@@ -63,7 +63,7 @@ export const sendLike = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (
     }
     tx.update(postRef, {
       loves: FieldValue.increment(1),
-      users_love_id: FieldValue.arrayUnion([uid]),
+      users_love_id: FieldValue.arrayUnion(uid),
       popularity: FieldValue.increment(1),
       totalGiftCoinsSentOnThisPost: FieldValue.increment(creatorCoins),
       totalCoinsFromLikes: FieldValue.increment(creatorCoins),
@@ -118,7 +118,7 @@ export const sendPostGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, asy
       updatedAt: now,
     });
     tx.update(postRef, {
-      users_cadeau_id: FieldValue.arrayUnion([uid]),
+      users_cadeau_id: FieldValue.arrayUnion(uid),
       popularity: FieldValue.increment(5),
       giftCount: FieldValue.increment(1),
       totalGiftCoinsSentOnThisPost: FieldValue.increment(coins),

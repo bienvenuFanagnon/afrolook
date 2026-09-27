@@ -236,10 +236,10 @@ export const reportPost = onCall(
       newPostScore = Math.max(0, currentScore - penalty);
       updates.postScore = newPostScore;
       updates.reportCount = FieldValue.increment(1);
-      updates.reporterIds = FieldValue.arrayUnion([uid]);
+      updates.reporterIds = FieldValue.arrayUnion(uid);
       if (reportType === "wrong_category") {
         updates.wrongCategoryCount = FieldValue.increment(1);
-        updates.wrongCategoryReporterIds = FieldValue.arrayUnion([uid]);
+        updates.wrongCategoryReporterIds = FieldValue.arrayUnion(uid);
       }
     }
 
