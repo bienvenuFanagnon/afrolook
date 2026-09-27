@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/model_data.dart';
 import '../theme/app_colors.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 /// Pièces reçues par un post (likes + commentaires + cadeaux), visibles par tous :
 /// c'est la preuve que sur Afrolook, chaque interaction paie le créateur.
@@ -48,7 +49,7 @@ Future<void> showPostCoinsBreakdown(BuildContext context, Post post) {
               style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
         ]),
       );
-  return showModalBottomSheet(
+  return showResponsiveBottomSheet(
     context: context,
     backgroundColor: c.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),

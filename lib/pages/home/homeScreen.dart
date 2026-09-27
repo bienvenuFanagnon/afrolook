@@ -452,7 +452,8 @@ class _MyHomePageState extends State<MyHomePage>
         await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
       },
       child: Drawer(
-        width: MediaQuery.of(context).size.width * 0.9,
+        // 90 % sur téléphone, 380 px au plus sur iPad et ordinateur
+        width: (MediaQuery.of(context).size.width * 0.9).clamp(0.0, 380.0),
         backgroundColor: colors.background,
         child: Column(
           children: <Widget>[
@@ -1523,7 +1524,9 @@ class _MyHomePageState extends State<MyHomePage>
     const double actionIconSize = 22;
 
     // ── Layout Wide (Tablette / Desktop ≥ 576 px) ────────────────────────
-    if (AppLayout.isWide(context)) {
+    // Interface « ordinateur » (barre latérale) uniquement sur le web en grand écran :
+    // iPad et tablettes ont la même interface que le téléphone (en-tête, navigation, menu complet).
+    if (AppLayout.useDesktopShell(context)) {
       return _buildWideScaffold(context, colors, l10n, width, navIconSize, actionIconSize);
     }
     // ── Layout Mobile (< 576 px) ─────────────────────────────────────────
@@ -2034,11 +2037,6 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   // 🔥 Déclenche le filtre pays de l'onglet actif depuis la barre du haut
-  void _onTopBarFilterTap() {
-    final state = _activeFeedKey?.currentState;
-    if (state != null) (state as dynamic).showCountryFilter();
-  }
-
   // 🔥 Déclenche le rafraîchissement de l'onglet actif depuis la barre du haut
   void _showLanguagePicker(BuildContext context, LocaleProvider localeProvider) {
     final colors = AppColors.of(context);
@@ -2183,6 +2181,8 @@ class _MyHomePageState extends State<MyHomePage>
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: colors.background,
+      // Même menu que sur téléphone (avant : aucun menu, « Paramètres » n'ouvrait rien)
+      drawer: menu(context, width, MediaQuery.of(context).size.height),
       body: SafeArea(
         child: Row(
           children: [
@@ -2264,22 +2264,35 @@ class _MyHomePageState extends State<MyHomePage>
       ),
       child: Column(
         children: [
-          // Logo
+          // Menu + logo (le menu complet s'ouvre comme sur téléphone)
           Container(
             height: AppLayout.topBarHeight,
-            alignment: wide ? Alignment.centerLeft : Alignment.center,
-            padding: EdgeInsets.symmetric(horizontal: wide ? 14 : 0),
+            padding: EdgeInsets.symmetric(horizontal: wide ? 4 : 0),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
             ),
-            child: Text(
-              wide ? 'Afrolook' : 'A',
-              style: TextStyle(
-                fontSize: wide ? 18 : 16,
-                fontWeight: FontWeight.w900,
-                color: colors.primary,
-                letterSpacing: 0.5,
-              ),
+            child: Row(
+              mainAxisAlignment: wide ? MainAxisAlignment.start : MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  tooltip: 'Menu',
+                  icon: Icon(Icons.menu, color: colors.textPrimary, size: 22),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+                if (wide)
+                  GestureDetector(
+                    onTap: _onLogoTap,
+                    child: Text(
+                      'Afrolook',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: colors.primary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           // Profil (desktop large uniquement)
@@ -2323,6 +2336,9 @@ class _MyHomePageState extends State<MyHomePage>
               child: Column(
                 children: [
                   const SizedBox(height: 8),
+                  // Raccourcis portefeuille (comme en haut du menu mobile)
+                  _sidebarWalletShortcuts(context, colors, wide),
+                  Divider(color: colors.border, height: 12),
                   _sidebarItem(
                     context: context,
                     icon: Icons.home_outlined,
@@ -2516,118 +2532,69 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   /// TopBar horizontale pour desktop/tablette (remplace les lignes 1+2 de l'AppBar mobile).
+  /// Barre du haut (ordinateur) : mêmes actions que l'en-tête du téléphone.
+  /// Le menu ☰ et le logo sont en haut de la barre latérale ; langue, thème et profil sont dans le menu.
   Widget _buildDesktopTopBar(
     BuildContext context,
     AppColors colors,
     AppLocalizations l10n,
     double actionIconSize,
   ) {
+    Widget action(Widget child, VoidCallback onTap, String tooltip) => Tooltip(
+          message: tooltip,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(padding: const EdgeInsets.all(8), child: child),
+          ),
+        );
+
     return Container(
       height: AppLayout.topBarHeight,
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
-          // Barre de recherche
-          Expanded(
-            child: Container(
-              height: 36,
-              constraints: const BoxConstraints(maxWidth: 400),
-              decoration: BoxDecoration(
-                color: colors.background,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: colors.border),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  Icon(Icons.search, color: colors.textSecondary, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Rechercher sur Afrolook…',
-                    style: TextStyle(color: colors.textSecondary, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Actions
+          const Spacer(),
+          // Notifications
           StreamBuilder<List<NotificationData>>(
             stream: authProvider.getListNotificationAuth(authProvider.loginUserData.id!),
             builder: (context, snap) {
-              int n = snap.hasData ? snap.data!.length : 0;
-              return GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/mes_notifications'),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: badges.Badge(
-                    showBadge: n > 0,
-                    badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
-                    badgeContent: Text(n > 9 ? '9+' : '$n', style: TextStyle(fontSize: 8, color: colors.onAccent)),
-                    child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize + 2),
-                  ),
+              final n = snap.hasData ? snap.data!.length : 0;
+              return action(
+                badges.Badge(
+                  showBadge: n > 0,
+                  badgeStyle: badges.BadgeStyle(badgeColor: colors.accent),
+                  badgeContent: Text(n > 9 ? '9+' : '$n', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+                  child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize),
                 ),
+                () => Navigator.pushNamed(context, '/mes_notifications'),
+                'Notifications',
               );
             },
           ),
-          GestureDetector(
-            onTap: _onTopBarFilterTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(Icons.filter_alt_outlined, color: colors.primary, size: actionIconSize + 2),
-            ),
+          // Recherche créateurs / canaux
+          action(
+            Icon(Icons.search_rounded, color: colors.textPrimary, size: actionIconSize),
+            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorCanalSearchPage())),
+            'Rechercher',
           ),
+          // Son
           Consumer<SoundProvider>(
-            builder: (_, sp, __) => GestureDetector(
-              onTap: sp.toggleSound,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Icon(sp.isMuted ? Icons.volume_off : Icons.volume_up, color: colors.primary, size: actionIconSize + 2),
-              ),
+            builder: (_, sp, __) => action(
+              Icon(sp.isMuted ? Icons.volume_off : Icons.volume_up, color: colors.primary, size: actionIconSize),
+              sp.toggleSound,
+              sp.isMuted ? 'Activer le son' : 'Couper le son',
             ),
           ),
-          GestureDetector(
-            onTap: _onTopBarRefreshTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(Icons.refresh, color: colors.primary, size: actionIconSize + 2),
-            ),
-          ),
-          Consumer<LocaleProvider>(
-            builder: (_, lp, __) => GestureDetector(
-              onTap: () => _showLanguagePicker(context, lp),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  (kSupportedLocales[lp.locale.languageCode] ?? '🇫🇷').substring(0, 2),
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => Provider.of<ThemeProvider>(context, listen: false).toggleTheme(),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 6, right: 4),
-              child: Icon(
-                colors.isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                color: colors.primary,
-                size: actionIconSize + 2,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/home_profile_user'),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundImage: NetworkImage(authProvider.loginUserData.imageUrl ?? ''),
-              onBackgroundImageError: (_, __) {},
-            ),
+          // Actualiser
+          action(
+            Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
+            _onTopBarRefreshTap,
+            'Actualiser',
           ),
         ],
       ),
@@ -2888,6 +2855,33 @@ class _MyHomePageState extends State<MyHomePage>
         ),
       ),
     );
+  }
+
+  /// Raccourcis portefeuille de la barre latérale (tablette et ordinateur) :
+  /// libellés en version large, icônes avec info-bulle en version étroite.
+  Widget _sidebarWalletShortcuts(BuildContext context, AppColors colors, bool wide) {
+    final coins = authProvider.loginUserData.giftCoinsBalance ?? 0;
+    Widget item(IconData icon, String label, String tooltip, Color color, Widget Function() page) {
+      final tile = _sidebarItem(
+        context: context,
+        icon: icon,
+        label: label,
+        iconColor: color,
+        wide: wide,
+        colors: colors,
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page())),
+      );
+      return wide ? tile : Tooltip(message: tooltip, child: tile);
+    }
+
+    return Column(children: [
+      item(Icons.account_balance_wallet_rounded, 'Portefeuille · ${TxAmount.fmt(coins)}',
+          'Portefeuille (${TxAmount.fmt(coins)} pièces)', colors.primary, () => MonetisationPage()),
+      item(Icons.add_circle_rounded, 'Recharger', 'Recharger des pièces', colors.supportAccent,
+          () => CoinRechargeScreen()),
+      item(Icons.north_east_rounded, 'Retirer', 'Retirer mes gains', colors.warning,
+          () => UserDemandeRetraitPage()),
+    ]);
   }
 
   /// Raccourcis en haut du menu : Portefeuille (solde de pièces), Recharger, Retirer.

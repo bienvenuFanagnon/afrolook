@@ -758,6 +758,11 @@ class _DetailsPostState extends State<DetailsPost>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        // Largeur limitée à 560 px sur iPad et ordinateur (avant : toute la largeur)
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: ((MediaQuery.of(context).size.width - 560) / 2).clamp(16.0, double.infinity),
+          vertical: 24,
+        ),
         backgroundColor: _colors.surfaceVariant,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
@@ -4546,19 +4551,13 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
     double contentHeight = screenHeight * 0.5; // 50% de l'écran
     contentHeight = contentHeight.clamp(300.0, 550.0);
 
+    // Pas de carte (fond + ombre) derrière les images : sur iPad et ordinateur, l'image
+    // affichée en entier ne remplit pas la boîte et la carte grise dépassait autour.
     return Container(
       height: contentHeight,
       margin: EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
-        color: _colors.surfaceVariant,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(_colors.isDark ? 0.5 : 0.12),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
         border: _isLookChallenge
             ? Border.all(color: _colors.primary.withOpacity(0.3))
             : null,

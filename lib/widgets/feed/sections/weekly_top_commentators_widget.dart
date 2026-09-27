@@ -6,6 +6,7 @@ import '../../../pages/weekly_top/weekly_top_commentators_page.dart';
 import '../../../services/weekly_rewards_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../flame_streak_banner.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 /// Affiché du lundi au mercredi dans le feed.
 /// Montre le top 5 commentateurs de la semaine précédente avec leurs récompenses.
@@ -226,7 +227,7 @@ class _CommentatorCard extends StatelessWidget {
     final streak = user?.commentStreak ?? 0;
     final level = commentLevelForStreak(streak);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(

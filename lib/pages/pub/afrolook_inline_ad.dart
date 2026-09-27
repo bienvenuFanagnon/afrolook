@@ -25,6 +25,7 @@ import '../chat/group/group_info_page.dart';
 import '../chat/group/group_chat_page.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import '../../theme/app_colors.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 /// Bannière pub inline affichant un post pub Afrolook (interne).
 /// Masquée pour Premium, Gold et Admin.
@@ -243,7 +244,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     final textPrimary = isDark ? Colors.white : const Color(0xFF111111);
     final textSecondary = isDark ? const Color(0xFFAAAAAA) : const Color(0xFF666666);
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

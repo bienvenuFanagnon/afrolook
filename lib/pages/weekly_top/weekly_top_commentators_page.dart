@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/weekly_rewards_service.dart';
 import '../../theme/app_colors.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 const _pageSize = 20;
 
@@ -95,7 +96,7 @@ class _WeeklyTopCommentatorsPageState extends State<WeeklyTopCommentatorsPage> {
       WeeklyRewardsService.getLastWeekId(),
       WeeklyRewardsService.getCurrentWeekId(),
     ];
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       builder: (ctx) {
         final colors = AppColors.of(ctx);

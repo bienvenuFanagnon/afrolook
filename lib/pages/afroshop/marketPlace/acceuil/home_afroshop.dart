@@ -250,7 +250,7 @@ class _HomePageState extends State<HomeAfroshopPage>
   }
 
   void _showCategoryOnboarding() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -494,7 +494,7 @@ class _HomePageState extends State<HomeAfroshopPage>
 
   void _showFilterDialog() {
     final colors = _clrs ?? AppColors.of(context);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

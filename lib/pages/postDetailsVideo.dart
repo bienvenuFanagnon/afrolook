@@ -301,6 +301,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        // Largeur limitée à 560 px sur iPad et ordinateur (avant : toute la largeur)
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: ((MediaQuery.of(context).size.width - 560) / 2).clamp(16.0, double.infinity),
+          vertical: 24,
+        ),
         backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(

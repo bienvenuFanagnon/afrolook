@@ -19,6 +19,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 class AdvertisementManagementPage extends StatefulWidget {
   const AdvertisementManagementPage({Key? key}) : super(key: key);
@@ -1208,7 +1209,7 @@ class _AdvertisementManagementPageState
         : 0.0;
     final followersLabel = type == 'groupe' ? 'membres' : 'abonnés';
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

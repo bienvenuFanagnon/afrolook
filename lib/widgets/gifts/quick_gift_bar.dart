@@ -15,6 +15,7 @@ import '../../services/quick_gift_service.dart';
 import '../../theme/app_colors.dart';
 import 'gift_sent_overlay.dart';
 import '../../services/coin_checkout.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 // ── Badge "Cadeau" + envoi rapide ────────────────────────────────────────────
 
@@ -344,7 +345,7 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
   }
 
   void _showSlotOptions(CoinPack pack, bool isPinned) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _SlotOptionsSheet(

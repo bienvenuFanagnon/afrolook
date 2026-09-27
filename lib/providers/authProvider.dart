@@ -38,6 +38,7 @@ import '../services/ad_preload_service.dart';
 import '../services/ad_rotation_service.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 class UserAuthProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
   late List<UserPhoneNumber> listNumbers = [];
@@ -3024,7 +3025,7 @@ if(actionType == 'comment'){
     final storeLabel = isIOS ? 'Mettre à jour sur App Store' : 'Mettre à jour sur Play Store';
     final storeIcon = isIOS ? Icons.apple : Icons.play_arrow;
 
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isDismissible: false,
       enableDrag: false,

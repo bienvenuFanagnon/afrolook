@@ -917,7 +917,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
   }
 
   void _openComments() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

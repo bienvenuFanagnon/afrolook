@@ -7,6 +7,7 @@ import '../providers/authProvider.dart';
 import '../services/weekly_rewards_service.dart';
 import '../theme/app_colors.dart';
 import 'flame_leaderboard.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Niveaux — progression récompensante liée aux commentaires
@@ -49,7 +50,7 @@ int _computeScore(int streak, int bestStreak) =>
 
 /// Ouvre le modal complet de série commentaires (niveaux, règles, classement).
 void showCommentStreakModal(BuildContext context, StreakProvider streak) {
-  showModalBottomSheet(
+  showResponsiveBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
@@ -547,7 +548,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
   }
 
   void _openModal(BuildContext context, StreakProvider streak) {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

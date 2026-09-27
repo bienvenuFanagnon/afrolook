@@ -9,6 +9,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../models/model_data.dart';
 import '../../utils/tx_amount.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 // ── Palette (même charte que UserManagementPage) ──────────────────────────────
 Color get _bg      => AdminPalette.bg;
@@ -483,7 +484,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   void _showDetails(TransactionSolde t) {
     final m = _metaFor(t.type);
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: _card,
       shape: const RoundedRectangleBorder(

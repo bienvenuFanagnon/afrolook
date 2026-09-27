@@ -14,6 +14,7 @@ import '../../../../providers/afroshop/categorie_produits_provider.dart';
 import '../../../../providers/authProvider.dart';
 import '../shop_product_comments.dart';
 import 'produit_details.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 class ShopVideoFeed extends StatefulWidget {
   final List<ArticleData> articles;
@@ -181,7 +182,7 @@ class _ShopVideoItemState extends State<_ShopVideoItem> {
   }
 
   void _openComments() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

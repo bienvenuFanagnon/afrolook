@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Breakpoints et utilitaires pour le layout responsive Afrolook.
 ///
@@ -35,6 +36,10 @@ class AppLayout {
 
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width > _desktopBreak;
+
+  /// Accueil en version « ordinateur » (barre latérale + panneau droit) : web en grand écran seulement.
+  /// L'app installée sur iPad ou tablette garde l'interface du téléphone (en-tête, navigation, menu).
+  static bool useDesktopShell(BuildContext context) => kIsWeb && isDesktop(context);
 
   static bool isTablet(BuildContext context) {
     final w = MediaQuery.of(context).size.width;

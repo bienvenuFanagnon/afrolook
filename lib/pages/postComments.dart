@@ -27,6 +27,7 @@ import 'coins/post_gifts_list.dart';
 import '../services/comment_coins.dart';
 import '../widgets/post_coins_earned.dart';
 import 'pub/afrolook_inline_ad.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -667,7 +668,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   }
 
   void _showAllGifters() {
-    showModalBottomSheet(
+    showResponsiveBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
