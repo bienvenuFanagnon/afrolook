@@ -1,6 +1,7 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitForm.dart';
 import 'package:flutter/material.dart';
+import '../../services/monetization_config.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
@@ -18,6 +19,21 @@ import '../../../providers/postProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 
+// Barème : config/monetization (MonetizationConfig), partagé avec les Cloud Functions.
+const _tierColors = [0xFF22C55E, 0xFF3B82F6, 0xFFF97316, 0xFFF59E0B, 0xFF94A3B8];
+List<Map<String, dynamic>> get _scoreTiersDyn {
+  final tiers = MonetizationConfig.tiers;
+  return [
+    for (var i = 0; i < tiers.length; i++)
+      {
+        'minScore': tiers[i].minScore,
+        'multiplier': tiers[i].multiplier,
+        'label': tiers[i].label,
+        'color': _tierColors[i < _tierColors.length ? i : _tierColors.length - 1],
+      },
+  ];
+}
+
 class MonetisationPage extends StatefulWidget {
   @override
   _MonetisationPageState createState() => _MonetisationPageState();
@@ -34,6 +50,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
   @override
   void initState() {
     super.initState();
+    MonetizationConfig.load().then((_) { if (mounted) setState(() {}); });
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userStream = authProvider.getUserStream();
@@ -116,13 +133,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
 
   // ── Carte Revenus des vues ────────────────────────────────────────────────
 
-  static const _scoreTiers = [
-    {'minScore': 80.0, 'multiplier': 1.00, 'label': 'Élite',    'color': 0xFF22C55E},
-    {'minScore': 50.0, 'multiplier': 0.80, 'label': 'Expert',   'color': 0xFF3B82F6},
-    {'minScore': 25.0, 'multiplier': 0.60, 'label': 'Avancé',   'color': 0xFFF97316},
-    {'minScore': 10.0, 'multiplier': 0.40, 'label': 'Standard', 'color': 0xFFF59E0B},
-    {'minScore':  0.0, 'multiplier': 0.20, 'label': 'Débutant', 'color': 0xFF94A3B8},
-  ];
+  List<Map<String, dynamic>> get _scoreTiers => _scoreTiersDyn;
 
   Map<String, dynamic> _getTier(double score) {
     for (final t in _scoreTiers) {
@@ -137,7 +148,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
     int creditedViews,
     AppColors colors,
   ) {
-    const double baseRate = 1.0; // FCFA max (taux de base actuel)
+    final double baseRate = MonetizationConfig.baseViewRate; // FCFA max par vue
     final tier = _getTier(creatorScore);
     final double multiplier = tier['multiplier'] as double;
     final String tierLabel = tier['label'] as String;

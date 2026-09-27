@@ -1,4 +1,3 @@
-import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
@@ -32,7 +31,7 @@ function getMultiplierForScore(
   return { multiplier: 0.20, label: "Débutant" };
 }
 
-/** Barème unique (CRON + encaissement manuel) : /config/monetization, sinon valeurs par défaut. */
+/** Barème (encaissement manuel + affichage app) : /config/monetization, sinon valeurs par défaut. */
 async function loadMonetizationConfig(): Promise<{ baseViewRate: number; scoreTiers: ScoreTier[] }> {
   const configSnap = await db.collection("config").doc("monetization").get();
   const configData = configSnap.data() ?? {};
@@ -42,99 +41,15 @@ async function loadMonetizationConfig(): Promise<{ baseViewRate: number; scoreTi
   };
 }
 
-/**
- * CRON quotidien — crédite les gains de vues dans votre_solde_principal.
- *
- * Pour chaque créateur :
- *   pendingViews = totalPostUniqueViews − totalViewsEarningsCredited
- *   rate         = baseViewRate × multiplier(creatorScore)
- *   earnings     = pendingViews × rate
- *
- * Config Firestore : /config/monetization
- *   { baseViewRate: 1.0, scoreTiers: [...] }
- */
-export const computeViewEarnings = onSchedule(
-  { schedule: "every 24 hours", region: "europe-west1" },
-  async () => {
-    // 1. Lire la config de monétisation
-    const { baseViewRate, scoreTiers } = await loadMonetizationConfig();
-
-    // 2. Récupérer tous les créateurs qui ont des vues non créditées
-    const usersSnap = await db
-      .collection("Users")
-      .where("totalPostUniqueViews", ">", 0)
-      .get();
-
-    let credited = 0;
-    const BATCH_SIZE = 400;
-    let batch = db.batch();
-    let opsInBatch = 0;
-
-    const flushBatch = async () => {
-      if (opsInBatch > 0) {
-        await batch.commit();
-        batch = db.batch();
-        opsInBatch = 0;
-      }
-    };
-
-    for (const doc of usersSnap.docs) {
-      const data = doc.data();
-      const totalViews: number = data.totalPostUniqueViews ?? 0;
-      const alreadyCredited: number = data.totalViewsEarningsCredited ?? 0;
-      const pendingViews = totalViews - alreadyCredited;
-
-      if (pendingViews <= 0) continue;
-
-      const creatorScore: number = data.creatorScore ?? 0;
-      const { multiplier, label } = getMultiplierForScore(creatorScore, scoreTiers);
-      const ratePerView = baseViewRate * multiplier;
-      const earnings = Math.round(pendingViews * ratePerView * 100) / 100;
-
-      if (earnings <= 0) continue;
-
-      // Mise à jour du solde et du compteur de vues créditées
-      batch.update(doc.ref, {
-        votre_solde_principal: admin.firestore.FieldValue.increment(earnings),
-        totalViewsEarningsCredited: totalViews,
-      });
-
-      // Transaction visible dans l'historique de l'utilisateur (TransactionSoldes)
-      const txRef = db.collection("TransactionSoldes").doc();
-      batch.set(txRef, {
-        id: txRef.id,
-        user_id: doc.id,
-        methode_paiement: "vues_posts",
-        type: "GAIN",
-        montant: earnings,
-        description: `Vues posts · ${pendingViews} vue${pendingViews > 1 ? "s" : ""} × ${ratePerView.toFixed(2)} FCFA (tier ${label})`,
-        statut: "VALIDER",
-        createdAt: Date.now(),
-      });
-
-      opsInBatch += 2;
-      credited++;
-
-      if (opsInBatch >= BATCH_SIZE) {
-        await flushBatch();
-      }
-    }
-
-    await flushBatch();
-    console.log(`[computeViewEarnings] ${credited} créateurs crédités`);
-  }
-);
-
 const MIN_CASH_FCFA = 1000;
 const CASH_COOLDOWN_MS = 60 * 1000;
 
 /**
  * cashViewEarnings — encaissement manuel des gains de vues (page « Mes gains »).
  *
- * Utilise le MÊME compteur que le CRON (totalViewsEarningsCredited) : une vue payée par
- * l'un ne peut plus être payée par l'autre. Avant ce correctif, l'encaissement manuel
- * calculait totalPostUniqueViews × taux − postViewsTotalCashed et ignorait les vues déjà
- * créditées par le CRON (double paiement).
+ * Seul mode de paiement des vues : l'utilisateur décide quand et combien il encaisse.
+ * totalViewsEarningsCredited = vues déjà payées (y compris par l'ancien paiement automatique
+ * computeViewEarnings, supprimé le 2026-09-27) ; seules les vues au-delà sont encaissables.
  */
 export const cashViewEarnings = onCall(
   { region: "europe-west1", timeoutSeconds: 30, memory: "256MiB" },

@@ -1,1209 +1,583 @@
-﻿// pages/admin/remuneration_admin_page.dart
-
 import 'package:afrotok/layout/centered_content.dart';
-import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
-import '../../services/remuneration_service.dart';
-import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import '../../services/monetization_config.dart';
+import '../../theme/app_colors.dart';
+import '../user/profile/adminprofil.dart';
+import '../user/profile/retraitAdmin/userAllDetails.dart';
 
+/// Admin — Rémunération des créateurs.
+///
+/// Suit ce que l'app verse aux créateurs (vues des posts : encaissements `cashViewEarnings`,
+/// seul mode de paiement ; l'ancien paiement automatique a été supprimé le 27/09/2026), les récompenses en pièces
+/// et les conversions, et permet de modifier le barème (`config/monetization`), lu par le
+/// serveur ET l'app.
 class RemunerationAdminPage extends StatefulWidget {
-  const RemunerationAdminPage({Key? key}) : super(key: key);
+  const RemunerationAdminPage({super.key});
 
   @override
-  _RemunerationAdminPageState createState() => _RemunerationAdminPageState();
+  State<RemunerationAdminPage> createState() => _RemunerationAdminPageState();
 }
 
-class _RemunerationAdminPageState extends State<RemunerationAdminPage> with SingleTickerProviderStateMixin {
-  final RemunerationService _service = RemunerationService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+enum _Period { today, week, month30, thisMonth }
 
-  late TabController _tabController;
+class _Payout {
+  final String userId;
+  final double montant;
+  final String type; // auto | manuel
+  final int createdAt;
+  final String description;
+  const _Payout(this.userId, this.montant, this.type, this.createdAt, this.description);
+}
 
-  bool _isLoading = true;
-  Map<String, dynamic> _statsGlobales = {};
-  List<Map<String, dynamic>> _dernieresTransactions = [];
-  List<Map<String, dynamic>> _topUtilisateurs = [];
-  List<Map<String, dynamic>> _encaissementsParJour = [];
+class _RemunerationAdminPageState extends State<RemunerationAdminPage> {
+  final _db = FirebaseFirestore.instance;
+  static final NumberFormat _money = NumberFormat('#,##0', 'fr');
 
-  // Filtres
-  DateTime _dateDebut = DateTime.now().subtract(Duration(days: 30));
-  DateTime _dateFin = DateTime.now();
+  _Period _period = _Period.month30;
+  bool _loading = true;
+
+  // Versements FCFA
+  List<_Payout> _payouts = [];
+  // Pièces
+  int _coinsRewarded = 0;
+  int _coinsRewardCount = 0;
+  double _convertedFcfa = 0;
+  int _conversionsCount = 0;
+  // Pseudos des créateurs du top
+  final Map<String, String> _pseudos = {};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _chargerDonnees();
+    _load();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  (int, int) _range() {
+    final now = DateTime.now();
+    final start = switch (_period) {
+      _Period.today => DateTime(now.year, now.month, now.day),
+      _Period.week => now.subtract(const Duration(days: 7)),
+      _Period.month30 => now.subtract(const Duration(days: 30)),
+      _Period.thisMonth => DateTime(now.year, now.month, 1),
+    };
+    // Borne haute = maintenant : exclut les anciens documents dont createdAt est en microsecondes
+    return (start.millisecondsSinceEpoch, now.millisecondsSinceEpoch);
   }
 
-  Future<void> _chargerDonnees() async {
-    setState(() => _isLoading = true);
+  Query<Map<String, dynamic>> _tx(String type, int start, int end) => _db
+      .collection('TransactionSoldes')
+      .where('statut', isEqualTo: 'VALIDER')
+      .where('type', isEqualTo: type)
+      .where('createdAt', isGreaterThanOrEqualTo: start)
+      .where('createdAt', isLessThanOrEqualTo: end);
 
+  Future<void> _load() async {
+    setState(() => _loading = true);
     try {
-      await Future.wait([
-        _chargerStatsGlobales(),
-        _chargerDernieresTransactions(),
-        _chargerTopUtilisateurs(),
-        _chargerEncaissementsParJour(),
+      final (start, end) = _range();
+      final results = await Future.wait([
+        _tx('GAIN', start, end).get(),
+        _tx('ENCAISSEMENT_VUES_POST', start, end).get(),
+        _tx('GAIN_PIECES', start, end).get(),
+        _tx('CONVERSION_PIECES', start, end).get(),
+        MonetizationConfig.load(force: true).then((_) => null),
       ]);
-    } catch (e) {
-      printVm('Erreur chargement: $e');
-      _showError('Erreur chargement: $e');
-    }
 
-    setState(() => _isLoading = false);
-  }
+      double num0(dynamic v) => (v as num?)?.toDouble() ?? 0;
+      final payouts = <_Payout>[];
+      for (final d in (results[0] as QuerySnapshot<Map<String, dynamic>>).docs) {
+        final m = d.data();
+        if (m['methode_paiement'] != 'vues_posts') continue; // uniquement les vues
+        payouts.add(_Payout(m['user_id'] ?? '', num0(m['montant']), 'auto', m['createdAt'] ?? 0, m['description'] ?? ''));
+      }
+      for (final d in (results[1] as QuerySnapshot<Map<String, dynamic>>).docs) {
+        final m = d.data();
+        payouts.add(_Payout(m['user_id'] ?? '', num0(m['montant']), 'manuel', m['createdAt'] ?? 0, m['description'] ?? ''));
+      }
+      payouts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-  Future<void> _chargerStatsGlobales() async {
-    // Total des encaissements
-    QuerySnapshot transactions = await _firestore
-        .collection('TransactionSoldes')
-        .where('type', isEqualTo: 'ENCAISSEMENT_POST')
-        .where('statut', isEqualTo: 'VALIDER')
-        .get();
+      final coinDocs = (results[2] as QuerySnapshot<Map<String, dynamic>>).docs;
+      final convDocs = (results[3] as QuerySnapshot<Map<String, dynamic>>).docs;
 
-    double totalEncaissements = 0;
-    int nombreEncaissements = transactions.docs.length;
-    Set<String> utilisateursUniques = {};
-
-    for (var doc in transactions.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      totalEncaissements += (data['montant'] as num?)?.toDouble() ?? 0;
-      utilisateursUniques.add(data['user_id'] ?? '');
-    }
-
-    // Encaissements aujourd'hui
-    DateTime aujourdhui = DateTime.now();
-    int debutAujourdhui = DateTime(aujourdhui.year, aujourdhui.month, aujourdhui.day).microsecondsSinceEpoch;
-    int finAujourdhui = DateTime(aujourdhui.year, aujourdhui.month, aujourdhui.day, 23, 59, 59).microsecondsSinceEpoch;
-
-    QuerySnapshot aujourdhuiTx = await _firestore
-        .collection('TransactionSoldes')
-        .where('type', isEqualTo: 'ENCAISSEMENT_POST')
-        .where('statut', isEqualTo: 'VALIDER')
-        .where('createdAt', isGreaterThanOrEqualTo: debutAujourdhui)
-        .where('createdAt', isLessThanOrEqualTo: finAujourdhui)
-        .get();
-
-    double aujourdhuiMontant = 0;
-    for (var doc in aujourdhuiTx.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      aujourdhuiMontant += (data['montant'] as num?)?.toDouble() ?? 0;
-    }
-
-    // Encaissements ce mois
-    DateTime debutMois = DateTime(aujourdhui.year, aujourdhui.month, 1);
-    int debutMoisTs = debutMois.microsecondsSinceEpoch;
-
-    QuerySnapshot moisTx = await _firestore
-        .collection('TransactionSoldes')
-        .where('type', isEqualTo: 'ENCAISSEMENT_POST')
-        .where('statut', isEqualTo: 'VALIDER')
-        .where('createdAt', isGreaterThanOrEqualTo: debutMoisTs)
-        .get();
-
-    double moisMontant = 0;
-    for (var doc in moisTx.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      moisMontant += (data['montant'] as num?)?.toDouble() ?? 0;
-    }
-
-    // Configuration active
-    RemunerationConfig? config = await _service.getActiveConfig();
-
-    setState(() {
-      _statsGlobales = {
-        'totalEncaissements': totalEncaissements,
-        'nombreEncaissements': nombreEncaissements,
-        'utilisateursActifs': utilisateursUniques.length,
-        'aujourdhuiMontant': aujourdhuiMontant,
-        'aujourdhuiNombre': aujourdhuiTx.docs.length,
-        'moisMontant': moisMontant,
-        'moisNombre': moisTx.docs.length,
-        'config': config,
-      };
-    });
-  }
-
-  Future<void> _chargerDernieresTransactions() async {
-    // Charger tous les types de transactions (pas seulement ENCAISSEMENT_POST)
-    QuerySnapshot snapshot = await _firestore
-        .collection('TransactionSoldes')
-        .orderBy('createdAt', descending: true)
-        .limit(200)
-        .get();
-
-    List<Map<String, dynamic>> transactions = [];
-    // Résoudre les pseudos en batch pour éviter N requêtes
-    final userIds = snapshot.docs.map((d) => (d.data() as Map<String, dynamic>)['user_id'] as String? ?? '').toSet();
-    final Map<String, Map<String, dynamic>> userCache = {};
-    for (final chunk in _chunked(userIds.where((id) => id.isNotEmpty).toList(), 30)) {
-      try {
-        final usersSnap = await _firestore.collection('Users').where('__name__', whereIn: chunk).get();
-        for (final u in usersSnap.docs) {
-          userCache[u.id] = u.data() as Map<String, dynamic>;
+      // Pseudos des 10 meilleurs créateurs + des derniers versements
+      final ids = {..._topCreators(payouts).map((e) => e.key), ...payouts.take(10).map((p) => p.userId)}
+        ..removeWhere((id) => id.isEmpty || _pseudos.containsKey(id));
+      final idList = ids.toList();
+      for (var i = 0; i < idList.length; i += 30) {
+        final chunk = idList.sublist(i, i + 30 > idList.length ? idList.length : i + 30);
+        final snap = await _db.collection('Users').where(FieldPath.documentId, whereIn: chunk).get();
+        for (final u in snap.docs) {
+          _pseudos[u.id] = u.data()['pseudo'] as String? ?? 'Sans pseudo';
         }
-      } catch (_) {}
-    }
-
-    for (var doc in snapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      data['id'] = doc.id;
-      final userId = data['user_id'] as String? ?? '';
-      final userData = userCache[userId];
-      data['user_pseudo'] = userData?['pseudo'] ?? 'Utilisateur inconnu';
-      data['user_email'] = userData?['email'] ?? '';
-      transactions.add(data);
-    }
-
-    setState(() {
-      _dernieresTransactions = transactions;
-    });
-  }
-
-  List<List<T>> _chunked<T>(List<T> list, int size) {
-    final result = <List<T>>[];
-    for (var i = 0; i < list.length; i += size) {
-      result.add(list.sublist(i, i + size > list.length ? list.length : i + size));
-    }
-    return result;
-  }
-
-  Future<void> _chargerTopUtilisateurs() async {
-    QuerySnapshot transactions = await _firestore
-        .collection('TransactionSoldes')
-        .where('type', isEqualTo: 'ENCAISSEMENT_POST')
-        .where('statut', isEqualTo: 'VALIDER')
-        .get();
-
-    Map<String, Map<String, dynamic>> utilisateursMap = {};
-
-    for (var doc in transactions.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      String userId = data['user_id'] ?? '';
-      double montant = (data['montant'] as num?)?.toDouble() ?? 0;
-
-      if (!utilisateursMap.containsKey(userId)) {
-        utilisateursMap[userId] = {
-          'userId': userId,
-          'totalEncaissements': 0,
-          'nombreEncaissements': 0,
-          'pseudo': 'Chargement...',
-        };
       }
 
-      utilisateursMap[userId]!['totalEncaissements'] += montant;
-      utilisateursMap[userId]!['nombreEncaissements'] += 1;
-    }
-
-    // Récupérer les pseudos et trier
-    List<Map<String, dynamic>> topList = [];
-    for (var entry in utilisateursMap.entries) {
-      try {
-        DocumentSnapshot userDoc = await _firestore.collection('Users').doc(entry.key).get();
-        if (userDoc.exists) {
-          var userData = userDoc.data() as Map<String, dynamic>;
-          entry.value['pseudo'] = userData['pseudo'] ?? 'Sans pseudo';
-          entry.value['email'] = userData['email'] ?? '';
-        }
-      } catch (e) {
-        entry.value['pseudo'] = 'Erreur chargement';
-      }
-      topList.add(entry.value);
-    }
-
-    // Trier par montant total décroissant
-    topList.sort((a, b) => (b['totalEncaissements'] as double).compareTo(a['totalEncaissements'] as double));
-
-    setState(() {
-      _topUtilisateurs = topList.take(10).toList();
-    });
-  }
-
-  Future<void> _chargerEncaissementsParJour() async {
-    int debut = _dateDebut.microsecondsSinceEpoch;
-    int fin = _dateFin.microsecondsSinceEpoch;
-
-    QuerySnapshot snapshot = await _firestore
-        .collection('TransactionSoldes')
-        .where('type', isEqualTo: 'ENCAISSEMENT_POST')
-        .where('statut', isEqualTo: 'VALIDER')
-        .where('createdAt', isGreaterThanOrEqualTo: debut)
-        .where('createdAt', isLessThanOrEqualTo: fin)
-        .orderBy('createdAt', descending: false)
-        .get();
-
-    Map<String, Map<String, dynamic>> jourMap = {};
-
-    for (var doc in snapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      int timestamp = data['createdAt'] ?? 0;
-      DateTime date = DateTime.fromMicrosecondsSinceEpoch(timestamp);
-      String jourKey = DateFormat('yyyy-MM-dd').format(date);
-
-      if (!jourMap.containsKey(jourKey)) {
-        jourMap[jourKey] = {
-          'date': date,
-          'montant': 0.0,
-          'nombre': 0,
-        };
-      }
-
-      jourMap[jourKey]!['montant'] += (data['montant'] as num?)?.toDouble() ?? 0;
-      jourMap[jourKey]!['nombre'] += 1;
-    }
-
-    List<Map<String, dynamic>> liste = jourMap.values.toList();
-    liste.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
-
-    setState(() {
-      _encaissementsParJour = liste;
-    });
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  String _formatMontant(double montant, {String devise = 'FCFA'}) {
-    return '${montant.toStringAsFixed(0)} $devise';
-  }
-
-  String _formatDate(int microseconds) {
-    if (microseconds <= 0) return 'Date inconnue';
-    try {
-      return DateFormat('dd/MM/yyyy HH:mm').format(
-          DateTime.fromMicrosecondsSinceEpoch(microseconds)
-      );
+      if (!mounted) return;
+      setState(() {
+        _payouts = payouts;
+        _coinsRewarded = coinDocs.fold(0, (s, d) => s + num0(d.data()['montant']).round());
+        _coinsRewardCount = coinDocs.length;
+        _convertedFcfa = convDocs.fold(0.0, (s, d) => s + num0(d.data()['montant']));
+        _conversionsCount = convDocs.length;
+        _loading = false;
+      });
     } catch (e) {
-      return 'Date invalide';
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de chargement : $e')));
     }
   }
+
+  List<MapEntry<String, double>> _topCreators(List<_Payout> payouts) {
+    final totals = <String, double>{};
+    for (final p in payouts) {
+      if (p.userId.isEmpty) continue;
+      totals[p.userId] = (totals[p.userId] ?? 0) + p.montant;
+    }
+    return totals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+  }
+
+  // ── UI ─────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.background,
       appBar: AppBar(
-        title: Text(
-          'ADMIN RÉMUNÉRATION',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-            color: Color(0xFFFFD700),
-          ),
-        ),
-        backgroundColor: Colors.black,
+        backgroundColor: c.surface,
         elevation: 0,
-        iconTheme: IconThemeData(color: Color(0xFFFFD700)),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Color(0xFFFFD700),
-          labelColor: Color(0xFFFFD700),
-          unselectedLabelColor: Colors.grey,
-          tabs: [
-            Tab(icon: Icon(Icons.dashboard), text: 'TABLEAU DE BORD'),
-            Tab(icon: Icon(Icons.history), text: 'TRANSACTIONS'),
-            Tab(icon: Icon(Icons.people), text: 'TOP UTILISATEURS'),
-            Tab(icon: Icon(Icons.bar_chart), text: 'ANALYTIQUES'),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Chargement des données...',
-              style: TextStyle(color: Colors.grey.shade400),
-            ),
-          ],
-        ),
-      )
-          : TabBarView(
-        controller: _tabController,
-        children: [
-          _buildTableauDeBord(),
-          _buildTransactionsTab(),
-          _buildTopUtilisateursTab(),
-          _buildAnalytiquesTab(),
+        scrolledUnderElevation: 0,
+        iconTheme: IconThemeData(color: c.textPrimary),
+        title: Text('Rémunération', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: c.textPrimary),
+            tooltip: 'Actualiser',
+            onPressed: _loading ? null : _load,
+          ),
         ],
       ),
-    );
-  }
-
-  // ============================================
-  // TABLEAU DE BORD
-  // ============================================
-  Widget _buildTableauDeBord() {
-    return RefreshIndicator(
-      onRefresh: _chargerDonnees,
-      color: Color(0xFFFFD700),
-      backgroundColor: Colors.black,
-      child: CenteredContent(child: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatsCards(),
-            SizedBox(height: 25),
-            _buildConfigCard(),
-            SizedBox(height: 25),
-            _buildDernieresTransactions(),
-          ],
-        ),
-      )),
-    );
-  }
-
-  Widget _buildStatsCards() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'VUE D\'ENSEMBLE',
-          style: TextStyle(
-            color: Color(0xFFFFD700),
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: c.primary,
+        child: CenteredContent(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            children: [
+              _periodChips(c),
+              const SizedBox(height: 12),
+              if (_loading)
+                const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+              else ...[
+                _label(c, 'Versements aux créateurs (vues des posts)'),
+                _payoutsCard(c),
+                const SizedBox(height: 20),
+                _label(c, 'Pièces'),
+                _coinsCard(c),
+                const SizedBox(height: 20),
+                _label(c, 'Top créateurs de la période'),
+                _topCard(c),
+                const SizedBox(height: 20),
+                _label(c, 'Derniers versements'),
+                _lastPayoutsCard(c),
+              ],
+              const SizedBox(height: 20),
+              _label(c, 'Barème de rémunération des vues'),
+              _baremeCard(c),
+            ],
           ),
         ),
-        SizedBox(height: 15),
-        GridView.count(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.5,
-          children: [
-            _buildStatCard(
-              'Total Encaissements',
-              _formatMontant(_statsGlobales['totalEncaissements'] ?? 0),
-              Icons.account_balance_wallet,
-              Colors.green,
-            ),
-            _buildStatCard(
-              'Nombre Transactions',
-              '${_statsGlobales['nombreEncaissements'] ?? 0}',
-              Icons.receipt,
-              Colors.blue,
-            ),
-            _buildStatCard(
-              'Utilisateurs Actifs',
-              '${_statsGlobales['utilisateursActifs'] ?? 0}',
-              Icons.people,
-              Colors.orange,
-            ),
-            _buildStatCard(
-              'Moyenne par user',
-              _formatMontant(
-                  (_statsGlobales['totalEncaissements'] ?? 0) /
-                      (_statsGlobales['utilisateursActifs'] ?? 1).toDouble()
+      ),
+    );
+  }
+
+  Widget _periodChips(AppColors c) {
+    const labels = {
+      _Period.today: "Aujourd'hui",
+      _Period.week: '7 jours',
+      _Period.month30: '30 jours',
+      _Period.thisMonth: 'Ce mois',
+    };
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final e in labels.entries)
+          GestureDetector(
+            onTap: () {
+              if (_period == e.key) return;
+              setState(() => _period = e.key);
+              _load();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: _period == e.key ? c.textPrimary : c.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _period == e.key ? c.textPrimary : c.border),
               ),
-              Icons.analytics,
-              Colors.purple,
+              child: Text(e.value,
+                  style: TextStyle(
+                    color: _period == e.key ? c.background : c.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  )),
             ),
-          ],
-        ),
-        SizedBox(height: 15),
-        Row(
-          children: [
-            Expanded(
-              child: _buildPeriodeCard(
-                'AUJOURD\'HUI',
-                '${_statsGlobales['aujourdhuiNombre'] ?? 0} transactions',
-                _formatMontant(_statsGlobales['aujourdhuiMontant'] ?? 0),
-                Icons.today,
-                Colors.cyan,
-              ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _buildPeriodeCard(
-                'CE MOIS',
-                '${_statsGlobales['moisNombre'] ?? 0} transactions',
-                _formatMontant(_statsGlobales['moisMontant'] ?? 0),
-                Icons.calendar_month,
-                Colors.amber,
-              ),
-            ),
-          ],
-        ),
+          ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withOpacity(0.3)),
+  Widget _payoutsCard(AppColors c) {
+    final auto = _payouts.where((p) => p.type == 'auto');
+    final manuel = _payouts.where((p) => p.type == 'manuel');
+    final autoTotal = auto.fold(0.0, (s, p) => s + p.montant);
+    final manuelTotal = manuel.fold(0.0, (s, p) => s + p.montant);
+    final creators = _payouts.map((p) => p.userId).where((id) => id.isNotEmpty).toSet().length;
+
+    return _card(c, Column(children: [
+      Row(children: [
+        Expanded(child: _metric(c, 'Total versé', '${_money.format(autoTotal + manuelTotal)} FCFA', c.primary, big: true)),
+        Expanded(child: _metric(c, 'Créateurs payés', '$creators', c.info, big: true)),
+      ]),
+      Divider(height: 24, color: c.border),
+      Row(children: [
+        Expanded(
+          child: _metric(c, 'Encaissements', '${_money.format(manuelTotal)} FCFA', c.textPrimary,
+              sub: '${manuel.length} encaissement(s)'),
+        ),
+        Expanded(
+          child: _metric(c, 'Ancien paiement auto.', '${_money.format(autoTotal)} FCFA', c.textSecondary,
+              sub: '${auto.length} versement(s)'),
+        ),
+      ]),
+      const SizedBox(height: 10),
+      _note(c,
+          "Les vues sont payées uniquement quand le créateur encaisse. L'ancien paiement automatique a été arrêté le 27/09/2026 (ses versements d'avant le 26/09 n'apparaissent pas ici)."),
+    ]));
+  }
+
+  Widget _coinsCard(AppColors c) {
+    return _card(c, Row(children: [
+      Expanded(
+        child: _metric(c, 'Pièces distribuées', '${_money.format(_coinsRewarded)} pièces', c.supportAccent,
+            sub: '$_coinsRewardCount récompense(s)'),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                SizedBox(width: 5),
+      Expanded(
+        child: _metric(c, 'Converties en argent', '${_money.format(_convertedFcfa)} FCFA', c.warning,
+            sub: '$_conversionsCount conversion(s)'),
+      ),
+    ]));
+  }
+
+  Widget _topCard(AppColors c) {
+    final top = _topCreators(_payouts).take(10).toList();
+    if (top.isEmpty) return _card(c, _empty(c, 'Aucun versement sur la période'));
+    return _card(
+      c,
+      Column(children: [
+        for (var i = 0; i < top.length; i++) ...[
+          if (i > 0) Divider(height: 1, thickness: 0.5, color: c.border),
+          InkWell(
+            onTap: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => UserManagementPage(userId: top[i].key))),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              child: Row(children: [
+                SizedBox(
+                  width: 26,
+                  child: Text('${i + 1}',
+                      style: TextStyle(
+                          color: i < 3 ? c.supportAccent : c.textSecondary, fontWeight: FontWeight.w800)),
+                ),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: Text('@${_pseudos[top[i].key] ?? '…'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13.5)),
                 ),
-              ],
+                Text('${_money.format(top[i].value)} FCFA',
+                    style: TextStyle(color: c.primary, fontWeight: FontWeight.w700, fontSize: 13)),
+                Icon(Icons.chevron_right_rounded, color: c.textSecondary, size: 18),
+              ]),
             ),
-            SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPeriodeCard(String titre, String sousTitre, String montant, IconData icon, Color color) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
-        ),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              SizedBox(width: 8),
-              Text(titre, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 10),
-          Text(montant, style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(sousTitre, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfigCard() {
-    var config = _statsGlobales['config'];
-    if (config == null) return SizedBox.shrink();
-
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.settings, color: Color(0xFFFFD700), size: 20),
-              SizedBox(width: 8),
-              Text(
-                'CONFIGURATION ACTIVE',
-                style: TextStyle(
-                  color: Color(0xFFFFD700),
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildConfigItem(
-                'PALIER',
-                '${config.nombreVuesParPalier} vues',
-                Icons.remove_red_eye,
-              ),
-              Container(height: 30, width: 1, color: Color(0xFFFFD700).withOpacity(0.3)),
-              _buildConfigItem(
-                'MONTANT',
-                '${config.montantParPalier} ${config.devise}',
-                Icons.monetization_on,
-              ),
-              Container(height: 30, width: 1, color: Color(0xFFFFD700).withOpacity(0.3)),
-              _buildConfigItem(
-                'STATUT',
-                config.estActif ? 'Actif' : 'Inactif',
-                Icons.check_circle,
-              ),
-            ],
           ),
         ],
-      ),
+      ]),
+      padding: const EdgeInsets.fromLTRB(14, 4, 8, 4),
     );
   }
 
-  Widget _buildConfigItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Color(0xFFFFD700), size: 18),
-        SizedBox(height: 4),
-        Text(value, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
-      ],
-    );
-  }
-
-  Widget _buildDernieresTransactions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'DERNIÈRES TRANSACTIONS',
-          style: TextStyle(
-            color: Color(0xFFFFD700),
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
-        ),
-        SizedBox(height: 15),
-        ..._dernieresTransactions.take(5).map((tx) => _buildTransactionTile(tx)).toList(),
-      ],
-    );
-  }
-
-  Widget _buildTransactionTile(Map<String, dynamic> tx) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.green.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(child: Icon(Icons.payments, color: Colors.green, size: 20)),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx['user_pseudo'] ?? 'Inconnu',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _formatDate(tx['createdAt'] ?? 0),
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '+${_formatMontant((tx['montant'] as num).toDouble())}',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'ID: ${tx['id'].toString().substring(0, 6)}...',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 9),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================
-  // TRANSACTIONS
-  // ============================================
-  // ── Définition des groupes admin ──────────────────────────────────────────
-  static const _adminGroups = {
-    'Encaissements': ['ENCAISSEMENT_POST', 'GAIN', 'GAIN_PIECES'],
-    'Dépôts':        ['DEPOT', 'DEPOTADMIN'],
-    'Retraits':      ['RETRAIT', 'RETRAITADMIN'],
-    'Dépenses':      ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
-    'Conversions':   ['CONVERSION_PIECES'],
-    'Autres':        <String>[],
-  };
-  static const _adminGroupColors = {
-    'Encaissements': Color(0xFF4CAF50),
-    'Dépôts':        Color(0xFF2196F3),
-    'Retraits':      Color(0xFFFF9800),
-    'Dépenses':      Color(0xFFF44336),
-    'Conversions':   Color(0xFF9C27B0),
-    'Autres':        Color(0xFF607D8B),
-  };
-  static const _adminGroupIcons = {
-    'Encaissements': Icons.trending_up,
-    'Dépôts':        Icons.account_balance_wallet,
-    'Retraits':      Icons.arrow_upward,
-    'Dépenses':      Icons.shopping_cart,
-    'Conversions':   Icons.swap_horiz,
-    'Autres':        Icons.help_outline,
-  };
-
-  final Map<String, bool> _txGroupExpanded = {};
-  final Map<String, int> _txGroupVisible = {};
-
-  String _adminGroupFor(String? type) {
-    for (final e in _adminGroups.entries) {
-      if (e.value.contains(type?.toUpperCase())) return e.key;
-    }
-    return 'Autres';
-  }
-
-  Widget _buildTransactionsTab() {
-    // Trier les groupes par transaction la plus récente
-    int latestOf(String g) => _dernieresTransactions
-        .where((tx) => _adminGroupFor(tx['type'] as String?) == g)
-        .fold<int>(0, (m, tx) {
-          final ts = (tx['createdAt'] as num?)?.toInt() ?? 0;
-          return ts > m ? ts : m;
-        });
-
-    final sortedGroups = _adminGroups.keys.toList()
-      ..sort((a, b) => latestOf(b).compareTo(latestOf(a)));
-
-    return RefreshIndicator(
-      onRefresh: _chargerDernieresTransactions,
-      color: const Color(0xFFFFD700),
-      backgroundColor: Colors.black,
-      child: CenteredContent(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: sortedGroups.map((group) {
-            final items = _dernieresTransactions
-                .where((tx) => _adminGroupFor(tx['type'] as String?) == group)
-                .toList()
-              ..sort((a, b) {
-                final ta = (a['createdAt'] as num?)?.toInt() ?? 0;
-                final tb = (b['createdAt'] as num?)?.toInt() ?? 0;
-                return tb.compareTo(ta);
-              });
-            if (items.isEmpty) return const SizedBox.shrink();
-
-            final groupColor = _adminGroupColors[group] ?? Colors.grey;
-            final isOpen = _txGroupExpanded[group] ?? true;
-            final visible = _txGroupVisible[group] ?? 5;
-
-            return Column(
-              children: [
-                // ── En-tête groupe ──
-                GestureDetector(
-                  onTap: () => setState(() => _txGroupExpanded[group] = !isOpen),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: groupColor.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: groupColor.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(_adminGroupIcons[group], color: groupColor, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(group,
-                              style: TextStyle(color: groupColor, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 0.5)),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: groupColor.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text('${items.length}',
-                              style: TextStyle(color: groupColor, fontWeight: FontWeight.w800, fontSize: 12)),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(isOpen ? Icons.expand_less : Icons.expand_more, color: groupColor, size: 20),
-                      ],
-                    ),
-                  ),
-                ),
-                // ── Items ──
-                if (isOpen) ...[
-                  ...items.take(visible).map((tx) => _buildTxCard(tx, groupColor)),
-                  if (visible < items.length)
-                    TextButton.icon(
-                      onPressed: () => setState(() => _txGroupVisible[group] = visible + 10),
-                      icon: Icon(Icons.expand_more, color: groupColor, size: 16),
-                      label: Text('Voir plus (${items.length - visible})',
-                          style: TextStyle(color: groupColor, fontSize: 12)),
-                    ),
-                  const SizedBox(height: 8),
-                ],
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTxCard(Map<String, dynamic> tx, Color groupColor) {
-    final montant = (tx['montant'] as num?)?.toDouble() ?? 0;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: groupColor.withOpacity(0.15)),
-      ),
-      child: ExpansionTile(
-        leading: Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(color: groupColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-          child: Icon(_adminGroupIcons[_adminGroupFor(tx['type'] as String?)] ?? Icons.receipt, color: groupColor, size: 20),
-        ),
-        title: Text(tx['user_pseudo'] ?? 'Inconnu',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-        subtitle: Text(_formatDate(tx['createdAt'] as int? ?? 0),
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-        trailing: Text(
-          '${montant >= 0 ? '+' : ''}${_formatMontant(montant)}',
-          style: TextStyle(color: groupColor, fontWeight: FontWeight.bold, fontSize: 12),
-        ),
-        children: [
+  Widget _lastPayoutsCard(AppColors c) {
+    final last = _payouts.take(10).toList();
+    return _card(
+      c,
+      Column(children: [
+        if (last.isEmpty) _empty(c, 'Aucun versement sur la période'),
+        for (var i = 0; i < last.length; i++) ...[
+          if (i > 0) Divider(height: 1, thickness: 0.5, color: c.border),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(children: [
-              _buildDetailRow('Type', tx['type'] ?? ''),
-              _buildDetailRow('ID', tx['id'] ?? ''),
-              _buildDetailRow('User ID', tx['user_id'] ?? ''),
-              _buildDetailRow('Description', tx['description'] ?? '-'),
-              _buildDetailRow('Méthode', tx['methode_paiement'] ?? '-'),
-              _buildDetailRow('Statut', tx['statut'] ?? '-'),
-              if ((tx['user_email'] as String?)?.isNotEmpty == true)
-                _buildDetailRow('Email', tx['user_email']),
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            child: Row(children: [
+              Icon(last[i].type == 'auto' ? Icons.autorenew_rounded : Icons.touch_app_rounded,
+                  size: 18, color: last[i].type == 'auto' ? c.info : c.warning),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('@${_pseudos[last[i].userId] ?? '…'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(
+                    '${last[i].type == 'auto' ? 'Ancien paiement auto.' : 'Encaissement'} · '
+                    '${DateFormat('d MMM · HH:mm', 'fr').format(DateTime.fromMillisecondsSinceEpoch(last[i].createdAt))}',
+                    style: TextStyle(color: c.textSecondary, fontSize: 11),
+                  ),
+                ]),
+              ),
+              Text('+${_money.format(last[i].montant)} F',
+                  style: TextStyle(color: c.primary, fontWeight: FontWeight.w700, fontSize: 13)),
             ]),
           ),
         ],
-      ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionsListPage())),
+            child: const Text('Toutes les transactions'),
+          ),
+        ),
+      ]),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-            ),
+  Widget _baremeCard(AppColors c) {
+    final tiers = MonetizationConfig.tiers;
+    final base = MonetizationConfig.baseViewRate;
+    return _card(c, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(
+          child: Text('Taux de base : ${base.toStringAsFixed(2)} FCFA / vue',
+              style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+        ),
+        OutlinedButton.icon(
+          onPressed: _editBareme,
+          icon: const Icon(Icons.edit_rounded, size: 16),
+          label: const Text('Modifier'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: c.primary,
+            side: BorderSide(color: c.primary.withOpacity(0.5)),
+            minimumSize: const Size(0, 34),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.white, fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      ]),
+      const SizedBox(height: 8),
+      for (final t in tiers)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            Expanded(
+                child: Text('${t.label}  (score ≥ ${t.minScore.toStringAsFixed(0)})',
+                    style: TextStyle(color: c.textPrimary, fontSize: 13))),
+            Text('${(t.multiplier * 100).toStringAsFixed(0)} %  ·  ${(base * t.multiplier * 1000).toStringAsFixed(0)} FCFA / 1 000 vues',
+                style: TextStyle(color: c.textSecondary, fontSize: 12)),
+          ]),
+        ),
+      const SizedBox(height: 8),
+      _note(c,
+          "Ce barème est utilisé pour l'encaissement des créateurs et l'affichage dans l'app. Minimum d'encaissement : 1 000 FCFA."),
+    ]));
   }
 
-  // ============================================
-  // TOP UTILISATEURS
-  // ============================================
-  Widget _buildTopUtilisateursTab() {
-    return RefreshIndicator(
-      onRefresh: _chargerTopUtilisateurs,
-      color: Color(0xFFFFD700),
-      backgroundColor: Colors.black,
-      child: CenteredContent(child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: _topUtilisateurs.length,
-        itemBuilder: (context, index) {
-          var user = _topUtilisateurs[index];
-          return Container(
-            margin: EdgeInsets.only(bottom: 10),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: index == 0
-                    ? Color(0xFFFFD700).withOpacity(0.5)
-                    : Colors.green.withOpacity(0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: index == 0
-                        ? Color(0xFFFFD700).withOpacity(0.2)
-                        : Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '#${index + 1}',
-                      style: TextStyle(
-                        color: index == 0 ? Color(0xFFFFD700) : Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+  // ── Modification du barème ─────────────────────────────────────────────────
+
+  Future<void> _editBareme() async {
+    final c = AppColors.of(context);
+    final baseCtrl = TextEditingController(text: MonetizationConfig.baseViewRate.toString());
+    final rows = MonetizationConfig.tiers
+        .map((t) => (
+              label: TextEditingController(text: t.label),
+              min: TextEditingController(text: t.minScore.toStringAsFixed(0)),
+              pct: TextEditingController(text: (t.multiplier * 100).toStringAsFixed(0)),
+            ))
+        .toList();
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          InputDecoration deco(String label) => InputDecoration(
+                labelText: label,
+                isDense: true,
+                filled: true,
+                fillColor: c.surfaceVariant,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              );
+          return Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Modifier le barème',
+                    style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: baseCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: c.textPrimary),
+                  decoration: deco('Taux de base (FCFA par vue)'),
+                ),
+                const SizedBox(height: 14),
+                Text('Paliers (score minimum, % du taux de base)',
+                    style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                for (var i = 0; i < rows.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(children: [
+                      Expanded(
+                          flex: 3,
+                          child: TextField(
+                              controller: rows[i].label,
+                              style: TextStyle(color: c.textPrimary),
+                              decoration: deco('Nom'))),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          flex: 2,
+                          child: TextField(
+                              controller: rows[i].min,
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: c.textPrimary),
+                              decoration: deco('Score ≥'))),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          flex: 2,
+                          child: TextField(
+                              controller: rows[i].pct,
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: c.textPrimary),
+                              decoration: deco('%'))),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline_rounded, color: c.danger),
+                        onPressed: rows.length <= 1 ? null : () => setSheet(() => rows.removeAt(i)),
                       ),
+                    ]),
+                  ),
+                TextButton.icon(
+                  onPressed: () => setSheet(() => rows.add((
+                        label: TextEditingController(text: 'Nouveau'),
+                        min: TextEditingController(text: '0'),
+                        pct: TextEditingController(text: '20'),
+                      ))),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Ajouter un palier'),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Les nouveaux paiements utiliseront ce barème immédiatement. Les vues déjà payées ne sont pas recalculées.',
+                  style: TextStyle(color: c.warning, fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
+                      onPressed: () async {
+                        final base = double.tryParse(baseCtrl.text.replaceAll(',', '.'));
+                        final tiers = <ScoreTier>[];
+                        for (final r in rows) {
+                          final min = double.tryParse(r.min.text);
+                          final pct = double.tryParse(r.pct.text.replaceAll(',', '.'));
+                          if (min == null || pct == null || pct < 0 || pct > 100 || r.label.text.trim().isEmpty) {
+                            tiers.clear();
+                            break;
+                          }
+                          tiers.add(ScoreTier(minScore: min, multiplier: pct / 100, label: r.label.text.trim()));
+                        }
+                        if (base == null || base < 0 || base > 100 || tiers.isEmpty || !tiers.any((t) => t.minScore == 0)) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('Valeurs invalides : un palier doit commencer à 0, % entre 0 et 100.')));
+                          return;
+                        }
+                        final adminId = context.read<UserAuthProvider>().userId;
+                        await MonetizationConfig.save(base: base, newTiers: tiers, adminId: adminId);
+                        if (ctx.mounted) Navigator.pop(ctx, true);
+                      },
+                      child: const Text('Enregistrer'),
                     ),
                   ),
-                ),
-                SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user['pseudo'] ?? 'Sans pseudo',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        '${user['nombreEncaissements']} encaissements',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _formatMontant(user['totalEncaissements']),
-                      style: TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      'total',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ],
+                ]),
+              ]),
             ),
           );
         },
-      )),
-    );
-  }
-
-  // ============================================
-  // ANALYTIQUES
-  // ============================================
-  Widget _buildAnalytiquesTab() {
-    return RefreshIndicator(
-      onRefresh: _chargerEncaissementsParJour,
-      color: Color(0xFFFFD700),
-      backgroundColor: Colors.black,
-      child: CenteredContent(child: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildFiltresPeriode(),
-            SizedBox(height: 20),
-            if (_encaissementsParJour.isEmpty)
-              Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.show_chart, color: Colors.grey.shade700, size: 60),
-                    SizedBox(height: 20),
-                    Text(
-                      'Aucune donnée pour cette période',
-                      style: TextStyle(color: Colors.grey.shade500),
-                    ),
-                  ],
-                ),
-              )
-            else ...[
-              _buildGraphiqueSimple(),
-              SizedBox(height: 20),
-              ..._encaissementsParJour.map((jour) => _buildJourTile(jour)).toList(),
-            ],
-          ],
-        ),
-      )),
-    );
-  }
-
-  Widget _buildFiltresPeriode() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(Icons.filter_list, color: Color(0xFFFFD700), size: 20),
-              SizedBox(width: 8),
-              Text('FILTRER PAR PÉRIODE', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 15),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDateField(
-                  'Du',
-                  _dateDebut,
-                      () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: _dateDebut,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _dateDebut = picked);
-                      _chargerEncaissementsParJour();
-                    }
-                  },
-                ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: _buildDateField(
-                  'Au',
-                  _dateFin,
-                      () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: _dateFin,
-                      firstDate: _dateDebut,
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _dateFin = picked);
-                      _chargerEncaissementsParJour();
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
+    if (saved == true && mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Barème enregistré')));
+    }
   }
 
-  Widget _buildDateField(String label, DateTime date, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+  // ── Petits éléments ────────────────────────────────────────────────────────
+
+  Widget _label(AppColors c, String t) => Padding(
+        padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+        child: Text(t.toUpperCase(),
+            style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)),
+      );
+
+  Widget _card(AppColors c, Widget child, {EdgeInsets padding = const EdgeInsets.all(14)}) => Container(
+        padding: padding,
         decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Color(0xFFFFD700).withOpacity(0.3)),
+          color: c.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: c.border),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
-            SizedBox(height: 4),
-            Text(
-              DateFormat('dd/MM/yyyy').format(date),
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ],
+        child: child,
+      );
+
+  Widget _metric(AppColors c, String label, String value, Color color, {String? sub, bool big = false}) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+              style: TextStyle(
+                color: color,
+                fontSize: big ? 19 : 15,
+                fontWeight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              )),
         ),
-      ),
-    );
-  }
+        if (sub != null) Text(sub, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+      ]);
 
-  Widget _buildGraphiqueSimple() {
-    double maxMontant = _encaissementsParJour.fold(0.0, (max, jour) {
-      return (jour['montant'] as double) > max ? jour['montant'] : max;
-    });
+  Widget _note(AppColors c, String text) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.info_outline_rounded, size: 14, color: c.textSecondary),
+        const SizedBox(width: 6),
+        Expanded(child: Text(text, style: TextStyle(color: c.textSecondary, fontSize: 11.5, height: 1.35))),
+      ]);
 
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('ÉVOLUTION QUOTIDIENNE', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold)),
-          SizedBox(height: 20),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _encaissementsParJour.map((jour) {
-                double hauteur = maxMontant > 0
-                    ? (jour['montant'] as double) / maxMontant * 100
-                    : 0;
-                String dateStr = DateFormat('dd/MM').format(jour['date'] as DateTime);
-
-                return Container(
-                  width: 50,
-                  margin: EdgeInsets.only(right: 8),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 100,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              height: hauteur,
-                              width: 30,
-                              decoration: BoxDecoration(
-                                color: Color(0xFFFFD700).withOpacity(0.7),
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(5)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        dateStr,
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
-                      ),
-                      Text(
-                        '${(jour['montant'] as double).toStringAsFixed(0)}',
-                        style: TextStyle(color: Colors.white, fontSize: 9),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildJourTile(Map<String, dynamic> jour) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              color: Color(0xFFFFD700).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                DateFormat('dd').format(jour['date'] as DateTime),
-                style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ),
-          ),
-          SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormat('EEEE MMMM yyyy').format(jour['date'] as DateTime),
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '${jour['nombre']} transaction${jour['nombre'] > 1 ? 's' : ''}',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _formatMontant(jour['montant']),
-                style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'total',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _empty(AppColors c, String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Center(child: Text(text, style: TextStyle(color: c.textSecondary, fontSize: 13))),
+      );
 }

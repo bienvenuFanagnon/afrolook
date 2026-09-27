@@ -3,6 +3,7 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import '../../services/monetization_config.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -15,15 +16,23 @@ import '../postDetails.dart';
 import '../postDetailsVideo.dart';
 
 const double _minEncaissement = 1000.0;
-const double _baseViewRate = 1.0;
+double get _baseViewRate => MonetizationConfig.baseViewRate;
 
-const _scoreTiers = [
-  {'minScore': 80.0, 'multiplier': 1.00, 'label': 'Élite',    'color': 0xFF22C55E},
-  {'minScore': 50.0, 'multiplier': 0.80, 'label': 'Expert',   'color': 0xFF3B82F6},
-  {'minScore': 25.0, 'multiplier': 0.60, 'label': 'Avancé',   'color': 0xFFF97316},
-  {'minScore': 10.0, 'multiplier': 0.40, 'label': 'Standard', 'color': 0xFFF59E0B},
-  {'minScore':  0.0, 'multiplier': 0.20, 'label': 'Débutant', 'color': 0xFF94A3B8},
-];
+// Barème : config/monetization (MonetizationConfig), partagé avec les Cloud Functions.
+const _tierColors = [0xFF22C55E, 0xFF3B82F6, 0xFFF97316, 0xFFF59E0B, 0xFF94A3B8];
+List<Map<String, dynamic>> get _scoreTiersDyn {
+  final tiers = MonetizationConfig.tiers;
+  return [
+    for (var i = 0; i < tiers.length; i++)
+      {
+        'minScore': tiers[i].minScore,
+        'multiplier': tiers[i].multiplier,
+        'label': tiers[i].label,
+        'color': _tierColors[i < _tierColors.length ? i : _tierColors.length - 1],
+      },
+  ];
+}
+List<Map<String, dynamic>> get _scoreTiers => _scoreTiersDyn;
 
 Map<String, dynamic> _getTier(double score) {
   for (final t in _scoreTiers) {
@@ -37,8 +46,8 @@ double _fcfaPerView(double creatorScore) {
   return _baseViewRate * (t['multiplier'] as double);
 }
 
-/// Vues pas encore payées. Compteur partagé avec le paiement automatique quotidien
-/// (computeViewEarnings) : une vue n'est payée qu'une seule fois.
+/// Vues pas encore payées (totalViewsEarningsCredited = vues déjà payées, y compris par
+/// l'ancien paiement automatique supprimé) : une vue n'est payée qu'une seule fois.
 int _pendingViews(UserData user) =>
     ((user.totalPostUniqueViews ?? 0) - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
 
@@ -76,6 +85,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
   @override
   void initState() {
     super.initState();
+    MonetizationConfig.load().then((_) { if (mounted) setState(() {}); });
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
