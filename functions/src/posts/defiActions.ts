@@ -1,4 +1,4 @@
-import { recordAppCommission } from "../payments/coinShares";
+import { creditSponsors, recordAppCommission, resolveSponsors, SponsorShare } from "../payments/coinShares";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue, Transaction, DocumentReference } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
@@ -74,11 +74,25 @@ function chargeFee(tx: Transaction, params: {
   fee: number;
   defiPostId: string;
   kind: "vote" | "participation";
+  sponsors: SponsorShare[];
 }) {
-  const { payerRef, payerId, creatorRef, creatorId, fee, defiPostId, kind } = params;
-  const { appShare, creatorShare } = computeShares(fee);
+  const { payerRef, payerId, creatorRef, creatorId, fee, defiPostId, kind, sponsors } = params;
+  const { creatorShare } = computeShares(fee);
+  // Parrainages (2,5 % + 2,5 %) pris sur la part de l'app ; le créateur garde 70 %
+  const sponsorCoins = sponsors.reduce((s, p) => s + p.coins, 0);
+  const appShare = fee - creatorShare - sponsorCoins;
   const now = Date.now();
   const label = kind === "vote" ? "Vote DÉFI" : "Participation DÉFI";
+
+  // Ce que ce DÉFI a rapporté (bloc visible par le créateur et les admins)
+  tx.update(db.collection("Posts").doc(defiPostId), {
+    [`defi_revenue.${kind}_coins`]: FieldValue.increment(fee),
+    [`defi_revenue.${kind}_count`]: FieldValue.increment(1),
+    "defi_revenue.creator_coins": FieldValue.increment(creatorShare),
+    "defi_revenue.app_coins": FieldValue.increment(appShare),
+    "defi_revenue.sponsor_coins": FieldValue.increment(sponsorCoins),
+  });
+  creditSponsors(tx, sponsors, label, now, { defiPostId });
 
   tx.update(payerRef, {
     giftCoinsBalance: FieldValue.increment(-fee),
@@ -109,6 +123,7 @@ function chargeFee(tx: Transaction, params: {
     createdAt: now,
     updatedAt: now,
     defiPostId,
+    defiKind: kind,
   });
 
   const creatorTxRef = db.collection("TransactionSoldes").doc();
@@ -144,6 +159,23 @@ async function recordVote(voterId: string, responsePostId: string) {
   const responseRef = db.collection("Posts").doc(responsePostId);
   const voterRef = db.collection("Users").doc(voterId);
 
+  // Contrôles hors transaction (requêtes non permises dedans)
+  const preResponse = await responseRef.get();
+  const preDefiId = preResponse.data()?.["defi_response_to_post_id"] as string | undefined;
+  if (!preDefiId) throw new HttpsError("invalid-argument", "Ce post n'est pas une réponse à un défi.");
+  const preDefi = await db.collection("Posts").doc(preDefiId).get();
+  const preCreatorId = preDefi.data()?.["user_id"] as string | undefined;
+  if (preCreatorId && preCreatorId === voterId) {
+    throw new HttpsError("permission-denied", "Le créateur du DÉFI ne peut pas voter.");
+  }
+  // Un seul vote par personne et par DÉFI (participants compris) : aucune réponse déjà votée
+  const responses = await db.collection("Posts").where("defi_response_to_post_id", "==", preDefiId).get();
+  if (responses.docs.some((r) => ((r.data()["defi_voter_ids"] as string[] | undefined) ?? []).includes(voterId))) {
+    throw new HttpsError("already-exists", "Tu as déjà voté pour ce DÉFI : un seul vote par personne.");
+  }
+  const preFee = ((preDefi.data()?.["defi_config"] as Record<string, unknown> | undefined)?.["vote_fee"] as number) ?? 0;
+  const sponsors = preFee > 0 ? await resolveSponsors(voterId, preCreatorId, preFee) : [];
+
   return db.runTransaction(async (tx) => {
     const [responseDoc, voterDoc] = await Promise.all([
       tx.get(responseRef),
@@ -165,7 +197,7 @@ async function recordVote(voterId: string, responsePostId: string) {
 
     const voterIds: string[] = responseData["defi_voter_ids"] ?? [];
     if (voterIds.includes(voterId)) {
-      throw new HttpsError("already-exists", "Vous avez déjà voté pour cette réponse.");
+      throw new HttpsError("already-exists", "Tu as déjà voté pour ce DÉFI : un seul vote par personne.");
     }
 
     const defiRef = db.collection("Posts").doc(defiPostId);
@@ -178,6 +210,10 @@ async function recordVote(voterId: string, responsePostId: string) {
     const defiConfig = defiData["defi_config"] as Record<string, unknown> | undefined;
     const defiCreatorId: string | undefined = defiData["user_id"];
     const voteFee: number = (defiConfig?.["vote_fee"] as number) ?? 0;
+    // Verrou contre deux votes simultanés sur deux réponses différentes
+    if (((defiData["defi_voter_ids"] as string[] | undefined) ?? []).includes(voterId)) {
+      throw new HttpsError("already-exists", "Tu as déjà voté pour ce DÉFI : un seul vote par personne.");
+    }
 
     const endDate = (defiConfig?.["end_date"] as number) ?? 0;
     if (defiConfig?.["status"] === "termine" || (endDate > 0 && endDate < Date.now())) {
@@ -198,7 +234,8 @@ async function recordVote(voterId: string, responsePostId: string) {
       if (balance < voteFee) {
         throw new HttpsError(
           "resource-exhausted",
-          `Solde insuffisant — ${balance} pièces disponibles, ${voteFee} requises.`
+          `Solde insuffisant — ${balance} pièces disponibles, ${voteFee} requises.`,
+          { coins: voteFee, balance }
         );
       }
 
@@ -210,6 +247,7 @@ async function recordVote(voterId: string, responsePostId: string) {
         fee: voteFee,
         defiPostId,
         kind: "vote",
+        sponsors: voteFee === preFee ? sponsors : [],
       });
     }
 
@@ -217,6 +255,7 @@ async function recordVote(voterId: string, responsePostId: string) {
       defi_votes: FieldValue.increment(1),
       defi_voter_ids: FieldValue.arrayUnion(voterId),
     });
+    tx.update(defiRef, { defi_voter_ids: FieldValue.arrayUnion(voterId) });
 
     const voterData = voterDoc.data()!;
     return {
@@ -303,6 +342,11 @@ async function handleParticipation(
   const participantRef = db.collection("Users").doc(participantId);
   const newPostRef = db.collection("Posts").doc(newPostId);
 
+  // Parrainages résolus hors transaction (requêtes non permises dedans)
+  const preDefi = (await defiRef.get()).data();
+  const preFee = ((preDefi?.["defi_config"] as Record<string, unknown> | undefined)?.["participation_fee"] as number) ?? 0;
+  const sponsors = preFee > 0 ? await resolveSponsors(participantId, preDefi?.["user_id"] as string | undefined, preFee) : [];
+
   return db.runTransaction(async (tx) => {
     const [defiDoc, participantDoc, existingPostDoc] = await Promise.all([
       tx.get(defiRef),
@@ -359,7 +403,8 @@ async function handleParticipation(
       if (balance < participationFee) {
         throw new HttpsError(
           "resource-exhausted",
-          `Solde insuffisant — ${balance} pièces disponibles, ${participationFee} requises.`
+          `Solde insuffisant — ${balance} pièces disponibles, ${participationFee} requises.`,
+          { coins: participationFee, balance }
         );
       }
 
@@ -371,6 +416,7 @@ async function handleParticipation(
         fee: participationFee,
         defiPostId,
         kind: "participation",
+        sponsors: participationFee === preFee ? sponsors : [],
       });
     }
 
@@ -444,7 +490,8 @@ async function handleCreateDefi(creatorId: string, newPostId: string, rawPost: R
       if (balance < cagnotte) {
         throw new HttpsError(
           "resource-exhausted",
-          `Solde insuffisant — ${balance} pièces disponibles, ${cagnotte} requises pour la cagnotte.`
+          `Solde insuffisant — ${balance} pièces disponibles, ${cagnotte} requises pour la cagnotte.`,
+          { coins: cagnotte, balance }
         );
       }
       tx.update(creatorRef, {

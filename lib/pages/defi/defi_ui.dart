@@ -3,6 +3,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -68,7 +69,14 @@ class DefiDialogs {
         context,
         icon: Icons.how_to_vote,
         title: 'Déjà voté',
-        message: 'Tu as déjà voté pour cette participation. Un seul vote par personne est autorisé.',
+        message: 'Tu as déjà voté pour ce DÉFI. Un seul vote par personne et par DÉFI, participants compris.',
+      );
+
+  static Future<void> creatorCannotVote(BuildContext context) => _show(
+        context,
+        icon: Icons.block,
+        title: 'Vote impossible',
+        message: 'Tu es le créateur de ce DÉFI : tu ne peux pas voter pour les participants.',
       );
 
   static Future<void> alreadyParticipated(BuildContext context) => _show(
@@ -117,7 +125,14 @@ class DefiDialogs {
         if (isCreation) return genericError(context, isVote: false, isCreation: true);
         return isVote ? alreadyVoted(context) : alreadyParticipated(context);
       case 'resource-exhausted':
+        // Vote et participation : fenêtre commune « Pas assez de pièces » (prix envoyé par le serveur)
+        final details = (error as FirebaseFunctionsException).details;
+        final coins = details is Map ? (details['coins'] as num?)?.round() : null;
+        if (!isCreation && coins != null && coins > 0) return CoinCheckout.insufficient(context, coins);
         return insufficientBalance(context, isVote: isVote, isCreation: isCreation);
+      case 'permission-denied':
+        if (isVote) return creatorCannotVote(context);
+        return genericError(context, isVote: isVote, isCreation: isCreation);
       case 'failed-precondition':
         return defiEnded(context);
       default:

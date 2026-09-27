@@ -5,10 +5,12 @@ import 'package:afrotok/pages/userPosts/youTube_video_card.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
+import 'package:afrotok/providers/authProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 const Color _yellow = Color(0xFFFF9500);
 const Color _yellowBg = Color(0x22FF9500);
@@ -33,6 +35,9 @@ class DefiDetailsSection extends StatelessWidget {
     final endDate = DateTime.fromMillisecondsSinceEpoch(cfg.endDate);
     final isOver = endDate.isBefore(DateTime.now()) || cfg.isTermine;
     final daysLeft = endDate.difference(DateTime.now()).inDays;
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    final isAdmin = auth.loginUserData.role == UserRole.ADM.name;
+    final isCreator = currentUserId.isNotEmpty && currentUserId == defiPost.user_id;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 14),
@@ -159,6 +164,10 @@ class DefiDetailsSection extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildResults(c, cfg),
                 ],
+                if ((isCreator || isAdmin) && defiPost.id != null) ...[
+                  const SizedBox(height: 14),
+                  DefiRevenueCard(defiPostId: defiPost.id!, showAppShare: isAdmin),
+                ],
               ],
             ),
           ),
@@ -258,6 +267,123 @@ class DefiDetailsSection extends StatelessWidget {
         border: Border.all(color: _yellow.withOpacity(0.4)),
       ),
       child: Text(label, style: const TextStyle(color: _yellow, fontSize: 11, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+// ── Ce que le DÉFI a rapporté — visible par le créateur et les admins ────────
+class DefiRevenueCard extends StatefulWidget {
+  final String defiPostId;
+  final bool showAppShare;
+
+  const DefiRevenueCard({super.key, required this.defiPostId, required this.showAppShare});
+
+  @override
+  State<DefiRevenueCard> createState() => _DefiRevenueCardState();
+}
+
+class _DefiRevenueCardState extends State<DefiRevenueCard> {
+  bool _loading = true;
+  int _voteCoins = 0, _voteCount = 0, _partCoins = 0, _partCount = 0;
+  int _creatorCoins = 0, _sponsorCoins = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  // Calculé à partir des transactions du DÉFI : couvre aussi les DÉFIs antérieurs au suivi serveur.
+  Future<void> _load() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('TransactionSoldes')
+          .where('defiPostId', isEqualTo: widget.defiPostId)
+          .get();
+      var vC = 0, vN = 0, pC = 0, pN = 0, cr = 0, sp = 0;
+      for (final d in snap.docs) {
+        final t = d.data();
+        final amount = (t['montant'] as num? ?? 0).round();
+        final type = '${t['type'] ?? ''}';
+        if (t['methode_paiement'] == 'commission_parrainage') {
+          sp += amount;
+        } else if (type == 'GAIN_PIECES') {
+          cr += amount;
+        } else if (type == 'DEPENSE') {
+          final kind = t['defiKind'] ?? ('${t['description'] ?? ''}'.startsWith('Vote') ? 'vote' : 'participation');
+          if (kind == 'vote') { vC += amount; vN++; } else { pC += amount; pN++; }
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _voteCoins = vC; _voteCount = vN; _partCoins = pC; _partCount = pN;
+          _creatorCoins = cr; _sponsorCoins = sp; _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final n = NumberFormat.decimalPattern('fr');
+    final total = _voteCoins + _partCoins;
+    final app = (total - _creatorCoins - _sponsorCoins).clamp(0, total);
+
+    Widget line(String k, String v, {String? sub, bool strong = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(k, style: TextStyle(color: strong ? c.textPrimary : c.textSecondary, fontSize: 13,
+                    fontWeight: strong ? FontWeight.w700 : FontWeight.w500)),
+                if (sub != null) Text(sub, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+              ]),
+            ),
+            Text(v, style: TextStyle(color: strong ? _yellow : c.textPrimary, fontSize: strong ? 15 : 13,
+                fontWeight: FontWeight.w700, fontFeatures: const [FontFeature.tabularFigures()])),
+          ]),
+        );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: c.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _yellow.withOpacity(0.35)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.savings_outlined, color: _yellow, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text('Ce DÉFI a rapporté',
+                style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
+          ),
+          Text(widget.showAppShare ? 'Créateur et admins' : 'Visible par toi seul',
+              style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
+        ]),
+        const SizedBox(height: 6),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _yellow))),
+          )
+        else ...[
+          line('Total payé', '${n.format(total)} pièces', strong: true),
+          line('Votes', '${n.format(_voteCoins)} pièces', sub: '$_voteCount vote${_voteCount > 1 ? 's' : ''} payant${_voteCount > 1 ? 's' : ''}'),
+          line('Participations', '${n.format(_partCoins)} pièces',
+              sub: '$_partCount participation${_partCount > 1 ? 's' : ''} payante${_partCount > 1 ? 's' : ''}'),
+          if (widget.showAppShare) ...[
+            Divider(height: 14, color: c.border),
+            line('Part du créateur (70 %)', '${n.format(_creatorCoins)} pièces'),
+            line('Parrainages', '${n.format(_sponsorCoins)} pièces'),
+            line("Part de l'app", '${n.format(app)} pièces', strong: true),
+          ],
+        ],
+      ]),
     );
   }
 }

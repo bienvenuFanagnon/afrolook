@@ -243,7 +243,7 @@ service cloud.firestore {
     // aussi uniquement par les Cloud Functions : defi_config et le type DEFI sont réservés.
     function defiServerKeys() {
       return ['defi_response_to_post_id', 'defi_participant_ids', 'defi_participant_count',
-              'defi_votes', 'defi_voter_ids', 'defi_config', 'defi_winners', 'defi_settled_at'];
+              'defi_votes', 'defi_voter_ids', 'defi_config', 'defi_winners', 'defi_settled_at', 'defi_revenue'];
     }
 
     match /Posts/{postId} {
