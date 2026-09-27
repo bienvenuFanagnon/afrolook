@@ -1,6 +1,7 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../widgets/coin_balances_row.dart';
 import 'package:provider/provider.dart';
 import '../../models/coin_pack.dart';
@@ -116,28 +117,67 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           child: Divider(height: 1, color: colors.divider),
         ),
       ),
-      body: CenteredContent(
+      body: PopScope(
+        canPop: !_isLoading,
+        child: Stack(children: [
+      CenteredContent(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 48),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildBalanceHeader(colors, user, soldeDepot, soldePrincipal),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               _buildBalanceSelector(colors, soldeDepot, soldePrincipal),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _buildBeneficiaryToggle(colors),
               if (_isForOther) ...[
                 const SizedBox(height: 14),
                 _buildEmailForm(colors),
               ],
-              const SizedBox(height: 28),
+              const SizedBox(height: 18),
               _buildPacksHeader(colors),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _buildCoinPacksGrid(coinProvider, user, currentUserBalance, colors),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               _buildRateInfo(colors),
             ],
+          ),
+        ),
+      ),
+          if (_isLoading) _buildProcessingOverlay(colors),
+        ]),
+      ),
+    );
+  }
+
+  /// Bloque la page tant que l'achat n'est pas terminé (plus de double clic ni de retour arrière).
+  Widget _buildProcessingOverlay(AppColors colors) {
+    return Positioned.fill(
+      child: AbsorbPointer(
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.45),
+          alignment: Alignment.center,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(
+                width: 34,
+                height: 34,
+                child: CircularProgressIndicator(strokeWidth: 3, color: colors.accent),
+              ),
+              const SizedBox(height: 14),
+              Text('Achat en cours…',
+                  style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text('Ne quitte pas la page',
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            ]),
           ),
         ),
       ),
@@ -173,7 +213,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             fontSize: 14,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -243,50 +283,47 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected ? color.withOpacity(0.1) : colors.surfaceVariant,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : colors.border,
             width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected
-              ? [BoxShadow(color: color.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 3))]
-              : null,
         ),
-        child: Column(
+        child: Row(
           children: [
-            Icon(icon, color: isSelected ? color : colors.textSecondary, size: 22),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : colors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+            Icon(isSelected ? Icons.radio_button_checked_rounded : icon,
+                color: isSelected ? color : colors.textSecondary, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isSelected ? color : colors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      )),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${amount.toStringAsFixed(0)} FCFA',
+                      style: TextStyle(
+                        color: isSelected ? colors.textPrimary : colors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 3),
-            Text(
-              '${amount.toStringAsFixed(0)} FCFA',
-              style: TextStyle(
-                color: isSelected ? color : colors.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (isSelected) ...[
-              const SizedBox(height: 4),
-              Container(
-                width: 20,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -522,14 +559,15 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
     double currentUserBalance,
     AppColors colors,
   ) {
+    final wide = MediaQuery.of(context).size.width >= 600;
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: wide ? 4 : 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        mainAxisExtent: 124,
       ),
       itemCount: _rechargePacks.length,
       itemBuilder: (context, index) {
@@ -550,178 +588,106 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
     AppColors colors,
   ) {
     final isDisabled = !isAffordable || !canPurchase || _isLoading;
+    final accent = pack.isPopular ? colors.accent : colors.primary;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: pack.isPopular
-              ? colors.accent
-              : isAffordable
-                  ? colors.border
-                  : colors.border.withOpacity(0.4),
+    return Material(
+      color: pack.isPopular ? colors.accent.withOpacity(colors.isDark ? 0.10 : 0.06) : colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: pack.isPopular ? colors.accent : colors.border.withOpacity(isAffordable ? 1 : 0.5),
           width: pack.isPopular ? 1.5 : 1,
         ),
-        boxShadow: pack.isPopular
-            ? [BoxShadow(color: colors.accent.withOpacity(0.12), blurRadius: 12, offset: const Offset(0, 4))]
-            : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
-      child: Stack(
-        children: [
-          // Fond subtil pour les packs populaires
-          if (pack.isPopular)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      colors.accent.withOpacity(0.06),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    // Icône pack
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: pack.isPopular
-                            ? colors.accent.withOpacity(0.12)
-                            : colors.surfaceVariant,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(pack.icon, style: const TextStyle(fontSize: 30)),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Nom du pack
-                    Text(
-                      pack.label,
-                      style: TextStyle(
-                        color: pack.isPopular ? colors.accent : colors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Nombre de pièces
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        const Text('🪙', style: TextStyle(fontSize: 13)),
-                        const SizedBox(width: 3),
-                        Text(
-                          _formatNumber(pack.coins),
-                          style: TextStyle(
-                            color: pack.isPopular ? colors.accent : colors.textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isDisabled ? null : () => _processPurchase(pack, coinProvider, user),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+              child: Column(
+                children: [
+                  // Pièces
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(pack.icon, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _formatNumber(pack.coins),
+                            style: TextStyle(
+                              color: pack.isPopular ? colors.accent : colors.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Prix FCFA
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isAffordable
-                            ? colors.surfaceVariant
-                            : colors.danger.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        '${pack.priceFcfa.toInt()} FCFA',
-                        style: TextStyle(
-                          color: isAffordable ? colors.textSecondary : colors.danger,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    ],
+                  ),
+                  Text('pièces', style: TextStyle(color: colors.textSecondary, fontSize: 10.5)),
+                  const Spacer(),
+                  // Prix
+                  Text(
+                    '${_formatNumber(pack.priceFcfa.toInt())} FCFA',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: isAffordable ? colors.textPrimary : colors.danger,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
-
-                // Bouton Acheter
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isDisabled ? null : () => _processPurchase(pack, coinProvider, user),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDisabled
-                          ? colors.surfaceVariant
-                          : pack.isPopular
-                              ? colors.accent
-                              : colors.primary,
-                      foregroundColor: isDisabled
-                          ? colors.textSecondary
-                          : pack.isPopular
-                              ? colors.onAccent
-                              : colors.onPrimary,
-                      disabledBackgroundColor: colors.surfaceVariant,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  const SizedBox(height: 6),
+                  // Bouton
+                  Container(
+                    height: 28,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isDisabled ? colors.surfaceVariant : accent,
+                      borderRadius: BorderRadius.circular(9),
                     ),
                     child: Text(
                       isAffordable ? 'Acheter' : 'Insuffisant',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                        color: isDisabled
+                            ? colors.textSecondary
+                            : pack.isPopular
+                                ? colors.onAccent
+                                : colors.onPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.5,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-
-          // Badge populaire
-          if (pack.isPopular && pack.popularLabel != null)
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: colors.accent,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(20),
-                    bottomLeft: Radius.circular(12),
+            // Badge populaire
+            if (pack.isPopular && pack.popularLabel != null)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colors.accent,
+                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8)),
                   ),
-                ),
-                child: Text(
-                  pack.popularLabel!,
-                  style: TextStyle(
-                    color: colors.onAccent,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
+                  child: Text(
+                    pack.popularLabel!,
+                    style: TextStyle(color: colors.onAccent, fontSize: 7.5, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -803,7 +769,8 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      _showErrorDialog('Erreur : $e');
+      if (!mounted) return;
+      _showErrorDialog("${e.toString().replaceFirst('Exception: ', '')}. Tu n'as pas été débité.");
       setState(() => _isLoading = false);
     }
   }
@@ -943,5 +910,5 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
     );
   }
 
-  String _formatNumber(int num) => num.toString();
+  String _formatNumber(int num) => NumberFormat.decimalPattern('fr').format(num);
 }

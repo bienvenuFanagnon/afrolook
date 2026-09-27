@@ -476,10 +476,14 @@ class _DetailsPostState extends State<DetailsPost>
 // Navigation vers un post suggéré
   void _onSuggestedPostSelected(Post newPost) {
     if(newPost.dataType==PostDataType.VIDEO.name){
+      // Vidéo format téléphone → page portrait ; sinon page paysage
+      final isPortrait = newPost.isPortrait ?? true;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => VideoYoutubePageDetails(initialPost: newPost,isIn: true,),
+          builder: (context) => isPortrait
+              ? PostDetailsVideoFormatTel(initialPost: newPost, isIn: true)
+              : VideoYoutubePageDetails(initialPost: newPost,isIn: true,),
         ),
       );
     }else{

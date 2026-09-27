@@ -14,6 +14,7 @@ import '../../services/quick_gift_service.dart';
 import '../../widgets/gifts/gift_sent_overlay.dart';
 import '../postComments.dart';
 import 'coin_recharge_screen.dart';
+import '../../widgets/coin_balances_row.dart';
 
 class CoinGiftDialog extends StatefulWidget {
   final String receiverId;
@@ -243,34 +244,16 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     final colors = AppColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              const Text('🪙', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 8),
-              Text(
-                'Vos pièces',
-                style: TextStyle(color: colors.textSecondary, fontSize: 14),
-              ),
-            ],
-          ),
-          Text(
-            '$_currentBalance',
-            style: const TextStyle(
-              color: Color(0xFFFFD700),
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
-          ),
-        ],
+      // Deux soldes : le dépôt est dépensé en premier, puis les pièces gagnées
+      child: CoinBalancesInline(
+        user: Provider.of<UserAuthProvider>(context, listen: false).loginUserData,
+        total: _currentBalance,
       ),
     );
   }

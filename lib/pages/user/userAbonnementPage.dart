@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../utils/platform_guard.dart';
 import '../../services/coin_checkout.dart';
 import 'package:provider/provider.dart';
+import 'package:afrotok/widgets/coin_balances_row.dart';
 
 import '../../models/model_data.dart';
 import '../../services/abonnement_service.dart';
@@ -357,7 +358,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         ? (user.giftCoinsBalance ?? 0).toDouble()
         : (_selectedBalanceGold == 'votre_solde_depot' ? depot : principal);
     final prixFinal = _getPrixGold(_dureeGold);
-    final soldeInsuffisant = solde < prixFinal;
+    final soldeInsuffisant = solde < (kPayInCoins ? CoinCheckout.coinsFor(prixFinal) : prixFinal);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -807,10 +808,15 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     Color btnTextColor = Colors.white,
     String soldeLabel = 'Solde Dépôt',
   }) {
-    final manquant = prixFinal - solde;
+    final manquant = (kPayInCoins ? CoinCheckout.coinsFor(prixFinal) : prixFinal) - solde;
 
     return Column(
       children: [
+        // Pièces : les deux soldes (le dépôt est débité en premier)
+        if (kPayInCoins) ...[
+          CoinBalancesInline(user: Provider.of<UserAuthProvider>(context, listen: false).loginUserData),
+          const SizedBox(height: 10),
+        ],
         // Info solde
         Container(
           padding: const EdgeInsets.all(14),
@@ -847,7 +853,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.red),
                   ),
-                  child: Text('-${manquant.toInt()} F',
+                  child: Text(kPayInCoins ? '-${manquant.toInt()} pièces' : '-${manquant.toInt()} F',
                       style: const TextStyle(
                           color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),

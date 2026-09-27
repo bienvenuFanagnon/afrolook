@@ -2290,7 +2290,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               child: Center(child: CircularProgressIndicator(color: colors.info)),
             )
           : previewReady
-              ? SizedBox(
+              ? GestureDetector(
+                  onTap: _openDetailsPage,
+                  child: SizedBox(
                   width: videoW,
                   height: videoH,
                   child: FittedBox(
@@ -2301,6 +2303,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       child: VideoPlayer(_previewController!),
                     ),
                   ),
+                ),
                 )
               : (_videoThumbnailPath != null && File(_videoThumbnailPath!).existsSync())
                   ? GestureDetector(
@@ -2318,7 +2321,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                         height: videoH,
                       ),
                     )
-                  : SizedBox(width: videoW, height: videoH, child: _buildFallbackThumbnail()),
+                  : GestureDetector(
+                      onTap: _startVideoPreview,
+                      child: SizedBox(width: videoW, height: videoH, child: _buildFallbackThumbnail()),
+                    ),
         ),
         );
 
@@ -2385,7 +2391,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         // Overlay play (masqué pendant la preview et le verrou)
         if (!_isPreviewPlaying && !_showCanalLockCta)
           Positioned.fill(
-            child: Center(
+            // Laisse passer le tap jusqu'à la miniature (sinon le bouton play ne fait rien)
+            child: IgnorePointer(child: Center(
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -2394,7 +2401,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 ),
                 child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
               ),
-            ),
+            )),
           ),
 
         // Badge vidéo en haut à gauche
@@ -2427,9 +2434,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 color: Colors.black.withOpacity(0.75),
                 child: Center(
                   child: GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => VideoYoutubePageDetails(initialPost: widget.post, feedTier: widget.feedTier),
-                    )),
+                    onTap: _openDetailsPage,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
@@ -3801,7 +3806,11 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => DetailsPost(post: widget.post, feedTier: widget.feedTier)),
+      MaterialPageRoute(
+        builder: (_) => isVideoPost
+            ? VideoYoutubePageDetails(initialPost: widget.post, feedTier: widget.feedTier)
+            : DetailsPost(post: widget.post, feedTier: widget.feedTier),
+      ),
     ).then((_) => _refreshPostStats());
   }
 

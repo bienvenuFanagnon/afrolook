@@ -7,6 +7,8 @@ import '../pages/coins/coin_recharge_screen.dart';
 import '../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../theme/app_colors.dart';
+import '../widgets/coin_balances_row.dart';
+import '../models/model_data.dart';
 
 /// Paiement en pièces de tous les achats de l'app (Android et iPhone), sauf contenus payants.
 /// Le prix est recalculé par la Cloud Function payWithCoins ; ici on n'affiche qu'une estimation.
@@ -46,7 +48,8 @@ class CoinCheckout {
     int? days,
   }) async {
     final price = coins ?? coinsFor(priceFcfa ?? 0);
-    final balance = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.giftCoinsBalance ?? 0;
+    final user = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    final balance = user.giftCoinsBalance ?? 0;
     if (balance < price) {
       await insufficient(context, price);
       return false;
@@ -63,9 +66,10 @@ class CoinCheckout {
           Text('${fmt(price)} pièces',
               style: TextStyle(color: c.textPrimary, fontSize: 24, fontWeight: FontWeight.w800)),
           Text('≈ ${fmt(fcfaFor(price))} FCFA', style: TextStyle(color: c.textSecondary, fontSize: 13)),
-          const SizedBox(height: 10),
-          Text('Solde après achat : ${fmt(balance - price)} pièces',
-              style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+          const SizedBox(height: 12),
+          CoinBalancesInline(user: user),
+          const SizedBox(height: 8),
+          Text(_debitLabel(user, price), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
@@ -124,9 +128,20 @@ class CoinCheckout {
   }
 
   /// Fenêtre « pas assez de pièces » : solde, prix, ce qui manque, bouton d'achat.
+  /// « Débité : 300 pièces de dépôt + 200 pièces gagnées » (le dépôt part en premier, comme sur le serveur).
+  static String _debitLabel(UserData user, int price) {
+    final s = CoinSplit.of(user);
+    final fromDepot = price < s.depot ? price : s.depot;
+    final fromGagnees = price - fromDepot;
+    if (fromGagnees <= 0) return 'Débité de tes pièces de dépôt.';
+    if (fromDepot <= 0) return 'Débité de tes pièces gagnées (ton dépôt est vide).';
+    return 'Débité : ${fmt(fromDepot)} pièces de dépôt + ${fmt(fromGagnees)} pièces gagnées.';
+  }
+
   static Future<void> insufficient(BuildContext context, int coins) {
     final c = AppColors.of(context);
-    final balance = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.giftCoinsBalance ?? 0;
+    final user = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    final balance = user.giftCoinsBalance ?? 0;
     final missing = (coins - balance).clamp(0, coins);
     Widget row(String k, String v, {Color? color}) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
@@ -145,6 +160,8 @@ class CoinCheckout {
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           row('Prix', '${fmt(coins)} pièces'),
           row('Ton solde', '${fmt(balance)} pièces'),
+          const SizedBox(height: 6),
+          CoinBalancesInline(user: user),
           Divider(color: c.border),
           row('Il te manque', '${fmt(missing)} pièces', color: c.danger),
         ]),

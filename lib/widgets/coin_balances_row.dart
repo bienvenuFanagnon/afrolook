@@ -91,3 +91,80 @@ class CoinBalancesRow extends StatelessWidget {
     );
   }
 }
+
+/// Répartition du solde total en Pièces de dépôt et Pièces gagnées.
+/// [total] : solde le plus récent (ex. CoinGiftUserProvider) ; par défaut celui de [user].
+/// Les dépenses consomment d'abord le dépôt, comme sur le serveur.
+class CoinSplit {
+  final int depot;
+  final int gagnees;
+
+  const CoinSplit(this.depot, this.gagnees);
+
+  factory CoinSplit.of(UserData? user, {int? total}) {
+    final t = total ?? user?.giftCoinsBalance ?? 0;
+    final d = (user?.lockedGiftCoins ?? 0).clamp(0, t < 0 ? 0 : t);
+    return CoinSplit(d, (t - d).clamp(0, 1 << 62));
+  }
+
+  int get total => depot + gagnees;
+
+  /// « Dépôt 1 200 · Gagnées 4 269 »
+  String get label => 'Dépôt ${TxAmount.fmt(depot)} · Gagnées ${TxAmount.fmt(gagnees)}';
+}
+
+/// Les deux soldes sur une ligne, pour les fenêtres d'achat, de cadeau et d'abonnement.
+class CoinBalancesInline extends StatelessWidget {
+  final UserData? user;
+  final int? total;
+  /// Couleurs forcées pour les fonds sombres fixes (lives, feuilles de cadeaux).
+  final bool onDark;
+
+  const CoinBalancesInline({super.key, required this.user, this.total, this.onDark = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final s = CoinSplit.of(user, total: total);
+    final fg = onDark ? Colors.white : c.textPrimary;
+    final sub = onDark ? Colors.white70 : c.textSecondary;
+    final bg = onDark ? Colors.white.withValues(alpha: 0.08) : c.surface;
+    final border = onDark ? Colors.white24 : c.border;
+
+    Widget pill(IconData icon, Color color, String label, int v) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: border),
+            ),
+            child: Row(children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sub, fontSize: 10.5)),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(TxAmount.fmt(v),
+                        style: TextStyle(
+                            color: fg,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            fontFeatures: const [FontFeature.tabularFigures()])),
+                  ),
+                ]),
+              ),
+            ]),
+          ),
+        );
+
+    return Row(children: [
+      pill(Icons.toll_rounded, c.supportAccent, 'Pièces de dépôt', s.depot),
+      const SizedBox(width: 8),
+      pill(Icons.emoji_events_rounded, c.primary, 'Pièces gagnées', s.gagnees),
+    ]);
+  }
+}

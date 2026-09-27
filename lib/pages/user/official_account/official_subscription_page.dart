@@ -10,6 +10,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/official_account/official_account_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/coin_balances_row.dart';
 
 /// Page d'abonnement mensuel du compte officiel.
 /// Affiche l'état de l'abonnement et permet le renouvellement manuel.
@@ -154,7 +155,13 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
                   _StatusCard(sub: _sub, colors: colors, fmt: fmt),
                   const SizedBox(height: 20),
 
-                  // Solde actuel
+                  // Solde actuel (pièces : les deux soldes, le dépôt part en premier)
+                  if (kPayInCoins)
+                    CoinBalancesInline(
+                      user: context.read<UserAuthProvider>().loginUserData,
+                      total: _balance?.round(),
+                    )
+                  else
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(

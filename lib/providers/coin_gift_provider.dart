@@ -187,8 +187,9 @@ class CoinGiftUserProvider with ChangeNotifier {
       }
       return result;
     } catch (e) {
+      // false est réservé au vrai manque de pièces : toute autre erreur remonte à l'appelant
       debugPrint("Erreur like avec pièces: $e");
-      return false;
+      rethrow;
     }
   }
 

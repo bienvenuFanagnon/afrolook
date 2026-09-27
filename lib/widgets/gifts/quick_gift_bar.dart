@@ -14,6 +14,7 @@ import '../../services/coin_gift_service.dart';
 import '../../services/quick_gift_service.dart';
 import '../../theme/app_colors.dart';
 import 'gift_sent_overlay.dart';
+import '../../services/coin_checkout.dart';
 
 // ── Badge "Cadeau" + envoi rapide ────────────────────────────────────────────
 
@@ -96,7 +97,7 @@ class _CadeauBadgeState extends State<CadeauBadge> {
     if (senderId == null) return;
 
     if (coinProvider.giftCoinsBalance < _quickGift!.coins) {
-      _showInsufficientModal(coinProvider.giftCoinsBalance);
+      CoinCheckout.insufficient(context, _quickGift!.coins);
       return;
     }
 
@@ -128,50 +129,6 @@ class _CadeauBadgeState extends State<CadeauBadge> {
     ).then((ok) {
       if (!ok) coinProvider.refreshBalance(senderId);
     }).catchError((_) {}));
-  }
-
-  void _showInsufficientModal(int balance) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final colors = AppColors.of(ctx);
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(children: [
-            const Text('🪙', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text('Solde insuffisant',
-                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
-          ]),
-          content: Text(
-            'Il vous faut ${_quickGift!.coins} pièces pour envoyer ce cadeau.\nVotre solde : $balance pièces.',
-            style: TextStyle(color: colors.textSecondary, fontSize: 13),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
-            ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 16),
-              label: const Text('Acheter des pièces',
-                  style: TextStyle(color: Colors.white, fontSize: 13)),
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -318,7 +275,7 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
     final balance = coinProvider.giftCoinsBalance;
 
     if (balance < pack.coins) {
-      _showInsufficientBalanceModal(pack.coins);
+      CoinCheckout.insufficient(context, pack.coins);
       return;
     }
 
@@ -358,43 +315,6 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
       coinProvider.refreshBalance(senderId);
       debugPrint('QuickGiftBar sendGift error: $e');
     }));
-  }
-
-  void _showInsufficientBalanceModal(int required) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.monetization_on, color: Colors.amber),
-            SizedBox(width: 8),
-            Text('Solde insuffisant'),
-          ],
-        ),
-        content: Text(
-          'Il te manque des pièces pour envoyer ce cadeau ($required 🪙 requis).\nRecharge ton solde pour continuer.',
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-            },
-            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-            label: const Text('Recharger', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showError(String msg) {

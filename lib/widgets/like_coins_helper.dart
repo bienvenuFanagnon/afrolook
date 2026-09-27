@@ -4,6 +4,7 @@ import '../pages/coins/coin_recharge_screen.dart';
 import '../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../theme/app_colors.dart';
+import 'coin_balances_row.dart';
 
 /// Animation centrée style "double-tap like" — cœur spring-bounce + message de soutien.
 /// Appelé depuis toute page qui gère le like avec pièces.
@@ -215,12 +216,12 @@ void showInsufficientCoinsForLikeDialog({
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Solde insuffisant',
                     style: TextStyle(color: dc.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                Text(
-                  'Votre solde : ${user.giftCoinsBalance ?? 0} pièce${(user.giftCoinsBalance ?? 0) > 1 ? 's' : ''} · Il faut 2 pièces',
-                  style: TextStyle(color: dc.textSecondary, fontSize: 11),
-                ),
+                Text('Il faut 2 pièces pour liker',
+                    style: TextStyle(color: dc.textSecondary, fontSize: 11)),
               ]),
             ]),
+            const SizedBox(height: 10),
+            CoinBalancesInline(user: user, total: coinProvider.giftCoinsBalance),
             const SizedBox(height: 12),
             Divider(color: dc.border, height: 1),
             const SizedBox(height: 12),

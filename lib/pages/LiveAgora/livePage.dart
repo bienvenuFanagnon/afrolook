@@ -42,6 +42,8 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:afrotok/utils/tx_amount.dart';
+import 'package:afrotok/widgets/coin_balances_row.dart';
 
 class LivePage extends StatefulWidget {
   final String liveId;
@@ -2321,7 +2323,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildFooter() {
-    final myCoins = (authProvider.loginUserData.giftCoinsBalance ?? 0);
+    final myCoins = CoinSplit.of(authProvider.loginUserData);
     final quickGifts = _gifts.take(3).toList();
     return Positioned(
       bottom: 0,
@@ -2359,8 +2361,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                         children: [
                           Icon(Icons.stars_rounded, color: Color(0xFFF9A825), size: 14),
                           SizedBox(width: 4),
-                          Text('$myCoins pcs',
-                              style: TextStyle(color: Color(0xFFF9A825), fontSize: 12, fontWeight: FontWeight.w700)),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Dépôt ${TxAmount.fmt(myCoins.depot)}',
+                                  style: TextStyle(color: Color(0xFFF9A825), fontSize: 10.5, fontWeight: FontWeight.w700)),
+                              Text('Gagnées ${TxAmount.fmt(myCoins.gagnees)}',
+                                  style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
                         ],
                       ),
                     ),
