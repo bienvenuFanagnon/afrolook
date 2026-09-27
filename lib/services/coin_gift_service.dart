@@ -64,89 +64,23 @@ class CoinGiftService {
     required UserAuthProvider authProvider,
     String balanceKey = 'votre_solde_depot', // solde débité : votre_solde_depot ou votre_solde_principal
   }) async {
-    final payerRef = firestore.collection('Users').doc(userPaid);
-    final receiverRef = firestore.collection('Users').doc(userReceived);
-    final isForSelf = userPaid == userReceived;
-
-    return firestore.runTransaction((tx) async {
-      // 1️⃣ Vérifier que le payeur existe
-      final payerSnap = await tx.get(payerRef);
-      if (!payerSnap.exists) throw Exception('Utilisateur payeur introuvable');
-
-      // 2️⃣ Vérifier le solde du payeur (dépôt ou gains selon balanceKey)
-      final payerBalance = (payerSnap.data()?[balanceKey] as num? ?? 0).toDouble();
-      if (payerBalance < fcfaCost) {
-        throw Exception('Solde insuffisant');
-      }
-
-      // 3️⃣ Vérifier que le destinataire existe (si différent du payeur)
-      final receiverSnap = isForSelf ? payerSnap : await tx.get(receiverRef);
-      if (!receiverSnap.exists) throw Exception('Destinataire introuvable');
-
-      // 4️⃣ DÉBITER le payeur sur le solde choisi (dépôt ou gains)
-      tx.update(payerRef, {
-        balanceKey: FieldValue.increment(-fcfaCost),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      // 5️⃣ CRÉDITER le destinataire en pièces
-      // Pièces achetées : dépensables, mais pas convertibles en argent.
-      tx.update(receiverRef, {
-        'giftCoinsBalance': FieldValue.increment(coinsAmount),
-        'totalGiftCoinsPurchased': FieldValue.increment(coinsAmount),
-        ...lockFieldsAfterPurchase(receiverSnap.data(), coinsAmount),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      // 6️⃣ Transaction pour le PAYEUR (dépense)
-      final payerTransaction = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id = userPaid
-        ..type = TypeTransaction.ACHAT_PIECES.name
-        ..statut = StatutTransaction.VALIDER.name
-        ..description = isForSelf
-            ? "Achat de ${_formatNumber(coinsAmount)} pièces"
-            : "Achat de ${_formatNumber(coinsAmount)} pièces pour @${_getUserName(userReceived, firestore)}"
-        ..montant = fcfaCost
-        ..methode_paiement = balanceKey
-        ..createdAt = DateTime.now().millisecondsSinceEpoch
-        ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-      tx.set(firestore.collection('TransactionSoldes').doc(payerTransaction.id), payerTransaction.toJson());
-
-      // 7️⃣ Transaction pour le DESTINATAIRE (gain) - seulement si différent du payeur
-      if (!isForSelf) {
-        final receiverTransaction = TransactionSolde()
-          ..id = firestore.collection('TransactionSoldes').doc().id
-          ..user_id = userReceived
-          ..type = TypeTransaction.CADEAU_PIECES_RECU.name
-          ..statut = StatutTransaction.VALIDER.name
-          ..description = "Réception de ${_formatNumber(coinsAmount)} pièces de la part de @${authProvider.loginUserData!.pseudo}"
-          ..montant = coinsAmount.toDouble()
-          ..methode_paiement = "cadeau"
-          ..createdAt = DateTime.now().millisecondsSinceEpoch
-          ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-        tx.set(firestore.collection('TransactionSoldes').doc(receiverTransaction.id), receiverTransaction.toJson());
-      }
-    });
-  }
-
-// Helper pour formater les nombres
-  static String _formatNumber(int num) {
-    if (num >= 1000000) return '${(num / 1000000).toStringAsFixed(1)}M';
-    if (num >= 1000) return '${(num / 1000).toStringAsFixed(1)}K';
-    return num.toString();
-  }
-
-// Helper pour récupérer le nom d'un utilisateur
-  static Future<String> _getUserName(String userId, FirebaseFirestore firestore) async {
+    // Prix du pack, débit, crédit des pièces (Pièces de dépôt), transactions et suivi des ventes :
+    // calculés par le serveur (buyCoinsWithBalance). Un e-mail est envoyé aux admins à chaque achat.
     try {
-      final doc = await firestore.collection('Users').doc(userId).get();
-      return doc.data()?['pseudo'] ?? 'utilisateur';
-    } catch (e) {
-      return 'utilisateur';
+      await FirebaseFunctions.instance.httpsCallable('buyCoinsWithBalance').call({
+        'coins': coinsAmount,
+        'balanceKey': balanceKey,
+        if (userReceived != userPaid) 'beneficiaryId': userReceived,
+      });
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'resource-exhausted') throw Exception('Solde insuffisant');
+      if (e.code == 'not-found') throw Exception('Destinataire introuvable');
+      throw Exception(e.message ?? 'Achat impossible');
     }
   }
 
+// Helper pour formater les nombres
+// Helper pour récupérer le nom d'un utilisateur
   /// Envoyer un like avec pièces (1 pièce pour le créateur, 1 pièce pour l'application).
   /// Retourne false si l'utilisateur n'a pas assez de pièces.
   static Future<bool> sendLikeWithCoins({

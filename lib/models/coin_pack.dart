@@ -33,15 +33,13 @@ class CoinPack {
 
   /// Packs vendus via In-App Purchase sur iOS.
   /// Grille 2026-09-27 : prix Mobile Money + 30 % (part d'Apple, payée par l'utilisateur),
-  /// soit au moins 0,40 F net par pièce pour l'app. Les identifiants App Store restent ceux
-  /// d'origine (coins1200…) ; seul le nombre de pièces livrées change.
+  /// soit au moins 0,40 F net par pièce pour l'app. Nouveaux produits App Store Connect :
+  /// coins1000 (0,99 $), coins4000 (3,99 $), coins10000 (9,99 $).
   static List<CoinPack> get appleProducts => [
-    CoinPack(coins: 1000, priceFcfa: 600, icon: '⭐', label: 'Pack Starter',
-        appleId: 'com.afrotok.afrotok.coins1200'),
+    CoinPack(coins: 1000, priceFcfa: 600, icon: '⭐', label: 'Pack Starter'),
     CoinPack(coins: 4000, priceFcfa: 2400, icon: '🔥', label: 'Pack Silver',
-        isPopular: true, popularLabel: 'POPULAIRE', appleId: 'com.afrotok.afrotok.coins5500'),
-    CoinPack(coins: 10000, priceFcfa: 6000, icon: '💎', label: 'Pack Gold',
-        appleId: 'com.afrotok.afrotok.coins14500'),
+        isPopular: true, popularLabel: 'POPULAIRE'),
+    CoinPack(coins: 10000, priceFcfa: 6000, icon: '💎', label: 'Pack Gold'),
   ];
 
   static List<CoinPack> get defaultPacks => [

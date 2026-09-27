@@ -24,6 +24,7 @@ export * from "./posts/defiSettlement";
 export * from "./payments/coinConversion";
 export * from "./payments/coinPayments";
 export * from "./payments/coinInteractions";
+export * from "./payments/coinPurchase";
 
 export * from "./payments/appleIap";
 export * from "./moderation/moderation";

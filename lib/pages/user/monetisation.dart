@@ -982,7 +982,8 @@ class TransactionWidget extends StatelessWidget {
     final credit = _isCredit(type, transaction);
     final isWithdrawal = type == 'RETRAIT' || type == 'RETRAITADMIN';
     final tint = credit ? c.success : (isWithdrawal ? c.warning : c.danger);
-    final equivalent = TxAmount.equivalent(transaction);
+    // Achat de pièces : montant réellement payé (sinon équivalent FCFA sur iPhone)
+    final equivalent = TxAmount.paidLabel(transaction) ?? TxAmount.equivalent(transaction);
     final desc = transaction.description?.trim() ?? '';
     final label = _labels[type] ?? type;
 

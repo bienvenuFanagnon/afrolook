@@ -4,6 +4,10 @@ import { FieldValue } from "firebase-admin/firestore";
 import { AppStoreServerAPIClient, Environment, APIException } from "@apple/app-store-server-library";
 import { db } from "../shared/firebase";
 import { appAccountTokenFor, lockFieldsAfterChange } from "../shared/coin_locks";
+import { recordCoinSale } from "./coinPurchase";
+
+/** Part conservée par Apple (pas d'inscription au Small Business Program). */
+const APPLE_COMMISSION = 0.3;
 
 // Clé "In-App Purchase" générée dans App Store Connect (Utilisateurs et accès → Intégrations).
 const APPLE_IAP_PRIVATE_KEY = defineSecret("APPLE_IAP_PRIVATE_KEY"); // contenu du fichier .p8
@@ -15,11 +19,14 @@ const BUNDLE_ID = "com.afrotok.afrotok";
 // Produits consommables App Store Connect → pièces créditées. Source de vérité côté serveur :
 // le nombre de pièces ne vient jamais de l'app. Doit correspondre à CoinPack.appleProducts (Flutter).
 export const APPLE_COIN_PRODUCTS: Record<string, number> = {
-  // Grille 2026-09-27 (prix Mobile Money + 30 % Apple) : l'identifiant garde l'ancien nombre,
-  // les pièces livrées sont celles-ci.
-  "com.afrotok.afrotok.coins1200": 1000, // 0,99 $
-  "com.afrotok.afrotok.coins5500": 4000, // 3,99 $
-  "com.afrotok.afrotok.coins14500": 10000, // 9,99 $
+  // Grille 2026-09-27 (prix Mobile Money + 30 % Apple) — nouveaux produits App Store Connect
+  "com.afrotok.afrotok.coins1000": 1000, // 0,99 $
+  "com.afrotok.afrotok.coins4000": 4000, // 3,99 $
+  "com.afrotok.afrotok.coins10000": 10000, // 9,99 $
+  // Anciens produits (jamais approuvés) : conservés pour créditer d'éventuels achats de test en attente
+  "com.afrotok.afrotok.coins1200": 1200,
+  "com.afrotok.afrotok.coins5500": 5500,
+  "com.afrotok.afrotok.coins14500": 14500,
 };
 
 type AppleTransaction = {
@@ -33,6 +40,9 @@ type AppleTransaction = {
   purchaseDate?: number;
   revocationDate?: number;
   environment?: string;
+  price?: number;     // prix payé, en millièmes de la devise (ex. 990 = 0,99)
+  currency?: string;  // devise ISO 4217 (USD, EUR, XOF…)
+  storefront?: string;
 };
 
 function decodeJws<T>(jws: string): T {
@@ -116,6 +126,10 @@ export const verifyApplePurchase = onCall(
 
     const coins = coinsPerUnit * Math.max(1, tx.quantity ?? 1);
     const userRef = db.collection("Users").doc(uid);
+    // Prix réellement payé (Apple : millièmes de la devise) et net estimé après la part d'Apple
+    const amountPaid = typeof tx.price === "number" ? Math.round(tx.price) / 1000 : null;
+    const currency = tx.currency ?? null;
+    const netEstimate = amountPaid !== null ? Math.round(amountPaid * (1 - APPLE_COMMISSION) * 100) / 100 : null;
 
     return db.runTransaction(async (t) => {
       const [purchaseDoc, userDoc] = await Promise.all([t.get(purchaseRef), t.get(userRef)]);
@@ -150,14 +164,22 @@ export const verifyApplePurchase = onCall(
         type: "ACHAT_PIECES",
         statut: "VALIDER",
         description: `Achat de ${coins} pièces via l'App Store`,
+        // Nouveau modèle d'achat : montant = pièces, + prix payé, devise et net estimé
         montant: coins,
+        coins,
+        amountPaid,
+        currency,
+        netEstimate,
+        paymentMethod: "App Store",
         frais: 0,
         montant_total: coins,
         methode_paiement: "apple_iap",
+        beneficiaryId: uid,
         createdAt: now,
         updatedAt: now,
         appleTransactionId: transactionId,
       });
+      if (amountPaid !== null && currency) recordCoinSale(t, now, coins, amountPaid, currency, netEstimate ?? undefined);
       return { success: true, coins };
     });
   }

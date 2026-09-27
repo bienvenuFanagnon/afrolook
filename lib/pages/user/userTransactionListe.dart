@@ -842,6 +842,10 @@ class _TxDetailSheet extends StatelessWidget {
         _SectionTitle('Transaction'),
         _Row('Type',        meta.label),
         _Row('Montant',     '$amount $unit'),
+        if (TxAmount.paidLabel(tx) != null) _Row('Payé', TxAmount.paidLabel(tx)!.replaceFirst('payé ', '')),
+        if (tx.netEstimate != null)
+          _Row('Net estimé', '${tx.netEstimate!.toStringAsFixed(2)} ${tx.currency ?? ''} (après Apple)'),
+        if ((tx.beneficiaryPseudo ?? '').isNotEmpty) _Row('Bénéficiaire', '@${tx.beneficiaryPseudo}'),
         if ((tx.frais ?? 0) > 0)
           _Row('Frais', '${tx.frais!.toStringAsFixed(2)} FCFA'),
         if ((tx.montant_total ?? 0) > 0)

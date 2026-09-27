@@ -652,9 +652,14 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     );
   }
 
-  String _amountLabel(TransactionSolde t) => TxAmount.storedInCoins(t)
-      ? '${TxAmount.fmt(t.montant ?? 0)} pièces'
-      : '${NumberFormat('#,##0.##', 'fr').format(t.montant ?? 0)} FCFA';
+  String _amountLabel(TransactionSolde t) {
+    final base = TxAmount.storedInCoins(t)
+        ? '${TxAmount.fmt(t.montant ?? 0)} pièces'
+        : '${NumberFormat('#,##0.##', 'fr').format(t.montant ?? 0)} FCFA';
+    // Achat de pièces : montant réellement payé, devise et moyen de paiement
+    final paid = TxAmount.paidLabel(t);
+    return paid == null ? base : '$base ($paid)';
+  }
 
   static const _coinTypes = {
     'GAIN_PIECES', 'CADEAU_PIECES', 'CADEAU_PIECES_RECU', 'LIKE_PIECES',
@@ -941,6 +946,11 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
               ],
               _buildDetailItem("Type", _formatTransactionType(transaction.type)),
               _buildDetailItem("Montant", _amountLabel(transaction)),
+              if (transaction.netEstimate != null)
+                _buildDetailItem("Net estimé (après la part d'Apple)",
+                    '${NumberFormat('#,##0.00', 'fr').format(transaction.netEstimate)} ${transaction.currency ?? ''}'),
+              if ((transaction.beneficiaryPseudo ?? '').isNotEmpty)
+                _buildDetailItem("Bénéficiaire", '@${transaction.beneficiaryPseudo}'),
               if (transaction.frais != null && transaction.frais! > 0)
                 _buildDetailItem("Frais", "${transaction.frais?.toStringAsFixed(2) ?? '0.00'} FCFA"),
               if (transaction.description != null && transaction.description!.isNotEmpty)

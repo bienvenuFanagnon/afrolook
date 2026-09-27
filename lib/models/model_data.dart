@@ -3154,11 +3154,24 @@ class TransactionSolde {
   int? createdAt;
   int? updatedAt;
 
+  // Modèle d'achat de pièces (2026-09-27), écrit par le serveur ; lu à part (hors code généré).
+  int? coins;             // pièces reçues
+  double? amountPaid;     // montant réellement payé
+  String? currency;       // XOF, USD, EUR…
+  String? paymentMethod;  // Dépôt FCFA, Gains à retirer, App Store
+  double? netEstimate;    // net estimé après la part d'Apple
+  String? beneficiaryPseudo;
+
   TransactionSolde();
 
   // Add a factory constructor that creates a new instance from a JSON map
-  factory TransactionSolde.fromJson(Map<String, dynamic> json) =>
-      _$TransactionSoldeFromJson(json);
+  factory TransactionSolde.fromJson(Map<String, dynamic> json) => _$TransactionSoldeFromJson(json)
+    ..coins = (json['coins'] as num?)?.toInt()
+    ..amountPaid = (json['amountPaid'] as num?)?.toDouble()
+    ..currency = json['currency'] as String?
+    ..paymentMethod = json['paymentMethod'] as String?
+    ..netEstimate = (json['netEstimate'] as num?)?.toDouble()
+    ..beneficiaryPseudo = json['beneficiaryPseudo'] as String?;
 
   // Add a method that converts this instance to a JSON map
   Map<String, dynamic> toJson() => _$TransactionSoldeToJson(this);

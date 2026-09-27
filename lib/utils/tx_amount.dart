@@ -17,6 +17,7 @@ class TxAmount {
 
   /// Vrai si `montant` est exprimé en pièces.
   static bool storedInCoins(TransactionSolde t) {
+    if (t.coins != null) return true; // nouveau modèle d'achat : montant = pièces
     final type = t.type?.toUpperCase() ?? '';
     if (_coinTypes.contains(type)) return true;
     if (type == 'ACHAT_PIECES') return t.methode_paiement == 'apple_iap';
@@ -42,6 +43,16 @@ class TxAmount {
   /// Montant principal : « 1 250 pièces » ou « 500 FCFA ».
   static String main(TransactionSolde t) =>
       _showInCoins(t) ? '${fmt(coins(t))} pièces' : '${fmt(fcfa(t))} FCFA';
+
+  /// Pour un achat de pièces : « payé 480 FCFA · Dépôt FCFA » ou « payé 0,99 USD · App Store ».
+  static String? paidLabel(TransactionSolde t) {
+    if (t.amountPaid == null) return null;
+    final cur = (t.currency ?? '').toUpperCase();
+    final amount = cur == 'XOF' || cur.isEmpty
+        ? '${fmt(t.amountPaid!)} FCFA'
+        : '${NumberFormat('#,##0.00', 'fr').format(t.amountPaid)} $cur';
+    return t.paymentMethod != null ? 'payé $amount · ${t.paymentMethod}' : 'payé $amount';
+  }
 
   /// Équivalent FCFA (sur iPhone uniquement, pour les montants affichés en pièces).
   static String? equivalent(TransactionSolde t) {
