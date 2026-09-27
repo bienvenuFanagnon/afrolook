@@ -71,6 +71,8 @@ import '../../../services/postService/post_view_service.dart';
 import '../../../services/postService/feed_interaction_service.dart';
 import '../../../services/streak_service.dart';
 import '../../../providers/streakProvider.dart';
+import 'package:afrotok/services/comment_coins.dart';
+import 'package:afrotok/widgets/post_coins_earned.dart';
 
 
 
@@ -2742,6 +2744,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               recordUniquePostView();
               widget.onLiked?.call();
             } : null,
+            coinHeart: true,
           ),
           if (widget.post.isAdvertisement != true &&
               authProvider.loginUserData.id != widget.post.user_id)
@@ -2931,6 +2934,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       );
 
       final success = await postProvider.newComment(comment);
+      // 2 pièces (1 au créateur) — publié même sans solde
+      if (success && mounted) CommentCoins.charge(context, widget.post);
 
       if (success) {
         if (mounted) {
@@ -3105,6 +3110,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     required Color color,
     required VoidCallback? onPressed,
     bool isLoading = false,
+    bool coinHeart = false, // like : cœur plus grand avec la pastille « +1 »
   }) {
     return Material(
       color: Colors.transparent,
@@ -3112,7 +3118,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         borderRadius: BorderRadius.circular(20),
         onTap: onPressed,
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: coinHeart ? 4.5 : 12, vertical: coinHeart ? 5 : 6),
           child: Column(
             children: [
               if (isLoading)
@@ -3124,6 +3130,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     color: onPressed != null ? color : color.withOpacity(0.3),
                   ),
                 )
+              else if (coinHeart)
+                LikeCoinHeart(icon: icon, color: onPressed != null ? color : color.withOpacity(0.3), size: 20)
               else
                 Icon(icon, size: 18, color: onPressed != null ? color : color.withOpacity(0.3)),
               SizedBox(width: 6),

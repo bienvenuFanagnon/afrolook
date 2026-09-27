@@ -14,7 +14,7 @@ export const SPONSOR_SHARE = 0.025;
 
 /** Sources de gain de l'app (clés de CommissionsDaily/{jour}). */
 export type CommissionSource =
-  | "likes" | "cadeaux" | "cadeaux_live" | "defi"
+  | "likes" | "commentaires" | "cadeaux" | "cadeaux_live" | "defi"
   | "groupes" | "canaux" | "lives_prives" | "participation_live"
   | "premium" | "gold" | "compte_officiel" | "pubs_boosts" | "contenus" | "abonnement_entreprise";
 

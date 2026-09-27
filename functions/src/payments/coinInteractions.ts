@@ -6,6 +6,7 @@ import { CREATOR_SHARE, creditSponsors, num, recordAppCommission, resolveSponsor
 /**
  * Interactions payantes en pièces, calculées côté serveur (auparavant dans l'app, donc contournables).
  * - sendLike      : 2 pièces → 1 au créateur, 1 à l'app (pas de parrainage).
+ * - sendComment   : 2 pièces → 1 au créateur, 1 à l'app (gratuit sur son propre post, publié même sans solde).
  * - sendPostGift  : cadeau sur un post → 70 % créateur, 2,5 % + 2,5 % parrains, reste à l'app.
  * - sendLiveGift  : cadeau en live → 70 % hôte, 2,5 % + 2,5 % parrains, reste à l'app.
  * Les notifications, commentaires automatiques et animations restent gérés par l'app.
@@ -70,6 +71,54 @@ export const sendLike = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (
     });
     recordAppCommission(tx, "likes", LIKE_COST - creatorCoins, now);
     return { success: true, coins: LIKE_COST };
+  });
+});
+
+// ── Commentaire ──────────────────────────────────────────────────────────────
+
+const COMMENT_COST = 2;
+const COMMENT_CREATOR = 1;
+
+/**
+ * Paiement d'un commentaire (pas des réponses) : 2 pièces → 1 au créateur, 1 à l'app.
+ * Gratuit pour le créateur sur son propre post. Sans solde suffisant, rien n'est débité :
+ * le commentaire est publié quand même (réponse { paid: false, reason: "insufficient" }).
+ */
+export const sendComment = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const postId = (request.data as { postId?: string })?.postId;
+  if (!postId) throw new HttpsError("invalid-argument", "postId requis.");
+
+  const postRef = db.collection("Posts").doc(postId);
+  const senderRef = db.collection("Users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const [postDoc, senderDoc] = await Promise.all([tx.get(postRef), tx.get(senderRef)]);
+    if (!postDoc.exists) throw new HttpsError("not-found", "Post introuvable.");
+    if (!senderDoc.exists) throw new HttpsError("not-found", "Compte introuvable.");
+    const creatorId = postDoc.data()!["user_id"] as string | undefined;
+    if (!creatorId || creatorId === uid) return { paid: false, reason: "own_post", coins: 0 };
+
+    const balance = num(senderDoc.data()!["giftCoinsBalance"]);
+    if (balance < COMMENT_COST) return { paid: false, reason: "insufficient", coins: COMMENT_COST, balance };
+    const now = Date.now();
+
+    tx.update(senderRef, {
+      giftCoinsBalance: FieldValue.increment(-COMMENT_COST),
+      totalGiftCoinsSpent: FieldValue.increment(COMMENT_COST),
+      updatedAt: now,
+    });
+    tx.update(db.collection("Users").doc(creatorId), {
+      giftCoinsBalance: FieldValue.increment(COMMENT_CREATOR),
+      totalCoinsEarnedFromComments: FieldValue.increment(COMMENT_CREATOR),
+      updatedAt: now,
+    });
+    tx.update(postRef, {
+      totalGiftCoinsSentOnThisPost: FieldValue.increment(COMMENT_CREATOR),
+      totalCoinsFromComments: FieldValue.increment(COMMENT_CREATOR),
+    });
+    recordAppCommission(tx, "commentaires", COMMENT_COST - COMMENT_CREATOR, now);
+    return { paid: true, coins: COMMENT_COST };
   });
 });
 

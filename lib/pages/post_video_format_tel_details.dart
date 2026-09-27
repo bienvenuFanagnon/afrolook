@@ -103,6 +103,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../services/postService/post_view_service.dart';
 import '../widgets/feed/sections/shop_promo_feed_widget.dart';
+import 'package:afrotok/services/comment_coins.dart';
+import 'package:afrotok/widgets/post_coins_earned.dart';
 
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
@@ -2629,6 +2631,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Pièces reçues (likes + commentaires + cadeaux), visible par tous
+          if (post.isAdvertisement != true)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: PostCoinsChip(post: post),
+            ),
           if (post.isRepost == true)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
@@ -2953,6 +2961,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       );
 
       final success = await postProvider.newComment(comment);
+      // 2 pièces (1 au créateur) — publié même sans solde
+      if (success && mounted) CommentCoins.charge(context, post);
 
       if (success && mounted) {
         setState(() {
@@ -3191,8 +3201,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             onTap: _isLiking ? null : () => _handleLike(post),
             child: Column(
               children: [
-                Icon(
-                  (_likedPosts[post.id] ?? (post.users_love_id?.contains(authProvider.loginUserData.id) ?? false))
+                LikeCoinHeart(
+                  icon: (_likedPosts[post.id] ?? (post.users_love_id?.contains(authProvider.loginUserData.id) ?? false))
                       ? Icons.favorite
                       : Icons.favorite_border,
                   color: _afroRed,
@@ -3794,9 +3804,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             child: _VideoPageBadges(post: post, feedTier: _currentPage == 0 ? widget.feedTier : null),
           ),
         // Cadeau rapide + badge — à droite, visible pour les non-propriétaires
-        if (_currentPage == 0 && post.user_id != null && post.user_id != authProvider.loginUserData.id)
+        if (_currentPage == 0 && post.isAdvertisement != true && post.user_id != null && post.user_id != authProvider.loginUserData.id)
           Positioned(
-            top: MediaQuery.of(context).padding.top + (widget.isIn ? 60 : 12),
+            // Sous le bouton œil (top + 10, ~40 px) pour ne jamais le chevaucher
+            top: MediaQuery.of(context).padding.top + 60,
             right: 12,
             child: CadeauBadge(
               receiverId: post.user_id!,
@@ -3804,6 +3815,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               receiverAvatar: post.user?.imageUrl ?? '',
               post: post,
               giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
+              showCount: false,
               onGiftSuccess: () {
                 setState(() {
                   post.users_cadeau_id ??= [];

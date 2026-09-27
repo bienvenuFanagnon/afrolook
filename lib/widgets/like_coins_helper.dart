@@ -8,12 +8,13 @@ import 'coin_balances_row.dart';
 
 /// Animation centrée style "double-tap like" — cœur spring-bounce + message de soutien.
 /// Appelé depuis toute page qui gère le like avec pièces.
-void showLikeOverlay(BuildContext context, {String creatorName = ''}) {
+void showLikeOverlay(BuildContext context, {String creatorName = '', bool isComment = false}) {
   final overlay = Overlay.of(context, rootOverlay: true);
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (_) => _LikeOverlay(
       creatorName: creatorName,
+      isComment: isComment,
       onDone: () {
         try { entry.remove(); } catch (_) {}
       },
@@ -24,8 +25,9 @@ void showLikeOverlay(BuildContext context, {String creatorName = ''}) {
 
 class _LikeOverlay extends StatefulWidget {
   final String creatorName;
+  final bool isComment;
   final VoidCallback onDone;
-  const _LikeOverlay({required this.creatorName, required this.onDone});
+  const _LikeOverlay({required this.creatorName, required this.onDone, this.isComment = false});
   @override
   State<_LikeOverlay> createState() => _LikeOverlayState();
 }
@@ -123,8 +125,8 @@ class _LikeOverlayState extends State<_LikeOverlay>
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Text('❤️', style: TextStyle(fontSize: 40)),
+                        child: Center(
+                          child: Text(widget.isComment ? '💬' : '❤️', style: const TextStyle(fontSize: 40)),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -163,8 +165,8 @@ class _LikeOverlayState extends State<_LikeOverlay>
                             const SizedBox(width: 8),
                             Text(
                               widget.creatorName.isNotEmpty
-                                  ? 'Votre like rapporte 1 🪙 à @${widget.creatorName} !'
-                                  : 'Votre like rapporte 1 🪙 au créateur du post !',
+                                  ? '${widget.isComment ? 'Ton commentaire' : 'Votre like'} rapporte 1 🪙 à @${widget.creatorName} !'
+                                  : '${widget.isComment ? 'Ton commentaire' : 'Votre like'} rapporte 1 🪙 au créateur du post !',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -193,6 +195,7 @@ void showInsufficientCoinsForLikeDialog({
   required UserData user,
   required CoinGiftUserProvider coinProvider,
   required UserAuthProvider authProvider,
+  bool isComment = false,
 }) {
   final hasClaimed = user.hasClaimedFreeCoins ?? false;
   showDialog(
@@ -216,7 +219,7 @@ void showInsufficientCoinsForLikeDialog({
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Solde insuffisant',
                     style: TextStyle(color: dc.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                Text('Il faut 2 pièces pour liker',
+                Text(isComment ? 'Ton commentaire est publié · 2 pièces pour soutenir' : 'Il faut 2 pièces pour liker',
                     style: TextStyle(color: dc.textSecondary, fontSize: 11)),
               ]),
             ]),
@@ -226,7 +229,10 @@ void showInsufficientCoinsForLikeDialog({
             Divider(color: dc.border, height: 1),
             const SizedBox(height: 12),
             Text(
-              'Votre like offre des pièces au créateur — c\'est ainsi qu\'il monétise son contenu sur Afrolook et aussi par des vues rémunérées à 1 000 F le RPM. Les meilleurs créateurs gagnent jusqu\'à 15 000 pièces par post.',
+              (isComment
+                      ? 'Avec des pièces, chaque commentaire rapporte 1 pièce au créateur'
+                      : 'Votre like offre des pièces au créateur') +
+                  ' — c\'est ainsi qu\'il monétise son contenu sur Afrolook et aussi par des vues rémunérées à 1 000 F le RPM. Les meilleurs créateurs gagnent jusqu\'à 15 000 pièces par post.',
               style: TextStyle(color: dc.textSecondary, fontSize: 12, height: 1.4),
             ),
             const SizedBox(height: 8),

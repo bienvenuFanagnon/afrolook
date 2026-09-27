@@ -107,6 +107,8 @@ import 'coins/post_gifts_list.dart';
 import 'home/homeWidget.dart';
 
 import '../services/postService/post_view_service.dart';
+import 'package:afrotok/services/comment_coins.dart';
+import 'package:afrotok/widgets/post_coins_earned.dart';
 
 // Couleurs Afrolook (accent, non remplacées par AppColors)
 const _afroGreen = Color(0xFF2ECC71);
@@ -1842,8 +1844,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   Widget _buildStatItem(IconData icon, int count, String label, {double iconSize = 20}) {
     final colors = AppColors.of(context);
+    final isHeart = icon == Icons.favorite || icon == Icons.favorite_border;
     return Column(children: [
-      Icon(icon, color: _afroYellow, size: iconSize),
+      // Like : cœur avec la pastille « +1 » (chaque like rapporte 1 pièce au créateur)
+      if (isHeart)
+        LikeCoinHeart(icon: icon, color: _afroYellow, size: iconSize)
+      else
+        Icon(icon, color: _afroYellow, size: iconSize),
       SizedBox(height: 2),
       Text(_formatCount(count), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
       Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
@@ -1993,6 +2000,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       );
 
       final success = await postProvider.newComment(comment);
+      // 2 pièces (1 au créateur) — publié même sans solde
+      if (success && mounted) CommentCoins.charge(context, _currentPost);
 
       if (success && mounted) {
         setState(() {
@@ -2126,6 +2135,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Pièces reçues : likes + commentaires + cadeaux (visible par tous)
+        PostCoinsBanner(post: _currentPost, margin: const EdgeInsets.only(bottom: 10)),
         Row(
           children: [
         // ── Actions interactives ─────────────────────────────────────────
@@ -2164,6 +2175,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             receiverName: _currentPost.user?.pseudo ?? 'Créateur',
             receiverAvatar: _currentPost.user?.imageUrl ?? '',
             post: _currentPost,
+            showCount: false,
           )
         else
           _buildStatItem(Icons.card_giftcard, _currentPost.totalGiftCoinsSentOnThisPost ?? 0, 'Cadeau'),

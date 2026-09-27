@@ -1611,6 +1611,7 @@ class Post {
   int? giftCount;                  // 🔥 NOUVEAU : compteur de cadeaux
   int? totalGiftCoinsSentOnThisPost;
   int? totalCoinsFromLikes;
+  int? totalCoinsFromComments = 0; // pièces gagnées par le créateur via les commentaires (sendComment)
 
   int? eventDate;
 
@@ -1825,6 +1826,7 @@ class Post {
     favoritesCount = json['favorites_count'] ?? 0;
     totalGiftCoinsSentOnThisPost = json['totalGiftCoinsSentOnThisPost'] ?? 0;
     totalCoinsFromLikes = json['totalCoinsFromLikes'] ?? 0;
+    totalCoinsFromComments = json['totalCoinsFromComments'] ?? 0;
     giftCount = json['giftCount'] ?? 0;
 
     // Dans toJson()

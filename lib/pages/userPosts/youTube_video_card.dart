@@ -59,6 +59,8 @@ import 'postWidgets/translatable_description.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'video_preload_manager.dart';
 import '../../services/media_cache_service.dart';
+import 'package:afrotok/services/comment_coins.dart';
+import 'package:afrotok/widgets/post_coins_earned.dart';
 
 
 class MediaPlaybackManager {
@@ -2449,6 +2451,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             count: widget.post.loves ?? 0,
             color: isLiked ? colors.danger : colors.textSecondary,
             onPressed: (hasAccess && !_isLiking) ? _handleLike : null,
+            coinHeart: true,
           ),
           const SizedBox(width: 4),
           if (!isAd && myId != null && myId != widget.post.user_id)
@@ -2578,6 +2581,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       );
 
       final success = await _postProvider.newComment(comment);
+      // 2 pièces (1 au créateur) — publié même sans solde
+      if (success && mounted) CommentCoins.charge(context, widget.post);
 
       if (success) {
         if (mounted) {
@@ -2732,6 +2737,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     Color? color,
     VoidCallback? onPressed,
     bool isLoading = false,
+    bool coinHeart = false, // like : cœur plus grand avec la pastille « +1 »
   }) {
     final colors = AppColors.of(context);
     final effectiveColor = onPressed != null ? (color ?? colors.textSecondary) : colors.textSecondary.withOpacity(0.3);
@@ -2741,12 +2747,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         borderRadius: BorderRadius.circular(20),
         onTap: onPressed,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: coinHeart ? 4.5 : 12, vertical: coinHeart ? 5 : 6),
           child: Column(
             children: [
               if (isLoading)
                 SizedBox(width: 18, height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2, color: effectiveColor))
+              else if (coinHeart)
+                LikeCoinHeart(icon: icon, color: effectiveColor, size: 20)
               else
                 Icon(icon, size: 18, color: effectiveColor),
               const SizedBox(width: 6),

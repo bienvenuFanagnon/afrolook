@@ -28,6 +28,8 @@ class CadeauBadge extends StatefulWidget {
   final Post post;
   final int giftCount;
   final VoidCallback? onGiftSuccess;
+  /// Faux dans les pages de détails : le total est affiché par le bandeau « pièces reçues ».
+  final bool showCount;
 
   const CadeauBadge({
     Key? key,
@@ -37,6 +39,7 @@ class CadeauBadge extends StatefulWidget {
     required this.post,
     this.giftCount = 0,
     this.onGiftSuccess,
+    this.showCount = true,
   }) : super(key: key);
 
   @override
@@ -183,13 +186,13 @@ class _CadeauBadgeState extends State<CadeauBadge> {
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.1)),
-                Container(
+                if (widget.showCount) Container(
                   width: 1,
                   height: 10,
                   margin: const EdgeInsets.symmetric(horizontal: 5),
                   color: pillBorder,
                 ),
-                Text(_fmt(widget.giftCount),
+                if (widget.showCount) Text(_fmt(widget.giftCount),
                     style: TextStyle(
                         color: colors.textSecondary,
                         fontSize: 10,

@@ -80,6 +80,8 @@ import '../widgets/like_coins_helper.dart';
 import 'coins/post_gifts_list.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 import '../widgets/chat/post_share_sheet.dart';
+import 'package:afrotok/services/comment_coins.dart';
+import 'package:afrotok/widgets/post_coins_earned.dart';
 
 // Couleurs migrées vers AppColors (_colors.*) dans _DetailsPostState
 
@@ -5947,6 +5949,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       );
 
       final success = await postProvider.newComment(comment);
+      // 2 pièces (1 au créateur) — publié même sans solde
+      if (success && mounted) CommentCoins.charge(context, widget.post);
 
       if (success && mounted) {
         setState(() {
@@ -6122,7 +6126,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           child: _buildStatItem(
             icon: Icons.comment,
             count: widget.post.comments ?? 0,
-            label: 'Comments',
+            label: 'Commentaires',
             isLocked: !hasAccess,
           ),
         ),
@@ -6142,6 +6146,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             receiverAvatar: post.user?.imageUrl ?? '',
             post: post,
             giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
+            showCount: false,
           );
         }),
         _isSharing
@@ -6193,14 +6198,19 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
           isLocked ? _colors.textSecondary.withOpacity(0.3) : _colors.warning;
     }
 
+    final isHeart = icon == Icons.favorite || icon == Icons.favorite_border;
     return Column(
       children: [
-        Icon(
-          icon,
-          color: iconColor,
-          size: 20,
-        ),
-        SizedBox(height: 5),
+        // Like : cœur avec la pastille « +1 » (chaque like rapporte 1 pièce au créateur)
+        if (isHeart && !isLocked)
+          LikeCoinHeart(icon: icon, color: iconColor, size: 22)
+        else
+          Icon(
+            icon,
+            color: iconColor,
+            size: 20,
+          ),
+        SizedBox(height: isHeart && !isLocked ? 3 : 5),
         Text(
           formatNumber(count),
           style: TextStyle(
@@ -6359,6 +6369,8 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       SizedBox(height: 20),
                       Divider(color: _colors.divider),
                       _buildCommentPreview(_hasAccessToContent()),
+                      // Pièces reçues : likes + commentaires + cadeaux (visible par tous)
+                      PostCoinsBanner(post: updatedPost),
                       _buildStatsRow(updatedPost),
                       _buildPostScoreBadge(updatedPost),
                       // _buildAdMrec(key: 'ad_details_post'),

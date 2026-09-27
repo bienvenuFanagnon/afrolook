@@ -26,6 +26,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
   /// Libellés et icônes des sources (clés écrites par le serveur, voir coinShares.ts).
   static const Map<String, (String, IconData)> _sources = {
     'likes': ('Likes', Icons.favorite_rounded),
+    'commentaires': ('Commentaires', Icons.chat_bubble_rounded),
     'cadeaux': ('Cadeaux sur les posts', Icons.card_giftcard_rounded),
     'cadeaux_live': ('Cadeaux en live', Icons.live_tv_rounded),
     'defi': ('DÉFI (votes, participations)', Icons.emoji_events_rounded),
