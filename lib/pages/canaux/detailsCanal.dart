@@ -41,6 +41,7 @@ import '../user/userPubs/user_profile_boost_page.dart';
 import '../user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/pages/component/showUserDetails.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -128,6 +129,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       checkIfFollowing();
       _checkMonthlyExpiry();
       if (mounted) setState(() => _followCheckDone = true);
+      _loadOwner();
     } catch (e) {
       printVm('Erreur rechargement canal depuis Firestore: $e');
       // Même en cas d'erreur, déverrouiller le bouton pour ne pas bloquer l'UI
@@ -216,6 +218,19 @@ class _CanalDetailsState extends State<CanalDetails> {
     final now = DateTime.now().millisecondsSinceEpoch;
     if ((expiresAt as int) < now) {
       setState(() => _monthlySubscriptionExpired = true);
+    }
+  }
+
+  /// Charge la fiche du propriétaire (photo, pseudo) si elle manque.
+  Future<void> _loadOwner() async {
+    final ownerId = widget.canal.userId;
+    if (ownerId == null || ownerId.isEmpty || widget.canal.user != null) return;
+    try {
+      final doc = await firestore.collection('Users').doc(ownerId).get();
+      if (!doc.exists || !mounted) return;
+      setState(() => widget.canal.user = UserData.fromJson(doc.data()!)..id = doc.id);
+    } catch (e) {
+      printVm('Propriétaire du canal : $e');
     }
   }
 
@@ -1061,6 +1076,21 @@ class _CanalDetailsState extends State<CanalDetails> {
                                 ),
                               ),
                             )
+                          : isFollowing && !_isProcessingUnfollow && !_monthlySubscriptionExpired
+                          ? Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: _colors.surface,
+                                borderRadius: BorderRadius.circular(25),
+                                border: Border.all(color: _colors.border),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.check_circle_rounded, size: 18, color: _colors.primary),
+                                const SizedBox(width: 6),
+                                Text('Abonné',
+                                    style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                              ]),
+                            )
                           : ElevatedButton(
                               onPressed: (_isProcessingSubscription || _isProcessingUnfollow) ? null : _handleFollowAction,
                               style: ElevatedButton.styleFrom(
@@ -1084,7 +1114,9 @@ class _CanalDetailsState extends State<CanalDetails> {
                                       ),
                                     )
                                   : Text(
-                                      isFollowing
+                                      _monthlySubscriptionExpired
+                                          ? "Renouveler l'abonnement"
+                                          : isFollowing
                                           ? AppLocalizations.of(context).canalUnsubscribeBtn
                                           : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
                                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -1171,17 +1203,29 @@ class _CanalDetailsState extends State<CanalDetails> {
                     ],
                   ),
 
-                // Menu 3-points — admin plateforme (non-propriétaire)
+                // Menu 3-points — non-propriétaire : se désabonner, et suppression pour l'admin plateforme
                 if (!isOwner &&
-                    (authProvider.loginUserData.role == 'ADM' ||
+                    ((isFollowing && _followCheckDone && !_monthlySubscriptionExpired) ||
+                        authProvider.loginUserData.role == 'ADM' ||
                         authProvider.loginUserData.role == 'admin'))
                   PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert, color: _colors.textPrimary),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     onSelected: (value) {
+                      if (value == 'desabonner') _handleFollowAction();
                       if (value == 'supprimer') _deleteCanal();
                     },
                     itemBuilder: (_) => [
+                      if (isFollowing && _followCheckDone && !_monthlySubscriptionExpired)
+                        PopupMenuItem(
+                          value: 'desabonner',
+                          child: Row(children: [
+                            Icon(Icons.person_remove_rounded, size: 18, color: _colors.danger),
+                            const SizedBox(width: 10),
+                            Text(AppLocalizations.of(context).canalUnsubscribeBtn, style: TextStyle(color: _colors.danger)),
+                          ]),
+                        ),
+                      if (authProvider.loginUserData.role == 'ADM' || authProvider.loginUserData.role == 'admin')
                       const PopupMenuItem(
                         value: 'supprimer',
                         child: Row(children: [
@@ -1367,50 +1411,71 @@ class _CanalDetailsState extends State<CanalDetails> {
             // Bandeau propriétaire — visible uniquement pour les admins plateforme
             if (authProvider.loginUserData.role == 'ADM' ||
                 authProvider.loginUserData.role == 'admin') ...[
-              GestureDetector(
-                onTap: () {
-                  if (widget.canal.userId != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => UserManagementPage(userId: widget.canal.userId!),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.admin_panel_settings, color: Colors.orange, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Propriétaire : ',
+                      style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                    // Photo + pseudo : ouvre la fenêtre du profil
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: widget.canal.user == null
+                            ? null
+                            : () => showUserDetailsModalDialog(
+                                  widget.canal.user!,
+                                  MediaQuery.of(context).size.width,
+                                  MediaQuery.of(context).size.height,
+                                  context,
+                                ),
+                        child: Row(children: [
+                          CircleAvatar(
+                            radius: 13,
+                            backgroundColor: _colors.surfaceVariant,
+                            backgroundImage: widget.canal.user?.imageUrl?.isNotEmpty == true
+                                ? NetworkImage(widget.canal.user!.imageUrl!)
+                                : null,
+                            child: widget.canal.user?.imageUrl?.isNotEmpty == true
+                                ? null
+                                : const Icon(Icons.person, size: 14, color: Colors.orange),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              widget.canal.user?.pseudo != null ? '@${widget.canal.user!.pseudo}' : 'Chargement…',
+                              style: const TextStyle(color: Colors.orange, fontSize: 12.5, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ]),
                       ),
-                    );
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.orange.withOpacity(0.4)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.admin_panel_settings, color: Colors.orange, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Admin — Propriétaire : ',
-                        style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w700),
-                      ),
-                      if (widget.canal.user?.imageUrl?.isNotEmpty == true) ...[
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundImage: NetworkImage(widget.canal.user!.imageUrl!),
+                    ),
+                    // Fiche admin de l'utilisateur
+                    if (widget.canal.userId != null)
+                      TextButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => UserManagementPage(userId: widget.canal.userId!)),
                         ),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(
-                        child: Text(
-                          widget.canal.user?.pseudo ?? widget.canal.userId ?? 'Inconnu',
-                          style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(0, 32),
                         ),
+                        child: const Text('Gérer', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
-                      const Icon(Icons.chevron_right, color: Colors.orange, size: 18),
-                    ],
-                  ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),

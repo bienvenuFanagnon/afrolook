@@ -65,9 +65,33 @@ Future<void> showPostCoinsBreakdown(BuildContext context, Post post) {
             ),
           ),
           const SizedBox(height: 14),
-          Text('Ce que ce post a rapporté à ${PostCoins.creatorName(post)}',
-              style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: PostCoins.bg(c),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: PostCoins.border.withValues(alpha: 0.6), width: 0.8),
+            ),
+            child: Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: '🪙 Ce post a rapporté '),
+                TextSpan(
+                  text: '${PostCoins.fmt(PostCoins.total(post))} pièces',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                TextSpan(
+                  text: PostCoins.creatorName(post).startsWith('au ')
+                      ? ' ${PostCoins.creatorName(post)}'
+                      : ' à ${PostCoins.creatorName(post)}',
+                ),
+              ]),
+              style: TextStyle(color: PostCoins.fg(c), fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Détail', style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
           line(Icons.favorite_rounded, 'Likes', PostCoins.likes(post)),
           line(Icons.chat_bubble_rounded, 'Commentaires', PostCoins.comments(post)),
           line(Icons.card_giftcard_rounded, 'Cadeaux', PostCoins.gifts(post)),
@@ -156,18 +180,27 @@ class PostCoinsChip extends StatelessWidget {
     if (post.isAdvertisement == true) return const SizedBox.shrink();
     final total = PostCoins.total(post);
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => showPostCoinsBreakdown(context, post),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      child: Padding(
+        // Zone de tap plus large que la pastille elle-même
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: const Color(0xFFFAEEDA),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: PostCoins.border, width: 0.8),
         ),
-        child: Text(
-          total > 0 ? '🪙 ${PostCoins.fmt(total)} pièces reçues' : '🪙 1 like = 1 pièce au créateur',
-          style: const TextStyle(color: Color(0xFF633806), fontSize: 11.5, fontWeight: FontWeight.w700),
-        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(
+            total > 0 ? '🪙 ${PostCoins.fmt(total)} pièces reçues' : '🪙 1 like = 1 pièce au créateur',
+            style: const TextStyle(color: Color(0xFF633806), fontSize: 11.5, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(width: 2),
+          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF633806)),
+        ]),
+      ),
       ),
     );
   }
