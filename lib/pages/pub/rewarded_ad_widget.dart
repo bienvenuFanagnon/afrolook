@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ class RewardedAdWidgetState extends State<RewardedAdWidget> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return; // Appodeal n'existe pas sur le web (plantage Platform._operatingSystem)
     _initCallbacks();
     _checkInitialAvailability();
   }
@@ -68,6 +70,8 @@ class RewardedAdWidgetState extends State<RewardedAdWidget> {
 
   // ✅ Méthode pour afficher la publicité
   Future<void> showAd() async {
+    // Pas de pub sur le web : on continue comme si elle avait été fermée
+    if (kIsWeb) { widget.onAdDismissed?.call(); return; }
     bool isLoaded = await Appodeal.isLoaded(AppodealAdType.RewardedVideo);
 
     if (isLoaded) {

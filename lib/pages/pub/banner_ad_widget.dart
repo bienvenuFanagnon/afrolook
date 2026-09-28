@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -34,6 +35,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return; // Appodeal n'existe pas sur le web (plantage Platform._operatingSystem)
     _checkPremiumStatus();
     _initBannerCallbacks();
   }

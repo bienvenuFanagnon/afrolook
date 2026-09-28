@@ -1797,7 +1797,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   Widget _buildPostContent(bool isLocked) {
     final colors = AppColors.of(context);
-    final text = (widget.post.description ?? '')
+    final text = (_translatedDescription ?? widget.post.description ?? '')
         .replaceAll(RegExp(r'[ \t]+\n'), '\n')  // lignes vides avec espaces → vraie ligne vide
         .replaceAll(RegExp(r'\n{3,}'), '\n\n'); // max 2 sauts de ligne consécutifs
 
@@ -1828,7 +1828,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               Icon(Icons.lock, color: colors.accent, size: 16),
               SizedBox(width: 4),
               Text(
-                'Contenu réservé aux abonnés',
+                AppLocalizations.of(context).postLockedSubscribers,
                 style: TextStyle(
                   color: colors.accent,
                   fontSize: 12,
@@ -1862,15 +1862,29 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               onTap: (_) {},
             ),
           ),
-          if (isLong)
-            GestureDetector(
-              onTap: _openDetailsPage,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('Voir plus',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
+          // "Voir plus" et "Voir la traduction" sur la même ligne
+          Wrap(
+            spacing: 14,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (isLong)
+                GestureDetector(
+                  onTap: _openDetailsPage,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(AppLocalizations.of(context).commonSeeMore,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colors.info)),
+                  ),
+                ),
+              TranslatableDescription(
+                postId: widget.post.id ?? '',
+                text: widget.post.description ?? '',
+                targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+                onToggle: (t) => setState(() => _translatedDescription = t),
+                style: TextStyle(color: colors.textPrimary),
               ),
-            ),
+            ],
+          ),
         ],
         _buildEventBadge(widget.post),
       ],

@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return; // Appodeal n'existe pas sur le web (plantage Platform._operatingSystem)
     _initCallbacks();
     _checkPremiumStatus();
   }
@@ -81,6 +83,8 @@ class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
 
   // ✅ Méthode pour afficher l'interstitiel
   Future<void> showAd() async {
+    // Pas de pub sur le web : on continue comme si elle avait été fermée
+    if (kIsWeb) { widget.onAdDismissed?.call(); return; }
     // 1. Sécurité Premium
     if (_isPremium || _isCheckingPremium) {
       printVm('📢 [INTERSTITIAL] Bypass (Premium ou Vérification)');

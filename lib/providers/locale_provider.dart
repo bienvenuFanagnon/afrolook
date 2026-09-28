@@ -1,10 +1,12 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 
 class LocaleProvider extends ChangeNotifier {
-  Locale _locale = const Locale('fr');
+  Locale _locale = Locale(deviceLanguageCode());
 
   Locale get locale => _locale;
   bool get isFrench => _locale.languageCode == 'fr';
@@ -15,11 +17,18 @@ class LocaleProvider extends ChangeNotifier {
 
   Future<void> _loadLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final code = prefs.getString('app_locale') ?? 'fr';
+    // Choix manuel de l'utilisateur en priorité, sinon langue du téléphone.
+    final code = prefs.getString('app_locale') ?? deviceLanguageCode();
     if (kSupportedLocales.containsKey(code)) {
       _locale = Locale(code);
       notifyListeners();
     }
+  }
+
+  /// Langue du téléphone si l'app la propose, sinon anglais.
+  static String deviceLanguageCode() {
+    final code = PlatformDispatcher.instance.locale.languageCode;
+    return kSupportedLocales.containsKey(code) ? code : 'en';
   }
 
   Future<void> setLocale(Locale locale) async {

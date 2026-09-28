@@ -11,7 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:http/http.dart' as http;
@@ -2994,12 +2994,12 @@ if(actionType == 'comment'){
     await Future.value().then((_) async {
       printVm("code app data *** : ${appDefaultData.app_version_code}");
       // En mode debug, on ignore la vérification de version pour ne pas bloquer le dev
-      if (kDebugMode) {
+      if (kDebugMode || kIsWeb) { // web : toujours la dernière version, pas de store
         onSuccess();
         return;
       }
       // Bypass pendant la review Google Play ou Apple App Store
-      final isInStoreReview = Platform.isIOS
+      final isInStoreReview = (!kIsWeb && Platform.isIOS)
           ? (appDefaultData.appleVerification ?? false)
           : (appDefaultData.googleVerification ?? false);
 
@@ -3018,7 +3018,7 @@ if(actionType == 'comment'){
     });
   }
   void _showUpdateModal(BuildContext context) {
-    final isIOS = Platform.isIOS;
+    final isIOS = !kIsWeb && Platform.isIOS;
     const iosAppStoreUrl = 'https://apps.apple.com/app/id6811423047';
     final storeUrl = isIOS
         ? (appDefaultData.ios_link?.isNotEmpty == true ? appDefaultData.ios_link! : iosAppStoreUrl)

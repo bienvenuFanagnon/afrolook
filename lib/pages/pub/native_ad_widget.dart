@@ -50,6 +50,7 @@ class _MrecAdWidgetState extends State<MrecAdWidget> {
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return; // Appodeal n'existe pas sur le web (plantage Platform._operatingSystem)
     _checkPremiumStatus();
     _setupAdCallbacks();
 

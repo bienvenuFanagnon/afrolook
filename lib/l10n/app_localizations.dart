@@ -413,7 +413,8 @@ class AppLocalizations {
   String get commonSave => btnSave;
   String get commonSend => btnSend;
   String get commonSearch => _t({'fr': 'Rechercher', 'en': 'Search', 'es': 'Buscar', 'de': 'Suchen', 'ar': 'البحث', 'pt': 'Pesquisar', 'zh': '搜索', 'sw': 'Tafuta'});
-  String get commonSeeMore => _t({'fr': 'Voir plus', 'en': 'See more', 'es': 'Ver más', 'de': 'Mehr sehen', 'ar': 'عرض المزيد', 'pt': 'Ver mais', 'zh': '查看更多', 'sw': 'Tazama zaidi'});
+  String get postLockedSubscribers => _t({'fr': 'Contenu réservé aux abonnés', 'en': 'Subscribers-only content', 'es': 'Contenido solo para suscriptores', 'de': 'Nur für Abonnenten', 'ar': 'محتوى مخصص للمشتركين', 'pt': 'Conteúdo exclusivo para assinantes', 'zh': '仅限订阅者的内容', 'sw': 'Maudhui ya wanaojisajili pekee'});
+  String get commonSeeMore =>_t({'fr': 'Voir plus', 'en': 'See more', 'es': 'Ver más', 'de': 'Mehr sehen', 'ar': 'عرض المزيد', 'pt': 'Ver mais', 'zh': '查看更多', 'sw': 'Tazama zaidi'});
   String get commonSeeLess => _t({'fr': 'Voir moins', 'en': 'See less', 'es': 'Ver menos', 'de': 'Weniger sehen', 'ar': 'عرض أقل', 'pt': 'Ver menos', 'zh': '收起', 'sw': 'Tazama kidogo'});
   String get commonLoading => _t({'fr': 'Chargement...', 'en': 'Loading...', 'es': 'Cargando...', 'de': 'Wird geladen...', 'ar': '...جارٍ التحميل', 'pt': 'Carregando...', 'zh': '加载中...', 'sw': 'Inapakia...'});
   String get commonError => _t({'fr': 'Une erreur est survenue', 'en': 'An error occurred', 'es': 'Ocurrió un error', 'de': 'Ein Fehler ist aufgetreten', 'ar': 'حدث خطأ', 'pt': 'Ocorreu um erro', 'zh': '发生错误', 'sw': 'Hitilafu imetokea'});
