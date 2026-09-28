@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'dart:math';
@@ -30,6 +30,7 @@ import '../../../socialVideos/afrovideos/SimpleVideoView.dart';
 import '../../../userPosts/postWidgets/postCadeau.dart';
 import '../../../userPosts/postWidgets/postUserWidget.dart';
 import '../../../userPosts/postWidgets/postWidgetPage.dart';
+import '../../../../utils/platform_guard.dart';
 
 class ProfileVideoTab extends StatefulWidget {
   const ProfileVideoTab({super.key});
@@ -219,6 +220,7 @@ bool _isLoading=false;
   }
 
   void showRepublishDialog(Post post, UserData userSendCadeau,AppDefaultData appdata ,BuildContext context) {
+    if (kIsAppleStore) return; // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
     showDialog(
       context: context,
       builder: (context) {
@@ -326,6 +328,7 @@ bool _isLoading=false;
 
 
   void showGiftDialog(Post post, UserData userSendCadeau,AppDefaultData appdata) {
+    if (kIsAppleStore) return; // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
     showDialog(
       context: context,
       barrierDismissible: false, // Empêche la fermeture
@@ -524,7 +527,7 @@ bool _isLoading=false;
                                     ),
                                   ),
                                   TextCustomerUserTitle(
-                                    titre: "${formatNumber(post.user!.abonnes!)} abonné(s)",
+                                    titre: "${formatNumber(post.user!.followersCount)} abonné(s)",
                                     fontSize: SizeText.homeProfileTextSize,
                                     couleur: ConstColors.textColors,
                                     fontWeight: FontWeight.w400,

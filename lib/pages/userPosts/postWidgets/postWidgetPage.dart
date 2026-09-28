@@ -1627,7 +1627,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
       final firstCountryCode = countryCodes.first.toUpperCase();
 
       // Chercher l'emoji du drapeau
-      final country = AfricanCountry.allCountries.firstWhere(
+      final country = AfricanCountry.everyCountry.firstWhere(
             (c) => c.code == firstCountryCode,
         orElse: () => AfricanCountry(
             code: firstCountryCode,

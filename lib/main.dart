@@ -111,6 +111,7 @@ import 'models/chatmodels/message.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:afrotok/services/currency_service.dart';
 
 late List<CameraDescription> _cameras;
 bool _shouldRestart = false;
@@ -212,6 +213,11 @@ Future<void> main() async {
       ignoreSsl: !kReleaseMode,
     );
   }
+
+  // Devise d'affichage : pays du téléphone jusqu'à la connexion, taux du jour en direct
+  CurrencyService.instance
+    ..setCountry(null)
+    ..listenRates();
 
   runApp(const MyApp());
 }
@@ -408,6 +414,7 @@ class _MyAppState extends State<MyApp> {
         // ... tous tes providers
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => LocaleProvider()),
+        ChangeNotifierProvider.value(value: CurrencyService.instance),
         ChangeNotifierProvider(create: (context) => UserShopAuthProvider()),
         ChangeNotifierProvider(create: (context) => CategorieProduitProvider()),
         ChangeNotifierProvider(create: (context) => UserAuthProvider()),
@@ -452,8 +459,8 @@ class _MyAppState extends State<MyApp> {
               CoinProvider(authProvider: authProvider),
         ),
       ],
-      child: Consumer2<ThemeProvider, LocaleProvider>(
-        builder: (context, themeProvider, localeProvider, _) => MaterialApp(
+      child: Consumer3<ThemeProvider, LocaleProvider, CurrencyService>(
+        builder: (context, themeProvider, localeProvider, _, __) => MaterialApp(
         navigatorKey: NavigationCacheService().navigatorKey,
         navigatorObservers: [datingRouteObserver],
         title: 'Afrolook',

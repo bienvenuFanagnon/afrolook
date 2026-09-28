@@ -9,6 +9,9 @@ import '../providers/coin_gift_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/coin_balances_row.dart';
 import '../models/model_data.dart';
+import '../l10n/tr.dart';
+import 'currency_service.dart';
+import '../utils/platform_guard.dart';
 
 /// Paiement en pièces de tous les achats de l'app (Android et iPhone), sauf contenus payants.
 /// Le prix est recalculé par la Cloud Function payWithCoins ; ici on n'affiche qu'une estimation.
@@ -25,7 +28,10 @@ class CoinCheckout {
   static String priceLabel(num fcfa) => coinsLabel(coinsFor(fcfa.toDouble()));
 
   /// « X pièces (≈ Y FCFA) » à partir d'un prix en pièces ; l'équivalent FCFA est indicatif.
-  static String coinsLabel(int coins) => '${fmt(coins)} pièces (≈ ${fmt(fcfaFor(coins))} FCFA)';
+  /// Sur iPhone/iPad : prix en pièces seulement, sans équivalent en argent (règle App Store 3.1.1).
+  static String coinsLabel(int coins) => kIsAppleStore
+      ? tr('{a} pièces', {'a': fmt(coins)})
+      : tr('{a} pièces ({b})', {'a': fmt(coins), 'b': Money.approx(fcfaFor(coins))});
 
   /// Prix en pièces d'un élément créé par un utilisateur : champ en pièces, sinon ancien prix FCFA × 2,5.
   static int creatorCoins(num? coinsField, num? fcfaField) =>
@@ -63,20 +69,20 @@ class CoinCheckout {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(label, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('${fmt(price)} pièces',
+          Text(context.tr('{a} pièces', {'a': fmt(price)}),
               style: TextStyle(color: c.textPrimary, fontSize: 24, fontWeight: FontWeight.w800)),
-          Text('≈ ${fmt(fcfaFor(price))} FCFA', style: TextStyle(color: c.textSecondary, fontSize: 13)),
+          if (!kIsAppleStore) Text(Money.approx(fcfaFor(price)), style: TextStyle(color: c.textSecondary, fontSize: 13)),
           const SizedBox(height: 12),
           CoinBalancesInline(user: user),
           const SizedBox(height: 8),
           Text(_debitLabel(user, price), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Annuler'))),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
-            child: const Text('Payer'),
+            child: Text(context.tr('Payer')),
           ),
         ],
       ),
@@ -101,14 +107,14 @@ class CoinCheckout {
         if (context.mounted) await insufficient(context, price);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Le paiement n'a pas pu être effectué. Tu n'as pas été débité.")),
+          SnackBar(content: Text(context.tr('Le paiement n\'a pas pu être effectué. Tu n\'as pas été débité.'))),
         );
       }
       return false;
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Le paiement n'a pas pu être effectué. Vérifie ta connexion.")),
+          SnackBar(content: Text(context.tr('Le paiement n\'a pas pu être effectué. Vérifie ta connexion.'))),
         );
       }
       return false;
@@ -133,9 +139,9 @@ class CoinCheckout {
     final s = CoinSplit.of(user);
     final fromDepot = price < s.depot ? price : s.depot;
     final fromGagnees = price - fromDepot;
-    if (fromGagnees <= 0) return 'Débité de tes pièces de dépôt.';
-    if (fromDepot <= 0) return 'Débité de tes pièces gagnées (ton dépôt est vide).';
-    return 'Débité : ${fmt(fromDepot)} pièces de dépôt + ${fmt(fromGagnees)} pièces gagnées.';
+    if (fromGagnees <= 0) return tr('Débité de tes pièces de dépôt.');
+    if (fromDepot <= 0) return tr('Débité de tes pièces gagnées (ton dépôt est vide).');
+    return tr('Débité : {a} pièces de dépôt + {b} pièces gagnées.', {'a': fmt(fromDepot), 'b': fmt(fromGagnees)});
   }
 
   static Future<void> insufficient(BuildContext context, int coins) {
@@ -155,25 +161,25 @@ class CoinCheckout {
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('Pas assez de pièces',
+        title: Text(context.tr('Pas assez de pièces'),
             style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          row('Prix', '${fmt(coins)} pièces'),
-          row('Ton solde', '${fmt(balance)} pièces'),
+          row(context.tr('Prix'), context.tr('{a} pièces', {'a': fmt(coins)})),
+          row(context.tr('Ton solde'), context.tr('{a} pièces', {'a': fmt(balance)})),
           const SizedBox(height: 6),
           CoinBalancesInline(user: user),
           Divider(color: c.border),
-          row('Il te manque', '${fmt(missing)} pièces', color: c.danger),
+          row(context.tr('Il te manque'), context.tr('{a} pièces', {'a': fmt(missing)}), color: c.danger),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fermer')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Fermer'))),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.push(context, MaterialPageRoute(builder: (_) => CoinRechargeScreen()));
             },
             style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
-            child: const Text('Acheter des pièces'),
+            child: Text(context.tr('Acheter des pièces')),
           ),
         ],
       ),

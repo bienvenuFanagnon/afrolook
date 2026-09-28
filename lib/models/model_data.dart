@@ -5619,16 +5619,137 @@ class ActionPoints {
 }
 
 // country_data.dart
+/// Pays proposés dans l'app (le nom historique est gardé : la liste couvre
+/// maintenant le monde entier). [continent] : AF, EU, NA, SA, AS, OC.
 class AfricanCountry {
   final String code;
   final String name;
   final String flag;
+  final String continent;
 
   AfricanCountry({
     required this.code,
     required this.name,
     required this.flag,
+    this.continent = 'AF',
   });
+
+  /// Pays du monde les plus actifs sur les réseaux sociaux (hors Afrique).
+  static final List<AfricanCountry> worldCountries = [
+    // Europe
+    AfricanCountry(code: 'FR', name: 'France', flag: '🇫🇷', continent: 'EU'),
+    AfricanCountry(code: 'BE', name: 'Belgique', flag: '🇧🇪', continent: 'EU'),
+    AfricanCountry(code: 'CH', name: 'Suisse', flag: '🇨🇭', continent: 'EU'),
+    AfricanCountry(code: 'LU', name: 'Luxembourg', flag: '🇱🇺', continent: 'EU'),
+    AfricanCountry(code: 'DE', name: 'Allemagne', flag: '🇩🇪', continent: 'EU'),
+    AfricanCountry(code: 'GB', name: 'Royaume-Uni', flag: '🇬🇧', continent: 'EU'),
+    AfricanCountry(code: 'IE', name: 'Irlande', flag: '🇮🇪', continent: 'EU'),
+    AfricanCountry(code: 'IT', name: 'Italie', flag: '🇮🇹', continent: 'EU'),
+    AfricanCountry(code: 'ES', name: 'Espagne', flag: '🇪🇸', continent: 'EU'),
+    AfricanCountry(code: 'PT', name: 'Portugal', flag: '🇵🇹', continent: 'EU'),
+    AfricanCountry(code: 'NL', name: 'Pays-Bas', flag: '🇳🇱', continent: 'EU'),
+    AfricanCountry(code: 'AT', name: 'Autriche', flag: '🇦🇹', continent: 'EU'),
+    AfricanCountry(code: 'SE', name: 'Suède', flag: '🇸🇪', continent: 'EU'),
+    AfricanCountry(code: 'NO', name: 'Norvège', flag: '🇳🇴', continent: 'EU'),
+    AfricanCountry(code: 'DK', name: 'Danemark', flag: '🇩🇰', continent: 'EU'),
+    AfricanCountry(code: 'FI', name: 'Finlande', flag: '🇫🇮', continent: 'EU'),
+    AfricanCountry(code: 'PL', name: 'Pologne', flag: '🇵🇱', continent: 'EU'),
+    AfricanCountry(code: 'CZ', name: 'Tchéquie', flag: '🇨🇿', continent: 'EU'),
+    AfricanCountry(code: 'HU', name: 'Hongrie', flag: '🇭🇺', continent: 'EU'),
+    AfricanCountry(code: 'RO', name: 'Roumanie', flag: '🇷🇴', continent: 'EU'),
+    AfricanCountry(code: 'GR', name: 'Grèce', flag: '🇬🇷', continent: 'EU'),
+    AfricanCountry(code: 'UA', name: 'Ukraine', flag: '🇺🇦', continent: 'EU'),
+    AfricanCountry(code: 'RU', name: 'Russie', flag: '🇷🇺', continent: 'EU'),
+    AfricanCountry(code: 'TR', name: 'Turquie', flag: '🇹🇷', continent: 'EU'),
+    // Amérique du Nord, Centrale et Caraïbes
+    AfricanCountry(code: 'US', name: 'États-Unis', flag: '🇺🇸', continent: 'NA'),
+    AfricanCountry(code: 'CA', name: 'Canada', flag: '🇨🇦', continent: 'NA'),
+    AfricanCountry(code: 'MX', name: 'Mexique', flag: '🇲🇽', continent: 'NA'),
+    AfricanCountry(code: 'HT', name: 'Haïti', flag: '🇭🇹', continent: 'NA'),
+    AfricanCountry(code: 'DO', name: 'République dominicaine', flag: '🇩🇴', continent: 'NA'),
+    AfricanCountry(code: 'JM', name: 'Jamaïque', flag: '🇯🇲', continent: 'NA'),
+    AfricanCountry(code: 'CU', name: 'Cuba', flag: '🇨🇺', continent: 'NA'),
+    AfricanCountry(code: 'GP', name: 'Guadeloupe', flag: '🇬🇵', continent: 'NA'),
+    AfricanCountry(code: 'MQ', name: 'Martinique', flag: '🇲🇶', continent: 'NA'),
+    // Amérique du Sud
+    AfricanCountry(code: 'BR', name: 'Brésil', flag: '🇧🇷', continent: 'SA'),
+    AfricanCountry(code: 'AR', name: 'Argentine', flag: '🇦🇷', continent: 'SA'),
+    AfricanCountry(code: 'CO', name: 'Colombie', flag: '🇨🇴', continent: 'SA'),
+    AfricanCountry(code: 'PE', name: 'Pérou', flag: '🇵🇪', continent: 'SA'),
+    AfricanCountry(code: 'CL', name: 'Chili', flag: '🇨🇱', continent: 'SA'),
+    AfricanCountry(code: 'VE', name: 'Venezuela', flag: '🇻🇪', continent: 'SA'),
+    AfricanCountry(code: 'EC', name: 'Équateur', flag: '🇪🇨', continent: 'SA'),
+    AfricanCountry(code: 'GF', name: 'Guyane', flag: '🇬🇫', continent: 'SA'),
+    // Asie et Moyen-Orient
+    AfricanCountry(code: 'IN', name: 'Inde', flag: '🇮🇳', continent: 'AS'),
+    AfricanCountry(code: 'ID', name: 'Indonésie', flag: '🇮🇩', continent: 'AS'),
+    AfricanCountry(code: 'PH', name: 'Philippines', flag: '🇵🇭', continent: 'AS'),
+    AfricanCountry(code: 'VN', name: 'Viêt Nam', flag: '🇻🇳', continent: 'AS'),
+    AfricanCountry(code: 'TH', name: 'Thaïlande', flag: '🇹🇭', continent: 'AS'),
+    AfricanCountry(code: 'MY', name: 'Malaisie', flag: '🇲🇾', continent: 'AS'),
+    AfricanCountry(code: 'SG', name: 'Singapour', flag: '🇸🇬', continent: 'AS'),
+    AfricanCountry(code: 'JP', name: 'Japon', flag: '🇯🇵', continent: 'AS'),
+    AfricanCountry(code: 'KR', name: 'Corée du Sud', flag: '🇰🇷', continent: 'AS'),
+    AfricanCountry(code: 'CN', name: 'Chine', flag: '🇨🇳', continent: 'AS'),
+    AfricanCountry(code: 'PK', name: 'Pakistan', flag: '🇵🇰', continent: 'AS'),
+    AfricanCountry(code: 'BD', name: 'Bangladesh', flag: '🇧🇩', continent: 'AS'),
+    AfricanCountry(code: 'SA', name: 'Arabie saoudite', flag: '🇸🇦', continent: 'AS'),
+    AfricanCountry(code: 'AE', name: 'Émirats arabes unis', flag: '🇦🇪', continent: 'AS'),
+    AfricanCountry(code: 'QA', name: 'Qatar', flag: '🇶🇦', continent: 'AS'),
+    AfricanCountry(code: 'KW', name: 'Koweït', flag: '🇰🇼', continent: 'AS'),
+    AfricanCountry(code: 'LB', name: 'Liban', flag: '🇱🇧', continent: 'AS'),
+    AfricanCountry(code: 'JO', name: 'Jordanie', flag: '🇯🇴', continent: 'AS'),
+    // Océanie
+    AfricanCountry(code: 'AU', name: 'Australie', flag: '🇦🇺', continent: 'OC'),
+    AfricanCountry(code: 'NZ', name: 'Nouvelle-Zélande', flag: '🇳🇿', continent: 'OC'),
+  ];
+
+  /// Tous les pays : Afrique + reste du monde.
+  static List<AfricanCountry> get everyCountry => [...allCountries, ...worldCountries];
+
+  static String? continentOf(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final c = code.toUpperCase();
+    for (final x in everyCountry) {
+      if (x.code == c) return x.continent;
+    }
+    return null;
+  }
+
+  /// Liste triée pour l'utilisateur : son pays d'abord, puis les pays de son
+  /// continent, puis tous les autres (ordre alphabétique).
+  static List<AfricanCountry> sortedFor(String? userCode) {
+    final code = userCode?.toUpperCase();
+    final continent = continentOf(code);
+    int rank(AfricanCountry c) => c.code == code ? 0 : (continent != null && c.continent == continent ? 1 : 2);
+    final list = [...everyCountry];
+    list.sort((a, b) {
+      final r = rank(a).compareTo(rank(b));
+      return r != 0 ? r : a.name.compareTo(b.name);
+    });
+    return list;
+  }
+
+  /// Recherche par nom ou par code pays (« fr », « France », « cote »…).
+  static List<AfricanCountry> search(List<AfricanCountry> base, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return base;
+    String strip(String s) => s
+        .toLowerCase()
+        .replaceAll(RegExp('[éèêë]'), 'e')
+        .replaceAll(RegExp('[àâä]'), 'a')
+        .replaceAll(RegExp('[îï]'), 'i')
+        .replaceAll(RegExp('[ôö]'), 'o')
+        .replaceAll(RegExp('[ùûü]'), 'u')
+        .replaceAll('ç', 'c');
+    final sq = strip(q);
+    // Code exact en premier, puis le reste
+    final exact = base.where((c) => c.code.toLowerCase() == q).toList();
+    final others = base
+        .where((c) => !exact.contains(c) && (strip(c.name).contains(sq) || c.code.toLowerCase().startsWith(q)))
+        .toList();
+    return [...exact, ...others];
+  }
 
   // Liste complète des pays africains avec leurs codes et emojis drapeau
   static List<AfricanCountry> allCountries = [

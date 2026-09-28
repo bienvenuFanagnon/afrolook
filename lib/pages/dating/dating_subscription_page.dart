@@ -1,4 +1,4 @@
-﻿// lib/pages/dating/dating_subscription_page.dart
+// lib/pages/dating/dating_subscription_page.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +9,7 @@ import '../../providers/authProvider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/app_colors.dart';
 import 'buy_coins_page.dart';
+import '../../l10n/tr.dart';
 
 class DatingSubscriptionPage extends StatefulWidget {
   const DatingSubscriptionPage({Key? key}) : super(key: key);
@@ -44,8 +45,8 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
       SubscriptionPlan(
         id: 'gratuit',
         code: 'gratuit',
-        name: 'Gratuit',
-        description: 'Fonctionnalités de base',
+        name: context.tr('Gratuit'),
+        description: context.tr('Fonctionnalités de base'),
         priceCoins: 0,
         durationInDays: 0,
         isActive: true,
@@ -54,19 +55,19 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
         defaultLikes: 5,
         defaultSuperLikes: 1,
         defaultSwipes: 15,
-        features: const [
-          '5 likes par jour',
-          '1 super like par jour',
-          '15 profils à découvrir par jour',
-          'Profils recommandés',
-          'Recharge de quota avec des pièces',
+        features: [
+          context.tr('5 likes par jour'),
+          context.tr('1 super like par jour'),
+          context.tr('15 profils à découvrir par jour'),
+          context.tr('Profils recommandés'),
+          context.tr('Recharge de quota avec des pièces'),
         ],
       ),
       SubscriptionPlan(
-        id: 'plus',
-        code: 'plus',
-        name: 'AfroLove Plus',
-        description: 'Profitez de plus de fonctionnalités',
+        id: context.tr('plus'),
+        code: context.tr('plus'),
+        name: context.tr('AfroLove Plus'),
+        description: context.tr('Profitez de plus de fonctionnalités'),
         priceCoins: 1499,
         durationInDays: 30,
         isActive: true,
@@ -75,20 +76,20 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
         defaultLikes: 20,
         defaultSuperLikes: 5,
         defaultSwipes: 50,
-        features: const [
-          '20 likes par jour',
-          '5 super likes par jour',
-          '50 profils à découvrir par jour',
-          'Annuler le dernier swipe (rewind)',
-          'Badge exclusif',
-          'Recharge de quota avec des pièces',
+        features: [
+          context.tr('20 likes par jour'),
+          context.tr('5 super likes par jour'),
+          context.tr('50 profils à découvrir par jour'),
+          context.tr('Annuler le dernier swipe (rewind)'),
+          context.tr('Badge exclusif'),
+          context.tr('Recharge de quota avec des pièces'),
         ],
       ),
       SubscriptionPlan(
         id: 'gold',
         code: 'gold',
-        name: 'AfroLove Gold',
-        description: "L'expérience ultime",
+        name: context.tr('AfroLove Gold'),
+        description: context.tr('L\'expérience ultime'),
         priceCoins: 3999,
         durationInDays: 30,
         isActive: true,
@@ -97,19 +98,19 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
         defaultLikes: 50,
         defaultSuperLikes: 20,
         defaultSwipes: -1,
-        features: const [
-          'Profils à découvrir illimités',
-          '50 likes par jour',
-          '20 super likes par jour',
-          'Voir qui vous a liké',
-          'Annuler le dernier swipe (rewind)',
-          'Message direct sans match (1/jour)',
-          'Filtre "profils vérifiés"',
-          'Statistiques de profil',
-          'Boost quotidien gratuit',
-          'Mode incognito (parcourir sans être vu)',
-          'Recharge de quota à -50%',
-          'Badge Gold exclusif',
+        features: [
+          context.tr('Profils à découvrir illimités'),
+          context.tr('50 likes par jour'),
+          context.tr('20 super likes par jour'),
+          context.tr('Voir qui vous a liké'),
+          context.tr('Annuler le dernier swipe (rewind)'),
+          context.tr('Message direct sans match (1/jour)'),
+          context.tr('Filtre "profils vérifiés"'),
+          context.tr('Statistiques de profil'),
+          context.tr('Boost quotidien gratuit'),
+          context.tr('Mode incognito (parcourir sans être vu)'),
+          context.tr('Recharge de quota à -50%'),
+          context.tr('Badge Gold exclusif'),
         ],
       ),
     ];
@@ -338,7 +339,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
     } catch (e) {
       printVm('❌ ERREUR lors de la souscription: $e');
       if (mounted) {
-        _showSnackBar('Erreur: ${e.toString()}', Colors.red);
+        _showSnackBar(context.tr('Erreur: {a}', {'a': e.toString()}), Colors.red);
       }
     } finally {
       if (mounted) {

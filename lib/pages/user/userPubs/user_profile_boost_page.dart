@@ -61,7 +61,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
   void initState() {
     super.initState();
     _auth = Provider.of<UserAuthProvider>(context, listen: false);
-    _filteredCountries = List.from(AfricanCountry.allCountries);
+    _filteredCountries = List.from(AfricanCountry.everyCountry);
     _countrySearchController.addListener(_filterCountries);
     _loadConfig();
   }
@@ -83,7 +83,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
   void _filterCountries() {
     final q = _countrySearchController.text.toLowerCase();
     setState(() {
-      _filteredCountries = AfricanCountry.allCountries
+      _filteredCountries = AfricanCountry.everyCountry
           .where((c) => c.name.toLowerCase().contains(q) || c.code.toLowerCase().contains(q))
           .toList();
     });
@@ -132,7 +132,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
       final now = DateTime.now().microsecondsSinceEpoch;
       final durationDays = _selectedDurationWeeks! * 7;
       final targetCountries = _selectAllCountries
-          ? AfricanCountry.allCountries.map((c) => c.code).toList()
+          ? AfricanCountry.everyCountry.map((c) => c.code).toList()
           : _selectedCountries.map((c) => c.code).toList();
 
 
@@ -626,7 +626,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
   Widget _buildCountryCard() {
     String displayMsg;
     if (_selectAllCountries) {
-      displayMsg = '🌍 Tous les pays (${AfricanCountry.allCountries.length})';
+      displayMsg = '🌍 Tous les pays (${AfricanCountry.everyCountry.length})';
     } else if (_selectedCountries.isEmpty) {
       displayMsg = '⚠️ Aucun pays sélectionné';
     } else {

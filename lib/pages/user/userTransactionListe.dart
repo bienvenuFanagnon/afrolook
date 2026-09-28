@@ -10,6 +10,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../models/model_data.dart';
 import '../../utils/tx_amount.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
+import '../../l10n/tr.dart';
 
 // ── Palette (même charte que UserManagementPage) ──────────────────────────────
 Color get _bg      => AdminPalette.bg;
@@ -63,34 +64,34 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   // ── Métadonnées par type ───────────────────────────────────────────────────
 
-  static final _meta = {
+  static Map<String, _TxMeta> get _meta => {
     // ─ FCFA ─────────────────────────────────────────────────────────────────
-    'DEPOT':              _TxMeta('Dépôt',               _green,  Iconsax.arrow_down,        _TabFilter.argent, true),
-    'DEPOTADMIN':         _TxMeta('Dépôt Admin',          _green,  Iconsax.arrow_circle_down, _TabFilter.argent, true),
-    'RETRAIT':            _TxMeta('Retrait',               _amber,  Iconsax.arrow_up,          _TabFilter.argent, false),
-    'RETRAITADMIN':       _TxMeta('Retrait Admin',         _amber,  Iconsax.arrow_circle_up,   _TabFilter.argent, false),
-    'GAIN':               _TxMeta('Gain',                  _blue,   Iconsax.chart_2,           _TabFilter.argent, true),
-    'DEPENSE':            _TxMeta('Dépense',               _red,    Iconsax.wallet_minus,      _TabFilter.argent, false),
-    'ABONNEMENT_OFFICIEL':_TxMeta('Abonnement Officiel',   _purple, Iconsax.star,              _TabFilter.argent, false),
+    'DEPOT':              _TxMeta(tr('Dépôt'),               _green,  Iconsax.arrow_down,        _TabFilter.argent, true),
+    'DEPOTADMIN':         _TxMeta(tr('Dépôt Admin'),          _green,  Iconsax.arrow_circle_down, _TabFilter.argent, true),
+    'RETRAIT':            _TxMeta(tr('Retrait'),               _amber,  Iconsax.arrow_up,          _TabFilter.argent, false),
+    'RETRAITADMIN':       _TxMeta(tr('Retrait Admin'),         _amber,  Iconsax.arrow_circle_up,   _TabFilter.argent, false),
+    'GAIN':               _TxMeta(tr('Gain'),                  _blue,   Iconsax.chart_2,           _TabFilter.argent, true),
+    'DEPENSE':            _TxMeta(tr('Dépense'),               _red,    Iconsax.wallet_minus,      _TabFilter.argent, false),
+    'ABONNEMENT_OFFICIEL':_TxMeta(tr('Abonnement Officiel'),   _purple, Iconsax.star,              _TabFilter.argent, false),
     // ─ Pièces ────────────────────────────────────────────────────────────────
-    'GAIN_PIECES':        _TxMeta('Gain pièces',           _gold,   Iconsax.gift,              _TabFilter.pieces, true),
-    'LIKE_PIECES':        _TxMeta('Like → Pièces',         _gold,   Iconsax.heart,             _TabFilter.pieces, true),
-    'CADEAU_PIECES_RECU': _TxMeta('Cadeau reçu',           _teal,   Iconsax.receive_square,    _TabFilter.pieces, true),
-    'CADEAU_PIECES':      _TxMeta('Cadeau envoyé',          _pink,   Iconsax.send_square,       _TabFilter.pieces, false),
-    'ACHAT_PIECES':       _TxMeta('Achat pièces',           _purple, Iconsax.buy_crypto,        _TabFilter.pieces, false),
-    'CONVERSION_PIECES':  _TxMeta('Conversion pièces',     _teal,   Iconsax.convert_3d_cube,   _TabFilter.pieces, false),
+    'GAIN_PIECES':        _TxMeta(tr('Gain pièces'),           _gold,   Iconsax.gift,              _TabFilter.pieces, true),
+    'LIKE_PIECES':        _TxMeta(tr('Like → Pièces'),         _gold,   Iconsax.heart,             _TabFilter.pieces, true),
+    'CADEAU_PIECES_RECU': _TxMeta(tr('Cadeau reçu'),           _teal,   Iconsax.receive_square,    _TabFilter.pieces, true),
+    'CADEAU_PIECES':      _TxMeta(tr('Cadeau envoyé'),          _pink,   Iconsax.send_square,       _TabFilter.pieces, false),
+    'ACHAT_PIECES':       _TxMeta(tr('Achat pièces'),           _purple, Iconsax.buy_crypto,        _TabFilter.pieces, false),
+    'CONVERSION_PIECES':  _TxMeta(tr('Conversion pièces'),     _teal,   Iconsax.convert_3d_cube,   _TabFilter.pieces, false),
   };
 
   static _TxMeta _metaFor(String? type) =>
       _meta[type?.toUpperCase()] ??
-      _TxMeta('Inconnu', _textS, Iconsax.transaction_minus, _TabFilter.tous, false);
+      _TxMeta(tr('Inconnu'), _textS, Iconsax.transaction_minus, _TabFilter.tous, false);
 
   static bool _isCoins(String? type) =>
       _meta[type?.toUpperCase()]?.tab == _TabFilter.pieces;
 
   // Montant en pièces : types « pièces » + achats payés en pièces (TxAmount)
   bool _inCoins(TransactionSolde t) => _isCoins(t.type) || TxAmount.storedInCoins(t);
-  String _unit(TransactionSolde t) => _inCoins(t) ? 'pièces' : 'FCFA';
+  String _unit(TransactionSolde t) => _inCoins(t) ? context.tr('pièces') : 'FCFA';
   String _amount(TransactionSolde t) {
     if (_inCoins(t)) {
       return '${t.montant?.toInt() ?? 0}';
@@ -220,7 +221,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       elevation: 0,
       centerTitle: false,
       title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Transactions',
+        Text(context.tr('Transactions'),
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textP)),
         if (_userData != null)
           Text('@${_userData!.pseudo ?? ''}',
@@ -229,13 +230,13 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       actions: [
         IconButton(
           icon: const Icon(Iconsax.refresh, size: 20),
-          tooltip: 'Actualiser',
+          tooltip: context.tr('Actualiser'),
           onPressed: _reload,
         ),
         if (_startDate != null || _endDate != null)
           IconButton(
             icon: Icon(Icons.clear_rounded, color: _red, size: 20),
-            tooltip: 'Effacer les dates',
+            tooltip: context.tr('Effacer les dates'),
             onPressed: () {
               setState(() { _startDate = null; _endDate = null; });
               _applyFilters();
@@ -276,9 +277,9 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
             Text(_userData!.email!, style: TextStyle(fontSize: 11, color: _textS)),
         ])),
         // Soldes compacts
-        _MiniBalance(label: 'Dépôt',  value: '${(_userData!.votre_solde_depot    ?? 0).toStringAsFixed(0)} F', color: _green),
+        _MiniBalance(label: context.tr('Dépôt'),  value: '${(_userData!.votre_solde_depot    ?? 0).toStringAsFixed(0)} F', color: _green),
         const SizedBox(width: 8),
-        _MiniBalance(label: 'Gains',  value: '${(_userData!.votre_solde_principal ?? 0).toStringAsFixed(0)} F', color: _amber),
+        _MiniBalance(label: context.tr('Gains'),  value: '${(_userData!.votre_solde_principal ?? 0).toStringAsFixed(0)} F', color: _amber),
         const SizedBox(width: 8),
         _MiniBalance(label: '🪙', value: '${_userData!.giftCoinsBalance ?? 0}', color: _gold),
       ]),
@@ -293,7 +294,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       child: Row(children: [
         for (final t in _TabFilter.values)
           Expanded(child: _TabBtn(
-            label: t == _TabFilter.tous ? 'Tous' : t == _TabFilter.argent ? 'Argent' : '🪙 Pièces',
+            label: t == _TabFilter.tous ? context.tr('Tous') : t == _TabFilter.argent ? context.tr('Argent') : context.tr('🪙 Pièces'),
             active: _tab == t,
             onTap: () { setState(() { _tab = t; _typeFilter = 'TOUS'; }); _applyFilters(); },
           )),
@@ -360,13 +361,13 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       color: _bg,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
       child: Row(children: [
-        _StatBadge(label: 'Crédits',   value: _fmtFcfa(fcfaIn),   color: _green),
+        _StatBadge(label: context.tr('Crédits'),   value: _fmtFcfa(fcfaIn),   color: _green),
         const SizedBox(width: 8),
-        _StatBadge(label: 'Débits',    value: _fmtFcfa(fcfaOut),  color: _amber),
+        _StatBadge(label: context.tr('Débits'),    value: _fmtFcfa(fcfaOut),  color: _amber),
         const SizedBox(width: 8),
-        _StatBadge(label: '🪙 Entrées', value: '$coinsIn',         color: _gold),
+        _StatBadge(label: context.tr('🪙 Entrées'), value: '$coinsIn',         color: _gold),
         const SizedBox(width: 8),
-        _StatBadge(label: '🪙 Sorties', value: '$coinsOut',        color: _pink),
+        _StatBadge(label: context.tr('🪙 Sorties'), value: '$coinsOut',        color: _pink),
       ]),
     );
   }
@@ -407,7 +408,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (m != null) ...[Icon(m.icon, size: 12, color: active ? Colors.white : color), const SizedBox(width: 5)],
                 Text(
-                  type == 'TOUS' ? 'Tous' : (m?.label ?? type),
+                  type == 'TOUS' ? context.tr('Tous') : (m?.label ?? type),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -432,11 +433,11 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(Iconsax.receipt, size: 64, color: _border),
         const SizedBox(height: 16),
-        Text('Aucune transaction', style: TextStyle(color: _textP, fontSize: 16, fontWeight: FontWeight.w600)),
+        Text(context.tr('Aucune transaction'), style: TextStyle(color: _textP, fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         Text(
-          _typeFilter == 'TOUS' ? 'Cet utilisateur n\'a pas encore de transactions'
-              : 'Aucune transaction de ce type sur la période',
+          _typeFilter == 'TOUS' ? context.tr('Cet utilisateur n\'a pas encore de transactions')
+              : context.tr('Aucune transaction de ce type sur la période'),
           style: TextStyle(color: _textS, fontSize: 13),
           textAlign: TextAlign.center,
         ),
@@ -447,9 +448,9 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('${_displayedTx.length} / ${_filteredTx.length} transactions',
+          Text(context.tr('{a} / {b} transactions', {'a': _displayedTx.length, 'b': _filteredTx.length}),
               style: TextStyle(color: _textS, fontSize: 11)),
-          Text('Total : ${_filteredTx.length}',
+          Text(context.tr('Total : {a}', {'a': _filteredTx.length}),
               style: TextStyle(color: _textS, fontSize: 11)),
         ]),
       ),
@@ -832,34 +833,34 @@ class _TxDetailSheet extends StatelessWidget {
         const SizedBox(height: 20),
         // Infos utilisateur
         if (userData != null) ...[
-          _SectionTitle('Utilisateur'),
-          _Row('Pseudo',    '@${userData!.pseudo ?? '—'}'),
+          _SectionTitle(context.tr('Utilisateur')),
+          _Row(context.tr('Pseudo'),    '@${userData!.pseudo ?? '—'}'),
           _Row('E-mail',    userData!.email   ?? '—'),
           if ((userData!.numeroDeTelephone ?? '').isNotEmpty)
-            _Row('Téléphone', userData!.numeroDeTelephone!),
+            _Row(context.tr('Téléphone'), userData!.numeroDeTelephone!),
           const SizedBox(height: 12),
         ],
         // Infos transaction
-        _SectionTitle('Transaction'),
-        _Row('Type',        meta.label),
-        _Row('Montant',     '$amount $unit'),
-        if (TxAmount.paidLabel(tx) != null) _Row('Payé', TxAmount.paidLabel(tx)!.replaceFirst('payé ', '')),
+        _SectionTitle(context.tr('Transaction')),
+        _Row(context.tr('Type'),        meta.label),
+        _Row(context.tr('Montant'),     '$amount $unit'),
+        if (TxAmount.paidLabel(tx) != null) _Row(context.tr('Payé'), TxAmount.paidLabel(tx)!.replaceFirst(context.tr('payé '), '')),
         if (tx.netEstimate != null)
-          _Row('Net estimé', '${tx.netEstimate!.toStringAsFixed(2)} ${tx.currency ?? ''} (après Apple)'),
-        if ((tx.beneficiaryPseudo ?? '').isNotEmpty) _Row('Bénéficiaire', '@${tx.beneficiaryPseudo}'),
+          _Row(context.tr('Net estimé'), context.tr('{a} {b} (après Apple)', {'a': tx.netEstimate!.toStringAsFixed(2), 'b': tx.currency ?? ''})),
+        if ((tx.beneficiaryPseudo ?? '').isNotEmpty) _Row(context.tr('Bénéficiaire'), '@${tx.beneficiaryPseudo}'),
         if ((tx.frais ?? 0) > 0)
-          _Row('Frais', '${tx.frais!.toStringAsFixed(2)} FCFA'),
+          _Row(context.tr('Frais'), '${tx.frais!.toStringAsFixed(2)} FCFA'),
         if ((tx.montant_total ?? 0) > 0)
-          _Row('Montant total', '${tx.montant_total!.toStringAsFixed(2)} FCFA'),
+          _Row(context.tr('Montant total'), '${tx.montant_total!.toStringAsFixed(2)} FCFA'),
         if ((tx.description ?? '').isNotEmpty)
-          _Row('Description',   tx.description!),
+          _Row(context.tr('Description'),   tx.description!),
         if ((tx.methode_paiement ?? '').isNotEmpty)
-          _Row('Méthode',       tx.methode_paiement!),
+          _Row(context.tr('Méthode'),       tx.methode_paiement!),
         if ((tx.id_transaction_cinetpay ?? '').isNotEmpty)
-          _Row('ID CinetPay',   tx.id_transaction_cinetpay!),
+          _Row(context.tr('ID CinetPay'),   tx.id_transaction_cinetpay!),
         if ((tx.numero_depot ?? '').isNotEmpty)
-          _Row('N° dépôt',      tx.numero_depot!),
-        _Row('Date',
+          _Row(context.tr('N° dépôt'),      tx.numero_depot!),
+        _Row(context.tr('Date'),
             tx.createdAt != null
                 ? DateFormat('dd MMM yyyy  HH:mm:ss', 'fr')
                     .format(DateTime.fromMillisecondsSinceEpoch(tx.createdAt!))
@@ -868,7 +869,7 @@ class _TxDetailSheet extends StatelessWidget {
           const SizedBox(height: 4),
           GestureDetector(
             onTap: () { Clipboard.setData(ClipboardData(text: tx.id!)); },
-            child: _Row('ID', tx.id!, mono: true, tapLabel: 'Copier'),
+            child: _Row('ID', tx.id!, mono: true, tapLabel: context.tr('Copier')),
           ),
         ],
       ],

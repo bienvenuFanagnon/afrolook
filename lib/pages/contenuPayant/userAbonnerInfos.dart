@@ -88,7 +88,7 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
                 Text('@${_owner!.pseudo ?? 'Utilisateur'}',
                     style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 4),
-                Text('${_owner!.abonnes ?? 0} abonné(s)',
+                Text('${_owner!.followersCount} abonné(s)',
                     style: TextStyle(color: colors.textSecondary, fontSize: 14)),
               ],
             ),

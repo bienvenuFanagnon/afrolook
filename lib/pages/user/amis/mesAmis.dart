@@ -118,7 +118,7 @@ class _MesAmisState extends State<MesAmis> {
                             children: <Widget>[
                               Text("@${amigo.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: colors.textPrimary),),
                               SizedBox(height: 6,),
-                              Text('${formatNumber(amigo.friend!.abonnes!)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),),
+                              Text('${formatNumber(amigo.friend!.followersCount)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),),
                             ],
                           ),
                           Visibility(

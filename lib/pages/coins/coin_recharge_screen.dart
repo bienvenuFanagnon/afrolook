@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../paiement/newDepot.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/platform_guard.dart';
+import '../../l10n/tr.dart';
 
 class CoinRechargeScreen extends StatefulWidget {
   const CoinRechargeScreen({Key? key}) : super(key: key);
@@ -44,7 +45,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   Future<void> _searchUser() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      _showErrorDialog('Veuillez entrer un email');
+      _showErrorDialog(context.tr('Veuillez entrer un email'));
       return;
     }
     setState(() {
@@ -62,20 +63,20 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           .get();
       if (query.docs.isEmpty) {
         setState(() { _isSearching = false; _userFound = false; });
-        _showErrorDialog('Aucun utilisateur trouvé avec cet email');
+        _showErrorDialog(context.tr('Aucun utilisateur trouvé avec cet email'));
         return;
       }
       final userDoc = query.docs.first;
       setState(() {
         _targetUserId = userDoc.id;
-        _targetUserName = userDoc.data()['pseudo'] ?? 'Utilisateur';
+        _targetUserName = userDoc.data()['pseudo'] ?? context.tr('Utilisateur');
         _targetUserAvatar = userDoc.data()['imageUrl'];
         _userFound = true;
         _isSearching = false;
       });
     } catch (e) {
       setState(() { _isSearching = false; _userFound = false; });
-      _showErrorDialog('Erreur lors de la recherche : $e');
+      _showErrorDialog(context.tr('Erreur lors de la recherche : {a}', {'a': e}));
     }
   }
 
@@ -98,7 +99,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(
         title: Text(
-          'Acheter des pièces',
+          context.tr('Acheter des pièces'),
           style: TextStyle(
             color: colors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -172,10 +173,10 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                 child: CircularProgressIndicator(strokeWidth: 3, color: colors.accent),
               ),
               const SizedBox(height: 14),
-              Text('Achat en cours…',
+              Text(context.tr('Achat en cours…'),
                   style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text('Ne quitte pas la page',
+              Text(context.tr('Ne quitte pas la page'),
                   style: TextStyle(color: colors.textSecondary, fontSize: 12)),
             ]),
           ),
@@ -193,8 +194,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   Widget _buildBalanceHeader(AppColors colors, UserData? user, double depot, double principal) {
     return CoinBalancesRow(
       user: user,
-      note: "Les pièces achetées vont dans tes Pièces de dépôt : elles servent à tout payer dans l'app, "
-          "mais ne sont pas convertibles en argent.",
+      note: context.tr('Les pièces achetées vont dans tes Pièces de dépôt : elles servent à tout payer dans l\'app, mais ne sont pas convertibles en argent.'),
     );
   }
 
@@ -206,7 +206,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Payer avec',
+          context.tr('Payer avec'),
           style: TextStyle(
             color: colors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -219,7 +219,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             Expanded(
               child: _buildBalanceOption(
                 colors: colors,
-                label: 'Dépôt FCFA',
+                label: context.tr('Dépôt FCFA'),
                 amount: depot,
                 color: green,
                 icon: Icons.savings_rounded,
@@ -231,7 +231,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             Expanded(
               child: _buildBalanceOption(
                 colors: colors,
-                label: 'Gains à retirer',
+                label: context.tr('Gains à retirer'),
                 amount: principal,
                 color: colors.warning,
                 icon: Icons.account_balance_wallet_rounded,
@@ -257,8 +257,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    "Attention : l'argent de tes Gains à retirer transformé en pièces ne pourra plus être retiré. "
-                    "Les pièces achetées ne sont pas convertibles en argent.",
+                    context.tr('Attention : l\'argent de tes Gains à retirer transformé en pièces ne pourra plus être retiré. Les pièces achetées ne sont pas convertibles en argent.'),
                     style: TextStyle(color: colors.textPrimary, fontSize: 12, height: 1.35),
                   ),
                 ),
@@ -342,7 +341,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildToggleTab(colors, 'Pour moi', !_isForOther, () {
+          Expanded(child: _buildToggleTab(colors, context.tr('Pour moi'), !_isForOther, () {
             setState(() {
               _isForOther = false;
               _targetUserId = null;
@@ -352,7 +351,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
               _emailController.clear();
             });
           })),
-          Expanded(child: _buildToggleTab(colors, 'Pour un autre', _isForOther, () {
+          Expanded(child: _buildToggleTab(colors, context.tr('Pour un autre'), _isForOther, () {
             setState(() {
               _isForOther = true;
               _userFound = false;
@@ -406,7 +405,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Email du destinataire',
+            context.tr('Email du destinataire'),
             style: TextStyle(color: colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
@@ -455,7 +454,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                             valueColor: AlwaysStoppedAnimation(colors.onAccent),
                           ),
                         )
-                      : const Text('Vérifier', style: TextStyle(fontWeight: FontWeight.bold)),
+                      : Text(context.tr('Vérifier'), style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -516,7 +515,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
               children: [
                 Icon(Icons.check_circle_rounded, color: colors.primary, size: 13),
                 const SizedBox(width: 4),
-                Text('Trouvé', style: TextStyle(color: colors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                Text(context.tr('Trouvé'), style: TextStyle(color: colors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -540,7 +539,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         ),
         const SizedBox(width: 10),
         Text(
-          'Choisissez votre pack',
+          context.tr('Choisissez votre pack'),
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: 17,
@@ -631,7 +630,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                       ),
                     ],
                   ),
-                  Text('pièces', style: TextStyle(color: colors.textSecondary, fontSize: 10.5)),
+                  Text(context.tr('pièces'), style: TextStyle(color: colors.textSecondary, fontSize: 10.5)),
                   const Spacer(),
                   // Prix
                   Text(
@@ -654,7 +653,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Text(
-                      isAffordable ? 'Acheter' : 'Insuffisant',
+                      isAffordable ? context.tr('Acheter') : context.tr('Insuffisant'),
                       style: TextStyle(
                         color: isDisabled
                             ? colors.textSecondary
@@ -707,7 +706,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '10 FCFA = 25 pièces · Minimum 500 pièces · Recharge instantanée · Pièces achetées non convertibles en argent',
+              context.tr('10 FCFA = 25 pièces · Minimum 500 pièces · Recharge instantanée · Pièces achetées non convertibles en argent'),
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
             ),
           ),
@@ -728,7 +727,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       return;
     }
     if (_isForOther && !_userFound) {
-      _showErrorDialog('Veuillez d\'abord vérifier l\'email du destinataire');
+      _showErrorDialog(context.tr('Veuillez d\'abord vérifier l\'email du destinataire'));
       return;
     }
 
@@ -765,12 +764,12 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           });
         }
       } else if (mounted && !success) {
-        _showErrorDialog('Erreur lors de l\'achat');
+        _showErrorDialog(context.tr('Erreur lors de l\'achat'));
         setState(() => _isLoading = false);
       }
     } catch (e) {
       if (!mounted) return;
-      _showErrorDialog("${e.toString().replaceFirst('Exception: ', '')}. Tu n'as pas été débité.");
+      _showErrorDialog(context.tr('{a}. Tu n\'as pas été débité.', {'a': e.toString().replaceFirst('Exception: ', '')}));
       setState(() => _isLoading = false);
     }
   }
@@ -788,17 +787,17 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           children: [
             Icon(Icons.account_balance_wallet_rounded, color: colors.accent, size: 22),
             const SizedBox(width: 8),
-            Text('Solde insuffisant', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(context.tr('Solde insuffisant'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: Text(
-          'Votre solde sélectionné est insuffisant pour cet achat. Rechargez votre solde de dépôt.',
+          context.tr('Votre solde sélectionné est insuffisant pour cet achat. Rechargez votre solde de dépôt.'),
           style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+            child: Text(context.tr('Annuler'), style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -811,7 +810,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
-            child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(context.tr('Recharger'), style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -839,15 +838,15 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
             children: [
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 64),
               const SizedBox(height: 16),
-              const Text(
-                'Recharge réussie !',
+              Text(
+                context.tr('Recharge réussie !'),
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
               ),
               const SizedBox(height: 8),
               Text(
                 _isForOther
-                    ? '${_formatNumber(pack.coins)} pièces envoyées à $email'
-                    : '${_formatNumber(pack.coins)} pièces ajoutées à votre compte',
+                    ? context.tr('{a} pièces envoyées à {b}', {'a': _formatNumber(pack.coins), 'b': email})
+                    : context.tr('{a} pièces ajoutées à votre compte', {'a': _formatNumber(pack.coins)}),
                 style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
                 textAlign: TextAlign.center,
               ),
@@ -890,7 +889,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           children: [
             Icon(Icons.error_outline_rounded, color: colors.danger, size: 20),
             const SizedBox(width: 8),
-            Text('Erreur', style: TextStyle(color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(context.tr('Erreur'), style: TextStyle(color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(message, style: TextStyle(color: colors.textSecondary, fontSize: 14)),

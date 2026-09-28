@@ -293,7 +293,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
               ),
             ),
             TextCustomerUserTitle(
-              titre: "${formatNumber(widget.chat.sender!.abonnes!)} abonné(s)",
+              titre: "${formatNumber(widget.chat.sender!.followersCount)} abonné(s)",
 
               fontSize: SizeText.homeProfileTextSize,
               couleur: ConstColors.textColors,

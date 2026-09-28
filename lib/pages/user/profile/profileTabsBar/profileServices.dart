@@ -155,7 +155,7 @@ class _OnlyUserServiceListPageState extends State<OnlyUserServiceListPage> {
 
                                           children: [
                                             Text('@${data.user?.pseudo ?? 'Pseudo'}',style: TextStyle(fontWeight: FontWeight.w900),),
-                                            Text('${data.user?.abonnes ?? '0'} abonné(s)',style: TextStyle(fontSize: 11,color: Colors.green),),
+                                            Text('${data.user?.followersCount ?? 0} abonné(s)',style: TextStyle(fontSize: 11,color: Colors.green),),
                                           ],
                                         )
                                       ],

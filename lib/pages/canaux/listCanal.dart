@@ -1,4 +1,4 @@
-﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,6 +22,7 @@ import 'detailsCanal.dart';
 
 import 'newCanal.dart';
 import 'package:afrotok/layout/centered_content.dart';
+import '../../l10n/tr.dart';
 
 class CanalListPage extends StatefulWidget {
   final bool isUserCanals;
@@ -284,7 +285,7 @@ class _CanalListPageState extends State<CanalListPage> {
                                 Icon(Icons.attach_money, color: _colors.accent, size: 14),
                                 SizedBox(width: 4),
                                 Text(
-                                  '${CoinCheckout.fmt(canal.subscriptionPriceCoins)} pièces',
+                                  context.tr('{a} pièces', {'a': CoinCheckout.fmt(canal.subscriptionPriceCoins)}),
                                   style: TextStyle(color: _colors.accent, fontSize: 12),
                                 ),
                               ],

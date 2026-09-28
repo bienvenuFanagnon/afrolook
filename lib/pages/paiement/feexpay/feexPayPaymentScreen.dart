@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/payment_methods_config_service.dart';
 
@@ -14,6 +14,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:intl/intl.dart';
+import '../../../l10n/tr.dart';
 
 class FeexPayPaymentScreen extends StatefulWidget {
   final String token;
@@ -163,12 +164,12 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Erreur', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        title: Text(context.tr('Erreur'), style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Fermer'),
+            child: Text(context.tr('Fermer')),
           ),
         ],
       ),
@@ -180,7 +181,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text('Succès', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+        title: Text(context.tr('Succès'), style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
         content: Text(message),
         actions: [
           TextButton(
@@ -200,19 +201,19 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text('Session expirée', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        title: Text(context.tr('Session expirée'), style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.warning_amber_rounded, size: 50, color: Colors.orange),
             SizedBox(height: 16),
-            Text('Votre session a expiré. Veuillez vous reconnecter.', textAlign: TextAlign.center),
+            Text(context.tr('Votre session a expiré. Veuillez vous reconnecter.'), textAlign: TextAlign.center),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Plus tard'),
+            child: Text(context.tr('Plus tard')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -220,7 +221,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
               Get.offAllNamed('/login');
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Se reconnecter'),
+            child: Text(context.tr('Se reconnecter')),
           ),
         ],
       ),
@@ -236,11 +237,11 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
 
     String phone = _phoneController.text.trim();
     if (phone.isEmpty) {
-      _showErrorDialog('Veuillez saisir votre numéro');
+      _showErrorDialog(context.tr('Veuillez saisir votre numéro'));
       return;
     }
     if (_selectedCountry == null || _selectedOperator == null) {
-      _showErrorDialog('Sélectionnez un pays et un opérateur');
+      _showErrorDialog(context.tr('Sélectionnez un pays et un opérateur'));
       return;
     }
 
@@ -256,7 +257,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     if (needsOtp) {
       final otp = _otpController.text.trim();
       if (otp.isEmpty) {
-        _showErrorDialog('Veuillez entrer le code OTP généré via USSD');
+        _showErrorDialog(context.tr('Veuillez entrer le code OTP généré via USSD'));
         return;
       }
     }
@@ -325,16 +326,16 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
           }
         }
 
-        _showSuccessDialog('Paiement initié avec succès !', () {
+        _showSuccessDialog(context.tr('Paiement initié avec succès !'), () {
           Navigator.pop(context);
           _showWaitingScreen(reference);
         });
       } else {
-        _showErrorDialog(result.data['message'] ?? 'Échec du paiement');
+        _showErrorDialog(result.data['message'] ?? context.tr('Échec du paiement'));
       }
     } catch (e) {
       printVm('Erreur: $e');
-      _showErrorDialog('Erreur technique. Veuillez réessayer.');
+      _showErrorDialog(context.tr('Erreur technique. Veuillez réessayer.'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -356,7 +357,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Paiement FeexPay - Afrolook'),
+        title: Text(context.tr('Paiement FeexPay - Afrolook')),
         backgroundColor: Color(0xFFD8A868),
         foregroundColor: Colors.white,
       ),
@@ -373,7 +374,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
               ),
               child: Column(
                 children: [
-                  Text('Montant à payer', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                  Text(context.tr('Montant à payer'), style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                   SizedBox(height: 8),
                   Text(
                     '${widget.amount} FCFA',
@@ -381,7 +382,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'N° dépôt: ${widget.depositNumber}',
+                    context.tr('N° dépôt: {a}', {'a': widget.depositNumber}),
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -389,7 +390,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
             ),
             SizedBox(height: 30),
             _buildDropdown(
-              label: 'Pays',
+              label: context.tr('Pays'),
               value: _selectedCountry,
               items: _activeOperators.keys.toList(),
               onChanged: (value) {
@@ -403,7 +404,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
             SizedBox(height: 20),
             if (_selectedCountry != null && _activeOperators.containsKey(_selectedCountry)) ...[
               _buildDropdown(
-                label: 'Opérateur',
+                label: context.tr('Opérateur'),
                 value: _selectedOperator,
                 items: _activeOperators[_selectedCountry]!.keys.toList(),
                 onChanged: (value) => setState(() {
@@ -430,7 +431,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
                 ),
                 child: _isLoading
                     ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white))
-                    : Text('Payer ${widget.amount} FCFA', style: TextStyle(fontSize: 18, color: Colors.white)),
+                    : Text(context.tr('Payer {a} FCFA', {'a': widget.amount}), style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ],
           ],
@@ -443,7 +444,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Numéro de téléphone', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(context.tr('Numéro de téléphone'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -454,7 +455,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
             controller: _phoneController,
             keyboardType: TextInputType.phone,
             decoration: InputDecoration(
-              hintText: 'Ex: ${_phonePrefixes[_selectedCountry]}XXXXXXXXX',
+              hintText: context.tr('Ex: {a}XXXXXXXXX', {'a': _phonePrefixes[_selectedCountry]}),
               prefixText: '+${_phonePrefixes[_selectedCountry]} ',
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -483,7 +484,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Orange BF requiert un code OTP.\nComposez #144*4*6*${widget.amount}# sur votre téléphone Orange BF, puis entrez le code reçu ci-dessous.',
+                  context.tr('Orange BF requiert un code OTP.\nComposez #144*4*6*{a}# sur votre téléphone Orange BF, puis entrez le code reçu ci-dessous.', {'a': widget.amount}),
                   style: TextStyle(fontSize: 12, color: Colors.orange.shade800, height: 1.4),
                 ),
               ),
@@ -491,7 +492,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        Text('Code OTP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(context.tr('Code OTP'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -502,8 +503,8 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
             controller: _otpController,
             keyboardType: TextInputType.number,
             maxLength: 6,
-            decoration: const InputDecoration(
-              hintText: 'Ex: 123456',
+            decoration: InputDecoration(
+              hintText: context.tr('Ex: 123456'),
               prefixIcon: Icon(Icons.lock_outline),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -533,7 +534,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
           ),
           child: DropdownButtonFormField<String>(
             value: value,
-            hint: Text('Sélectionnez $label'),
+            hint: Text(context.tr('Sélectionnez {a}', {'a': label})),
             decoration: InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16)),
             items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
             onChanged: onChanged,
@@ -566,7 +567,7 @@ class PaymentWaitingScreen extends StatefulWidget {
 
 class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
   bool _isChecking = true;
-  String _message = 'En attente de confirmation du paiement...';
+  String _message = tr('En attente de confirmation du paiement...');
   bool _isSuccess = false;
   int _checkCount = 0;
   final int _maxChecks = 12;
@@ -593,7 +594,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
         setState(() {
           _isChecking = false;
           _isSuccess = false;
-          _message = '⏰ Délai dépassé. Vérifiez manuellement dans la liste des transactions.';
+          _message = context.tr('⏰ Délai dépassé. Vérifiez manuellement dans la liste des transactions.');
         });
       }
       return;
@@ -605,7 +606,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
         setState(() {
           _isChecking = false;
           _isSuccess = false;
-          _message = '❌ Session expirée. Veuillez vous reconnecter.';
+          _message = context.tr('❌ Session expirée. Veuillez vous reconnecter.');
         });
       }
       return;
@@ -635,7 +636,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
           setState(() {
             _isChecking = false;
             _isSuccess = true;
-            _message = '✅ Paiement confirmé avec succès !\n\nVotre compte a été crédité.';
+            _message = context.tr('✅ Paiement confirmé avec succès !\n\nVotre compte a été crédité.');
           });
         }
         Future.delayed(Duration(seconds: 3), () {
@@ -653,7 +654,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
       } else if (pending == true) {
         if (mounted) {
           setState(() {
-            _message = '⏳ Paiement en attente... ($_checkCount/$_maxChecks)\nProchaine vérification dans 5 secondes';
+            _message = context.tr('⏳ Paiement en attente... ({a}/{b})\nProchaine vérification dans 5 secondes', {'a': _checkCount, 'b': _maxChecks});
           });
           Future.delayed(Duration(seconds: 5), _checkStatus);
         }
@@ -670,14 +671,14 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
       printVm('Erreur: $e');
       if (mounted && _checkCount < _maxChecks) {
         setState(() {
-          _message = '⚠️ Erreur, réessai dans 10 secondes... ($_checkCount/$_maxChecks)';
+          _message = context.tr('⚠️ Erreur, réessai dans 10 secondes... ({a}/{b})', {'a': _checkCount, 'b': _maxChecks});
         });
         Future.delayed(Duration(seconds: 10), _checkStatus);
       } else {
         setState(() {
           _isChecking = false;
           _isSuccess = false;
-          _message = '❌ Erreur technique. Vérifiez manuellement.';
+          _message = context.tr('❌ Erreur technique. Vérifiez manuellement.');
         });
       }
     }
@@ -686,7 +687,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
   Future<void> _manualCheck() async {
     setState(() {
       _isChecking = true;
-      _message = 'Vérification manuelle en cours...';
+      _message = context.tr('Vérification manuelle en cours...');
       _errorDetails = null;
       _checkCount = 0;
     });
@@ -697,7 +698,7 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Confirmation du paiement'),
+        title: Text(context.tr('Confirmation du paiement')),
         backgroundColor: Color(0xFFD8A868),
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -745,13 +746,13 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
                 ElevatedButton(
                   onPressed: _manualCheck,
                   style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD8A868)),
-                  child: Text('Vérifier à nouveau', style: TextStyle(color: Colors.white)),
+                  child: Text(context.tr('Vérifier à nouveau'), style: TextStyle(color: Colors.white)),
                 ),
               SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-                child: Text('Retour à l\'accueil', style: TextStyle(color: Colors.white)),
+                child: Text(context.tr('Retour à l\'accueil'), style: TextStyle(color: Colors.white)),
               ),
             ],
           ),

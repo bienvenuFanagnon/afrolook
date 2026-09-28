@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import 'feexpay/feexPayPaymentScreen.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../l10n/tr.dart';
 
 class DepositScreen extends StatefulWidget {
   final double? defaultAmount;
@@ -90,9 +91,9 @@ class _DepositScreenState extends State<DepositScreen> {
                 child: ListView(
                   children: [
                     _PaymentMethodCard(
-                      title: 'FeexPay Mobile Money',
-                      subtitle: 'Afrique de l\'Ouest',
-                      description: 'MTN • MOOV • ORANGE • WAVE  •  Frais : 5.6%',
+                      title: context.tr('FeexPay Mobile Money'),
+                      subtitle: context.tr('Afrique de l\'Ouest'),
+                      description: context.tr('MTN • MOOV • ORANGE • WAVE  •  Frais : 5.6%'),
                       icon: Icons.qr_code_scanner,
                       color: const Color(0xFF9C27B0),
                       iconColor: Colors.white,
@@ -103,9 +104,9 @@ class _DepositScreenState extends State<DepositScreen> {
                     ),
                     const SizedBox(height: 12),
                     _PaymentMethodCard(
-                      title: 'PayGate',
-                      subtitle: 'Togo seulement',
-                      description: 'FLOOZ • T-Money  •  Frais : 5.6%',
+                      title: context.tr('PayGate'),
+                      subtitle: context.tr('Togo seulement'),
+                      description: context.tr('FLOOZ • T-Money  •  Frais : 5.6%'),
                       icon: Icons.phone_android,
                       color: colors.info,
                       iconColor: Colors.white,
@@ -204,9 +205,9 @@ class _DepositScreenState extends State<DepositScreen> {
                 value: selectedNetwork,
                 dropdownColor: colors.surface,
                 style: TextStyle(color: colors.textPrimary),
-                items: const [
-                  DropdownMenuItem(value: 'FLOOZ', child: Text('FLOOZ (Moov)')),
-                  DropdownMenuItem(value: 'T-MONEY', child: Text('T-Money (Togocel)')),
+                items: [
+                  DropdownMenuItem(value: 'FLOOZ', child: Text(context.tr('FLOOZ (Moov)'))),
+                  DropdownMenuItem(value: 'T-MONEY', child: Text(context.tr('T-Money (Togocel)'))),
                 ],
                 onChanged: (value) {
                   setStateDialog(() => selectedNetwork = value!);
@@ -270,15 +271,15 @@ class _DepositScreenState extends State<DepositScreen> {
   }
 
   // Pays CinetPay (ISO 2 lettres) — les plus courants en Afrique + Europe
-  static const _countries = [
-    ('CI', 'Côte d\'Ivoire'), ('SN', 'Sénégal'),    ('CM', 'Cameroun'),
-    ('TG', 'Togo'),          ('BJ', 'Bénin'),        ('BF', 'Burkina Faso'),
-    ('ML', 'Mali'),          ('NE', 'Niger'),        ('GN', 'Guinée'),
-    ('GH', 'Ghana'),         ('NG', 'Nigeria'),      ('CD', 'Congo RDC'),
-    ('CG', 'Congo'),         ('GA', 'Gabon'),        ('MG', 'Madagascar'),
-    ('MA', 'Maroc'),         ('TN', 'Tunisie'),      ('DZ', 'Algérie'),
-    ('FR', 'France'),        ('BE', 'Belgique'),     ('CH', 'Suisse'),
-    ('CA', 'Canada'),        ('US', 'États-Unis'),
+  static List<(String, String)> get _countries => [
+    ('CI', tr('Côte d\'Ivoire')), ('SN', tr('Sénégal')),    ('CM', tr('Cameroun')),
+    ('TG', tr('Togo')),          ('BJ', tr('Bénin')),        ('BF', tr('Burkina Faso')),
+    ('ML', tr('Mali')),          ('NE', tr('Niger')),        ('GN', tr('Guinée')),
+    ('GH', tr('Ghana')),         ('NG', tr('Nigeria')),      ('CD', tr('Congo RDC')),
+    ('CG', tr('Congo')),         ('GA', tr('Gabon')),        ('MG', tr('Madagascar')),
+    ('MA', tr('Maroc')),         ('TN', tr('Tunisie')),      ('DZ', tr('Algérie')),
+    ('FR', tr('France')),        ('BE', tr('Belgique')),     ('CH', tr('Suisse')),
+    ('CA', tr('Canada')),        ('US', tr('États-Unis')),
   ];
 
   Future<void> _processCinetPayPayment({required String paymentType}) async {
@@ -346,7 +347,7 @@ class _DepositScreenState extends State<DepositScreen> {
                       Icon(Icons.credit_card, color: colors.primary, size: 24),
                       const SizedBox(width: 10),
                       Text(
-                        'Carte Bancaire — Informations',
+                        context.tr('Carte Bancaire — Informations'),
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -357,7 +358,7 @@ class _DepositScreenState extends State<DepositScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Vérifiez et complétez vos informations avant de payer.',
+                    context.tr('Vérifiez et complétez vos informations avant de payer.'),
                     style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                   const SizedBox(height: 16),
@@ -372,10 +373,10 @@ class _DepositScreenState extends State<DepositScreen> {
                     ),
                     child: Column(
                       children: [
-                        _feeRow('Montant saisi', '${amount.round()} FCFA', colors.textPrimary, colors),
-                        _feeRow('Frais (7%)', '- $fees FCFA', colors.danger, colors),
+                        _feeRow(context.tr('Montant saisi'), '${amount.round()} FCFA', colors.textPrimary, colors),
+                        _feeRow(context.tr('Frais (7%)'), context.tr('- {a} FCFA', {'a': fees}), colors.danger, colors),
                         Divider(color: colors.border, height: 16),
-                        _feeRow('Vous recevez', '$credited FCFA', colors.primary, colors),
+                        _feeRow(context.tr('Vous recevez'), '$credited FCFA', colors.primary, colors),
                       ],
                     ),
                   ),
@@ -385,7 +386,7 @@ class _DepositScreenState extends State<DepositScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'INFORMATIONS CLIENT',
+                      context.tr('INFORMATIONS CLIENT'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -398,24 +399,24 @@ class _DepositScreenState extends State<DepositScreen> {
                   // Prénom + Nom
                   Row(
                     children: [
-                      Expanded(child: _buildField(prenomCtrl, 'Prénom', Icons.person_outline, colors, required: true)),
+                      Expanded(child: _buildField(prenomCtrl, context.tr('Prénom'), Icons.person_outline, colors, required: true)),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildField(nomCtrl, 'Nom', Icons.person, colors, required: true)),
+                      Expanded(child: _buildField(nomCtrl, context.tr('Nom'), Icons.person, colors, required: true)),
                     ],
                   ),
                   const SizedBox(height: 14),
 
                   // Téléphone
-                  _buildField(phoneCtrl, 'Téléphone', Icons.phone_outlined, colors,
+                  _buildField(phoneCtrl, context.tr('Téléphone'), Icons.phone_outlined, colors,
                       required: true, keyboardType: TextInputType.phone),
                   const SizedBox(height: 14),
 
                   // Adresse
-                  _buildField(adresseCtrl, 'Adresse', Icons.home_outlined, colors, required: true),
+                  _buildField(adresseCtrl, context.tr('Adresse'), Icons.home_outlined, colors, required: true),
                   const SizedBox(height: 14),
 
                   // Ville
-                  _buildField(villeCtrl, 'Ville', Icons.location_city_outlined, colors, required: true),
+                  _buildField(villeCtrl, context.tr('Ville'), Icons.location_city_outlined, colors, required: true),
                   const SizedBox(height: 14),
 
                   // Pays (dropdown)
@@ -425,7 +426,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     isExpanded: true,
                     style: TextStyle(color: colors.textPrimary, fontSize: 14),
                     decoration: InputDecoration(
-                      labelText: 'Pays',
+                      labelText: context.tr('Pays'),
                       labelStyle: TextStyle(color: colors.textSecondary),
                       prefixIcon: Icon(Icons.flag_outlined, color: colors.textSecondary),
                       border: OutlineInputBorder(
@@ -449,7 +450,7 @@ class _DepositScreenState extends State<DepositScreen> {
                       child: Text('${c.$1} — ${c.$2}', overflow: TextOverflow.ellipsis),
                     )).toList(),
                     onChanged: (v) => setStateSheet(() => selectedCountry = v!),
-                    validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
+                    validator: (v) => (v == null || v.isEmpty) ? context.tr('Requis') : null,
                   ),
                   const SizedBox(height: 28),
 
@@ -468,7 +469,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     ),
                     icon: Icon(Icons.lock_outline, color: colors.onPrimary),
                     label: Text(
-                      'Confirmer et payer',
+                      context.tr('Confirmer et payer'),
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.onPrimary),
                     ),
                   ),
@@ -516,8 +517,8 @@ class _DepositScreenState extends State<DepositScreen> {
       'amount':          amount.round(),
       'userId':          user.id,
       'paymentType':     paymentType,
-      'customerName':    prenomCtrl.text.trim().isNotEmpty ? prenomCtrl.text.trim() : 'Client',
-      'customerSurname': nomCtrl.text.trim().isNotEmpty   ? nomCtrl.text.trim()    : 'Afrolook',
+      'customerName':    prenomCtrl.text.trim().isNotEmpty ? prenomCtrl.text.trim() : context.tr('Client'),
+      'customerSurname': nomCtrl.text.trim().isNotEmpty   ? nomCtrl.text.trim()    : context.tr('Afrolook'),
       'customerEmail':   user.email ?? '',
       'customerPhone':   phoneCtrl.text.trim(),
       'customerAddress': adresseCtrl.text.trim().isNotEmpty ? adresseCtrl.text.trim() : 'N/A',
@@ -591,7 +592,7 @@ class _DepositScreenState extends State<DepositScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
       validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null
+          ? (v) => (v == null || v.trim().isEmpty) ? context.tr('Requis') : null
           : null,
     );
   }
@@ -606,7 +607,7 @@ class _DepositScreenState extends State<DepositScreen> {
           children: [
             Icon(Icons.error_outline, color: colors.danger),
             const SizedBox(width: 10),
-            Text('Échec du paiement', style: TextStyle(color: colors.textPrimary, fontSize: 16)),
+            Text(context.tr('Échec du paiement'), style: TextStyle(color: colors.textPrimary, fontSize: 16)),
           ],
         ),
         content: SelectableText(
@@ -717,7 +718,7 @@ class _DepositScreenState extends State<DepositScreen> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Échec PayGate : ${e.toString()}'),
+          content: Text(context.tr('Échec PayGate : {a}', {'a': e.toString()})),
           backgroundColor: colors.danger,
           behavior: SnackBarBehavior.floating,
         ),
@@ -801,7 +802,7 @@ class _DepositScreenState extends State<DepositScreen> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Échec FeexPay : ${e.toString()}'),
+          content: Text(context.tr('Échec FeexPay : {a}', {'a': e.toString()})),
           backgroundColor: colors.danger,
           behavior: SnackBarBehavior.floating,
         ),
@@ -833,13 +834,13 @@ class _DepositScreenState extends State<DepositScreen> {
                 const Text('🍎', style: TextStyle(fontSize: 48)),
                 const SizedBox(height: 20),
                 Text(
-                  'Achète des pièces avec l\'App Store',
+                  context.tr('Achète des pièces avec l\'App Store'),
                   style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Sur iPhone, les pièces s\'achètent directement dans l\'app, avec un paiement sécurisé par l\'App Store.',
+                  context.tr('Sur iPhone, les pièces s\'achètent directement dans l\'app, avec un paiement sécurisé par l\'App Store.'),
                   style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
                   textAlign: TextAlign.center,
                 ),
@@ -856,7 +857,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                     elevation: 0,
                   ),
-                  child: const Text('Acheter des pièces', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(context.tr('Acheter des pièces'), style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -902,7 +903,7 @@ class _DepositScreenState extends State<DepositScreen> {
                         ),
                       ),
                       const SizedBox(height: 15),
-                      _buildInfoRow(t.depositMinAmount, '200 FCFA', colors),
+                      _buildInfoRow(t.depositMinAmount, context.tr('200 FCFA'), colors),
                       const SizedBox(height: 8),
                       _buildInfoRow(t.depositFeesMM, '5,6%', colors),
                       const SizedBox(height: 8),

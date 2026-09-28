@@ -58,6 +58,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import '../../services/feed/country_priority.dart';
 import '../../services/feed/seen_discovery_cache.dart';
 import '../../services/feed/discovery_posts_cache.dart';
 import 'HomeConstPost.dart' show flushSeenPostsAndCleanMemory;
@@ -68,6 +69,7 @@ import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 
 import '../dating/widgets/top_dating_profiles_widget.dart';
+import '../intro/monetization_tutorial.dart';
 
 
 // Constantes de couleur
@@ -246,9 +248,15 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
 
+  // Rappel animé « chaque like paie le créateur » (de temps en temps)
+  bool _showTutoReminder = false;
+
   @override
   void initState() {
     super.initState();
+    MonetizationReminder.due('sport').then((v) {
+      if (mounted && v) setState(() => _showTutoReminder = true);
+    });
     // 🔥 Initialisation du MediaPlaybackManager avec l'instance globale
     // (même instance que l'AppBar / YouTubeVideoCard / AudioPostCard, Session 8)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -970,13 +978,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
               setModalState(() {});
             }
 
-            List<AfricanCountry> filteredCountries = AfricanCountry.allCountries
-                .where((country) {
-              if (searchQuery.isEmpty) return true;
-              return country.name.toLowerCase().contains(searchQuery) ||
-                  country.code.toLowerCase().contains(searchQuery) ||
-                  country.name?.toLowerCase().contains(searchQuery) == true;
-            }).toList();
+            List<AfricanCountry> filteredCountries = AfricanCountry.search(
+                AfricanCountry.sortedFor(Provider.of<UserAuthProvider>(context, listen: false)
+                    .loginUserData.countryData?['countryCode']),
+                searchQuery);
 
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
@@ -1369,7 +1374,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
   String _getCountryFlag(String countryCode) {
     try {
-      final country = AfricanCountry.allCountries.firstWhere(
+      final country = AfricanCountry.everyCountry.firstWhere(
             (c) => c.code.toUpperCase() == countryCode.toUpperCase(),
         orElse: () => AfricanCountry(
           code: countryCode,
@@ -1992,7 +1997,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     t2.shuffle(); // différent à chaque affichage
 
     const kMaxT1 = 16, kMaxT2Regular = 6, kMaxT3 = 3;
-    final s1 = _spreadCreators(t1.take(kMaxT1).toList());
+    // Posts du pays de l'utilisateur en premier (tri local, sans index Firestore)
+    final s1 = _spreadCreators(prioritizeUserCountry(
+        t1.take(kMaxT1).toList(), authProvider.loginUserData.countryData?['countryCode']));
     final t1Gap = kMaxT1 - s1.length;
     final t2Fill = t1Gap > 0 ? t2.take(t1Gap).toList() : <Post>[];
     final t2Regular = t2.skip(t2Fill.length).take(kMaxT2Regular).toList();
@@ -2934,6 +2941,10 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           ),
         ),
       );
+
+      if (i == 5 && _showTutoReminder) {
+        contentWidgets.add(const FeedMonetizationReminder(key: ValueKey('tuto_reminder_sport'), feed: 'sport'));
+      }
 
       // T2 fill counter (plus de section découverte en plein feed)
       final pid = post.id ?? '';

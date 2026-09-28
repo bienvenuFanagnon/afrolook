@@ -14,6 +14,8 @@ import '../../services/postService/post_view_service.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
+import '../../l10n/tr.dart';
+import '../../services/currency_service.dart';
 
 const double _minEncaissement = 1000.0;
 double get _baseViewRate => MonetizationConfig.baseViewRate;
@@ -226,7 +228,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
     String titleText = t.gainsTitle;
     if (widget.isAdminView && _viewedUser != null) {
-      titleText = 'Gains de @${_viewedUser!.pseudo ?? ''}';
+      titleText = context.tr('Gains de @{a}', {'a': _viewedUser!.pseudo ?? ''});
     }
 
     return Scaffold(
@@ -312,7 +314,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
               Icon(Icons.emoji_events_outlined, color: tierColor, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Votre niveau créateur',
+                child: Text(context.tr('Votre niveau créateur'),
                     style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
               ),
               Icon(
@@ -334,23 +336,23 @@ class _MesGainsPageState extends State<MesGainsPage> {
             ),
             child: Row(children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Niveau actuel',
+                Text(context.tr('Niveau actuel'),
                     style: TextStyle(color: colors.textSecondary, fontSize: 11)),
                 const SizedBox(height: 2),
                 Text(tierLabel,
                     style: TextStyle(color: tierColor, fontWeight: FontWeight.w800, fontSize: 22)),
                 const SizedBox(height: 2),
-                Text('Score : ${score.toStringAsFixed(1)}',
+                Text(context.tr('Score : {a}', {'a': score.toStringAsFixed(1)}),
                     style: TextStyle(color: colors.textSecondary, fontSize: 11)),
               ]),
               const Spacer(),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('Votre RPM',
+                Text(context.tr('Votre RPM'),
                     style: TextStyle(color: colors.textSecondary, fontSize: 11)),
                 const SizedBox(height: 2),
-                Text('${(myRate * 1000).toInt()} FCFA',
+                Text(Money.fmt(myRate * 1000),
                     style: TextStyle(color: tierColor, fontWeight: FontWeight.bold, fontSize: 20)),
-                Text('pour 1 000 vues',
+                Text(context.tr('pour 1 000 vues'),
                     style: TextStyle(color: tierColor.withOpacity(0.7), fontSize: 10)),
               ]),
             ]),
@@ -363,7 +365,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
             const SizedBox(height: 14),
 
             // Tableau des paliers
-            Text('Tous les paliers',
+            Text(context.tr('Tous les paliers'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
             const SizedBox(height: 10),
             ..._scoreTiers.map((t) {
@@ -396,7 +398,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '$tLabel  (score ≥ ${tMin.toStringAsFixed(0)})',
+                      context.tr('{a}  (score ≥ {b})', {'a': tLabel, 'b': tMin.toStringAsFixed(0)}),
                       style: TextStyle(
                         color: isActive ? colors.textPrimary : colors.textSecondary,
                         fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
@@ -405,7 +407,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
                     ),
                   ),
                   Text(
-                    '${(tRate * 1000).toInt()} FCFA RPM',
+                    context.tr('{a} RPM', {'a': Money.fmt(tRate * 1000)}),
                     style: TextStyle(
                       color: isActive ? tColor : colors.textSecondary,
                       fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
@@ -430,11 +432,11 @@ class _MesGainsPageState extends State<MesGainsPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Comment progresser ?',
+                  Text(context.tr('Comment progresser ?'),
                       style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
-                    'Publie régulièrement du contenu de qualité. Plus tes posts reçoivent de likes, loves et commentaires de ta communauté, plus ton score créateur monte — et plus ton RPM augmente.',
+                    context.tr('Publie régulièrement du contenu de qualité. Plus tes posts reçoivent de likes, loves et commentaires de ta communauté, plus ton score créateur monte — et plus ton RPM augmente.'),
                     style: TextStyle(color: colors.textSecondary, fontSize: 11.5, height: 1.5),
                   ),
                 ]),
@@ -460,7 +462,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Certains créateurs Élite touchent déjà plus de 5 000 FCFA RPM. Comment ? Le RPM de base augmente avec la croissance de la plateforme — et les créateurs avec le meilleur score en bénéficient en premier. Plus tôt tu montes de palier, plus tu en profites.',
+                    context.tr('Certains créateurs Élite touchent déjà plus de {a} RPM. Comment ? Le RPM de base augmente avec la croissance de la plateforme — et les créateurs avec le meilleur score en bénéficient en premier. Plus tôt tu montes de palier, plus tu en profites.', {'a': Money.fmt(5000)}),
                     style: TextStyle(color: colors.textPrimary, fontSize: 11.5, height: 1.5),
                   ),
                 ),
@@ -521,21 +523,21 @@ class _MesGainsPageState extends State<MesGainsPage> {
           ]),
           const SizedBox(height: 4),
           Text(
-            '${(rate * 1000).toInt()} FCFA RPM  ·  ${((tier['multiplier'] as double) * 100).toStringAsFixed(0)}% du taux de base (1 000 FCFA RPM max)',
+            context.tr('{a} RPM  ·  {b}% du taux de base ({c} RPM max)', {'a': Money.fmt(rate * 1000), 'b': ((tier['multiplier'] as double) * 100).toStringAsFixed(0), 'c': Money.fmt(1000)}),
             style: TextStyle(color: colors.textSecondary, fontSize: 11),
           ),
           const SizedBox(height: 14),
           Row(children: [
             Expanded(child: _statChip(t.gainsTotalViews, '$totalViews', Icons.visibility_outlined, colors.info, colors)),
             const SizedBox(width: 12),
-            Expanded(child: _statChip(t.gainsPerView, '${(rate * 1000).toInt()} FCFA RPM', Icons.attach_money, tierColor, colors)),
+            Expanded(child: _statChip(t.gainsPerView, context.tr('{a} RPM', {'a': Money.fmt(rate * 1000)}), Icons.attach_money, tierColor, colors)),
           ]),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: _statChip(t.gainsAvailable, '${available.toInt()} FCFA', Icons.account_balance_wallet_outlined, tierColor, colors,
-                subtitle: '${_pendingViews(user)} vues dispo')),
+            Expanded(child: _statChip(t.gainsAvailable, Money.fmt(available), Icons.account_balance_wallet_outlined, tierColor, colors,
+                subtitle: context.tr('{a} vues dispo', {'a': _pendingViews(user)}))),
             const SizedBox(width: 12),
-            Expanded(child: _statChip(t.gainsTotalCashed, '${cashed.toInt()} FCFA', Icons.check_circle_outline, colors.primary, colors)),
+            Expanded(child: _statChip(t.gainsTotalCashed, Money.fmt(cashed), Icons.check_circle_outline, colors.primary, colors)),
           ]),
         ],
       ),
@@ -733,7 +735,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
                   Text(t.gainsMonthViews(views),
                       style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                   const SizedBox(width: 12),
-                  Text('$fcfa FCFA',
+                  Text(Money.fmt(fcfa),
                       style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(width: 8),
                   Icon(Icons.chevron_right, color: colors.textSecondary, size: 16),
@@ -1067,7 +1069,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
                                         onPressed: _loadMore,
                                         icon: Icon(Icons.expand_more, color: colors.info),
                                         label: Text(
-                                          'Voir plus (${_allPostIds.length - _idOffset} restants)',
+                                          context.tr('Voir plus ({a} restants)', {'a': _allPostIds.length - _idOffset}),
                                           style: TextStyle(color: colors.info),
                                         ),
                                       ),
@@ -1136,7 +1138,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
               ]),
             ),
             const SizedBox(height: 4),
-            Text('${(views * widget.fcfaPerView).toInt()} FCFA',
+            Text(Money.fmt(views * widget.fcfaPerView),
                 style: TextStyle(
                     color: colors.accent, fontWeight: FontWeight.bold, fontSize: 12)),
           ]),

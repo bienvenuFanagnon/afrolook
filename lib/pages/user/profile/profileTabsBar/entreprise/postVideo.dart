@@ -1,4 +1,4 @@
-﻿import 'package:afrotok/pages/socialVideos/videoPlayer.dart';
+import 'package:afrotok/pages/socialVideos/videoPlayer.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -502,7 +502,7 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                                         ),
                                       ),
                                       TextCustomerUserTitle(
-                                        titre: "${post.user!.abonnes!} abonné(s)",
+                                        titre: "${post.user!.followersCount} abonné(s)",
                                         fontSize: 10,
                                         couleur: ConstColors.textColors,
                                         fontWeight: FontWeight.w400,

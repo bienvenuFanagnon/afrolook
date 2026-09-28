@@ -18,6 +18,8 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../l10n/tr.dart';
+import '../../services/currency_service.dart';
 
 // Barème : config/monetization (MonetizationConfig), partagé avec les Cloud Functions.
 const _tierColors = [0xFF22C55E, 0xFF3B82F6, 0xFFF97316, 0xFFF59E0B, 0xFF94A3B8];
@@ -191,7 +193,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                       children: [
                         Row(
                           children: [
-                            Text('Revenus des vues',
+                            Text(context.tr('Revenus des vues'),
                                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.textPrimary)),
                             const SizedBox(width: 6),
                             Container(
@@ -207,7 +209,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${(myRate * 1000).toInt()} FCFA RPM · à encaisser : ${pendingEarnings.toStringAsFixed(2)} F',
+                          context.tr('{a} RPM · à encaisser : {b}', {'a': Money.fmt(myRate * 1000), 'b': Money.fmt(pendingEarnings)}),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: 11.5, color: colors.textSecondary),
@@ -230,7 +232,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Score créateur : ${creatorScore.toStringAsFixed(1)} pts  ·  ${(multiplier * 100).toStringAsFixed(0)}% du taux de base (RPM max : 1 000 FCFA)',
+                    context.tr('Score créateur : {a} pts  ·  {b}% du taux de base (RPM max : {c})', {'a': creatorScore.toStringAsFixed(1), 'b': (multiplier * 100).toStringAsFixed(0), 'c': Money.fmt(1000)}),
                     style: TextStyle(fontSize: 11, color: colors.textSecondary),
                   ),
                   const SizedBox(height: 12),
@@ -240,7 +242,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                       Expanded(
                         child: _viewStat(
                           icon: Icons.remove_red_eye_outlined,
-                          label: 'Vues totales',
+                          label: context.tr('Vues totales'),
                           value: totalViews.toString(),
                           color: colors.textSecondary,
                           colors: colors,
@@ -249,7 +251,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                       Expanded(
                         child: _viewStat(
                           icon: Icons.schedule_outlined,
-                          label: 'Non encaissées',
+                          label: context.tr('Non encaissées'),
                           value: pendingViews.toString(),
                           color: tierColor,
                           colors: colors,
@@ -258,8 +260,8 @@ class _MonetisationPageState extends State<MonetisationPage> {
                       Expanded(
                         child: _viewStat(
                           icon: Icons.account_balance_wallet_outlined,
-                          label: 'À encaisser',
-                          value: '${pendingEarnings.toStringAsFixed(2)} F',
+                          label: context.tr('À encaisser'),
+                          value: Money.fmt(pendingEarnings),
                           color: tierColor,
                           colors: colors,
                         ),
@@ -278,7 +280,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Paliers de rémunération',
+                          context.tr('Paliers de rémunération'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -307,7 +309,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '$tLabel  (score ≥ ${tMin.toStringAsFixed(0)})',
+                                    context.tr('{a}  (score ≥ {b})', {'a': tLabel, 'b': tMin.toStringAsFixed(0)}),
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: isActive ? colors.textPrimary : colors.textSecondary,
@@ -316,7 +318,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                                   ),
                                 ),
                                 Text(
-                                  '${((tMulti * baseRate) * 1000).toInt()} FCFA RPM',
+                                  context.tr('{a} RPM', {'a': Money.fmt((tMulti * baseRate) * 1000)}),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: isActive ? tColor : colors.textSecondary,
@@ -332,9 +334,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Tes gains s\'accumulent selon tes vues et ton palier. '
-                    'Le RPM maximum est de 1 000 FCFA (pour 1 000 vues) et peut être ajusté par Afrolook. '
-                    'Améliore ton score en publiant du contenu apprécié.',
+                    context.tr('Tes gains s\'accumulent selon tes vues et ton palier. Le RPM maximum est de {a} (pour 1 000 vues) et peut être ajusté par Afrolook. Améliore ton score en publiant du contenu apprécié.', {'a': Money.fmt(1000)}),
                     style: TextStyle(fontSize: 10.5, color: colors.textSecondary, height: 1.4),
                   ),
                 ],
@@ -356,7 +356,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 ),
                 icon: Icon(Icons.account_balance_wallet_outlined, size: 16, color: tierColor),
                 label: Text(
-                  'Voir mes gains & encaisser',
+                  context.tr('Voir mes gains & encaisser'),
                   style: TextStyle(color: tierColor, fontWeight: FontWeight.w700, fontSize: 13),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -405,7 +405,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
   // Bloc 2 « Mon argent » : gains à retirer + dépôt FCFA (Android uniquement).
 
   static final NumberFormat _moneyFmt = NumberFormat('#,##0.##', 'fr');
-  String _money(double v) => '${_moneyFmt.format(v)} FCFA';
+  String _money(double v) => Money.fmt(v);
 
   Widget _buildWallet(UserData user, AppColors c) {
     final depotCoins = user.lockedGiftCoins;
@@ -413,7 +413,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _walletTitle(c, 'Mes pièces'),
+        _walletTitle(c, context.tr('Mes pièces')),
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -423,10 +423,10 @@ class _MonetisationPageState extends State<MonetisationPage> {
                   c,
                   icon: Icons.toll_rounded,
                   color: c.supportAccent,
-                  title: 'Pièces de dépôt',
+                  title: context.tr('Pièces de dépôt'),
                   coins: depotCoins,
-                  caption: 'Pour acheter, offrir et voter',
-                  action: 'Recharger',
+                  caption: context.tr('Pour acheter, offrir et voter'),
+                  action: context.tr('Recharger'),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoinRechargeScreen())),
                 ),
               ),
@@ -436,10 +436,10 @@ class _MonetisationPageState extends State<MonetisationPage> {
                   c,
                   icon: Icons.emoji_events_rounded,
                   color: c.primary,
-                  title: 'Pièces gagnées',
+                  title: context.tr('Pièces gagnées'),
                   coins: gagnees,
-                  caption: 'Convertibles en argent',
-                  action: 'Convertir',
+                  caption: context.tr('Convertibles en argent'),
+                  action: context.tr('Convertir'),
                   onTap: gagnees > 0
                       ? () async {
                           final result = await Navigator.push(
@@ -455,7 +455,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
           ),
         ),
         const SizedBox(height: 20),
-        _walletTitle(c, 'Mon argent'),
+        _walletTitle(c, context.tr('Mon argent')),
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
@@ -469,9 +469,9 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 c,
                 icon: Icons.account_balance_wallet_rounded,
                 color: c.primary,
-                title: 'Gains à retirer',
+                title: context.tr('Gains à retirer'),
                 value: _money(user.votre_solde_principal ?? 0),
-                action: 'Retirer',
+                action: context.tr('Retirer'),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserDemandeRetraitPage())),
               ),
               // Dépôt FCFA : Android uniquement (argent déjà versé par Mobile Money,
@@ -482,18 +482,18 @@ class _MonetisationPageState extends State<MonetisationPage> {
                   c,
                   icon: Icons.savings_rounded,
                   color: c.info,
-                  title: 'Dépôt FCFA',
+                  title: context.tr('Dépôt FCFA'),
                   value: _money(user.votre_solde_depot ?? 0),
-                  action: 'Convertir en pièces',
+                  action: context.tr('Convertir en pièces'),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CoinRechargeScreen())),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(60, 0, 8, 6),
                   child: Row(
                     children: [
-                      _linkButton(c, Icons.add_rounded, 'Recharger',
+                      _linkButton(c, Icons.add_rounded, context.tr('Recharger'),
                           () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DepositScreen()))),
-                      _linkButton(c, Icons.pending_actions_rounded, 'En attente',
+                      _linkButton(c, Icons.pending_actions_rounded, context.tr('En attente'),
                           () => Navigator.push(context, MaterialPageRoute(builder: (_) => PendingTransactionsScreen()))),
                     ],
                   ),
@@ -503,7 +503,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
           ),
         ),
         const SizedBox(height: 20),
-        _walletTitle(c, 'Mes revenus'),
+        _walletTitle(c, context.tr('Mes revenus')),
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
@@ -513,13 +513,13 @@ class _MonetisationPageState extends State<MonetisationPage> {
           ),
           child: Column(
             children: [
-              _linkRow(c, Icons.article_rounded, c.primary, 'Rémunération des posts',
+              _linkRow(c, Icons.article_rounded, c.primary, context.tr('Rémunération des posts'),
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesGainsPage(userId: user.id!)))),
               Divider(height: 1, thickness: 0.5, indent: 52, color: c.border),
-              _linkRow(c, Icons.campaign_rounded, c.info, 'Gains publicitaires',
+              _linkRow(c, Icons.campaign_rounded, c.info, context.tr('Gains publicitaires'),
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesGainsPublicitePage(userId: user.id!)))),
               Divider(height: 1, thickness: 0.5, indent: 52, color: c.border),
-              _linkRow(c, Icons.receipt_long_rounded, c.warning, 'Historique des retraits',
+              _linkRow(c, Icons.receipt_long_rounded, c.warning, context.tr('Historique des retraits'),
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserRetraitListPage()))),
             ],
           ),
@@ -601,7 +601,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
               ),
             ),
           ),
-          Text('pièces · ≈ ${TxAmount.fmt(coins / 2.5)} FCFA',
+          Text(context.tr('pièces · {a}', {'a': Money.approx(coins / 2.5)}),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 11, color: c.textSecondary)),
@@ -707,7 +707,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
   }
 
   Widget _buildTransactionHeader(AppColors c, AppLocalizations t) {
-    const filters = {'tous': 'Tout', 'pieces': 'Pièces', 'argent': 'Argent'};
+    final filters = {'tous': context.tr('Tout'), 'pieces': context.tr('Pièces'), 'argent': context.tr('Argent')};
     return Row(
       children: [
         Expanded(
@@ -805,7 +805,7 @@ class _TxGroupedListState extends State<_TxGroupedList> {
     for (final e in _groups.entries) {
       if (e.value.contains(type?.toUpperCase())) return e.key;
     }
-    return 'Entrées';
+    return context.tr('Entrées');
   }
 
   Color _groupColor(String group, AppColors c) {
@@ -900,7 +900,7 @@ class _TxGroupedListState extends State<_TxGroupedList> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Center(
-                  child: Text('Voir plus (${items.length - visible})',
+                  child: Text(context.tr('Voir plus ({a})', {'a': items.length - visible}),
                       style: TextStyle(color: c.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
                 ),
               ),
@@ -965,13 +965,13 @@ class TransactionWidget extends StatelessWidget {
     }
   }
 
-  String _date(int ms) {
+  String _date(BuildContext context, int ms) {
     final d = DateTime.fromMillisecondsSinceEpoch(ms);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final hm = DateFormat('HH:mm').format(d);
-    if (!d.isBefore(today)) return "Aujourd'hui · $hm";
-    if (!d.isBefore(today.subtract(const Duration(days: 1)))) return 'Hier · $hm';
+    if (!d.isBefore(today)) return context.tr('Aujourd\'hui · {a}', {'a': hm});
+    if (!d.isBefore(today.subtract(const Duration(days: 1)))) return context.tr('Hier · {a}', {'a': hm});
     return DateFormat('d MMM yyyy · HH:mm', 'fr').format(d);
   }
 
@@ -985,13 +985,13 @@ class TransactionWidget extends StatelessWidget {
     // Achat de pièces : montant réellement payé (sinon équivalent FCFA sur iPhone)
     final equivalent = TxAmount.paidLabel(transaction) ?? TxAmount.equivalent(transaction);
     final desc = transaction.description?.trim() ?? '';
-    final label = _labels[type] ?? type;
+    final label = _labels[type] != null ? context.tr(_labels[type]!) : type;
 
     final statut = transaction.statut?.toUpperCase() ?? '';
     final String? statutLabel = statut == 'ENCOURS'
-        ? 'En cours'
+        ? context.tr('En cours')
         : statut == 'ANNULER'
-            ? 'Annulée'
+            ? context.tr('Annulée')
             : null;
     final statutColor = statut == 'ANNULER' ? c.danger : c.warning;
 
@@ -1024,7 +1024,7 @@ class TransactionWidget extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '$label · ${_date(transaction.createdAt ?? 0)}',
+                        '$label · ${_date(context, transaction.createdAt ?? 0)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11, color: c.textSecondary),

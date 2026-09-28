@@ -1,4 +1,4 @@
-﻿
+
 
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import 'inactiveUserReminderHelperService.dart';
+import '../l10n/tr.dart';
 
 class CoinGiftService {
   static const int coinsPerFcfa = 25;   // pour 10 FCFA
@@ -150,10 +151,10 @@ class CoinGiftService {
     final notificationId = FirebaseFirestore.instance.collection('Notifications').doc().id;
     final notification = NotificationData(
       id: notificationId,
-      titre: "🎁 Cadeau reçu !",
+      titre: '🎁 Cadeau reçu !',
       media_url: authProvider.loginUserData.imageUrl ?? '',
       type: NotificationType.POST.name,
-      description: "@$senderName vous a envoyé un cadeau de $coinsAmount pièces ! 🎉",
+      description: '@${senderName} vous a envoyé un cadeau de ${coinsAmount} pièces ! 🎉',
       users_id_view: [],
       user_id: authProvider.loginUserData.id!,
       receiver_id: receiverId,
@@ -176,7 +177,7 @@ class CoinGiftService {
         smallImage: authProvider.loginUserData.imageUrl ?? '',
         send_user_id: authProvider.loginUserData.id!,
         recever_user_id: receiverId,
-        message: "🎁 @$senderName vous a envoyé un cadeau de $coinsAmount pièces !",
+        message: '🎁 @${senderName} vous a envoyé un cadeau de ${coinsAmount} pièces !',
         type_notif: NotificationType.POST.name,
         post_id: postId,
         post_type: postDataType,
@@ -217,7 +218,7 @@ class CoinGiftService {
     await _sendGiftNotification(
       receiverId: receiverId,
       receiverOneSignalId: receiverOneSignalId,
-      senderName: authProvider.loginUserData.pseudo ?? 'Un utilisateur',
+      senderName: authProvider.loginUserData.pseudo ?? context.tr('Un utilisateur'),
       coinsAmount: coinsAmount,
       postId: post.id!,
       postDataType: post.dataType ?? PostDataType.IMAGE.name,
@@ -228,17 +229,17 @@ class CoinGiftService {
     onSuccess?.call();
   }
 
-  static const List<String> _giftMessages = [
-    '🎁 Un cadeau pour soutenir ce travail 💪 Merci pour ce contenu !',
-    '🎁 Ce contenu mérite d\'être reconnu — voilà ma contribution !',
-    '🎁 Bravo pour ce post, voilà mon petit soutien 🔥',
-    '🎁 Continuez comme ça, vous méritez ce cadeau 💙',
-    '🎁 Ce contenu est top, je soutiens ✨',
-    '🎁 Merci pour ce que vous créez — voilà pour vous 🙏',
-    '🎁 Un vrai coup de cœur pour ce post 💎',
-    '🎁 Trop bien ce contenu, je vous soutiens 🚀',
-    '🎁 Voilà ma façon de vous encourager — continuez ! 💪',
-    '🎁 Ce post vaut le détour, voilà mon soutien 🌟',
+  static List<String> get _giftMessages => [
+    tr('🎁 Un cadeau pour soutenir ce travail 💪 Merci pour ce contenu !'),
+    tr('🎁 Ce contenu mérite d\'être reconnu — voilà ma contribution !'),
+    tr('🎁 Bravo pour ce post, voilà mon petit soutien 🔥'),
+    tr('🎁 Continuez comme ça, vous méritez ce cadeau 💙'),
+    tr('🎁 Ce contenu est top, je soutiens ✨'),
+    tr('🎁 Merci pour ce que vous créez — voilà pour vous 🙏'),
+    tr('🎁 Un vrai coup de cœur pour ce post 💎'),
+    tr('🎁 Trop bien ce contenu, je vous soutiens 🚀'),
+    tr('🎁 Voilà ma façon de vous encourager — continuez ! 💪'),
+    tr('🎁 Ce post vaut le détour, voilà mon soutien 🌟'),
   ];
 
   static void postGiftAutoComment({
@@ -315,7 +316,7 @@ class CoinGiftService {
         ..user_id = userId
         ..type = TypeTransaction.CONVERSION_PIECES.name
         ..statut = StatutTransaction.VALIDER.name
-        ..description = "Conversion de $coinsAmount pièces en FCFA"
+        ..description = 'Conversion de $coinsAmount pièces en FCFA'
         ..montant = fcfaGain
         ..methode_paiement = "pieces"
         ..createdAt = DateTime.now().millisecondsSinceEpoch;

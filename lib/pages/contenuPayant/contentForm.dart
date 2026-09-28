@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
@@ -814,7 +814,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '${user?.abonnes ?? 0} abonnés',
+                  '${user?.followersCount ?? 0} abonnés',
                   style: TextStyle(
                     color: _colors.primary,
                     fontSize: 14,

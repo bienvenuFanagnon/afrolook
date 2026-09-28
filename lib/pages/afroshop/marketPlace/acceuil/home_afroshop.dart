@@ -1,4 +1,4 @@
-﻿import 'package:afrotok/utils/responsive_sheet.dart';
+import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -44,6 +44,8 @@ import 'shop_video_feed.dart';
 import '../../../../theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../../utils/platform_guard.dart';
+import '../../../../l10n/tr.dart';
 
 class HomeAfroshopPage extends StatefulWidget {
   const HomeAfroshopPage({super.key, required this.title});
@@ -1285,6 +1287,13 @@ class _HomePageState extends State<HomeAfroshopPage>
 
   @override
   Widget build(BuildContext context) {
+    // Marketplace masquée sur iPhone/iPad pour le moment
+    if (kIsAppleStore) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text(context.tr('Cette section n\'est pas disponible sur cet appareil.'))),
+      );
+    }
     _clrs = AppColors.of(context);
     return Scaffold(
       backgroundColor: _clrs!.background,

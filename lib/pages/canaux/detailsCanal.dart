@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -42,6 +42,7 @@ import '../user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
+import '../../l10n/tr.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -273,13 +274,13 @@ class _CanalDetailsState extends State<CanalDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Êtes-vous sûr de vouloir vous désabonner de ce canal?',
+                context.tr('Êtes-vous sûr de vouloir vous désabonner de ce canal?'),
                 style: TextStyle(color: colors.textSecondary),
               ),
               SizedBox(height: 8),
               if (isPrivate)
                 Text(
-                  '⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de ${CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)} pièces pour y accéder à nouveau.',
+                  context.tr('⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de {a} pièces pour y accéder à nouveau.', {'a': CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)}),
                   style: TextStyle(
                     color: colors.accent,
                     fontSize: 12,
@@ -291,7 +292,7 @@ class _CanalDetailsState extends State<CanalDetails> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+              child: Text(context.tr('Annuler'), style: TextStyle(color: colors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -334,7 +335,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '✅ Vous vous êtes désabonné de ce canal.',
+            context.tr('✅ Vous vous êtes désabonné de ce canal.'),
             style: TextStyle(color: _colors.onPrimary),
           ),
           backgroundColor: _colors.primary,
@@ -347,7 +348,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '❌ Erreur lors du désabonnement',
+            context.tr('❌ Erreur lors du désabonnement'),
             style: TextStyle(color: _colors.onPrimary),
           ),
           backgroundColor: _colors.danger,
@@ -373,14 +374,14 @@ class _CanalDetailsState extends State<CanalDetails> {
           title: Row(children: [
             Icon(Icons.group_add, color: colors.primary, size: 22),
             const SizedBox(width: 8),
-            Text('Remplir les abonnés', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+            Text(context.tr('Remplir les abonnés'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
           ]),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Nombre d\'utilisateurs actifs à ajouter (ex : 1000, 10 000…) :',
+                context.tr('Nombre d\'utilisateurs actifs à ajouter (ex : 1000, 10 000…) :'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 12),
@@ -389,7 +390,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                 keyboardType: TextInputType.number,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Ex : 500',
+                  hintText: context.tr('Ex : 500'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
@@ -397,14 +398,14 @@ class _CanalDetailsState extends State<CanalDetails> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Annuler'))),
             ElevatedButton(
               onPressed: () {
                 final n = int.tryParse(controller.text.trim());
                 if (n != null && n > 0) Navigator.pop(ctx, n);
               },
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary),
-              child: const Text('Ajouter'),
+              child: Text(context.tr('Ajouter')),
             ),
           ],
         );
@@ -419,7 +420,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     final messenger = ScaffoldMessenger.of(context);
 
     bool _dialogOpen = true;
-    final progressNotifier = ValueNotifier<String>('Initialisation…');
+    final progressNotifier = ValueNotifier<String>(context.tr('Initialisation…'));
     nav.push(PageRouteBuilder(
       opaque: false,
       barrierDismissible: false,
@@ -471,7 +472,7 @@ class _CanalDetailsState extends State<CanalDetails> {
 
       outer:
       while (toAdd.length < count) {
-        progressNotifier.value = 'Recherche des utilisateurs actifs… (${toAdd.length}/$count)';
+        progressNotifier.value = context.tr('Recherche des utilisateurs actifs… ({a}/{b})', {'a': toAdd.length, 'b': count});
 
         var query = firestore
             .collection('Users')
@@ -494,7 +495,7 @@ class _CanalDetailsState extends State<CanalDetails> {
 
       if (toAdd.isEmpty) {
         closeDialog();
-        messenger.showSnackBar(const SnackBar(content: Text('Aucun nouvel utilisateur actif à ajouter.')));
+        messenger.showSnackBar(SnackBar(content: Text(context.tr('Aucun nouvel utilisateur actif à ajouter.'))));
         return;
       }
 
@@ -502,7 +503,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       int written = 0;
       for (int i = 0; i < toAdd.length; i += batchSize) {
         final chunk = toAdd.sublist(i, (i + batchSize).clamp(0, toAdd.length));
-        progressNotifier.value = 'Écriture… ($written/${toAdd.length})';
+        progressNotifier.value = context.tr('Écriture… ({a}/{b})', {'a': written, 'b': toAdd.length});
         await firestore.collection('Canaux').doc(widget.canal.id).update({
           'usersSuiviId': FieldValue.arrayUnion(chunk),
           'suivi': FieldValue.increment(chunk.length),
@@ -518,10 +519,10 @@ class _CanalDetailsState extends State<CanalDetails> {
           widget.canal.suivi = (widget.canal.suivi ?? 0) + toAdd.length;
         });
       }
-      messenger.showSnackBar(SnackBar(content: Text('${toAdd.length} abonné(s) ajouté(s) avec succès ✅')));
+      messenger.showSnackBar(SnackBar(content: Text(context.tr('{a} abonné(s) ajouté(s) avec succès ✅', {'a': toAdd.length}))));
     } catch (e) {
       closeDialog();
-      messenger.showSnackBar(SnackBar(content: Text('Erreur : $e')));
+      messenger.showSnackBar(SnackBar(content: Text(context.tr('Erreur : {a}', {'a': e}))));
     }
     progressNotifier.dispose();
   }
@@ -543,18 +544,18 @@ class _CanalDetailsState extends State<CanalDetails> {
           title: Row(children: [
             const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
             const SizedBox(width: 8),
-            Text('Supprimer le canal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+            Text(context.tr('Supprimer le canal'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
           ]),
           content: Text(
-            'Cette action est irréversible.\nTous les posts et abonnés seront supprimés définitivement.',
+            context.tr('Cette action est irréversible.\nTous les posts et abonnés seront supprimés définitivement.'),
             style: TextStyle(color: colors.textSecondary),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Annuler'))),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Continuer', style: TextStyle(color: Colors.white)),
+              child: Text(context.tr('Continuer'), style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -563,7 +564,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     if (!step1 || !mounted) return;
 
     // Étape 2 : confirmation finale
-    final canalName = widget.canal.titre ?? 'ce canal';
+    final canalName = widget.canal.titre ?? context.tr('ce canal');
     final step2 = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -571,14 +572,14 @@ class _CanalDetailsState extends State<CanalDetails> {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: colors.surface,
-          title: Text('Dernière confirmation', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: colors.textPrimary)),
-          content: Text('Supprimer définitivement le canal\n"$canalName" ?', style: TextStyle(color: colors.textSecondary)),
+          title: Text(context.tr('Dernière confirmation'), style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: colors.textPrimary)),
+          content: Text(context.tr('Supprimer définitivement le canal\n"{a}" ?', {'a': canalName}), style: TextStyle(color: colors.textSecondary)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Non, annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Non, annuler'))),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Oui, supprimer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              child: Text(context.tr('Oui, supprimer'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ],
         );
@@ -609,7 +610,7 @@ class _CanalDetailsState extends State<CanalDetails> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Canal supprimé avec succès'), backgroundColor: Colors.green),
+          SnackBar(content: Text(context.tr('Canal supprimé avec succès')), backgroundColor: Colors.green),
         );
         Navigator.of(context).popUntil((r) => r.isFirst);
       }
@@ -617,7 +618,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Erreur lors de la suppression'),
+            content: Text(context.tr('Erreur lors de la suppression')),
             backgroundColor: _colors.danger,
           ),
         );
@@ -650,7 +651,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '✅ Vous avez déjà accès à ce canal privé!',
+            context.tr('✅ Vous avez déjà accès à ce canal privé!'),
             style: TextStyle(color: _colors.onPrimary),
           ),
           backgroundColor: _colors.primary,
@@ -664,17 +665,14 @@ class _CanalDetailsState extends State<CanalDetails> {
     final String dialogTitle;
     final String confirmationMessage;
     if (_monthlySubscriptionExpired) {
-      dialogTitle = 'Renouveler l\'abonnement';
-      confirmationMessage = 'Votre abonnement mensuel a expiré.\n\n'
-          'Renouvelez pour ${CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)} par mois et continuez à accéder à ce canal.';
+      dialogTitle = context.tr('Renouveler l\'abonnement');
+      confirmationMessage = context.tr('Votre abonnement mensuel a expiré.\n\nRenouvelez pour {a} par mois et continuez à accéder à ce canal.', {'a': CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)});
     } else if (isMensuel) {
-      dialogTitle = 'Abonnement Mensuel';
-      confirmationMessage = 'Ce canal est privé — abonnement mensuel à ${CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)} par mois.\n\n'
-          'L\'accès est valable 30 jours, puis renouvelable.';
+      dialogTitle = context.tr('Abonnement Mensuel');
+      confirmationMessage = context.tr('Ce canal est privé — abonnement mensuel à {a} par mois.\n\nL\'accès est valable 30 jours, puis renouvelable.', {'a': CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)});
     } else {
-      dialogTitle = 'Abonnement Unique';
-      confirmationMessage = 'Ce canal est privé. L\'accès à vie coûte ${CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)}.\n\n'
-          'Confirmez-vous l\'abonnement ?';
+      dialogTitle = context.tr('Abonnement Unique');
+      confirmationMessage = context.tr('Ce canal est privé. L\'accès à vie coûte {a}.\n\nConfirmez-vous l\'abonnement ?', {'a': CoinCheckout.coinsLabel(widget.canal.subscriptionPriceCoins)});
     }
 
     final bool? confirm = await showDialog<bool>(
@@ -688,13 +686,13 @@ class _CanalDetailsState extends State<CanalDetails> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+              child: Text(context.tr('Annuler'), style: TextStyle(color: colors.textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
               child: Text(
-                isMensuel ? 'S\'abonner — ${CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)} pièces/mois' : 'Confirmer',
+                isMensuel ? context.tr('S\'abonner — {a} pièces/mois', {'a': CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)}) : context.tr('Confirmer'),
                 style: TextStyle(color: colors.onPrimary),
               ),
             ),
@@ -716,7 +714,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     try {
       // Paiement en pièces (serveur) : débit, 70 % au créateur en Pièces gagnées, parrainages, part de l'app
       final paid = await CoinCheckout.pay(context,
-          kind: 'canal', refId: widget.canal.id, coins: widget.canal.subscriptionPriceCoins, label: 'Abonnement au canal');
+          kind: 'canal', refId: widget.canal.id, coins: widget.canal.subscriptionPriceCoins, label: context.tr('Abonnement au canal'));
       if (!paid) {
         if (mounted) setState(() => _isProcessingSubscription = false);
         return;
@@ -741,10 +739,10 @@ class _CanalDetailsState extends State<CanalDetails> {
 
       final isMensuel = widget.canal.subscriptionType == 'mensuel';
       String successMessage = isMensuel
-          ? '✅ Abonnement mensuel activé ! Accès valable 30 jours.'
+          ? context.tr('✅ Abonnement mensuel activé ! Accès valable 30 jours.')
           : isAlreadySubscribed && _requirePaymentForExistingSubscribers
-              ? '✅ Paiement accepté! Vous conservez l\'accès au canal privé.'
-              : '✅ Abonnement réussi! Canal privé ajouté.';
+              ? context.tr('✅ Paiement accepté! Vous conservez l\'accès au canal privé.')
+              : context.tr('✅ Abonnement réussi! Canal privé ajouté.');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -762,7 +760,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '❌ Erreur lors de l\'abonnement',
+            context.tr('❌ Erreur lors de l\'abonnement'),
             style: TextStyle(color: _colors.onPrimary),
           ),
           backgroundColor: _colors.danger,
@@ -813,10 +811,10 @@ class _CanalDetailsState extends State<CanalDetails> {
     // Créer la notification
     final NotificationData notif = NotificationData(
       id: firestore.collection('Notifications').doc().id,
-      titre: "Canal 📺",
+      titre: 'Canal 📺',
       media_url: authProvider.loginUserData.imageUrl,
       type: NotificationType.ACCEPTINVITATION.name,
-      description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!",
+      description: '@${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!',
       users_id_view: [],
       user_id: userId,
       receiver_id: widget.canal.userId!,
@@ -836,7 +834,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         smallImage: widget.canal.urlImage!,
         send_user_id: userId,
         recever_user_id: widget.canal.userId!,
-        message: "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!",
+        message: '📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!',
         type_notif: NotificationType.ACCEPTINVITATION.name,
         post_id: "",
         post_type: "",
@@ -1035,7 +1033,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                             _buildStatItem(
                               icon: Icons.attach_money,
                               value: CoinCheckout.fmt(widget.canal.subscriptionPriceCoins),
-                              label: 'pièces',
+                              label: context.tr('pièces'),
                               color: _colors.accent,
                             ),
                           ],
@@ -1087,7 +1085,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 Icon(Icons.check_circle_rounded, size: 18, color: _colors.primary),
                                 const SizedBox(width: 6),
-                                Text('Abonné',
+                                Text(context.tr('Abonné'),
                                     style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
                               ]),
                             )
@@ -1115,7 +1113,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                                     )
                                   : Text(
                                       _monthlySubscriptionExpired
-                                          ? "Renouveler l'abonnement"
+                                          ? context.tr('Renouveler l\'abonnement')
                                           : isFollowing
                                           ? AppLocalizations.of(context).canalUnsubscribeBtn
                                           : (isPrivate ? AppLocalizations.of(context).canalSubscribeBtn : AppLocalizations.of(context).canalFollowBtn),
@@ -1157,7 +1155,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                         child: Row(children: [
                           Icon(Icons.edit, size: 18, color: _colors.textPrimary),
                           const SizedBox(width: 10),
-                          Text('Modifier', style: TextStyle(color: _colors.textPrimary)),
+                          Text(context.tr('Modifier'), style: TextStyle(color: _colors.textPrimary)),
                         ]),
                       ),
                       PopupMenuItem(
@@ -1173,7 +1171,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                         child: Row(children: [
                           const Icon(Icons.rocket_launch_outlined, size: 18, color: Color(0xFFFFD700)),
                           const SizedBox(width: 10),
-                          Text('Booster ce canal', style: TextStyle(color: _colors.textPrimary)),
+                          Text(context.tr('Booster ce canal'), style: TextStyle(color: _colors.textPrimary)),
                         ]),
                       ),
                       PopupMenuItem(
@@ -1181,14 +1179,14 @@ class _CanalDetailsState extends State<CanalDetails> {
                         child: Row(children: [
                           Icon(Icons.group_add, size: 18, color: _colors.primary),
                           const SizedBox(width: 10),
-                          Expanded(child: Text('Remplir les abonnés', style: TextStyle(color: _colors.textPrimary))),
+                          Expanded(child: Text(context.tr('Remplir les abonnés'), style: TextStyle(color: _colors.textPrimary))),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: _colors.primary.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text('Admin', style: TextStyle(color: _colors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
+                            child: Text(context.tr('Admin'), style: TextStyle(color: _colors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
                           ),
                         ]),
                       ),
@@ -1197,7 +1195,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                         child: Row(children: [
                           const Icon(Icons.delete_forever_rounded, size: 18, color: Colors.red),
                           const SizedBox(width: 10),
-                          const Text('Supprimer le canal', style: TextStyle(color: Colors.red)),
+                          Text(context.tr('Supprimer le canal'), style: TextStyle(color: Colors.red)),
                         ]),
                       ),
                     ],
@@ -1226,12 +1224,12 @@ class _CanalDetailsState extends State<CanalDetails> {
                           ]),
                         ),
                       if (authProvider.loginUserData.role == 'ADM' || authProvider.loginUserData.role == 'admin')
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'supprimer',
                         child: Row(children: [
                           Icon(Icons.delete_forever_rounded, size: 18, color: Colors.red),
                           SizedBox(width: 10),
-                          Text('Supprimer le canal', style: TextStyle(color: Colors.red)),
+                          Text(context.tr('Supprimer le canal'), style: TextStyle(color: Colors.red)),
                         ]),
                       ),
                     ],
@@ -1424,7 +1422,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     const Icon(Icons.admin_panel_settings, color: Colors.orange, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      'Propriétaire : ',
+                      context.tr('Propriétaire : '),
                       style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                     // Photo + pseudo : ouvre la fenêtre du profil
@@ -1453,7 +1451,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              widget.canal.user?.pseudo != null ? '@${widget.canal.user!.pseudo}' : 'Chargement…',
+                              widget.canal.user?.pseudo != null ? '@${widget.canal.user!.pseudo}' : context.tr('Chargement…'),
                               style: const TextStyle(color: Colors.orange, fontSize: 12.5, fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1473,7 +1471,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           minimumSize: const Size(0, 32),
                         ),
-                        child: const Text('Gérer', style: TextStyle(fontWeight: FontWeight.w700)),
+                        child: Text(context.tr('Gérer'), style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                   ],
                 ),
@@ -1526,7 +1524,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                _descriptionExpanded ? 'Voir moins' : 'Voir plus',
+                                _descriptionExpanded ? context.tr('Voir moins') : context.tr('Voir plus'),
                                 style: TextStyle(
                                   color: _colors.primary,
                                   fontSize: 13,
@@ -1571,7 +1569,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         : score >= 15
             ? const Color(0xFFFFD700)
             : _colors.textSecondary;
-    final label = score >= 50 ? 'Canal populaire' : score >= 15 ? 'Canal actif' : 'Canal';
+    final label = score >= 50 ? context.tr('Canal populaire') : score >= 15 ? context.tr('Canal actif') : context.tr('Canal');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
@@ -1583,7 +1581,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         Icon(Icons.trending_up_rounded, size: 13, color: color),
         const SizedBox(width: 5),
         Text(
-          '$label · ${score.toStringAsFixed(1)} pts',
+          context.tr('{a} · {b} pts', {'a': label, 'b': score.toStringAsFixed(1)}),
           style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
         ),
       ]),
@@ -1647,7 +1645,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     Icon(Icons.error, color: _colors.danger, size: 50),
                     SizedBox(height: 16),
                     Text(
-                      'Erreur de chargement',
+                      context.tr('Erreur de chargement'),
                       style: TextStyle(color: _colors.textSecondary),
                     ),
                   ],
@@ -1666,12 +1664,12 @@ class _CanalDetailsState extends State<CanalDetails> {
                     Icon(Icons.feed, color: _colors.textSecondary, size: 50),
                     SizedBox(height: 16),
                     Text(
-                      'Aucune publication',
+                      context.tr('Aucune publication'),
                       style: TextStyle(color: _colors.textSecondary, fontSize: 16),
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Soyez le premier à publier dans ce canal!',
+                      context.tr('Soyez le premier à publier dans ce canal!'),
                       style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ],
@@ -1719,13 +1717,13 @@ class _CanalDetailsState extends State<CanalDetails> {
             ? CircularProgressIndicator(color: _colors.primary)
             : _hasMorePosts
             ? Text(
-          'Charger plus...',
+          context.tr('Charger plus...'),
           style: TextStyle(color: _colors.textSecondary),
         )
             : Container(
           padding: EdgeInsets.all(16),
           child: Text(
-            '🎉 Vous avez vu toutes les publications!',
+            context.tr('🎉 Vous avez vu toutes les publications!'),
             style: TextStyle(
               color: _colors.textSecondary,
               fontSize: 14,

@@ -9,6 +9,7 @@ import '../../models/model_data.dart';
 import '../../theme/app_colors.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/tr.dart';
 
 class ChannelFollowersPage extends StatefulWidget {
   final List<String> userIds;
@@ -232,7 +233,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
   }
 
   Widget _buildUserItem(UserData user, double width, double height, BuildContext context, AppLocalizations l10n) {
-    final followerCount = user.abonnes ?? 0;
+    final followerCount = user.followersCount;
     final isVerified = user.isVerify ?? false;
 
     return Container(
@@ -453,7 +454,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 elevation: 0,
               ),
-              child: Text('Rafraîchir'),
+              child: Text(context.tr('Rafraîchir')),
             ),
           ],
         ),

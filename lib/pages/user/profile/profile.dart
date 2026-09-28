@@ -26,6 +26,8 @@ import '../userAbonnementPage.dart';
 import '../userPubs/user_my_advertisements_page.dart';
 import '../userPubs/user_profile_boost_page.dart';
 import 'adminprofil.dart';
+import '../account_deletion_page.dart';
+import '../../../l10n/tr.dart';
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
 
@@ -107,6 +109,26 @@ class _UserProfilState extends State<UserProfil> {
           ),
         ),
         actions: [
+          // Réglages du compte : suppression accessible depuis le profil (exigence App Store 5.1.1(v))
+          PopupMenuButton<String>(
+            icon: Icon(Icons.settings_rounded, color: textWhite),
+            tooltip: context.tr('Paramètres'),
+            onSelected: (v) {
+              if (v == 'delete') {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountDeletionPage()));
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(children: [
+                  const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+                  const SizedBox(width: 10),
+                  Text(context.tr('Supprimer mon compte'), style: const TextStyle(color: Colors.redAccent)),
+                ]),
+              ),
+            ],
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Container(
@@ -213,7 +235,7 @@ class _UserProfilState extends State<UserProfil> {
                                 Column(
                                   children: [
                                     Text(
-                                      "${formatNumber(authProvider.loginUserData!.userAbonnesIds!.length ?? 0)}",
+                                      "${formatNumber(authProvider.loginUserData!.followersCount)}",
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,

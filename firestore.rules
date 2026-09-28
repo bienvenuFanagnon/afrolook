@@ -272,7 +272,13 @@ service cloud.firestore {
     // ─────────────────────────────────────────────────────────────
     match /{collection}/{docId} {
       allow read: if isAuth();
-      allow write: if isAuth() && collection != 'Posts';
+      // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
+      allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig';
+    }
+
+    // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app
+    match /AppConfig/exchangeRates {
+      allow read: if true;
     }
 
     // Sous-collections uniquement ({subCollection} impose au moins un segment de plus,

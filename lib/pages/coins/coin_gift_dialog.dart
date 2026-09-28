@@ -15,6 +15,7 @@ import '../../widgets/gifts/gift_sent_overlay.dart';
 import '../postComments.dart';
 import 'coin_recharge_screen.dart';
 import '../../widgets/coin_balances_row.dart';
+import '../../l10n/tr.dart';
 
 class CoinGiftDialog extends StatefulWidget {
   final String receiverId;
@@ -174,7 +175,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Envoyer un cadeau à',
+                  context.tr('Envoyer un cadeau à'),
                   style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
@@ -209,7 +210,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 // Sous-texte pour les canaux (nombre d'abonnés)
                 if (isCanal && widget.post?.canal != null)
                   Text(
-                    '${(widget.post?.canal?.membersCount ?? 0)} abonné(s)',
+                    context.tr('{a} abonné(s)', {'a': (widget.post?.canal?.membersCount ?? 0)}),
                     style: TextStyle(
                       color: colors.textSecondary,
                       fontSize: 10,
@@ -375,7 +376,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            'Insuffisant',
+                            context.tr('Insuffisant'),
                             style: TextStyle(
                               color: Colors.red.withOpacity(0.7),
                               fontSize: 7,
@@ -432,7 +433,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Recharger', style: TextStyle(fontWeight: FontWeight.bold,fontSize: 13)),
+              child: Text(context.tr('Recharger'), style: TextStyle(fontWeight: FontWeight.bold,fontSize: 13)),
             ),
           ),
           const SizedBox(width: 12),
@@ -462,7 +463,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    hasEnoughCoins ? 'Envoyer' : 'Solde faible',
+                    hasEnoughCoins ? context.tr('Envoyer') : context.tr('Solde faible'),
                     style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 13),
                   ),
                 ],
@@ -559,13 +560,13 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
         return AlertDialog(
         backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Solde insuffisant', style: TextStyle(color: Color(0xFFFFD700))),
-        content: Text('Vous n\'avez pas assez de pièces. Voulez-vous en acheter ?',
+        title: Text(context.tr('Solde insuffisant'), style: TextStyle(color: Color(0xFFFFD700))),
+        content: Text(context.tr('Vous n\'avez pas assez de pièces. Voulez-vous en acheter ?'),
             style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
+            child: Text(context.tr('Annuler'), style: TextStyle(color: colors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -573,7 +574,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
               _navigateToRecharge();
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD700)),
-            child: const Text('Acheter des pièces', style: TextStyle(color: Colors.black)),
+            child: Text(context.tr('Acheter des pièces'), style: TextStyle(color: Colors.black)),
           ),
         ],
       );

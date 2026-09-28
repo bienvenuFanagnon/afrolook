@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import 'package:afrotok/pages/home/users_cards/allUsersCard.dart';
@@ -1475,7 +1475,7 @@ class _PostViewState extends State<PostView>
                                         ),
                                         TextCustomerUserTitle(
                                           titre:
-                                          "${formatNumber(post.user!.abonnes!)} abonné(s)",
+                                          "${formatNumber(post.user!.followersCount)} abonné(s)",
                                           fontSize: 10,
                                           couleur: ConstColors.textColors,
                                           fontWeight: FontWeight.w400,
@@ -2222,7 +2222,7 @@ class _PostViewState extends State<PostView>
                                   ),
                                   TextCustomerUserTitle(
                                     titre:
-                                    "${formatNumber(post.user!.abonnes!)} abonné(s)",
+                                    "${formatNumber(post.user!.followersCount)} abonné(s)",
                                     fontSize: SizeText.homeProfileTextSize,
                                     couleur: ConstColors.textColors,
                                     fontWeight: FontWeight.w400,

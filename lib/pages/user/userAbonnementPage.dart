@@ -13,6 +13,7 @@ import '../../models/model_data.dart';
 import '../../services/abonnement_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/tr.dart';
 
 class AbonnementScreen extends StatefulWidget {
   final int? initialTab;
@@ -132,13 +133,13 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     String title;
     if (isGold) {
       gradientColors = [const Color(0xFFFFD700), const Color(0xFFFF8C00)];
-      title = 'Afrolook Gold 👑';
+      title = context.tr('Afrolook Gold 👑');
     } else if (isPremium) {
       gradientColors = [const Color(0xFFFF416C), const Color(0xFFFDB813)];
-      title = 'Afrolook Premium ⭐';
+      title = context.tr('Afrolook Premium ⭐');
     } else {
       gradientColors = [const Color(0xFF1FAA59), const Color(0xFF0E7C3A)];
-      title = 'Abonnement';
+      title = context.tr('Abonnement');
     }
 
     return SliverAppBar(
@@ -176,10 +177,10 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         labelColor: Colors.white,
         unselectedLabelColor: colors.textSecondary,
         indicatorSize: TabBarIndicatorSize.tab,
-        tabs: const [
-          Tab(text: '🆓 Gratuit'),
-          Tab(text: '⭐ Premium'),
-          Tab(text: '👑 Gold'),
+        tabs: [
+          Tab(text: context.tr('🆓 Gratuit')),
+          Tab(text: context.tr('⭐ Premium')),
+          Tab(text: context.tr('👑 Gold')),
         ],
         indicator: BoxDecoration(
           gradient: const LinearGradient(colors: [Color(0xFFFF416C), Color(0xFFFDB813)]),
@@ -202,26 +203,26 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           icon: Icons.person_outline,
           iconColor: colors.textSecondary,
           borderColor: colors.border,
-          title: 'PLAN GRATUIT',
-          subtitle: isActive ? 'Votre plan actuel' : 'Plan de base',
+          title: context.tr('PLAN GRATUIT'),
+          subtitle: isActive ? context.tr('Votre plan actuel') : context.tr('Plan de base'),
           badge: isActive ? 'ACTUEL' : null,
           badgeColor: colors.primary,
         ),
         const SizedBox(height: 20),
         _buildFeatureList(colors, [
-          _Feature('Messagerie privée', true),
-          _Feature('Rejoindre des groupes publics', true),
-          _Feature('Posts visibles dans son pays', true),
-          _Feature('1 photo par look', true),
-          _Feature('Créer un groupe', false),
-          _Feature('Live HD', false),
-          _Feature('Groupes privés payants', false),
-          _Feature('Badge exclusif', false),
+          _Feature(context.tr('Messagerie privée'), true),
+          _Feature(context.tr('Rejoindre des groupes publics'), true),
+          _Feature(context.tr('Posts visibles dans son pays'), true),
+          _Feature(context.tr('1 photo par look'), true),
+          _Feature(context.tr('Créer un groupe'), false),
+          _Feature(context.tr('Live HD'), false),
+          _Feature(context.tr('Groupes privés payants'), false),
+          _Feature(context.tr('Badge exclusif'), false),
         ]),
         const SizedBox(height: 20),
         _buildInfoCard(colors, [
-          '⏰ À l\'expiration d\'un plan payant, retour automatique au plan Gratuit',
-          '💡 Votre abonnement soutient le développement d\'Afrolook',
+          context.tr('⏰ À l\'expiration d\'un plan payant, retour automatique au plan Gratuit'),
+          context.tr('💡 Votre abonnement soutient le développement d\'Afrolook'),
         ]),
       ],
     );
@@ -249,8 +250,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             icon: Icons.workspace_premium,
             iconColor: const Color(0xFFFFD700),
             borderColor: const Color(0xFFFFD700),
-            title: 'VOUS ÊTES GOLD 👑',
-            subtitle: 'Le plan Gold inclut tout Premium et plus encore',
+            title: context.tr('VOUS ÊTES GOLD 👑'),
+            subtitle: context.tr('Le plan Gold inclut tout Premium et plus encore'),
           ),
           const SizedBox(height: 16),
           Container(
@@ -261,7 +262,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
             ),
             child: Text(
-              'Gold ⊃ Premium : tous les avantages Premium sont inclus dans votre plan Gold.',
+              context.tr('Gold ⊃ Premium : tous les avantages Premium sont inclus dans votre plan Gold.'),
               style: TextStyle(color: colors.textSecondary, fontSize: 13),
               textAlign: TextAlign.center,
             ),
@@ -282,8 +283,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             icon: Icons.workspace_premium,
             iconColor: const Color(0xFFFDB813),
             borderColor: const Color(0xFFFDB813),
-            title: 'ABONNÉ PREMIUM ⭐',
-            subtitle: 'Valable encore ${AbonnementUtils.getDaysRemaining(abonnement)} jours',
+            title: context.tr('ABONNÉ PREMIUM ⭐'),
+            subtitle: context.tr('Valable encore {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
             badge: 'ACTIF',
             badgeColor: const Color(0xFFFF416C),
             dateDebut: abonnement?.dateDebut,
@@ -291,7 +292,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             montantPaye: abonnement?.montantPaye,
           ),
         if (!isPremium) ...[
-          _buildPlanHeader(colors, 'Premium ⭐', 'À partir de', 200, const Color(0xFFFDB813)),
+          _buildPlanHeader(colors, context.tr('Premium ⭐'), context.tr('À partir de'), 200, const Color(0xFFFDB813)),
           const SizedBox(height: 16),
           _buildFeatureList(colors, _premiumFeatures()),
           const SizedBox(height: 20),
@@ -317,9 +318,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: kPayInCoins ? 'Solde de pièces' : (_selectedBalancePremium == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
+            soldeLabel: kPayInCoins ? context.tr('Solde de pièces') : (_selectedBalancePremium == 'votre_solde_depot' ? context.tr('Solde Dépôt') : context.tr('Solde Gains')),
             accentColor: const Color(0xFFFF416C),
-            btnLabel: '⭐ DEVENIR PREMIUM — ${_px(prixFinal)}',
+            btnLabel: context.tr('⭐ DEVENIR PREMIUM — {a}', {'a': _px(prixFinal)}),
             onPay: () => _souscrire(user, 'premium', _dureePremium, balanceKey: _selectedBalancePremium),
           ),
         ],
@@ -340,9 +341,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         _buildGroupRenewalNote(colors),
         const SizedBox(height: 20),
         _buildInfoCard(colors, [
-          '🔄 Pas de renouvellement automatique — vous contrôlez votre abonnement',
-          '⏰ À l\'expiration, retour automatique au plan Gratuit',
-          '👑 Pour les groupes privés payants, passez au plan Gold',
+          context.tr('🔄 Pas de renouvellement automatique — vous contrôlez votre abonnement'),
+          context.tr('⏰ À l\'expiration, retour automatique au plan Gratuit'),
+          context.tr('👑 Pour les groupes privés payants, passez au plan Gold'),
         ]),
       ],
     );
@@ -370,8 +371,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             icon: Icons.workspace_premium,
             iconColor: const Color(0xFFFFD700),
             borderColor: const Color(0xFFFFD700),
-            title: 'ABONNÉ GOLD 👑',
-            subtitle: 'Valable encore ${AbonnementUtils.getDaysRemaining(abonnement)} jours',
+            title: context.tr('ABONNÉ GOLD 👑'),
+            subtitle: context.tr('Valable encore {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
             badge: 'ACTIF',
             badgeColor: const Color(0xFFFFD700),
             dateDebut: abonnement?.dateDebut,
@@ -382,7 +383,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         if (!isGold) ...[
           _buildNewBadge(),
           const SizedBox(height: 12),
-          _buildPlanHeader(colors, 'Gold 👑', 'À partir de', 500, const Color(0xFFFFD700)),
+          _buildPlanHeader(colors, context.tr('Gold 👑'), context.tr('À partir de'), 500, const Color(0xFFFFD700)),
         ],
 
         const SizedBox(height: 16),
@@ -398,8 +399,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
           ),
           child: Text(
-            '👑 Si votre abonnement Gold expire : vos groupes passent en lecture seule. '
-            'Les membres ne sont pas expulsés — le renouvellement est demandé à leur prochaine entrée.',
+            context.tr('👑 Si votre abonnement Gold expire : vos groupes passent en lecture seule. Les membres ne sont pas expulsés — le renouvellement est demandé à leur prochaine entrée.'),
             style: TextStyle(color: colors.textSecondary, fontSize: 12),
           ),
         ),
@@ -429,9 +429,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             solde: solde,
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: kPayInCoins ? 'Solde de pièces' : (_selectedBalanceGold == 'votre_solde_depot' ? 'Solde Dépôt' : 'Solde Gains'),
+            soldeLabel: kPayInCoins ? context.tr('Solde de pièces') : (_selectedBalanceGold == 'votre_solde_depot' ? context.tr('Solde Dépôt') : context.tr('Solde Gains')),
             accentColor: const Color(0xFFFFD700),
-            btnLabel: '👑 DEVENIR GOLD — ${_px(prixFinal)}',
+            btnLabel: context.tr('👑 DEVENIR GOLD — {a}', {'a': _px(prixFinal)}),
             onPay: () => _souscrire(user, 'gold', _dureeGold, balanceKey: _selectedBalanceGold),
             btnTextColor: Colors.black,
           ),
@@ -453,9 +453,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         _buildGroupRenewalNote(colors),
         const SizedBox(height: 20),
         _buildInfoCard(colors, [
-          '🔄 Pas de renouvellement automatique — vous contrôlez votre abonnement',
-          '⏰ À l\'expiration, retour automatique au plan Gratuit',
-          '💰 70% des abonnements de vos groupes privés vous reviennent directement',
+          context.tr('🔄 Pas de renouvellement automatique — vous contrôlez votre abonnement'),
+          context.tr('⏰ À l\'expiration, retour automatique au plan Gratuit'),
+          context.tr('💰 70% des abonnements de vos groupes privés vous reviennent directement'),
         ]),
       ],
     );
@@ -521,17 +521,17 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             const SizedBox(height: 14),
             Divider(color: colors.border),
             const SizedBox(height: 10),
-            _infoRow(colors, 'Début',
+            _infoRow(colors, context.tr('Début'),
                 '${dateDebut.day}/${dateDebut.month}/${dateDebut.year}'),
             const SizedBox(height: 6),
-            _infoRow(colors, 'Fin',
+            _infoRow(colors, context.tr('Fin'),
                 '${dateFin.day}/${dateFin.month}/${dateFin.year}',
                 valueColor: dateFin.difference(DateTime.now()).inDays <= 7
                     ? Colors.orange
                     : null),
             if (montantPaye != null) ...[
               const SizedBox(height: 6),
-              _infoRow(colors, 'Montant payé', _px(montantPaye),
+              _infoRow(colors, context.tr('Montant payé'), _px(montantPaye),
                   valueColor: const Color(0xFFFDB813)),
             ],
           ],
@@ -557,7 +557,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   /// Prix en pièces sur iPhone (achat via l'App Store), en FCFA ailleurs.
   String _px(num fcfa) =>
-      kPayInCoins ? '${CoinCheckout.coinsFor(fcfa.toDouble())} pièces' : '${fcfa.toInt()} FCFA';
+      kPayInCoins ? context.tr('{a} pièces', {'a': CoinCheckout.coinsFor(fcfa.toDouble())}) : '${fcfa.toInt()} FCFA';
 
   Widget _buildPlanHeader(AppColors colors, String name, String prefix,
       int basePrice, Color accentColor) {
@@ -591,7 +591,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           color: const Color(0xFFFFD700),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Text('NOUVEAU 🆕',
+        child: Text(context.tr('NOUVEAU 🆕'),
             style: TextStyle(
                 color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
       ),
@@ -651,7 +651,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('CHOISIR LA DURÉE',
+        Text(context.tr('CHOISIR LA DURÉE'),
             style: TextStyle(
                 color: colors.textSecondary,
                 fontSize: 11,
@@ -763,20 +763,20 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       ),
       child: Column(
         children: [
-          _infoRow(colors, 'Durée', '$selected mois'),
+          _infoRow(colors, context.tr('Durée'), '$selected mois'),
           if (reduction > 0) ...[
             const SizedBox(height: 8),
-            _infoRow(colors, 'Prix de base', _px(prixBase),
+            _infoRow(colors, context.tr('Prix de base'), _px(prixBase),
                 valueColor: colors.textSecondary),
             const SizedBox(height: 8),
-            _infoRow(colors, 'Réduction', '-${_px(reduction)}',
+            _infoRow(colors, context.tr('Réduction'), '-${_px(reduction)}',
                 valueColor: Colors.green),
           ],
           Divider(color: colors.border, height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total à payer',
+              Text(context.tr('Total à payer'),
                   style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 15,
@@ -789,7 +789,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-                'soit ${(prixFinal / selected).round()} F/mois',
+                context.tr('soit {a} F/mois', {'a': (prixFinal / selected).round()}),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           ),
         ],
@@ -834,9 +834,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(soldeLabel,
+                    Text(context.tr(soldeLabel),
                         style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                    Text(kPayInCoins ? '${solde.toInt()} pièces' : '${solde.toInt()} FCFA',
+                    Text(kPayInCoins ? context.tr('{a} pièces', {'a': solde.toInt()}) : '${solde.toInt()} FCFA',
                         style: TextStyle(
                             color: colors.textPrimary,
                             fontSize: 18,
@@ -853,7 +853,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.red),
                   ),
-                  child: Text(kPayInCoins ? '-${manquant.toInt()} pièces' : '-${manquant.toInt()} F',
+                  child: Text(kPayInCoins ? context.tr('-{a} pièces', {'a': manquant.toInt()}) : '-${manquant.toInt()} F',
                       style: const TextStyle(
                           color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
@@ -880,9 +880,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Solde insuffisant',
+                      Text(context.tr('Solde insuffisant'),
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text('Il vous manque ${manquant.toInt()} F',
+                      Text(context.tr('Il vous manque {a} F', {'a': manquant.toInt()}),
                           style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                     ],
                   ),
@@ -896,7 +896,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text('Recharger', style: TextStyle(fontSize: 12)),
+                  child: Text(context.tr('Recharger'), style: TextStyle(fontSize: 12)),
                 ),
               ],
             ),
@@ -942,7 +942,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'PAYER AVEC',
+          context.tr('PAYER AVEC'),
           style: TextStyle(
             color: colors.textSecondary,
             fontSize: 11,
@@ -956,7 +956,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             Expanded(
               child: _buildBalanceOption(
                 colors: colors,
-                label: 'Dépôt',
+                label: context.tr('Dépôt'),
                 amount: depot,
                 color: green,
                 icon: Icons.savings_rounded,
@@ -968,7 +968,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             Expanded(
               child: _buildBalanceOption(
                 colors: colors,
-                label: 'Gains',
+                label: context.tr('Gains'),
                 amount: principal,
                 color: colors.warning,
                 icon: Icons.account_balance_wallet_rounded,
@@ -1075,7 +1075,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Expire dans ${AbonnementUtils.getDaysRemaining(abonnement)} jours',
+                      context.tr('Expire dans {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
                       style: const TextStyle(
                           color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13),
                     ),
@@ -1083,13 +1083,13 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 ],
               ),
             ),
-          Text('Renouveler votre abonnement',
+          Text(context.tr('Renouveler votre abonnement'),
               style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text('Renouvelez avant l\'expiration pour ne pas perdre vos avantages.',
+          Text(context.tr('Renouvelez avant l\'expiration pour ne pas perdre vos avantages.'),
               style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           const SizedBox(height: 14),
           OutlinedButton(
@@ -1101,7 +1101,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               minimumSize: const Size(double.infinity, 46),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('VOIR LES OPTIONS DE RENOUVELLEMENT',
+            child: Text(context.tr('VOIR LES OPTIONS DE RENOUVELLEMENT'),
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           ),
         ],
@@ -1124,9 +1124,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Groupes privés payants : si votre abonnement à un groupe expire, '
-              'vous n\'êtes pas expulsé. Le renouvellement vous est demandé '
-              'uniquement lorsque vous essayez de ré-entrer dans le groupe.',
+              context.tr('Groupes privés payants : si votre abonnement à un groupe expire, vous n\'êtes pas expulsé. Le renouvellement vous est demandé uniquement lorsque vous essayez de ré-entrer dans le groupe.'),
               style: TextStyle(color: colors.textSecondary, fontSize: 12),
             ),
           ),
@@ -1169,55 +1167,55 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   // ── Listes de fonctionnalités ────────────────────────────────────────────
 
   List<_Feature> _premiumFeatures() => [
-    _Feature('Messagerie privée', true),
-    _Feature('Créer et gérer des groupes · 2 groupes max · 100 membres/groupe', true),
-    _Feature('Posts visibles partout en Afrique', true),
-    _Feature('3 photos par look · vidéos jusqu\'à 40 Mo', true),
-    _Feature('Live HD · latence 500ms', true),
-    _Feature('Mode fantôme · connexion cachée', true),
-    _Feature('Emojis 3D · Stickers exclusifs', true),
-    _Feature('Challenges illimités', true),
-    _Feature('Badge Premium ⭐', true),
-    _Feature('Mode lecture seule pour les membres', true),
-    _Feature('Support prioritaire', true),
-    _Feature('Groupes illimités · membres illimités (Gold)', false, isGoldOnly: true),
-    _Feature('Groupes privés payants (70% vous revient)', false, isGoldOnly: true),
-    _Feature('Code unique + lien d\'invitation partageable', false, isGoldOnly: true),
-    _Feature('Liens externes cliquables dans les messages', false, isGoldOnly: true),
-    _Feature('Carousel pub dans la page Groupes', false, isGoldOnly: true),
-    _Feature('Contrôle écriture / partage par membre', false, isGoldOnly: true),
-    _Feature('Masquer ou restreindre un message', false, isGoldOnly: true),
-    _Feature('Groupe gelé si plan expire (membres protégés)', false, isGoldOnly: true),
+    _Feature(context.tr('Messagerie privée'), true),
+    _Feature(context.tr('Créer et gérer des groupes · 2 groupes max · 100 membres/groupe'), true),
+    _Feature(context.tr('Posts visibles partout en Afrique'), true),
+    _Feature(context.tr('3 photos par look · vidéos jusqu\'à 40 Mo'), true),
+    _Feature(context.tr('Live HD · latence 500ms'), true),
+    _Feature(context.tr('Mode fantôme · connexion cachée'), true),
+    _Feature(context.tr('Emojis 3D · Stickers exclusifs'), true),
+    _Feature(context.tr('Challenges illimités'), true),
+    _Feature(context.tr('Badge Premium ⭐'), true),
+    _Feature(context.tr('Mode lecture seule pour les membres'), true),
+    _Feature(context.tr('Support prioritaire'), true),
+    _Feature(context.tr('Groupes illimités · membres illimités (Gold)'), false, isGoldOnly: true),
+    _Feature(context.tr('Groupes privés payants (70% vous revient)'), false, isGoldOnly: true),
+    _Feature(context.tr('Code unique + lien d\'invitation partageable'), false, isGoldOnly: true),
+    _Feature(context.tr('Liens externes cliquables dans les messages'), false, isGoldOnly: true),
+    _Feature(context.tr('Carousel pub dans la page Groupes'), false, isGoldOnly: true),
+    _Feature(context.tr('Contrôle écriture / partage par membre'), false, isGoldOnly: true),
+    _Feature(context.tr('Masquer ou restreindre un message'), false, isGoldOnly: true),
+    _Feature(context.tr('Groupe gelé si plan expire (membres protégés)'), false, isGoldOnly: true),
   ];
 
   List<_Feature> _goldFeatures() => [
     // ── Hérité du plan Premium
-    _Feature('Tout le plan Premium inclus', true),
+    _Feature(context.tr('Tout le plan Premium inclus'), true),
     // ── Posts & médias
-    _Feature('5 photos par look (Premium : 3)', true, isGoldOnly: true),
-    _Feature('Vidéos jusqu\'à 50 Mo (Premium : 40 Mo)', true, isGoldOnly: true),
+    _Feature(context.tr('5 photos par look (Premium : 3)'), true, isGoldOnly: true),
+    _Feature(context.tr('Vidéos jusqu\'à 50 Mo (Premium : 40 Mo)'), true, isGoldOnly: true),
     // ── Groupes : limites levées
-    _Feature('Groupes illimités (Premium : 2 max)', true, isGoldOnly: true),
-    _Feature('Membres illimités par groupe (Premium : 100 max)', true, isGoldOnly: true),
+    _Feature(context.tr('Groupes illimités (Premium : 2 max)'), true, isGoldOnly: true),
+    _Feature(context.tr('Membres illimités par groupe (Premium : 100 max)'), true, isGoldOnly: true),
     // ── Groupes privés
-    _Feature('Groupes privés payants · 70% des revenus vous revient', true, isGoldOnly: true),
-    _Feature('Abonnés groupes : renouvellement à la demande (non expulsés)', true, isGoldOnly: true),
+    _Feature(context.tr('Groupes privés payants · 70% des revenus vous revient'), true, isGoldOnly: true),
+    _Feature(context.tr('Abonnés groupes : renouvellement à la demande (non expulsés)'), true, isGoldOnly: true),
     // ── Accès & invitation
-    _Feature('Code unique d\'accès (valide 30 jours, régénérable)', true, isGoldOnly: true),
-    _Feature('Lien d\'invitation partageable (WhatsApp, SMS…)', true, isGoldOnly: true),
-    _Feature('Lien redirige directement vers le groupe dans l\'app', true, isGoldOnly: true),
+    _Feature(context.tr('Code unique d\'accès (valide 30 jours, régénérable)'), true, isGoldOnly: true),
+    _Feature(context.tr('Lien d\'invitation partageable (WhatsApp, SMS…)'), true, isGoldOnly: true),
+    _Feature(context.tr('Lien redirige directement vers le groupe dans l\'app'), true, isGoldOnly: true),
     // ── Contrôle des membres
-    _Feature('Contrôle d\'écriture global (activer/désactiver pour tous)', true, isGoldOnly: true),
-    _Feature('Contrôle de partage global (posts, produits, lives)', true, isGoldOnly: true),
-    _Feature('Permissions individuelles par membre', true, isGoldOnly: true),
+    _Feature(context.tr('Contrôle d\'écriture global (activer/désactiver pour tous)'), true, isGoldOnly: true),
+    _Feature(context.tr('Contrôle de partage global (posts, produits, lives)'), true, isGoldOnly: true),
+    _Feature(context.tr('Permissions individuelles par membre'), true, isGoldOnly: true),
     // ── Messages enrichis
-    _Feature('Liens externes cliquables dans les messages', true, isGoldOnly: true),
-    _Feature('Masquer un message existant (sans le supprimer)', true, isGoldOnly: true),
-    _Feature('Choisir qui peut voir un message (destinataires ciblés)', true, isGoldOnly: true),
+    _Feature(context.tr('Liens externes cliquables dans les messages'), true, isGoldOnly: true),
+    _Feature(context.tr('Masquer un message existant (sans le supprimer)'), true, isGoldOnly: true),
+    _Feature(context.tr('Choisir qui peut voir un message (destinataires ciblés)'), true, isGoldOnly: true),
     // ── Visibilité & badge
-    _Feature('Carousel pub dans la page Groupes (aléatoire)', true, isGoldOnly: true),
-    _Feature('Badge Gold 👑 exclusif sur votre profil et vos groupes', true, isGoldOnly: true),
-    _Feature('Groupe gelé automatiquement si plan expire (membres conservés)', true, isGoldOnly: true),
+    _Feature(context.tr('Carousel pub dans la page Groupes (aléatoire)'), true, isGoldOnly: true),
+    _Feature(context.tr('Badge Gold 👑 exclusif sur votre profil et vos groupes'), true, isGoldOnly: true),
+    _Feature(context.tr('Groupe gelé automatiquement si plan expire (membres conservés)'), true, isGoldOnly: true),
   ];
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -1241,7 +1239,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         if (!mounted) return;
         _showSuccessDialog(planType);
       } else if (result['cancelled'] != true) {
-        _showErrorDialog(result['message'] ?? 'Erreur inconnue');
+        _showErrorDialog(result['message'] ?? context.tr('Erreur inconnue'));
       }
     } catch (e) {
       if (!mounted) return;
@@ -1271,13 +1269,13 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                       color: colors.border, borderRadius: BorderRadius.circular(2))),
-              Text('Renouveler l\'abonnement',
+              Text(context.tr('Renouveler l\'abonnement'),
                   style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('Choisissez une durée pour votre renouvellement',
+              Text(context.tr('Choisissez une durée pour votre renouvellement'),
                   style: TextStyle(color: colors.textSecondary, fontSize: 13)),
               const SizedBox(height: 20),
               Expanded(
@@ -1310,7 +1308,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                           style: TextStyle(
                               color: colors.textPrimary, fontWeight: FontWeight.bold)),
                       subtitle: Text(
-                          'soit ${_px(prixFinal / mois)}/mois',
+                          context.tr('soit {a}/mois', {'a': _px(prixFinal / mois)}),
                           style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                       trailing: Icon(Icons.arrow_forward_ios,
                           color: colors.textSecondary, size: 16),
@@ -1355,7 +1353,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               child: Icon(Icons.workspace_premium, color: Colors.white, size: 48),
             ),
             const SizedBox(height: 20),
-            Text('FÉLICITATIONS !',
+            Text(context.tr('FÉLICITATIONS !'),
                 style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 22,
@@ -1363,8 +1361,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             const SizedBox(height: 10),
             Text(
               isGold
-                  ? 'Vous êtes maintenant membre Afrolook Gold 👑'
-                  : 'Vous êtes maintenant membre Afrolook Premium ⭐',
+                  ? context.tr('Vous êtes maintenant membre Afrolook Gold 👑')
+                  : context.tr('Vous êtes maintenant membre Afrolook Premium ⭐'),
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),
@@ -1385,7 +1383,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('SUPER !',
+              child: Text(context.tr('SUPER !'),
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             ),
           ),
@@ -1400,7 +1398,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: colors.surface,
-        title: Text('Erreur', style: TextStyle(color: colors.danger)),
+        title: Text(context.tr('Erreur'), style: TextStyle(color: colors.danger)),
         content: Text(message, style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(

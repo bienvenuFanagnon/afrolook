@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:afrotok/pages/user/profile/profileDetail/model/user.dart';
 import 'package:animated_icon/animated_icon.dart';
@@ -953,7 +953,7 @@ class _VideoPostItemState extends State<_VideoPostItem> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('@${user.pseudo}', style: TextStyle(color: Colors.white)),
-              Text('${user.userAbonnesIds!.length} abonnés',
+              Text('${user.followersCount} abonnés',
                   style: TextStyle(color: Colors.white54)),
             ],
           ),

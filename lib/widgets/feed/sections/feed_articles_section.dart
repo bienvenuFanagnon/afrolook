@@ -4,6 +4,7 @@ import '../../../models/model_data.dart';
 import '../../../pages/afroshop/marketPlace/component.dart';
 import '../../../pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../../theme/app_colors.dart';
+import '../../../utils/platform_guard.dart';
 
 /// Section horizontale d'articles/produits boostés.
 class FeedArticlesSection extends StatelessWidget {
@@ -22,6 +23,7 @@ class FeedArticlesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const SizedBox.shrink(); // marketplace masquée sur iPhone/iPad
     if (isLoading || articles.isEmpty) return const SizedBox.shrink();
 
     final size = MediaQuery.of(context).size;

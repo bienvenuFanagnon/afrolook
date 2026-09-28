@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/model_data.dart';
 import '../services/coin_checkout.dart';
 import 'platform_guard.dart';
+import '../services/currency_service.dart';
 
 /// Montant d'une transaction (TransactionSoldes) : unité réelle du champ `montant`
 /// et affichage « tout en pièces » sur iPhone, avec l'équivalent FCFA à côté.
@@ -42,7 +43,7 @@ class TxAmount {
 
   /// Montant principal : « 1 250 pièces » ou « 500 FCFA ».
   static String main(TransactionSolde t) =>
-      _showInCoins(t) ? '${fmt(coins(t))} pièces' : '${fmt(fcfa(t))} FCFA';
+      _showInCoins(t) ? '${fmt(coins(t))} pièces' : Money.fmt(fcfa(t));
 
   /// Pour un achat de pièces : « payé 480 FCFA · Dépôt FCFA » ou « payé 0,99 USD · App Store ».
   static String? paidLabel(TransactionSolde t) {
@@ -58,6 +59,6 @@ class TxAmount {
   static String? equivalent(TransactionSolde t) {
     if (!kIsAppleStore || !_showInCoins(t)) return null;
     final v = fcfa(t);
-    return v > 0 ? '≈ ${fmt(v)} FCFA' : null;
+    return v > 0 ? '≈ ${Money.fmt(v)}' : null;
   }
 }

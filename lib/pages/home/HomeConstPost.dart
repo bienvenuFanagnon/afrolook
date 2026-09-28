@@ -53,6 +53,7 @@ import '../../widgets/feed/sections/feed_state_widgets.dart';
 import '../../widgets/feed/sections/feed_filter_bar.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../../services/feed/feed_repository.dart';
+import '../../services/feed/country_priority.dart';
 import '../../services/feed/seen_discovery_cache.dart';
 import '../../services/feed/discovery_posts_cache.dart';
 import '../../services/feed/feed_preload_service.dart';
@@ -78,6 +79,7 @@ import '../../widgets/flame_streak_banner.dart';
 
 import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 import '../../services/feed/end_of_feed_cache.dart';
+import '../intro/monetization_tutorial.dart';
 
 
 // Constantes de couleur
@@ -282,9 +284,15 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
 
   late SoundProvider _soundProvider;
+  // Rappel animé « chaque like paie le créateur » (de temps en temps)
+  bool _showTutoReminder = false;
+
   @override
   void initState() {
     super.initState();
+    MonetizationReminder.due('home').then((v) {
+      if (mounted && v) setState(() => _showTutoReminder = true);
+    });
     // 🔥 Initialisation du MediaPlaybackManager avec l'instance globale
     // (celle fournie par le ChangeNotifierProvider dans main.dart, la même
     // utilisée par l'icône son de l'AppBar, AudioPostCard et YouTubeVideoCard)
@@ -1108,13 +1116,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             }
 
             // Filtrer les pays
-            List<AfricanCountry> filteredCountries = AfricanCountry.allCountries
-                .where((country) {
-              if (searchQuery.isEmpty) return true;
-              return country.name.toLowerCase().contains(searchQuery) ||
-                  country.code.toLowerCase().contains(searchQuery) ||
-                  country.name?.toLowerCase().contains(searchQuery) == true;
-            }).toList();
+            List<AfricanCountry> filteredCountries = AfricanCountry.search(
+                AfricanCountry.sortedFor(Provider.of<UserAuthProvider>(context, listen: false)
+                    .loginUserData.countryData?['countryCode']),
+                searchQuery);
 
             final colors = AppColors.of(context);
             final l10n = AppLocalizations.of(context);
@@ -1520,7 +1525,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   String _getCountryFlag(String countryCode) {
     try {
-      final country = AfricanCountry.allCountries.firstWhere(
+      final country = AfricanCountry.everyCountry.firstWhere(
             (c) => c.code.toUpperCase() == countryCode.toUpperCase(),
         orElse: () => AfricanCountry(
           code: countryCode,
@@ -2378,7 +2383,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _t2FillPostIds.clear();
 
     const kMaxT1 = 25;
-    final s1 = _spreadCreators(t1.take(kMaxT1).toList());
+    // Posts du pays de l'utilisateur en premier (tri local, sans index Firestore)
+    final s1 = _spreadCreators(prioritizeUserCountry(
+        t1.take(kMaxT1).toList(), authProvider.loginUserData.countryData?['countryCode']));
 
     printVm('🏗️ [FEED] _buildTieredFeed → T1=${s1.length} | total=${s1.length}');
     return s1;
@@ -3739,6 +3746,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 ),
         ),
       );
+
+      if (i == 5 && _showTutoReminder) {
+        contentWidgets.add(const FeedMonetizationReminder(key: ValueKey('tuto_reminder_home'), feed: 'home'));
+      }
 
       // T2 fill counter
       if (_t2FillPostIds.isNotEmpty && _t2FillPostIds.contains(pid)) {

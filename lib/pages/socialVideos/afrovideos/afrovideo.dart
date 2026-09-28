@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';
 import 'package:animated_icon/animated_icon.dart';
@@ -38,6 +38,7 @@ import '../../user/detailsOtherUser.dart';
 import '../../userPosts/postWidgets/postCadeau.dart';
 import '../../userPosts/postWidgets/postWidgetPage.dart';
 import 'SimpleVideoView.dart';
+import '../../../utils/platform_guard.dart';
 
 class AfroVideo extends StatefulWidget {
   const AfroVideo({super.key});
@@ -629,6 +630,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
 
 
   void showRepublishDialog(Post post, UserData userSendCadeau,AppDefaultData appdata ,BuildContext context) {
+    if (kIsAppleStore) return; // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
     showDialog(
       context: context,
       builder: (context) {
@@ -736,6 +738,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
 
 
   void showGiftDialog(Post post, UserData userSendCadeau,AppDefaultData appdata) {
+    if (kIsAppleStore) return; // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
     showDialog(
       context: context,
       barrierDismissible: false, // Empêche la fermeture
@@ -1230,7 +1233,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                                                                     ),
                                                                   ),
                                                                   TextCustomerUserTitle(
-                                                                    titre: "${ datas[index].user!.abonnes!} abonné(s)",
+                                                                    titre: "${ datas[index].user!.followersCount} abonné(s)",
                                                                     fontSize: 10,
                                                                     couleur: Colors.white,
                                                                     fontWeight: FontWeight.w400,

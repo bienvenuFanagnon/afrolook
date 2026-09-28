@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -23,6 +23,7 @@ import '../../../providers/userProvider.dart';
 import '../../theme/app_colors.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/tr.dart';
 
 class EditCanal extends StatefulWidget {
   final Canal canal;
@@ -54,15 +55,15 @@ class _EditCanalState extends State<EditCanal> {
   String _subscriptionType = 'unique';
   String? _selectedMainCategory;
 
-  static const _mainCategoryOptions = [
-    {'value': 'SPORT',      'label': 'Sport',       'emoji': '⚽'},
-    {'value': 'ACTUALITES', 'label': 'Actualités',  'emoji': '📰'},
-    {'value': 'LOOKS',      'label': 'Looks',       'emoji': '👗'},
-    {'value': 'EVENEMENT',  'label': 'Événement',   'emoji': '🎉'},
-    {'value': 'OFFRES',     'label': 'Offres',      'emoji': '🛍️'},
-    {'value': 'GAMER',      'label': 'Gaming',      'emoji': '🎮'},
-    {'value': 'VIBE',       'label': 'Vibe',        'emoji': '🎵'},
-    {'value': 'GENERAL',    'label': 'Général',     'emoji': '📌'},
+  static List<Map<String, String>> get _mainCategoryOptions => [
+    {'value': 'SPORT',      'label': tr('Sport'),       'emoji': '⚽'},
+    {'value': 'ACTUALITES', 'label': tr('Actualités'),  'emoji': '📰'},
+    {'value': 'LOOKS',      'label': tr('Looks'),       'emoji': '👗'},
+    {'value': 'EVENEMENT',  'label': tr('Événement'),   'emoji': '🎉'},
+    {'value': 'OFFRES',     'label': tr('Offres'),      'emoji': '🛍️'},
+    {'value': 'GAMER',      'label': tr('Gaming'),      'emoji': '🎮'},
+    {'value': 'VIBE',       'label': tr('Vibe'),        'emoji': '🎵'},
+    {'value': 'GENERAL',    'label': tr('Général'),     'emoji': '📌'},
   ];
 
   final ImagePicker picker = ImagePicker();
@@ -320,9 +321,9 @@ class _EditCanalState extends State<EditCanal> {
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               style: TextStyle(color: _colors.textPrimary),
               decoration: InputDecoration(
-                labelText: "Prix de l'abonnement (pièces)",
-                suffixText: 'pièces',
-                helperText: '1 FCFA = 2,5 pièces',
+                labelText: context.tr('Prix de l\'abonnement (pièces)'),
+                suffixText: context.tr('pièces'),
+                helperText: context.tr('1 FCFA = 2,5 pièces'),
                 labelStyle: TextStyle(color: _colors.accent),
                 prefixIcon: Icon(Icons.toll_rounded, color: _colors.accent),
                 border: OutlineInputBorder(
@@ -353,15 +354,15 @@ class _EditCanalState extends State<EditCanal> {
             ),
             SizedBox(height: 16),
             Text(
-              'Type d\'abonnement',
+              context.tr('Type d\'abonnement'),
               style: TextStyle(color: _colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
             ),
             SizedBox(height: 8),
             Row(
               children: [
-                _buildSubTypeOption('unique', Icons.all_inclusive_rounded, 'Unique', 'Accès à vie'),
+                _buildSubTypeOption('unique', Icons.all_inclusive_rounded, context.tr('Unique'), context.tr('Accès à vie')),
                 SizedBox(width: 10),
-                _buildSubTypeOption('mensuel', Icons.autorenew_rounded, 'Mensuel', 'Renouvellement/mois'),
+                _buildSubTypeOption('mensuel', Icons.autorenew_rounded, context.tr('Mensuel'), context.tr('Renouvellement/mois')),
               ],
             ),
           ],
@@ -468,7 +469,7 @@ class _EditCanalState extends State<EditCanal> {
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                '$subscribersCount abonné(s) actuel(s) seront affectés par ce changement',
+                context.tr('{a} abonné(s) actuel(s) seront affectés par ce changement', {'a': subscribersCount}),
                 style: TextStyle(
                   color: _colors.accent,
                   fontSize: 12,
@@ -572,7 +573,7 @@ class _EditCanalState extends State<EditCanal> {
           Icon(Icons.category_outlined, color: _colors.primary, size: 18),
           SizedBox(width: 6),
           Text(
-            'Catégorie principale',
+            context.tr('Catégorie principale'),
             style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
           ),
           if (locked && unlocksAt != null) ...[
@@ -581,7 +582,7 @@ class _EditCanalState extends State<EditCanal> {
             SizedBox(width: 4),
             Expanded(
               child: Text(
-                'Modifiable le ${_formatDate(unlocksAt)}',
+                context.tr('Modifiable le {a}', {'a': _formatDate(unlocksAt)}),
                 style: TextStyle(color: Colors.orange, fontSize: 11),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -637,7 +638,7 @@ class _EditCanalState extends State<EditCanal> {
       child: Column(
         children: [
           Text(
-            'Statistiques du Canal',
+            context.tr('Statistiques du Canal'),
             style: TextStyle(
               color: _colors.accent,
               fontSize: 18,
@@ -836,7 +837,7 @@ class _EditCanalState extends State<EditCanal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Erreur lors de la mise à jour du canal',
+              context.tr('Erreur lors de la mise à jour du canal'),
               style: TextStyle(color: _colors.onPrimary),
             ),
             backgroundColor: _colors.danger,
@@ -918,7 +919,7 @@ class _EditCanalState extends State<EditCanal> {
                         Icon(Icons.info, color: _colors.accent, size: 20),
                         SizedBox(width: 10),
                         Text(
-                          'Information importante',
+                          context.tr('Information importante'),
                           style: TextStyle(
                             color: _colors.accent,
                             fontWeight: FontWeight.bold,
@@ -928,8 +929,7 @@ class _EditCanalState extends State<EditCanal> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Si vous rendez un canal privé public, tous les abonnés actuels garderont l\'accès gratuitement. '
-                          'Si vous rendez un canal public privé, les nouveaux membres devront payer l\'abonnement.',
+                      context.tr('Si vous rendez un canal privé public, tous les abonnés actuels garderont l\'accès gratuitement. Si vous rendez un canal public privé, les nouveaux membres devront payer l\'abonnement.'),
                       style: TextStyle(
                         color: _colors.textSecondary,
                         fontSize: 12,

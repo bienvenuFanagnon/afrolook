@@ -8,6 +8,7 @@ import '../../widgets/coin_balances_row.dart';
 import 'monetisation.dart';
 import 'UserRetrait/userRetraitForm.dart';
 import '../../models/model_data.dart';
+import '../../l10n/tr.dart';
 
 class AccountDeletionPage extends StatefulWidget {
   const AccountDeletionPage({Key? key}) : super(key: key);
@@ -32,15 +33,15 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
 
   Future<void> _onDelete() async {
     if (!_confirmed) {
-      setState(() => _error = 'Veuillez cocher la case de confirmation.');
+      setState(() => _error = context.tr('Veuillez cocher la case de confirmation.'));
       return;
     }
     if (_passwordController.text.trim().isEmpty) {
-      setState(() => _error = 'Entrez votre mot de passe pour confirmer.');
+      setState(() => _error = context.tr('Entrez votre mot de passe pour confirmer.'));
       return;
     }
     if (_hasBalances && !_acceptLoss) {
-      setState(() => _error = 'Retire tes soldes, ou coche la case pour y renoncer.');
+      setState(() => _error = context.tr('Retire tes soldes, ou coche la case pour y renoncer.'));
       return;
     }
 
@@ -64,10 +65,9 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Compte supprimé'),
-        content: const Text(
-          'Ton compte est désactivé dès maintenant. Il sera supprimé définitivement dans 15 jours, '
-          'avec toutes ses données.\n\nEn cas d\'erreur, contacte-nous avant cette date : officiel.afrolook@gmail.com',
+        title: Text(context.tr('Compte supprimé')),
+        content: Text(
+          context.tr('Ton compte est désactivé dès maintenant. Il sera supprimé définitivement dans 15 jours, avec toutes ses données.\n\nEn cas d\'erreur, contacte-nous avant cette date : officiel.afrolook@gmail.com'),
         ),
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
       ),
@@ -111,28 +111,28 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
           Icon(Icons.account_balance_wallet_rounded, color: colors.warning, size: 20),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('Il reste des soldes sur ton compte',
+            child: Text(context.tr('Il reste des soldes sur ton compte'),
                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
           ),
         ]),
         const SizedBox(height: 8),
-        Text('Retire-les avant de supprimer ton compte : après la suppression, ils seront perdus.',
+        Text(context.tr('Retire-les avant de supprimer ton compte : après la suppression, ils seront perdus.'),
             style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4)),
         const SizedBox(height: 10),
         if ((u.giftCoinsBalance ?? 0) > 0) ...[
           CoinBalancesInline(user: u),
           const SizedBox(height: 6),
         ],
-        if ((u.votre_solde_principal ?? 0) > 0) line('Gains à retirer', '${TxAmount.fmt(u.votre_solde_principal!)} FCFA'),
-        if ((u.votre_solde_depot ?? 0) > 0) line('Dépôt FCFA', '${TxAmount.fmt(u.votre_solde_depot!)} FCFA'),
-        if ((u.postViewsAvailable ?? 0) > 0) line('Revenus des vues à encaisser', '${TxAmount.fmt(u.postViewsAvailable!)} FCFA'),
+        if ((u.votre_solde_principal ?? 0) > 0) line(context.tr('Gains à retirer'), '${TxAmount.fmt(u.votre_solde_principal!)} FCFA'),
+        if ((u.votre_solde_depot ?? 0) > 0) line(context.tr('Dépôt FCFA'), '${TxAmount.fmt(u.votre_solde_depot!)} FCFA'),
+        if ((u.postViewsAvailable ?? 0) > 0) line(context.tr('Revenus des vues à encaisser'), '${TxAmount.fmt(u.postViewsAvailable!)} FCFA'),
         const SizedBox(height: 10),
         Row(children: [
           Expanded(
             child: FilledButton.icon(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserDemandeRetraitPage())),
               icon: const Icon(Icons.north_east_rounded, size: 18),
-              label: const Text('Retirer mes gains'),
+              label: Text(context.tr('Retirer mes gains')),
               style: FilledButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary),
             ),
           ),
@@ -140,7 +140,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
           Expanded(
             child: OutlinedButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage())),
-              child: const Text('Mon portefeuille'),
+              child: Text(context.tr('Mon portefeuille')),
             ),
           ),
         ]),
@@ -156,7 +156,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text('Je renonce à ces soldes : ils seront perdus avec mon compte.',
+                child: Text(context.tr('Je renonce à ces soldes : ils seront perdus avec mon compte.'),
                     style: TextStyle(color: colors.textPrimary, fontSize: 13, height: 1.4)),
               ),
             ),
@@ -173,7 +173,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: Text('Supprimer mon compte', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 17)),
+        title: Text(context.tr('Supprimer mon compte'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 17)),
         backgroundColor: colors.surface,
         elevation: 0,
         centerTitle: true,
@@ -207,25 +207,24 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
                       Icon(Icons.warning_amber_rounded, color: colors.danger, size: 24),
                       const SizedBox(width: 10),
                       Text(
-                        'Suppression du compte',
+                        context.tr('Suppression du compte'),
                         style: TextStyle(color: colors.danger, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Ton compte sera désactivé immédiatement, puis supprimé définitivement au bout de 15 jours. '
-                    'Pendant ce délai, tu peux contacter notre service en cas d\'erreur. Seront supprimés :',
+                    context.tr('Ton compte sera désactivé immédiatement, puis supprimé définitivement au bout de 15 jours. Pendant ce délai, tu peux contacter notre service en cas d\'erreur. Seront supprimés :'),
                     style: TextStyle(color: colors.textPrimary, fontSize: 14, height: 1.5),
                   ),
                   const SizedBox(height: 10),
                   ...[
-                    'Votre profil et toutes vos informations personnelles',
-                    'Vos posts, vidéos et contenus publiés',
-                    'Votre solde de pièces (Afrocoins)',
-                    'Vos abonnements actifs',
-                    'Vos messages et conversations',
-                    'Votre historique et vos favoris',
+                    context.tr('Votre profil et toutes vos informations personnelles'),
+                    context.tr('Vos posts, vidéos et contenus publiés'),
+                    context.tr('Votre solde de pièces (Afrocoins)'),
+                    context.tr('Vos abonnements actifs'),
+                    context.tr('Vos messages et conversations'),
+                    context.tr('Votre historique et vos favoris'),
                   ].map((item) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
@@ -252,7 +251,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
 
             // ── Mot de passe ───────────────────────────────────────────────
             Text(
-              'Confirmez avec votre mot de passe',
+              context.tr('Confirmez avec votre mot de passe'),
               style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 15),
             ),
             const SizedBox(height: 10),
@@ -261,7 +260,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
               obscureText: _obscure,
               style: TextStyle(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Mot de passe',
+                hintText: context.tr('Mot de passe'),
                 hintStyle: TextStyle(color: colors.textSecondary),
                 filled: true,
                 fillColor: colors.surface,
@@ -304,7 +303,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        'Je comprends que mon compte sera désactivé tout de suite et supprimé définitivement avec toutes mes données dans 15 jours.',
+                        context.tr('Je comprends que mon compte sera désactivé tout de suite et supprimé définitivement avec toutes mes données dans 15 jours.'),
                         style: TextStyle(color: colors.textPrimary, fontSize: 13, height: 1.4),
                       ),
                     ),
@@ -343,7 +342,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
                     ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.delete_forever_rounded, size: 20),
                 label: Text(
-                  _isDeleting ? 'Suppression...' : 'Supprimer définitivement mon compte',
+                  _isDeleting ? context.tr('Suppression...') : context.tr('Supprimer définitivement mon compte'),
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -364,7 +363,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Annuler', style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600)),
+                child: Text(context.tr('Annuler'), style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600)),
               ),
             ),
           ],

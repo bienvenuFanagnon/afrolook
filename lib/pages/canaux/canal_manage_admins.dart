@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +13,7 @@ import '../../models/model_data.dart';
 import '../../theme/app_colors.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../l10n/tr.dart';
 
 class CanalManageAdminsPage extends StatefulWidget {
   final Canal canal;
@@ -128,7 +129,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Erreur lors de la recherche'),
+          content: Text(context.tr('❌ Erreur lors de la recherche')),
           backgroundColor: _colors.danger,
         ),
       );
@@ -163,7 +164,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${user.pseudo} est maintenant administrateur'),
+            content: Text(context.tr('✅ {a} est maintenant administrateur', {'a': user.pseudo})),
             backgroundColor: _colors.primary,
             duration: Duration(seconds: 2),
           ),
@@ -173,7 +174,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur ajout admin: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Erreur lors de l\'ajout'),
+          content: Text(context.tr('❌ Erreur lors de l\'ajout')),
           backgroundColor: _colors.danger,
         ),
       );
@@ -186,7 +187,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       if (user.id == widget.canal.userId) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Le propriétaire ne peut pas être retiré'),
+            content: Text(context.tr('❌ Le propriétaire ne peut pas être retiré')),
             backgroundColor: _colors.danger,
           ),
         );
@@ -210,7 +211,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ ${user.pseudo} n\'est plus administrateur'),
+          content: Text(context.tr('✅ {a} n\'est plus administrateur', {'a': user.pseudo})),
           backgroundColor: _colors.primary,
           duration: Duration(seconds: 2),
         ),
@@ -219,7 +220,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur retrait admin: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Erreur lors du retrait'),
+          content: Text(context.tr('❌ Erreur lors du retrait')),
           backgroundColor: _colors.danger,
         ),
       );
@@ -244,8 +245,8 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(widget.canal.allowedPostersIds!.contains(user.id)
-              ? '✅ ${user.pseudo} peut maintenant poster'
-              : '✅ ${user.pseudo} ne peut plus poster'),
+              ? context.tr('✅ {a} peut maintenant poster', {'a': user.pseudo})
+              : context.tr('✅ {a} ne peut plus poster', {'a': user.pseudo})),
           backgroundColor: _colors.primary,
           duration: Duration(seconds: 2),
         ),
@@ -254,7 +255,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur mise à jour permission: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Erreur lors de la mise à jour'),
+          content: Text(context.tr('❌ Erreur lors de la mise à jour')),
           backgroundColor: _colors.danger,
         ),
       );
@@ -275,8 +276,8 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(widget.canal.allowAllMembersToPost!
-              ? '✅ Tous les membres peuvent maintenant poster'
-              : '✅ Seuls les utilisateurs autorisés peuvent poster'),
+              ? context.tr('✅ Tous les membres peuvent maintenant poster')
+              : context.tr('✅ Seuls les utilisateurs autorisés peuvent poster')),
           backgroundColor: _colors.primary,
           duration: Duration(seconds: 2),
         ),
@@ -285,7 +286,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur mise à jour permissions générales: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Erreur lors de la mise à jour'),
+          content: Text(context.tr('❌ Erreur lors de la mise à jour')),
           backgroundColor: _colors.danger,
         ),
       );
@@ -296,10 +297,10 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
     try {
       final notification = NotificationData(
         id: _firestore.collection('Notifications').doc().id,
-        titre: "Gestion Canal 📺",
+        titre: 'Gestion Canal 📺',
         media_url: widget.canal.urlImage,
         type: NotificationType.INVITATION.name,
-        description: "Vous avez été nommé administrateur du canal #${widget.canal.titre}!",
+        description: 'Vous avez été nommé administrateur du canal #${widget.canal.titre}!',
         users_id_view: [],
         user_id: _authProvider.loginUserData.id!,
         receiver_id: user.id!,
@@ -319,7 +320,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           smallImage: widget.canal.urlImage!,
           send_user_id: _authProvider.loginUserData.id!,
           recever_user_id: user.id!,
-          message: "🎖️ Vous êtes maintenant administrateur du canal #${widget.canal.titre}!",
+          message: '🎖️ Vous êtes maintenant administrateur du canal #${widget.canal.titre}!',
           type_notif: NotificationType.INVITATION.name,
           post_id: "",
           post_type: "",
@@ -486,8 +487,8 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               hintText: _searchByEmail
-                  ? 'Entrez l\'email du membre...'
-                  : 'Entrez le pseudo du membre...',
+                  ? context.tr('Entrez l\'email du membre...')
+                  : context.tr('Entrez le pseudo du membre...'),
               hintStyle: TextStyle(color: _colors.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -670,7 +671,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              user.email ?? 'Pas d\'email',
+              user.email ?? context.tr('Pas d\'email'),
               style: TextStyle(color: _colors.textSecondary, fontSize: 12),
               overflow: TextOverflow.ellipsis,
             ),
@@ -722,11 +723,11 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             ? IconButton(
           icon: Icon(Icons.add_circle, color: _colors.primary),
           onPressed: () => _addAdmin(user),
-          tooltip: 'Ajouter comme administrateur',
+          tooltip: context.tr('Ajouter comme administrateur'),
         )
             : isCreator
             ? Tooltip(
-          message: 'Le propriétaire ne peut pas être modifié',
+          message: context.tr('Le propriétaire ne peut pas être modifié'),
           child: Icon(Icons.lock, color: _colors.textSecondary),
         )
             : Row(
@@ -740,8 +741,8 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
               ),
               onPressed: () => _togglePostingPermission(user),
               tooltip: canPost
-                  ? 'Retirer permission de poster'
-                  : 'Autoriser à poster',
+                  ? context.tr('Retirer permission de poster')
+                  : context.tr('Autoriser à poster'),
             ),
             IconButton(
               icon: Icon(
@@ -750,7 +751,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                 size: 20,
               ),
               onPressed: () => _removeAdmin(user),
-              tooltip: 'Retirer comme administrateur',
+              tooltip: context.tr('Retirer comme administrateur'),
             ),
           ],
         ),
@@ -847,7 +848,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
               Column(
                 children: [
                   Text(
-                    widget.canal.usersSuiviId?.length.toString() ?? '0',
+                    widget.canal.membersCount.toString(),
                     style: TextStyle(
                       color: _colors.info,
                       fontSize: 24,
@@ -971,7 +972,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Les administrateurs peuvent gérer les membres mais seul le propriétaire peut modifier le canal ou ajouter/retirer des administrateurs.',
+                      context.tr('Les administrateurs peuvent gérer les membres mais seul le propriétaire peut modifier le canal ou ajouter/retirer des administrateurs.'),
                       style: TextStyle(color: _colors.warning, fontSize: 12),
                     ),
                   ),

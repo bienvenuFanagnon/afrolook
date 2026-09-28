@@ -90,6 +90,7 @@ import 'coins/post_gifts_list.dart';
 import '../theme/app_colors.dart';
 
 import '../services/feed/feed_repository.dart';
+import '../services/feed/country_priority.dart';
 import '../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../services/postService/feed_interaction_service.dart';
 import '../services/streak_service.dart';
@@ -105,6 +106,8 @@ import '../services/postService/post_view_service.dart';
 import '../widgets/feed/sections/shop_promo_feed_widget.dart';
 import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
+import 'intro/monetization_tutorial.dart';
+import '../utils/platform_guard.dart';
 
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
@@ -184,10 +187,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   // Interactions state
   bool _isSharing = false;
-  bool _isVoting = false;
-  bool _hasVoted = false;
-  Challenge? _challenge;
-  bool _loadingChallenge = false;
   bool _isSupporting = false;
   bool? _hasSeenSupportModal;
   int _selectedGiftIndex = 0;
@@ -210,8 +209,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   bool _midrollVideoInitialized = false;
   VoidCallback? _videoPositionListener;
 
-  // bool get _isLookChallenge => widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
-  bool get _isLookChallenge => widget.initialPost != null && widget.initialPost!.type == 'CHALLENGEPARTICIPATION';
 
   // Pour l'animation de like au double clic
   bool _showLikeAnimation = false;
@@ -255,9 +252,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   Timer? _oldVideosLoadTimer;   // chargement par lot
   Set<String> _usedOldVideoIds = {};
 
+  // Rappel animé « chaque like paie le créateur » (de temps en temps)
+  bool _showTutoReminder = false;
+
   @override
   void initState() {
     super.initState();
+    MonetizationReminder.due('video').then((v) {
+      if (mounted && v) setState(() => _showTutoReminder = true);
+    });
     WidgetsBinding.instance.addObserver(this);
     _pageController = PageController(
       initialPage: 0,
@@ -273,10 +276,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       _checkFavoriteStatus();
       _incrementViews(); // gère totalInteractions + vue unique via SharedPrefs
       _loadSupportModalSeen();
-      if (_isLookChallenge && widget.initialPost!.challenge_id != null) {
-        _loadChallengeData();
-        _checkIfUserHasVoted();
-      }
     }
 
     // 🚀 Affichage instantané : on place immédiatement le post initial dans
@@ -983,6 +982,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   }
 
   void _rebuildFeedItems() {
+    // Première construction : vidéos du pays de l'utilisateur en premier
+    // (la vidéo ouverte reste en tête ; tri local, sans index Firestore).
+    if (_feedItems.isEmpty && _videoPosts.length > 2) {
+      final rest = prioritizeUserCountry(
+          _videoPosts.sublist(1), authProvider.loginUserData.countryData?['countryCode']);
+      _videoPosts.replaceRange(1, _videoPosts.length, rest);
+    }
     final List<Post> normalPosts = List.from(_videoPosts);
     final List<Post> oldBuffer = List.from(_oldVideosCache);
     final List<Post> mixedPosts = [];
@@ -1041,6 +1047,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     for (int i = 0; i < mixedPosts.length; i++) {
       _feedItems.add(mixedPosts[i]);
       postCount++;
+      if (postCount == 5 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
 
       // Pub toutes les 3 vidéos (gratuit uniquement)
       if (!skipAds &&
@@ -1052,7 +1059,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       }
 
       // Promo AfroShop toutes les 7 vidéos
-      if (postCount % 7 == 0 && _promoArticles.isNotEmpty) {
+      if (postCount % 7 == 0 && _promoArticles.isNotEmpty && !kIsAppleStore) {
         _feedItems.add(const _ShopPromoSentinel());
       }
     }
@@ -1095,6 +1102,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     while (videoIdx < _videoPosts.length) {
       _feedItems.add(_videoPosts[videoIdx]);
       videoIdx++;
+      if (videoIdx == 5 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
 
       // Toutes les 3 vidéos (gratuit uniquement)
       if (!skipAds && videoIdx % 3 == 0 && videoIdx < _videoPosts.length && adIdx < ads.length) {
@@ -2119,19 +2127,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     );
   }
 
-  Future<void> _createTransaction(String type, double montant, String description, String userid) async {
-    final transaction = TransactionSolde()
-      ..id = _firestore.collection('TransactionSoldes').doc().id
-      ..user_id = userid
-      ..type = type
-      ..statut = StatutTransaction.VALIDER.name
-      ..description = description
-      ..montant = montant
-      ..methode_paiement = "cadeau"
-      ..createdAt = DateTime.now().millisecondsSinceEpoch
-      ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-    await _firestore.collection('TransactionSoldes').doc(transaction.id).set(transaction.toJson());
-  }
 
   Future<void> _handleRepost(Post post) async {
     final me = authProvider.loginUserData;
@@ -2412,89 +2407,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     }
   }
 
-  // ==================== CHALLENGE & VOTE ====================
-  Future<void> _loadChallengeData() async {
-    if (widget.initialPost!.challenge_id == null) return;
-    setState(() => _loadingChallenge = true);
-    try {
-      final doc = await _firestore.collection('Challenges').doc(widget.initialPost!.challenge_id).get();
-      if (doc.exists) setState(() => _challenge = Challenge.fromJson(doc.data()!)..id = doc.id);
-    } catch (e) { printVm('Erreur chargement challenge: $e'); } finally { setState(() => _loadingChallenge = false); }
-  }
 
-  Future<void> _checkIfUserHasVoted() async {
-    final userId = authProvider.loginUserData.id;
-    if (userId == null) return;
-    final doc = await _firestore.collection('Posts').doc(widget.initialPost!.id).get();
-    if (doc.exists) {
-      final voters = List<String>.from(doc.data()?['users_votes_ids'] ?? []);
-      setState(() => _hasVoted = voters.contains(userId));
-    }
-  }
 
-  Future<void> _voteForLook() async {
-    if (_hasVoted || _isVoting || _challenge == null) return;
-    final user = _auth.currentUser;
-    if (user == null) { _showError('Connectez-vous pour voter'); return; }
-    if (_challenge!.isTermine) { _showError('Challenge terminé'); return; }
-    if (_challenge!.aVote(user.uid)) { _showError('Vous avez déjà voté'); return; }
-    if (!_challenge!.voteGratuit!) {
-      final solde = await _getSoldeUtilisateur(user.uid);
-      if (solde < _challenge!.prixVote!) { _showSoldeInsuffisant(_challenge!.prixVote! - solde.toInt()); return; }
-    }
-    final colors = AppColors.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colors.surface,
-        title: Text('Confirmer votre vote', style: TextStyle(color: colors.textPrimary)),
-        content: Text(!_challenge!.voteGratuit! ? 'Ce vote coûtera ${_challenge!.prixVote} Afrcoins.' : 'Votre vote est gratuit et définitif.', style: TextStyle(color: colors.textSecondary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textSecondary))),
-          ElevatedButton(onPressed: () async { Navigator.pop(context); await _processVoteWithChallenge(user.uid); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Voter', style: TextStyle(color: colors.onPrimary))),
-        ],
-      ),
-    );
-  }
 
-  Future<void> _processVoteWithChallenge(String userId) async {
-    setState(() => _isVoting = true);
-    try {
-      await _firestore.runTransaction((transaction) async {
-        final challengeRef = _firestore.collection('Challenges').doc(_challenge!.id);
-        final challengeDoc = await transaction.get(challengeRef);
-        if (!challengeDoc.exists) throw Exception('Challenge introuvable');
-        final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
-        if (!currentChallenge.isEnCours) throw Exception('Challenge non actif');
-        if (currentChallenge.aVote(userId)) throw Exception('Déjà voté');
-        if (!_challenge!.voteGratuit!) {
-          await _debiterUtilisateur(userId, _challenge!.prixVote!, 'Vote challenge ${_challenge!.titre}');
-        }
-        transaction.update(_firestore.collection('Posts').doc(widget.initialPost!.id), {
-          'votes_challenge': FieldValue.increment(1),
-          'users_votes_ids': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(3),
-        });
-        transaction.update(challengeRef, {
-          'users_votants_ids': FieldValue.arrayUnion([userId]),
-          'total_votes': FieldValue.increment(1),
-        });
-      });
-      setState(() => _hasVoted = true);
-      _showSuccess('Vote enregistré !');
-    } catch (e) { _showError('Erreur: $e'); } finally { setState(() => _isVoting = false); }
-  }
 
-  Future<double> _getSoldeUtilisateur(String userId) async {
-    final doc = await _firestore.collection('Users').doc(userId).get();
-    return (doc.data()?['votre_solde_principal'] ?? 0).toDouble();
-  }
 
-  Future<void> _debiterUtilisateur(String userId, int montant, String raison) async {
-    await _firestore.collection('Users').doc(userId).update({'votre_solde_principal': FieldValue.increment(-montant)});
-    await _firestore.collection('AppData').doc(appId).set({'solde_gain': FieldValue.increment(montant)}, SetOptions(merge: true));
-    await _createTransaction(TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
-  }
 
   void _showError(String msg) {
     final colors = AppColors.of(context);
@@ -2503,21 +2420,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   void _showSuccess(String msg) {
     final colors = AppColors.of(context);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: colors.success));
-  }
-  void _showSoldeInsuffisant(int manquant) {
-    final colors = AppColors.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colors.surface,
-        title: Text('Solde insuffisant', style: TextStyle(color: colors.accent)),
-        content: Text('Il manque $manquant Afrcoins pour voter. Rechargez votre compte.', style: TextStyle(color: colors.textPrimary)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard', style: TextStyle(color: colors.textSecondary))),
-          ElevatedButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const CoinRechargeScreen())); }, style: ElevatedButton.styleFrom(backgroundColor: colors.primary), child: Text('Recharger', style: TextStyle(color: colors.onPrimary))),
-        ],
-      ),
-    );
   }
 
   // ==================== SUPPORT AD ====================
@@ -3186,16 +3088,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             ),
           ),
           const SizedBox(height: 14),
-          if (_isLookChallenge)
-            Column(
-              children: [
-                GestureDetector(
-                  onTap: _voteForLook,
-                  child: Icon(_hasVoted ? Icons.how_to_vote : Icons.how_to_vote_outlined, color: _hasVoted ? _afroGreen : Colors.white, size: 35),
-                ),
-                Text('${post.votesChallenge ?? 0}', style: const TextStyle(color: Colors.white)),
-              ],
-            ),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _isLiking ? null : () => _handleLike(post),
@@ -3908,6 +3800,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 return _buildEndOfFeedPage();
               } else if (item is _ShopPromoSentinel) {
                 return ShopPromoVideoItem(articles: _promoArticles);
+              } else if (item is _TutoReminderSentinel) {
+                return const FeedMonetizationReminder(feed: 'video', fullScreen: true);
               } else if (item is Map<String, dynamic>) {
                 return AdPostWidget(
                   adData: item,
@@ -3957,6 +3851,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     }
     return _videoStack;
   }
+}
+
+/// Sentinel du rappel animé de monétisation (feed vidéo).
+class _TutoReminderSentinel {
+  const _TutoReminderSentinel();
 }
 
 /// Sentinel inséré dans _feedItems pour déclencher l'affichage de la promo AfroShop.
@@ -4111,7 +4010,7 @@ class _VideoPageBadges extends StatelessWidget {
     String countryLabel = '';
     if (!isAll) {
       final code = countries.first.toUpperCase();
-      final found = AfricanCountry.allCountries.where((c) => c.code.toUpperCase() == code).toList();
+      final found = AfricanCountry.everyCountry.where((c) => c.code.toUpperCase() == code).toList();
       flagText = found.isNotEmpty ? found.first.flag : '🏳️';
       countryLabel = countries.length == 1 ? code : '+${countries.length - 1}';
     }

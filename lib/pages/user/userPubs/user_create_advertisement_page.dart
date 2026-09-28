@@ -104,7 +104,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    _filteredCountries = List.from(AfricanCountry.allCountries);
+    _filteredCountries = List.from(AfricanCountry.everyCountry);
     _countrySearchController.addListener(_filterCountries);
     _loadConfig();
     // Si post existant fourni, pré-remplir la description
@@ -132,7 +132,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   void _filterCountries() {
     final query = _countrySearchController.text.toLowerCase();
     setState(() {
-      _filteredCountries = AfricanCountry.allCountries.where((country) {
+      _filteredCountries = AfricanCountry.everyCountry.where((country) {
         return country.name.toLowerCase().contains(query) ||
             country.code.toLowerCase().contains(query);
       }).toList();
@@ -382,7 +382,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         _selectedCountries.clear();
         _selectAllCountries = false;
       } else {
-        _selectedCountries = List.from(AfricanCountry.allCountries);
+        _selectedCountries = List.from(AfricanCountry.everyCountry);
         _selectAllCountries = true;
       }
     });
@@ -440,7 +440,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           : _actionUrlController.text;
       final int durationDays = _selectedDurationWeeks! * 7;
       final List<String> targetCountries = _selectAllCountries
-          ? AfricanCountry.allCountries.map((c) => c.code).toList()
+          ? AfricanCountry.everyCountry.map((c) => c.code).toList()
           : _selectedCountries.map((c) => c.code).toList();
 
       String postId;
@@ -1259,7 +1259,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   Widget _buildCountrySelectionCard() {
     String displayMessage;
     if (_selectAllCountries) {
-      displayMessage = '🌍 Tous les pays africains (${AfricanCountry.allCountries.length} pays)';
+      displayMessage = '🌍 Tous les pays (${AfricanCountry.everyCountry.length} pays)';
     } else if (_selectedCountries.isEmpty) {
       displayMessage = '⚠️ Aucun pays sélectionné';
     } else {

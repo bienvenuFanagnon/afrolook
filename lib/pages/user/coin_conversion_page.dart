@@ -8,6 +8,8 @@ import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
 import '../../services/coin_gift_service.dart';
 import '../../theme/app_colors.dart';
+import '../../l10n/tr.dart';
+import '../../services/currency_service.dart';
 
 class CoinConversionPage extends StatefulWidget {
   const CoinConversionPage({Key? key}) : super(key: key);
@@ -79,17 +81,17 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       }
       final parsed = int.tryParse(value);
       if (parsed == null) {
-        _errorMessage = 'Veuillez entrer un nombre valide';
+        _errorMessage = context.tr('Veuillez entrer un nombre valide');
         _coinsToConvert = 0;
         _fcfaToGet = 0;
         return;
       }
       if (parsed > _coinsBalance) {
-        _errorMessage = 'Maximum convertible : ${_fmt(_coinsBalance)} pièces gagnées';
+        _errorMessage = context.tr('Maximum convertible : {a} pièces gagnées', {'a': _fmt(_coinsBalance)});
         _coinsToConvert = 0;
         _fcfaToGet = 0;
       } else if (parsed < _minCoins) {
-        _errorMessage = 'Minimum $_minCoins pièces par conversion';
+        _errorMessage = context.tr('Minimum {a} pièces par conversion', {'a': _minCoins});
         _coinsToConvert = 0;
         _fcfaToGet = 0;
       } else {
@@ -116,8 +118,8 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           .call({'coinsAmount': _coinsToConvert});
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Conversion réussie !'),
+        SnackBar(
+          content: Text(context.tr('✅ Conversion réussie !')),
           backgroundColor: Color(0xFF2ECC71),
           duration: Duration(seconds: 3),
         ),
@@ -137,8 +139,8 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(notConvertible
-              ? 'Seules tes pièces gagnées sont convertibles : ${_fmt(_coinsBalance)} pièces maximum.'
-              : "La conversion n'a pas pu être effectuée. Vérifie ta connexion et réessaie."),
+              ? context.tr('Seules tes pièces gagnées sont convertibles : {a} pièces maximum.', {'a': _fmt(_coinsBalance)})
+              : context.tr('La conversion n\'a pas pu être effectuée. Vérifie ta connexion et réessaie.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -158,7 +160,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       backgroundColor: colors.background,
       appBar: AppBar(
         title: Text(
-          'Convertir en FCFA',
+          context.tr('Convertir en argent'),
           style: TextStyle(
             color: colors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -236,7 +238,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           ),
           const SizedBox(height: 18),
           Text(
-            'Solde de pièces',
+            context.tr('Solde de pièces'),
             style: TextStyle(color: colors.textSecondary, fontSize: 13, letterSpacing: 0.3),
           ),
           const SizedBox(height: 6),
@@ -258,15 +260,14 @@ class _CoinConversionPageState extends State<CoinConversionPage>
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'pièces gagnées convertibles',
+              context.tr('pièces gagnées convertibles'),
               style: TextStyle(color: colors.accent, fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ),
           if (_totalCoins > _coinsBalance) ...[
             const SizedBox(height: 10),
             Text(
-              'Solde total : ${_fmt(_totalCoins)} pièces, dont ${_fmt(_totalCoins - _coinsBalance)} achetées '
-              '(utilisables pour les cadeaux, votes et DÉFI, mais non convertibles).',
+              context.tr('Solde total : {a} pièces, dont {b} achetées (utilisables pour les cadeaux, votes et DÉFI, mais non convertibles).', {'a': _fmt(_totalCoins), 'b': _fmt(_totalCoins - _coinsBalance)}),
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
             ),
@@ -292,14 +293,14 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           const Text('🪙', style: TextStyle(fontSize: 16)),
           const SizedBox(width: 6),
           Text(
-            '25 pièces',
+            context.tr('25 pièces'),
             style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
           ),
           const SizedBox(width: 12),
           Icon(Icons.east_rounded, color: colors.primary, size: 18),
           const SizedBox(width: 12),
           Text(
-            '10 FCFA',
+            Money.fmt(10),
             style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const Spacer(),
@@ -310,7 +311,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              'Taux fixe',
+              context.tr('Taux fixe'),
               style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w700),
             ),
           ),
@@ -329,7 +330,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Pièces à convertir',
+          context.tr('Pièces à convertir'),
           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 15),
         ),
         const SizedBox(height: 10),
@@ -395,7 +396,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
               Padding(
                 padding: const EdgeInsets.only(right: 18),
                 child: Text(
-                  'pièces',
+                  context.tr('pièces'),
                   style: TextStyle(color: colors.textSecondary, fontSize: 13),
                 ),
               ),
@@ -433,7 +434,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
     return Wrap(
       spacing: 8,
       children: [
-        Text('Rapide :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+        Text(context.tr('Rapide :'), style: TextStyle(color: colors.textSecondary, fontSize: 12)),
         ...quickAmounts.where((a) => a <= _coinsBalance).map((amount) {
           final isSelected = _coinsToConvert == amount;
           return GestureDetector(
@@ -471,7 +472,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
                 ),
               ),
               child: Text(
-                'Tout',
+                context.tr('Tout'),
                 style: TextStyle(
                   color: _coinsToConvert == _coinsBalance ? colors.onPrimary : colors.textPrimary,
                   fontSize: 12,
@@ -514,7 +515,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
               ),
               const SizedBox(width: 6),
               Text(
-                'Vous recevrez',
+                context.tr('Vous recevrez'),
                 style: TextStyle(
                   color: canConvert ? colors.textPrimary : colors.textSecondary,
                   fontSize: 14,
@@ -527,7 +528,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           ScaleTransition(
             scale: canConvert ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
             child: Text(
-              canConvert ? '${_fcfaToGet.toStringAsFixed(0)} FCFA' : '— FCFA',
+              canConvert ? Money.fmt(_fcfaToGet) : '—',
               style: TextStyle(
                 color: canConvert ? colors.primary : colors.textSecondary,
                 fontSize: 40,
@@ -543,7 +544,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '${_fmt(_coinsToConvert)} pièces',
+                  context.tr('{a} pièces', {'a': _fmt(_coinsToConvert)}),
                   style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(width: 6),
@@ -556,7 +557,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Solde Gains',
+                    context.tr('Solde Gains'),
                     style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -600,7 +601,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
                   const Text('🪙', style: TextStyle(fontSize: 20)),
                   const SizedBox(width: 10),
                   Text(
-                    'Convertir maintenant',
+                    context.tr('Convertir maintenant'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -629,8 +630,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Minimum $_minCoins pièces par conversion. '
-              'Le montant FCFA est ajouté à votre Solde Gains.',
+              context.tr('Minimum {a} pièces par conversion. Le montant est ajouté à votre Solde Gains.', {'a': _minCoins}),
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.5),
             ),
           ),

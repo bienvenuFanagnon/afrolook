@@ -1,4 +1,4 @@
-﻿import 'package:afrotok/pages/home/homeWidget.dart';
+import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
@@ -37,6 +37,7 @@ import '../userPosts/postWidgets/postCadeau.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'afrovideos/SimpleVideoView.dart';
 import 'afrovideos/videoWidget.dart';
+import '../../utils/platform_guard.dart';
 
 
 
@@ -380,6 +381,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
 
 
   void showRepublishDialog(Post post, UserData userSendCadeau,AppDefaultData appdata ,BuildContext context) {
+    if (kIsAppleStore) return; // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
     showDialog(
       context: context,
       builder: (context) {
@@ -487,6 +489,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
 
 
   void showGiftDialog(Post post, UserData userSendCadeau,AppDefaultData appdata) {
+    if (kIsAppleStore) return; // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
     showDialog(
       context: context,
       barrierDismissible: false, // Empêche la fermeture
@@ -820,7 +823,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                                                   ),
                                                                 ),
                                                                 TextCustomerUserTitle(
-                                                                  titre: "${ datas[index].user!.abonnes!} abonné(s)",
+                                                                  titre: "${ datas[index].user!.followersCount} abonné(s)",
                                                                   fontSize: 10,
                                                                   couleur: Colors.white,
                                                                   fontWeight: FontWeight.w400,

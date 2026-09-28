@@ -5,6 +5,7 @@ import '../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../theme/app_colors.dart';
 import 'coin_balances_row.dart';
+import '../l10n/tr.dart';
 
 /// Animation centrée style "double-tap like" — cœur spring-bounce + message de soutien.
 /// Appelé depuis toute page qui gère le like avec pièces.
@@ -165,8 +166,8 @@ class _LikeOverlayState extends State<_LikeOverlay>
                             const SizedBox(width: 8),
                             Text(
                               widget.creatorName.isNotEmpty
-                                  ? '${widget.isComment ? 'Ton commentaire' : 'Votre like'} rapporte 1 🪙 à @${widget.creatorName} !'
-                                  : '${widget.isComment ? 'Ton commentaire' : 'Votre like'} rapporte 1 🪙 au créateur du post !',
+                                  ? context.tr('{a} rapporte 1 🪙 à @{b} !', {'a': widget.isComment ? context.tr('Ton commentaire') : context.tr('Votre like'), 'b': widget.creatorName})
+                                  : context.tr('{a} rapporte 1 🪙 au créateur du post !', {'a': widget.isComment ? context.tr('Ton commentaire') : context.tr('Votre like')}),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -206,7 +207,7 @@ void showInsufficientCoinsForLikeDialog({
         backgroundColor: dc.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          '💙 Soutenez vos créateurs !',
+          context.tr('💙 Soutenez vos créateurs !'),
           style: TextStyle(color: dc.primary, fontWeight: FontWeight.bold),
         ),
         content: Column(
@@ -217,9 +218,9 @@ void showInsufficientCoinsForLikeDialog({
               const Text('🪙', style: TextStyle(fontSize: 15)),
               const SizedBox(width: 8),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Solde insuffisant',
+                Text(context.tr('Solde insuffisant'),
                     style: TextStyle(color: dc.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                Text(isComment ? 'Ton commentaire est publié · 2 pièces pour soutenir' : 'Il faut 2 pièces pour liker',
+                Text(isComment ? context.tr('Ton commentaire est publié · 2 pièces pour soutenir') : context.tr('Il faut 2 pièces pour liker'),
                     style: TextStyle(color: dc.textSecondary, fontSize: 11)),
               ]),
             ]),
@@ -230,13 +231,13 @@ void showInsufficientCoinsForLikeDialog({
             const SizedBox(height: 12),
             Text(
               (isComment
-                      ? 'Avec des pièces, chaque commentaire rapporte 1 pièce au créateur'
-                      : 'Votre like offre des pièces au créateur') +
-                  ' — c\'est ainsi qu\'il monétise son contenu sur Afrolook et aussi par des vues rémunérées à 1 000 F le RPM. Les meilleurs créateurs gagnent jusqu\'à 15 000 pièces par post.',
+                      ? context.tr('Avec des pièces, chaque commentaire rapporte 1 pièce au créateur')
+                      : context.tr('Votre like offre des pièces au créateur')) +
+                  context.tr(' — c\'est ainsi qu\'il monétise son contenu sur Afrolook et aussi par des vues rémunérées à 1 000 F le RPM. Les meilleurs créateurs gagnent jusqu\'à 15 000 pièces par post.'),
               style: TextStyle(color: dc.textSecondary, fontSize: 12, height: 1.4),
             ),
             const SizedBox(height: 8),
-            Text('💎 Vous pouvez obtenir 500 pièces à 250 FCFA',
+            Text(context.tr('💎 Vous pouvez obtenir 500 pièces à 250 FCFA'),
                 style: TextStyle(color: dc.textSecondary, fontSize: 12)),
             if (!hasClaimed) ...[
               const SizedBox(height: 12),
@@ -252,7 +253,7 @@ void showInsufficientCoinsForLikeDialog({
                   const Text('🎁', style: TextStyle(fontSize: 15)),
                   const SizedBox(width: 8),
                   Expanded(child: Text(
-                    'Offre unique : 10 pièces gratuites à encaisser maintenant !',
+                    context.tr('Offre unique : 10 pièces gratuites à encaisser maintenant !'),
                     style: TextStyle(color: dc.primary, fontSize: 12, fontWeight: FontWeight.w600),
                   )),
                 ]),
@@ -268,7 +269,7 @@ void showInsufficientCoinsForLikeDialog({
               Expanded(
                 child: ElevatedButton.icon(
                   icon: const Text('🎁', style: TextStyle(fontSize: 12)),
-                  label: const Text('10 pièces gratuites',
+                  label: Text(context.tr('10 pièces gratuites'),
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                   onPressed: () async {
                     Navigator.pop(ctx);
@@ -277,7 +278,7 @@ void showInsufficientCoinsForLikeDialog({
                       await authProvider.refreshUserData();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: const Text('🎁 10 pièces créditées ! Soutenez un créateur.'),
+                          content: Text(context.tr('🎁 10 pièces créditées ! Soutenez un créateur.')),
                           backgroundColor: AppColors.of(context).primary,
                           duration: const Duration(seconds: 3),
                         ));
@@ -307,7 +308,7 @@ void showInsufficientCoinsForLikeDialog({
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Recharger →',
+                child: Text(context.tr('Recharger →'),
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ),
@@ -316,7 +317,7 @@ void showInsufficientCoinsForLikeDialog({
           Center(
             child: TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: TextStyle(color: dc.textSecondary, fontSize: 12)),
+              child: Text(context.tr('Annuler'), style: TextStyle(color: dc.textSecondary, fontSize: 12)),
             ),
           ),
         ],
@@ -346,7 +347,7 @@ class LikeSupportMessage extends StatelessWidget {
           const Text('🪙', style: TextStyle(fontSize: 13)),
           const SizedBox(width: 6),
           Text(
-            'Merci d\'avoir soutenu ce créateur !',
+            context.tr('Merci d\'avoir soutenu ce créateur !'),
             style: TextStyle(
               color: colors.primary,
               fontSize: 12,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/coin_gift_provider.dart';
+import '../../l10n/tr.dart';
 
 class CoinBalanceWidget extends StatelessWidget {
   final bool showIcon;
@@ -51,8 +52,8 @@ class CoinBalanceWidget extends StatelessWidget {
             ),
             if (showLabel) ...[
               const SizedBox(width: 4),
-              const Text(
-                'pièces',
+              Text(
+                context.tr('pièces'),
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],

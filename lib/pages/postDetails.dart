@@ -82,6 +82,8 @@ import '../widgets/gifts/quick_gift_bar.dart';
 import '../widgets/chat/post_share_sheet.dart';
 import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
+import '../utils/platform_guard.dart';
+import '../l10n/tr.dart';
 
 // Couleurs migrées vers AppColors (_colors.*) dans _DetailsPostState
 
@@ -118,10 +120,6 @@ class _DetailsPostState extends State<DetailsPost>
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
 
-  // Variables pour le vote
-  bool _hasVoted = false;
-  bool _isVoting = false;
-  List<String> _votersList = [];
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -135,8 +133,6 @@ class _DetailsPostState extends State<DetailsPost>
   List<PostComment> _preloadedComments = [];
   final TextEditingController _quickCommentController = TextEditingController();
   bool _isSendingQuickComment = false;
-  Challenge? _challenge;
-  bool _loadingChallenge = false;
 
   // 🔥 NOUVELLE VARIABLE POUR LE CAROUSEL AUTO
   late PageController _carouselController;
@@ -1676,9 +1672,6 @@ class _DetailsPostState extends State<DetailsPost>
               offset: Offset(0, 5),
             ),
           ],
-          border: _isLookChallenge
-              ? Border.all(color: _colors.primary.withOpacity(0.5), width: 2)
-              : null,
         ),
         child: Stack(
           children: [
@@ -2089,11 +2082,7 @@ class _DetailsPostState extends State<DetailsPost>
     _postStream = firestore.collection('Posts').doc(widget.post.id).snapshots();
 
     // Charger le challenge si c'est un look challenge
-    if (_isLookChallenge && widget.post.challenge_id != null) {
-      _loadChallengeData();
-    }
     // Vérifier si l'utilisateur a déjà voté
-    _checkIfUserHasVoted();
 
     // Incrémenter les vues
     _incrementViews();
@@ -2335,10 +2324,6 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-  // Vérifier si c'est un Look Challenge
-  bool get _isLookChallenge {
-    return widget.post.type == 'CHALLENGEPARTICIPATION';
-  }
 
   Future<void> _loadPostRelations() async {
     try {
@@ -2375,22 +2360,6 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-  Future<void> _checkIfUserHasVoted() async {
-    try {
-      final postDoc =
-          await firestore.collection('Posts').doc(widget.post.id).get();
-      if (postDoc.exists) {
-        final data = postDoc.data() as Map<String, dynamic>;
-        final voters = List<String>.from(data['users_votes_ids'] ?? []);
-        setState(() {
-          _hasVoted = voters.contains(authProvider.loginUserData.id);
-          _votersList = voters;
-        });
-      }
-    } catch (e) {
-      printVm('Erreur lors de la vérification du vote: $e');
-    }
-  }
 
   String _getTodayDateString() {
     final now = DateTime.now();
@@ -2502,648 +2471,18 @@ class _DetailsPostState extends State<DetailsPost>
     }
   }
 
-  // FONCTIONNALITÉ DE VOTE
-  Future<void> _loadChallengeData() async {
-    if (widget.post.challenge_id == null) return;
 
-    setState(() {
-      _loadingChallenge = true;
-    });
 
-    try {
-      final challengeDoc = await firestore
-          .collection('Challenges')
-          .doc(widget.post.challenge_id)
-          .get();
-      if (challengeDoc.exists) {
-        setState(() {
-          _challenge = Challenge.fromJson(challengeDoc.data()!)
-            ..id = challengeDoc.id;
-        });
-      }
-    } catch (e) {
-      printVm('Erreur chargement challenge: $e');
-    } finally {
-      setState(() {
-        _loadingChallenge = false;
-      });
-    }
-  }
 
-  Future<void> _voteForLook() async {
-    if (_hasVoted || _isVoting) return;
 
-    final user = _auth.currentUser;
-    if (user == null) {
-      _showError(
-          'CONNECTEZ-VOUS POUR POUVOIR VOTER\nVotre vote compte pour élire le gagnant !');
-      return;
-    }
 
-    setState(() {
-      _isVoting = true;
-    });
 
-    try {
-      // Si c'est un look challenge, recharger les données d'abord
-      if (_isLookChallenge && widget.post.challenge_id != null) {
-        await _reloadChallengeData();
 
-        // Vérifier à nouveau après rechargement
-        if (_challenge == null) {
-          _showError(
-              'Impossible de charger les données du challenge. Veuillez réessayer.');
-          return;
-        }
 
-        final now = DateTime.now().microsecondsSinceEpoch;
 
-        // Vérifier si le challenge est terminé
-        if (_challenge!.isTermine || now > (_challenge!.finishedAt ?? 0)) {
-          _showError('CE CHALLENGE EST TERMINÉ\nMerci pour votre intérêt !');
-          return;
-        }
 
-        if (_challenge!.aVote(user.uid)) {
-          _showError(
-              'VOUS AVEZ DÉJÀ VOTÉ DANS CE CHALLENGE\nMerci pour votre participation !');
-          return;
-        }
 
-        if (!_challenge!.isEnCours) {
-          _showError(
-              'CE CHALLENGE N\'EST PLUS ACTIF\nLe vote n\'est pas possible actuellement.');
-          return;
-        }
 
-        // Vérifier le solde si vote payant
-        if (!_challenge!.voteGratuit!) {
-          final solde = await _getSoldeUtilisateur(user.uid);
-          if (solde < _challenge!.prixVote!) {
-            _showSoldeInsuffisant(_challenge!.prixVote! - solde.toInt());
-            return;
-          }
-        }
-
-        // Afficher la confirmation de vote
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: _colors.surfaceVariant,
-            title: Text('Confirmer votre vote',
-                style: TextStyle(color: _colors.textPrimary)),
-            content: Text(
-              !_challenge!.voteGratuit!
-                  ? 'Êtes-vous sûr de vouloir voter pour ce look ?\n\nCe vote vous coûtera ${_challenge!.prixVote} Afrcoins.'
-                  : 'Voulez-vous vraiment voter pour ce look ?\n\nVotre vote est gratuit et ne peut être changé.',
-              style: TextStyle(color: _colors.textSecondary),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _isVoting = false;
-                  });
-                },
-                child: Text('ANNULER', style: TextStyle(color: _colors.textSecondary)),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await _processVoteWithChallenge(user.uid);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: _colors.success),
-                child: Text('CONFIRMER MON VOTE',
-                    style: TextStyle(color: _colors.onPrimary)),
-              ),
-            ],
-          ),
-        );
-      } else {
-        // Vote normal (sans challenge)
-        await _processVoteNormal(user.uid);
-      }
-    } catch (e) {
-      printVm("Erreur lors de la préparation du vote: $e");
-      _showError('Erreur lors de la préparation du vote: $e');
-    }
-  }
-
-  Future<void> _reloadChallengeData() async {
-    try {
-      if (widget.post.challenge_id == null) return;
-
-      if (mounted) {
-        setState(() {
-          _loadingChallenge = true;
-        });
-      }
-
-      final challengeDoc = await firestore
-          .collection('Challenges')
-          .doc(widget.post.challenge_id)
-          .get();
-
-      if (challengeDoc.exists) {
-        if (mounted) {
-          setState(() {
-            _challenge = Challenge.fromJson(challengeDoc.data()!)
-              ..id = challengeDoc.id;
-          });
-        }
-      } else {
-        printVm('Challenge non trouvé: ${widget.post.challenge_id}');
-        if (mounted) {
-          setState(() {
-            _challenge = null;
-          });
-        }
-      }
-    } catch (e) {
-      printVm('Erreur rechargement challenge: $e');
-      if (mounted) {
-        setState(() {
-          _challenge = null;
-        });
-      }
-      rethrow;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loadingChallenge = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _processVoteWithChallenge(String userId) async {
-    try {
-      await _reloadChallengeData();
-
-      if (_challenge == null) {
-        throw Exception('Données du challenge non disponibles');
-      }
-
-      // Récupérer l'ID unique de l'appareil
-      final String deviceId = await DeviceInfoService.getDeviceId();
-      printVm("Vérification appareil pour vote: $deviceId");
-
-      // Vérifier si l'appareil a déjà voté (uniquement si ID valide)
-      if (DeviceInfoService.isDeviceIdValid(deviceId) &&
-          _challenge!.aVoteAvecAppareil(deviceId)) {
-        throw Exception(
-            '🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter dans ce challenge. L\'utilisation de comptes multiples est strictement interdite.');
-      }
-
-      await firestore.runTransaction((transaction) async {
-        final challengeRef =
-            firestore.collection('Challenges').doc(_challenge!.id!);
-        final challengeDoc = await transaction.get(challengeRef);
-
-        if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
-
-        final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
-
-        if (!currentChallenge.isEnCours) {
-          throw Exception('Le challenge n\'est plus actif');
-        }
-
-        if (currentChallenge.aVote(userId)) {
-          throw Exception('Vous avez déjà voté dans ce challenge');
-        }
-
-        // Vérification supplémentaire de l'appareil dans la transaction
-        if (DeviceInfoService.isDeviceIdValid(deviceId) &&
-            currentChallenge.aVoteAvecAppareil(deviceId)) {
-          throw Exception(
-              '🚨 VIOLATION DÉTECTÉE: Cet appareil a déjà été utilisé pour voter. Utilisation de comptes multiples interdite.');
-        }
-
-        final postRef = firestore.collection('Posts').doc(widget.post.id);
-        final postDoc = await transaction.get(postRef);
-
-        if (!postDoc.exists) throw Exception('Post non trouvé');
-
-        if (!_challenge!.voteGratuit!) {
-          await _debiterUtilisateur(userId, _challenge!.prixVote!,
-              'Vote pour le challenge ${_challenge!.titre}');
-        }
-
-        // Mettre à jour le post
-        transaction.update(postRef, {
-          'votes_challenge': FieldValue.increment(1),
-          'users_votes_ids': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(3),
-        });
-
-        // Préparer les updates pour le challenge
-        final challengeUpdates = {
-          'users_votants_ids': FieldValue.arrayUnion([userId]),
-          'total_votes': FieldValue.increment(1),
-          'updated_at': DateTime.now().microsecondsSinceEpoch
-        };
-
-        // Ajouter l'ID appareil uniquement s'il est valide
-        if (DeviceInfoService.isDeviceIdValid(deviceId)) {
-          challengeUpdates['devices_votants_ids'] =
-              FieldValue.arrayUnion([deviceId]);
-        }
-
-        transaction.update(challengeRef, challengeUpdates);
-      });
-
-      // Succès du vote
-      if (mounted) {
-        setState(() {
-          _hasVoted = true;
-          _votersList.add(userId);
-          widget.post.votesChallenge = (widget.post.votesChallenge ?? 0) + 1;
-        });
-      }
-
-      addPointsForAction(UserAction.voteChallenge);
-      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-
-      // Notification
-      await authProvider.sendNotification(
-        userIds: [widget.post.user!.oneIgnalUserid!],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: widget.post.user_id!,
-        message:
-            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
-        type_notif: NotificationType.POST.name,
-        post_id: widget.post.id!,
-        post_type: PostDataType.IMAGE.name,
-        chat_id: '',
-      );
-
-      postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
-          authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
-
-      _showSuccess(
-          '✅ VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
-      _envoyerNotificationVote(
-          userVotant: authProvider.loginUserData!,
-          userVote: widget.post!.user!);
-    } catch (e) {
-      printVm("Erreur lors du vote avec challenge: $e");
-
-      // Message d'erreur spécifique pour les violations
-      if (e.toString().contains('VIOLATION DÉTECTÉE')) {
-        _showError('''🚨 FRAUDE DÉTECTÉE
-
-Cet appareil a déjà été utilisé pour voter dans ce challenge.
-
-Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule fois, quel que soit le compte utilisé.
-
-📞 Contactez le support si vous pensez qu'il s'agit d'une erreur.''');
-      } else {
-        _showError(
-            '❌ ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isVoting = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _processVoteWithChallenge2(String userId) async {
-    try {
-      await _reloadChallengeData();
-
-      if (_challenge == null) {
-        throw Exception('Données du challenge non disponibles');
-      }
-
-      await firestore.runTransaction((transaction) async {
-        final challengeRef =
-            firestore.collection('Challenges').doc(_challenge!.id!);
-        final challengeDoc = await transaction.get(challengeRef);
-
-        if (!challengeDoc.exists) throw Exception('Challenge non trouvé');
-
-        final currentChallenge = Challenge.fromJson(challengeDoc.data()!);
-
-        if (!currentChallenge.isEnCours) {
-          throw Exception('Le challenge n\'est plus actif');
-        }
-
-        if (currentChallenge.aVote(userId)) {
-          throw Exception('Vous avez déjà voté dans ce challenge');
-        }
-
-        final postRef = firestore.collection('Posts').doc(widget.post.id);
-        final postDoc = await transaction.get(postRef);
-
-        if (!postDoc.exists) throw Exception('Post non trouvé');
-
-        if (!_challenge!.voteGratuit!) {
-          await _debiterUtilisateur(userId, _challenge!.prixVote!,
-              'Vote pour le challenge ${_challenge!.titre}');
-        }
-
-        transaction.update(postRef, {
-          'votes_challenge': FieldValue.increment(1),
-          'users_votes_ids': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(3),
-        });
-
-        transaction.update(challengeRef, {
-          'users_votants_ids': FieldValue.arrayUnion([userId]),
-          'total_votes': FieldValue.increment(1),
-          'updated_at': DateTime.now().microsecondsSinceEpoch
-        });
-      });
-
-      if (mounted) {
-        setState(() {
-          _hasVoted = true;
-          _votersList.add(userId);
-          widget.post.votesChallenge = (widget.post.votesChallenge ?? 0) + 1;
-        });
-      }
-      addPointsForAction(UserAction.voteChallenge);
-      addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
-
-      await authProvider.sendNotification(
-        userIds: [widget.post.user!.oneIgnalUserid!],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: widget.post.user_id!,
-        message:
-            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look dans le challenge ${_challenge!.titre}!",
-        type_notif: NotificationType.POST.name,
-        post_id: widget.post.id!,
-        post_type: PostDataType.IMAGE.name,
-        chat_id: '',
-      );
-
-      postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
-          authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
-
-      _showSuccess(
-          'VOTE ENREGISTRÉ !\nMerci d\'avoir participé à l\'élection du gagnant.');
-      _envoyerNotificationVote(
-          userVotant: authProvider.loginUserData!,
-          userVote: widget.post!.user!);
-    } catch (e) {
-      printVm("Erreur lors du vote avec challenge: $e");
-      _showError('ERREUR LORS DU VOTE: ${e.toString()}\nVeuillez réessayer.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isVoting = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _envoyerNotificationVote({
-    required UserData userVotant,
-    required UserData userVote,
-  }) async {
-    try {
-      final userIds = await authProvider.getAllUsersOneSignaUserId();
-
-      if (userIds.isEmpty) {
-        debugPrint("⚠️ Aucun utilisateur à notifier.");
-        return;
-      }
-
-      final message = "👏 ${userVotant.pseudo} a voté pour ${userVote.pseudo}!";
-
-      await authProvider.sendNotification(
-        userIds: userIds,
-        smallImage: userVotant.imageUrl ?? '',
-        send_user_id: userVotant.id!,
-        recever_user_id: userVote.id ?? "",
-        message: message,
-        type_notif: 'VOTE',
-        post_id: '',
-        post_type: '',
-        chat_id: '',
-      );
-
-      debugPrint("✅ Notification envoyée: $message");
-    } catch (e, stack) {
-      debugPrint("❌ Erreur envoi notification vote: $e\n$stack");
-    }
-  }
-
-  Future<void> _processVoteNormal(String userId) async {
-    try {
-      await firestore.collection('Posts').doc(widget.post.id).update({
-        'votes_challenge': FieldValue.increment(1),
-        'users_votes_ids': FieldValue.arrayUnion([userId]),
-        'popularity': FieldValue.increment(3),
-      });
-
-      if (mounted) {
-        setState(() {
-          _hasVoted = true;
-          _votersList.add(userId);
-          widget.post.votesChallenge = (widget.post.votesChallenge ?? 0) + 1;
-        });
-      }
-
-      await authProvider.sendNotification(
-        userIds: [widget.post.user!.oneIgnalUserid!],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: widget.post.user_id!,
-        message:
-            "🎉 @${authProvider.loginUserData.pseudo!} a voté pour votre look !",
-        type_notif: NotificationType.POST.name,
-        post_id: widget.post.id!,
-        post_type: PostDataType.IMAGE.name,
-        chat_id: '',
-      );
-
-      await postProvider.interactWithPostAndIncrementSolde(widget.post.id!,
-          authProvider.loginUserData.id!, "vote_look", widget.post.user_id!);
-
-      _showSuccess('🎉 Vote enregistré !');
-    } catch (e) {
-      printVm("Erreur lors du vote normal: $e");
-      _showError('Erreur lors du vote: ${e.toString()}');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isVoting = false;
-        });
-      }
-    }
-  }
-
-  Future<double> _getSoldeUtilisateur(String userId) async {
-    final doc = await firestore.collection('Users').doc(userId).get();
-    return (doc.data()?['votre_solde_principal'] ?? 0).toDouble();
-  }
-
-  Future<void> _debiterUtilisateur(
-      String userId, int montant, String raison) async {
-    await firestore
-        .collection('Users')
-        .doc(userId)
-        .update({'votre_solde_principal': FieldValue.increment(-montant)});
-    String appDataId = authProvider.appDefaultData.id!;
-
-    await firestore.collection('AppData').doc(appDataId).set(
-        {'solde_gain': FieldValue.increment(montant)}, SetOptions(merge: true));
-    await _createTransaction(
-        TypeTransaction.DEPENSE.name, montant.toDouble(), raison, userId);
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: TextStyle(color: _colors.onPrimary)),
-        backgroundColor: _colors.danger,
-        duration: Duration(seconds: 4),
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: TextStyle(color: _colors.onPrimary)),
-        backgroundColor: _colors.success,
-        duration: Duration(seconds: 4),
-      ),
-    );
-  }
-
-  void _showSoldeInsuffisant(int montantManquant) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _colors.surfaceVariant,
-        title:
-            Text('SOLDE INSUFFISANT', style: TextStyle(color: _colors.accent)),
-        content: Text(
-          'Il vous manque $montantManquant Afrcoins pour pouvoir voter.\n\n'
-          'Rechargez votre compte pour soutenir votre look préféré !',
-          style: TextStyle(color: _colors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('PLUS TARD', style: TextStyle(color: _colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const CoinRechargeScreen()));
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: _colors.success),
-            child: Text('RECHARGER MAINTENANT',
-                style: TextStyle(color: _colors.onPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showVoteConfirmationDialog() {
-    final user = _auth.currentUser;
-
-    if (_isLookChallenge && _challenge != null && !_challenge!.voteGratuit!) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: _colors.surfaceVariant,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: _colors.primary, width: 2),
-            ),
-            title: Text(
-              '🎉 Voter pour ce Look',
-              style: TextStyle(
-                color: _colors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            content: Text(
-              'Ce vote vous coûtera ${_challenge!.prixVote} Afrcoins.\n\n'
-              'Voulez-vous continuer ?',
-              style: TextStyle(color: _colors.textPrimary),
-              textAlign: TextAlign.center,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Annuler',
-                    style: TextStyle(color: _colors.textSecondary)),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _voteForLook();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _colors.primary,
-                ),
-                child: Text('Voter ${_challenge!.prixVote} Afrcoins',
-                    style: TextStyle(color: _colors.onPrimary)),
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: _colors.surfaceVariant,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: _colors.primary, width: 2),
-            ),
-            title: Text(
-              '🎉 Voter pour ce Look',
-              style: TextStyle(
-                color: _colors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            content: Text(
-              'Vous allez voter pour ce look${_isLookChallenge ? ' challenge' : ''}. Cette action est irréversible${_isLookChallenge && _challenge != null ? ' et vous rapportera 3 points' : ''}!',
-              style: TextStyle(color: _colors.textPrimary),
-              textAlign: TextAlign.center,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Annuler',
-                    style: TextStyle(color: _colors.textSecondary)),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _voteForLook();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _colors.primary,
-                ),
-                child: Text('Voter', style: TextStyle(color: _colors.onPrimary)),
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
 
   String formatNumber(int number) {
     if (number >= 1000) {
@@ -3233,7 +2572,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             send_user_id: "${authProvider.loginUserData.id!}",
             recever_user_id: "${widget.post.user_id!}",
             message:
-                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre post",
             type_notif: NotificationType.POST.name,
             post_id: "${widget.post!.id!}",
             post_type: PostDataType.IMAGE.name,
@@ -3295,7 +2634,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             send_user_id: "${authProvider.loginUserData.id!}",
             recever_user_id: "${widget.post.user_id!}",
             message:
-                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+                "📢 @${authProvider.loginUserData.pseudo!} a aimé votre post",
             type_notif: NotificationType.POST.name,
             post_id: "${widget.post!.id!}",
             post_type: PostDataType.IMAGE.name,
@@ -3386,7 +2725,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             titre: "Like ❤️",
             media_url: authProvider.loginUserData.imageUrl ?? '',
             type: NotificationType.POST.name,
-            description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+            description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre post",
             users_id_view: [],
             user_id: userId,
             receiver_id: widget.post.user_id!,
@@ -3405,7 +2744,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
               smallImage: authProvider.loginUserData.imageUrl ?? '',
               send_user_id: userId,
               recever_user_id: widget.post.user_id!,
-              message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'}",
+              message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre post",
               type_notif: NotificationType.POST.name,
               post_id: postId,
               post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
@@ -3549,7 +2888,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 titre: "Like ❤️ + 1 pièce",
                 media_url: authProvider.loginUserData.imageUrl ?? '',
                 type: NotificationType.POST.name,
-                description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'} et vous a offert 1 pièce !",
+                description: "@${authProvider.loginUserData.pseudo ?? ''} a aimé votre post et vous a offert 1 pièce !",
                 users_id_view: [],
                 user_id: userId,
                 receiver_id: widget.post.user_id!,
@@ -3566,7 +2905,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                   smallImage: authProvider.loginUserData.imageUrl ?? '',
                   send_user_id: userId,
                   recever_user_id: widget.post.user_id!,
-                  message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre ${_isLookChallenge ? 'look' : 'post'} et vous a offert 1 pièce !",
+                  message: "📢 @${authProvider.loginUserData.pseudo ?? ''} a aimé votre post et vous a offert 1 pièce !",
                   type_notif: NotificationType.POST.name,
                   post_id: postId,
                   post_type: widget.post.dataType ?? PostDataType.IMAGE.name,
@@ -3774,23 +3113,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     child: Icon(Icons.verified, color: _colors.info, size: 14),
                   ),
                 ),
-              if (_isLookChallenge)
-                Positioned(
-                  top: -2,
-                  left: -2,
-                  child: Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: _colors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.emoji_events,
-                      color: _colors.onPrimary,
-                      size: 12,
-                    ),
-                  ),
-                ),
               if (isLocked)
                 Positioned(
                   bottom: -2,
@@ -3834,7 +3156,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                     ],
                   ),
                   Text(
-                    '${canal.usersSuiviId!.length ?? 0} abonnés',
+                    context.tr('{a} abonné(s)', {'a': canal.membersCount}),
                     style: TextStyle(
                       color: _colors.textSecondary,
                       fontSize: 12,
@@ -3886,30 +3208,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                           ),
                         ),
                       SizedBox(width: 4),
-                      if (_isLookChallenge)
-                        Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _colors.primary.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: _colors.primary),
-                          ),
-                          child: Text(
-                            'LOOK',
-                            style: TextStyle(
-                              color: _colors.primary,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                       if ((post.typeTabbar ?? '').isNotEmpty)
                         _buildTabbarBadge(post.typeTabbar!),
                     ],
                   ),
                   Text(
-                    '${user.userAbonnesIds!.length ?? 0} abonnés${_isLookChallenge ? ' • ${post.votesChallenge ?? 0} votes' : ''}',
+                    context.tr('{a} abonné(s)', {'a': user.followersCount}),
                     style: TextStyle(
                       color: _colors.textSecondary,
                       fontSize: 12,
@@ -4470,15 +3774,12 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             spreadRadius: 2,
           ),
         ],
-        border: _isLookChallenge
-            ? Border.all(color: _colors.primary.withOpacity(0.3))
-            : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
         child: ImageSlideshow(
           initialPage: 0,
-          indicatorColor: _isLookChallenge ? _colors.primary : _colors.accent,
+          indicatorColor: _colors.accent,
           indicatorBackgroundColor: _colors.textSecondary,
           onPageChanged: (value) {
             printVm('Page changed: $value');
@@ -4545,9 +3846,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
             spreadRadius: 2,
           ),
         ],
-        border: _isLookChallenge
-            ? Border.all(color: _colors.primary.withOpacity(0.3))
-            : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
@@ -4573,9 +3871,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       margin: EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        border: _isLookChallenge
-            ? Border.all(color: _colors.primary.withOpacity(0.3))
-            : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
@@ -4916,7 +4211,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
   Widget _buildImageSlideshow(List<String> images, double height) {
     return ImageSlideshow(
       initialPage: 0,
-      indicatorColor: _isLookChallenge ? _colors.primary : _colors.accent,
+      indicatorColor: _colors.accent,
       indicatorBackgroundColor: _colors.textSecondary,
       onPageChanged: (value) {
         printVm('Page changed: $value');
@@ -4973,646 +4268,10 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
       }
     });
   }
-  // NOUVELLE SECTION POUR LES LOOK CHALLENGES
-  Widget _buildLookChallengeSection(Post post) {
-    if (!_isLookChallenge) return SizedBox();
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: widget.post.challenge_id != null
-          ? firestore
-              .collection('Challenges')
-              .doc(widget.post.challenge_id)
-              .get()
-          : null,
-      builder: (context, challengeSnapshot) {
-        if (challengeSnapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            margin: EdgeInsets.symmetric(vertical: 15),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _colors.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _colors.primary.withOpacity(0.3)),
-            ),
-            child: Center(
-              child: CircularProgressIndicator(color: _colors.primary),
-            ),
-          );
-        }
 
-        if (challengeSnapshot.hasError ||
-            !challengeSnapshot.hasData ||
-            !challengeSnapshot.data!.exists) {
-          return _buildBasicChallengeSection(post);
-        }
 
-        final challengeData =
-            challengeSnapshot.data!.data() as Map<String, dynamic>;
-        final challenge = Challenge.fromJson(challengeData);
-        final bool challengeTermine = challenge.isTermine ||
-            DateTime.now().microsecondsSinceEpoch > (challenge.finishedAt ?? 0);
-        final bool peutVoter = challenge.peutParticiper && !_hasVoted;
 
-        return FutureBuilder<DocumentSnapshot>(
-          future: challenge.postChallengeId != null
-              ? firestore
-                  .collection('Posts')
-                  .doc(challenge.postChallengeId)
-                  .get()
-              : null,
-          builder: (context, postChallengeSnapshot) {
-            Post? postChallenge;
-            if (postChallengeSnapshot.hasData &&
-                postChallengeSnapshot.data!.exists) {
-              final postData =
-                  postChallengeSnapshot.data!.data() as Map<String, dynamic>;
-              postChallenge = Post.fromJson(postData);
-            }
-
-            return Container(
-              margin: EdgeInsets.symmetric(vertical: 15),
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _colors.surfaceVariant,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _colors.primary.withOpacity(0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.emoji_events, color: _colors.primary, size: 24),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'LOOK CHALLENGE',
-                              style: TextStyle(
-                                color: _colors.primary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (challenge.titre != null &&
-                                challenge.titre!.isNotEmpty)
-                              Text(
-                                challenge.titre!,
-                                style: TextStyle(
-                                  color: _colors.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12),
-                  if (postChallenge != null)
-                    _buildChallengePostPreview(challenge, postChallenge),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildChallengeStatItem(
-                        icon: Icons.how_to_vote,
-                        value: '${post.votesChallenge ?? 0}',
-                        label: 'Votes',
-                        color: _colors.primary,
-                      ),
-                      _buildChallengeStatItem(
-                        icon: Icons.people,
-                        value: '${challenge.usersInscritsIds!.length ?? 0}',
-                        label: 'Participants',
-                        color: _colors.info,
-                      ),
-                      _buildChallengeStatItem(
-                        icon: Icons.favorite,
-                        value: '${post.loves ?? 0}',
-                        label: 'Likes',
-                        color: _colors.danger,
-                      ),
-                      _buildChallengeStatItem(
-                        icon: Icons.trending_up,
-                        value: '${post.popularity ?? 0}',
-                        label: 'Popularité',
-                        color: _colors.accent,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  if (challenge.description != null &&
-                      challenge.description!.isNotEmpty)
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _colors.background.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '📝 À propos du challenge',
-                            style: TextStyle(
-                              color: _colors.primary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            challenge.description!,
-                            style: TextStyle(
-                              color: _colors.textSecondary,
-                              fontSize: 12,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  SizedBox(height: 12),
-                  Column(
-                    children: [
-                      if (!challengeTermine)
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _colors.isDark
-                                ? Colors.black.withOpacity(0.3)
-                                : _colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                '🎯 VOTER POUR CE LOOK',
-                                style: TextStyle(
-                                  color: _colors.primary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Votre vote aide ce participant à gagner le challenge !',
-                                style: TextStyle(
-                                  color: _colors.textSecondary,
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              if (!challenge.voteGratuit!)
-                                Text(
-                                  'Coût du vote: ${challenge.prixVote} Afrcoins',
-                                  style: TextStyle(
-                                    color: _colors.accent,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                            ],
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _colors.danger.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '⏰ CE CHALLENGE EST TERMINÉ',
-                            style: TextStyle(
-                              color: _colors.danger,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      SizedBox(height: 16),
-                      Row(
-                        children: [
-                          if (peutVoter)
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isVoting
-                                    ? null
-                                    : _showVoteConfirmationDialog,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _colors.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                ),
-                                child: _isVoting
-                                    ? SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: _colors.onPrimary,
-                                        ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.how_to_vote, size: 18),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'VOTER',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            )
-                          else
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: _colors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: _colors.primary),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.check_circle,
-                                        color: _colors.primary, size: 16),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      _hasVoted
-                                          ? 'DÉJÀ VOTÉ'
-                                          : 'NON DISPONIBLE',
-                                      style: TextStyle(
-                                        color: _colors.primary,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _colors.info,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.visibility, size: 16),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Voir',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  if (_votersList.isNotEmpty) ...[
-                    SizedBox(height: 16),
-                    Text(
-                      'Derniers votants',
-                      style: TextStyle(
-                        color: _colors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Container(
-                      height: 50,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _votersList.length,
-                        itemBuilder: (context, index) {
-                          return FutureBuilder<DocumentSnapshot>(
-                            future: firestore
-                                .collection('Users')
-                                .doc(_votersList[index])
-                                .get(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData && snapshot.data!.exists) {
-                                var userData = UserData.fromJson(snapshot.data!
-                                    .data() as Map<String, dynamic>);
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: Column(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: () {
-                                          final url = _optimizeImageUrl(userData.imageUrl ?? '');
-                                          return url.isNotEmpty ? NetworkImage(url) : null;
-                                        }(),
-                                        backgroundColor: Colors.grey[800],
-                                        child: (userData.imageUrl ?? '').isEmpty
-                                            ? const Icon(Icons.person_rounded, color: Colors.white54, size: 12)
-                                            : null,
-                                        radius: 15,
-                                      ),
-                                      SizedBox(height: 2),
-                                      Text('🗳️',
-                                          style: TextStyle(fontSize: 8)),
-                                    ],
-                                  ),
-                                );
-                              }
-                              return SizedBox();
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildChallengePostPreview(Challenge challenge, Post postChallenge) {
-    final hasImages =
-        postChallenge.images != null && postChallenge.images!.isNotEmpty;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _colors.primary.withOpacity(0.5)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DetailsPost(post: postChallenge),
-                ),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: _colors.textSecondary.withOpacity(0.1),
-                    ),
-                    child: _buildChallengePreviewThumbnail(postChallenge),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Post du Challenge',
-                          style: TextStyle(
-                            color: _colors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          challenge.titre ?? 'Challenge',
-                          style: TextStyle(
-                            color: _colors.textSecondary,
-                            fontSize: 12,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Tap pour voir →',
-                          style: TextStyle(
-                            color: _colors.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChallengePreviewThumbnail(Post post) {
-    final hasImages = post.images != null && post.images!.isNotEmpty;
-
-    if (hasImages) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: CachedNetworkImage(
-          imageUrl: post.images!.first,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: _colors.textSecondary.withOpacity(0.2),
-            child: Icon(Icons.photo, color: _colors.textSecondary, size: 20),
-          ),
-          errorWidget: (context, url, error) =>
-              Icon(Icons.error, color: _colors.danger, size: 20),
-        ),
-      );
-    } else {
-      return Container(
-        color: _colors.textSecondary.withOpacity(0.2),
-        child: Icon(Icons.article, color: _colors.textSecondary, size: 20),
-      );
-    }
-  }
-
-  Widget _buildBasicChallengeSection(Post post) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 15),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _colors.primary.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.emoji_events, color: _colors.primary, size: 24),
-              SizedBox(width: 8),
-              Text(
-                'LOOK CHALLENGE',
-                style: TextStyle(
-                  color: _colors.primary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildChallengeStatItem(
-                icon: Icons.how_to_vote,
-                value: '${post.votesChallenge ?? 0}',
-                label: 'Votes',
-                color: _colors.primary,
-              ),
-              _buildChallengeStatItem(
-                icon: Icons.bar_chart,
-                value: '${post.totalInteractions ?? 0}',
-                label: 'Interactions',
-                color: _colors.info,
-              ),
-              _buildChallengeStatItem(
-                icon: Icons.favorite,
-                value: '${post.loves ?? 0}',
-                label: 'Likes',
-                color: _colors.danger,
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          if (!_hasVoted)
-            Container(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isVoting ? null : _showVoteConfirmationDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _colors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                ),
-                child: _isVoting
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: _colors.onPrimary,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.how_to_vote, size: 20),
-                          SizedBox(width: 10),
-                          Text(
-                            'VOTER POUR CE LOOK',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            )
-          else
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _colors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _colors.primary),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle, color: _colors.primary, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Vous avez déjà voté pour ce look',
-                    style: TextStyle(
-                      color: _colors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChallengeStatItem(
-      {required IconData icon,
-      required String value,
-      required String label,
-      required Color color}) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: _colors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: _colors.textSecondary,
-            fontSize: 10,
-          ),
-        ),
-      ],
-    );
-  }
 
   void _handleShare() async {
     // Activer le mode chargement
@@ -6287,7 +4946,7 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                 ],
               )
             : Text(
-                _isLookChallenge ? 'Look Challenge' : 'Post',
+                'Post',
                 style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18),
               ),
         actions: [
@@ -6362,8 +5021,6 @@ Pour garantir l'équité du concours, chaque appareil ne peut voter qu'une seule
                       _buildBoostSection(),
                       _buildPostContent(updatedPost),
 
-                      if (_isLookChallenge)
-                        _buildLookChallengeSection(updatedPost),
 
                       if (updatedPost.defiResponseToPostId != null)
                         DefiResponseBanner(
@@ -6757,7 +5414,7 @@ class _PostDetailBadgesRow extends StatelessWidget {
       countryLabel = 'Tous';
     } else {
       final code = countries.first.toUpperCase();
-      final found = AfricanCountry.allCountries.where((c) => c.code.toUpperCase() == code).toList();
+      final found = AfricanCountry.everyCountry.where((c) => c.code.toUpperCase() == code).toList();
       flagText = found.isNotEmpty ? found.first.flag : '🏳️';
       countryLabel = countries.length == 1 ? code : '+${countries.length - 1}';
     }

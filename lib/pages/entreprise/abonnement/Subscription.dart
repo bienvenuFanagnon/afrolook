@@ -1,4 +1,4 @@
-﻿import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/sessions/session_checker_service.dart';
 
@@ -23,6 +23,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as Path;
 
 import 'dart:io';
+import '../../../l10n/tr.dart';
 
 class PremiumSubscriptionPage extends StatefulWidget {
   final EntrepriseData? entreprise;
@@ -74,7 +75,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Abonnement Premium',
+          context.tr('Abonnement Premium'),
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -165,7 +166,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ABONNEMENT PREMIUM',
+                      context.tr('ABONNEMENT PREMIUM'),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -174,7 +175,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'De 15 à 100 posts selon la durée !',
+                      context.tr('De 15 à 100 posts selon la durée !'),
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -194,7 +195,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
               border: Border.all(color: Colors.amber),
             ),
             child: Text(
-              '📈 PROGRESSION DES POSTS',
+              context.tr('📈 PROGRESSION DES POSTS'),
               style: TextStyle(
                 color: Colors.amber,
                 fontSize: 12,
@@ -231,7 +232,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                   Icon(Icons.info, color: Colors.orange, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    'Abonnement en cours',
+                    context.tr('Abonnement en cours'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -241,10 +242,10 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                 ],
               ),
               SizedBox(height: 12),
-              _buildInfoRow('Type', currentAbonnement.type ?? "Inconnu"),
-              _buildInfoRow('Jours restants', '$daysLeft jours'),
+              _buildInfoRow(context.tr('Type'), currentAbonnement.type ?? context.tr('Inconnu')),
+              _buildInfoRow(context.tr('Jours restants'), '$daysLeft jours'),
               if (currentAbonnement.type != TypeAbonement.GRATUIT.name)
-                _buildInfoRow('Produits restants', '${_calculateRemainingProducts(currentAbonnement)}'),
+                _buildInfoRow(context.tr('Produits restants'), '${_calculateRemainingProducts(currentAbonnement)}'),
             ],
           ),
         ),
@@ -291,7 +292,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '🎯 AVANTAGES PREMIUM',
+              context.tr('🎯 AVANTAGES PREMIUM'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -300,32 +301,32 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
             ),
             SizedBox(height: 16),
             _buildBenefitItem(
-              '📦 De 15 à 100 posts',
-              'Plus la durée est longue, plus vous avez de posts !',
+              context.tr('📦 De 15 à 100 posts'),
+              context.tr('Plus la durée est longue, plus vous avez de posts !'),
             ),
             _buildBenefitItem(
-              '👀 Visibilité maximale',
-              'Apparaissez dans toutes les pages de l\'application',
+              context.tr('👀 Visibilité maximale'),
+              context.tr('Apparaissez dans toutes les pages de l\'application'),
             ),
             _buildBenefitItem(
-              '🖼️ 5 images par produit',
-              'Montrez vos produits sous tous les angles',
+              context.tr('🖼️ 5 images par produit'),
+              context.tr('Montrez vos produits sous tous les angles'),
             ),
             _buildBenefitItem(
-              '🚀 5 boosts gratuits',
-              'Mettez vos produits en avant gratuitement',
+              context.tr('🚀 5 boosts gratuits'),
+              context.tr('Mettez vos produits en avant gratuitement'),
             ),
             _buildBenefitItem(
-              '📊 Statistiques détaillées',
-              'Suivez les performances de vos produits',
+              context.tr('📊 Statistiques détaillées'),
+              context.tr('Suivez les performances de vos produits'),
             ),
             _buildBenefitItem(
-              '🔔 Notifications abonnés',
-              'Alertes instantanées pour vos nouveaux produits',
+              context.tr('🔔 Notifications abonnés'),
+              context.tr('Alertes instantanées pour vos nouveaux produits'),
             ),
             _buildBenefitItem(
-              '⭐ Support prioritaire',
-              'Assistance rapide pour vos questions',
+              context.tr('⭐ Support prioritaire'),
+              context.tr('Assistance rapide pour vos questions'),
             ),
           ],
         ),
@@ -395,7 +396,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '⏰ DURÉE DE L\'ABONNEMENT',
+              context.tr('⏰ DURÉE DE L\'ABONNEMENT'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -443,7 +444,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Posts inclus',
+                        context.tr('Posts inclus'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -473,14 +474,14 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '15 posts',
+                        context.tr('15 posts'),
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey[600],
                         ),
                       ),
                       Text(
-                        '100 posts',
+                        context.tr('100 posts'),
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey[600],
@@ -490,9 +491,9 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                   ),
                   SizedBox(height: 16),
 
-                  _buildPriceRow('Prix total', CoinCheckout.priceLabel(totalPrice)),
+                  _buildPriceRow(context.tr('Prix total'), CoinCheckout.priceLabel(totalPrice)),
                   SizedBox(height: 8),
-                  _buildPriceRow('Posts par mois', '~${(productCount / (selectedDays / 30)).roundToDouble().toInt()}'),
+                  _buildPriceRow(context.tr('Posts par mois'), '~${(productCount / (selectedDays / 30)).roundToDouble().toInt()}'),
 
                   if (selectedDays > 30)
                     SizedBox(height: 8),
@@ -549,7 +550,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
           Icon(Icons.local_offer, size: 14, color: Colors.amber[800]),
           SizedBox(width: 4),
           Text(
-            'Réduction de $discount% !',
+            context.tr('Réduction de {a}% !', {'a': discount}),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -575,7 +576,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
           Icon(Icons.celebration, size: 14, color: Color(0xFF2ECC71)),
           SizedBox(width: 4),
           Text(
-            'MAXIMUM 100 POSTS ATTEINT !',
+            context.tr('MAXIMUM 100 POSTS ATTEINT !'),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -599,7 +600,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '📋 RÉCAPITULATIF',
+              context.tr('📋 RÉCAPITULATIF'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -607,13 +608,13 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
               ),
             ),
             SizedBox(height: 16),
-            _buildDetailRow('Durée de l\'abonnement', '$selectedDays jours'),
-            _buildDetailRow('Prix total', CoinCheckout.priceLabel(totalPrice)),
-            _buildDetailRow('Nombre total de posts', '${productCount.toInt()}'),
-            _buildDetailRow('Posts par mois', '~${(productCount / (selectedDays / 30)).roundToDouble().toInt()}'),
-            _buildDetailRow('Produits boostés inclus', '5'),
-            _buildDetailRow('Images par produit', '5'),
-            _buildDetailRow('Support prioritaire', 'Inclus'),
+            _buildDetailRow(context.tr('Durée de l\'abonnement'), '$selectedDays jours'),
+            _buildDetailRow(context.tr('Prix total'), CoinCheckout.priceLabel(totalPrice)),
+            _buildDetailRow(context.tr('Nombre total de posts'), '${productCount.toInt()}'),
+            _buildDetailRow(context.tr('Posts par mois'), '~${(productCount / (selectedDays / 30)).roundToDouble().toInt()}'),
+            _buildDetailRow(context.tr('Produits boostés inclus'), '5'),
+            _buildDetailRow(context.tr('Images par produit'), '5'),
+            _buildDetailRow(context.tr('Support prioritaire'), context.tr('Inclus')),
           ],
         ),
       ),
@@ -687,7 +688,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
                 Icon(Icons.star, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'S\'ABONNER - ${CoinCheckout.fmt(CoinCheckout.coinsFor(totalPrice))} pièces',
+                  context.tr('S\'ABONNER - {a} pièces', {'a': CoinCheckout.fmt(CoinCheckout.coinsFor(totalPrice))}),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -743,13 +744,12 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Abonnement en cours', style: TextStyle(color: Colors.black87)),
-        content: Text('Vous avez déjà un abonnement premium actif. '
-            'Veuillez attendre qu\'il expire pour souscrire à un nouvel abonnement.'),
+        title: Text(context.tr('Abonnement en cours'), style: TextStyle(color: Colors.black87)),
+        content: Text(context.tr('Vous avez déjà un abonnement premium actif. Veuillez attendre qu\'il expire pour souscrire à un nouvel abonnement.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Compris', style: TextStyle(color: Color(0xFF2ECC71))),
+            child: Text(context.tr('Compris'), style: TextStyle(color: Color(0xFF2ECC71))),
           ),
         ],
       ),
@@ -759,7 +759,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
   Future<void> _subscribeToPremium() async {
     if (widget.entreprise == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez d\'abord créer une entreprise')),
+        SnackBar(content: Text(context.tr('Veuillez d\'abord créer une entreprise'))),
       );
       return;
     }
@@ -773,7 +773,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
           kind: 'entreprise_premium',
           days: selectedDays,
           priceFcfa: totalPrice,
-          label: 'Abonnement entreprise Premium — $selectedDays jours');
+          label: context.tr('Abonnement entreprise Premium — {a} jours', {'a': selectedDays}));
       if (!paid) {
         setState(() { isLoading = false; });
         return;
@@ -786,7 +786,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
         ..type = TypeAbonement.PREMIUM.name
         ..id = firestore.collection('EntrepriseAbonnements').doc().id
         ..entrepriseId = widget.entreprise!.id!
-        ..description = "Abonnement Premium - $selectedDays jours"
+        ..description = 'Abonnement Premium - ${selectedDays} jours'
         ..nombre_pub = productCount
         ..nombre_image_pub = 5
         ..nbr_jour_pub_afrolook = 0
@@ -809,7 +809,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Color(0xFF2ECC71),
-          content: Text('🎉 Abonnement Premium activé pour $selectedDays jours avec ${productCount} posts !'),
+          content: Text(context.tr('🎉 Abonnement Premium activé pour {a} jours avec {b} posts !', {'a': selectedDays, 'b': productCount})),
         ),
       );
 
@@ -820,7 +820,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text('Erreur lors de l\'abonnement: ${e.toString()}'),
+          content: Text(context.tr('Erreur lors de l\'abonnement: {a}', {'a': e.toString()})),
         ),
       );
     } finally {

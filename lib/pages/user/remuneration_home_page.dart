@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../theme/app_colors.dart';
 import 'mes_gains_post_page.dart';
 import 'mes_gains_publicite_page.dart';
+import '../../services/currency_service.dart';
 
 class RemunerationHomePage extends StatefulWidget {
   final UserData user;
@@ -59,7 +60,7 @@ class _RemunerationHomePageState extends State<RemunerationHomePage> {
                     Icon(Icons.account_balance_wallet, color: colors.primary, size: 16),
                     const SizedBox(width: 6),
                     Text(
-                      '${widget.user.votre_solde_principal?.toStringAsFixed(2) ?? "0.00"} FCFA',
+                      Money.fmt(widget.user.votre_solde_principal ?? 0),
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.bold,

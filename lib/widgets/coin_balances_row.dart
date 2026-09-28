@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/model_data.dart';
 import '../theme/app_colors.dart';
 import '../utils/tx_amount.dart';
+import '../l10n/tr.dart';
 
 /// Les deux soldes de pièces, côte à côte : Pièces de dépôt (achetées, dépensables)
 /// et Pièces gagnées (convertibles en argent). Même calcul que le serveur (coin_locks.ts).
@@ -32,9 +33,9 @@ class CoinBalancesRow extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               children: [
-                Expanded(child: _balance(c, Icons.toll_rounded, c.supportAccent, 'Pièces de dépôt', depot)),
+                Expanded(child: _balance(c, Icons.toll_rounded, c.supportAccent, context.tr('Pièces de dépôt'), depot)),
                 VerticalDivider(width: 20, thickness: 1, color: c.border),
-                Expanded(child: _balance(c, Icons.emoji_events_rounded, c.primary, 'Pièces gagnées', gagnees)),
+                Expanded(child: _balance(c, Icons.emoji_events_rounded, c.primary, context.tr('Pièces gagnées'), gagnees)),
               ],
             ),
           ),
@@ -86,7 +87,7 @@ class CoinBalancesRow extends StatelessWidget {
             ),
           ),
         ),
-        Text('pièces', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+        Text(tr('pièces'), style: TextStyle(color: c.textSecondary, fontSize: 11)),
       ],
     );
   }
@@ -110,7 +111,7 @@ class CoinSplit {
   int get total => depot + gagnees;
 
   /// « Dépôt 1 200 · Gagnées 4 269 »
-  String get label => 'Dépôt ${TxAmount.fmt(depot)} · Gagnées ${TxAmount.fmt(gagnees)}';
+  String get label => tr('Dépôt {a} · Gagnées {b}', {'a': TxAmount.fmt(depot), 'b': TxAmount.fmt(gagnees)});
 }
 
 /// Les deux soldes sur une ligne, pour les fenêtres d'achat, de cadeau et d'abonnement.
@@ -162,9 +163,9 @@ class CoinBalancesInline extends StatelessWidget {
         );
 
     return Row(children: [
-      pill(Icons.toll_rounded, c.supportAccent, 'Pièces de dépôt', s.depot),
+      pill(Icons.toll_rounded, c.supportAccent, context.tr('Pièces de dépôt'), s.depot),
       const SizedBox(width: 8),
-      pill(Icons.emoji_events_rounded, c.primary, 'Pièces gagnées', s.gagnees),
+      pill(Icons.emoji_events_rounded, c.primary, context.tr('Pièces gagnées'), s.gagnees),
     ]);
   }
 }

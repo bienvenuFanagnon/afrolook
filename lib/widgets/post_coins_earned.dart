@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/model_data.dart';
 import '../theme/app_colors.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
+import '../l10n/tr.dart';
 
 /// Pièces reçues par un post (likes + commentaires + cadeaux), visibles par tous :
 /// c'est la preuve que sur Afrolook, chaque interaction paie le créateur.
@@ -27,7 +28,7 @@ class PostCoins {
     final canal = p.canal?.titre;
     if (canal != null && canal.isNotEmpty) return '#$canal';
     final pseudo = p.user?.pseudo;
-    return pseudo != null && pseudo.isNotEmpty ? '@$pseudo' : 'au créateur';
+    return pseudo != null && pseudo.isNotEmpty ? '@$pseudo' : tr('au créateur');
   }
 
   // Or : fond clair ou sombre selon le thème
@@ -45,7 +46,7 @@ Future<void> showPostCoinsBreakdown(BuildContext context, Post post) {
           Icon(icon, size: 18, color: c.textSecondary),
           const SizedBox(width: 10),
           Expanded(child: Text(label, style: TextStyle(color: c.textPrimary, fontSize: 14))),
-          Text('${PostCoins.fmt(coins)} pièces',
+          Text(context.tr('{a} pièces', {'a': PostCoins.fmt(coins)}),
               style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
         ]),
       );
@@ -75,13 +76,13 @@ Future<void> showPostCoinsBreakdown(BuildContext context, Post post) {
             ),
             child: Text.rich(
               TextSpan(children: [
-                const TextSpan(text: '🪙 Ce post a rapporté '),
+                TextSpan(text: context.tr('🪙 Ce post a rapporté ')),
                 TextSpan(
-                  text: '${PostCoins.fmt(PostCoins.total(post))} pièces',
+                  text: context.tr('{a} pièces', {'a': PostCoins.fmt(PostCoins.total(post))}),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 TextSpan(
-                  text: PostCoins.creatorName(post).startsWith('au ')
+                  text: PostCoins.creatorName(post).startsWith(context.tr('au '))
                       ? ' ${PostCoins.creatorName(post)}'
                       : ' à ${PostCoins.creatorName(post)}',
                 ),
@@ -90,15 +91,15 @@ Future<void> showPostCoinsBreakdown(BuildContext context, Post post) {
             ),
           ),
           const SizedBox(height: 12),
-          Text('Détail', style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(context.tr('Détail'), style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          line(Icons.favorite_rounded, 'Likes', PostCoins.likes(post)),
-          line(Icons.chat_bubble_rounded, 'Commentaires', PostCoins.comments(post)),
-          line(Icons.card_giftcard_rounded, 'Cadeaux', PostCoins.gifts(post)),
+          line(Icons.favorite_rounded, context.tr('Likes'), PostCoins.likes(post)),
+          line(Icons.chat_bubble_rounded, context.tr('Commentaires'), PostCoins.comments(post)),
+          line(Icons.card_giftcard_rounded, context.tr('Cadeaux'), PostCoins.gifts(post)),
           Divider(height: 20, color: c.border),
           Row(children: [
-            Expanded(child: Text('Total', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700))),
-            Text('${PostCoins.fmt(PostCoins.total(post))} pièces',
+            Expanded(child: Text(context.tr('Total'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700))),
+            Text(context.tr('{a} pièces', {'a': PostCoins.fmt(PostCoins.total(post))}),
                 style: TextStyle(color: PostCoins.fg(c), fontSize: 15, fontWeight: FontWeight.w800)),
           ]),
           const SizedBox(height: 12),
@@ -107,7 +108,7 @@ Future<void> showPostCoinsBreakdown(BuildContext context, Post post) {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: PostCoins.bg(c), borderRadius: BorderRadius.circular(10)),
             child: Text(
-              'Sur Afrolook, chaque like et chaque commentaire paient le créateur : 1 pièce à chaque fois.',
+              context.tr('Sur Afrolook, chaque like et chaque commentaire paient le créateur : 1 pièce à chaque fois.'),
               style: TextStyle(color: PostCoins.fg(c), fontSize: 12.5, height: 1.35),
             ),
           ),
@@ -150,11 +151,11 @@ class PostCoinsBanner extends StatelessWidget {
                 child: Text.rich(
                   total > 0
                       ? TextSpan(children: [
-                          const TextSpan(text: 'Ce post a rapporté '),
-                          TextSpan(text: '${PostCoins.fmt(total)} pièces', style: const TextStyle(fontWeight: FontWeight.w800)),
-                          TextSpan(text: name.startsWith('au ') ? ' $name' : ' à $name'),
+                          TextSpan(text: context.tr('Ce post a rapporté ')),
+                          TextSpan(text: context.tr('{a} pièces', {'a': PostCoins.fmt(total)}), style: const TextStyle(fontWeight: FontWeight.w800)),
+                          TextSpan(text: name.startsWith(context.tr('au ')) ? ' $name' : ' à $name'),
                         ])
-                      : TextSpan(text: 'Chaque like rapporte 1 pièce ${name.startsWith('au ') ? name : 'à $name'}'),
+                      : TextSpan(text: context.tr('Chaque like rapporte 1 pièce {a}', {'a': name.startsWith('au ') ? name : 'à $name'})),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: PostCoins.fg(c), fontSize: 13),
@@ -194,7 +195,7 @@ class PostCoinsChip extends StatelessWidget {
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(
-            total > 0 ? '🪙 ${PostCoins.fmt(total)} pièces reçues' : '🪙 1 like = 1 pièce au créateur',
+            total > 0 ? context.tr('🪙 {a} pièces reçues', {'a': PostCoins.fmt(total)}) : context.tr('🪙 1 like = 1 pièce au créateur'),
             style: const TextStyle(color: Color(0xFF633806), fontSize: 11.5, fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 2),

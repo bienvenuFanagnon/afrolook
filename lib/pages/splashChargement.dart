@@ -46,6 +46,8 @@ import '../services/sessions/session_service.dart';
 
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
 import 'intro/introduction.dart';
+import 'intro/monetization_tutorial.dart';
+import 'intro/creator_splash.dart';
 
 import 'auth/authTest/Screens/updateUserData.dart';
 
@@ -407,8 +409,17 @@ class _SplashChargementState extends State<SplashChargement> {
     return _buildVideoScreen();
   }
 
-  // Splash screen — logo centré sur desktop, image de fond sur mobile.
+  // Écran de démarrage : photo de créateur tirée au hasard, accroche et chargement doré.
   Widget _buildSplashScreen(double height, double width) {
+    return CreatorSplash(
+      loadingText: _loadingText,
+      footer: (_isLoadingTarget || _loadedPost != null || _loadedChat != null) ? _buildLoadingStatus() : null,
+    );
+  }
+
+  // Ancien écran (conservé pour référence, plus utilisé)
+  // ignore: unused_element
+  Widget _buildSplashScreenOld(double height, double width) {
     // Desktop/Tablette : juste le logo centré sur fond uni
     if (AppLayout.isWide(context)) {
       return Scaffold(
@@ -745,7 +756,18 @@ class _SplashChargementState extends State<SplashChargement> {
     await _navigateToHomeWithDestination();
   }
 
-  void _redirectToLogin() {
+  Future<void> _redirectToLogin() async {
+    if (!mounted) return;
+    // Tutoriel de monétisation : une seule fois, avant la connexion ou l'inscription
+    if (!await MonetizationTutorialPage.alreadySeen()) {
+      if (!mounted) return;
+      Navigator.pushReplacement(context, PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 600),
+        pageBuilder: (_, __, ___) => const MonetizationTutorialPage(),
+        transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
+      ));
+      return;
+    }
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser()));
   }

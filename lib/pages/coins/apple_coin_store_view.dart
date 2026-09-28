@@ -12,6 +12,7 @@ import '../../services/apple_iap_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/tx_amount.dart';
 import '../../widgets/coin_balances_row.dart';
+import '../../l10n/tr.dart';
 
 /// Boutique iOS : pièces vendues via In-App Purchase (règle App Store 3.1.1).
 class AppleCoinStoreView extends StatefulWidget {
@@ -58,10 +59,10 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
     if (!mounted) return;
     switch (event.type) {
       case AppleIapEventType.success:
-        _showMessage('🎉 Achat réussi', '+${event.coins} pièces ont été ajoutées à ton solde.');
+        _showMessage(context.tr('🎉 Achat réussi'), context.tr('+{a} pièces ont été ajoutées à ton solde.', {'a': event.coins}));
         break;
       case AppleIapEventType.error:
-        _showMessage('Achat non finalisé', event.message);
+        _showMessage(context.tr('Achat non finalisé'), event.message);
         break;
       case AppleIapEventType.pending:
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(event.message)));
@@ -95,7 +96,7 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: Text('Acheter des pièces',
+        title: Text(context.tr('Acheter des pièces'),
             style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: colors.surface,
         elevation: 0,
@@ -113,19 +114,16 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
             children: [
               CoinBalancesRow(
                 user: user,
-                note: 'Les pièces achetées vont dans tes Pièces de dépôt.',
+                note: context.tr('Les pièces achetées vont dans tes Pièces de dépôt.'),
               ),
               const SizedBox(height: 18),
-              Text('Choisis un pack',
+              Text(context.tr('Choisis un pack'),
                   style: TextStyle(color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               ..._content(colors),
               const SizedBox(height: 18),
               Text(
-                "Paiement sécurisé par l'App Store. Les pièces achetées servent à tout payer dans l'app : "
-                "abonnements, cadeaux, votes, DÉFI, lives, groupes, canaux, publicités et boosts. "
-                "Elles ne sont pas convertibles en argent : seules les pièces gagnées (cadeaux reçus, likes, "
-                "récompenses, gains de DÉFI) peuvent être converties.",
+                context.tr('Paiement sécurisé par l\'App Store. Les pièces achetées servent à tout payer dans l\'app : abonnements, cadeaux, votes, DÉFI, lives, groupes, canaux, publicités et boosts. Elles ne sont pas convertibles en argent : seules les pièces gagnées (cadeaux reçus, likes, récompenses, gains de DÉFI) peuvent être converties.'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
               ),
             ],
@@ -154,12 +152,12 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
               const Text('🍎', style: TextStyle(fontSize: 40)),
               const SizedBox(height: 10),
               Text(
-                "Les achats App Store ne sont pas disponibles pour le moment.",
+                context.tr('Les achats App Store ne sont pas disponibles pour le moment.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              OutlinedButton(onPressed: _iap.loadProducts, child: const Text('Réessayer')),
+              OutlinedButton(onPressed: _iap.loadProducts, child: Text(context.tr('Réessayer'))),
             ],
           ),
         ),
@@ -195,7 +193,7 @@ class _AppleCoinStoreViewState extends State<AppleCoinStoreView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${TxAmount.fmt(pack.coins)} pièces',
+                Text(context.tr('{a} pièces', {'a': TxAmount.fmt(pack.coins)}),
                     style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                 Text(pack.popularLabel ?? pack.label,
                     style: TextStyle(color: colors.textSecondary, fontSize: 12)),

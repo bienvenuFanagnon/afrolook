@@ -1369,7 +1369,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       flagEmoji = '🌍';
     } else if (countryCodes.isNotEmpty) {
       final firstCountryCode = countryCodes.first.toUpperCase();
-      final country = AfricanCountry.allCountries.firstWhere(
+      final country = AfricanCountry.everyCountry.firstWhere(
             (c) => c.code == firstCountryCode,
         orElse: () => AfricanCountry(code: firstCountryCode, name: firstCountryCode, flag: '🏳️'),
       );
@@ -1468,7 +1468,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     itemCount: countryCodes.length,
                     itemBuilder: (ctx2, i) {
                       final code = countryCodes[i].toUpperCase();
-                      final country = AfricanCountry.allCountries.firstWhere(
+                      final country = AfricanCountry.everyCountry.firstWhere(
                         (c) => c.code == code,
                         orElse: () => AfricanCountry(code: code, name: code, flag: '🏳️'),
                       );

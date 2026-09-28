@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../../theme/app_colors.dart';
 import 'detailsCanal.dart';
 import 'newCanal.dart';
+import '../../l10n/tr.dart';
 
 /// « Mes canaux » : canaux créés et canaux administrés par l'utilisateur.
 /// Chargement rapide : les deux requêtes partent en parallèle, la liste s'affiche dès leur retour,
@@ -121,7 +122,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
       backgroundColor: _colors.background,
       appBar: AppBar(
         title: Text(
-          'Mes canaux',
+          context.tr('Mes canaux'),
           style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: _colors.surface,
@@ -135,7 +136,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
           IconButton(
             onPressed: _loadCanaux,
             icon: Icon(Icons.refresh_rounded, color: _colors.textPrimary),
-            tooltip: 'Actualiser',
+            tooltip: context.tr('Actualiser'),
           ),
         ],
         bottom: PreferredSize(
@@ -158,13 +159,13 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
                           children: [
                             _buildSummary(),
                             const SizedBox(height: 18),
-                            _buildSectionHeader('Créés par moi', createdCanaux.length, _colors.primary),
+                            _buildSectionHeader(context.tr('Créés par moi'), createdCanaux.length, _colors.primary),
                             if (createdCanaux.isEmpty)
                               _buildEmptySection(l10n.canalNoneCreated, Icons.add_circle_outline_rounded)
                             else
                               ...createdCanaux.map((c) => _buildCanalCard(c, isOwner: true)),
                             const SizedBox(height: 18),
-                            _buildSectionHeader("J'administre", adminCanaux.length, _colors.warning),
+                            _buildSectionHeader(context.tr('J\'administre'), adminCanaux.length, _colors.warning),
                             if (adminCanaux.isEmpty)
                               _buildEmptySection(l10n.canalNoneManaged, Icons.admin_panel_settings_outlined)
                             else
@@ -178,7 +179,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
         backgroundColor: _colors.primary,
         foregroundColor: _colors.onPrimary,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Créer un canal', style: TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(context.tr('Créer un canal'), style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -212,7 +213,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
         child: Row(children: [
           stat('${all.length}', all.length > 1 ? 'canaux' : 'canal', Icons.campaign_rounded, _colors.primary),
           VerticalDivider(width: 1, color: _colors.border),
-          stat(_n.format(followers), 'abonnés', Icons.people_alt_rounded, _colors.accent),
+          stat(_n.format(followers), context.tr('abonnés'), Icons.people_alt_rounded, _colors.accent),
           VerticalDivider(width: 1, color: _colors.border),
           stat(_n.format(posts), 'publications', Icons.article_rounded, _colors.info),
         ]),
@@ -247,7 +248,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
     final hasImage = canal.urlImage != null && canal.urlImage!.isNotEmpty;
     final creator = canal.user?.pseudo;
     final subtitle = !isOwner && creator != null && creator.isNotEmpty
-        ? 'Créé par @$creator'
+        ? context.tr('Créé par @{a}', {'a': creator})
         : (canal.description?.trim().isNotEmpty == true ? canal.description!.trim() : null);
 
     Widget chip(IconData icon, String text, {Color? color}) => Row(mainAxisSize: MainAxisSize.min, children: [
@@ -332,7 +333,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
                     isPrivate
                         ? chip(Icons.lock_rounded,
                             canal.subscriptionPriceCoins > 0
-                                ? '${l10n.canalPrivate} · ${_n.format(canal.subscriptionPriceCoins)} pièces'
+                                ? context.tr('{a} · {b} pièces', {'a': l10n.canalPrivate, 'b': _n.format(canal.subscriptionPriceCoins)})
                                 : l10n.canalPrivate,
                             color: _colors.accent)
                         : chip(Icons.public_rounded, l10n.canalPublic, color: _colors.primary),
@@ -414,15 +415,15 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.wifi_off_rounded, size: 48, color: _colors.textSecondary),
           const SizedBox(height: 12),
-          Text('Impossible de charger tes canaux',
+          Text(context.tr('Impossible de charger tes canaux'),
               style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Vérifie ta connexion, puis réessaie.', style: TextStyle(color: _colors.textSecondary)),
+          Text(context.tr('Vérifie ta connexion, puis réessaie.'), style: TextStyle(color: _colors.textSecondary)),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _loadCanaux,
             style: FilledButton.styleFrom(backgroundColor: _colors.primary, foregroundColor: _colors.onPrimary),
-            child: const Text('Réessayer'),
+            child: Text(context.tr('Réessayer')),
           ),
         ]),
       ),
@@ -447,7 +448,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
               style: TextStyle(color: _colors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(
-            'Un canal regroupe tes publications et tes abonnés autour d\'un thème. Il peut être public ou privé (abonnement en pièces).',
+            context.tr('Un canal regroupe tes publications et tes abonnés autour d\'un thème. Il peut être public ou privé (abonnement en pièces).'),
             textAlign: TextAlign.center,
             style: TextStyle(color: _colors.textSecondary, height: 1.4),
           ),

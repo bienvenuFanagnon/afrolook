@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
+import '../../../l10n/tr.dart';
 
 class CurrentSubscriptionPage extends StatelessWidget {
   final EntrepriseAbonnement abonnement;
@@ -31,7 +32,7 @@ class CurrentSubscriptionPage extends StatelessWidget {
 
     String produitRestant = isFree
         ? "${abonnement.nombre_pub ?? 0} restants"
-        : "Illimité";
+        : context.tr('Illimité');
 
     Color getStatusColor() {
       if (isFree) return Colors.grey;
@@ -40,15 +41,15 @@ class CurrentSubscriptionPage extends StatelessWidget {
     }
 
     String getStatusText() {
-      if (isFree) return "Gratuit";
-      if (isExpired) return "Expiré";
-      return "Actif";
+      if (isFree) return context.tr('Gratuit');
+      if (isExpired) return context.tr('Expiré');
+      return context.tr('Actif');
     }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Mon Abonnement',
+          context.tr('Mon Abonnement'),
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -103,7 +104,7 @@ class CurrentSubscriptionPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Statut',
+                                  context.tr('Statut'),
                                   style: TextStyle(
                                     color: Colors.white70,
                                     fontSize: 14,
@@ -136,7 +137,7 @@ class CurrentSubscriptionPage extends StatelessWidget {
                                   ),
                                   SizedBox(width: 4),
                                   Text(
-                                    abonnement.type ?? "Inconnu",
+                                    abonnement.type ?? context.tr('Inconnu'),
                                     style: TextStyle(
                                       color: getStatusColor(),
                                       fontWeight: FontWeight.bold,
@@ -162,7 +163,7 @@ class CurrentSubscriptionPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Jours restants',
+                                context.tr('Jours restants'),
                                 style: TextStyle(
                                   color: Colors.white70,
                                   fontSize: 12,
@@ -197,35 +198,35 @@ class CurrentSubscriptionPage extends StatelessWidget {
                     // ),
                     _buildDetailTile(
                       icon: Icons.image,
-                      title: 'Images par produit',
+                      title: context.tr('Images par produit'),
                       value: '${abonnement.nombre_image_pub ?? 1}',
                       color: Colors.blue,
                     ),
                     if (abonnement.nombre_pub != null && !isFree)
                       _buildDetailTile(
                         icon: Icons.layers,
-                        title: 'Total produits autorisés',
+                        title: context.tr('Total produits autorisés'),
                         value: '${abonnement.nombre_pub}',
                         color: Colors.purple,
                       ),
                     if (abonnement.produistIdBoosted != null && !isFree)
                       _buildDetailTile(
                         icon: Icons.rocket_launch,
-                        title: 'Produits boostés',
+                        title: context.tr('Produits boostés'),
                         value: '${abonnement.produistIdBoosted!.length}',
                         color: Colors.orange,
                       ),
                     if (abonnement.createdAt != null && !isFree)
                       _buildDetailTile(
                         icon: Icons.calendar_today,
-                        title: 'Date de début',
+                        title: context.tr('Date de début'),
                         value: dateFormat.format(DateTime.fromMillisecondsSinceEpoch(abonnement.createdAt!)),
                         color: Colors.green,
                       ),
                     if (abonnement.end != null && !isFree)
                       _buildDetailTile(
                         icon: Icons.event,
-                        title: 'Date de fin',
+                        title: context.tr('Date de fin'),
                         value: dateFormat.format(DateTime.fromMillisecondsSinceEpoch(abonnement.end!)),
                         color: Colors.red,
                       ),
@@ -270,8 +271,8 @@ class CurrentSubscriptionPage extends StatelessWidget {
                       ),
                       SizedBox(width: 8),
                       Text(
-                        isFree ? 'Passer à Premium' :
-                        isExpired ? 'Renouveler' : 'Améliorer',
+                        isFree ? context.tr('Passer à Premium') :
+                        isExpired ? context.tr('Renouveler') : context.tr('Améliorer'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -359,7 +360,7 @@ class CurrentSubscriptionPage extends StatelessWidget {
                 Icon(Icons.info, color: Colors.amber[700]),
                 SizedBox(width: 8),
                 Text(
-                  'Plan Gratuit',
+                  tr('Plan Gratuit'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -370,18 +371,18 @@ class CurrentSubscriptionPage extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Profitez des fonctionnalités de base. Passez à Premium pour débloquer :',
+              tr('Profitez des fonctionnalités de base. Passez à Premium pour débloquer :'),
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.black87,
               ),
             ),
             SizedBox(height: 8),
-            _buildFeatureItem('➕ Plus de produits à publier'),
-            _buildFeatureItem('🖼️ Plus d\'images par produit'),
-            _buildFeatureItem('🚀 Boost de produits gratuit'),
-            _buildFeatureItem('📊 Statistiques détaillées'),
-            _buildFeatureItem('👀 Visibilité étendue'),
+            _buildFeatureItem(tr('➕ Plus de produits à publier')),
+            _buildFeatureItem(tr('🖼️ Plus d\'images par produit')),
+            _buildFeatureItem(tr('🚀 Boost de produits gratuit')),
+            _buildFeatureItem(tr('📊 Statistiques détaillées')),
+            _buildFeatureItem(tr('👀 Visibilité étendue')),
           ],
         ),
       ),

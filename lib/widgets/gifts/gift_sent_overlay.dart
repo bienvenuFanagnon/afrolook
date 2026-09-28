@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/coin_pack.dart';
+import '../../l10n/tr.dart';
 
 /// Affiche une animation centrée (style "double-tap like") lors de l'envoi d'un cadeau.
 /// Fonctionne depuis n'importe quelle page via l'Overlay.
@@ -208,7 +209,7 @@ class _GiftSentOverlayState extends State<_GiftSentOverlay>
                                           style: TextStyle(fontSize: 11)),
                                       const SizedBox(width: 3),
                                       Text(
-                                        '+${_fmt(widget.receiverCoins)} créateur',
+                                        context.tr('+{a} créateur', {'a': _fmt(widget.receiverCoins)}),
                                         style: const TextStyle(
                                           color: Color(0xFFFFD700),
                                           fontWeight: FontWeight.bold,
@@ -222,7 +223,7 @@ class _GiftSentOverlayState extends State<_GiftSentOverlay>
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              'Vous soutenez @$name ✨',
+                              context.tr('Vous soutenez @{a} ✨', {'a': name}),
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.75),
                                 fontSize: 12,

@@ -377,13 +377,10 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
               setModalState(() {});
             }
 
-            List<AfricanCountry> filteredCountries = AfricanCountry.allCountries
-                .where((country) {
-              if (searchQuery.isEmpty) return true;
-              return country.name.toLowerCase().contains(searchQuery) ||
-                  country.code.toLowerCase().contains(searchQuery) ||
-                  country.name?.toLowerCase().contains(searchQuery) == true;
-            }).toList();
+            List<AfricanCountry> filteredCountries = AfricanCountry.search(
+                AfricanCountry.sortedFor(Provider.of<UserAuthProvider>(context, listen: false)
+                    .loginUserData.countryData?['countryCode']),
+                searchQuery);
 
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
@@ -775,7 +772,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
   String _getCountryFlag(String countryCode) {
     try {
-      final country = AfricanCountry.allCountries.firstWhere(
+      final country = AfricanCountry.everyCountry.firstWhere(
             (c) => c.code.toUpperCase() == countryCode.toUpperCase(),
         orElse: () => AfricanCountry(
           code: countryCode,

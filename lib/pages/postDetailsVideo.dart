@@ -160,12 +160,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   bool? _hasSeenSupportModal;
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
 
-  // Vote challenge
-  bool _hasVoted = false;
-  bool _isVoting = false;
-  List<String> _votersList = [];
-  Challenge? _challenge;
-  bool _loadingChallenge = false;
 
   // Cadeau
   int _selectedGiftIndex = 0;
@@ -198,7 +192,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   // Streams de mise à jour
   StreamSubscription<DocumentSnapshot>? _postSubscription;
 
-  bool get _isLookChallenge => _currentPost.type == 'CHALLENGEPARTICIPATION';
   // Suggestions
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
@@ -254,10 +247,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     _loadSupportModalSeen();
     _loadPostRelations();
     _checkIfFavorite();
-    if (_isLookChallenge && _currentPost.challenge_id != null) {
-      _loadChallengeData();
-    }
-    _checkIfUserHasVoted();
     _initializeVideo();
     _incrementViews();
     _isAd = _currentPost.isAdvertisement == true;
@@ -887,20 +876,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     }
   }
 
-  Future<void> _loadChallengeData() async {
-    if (_currentPost.challenge_id == null) return;
-    setState(() => _loadingChallenge = true);
-    try {
-      final doc = await _firestore.collection('Challenges').doc(_currentPost.challenge_id).get();
-      if (doc.exists) {
-        _challenge = Challenge.fromJson(doc.data()!)..id = doc.id;
-      }
-    } catch (e) {
-      printVm('Erreur chargement challenge: $e');
-    } finally {
-      setState(() => _loadingChallenge = false);
-    }
-  }
   Widget _buildExpandableDescription(String text) {
     final colors = AppColors.of(context);
     const int maxWords = 10;
@@ -958,20 +933,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           ),
       ],
     );
-  }
-  Future<void> _checkIfUserHasVoted() async {
-    try {
-      final postDoc = await _firestore.collection('Posts').doc(_currentPost.id).get();
-      if (postDoc.exists) {
-        final voters = List<String>.from(postDoc.data()?['users_votes_ids'] ?? []);
-        setState(() {
-          _hasVoted = voters.contains(authProvider.loginUserData.id);
-          _votersList = voters;
-        });
-      }
-    } catch (e) {
-      printVm('Erreur vérification vote: $e');
-    }
   }
 
   Future<void> _initializeVideo() async {
@@ -2230,56 +2191,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     );
   }
 
-  Widget _buildChallengeSection() {
-    if (!_isLookChallenge || _challenge == null) return SizedBox.shrink();
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(color: AppColors.of(context).surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _afroGreen)),
-      child: Column(children: [
-        Row(children: [Icon(Icons.emoji_events, color: _afroGreen), SizedBox(width: 8), Text('LOOK CHALLENGE', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold))]),
-        SizedBox(height: 8),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('${_currentPost.votesChallenge ?? 0} votes', style: TextStyle(color: AppColors.of(context).textPrimary)),
-          if (!_hasVoted && _challenge!.isEnCours)
-            ElevatedButton(onPressed: _isVoting ? null : _showVoteConfirmationDialog, style: ElevatedButton.styleFrom(backgroundColor: _afroGreen), child: _isVoting ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : Text('VOTER', style: TextStyle(color: Colors.white))),
-          if (_hasVoted) Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _afroGreen.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Text('DÉJÀ VOTÉ', style: TextStyle(color: _afroGreen, fontSize: 12, fontWeight: FontWeight.bold))),
-        ]),
-      ]),
-    );
-  }
 
-  void _showVoteConfirmationDialog() {
-    showDialog(context: context, builder: (context) => AlertDialog(
-      backgroundColor: AppColors.of(context).surface,
-      title: Text('Confirmer le vote', style: TextStyle(color: AppColors.of(context).textPrimary)),
-      content: Text(_challenge!.voteGratuit! ? 'Voter pour ce look est gratuit.' : 'Ce vote vous coûtera ${_challenge!.prixVote} Afrcoins.', style: TextStyle(color: Colors.grey)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler')),
-        ElevatedButton(onPressed: () async { Navigator.pop(context); await _voteForLook(); }, style: ElevatedButton.styleFrom(backgroundColor: _afroGreen), child: Text('VOTER')),
-      ],
-    ));
-  }
 
-  Future<void> _voteForLook() async {
-    if (_hasVoted || _isVoting) return;
-    setState(() => _isVoting = true);
-    try {
-      await _firestore.collection('Posts').doc(_currentPost.id).update({
-        'votes_challenge': FieldValue.increment(1),
-        'users_votes_ids': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
-      });
-      setState(() {
-        _hasVoted = true;
-        _currentPost.votesChallenge = (_currentPost.votesChallenge ?? 0) + 1;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vote enregistré !'), backgroundColor: Colors.green));
-    } catch (e) {
-      printVm('Erreur vote: $e');
-    } finally {
-      setState(() => _isVoting = false);
-    }
-  }
 
 
   Future<void> _handleSupportAd() async {
@@ -2623,7 +2536,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                   maxDisplayItems: 10,
                 ),
                 _buildPostScoreBadge(),
-                _buildChallengeSection(),
 
                 // ── Nouvelle section DÉFI ─────────────────────────
                 if (_currentPost.type == PostType.DEFI.name)
@@ -2727,7 +2639,7 @@ class _PostDetailBadgesRow extends StatelessWidget {
       countryLabel = 'Tous';
     } else {
       final code = countries.first.toUpperCase();
-      final found = AfricanCountry.allCountries.where((c) => c.code.toUpperCase() == code).toList();
+      final found = AfricanCountry.everyCountry.where((c) => c.code.toUpperCase() == code).toList();
       flagText = found.isNotEmpty ? found.first.flag : '🏳️';
       countryLabel = countries.length == 1 ? code : '+${countries.length - 1}';
     }

@@ -1,4 +1,4 @@
-﻿
+
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/postProvider.dart';
+import '../../utils/platform_guard.dart';
 
 Future<bool> processPublicashTransaction({
   // required UserData userSendCadeau,
@@ -16,6 +17,8 @@ Future<bool> processPublicashTransaction({
   required PostProvider postProvider,
   required AppDefaultData appdata,
 }) async {
+  // App Store : pas de paiement avec un solde en argent (règle 3.1.1)
+  if (kIsAppleStore) return false;
   try {
     late UserAuthProvider authProvider =
     Provider.of<UserAuthProvider>(context, listen: false);

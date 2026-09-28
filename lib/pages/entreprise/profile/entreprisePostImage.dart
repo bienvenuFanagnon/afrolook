@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -280,7 +280,7 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                         ),
                                       ),
                                       TextCustomerUserTitle(
-                                        titre: "${formatNumber(post.user!.abonnes!) } abonné(s)",
+                                        titre: "${formatNumber(post.user!.followersCount) } abonné(s)",
                                         fontSize: 10,
                                         couleur: ConstColors.textColors,
                                         fontWeight: FontWeight.w400,

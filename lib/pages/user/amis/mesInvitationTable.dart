@@ -70,7 +70,7 @@ class _MesInvitationsState extends State<MesInvitations> {
                       children: <Widget>[
                         Text("@${invitation.inviteUser!.pseudo!}".toLowerCase(), style: const TextStyle(fontSize: 16)),
                         const SizedBox(height: 6),
-                        Text('${formatNumber(invitation.inviteUser!.abonnes!)} abonné(s)',
+                        Text('${formatNumber(invitation.inviteUser!.followersCount)} abonné(s)',
                             style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                       ],
                     ),

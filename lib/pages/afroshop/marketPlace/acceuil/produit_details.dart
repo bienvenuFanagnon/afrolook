@@ -61,6 +61,8 @@ import 'package:flutter/services.dart'; // Pour Clipboard
 import '../../../../theme/app_colors.dart';
 import 'package:video_player/video_player.dart';
 import '../shop_product_comments.dart';
+import '../../../../utils/platform_guard.dart';
+import '../../../../l10n/tr.dart';
 
 class ProduitDetail extends StatefulWidget {
   final String productId;
@@ -1582,6 +1584,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   @override
   Widget build(BuildContext context) {
+    // Marketplace masquée sur iPhone/iPad pour le moment
+    if (kIsAppleStore) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text(context.tr('Cette section n\'est pas disponible sur cet appareil.'))),
+      );
+    }
     _clrs = AppColors.of(context);
     final colors = _clrs!;
     if (isLoading) {

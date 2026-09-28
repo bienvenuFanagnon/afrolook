@@ -123,6 +123,8 @@ import '../../layout/responsive_layout.dart';
 import '../LiveAgora/live_list_page.dart';
 import '../LiveAgora/livePage.dart';
 import '../user/conversation/listUserConv.dart';
+import '../../l10n/tr.dart';
+import '../../services/currency_service.dart';
 
 class MyHomePage extends StatefulWidget {
 
@@ -564,7 +566,7 @@ class _MyHomePageState extends State<MyHomePage>
                       onTap: () => Navigator.pushNamed(context, '/home_profile_user')),
                   _dItem(context, colors,
                       icon: Icons.account_balance_wallet_rounded,
-                      label: 'Mon portefeuille',
+                      label: context.tr('Mon portefeuille'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
 
                   // ── Applications ───────────────────────────────────────────
@@ -576,8 +578,8 @@ class _MyHomePageState extends State<MyHomePage>
                         iconColor: Colors.red,
                         label: 'Afro Love',
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSwipePage()))),
-                  // AfroShop Market — mis en avant
-                  Container(
+                  // AfroShop Market — mis en avant (masqué sur iPhone/iPad)
+                  if (!kIsAppleStore) Container(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                     decoration: BoxDecoration(
                       color: colors.primary.withOpacity(0.08),
@@ -595,8 +597,8 @@ class _MyHomePageState extends State<MyHomePage>
                             color: const Color(0xFFF0A500),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'VIDÉOS',
+                          child: Text(
+                            context.tr('VIDÉOS'),
                             style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                           ),
                         ),
@@ -628,11 +630,11 @@ class _MyHomePageState extends State<MyHomePage>
                   _dItem(context, colors,
                       icon: Icons.trending_up_rounded,
                       iconColor: const Color(0xFFFFD700),
-                      label: 'Top posts de la semaine',
+                      label: context.tr('Top posts de la semaine'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopPostsPage()))),
                   _dItem(context, colors,
                       icon: Icons.forum_rounded,
-                      label: 'Top commentateurs de la semaine',
+                      label: context.tr('Top commentateurs de la semaine'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage()))),
 
                   // ── Mes contenus ───────────────────────────────────────────
@@ -656,7 +658,7 @@ class _MyHomePageState extends State<MyHomePage>
                     _dItem(context, colors,
                         icon: Icons.play_lesson_outlined,
                         iconColor: const Color(0xFFFFD400),
-                        label: 'Contenu Business',
+                        label: context.tr('Contenu Business'),
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen()))),
                   ],
 
@@ -708,11 +710,11 @@ class _MyHomePageState extends State<MyHomePage>
                       onTap: () => Navigator.pushNamed(context, '/app_info')),
                   _dItem(context, colors,
                       icon: Icons.gavel_rounded,
-                      label: 'Règles & Confidentialité',
+                      label: context.tr('Règles & Confidentialité'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReglesConfidentialitePage()))),
                   _dItem(context, colors,
                       icon: Icons.cleaning_services_outlined,
-                      label: 'Vider le cache des posts',
+                      label: context.tr('Vider le cache des posts'),
                       closeDrawer: false,
                       onTap: () => _clearCacheAndRefresh(context)),
                   _dItem(context, colors,
@@ -777,7 +779,7 @@ class _MyHomePageState extends State<MyHomePage>
                     ListTile(
                       leading: Icon(Icons.delete_forever_rounded, color: colors.danger),
                       title: TextCustomerMenu(
-                        titre: 'Supprimer mon compte',
+                        titre: context.tr('Supprimer mon compte'),
                         fontSize: 14,
                         couleur: colors.danger,
                         fontWeight: FontWeight.w600,
@@ -1042,6 +1044,8 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     // Achats App Store interrompus (iOS) : Apple les redonne à l'écoute, ils sont vérifiés puis crédités.
     AppleIapService.instance.start();
+    // Devise d'affichage : pays du profil (sinon celui du téléphone)
+    CurrencyService.instance.setCountry(authProvider.loginUserData.countryData?['countryCode']);
     // Utilisateurs bloqués : leurs contenus sont masqués immédiatement dans le fil.
     BlockService.instance.start();
     _headerCtrl = AnimationController(
@@ -1287,7 +1291,7 @@ class _MyHomePageState extends State<MyHomePage>
               builder: (_) => PostDetailsVideoFormatTel(initialPost: post, isIn: false),
             ),
           ),
-          'Vidéo',
+          context.tr('Vidéo'),
         );
       } else {
         _setDesktopSection(
@@ -1438,7 +1442,7 @@ class _MyHomePageState extends State<MyHomePage>
     final inPriorityPeriod = DateTime.now().isBefore(priorityEnd);
     final modalKeys = inPriorityPeriod
         ? ['affiliation_marketing', 'remuneration', 'invite_amis']
-        : ['remuneration', 'top_dating', 'challenge_month', 'invite_amis', 'affiliation_marketing'];
+        : ['remuneration', 'top_dating', 'invite_amis', 'affiliation_marketing'];
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 
@@ -1896,7 +1900,7 @@ class _MyHomePageState extends State<MyHomePage>
                         child: Icon(Icons.group, color: colors.textPrimary, size: 26),
                       ),
                       SizedBox(height: 4),
-                      Text('Invitations', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
+                      Text(AppLocalizations.of(context).navInvitations, style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                     ],
                   );
                 },
@@ -1922,7 +1926,7 @@ class _MyHomePageState extends State<MyHomePage>
                         child: Icon(Icons.chat_bubble_outline, color: colors.info, size: 26),
                       ),
                       SizedBox(height: 4),
-                      Text('Messages', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
+                      Text(AppLocalizations.of(context).navMessages, style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                     ],
                   );
                 },
@@ -1980,7 +1984,7 @@ class _MyHomePageState extends State<MyHomePage>
                     child: Icon(Icons.video_library, color: colors.textPrimary, size: 26),
                   ),
                   SizedBox(height: 4),
-                  Text('Vidéos', style: TextStyle(color: colors.textPrimary, fontSize: 10)),
+                  Text(AppLocalizations.of(context).navVideos, style: TextStyle(color: colors.textPrimary, fontSize: 10)),
                 ],
               ),
             ),
@@ -2108,8 +2112,8 @@ class _MyHomePageState extends State<MyHomePage>
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cache vidé — rechargement des posts en cours…'),
+        SnackBar(
+          content: Text(context.tr('Cache vidé — rechargement des posts en cours…')),
           duration: Duration(seconds: 3),
         ),
       );
@@ -2319,7 +2323,7 @@ class _MyHomePageState extends State<MyHomePage>
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Voir mon profil',
+                            context.tr('Voir mon profil'),
                             style: TextStyle(fontSize: 10, color: colors.primary),
                           ),
                         ],
@@ -2424,7 +2428,7 @@ class _MyHomePageState extends State<MyHomePage>
                     _sidebarItem(
                       context: context,
                       icon: Icons.settings_outlined,
-                      label: 'Paramètres',
+                      label: l10n.navSettings,
                       onTap: () => _scaffoldKey.currentState?.openDrawer(),
                       wide: wide,
                       colors: colors,
@@ -2572,7 +2576,7 @@ class _MyHomePageState extends State<MyHomePage>
                   child: Icon(Icons.notifications_none_rounded, color: colors.textPrimary, size: actionIconSize),
                 ),
                 () => Navigator.pushNamed(context, '/mes_notifications'),
-                'Notifications',
+                l10n.navNotifications,
               );
             },
           ),
@@ -2580,21 +2584,21 @@ class _MyHomePageState extends State<MyHomePage>
           action(
             Icon(Icons.search_rounded, color: colors.textPrimary, size: actionIconSize),
             () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorCanalSearchPage())),
-            'Rechercher',
+            context.tr('Rechercher'),
           ),
           // Son
           Consumer<SoundProvider>(
             builder: (_, sp, __) => action(
               Icon(sp.isMuted ? Icons.volume_off : Icons.volume_up, color: colors.primary, size: actionIconSize),
               sp.toggleSound,
-              sp.isMuted ? 'Activer le son' : 'Couper le son',
+              sp.isMuted ? context.tr('Activer le son') : context.tr('Couper le son'),
             ),
           ),
           // Actualiser
           action(
             Icon(Icons.refresh, color: colors.primary, size: actionIconSize),
             _onTopBarRefreshTap,
-            'Actualiser',
+            context.tr('Actualiser'),
           ),
         ],
       ),
@@ -2700,7 +2704,7 @@ class _MyHomePageState extends State<MyHomePage>
                 if (!kIsAppleStore) _rpItem(context, colors, icon: Fontisto.tinder, iconColor: Colors.red,     label: 'Afro Love',            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()))),
                 _rpItem(context, colors, icon: Icons.group,                                label: l10n.menuFriends,        onTap: () => _setDesktopSection(Amis(), l10n.menuFriends)),
                 _rpItem(context, colors, icon: Icons.search,                               label: l10n.menuSearchUsers,    onTap: () => _setDesktopSection(AddListAmis(), l10n.menuSearchUsers)),
-                _rpItem(context, colors, icon: Icons.notifications_none_rounded,           label: 'Notifications',         onTap: () => _setDesktopSection(MesNotification(), 'Notifications')),
+                _rpItem(context, colors, icon: Icons.notifications_none_rounded,           label: l10n.navNotifications,    onTap: () => _setDesktopSection(MesNotification(), l10n.navNotifications)),
                 _rpItem(context, colors, icon: Icons.chat_bubble_outline,                  label: l10n.navMessages,        onTap: () => _setDesktopSection(const ListUserChatsOptimized(), l10n.navMessages)),
 
                 // ── Mon contenu ──────────────────────────────────────
@@ -2712,14 +2716,14 @@ class _MyHomePageState extends State<MyHomePage>
 
                 // ── Business & Monétisation ──────────────────────────
                 _rpSection(colors, 'Business'),
-                if (!kIsAppleStore) _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: 'Contenu Business', onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
-                _rpItem(context, colors, icon: Icons.account_balance_wallet_rounded, label: 'Mon portefeuille', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
+                if (!kIsAppleStore) _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: context.tr('Contenu Business'), onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
+                _rpItem(context, colors, icon: Icons.account_balance_wallet_rounded, label: context.tr('Mon portefeuille'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
 
                 // ── Découverte ───────────────────────────────────────
                 _rpSection(colors, 'Découverte'),
                 _rpItem(context, colors, icon: Entypo.trophy,                              label: l10n.menuTopStars,        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserClassement()))),
                 _rpItem(context, colors, icon: FontAwesome.forumbee,                       label: l10n.menuCanaux,          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
-                _rpItem(context, colors, icon: Icons.store_mall_directory,                 label: l10n.menuAfroshopMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
+                if (!kIsAppleStore) _rpItem(context, colors, icon: Icons.store_mall_directory,                 label: l10n.menuAfroshopMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
                 _rpItem(context, colors, icon: Icons.settings_outlined,                    label: l10n.menuServicesJobs,    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage()))),
 
                 // ── Paramètres & Divers ──────────────────────────────
@@ -2783,7 +2787,7 @@ class _MyHomePageState extends State<MyHomePage>
                 _rpItem(context, colors,
                   icon: Icons.delete_forever_rounded,
                   iconColor: colors.danger,
-                  label: 'Supprimer mon compte',
+                  label: context.tr('Supprimer mon compte'),
                   labelColor: colors.danger,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountDeletionPage())),
                 ),
@@ -2810,7 +2814,7 @@ class _MyHomePageState extends State<MyHomePage>
   /// Titre de section du menu (liste dépliée, sans sections repliables).
   Widget _dSection(AppColors colors, String title) => Padding(
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
-        child: Text(title.toUpperCase(),
+        child: Text(context.tr(title).toUpperCase(),
             style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.0)),
       );
 
@@ -2875,11 +2879,11 @@ class _MyHomePageState extends State<MyHomePage>
     }
 
     return Column(children: [
-      item(Icons.account_balance_wallet_rounded, 'Portefeuille · ${TxAmount.fmt(coins)}',
-          'Portefeuille (${TxAmount.fmt(coins)} pièces)', colors.primary, () => MonetisationPage()),
-      item(Icons.add_circle_rounded, 'Recharger', 'Recharger des pièces', colors.supportAccent,
+      item(Icons.account_balance_wallet_rounded, '${context.tr('Portefeuille')} · ${TxAmount.fmt(coins)}',
+          context.tr('Portefeuille ({n} pièces)', {'n': TxAmount.fmt(coins)}), colors.primary, () => MonetisationPage()),
+      item(Icons.add_circle_rounded, context.tr('Recharger'), context.tr('Recharger des pièces'), colors.supportAccent,
           () => CoinRechargeScreen()),
-      item(Icons.north_east_rounded, 'Retirer', 'Retirer mes gains', colors.warning,
+      item(Icons.north_east_rounded, context.tr('Retirer'), context.tr('Retirer mes gains'), colors.warning,
           () => UserDemandeRetraitPage()),
     ]);
   }
@@ -2925,13 +2929,13 @@ class _MyHomePageState extends State<MyHomePage>
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       child: Row(
         children: [
-          tile(Icons.account_balance_wallet_rounded, 'Portefeuille', '${TxAmount.fmt(coins)} pièces',
+          tile(Icons.account_balance_wallet_rounded, context.tr('Portefeuille'), context.tr('{n} pièces', {'n': TxAmount.fmt(coins)}),
               colors.primary, () => MonetisationPage()),
           const SizedBox(width: 8),
-          tile(Icons.add_circle_rounded, 'Recharger', 'Acheter des pièces', colors.supportAccent,
+          tile(Icons.add_circle_rounded, context.tr('Recharger'), context.tr('Acheter des pièces'), colors.supportAccent,
               () => CoinRechargeScreen()),
           const SizedBox(width: 8),
-          tile(Icons.north_east_rounded, 'Retirer', 'Mes gains', colors.warning,
+          tile(Icons.north_east_rounded, context.tr('Retirer'), context.tr('Mes gains'), colors.warning,
               () => UserDemandeRetraitPage()),
         ],
       ),
@@ -2940,7 +2944,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   Widget _rpSection(AppColors colors, String title) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-    child: Text(title, style: TextStyle(color: colors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+    child: Text(context.tr(title), style: TextStyle(color: colors.textSecondary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
   );
 
   /// Item simple (icône + label + flèche) dans le panneau droit.

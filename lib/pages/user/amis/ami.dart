@@ -365,7 +365,7 @@ class _InvitationsState extends State<Invitations> {
                       ),
                       SizedBox(width: 4),
                       Text(
-                        '${widget.userInvitation.inviteUser!.abonnes!} abonné(s)',
+                        '${widget.userInvitation.inviteUser!.followersCount} abonné(s)',
                         style: TextStyle(
                             fontSize: 13,
                             color: _colors.textSecondary,

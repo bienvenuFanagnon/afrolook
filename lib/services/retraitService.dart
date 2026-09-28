@@ -1,4 +1,4 @@
-﻿// services/retraitService.dart
+// services/retraitService.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,6 +18,7 @@ class RetraitService {
     required String numeroCompte,
     required String countryCode,
     required UserData userData,
+    Map<String, dynamic>? extra, // devise, montant local, taux, type de retrait…
   }) async {
     try {
       // Vérifier les horaires d'ouverture
@@ -73,7 +74,7 @@ class RetraitService {
 
         // 2. Enregistrer la demande de retrait
         final retraitRef = _firestore.collection(_collectionRetraits).doc();
-        transaction.set(retraitRef, transactionData.toJson());
+        transaction.set(retraitRef, {...transactionData.toJson(), ...?extra});
       });
 
       printVm('✅ Demande de retrait créée: $montant FCFA pour $countryCode');

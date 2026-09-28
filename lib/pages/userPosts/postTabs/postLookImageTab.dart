@@ -1,4 +1,4 @@
-﻿// Dart imports:
+// Dart imports:
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -129,7 +129,6 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
   bool onTap = false;
   bool isSwitched = false;
-  bool isChallenge = false;
   bool _canPost = true;
   String _timeRemaining = '';
 
@@ -138,9 +137,6 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
 
   Uint8List? _imageBytes;
 
-  // Contrôles pour les challenges
-  final TextEditingController _challengeDescriptionController = TextEditingController();
-  final TextEditingController _challengeAmountController = TextEditingController();
   String _selectedGiftType = "virtuel";
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now();
@@ -367,7 +363,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         ..updatedAt = DateTime.now().microsecondsSinceEpoch
         ..createdAt = DateTime.now().microsecondsSinceEpoch
         ..status = PostStatus.VALIDE.name
-        ..type = isChallenge ? PostType.CHALLENGE.name : isSwitched ? PostType.PUB.name : PostType.POST.name
+        ..type = isSwitched ? PostType.PUB.name : PostType.POST.name
         ..urlLink = isSwitched ? _linkController.text : ""
         ..comments = 0
         ..typeTabbar = _selectedPostType
@@ -436,7 +432,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
       } else {
         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,
-          message: isChallenge ? "📢 🎉 Nouveau challenge en ligne ! 🎉 " : "${getTabBarTypeMessage(_selectedPostType!, post)}",
+          message: "${getTabBarTypeMessage(_selectedPostType!, post)}",
           typeNotif: NotificationType.POST.name,
           postId: post.id!,
           postType: PostDataType.IMAGE.name,
@@ -592,7 +588,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //       ..updatedAt = DateTime.now().microsecondsSinceEpoch
   //       ..createdAt = DateTime.now().microsecondsSinceEpoch
   //       ..status = PostStatus.VALIDE.name
-  //       ..type = isChallenge ? PostType.CHALLENGE.name : isSwitched ? PostType.PUB.name : PostType.POST.name
+  //       ..type = isSwitched ? PostType.PUB.name : PostType.POST.name
   //       ..urlLink = isSwitched ? _linkController.text : ""
   //       ..comments = 0
   //       ..typeTabbar = _selectedPostType
@@ -651,7 +647,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
   //     } else {
   //       authProvider.sendPushNotificationToUsers(
   //         sender: authProvider.loginUserData,
-  //         message: isChallenge ? "📢 🎉 Nouveau challenge en ligne ! 🎉 " : "${getTabBarTypeMessage(_selectedPostType!, post)}",
+  //         message: "${getTabBarTypeMessage(_selectedPostType!, post)}",
   //         typeNotif: NotificationType.POST.name,
   //         postId: post.id!,
   //         postType: PostDataType.IMAGE.name,
@@ -841,92 +837,9 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
                       ),
                     ),
 
-                    Visibility(
-                      visible: authProvider.loginUserData.role == UserRole.ADM.name,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text("Challenge"),
-                          Switch(
-                            value: isChallenge,
-                            onChanged: (value) {
-                              setState(() {
-                                isChallenge = value;
-                              });
-                            },
-                            activeColor: _c.primary,
-                            inactiveThumbColor: _c.textSecondary,
-                          ),
-                          Text("Activé"),
-                        ],
-                      ),
-                    ),
 
                     SizedBox(height: 25),
 
-                    // Formulaire challenge
-                    if (isChallenge && authProvider.loginUserData.role == UserRole.ADM.name)
-                      Column(
-                        children: [
-                          TextFormField(
-                            controller: _challengeDescriptionController,
-                            decoration: InputDecoration(labelText: 'Description du cadeau'),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer une description';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            value: _selectedGiftType,
-                            decoration: InputDecoration(labelText: 'Type de cadeau'),
-                            items: [
-                              DropdownMenuItem(child: Text('Physique'), value: 'physique'),
-                              DropdownMenuItem(child: Text('Virtuel'), value: 'virtuel'),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedGiftType = value!;
-                              });
-                            },
-                          ),
-                          SizedBox(height: 16),
-                          TextFormField(
-                            controller: _challengeAmountController,
-                            decoration: InputDecoration(labelText: 'Montant à gagner'),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un montant';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Text("Date de début: ${DateFormat('dd/MM/yyyy').format(_startDate)}"),
-                              IconButton(
-                                icon: Icon(Icons.calendar_today),
-                                onPressed: () => _selectDate(context, true),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Text("Date de fin: ${DateFormat('dd/MM/yyyy').format(_endDate)}"),
-                              IconButton(
-                                icon: Icon(Icons.calendar_today),
-                                onPressed: () => _selectDate(context, false),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                        ],
-                      ),
 
                     // Aperçu image
                     if (!widget.showThumbnail)

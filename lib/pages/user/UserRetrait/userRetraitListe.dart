@@ -12,6 +12,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/retraitService.dart';
 import '../../../theme/app_colors.dart';
+import '../../../l10n/tr.dart';
 
 /// Liste des demandes de retrait de l'utilisateur (thèmes clair et sombre via [AppColors]).
 class UserRetraitListPage extends StatefulWidget {
@@ -38,7 +39,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
-        title: Text('Mes retraits',
+        title: Text(context.tr('Mes retraits'),
             style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 18)),
         backgroundColor: c.surface,
         elevation: 0,
@@ -48,7 +49,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.add_rounded, color: c.primary),
-            tooltip: 'Nouvelle demande',
+            tooltip: context.tr('Nouvelle demande'),
             onPressed: _openNewRequest,
           ),
         ],
@@ -61,7 +62,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
           }
           if (snapshot.hasError) {
             printVm("snapshot.hasError : ${snapshot.error.toString()}");
-            return Center(child: Text('Erreur de chargement', style: TextStyle(color: c.danger)));
+            return Center(child: Text(context.tr('Erreur de chargement'), style: TextStyle(color: c.danger)));
           }
 
           final retraits = snapshot.data ?? [];
@@ -102,10 +103,10 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Action requise',
+                Text(context.tr('Action requise'),
                     style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 2),
-                Text('Contacte le service client pour finaliser tes retraits en attente.',
+                Text(context.tr('Contacte le service client pour finaliser tes retraits en attente.'),
                     style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.3)),
               ],
             ),
@@ -120,7 +121,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               shape: const StadiumBorder(),
             ),
-            child: const Text('Contacter', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+            child: Text(context.tr('Contacter'), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -136,16 +137,16 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
           children: [
             Icon(Icons.account_balance_rounded, size: 52, color: c.textSecondary),
             const SizedBox(height: 14),
-            Text('Aucune demande de retrait',
+            Text(context.tr('Aucune demande de retrait'),
                 style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text('Tes demandes apparaîtront ici.',
+            Text(context.tr('Tes demandes apparaîtront ici.'),
                 style: TextStyle(color: c.textSecondary, fontSize: 13)),
             const SizedBox(height: 18),
             FilledButton.icon(
               onPressed: _openNewRequest,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Faire une demande', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: Text(context.tr('Faire une demande'), style: TextStyle(fontWeight: FontWeight.w700)),
               style: FilledButton.styleFrom(
                 backgroundColor: c.primary,
                 foregroundColor: c.onPrimary,
@@ -197,9 +198,9 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
             ],
           ),
           const SizedBox(height: 8),
-          _detailRow(c, 'Méthode', retrait.methodPaiement ?? 'Non spécifiée'),
-          _detailRow(c, 'Compte', retrait.numeroCompte ?? 'Non spécifié'),
-          _detailRow(c, 'Date', _formatDate(retrait.createdAt!)),
+          _detailRow(c, context.tr('Méthode'), retrait.methodPaiement ?? context.tr('Non spécifiée')),
+          _detailRow(c, context.tr('Compte'), retrait.numeroCompte ?? context.tr('Non spécifié')),
+          _detailRow(c, context.tr('Date'), _formatDate(retrait.createdAt!)),
 
           // Numéro de transaction (copiable)
           if (retrait.numeroTransaction != null) ...[
@@ -224,7 +225,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
                     ),
                     Icon(Icons.copy_rounded, size: 15, color: c.primary),
                     const SizedBox(width: 4),
-                    Text('Copier', style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text(context.tr('Copier'), style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -235,7 +236,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
           if (retrait.isEnAttente) ...[
             const SizedBox(height: 10),
             Text(
-              'Contacte le service client avec ton numéro de transaction pour terminer le retrait.',
+              context.tr('Contacte le service client avec ton numéro de transaction pour terminer le retrait.'),
               style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35),
             ),
             const SizedBox(height: 8),
@@ -245,7 +246,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
               child: OutlinedButton.icon(
                 onPressed: _openContact,
                 icon: Icon(Icons.support_agent_rounded, size: 17, color: c.warning),
-                label: Text('Contacter le service client',
+                label: Text(context.tr('Contacter le service client'),
                     style: TextStyle(color: c.warning, fontSize: 12.5, fontWeight: FontWeight.w700)),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: c.warning.withOpacity(0.5)),
@@ -265,7 +266,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
                 color: c.danger.withOpacity(c.isDark ? 0.16 : 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text('Motif : ${retrait.motifAnnulation!}',
+              child: Text(context.tr('Motif : {a}', {'a': retrait.motifAnnulation!}),
                   style: TextStyle(color: c.danger, fontSize: 12)),
             ),
           ],
@@ -301,7 +302,7 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
   void _copyTransactionId(String transactionId) {
     Clipboard.setData(ClipboardData(text: transactionId));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Numéro de transaction copié')),
+      SnackBar(content: Text(context.tr('Numéro de transaction copié'))),
     );
   }
 }

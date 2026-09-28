@@ -4,6 +4,7 @@ import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../l10n/tr.dart';
 
 class MesGainsPublicitePage extends StatefulWidget {
   final String userId;
@@ -41,8 +42,8 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text(
-          'Gains Publicitaires',
+        title: Text(
+          context.tr('Gains Publicitaires'),
           style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.black,
@@ -59,7 +60,7 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Erreur : ${snapshot.error}'));
+            return Center(child: Text(context.tr('Erreur : {a}', {'a': snapshot.error})));
           }
           final user = snapshot.data!;
           return CenteredContent(child: SingleChildScrollView(
@@ -102,8 +103,8 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
             children: [
               const Icon(Icons.verified_user, color: Color(0xFFFFD700), size: 28),
               const SizedBox(width: 10),
-              const Text(
-                'Vos gains',
+              Text(
+                context.tr('Vos gains'),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -113,9 +114,9 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildGainRow('Pièces gagnées', '$totalCoins 🪙', const Color(0xFF4CAF50)),
+          _buildGainRow(context.tr('Pièces gagnées'), '$totalCoins 🪙', const Color(0xFF4CAF50)),
           const Divider(color: Colors.white24),
-          _buildGainRow('Soutiens reçus', '$totalViews 👥', Colors.lightBlue),
+          _buildGainRow(context.tr('Soutiens reçus'), '$totalViews 👥', Colors.lightBlue),
         ],
       ),
     );
@@ -158,12 +159,12 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.info_outline, color: Color(0xFFFFD700)),
               SizedBox(width: 8),
               Text(
-                'Comment ça fonctionne ?',
+                context.tr('Comment ça fonctionne ?'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -173,16 +174,13 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Google diffuse des publicités sur vos posts via Afrolook. '
-                'Chaque fois qu\'un de vos abonnés, amis ou visiteurs regarde une publicité sur votre contenu, '
-                'vous recevez 10 pièces.',
+          Text(
+            context.tr('Google diffuse des publicités sur vos posts via Afrolook. Chaque fois qu\'un de vos abonnés, amis ou visiteurs regarde une publicité sur votre contenu, vous recevez 10 pièces.'),
             style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Ces pièces pourront bientôt être converties en argent réel (FCFA ou Euro) '
-                'et retirées sur votre compte principal Afrolook.',
+          Text(
+            context.tr('Ces pièces pourront bientôt être converties en argent réel (dans ta devise) et retirées sur votre compte principal Afrolook.'),
             style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: 12),
@@ -193,13 +191,13 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(Icons.emoji_events, color: Color(0xFFFFD700)),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '🎯 Jusqu\'à 400€ par mois possibles si vous développez votre communauté !',
+                    context.tr('🎯 Jusqu\'à 400€ par mois possibles si vous développez votre communauté !'),
                     style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -223,8 +221,8 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
         children: [
           const Icon(Icons.construction, size: 48, color: Color(0xFFFFD700)),
           const SizedBox(height: 12),
-          const Text(
-            '💱 Conversion en argent réel',
+          Text(
+            context.tr('💱 Conversion en argent réel'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -232,10 +230,8 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'La fonctionnalité de conversion de vos pièces en argent réel arrivera très bientôt.\n'
-                'Nous travaillons activement pour vous permettre de retirer vos gains (jusqu\'à 400€ par mois) '
-                'directement sur votre compte Afrolook.',
+          Text(
+            context.tr('La fonctionnalité de conversion de vos pièces en argent réel arrivera très bientôt.\nNous travaillons activement pour vous permettre de retirer vos gains (jusqu\'à 400€ par mois) directement sur votre compte Afrolook.'),
             style: TextStyle(fontSize: 14, color: Colors.white70),
             textAlign: TextAlign.center,
           ),
@@ -246,8 +242,8 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
               color: const Color(0xFFFFD700).withOpacity(0.2),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: const Text(
-              '🔜 Bientôt disponible',
+            child: Text(
+              context.tr('🔜 Bientôt disponible'),
               style: TextStyle(
                 color: Color(0xFFFFD700),
                 fontWeight: FontWeight.bold,

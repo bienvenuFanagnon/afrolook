@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +8,7 @@ import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
 import '../user/monetisation.dart';
 import 'depotPaiment.dart';
+import '../../l10n/tr.dart';
 
 class DepotPageTransaction extends StatefulWidget {
   @override
@@ -30,7 +31,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
     return Scaffold(
       appBar: AppBar(
         iconTheme: IconThemeData(color: Colors.white),
-        title: Text("Dépôt Publicash",style: TextStyle(color: Colors.white),),
+        title: Text(context.tr('Dépôt Publicash'),style: TextStyle(color: Colors.white),),
         backgroundColor: Colors.green,
       ),
       body: Padding(
@@ -44,7 +45,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
                 padding: const EdgeInsets.all(8.0),
                 child: Center(
                   child: Text(
-                    'Pour les Togolais, Les dépôts avec TMoney - YAS sont plus fiables que Flooz. Il est conseillé de faire le dépôt avec ces moyens. Faute de cela, nous ne pourrons pas récupérer le montant en cas de souci.',
+                    context.tr('Pour les Togolais, Les dépôts avec TMoney - YAS sont plus fiables que Flooz. Il est conseillé de faire le dépôt avec ces moyens. Faute de cela, nous ne pourrons pas récupérer le montant en cas de souci.'),
                   ),
                 ),
               ),
@@ -54,16 +55,16 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
                 controller: controller,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: "Nombre de Publicash",
+                  labelText: context.tr('Nombre de Publicash'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Ce champ est obligatoire';
+                    return context.tr('Ce champ est obligatoire');
                   }
                   final number = double.tryParse(value);
                   if (number == null || number < 10.0) {
-                    return 'Valeur supérieure ou égale à 10.0';
+                    return context.tr('Valeur supérieure ou égale à 10.0');
                   }
                   return null;
                 },
@@ -76,7 +77,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
               ),
               SizedBox(height: 10),
               Text(
-                "Prix en FCFA : ${prixFcfa.toStringAsFixed(0)} FCFA",
+                context.tr('Prix en FCFA : {a} FCFA', {'a': prixFcfa.toStringAsFixed(0)}),
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 20),
@@ -90,7 +91,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: Text("Annuler"),
+                    child: Text(context.tr('Annuler')),
                   ),
                   TextButton(
                     onPressed: () {
@@ -102,7 +103,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: Text("Continuer"),
+                    child: Text(context.tr('Continuer')),
                   ),
                 ],
               ),
@@ -129,7 +130,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
         transaction.user_id = authProvider.loginUserData.id;
         transaction.type = TypeTransaction.DEPOT.name;
         transaction.statut = StatutTransaction.VALIDER.name;
-        transaction.description = "Dépôt";
+        transaction.description = 'Dépôt';
         transaction.montant = montantTotal;
         transaction.createdAt = DateTime.now().millisecondsSinceEpoch;
         transaction.updatedAt = DateTime.now().millisecondsSinceEpoch;
@@ -166,7 +167,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Votre paiement a été effectué avec succès. 🎉💰',
+                                    context.tr('Votre paiement a été effectué avec succès. 🎉💰'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(color: Colors.green),
                                   ),
@@ -187,7 +188,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
         printVm("Erreur lors de la transaction : $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Une erreur est survenue. Veuillez réessayer."),
+            content: Text(context.tr('Une erreur est survenue. Veuillez réessayer.')),
             backgroundColor: Colors.red,
           ),
         );
@@ -195,7 +196,7 @@ class _DepotPageTransactionState extends State<DepotPageTransaction> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Veuillez corriger les erreurs du formulaire minimum 10 pc"),
+          content: Text(context.tr('Veuillez corriger les erreurs du formulaire minimum 10 pc')),
           backgroundColor: Colors.orange,
         ),
       );

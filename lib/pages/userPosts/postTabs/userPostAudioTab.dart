@@ -156,7 +156,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     _notificationService = MassNotificationService();
-    _filteredCountries = AfricanCountry.allCountries;
+    _filteredCountries = _countryBase;
 
     _setupRestrictions();
     _checkPostCooldown();
@@ -212,13 +212,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     super.dispose();
   }
 
+  /// Pays de l'utilisateur en premier, puis son continent, puis le reste du monde.
+  List<AfricanCountry> get _countryBase => AfricanCountry.sortedFor(
+      Provider.of<UserAuthProvider>(context, listen: false).loginUserData.countryData?['countryCode']);
+
   void _filterCountries() {
     final query = _countrySearchController.text.toLowerCase();
     setState(() {
-      _filteredCountries = AfricanCountry.allCountries.where((country) {
-        return country.name.toLowerCase().contains(query) ||
-            country.code.toLowerCase().contains(query);
-      }).toList();
+      _filteredCountries = AfricanCountry.search(_countryBase, _countrySearchController.text);
     });
   }
 

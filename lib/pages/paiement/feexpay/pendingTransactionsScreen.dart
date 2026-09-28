@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:intl/intl.dart';
+import '../../../l10n/tr.dart';
 
 class PendingTransactionsScreen extends StatefulWidget {
   const PendingTransactionsScreen({Key? key}) : super(key: key);
@@ -55,7 +56,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
     if (_currentUserId == null) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Transactions en attente'),
+          title: Text(context.tr('Transactions en attente')),
           backgroundColor: Color(0xFFD8A868),
           foregroundColor: Colors.white,
         ),
@@ -65,12 +66,12 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
             children: [
               Icon(Icons.lock_outline, size: 64, color: Colors.grey),
               SizedBox(height: 16),
-              Text('Veuillez vous connecter', style: TextStyle(fontSize: 18)),
+              Text(context.tr('Veuillez vous connecter'), style: TextStyle(fontSize: 18)),
               SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFD8A868)),
-                child: Text('Retour', style: TextStyle(color: Colors.white)),
+                child: Text(context.tr('Retour'), style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -80,7 +81,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Transactions en attente - Afrolook'),
+        title: Text(context.tr('Transactions en attente - Afrolook')),
         backgroundColor: Color(0xFFD8A868),
         foregroundColor: Colors.white,
       ),
@@ -98,7 +99,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Erreur: ${snapshot.error}'));
+          return Center(child: Text(context.tr('Erreur: {a}', {'a': snapshot.error})));
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -114,7 +115,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
               children: [
                 Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
                 SizedBox(height: 16),
-                Text('Aucune transaction en attente', style: TextStyle(fontSize: 16)),
+                Text(context.tr('Aucune transaction en attente'), style: TextStyle(fontSize: 16)),
               ],
             ),
           );
@@ -128,7 +129,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
             final data = doc.data() as Map<String, dynamic>;
             final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
             final amount = (data['amount'] ?? 0).toDouble();
-            final reference = data['reference'] ?? 'En attente...';
+            final reference = data['reference'] ?? context.tr('En attente...');
             final amountWithoutFees = (data['amountWithoutFees'] ?? 0).toDouble();
             final status = data['status'] ?? 'pending';
             final depositNumber = data['depositNumber'] ?? '';
@@ -168,17 +169,17 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
     switch (status) {
       case 'completed':
         statusColor = Colors.green;
-        statusText = 'Terminé';
+        statusText = context.tr('Terminé');
         statusIcon = Icons.check_circle;
         break;
       case 'failed':
         statusColor = Colors.red;
-        statusText = 'Échoué';
+        statusText = context.tr('Échoué');
         statusIcon = Icons.error;
         break;
       default:
         statusColor = Colors.orange;
-        statusText = 'En attente';
+        statusText = context.tr('En attente');
         statusIcon = Icons.pending;
     }
 
@@ -214,7 +215,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Dépôt Afrolook',
+                      context.tr('Dépôt Afrolook'),
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                     ),
                   ),
@@ -239,7 +240,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Montant:', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(context.tr('Montant:'), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                   Text('${amount.toStringAsFixed(0)} FCFA',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ],
@@ -248,7 +249,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('N° dépôt:', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    Text(context.tr('N° dépôt:'), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                     Text(depositNumber, style: TextStyle(fontSize: 11)),
                   ],
                 ),
@@ -271,7 +272,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
                         children: [
                           Icon(Icons.refresh, size: 12, color: Color(0xFFD8A868)),
                           SizedBox(width: 4),
-                          Text('Vérifier', style: TextStyle(color: Color(0xFFD8A868), fontSize: 11)),
+                          Text(context.tr('Vérifier'), style: TextStyle(color: Color(0xFFD8A868), fontSize: 11)),
                         ],
                       ),
                     ),
@@ -304,7 +305,7 @@ class _VerificationDialog extends StatefulWidget {
 
 class _VerificationDialogState extends State<_VerificationDialog> {
   bool _isChecking = true;
-  String _message = 'Vérification du paiement en cours...';
+  String _message = tr('Vérification du paiement en cours...');
   bool _isSuccess = false;
   String? _errorDetails;
   int _checkCount = 0;
@@ -323,7 +324,7 @@ class _VerificationDialogState extends State<_VerificationDialog> {
       setState(() {
         _isChecking = false;
         _isSuccess = false;
-        _message = '❌ Aucune référence trouvée.';
+        _message = context.tr('❌ Aucune référence trouvée.');
       });
       return;
     }
@@ -347,7 +348,7 @@ class _VerificationDialogState extends State<_VerificationDialog> {
         setState(() {
           _isChecking = false;
           _isSuccess = true;
-          _message = '✅ Paiement confirmé avec succès !';
+          _message = context.tr('✅ Paiement confirmé avec succès !');
         });
 
         await widget.transaction['ref'].update({
@@ -370,14 +371,14 @@ class _VerificationDialogState extends State<_VerificationDialog> {
       } else if (pending == true) {
         if (_checkCount < _maxChecks) {
           setState(() {
-            _message = '⏳ Paiement en attente... ($_checkCount/$_maxChecks)';
+            _message = context.tr('⏳ Paiement en attente... ({a}/{b})', {'a': _checkCount, 'b': _maxChecks});
           });
           Future.delayed(Duration(seconds: 3), _checkStatus);
         } else {
           setState(() {
             _isChecking = false;
             _isSuccess = false;
-            _message = '⏳ Délai dépassé. Veuillez réessayer plus tard.';
+            _message = context.tr('⏳ Délai dépassé. Veuillez réessayer plus tard.');
           });
         }
       } else {
@@ -391,14 +392,14 @@ class _VerificationDialogState extends State<_VerificationDialog> {
       printVm('Erreur: $e');
       if (_checkCount < _maxChecks) {
         setState(() {
-          _message = '⚠️ Erreur technique, nouvelle tentative... ($_checkCount/$_maxChecks)';
+          _message = context.tr('⚠️ Erreur technique, nouvelle tentative... ({a}/{b})', {'a': _checkCount, 'b': _maxChecks});
         });
         Future.delayed(Duration(seconds: 3), _checkStatus);
       } else {
         setState(() {
           _isChecking = false;
           _isSuccess = false;
-          _message = '❌ Erreur technique. Veuillez réessayer.';
+          _message = context.tr('❌ Erreur technique. Veuillez réessayer.');
           _errorDetails = e.toString();
         });
       }
@@ -408,7 +409,7 @@ class _VerificationDialogState extends State<_VerificationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Vérification du paiement'),
+      title: Text(context.tr('Vérification du paiement')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -425,11 +426,11 @@ class _VerificationDialogState extends State<_VerificationDialog> {
             Text(_errorDetails!, style: TextStyle(fontSize: 10, color: Colors.grey)),
           ],
           SizedBox(height: 16),
-          Text('Réf: ${widget.transaction['reference'] ?? 'N/A'}', style: TextStyle(fontSize: 12)),
+          Text(context.tr('Réf: {a}', {'a': widget.transaction['reference'] ?? 'N/A'}), style: TextStyle(fontSize: 12)),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Fermer')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('Fermer'))),
       ],
     );
   }

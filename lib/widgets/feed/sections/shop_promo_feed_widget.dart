@@ -7,6 +7,7 @@ import '../../../layout/responsive_layout.dart';
 import '../../../models/model_data.dart';
 import '../../../pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../../theme/app_colors.dart';
+import '../../../utils/platform_guard.dart';
 
 /// Widget AfroShop dans le fil d'actualité — 3 produits aléatoires + CTA boutique.
 /// [isFirstPosition] change la palette (ambre) pour la variante "à la une" du lundi/jeudi.
@@ -35,6 +36,7 @@ class ShopPromoFeedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const SizedBox.shrink(); // marketplace masquée sur iPhone/iPad
     final colors = AppColors.of(context);
     final picks = _picks;
     if (picks.isEmpty) return const SizedBox.shrink();
@@ -192,6 +194,7 @@ class ShopPromoVideoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsAppleStore) return const SizedBox.shrink(); // marketplace masquée sur iPhone/iPad
     final picks = _picks;
     final size = MediaQuery.of(context).size;
     final contentW = AppLayout.effectiveContentWidth(context);
