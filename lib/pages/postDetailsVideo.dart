@@ -451,6 +451,21 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                           _suggStatItem(Icons.favorite_rounded, _formatCount(post.loves ?? 0), color: const Color(0xFFFF6B6B)),
                           const SizedBox(width: 12),
                           _suggStatItem(Icons.chat_bubble_outline_rounded, _formatCount(post.comments ?? 0)),
+                          // Pièces gagnées par le créateur grâce à ce post (likes + commentaires + cadeaux)
+                          if (PostCoins.total(post) > 0) ...[
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAEEDA),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '🪙 ${PostCoins.compact(PostCoins.total(post))} pièces',
+                                style: const TextStyle(color: Color(0xFF633806), fontSize: 10.5, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
@@ -1627,8 +1642,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
     // Compteur affiché : liste en priorité, sinon le champ entier (snapshot)
     final int followerCount = canal != null
-        ? (canal.usersSuiviId?.length ?? canal.suivi ?? 0)
-        : (user?.userAbonnesIds?.length ?? user?.abonnes ?? 0);
+        ? canal.membersCount
+        : (user?.followersCount ?? 0);
     final String followerLabel = followerCount > 0
         ? '$followerCount abonné${followerCount > 1 ? 's' : ''}'
         : '';

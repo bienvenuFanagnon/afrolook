@@ -28,3 +28,5 @@ export * from "./payments/coinPurchase";
 
 export * from "./payments/appleIap";
 export * from "./moderation/moderation";
+export * from "./users/accountDeletion";
+export * from "./users/accountPurge";

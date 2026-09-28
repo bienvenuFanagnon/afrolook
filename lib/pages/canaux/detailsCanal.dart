@@ -39,6 +39,8 @@ import '../userPosts/postWidgets/postWidgetPage.dart';
 import 'canal_manage_admins.dart';
 import '../user/userPubs/user_profile_boost_page.dart';
 import '../user/profile/retraitAdmin/userAllDetails.dart';
+import 'package:afrotok/layout/responsive_layout.dart';
+import 'package:afrotok/layout/centered_content.dart';
 
 class CanalDetails extends StatefulWidget {
   final Canal canal;
@@ -856,9 +858,10 @@ class _CanalDetailsState extends State<CanalDetails> {
                 );
               },
               child: Container(
-                height: 200,
+                height: AppLayout.isWide(context) ? 260 : 200,
                 width: double.infinity,
                 decoration: BoxDecoration(
+                  borderRadius: AppLayout.isWide(context) ? const BorderRadius.vertical(bottom: Radius.circular(16)) : null,
                   image: DecorationImage(
                     image: (widget.canal.urlCouverture?.isNotEmpty == true)
                         ? NetworkImage(widget.canal.urlCouverture!)
@@ -961,7 +964,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     final isPrivate = widget.canal.isPrivate == true;
     final isOwner = authProvider.loginUserData.id == widget.canal.userId;
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-    final subscribersCount = widget.canal.usersSuiviId?.length ?? 0;
+    final subscribersCount = widget.canal.membersCount;
     final postsCount = widget.canal.publication ?? 0;
 
     return SliverPadding(
@@ -1627,7 +1630,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     post: post,
                     color: _colors.primary,
                     height: MediaQuery.of(context).size.height,
-                    width: MediaQuery.of(context).size.width,
+                    width: _contentWidth,
                   ),
                 );
               },
@@ -1693,15 +1696,27 @@ class _CanalDetailsState extends State<CanalDetails> {
           ),
         ],
       ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          _buildHeaderSection(),
-          _buildInfoSection(),
-          _buildPostsSection(),
-        ],
+      // Tablette et ordinateur : contenu centré (couverture, infos et publications)
+      body: CenteredContent(
+        maxWidth: _contentMaxWidth,
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            _buildHeaderSection(),
+            _buildInfoSection(),
+            _buildPostsSection(),
+          ],
+        ),
       ),
     );
+  }
+
+  double get _contentMaxWidth => AppLayout.isDesktop(context) ? 820 : AppLayout.maxFeedWidth;
+
+  /// Largeur réelle de la colonne de contenu (et non de l'écran).
+  double get _contentWidth {
+    final w = MediaQuery.of(context).size.width;
+    return w < _contentMaxWidth ? w : _contentMaxWidth;
   }
 }
 

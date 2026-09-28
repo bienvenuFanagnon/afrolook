@@ -338,7 +338,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                       child: Container(
                         alignment: Alignment.center,
                         child: TextCustomerPostDescription(
-                          titre: "${widget.user.userAbonnesIds?.length ?? 0}",
+                          titre: "${widget.user.followersCount}",
                           fontSize: 15,
                           couleur: ConstColors.textColors,
                           fontWeight: FontWeight.w600,
@@ -1288,7 +1288,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _buildStatItem(
-                            formatNumber(widget.user.userAbonnesIds?.length ?? 0),
+                            formatNumber(widget.user.followersCount),
                             l10n.profileFollowers,
                             const Color(0xFFFFD700),
                           ),

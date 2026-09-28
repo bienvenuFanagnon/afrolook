@@ -133,7 +133,7 @@ class _RequestOfficialAccountPageState
   bool get _needsIdVerification => _category?.requiresIdVerification == true;
 
   int get _myFollowersCount =>
-      context.read<UserAuthProvider>().loginUserData.userAbonnesIds?.length ?? 0;
+      context.read<UserAuthProvider>().loginUserData.followersCount;
 
   bool get _meetsFollowerRequirement =>
       _category?.canMonetize != true || _myFollowersCount >= _kMinFollowersMonetizable;

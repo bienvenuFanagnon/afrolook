@@ -3174,9 +3174,9 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   String _getFollowerCount() {
     int count;
     if (currentCanal != null) {
-      count = currentCanal!.usersSuiviId?.length ?? currentCanal!.suivi ?? 0;
+      count = currentCanal!.membersCount;
     } else if (currentUser != null) {
-      count = currentUser!.userAbonnesIds?.length ?? currentUser!.abonnes ?? 0;
+      count = currentUser!.followersCount;
     } else {
       return "";
     }

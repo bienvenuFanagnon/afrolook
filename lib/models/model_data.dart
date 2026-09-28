@@ -1006,6 +1006,16 @@ class UserData {
 
   // Score créateur — moyenne pondérée des postScores de ses 30 derniers posts (CRON 6h)
   double? creatorScore = 0.0;
+  /// « PENDING_DELETION » : suppression demandée, effacement définitif à [deletionScheduledAt] (ms).
+  String? accountStatus;
+  int? deletionScheduledAt;
+  /// Nombre d'abonnés affiché : la liste réelle, ou le compteur s'il est plus grand
+  /// (la liste est absente des copies en cache).
+  int get followersCount {
+    final fromList = userAbonnesIds?.length ?? 0;
+    final counter = abonnes ?? 0;
+    return fromList > counter ? fromList : counter;
+  }
 
   // ── Suspension de compte ─────────────────────────────────────────────────
   int? suspendedUntil;         // timestamp ms, null = non suspendu
@@ -1424,6 +1434,8 @@ class UserData {
     interests = (json['interests'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
     mainCategory = json['mainCategory'] as String?;
     creatorScore = (json['creatorScore'] as num?)?.toDouble() ?? 0.0;
+    accountStatus = json['accountStatus'] as String?;
+    deletionScheduledAt = (json['deletionScheduledAt'] as num?)?.toInt();
   }
 
   Map<String, dynamic> toJson() {
@@ -3305,6 +3317,13 @@ class Canal {
   String? id;
   String? description;
   int? suivi = 0;
+  /// Nombre d'abonnés affiché : la liste réelle, ou l'ancien compteur s'il est plus grand
+  /// (la liste est absente des copies en cache).
+  int get membersCount {
+    final fromList = usersSuiviId?.length ?? 0;
+    final counter = suivi ?? 0;
+    return fromList > counter ? fromList : counter;
+  }
   int? publication = 0;
   double? publicash = 0;
   String? urlImage;

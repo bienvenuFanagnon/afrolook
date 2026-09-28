@@ -62,7 +62,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
       setState(() {
         _topCreators = cached.$1.take(3).toList();
         _topCanaux = cached.$2
-            .where((c) => ((c.suivi ?? 0) + (c.usersSuiviId?.length ?? 0)) > 0)
+            .where((c) => c.membersCount > 0)
             .take(3)
             .toList();
         _loadingDefault = false;
@@ -76,9 +76,10 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
 
   Future<void> _fetchDefaultsFromFirestore() async {
     try {
-      // Pas de filtre status — tous les créateurs triés par score
+      // Vrais « top » : triés par score dans Firestore (avant : 30 comptes au hasard, triés ensuite)
       final cSnap = await FirebaseFirestore.instance
           .collection('Users')
+          .orderBy('creatorScore', descending: true)
           .limit(30)
           .get();
       final creators = cSnap.docs
@@ -90,13 +91,14 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
 
       final kSnap = await FirebaseFirestore.instance
           .collection('Canaux')
+          .orderBy('canalScore', descending: true)
           .limit(20)
           .get();
       final canaux = kSnap.docs
           .map((d) { try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
           .whereType<Canal>()
           // Exclure les canaux sans membres
-          .where((c) => ((c.suivi ?? 0) + (c.usersSuiviId?.length ?? 0)) > 0)
+          .where((c) => c.membersCount > 0)
           .toList()
         ..sort((a, b) => (b.canalScore ?? 0).compareTo(a.canalScore ?? 0));
 
@@ -330,7 +332,7 @@ class _CreatorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = user.pseudo?.isNotEmpty == true ? '@${user.pseudo}' : '${user.nom ?? ''} ${user.prenom ?? ''}'.trim();
-    final followers = user.abonnes ?? user.userAbonnesIds?.length ?? 0;
+    final followers = user.followersCount;
     final score = user.creatorScore ?? 0;
 
     return GestureDetector(
@@ -391,7 +393,7 @@ class _CanalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final members = canal.suivi ?? canal.usersSuiviId?.length ?? 0;
+    final members = canal.membersCount;
 
     return GestureDetector(
       onTap: onTap,

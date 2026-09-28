@@ -2063,7 +2063,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                   Text(
-                    '${_hostData.userAbonnesIds?.length ?? 0} abonnés',
+                    '${_hostData.followersCount} abonnés',
                     style: TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                 ],

@@ -640,8 +640,8 @@ setMessageNonLu(int nbr){
 
         // Trier par popularité
         listUsers.sort((a, b) {
-          final aFollowers = a.userAbonnesIds?.length ?? 0;
-          final bFollowers = b.userAbonnesIds?.length ?? 0;
+          final aFollowers = a.followersCount;
+          final bFollowers = b.followersCount;
           return bFollowers.compareTo(aFollowers);
         });
 

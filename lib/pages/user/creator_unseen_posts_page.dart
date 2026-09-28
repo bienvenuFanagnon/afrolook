@@ -330,7 +330,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     final creator = widget.creator;
     final pseudo = '@${creator.pseudo?.replaceAll('@', '') ?? 'créateur'}';
     final followersCount =
-        creator.userAbonnesIds?.length ?? creator.abonnes ?? 0;
+        creator.followersCount;
 
     return Scaffold(
       backgroundColor: colors.background,

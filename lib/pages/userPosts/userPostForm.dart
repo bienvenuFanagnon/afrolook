@@ -113,7 +113,7 @@ class _UserPostFormState extends State<UserPostForm> {
     final user = authProvider.loginUserData;
     final imageUrl = user.imageUrl ?? '';
     final pseudo = user.pseudo ?? '';
-    final abonnesCount = user.userAbonnesIds?.length ?? 0;
+    final abonnesCount = user.followersCount;
 
     return Container(
       color: _colors.surfaceVariant,
@@ -156,7 +156,7 @@ class _UserPostFormState extends State<UserPostForm> {
     final canal = widget.canal!;
     final imageUrl = canal.urlImage ?? '';
     final titre = canal.titre ?? 'Canal';
-    final abonnesCount = canal.usersSuiviId?.length ?? 0;
+    final abonnesCount = canal.membersCount;
     final description = canal.description ?? '';
 
     return Container(

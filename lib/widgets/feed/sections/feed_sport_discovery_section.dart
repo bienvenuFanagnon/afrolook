@@ -274,7 +274,7 @@ class _UserCard extends StatelessWidget {
     final name = user.pseudo?.isNotEmpty == true
         ? '@${user.pseudo}'
         : '${user.nom ?? ''} ${user.prenom ?? ''}'.trim();
-    final followers = user.userAbonnesIds?.length ?? (user.abonnes ?? 0);
+    final followers = user.followersCount;
 
     return GestureDetector(
       onTap: onTap,
@@ -331,7 +331,7 @@ class _CanalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final members = canal.usersSuiviId?.length ?? (canal.suivi ?? 0);
+    final members = canal.membersCount;
 
     return GestureDetector(
       onTap: onTap,

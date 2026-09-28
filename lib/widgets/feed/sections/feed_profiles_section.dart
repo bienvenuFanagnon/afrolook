@@ -280,7 +280,7 @@ class _RoundCard extends StatelessWidget {
     final pseudo =
         '@${user.pseudo?.replaceAll('@', '') ?? 'user'}';
     final followers =
-        _formatCount(user.userAbonnesIds?.length ?? user.abonnes ?? 0);
+        _formatCount(user.followersCount);
 
     return GestureDetector(
       onTap: onTap,
@@ -431,7 +431,7 @@ class _CanalRoundCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final name = canal.titre ?? 'Canal';
-    final followers = _formatCount(canal.usersSuiviId?.length ?? canal.suivi ?? 0);
+    final followers = _formatCount(canal.membersCount);
 
     return GestureDetector(
       onTap: onTap,
@@ -736,7 +736,7 @@ class _RectCard extends StatelessWidget {
                               const SizedBox(width: 2),
                               Text(
                                 _formatNumber(
-                                    user.userAbonnesIds?.length ?? 0),
+                                    user.followersCount),
                                 style: TextStyle(
                                     color: colors.accent, fontSize: 9),
                               ),

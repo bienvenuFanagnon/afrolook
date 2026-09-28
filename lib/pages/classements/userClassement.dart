@@ -519,7 +519,7 @@ class _TopFiveUserItemState extends State<TopFiveUserItem> {
                     Icon(Icons.people, size: 12, color: Colors.green[600]),
                     SizedBox(width: 4),
                     Text(
-                      "${widget.user.userAbonnesIds?.length ?? 0} abonnés",
+                      "${widget.user.followersCount} abonnés",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[400],

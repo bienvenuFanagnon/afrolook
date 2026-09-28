@@ -179,6 +179,7 @@ class _MyHomePageState extends State<MyHomePage>
   TabController? _tabController;
   int _unreadNotificationsCount = 0;
   int _unreadDatingCount = 0;
+  bool _startupModalsDone = false;
   DateTime? _lastToastTime;
   List<NotificationData> _latestUnreadNotifs = [];
   String _appVersion = '';
@@ -397,6 +398,8 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void _showNotificationToastIfNeeded() {
+    // Pas de bannière tant que les fenêtres de démarrage ne sont pas fermées
+    if (!_startupModalsDone) return;
     final now = DateTime.now();
     if (_lastToastTime != null &&
         now.difference(_lastToastTime!) < const Duration(minutes: 5)) return;
@@ -1107,27 +1110,11 @@ class _MyHomePageState extends State<MyHomePage>
       // AdvancedModalManager.showModalsWithSmartDelay(context);
 
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-
-            if (kIsWeb) {
-              showInstallModal(context);
-            }
+          // Fenêtres de démarrage affichées une par une (avant : jusqu'à 6 en même temps).
+          // Si une mise à jour est obligatoire, seule la fenêtre de mise à jour s'affiche.
           await authProvider.checkAppVersionAndProceed(context, () {
-            // AdvancedModalManager.showModalsWithSmartDelay(context);
-            // showRemunerationAnnounceModal(context,authProvider.loginUserData.id!);
-
-            _showDailyModal();
-
+            _runStartupModals();
           });
-          // Onboarding centres d'intérêt pour les utilisateurs qui n'en ont pas
-          if (context.mounted) {
-            showInterestsOnboardingModal(context);
-          }
-          // Onboarding catégorie créateur (affiché après les intérêts)
-          if (context.mounted) {
-            Future.delayed(const Duration(milliseconds: 600), () {
-              if (context.mounted) showCreatorCategoryOnboardingModal(context);
-            });
-          }
 
         });
 
@@ -1429,6 +1416,18 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
 
+  /// Enchaîne les fenêtres de démarrage : la suivante s'ouvre à la fermeture de la précédente.
+  /// Ordre : installer l'app (web) → centres d'intérêt → catégorie créateur → fenêtre du jour,
+  /// puis la bannière des notifications non lues.
+  Future<void> _runStartupModals() async {
+    if (kIsWeb && mounted) await showInstallModal(context);
+    if (mounted) await showInterestsOnboardingModal(context);
+    if (mounted) await showCreatorCategoryOnboardingModal(context);
+    if (mounted) await _showDailyModal();
+    _startupModalsDone = true;
+    if (mounted) _showNotificationToastIfNeeded();
+  }
+
   Future<void> _showDailyModal() async {
     // Premier lancement sur HomeScreen → on laisse l'utilisateur découvrir l'app
     // librement. Les modals rotatifs ne démarrent qu'à partir de la 2e visite.
@@ -1443,14 +1442,15 @@ class _MyHomePageState extends State<MyHomePage>
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 
-    if (modalToShow == 'invite_amis') {
-      showInviteFriendsModal(context, authProvider.loginUserData);
-    } else if (modalToShow == 'remuneration') {
-      showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
-    } else if (modalToShow == 'top_dating') {
-      showTopDatingAnnounceModal(context);
-    }
     await DailyModalService.markModalShownToday(modalToShow);
+    if (!mounted) return;
+    if (modalToShow == 'invite_amis') {
+      await showInviteFriendsModal(context, authProvider.loginUserData);
+    } else if (modalToShow == 'remuneration') {
+      await showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
+    } else if (modalToShow == 'top_dating') {
+      await showTopDatingAnnounceModal(context);
+    }
   }
 
 

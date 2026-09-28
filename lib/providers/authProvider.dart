@@ -320,8 +320,11 @@ class UserAuthProvider extends ChangeNotifier {
 
   /// Supprime définitivement le compte Firebase Auth + marque le document Firestore
   /// comme supprimé. Retourne null si succès, sinon un message d'erreur.
+  /// Demande de suppression : accès coupé tout de suite, effacement définitif 15 jours plus tard
+  /// (le support peut restaurer le compte pendant ce délai). Voir requestAccountDeletion.
   Future<String?> deleteAccount({
     required String password,
+    bool acceptLoss = false,
   }) async {
     final firebaseUser = FirebaseAuth.instance.currentUser;
     if (firebaseUser == null) return 'Utilisateur non connecté';
@@ -334,21 +337,19 @@ class UserAuthProvider extends ChangeNotifier {
         await firebaseUser.reauthenticateWithCredential(credential);
       }
 
-      final userId = loginUserData.id;
-
-      // Marquer le compte comme supprimé dans Firestore (garde la trace pour désactivation des posts)
-      if (userId != null) {
-        await _firestore.collection('Users').doc(userId).update({
-          'deleted': true,
-          'deleted_at': DateTime.now().millisecondsSinceEpoch,
-          'pseudo': '[Compte supprimé]',
-          'email': '',
-        });
+      // Le serveur vérifie les soldes, désactive la connexion et planifie l'effacement (J+15)
+      try {
+        await FirebaseFunctions.instance
+            .httpsCallable('requestAccountDeletion')
+            .call({'acceptLoss': acceptLoss});
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code == 'failed-precondition') {
+          return 'Il reste des soldes sur ton compte : retire-les ou coche la case de renonciation.';
+        }
+        return 'Suppression impossible pour le moment. Réessaie plus tard.';
       }
 
-      // Supprimer l'utilisateur Firebase Auth
-      await firebaseUser.delete();
-
+      await FirebaseAuth.instance.signOut();
       return null; // succès
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {

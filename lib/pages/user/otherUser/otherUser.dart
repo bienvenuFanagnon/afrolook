@@ -730,7 +730,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   Widget _buildStatsRow() {
     final colors = AppColors.of(context);
-    final followers = widget.otherUser.userAbonnesIds?.length ?? 0;
+    final followers = widget.otherUser.followersCount;
     final likes = widget.otherUser.userlikes ?? 0;
     final score = widget.otherUser.creatorScore ?? 0.0;
 

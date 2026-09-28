@@ -3,7 +3,6 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 
 import 'package:provider/provider.dart';
@@ -18,12 +17,11 @@ import '../../theme/app_colors.dart';
 
 import '../../l10n/app_localizations.dart';
 
-import '../paiement/newDepot.dart';
-import '../coins/coin_recharge_screen.dart';
 
 import 'detailsCanal.dart';
 
 import 'newCanal.dart';
+import 'package:afrotok/layout/centered_content.dart';
 
 class CanalListPage extends StatefulWidget {
   final bool isUserCanals;
@@ -156,227 +154,10 @@ class _CanalListPageState extends State<CanalListPage> {
     });
   }
 
-  Future<void> _handleFollowCanal(Canal canal) async {
-    final isFollowing = canal.usersSuiviId!.contains(authProvider.loginUserData.id);
-    final isPrivate = canal.isPrivate == true;
-
-    // Vérifier si l'utilisateur suit déjà le canal
-    if (isFollowing) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).canalAlreadyFollowing,
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-          backgroundColor: _colors.warning,
-        ),
-      );
-      return;
-    }
-
-    // Vérifier si le canal est privé
-    if (isPrivate) {
-      await _handlePrivateCanalSubscription(canal);
-    } else {
-      await _followPublicCanal(canal);
-    }
-  }
-
-  Future<void> _handlePrivateCanalSubscription(Canal canal) async {
-    final subscriptionPrice = canal.subscriptionPrice ?? 0;
-    final isAlreadySubscribed = canal.usersSuiviId!.contains(authProvider.loginUserData.id);
-
-    // Vérifier si l'utilisateur est déjà abonné (cas où le canal est devenu privé après)
-    if (isAlreadySubscribed && !_requirePaymentForExistingSubscribers) {
-      // L'utilisateur garde l'accès gratuit
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '✅ Vous avez déjà accès à ce canal!',
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-          backgroundColor: _colors.primary,
-        ),
-      );
-      return;
-    }
-
-
-    // Message de confirmation différent selon la configuration
-    String confirmationMessage = '';
-    if (isAlreadySubscribed && _requirePaymentForExistingSubscribers) {
-      confirmationMessage = 'Ce canal est devenu privé. Pour continuer à y accéder, '
-          'vous devez payer l\'abonnement de ${CoinCheckout.coinsLabel(canal.subscriptionPriceCoins)}.\n\n'
-          // '50% ira au créateur et 50% à l\'application.\n\n'
-          'Confirmez-vous le paiement?';
-    } else {
-      confirmationMessage = 'Ce canal est privé. L\'abonnement coûte ${CoinCheckout.coinsLabel(canal.subscriptionPriceCoins)}.\n\n'
-          // '50% ira au créateur et 50% à l\'application.\n\n'
-          'Confirmez-vous l\'abonnement?';
-    }
-
-    // Demander confirmation pour l'abonnement payant
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: _colors.surface,
-          title: Text(
-            isAlreadySubscribed && _requirePaymentForExistingSubscribers
-                ? 'Mise à jour d\'abonnement'
-                : 'Abonnement Privé',
-            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            confirmationMessage,
-            style: TextStyle(color: _colors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Annuler', style: TextStyle(color: _colors.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: _colors.primary),
-              child: Text('Confirmer', style: TextStyle(color: _colors.onPrimary)),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm == true) {
-      await _processPrivateSubscription(canal, subscriptionPrice, isAlreadySubscribed);
-    }
-  }
-
-  Future<void> _processPrivateSubscription(Canal canal, double price, bool isAlreadySubscribed) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Paiement en pièces (serveur) : débit, 70 % au créateur en Pièces gagnées, parrainages, part de l'app
-      final paid = await CoinCheckout.pay(context,
-          kind: 'canal', refId: canal.id, coins: canal.subscriptionPriceCoins, label: 'Abonnement au canal');
-      if (!paid) {
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-
-      // Suivre le canal (ou maintenir l'abonnement)
-      if (!isAlreadySubscribed) {
-        await _followCanal(canal);
-      }
-
-      String successMessage = isAlreadySubscribed && _requirePaymentForExistingSubscribers
-          ? '✅ Paiement accepté! Vous conservez l\'accès au canal.'
-          : '✅ Abonnement réussi! Canal privé ajouté.';
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            successMessage,
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-          backgroundColor: _colors.primary,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-    } catch (e) {
-      printVm('Erreur abonnement privé: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '❌ Erreur lors de l\'abonnement',
-            style: TextStyle(color: _colors.onPrimary),
-          ),
-          backgroundColor: _colors.danger,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _followPublicCanal(Canal canal) async {
-    await _followCanal(canal);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '✅ ${AppLocalizations.of(context).canalNowFollowing}!',
-          style: TextStyle(color: _colors.onPrimary),
-        ),
-        backgroundColor: _colors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  Future<void> _followCanal(Canal canal) async {
-    final String userId = authProvider.loginUserData.id!;
-
-    if (canal.usersSuiviId!.contains(userId)) {
-      return;
-    }
-
-    // Ajouter l'utilisateur aux abonnés
-    canal.usersSuiviId!.add(userId);
-    await Future.wait([
-      firestore.collection('Canaux').doc(canal.id).update({
-        'usersSuiviId': canal.usersSuiviId,
-      }),
-      firestore.collection('Users').doc(userId).update({
-        'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
-      }),
-    ]);
-
-    // Créer la notification
-    final NotificationData notif = NotificationData(
-      id: firestore.collection('Notifications').doc().id,
-      titre: "Canal 📺",
-      media_url: authProvider.loginUserData.imageUrl,
-      type: NotificationType.ACCEPTINVITATION.name,
-      description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
-      users_id_view: [],
-      user_id: userId,
-      receiver_id: canal.userId!,
-      post_id: "",
-      post_data_type: "",
-      updatedAt: DateTime.now().microsecondsSinceEpoch,
-      createdAt: DateTime.now().microsecondsSinceEpoch,
-      status: PostStatus.VALIDE.name,
-    );
-
-    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-    // Envoyer notification push
-    if (canal.user != null && canal.user!.oneIgnalUserid != null) {
-      await authProvider.sendNotification(
-        userIds: [canal.user!.oneIgnalUserid!],
-        smallImage: canal.urlImage!,
-        send_user_id: userId,
-        recever_user_id: canal.userId!,
-        message: "📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!} 📺!",
-        type_notif: NotificationType.ACCEPTINVITATION.name,
-        post_id: "",
-        post_type: "",
-        chat_id: "",
-      );
-    }
-
-    setState(() {});
-  }
-
   Widget _buildCanalCard(Canal canal) {
     final isFollowing = canal.usersSuiviId!.contains(authProvider.loginUserData.id);
     final isPrivate = canal.isPrivate == true;
-    final subscribersCount = canal.usersSuiviId?.length ?? 0;
+    final subscribersCount = canal.membersCount;
     final l10n = AppLocalizations.of(context);
 
     return Container(
@@ -518,7 +299,8 @@ class _CanalListPageState extends State<CanalListPage> {
                       Container(
                         height: 32,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : () => _handleFollowCanal(canal),
+                          // Le bouton ouvre la page du canal : l'abonnement (et son paiement en pièces) se fait là-bas
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal))),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isPrivate ? _colors.accent : _colors.primary,
                             foregroundColor: isPrivate ? _colors.onAccent : _colors.onPrimary,
@@ -540,7 +322,7 @@ class _CanalListPageState extends State<CanalListPage> {
                       Container(
                         height: 32,
                         child: OutlinedButton(
-                          onPressed: null,
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal))),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: _colors.textSecondary),
                             shape: RoundedRectangleBorder(
@@ -623,7 +405,8 @@ class _CanalListPageState extends State<CanalListPage> {
           ),
         ],
       ),
-      body: Column(
+      // Tablette et ordinateur : liste centrée
+      body: CenteredContent(child: Column(
         children: [
           // Barre de recherche
           _buildSearchBar(),
@@ -680,7 +463,7 @@ class _CanalListPageState extends State<CanalListPage> {
             ),
           ),
         ],
-      ),
+      )),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

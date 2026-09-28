@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../auth/authTest/Screens/Login/loginPageUser.dart';
+import '../../utils/tx_amount.dart';
+import '../../widgets/coin_balances_row.dart';
+import 'monetisation.dart';
+import 'UserRetrait/userRetraitForm.dart';
+import '../../models/model_data.dart';
 
 class AccountDeletionPage extends StatefulWidget {
   const AccountDeletionPage({Key? key}) : super(key: key);
@@ -16,6 +21,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
   bool _obscure = true;
   bool _isDeleting = false;
   bool _confirmed = false;
+  bool _acceptLoss = false; // renonciation explicite aux soldes restants
   String? _error;
 
   @override
@@ -33,11 +39,18 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
       setState(() => _error = 'Entrez votre mot de passe pour confirmer.');
       return;
     }
+    if (_hasBalances && !_acceptLoss) {
+      setState(() => _error = 'Retire tes soldes, ou coche la case pour y renoncer.');
+      return;
+    }
 
     setState(() { _isDeleting = true; _error = null; });
 
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final err = await authProvider.deleteAccount(password: _passwordController.text.trim());
+    final err = await authProvider.deleteAccount(
+      password: _passwordController.text.trim(),
+      acceptLoss: _acceptLoss,
+    );
 
     if (!mounted) return;
 
@@ -46,10 +59,110 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
       return;
     }
 
-    // Compte supprimé — déconnexion + redirection
+    // Accès coupé — message puis retour à la connexion
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Compte supprimé'),
+        content: const Text(
+          'Ton compte est désactivé dès maintenant. Il sera supprimé définitivement dans 15 jours, '
+          'avec toutes ses données.\n\nEn cas d\'erreur, contacte-nous avant cette date : officiel.afrolook@gmail.com',
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      ),
+    );
+    if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => LoginPageUser()),
       (route) => false,
+    );
+  }
+
+  UserData get _user => Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+
+  bool get _hasBalances {
+    final u = _user;
+    return (u.giftCoinsBalance ?? 0) > 0 ||
+        (u.votre_solde_principal ?? 0) > 0 ||
+        (u.votre_solde_depot ?? 0) > 0 ||
+        (u.postViewsAvailable ?? 0) > 0;
+  }
+
+  /// Soldes restants : l'utilisateur est invité à les retirer avant la suppression.
+  Widget _buildBalances(AppColors colors) {
+    final u = _user;
+    Widget line(String label, String value) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            Expanded(child: Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 13))),
+            Text(value, style: TextStyle(color: colors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w700)),
+          ]),
+        );
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.warning.withOpacity(colors.isDark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.warning.withOpacity(0.4)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.account_balance_wallet_rounded, color: colors.warning, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Il reste des soldes sur ton compte',
+                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Text('Retire-les avant de supprimer ton compte : après la suppression, ils seront perdus.',
+            style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.4)),
+        const SizedBox(height: 10),
+        if ((u.giftCoinsBalance ?? 0) > 0) ...[
+          CoinBalancesInline(user: u),
+          const SizedBox(height: 6),
+        ],
+        if ((u.votre_solde_principal ?? 0) > 0) line('Gains à retirer', '${TxAmount.fmt(u.votre_solde_principal!)} FCFA'),
+        if ((u.votre_solde_depot ?? 0) > 0) line('Dépôt FCFA', '${TxAmount.fmt(u.votre_solde_depot!)} FCFA'),
+        if ((u.postViewsAvailable ?? 0) > 0) line('Revenus des vues à encaisser', '${TxAmount.fmt(u.postViewsAvailable!)} FCFA'),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserDemandeRetraitPage())),
+              icon: const Icon(Icons.north_east_rounded, size: 18),
+              label: const Text('Retirer mes gains'),
+              style: FilledButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage())),
+              child: const Text('Mon portefeuille'),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () => setState(() => _acceptLoss = !_acceptLoss),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Checkbox(
+              value: _acceptLoss,
+              activeColor: colors.danger,
+              onChanged: (v) => setState(() => _acceptLoss = v ?? false),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text('Je renonce à ces soldes : ils seront perdus avec mon compte.',
+                    style: TextStyle(color: colors.textPrimary, fontSize: 13, height: 1.4)),
+              ),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 
@@ -94,14 +207,15 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
                       Icon(Icons.warning_amber_rounded, color: colors.danger, size: 24),
                       const SizedBox(width: 10),
                       Text(
-                        'Action irréversible',
+                        'Suppression du compte',
                         style: TextStyle(color: colors.danger, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'La suppression de votre compte est définitive. Les données suivantes seront perdues :',
+                    'Ton compte sera désactivé immédiatement, puis supprimé définitivement au bout de 15 jours. '
+                    'Pendant ce délai, tu peux contacter notre service en cas d\'erreur. Seront supprimés :',
                     style: TextStyle(color: colors.textPrimary, fontSize: 14, height: 1.5),
                   ),
                   const SizedBox(height: 10),
@@ -128,6 +242,11 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
                 ],
               ),
             ),
+
+            if (_hasBalances) ...[
+              const SizedBox(height: 16),
+              _buildBalances(colors),
+            ],
 
             const SizedBox(height: 28),
 
@@ -185,7 +304,7 @@ class _AccountDeletionPageState extends State<AccountDeletionPage> {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        'Je comprends que cette action est irréversible et que toutes mes données seront définitivement supprimées.',
+                        'Je comprends que mon compte sera désactivé tout de suite et supprimé définitivement avec toutes mes données dans 15 jours.',
                         style: TextStyle(color: colors.textPrimary, fontSize: 13, height: 1.4),
                       ),
                     ),

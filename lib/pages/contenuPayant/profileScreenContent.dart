@@ -319,7 +319,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu>
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              _statChip(Icons.people_rounded, '${user.userAbonnesIds?.length ?? 0}', 'abonnés'),
+                              _statChip(Icons.people_rounded, '${user.followersCount}', 'abonnés'),
                               const SizedBox(width: 12),
                               _statChip(Icons.inventory_2_outlined, '$totalContent', 'contenus'),
                             ],

@@ -1559,8 +1559,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               ),
               Builder(builder: (_) {
                 final count = isCanalPost
-                    ? (_creatorCanal?.usersSuiviId?.length ?? _creatorCanal?.suivi ?? 0)
-                    : (_creatorUser?.userAbonnesIds?.length ?? _creatorUser?.abonnes ?? 0);
+                    ? ((_creatorCanal?.membersCount ?? 0))
+                    : ((_creatorUser?.followersCount ?? 0));
                 if (count == 0) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 2),
@@ -1650,8 +1650,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               ),
               Builder(builder: (_) {
                 final count = isCanalPost
-                    ? (_creatorCanal?.usersSuiviId?.length ?? _creatorCanal?.suivi ?? 0)
-                    : (_creatorUser?.userAbonnesIds?.length ?? _creatorUser?.abonnes ?? 0);
+                    ? ((_creatorCanal?.membersCount ?? 0))
+                    : ((_creatorUser?.followersCount ?? 0));
                 if (count == 0) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 2),

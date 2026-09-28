@@ -131,7 +131,7 @@ class FeedCanauxSection extends StatelessWidget {
                         const SizedBox(height: 2),
                         // Abonnés
                         Text(
-                          '${canal.usersSuiviId?.length ?? 0} abonnés',
+                          '${canal.membersCount} abonnés',
                           style: TextStyle(
                             fontSize: 9,
                             color: colors.textSecondary,

@@ -10,9 +10,22 @@ class EndOfFeedCache {
   EndOfFeedCache._();
   static final EndOfFeedCache instance = EndOfFeedCache._();
 
-  static const _keyCreators = 'eofc_creators_v1';
-  static const _keyCanaux = 'eofc_canaux_v1';
-  static const _keyTs = 'eofc_ts_v1';
+  // v2 : le cache garde le nombre d'abonnés et le score (absents de toJson en v1 → « 0 abonné »)
+  static const _keyCreators = 'eofc_creators_v2';
+  static const _keyCanaux = 'eofc_canaux_v2';
+  static const _keyTs = 'eofc_ts_v2';
+
+  static Map<String, dynamic> _userJson(UserData u) => {
+        ...u.toJson(),
+        'abonnes': u.followersCount,
+        'creatorScore': u.creatorScore ?? 0,
+      };
+
+  static Map<String, dynamic> _canalJson(Canal c) => {
+        ...c.toJson(),
+        'suivi': c.membersCount,
+        'canalScore': c.canalScore ?? 0,
+      };
   static const _ttl = Duration(hours: 1);
 
   // In-memory layer pour éviter les lectures SP répétées dans la même session
@@ -78,6 +91,7 @@ class EndOfFeedCache {
       } else {
         userSnap = await FirebaseFirestore.instance
             .collection('Users')
+            .orderBy('creatorScore', descending: true)
             .limit(60)
             .get();
       }
@@ -87,13 +101,14 @@ class EndOfFeedCache {
           })
           .whereType<UserData>()
           .where((u) => u.id != null && !exclude.contains(u.id))
-          .where((u) => (u.creatorScore ?? 0) > 0 || (u.abonnes ?? 0) > 0)
+          .where((u) => (u.creatorScore ?? 0) > 0 || u.followersCount > 0)
           .toList()
         ..sort((a, b) => (b.creatorScore ?? 0).compareTo(a.creatorScore ?? 0));
 
       // Canaux
       final canalSnap = await FirebaseFirestore.instance
           .collection('Canaux')
+          .orderBy('canalScore', descending: true)
           .limit(40)
           .get();
       final canaux = canalSnap.docs
@@ -110,8 +125,8 @@ class EndOfFeedCache {
         ..sort((a, b) => (b.canalScore ?? 0).compareTo(a.canalScore ?? 0));
 
       // Sérialisation
-      final creatorsJson = jsonEncode(creators.take(20).map((u) => u.toJson()).toList());
-      final canauxJson = jsonEncode(canaux.take(10).map((c) => c.toJson()).toList());
+      final creatorsJson = jsonEncode(creators.take(20).map(_userJson).toList());
+      final canauxJson = jsonEncode(canaux.take(10).map(_canalJson).toList());
 
       await prefs.setString(_keyCreators, creatorsJson);
       await prefs.setString(_keyCanaux, canauxJson);
@@ -130,8 +145,8 @@ class EndOfFeedCache {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final creatorsJson = jsonEncode(users.take(20).map((u) => u.toJson()).toList());
-      final canauxJson = jsonEncode(canaux.take(10).map((c) => c.toJson()).toList());
+      final creatorsJson = jsonEncode(users.take(20).map(_userJson).toList());
+      final canauxJson = jsonEncode(canaux.take(10).map(_canalJson).toList());
       await prefs.setString(_keyCreators, creatorsJson);
       await prefs.setString(_keyCanaux, canauxJson);
       await prefs.setInt(_keyTs, DateTime.now().millisecondsSinceEpoch);

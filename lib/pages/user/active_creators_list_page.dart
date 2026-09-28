@@ -437,7 +437,7 @@ class _CreatorTile extends StatelessWidget {
     final flag =
         rawCode != null && rawCode.length == 2 ? _flagEmoji(rawCode) : null;
     final followers =
-        _formatCount(user.userAbonnesIds?.length ?? user.abonnes ?? 0);
+        _formatCount(user.followersCount);
 
     return InkWell(
       onTap: onTap,
@@ -583,7 +583,7 @@ class _CanalTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = canal.titre ?? 'Canal';
     final followers =
-        _formatCount(canal.usersSuiviId?.length ?? canal.suivi ?? 0);
+        _formatCount(canal.membersCount);
 
     return InkWell(
       onTap: onTap,

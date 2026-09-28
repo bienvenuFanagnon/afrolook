@@ -1152,9 +1152,9 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
               child: Row(children: [Text('@${user.pseudo ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(width: 4), UserBadgeWidget(user: user, size: 14)]),
             ),
           if (canal != null)
-            Text('${canal.usersSuiviId?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70))
+            Text('${canal.membersCount} abonnés', style: const TextStyle(color: Colors.white70))
           else if (user != null)
-            Text('${user.userAbonnesIds?.length ?? 0} abonnés', style: const TextStyle(color: Colors.white70)),
+            Text('${user.followersCount} abonnés', style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 4),
           if (post.description != null)
             Container(constraints: const BoxConstraints(maxWidth: 250), child: Text(post.description!, style: const TextStyle(color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis)),

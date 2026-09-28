@@ -313,7 +313,7 @@ class TopFiveUserItem extends StatelessWidget {
                     Icon(Icons.people, size: 14, color: colors.primary),
                     SizedBox(width: 4),
                     Text(
-                      "${user.userAbonnesIds?.length ?? 0} abonnés",
+                      "${user.followersCount} abonnés",
                       style: TextStyle(
                         fontSize: 12,
                         color: colors.textSecondary,
@@ -3113,8 +3113,8 @@ if(userProvider.listAllUsers.isNotEmpty){
   }
 }
 
-void showRemunerationAnnounceModal(BuildContext context, String userId) {
-  showDialog(
+Future<void> showRemunerationAnnounceModal(BuildContext context, String userId) {
+  return showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {

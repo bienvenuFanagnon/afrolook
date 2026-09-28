@@ -1932,7 +1932,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                               Icon(Icons.group, size: 9, color: colors.warning),
                               SizedBox(width: 2),
                               Text(
-                                _formatNumber(user.userAbonnesIds?.length ?? 0),
+                                _formatNumber(user.followersCount),
                                 style: TextStyle(
                                   color: colors.warning,
                                   fontSize: 9,

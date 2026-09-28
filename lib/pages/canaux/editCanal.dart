@@ -650,7 +650,7 @@ class _EditCanalState extends State<EditCanal> {
             children: [
               _buildStatItem(
                 icon: Icons.people,
-                value: '${widget.canal.usersSuiviId?.length ?? 0}',
+                value: '${widget.canal.membersCount}',
                 label: _l10n.canalFollowers,
                 color: _colors.primary,
               ),

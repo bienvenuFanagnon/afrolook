@@ -566,7 +566,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                           children: [
                             _buildStatChip(
                               Icons.people,
-                              formatNumber(user.userAbonnesIds?.length ?? 0),
+                              formatNumber(user.followersCount),
                               Colors.blue,
                             ),
                           ],

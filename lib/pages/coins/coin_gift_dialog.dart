@@ -209,7 +209,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
                 // Sous-texte pour les canaux (nombre d'abonnés)
                 if (isCanal && widget.post?.canal != null)
                   Text(
-                    '${widget.post?.canal?.usersSuiviId?.length ?? 0} abonné(s)',
+                    '${(widget.post?.canal?.membersCount ?? 0)} abonné(s)',
                     style: TextStyle(
                       color: colors.textSecondary,
                       fontSize: 10,

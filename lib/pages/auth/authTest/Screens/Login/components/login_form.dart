@@ -101,7 +101,7 @@ class _LoginFormState extends State<LoginForm> {
             errorMessage = "L'utilisateur avec cet numero n'existe pas.";
             break;
           case "user-disabled":
-            errorMessage = "L'utilisateur avec cet numero a été désactivé.";
+            errorMessage = "Ce compte a été supprimé. Il sera effacé définitivement sous 15 jours. En cas d'erreur, contacte-nous : officiel.afrolook@gmail.com";
             break;
           case "too-many-requests":
             errorMessage = "Trop de demandes";

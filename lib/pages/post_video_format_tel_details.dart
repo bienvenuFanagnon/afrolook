@@ -3121,8 +3121,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         ? '#${canal.titre ?? ''}'
         : '@${user?.pseudo ?? ''}';
     final int subscriberCount = canal != null
-        ? (canal.usersSuiviId?.length ?? 0)
-        : (user?.userAbonnesIds?.length ?? 0);
+        ? (canal.membersCount)
+        : ((user?.followersCount ?? 0));
 
     return Positioned(
       right: 16,

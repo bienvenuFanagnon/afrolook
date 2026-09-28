@@ -536,7 +536,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
                               children: [
                                 _buildStatChip(
                                   Icons.people,
-                                  _formatCount(user.userAbonnesIds?.length ?? 0),
+                                  _formatCount(user.followersCount),
                                 ),
                                 const SizedBox(width: 8),
                                 _buildStatChip(

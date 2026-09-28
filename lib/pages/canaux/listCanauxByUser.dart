@@ -1,38 +1,33 @@
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
-
-import '../../../providers/userProvider.dart';
-
-import '../../providers/postProvider.dart';
-
-import '../../theme/app_colors.dart';
-
 import '../../l10n/app_localizations.dart';
-
+import '../../theme/app_colors.dart';
 import 'detailsCanal.dart';
-
 import 'newCanal.dart';
 
+/// « Mes canaux » : canaux créés et canaux administrés par l'utilisateur.
+/// Chargement rapide : les deux requêtes partent en parallèle, la liste s'affiche dès leur retour,
+/// puis les créateurs des canaux administrés sont complétés (une lecture par créateur, en parallèle).
 class CanalListPageByUser extends StatefulWidget {
   @override
   _CanalListPageByUserState createState() => _CanalListPageByUserState();
 }
 
 class _CanalListPageByUserState extends State<CanalListPageByUser> {
-  List<Canal> allCanaux = [];
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  static final NumberFormat _n = NumberFormat.decimalPattern('fr');
+
   List<Canal> createdCanaux = [];
   List<Canal> adminCanaux = [];
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool isLoading = true;
   bool hasError = false;
-  String errorMessage = '';
 
   late AppColors _colors;
 
@@ -42,619 +37,421 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
     _loadCanaux();
   }
 
+  Canal _parse(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final canal = Canal.fromJson(doc.data());
+    canal.id = doc.id;
+    canal.adminIds ??= [];
+    canal.allowedPostersIds ??= [];
+    canal.usersSuiviId ??= [];
+    return canal;
+  }
+
   Future<void> _loadCanaux() async {
     setState(() {
-      isLoading = true;
+      isLoading = createdCanaux.isEmpty && adminCanaux.isEmpty;
       hasError = false;
-      allCanaux.clear();
-      createdCanaux.clear();
-      adminCanaux.clear();
     });
 
     try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final postProvider = Provider.of<PostProvider>(context, listen: false);
-      final userId = authProvider.loginUserData.id!;
+      final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+      final uid = me.id!;
+      final canaux = firestore.collection('Canaux');
 
-      final stream = postProvider.getAllCanauxForUser(userId);
+      // Les deux requêtes en parallèle (avant : l'une après l'autre)
+      final results = await Future.wait([
+        canaux.where('userId', isEqualTo: uid).orderBy('updatedAt', descending: true).limit(50).get(),
+        canaux.where('adminIds', arrayContains: uid).orderBy('updatedAt', descending: true).limit(50).get(),
+      ]);
 
-      await for (Canal canal in stream) {
-        if (!allCanaux.any((c) => c.id == canal.id)) {
-          allCanaux.add(canal);
-
-          if (canal.userId == userId) {
-            createdCanaux.add(canal);
-          } else {
-            adminCanaux.add(canal);
-          }
-
-          setState(() {});
-        }
+      // Mes canaux : je suis le créateur, pas besoin de relire ma fiche
+      final created = results[0].docs.map(_parse).toList();
+      for (final c in created) {
+        c.user = me;
       }
+      final createdIds = created.map((c) => c.id).toSet();
+      final admin = results[1].docs.where((d) => !createdIds.contains(d.id)).map(_parse).toList();
 
+      if (!mounted) return;
       setState(() {
+        createdCanaux = created;
+        adminCanaux = admin;
         isLoading = false;
       });
 
+      _loadCreators(admin);
     } catch (e) {
-      printVm("Erreur chargement canaux: $e");
+      printVm('Erreur chargement canaux: $e');
+      if (!mounted) return;
       setState(() {
         isLoading = false;
-        hasError = true;
-        errorMessage = 'Erreur de chargement: $e';
+        hasError = createdCanaux.isEmpty && adminCanaux.isEmpty;
       });
     }
   }
 
-  Future<void> _suivreCanal(Canal canal, BuildContext context) async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final userId = authProvider.loginUserData.id!;
-    final l10n = AppLocalizations.of(context);
-
-    if (!canal.usersSuiviId!.contains(userId)) {
-      try {
-        canal.usersSuiviId!.add(userId);
-
-        await firestore.collection('Canaux').doc(canal.id).update({
-          'usersSuiviId': canal.usersSuiviId,
-          'updatedAt': DateTime.now().microsecondsSinceEpoch,
-        });
-
-        final notif = NotificationData(
-          id: firestore.collection('Notifications').doc().id,
-          titre: "Canal 📺",
-          media_url: authProvider.loginUserData.imageUrl,
-          type: "FOLLOW_CANAL",
-          description: "@${authProvider.loginUserData.pseudo!} suit votre canal #${canal.titre!}",
-          user_id: userId,
-          receiver_id: canal.userId,
-          canal_id: canal.id,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-          status: "VALIDE",
-        );
-
-        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '✅ ${l10n.canalNowFollowing}!',
-              style: TextStyle(color: _colors.onPrimary),
-            ),
-            backgroundColor: _colors.primary,
-          ),
-        );
-
-        setState(() {});
-      } catch (e) {
-        printVm("Erreur suivre canal: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Erreur lors du suivi',
-              style: TextStyle(color: _colors.onPrimary),
-            ),
-            backgroundColor: _colors.danger,
-          ),
-        );
-      }
+  /// Créateurs des canaux administrés : une lecture par créateur distinct, en parallèle, après l'affichage.
+  Future<void> _loadCreators(List<Canal> canals) async {
+    final ids = canals.map((c) => c.userId).whereType<String>().where((id) => id.isNotEmpty).toSet().toList();
+    if (ids.isEmpty) return;
+    try {
+      final docs = await Future.wait(ids.map((id) => firestore.collection('Users').doc(id).get()));
+      final byId = <String, UserData>{
+        for (final d in docs)
+          if (d.exists) d.id: UserData.fromJson(d.data()!),
+      };
+      if (!mounted) return;
+      setState(() {
+        for (final c in canals) {
+          c.user = byId[c.userId] ?? c.user;
+        }
+      });
+    } catch (e) {
+      printVm('Erreur créateurs des canaux: $e');
     }
   }
 
-  Widget _buildCanalCard(Canal canal, BuildContext context, {bool isAdminCard = false}) {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final isOwner = canal.userId == authProvider.loginUserData.id;
-    final isFollowing = canal.usersSuiviId?.contains(authProvider.loginUserData.id) == true;
-    final isAdmin = canal.adminIds?.contains(authProvider.loginUserData.id) == true && !isOwner;
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: _colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CanalDetails(canal: canal),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Avatar du canal avec badge
-                Stack(
-                  children: [
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: isOwner
-                              ? [_colors.primary, _colors.accent]
-                              : isAdminCard
-                              ? [_colors.warning, _colors.warning.withOpacity(0.6)]
-                              : [_colors.info, _colors.info.withOpacity(0.6)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: CircleAvatar(
-                        radius: 32,
-                        backgroundColor: _colors.surface,
-                        backgroundImage: canal.urlImage != null && canal.urlImage!.isNotEmpty
-                            ? NetworkImage(canal.urlImage!)
-                            : null,
-                        child: canal.urlImage == null || canal.urlImage!.isEmpty
-                            ? Icon(
-                          isOwner ? Icons.star : Icons.admin_panel_settings,
-                          size: 30,
-                          color: isOwner ? _colors.primary : _colors.warning,
-                        )
-                            : null,
-                      ),
-                    ),
-                    if (canal.isVerify == true)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: _colors.surface,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: _colors.info, width: 1.5),
-                          ),
-                          child: Icon(
-                            Icons.verified,
-                            size: 14,
-                            color: _colors.info,
-                          ),
-                        ),
-                      ),
-                    if (isOwner || isAdmin)
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isOwner ? _colors.primary : _colors.warning,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            isOwner ? l10n.canalProprioLabel : l10n.canalAdminLabel,
-                            style: TextStyle(
-                              color: _colors.onPrimary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                SizedBox(width: 16),
-
-                // Infos du canal
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              "#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? 'Sans nom'}",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: _colors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 4),
-
-                      if (isAdminCard && canal.user != null)
-                        Text(
-                          'Créé par: ${canal.user!.pseudo ?? l10n.canalUnknown}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _colors.textSecondary,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                      if (canal.description != null && canal.description!.isNotEmpty)
-                        Text(
-                          canal.description!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: _colors.textSecondary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                      SizedBox(height: 8),
-
-                      Row(
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.people, size: 16, color: _colors.accent),
-                              SizedBox(width: 4),
-                              Text(
-                                "${canal.usersSuiviId?.length ?? 0}",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: _colors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(width: 16),
-
-                          Row(
-                            children: [
-                              Icon(Icons.post_add, size: 16, color: _colors.primary),
-                              SizedBox(width: 4),
-                              Text(
-                                "${canal.publication ?? 0}",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: _colors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          Spacer(),
-
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: canal.isPrivate == true
-                                  ? _colors.accent.withOpacity(0.2)
-                                  : _colors.primary.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: canal.isPrivate == true ? _colors.accent : _colors.primary,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  canal.isPrivate == true ? Icons.lock : Icons.public,
-                                  size: 12,
-                                  color: canal.isPrivate == true ? _colors.accent : _colors.primary,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  canal.isPrivate == true ? l10n.canalPrivate : l10n.canalPublic,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: canal.isPrivate == true ? _colors.accent : _colors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (!isOwner && !isFollowing)
-                  Container(
-                    margin: EdgeInsets.only(left: 8),
-                    child: ElevatedButton(
-                      onPressed: () => _suivreCanal(canal, context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _colors.primary,
-                        foregroundColor: _colors.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: Text(
-                        l10n.canalFollow,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader({required String title, required int count, required Color color}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: _colors.textPrimary,
-              ),
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$count',
-              style: TextStyle(
-                color: _colors.onPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptySection({required String message, required IconData icon, Color? color}) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _colors.border),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 50,
-            color: color ?? _colors.textSecondary,
-          ),
-          SizedBox(height: 12),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _colors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoading() {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(_colors.primary),
-          ),
-          SizedBox(height: 16),
-          Text(
-            l10n.canalLoading,
-            style: TextStyle(color: _colors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 60, color: _colors.danger),
-          SizedBox(height: 16),
-          Text(
-            'Erreur de chargement',
-            style: TextStyle(
-              fontSize: 18,
-              color: _colors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            errorMessage,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: _colors.textSecondary),
-          ),
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _loadCanaux,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _colors.primary,
-              foregroundColor: _colors.onPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: Text('Réessayer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyAll() {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.group_off, size: 80, color: _colors.textSecondary),
-          SizedBox(height: 16),
-          Text(
-            l10n.canalNone,
-            style: TextStyle(fontSize: 18, color: _colors.textSecondary, fontWeight: FontWeight.w600),
-          ),
-          SizedBox(height: 8),
-          Text(
-            l10n.canalCreateFirstOne,
-            style: TextStyle(color: _colors.textSecondary),
-          ),
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => NewCanal()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _colors.primary,
-              foregroundColor: _colors.onPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: Text(
-              l10n.canalCreate,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Construction ──────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context);
-    final hasCreatedCanals = createdCanaux.isNotEmpty;
-    final hasAdminCanals = adminCanaux.isNotEmpty;
-    final isEmpty = !hasCreatedCanals && !hasAdminCanals;
 
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: AppBar(
         title: Text(
-          l10n.canalMyChannels,
-          style: TextStyle(color: _colors.onPrimary, fontSize: 20, fontWeight: FontWeight.bold),
+          'Mes canaux',
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        backgroundColor: _colors.primary,
-        iconTheme: IconThemeData(color: _colors.onPrimary),
+        backgroundColor: _colors.surface,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: _colors.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
             onPressed: _loadCanaux,
-            icon: Icon(Icons.refresh, color: _colors.onPrimary),
-            tooltip: 'Rafraîchir',
+            icon: Icon(Icons.refresh_rounded, color: _colors.textPrimary),
+            tooltip: 'Actualiser',
           ),
         ],
-      ),
-      body: isLoading
-          ? _buildLoading()
-          : hasError
-          ? _buildError()
-          : isEmpty
-          ? _buildEmptyAll()
-          : RefreshIndicator(
-        onRefresh: _loadCanaux,
-        color: _colors.primary,
-        child: ListView(
-          padding: EdgeInsets.only(bottom: 80),
-          children: [
-            if (hasCreatedCanals) ...[
-              _buildSectionHeader(
-                title: l10n.canalCreatedBy,
-                count: createdCanaux.length,
-                color: _colors.primary,
-              ),
-              ...createdCanaux.map((canal) => _buildCanalCard(canal, context, isAdminCard: false)).toList(),
-              SizedBox(height: 20),
-            ] else ...[
-              _buildSectionHeader(title: l10n.canalCreatedBy, count: 0, color: _colors.primary),
-              _buildEmptySection(
-                message: l10n.canalNoneCreated,
-                icon: Icons.group_off,
-                color: _colors.primary.withOpacity(0.5),
-              ),
-            ],
-
-            if (hasAdminCanals) ...[
-              _buildSectionHeader(
-                title: l10n.canalAdminOf,
-                count: adminCanaux.length,
-                color: _colors.warning,
-              ),
-              ...adminCanaux.map((canal) => _buildCanalCard(canal, context, isAdminCard: true)).toList(),
-            ] else ...[
-              _buildSectionHeader(title: l10n.canalAdminOf, count: 0, color: _colors.warning),
-              _buildEmptySection(
-                message: l10n.canalNoneManaged,
-                icon: Icons.admin_panel_settings_outlined,
-                color: _colors.warning.withOpacity(0.5),
-              ),
-            ],
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: _colors.divider),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => NewCanal()));
-        },
+      body: CenteredContent(
+        child: isLoading
+            ? _buildSkeleton()
+            : hasError
+                ? _buildError()
+                : (createdCanaux.isEmpty && adminCanaux.isEmpty)
+                    ? _buildEmptyAll(l10n)
+                    : RefreshIndicator(
+                        onRefresh: _loadCanaux,
+                        color: _colors.primary,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
+                          children: [
+                            _buildSummary(),
+                            const SizedBox(height: 18),
+                            _buildSectionHeader('Créés par moi', createdCanaux.length, _colors.primary),
+                            if (createdCanaux.isEmpty)
+                              _buildEmptySection(l10n.canalNoneCreated, Icons.add_circle_outline_rounded)
+                            else
+                              ...createdCanaux.map((c) => _buildCanalCard(c, isOwner: true)),
+                            const SizedBox(height: 18),
+                            _buildSectionHeader("J'administre", adminCanaux.length, _colors.warning),
+                            if (adminCanaux.isEmpty)
+                              _buildEmptySection(l10n.canalNoneManaged, Icons.admin_panel_settings_outlined)
+                            else
+                              ...adminCanaux.map((c) => _buildCanalCard(c, isOwner: false)),
+                          ],
+                        ),
+                      ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NewCanal())),
         backgroundColor: _colors.primary,
         foregroundColor: _colors.onPrimary,
-        child: Icon(Icons.add, size: 28),
-        shape: CircleBorder(),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Créer un canal', style: TextStyle(fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  /// Chiffres clés : canaux, abonnés cumulés, publications cumulées.
+  Widget _buildSummary() {
+    final all = [...createdCanaux, ...adminCanaux];
+    final followers = all.fold<int>(0, (s, c) => s + (c.membersCount));
+    final posts = all.fold<int>(0, (s, c) => s + (c.publication ?? 0));
+    Widget stat(String value, String label, IconData icon, Color color) => Expanded(
+          child: Column(children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(height: 4),
+            Text(value,
+                style: TextStyle(
+                    color: _colors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: const [FontFeature.tabularFigures()])),
+            Text(label, style: TextStyle(color: _colors.textSecondary, fontSize: 11.5)),
+          ]),
+        );
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _colors.border),
+      ),
+      child: IntrinsicHeight(
+        child: Row(children: [
+          stat('${all.length}', all.length > 1 ? 'canaux' : 'canal', Icons.campaign_rounded, _colors.primary),
+          VerticalDivider(width: 1, color: _colors.border),
+          stat(_n.format(followers), 'abonnés', Icons.people_alt_rounded, _colors.accent),
+          VerticalDivider(width: 1, color: _colors.border),
+          stat(_n.format(posts), 'publications', Icons.article_rounded, _colors.info),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+      child: Row(children: [
+        Text(title.toUpperCase(),
+            style: TextStyle(
+                color: _colors.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: _colors.isDark ? 0.22 : 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text('$count', style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w800)),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildCanalCard(Canal canal, {required bool isOwner}) {
+    final l10n = AppLocalizations.of(context);
+    final isPrivate = canal.isPrivate == true;
+    final roleColor = isOwner ? _colors.primary : _colors.warning;
+    final hasImage = canal.urlImage != null && canal.urlImage!.isNotEmpty;
+    final creator = canal.user?.pseudo;
+    final subtitle = !isOwner && creator != null && creator.isNotEmpty
+        ? 'Créé par @$creator'
+        : (canal.description?.trim().isNotEmpty == true ? canal.description!.trim() : null);
+
+    Widget chip(IconData icon, String text, {Color? color}) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 13, color: color ?? _colors.textSecondary),
+          const SizedBox(width: 3),
+          Text(text,
+              style: TextStyle(
+                  color: color ?? _colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+        ]);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: _colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: _colors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal))),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(children: [
+              // Avatar + badge vérifié
+              Stack(clipBehavior: Clip.none, children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: roleColor, width: 2)),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: _colors.surfaceVariant,
+                    backgroundImage: hasImage ? NetworkImage(canal.urlImage!) : null,
+                    child: hasImage ? null : Icon(Icons.campaign_rounded, color: roleColor, size: 22),
+                  ),
+                ),
+                if (canal.isVerify == true)
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Container(
+                      decoration: BoxDecoration(color: _colors.surface, shape: BoxShape.circle),
+                      child: Icon(Icons.verified_rounded, size: 17, color: _colors.info),
+                    ),
+                  ),
+              ]),
+              const SizedBox(width: 12),
+              // Infos
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Flexible(
+                      child: Text(
+                        '#${canal.titre ?? 'Sans nom'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _colors.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: roleColor.withValues(alpha: _colors.isDark ? 0.22 : 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(isOwner ? l10n.canalProprioLabel : l10n.canalAdminLabel,
+                          style: TextStyle(color: roleColor, fontSize: 9.5, fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _colors.textSecondary, fontSize: 12.5)),
+                  ],
+                  const SizedBox(height: 6),
+                  Wrap(spacing: 12, runSpacing: 4, children: [
+                    chip(Icons.people_alt_rounded, _n.format(canal.membersCount)),
+                    chip(Icons.article_rounded, _n.format(canal.publication ?? 0)),
+                    isPrivate
+                        ? chip(Icons.lock_rounded,
+                            canal.subscriptionPriceCoins > 0
+                                ? '${l10n.canalPrivate} · ${_n.format(canal.subscriptionPriceCoins)} pièces'
+                                : l10n.canalPrivate,
+                            color: _colors.accent)
+                        : chip(Icons.public_rounded, l10n.canalPublic, color: _colors.primary),
+                  ]),
+                ]),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, color: _colors.textSecondary),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptySection(String message, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _colors.border),
+      ),
+      child: Row(children: [
+        Icon(icon, color: _colors.textSecondary, size: 22),
+        const SizedBox(width: 10),
+        Expanded(child: Text(message, style: TextStyle(color: _colors.textSecondary, fontSize: 13.5))),
+      ]),
+    );
+  }
+
+  /// Squelette pendant le premier chargement (au lieu d'un simple indicateur).
+  Widget _buildSkeleton() {
+    Widget bar(double w, double h) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(color: _colors.surfaceVariant, borderRadius: BorderRadius.circular(6)),
+        );
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        Container(
+          height: 78,
+          decoration: BoxDecoration(color: _colors.surface, borderRadius: BorderRadius.circular(16)),
+        ),
+        const SizedBox(height: 18),
+        for (var i = 0; i < 4; i++)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _colors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _colors.border),
+            ),
+            child: Row(children: [
+              CircleAvatar(radius: 26, backgroundColor: _colors.surfaceVariant),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  bar(140, 13),
+                  const SizedBox(height: 8),
+                  bar(200, 10),
+                  const SizedBox(height: 8),
+                  bar(120, 10),
+                ]),
+              ),
+            ]),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.wifi_off_rounded, size: 48, color: _colors.textSecondary),
+          const SizedBox(height: 12),
+          Text('Impossible de charger tes canaux',
+              style: TextStyle(color: _colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text('Vérifie ta connexion, puis réessaie.', style: TextStyle(color: _colors.textSecondary)),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _loadCanaux,
+            style: FilledButton.styleFrom(backgroundColor: _colors.primary, foregroundColor: _colors.onPrimary),
+            child: const Text('Réessayer'),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildEmptyAll(AppLocalizations l10n) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: _colors.primary.withValues(alpha: _colors.isDark ? 0.18 : 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.campaign_rounded, size: 40, color: _colors.primary),
+          ),
+          const SizedBox(height: 14),
+          Text(l10n.canalCreateFirstOne,
+              style: TextStyle(color: _colors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(
+            'Un canal regroupe tes publications et tes abonnés autour d\'un thème. Il peut être public ou privé (abonnement en pièces).',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _colors.textSecondary, height: 1.4),
+          ),
+        ]),
       ),
     );
   }

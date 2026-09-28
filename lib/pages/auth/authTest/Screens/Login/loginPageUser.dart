@@ -254,7 +254,8 @@ class _LoginPageUserState extends State<LoginPageUser> {
         _errorMessage = "Email ou mot de passe incorrect. Avez-vous déjà créé un compte ?";
         break;
       case "user-disabled":
-        _errorMessage = "L'utilisateur avec cet email a été désactivé.";
+        // Compte supprimé (délai de 15 jours avant l'effacement définitif)
+        _errorMessage = "Ce compte a été supprimé. Il sera effacé définitivement sous 15 jours. En cas d'erreur, contacte-nous : officiel.afrolook@gmail.com";
         break;
       case "too-many-requests":
         _errorMessage = "Trop de tentatives de connexion. Réessayez plus tard.";

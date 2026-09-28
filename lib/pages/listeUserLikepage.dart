@@ -663,7 +663,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
                               children: [
                                 _buildMiniStat(
                                   Icons.people,
-                                  _formatCount(user.userAbonnesIds?.length ?? 0),
+                                  _formatCount(user.followersCount),
                                 ),
                                 const SizedBox(width: 6),
                                 _buildMiniStat(

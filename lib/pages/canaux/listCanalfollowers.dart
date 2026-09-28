@@ -88,8 +88,8 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
       }
 
       listUsers.sort((a, b) {
-        final aFollowers = a.userAbonnesIds?.length ?? 0;
-        final bFollowers = b.userAbonnesIds?.length ?? 0;
+        final aFollowers = a.followersCount;
+        final bFollowers = b.followersCount;
         return bFollowers.compareTo(aFollowers);
       });
 
@@ -355,7 +355,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                         ],
                       ),
 
-                      if ((user.userAbonnesIds?.length ?? 0) > 1000)
+                      if ((user.followersCount) > 1000)
                         Container(
                           margin: EdgeInsets.only(top: 6),
                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),

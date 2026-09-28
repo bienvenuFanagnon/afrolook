@@ -129,6 +129,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   // Desktop 2-colonnes : conversation active dans le panneau droit
   Widget? _activeChatWidget;
+  // Tablette / ordinateur : les deux panneaux, chat seul (liste réduite) ou liste seule (chat réduit)
+  _ConvPane _paneMode = _ConvPane.split;
+  Key? _lastChatKey;
 
   // Archives (persistées en local)
   Set<String> _archivedChatIds = {};
@@ -979,26 +982,85 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: _buildAppBar(),
-      body: Row(
-        children: [
-          // ── Liste gauche (360px) ──────────────────────────────────
-          SizedBox(
-            width: 360,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(right: BorderSide(color: _colors.border, width: 0.5)),
-              ),
-              child: _buildChatListContent(),
-            ),
-          ),
-          // ── Conversation active (reste) ───────────────────────────
-          Expanded(
-            child: _activeChatWidget ?? _buildChatPlaceholder(),
-          ),
-        ],
-      ),
+      body: _buildPanes(),
     );
   }
+
+  /// Écran partagé : liste + conversation, avec possibilité de réduire l'un ou l'autre panneau.
+  Widget _buildPanes() {
+    // Ouvrir une conversation depuis « liste seule » réaffiche le chat
+    final key = _activeChatWidget?.key;
+    if (key != null && key != _lastChatKey) {
+      _lastChatKey = key;
+      if (_paneMode == _ConvPane.listOnly) _paneMode = _ConvPane.split;
+    }
+    void setMode(_ConvPane m) => setState(() => _paneMode = m);
+
+    final list = Container(
+      decoration: BoxDecoration(border: Border(right: BorderSide(color: _colors.border, width: 0.5))),
+      child: _buildChatListContent(),
+    );
+    final chat = _activeChatWidget ?? _buildChatPlaceholder();
+
+    switch (_paneMode) {
+      case _ConvPane.chatOnly:
+        return Row(children: [
+          _paneRail(Icons.format_list_bulleted_rounded, 'Afficher la liste', () => setMode(_ConvPane.split), left: true),
+          Expanded(child: chat),
+        ]);
+      case _ConvPane.listOnly:
+        return Row(children: [
+          Expanded(child: list),
+          _paneRail(Icons.chat_bubble_outline_rounded, 'Afficher la conversation', () => setMode(_ConvPane.split), left: false),
+        ]);
+      case _ConvPane.split:
+        return Row(children: [
+          SizedBox(width: 360, child: list),
+          // Commandes entre les panneaux : réduire la liste ou réduire le chat
+          Container(
+            width: 28,
+            color: _colors.surface,
+            child: Column(children: [
+              const SizedBox(height: 8),
+              _paneButton(Icons.chevron_left_rounded, 'Réduire la liste', () => setMode(_ConvPane.chatOnly)),
+              _paneButton(Icons.chevron_right_rounded, 'Réduire la conversation', () => setMode(_ConvPane.listOnly)),
+            ]),
+          ),
+          Expanded(child: chat),
+        ]);
+    }
+  }
+
+  Widget _paneButton(IconData icon, String tooltip, VoidCallback onTap) => Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Icon(icon, size: 20, color: _colors.textSecondary),
+          ),
+        ),
+      );
+
+  /// Panneau réduit : fine barre avec un bouton pour le rouvrir.
+  Widget _paneRail(IconData icon, String tooltip, VoidCallback onTap, {required bool left}) => Container(
+        width: 44,
+        decoration: BoxDecoration(
+          color: _colors.surface,
+          border: Border(
+            right: left ? BorderSide(color: _colors.border, width: 0.5) : BorderSide.none,
+            left: left ? BorderSide.none : BorderSide(color: _colors.border, width: 0.5),
+          ),
+        ),
+        child: Column(children: [
+          const SizedBox(height: 8),
+          Tooltip(
+            message: tooltip,
+            child: IconButton(icon: Icon(icon, color: _colors.primary), onPressed: onTap),
+          ),
+        ]),
+      );
 
   Widget _buildChatPlaceholder() {
     return Center(
@@ -3013,3 +3075,6 @@ class _GroupAttentionBadgeState extends State<_GroupAttentionBadge>
     );
   }
 }
+
+/// Disposition de la page Conversations sur tablette / ordinateur.
+enum _ConvPane { split, chatOnly, listOnly }

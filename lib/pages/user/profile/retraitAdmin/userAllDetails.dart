@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../admin/admin_palette.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:iconsax/iconsax.dart';
@@ -67,6 +68,66 @@ class _UserManagementPageState extends State<UserManagementPage> {
   }
 
   // ── Certification ─────────────────────────────────────────────────────────
+
+  /// Compte en cours de suppression : restauration possible pendant les 15 jours (erreur signalée au support).
+  Widget _buildDeletionBanner() {
+    final at = _userData!.deletionScheduledAt;
+    final date = at != null ? DateFormat('dd/MM/yyyy').format(DateTime.fromMillisecondsSinceEpoch(at)) : '?';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _red.withValues(alpha: 0.5)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.delete_forever_rounded, color: _red),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Compte supprimé à la demande de l\'utilisateur',
+                style: TextStyle(color: _textP, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        Text('Accès désactivé. Effacement définitif prévu le $date.',
+            style: TextStyle(color: _textS, fontSize: 13)),
+        const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: _restoreAccount,
+          icon: const Icon(Icons.restore_rounded, size: 18),
+          label: const Text('Restaurer le compte'),
+          style: FilledButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _restoreAccount() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restaurer ce compte ?'),
+        content: const Text('La personne pourra de nouveau se connecter et la suppression est annulée.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restaurer')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('restoreDeletedAccount')
+          .call({'userId': _userData!.id});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compte restauré')));
+      await _loadUserData();
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Restauration impossible')));
+    }
+  }
 
   Future<void> _toggleVerification() async {
     if (_userData == null) return;
@@ -399,6 +460,10 @@ class _UserManagementPageState extends State<UserManagementPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_userData!.accountStatus == 'PENDING_DELETION') ...[
+                    _buildDeletionBanner(),
+                    const SizedBox(height: 16),
+                  ],
                   _buildProfileCard(),
                   const SizedBox(height: 16),
                   _buildCertificationSection(),

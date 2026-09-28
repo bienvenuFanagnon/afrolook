@@ -9,8 +9,8 @@ import '../dating_entry_page.dart';
 
 import '../dating_profile_detail_page.dart';
 
-void showTopDatingAnnounceModal(BuildContext context) {
-  showDialog(
+Future<void> showTopDatingAnnounceModal(BuildContext context) {
+  return showDialog(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {

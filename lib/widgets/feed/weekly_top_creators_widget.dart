@@ -41,8 +41,8 @@ class _TopEntry {
       isCanal ? (canal?.description ?? '') : (userData?.apropos ?? '');
   int get followerCount =>
       isCanal
-          ? (canal?.usersSuiviId?.length ?? canal?.suivi ?? 0)
-          : (userData?.userAbonnesIds?.length ?? userData?.abonnes ?? 0);
+          ? ((canal?.membersCount ?? 0))
+          : ((userData?.followersCount ?? 0));
 }
 
 // ─── Widget principal ────────────────────────────────────────────────────────

@@ -35,7 +35,7 @@ Future<void> showInstallModal(BuildContext context) async {
 
   if (!context.mounted) return;
 
-  showDialog(
+  await showDialog(
     context: context,
     barrierDismissible: true,
     barrierColor: Colors.black.withOpacity(0.75),
