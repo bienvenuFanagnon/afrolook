@@ -89,54 +89,6 @@ Map<String, dynamic> _$ArticleDataToJson(ArticleData instance) =>
 
 
 
-LookChallenge _$LookChallengeFromJson(Map<String, dynamic> json) =>
-    LookChallenge()
-      ..id = json['id'] as String?
-      ..user_id = json['user_id'] as String?
-      ..challenge_id = json['challenge_id'] as String?
-      ..postChallengeId = json['postChallengeId'] as String?
-      ..titre = json['titre'] as String?
-      ..statut = json['statut'] as String?
-      ..popularite = (json['popularite'] as num?)?.toDouble()
-      ..prix = (json['prix'] as num?)?.toInt()
-      ..vues = (json['vues'] as num?)?.toInt()
-      ..disponible = json['disponible'] as bool?
-      ..isAprouved = json['isAprouved'] as bool?
-      ..jaime = (json['jaime'] as num?)?.toInt()
-      ..partage = (json['partage'] as num?)?.toInt()
-      ..createdAt = (json['createdAt'] as num?)?.toInt()
-      ..updatedAt = (json['updatedAt'] as num?)?.toInt()
-      ..usersLovesIds = (json['usersLovesIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList()
-      ..usersVuesIds = (json['usersVuesIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList()
-      ..usersPartagesIds = (json['usersPartagesIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList();
-
-Map<String, dynamic> _$LookChallengeToJson(LookChallenge instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'user_id': instance.user_id,
-      'challenge_id': instance.challenge_id,
-      'postChallengeId': instance.postChallengeId,
-      'titre': instance.titre,
-      'statut': instance.statut,
-      'popularite': instance.popularite,
-      'prix': instance.prix,
-      'vues': instance.vues,
-      'disponible': instance.disponible,
-      'isAprouved': instance.isAprouved,
-      'jaime': instance.jaime,
-      'partage': instance.partage,
-      'createdAt': instance.createdAt,
-      'updatedAt': instance.updatedAt,
-      'usersLovesIds': instance.usersLovesIds,
-      'usersVuesIds': instance.usersVuesIds,
-      'usersPartagesIds': instance.usersPartagesIds,
-    };
 
 Categorie _$CategorieFromJson(Map<String, dynamic> json) => Categorie()
   ..id = json['id'] as String?

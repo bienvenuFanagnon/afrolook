@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -612,43 +612,6 @@ class PostProvider extends ChangeNotifier {
     }
   }
 
-  Stream<List<Post>> getChallengePostsImagesByUser(String userId) async* {
-    var postStream = FirebaseFirestore.instance.collection('Posts')
-        .where("user_id",isEqualTo:'${userId}')
-        .where("type",isEqualTo:'${PostType.POST.name}')
-    // .where("dataType",isEqualTo:'${PostDataType.IMAGE.name}')
-        .where(
-        "dataType",isEqualTo:'${PostDataType.IMAGE.name}'
-
-    )
-
-        .orderBy('created_at', descending: true)
-
-        .snapshots();
-    List<Post> posts = [];
-    //listConstposts =[];
-    //  UserData userData=UserData();
-    await for (var snapshot in postStream) {
-
-      for (var post in snapshot.docs) {
-        //  printVm("post : ${jsonDecode(post.toString())}");
-        Post p=Post.fromJson(post.data());
-        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
-        // Afficher la liste
-
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-        p.user=userList.first;
-        posts.add(p);
-        listConstposts=posts;
-
-
-      }
-      yield listConstposts;
-    }
-  }
 
   Stream<List<Post>> getEntreprisePostsImagesByUser(String userId) async* {
     var postStream = FirebaseFirestore.instance.collection('Posts')
@@ -2348,115 +2311,13 @@ class PostProvider extends ChangeNotifier {
 
 
 
-  double calculatePopularity(LookChallenge lookChallenge) {
-    // Définir les pondérations pour chaque paramètre
-    const double weightJaime = 1.0;
-    const double weightPartage = 2.0;
-    const double weightVues = 0.5;
-
-    // Récupérer les valeurs ou utiliser 0 par défaut si elles sont nulles
-    int jaime = lookChallenge.jaime ?? 0;
-    int partage = lookChallenge.partage ?? 0;
-    int vues = lookChallenge.vues ?? 0;
-
-    // Calculer la popularité en fonction de la formule pondérée
-    double popularite = (jaime * weightJaime) +
-        (partage * weightPartage) +
-        (vues * weightVues);
-
-    return popularite;
-  }
-
-
-  Future<List<LookChallenge>> getAllLookChallengesByChallenge(String challenge_id) async {
-    List<LookChallenge> challenges = [];
-    CollectionReference postCollect = FirebaseFirestore.instance.collection('LookChallenges');
-    QuerySnapshot querySnapshotPost = await postCollect
-        .where("challenge_id", isEqualTo: challenge_id)
-        .where("disponible", isEqualTo: true)
-    // .where("statut", isNotEqualTo: StatutData.TERMINER.name)
-    //     .orderBy('createdAt', descending: true)
-        .orderBy('popularite', descending: true)
-        // .limit(10)
-        .get();
-
-    List<LookChallenge> challengesList = querySnapshotPost.docs
-        .map((doc) => LookChallenge.fromJson(doc.data() as Map<String, dynamic>))
-        .toList();
-
-    // int currentTime = DateTime.now().millisecondsSinceEpoch;
-    //
-    // for (Challenge p in challengesList) {
-    //   if (p.finishedAt! <= currentTime) {
-    //     // Si la date de fin est dépassée
-    //     p.statut = StatutData.TERMINER.name;
-    //     await postCollect.doc(p.id).update({'statut': StatutData.TERMINER.name});
-    //   } else if (p.startAt! <= currentTime && p.finishedAt! > currentTime) {
-    //     // Si la date actuelle est entre dateDebut et dateFin
-    //     p.statut = StatutData.ENCOURS.name;
-    //     await postCollect.doc(p.id).update({'statut': StatutData.ENCOURS.name});
-    //   }
-
-    int currentTime = DateTime.now().millisecondsSinceEpoch;
-
-    for (LookChallenge p in challengesList) {
-      // Récupération du post lié
-      CollectionReference postRef = FirebaseFirestore.instance.collection('Posts');
-      QuerySnapshot postSnapshot = await postRef.where("id", isEqualTo: p.postChallengeId).get();
-      List<Post> posts = postSnapshot.docs.map((doc) => Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      p.post=posts.first;
-
-      CollectionReference userRef = FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot userSnapshot = await userRef.where("id", isEqualTo: p.user_id).get();
-      List<UserData> users = userSnapshot.docs.map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      p.post!.user=users.first;
-      p.popularite=calculatePopularity(p);
-      updateLookChallenge(p);
-
-      p.user=users.first;challenges.add(p);
-    }
 
 
 
 
 
-    return challenges;
-  }
 
 
-
-
-
-  Future<List<LookChallenge>> getLookChallengeById(String id) async {
-    List<LookChallenge> challenges = [];
-    CollectionReference postCollect = FirebaseFirestore.instance.collection('LookChallenges');
-    QuerySnapshot querySnapshotPost = await postCollect
-        .where("id", isEqualTo: id)
-        .where("disponible", isEqualTo: true)
-        // .where("statut", isNotEqualTo: StatutData.TERMINER.name)
-        .orderBy('createdAt', descending: true)
-        .limit(30)
-        .get();
-
-    List<LookChallenge> challengesList = querySnapshotPost.docs
-        .map((doc) => LookChallenge.fromJson(doc.data() as Map<String, dynamic>))
-        .toList();
-
-    int currentTime = DateTime.now().millisecondsSinceEpoch;
-
-    // for (Challenge p in challengesList) {
-    //   // Récupération du post lié
-    //   CollectionReference postRef = FirebaseFirestore.instance.collection('Posts');
-    //   QuerySnapshot postSnapshot = await postRef.where("id", isEqualTo: p.postChallengeId).get();
-    //   List<Post> posts = postSnapshot.docs.map((doc) => Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //
-    //
-    // }
-
-    challenges=challengesList;
-
-    return challenges;
-  }
 
 
 
@@ -3353,22 +3214,6 @@ class PostProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateLookChallenge(LookChallenge post) async {
-    try{
-
-      // post.updatedAt=DateTime.now().microsecondsSinceEpoch;
-
-      await FirebaseFirestore.instance
-          .collection('LookChallenges')
-          .doc(post.id)
-          .update(post.toJson());
-
-      return true;
-    }catch(e){
-      printVm("erreur update post : ${e}");
-      return false;
-    }
-  }
 
   Future<bool> updatePost(Post post,UserData userAction,BuildContext context) async {
     try{

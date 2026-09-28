@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -931,50 +931,6 @@ class UserAuthProvider extends ChangeNotifier {
     return url.toString();
   }
 
-  Future<String> createChallengeLink(bool short, LookChallenge lookChallenge) async {
-    FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
-
-    final String DynamicLink = 'https://afrotok.page.link/post';
-    final String appLogo="https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/logoapp%2Fafrolook_logo.png?alt=media&token=dae50f81-4ea1-489f-86f3-e08766654980";
-
-    // Paramètres que vous souhaitez ajouter à l'URL du lien dynamique
-    final Uri link = Uri.parse(
-        'https://afrotok.page.link/post?postId=${lookChallenge.id}&postImage=${lookChallenge.post!.images!.isEmpty?appLogo:lookChallenge.post!.images!.first}&postType=${PostType.CHALLENGE.name}'
-    );
-
-    final DynamicLinkParameters parameters = DynamicLinkParameters(
-      uriPrefix: 'https://afrotok.page.link',
-      link: link,
-      androidParameters: const AndroidParameters(
-        packageName: 'com.afrotok.afrotok',
-        minimumVersion: 0,
-      ),
-      iosParameters: const IOSParameters(
-        bundleId: 'com.afrotok.afrotok',
-        minimumVersion: '0',
-      ),
-      socialMetaTagParameters: SocialMetaTagParameters(
-        title: 'Afrolook Challenge 🏆🔥🎁',  // Titre de la publication
-        description: lookChallenge.post!.description,  // Description de la publication
-        imageUrl: Uri.parse(lookChallenge.post!.images!.isEmpty?appLogo:lookChallenge.post!.images!.first),  // URL de l'image du post
-      ),
-    );
-
-    Uri url;
-    if (short) {
-      final ShortDynamicLink shortLink =
-      await dynamicLinks.buildShortLink(parameters);
-      url = shortLink.shortUrl;
-    } else {
-      url = await dynamicLinks.buildLink(parameters);
-    }
-
-    _linkMessage = url.toString();
-    _isCreatingLink = false;
-
-    printVm('Generated Dynamic Link: $_linkMessage');
-    return url.toString();
-  }
 
   Future<String> createArticleLink(bool short, ArticleData article) async {
     FirebaseDynamicLinks dynamicLinks = FirebaseDynamicLinks.instance;
