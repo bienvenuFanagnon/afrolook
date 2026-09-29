@@ -271,3 +271,28 @@ export const canalUnlockQuote = onCall({ timeoutSeconds: 15, memory: "256MiB" },
   const c = d.data()!;
   return { isBlocked: c["isBlocked"] === true, coins: canalUnlockCost(followersOf(c)), followers: followersOf(c) };
 });
+
+/** Chaque jour : rappel aux comptes créateurs qui approchent des 20 jours sans publication (à partir de 15 jours). */
+export const warnInactiveAccounts = onSchedule(
+  { schedule: "every day 03:30", timeZone: "UTC", memory: "512MiB", timeoutSeconds: 540 },
+  async () => {
+    const now = Date.now();
+    const snap = await db.collection("Users")
+      .where("lastPostAt", ">", now - CANAL_INACTIVE_DAYS * DAY_MS)
+      .where("lastPostAt", "<=", now - WARN_DAYS * DAY_MS)
+      .limit(1000).get();
+    let warned = 0;
+    for (const doc of snap.docs) {
+      const u = doc.data();
+      if (u["role"] === "ADM") continue;
+      const last = toMs(u["lastPostAt"]);
+      if (!last || toMs(u["inactivityWarnedFor"]) === last) continue; // déjà prévenu pour cette période d'inactivité
+      const daysLeft = Math.max(1, Math.ceil(CANAL_INACTIVE_DAYS - (now - last) / DAY_MS));
+      await doc.ref.update({ inactivityWarnedFor: last });
+      await notifyOwner(doc.id, "", "⚠️ Ton compte devient inactif",
+        `Tu n'as rien publié depuis ${Math.floor((now - last) / DAY_MS)} jours. Publie dans les ${daysLeft} prochains jours pour éviter le blocage de ton compte.`);
+      warned++;
+    }
+    console.log(`[warnInactiveAccounts] rappels envoyés: ${warned}`);
+  }
+);
