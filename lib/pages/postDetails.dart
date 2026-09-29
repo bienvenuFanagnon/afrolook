@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import '../services/followers_count_service.dart';
 import '../utils/count_format.dart';
@@ -3146,12 +3147,16 @@ class _DetailsPostState extends State<DetailsPost>
                 if (canal != null) ...[
                   Row(
                     children: [
-                      Text(
-                        '#${(canal.titre != null && canal.titre!.length > 17) ? '${canal.titre!.substring(0, 17)}...' : canal.titre ?? ''}',
-                        style: TextStyle(
-                          color: _colors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Flexible(
+                        child: NameTag(
+                          label: '#${canal.titre ?? ''}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       SizedBox(width: 4),

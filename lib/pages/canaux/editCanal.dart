@@ -524,7 +524,7 @@ class _EditCanalState extends State<EditCanal> {
               // Un ancien nom (majuscules, espaces) reste accepté tel quel tant qu'on ne le modifie pas
               if (normalizePseudo(value) != normalizePseudo(widget.canal.titre ?? '') &&
                   (value.length < kCanalMinLength || value.length > kCanalMaxLength)) {
-                return context.tr('Le nom doit faire entre 3 et 30 caractères');
+                return context.tr('Le nom doit faire entre 3 et 32 caractères');
               }
               return null;
             },

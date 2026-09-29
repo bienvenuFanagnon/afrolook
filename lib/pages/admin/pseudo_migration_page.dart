@@ -148,7 +148,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
             ]),
             const SizedBox(height: 8),
             Text(widget.canaux
-                ? 'Format cible : mot.mot (minuscules, points, 3 à 30 caractères). Exemple : Mode Afro → mode.afro.'
+                ? 'Format cible : mot.mot (minuscules, points, 3 à 32 caractères). Exemple : Mode Afro → mode.afro.'
                 : 'Format cible : prenom.nom (minuscules, points, 3 à 20 caractères). Exemple : Olivier_Bernard → olivier.bernard.',
                 style: TextStyle(color: c.textSecondary, fontSize: 13)),
             if (_status != null && st != 'never') ...[

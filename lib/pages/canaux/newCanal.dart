@@ -429,7 +429,7 @@ class _NewCanalState extends State<NewCanal> {
                 return _l10n.canalValidTitle;
               }
               if (value.length < kCanalMinLength || value.length > kCanalMaxLength) {
-                return context.tr('Le nom doit faire entre 3 et 30 caractères');
+                return context.tr('Le nom doit faire entre 3 et 32 caractères');
               }
               return null;
             },

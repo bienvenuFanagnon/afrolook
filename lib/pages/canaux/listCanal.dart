@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -222,8 +223,9 @@ class _CanalListPageState extends State<CanalListPage> {
                           Row(
                             children: [
                               Flexible(
-                                child: Text(
-                                  "#${(canal.titre != null && canal.titre!.length > 12) ? '${canal.titre!.substring(0, 12)}...' : canal.titre ?? ''}",
+                                // Titre affiché en entier (jusqu'à 32 caractères), badge canal Afrolook
+                                child: NameTag(
+                                  label: "#${canal.titre ?? ''}",
                                   style: TextStyle(
                                     color: _colors.textPrimary,
                                     fontWeight: FontWeight.bold,

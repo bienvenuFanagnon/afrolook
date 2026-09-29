@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 const int kPseudoMinLength = 3;
 const int kPseudoMaxLength = 20;
 
-/// Nom d'un canal : même règle de format, 3 à 30 caractères.
+/// Nom d'un canal : même règle de format, 3 à 32 caractères.
 const int kCanalMinLength = 3;
-const int kCanalMaxLength = 30;
+const int kCanalMaxLength = 32;
 
 /// Règle des pseudos : minuscules, mots séparés par un point (ex. « olivier.bernard »).
 /// Espaces, tirets et underscores deviennent des points ; accents retirés ; seuls a-z, 0-9 et « . » restent ;
