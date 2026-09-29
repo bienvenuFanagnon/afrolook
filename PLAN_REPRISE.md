@@ -115,3 +115,8 @@ Fichiers : `lib/pages/intro/tutos/tuto_catalog.dart` (12 scènes, `tutoScenesAva
 - [ ] Vérifier sur iOS : scène « contenu payant » masquée ; aucun montant en argent dans les textes.
 - [ ] Vérifier chaque `action` (pages ouvertes sans argument requis) et le rendu plein écran (feed vidéo).
 - [ ] Valider les textes/chiffres avec le propriétaire (surtout 70 %/30 % groupes, 2 pièces/commentaire, DÉFI).
+
+### Suite LOT 5 (29/09) — nettoyage prudent
+Supprimé (code mort, aucune référence) : `getChallengeUsers`, `canJoinChallengesFreely`, clé `page_challenge_mois_active`, `FeedType.challenges`.
+Volontairement GARDÉ (compatibilité anciennes données Firestore / catégorie de contenu) : `PostType.CHALLENGE(PARTICIPATION)`, filtres de `mixed_feedvideo_service`, champs `challenge_id`/`votesChallenge`/`challengeMonth` du modèle, catégorie « Challenges » des contenus payants, textes l10n.
+- [ ] Reste : décider si l'on supprime aussi ces champs après migration des anciens posts.

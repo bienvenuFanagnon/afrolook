@@ -40,9 +40,6 @@ class AbonnementUtils {
   static int getRestrictionTime(AfrolookAbonnement? abonnement) =>
       abonnement?.estPremium == true ? 0 : 60;
 
-  static bool canJoinChallengesFreely(AfrolookAbonnement? abonnement) =>
-      abonnement?.estPremium == true;
-
   static bool canShareMoreText(AfrolookAbonnement? abonnement) =>
       abonnement?.estPremium == true;
 

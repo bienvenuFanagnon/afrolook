@@ -12,7 +12,6 @@ class RemoteConfigService {
   static const Map<String, dynamic> _defaults = {
     'app_active': true,
     'page_marketing_active': true,
-    'page_challenge_mois_active': true,
     'cdn_active': true,
   };
 

@@ -9,7 +9,7 @@ import '../../pages/chronique/chroniqueform.dart';
 import '../postService/feed_scoring_service.dart';
 
 /// Types de feed disponibles dans l'application.
-enum FeedType { home, looks, sport, events, video, vibes, challenges }
+enum FeedType { home, looks, sport, events, video, vibes }
 
 /// Paramètres d'une requête de feed.
 class FeedQuery {

@@ -661,40 +661,6 @@ setMessageNonLu(int nbr){
 
     return listUsers;
   }
-  Future<List<UserData>> getChallengeUsers(
-      List<String> userIds)
-  async {
-
-
-    List<UserData> listUsers = [];
-
-    if (userIds.isEmpty) return listUsers; // Si la liste est vide, retourner une liste vide.
-
-    try {
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-
-      // Récupérer uniquement les utilisateurs correspondant aux IDs fournis
-      QuerySnapshot querySnapshotUser = await userCollect
-          .where('id', whereIn: userIds)
-          // .limit(limit)
-          .get();
-
-      // Convertir les documents en objets UserData
-      listUsers = querySnapshotUser.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      listUsers.shuffle(); // Mélanger les résultats pour un effet aléatoire
-
-      printVm('Liste des utilisateurs récupérés: ${listUsers.length}');
-
-    } catch (e) {
-      printVm('Erreur lors de la récupération des utilisateurs : $e');
-    }
-
-    return listUsers;
-  }
   Stream<List<UserData>> streamProfileUsers(
       String currentUserId,
       BuildContext context,
