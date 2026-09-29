@@ -123,3 +123,8 @@ Volontairement GARDÉ (compatibilité anciennes données Firestore / catégorie 
 
 ### 29/09 — Traductions des 12 scènes faites (7 langues, `tr_tuto.dart`). Page admin : module « Tutoriels » (`TutoListPage(showAll: true)`) liste toutes les scènes avec étiquettes (avant connexion / masquée iOS).
 - [ ] Reste : entrée « Tous les tutoriels » dans le menu utilisateur.
+
+### 29/09 — Correctif démarrage automatique (pièces absentes, @null, « Erreur technique » à l'abonnement)
+Causes trouvées : (1) le cache de démarrage ne stockait ni les pièces (`giftCoinsBalance`, `lockedCoins`…) ni les listes d'abonnements, et rien ne prévenait les écrans après le rafraîchissement ; (2) les listes par défaut `const []` de `UserData` sont non modifiables → `.add()` levait « Unsupported operation » dans `abonner()` ; (3) `getLoginUser` renvoyait `false` (donc retour au login / pas de rafraîchissement) si une étape secondaire échouait.
+Corrigé : cache complété, listes modifiables dans le constructeur, `notifyUserDataChanged()` après refresh (2 essais), `getLoginUser` tolérant, `abonner()` n'affiche plus d'erreur si seules les étapes secondaires échouent.
+- [ ] À confirmer sur téléphone ; si « @null » persiste, chercher quel écran lit `loginUserData` avant le chargement (pseudo vide dans le cache ?).

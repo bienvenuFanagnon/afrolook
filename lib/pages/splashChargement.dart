@@ -602,10 +602,20 @@ class _SplashChargementState extends State<SplashChargement> {
   void _backgroundRefresh(String userId) {
     Future.microtask(() async {
       try {
-        await authProvider.getLoginUser(userId);
-        await StartupCacheService.saveUserData(authProvider.loginUserData);
-        await StartupCacheService.saveAppData(authProvider.appDefaultData);
-        printVm("✅ [SPLASH] Background refresh terminé");
+        // Deux essais : un échec ne doit pas laisser l'utilisateur avec les données partielles du cache.
+        var ok = await authProvider.getLoginUser(userId);
+        if (!ok) {
+          await Future.delayed(const Duration(seconds: 2));
+          ok = await authProvider.getLoginUser(userId);
+        }
+        if (ok) {
+          await StartupCacheService.saveUserData(authProvider.loginUserData);
+          await StartupCacheService.saveAppData(authProvider.appDefaultData);
+          authProvider.notifyUserDataChanged(); // pièces, pseudo… s'affichent sans redémarrer
+          printVm("✅ [SPLASH] Background refresh terminé");
+        } else {
+          printVm("⚠️ [SPLASH] Background refresh : données non rechargées");
+        }
       } catch (e) {
         printVm("⚠️ [SPLASH] Background refresh échoué (ignoré): $e");
       }

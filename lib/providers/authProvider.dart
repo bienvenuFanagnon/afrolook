@@ -1187,6 +1187,9 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Prévient les écrans (pièces, profil…) que [loginUserData] a été remplacé.
+  void notifyUserDataChanged() => notifyListeners();
+
   Future<bool> getLoginUser(String id) async {
     await getAppData();
     bool haveData = false;
@@ -1203,6 +1206,7 @@ class UserAuthProvider extends ChangeNotifier {
       // 1. Chargement des données utilisateur
       final userDoc = userSnapshot.docs.first;
       loginUserData = UserData.fromJson(userDoc.data()..['id'] = userDoc.id);
+      haveData = true; // données chargées : les étapes suivantes (push, série, abonnement) ne sont pas bloquantes
 
       // 2. Mise à jour sélective des champs sans toucher aux stories
       final updateData = <String, dynamic>{
@@ -1233,7 +1237,7 @@ class UserAuthProvider extends ChangeNotifier {
     } catch (e, stack) {
       debugPrint("Erreur de connexion: $e");
       debugPrint("Stack trace: $stack");
-      haveData = false;
+      // haveData reste true si le profil a déjà été chargé avant l'erreur
     }
 
     return haveData;
@@ -2486,6 +2490,9 @@ if(actionType == 'comment'){
         return true;
       }
 
+      // La transaction est validée : l'abonnement existe. Le reste (relation, points, notification,
+      // mise à jour locale) est secondaire et ne doit jamais afficher « Erreur technique ».
+      try {
       // Créer le doc de relation dans Abonnements (hors transaction — pas critique)
       final abonneId = fs.collection('Abonnements').doc().id;
       final userAbonne = UserAbonnes()
@@ -2538,6 +2545,10 @@ if(actionType == 'comment'){
           ..createdAt = DateTime.now().microsecondsSinceEpoch
           ..status = PostStatus.VALIDE.name;
         await fs.collection('Notifications').doc(notif.id).set(notif.toJson());
+      }
+
+      } catch (e, st) {
+        printVm("⚠️ Abonnement enregistré, étapes secondaires échouées : $e\n$st");
       }
 
       ScaffoldMessenger.of(context).showSnackBar(

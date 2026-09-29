@@ -1194,6 +1194,15 @@ class UserData {
   }) {
     abonnement ??= AfrolookAbonnement.gratuit();
     liveStats ??= LiveStats.defaultForUser(id ?? '');
+    // Les valeurs par défaut « const [] » sont non modifiables : un .add() dessus levait
+    // « Unsupported operation » (ex. s'abonner juste après un démarrage depuis le cache).
+    userAbonnesIds = userAbonnesIds == null ? [] : List<String>.of(userAbonnesIds!);
+    followingIds = followingIds == null ? [] : List<String>.of(followingIds!);
+    canauxSuivisIds = canauxSuivisIds == null ? [] : List<String>.of(canauxSuivisIds!);
+    newPostsFromSubscriptions = List<String>.of(newPostsFromSubscriptions);
+    viewedPostIds = viewedPostIds == null ? [] : List<String>.of(viewedPostIds!);
+    viewedVideos = List<String>.of(viewedVideos);
+    favoritePostsIds = favoritePostsIds == null ? [] : List<String>.of(favoritePostsIds!);
   }
 
   // Helpers — parse unreadPosts depuis Firestore (valeur = int OU objet repost)

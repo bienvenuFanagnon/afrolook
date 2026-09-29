@@ -117,6 +117,16 @@ class StartupCacheService {
         'votre_solde': u.votre_solde,
         'votre_solde_principal': u.votre_solde_principal,
         'abonnes': u.abonnes,
+        'userAbonnesIds': u.userAbonnesIds,
+        'followingIds': u.followingIds,
+        'canauxSuivisIds': u.canauxSuivisIds,
+        'giftCoinsBalance': u.giftCoinsBalance,
+        'totalGiftCoinsPurchased': u.totalGiftCoinsPurchased,
+        'totalGiftCoinsSpent': u.totalGiftCoinsSpent,
+        'totalGiftCoinsConverted': u.totalGiftCoinsConverted,
+        'lockedCoins': u.lockedCoins,
+        'lockedCoinsSpentBaseline': u.lockedCoinsSpentBaseline,
+        'hasClaimedFreeCoins': u.hasClaimedFreeCoins,
         'state': u.state,
         'oneIgnalUserid': u.oneIgnalUserid,
       };
@@ -141,6 +151,17 @@ class StartupCacheService {
     user.votre_solde_principal =
         (j['votre_solde_principal'] as num?)?.toDouble() ?? 0.0;
     user.abonnes = j['abonnes'];
+    List<String> ids(String k) => List<String>.from((j[k] as List?) ?? const []);
+    user.userAbonnesIds = ids('userAbonnesIds');
+    user.followingIds = ids('followingIds');
+    user.canauxSuivisIds = ids('canauxSuivisIds');
+    user.giftCoinsBalance = (j['giftCoinsBalance'] as num?)?.toInt() ?? 0;
+    user.totalGiftCoinsPurchased = (j['totalGiftCoinsPurchased'] as num?)?.toInt();
+    user.totalGiftCoinsSpent = (j['totalGiftCoinsSpent'] as num?)?.toInt();
+    user.totalGiftCoinsConverted = (j['totalGiftCoinsConverted'] as num?)?.toInt();
+    user.lockedCoins = (j['lockedCoins'] as num?)?.toInt();
+    user.lockedCoinsSpentBaseline = (j['lockedCoinsSpentBaseline'] as num?)?.toInt();
+    user.hasClaimedFreeCoins = j['hasClaimedFreeCoins'] as bool?;
     user.state = j['state'];
     user.oneIgnalUserid = j['oneIgnalUserid'];
     return user;
