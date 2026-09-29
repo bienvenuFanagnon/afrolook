@@ -187,6 +187,8 @@ export const sendCommentLike = onCall({ timeoutSeconds: 20, memory: "256MiB" }, 
         totalCoinsFromLikes: FieldValue.increment(COMMENT_LIKE_CREATOR),
       });
     }
+    tx.update(commentRef, replyId ? { [`replyCoins.${replyId}`]: FieldValue.increment(COMMENT_LIKE_CREATOR) }
+      : { coinsEarned: FieldValue.increment(COMMENT_LIKE_CREATOR) });
     tx.set(payRef, { commentId, replyId: replyId ?? null, userId: uid, authorId, coins: COMMENT_LIKE_COST, createdAt: now });
     recordAppCommission(tx, "likes", COMMENT_LIKE_COST - COMMENT_LIKE_CREATOR, now);
     return { paid: true, coins: COMMENT_LIKE_COST, authorId };
@@ -236,6 +238,8 @@ export const sendCommentGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, 
       totalCoinsEarnedFromGifts: FieldValue.increment(receiverCoins),
       updatedAt: now,
     });
+    tx.update(commentRef, replyId ? { [`replyCoins.${replyId}`]: FieldValue.increment(receiverCoins) }
+      : { coinsEarned: FieldValue.increment(receiverCoins) });
     const giftRef = db.collection("CommentGifts").doc();
     tx.set(giftRef, {
       id: giftRef.id, commentId, replyId: replyId ?? null, postId, senderId: uid, receiverId,

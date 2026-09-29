@@ -219,4 +219,6 @@ const Map<String, Map<String, String>> kTrTuto = {
   'Tu viens de soutenir': {'en': 'You just supported', 'es': 'Acabas de apoyar a', 'de': 'Du hast gerade unterstützt', 'ar': 'لقد دعمت للتو', 'pt': 'Você acabou de apoiar', 'zh': '你刚刚支持了', 'sw': 'Umemuunga mkono'},
   'Offrir un cadeau à': {'en': 'Send a gift to', 'es': 'Regalar a', 'de': 'Geschenk senden an', 'ar': 'أهدِ هدية إلى', 'pt': 'Oferecer um presente a', 'zh': '送礼物给', 'sw': 'Mpe zawadi'},
   'Envoi impossible': {'en': 'Could not send', 'es': 'No se pudo enviar', 'de': 'Senden nicht möglich', 'ar': 'تعذر الإرسال', 'pt': 'Não foi possível enviar', 'zh': '无法发送', 'sw': 'Imeshindikana kutuma'},
+  'Envoi du cadeau en cours…': {'en': 'Sending your gift…', 'es': 'Enviando tu regalo…', 'de': 'Geschenk wird gesendet…', 'ar': 'جارٍ إرسال الهدية…', 'pt': 'Enviando seu presente…', 'zh': '正在发送礼物…', 'sw': 'Zawadi inatumwa…'},
+  'Ne ferme pas cette fenêtre': {'en': 'Don\'t close this window', 'es': 'No cierres esta ventana', 'de': 'Schließe dieses Fenster nicht', 'ar': 'لا تغلق هذه النافذة', 'pt': 'Não feche esta janela', 'zh': '请勿关闭此窗口', 'sw': 'Usifunge dirisha hili'},
 };

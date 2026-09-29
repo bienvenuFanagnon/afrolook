@@ -190,3 +190,7 @@ Serveur (`pseudoMigration.ts`) : normalisation NFKD (lettres stylisées 𝓞, pl
 - Services & Jobs (`UserServices/listUserService.dart`) : page en `CustomScrollView` — recherche, pub, filtres et grille défilent ensemble (pull-to-refresh conservé).
 - Détails d'un service/job (`detailsUserService.dart`) : couleurs → `AppColors` (clair et sombre).
 - Like d'un service : un seul like par utilisateur, une seule fois, par transaction (compteur recalculé depuis la liste `usersLikeId`) ; cœur plein si déjà aimé.
+
+### 29/09 — Commentaires : pièces reçues + chargement du cadeau
+- Le serveur cumule les pièces reçues par un commentaire (`coinsEarned`) ou une réponse (`replyCoins.<id>`) à chaque like payé et chaque cadeau ; l'app les affiche sous le texte (« 🪙 N pièces reçues »). Champs en lecture seule côté client (non réécrits par `updateComment`). **Redéployer** `sendCommentLike` et `sendCommentGift`.
+- Feuille de cadeau : voile + roue + « Envoi du cadeau en cours… » pendant l'envoi.

@@ -1065,6 +1065,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               ),
               const SizedBox(height: 3),
               _buildMentionText(pcm.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+              _buildCoinsEarned(pcm.coinsEarned),
               if (needsExpandButton)
                 GestureDetector(
                   onTap: () => setState(() => _commentExpanded[pcm.id!] = !isExpanded),
@@ -1206,6 +1207,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 ),
                 const SizedBox(height: 3),
                 _buildMentionText(rpc.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+                _buildCoinsEarned(pcm.replyCoins[rpc.id] ?? 0),
                 if (needsExpandButton)
                   GestureDetector(
                     onTap: () => setState(() => _replyExpanded[replyKey] = !isExpanded),
@@ -1261,6 +1263,25 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Pièces reçues par l'auteur d'un commentaire ou d'une réponse (likes + cadeaux), affichées sous le texte.
+  Widget _buildCoinsEarned(int coins) {
+    if (coins <= 0) return const SizedBox.shrink();
+    final gold = _colors.isDark ? const Color(0xFFF5C542) : const Color(0xFF8A5A00);
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: gold.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: gold.withOpacity(0.4)),
+        ),
+        child: Text(context.tr('🪙 {a} pièces reçues', {'a': coins}),
+            style: TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w800)),
       ),
     );
   }

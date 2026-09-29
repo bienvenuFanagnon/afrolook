@@ -4126,6 +4126,11 @@ class PostComment {
   // Commentaire auto-généré lors d'un envoi de cadeau
   bool? isAutoGiftComment;
 
+  /// Pièces reçues par l'auteur grâce aux likes et cadeaux sur ce commentaire (écrit par le serveur, jamais renvoyé par toJson).
+  int coinsEarned = 0;
+  /// Idem pour chaque réponse : replyId → pièces.
+  Map<String, int> replyCoins = {};
+
   PostComment({
     this.id,
     this.comments,
@@ -4162,6 +4167,10 @@ class PostComment {
     canal_name = json['canal_name'];
     canal_image = json['canal_image'];
     isAutoGiftComment = json['isAutoGiftComment'] == true;
+    coinsEarned = (json['coinsEarned'] as num?)?.toInt() ?? 0;
+    replyCoins = {
+      for (final e in ((json['replyCoins'] as Map?) ?? const {}).entries) '${e.key}': (e.value as num?)?.toInt() ?? 0,
+    };
     if (json['responseComments'] != null) {
       responseComments = <ResponsePostComment>[];
       json['responseComments'].forEach((v) {

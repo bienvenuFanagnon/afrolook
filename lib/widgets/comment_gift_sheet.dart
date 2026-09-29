@@ -87,7 +87,7 @@ class _CommentGiftSheetState extends State<_CommentGiftSheet> {
     final c = AppColors.of(context);
     final coinProvider = Provider.of<CoinGiftUserProvider>(context);
     final gold = c.isDark ? const Color(0xFFF5C542) : const Color(0xFFD99A00);
-    return Container(
+    final sheet = Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * .7),
       padding: EdgeInsets.fromLTRB(16, 14, 16, 16 + MediaQuery.of(context).viewPadding.bottom),
       decoration: BoxDecoration(color: c.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(22))),
@@ -125,8 +125,29 @@ class _CommentGiftSheetState extends State<_CommentGiftSheet> {
             },
           ),
         ),
-        if (_sending) const Padding(padding: EdgeInsets.only(top: 10), child: LinearProgressIndicator()),
       ]),
     );
+
+    // Pendant l'envoi : voile + roue + message, la grille n'est plus touchable
+    return Stack(children: [
+      sheet,
+      if (_sending)
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: c.surface.withOpacity(.92),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+            ),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              SizedBox(width: 46, height: 46, child: CircularProgressIndicator(strokeWidth: 4, color: gold)),
+              const SizedBox(height: 16),
+              Text(context.tr('Envoi du cadeau en cours…'),
+                  style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(context.tr('Ne ferme pas cette fenêtre'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            ]),
+          ),
+        ),
+    ]);
   }
 }
