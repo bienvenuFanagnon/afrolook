@@ -46,7 +46,7 @@ class PostComments extends StatefulWidget {
     super.key,
     required this.post,
     this.isInModal = false,
-    this.focusKeyboard = false,
+    this.focusKeyboard = true,
     this.initialComments = const [],
     this.initialText,
   });
