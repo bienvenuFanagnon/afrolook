@@ -1,3 +1,4 @@
+import '../../widgets/safe_network_avatar.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -864,6 +865,7 @@ class _CanalDetailsState extends State<CanalDetails> {
             // Image de couverture
             GestureDetector(
               onTap: () {
+                if (widget.canal.urlCouverture?.isNotEmpty != true) return;
                 showImageDetailsModalDialog(widget.canal.urlCouverture!,
                     MediaQuery.of(context).size.width,
                     MediaQuery.of(context).size.height,
@@ -873,16 +875,13 @@ class _CanalDetailsState extends State<CanalDetails> {
               child: Container(
                 height: AppLayout.isWide(context) ? 260 : 200,
                 width: double.infinity,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   borderRadius: AppLayout.isWide(context) ? const BorderRadius.vertical(bottom: Radius.circular(16)) : null,
-                  image: DecorationImage(
-                    image: (widget.canal.urlCouverture?.isNotEmpty == true)
-                        ? NetworkImage(widget.canal.urlCouverture!)
-                        : AssetImage('assets/default_cover.png') as ImageProvider,
-                    fit: BoxFit.cover,
-                  ),
                 ),
-                child: Container(
+                child: Stack(fit: StackFit.expand, children: [
+                  SafeNetworkCover(url: widget.canal.urlCouverture),
+                  Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
@@ -894,6 +893,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                     ),
                   ),
                 ),
+                ]),
               ),
             ),
 
@@ -903,6 +903,7 @@ class _CanalDetailsState extends State<CanalDetails> {
               left: 16,
               child: GestureDetector(
                 onTap: () {
+                  if (widget.canal.urlImage?.isNotEmpty != true) return;
                   showImageDetailsModalDialog(widget.canal.urlImage!,
                       MediaQuery.of(context).size.width,
                       MediaQuery.of(context).size.height,
@@ -917,11 +918,12 @@ class _CanalDetailsState extends State<CanalDetails> {
                         color: _colors.surface,
                         shape: BoxShape.circle,
                       ),
-                      child: CircleAvatar(
+                      child: SafeNetworkAvatar(
+                        url: widget.canal.urlImage,
                         radius: 45,
-                        backgroundImage: (widget.canal.urlImage?.isNotEmpty == true)
-                            ? NetworkImage(widget.canal.urlImage!)
-                            : AssetImage('assets/default_profile.png') as ImageProvider,
+                        fallbackIcon: Icons.tv_rounded,
+                        backgroundColor: _colors.surfaceVariant,
+                        iconColor: _colors.textSecondary,
                       ),
                     ),
                     if (isPrivate)
@@ -1438,15 +1440,11 @@ class _CanalDetailsState extends State<CanalDetails> {
                                   context,
                                 ),
                         child: Row(children: [
-                          CircleAvatar(
+                          SafeNetworkAvatar(
+                            url: widget.canal.user?.imageUrl,
                             radius: 13,
                             backgroundColor: _colors.surfaceVariant,
-                            backgroundImage: widget.canal.user?.imageUrl?.isNotEmpty == true
-                                ? NetworkImage(widget.canal.user!.imageUrl!)
-                                : null,
-                            child: widget.canal.user?.imageUrl?.isNotEmpty == true
-                                ? null
-                                : const Icon(Icons.person, size: 14, color: Colors.orange),
+                            iconColor: Colors.orange,
                           ),
                           const SizedBox(width: 6),
                           Flexible(

@@ -136,3 +136,6 @@ Corrigé : cache complété, listes modifiables dans le constructeur, `notifyUse
 ### 29/09 — Pièces du post (vidéos)
 - Portrait (`post_video_format_tel_details.dart`) : la pastille était figée car les mises à jour temps réel ne touchaient que `_videoPosts`, alors que la page lit `_feedItems` → corrigé ; le tap était bloqué par la zone des commentaires en direct (`IgnorePointer` ajouté).
 - Paysage (`postDetailsVideo.dart`) : `_postSubscription` n'était jamais branchée → abonnement temps réel ajouté ; le bandeau ouvre déjà le détail au tap.
+
+### 29/09 — Images de canal (403)
+`lib/widgets/safe_network_avatar.dart` (`SafeNetworkAvatar`, `SafeNetworkCover`) : repli sans exception si le lien est vide/périmé. Appliqué à `canaux/detailsCanal.dart` (couverture, avatar, propriétaire). [ ] Étendre aux autres avatars de canaux (`listCanal`, `listCanauxByUser`, fil vidéo, commentaires) et aux profils.
