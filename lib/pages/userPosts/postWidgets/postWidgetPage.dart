@@ -3280,7 +3280,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               child: PostComments(
                 post: post,
                 isInModal: true,
-                focusKeyboard: true,
+                focusKeyboard: false,
                 initialComments: _preloadedComments,
                 initialText: initialText,
               ),

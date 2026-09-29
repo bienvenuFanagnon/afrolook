@@ -1288,7 +1288,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               child: PostComments(
                 post: widget.post,
                 isInModal: true,
-                focusKeyboard: true,
+                focusKeyboard: false,
                 initialComments: _preloadedComments,
                 initialText: initialText,
               ),
