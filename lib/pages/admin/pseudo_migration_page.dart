@@ -29,7 +29,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
   String? _error;
 
   // Résultat de la dernière simulation
-  int _scanned = 0, _changed = 0, _skipped = 0;
+  int _scanned = 0, _changed = 0, _skipped = 0, _emoji = 0, _replaced = 0;
   final List<Map<String, dynamic>> _sample = [];
   final List<Map<String, dynamic>> _skippedList = [];
   bool _simulated = false;
@@ -64,7 +64,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
       _error = null;
       _progress = dryRun ? 'Simulation en cours…' : 'Migration en cours…';
       if (dryRun) {
-        _scanned = _changed = _skipped = 0;
+        _scanned = _changed = _skipped = _emoji = _replaced = 0;
         _sample.clear();
         _skippedList.clear();
         _simulated = false;
@@ -79,6 +79,8 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
         _scanned += (r['scanned'] as num?)?.toInt() ?? 0;
         _changed += (r['changed'] as num?)?.toInt() ?? 0;
         _skipped += (r['skipped'] as num?)?.toInt() ?? 0;
+        _emoji += (r['withEmoji'] as num?)?.toInt() ?? 0;
+        _replaced += (r['replaced'] as num?)?.toInt() ?? 0;
         if (dryRun) {
           for (final c in (r['changes'] as List? ?? [])) {
             if (_sample.length < 40) _sample.add(Map<String, dynamic>.from(c as Map));
@@ -184,7 +186,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
             _card(c, [
               Text('Résultat de la simulation', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
-              Text('$_scanned parcourus · $_changed à modifier (dont ceux à remplacer : emojis ou symboles seuls) · $_skipped ignorés',
+              Text('$_scanned parcourus · $_changed à modifier · $_skipped ignorés\nAvec emoji : $_emoji (retirés) · nom entièrement remplacé : $_replaced',
                   style: TextStyle(color: c.textSecondary, fontSize: 13)),
               const SizedBox(height: 10),
               for (final s in _sample)

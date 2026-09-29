@@ -181,3 +181,6 @@ Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages 
 - Emojis et tout caractère hors a-z 0-9 . déjà bloqués à la saisie (formatter) et à la collée ; ajout de `NamePreview` (aperçu du rendu final capsule/badge + compteur x/20 ou x/30) sous les champs : inscription (2 formulaires), modification du pseudo (profil), création et modification de canal.
 - Migration : un pseudo/nom composé seulement d'emojis ou symboles reçoit un nom de remplacement (prénom.nom, sinon début d'e-mail, sinon `afro1234` / `canal1234`), signalé « remplacé » dans la simulation.
 - Non appliqué : pseudos des profils Afrolove (dating), qui ont leur propre formulaire.
+
+### 29/09 — Migration : traitement des emojis
+Serveur (`pseudoMigration.ts`) : normalisation NFKD (lettres stylisées 𝓞, pleine largeur Ｏ et accents → lettres simples), puis suppression de tout ce qui n'est pas a-z 0-9 . ; nom vide/trop court après nettoyage (emojis seuls, alphabets non latins) → nom de remplacement (`prenom.nom` / e-mail / `afro1234`, `canal1234`). La simulation compte « avec emoji » et « entièrement remplacés ». Côté app (saisie), le nettoyage des lettres stylisées reste plus simple (supprimées) : écart mineur.

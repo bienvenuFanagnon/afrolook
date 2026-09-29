@@ -21,9 +21,14 @@ import { db } from "../shared/firebase";
 const FROM = "àáâãäåçèéêëìíîïñòóôõöùúûüýÿœæ";
 const TO = ["a", "a", "a", "a", "a", "a", "c", "e", "e", "e", "e", "i", "i", "i", "i", "n", "o", "o", "o", "o", "o", "u", "u", "u", "u", "y", "y", "oe", "ae"];
 
+/** Le nom contient-il un emoji / pictogramme ? (pour le rapport de simulation) */
+const EMOJI_RE = /\p{Extended_Pictographic}|[\u{1F1E6}-\u{1F1FF}]|\u20E3/u;
+
 export function normalizePseudo(input: string): string {
   let s = "";
-  for (const ch of input.trim().toLowerCase()) {
+  // NFKD : « 𝓞𝓵𝓲𝓿𝓲𝓮𝓻 », « Ｏｌｉｖｉｅｒ » et les lettres accentuées deviennent des lettres simples avant nettoyage
+  const flat = input.trim().normalize("NFKD").replace(/\p{M}/gu, "");
+  for (const ch of flat.toLowerCase()) {
     const i = FROM.indexOf(ch);
     s += i >= 0 ? TO[i] : ch;
   }
@@ -99,7 +104,7 @@ function buildMigration(cfg: MigrationConfig) {
     if (cursor) q = q.startAfter(cursor);
     const page = await q.get();
 
-    type Change = { id: string; from: string; to: string; suffix: boolean; replaced?: boolean; postsLeft?: number };
+    type Change = { id: string; from: string; to: string; suffix: boolean; replaced?: boolean; emoji?: boolean; postsLeft?: number };
     const changes: Change[] = [];
     const skipped: Array<{ id: string; pseudo: string; reason: string }> = [];
 
@@ -116,7 +121,7 @@ function buildMigration(cfg: MigrationConfig) {
       let n = 2;
       while (taken.has(target)) target = `${base}${n++}`;
       taken.add(target);
-      const change: Change = { id: doc.id, from: old, to: target, suffix: target !== base, ...(replaced ? { replaced: true } : {}) };
+      const change: Change = { id: doc.id, from: old, to: target, suffix: target !== base, ...(replaced ? { replaced: true } : {}), ...(EMOJI_RE.test(old) ? { emoji: true } : {}) };
 
       if (!dryRun) {
         const batch = db.batch();
@@ -153,6 +158,7 @@ function buildMigration(cfg: MigrationConfig) {
         suffixed: FieldValue.increment(changes.filter((c) => c.suffix).length),
         skipped: FieldValue.increment(skipped.length),
         replaced: FieldValue.increment(changes.filter((c) => c.replaced).length),
+        withEmoji: FieldValue.increment(changes.filter((c) => c.emoji).length),
         lastCursor: finished ? null : last,
       }, { merge: true });
     }
@@ -162,6 +168,7 @@ function buildMigration(cfg: MigrationConfig) {
       changed: changes.length,
       skipped: skipped.length,
       replaced: changes.filter((c) => c.replaced).length,
+      withEmoji: changes.filter((c) => c.emoji).length,
       done: finished,
       nextCursor: finished ? null : last,
       changes: changes.slice(0, 200),
