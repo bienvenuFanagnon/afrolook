@@ -199,3 +199,8 @@ Serveur (`pseudoMigration.ts`) : normalisation NFKD (lettres stylisées 𝓞, pl
 - Serveur `functions/src/posts/canalInactivity.ts` : `onCanalPostCreated` (met `lastPostAt`, supprime toute publication sur un canal bloqué), `checkInactiveCanals` (quotidien 03:00 UTC : rappel à 15 j, blocage à 20 j, notification au propriétaire ; canaux existants : dernière publication retrouvée une seule fois, 200 max/jour), `unlockCanal` (propriétaire, paie 500 / 1 500 / 2 000 / 3 000 pièces selon <100 / <2 000 / <3 000 / ≥3 000 abonnés), `canalUnlockQuote`. **À déployer.**
 - App : bandeau « Canal bloqué » + bouton « Débloquer · N pièces » (`detailsCanal.dart`), bouton Publier masqué et `UserPostForm` refusé si bloqué. Règles & Confidentialité mises à jour.
 - [ ] Non fait : masquer les posts/canaux bloqués des feeds et suggestions ; tester le premier passage sur les canaux existants (surveiller le nombre de blocages).
+
+## Inactivité des comptes (20 jours)
+- Serveur : `accountPublishStatus`, `unlockAccount`, `onPostCreatedInactivity`, `onCanalCreatedCheckAccount`, `onGroupCreatedCheckAccount`, `onLiveCreatedCheckAccount` (canalInactivity.ts).
+- Client : `lib/services/account_gate.dart` branché sur post, canal, groupe, live.
+- Exemptés : admins et comptes n'ayant jamais publié. À déployer par l'utilisateur.

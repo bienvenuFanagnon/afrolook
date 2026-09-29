@@ -32,6 +32,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
     'defi': ('DÉFI (votes, participations)', Icons.emoji_events_rounded),
     'groupes': ('Abonnements groupes', Icons.groups_rounded),
     'canaux': ('Abonnements canaux', Icons.campaign_rounded),
+    'deblocages': ('Déblocages (comptes et canaux)', Icons.lock_open_rounded),
     'lives_prives': ('Lives privés', Icons.lock_rounded),
     'participation_live': ('Participation aux lives', Icons.mic_rounded),
     'premium': ('Premium', Icons.workspace_premium_rounded),

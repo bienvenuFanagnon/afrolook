@@ -178,6 +178,8 @@ class ReglesConfidentialitePage extends StatelessWidget {
                   'À partir de 15 jours sans publication, le propriétaire reçoit un rappel pour publier avant que le canal ne soit bloqué.'),
               _rule('Déblocage en pièces',
                   'Le propriétaire débloque son canal depuis la page du canal, en pièces, selon le nombre d\'abonnés : moins de 100 abonnés → 500 pièces ; moins de 2 000 → 1 500 pièces ; moins de 3 000 → 2 000 pièces ; à partir de 3 000 → 3 000 pièces. Le prix est calculé par Afrolook au moment du déblocage. Après le déblocage, le compteur de 20 jours repart de zéro.'),
+              _rule('Même règle pour les comptes',
+                  'Un compte qui n\'a rien publié depuis 20 jours est bloqué : il ne peut plus publier (avec son profil ou via un canal), ni créer de canal, de groupe ou de live, tant qu\'il n\'est pas débloqué. Le déblocage se fait en pièces, avec le même barème selon le nombre d\'abonnés (500 / 1 500 / 2 000 / 3 000 pièces). Les comptes qui n\'ont jamais publié et les administrateurs ne sont pas concernés.'),
               _rule('Canaux sans membres',
                   'Les canaux sans aucun abonné n\'apparaissent pas dans les suggestions de découverte, même s\'ils ont publié du contenu récemment.'),
             ],

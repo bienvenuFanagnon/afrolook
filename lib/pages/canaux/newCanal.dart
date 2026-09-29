@@ -1,3 +1,4 @@
+import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import '../../utils/platform_guard.dart';
@@ -34,6 +35,15 @@ class NewCanal extends StatefulWidget {
 }
 
 class _NewCanalState extends State<NewCanal> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de continuer
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
+    });
+  }
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titreController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();

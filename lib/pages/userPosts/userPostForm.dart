@@ -1,3 +1,4 @@
+import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -29,6 +30,15 @@ class UserPostForm extends StatefulWidget {
 }
 
 class _UserPostFormState extends State<UserPostForm> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de continuer
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
+    });
+  }
   late UserAuthProvider authProvider =
       Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =

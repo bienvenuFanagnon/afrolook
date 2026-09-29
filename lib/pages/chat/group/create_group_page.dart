@@ -1,3 +1,4 @@
+import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:math';
 
@@ -41,6 +42,10 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   @override
   void initState() {
     super.initState();
+    // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de continuer
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
+    });
     _auth = Provider.of<UserAuthProvider>(context, listen: false);
     _loadFriends();
   }

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/account_gate.dart';
 ﻿import '../../utils/platform_guard.dart';
 import 'dart:async';
 import 'dart:io';
@@ -61,6 +62,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
   @override
   void initState() {
     super.initState();
+    // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de continuer
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
+    });
     _loadLiveRestrictions();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkActiveLive());
   }

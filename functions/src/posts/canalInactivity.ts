@@ -50,20 +50,117 @@ async function notifyOwner(ownerId: string, canalId: string, titre: string, desc
   });
 }
 
-/** Chaque publication d'un canal remet le compteur d'inactivité à zéro (et refuse une publication sur un canal bloqué). */
-export const onCanalPostCreated = onDocumentCreated("Posts/{postId}", async (event) => {
-  const post = event.data?.data();
-  const canalId = post?.["canal_id"] as string | undefined;
-  if (!post || !canalId) return;
-  const canalRef = db.collection("Canaux").doc(canalId);
-  const canal = await canalRef.get();
-  if (!canal.exists) return;
-  if (canal.get("isBlocked") === true) {
-    // Canal bloqué : la publication est refusée côté serveur (l'app le masque déjà)
-    await event.data!.ref.delete();
-    return;
+// ── Comptes : même règle que les canaux ───────────────────────────────────────────────────────
+//
+// Un compte qui a déjà publié puis reste 20 jours sans rien publier ne peut plus publier (profil ou canal),
+// ni créer de canal, de groupe ou de live, tant qu'il n'est pas débloqué en pièces. L'état se déduit de
+// Users.lastPostAt (aucun drapeau à maintenir) ; un déblocage remet lastPostAt à « maintenant ».
+// Les comptes qui n'ont jamais publié et les administrateurs ne sont pas concernés.
+
+export interface AccountStatus { blocked: boolean; daysInactive: number; followers: number; cost: number }
+
+/** Dernière publication d'un compte : champ lastPostAt, sinon retrouvée une seule fois dans ses posts. */
+async function lastPostOf(userId: string, userData: FirebaseFirestore.DocumentData, excludePostId?: string): Promise<number> {
+  const known = toMs(userData["lastPostAt"]);
+  if (known) return known;
+  const posts = await db.collection("Posts").where("user_id", "==", userId).limit(500).get();
+  let last = 0;
+  for (const p of posts.docs) {
+    if (p.id === excludePostId) continue;
+    if (p.get("isAdvertisement") === true) continue;
+    last = Math.max(last, toMs(p.get("created_at")), toMs(p.get("createdAt")));
   }
-  await canalRef.update({ lastPostAt: Date.now(), inactivityWarnedAt: FieldValue.delete() });
+  if (last) await db.collection("Users").doc(userId).update({ lastPostAt: last });
+  return last;
+}
+
+export async function accountStatus(userId: string, excludePostId?: string): Promise<AccountStatus> {
+  const doc = await db.collection("Users").doc(userId).get();
+  const u = doc.data();
+  if (!u || u["role"] === "ADM") return { blocked: false, daysInactive: 0, followers: 0, cost: 0 };
+  const followers = Math.max(Array.isArray(u["userAbonnesIds"]) ? (u["userAbonnesIds"] as unknown[]).length : 0, num(u["abonnes"]));
+  const last = await lastPostOf(userId, u, excludePostId);
+  if (!last) return { blocked: false, daysInactive: 0, followers, cost: canalUnlockCost(followers) }; // n'a jamais publié
+  const days = (Date.now() - last) / DAY_MS;
+  return { blocked: days >= CANAL_INACTIVE_DAYS, daysInactive: Math.floor(days), followers, cost: canalUnlockCost(followers) };
+}
+
+/** Statut du compte connecté (affichage du blocage et du prix de déblocage). */
+export const accountPublishStatus = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  return accountStatus(uid);
+});
+
+/** Déblocage du compte connecté, payé en pièces (même barème que les canaux, selon ses abonnés). */
+export const unlockAccount = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const st = await accountStatus(uid);
+  if (!st.blocked) return { unlocked: false, reason: "not_blocked", coins: 0 };
+  const userRef = db.collection("Users").doc(uid);
+  return db.runTransaction(async (tx) => {
+    const d = await tx.get(userRef);
+    const balance = num(d.data()?.["giftCoinsBalance"]);
+    if (balance < st.cost) throw new HttpsError("resource-exhausted", "Solde insuffisant", { balance, coins: st.cost });
+    const now = Date.now();
+    tx.update(userRef, {
+      giftCoinsBalance: FieldValue.increment(-st.cost),
+      totalGiftCoinsSpent: FieldValue.increment(st.cost),
+      lastPostAt: now, accountUnlockedAt: now, updatedAt: now,
+    });
+    const t = db.collection("TransactionSoldes").doc();
+    tx.set(t, {
+      id: t.id, user_id: uid, type: "DEPENSE", statut: "VALIDER",
+      description: `Déblocage du compte — ${st.cost} pièces`,
+      montant: st.cost, frais: 0, montant_total: st.cost, methode_paiement: "pieces",
+      createdAt: now, updatedAt: now, purchaseKind: "account_unlock",
+    });
+    recordAppCommission(tx, "deblocages", st.cost, now);
+    return { unlocked: true, coins: st.cost };
+  });
+});
+
+/**
+ * Chaque publication : refusée (supprimée) si le compte est bloqué ou si le canal est bloqué ;
+ * sinon remet à zéro le compteur d'inactivité du compte et du canal.
+ */
+export const onPostCreatedInactivity = onDocumentCreated("Posts/{postId}", async (event) => {
+  const post = event.data?.data();
+  if (!post) return;
+  const userId = post["user_id"] as string | undefined;
+  const canalId = post["canal_id"] as string | undefined;
+  const isAd = post["isAdvertisement"] === true;
+
+  if (userId && !isAd) {
+    const st = await accountStatus(userId, event.params.postId);
+    if (st.blocked) { await event.data!.ref.delete(); return; }
+  }
+  if (canalId) {
+    const canalRef = db.collection("Canaux").doc(canalId);
+    const canal = await canalRef.get();
+    if (canal.exists) {
+      if (canal.get("isBlocked") === true) { await event.data!.ref.delete(); return; }
+      await canalRef.update({ lastPostAt: Date.now(), inactivityWarnedAt: FieldValue.delete() });
+    }
+  }
+  if (userId && !isAd) await db.collection("Users").doc(userId).update({ lastPostAt: Date.now() });
+});
+
+/** Création d'un canal, d'un groupe ou d'un live par un compte bloqué : refusée côté serveur. */
+async function refuseIfBlocked(ownerId: string | undefined, ref: FirebaseFirestore.DocumentReference) {
+  if (!ownerId) return;
+  const st = await accountStatus(ownerId);
+  if (st.blocked) await ref.delete();
+}
+export const onCanalCreatedCheckAccount = onDocumentCreated("Canaux/{id}", async (event) => {
+  await refuseIfBlocked(event.data?.get("userId") as string | undefined, event.data!.ref);
+});
+export const onGroupCreatedCheckAccount = onDocumentCreated("GroupChats/{id}", async (event) => {
+  await refuseIfBlocked(event.data?.get("owner_id") as string | undefined, event.data!.ref);
+});
+export const onLiveCreatedCheckAccount = onDocumentCreated("lives/{id}", async (event) => {
+  await refuseIfBlocked(event.data?.get("hostId") as string | undefined, event.data!.ref);
 });
 
 /** Chaque jour : rappel à 15 jours, blocage à 20 jours d'inactivité. */
@@ -159,7 +256,7 @@ export const unlockCanal = onCall({ timeoutSeconds: 30, memory: "256MiB" }, asyn
       montant: cost, frais: 0, montant_total: cost, methode_paiement: "pieces",
       createdAt: now, updatedAt: now, purchaseKind: "canal_unlock", purchaseRefId: canalId,
     });
-    recordAppCommission(tx, "canaux", cost, now);
+    recordAppCommission(tx, "deblocages", cost, now);
     return { unlocked: true, coins: cost };
   });
 });
