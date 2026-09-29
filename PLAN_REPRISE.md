@@ -148,3 +148,7 @@ Validé par le propriétaire (maquette artifact). Chaque tutoriel = téléphone 
 - Traductions des nouveaux textes ajoutées (7 langues).
 - [ ] À tester sur téléphone : rendu de la maquette (hauteur 470 px dans le feed vidéo plein écran, échelle 0.8), timings, boutons d'action.
 - [ ] Les chiffres d'exemple (3 200 likes, 50 abonnés à 300 pièces, 40 entrées à 250 pièces…) sont indicatifs : à valider.
+
+### 29/09 — Tutoriels en mode clair ET sombre
+Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages `TutoScenePage`/`TutoBeforeLoginPage` et carte « Le savais-tu ? » du feed utilisent `AppColors.of(context)` (fonds, textes, bordures) ; l'or vif en sombre devient un ambre plus foncé en clair (`_goldOn`) pour rester lisible. Non modifié volontairement : la page plein écran « Tutoriel de monétisation » d'origine reste cinématique (fond noir dans les deux modes).
+- [ ] À vérifier visuellement en mode clair (contrastes de la maquette, doigt, bulle dorée).

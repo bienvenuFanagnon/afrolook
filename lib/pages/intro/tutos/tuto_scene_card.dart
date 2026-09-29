@@ -3,9 +3,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../l10n/tr.dart';
+import '../../../theme/app_colors.dart';
 import 'tuto_catalog.dart';
 
 const _gold = Color(0xFFF5C542);
+
+/// Or lisible dans les deux thèmes : l'or vif sur fond sombre, un ambre plus foncé sur fond clair.
+Color _goldOn(AppColors c) => c.isDark ? _gold : const Color(0xFF8A5A00);
+
+/// Fond des cartes « gain » (or très léger).
+Color _goldBg(AppColors c) => c.isDark ? const Color(0xFF2A2410) : const Color(0xFFFFF4D6);
 
 /// Un choix de rotation : [scene] null = « Tutoriel de monétisation » d'origine (animation du like).
 class TutoPick {
@@ -115,7 +122,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
 
   double _seg(double t, double a, double b) => ((t - a) / (b - a)).clamp(0.0, 1.0);
 
-  Widget _el(BuildContext ctx, MockEl e) {
+  Widget _el(BuildContext ctx, AppColors c, MockEl e) {
     switch (e.kind) {
       case MockKind.cover:
         return Container(
@@ -138,28 +145,28 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
             const SizedBox(width: 10),
             Expanded(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(ctx.tr(e.a), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
-                Text(ctx.tr(e.b), style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                Text(ctx.tr(e.a), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+                Text(ctx.tr(e.b), style: TextStyle(color: c.textSecondary, fontSize: 11)),
               ]),
             ),
           ]),
         );
       case MockKind.line:
-        return Container(height: 8, decoration: BoxDecoration(color: const Color(0xFF23302A), borderRadius: BorderRadius.circular(4)));
+        return Container(height: 8, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(4)));
       case MockKind.tile:
         return Container(
           height: e.height,
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(color: const Color(0xFF17211C), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(10)),
           child: Row(children: [
             Expanded(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(ctx.tr(e.a),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11.5)),
+                    style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 11.5)),
                 if (e.b.isNotEmpty)
-                  Text(ctx.tr(e.b), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                  Text(ctx.tr(e.b), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 10)),
               ]),
             ),
             if (e.trailing == 'on' || e.trailing == 'off')
@@ -168,11 +175,11 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                 height: 17,
                 padding: const EdgeInsets.all(2),
                 alignment: e.trailing == 'on' ? Alignment.centerRight : Alignment.centerLeft,
-                decoration: BoxDecoration(color: e.trailing == 'on' ? _green : const Color(0xFF33443B), borderRadius: BorderRadius.circular(9)),
+                decoration: BoxDecoration(color: e.trailing == 'on' ? _green : c.border, borderRadius: BorderRadius.circular(9)),
                 child: Container(width: 13, height: 13, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
               )
             else if (e.trailing.isNotEmpty)
-              Text(e.trailing, style: const TextStyle(color: _gold, fontWeight: FontWeight.w800, fontSize: 11.5)),
+              Text(e.trailing, style: TextStyle(color: _goldOn(c), fontWeight: FontWeight.w800, fontSize: 11.5)),
           ]),
         );
       case MockKind.button:
@@ -193,8 +200,8 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                 margin: const EdgeInsets.only(right: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: const Color(0xFF1D2A23), borderRadius: BorderRadius.circular(12)),
-                child: Text(ctx.tr(it), style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(12)),
+                child: Text(ctx.tr(it), style: TextStyle(color: c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w700)),
               ),
           ]),
         );
@@ -203,10 +210,10 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
           height: e.height,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           alignment: Alignment.centerLeft,
-          decoration: BoxDecoration(color: const Color(0xFF2A2410), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: _goldBg(c), borderRadius: BorderRadius.circular(10)),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(ctx.tr(e.a), style: const TextStyle(color: Colors.white54, fontSize: 10.5)),
-            Text(e.b, style: const TextStyle(color: _gold, fontWeight: FontWeight.w900, fontSize: 20)),
+            Text(ctx.tr(e.a), style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
+            Text(e.b, style: TextStyle(color: _goldOn(c), fontWeight: FontWeight.w900, fontSize: 20)),
           ]),
         );
     }
@@ -215,6 +222,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final sc = widget.scene;
+    final c = AppColors.of(context);
     // Position verticale de l'élément mis en lumière (barre 44 + marge 10, éléments espacés de 8)
     var y = 54.0;
     for (var i = 0; i < sc.target; i++) {
@@ -237,7 +245,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
         child: ClipRRect(
           borderRadius: BorderRadius.circular(26),
           child: Container(
-            color: const Color(0xFF101512),
+            color: c.background,
             child: AnimatedBuilder(
               animation: _c,
               builder: (ctx, _) {
@@ -257,16 +265,16 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                     Container(
                       height: 44,
                       padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
-                      color: const Color(0xFF16201B),
+                      color: c.surface,
                       alignment: Alignment.centerLeft,
                       child: Text(ctx.tr(sc.screenTitle),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
+                          style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(10),
                       child: Column(children: [
                         for (var i = 0; i < sc.els.length; i++) ...[
-                          _el(ctx, sc.els[i]),
+                          _el(ctx, c, sc.els[i]),
                           const SizedBox(height: 8),
                         ],
                       ]),
@@ -281,7 +289,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                     right: 10,
                     height: th,
                     child: Stack(clipBehavior: Clip.none, children: [
-                      Positioned.fill(child: _el(ctx, target)),
+                      Positioned.fill(child: _el(ctx, c, target)),
                       Positioned(
                         left: -5,
                         right: -5,
@@ -312,7 +320,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                              color: Colors.white38, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                              color: (c.isDark ? Colors.white : Colors.black).withOpacity(.25), shape: BoxShape.circle, border: Border.all(color: c.isDark ? Colors.white : Colors.black87, width: 2)),
                         ),
                       ),
                     ),
@@ -363,9 +371,9 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2A2410),
+                            color: _goldBg(c),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: _gold, width: 1.5),
+                            border: Border.all(color: _goldOn(c), width: 1.5),
                           ),
                           child: Row(children: [
                             Text(sc.gainEmoji, style: const TextStyle(fontSize: 22)),
@@ -373,8 +381,8 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                                 Text(ctx.tr(sc.gainTitle),
-                                    style: const TextStyle(color: _gold, fontWeight: FontWeight.w900, fontSize: 15)),
-                                Text(ctx.tr(sc.gainSub), style: const TextStyle(color: Color(0xFFD9C88A), fontSize: 10.5)),
+                                    style: TextStyle(color: _goldOn(c), fontWeight: FontWeight.w900, fontSize: 15)),
+                                Text(ctx.tr(sc.gainSub), style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
                               ]),
                             ),
                           ]),
@@ -415,6 +423,8 @@ class TutoSceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final gold = _goldOn(c);
     final scale = fullScreen ? 0.8 : 1.0;
     final content = Column(
       mainAxisSize: MainAxisSize.min,
@@ -423,25 +433,25 @@ class TutoSceneCard extends StatelessWidget {
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: _gold.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: gold.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
             child: Text(context.tr('Le savais-tu ?'),
-                style: const TextStyle(color: _gold, fontSize: 12, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w800)),
           ),
           const Spacer(),
           if (onClose != null)
             IconButton(
               visualDensity: VisualDensity.compact,
               onPressed: onClose,
-              icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+              icon: Icon(Icons.close_rounded, color: c.textSecondary, size: 20),
             ),
         ]),
         const SizedBox(height: 8),
         Text('${scene.emoji} ${context.tr(scene.title)}',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: fullScreen ? 22 : 20, fontWeight: FontWeight.w800, height: 1.2)),
+            style: TextStyle(color: c.textPrimary, fontSize: fullScreen ? 22 : 20, fontWeight: FontWeight.w800, height: 1.2)),
         const SizedBox(height: 4),
         Text(context.tr(scene.hook),
-            textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4)),
+            textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)),
         const SizedBox(height: 12),
         Center(
           child: SizedBox(
@@ -454,17 +464,17 @@ class TutoSceneCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF2A2410),
+            color: _goldBg(c),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _gold.withOpacity(0.5)),
+            border: Border.all(color: gold.withOpacity(0.5)),
           ),
           child: Column(children: [
             Text(context.tr(scene.earn),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: _gold, fontSize: 13.5, fontWeight: FontWeight.w800, height: 1.3)),
+                style: TextStyle(color: gold, fontSize: 13.5, fontWeight: FontWeight.w800, height: 1.3)),
             const SizedBox(height: 2),
             Text(context.tr('Exemple de gains, à titre indicatif'),
-                textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 11)),
           ]),
         ),
         const SizedBox(height: 12),
@@ -483,12 +493,12 @@ class TutoSceneCard extends StatelessWidget {
         if (onSeeAll != null)
           TextButton(
             onPressed: onSeeAll,
-            child: Text(context.tr('Voir tous les tutoriels'), style: const TextStyle(color: Colors.white60)),
+            child: Text(context.tr('Voir tous les tutoriels'), style: TextStyle(color: c.textSecondary)),
           ),
         if (fullScreen) ...[
           const SizedBox(height: 6),
           Text(context.tr('Glisse vers le haut pour continuer'),
-              textAlign: TextAlign.center, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+              textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 12)),
         ],
       ],
     );
@@ -498,11 +508,11 @@ class TutoSceneCard extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16, fullScreen ? 50 : 14, 16, fullScreen ? 24 : 16),
       decoration: BoxDecoration(
         borderRadius: fullScreen ? null : BorderRadius.circular(22),
-        border: fullScreen ? null : Border.all(color: _gold.withOpacity(0.25)),
-        gradient: const RadialGradient(
-          center: Alignment(-0.8, -0.9),
+        border: fullScreen ? null : Border.all(color: gold.withOpacity(0.25)),
+        gradient: RadialGradient(
+          center: const Alignment(-0.8, -0.9),
           radius: 1.3,
-          colors: [Color(0x331FAA59), Color(0xFF070B09)],
+          colors: [c.isDark ? const Color(0x331FAA59) : const Color(0x261FAA59), c.isDark ? const Color(0xFF070B09) : c.background],
         ),
       ),
       child: fullScreen ? Center(child: SingleChildScrollView(child: content)) : content,
@@ -519,11 +529,12 @@ class TutoListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scenes = showAll ? kTutoScenes : tutoScenesAvailable();
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF070B09),
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF070B09),
-        foregroundColor: Colors.white,
+        backgroundColor: c.background,
+        foregroundColor: c.textPrimary,
         elevation: 0,
         title: Text(context.tr('Tous les tutoriels')),
       ),
@@ -539,9 +550,9 @@ class TutoListPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFF111814),
+                color: c.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _gold.withOpacity(0.2)),
+                border: Border.all(color: _goldOn(c).withOpacity(0.3)),
               ),
               child: Row(children: [
                 Text(s.emoji, style: const TextStyle(fontSize: 28)),
@@ -549,9 +560,9 @@ class TutoListPage extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('${i + 1}. ${context.tr(s.title)}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                        style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
                     const SizedBox(height: 2),
-                    Text(context.tr(s.hook), style: const TextStyle(color: Colors.white60, fontSize: 12.5)),
+                    Text(context.tr(s.hook), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
                     if (showAll)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -560,12 +571,12 @@ class TutoListPage extends StatelessWidget {
                             s.publicScene ? 'Avant connexion : oui' : 'Avant connexion : non',
                             if (s.hiddenOnIOS) 'Masquée sur iOS',
                           ].join(' · '),
-                          style: const TextStyle(color: _gold, fontSize: 11),
+                          style: TextStyle(color: _goldOn(c), fontSize: 11),
                         ),
                       ),
                   ]),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                Icon(Icons.chevron_right_rounded, color: c.textSecondary),
               ]),
             ),
           );
@@ -584,7 +595,7 @@ class TutoScenePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: const Color(0xFF070B09),
+        backgroundColor: AppColors.of(context).background,
         body: SafeArea(
           child: SingleChildScrollView(
             child: TutoSceneCard(
@@ -606,7 +617,7 @@ class TutoBeforeLoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: const Color(0xFF070B09),
+        backgroundColor: AppColors.of(context).background,
         body: SafeArea(
           child: SingleChildScrollView(
             child: TutoSceneCard(

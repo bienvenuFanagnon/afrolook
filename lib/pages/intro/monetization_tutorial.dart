@@ -1430,6 +1430,8 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
   @override
   Widget build(BuildContext context) {
     if (_hidden) return const SizedBox.shrink();
+    final ac = AppColors.of(context);
+    final gold = ac.isDark ? _gold : const Color(0xFF8A5A00);
     final t = _loop.value;
     final liked = t >= 0.25;
     // Après le like, les likes et les pièces montent jusqu'à 3 200
@@ -1446,38 +1448,38 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: _gold.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: gold.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
             child: Text(context.tr('Le savais-tu ?'),
-                style: const TextStyle(color: _gold, fontSize: 12, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: gold, fontSize: 12, fontWeight: FontWeight.w800)),
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF2A2410),
+              color: ac.isDark ? const Color(0xFF2A2410) : const Color(0xFFFFF4D6),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _gold.withOpacity(0.5)),
+              border: Border.all(color: gold.withOpacity(0.5)),
             ),
             child: Text('🪙 ${_n(coins)}  ${Money.approx(fcfa)}',
-                style: const TextStyle(color: _gold, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: gold, fontSize: 12.5, fontWeight: FontWeight.w800)),
           ),
           if (!widget.fullScreen)
             IconButton(
               visualDensity: VisualDensity.compact,
               onPressed: () => setState(() => _hidden = true),
-              icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+              icon: Icon(Icons.close_rounded, color: ac.textSecondary, size: 20),
             ),
         ]),
         const SizedBox(height: 12),
         Text.rich(
           TextSpan(children: [
             TextSpan(text: context.tr('Sur Afrolook, chaque like ')),
-            TextSpan(text: context.tr('paie'), style: const TextStyle(color: _gold)),
+            TextSpan(text: context.tr('paie'), style: TextStyle(color: gold)),
             TextSpan(text: context.tr(' le créateur.')),
           ]),
           textAlign: TextAlign.center,
           style: TextStyle(
-              color: Colors.white, fontSize: widget.fullScreen ? 26 : 20, fontWeight: FontWeight.w800, height: 1.2),
+              color: ac.textPrimary, fontSize: widget.fullScreen ? 26 : 20, fontWeight: FontWeight.w800, height: 1.2),
         ),
         const SizedBox(height: 14),
         GestureDetector(
@@ -1490,7 +1492,7 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
               heartBounce: _heartBounce,
               burst: _burst,
               interactions: (likes + _post.comments + _post.reposts).round(),
-              colors: AppColors.dark,
+              colors: ac,
             ),
             if (coinFly > 0 && coinFly < 1)
               Positioned(
@@ -1512,7 +1514,7 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
         Text(
           context.tr('Publie, reçois des likes : chaque like te rapporte 1 pièce, convertible en argent.'),
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+          style: TextStyle(color: ac.textSecondary, fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 14),
         Row(children: [
@@ -1520,8 +1522,8 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
             child: OutlinedButton(
               onPressed: _openTutorial,
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white24),
+                foregroundColor: ac.textPrimary,
+                side: BorderSide(color: ac.border),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -1545,12 +1547,12 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
         ]),
         TextButton(
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TutoListPage())),
-          child: Text(context.tr('Voir plus de tutoriels'), style: const TextStyle(color: Colors.white60)),
+          child: Text(context.tr('Voir plus de tutoriels'), style: TextStyle(color: ac.textSecondary)),
         ),
         if (widget.fullScreen) ...[
           const SizedBox(height: 18),
           Text(context.tr('Glisse vers le haut pour continuer'),
-              style: const TextStyle(color: Colors.white38, fontSize: 12)),
+              style: TextStyle(color: ac.textSecondary, fontSize: 12)),
         ],
       ],
     );
@@ -1560,11 +1562,11 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
       padding: EdgeInsets.fromLTRB(16, widget.fullScreen ? 60 : 14, 16, widget.fullScreen ? 30 : 16),
       decoration: BoxDecoration(
         borderRadius: widget.fullScreen ? null : BorderRadius.circular(22),
-        border: widget.fullScreen ? null : Border.all(color: _gold.withOpacity(0.25)),
-        gradient: const RadialGradient(
-          center: Alignment(-0.8, -0.9),
+        border: widget.fullScreen ? null : Border.all(color: gold.withOpacity(0.25)),
+        gradient: RadialGradient(
+          center: const Alignment(-0.8, -0.9),
           radius: 1.3,
-          colors: [Color(0x331FAA59), Color(0xFF070B09)],
+          colors: [ac.isDark ? const Color(0x331FAA59) : const Color(0x261FAA59), ac.isDark ? const Color(0xFF070B09) : ac.background],
         ),
       ),
       child: content,
