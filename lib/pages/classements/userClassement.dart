@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/models/model_data.dart';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -506,15 +507,13 @@ class _TopFiveUserItemState extends State<TopFiveUserItem> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "@${widget.user.pseudo}",
+                PseudoTag(label: "@${widget.user.pseudo}",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  overflow: TextOverflow.ellipsis),
                 SizedBox(height: 4),
                 Row(
                   children: [

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/apple_iap_service.dart';
@@ -2327,11 +2328,9 @@ class _MyHomePageState extends State<MyHomePage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '@${authProvider.loginUserData.pseudo ?? ''}',
+                          PseudoTag(label: '@${authProvider.loginUserData.pseudo ?? ''}',
                             style: TextStyle(fontSize: 12, color: colors.textPrimary, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            overflow: TextOverflow.ellipsis),
                           Text(
                             context.tr('Voir mon profil'),
                             style: TextStyle(fontSize: 10, color: colors.primary),
@@ -2679,11 +2678,9 @@ class _MyHomePageState extends State<MyHomePage>
                         Row(
                           children: [
                             Flexible(
-                              child: Text(
-                                '@${authProvider.loginUserData.pseudo ?? ''}',
+                              child: PseudoTag(label: '@${authProvider.loginUserData.pseudo ?? ''}',
                                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                overflow: TextOverflow.ellipsis),
                             ),
                             const SizedBox(width: 4),
                             UserBadgeWidget(user: authProvider.loginUserData, size: 13),

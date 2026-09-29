@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../layout/responsive_layout.dart';
@@ -724,16 +725,14 @@ class _RectCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
+                          PseudoTag(label: '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                            )),
                           const SizedBox(height: 2),
                           Row(
                             children: [

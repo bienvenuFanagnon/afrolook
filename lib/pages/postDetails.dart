@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import '../services/followers_count_service.dart';
 import '../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -3170,14 +3171,12 @@ class _DetailsPostState extends State<DetailsPost>
                 ] else if (user != null) ...[
                   Row(
                     children: [
-                      Text(
-                        '@${user.pseudo ?? ''}',
+                      PseudoTag(label: '@${user.pseudo ?? ''}',
                         style: TextStyle(
                           color: _colors.textPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                        ),
-                      ),
+                        )),
                       SizedBox(width: 4),
                       UserBadgeWidget(user: user, size: 15),
                       // if (user.isVerify ?? false)

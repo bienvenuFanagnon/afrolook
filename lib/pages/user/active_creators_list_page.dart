@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -496,15 +497,13 @@ class _CreatorTile extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
-                          '@${user.pseudo?.replaceAll('@', '') ?? 'user'}',
+                        child: PseudoTag(label: '@${user.pseudo?.replaceAll('@', '') ?? 'user'}',
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          overflow: TextOverflow.ellipsis),
                       ),
                       const SizedBox(width: 4),
                       UserBadgeWidget(

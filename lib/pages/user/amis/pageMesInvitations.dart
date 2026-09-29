@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'dart:async';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -548,16 +549,14 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                '@${user.pseudo?.toLowerCase() ?? "utilisateur"}',
+                              child: PseudoTag(label: '@${user.pseudo?.toLowerCase() ?? "utilisateur"}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                overflow: TextOverflow.ellipsis),
                             ),
                           ],
                         ),

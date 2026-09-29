@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -129,7 +130,7 @@ class _VideoFeedPageState extends State<VideoFeedPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('@${post.user!.pseudo}',
+              PseudoTag(label: '@${post.user!.pseudo}',
                   style: TextStyle(color: Colors.white, fontSize: 16)),
               SizedBox(height: 8),
               Text(post.description!,

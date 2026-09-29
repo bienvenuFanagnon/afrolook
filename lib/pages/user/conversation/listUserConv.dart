@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1312,13 +1313,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               letterSpacing: 1.2,
             ),
           ),
-          Text(
-            "@${authProvider.loginUserData.pseudo}",
+          PseudoTag(label: "@${authProvider.loginUserData.pseudo}",
             style: TextStyle(
               color: _colors.border,
               fontSize: 12,
-            ),
-          ),
+            )),
         ],
       ),
     );
@@ -2009,7 +2008,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                                 ? Icon(Icons.person, color: _colors.textSecondary)
                                 : null,
                           ),
-                          title: Text('@${friend?.pseudo ?? '...'}',
+                          title: PseudoTag(label: '@${friend?.pseudo ?? '...'}',
                               style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
                           subtitle: Text(cwm.lastMessage != null ? _getMessagePreview(cwm.lastMessage) : (cwm.chat.lastMessage ?? _l10n.convNoMessage),
                               style: TextStyle(color: _colors.textSecondary, fontSize: 12),

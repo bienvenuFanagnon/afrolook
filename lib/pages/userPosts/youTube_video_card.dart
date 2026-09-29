@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import '../../services/followers_count_service.dart';
 import '../../utils/count_format.dart';
@@ -1621,10 +1622,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final colors = AppColors.of(context);
     final isCanalPost = _creatorCanal != null;
     if (!isCanalPost && _creatorUser == null) {
-      return Text(
-        '@${widget.post.user?.pseudo ?? 'utilisateur'}',
-        style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
-      );
+      return PseudoTag(label: '@${widget.post.user?.pseudo ?? 'utilisateur'}',
+        style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14));
     }
     final postOwner = isCanalPost ? _creatorCanal! : _creatorUser!;
     final isCurrentUser = _authProvider.loginUserData.id == widget.post.user_id;
@@ -1695,10 +1694,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      '@${widget.post.user?.pseudo ?? 'utilisateur'}',
-                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
+                    child: PseudoTag(label: '@${widget.post.user?.pseudo ?? 'utilisateur'}',
+                      style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -297,7 +298,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> {
                           color: i < 3 ? c.supportAccent : c.textSecondary, fontWeight: FontWeight.w800)),
                 ),
                 Expanded(
-                  child: Text('@${_pseudos[top[i].key] ?? '…'}',
+                  child: PseudoTag(label: '@${_pseudos[top[i].key] ?? '…'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13.5)),
@@ -330,7 +331,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('@${_pseudos[last[i].userId] ?? '…'}',
+                  PseudoTag(label: '@${_pseudos[last[i].userId] ?? '…'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),

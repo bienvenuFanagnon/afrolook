@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -552,8 +553,7 @@ class _LeaderRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '@${entry.pseudo}',
+                  PseudoTag(label: '@${entry.pseudo}',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight:
@@ -563,8 +563,7 @@ class _LeaderRow extends StatelessWidget {
                           : colors.textSecondary,
                     ),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
                   Row(
                     mainAxisSize: MainAxisSize.min,

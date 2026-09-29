@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -309,11 +310,9 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '@${user.pseudo ?? 'Utilisateur'}',
+                          PseudoTag(label: '@${user.pseudo ?? 'Utilisateur'}',
                             style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Colors.white),
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                          ),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 2),
                           const Text('Créateur de contenu', style: TextStyle(fontSize: 13, color: Colors.white70)),
                           const SizedBox(height: 8),

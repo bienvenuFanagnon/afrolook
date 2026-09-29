@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -521,16 +522,14 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '@${user.pseudo ?? "utilisateur"}',
+                            PseudoTag(label: '@${user.pseudo ?? "utilisateur"}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 4),
                             Row(
                               children: [

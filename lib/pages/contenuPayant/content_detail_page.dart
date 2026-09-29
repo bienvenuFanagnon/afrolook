@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 
@@ -878,13 +879,11 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '@${_creatorData?.pseudo ?? 'Créateur'}',
+                    PseudoTag(label: '@${_creatorData?.pseudo ?? 'Créateur'}',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: _colors.textPrimary),
-                    ),
+                          color: _colors.textPrimary)),
                     const SizedBox(height: 2),
                     Text(
                       'Créateur de contenu',

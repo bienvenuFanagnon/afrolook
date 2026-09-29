@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -560,13 +561,11 @@ class _PostShareSheetState extends State<PostShareSheet>
             ? Icon(Icons.person, color: _colors.textSecondary)
             : null,
       ),
-      title: Text(
-        '@${friend?.pseudo ?? '...'}',
+      title: PseudoTag(label: '@${friend?.pseudo ?? '...'}',
         style: TextStyle(
             color: _colors.textPrimary,
             fontWeight: FontWeight.w600,
-            fontSize: 14),
-      ),
+            fontSize: 14)),
       trailing: isSending
           ? SizedBox(
               width: 20, height: 20,

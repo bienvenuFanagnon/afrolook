@@ -1,5 +1,6 @@
 ﻿// pages/users/users_list_page.dart
 
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'dart:math';
@@ -648,16 +649,14 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '@${user.pseudo ?? "user"}',
+                            PseudoTag(label: '@${user.pseudo ?? "user"}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 2),
                             Row(
                               children: [

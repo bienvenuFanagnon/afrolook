@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
@@ -405,16 +406,14 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
                   : AssetImage('assets/default_profile.png') as ImageProvider,
             ),
             SizedBox(width: 6),
-            Text(
-              '@${user.pseudo ?? 'user'}',
+            PseudoTag(label: '@${user.pseudo ?? 'user'}',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+              overflow: TextOverflow.ellipsis),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 ﻿
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -1251,8 +1252,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           constraints: BoxConstraints(
                             maxWidth: widget.w * 0.7,
                           ),
-                          child: Text(
-                            '@${widget.user.pseudo ?? l10n.profileDefaultUser}',
+                          child: PseudoTag(label: '@${widget.user.pseudo ?? l10n.profileDefaultUser}',
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -1265,8 +1265,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                               ],
                             ),
                             textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            overflow: TextOverflow.ellipsis),
                         ),
                         const SizedBox(width: 8),
                         UserBadgeWidget(user: widget.user, size: 18),

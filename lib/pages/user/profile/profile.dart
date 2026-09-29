@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -219,15 +220,13 @@ class _UserProfilState extends State<UserProfil> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              "@${authProvider.loginUserData!.pseudo}",
+                            PseudoTag(label: "@${authProvider.loginUserData!.pseudo}",
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: textWhite,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              overflow: TextOverflow.ellipsis),
                             SizedBox(height: 8),
 
                             // Statistiques

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'group_revenue_card.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -593,7 +594,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                             ? Icon(Icons.person, size: 16, color: _colors.textSecondary)
                             : null,
                       ),
-                      title: Text('@${u.pseudo ?? ''}',
+                      title: PseudoTag(label: '@${u.pseudo ?? ''}',
                           style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
                       trailing: Icon(Icons.person_add_rounded, color: _colors.primary),
                       onTap: () {

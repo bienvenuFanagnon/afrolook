@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -85,7 +86,7 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('@${_owner!.pseudo ?? 'Utilisateur'}',
+                PseudoTag(label: '@${_owner!.pseudo ?? 'Utilisateur'}',
                     style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 4),
                 Text('${_owner!.followersCount} abonné(s)',

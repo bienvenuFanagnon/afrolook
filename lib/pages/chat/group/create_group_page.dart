@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -578,10 +579,8 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                 ? Icon(Icons.person, color: _colors.textSecondary)
                 : null,
           ),
-          title: Text(
-            '@${user.pseudo ?? '...'}',
-            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
-          ),
+          title: PseudoTag(label: '@${user.pseudo ?? '...'}',
+            style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
           trailing: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 24, height: 24,

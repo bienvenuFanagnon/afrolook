@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 
 import 'package:afrotok/pages/socialVideos/afrovideos/videoWidget.dart';
@@ -1358,11 +1359,9 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                                                     const SizedBox(
                                                       width: 5.0,
                                                     ),
-                                                    Text(
-                                                      "@${datas[index].user!.pseudo!}",
+                                                    PseudoTag(label: "@${datas[index].user!.pseudo!}",
                                                       style: const TextStyle(
-                                                        fontSize: 12.0, color: Colors.white,),
-                                                    ),
+                                                        fontSize: 12.0, color: Colors.white,)),
                                                     const SizedBox(
                                                       width: 5.0,
                                                     )

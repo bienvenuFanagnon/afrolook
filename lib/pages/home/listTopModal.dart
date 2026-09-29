@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import '../../utils/platform_guard.dart';
 import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -296,15 +297,13 @@ class TopFiveUserItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // PSEUDO
-                Text(
-                  "@${user.pseudo}",
+                PseudoTag(label: "@${user.pseudo}",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: colors.textPrimary,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  overflow: TextOverflow.ellipsis),
 
                 SizedBox(height: 4),
 
@@ -791,15 +790,13 @@ class _LiveGridItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 4),
-                  Text(
-                    "@${live.hostName}",
+                  PseudoTag(label: "@${live.hostName}",
                     style: TextStyle(
                       fontSize: 10,
                       color: colors.accent,
                     ),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),

@@ -1,4 +1,5 @@
-﻿import 'dart:math';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'dart:math';
 
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -1377,10 +1378,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            "@${widget.otherUser.pseudo ?? ''}",
-                            style: TextStyle(color: colors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
-                          ),
+                          PseudoTag(label: "@${widget.otherUser.pseudo ?? ''}",
+                            style: TextStyle(color: colors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
                           const SizedBox(width: 6),
                           _buildVerificationBadge(),
                         ],

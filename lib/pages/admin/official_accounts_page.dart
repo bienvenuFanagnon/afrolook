@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -215,7 +216,7 @@ class _RequestCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('@${request.pseudo}',
+                        PseudoTag(label: '@${request.pseudo}',
                             style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
                         Text(request.officialName,
                             style: TextStyle(color: colors.textSecondary, fontSize: 12)),
@@ -337,7 +338,7 @@ class _RequestDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('@${request.pseudo}',
+                      PseudoTag(label: '@${request.pseudo}',
                           style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700)),
                       Text(request.officialName,
                           style: TextStyle(color: colors.textSecondary, fontSize: 13)),

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:math';
@@ -1906,15 +1907,13 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
+                            child: PseudoTag(label: '@${user.pseudo?.replaceAll("@", "") ?? "user"}',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                              )),
                           ),
                           if (user.isVerify ?? false)
                             Icon(Icons.verified, color: colors.primary, size: 12),

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -333,14 +334,12 @@ class _ExampleCardState extends State<ExampleCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "@${widget.cardUser.pseudo}",
+                  PseudoTag(label: "@${widget.cardUser.pseudo}",
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
-                    ),
-                  ),
+                    )),
                   const SizedBox(height: 5),
                   Text(
                     "${widget.cardUser.abonnes} abonné(s)",

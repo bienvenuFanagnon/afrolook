@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -1092,7 +1093,7 @@ class _FeedCard extends StatelessWidget {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
                         Flexible(
-                          child: Text('@${post.pseudo}',
+                          child: PseudoTag(label: '@${post.pseudo}',
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5)),
                         ),

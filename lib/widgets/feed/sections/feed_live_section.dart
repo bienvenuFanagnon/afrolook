@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -269,12 +270,10 @@ class _LiveCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '@${live.hostName ?? ''}',
+                    PseudoTag(label: '@${live.hostName ?? ''}',
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      overflow: TextOverflow.ellipsis),
                     if (live.title.isNotEmpty)
                       Text(
                         live.title,

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -224,7 +225,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
         Text(context.tr('Transactions'),
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textP)),
         if (_userData != null)
-          Text('@${_userData!.pseudo ?? ''}',
+          PseudoTag(label: '@${_userData!.pseudo ?? ''}',
               style: TextStyle(fontSize: 11, color: _textS, fontWeight: FontWeight.w400)),
       ]),
       actions: [

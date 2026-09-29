@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -1157,10 +1158,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _colors.textSecondary),
                       const SizedBox(width: 2),
-                      Text(
-                        "@${rpc.user_reply_pseudo}",
-                        style: TextStyle(color: _colors.textSecondary, fontSize: 11.5),
-                      ),
+                      PseudoTag(label: "@${rpc.user_reply_pseudo}",
+                        style: TextStyle(color: _colors.textSecondary, fontSize: 11.5)),
                     ],
                     const Spacer(),
                     Text(
@@ -1311,7 +1310,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     ? NetworkImage(user.imageUrl!)
                     : null,
               ),
-              title: Text("@${user.pseudo!}", style: TextStyle(fontSize: 13, color: _colors.textPrimary)),
+              title: PseudoTag(label: "@${user.pseudo!}", style: TextStyle(fontSize: 13, color: _colors.textPrimary)),
               onTap: () => _selectUser(user),
             );
           },

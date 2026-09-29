@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/pseudo_tag.dart';
 
 class TextCustomerUserTitle extends StatelessWidget {
   final String titre;
@@ -15,6 +16,13 @@ class TextCustomerUserTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Les pseudos (« @prenom.nom ») s'affichent en capsule Afrolook partout dans l'app.
+    if (PseudoTag.isPseudoLabel(titre)) {
+      return PseudoTag(
+        label: titre,
+        style: TextStyle(fontSize: fontSize, color: couleur, fontWeight: fontWeight),
+      );
+    }
     return Text(
       titre,
       overflow: TextOverflow.ellipsis,
@@ -42,6 +50,12 @@ class TextCustomerPostDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (PseudoTag.isPseudoLabel(titre)) {
+      return PseudoTag(
+        label: titre,
+        style: TextStyle(fontSize: fontSize, color: couleur, fontWeight: fontWeight),
+      );
+    }
     return Text(
       titre,
       //overflow: TextOverflow.ellipsis,

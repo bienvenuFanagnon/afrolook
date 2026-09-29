@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'dart:async';
@@ -1062,15 +1063,13 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       SizedBox(height: 5),
-                      Text(
-                        "@${authProvider.loginUserData.pseudo ?? ''}",
+                      PseudoTag(label: "@${authProvider.loginUserData.pseudo ?? ''}",
                         style: TextStyle(
                           color: _colors.accent,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
-                        ),
-                      ),
+                        )),
                       Text(
                         "(Non modifiable)",
                         style: TextStyle(

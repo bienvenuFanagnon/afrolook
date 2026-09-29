@@ -1,4 +1,5 @@
 
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/UserServices/detailsUserService.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -154,7 +155,7 @@ class _OnlyUserServiceListPageState extends State<OnlyUserServiceListPage> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
 
                                           children: [
-                                            Text('@${data.user?.pseudo ?? 'Pseudo'}',style: TextStyle(fontWeight: FontWeight.w900),),
+                                            PseudoTag(label: '@${data.user?.pseudo ?? 'Pseudo'}',style: TextStyle(fontWeight: FontWeight.w900)),
                                             Text('${data.user?.followersCount ?? 0} abonné(s)',style: TextStyle(fontSize: 11,color: Colors.green),),
                                           ],
                                         )

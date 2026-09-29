@@ -24,6 +24,7 @@ import 'moderation_reports_page.dart';
 import 'official_accounts_page.dart';
 import 'payment_methods_admin_page.dart';
 import 'remuneration_admin_page.dart';
+import 'pseudo_migration_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
 
 /// Tableau de bord admin unique (fusion de l'ancien « Tableau de bord » et de l'« ADMIN HUB » / AppData).
@@ -500,6 +501,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.payment_rounded, 'Moyens de paiement', c.primary, 0, const PaymentMethodsAdminPage()),
       _Module(Icons.groups_rounded, 'Groupe Afrolook', c.info, 0, const AfrolookGroupMigrationPage()),
       _Module(Icons.school_rounded, 'Tutoriels', c.supportAccent, 0, const TutoListPage(showAll: true)),
+      _Module(Icons.alternate_email_rounded, 'Pseudos', c.info, 0, const PseudoMigrationPage()),
     ];
     return GridView.count(
       crossAxisCount: 3,

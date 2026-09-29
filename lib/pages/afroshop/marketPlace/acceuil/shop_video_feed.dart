@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -352,10 +353,8 @@ class _ShopVideoItemState extends State<_ShopVideoItem> {
                               : null,
                         ),
                         SizedBox(width: 8),
-                        Text(
-                          '@${article.user!.pseudo ?? ''}',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-                        ),
+                        PseudoTag(label: '@${article.user!.pseudo ?? ''}',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
                       ],
                     ),
                   SizedBox(height: 8),

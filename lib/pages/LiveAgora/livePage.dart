@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 // models/live_models.dart
 import 'dart:async';
@@ -2058,10 +2059,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '@${_hostData.pseudo ?? widget.hostName}',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
-                  ),
+                  PseudoTag(label: '@${_hostData.pseudo ?? widget.hostName}',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
                   Text(
                     '${_hostData.followersCount} abonnés',
                     style: TextStyle(color: Colors.white54, fontSize: 10),

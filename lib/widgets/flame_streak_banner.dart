@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -518,13 +519,11 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                       ],
                                     ),
                                     const SizedBox(height: 3),
-                                    Text(
-                                      '@${user.pseudo}',
+                                    PseudoTag(label: '@${user.pseudo}',
                                       style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w600),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
+                                      textAlign: TextAlign.center),
                                     Text(
                                       _topUsersIsFallback
                                           ? '${user.commentCount}j 💬'

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fluttertagger/fluttertagger.dart';
@@ -79,7 +80,7 @@ class UserListView extends StatelessWidget {
                                   onBackgroundImageError: (_, __) {},
                                 ),
                                 title: Text(user.fullName),
-                                subtitle: Text("@${user.userName}"),
+                                subtitle: PseudoTag(label: "@${user.userName}"),
                                 onTap: () {
                                   tagController.addTag(
                                     id: user.id,

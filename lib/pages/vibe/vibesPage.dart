@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/safe_network_avatar.dart';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -1150,7 +1151,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
           else if (user != null)
             GestureDetector(
               onTap: () => showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context),
-              child: Row(children: [Text('@${user.pseudo ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(width: 4), UserBadgeWidget(user: user, size: 14)]),
+              child: Row(children: [PseudoTag(label: '@${user.pseudo ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), const SizedBox(width: 4), UserBadgeWidget(user: user, size: 14)]),
             ),
           if (canal != null)
             Text('${canal.membersCount} abonnés', style: const TextStyle(color: Colors.white70))

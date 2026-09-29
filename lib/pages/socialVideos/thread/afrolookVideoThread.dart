@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 
 import 'package:afrotok/pages/user/profile/profileDetail/model/user.dart';
@@ -952,7 +953,7 @@ class _VideoPostItemState extends State<_VideoPostItem> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('@${user.pseudo}', style: TextStyle(color: Colors.white)),
+              PseudoTag(label: '@${user.pseudo}', style: TextStyle(color: Colors.white)),
               Text('${user.followersCount} abonnés',
                   style: TextStyle(color: Colors.white54)),
             ],

@@ -1,5 +1,6 @@
 
 
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'dart:async';
@@ -118,7 +119,7 @@ class _MesAmisState extends State<MesAmis> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Text("@${amigo.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: colors.textPrimary),),
+                              PseudoTag(label: "@${amigo.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: colors.textPrimary)),
                               SizedBox(height: 6,),
                               FollowersCountBuilder(userId: amigo.friend!.id, fallback: amigo.friend!.followersCount, builder: (_, c) => Text('${formatCompactCount(c)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),)),
                             ],

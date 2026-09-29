@@ -1,5 +1,6 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -744,14 +745,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                   children: [
                     GestureDetector(
                       onTap: () => _showUserProfile(message.userId),
-                      child: Text(
-                        '@${message.userPseudo}',
+                      child: PseudoTag(label: '@${message.userPseudo}',
                         style: TextStyle(
                           color: isMessageOwner ? Colors.blue : Color(0xFFFFD700),
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                        )),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -1764,7 +1763,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             SizedBox(width: 8),
             GestureDetector(
               onTap: () => _showUserProfile(chronique.userId),
-              child: Text('@${chronique.userPseudo}', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              child: PseudoTag(label: '@${chronique.userPseudo}', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
             ),
             if (_chroniqueOwner?.isVerify == true) ...[
               SizedBox(width: 4),

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -947,11 +948,9 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                                   const SizedBox(
                                                     width: 5.0,
                                                   ),
-                                                  Text(
-                                                    "@${datas[index].user!.pseudo!}",
+                                                  PseudoTag(label: "@${datas[index].user!.pseudo!}",
                                                     style: const TextStyle(
-                                                      fontSize: 12.0, color: Colors.white,),
-                                                  ),
+                                                      fontSize: 12.0, color: Colors.white,)),
                                                   const SizedBox(
                                                     width: 5.0,
                                                   )

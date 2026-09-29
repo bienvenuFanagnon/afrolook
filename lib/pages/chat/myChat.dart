@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -3296,16 +3297,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                         Row(
                           children: [
                             Flexible(
-                              child: Text(
-                                "@${user.pseudo ?? ''}",
+                              child: PseudoTag(label: "@${user.pseudo ?? ''}",
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: _colors.textPrimary,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                                )),
                             ),
                             const SizedBox(width: 4),
                             UserBadgeWidget(user: user, size: 14),

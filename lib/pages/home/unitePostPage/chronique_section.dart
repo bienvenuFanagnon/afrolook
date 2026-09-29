@@ -1,4 +1,5 @@
-﻿import 'dart:typed_data';
+﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'dart:typed_data';
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -377,8 +378,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
             const SizedBox(height: 6),
             Container(
               constraints: const BoxConstraints(maxWidth: 130),
-              child: Text(
-                '@${firstChronique.userPseudo}',
+              child: PseudoTag(label: '@${firstChronique.userPseudo}',
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 11,
@@ -386,8 +386,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
+                textAlign: TextAlign.center),
             ),
           ],
         ),

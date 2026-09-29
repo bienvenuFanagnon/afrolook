@@ -1,4 +1,5 @@
 // pages/retrait/admin_retrait_list_page.dart
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminDetails.dart';
 import 'package:flutter/material.dart';
@@ -389,15 +390,13 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
                   ),
                   SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      '@${retrait.userPseudo ?? 'Utilisateur'}',
+                    child: PseudoTag(label: '@${retrait.userPseudo ?? 'Utilisateur'}',
                       style: TextStyle(
                         color: AdminPalette.textP,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      overflow: TextOverflow.ellipsis),
                   ),
                 ],
               ),

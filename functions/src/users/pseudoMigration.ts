@@ -39,9 +39,17 @@ export const migratePseudos = onCall({ timeoutSeconds: 540, memory: "512MiB" }, 
   const me = await db.collection("Users").doc(uid).get();
   if (me.data()?.role !== "ADM") throw new HttpsError("permission-denied", "Réservé aux administrateurs.");
 
-  const { dryRun = true, limit = 100, cursor } = (request.data ?? {}) as {
-    dryRun?: boolean; limit?: number; cursor?: string;
+  const statusRef = db.collection("AppConfig").doc("pseudoMigration");
+  const { dryRun = true, limit = 100, cursor, action } = (request.data ?? {}) as {
+    dryRun?: boolean; limit?: number; cursor?: string; action?: string;
   };
+  if (action === "status") return { status: (await statusRef.get()).data() ?? { status: "never" } };
+
+  // Une seule exécution : une fois terminée, plus aucune application possible.
+  const current = (await statusRef.get()).data();
+  if (!dryRun && current?.status === "done") {
+    throw new HttpsError("failed-precondition", "La migration des pseudos a déjà été effectuée.");
+  }
   const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 300);
 
   // Pseudos déjà pris (forme normalisée) : Pseudo + pseudos des comptes déjà au bon format
@@ -103,6 +111,20 @@ export const migratePseudos = onCall({ timeoutSeconds: 540, memory: "512MiB" }, 
   }
 
   const last = page.docs.length ? page.docs[page.docs.length - 1].id : null;
+  const finished = page.size < pageSize;
+  if (!dryRun) {
+    const { FieldValue } = await import("firebase-admin/firestore");
+    await statusRef.set({
+      status: finished ? "done" : "running",
+      startedAt: current?.startedAt ?? Date.now(),
+      updatedAt: Date.now(),
+      ...(finished ? { finishedAt: Date.now() } : {}),
+      changed: FieldValue.increment(changes.length),
+      suffixed: FieldValue.increment(changes.filter((c) => c.suffix).length),
+      skipped: FieldValue.increment(skipped.length),
+      lastCursor: finished ? null : last,
+    }, { merge: true });
+  }
   return {
     dryRun,
     scanned: page.size,

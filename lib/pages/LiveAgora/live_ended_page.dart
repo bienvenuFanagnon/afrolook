@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -106,10 +107,8 @@ class LiveEndedPage extends StatelessWidget {
                               : null,
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          '@${live.hostName ?? ''}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
-                        ),
+                        PseudoTag(label: '@${live.hostName ?? ''}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
                         const SizedBox(height: 4),
                         Text(
                           live.title,
