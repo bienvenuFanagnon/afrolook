@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../l10n/tr.dart';
 import '../../../theme/app_colors.dart';
 import 'tuto_catalog.dart';
+import 'tuto_layouts.dart';
 
 const _gold = Color(0xFFF5C542);
 
@@ -224,12 +225,19 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
     final sc = widget.scene;
     final c = AppColors.of(context);
     // Position verticale de l'élément mis en lumière (barre 44 + marge 10, éléments espacés de 8)
+    final custom = sc.layout != 'std' && sc.spot != null;
     var y = 54.0;
-    for (var i = 0; i < sc.target; i++) {
-      y += sc.els[i].height + 8;
+    if (custom) {
+      y = sc.spot!.top;
+    } else {
+      for (var i = 0; i < sc.target; i++) {
+        y += sc.els[i].height + 8;
+      }
     }
-    final target = sc.els[sc.target];
-    final th = target.height;
+    final MockEl? target = custom ? null : sc.els[sc.target];
+    final th = custom ? sc.spot!.height : target!.height;
+    final spotL = custom ? sc.spot!.left : 10.0;
+    final spotR = custom ? sc.spot!.right : 10.0;
     final labelBelow = y + th < 290;
 
     return SizedBox(
@@ -261,6 +269,25 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
 
                 return Stack(children: [
                   // 1) La vraie page (maquette)
+                  if (custom)
+                    Positioned.fill(
+                      child: sc.layout == 'live'
+                          ? tutoLayoutLive(ctx)
+                          : sc.layout == 'live_prive'
+                              ? tutoLayoutLivePrivate(ctx)
+                              : Column(children: [
+                                  Container(
+                                    height: 44,
+                                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                                    color: c.surface,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(ctx.tr(sc.screenTitle),
+                                        style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
+                                  ),
+                                  Expanded(child: sc.layout == 'comments' ? tutoLayoutComments(ctx, c) : tutoLayoutPost(ctx, c)),
+                                ]),
+                    )
+                  else
                   Column(children: [
                     Container(
                       height: 44,
@@ -281,15 +308,15 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
                     ),
                   ]),
                   // 2) Le reste s'assombrit
-                  Positioned.fill(child: IgnorePointer(child: Container(color: Colors.black.withOpacity(dim)))),
+                  if (!custom) Positioned.fill(child: IgnorePointer(child: Container(color: Colors.black.withOpacity(dim)))),
                   // 3) L'action en lumière : l'élément est redessiné au-dessus, avec son halo
                   Positioned(
                     top: y,
-                    left: 10,
-                    right: 10,
+                    left: spotL,
+                    right: spotR,
                     height: th,
                     child: Stack(clipBehavior: Clip.none, children: [
-                      Positioned.fill(child: _el(ctx, c, target)),
+                      if (target != null) Positioned.fill(child: _el(ctx, c, target)),
                       Positioned(
                         left: -5,
                         right: -5,

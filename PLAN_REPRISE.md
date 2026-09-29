@@ -152,3 +152,8 @@ Validé par le propriétaire (maquette artifact). Chaque tutoriel = téléphone 
 ### 29/09 — Tutoriels en mode clair ET sombre
 Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages `TutoScenePage`/`TutoBeforeLoginPage` et carte « Le savais-tu ? » du feed utilisent `AppColors.of(context)` (fonds, textes, bordures) ; l'or vif en sombre devient un ambre plus foncé en clair (`_goldOn`) pour rester lisible. Non modifié volontairement : la page plein écran « Tutoriel de monétisation » d'origine reste cinématique (fond noir dans les deux modes).
 - [ ] À vérifier visuellement en mode clair (contrastes de la maquette, doigt, bulle dorée).
+
+### 29/09 — Écrans plus fidèles + plus de pourcentages
+- `tutos/tuto_layouts.dart` : reproductions plus proches des vraies pages — **live** (hôte, compteurs, messages et cadeaux, solde Dépôt/Gagnées, cadeaux rapides, barre « Envoyer un message… », actions), **live privé** (écran d'entrée payante), **commentaires** (en-tête du post, bandeau « Ce post a rapporté… », commentaires avec ❤ / Répondre / réponses / 🎁 cadeau, barre de saisie), **détails de post** (média, bandeau, stats). Scènes likes/cadeaux/commentaires/lives/live privé (nouvelle scène) les utilisent.
+- Les tutoriels ne parlent plus de pourcentages (70 %, 2,5 %…) : uniquement des montants en pièces d'exemple.
+- [ ] Autres scènes (groupes, canal, DÉFI, retrait, boost, parrainage, contenu payant) encore en maquette d'éléments : à rapprocher des vraies pages avec des captures.

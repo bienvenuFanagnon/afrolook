@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'tuto_layouts.dart';
+
 import '../../../utils/platform_guard.dart';
 import '../../canaux/listCanauxByUser.dart';
 import '../../chat/group/create_group_page.dart';
@@ -46,6 +48,9 @@ class TutoScene {
   final String screenTitle;
   final List<MockEl> els;
   final int target; // index de l'élément mis en lumière
+  /// 'std' = maquette d'éléments ; sinon écran fidèle : live, live_prive, comments, post.
+  final String layout;
+  final TutoSpot? spot; // zone mise en lumière pour les écrans fidèles
   final String hint; // bulle qui explique l'action
   final String gainEmoji;
   final String gainTitle;
@@ -62,8 +67,10 @@ class TutoScene {
     required this.title,
     required this.hook,
     required this.screenTitle,
-    required this.els,
-    required this.target,
+    this.els = const [],
+    this.target = 0,
+    this.layout = 'std',
+    this.spot,
     required this.hint,
     required this.gainEmoji,
     required this.gainTitle,
@@ -83,41 +90,24 @@ void _push(BuildContext c, Widget page) => Navigator.of(c).push(MaterialPageRout
 final List<TutoScene> kTutoScenes = [
   TutoScene(
     id: 'likes', emoji: '❤️', title: 'Les likes paient', hook: 'Chaque like sur tes posts te rapporte des pièces.',
-    screenTitle: 'Mon post',
-    els: const [
-      MockEl(MockKind.cover),
-      MockEl(MockKind.profile, a: '@nadia.vibes', b: '12,4 k abonnés'),
-      MockEl(MockKind.chips, items: ['❤️ 3 200', '💬 42', '🔁 16']),
-    ],
-    target: 2, hint: 'Chaque like te rapporte 1 pièce',
+    screenTitle: 'Détails du post', layout: 'post', spot: tutoSpotPostLikes,
+    hint: 'Chaque like te rapporte 1 pièce',
     gainEmoji: '🪙', gainTitle: '+3 200 pièces', gainSub: 'pour 3 200 likes',
     earn: 'Exemple : un post à 3 200 likes = 3 200 pièces pour toi',
     actionLabel: 'Créer un post', action: (c) => Navigator.of(c).pushNamed('/user_posts_form'),
   ),
   TutoScene(
     id: 'cadeaux', emoji: '🎁', title: 'Les cadeaux en pièces', hook: 'Tes fans t’offrent des pièces directement sur tes posts.',
-    screenTitle: 'Mon post',
-    els: const [
-      MockEl(MockKind.cover),
-      MockEl(MockKind.profile, a: '@nadia.vibes', b: '12,4 k abonnés'),
-      MockEl(MockKind.button, a: '🎁 Envoyer un cadeau', color: 2),
-      MockEl(MockKind.tile, a: '@kofi · 🎁 Couronne', trailing: '+120 🪙'),
-    ],
-    target: 2, hint: 'Un fan t’offre un cadeau en pièces',
+    screenTitle: 'Détails du post', layout: 'post', spot: tutoSpotPostGifts,
+    hint: 'Un fan t’offre un cadeau en pièces',
     gainEmoji: '🎁', gainTitle: '+120 pièces', gainSub: 'cadeau « Couronne » reçu',
     earn: 'Chaque cadeau reçu est crédité en pièces sur ton portefeuille',
     actionLabel: 'Voir mon portefeuille', action: (c) => _push(c, MonetisationPage()),
   ),
   TutoScene(
     id: 'commentaires', emoji: '💬', title: 'Les commentaires paient', hook: 'Une bonne conversation rapporte aussi.',
-    screenTitle: 'Commentaires',
-    els: const [
-      MockEl(MockKind.tile, a: '@kofi', b: 'Superbe photo 🔥', trailing: '+1 🪙'),
-      MockEl(MockKind.tile, a: '@awa', b: 'J’adore ce look !', trailing: '+1 🪙'),
-      MockEl(MockKind.tile, a: '@moussa', b: 'Trop stylé', trailing: '+1 🪙'),
-      MockEl(MockKind.button, a: 'Écrire un commentaire'),
-    ],
-    target: 0, hint: 'Chaque commentaire te rapporte 1 pièce',
+    screenTitle: 'Commentaires', layout: 'comments', spot: tutoSpotCommentInput,
+    hint: 'Chaque commentaire te rapporte 1 pièce',
     gainEmoji: '💬', gainTitle: '+150 pièces', gainSub: 'pour 150 commentaires',
     earn: 'Exemple : 150 commentaires = 150 pièces pour toi',
     actionLabel: 'Créer un post', action: (c) => Navigator.of(c).pushNamed('/user_posts_form'),
@@ -159,7 +149,7 @@ final List<TutoScene> kTutoScenes = [
       MockEl(MockKind.tile, a: '🔒 Publications réservées'),
     ],
     target: 2, hint: 'Fixe un prix d’abonnement en pièces',
-    gainEmoji: '🪙', gainTitle: '+210 pièces', gainSub: 'à chaque nouvel abonné (70 %)',
+    gainEmoji: '🪙', gainTitle: '+210 pièces', gainSub: 'à chaque nouvel abonné',
     earn: 'Exemple : 50 abonnés à 300 pièces = 10 500 pièces pour toi',
     actionLabel: 'Créer un canal', action: (c) => _push(c, CanalListPageByUser()), publicScene: false,
   ),
@@ -187,22 +177,24 @@ final List<TutoScene> kTutoScenes = [
       MockEl(MockKind.tile, a: 'Ajouter un membre', trailing: '›'),
     ],
     target: 3, hint: 'Active « Groupe privé payant » et fixe ton prix',
-    gainEmoji: '🪙', gainTitle: '+175 pièces', gainSub: '70 % de chaque entrée pour toi',
+    gainEmoji: '🪙', gainTitle: '+175 pièces', gainSub: 'à chaque entrée dans ton groupe',
     earn: 'Exemple : 40 entrées à 250 pièces = 7 000 pièces pour toi',
     actionLabel: 'Créer un groupe', action: (c) => _push(c, const CreateGroupPage()), publicScene: false,
   ),
   TutoScene(
     id: 'lives', emoji: '🔴', title: 'Les lives', hook: 'Passe en direct et reçois des cadeaux en temps réel.',
-    screenTitle: '● LIVE · 1,2 k 👁',
-    els: const [
-      MockEl(MockKind.cover),
-      MockEl(MockKind.tile, a: '@nadia · 🎁 Rose', trailing: '+20 🪙'),
-      MockEl(MockKind.tile, a: '@kofi · 🎁 Couronne', trailing: '+120 🪙'),
-      MockEl(MockKind.button, a: '🎁 Cadeau', color: 2),
-    ],
-    target: 2, hint: 'Tes spectateurs t’envoient des cadeaux',
+    screenTitle: 'Live', layout: 'live', spot: tutoSpotLiveGifts,
+    hint: 'Tes spectateurs t’envoient des cadeaux',
     gainEmoji: '🪙', gainTitle: '+140 pièces', gainSub: 'ce live t’a déjà rapporté',
     earn: 'Les cadeaux du live s’ajoutent en direct à tes pièces',
+    actionLabel: 'Lancer un live', action: (c) => Navigator.of(c).pushNamed('/create_live'), publicScene: false,
+  ),
+  TutoScene(
+    id: 'live_prive', emoji: '🔒', title: 'Lives privés payants', hook: 'Fais payer l’entrée de ton live.',
+    screenTitle: 'Live privé', layout: 'live_prive', spot: tutoSpotLivePay,
+    hint: 'Chaque spectateur paie son entrée en pièces',
+    gainEmoji: '🪙', gainTitle: '+70 pièces', gainSub: 'à chaque nouvelle entrée',
+    earn: 'Exemple : 30 entrées à 100 pièces = 2 100 pièces pour toi',
     actionLabel: 'Lancer un live', action: (c) => Navigator.of(c).pushNamed('/create_live'), publicScene: false,
   ),
   TutoScene(
@@ -214,8 +206,8 @@ final List<TutoScene> kTutoScenes = [
       MockEl(MockKind.tile, a: '3 amis inscrits', trailing: '✓'),
     ],
     target: 1, hint: 'Partage ton code : ton ami s’inscrit avec',
-    gainEmoji: '🤝', gainTitle: 'Tu gagnes avec eux', gainSub: '2,5 % sur leurs achats',
-    earn: 'Chaque ami parrainé te rapporte une commission de 2,5 % sur ses achats',
+    gainEmoji: '🤝', gainTitle: 'Tu gagnes avec eux', gainSub: 'sur leurs achats',
+    earn: 'Chaque ami parrainé te rapporte une commission sur ses achats',
     actionLabel: 'Inviter mes amis', action: (c) => Navigator.of(c).pushNamed('/amis'), publicScene: false,
   ),
   TutoScene(
