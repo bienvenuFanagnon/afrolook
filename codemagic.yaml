@@ -42,7 +42,7 @@ workflows:
           - Testeurs
       email:
         recipients:
-          - kfanagnon@togoanvt.org
+          - techbienos@gmail.com
         notify:
           success: true
           failure: true
