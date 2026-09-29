@@ -225,6 +225,7 @@ class _CanalListPageState extends State<CanalListPage> {
                               Flexible(
                                 // Titre affiché en entier (jusqu'à 32 caractères), badge canal Afrolook
                                 child: NameTag(
+                                  bordered: false,
                                   label: "#${canal.titre ?? ''}",
                                   style: TextStyle(
                                     color: _colors.textPrimary,

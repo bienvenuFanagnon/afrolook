@@ -67,20 +67,38 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
         return;
       }
 
-      // Récupérer les posts en batch (limité à 50 pour performance)
-      final batchIds = favoriteIds.take(50).toList();
-      final postsSnapshot = await _firestore
-          .collection('Posts')
-          .where('id', whereIn: batchIds)
-          .get();
+      // Récupérer les posts par lots de 10 (limite whereIn), en parallèle. Le plus récemment ajouté d'abord ;
+      // un lot ou un post en échec n'empêche plus d'afficher les autres (avant : tout l'écran en erreur).
+      final wanted = favoriteIds.reversed.take(60).toList();
+      final futures = <Future<QuerySnapshot<Map<String, dynamic>>?>>[];
+      for (var i = 0; i < wanted.length; i += 10) {
+        final chunk = wanted.sublist(i, i + 10 > wanted.length ? wanted.length : i + 10);
+        futures.add(_firestore
+            .collection('Posts')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get()
+            .then<QuerySnapshot<Map<String, dynamic>>?>((v) => v)
+            .catchError((e) {
+          printVm('Erreur lot favoris: $e');
+          return null;
+        }));
+      }
+      final results = await Future.wait(futures);
+      if (results.every((r) => r == null)) throw Exception('Aucun lot de favoris chargé');
 
-      // Convertir en objets Post
-      final posts = postsSnapshot.docs.map((doc) {
-        final postData = doc.data();
-        final post = Post.fromJson(postData);
-        post.id = doc.id;
-        return post;
-      }).toList();
+      final posts = <Post>[];
+      for (final snap in results) {
+        if (snap == null) continue;
+        for (final doc in snap.docs) {
+          try {
+            final post = Post.fromJson(doc.data());
+            post.id = doc.id;
+            posts.add(post);
+          } catch (e) {
+            printVm('Favori illisible ${doc.id}: $e');
+          }
+        }
+      }
 
       // Trier par date (les plus récents d'abord)
       posts.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));

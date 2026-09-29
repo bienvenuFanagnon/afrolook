@@ -11,8 +11,10 @@ class CanalTag extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
+  /// false : sans contour (pages de listes de canaux)
+  final bool bordered;
 
-  const CanalTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign});
+  const CanalTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign, this.bordered = true});
 
   /// Le texte est-il un nom de canal à mettre en badge (« #xxx » sans espace) ?
   static bool isCanalLabel(String s) => RegExp(r'^#(?=.*[A-Za-z])[A-Za-z0-9._\-]+$').hasMatch(s);
@@ -42,7 +44,7 @@ class CanalTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: onDark ? Colors.black.withOpacity(.4) : c.surfaceVariant,
         borderRadius: BorderRadius.circular(fs * .5),
-        border: Border.all(color: green, width: 1.4),
+        border: bordered ? Border.all(color: green, width: 1.4) : null,
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Container(

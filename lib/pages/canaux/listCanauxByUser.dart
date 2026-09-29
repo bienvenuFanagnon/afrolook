@@ -209,7 +209,6 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
       decoration: BoxDecoration(
         color: _colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _colors.border),
       ),
       child: IntrinsicHeight(
         child: Row(children: [
@@ -267,7 +266,6 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
         color: _colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: _colors.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -304,7 +302,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Flexible(
-                      child: NameTag(label: '#${canal.titre ?? 'Sans nom'}',
+                      child: NameTag(bordered: false, label: '#${canal.titre ?? 'Sans nom'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: _colors.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700)),

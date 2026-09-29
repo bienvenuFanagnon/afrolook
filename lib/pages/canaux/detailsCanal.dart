@@ -999,7 +999,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                       Row(
                         children: [
                           Expanded(
-                            child: NameTag(label: "#${widget.canal.titre!}",
+                            child: NameTag(bordered: false, label: "#${widget.canal.titre!}",
                               style: TextStyle(
                                 color: _colors.textPrimary,
                                 fontSize: 24,
@@ -1740,7 +1740,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       backgroundColor: _colors.background,
       appBar: AppBar(
         iconTheme: IconThemeData(color: _colors.textPrimary),
-        title: NameTag(label: '#${widget.canal.titre ?? ''}',
+        title: NameTag(bordered: false, label: '#${widget.canal.titre ?? ''}',
           style: TextStyle(
             color: _colors.textPrimary,
             fontWeight: FontWeight.bold,

@@ -187,7 +187,7 @@ class _HomePageState extends State<HomeAfroshopPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 1); // 1 = grille par défaut
     _initializeData();
     _loadFavoriteCategories();
     _scrollController.addListener(_scrollListener);
