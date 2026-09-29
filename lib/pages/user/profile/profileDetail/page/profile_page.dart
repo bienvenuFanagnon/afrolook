@@ -213,7 +213,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _pseudoStatus = 'same');
       return;
     }
-    if (formatted.length < 3) {
+    if (formatted.length < kPseudoMinLength || formatted.length > kPseudoMaxLength) {
       setState(() => _pseudoStatus = 'invalid');
       return;
     }
@@ -380,7 +380,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (_pseudoStatus == 'invalid') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Le pseudo doit faire au moins 3 caractères'),
+            content: Text('Le pseudo doit faire entre 3 et 20 caractères'),
             backgroundColor: Colors.orange,
           ),
         );

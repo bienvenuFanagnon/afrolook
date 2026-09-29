@@ -1,5 +1,9 @@
 import 'package:flutter/services.dart';
 
+/// Longueur d'un pseudo : 3 à 20 caractères (pseudos courts).
+const int kPseudoMinLength = 3;
+const int kPseudoMaxLength = 20;
+
 /// Règle des pseudos : minuscules, mots séparés par un point (ex. « olivier.bernard »).
 /// Espaces, tirets et underscores deviennent des points ; accents retirés ; seuls a-z, 0-9 et « . » restent ;
 /// pas de point au début, à la fin ni doublé.
@@ -24,6 +28,7 @@ class PseudoInputFormatter extends TextInputFormatter {
     final trailingDot = RegExp(r'[\s_\-.]$').hasMatch(newValue.text);
     var t = normalizePseudo(newValue.text);
     if (trailingDot && t.isNotEmpty) t = '$t.';
+    if (t.length > kPseudoMaxLength) t = t.substring(0, kPseudoMaxLength);
     return TextEditingValue(text: t, selection: TextSelection.collapsed(offset: t.length));
   }
 }

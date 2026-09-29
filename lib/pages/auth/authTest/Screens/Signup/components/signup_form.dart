@@ -228,7 +228,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         if (value == null || value.isEmpty) {
                           return l10n.signupPseudoRequired;
                         }
-                        if (value.length < 3) {
+                        if (value.length < kPseudoMinLength || value.length > kPseudoMaxLength) {
                           return l10n.signupPseudoTooShort;
                         }
                         return null;
@@ -585,7 +585,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _buildTextField(
         context: context, controller: pseudoController, hintText: l10n.signupPseudoUnique, prefixIcon: Icons.person_outline,
         inputFormatters: [PseudoInputFormatter()],
-        validator: (v) => (v == null || v.isEmpty) ? l10n.signupPseudoRequired : (v.length < 3 ? l10n.signupPseudoTooShort : null),
+        validator: (v) => (v == null || v.isEmpty) ? l10n.signupPseudoRequired : ((v.length < kPseudoMinLength || v.length > kPseudoMaxLength) ? l10n.signupPseudoTooShort : null),
       ),
       const SizedBox(height: 15),
       Container(
