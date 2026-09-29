@@ -1047,7 +1047,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     for (int i = 0; i < mixedPosts.length; i++) {
       _feedItems.add(mixedPosts[i]);
       postCount++;
-      if (postCount == 5 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
+      if (postCount == 1 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
 
       // Pub toutes les 3 vidéos (gratuit uniquement)
       if (!skipAds &&
@@ -1102,7 +1102,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
     while (videoIdx < _videoPosts.length) {
       _feedItems.add(_videoPosts[videoIdx]);
       videoIdx++;
-      if (videoIdx == 5 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
+      if (videoIdx == 1 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
 
       // Toutes les 3 vidéos (gratuit uniquement)
       if (!skipAds && videoIdx % 3 == 0 && videoIdx < _videoPosts.length && adIdx < ads.length) {

@@ -2942,7 +2942,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
       );
 
-      if (i == 5 && _showTutoReminder) {
+      if (i == 1 && _showTutoReminder) {
         contentWidgets.add(const FeedMonetizationReminder(key: ValueKey('tuto_reminder_sport'), feed: 'sport'));
       }
 

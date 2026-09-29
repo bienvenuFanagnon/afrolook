@@ -1350,7 +1350,7 @@ class _ConfettiPainter extends CustomPainter {
 // ── Rappel dans le feed ───────────────────────────────────────────────────────
 /// Fréquence : au plus une fois tous les 3 jours par feed, une fois par session.
 class MonetizationReminder {
-  static const _every = Duration(days: 3);
+  static const _every = Duration(days: 1);
   static final Set<String> _shownThisSession = {};
 
   static Future<bool> due(String feed) async {

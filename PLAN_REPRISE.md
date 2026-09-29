@@ -38,8 +38,8 @@ Certaines copies sont en cache sans la liste `userAbonnesIds`, d'autres avec un 
 ## LOT 3 — Tutoriel : apparition plus tôt dans les feeds
 Fichiers : `lib/pages/intro/monetization_tutorial.dart` (`MonetizationReminder`, `FeedMonetizationReminder`), inséré dans `HomeConstPost.dart` l.~3750 (`i == 5`), `homeSportPost.dart` l.~2946, `post_video_format_tel_details.dart` l.~3804.
 
-- [ ] Faire apparaître le rappel plus tôt (ex. après le 2ᵉ post au lieu du 6ᵉ, et dès le premier affichage du feed de la session).
-- [ ] Vérifier `_shownThisSession` et le délai `_every` (actuellement 3 jours) : la première apparition ne doit pas être bloquée.
+- [ ] Faire apparaître le rappel plus tôt (FAIT : après le 2ᵉ post au lieu du 6ᵉ, et dès le premier affichage du feed de la session).
+- [x] Fréquence décidée : **1 fois par jour** par feed → passer `_every` de 3 jours à 1 jour dans `MonetizationReminder`. Vérifier `_shownThisSession` : la première apparition ne doit pas être bloquée.
 
 ## LOT 4 — 10+ tutoriels de rémunération, avec scènes tournantes
 Idée : une **liste de tutoriels** (un par fonctionnalité qui rapporte), chacun composé de **scènes**, chaque scène ayant **son bouton d'action** (ex. « Créer mon canal »).

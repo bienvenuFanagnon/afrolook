@@ -3747,7 +3747,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
 
-      if (i == 5 && _showTutoReminder) {
+      if (i == 1 && _showTutoReminder) {
         contentWidgets.add(const FeedMonetizationReminder(key: ValueKey('tuto_reminder_home'), feed: 'home'));
       }
 
