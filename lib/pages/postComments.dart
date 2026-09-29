@@ -1,3 +1,4 @@
+import '../l10n/tr.dart';
 import 'package:afrotok/widgets/comment_gift_sheet.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/widgets/name_tag.dart';
