@@ -1309,8 +1309,11 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             duration: const Duration(milliseconds: 380),
             curve: Curves.elasticOut,
             builder: (_, v, child) => Transform.scale(scale: v, child: child),
-            child: Icon(isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isLiked ? _colors.danger : _colors.textSecondary, size: size),
+            // Même cœur que le like d'un post (avec la pastille « +1 »)
+            child: LikeCoinHeart(
+                icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: isLiked ? _colors.danger : _colors.textSecondary,
+                size: size),
           ),
           if (count > 0) ...[
             const SizedBox(width: 5),

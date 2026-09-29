@@ -67,7 +67,8 @@ class CommentCoins {
       if (data['paid'] == true) {
         await coinProvider.refreshBalance(userId);
         if (context.mounted) {
-          showSupportedModal(context, pseudo: authorPseudo, emoji: '❤️', detail: '+1 🪙 pour lui (2 pièces envoyées)');
+          // Même animation que le like d'un post : grand cœur + « Votre like rapporte 1 🪙 à @pseudo ! »
+          showLikeOverlay(context, creatorName: authorPseudo);
         }
       } else if (data['reason'] == 'insufficient') {
         showInsufficientCoinsForLikeDialog(
