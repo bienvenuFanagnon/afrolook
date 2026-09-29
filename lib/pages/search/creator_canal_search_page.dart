@@ -353,7 +353,7 @@ class _CreatorTile extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Flexible(
-                  child: Text(name,
+                  child: NameTag(label: name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

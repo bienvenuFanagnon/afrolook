@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -635,14 +636,12 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         title: Row(
           children: [
             Expanded(
-              child: Text(
-                user.pseudo ?? _l10n.canalUser,
+              child: NameTag(label: '@${user.pseudo ?? _l10n.canalUser}',
                 style: TextStyle(
                   color: _colors.textPrimary,
                   fontWeight: isCreator ? FontWeight.bold : FontWeight.normal,
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                overflow: TextOverflow.ellipsis),
             ),
             if (isCreator)
               Container(
@@ -909,14 +908,12 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.canal.titre!,
+                        NameTag(label: '#${widget.canal.titre!}',
                           style: TextStyle(
                             color: _colors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                          )),
                         SizedBox(height: 4),
                         Text(
                           _l10n.canalOwner,

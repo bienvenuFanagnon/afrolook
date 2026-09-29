@@ -1,4 +1,5 @@
 // pages/live/live_widgets.dart
+import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -350,13 +351,11 @@ class UsersPanelWidget extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                user.pseudo ?? 'Utilisateur',
+                              NameTag(label: '@${user.pseudo ?? 'Utilisateur'}',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                                )),
                               Text(
                                 isHost ? 'Hôte' : (isParticipant ? 'Participant' : 'Spectateur'),
                                 style: TextStyle(

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -317,16 +318,14 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              user.pseudo ?? l10n.canalUser,
+                            child: NameTag(label: '@${user.pseudo ?? l10n.canalUser}',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: _colors.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+                              maxLines: 1),
                           ),
                           SizedBox(width: 4),
                           if (user.isConnected ?? false)

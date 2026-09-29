@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -316,7 +317,7 @@ class _WeeklyPostCard extends StatelessWidget {
                     const SizedBox(height: 4),
 
                     // Auteur
-                    Text('@$pseudo',
+                    NameTag(label: '@$pseudo',
                         style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
 
                     const SizedBox(height: 6),

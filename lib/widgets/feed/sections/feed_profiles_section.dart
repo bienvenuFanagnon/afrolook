@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -372,8 +373,7 @@ class _RoundCard extends StatelessWidget {
             const SizedBox(height: 3),
 
             // Pseudo
-            Text(
-              pseudo,
+            NameTag(label: pseudo,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -382,8 +382,7 @@ class _RoundCard extends StatelessWidget {
                 fontSize: 10,
                 fontWeight:
                     unseenCount > 0 ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
+              )),
 
             // Abonnés
             Row(
@@ -531,8 +530,7 @@ class _CanalRoundCard extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             // Nom du canal
-            Text(
-              name,
+            NameTag(label: '#$name',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -540,8 +538,7 @@ class _CanalRoundCard extends StatelessWidget {
                 color: colors.textPrimary,
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-              ),
-            ),
+              )),
             // Abonnés
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

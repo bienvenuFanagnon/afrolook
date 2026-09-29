@@ -486,7 +486,7 @@ class _UserCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+              NameTag(label: name, maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               if (followers > 0)
                 Text('$followers abonné${followers > 1 ? 's' : ''}',

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart' show CanalDetails;
 import 'package:afrotok/pages/component/showUserDetails.dart';
@@ -476,12 +477,10 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              '${entry.isCanal ? '#' : '@'}${entry.displayName}',
+                            child: NameTag(label: '${entry.isCanal ? '#' : '@'}${entry.displayName}',
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              overflow: TextOverflow.ellipsis),
                           ),
                           if (_isVerified(entry)) ...[
                             const SizedBox(width: 2),

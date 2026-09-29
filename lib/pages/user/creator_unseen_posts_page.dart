@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -397,15 +398,13 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(
-                            pseudo,
+                          child: NameTag(label: pseudo,
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            overflow: TextOverflow.ellipsis),
                         ),
                         const SizedBox(width: 4),
                         UserBadgeWidget(

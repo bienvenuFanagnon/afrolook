@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -272,7 +273,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_userData!.pseudo ?? '—',
+          NameTag(label: '@${_userData!.pseudo ?? '—'}',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _textP)),
           if ((_userData!.email ?? '').isNotEmpty)
             Text(_userData!.email!, style: TextStyle(fontSize: 11, color: _textS)),
