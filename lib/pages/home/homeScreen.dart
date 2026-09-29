@@ -100,6 +100,7 @@ import '../user/amis/ami.dart';
 import '../user/amis/pageMesInvitations.dart';
 import '../user/inviteAmis.dart';
 import '../user/monetisation.dart';
+import '../intro/tutos/tuto_scene_card.dart';
 import '../user/account_deletion_page.dart';
 import '../coins/coin_recharge_screen.dart';
 import '../user/UserRetrait/userRetraitForm.dart';
@@ -568,6 +569,10 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.account_balance_wallet_rounded,
                       label: context.tr('Mon portefeuille'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
+                  _dItem(context, colors,
+                      icon: Icons.school_rounded,
+                      label: context.tr('Tous les tutoriels'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TutoListPage()))),
 
                   // ── Applications ───────────────────────────────────────────
                   _dSection(colors, 'Applications'),
@@ -2718,6 +2723,7 @@ class _MyHomePageState extends State<MyHomePage>
                 _rpSection(colors, 'Business'),
                 if (!kIsAppleStore) _rpItem(context, colors, icon: Icons.play_lesson_outlined, iconColor: const Color(0xFFFFD400), label: context.tr('Contenu Business'), onTap: () => _setDesktopSection(DashboardContentScreen(), 'Business')),
                 _rpItem(context, colors, icon: Icons.account_balance_wallet_rounded, label: context.tr('Mon portefeuille'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
+                _rpItem(context, colors, icon: Icons.school_rounded, label: context.tr('Tous les tutoriels'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TutoListPage()))),
 
                 // ── Découverte ───────────────────────────────────────
                 _rpSection(colors, 'Découverte'),
