@@ -308,7 +308,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                '200 FCFA',
+                                '500 pièces',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 24,

@@ -2499,7 +2499,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     final colors = AppColors.of(context);
     final isCanalPost = currentCanal != null;
     final isPrivate = currentCanal?.isPrivate == true;
-    final subscriptionPrice = currentCanal?.subscriptionPrice ?? 0;
+    final subscriptionPrice = currentCanal?.subscriptionPriceCoins ?? 0;
 
     return Container(
       width: double.infinity,
@@ -2530,7 +2530,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             SizedBox(width: 8),
             Text(
               isPrivate
-                  ? 'S\'ABONNER - ${subscriptionPrice.toInt()} FCFA'
+                  ? 'S\'ABONNER - $subscriptionPrice pièces'
                   : 'SUIVRE LE CANAL',
               style: TextStyle(
                 fontSize: 14,

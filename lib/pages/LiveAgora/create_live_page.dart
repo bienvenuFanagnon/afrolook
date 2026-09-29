@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+﻿import '../../utils/platform_guard.dart';
+import 'dart:async';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1188,7 +1189,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
         hintText: '250',
         suffixText: 'pièces',
-        helperText: '1 FCFA = 2,5 pièces',
+        helperText: kIsAppleStore ? null : '1 FCFA = 2,5 pièces',
         hintStyle: TextStyle(color: Colors.grey[600]),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF2E7D32)),

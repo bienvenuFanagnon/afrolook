@@ -1,3 +1,4 @@
+import '../../utils/platform_guard.dart';
 import 'package:afrotok/pages/LiveAgora/live_list_page.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -481,7 +482,7 @@ class TopLiveGridModal {
                   child: Column(
                     children: [
                       Text(
-                        "En faisant un live, vous pouvez gagner plus de 50 000 FCFA!",
+                        kIsAppleStore ? "En faisant un live, vous pouvez gagner beaucoup de pièces !" : "En faisant un live, vous pouvez gagner plus de 50 000 FCFA!",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,

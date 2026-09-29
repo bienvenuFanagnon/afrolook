@@ -1274,7 +1274,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                                 ),
                                 SizedBox(width: 2),
                                 Text(
-                                  hasSubscription ? '${canal.subscriptionPrice.toInt()} FCFA' : 'Privé',
+                                  hasSubscription ? '${canal.subscriptionPriceCoins} pièces' : 'Privé',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 8,

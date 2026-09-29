@@ -1,3 +1,4 @@
+import '../../utils/platform_guard.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -258,7 +259,7 @@ class _NewCanalState extends State<NewCanal> {
               decoration: InputDecoration(
                 labelText: context.tr('Prix de l\'abonnement (pièces)'),
                 suffixText: context.tr('pièces'),
-                helperText: context.tr('1 FCFA = 2,5 pièces'),
+                helperText: kIsAppleStore ? null : context.tr('1 FCFA = 2,5 pièces'),
                 labelStyle: TextStyle(color: _colors.accent),
                 prefixIcon: Icon(Icons.toll_rounded, color: _colors.accent),
                 border: OutlineInputBorder(

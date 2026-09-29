@@ -1,3 +1,4 @@
+import '../utils/platform_guard.dart';
 import 'package:flutter/material.dart';
 import '../models/model_data.dart';
 import '../pages/coins/coin_recharge_screen.dart';
@@ -237,8 +238,9 @@ void showInsufficientCoinsForLikeDialog({
               style: TextStyle(color: dc.textSecondary, fontSize: 12, height: 1.4),
             ),
             const SizedBox(height: 8),
-            Text(context.tr('💎 Vous pouvez obtenir 500 pièces à 250 FCFA'),
-                style: TextStyle(color: dc.textSecondary, fontSize: 12)),
+            if (!kIsAppleStore)
+              Text(context.tr('💎 Vous pouvez obtenir 500 pièces à 250 FCFA'),
+                  style: TextStyle(color: dc.textSecondary, fontSize: 12)),
             if (!hasClaimed) ...[
               const SizedBox(height: 12),
               Container(
