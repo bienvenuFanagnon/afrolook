@@ -1,5 +1,6 @@
 # SUIVI REFONTE UI — AFROLOOK V2
-_Dernière mise à jour : 7 juillet 2026 (session 94)_
+_Dernière mise à jour : 29 septembre 2026_
+_Les travaux de septembre (pièces, DÉFI, App Store, devises, tutoriels…) sont suivis dans `PLAN_REPRISE.md` et l'historique git._
 
 ---
 
