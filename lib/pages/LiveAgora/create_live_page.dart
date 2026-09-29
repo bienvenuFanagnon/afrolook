@@ -1,5 +1,5 @@
 import 'package:afrotok/services/account_gate.dart';
-﻿import '../../utils/platform_guard.dart';
+import '../../utils/platform_guard.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
