@@ -365,7 +365,7 @@ class AppLocalizations {
   String get menuFavorites => _t({'fr': 'Mes favoris', 'en': 'My favorites', 'es': 'Mis favoritos', 'de': 'Meine Favoriten', 'ar': 'المفضلة لدي', 'pt': 'Meus favoritos', 'zh': '我的收藏', 'sw': 'Vipendwa vyangu'});
   String get menuServicesJobs => '🛠️Services & Jobs 💼';
   String get menuServicesJobsSubtitle => _t({'fr': 'Chercher des gens pour bosser', 'en': 'Find people to work with', 'es': 'Buscar personas para trabajar', 'de': 'Personen zum Arbeiten finden', 'ar': 'البحث عن أشخاص للعمل معهم', 'pt': 'Encontrar pessoas para trabalhar', 'zh': '寻找合作伙伴', 'sw': 'Tafuta watu wa kufanya kazi nao'});
-  String get menuAfroshopMarket => 'Afroshop Market';
+  String get menuAfroshopMarket => _t({'fr': 'Vente de produit', 'en': 'Product sales', 'es': 'Venta de productos', 'de': 'Produktverkauf', 'ar': 'بيع المنتجات', 'pt': 'Venda de produtos', 'zh': '产品销售', 'sw': 'Uuzaji wa bidhaa'});
   String get menuAfroCoinMarket => 'AfroCoin Market';
   String get menuMyLives => _t({'fr': 'Mes lives', 'en': 'My lives', 'es': 'Mis transmisiones en vivo', 'de': 'Meine Lives', 'ar': 'بثوثي المباشرة', 'pt': 'Minhas lives', 'zh': '我的直播', 'sw': 'Matangazo yangu ya moja kwa moja'});
   String get menuMyChallenges => _t({'fr': 'Mes challenges', 'en': 'My challenges', 'es': 'Mis desafíos', 'de': 'Meine Challenges', 'ar': 'تحدياتي', 'pt': 'Meus desafios', 'zh': '我的挑战', 'sw': 'Changamoto zangu'});
