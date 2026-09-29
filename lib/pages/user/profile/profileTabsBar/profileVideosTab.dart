@@ -1,3 +1,5 @@
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -526,12 +528,12 @@ bool _isLoading=false;
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  TextCustomerUserTitle(
-                                    titre: "${formatNumber(post.user!.followersCount)} abonné(s)",
+                                  FollowersCountBuilder(userId: post.user!.id, fallback: post.user!.followersCount, builder: (_, c) => TextCustomerUserTitle(
+                                    titre: "${formatCompactCount(c)} abonné(s)",
                                     fontSize: SizeText.homeProfileTextSize,
                                     couleur: ConstColors.textColors,
                                     fontWeight: FontWeight.w400,
-                                  ),
+                                  )),
                                 ],
                               ),
                               StatefulBuilder(

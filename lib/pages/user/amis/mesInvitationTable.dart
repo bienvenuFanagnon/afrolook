@@ -1,3 +1,5 @@
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'dart:async';
 import 'package:afrotok/services/api.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -70,8 +72,8 @@ class _MesInvitationsState extends State<MesInvitations> {
                       children: <Widget>[
                         Text("@${invitation.inviteUser!.pseudo!}".toLowerCase(), style: const TextStyle(fontSize: 16)),
                         const SizedBox(height: 6),
-                        Text('${formatNumber(invitation.inviteUser!.followersCount)} abonné(s)',
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                        FollowersCountBuilder(userId: invitation.inviteUser!.id, fallback: invitation.inviteUser!.followersCount, builder: (_, c) => Text('${formatCompactCount(c)} abonné(s)',
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600))),
                       ],
                     ),
                     Visibility(

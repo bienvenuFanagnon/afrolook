@@ -1,3 +1,5 @@
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -279,12 +281,12 @@ class _ProfileEntreprisePostImageTabState extends State<ProfileEntreprisePostIma
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      TextCustomerUserTitle(
-                                        titre: "${formatNumber(post.user!.followersCount) } abonné(s)",
+                                      FollowersCountBuilder(userId: post.user!.id, fallback: post.user!.followersCount, builder: (_, c) => TextCustomerUserTitle(
+                                        titre: "${formatCompactCount(c)} abonné(s)",
                                         fontSize: 10,
                                         couleur: ConstColors.textColors,
                                         fontWeight: FontWeight.w400,
-                                      ),
+                                      )),
 
                                     ],
                                   ),

@@ -103,7 +103,7 @@ _(ajouter ici une ligne par lot terminé : date, commit)_
 
 ### Suite LOT 2 (29/09) — abonnés uniformisés
 Nouveau `lib/services/followers_count_service.dart` (`FollowersCountBuilder`) : une seule source (doc `Users`, max(liste, compteur), cache 3 min) + format `formatCompactCount`. Branché sur : feed (`postWidgetPage`, `postView`), détails image/audio (`postDetails`), vidéo paysage/portrait (`postDetailsVideo`, `post_video_format_tel_details`, `youTube_video_card`), Mon profil (`profile.dart`, `profile_page.dart`), création de post (`userPostForm`).
-- [ ] À faire : brancher aussi les listes secondaires (`mesAmis`, `listTopModal`, `detailsOtherUser`, `afrovideo`, `video_details`, `entreprisePost*`, etc.) si l'écart y est vu ; appeler `FollowersCountService.instance.invalidate(userId)` après abonnement/désabonnement.
+- [x] Listes secondaires branchées (amis, invitations, autre profil, onglets profil, entreprise). Non branchés volontairement (listes longues, coût en lectures) : classements, top, découverte.
 - [ ] Vérifier si le compteur `abonnes` et la liste `userAbonnesIds` divergent dans Firestore (cause probable de 171 vs 123) et réparer les données.
 
 ### Suite LOT 4 (29/09) — V1 livrée

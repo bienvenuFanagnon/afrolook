@@ -1,4 +1,6 @@
 ﻿
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:country_flags/country_flags.dart';
@@ -337,12 +339,12 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                       //width: 70,
                       child: Container(
                         alignment: Alignment.center,
-                        child: TextCustomerPostDescription(
-                          titre: "${widget.user.followersCount}",
+                        child: FollowersCountBuilder(userId: widget.user.id, fallback: widget.user.followersCount, builder: (_, c) => TextCustomerPostDescription(
+                          titre: "${formatCompactCount(c)}",
                           fontSize: 15,
                           couleur: ConstColors.textColors,
                           fontWeight: FontWeight.w600,
-                        ),
+                        )),
                       ),
                     ),
                   ),
@@ -1287,11 +1289,11 @@ class _UserProfileModalState extends State<UserProfileModal> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildStatItem(
-                            formatNumber(widget.user.followersCount),
+                          FollowersCountBuilder(userId: widget.user.id, fallback: widget.user.followersCount, builder: (_, c) => _buildStatItem(
+                            formatCompactCount(c),
                             l10n.profileFollowers,
                             const Color(0xFFFFD700),
-                          ),
+                          )),
                           _buildStatItem(
                             '${taux.toStringAsFixed(1)}%',
                             l10n.profilePopularity,

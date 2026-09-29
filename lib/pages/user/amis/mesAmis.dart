@@ -1,5 +1,7 @@
 
 
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'dart:async';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -118,7 +120,7 @@ class _MesAmisState extends State<MesAmis> {
                             children: <Widget>[
                               Text("@${amigo.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: colors.textPrimary),),
                               SizedBox(height: 6,),
-                              Text('${formatNumber(amigo.friend!.followersCount)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),),
+                              FollowersCountBuilder(userId: amigo.friend!.id, fallback: amigo.friend!.followersCount, builder: (_, c) => Text('${formatCompactCount(c)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),)),
                             ],
                           ),
                           Visibility(
