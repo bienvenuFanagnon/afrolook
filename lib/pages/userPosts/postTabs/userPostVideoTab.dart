@@ -2002,6 +2002,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
   }
 
   Future<void> _checkVideoQualityModalStatus() async {
+    // Fenêtre « Gagnez de l'argent » désactivée : elle annonçait des gains en argent (règle App Store 3.1.1)
+    return;
+    // ignore: dead_code
     final prefs = await SharedPreferences.getInstance();
     final hasSeenModal = prefs.getBool('has_seen_video_quality_modal') ?? false;
     if (!hasSeenModal && mounted) {

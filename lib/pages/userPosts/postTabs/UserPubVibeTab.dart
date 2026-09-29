@@ -1446,6 +1446,9 @@ class _UserPubVibeState extends State<UserPubVibe> {
   }
 
   Future<void> _checkVideoQualityModalStatus() async {
+    // Fenêtre « Gagnez de l'argent » désactivée : elle annonçait des gains en argent (règle App Store 3.1.1)
+    return;
+    // ignore: dead_code
     final prefs = await SharedPreferences.getInstance();
     final hasSeenModal = prefs.getBool('has_seen_vibe_modal') ?? false;
     if (!hasSeenModal && mounted) {
