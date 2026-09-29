@@ -1447,7 +1447,12 @@ class _MyHomePageState extends State<MyHomePage>
     final inPriorityPeriod = DateTime.now().isBefore(priorityEnd);
     final modalKeys = inPriorityPeriod
         ? ['affiliation_marketing', 'remuneration', 'invite_amis']
-        : ['remuneration', 'top_dating', 'invite_amis', 'affiliation_marketing'];
+        : [
+            'remuneration',
+            if (!kIsAppleStore) 'top_dating', // Afrolove est masqué sur iPhone/iPad (App Store)
+            'invite_amis',
+            'affiliation_marketing',
+          ];
     final modalToShow = await DailyModalService.getModalToShowToday(modalKeys);
     if (modalToShow == null) return;
 

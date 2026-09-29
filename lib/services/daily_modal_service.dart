@@ -45,7 +45,11 @@ class DailyModalService {
     }
     if (notShown.isEmpty) return null;
     // Choisir un modal au hasard parmi ceux non affichés
-    notShown.shuffle();
+    // Rotation équitable : celui affiché le moins récemment (jamais affiché = en premier),
+    // au lieu du hasard qui pouvait laisser une fenêtre (ex. Afrolove) des semaines sans passer.
+    final prefs = await SharedPreferences.getInstance();
+    notShown.shuffle(); // départage les égalités
+    notShown.sort((a, b) => (prefs.getString('$_keyPrefix$a') ?? '').compareTo(prefs.getString('$_keyPrefix$b') ?? ''));
     return notShown.first;
   }
 
