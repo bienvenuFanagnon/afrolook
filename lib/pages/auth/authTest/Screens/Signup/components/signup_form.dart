@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_preview.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import 'dart:math';
@@ -234,6 +235,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         return null;
                       },
                     ),
+NamePreview(controller: pseudoController),
                     SizedBox(height: 15),
 
                     // Sélecteur de genre
@@ -587,6 +589,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         inputFormatters: [PseudoInputFormatter()],
         validator: (v) => (v == null || v.isEmpty) ? l10n.signupPseudoRequired : ((v.length < kPseudoMinLength || v.length > kPseudoMaxLength) ? l10n.signupPseudoTooShort : null),
       ),
+NamePreview(controller: pseudoController),
       const SizedBox(height: 15),
       Container(
         decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(15)),

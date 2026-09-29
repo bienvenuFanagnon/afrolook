@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import 'package:afrotok/services/followers_count_service.dart';
@@ -719,6 +720,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildPseudoStatusIcon(),
                     ],
                   ),
+                  NamePreview(controller: _pseudoController),
                   const SizedBox(height: 2),
                   if (_pseudoStatus == 'available')
                     Text('Disponible', style: const TextStyle(color: Colors.green, fontSize: 11)),

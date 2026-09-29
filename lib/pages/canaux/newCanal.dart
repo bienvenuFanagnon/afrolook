@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import '../../utils/platform_guard.dart';
 import 'dart:io';
@@ -434,6 +435,7 @@ class _NewCanalState extends State<NewCanal> {
             },
             controller: _titreController,
           ),
+          NamePreview(controller: _titreController, canal: true),
           SizedBox(height: 20),
           TextFormField(
             controller: _descriptionController,

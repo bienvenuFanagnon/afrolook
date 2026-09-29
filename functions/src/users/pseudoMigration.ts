@@ -33,6 +33,27 @@ export function normalizePseudo(input: string): string {
 
 const MAX_POSTS_PER_ITEM = 500;
 
+/** Suffixe stable à 4 chiffres tiré de l'identifiant. */
+function digitsOf(id: string): string {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return String(1000 + (h % 9000));
+}
+
+/**
+ * Nom de remplacement quand l'ancien ne contient rien de valable une fois nettoyé (emojis seuls, symboles…) :
+ * prénom.nom, puis début de l'e-mail, sinon « afro1234 » (« canal1234 » pour un canal).
+ */
+function fallbackName(collection: string, doc: FirebaseFirestore.QueryDocumentSnapshot): string {
+  const cands: string[] = [];
+  if (collection === "Users") {
+    cands.push(normalizePseudo(`${doc.get("prenom") ?? ""}.${doc.get("nom") ?? ""}`));
+    cands.push(normalizePseudo(String(doc.get("email") ?? "").split("@")[0]));
+  }
+  for (const c of cands) if (c.length >= 3) return c.slice(0, 20);
+  return `${collection === "Users" ? "afro" : "canal"}${digitsOf(doc.id)}`;
+}
+
 interface MigrationConfig {
   collection: string; // Users | Canaux
   field: string; // pseudo | titre
@@ -78,22 +99,24 @@ function buildMigration(cfg: MigrationConfig) {
     if (cursor) q = q.startAfter(cursor);
     const page = await q.get();
 
-    type Change = { id: string; from: string; to: string; suffix: boolean; postsLeft?: number };
+    type Change = { id: string; from: string; to: string; suffix: boolean; replaced?: boolean; postsLeft?: number };
     const changes: Change[] = [];
     const skipped: Array<{ id: string; pseudo: string; reason: string }> = [];
 
     for (const doc of page.docs) {
       const old = doc.get(cfg.field);
       if (typeof old !== "string" || !old) continue;
-      const base = normalizePseudo(old);
+      let base = normalizePseudo(old);
       if (base === old) { taken.add(old); continue; }
-      if (base.length < 3) { skipped.push({ id: doc.id, pseudo: old, reason: "trop court après normalisation" }); continue; }
+      // Rien de valable après nettoyage (emojis seuls, symboles…) : nom de remplacement
+      const replaced = base.length < 3;
+      if (replaced) base = fallbackName(cfg.collection, doc);
 
       let target = base;
       let n = 2;
       while (taken.has(target)) target = `${base}${n++}`;
       taken.add(target);
-      const change: Change = { id: doc.id, from: old, to: target, suffix: target !== base };
+      const change: Change = { id: doc.id, from: old, to: target, suffix: target !== base, ...(replaced ? { replaced: true } : {}) };
 
       if (!dryRun) {
         const batch = db.batch();
@@ -129,6 +152,7 @@ function buildMigration(cfg: MigrationConfig) {
         changed: FieldValue.increment(changes.length),
         suffixed: FieldValue.increment(changes.filter((c) => c.suffix).length),
         skipped: FieldValue.increment(skipped.length),
+        replaced: FieldValue.increment(changes.filter((c) => c.replaced).length),
         lastCursor: finished ? null : last,
       }, { merge: true });
     }
@@ -137,6 +161,7 @@ function buildMigration(cfg: MigrationConfig) {
       scanned: page.size,
       changed: changes.length,
       skipped: skipped.length,
+      replaced: changes.filter((c) => c.replaced).length,
       done: finished,
       nextCursor: finished ? null : last,
       changes: changes.slice(0, 200),

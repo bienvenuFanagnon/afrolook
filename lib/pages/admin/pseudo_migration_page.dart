@@ -184,7 +184,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
             _card(c, [
               Text('Résultat de la simulation', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
-              Text('$_scanned comptes parcourus · $_changed à modifier · $_skipped ignorés (trop courts)',
+              Text('$_scanned parcourus · $_changed à modifier (dont ceux à remplacer : emojis ou symboles seuls) · $_skipped ignorés',
                   style: TextStyle(color: c.textSecondary, fontSize: 13)),
               const SizedBox(height: 10),
               for (final s in _sample)
@@ -192,6 +192,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(children: [
                     Expanded(child: Text('${s['from']}', style: TextStyle(color: c.textSecondary, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                    if (s['replaced'] == true) Padding(padding: const EdgeInsets.only(right: 4), child: Text('remplacé', style: TextStyle(color: c.warning, fontSize: 10.5, fontWeight: FontWeight.w800))),
                     Icon(Icons.arrow_forward_rounded, size: 14, color: c.textSecondary),
                     const SizedBox(width: 6),
                     Flexible(child: (widget.canaux ? CanalTag(label: '#${s['to']}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)) : PseudoTag(label: '@${s['to']}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)))),

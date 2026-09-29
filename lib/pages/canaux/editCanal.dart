@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -529,6 +530,7 @@ class _EditCanalState extends State<EditCanal> {
             },
             controller: _titreController,
           ),
+          NamePreview(controller: _titreController, canal: true),
           SizedBox(height: 20),
           TextFormField(
             controller: _descriptionController,

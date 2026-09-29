@@ -176,3 +176,8 @@ Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages 
 - Règle des noms de canaux : mêmes règles que les pseudos, 3 à 30 caractères (`kCanalMaxLength`), appliquée à la création (`newCanal.dart`) et à la modification (`editCanal.dart`, avec test d'unicité et mise à jour de `CanalNames`).
 - Migration : fonction `migrateCanalNames` (même moteur que les pseudos, statut `AppConfig/canalMigration`, exécution unique), carte admin « Noms de canaux ». **À déployer** (`firebase deploy --only functions:migrateCanalNames,functions:migratePseudos`) puis sauvegarder Firestore.
 - [ ] Restent en texte simple : noms de canaux tronqués (`substring(...)`), notifications, `name:`/`appName:` passés à des widgets tiers.
+
+### 29/09 — Noms propres : emojis interdits, aperçu en direct, remplacement des anciens
+- Emojis et tout caractère hors a-z 0-9 . déjà bloqués à la saisie (formatter) et à la collée ; ajout de `NamePreview` (aperçu du rendu final capsule/badge + compteur x/20 ou x/30) sous les champs : inscription (2 formulaires), modification du pseudo (profil), création et modification de canal.
+- Migration : un pseudo/nom composé seulement d'emojis ou symboles reçoit un nom de remplacement (prénom.nom, sinon début d'e-mail, sinon `afro1234` / `canal1234`), signalé « remplacé » dans la simulation.
+- Non appliqué : pseudos des profils Afrolove (dating), qui ont leur propre formulaire.
