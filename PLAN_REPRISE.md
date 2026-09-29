@@ -157,3 +157,9 @@ Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages 
 - `tutos/tuto_layouts.dart` : reproductions plus proches des vraies pages — **live** (hôte, compteurs, messages et cadeaux, solde Dépôt/Gagnées, cadeaux rapides, barre « Envoyer un message… », actions), **live privé** (écran d'entrée payante), **commentaires** (en-tête du post, bandeau « Ce post a rapporté… », commentaires avec ❤ / Répondre / réponses / 🎁 cadeau, barre de saisie), **détails de post** (média, bandeau, stats). Scènes likes/cadeaux/commentaires/lives/live privé (nouvelle scène) les utilisent.
 - Les tutoriels ne parlent plus de pourcentages (70 %, 2,5 %…) : uniquement des montants en pièces d'exemple.
 - [ ] Autres scènes (groupes, canal, DÉFI, retrait, boost, parrainage, contenu payant) encore en maquette d'éléments : à rapprocher des vraies pages avec des captures.
+
+### 29/09 — Migration des pseudos (format « prenom.nom »)
+- Règle : `lib/utils/pseudo_format.dart` (`normalizePseudo`, `PseudoInputFormatter`) = même règle que `functions/src/users/pseudoMigration.ts` : minuscules, espaces/`_`/`-` → `.`, accents retirés, seuls a-z 0-9 `.`.
+- Appliquée à l'inscription (`signup_form.dart`, 2 formulaires) et à la modification du pseudo (`profile_page.dart`), y compris la vérification d'unicité (forme normalisée + ancienne forme).
+- Migration : fonction `migratePseudos` (admin) — simulation par défaut (`dryRun: true`), par lots (`cursor`). **PAS ENCORE EXÉCUTÉE** : à déployer puis lancer par le propriétaire (sauvegarde Firestore avant). Doublons → suffixe numérique.
+- [ ] Non couvert : @mentions déjà écrites dans d'anciens posts/commentaires, liens d'invitation contenant l'ancien pseudo, recherches/affichages qui comparent l'ancien pseudo (Chat, Nom des canaux admins…), autres copies du pseudo (commentaires, notifications, chats).

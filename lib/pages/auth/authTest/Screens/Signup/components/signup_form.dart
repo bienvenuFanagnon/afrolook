@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:afrotok/utils/pseudo_format.dart';
 import 'dart:math';
 import 'package:afrotok/layout/branding_carousel_panel.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -56,8 +58,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<bool> verifierPseudo(String nom) async {
+    // Règle des pseudos : minuscules avec points. On teste aussi l'ancienne forme (underscores)
+    // tant que la migration n'a pas converti tous les comptes.
+    final n = normalizePseudo(nom);
     final snap = await firestore.collection("Pseudo")
-        .where('name', isEqualTo: nom.trim().toLowerCase())
+        .where('name', whereIn: [n, n.replaceAll('.', '_')])
         .limit(1)
         .get();
 
@@ -218,6 +223,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: pseudoController,
                       hintText: l10n.signupPseudoUnique,
                       prefixIcon: Icons.person_outline,
+                      inputFormatters: [PseudoInputFormatter()],
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return l10n.signupPseudoRequired;
@@ -375,8 +381,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               authProvider.initializeData();
                               authProvider.registerUser.numeroDeTelephone = telephoneController.text;
                               authProvider.registerUser.codeParrain = code_parrainageController.text.trim();
-                              authProvider.registerUser.codeParrainage = "${pseudoController.text}${genererNombreAleatoire()}".replaceAll(' ', '');
-                              authProvider.registerUser.pseudo = pseudoController.text.trim().replaceAll(' ', '_');
+                              authProvider.registerUser.codeParrainage = "${normalizePseudo(pseudoController.text)}${genererNombreAleatoire()}".replaceAll(' ', '');
+                              authProvider.registerUser.pseudo = normalizePseudo(pseudoController.text);
                               authProvider.registerUser.genre = selectedGenre;
                               authProvider.registerUser.password = motDePasseController.text;
                               authProvider.registerUser.email = emailController.text;
@@ -578,6 +584,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       const SizedBox(height: 15),
       _buildTextField(
         context: context, controller: pseudoController, hintText: l10n.signupPseudoUnique, prefixIcon: Icons.person_outline,
+        inputFormatters: [PseudoInputFormatter()],
         validator: (v) => (v == null || v.isEmpty) ? l10n.signupPseudoRequired : (v.length < 3 ? l10n.signupPseudoTooShort : null),
       ),
       const SizedBox(height: 15),
@@ -636,8 +643,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 authProvider.initializeData();
                 authProvider.registerUser.numeroDeTelephone = telephoneController.text;
                 authProvider.registerUser.codeParrain = code_parrainageController.text.trim();
-                authProvider.registerUser.codeParrainage = "${pseudoController.text}${genererNombreAleatoire()}".replaceAll(' ', '');
-                authProvider.registerUser.pseudo = pseudoController.text.trim().replaceAll(' ', '_');
+                authProvider.registerUser.codeParrainage = "${normalizePseudo(pseudoController.text)}${genererNombreAleatoire()}".replaceAll(' ', '');
+                authProvider.registerUser.pseudo = normalizePseudo(pseudoController.text);
                 authProvider.registerUser.genre = selectedGenre;
                 authProvider.registerUser.password = motDePasseController.text;
                 authProvider.registerUser.email = emailController.text;
@@ -679,11 +686,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required IconData prefixIcon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     final colors = AppColors.of(context);
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       style: TextStyle(color: colors.textPrimary),
       decoration: InputDecoration(
         filled: true,

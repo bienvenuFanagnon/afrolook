@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/pseudo_format.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
@@ -204,9 +205,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _onPseudoChanged() {
     _pseudoDebounce?.cancel();
-    final formatted = _pseudoController.text.trim().replaceAll(' ', '_');
+    final formatted = normalizePseudo(_pseudoController.text);
 
-    if (formatted.toLowerCase() == _originalPseudo.toLowerCase()) {
+    // Un ancien pseudo (majuscules, underscores) équivalent au nouveau format n'est pas un changement :
+    // il sera converti par la migration.
+    if (formatted == normalizePseudo(_originalPseudo)) {
       setState(() => _pseudoStatus = 'same');
       return;
     }
@@ -225,8 +228,8 @@ class _ProfilePageState extends State<ProfilePage> {
       try {
         final snap = await firestore.collection('Pseudo').get();
         final taken = snap.docs.any((doc) {
-          final name = (doc.data()['name'] as String? ?? '').toLowerCase();
-          return name == formatted.toLowerCase();
+          final name = normalizePseudo(doc.data()['name'] as String? ?? '');
+          return name == formatted;
         });
         if (mounted) setState(() => _pseudoStatus = taken ? 'taken' : 'available');
       } catch (_) {
@@ -350,9 +353,9 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
   Future<void> _updateUserInfo() async {
-    final formattedPseudo = _pseudoController.text.trim().replaceAll(' ', '_');
+    final formattedPseudo = normalizePseudo(_pseudoController.text);
     // Référence serveur stable — pas le local state qui peut dériver
-    final pseudoChanged = formattedPseudo.toLowerCase() != _originalPseudo.toLowerCase();
+    final pseudoChanged = formattedPseudo != normalizePseudo(_originalPseudo);
 
     // Guards si le pseudo a été modifié
     if (pseudoChanged) {
@@ -701,14 +704,12 @@ class _ProfilePageState extends State<ProfilePage> {
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                          ],
+                          inputFormatters: [PseudoInputFormatter()],
                           decoration: InputDecoration(
                             isDense: true,
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
-                            hintText: 'votre_pseudo',
+                            hintText: 'votre.pseudo',
                             hintStyle: TextStyle(color: _colors.textSecondary),
                           ),
                         ),

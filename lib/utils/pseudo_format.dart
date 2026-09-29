@@ -1,0 +1,29 @@
+import 'package:flutter/services.dart';
+
+/// Règle des pseudos : minuscules, mots séparés par un point (ex. « olivier.bernard »).
+/// Espaces, tirets et underscores deviennent des points ; accents retirés ; seuls a-z, 0-9 et « . » restent ;
+/// pas de point au début, à la fin ni doublé.
+/// La même règle est appliquée par la migration serveur (functions/src/users/pseudoMigration.ts).
+String normalizePseudo(String input) {
+  const from = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿœæ';
+  const to = ['a', 'a', 'a', 'a', 'a', 'a', 'c', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'n', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'y', 'oe', 'ae'];
+  final b = StringBuffer();
+  for (final ch in input.trim().toLowerCase().split('')) {
+    final i = from.indexOf(ch);
+    b.write(i >= 0 ? to[i] : ch);
+  }
+  var s = b.toString().replaceAll(RegExp(r'[\s_\-]+'), '.').replaceAll(RegExp(r'[^a-z0-9.]'), '');
+  s = s.replaceAll(RegExp(r'\.{2,}'), '.');
+  return s.replaceAll(RegExp(r'^\.+|\.+$'), '');
+}
+
+/// Applique la règle pendant la saisie (le point final est toléré pour pouvoir écrire « olivier. »).
+class PseudoInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final trailingDot = RegExp(r'[\s_\-.]$').hasMatch(newValue.text);
+    var t = normalizePseudo(newValue.text);
+    if (trailingDot && t.isNotEmpty) t = '$t.';
+    return TextEditingValue(text: t, selection: TextSelection.collapsed(offset: t.length));
+  }
+}
