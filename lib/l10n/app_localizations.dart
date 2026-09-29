@@ -58,7 +58,7 @@ class AppLocalizations {
   String get tabRecent => _t({'fr': '🕐 Récent', 'en': '🕐 Recent', 'es': '🕐 Reciente', 'de': '🕐 Aktuell', 'ar': '🕐 الأحدث', 'pt': '🕐 Recente', 'zh': '🕐 最新', 'sw': '🕐 Hivi Karibuni'});
   String get tabSport => '⚽ Sport';
   String get tabVibe => _t({'fr': '📱 Vibe vidéos', 'en': '📱 Vibe videos', 'es': '📱 Vibe vídeos', 'de': '📱 Vibe-Videos', 'ar': '📱 فيديوهات Vibe', 'pt': '📱 Vibe vídeos', 'zh': '📱 Vibe视频', 'sw': '📱 Video za Vibe'});
-  String get tabEvents => _t({'fr': '📅 Événements', 'en': '📅 Events', 'es': '📅 Eventos', 'de': '📅 Veranstaltungen', 'ar': '📅 الفعاليات', 'pt': '📅 Eventos', 'zh': '📅 活动', 'sw': '📅 Matukio'});
+  String get tabEvents => _t({'fr': '📅 Évén.', 'en': '📅 Events', 'es': '📅 Eventos', 'de': '📅 Events', 'ar': '📅 فعاليات', 'pt': '📅 Eventos', 'zh': '📅 活动', 'sw': '📅 Matukio'});
   String get tabVip => _t({'fr': '🪙 Business', 'en': '🪙 Business', 'es': '🪙 Business', 'de': '🪙 VIP-Bereich', 'ar': '🪙 منطقة VIP', 'pt': '🪙 Zona VIP', 'zh': '🪙 VIP专区', 'sw': '🪙 Eneo la VIP'});
   String get tabChallenges => '🏆 Challenges';
   String get tabChroniques => _t({'fr': '🌟 Chroniques', 'en': '🌟 Chronicles', 'es': '🌟 Crónicas', 'de': '🌟 Chroniken', 'ar': '🌟 السجلات', 'pt': '🌟 Crônicas', 'zh': '🌟 纪事', 'sw': '🌟 Mambo Mapya'});
