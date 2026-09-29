@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import '../../widgets/safe_network_avatar.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -998,16 +999,14 @@ class _CanalDetailsState extends State<CanalDetails> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              "#${widget.canal.titre!}",
+                            child: NameTag(label: "#${widget.canal.titre!}",
                               style: TextStyle(
                                 color: _colors.textPrimary,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
                               maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              overflow: TextOverflow.ellipsis),
                           ),
                           SizedBox(width: 8),
                           if (widget.canal.isVerify == true)
@@ -1741,13 +1740,11 @@ class _CanalDetailsState extends State<CanalDetails> {
       backgroundColor: _colors.background,
       appBar: AppBar(
         iconTheme: IconThemeData(color: _colors.textPrimary),
-        title: Text(
-          '#${widget.canal.titre ?? ''}',
+        title: NameTag(label: '#${widget.canal.titre ?? ''}',
           style: TextStyle(
             color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
-          ),
-        ),
+          )),
         backgroundColor: _colors.background,
         elevation: 0,
         actions: [

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -57,8 +58,7 @@ class _UserPostFormState extends State<UserPostForm> {
       appBar: AppBar(
         backgroundColor: _colors.surfaceVariant,
         elevation: 0,
-        title: Text(
-          widget.defiPostId != null
+        title: NameTag(label: widget.defiPostId != null
               ? '🏆 Répondre au Défi'
               : _isCanal
                   ? '#${widget.canal!.titre ?? 'Canal'}'
@@ -67,8 +67,7 @@ class _UserPostFormState extends State<UserPostForm> {
             color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 20,
-          ),
-        ),
+          )),
         centerTitle: true,
         actions: [
           Padding(

@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/pseudo_format.dart';
 import '../../utils/platform_guard.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -80,10 +81,13 @@ class _NewCanalState extends State<NewCanal> {
   }
 
   Future<bool> verifierCanalName(String nom) async {
-    CollectionReference pseudos = firestore.collection("CanalNames");
-    QuerySnapshot snapshot = await pseudos.get();
-    final list = snapshot.docs.map((doc) => UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    bool existe = list.any((e) => e.name!.toLowerCase() == nom.toLowerCase());
+    // Règle des noms de canaux : minuscules avec points (on teste aussi l'ancienne forme à underscores).
+    final n = normalizePseudo(nom);
+    final snapshot = await firestore.collection("CanalNames")
+        .where('name', whereIn: [n, n.replaceAll('.', '_')])
+        .limit(1)
+        .get();
+    bool existe = snapshot.docs.isNotEmpty;
 
     if (!existe) {
       return false;
@@ -418,9 +422,13 @@ class _NewCanalState extends State<NewCanal> {
               filled: true,
               fillColor: _colors.surfaceVariant,
             ),
+            inputFormatters: [PseudoInputFormatter(maxLength: kCanalMaxLength)],
             validator: (value) {
               if (value!.isEmpty) {
                 return _l10n.canalValidTitle;
+              }
+              if (value.length < kCanalMinLength || value.length > kCanalMaxLength) {
+                return context.tr('Le nom doit faire entre 3 et 30 caractères');
               }
               return null;
             },
@@ -600,7 +608,7 @@ class _NewCanalState extends State<NewCanal> {
         return;
       }
 
-      if (!await verifierCanalName(_titreController.text)) {
+      if (!await verifierCanalName(normalizePseudo(_titreController.text))) {
         try {
           setState(() {
             onTapCreatePro = true;
@@ -609,7 +617,7 @@ class _NewCanalState extends State<NewCanal> {
           String id = FirebaseFirestore.instance.collection('Canaux').doc().id;
           // Création du canal avec les nouveaux champs
           Canal canal = Canal(
-            titre: _titreController.text,
+            titre: normalizePseudo(_titreController.text),
             type: "CANAL",
             isVerify: false,
             id: id,
@@ -665,7 +673,7 @@ class _NewCanalState extends State<NewCanal> {
           // Sauvegarde du nom du canal
           UserPseudo pseudo = UserPseudo();
           pseudo.id = firestore.collection('CanalNames').doc().id;
-          pseudo.name = _titreController.text;
+          pseudo.name = normalizePseudo(_titreController.text);
           await firestore.collection('CanalNames').doc(pseudo.id).set(pseudo.toJson());
 
           // Succès

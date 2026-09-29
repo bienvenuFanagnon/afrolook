@@ -1,6 +1,7 @@
 
 
 
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -221,8 +222,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
             SizedBox(height: 6),
 
             // Titre
-            Text(
-              '#${data.titre ?? 'Sans titre'}',
+            NameTag(label: '#${data.titre ?? 'Sans titre'}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -230,8 +230,7 @@ Widget channelWidget(Canal data, double height, double width, BuildContext conte
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: colors.textPrimary,
-              ),
-            ),
+              )),
 
             SizedBox(height: 2),
 

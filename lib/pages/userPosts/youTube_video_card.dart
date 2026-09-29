@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import '../../services/followers_count_service.dart';
@@ -1539,10 +1540,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   Expanded(
                     child: Row(
                       children: [
-                        Text(
-                          isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
-                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
+                        NameTag(label: isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
+                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
                         const SizedBox(width: 4),
 
                         if (_creatorUser != null)
@@ -1640,11 +1639,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
+                    child: NameTag(label: isCanalPost ? '#${_creatorCanal?.titre ?? ''}' : '@${_creatorUser?.pseudo ?? ''}',
                       style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      overflow: TextOverflow.ellipsis),
                   ),
                   const SizedBox(width: 4),
                   if (_creatorUser != null) UserBadgeWidget(user: _creatorUser, size: 13),

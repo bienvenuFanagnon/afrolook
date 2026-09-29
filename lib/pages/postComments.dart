@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -814,14 +815,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         children: [
                           Row(
                             children: [
-                              Text(
-                                isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
+                              NameTag(label: isCanal ? "#${post.canal!.titre!}" : "@${post.user!.pseudo!}",
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13.5,
                                   color: _colors.textPrimary,
-                                ),
-                              ),
+                                )),
                               const SizedBox(width: 4),
                               UserBadgeWidget(user: post.user, size: 14),
                             ],
@@ -1003,14 +1002,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      pcm.canal_name != null
+                    child: NameTag(label: pcm.canal_name != null
                           ? "#${pcm.canal_name}"
                           : "@${pcm.user?.pseudo ?? '...'}",
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _colors.textPrimary),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      overflow: TextOverflow.ellipsis),
                   ),
                   const SizedBox(width: 4),
                   if (pcm.canal_name == null) UserBadgeWidget(user: pcm.user, size: 14),
@@ -1148,12 +1145,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               children: [
                 Row(
                   children: [
-                    Text(
-                      rpc.canal_name != null && rpc.canal_name!.isNotEmpty
+                    NameTag(label: rpc.canal_name != null && rpc.canal_name!.isNotEmpty
                           ? "#${rpc.canal_name}"
                           : "@${rpc.user_pseudo ?? ''}",
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: _colors.textPrimary),
-                    ),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: _colors.textPrimary)),
                     if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty) ...[
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _colors.textSecondary),

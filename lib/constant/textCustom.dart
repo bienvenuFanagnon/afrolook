@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/pseudo_tag.dart';
+import '../widgets/canal_tag.dart';
 
 class TextCustomerUserTitle extends StatelessWidget {
   final String titre;
@@ -17,6 +18,12 @@ class TextCustomerUserTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Les pseudos (« @prenom.nom ») s'affichent en capsule Afrolook partout dans l'app.
+    if (CanalTag.isCanalLabel(titre)) {
+      return CanalTag(
+        label: titre,
+        style: TextStyle(fontSize: fontSize, color: couleur, fontWeight: fontWeight),
+      );
+    }
     if (PseudoTag.isPseudoLabel(titre)) {
       return PseudoTag(
         label: titre,
@@ -50,6 +57,12 @@ class TextCustomerPostDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (CanalTag.isCanalLabel(titre)) {
+      return CanalTag(
+        label: titre,
+        style: TextStyle(fontSize: fontSize, color: couleur, fontWeight: fontWeight),
+      );
+    }
     if (PseudoTag.isPseudoLabel(titre)) {
       return PseudoTag(
         label: titre,

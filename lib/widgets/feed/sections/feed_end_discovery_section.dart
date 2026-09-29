@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -532,7 +533,7 @@ class _CanalCard extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('#${canal.titre ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis,
+              NameTag(label: '#${canal.titre ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
               if (members > 0)
                 Text('$members membre${members > 1 ? 's' : ''}',

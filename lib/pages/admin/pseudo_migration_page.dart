@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
+import '../../widgets/canal_tag.dart';
 import '../../widgets/pseudo_tag.dart';
 
 /// Admin — Migration des pseudos vers le format « prenom.nom » (une seule exécution).
@@ -11,7 +12,9 @@ import '../../widgets/pseudo_tag.dart';
 /// 2) « Lancer la migration » applique par lots ; le serveur la verrouille une fois terminée.
 /// Règle : minuscules, espaces / _ / - → point, accents retirés, seuls a-z 0-9 « . ».
 class PseudoMigrationPage extends StatefulWidget {
-  const PseudoMigrationPage({super.key});
+  /// true : migration des noms de canaux (fonction migrateCanalNames) au lieu des pseudos.
+  final bool canaux;
+  const PseudoMigrationPage({super.key, this.canaux = false});
 
   @override
   State<PseudoMigrationPage> createState() => _PseudoMigrationPageState();
@@ -40,7 +43,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
   }
 
   Future<Map<String, dynamic>> _call(Map<String, dynamic> data) async {
-    final res = await _fn.httpsCallable('migratePseudos', options: HttpsCallableOptions(timeout: const Duration(minutes: 9))).call(data);
+    final res = await _fn.httpsCallable(widget.canaux ? 'migrateCanalNames' : 'migratePseudos', options: HttpsCallableOptions(timeout: const Duration(minutes: 9))).call(data);
     return Map<String, dynamic>.from(res.data as Map);
   }
 
@@ -105,7 +108,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Lancer la migration ?'),
-        content: Text('$_changed pseudo(s) vont être modifiés. Cette opération ne peut être faite qu\'une seule fois. '
+        content: Text('$_changed ${widget.canaux ? 'nom(s) de canal' : 'pseudo(s)'} vont être modifiés. Cette opération ne peut être faite qu\'une seule fois. '
             'Pense à avoir sauvegardé Firestore avant.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
@@ -132,7 +135,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
         backgroundColor: c.background,
         foregroundColor: c.textPrimary,
         elevation: 0,
-        title: const Text('Migration des pseudos'),
+        title: Text(widget.canaux ? 'Migration des canaux' : 'Migration des pseudos'),
       ),
       body: CenteredContent(
         maxWidth: 700,
@@ -144,8 +147,9 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
               Expanded(child: Text(label, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15))),
             ]),
             const SizedBox(height: 8),
-            Text('Format cible : prenom.nom (minuscules, points, 3 à 20 caractères). '
-                'Exemple : Olivier_Bernard → olivier.bernard.',
+            Text(widget.canaux
+                ? 'Format cible : mot.mot (minuscules, points, 3 à 30 caractères). Exemple : Mode Afro → mode.afro.'
+                : 'Format cible : prenom.nom (minuscules, points, 3 à 20 caractères). Exemple : Olivier_Bernard → olivier.bernard.',
                 style: TextStyle(color: c.textSecondary, fontSize: 13)),
             if (_status != null && st != 'never') ...[
               const SizedBox(height: 8),
@@ -190,7 +194,7 @@ class _PseudoMigrationPageState extends State<PseudoMigrationPage> {
                     Expanded(child: Text('${s['from']}', style: TextStyle(color: c.textSecondary, fontSize: 13), overflow: TextOverflow.ellipsis)),
                     Icon(Icons.arrow_forward_rounded, size: 14, color: c.textSecondary),
                     const SizedBox(width: 6),
-                    Flexible(child: PseudoTag(label: '@${s['to']}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700))),
+                    Flexible(child: (widget.canaux ? CanalTag(label: '#${s['to']}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)) : PseudoTag(label: '@${s['to']}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)))),
                   ]),
                 ),
               if (_skippedList.isNotEmpty) ...[

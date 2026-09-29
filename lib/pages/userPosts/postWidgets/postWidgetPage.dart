@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import '../../../services/followers_count_service.dart';
 import '../../../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1328,15 +1329,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      _getDisplayName(),
+                    child: NameTag(label: _getDisplayName(),
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 13.5,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      overflow: TextOverflow.ellipsis),
                   ),
                   const SizedBox(width: 3),
                   UserBadgeWidget(user: widget.post.user, size: 13),
@@ -1437,14 +1436,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Expanded(
                     child: Row(
                       children: [
-                        Text(
-                          _getDisplayName(),
+                        NameTag(label: _getDisplayName(),
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                          ),
-                        ),
+                          )),
                         SizedBox(width: 4),
                         UserBadgeWidget(user: widget.post.user, size: 14),
                         if (currentCanal == null && (widget.post.user?.commentStreak ?? 0) >= 1)
@@ -1538,14 +1535,12 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   Expanded(
                     child: Row(
                       children: [
-                        Text(
-                          _getDisplayName(),
+                        NameTag(label: _getDisplayName(),
                           style: TextStyle(
                             color: colors.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                          ),
-                        ),
+                          )),
                         SizedBox(width: 4),
                         // if (_isVerified())
                           UserBadgeWidget(user: widget.post.user, size: 14),

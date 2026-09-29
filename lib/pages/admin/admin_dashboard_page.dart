@@ -502,6 +502,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.groups_rounded, 'Groupe Afrolook', c.info, 0, const AfrolookGroupMigrationPage()),
       _Module(Icons.school_rounded, 'Tutoriels', c.supportAccent, 0, const TutoListPage(showAll: true)),
       _Module(Icons.alternate_email_rounded, 'Pseudos', c.info, 0, const PseudoMigrationPage()),
+      _Module(Icons.tag_rounded, 'Noms de canaux', c.primary, 0, const PseudoMigrationPage(canaux: true)),
     ];
     return GridView.count(
       crossAxisCount: 3,

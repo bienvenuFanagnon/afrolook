@@ -31,4 +31,4 @@ export * from "./moderation/moderation";
 export * from "./users/accountDeletion";
 export * from "./users/accountPurge";
 export * from "./payments/exchangeRates";
-export { migratePseudos } from "./users/pseudoMigration";
+export { migratePseudos, migrateCanalNames } from "./users/pseudoMigration";

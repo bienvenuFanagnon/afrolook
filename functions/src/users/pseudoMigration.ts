@@ -1,21 +1,21 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { FieldPath } from "firebase-admin/firestore";
+import { FieldPath, FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 
 /**
- * Migration des pseudos : minuscules, mots séparés par un point (« Olivier_Bernard » → « olivier.bernard »).
- * Même règle que lib/utils/pseudo_format.dart (normalizePseudo).
+ * Migrations des noms : pseudos des comptes et noms des canaux.
+ * Format : minuscules, mots séparés par un point (« Olivier_Bernard » → « olivier.bernard »,
+ * « Mode Afro » → « mode.afro »). Même règle que lib/utils/pseudo_format.dart (normalizePseudo).
  *
- * Appel (administrateur uniquement), par lots — répéter avec `cursor` jusqu'à `done: true` :
- *   migratePseudos({ dryRun: true })                 → simulation, rien n'est écrit (valeur par défaut)
- *   migratePseudos({ dryRun: false, limit: 100 })    → applique un lot
- *   migratePseudos({ dryRun: false, cursor: "<nextCursor>" })
+ * Appel (administrateur uniquement, depuis la page admin), par lots — répéter avec `cursor` jusqu'à `done: true` :
+ *   { action: "status" }                              → état enregistré
+ *   { dryRun: true }                                  → simulation, rien n'est écrit (valeur par défaut)
+ *   { dryRun: false, limit: 300, cursor? }            → applique un lot ; verrouillée une fois terminée
  *
- * Écrit : Users.pseudo (+ pseudo_before, pseudo_migrated_at), document de la collection Pseudo, et
- * creatorSnapshot.pseudo des posts de l'utilisateur (500 max par utilisateur, le reste est signalé).
- * En cas de doublon après normalisation, le pseudo reçoit un numéro (olivier.bernard2) ; le premier
- * arrivé (ordre des identifiants) garde le pseudo sans numéro.
- * Non modifiés : @mentions déjà écrites dans d'anciens textes, codes de parrainage existants.
+ * Pseudos : Users.pseudo + collection Pseudo + creatorSnapshot.pseudo des posts.
+ * Canaux  : Canaux.titre + collection CanalNames + canalSnapshot.titre des posts.
+ * En cas de doublon après normalisation, le nom reçoit un numéro (olivier.bernard2) ; le premier (ordre des
+ * identifiants) garde le nom sans numéro. Non modifiés : @mentions / #mentions déjà écrites dans d'anciens textes.
  */
 
 const FROM = "àáâãäåçèéêëìíîïñòóôõöùúûüýÿœæ";
@@ -31,108 +31,128 @@ export function normalizePseudo(input: string): string {
   return s.replace(/^\.+|\.+$/g, "");
 }
 
-const MAX_POSTS_PER_USER = 500;
+const MAX_POSTS_PER_ITEM = 500;
 
-export const migratePseudos = onCall({ timeoutSeconds: 540, memory: "512MiB" }, async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
-  const me = await db.collection("Users").doc(uid).get();
-  if (me.data()?.role !== "ADM") throw new HttpsError("permission-denied", "Réservé aux administrateurs.");
+interface MigrationConfig {
+  collection: string; // Users | Canaux
+  field: string; // pseudo | titre
+  namesCollection: string; // Pseudo | CanalNames
+  statusDoc: string;
+  postOwnerField: string; // user_id | canal_id
+  postSnapshotField: string; // creatorSnapshot.pseudo | canalSnapshot.titre
+  before: string;
+  migratedAt: string;
+}
 
-  const statusRef = db.collection("AppConfig").doc("pseudoMigration");
-  const { dryRun = true, limit = 100, cursor, action } = (request.data ?? {}) as {
-    dryRun?: boolean; limit?: number; cursor?: string; action?: string;
-  };
-  if (action === "status") return { status: (await statusRef.get()).data() ?? { status: "never" } };
+function buildMigration(cfg: MigrationConfig) {
+  return onCall({ timeoutSeconds: 540, memory: "512MiB" }, async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+    const me = await db.collection("Users").doc(uid).get();
+    if (me.data()?.role !== "ADM") throw new HttpsError("permission-denied", "Réservé aux administrateurs.");
 
-  // Une seule exécution : une fois terminée, plus aucune application possible.
-  const current = (await statusRef.get()).data();
-  if (!dryRun && current?.status === "done") {
-    throw new HttpsError("failed-precondition", "La migration des pseudos a déjà été effectuée.");
-  }
-  const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 300);
+    const statusRef = db.collection("AppConfig").doc(cfg.statusDoc);
+    const { dryRun = true, limit = 100, cursor, action } = (request.data ?? {}) as {
+      dryRun?: boolean; limit?: number; cursor?: string; action?: string;
+    };
+    if (action === "status") return { status: (await statusRef.get()).data() ?? { status: "never" } };
 
-  // Pseudos déjà pris (forme normalisée) : Pseudo + pseudos des comptes déjà au bon format
-  const taken = new Set<string>();
-  const pseudoDocs = await db.collection("Pseudo").select("name").get();
-  const pseudoDocByName = new Map<string, string>();
-  pseudoDocs.forEach((d) => {
-    const name = String(d.get("name") ?? "");
-    pseudoDocByName.set(name, d.id);
-    if (name === normalizePseudo(name)) taken.add(name);
-  });
-
-  let q = db.collection("Users").orderBy(FieldPath.documentId()).limit(pageSize);
-  if (cursor) q = q.startAfter(cursor);
-  const page = await q.get();
-
-  const changes: Array<{ id: string; from: string; to: string; suffix: boolean; postsLeft?: number }> = [];
-  const skipped: Array<{ id: string; pseudo: string; reason: string }> = [];
-
-  for (const doc of page.docs) {
-    const old = doc.get("pseudo");
-    if (typeof old !== "string" || !old) continue;
-    const base = normalizePseudo(old);
-    if (base === old) { taken.add(old); continue; }
-    if (base.length < 3) { skipped.push({ id: doc.id, pseudo: old, reason: "trop court après normalisation" }); continue; }
-
-    let target = base;
-    let n = 2;
-    while (taken.has(target)) target = `${base}${n++}`;
-    taken.add(target);
-    const change: { id: string; from: string; to: string; suffix: boolean; postsLeft?: number } =
-      { id: doc.id, from: old, to: target, suffix: target !== base };
-
-    if (!dryRun) {
-      const now = Date.now();
-      const batch = db.batch();
-      batch.update(doc.ref, { pseudo: target, pseudo_before: old, pseudo_migrated_at: now });
-      const pseudoDocId = pseudoDocByName.get(old);
-      if (pseudoDocId) batch.update(db.collection("Pseudo").doc(pseudoDocId), { name: target });
-      else batch.set(db.collection("Pseudo").doc(), { name: target });
-      await batch.commit();
-
-      // Copies dans les posts (snapshot affiché avant le chargement du profil)
-      const posts = await db.collection("Posts").where("user_id", "==", doc.id).limit(MAX_POSTS_PER_USER + 1).get();
-      let count = 0;
-      let pb = db.batch();
-      let inBatch = 0;
-      for (const p of posts.docs.slice(0, MAX_POSTS_PER_USER)) {
-        if (p.get("creatorSnapshot.pseudo") === undefined) continue;
-        pb.update(p.ref, { "creatorSnapshot.pseudo": target });
-        count++;
-        if (++inBatch === 400) { await pb.commit(); pb = db.batch(); inBatch = 0; }
-      }
-      if (inBatch > 0) await pb.commit();
-      if (posts.size > MAX_POSTS_PER_USER) change.postsLeft = posts.size - MAX_POSTS_PER_USER;
-      void count;
+    // Une seule exécution : une fois terminée, plus aucune application possible.
+    const current = (await statusRef.get()).data();
+    if (!dryRun && current?.status === "done") {
+      throw new HttpsError("failed-precondition", "Cette migration a déjà été effectuée.");
     }
-    changes.push(change);
-  }
+    const pageSize = Math.min(Math.max(Number(limit) || 100, 1), 300);
 
-  const last = page.docs.length ? page.docs[page.docs.length - 1].id : null;
-  const finished = page.size < pageSize;
-  if (!dryRun) {
-    const { FieldValue } = await import("firebase-admin/firestore");
-    await statusRef.set({
-      status: finished ? "done" : "running",
-      startedAt: current?.startedAt ?? Date.now(),
-      updatedAt: Date.now(),
-      ...(finished ? { finishedAt: Date.now() } : {}),
-      changed: FieldValue.increment(changes.length),
-      suffixed: FieldValue.increment(changes.filter((c) => c.suffix).length),
-      skipped: FieldValue.increment(skipped.length),
-      lastCursor: finished ? null : last,
-    }, { merge: true });
-  }
-  return {
-    dryRun,
-    scanned: page.size,
-    changed: changes.length,
-    skipped: skipped.length,
-    done: page.size < pageSize,
-    nextCursor: page.size < pageSize ? null : last,
-    changes: changes.slice(0, 200),
-    skippedList: skipped.slice(0, 100),
-  };
+    // Noms déjà pris (forme normalisée) et documents de la collection des noms
+    const taken = new Set<string>();
+    const nameDocs = await db.collection(cfg.namesCollection).select("name").get();
+    const nameDocByName = new Map<string, string>();
+    nameDocs.forEach((d) => {
+      const name = String(d.get("name") ?? "");
+      nameDocByName.set(name, d.id);
+      if (name === normalizePseudo(name)) taken.add(name);
+    });
+
+    let q = db.collection(cfg.collection).orderBy(FieldPath.documentId()).limit(pageSize);
+    if (cursor) q = q.startAfter(cursor);
+    const page = await q.get();
+
+    type Change = { id: string; from: string; to: string; suffix: boolean; postsLeft?: number };
+    const changes: Change[] = [];
+    const skipped: Array<{ id: string; pseudo: string; reason: string }> = [];
+
+    for (const doc of page.docs) {
+      const old = doc.get(cfg.field);
+      if (typeof old !== "string" || !old) continue;
+      const base = normalizePseudo(old);
+      if (base === old) { taken.add(old); continue; }
+      if (base.length < 3) { skipped.push({ id: doc.id, pseudo: old, reason: "trop court après normalisation" }); continue; }
+
+      let target = base;
+      let n = 2;
+      while (taken.has(target)) target = `${base}${n++}`;
+      taken.add(target);
+      const change: Change = { id: doc.id, from: old, to: target, suffix: target !== base };
+
+      if (!dryRun) {
+        const batch = db.batch();
+        batch.update(doc.ref, { [cfg.field]: target, [cfg.before]: old, [cfg.migratedAt]: Date.now() });
+        const nameDocId = nameDocByName.get(old);
+        if (nameDocId) batch.update(db.collection(cfg.namesCollection).doc(nameDocId), { name: target });
+        else batch.set(db.collection(cfg.namesCollection).doc(), { name: target });
+        await batch.commit();
+
+        // Copies dans les posts (snapshot affiché avant le chargement du profil / du canal)
+        const posts = await db.collection("Posts").where(cfg.postOwnerField, "==", doc.id).limit(MAX_POSTS_PER_ITEM + 1).get();
+        let pb = db.batch();
+        let inBatch = 0;
+        for (const p of posts.docs.slice(0, MAX_POSTS_PER_ITEM)) {
+          if (p.get(cfg.postSnapshotField) === undefined) continue;
+          pb.update(p.ref, { [cfg.postSnapshotField]: target });
+          if (++inBatch === 400) { await pb.commit(); pb = db.batch(); inBatch = 0; }
+        }
+        if (inBatch > 0) await pb.commit();
+        if (posts.size > MAX_POSTS_PER_ITEM) change.postsLeft = posts.size - MAX_POSTS_PER_ITEM;
+      }
+      changes.push(change);
+    }
+
+    const last = page.docs.length ? page.docs[page.docs.length - 1].id : null;
+    const finished = page.size < pageSize;
+    if (!dryRun) {
+      await statusRef.set({
+        status: finished ? "done" : "running",
+        startedAt: current?.startedAt ?? Date.now(),
+        updatedAt: Date.now(),
+        ...(finished ? { finishedAt: Date.now() } : {}),
+        changed: FieldValue.increment(changes.length),
+        suffixed: FieldValue.increment(changes.filter((c) => c.suffix).length),
+        skipped: FieldValue.increment(skipped.length),
+        lastCursor: finished ? null : last,
+      }, { merge: true });
+    }
+    return {
+      dryRun,
+      scanned: page.size,
+      changed: changes.length,
+      skipped: skipped.length,
+      done: finished,
+      nextCursor: finished ? null : last,
+      changes: changes.slice(0, 200),
+      skippedList: skipped.slice(0, 100),
+    };
+  });
+}
+
+export const migratePseudos = buildMigration({
+  collection: "Users", field: "pseudo", namesCollection: "Pseudo", statusDoc: "pseudoMigration",
+  postOwnerField: "user_id", postSnapshotField: "creatorSnapshot.pseudo",
+  before: "pseudo_before", migratedAt: "pseudo_migrated_at",
+});
+
+export const migrateCanalNames = buildMigration({
+  collection: "Canaux", field: "titre", namesCollection: "CanalNames", statusDoc: "canalMigration",
+  postOwnerField: "canal_id", postSnapshotField: "canalSnapshot.titre",
+  before: "titre_before", migratedAt: "titre_migrated_at",
 });

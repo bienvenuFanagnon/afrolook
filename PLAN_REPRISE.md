@@ -170,3 +170,9 @@ Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages 
 - Restent en texte simple : pseudos passés en `name:`/`appName:` à des widgets tiers, notifications, `TextSpan`, `.toLowerCase()`, textes avec autres arguments (`softWrap`…).
 - Admin : carte « Pseudos » (`admin/pseudo_migration_page.dart`) : simuler → lancer (confirmation) → verrouillée une fois terminée (`AppConfig/pseudoMigration`, contrôlé par la fonction `migratePseudos`). **À déployer** (`firebase deploy --only functions:migratePseudos`) puis sauvegarder Firestore avant de lancer.
 - [ ] Collection `Pseudo` conservée (nécessaire à l'inscription : `Users` illisible sans connexion). À revoir : id du document = pseudo pour l'unicité atomique et éviter de lire toute la collection.
+
+### 29/09 — Canaux : badge carré (option B) + migration
+- `lib/widgets/canal_tag.dart` (`CanalTag`) : badge à coins carrés, # dans un carré vert, points verts (distinct de la capsule ronde dorée des pseudos). `NameTag` choisit # → canal, @ → pseudo. Branché : `TextCustomer*` + 20 `Text(...)` (14 fichiers).
+- Règle des noms de canaux : mêmes règles que les pseudos, 3 à 30 caractères (`kCanalMaxLength`), appliquée à la création (`newCanal.dart`) et à la modification (`editCanal.dart`, avec test d'unicité et mise à jour de `CanalNames`).
+- Migration : fonction `migrateCanalNames` (même moteur que les pseudos, statut `AppConfig/canalMigration`, exécution unique), carte admin « Noms de canaux ». **À déployer** (`firebase deploy --only functions:migrateCanalNames,functions:migratePseudos`) puis sauvegarder Firestore.
+- [ ] Restent en texte simple : noms de canaux tronqués (`substring(...)`), notifications, `name:`/`appName:` passés à des widgets tiers.

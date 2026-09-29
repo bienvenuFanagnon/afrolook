@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -303,12 +304,10 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Flexible(
-                      child: Text(
-                        '#${canal.titre ?? 'Sans nom'}',
+                      child: NameTag(label: '#${canal.titre ?? 'Sans nom'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: _colors.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700),
-                      ),
+                        style: TextStyle(color: _colors.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w700)),
                     ),
                     const SizedBox(width: 6),
                     Container(

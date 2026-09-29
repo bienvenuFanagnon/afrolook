@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:flutter/material.dart';
 import '../../../models/model_data.dart';
 import '../../../pages/canaux/listCanal.dart';
@@ -117,8 +118,7 @@ class FeedCanauxSection extends StatelessWidget {
                         ),
                         const SizedBox(height: 5),
                         // Nom du canal
-                        Text(
-                          '#${canal.titre ?? ''}',
+                        NameTag(label: '#${canal.titre ?? ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
@@ -126,8 +126,7 @@ class FeedCanauxSection extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: colors.textPrimary,
-                          ),
-                        ),
+                          )),
                         const SizedBox(height: 2),
                         // Abonnés
                         Text(

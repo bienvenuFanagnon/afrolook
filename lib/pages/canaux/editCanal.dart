@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/pseudo_format.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -514,9 +515,15 @@ class _EditCanalState extends State<EditCanal> {
               filled: true,
               fillColor: _colors.surfaceVariant,
             ),
+            inputFormatters: [PseudoInputFormatter(maxLength: kCanalMaxLength)],
             validator: (value) {
               if (value!.isEmpty) {
                 return _l10n.canalValidTitle;
+              }
+              // Un ancien nom (majuscules, espaces) reste accepté tel quel tant qu'on ne le modifie pas
+              if (normalizePseudo(value) != normalizePseudo(widget.canal.titre ?? '') &&
+                  (value.length < kCanalMinLength || value.length > kCanalMaxLength)) {
+                return context.tr('Le nom doit faire entre 3 et 30 caractères');
               }
               return null;
             },
@@ -791,7 +798,28 @@ class _EditCanalState extends State<EditCanal> {
         }
 
         // Mise à jour des informations du canal
-        widget.canal.titre = _titreController.text;
+        final oldTitle = widget.canal.titre ?? '';
+        final newTitle = normalizePseudo(_titreController.text);
+        if (newTitle != normalizePseudo(oldTitle) || (newTitle != oldTitle && newTitle.isNotEmpty)) {
+          if (newTitle != normalizePseudo(oldTitle)) {
+            // Nom réellement changé : il doit rester unique
+            final dup = await FirebaseFirestore.instance.collection('CanalNames')
+                .where('name', whereIn: [newTitle, newTitle.replaceAll('.', '_')]).limit(1).get();
+            if (dup.docs.isNotEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le titre existe déjà'))));
+              setState(() => onTapUpdate = false);
+              return;
+            }
+          }
+          // Mise à jour de l'annuaire des noms
+          final old = await FirebaseFirestore.instance.collection('CanalNames').where('name', isEqualTo: oldTitle).limit(1).get();
+          if (old.docs.isNotEmpty) {
+            await old.docs.first.reference.update({'name': newTitle});
+          } else {
+            await FirebaseFirestore.instance.collection('CanalNames').add({'name': newTitle});
+          }
+        }
+        widget.canal.titre = newTitle;
         widget.canal.description = _descriptionController.text;
         widget.canal.isPrivate = _isPrivate;
         widget.canal.setPriceCoins(_isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0);

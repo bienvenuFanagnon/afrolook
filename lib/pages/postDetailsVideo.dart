@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import '../services/followers_count_service.dart';
 import '../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1655,7 +1656,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             },
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Flexible(child: Text(canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
+                Flexible(child: NameTag(label: canal != null ? '#${canal.titre}' : '@${user?.pseudo ?? ''}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis)),
                 if (user != null) UserBadgeWidget(user: user, size: 15),
                 if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
               ]),
