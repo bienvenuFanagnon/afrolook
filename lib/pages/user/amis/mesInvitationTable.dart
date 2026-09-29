@@ -1,4 +1,4 @@
-import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'dart:async';
 import 'package:afrotok/services/api.dart';
@@ -70,22 +70,26 @@ class _MesInvitationsState extends State<MesInvitations> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text("@${invitation.inviteUser!.pseudo!}".toLowerCase(), style: const TextStyle(fontSize: 16)),
-                        const SizedBox(height: 6),
-                        FollowersCountBuilder(userId: invitation.inviteUser!.id, fallback: invitation.inviteUser!.followersCount, builder: (_, c) => Text('${formatCompactCount(c)} abonné(s)',
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600))),
+                        // Badge vérifié devant le pseudo ; pseudo réduit et limité à 20 caractères
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          if (invitation.inviteUser!.isVerify == true)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 4),
+                              child: Icon(Icons.verified, color: Colors.green, size: 14),
+                            ),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.42),
+                            child: PseudoTag(
+                              label: "@${(invitation.inviteUser!.pseudo ?? '').toLowerCase().length > 20 ? (invitation.inviteUser!.pseudo ?? '').toLowerCase().substring(0, 20) : (invitation.inviteUser!.pseudo ?? '').toLowerCase()}",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 4),
+                        Text('${formatCompactCount(invitation.inviteUser!.followersCount)} abonné(s)',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                       ],
                     ),
-                    Visibility(
-                      visible: invitation.inviteUser!.isVerify!||invitation.inviteUser!.isVerify==false!?false:true,
-                      child: Card(
-                        child: const Icon(
-                          Icons.verified,
-                          color: Colors.green,
-                          size: 17,
-                        ),
-                      ),
-                    )
                   ],
                 ),
               ],

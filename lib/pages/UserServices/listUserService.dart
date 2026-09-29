@@ -493,83 +493,158 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         ],
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          // Barre de recherche
-          Padding(
-            padding: EdgeInsets.all(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.border),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: TextStyle(color: colors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: '🔍 Rechercher services, villes, métiers...',
-                  hintStyle: TextStyle(color: colors.textSecondary),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.search, color: Colors.green),
-                    onPressed: _performSearch,
+      // Toute la page défile ensemble : recherche, pub, filtres, puis les services
+      body: RefreshIndicator(
+        backgroundColor: Colors.green,
+        color: colors.accent,
+        onRefresh: () async {
+          setState(() => _isLoadingServices = true);
+          await Provider.of<PostProvider>(context, listen: false).getUserServices();
+          if (mounted) setState(() => _isLoadingServices = false);
+        },
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Barre de recherche
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: TextStyle(color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: '🔍 Rechercher services, villes, métiers...',
+                      hintStyle: TextStyle(color: colors.textSecondary),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.search, color: Colors.green),
+                        onPressed: _performSearch,
+                      ),
+                    ),
+                    onSubmitted: (_) => _performSearch(),
                   ),
                 ),
-                onSubmitted: (_) => _performSearch(),
-              ),
-            ),
-          ),
-
-          // Pub Afrolook
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: AfrolookInlineAd(),
-          ),
-
-          // Filtres
-          if (_showFilters) _buildFiltersSection(postProvider, colors),
-
-          // Indication du filtre actif
-          if (postProvider.selectedCountry != null && !_showFilters)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              color: Colors.green.withOpacity(0.2),
-              child: Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.green, size: 14),
-                  SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Filtre actif: ${postProvider.selectedCountry}',
-                      style: TextStyle(color: colors.supportAccent, fontSize: 12),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _clearFilters,
-                    child: Icon(Icons.close, color: Colors.red, size: 16),
-                  ),
-                ],
               ),
             ),
 
-          // Indicateur de chargement global
-          if (_isLoadingServices)
-            LinearProgressIndicator(
-              backgroundColor: colors.surface,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            // Pub Afrolook : dans le défilement, elle disparaît avec la page
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: AfrolookInlineAd(),
+              ),
             ),
 
-          // Contenu principal
-          Expanded(
-            child: _isLoadingServices && postProvider.userServices.isEmpty
-                ? _buildFullPageLoader(colors)
-                : postProvider.userServices.isEmpty && !_isLoadingServices
-                ? _buildEmptyState(colors)
-                : _buildServicesGrid(authProvider, postProvider, colors),
-          ),
-        ],
+            // Filtres
+            if (_showFilters) SliverToBoxAdapter(child: _buildFiltersSection(postProvider, colors)),
+
+            // Indication du filtre actif
+            if (postProvider.selectedCountry != null && !_showFilters)
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  color: Colors.green.withOpacity(0.2),
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_on, color: Colors.green, size: 14),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Filtre actif: ${postProvider.selectedCountry}',
+                          style: TextStyle(color: colors.supportAccent, fontSize: 12),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: _clearFilters,
+                        child: Icon(Icons.close, color: Colors.red, size: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Indicateur de chargement global
+            if (_isLoadingServices)
+              SliverToBoxAdapter(
+                child: LinearProgressIndicator(
+                  backgroundColor: colors.surface,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ),
+              ),
+
+            // Contenu principal
+            if (_isLoadingServices && postProvider.userServices.isEmpty)
+              SliverToBoxAdapter(child: SizedBox(height: 360, child: _buildFullPageLoader(colors)))
+            else if (postProvider.userServices.isEmpty && !_isLoadingServices)
+              SliverToBoxAdapter(child: SizedBox(height: 420, child: _buildEmptyState(colors)))
+            else ...[
+              // Compteur de résultats
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  color: colors.surface,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${postProvider.userServices.length} service(s) trouvé(s)',
+                        style: TextStyle(color: Colors.green, fontSize: 12),
+                      ),
+                      if (postProvider.selectedCountry != null ||
+                          postProvider.selectedCategory != null ||
+                          postProvider.selectedCity != null)
+                        GestureDetector(
+                          onTap: _clearFilters,
+                          child: Text(
+                            'Effacer les filtres',
+                            style: TextStyle(color: colors.supportAccent, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              // Grille des services
+              SliverPadding(
+                padding: EdgeInsets.all(8),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.85,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final service = postProvider.userServices[index];
+                      return ServiceGridCard(
+                        service: service,
+                        authProvider: authProvider,
+                        onTap: () => _navigateToDetail(service),
+                        onContact: (service) async {
+                          final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+                          await authProvider.createServiceLink(true, service).then((url) async {
+                            await launchWhatsApp(service.contact!, service, url);
+                          });
+                        },
+                      );
+                    },
+                    childCount: postProvider.userServices.length,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: _isLoadingMore ? 110 : 24, child: _buildLoadMoreIndicator())),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/services/api.dart';
@@ -366,14 +365,14 @@ class _InvitationsState extends State<Invitations> {
                         color: _colors.accent,
                       ),
                       SizedBox(width: 4),
-                      FollowersCountBuilder(userId: widget.userInvitation.inviteUser!.id, fallback: widget.userInvitation.inviteUser!.followersCount, builder: (_, c) => Text(
-                        '${formatCompactCount(c)} abonné(s)',
+                      Text(
+                        '${formatCompactCount(widget.userInvitation.inviteUser!.followersCount)} abonné(s)',
                         style: TextStyle(
                             fontSize: 13,
                             color: _colors.textSecondary,
                             fontWeight: widget.isMessageRead ? FontWeight.bold : FontWeight.normal
                         ),
-                      )),
+                      ),
                     ],
                   ),
                 ],

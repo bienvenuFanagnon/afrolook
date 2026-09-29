@@ -119,20 +119,26 @@ class _MesAmisState extends State<MesAmis> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              PseudoTag(label: "@${amigo.friend!.pseudo!}", style: TextStyle(fontSize: 16,color: colors.textPrimary)),
-                              SizedBox(height: 6,),
-                              FollowersCountBuilder(userId: amigo.friend!.id, fallback: amigo.friend!.followersCount, builder: (_, c) => Text('${formatCompactCount(c)} ${l10n.amiSubscribers}',style: TextStyle(fontSize: 13,color: colors.textSecondary, fontWeight: FontWeight.normal),)),
-                            ],
-                          ),
-                          Visibility(
-                            visible: amigo.friend!.isVerify!,
-                            child: Card(
-                              child: Icon(
-                                Icons.verified,
-                                color: colors.primary,
-                                size: 17,
-                              ),
-                            ),
+                              // Badge vérifié DEVANT le pseudo ; pseudo réduit et limité en longueur
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                if (amigo.friend!.isVerify == true)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: Icon(Icons.verified, color: colors.primary, size: 14),
+                                  ),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(maxWidth: width * 0.42),
+                                  child: PseudoTag(
+                                    label: "@${(amigo.friend!.pseudo ?? '').length > 20 ? (amigo.friend!.pseudo ?? '').substring(0, 20) : (amigo.friend!.pseudo ?? '')}",
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.textPrimary),
+                                  ),
+                                ),
+                              ]),
+                              SizedBox(height: 4,),
+                              // Abonnés lus dans le profil déjà chargé (pas de lecture supplémentaire par ami)
+                              Text('${formatCompactCount(amigo.friend!.followersCount)} ${l10n.amiSubscribers}',
+                                  style: TextStyle(fontSize: 11, color: colors.textSecondary, fontWeight: FontWeight.normal)),
+],
                           ),
                         ],
                       ),
@@ -155,6 +161,9 @@ class _MesAmisState extends State<MesAmis> {
     );
   }
   late List<Friends> listfirends=[];
+  // Flux créé UNE fois (avant : recréé à chaque rebuild → tout se rechargeait) et dernier résultat gardé en mémoire
+  static List<Friends>? _friendsCache;
+  late final Stream<List<Friends>> _friendsStream = getFriendsData();
   Future<void> searchListDialogue(BuildContext context,double h,double w,List<Friends> firends) async {
     return showDialog<void>(
       context: context,
@@ -267,6 +276,7 @@ class _MesAmisState extends State<MesAmis> {
 
     await for (var friendSnapshot in friendsStream) {
       if (friendSnapshot.docs.isEmpty) {
+        _friendsCache = [];
         listfirends = [];
         userProvider.countFriends = 0;
         yield [];
@@ -310,6 +320,7 @@ class _MesAmisState extends State<MesAmis> {
 
       listfirends = friends;
       userProvider.countFriends = friends.length;
+      _friendsCache = friends;
       yield friends;
     }
   }
@@ -471,7 +482,8 @@ if (await friendsStream.isEmpty) {
           ),
           StreamBuilder<List<Friends>>(
             //initialData: [],
-            stream: getFriendsData()!,
+            initialData: _friendsCache,
+            stream: _friendsStream,
 
             // key: _formKey,
 

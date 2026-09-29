@@ -184,3 +184,9 @@ Cartes (`TutoSceneCard`), maquette (`TutoPhone`), liste (`TutoListPage`), pages 
 
 ### 29/09 — Migration : traitement des emojis
 Serveur (`pseudoMigration.ts`) : normalisation NFKD (lettres stylisées 𝓞, pleine largeur Ｏ et accents → lettres simples), puis suppression de tout ce qui n'est pas a-z 0-9 . ; nom vide/trop court après nettoyage (emojis seuls, alphabets non latins) → nom de remplacement (`prenom.nom` / e-mail / `afro1234`, `canal1234`). La simulation compte « avec emoji » et « entièrement remplacés ». Côté app (saisie), le nettoyage des lettres stylisées reste plus simple (supprimées) : écart mineur.
+
+### 29/09 — Mes amis, Services & Jobs, likes de service
+- Mes amis (`amis/mesAmis.dart`) : lenteur = flux Firestore recréé à chaque rebuild + une lecture d'abonnés par ami (que j'avais ajoutée) → flux créé une fois, dernier résultat gardé en mémoire (affichage immédiat au retour), abonnés lus dans le profil déjà chargé. Pseudo réduit (12), limité à 20 caractères, badge vérifié DEVANT le pseudo (aussi `mesInvitationTable.dart`).
+- Services & Jobs (`UserServices/listUserService.dart`) : page en `CustomScrollView` — recherche, pub, filtres et grille défilent ensemble (pull-to-refresh conservé).
+- Détails d'un service/job (`detailsUserService.dart`) : couleurs → `AppColors` (clair et sombre).
+- Like d'un service : un seul like par utilisateur, une seule fois, par transaction (compteur recalculé depuis la liste `usersLikeId`) ; cœur plein si déjà aimé.

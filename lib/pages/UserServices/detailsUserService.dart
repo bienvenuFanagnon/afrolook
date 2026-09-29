@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import '../../theme/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
@@ -75,7 +76,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
           content: Text(
             "Impossible d'ouvrir WhatsApp",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
+            style: TextStyle(color: AppColors.of(context).danger),
           ),
         ),
       );
@@ -122,12 +123,12 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
                       fit: BoxFit.contain,
                       placeholder: (context, url) => Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.of(context).primary),
                         ),
                       ),
                       errorWidget: (context, url, error) => Icon(
                         Icons.error,
-                        color: Colors.red,
+                        color: AppColors.of(context).danger,
                         size: 50,
                       ),
                     ),
@@ -208,35 +209,35 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: AppColors.of(context).surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning, color: Colors.yellow),
+            Icon(Icons.warning, color: AppColors.of(context).supportAccent),
             SizedBox(width: 10),
             Text(
               'Confirmer',
-              style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.of(context).supportAccent, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         content: Text(
           'Êtes-vous sûr de vouloir supprimer définitivement ce service ?',
-          style: TextStyle(color: Colors.white, height: 1.4),
+          style: TextStyle(color: AppColors.of(context).textPrimary, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
               'ANNULER',
-              style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.of(context).primary, fontWeight: FontWeight.bold),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               'SUPPRIMER',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.of(context).danger, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -261,7 +262,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.of(context).danger,
             content: Text('Erreur lors de la suppression'),
           ),
         );
@@ -283,22 +284,53 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     );
   }
 
-  void _toggleLike() async {
-    await postProvider.getUserServiceById(widget.data.id!).then((value) async {
-      if (value.isNotEmpty) {
-        final service = value.first;
-        service.like = (service.like ?? 0) + 1;
+  bool _liking = false;
 
-        if (!_isIn(service.usersLikeId!, authProvider.loginUserData.id!)) {
-          service.usersLikeId!.add(authProvider.loginUserData.id!);
+  /// Un utilisateur = un seul like par service, une seule fois (pas de like multiple, pas de retrait).
+  bool get _alreadyLiked =>
+      widget.data.usersLikeId?.contains(authProvider.loginUserData.id) ?? false;
+
+  Future<void> _toggleLike() async {
+    final uid = authProvider.loginUserData.id;
+    final serviceId = widget.data.id;
+    if (uid == null || serviceId == null || _liking) return;
+    if (_alreadyLiked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vous avez déjà aimé ce service'), duration: Duration(seconds: 1)),
+      );
+      return;
+    }
+    _liking = true;
+    // Affichage immédiat, confirmé (ou annulé) par le serveur
+    setState(() {
+      widget.data.usersLikeId ??= [];
+      widget.data.usersLikeId!.add(uid);
+      widget.data.like = (widget.data.like ?? 0) + 1;
+    });
+    try {
+      final ref = FirebaseFirestore.instance.collection('UserServices').doc(serviceId);
+      // Transaction : le like n'est compté que si cet utilisateur n'est pas déjà dans la liste,
+      // et le compteur est recalculé à partir de la liste (jamais d'incrément à l'aveugle).
+      final total = await FirebaseFirestore.instance.runTransaction<int>((tx) async {
+        final snap = await tx.get(ref);
+        final ids = List<String>.from((snap.data()?['usersLikeId'] as List?) ?? const []);
+        if (!ids.contains(uid)) {
+          ids.add(uid);
+          tx.update(ref, {'usersLikeId': FieldValue.arrayUnion([uid]), 'like': ids.length});
         }
-
-        await postProvider.updateUserService(service, context);
+        return ids.length;
+      });
+      if (mounted) setState(() => widget.data.like = total);
+    } catch (_) {
+      if (mounted) {
         setState(() {
-          widget.data.like = service.like;
+          widget.data.usersLikeId?.remove(uid);
+          widget.data.like = ((widget.data.like ?? 1) - 1).clamp(0, 1 << 30);
         });
       }
-    });
+    } finally {
+      _liking = false;
+    }
   }
 
   bool get _canEditOrDelete {
@@ -311,13 +343,13 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.of(context).background,
       body: _isLoading
           ? _buildLoadingState()
           : CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: Colors.black,
+            backgroundColor: AppColors.of(context).background,
             expandedHeight: 300,
             floating: false,
             pinned: true,
@@ -325,7 +357,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
               background: _buildHeroImage(),
             ),
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.yellow),
+              icon: Icon(Icons.arrow_back, color: AppColors.of(context).supportAccent),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
@@ -361,12 +393,12 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.of(context).primary),
           ),
           SizedBox(height: 16),
           Text(
             'Chargement...',
-            style: TextStyle(color: Colors.yellow),
+            style: TextStyle(color: AppColors.of(context).supportAccent),
           ),
         ],
       ),
@@ -388,30 +420,30 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
                 imageUrl: widget.data.imageCourverture!,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  color: Colors.grey[800],
+                  color: AppColors.of(context).surfaceVariant,
                   child: Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.of(context).primary),
                     ),
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[800],
-                  child: Icon(Icons.work_outline, color: Colors.green, size: 60),
+                  color: AppColors.of(context).surfaceVariant,
+                  child: Icon(Icons.work_outline, color: AppColors.of(context).primary, size: 60),
                 ),
               )
                   : Container(
-                color: Colors.grey[800],
+                color: AppColors.of(context).surfaceVariant,
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.work_outline, color: Colors.green, size: 60),
+                      Icon(Icons.work_outline, color: AppColors.of(context).primary, size: 60),
                       SizedBox(height: 8),
                       Text(
                         'SERVICE',
                         style: TextStyle(
-                          color: Colors.green,
+                          color: AppColors.of(context).primary,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -441,7 +473,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
 
   Widget _buildActionMenu() {
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, color: Colors.yellow),
+      icon: Icon(Icons.more_vert, color: AppColors.of(context).supportAccent),
       onSelected: (value) {
         switch (value) {
           case 'edit':
@@ -457,7 +489,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
           value: 'edit',
           child: Row(
             children: [
-              Icon(Icons.edit, color: Colors.yellow),
+              Icon(Icons.edit, color: AppColors.of(context).supportAccent),
               SizedBox(width: 8),
               Text('Modifier'),
             ],
@@ -467,9 +499,9 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
           value: 'delete',
           child: Row(
             children: [
-              Icon(Icons.delete, color: Colors.red),
+              Icon(Icons.delete, color: AppColors.of(context).danger),
               SizedBox(width: 8),
-              Text('Supprimer', style: TextStyle(color: Colors.red)),
+              Text('Supprimer', style: TextStyle(color: AppColors.of(context).danger)),
             ],
           ),
         ),
@@ -487,14 +519,14 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             Container(
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.yellow.withOpacity(0.15),
+                color: AppColors.of(context).supportAccent.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.yellow),
+                border: Border.all(color: AppColors.of(context).supportAccent),
               ),
               child: Text(
                 widget.data.category ?? 'Autre',
                 style: TextStyle(
-                  color: Colors.yellow,
+                  color: AppColors.of(context).supportAccent,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -507,18 +539,18 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
               child: Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: AppColors.of(context).danger.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red),
+                  border: Border.all(color: AppColors.of(context).danger),
                 ),
                 child: Row(
                   children: [
-                    Icon(FontAwesome.heart, color: Colors.red, size: 16),
+                    Icon(_alreadyLiked ? FontAwesome.heart : FontAwesome.heart_o, color: AppColors.of(context).danger, size: 16),
                     SizedBox(width: 4),
                     Text(
                       '${widget.data.like ?? 0}',
                       style: TextStyle(
-                        color: Colors.red,
+                        color: AppColors.of(context).danger,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -534,7 +566,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         Text(
           widget.data.titre?.toUpperCase() ?? 'TITRE DU SERVICE',
           style: TextStyle(
-            color: Colors.yellow,
+            color: AppColors.of(context).supportAccent,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             height: 1.3,
@@ -544,12 +576,12 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         // Localisation
         Row(
           children: [
-            Icon(Icons.location_on, color: Colors.green, size: 16),
+            Icon(Icons.location_on, color: AppColors.of(context).primary, size: 16),
             SizedBox(width: 6),
             Text(
               '${widget.data.city ?? ''}${widget.data.city != null && widget.data.country != null ? ', ' : ''}${widget.data.country ?? ''}',
               style: TextStyle(
-                color: Colors.green,
+                color: AppColors.of(context).primary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -564,9 +596,9 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: AppColors.of(context).surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: AppColors.of(context).primary.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -575,25 +607,25 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             icon: Icons.remove_red_eye,
             value: widget.data.vues ?? 0,
             label: 'Vues',
-            color: Colors.green,
+            color: AppColors.of(context).primary,
           ),
           _buildStatItem(
             icon: FontAwesome.whatsapp,
             value: widget.data.contactWhatsapp ?? 0,
             label: 'Contacts',
-            color: Colors.green,
+            color: AppColors.of(context).primary,
           ),
           _buildStatItem(
             icon: FontAwesome.heart,
             value: widget.data.like ?? 0,
             label: 'Likes',
-            color: Colors.red,
+            color: AppColors.of(context).danger,
           ),
           _buildStatItem(
             icon: Icons.share,
             value: widget.data.usersPartageId?.length ?? 0,
             label: 'Partages',
-            color: Colors.blue,
+            color: AppColors.of(context).info,
           ),
         ],
       ),
@@ -620,7 +652,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         Text(
           value.toString(),
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.of(context).textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -643,7 +675,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         Text(
           'Description du service',
           style: TextStyle(
-            color: Colors.yellow,
+            color: AppColors.of(context).supportAccent,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -652,13 +684,13 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[900],
+            color: AppColors.of(context).surface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             widget.data.description ?? 'Aucune description disponible',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.of(context).textPrimary,
               fontSize: 14,
               height: 1.5,
             ),
@@ -675,7 +707,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         Text(
           'Contact',
           style: TextStyle(
-            color: Colors.yellow,
+            color: AppColors.of(context).supportAccent,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -710,24 +742,24 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
           Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[900],
+              color: AppColors.of(context).surface,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                Icon(Icons.phone, color: Colors.green, size: 16),
+                Icon(Icons.phone, color: AppColors.of(context).primary, size: 16),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.data.contact!,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.of(context).textPrimary,
                       fontSize: 14,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.content_copy, color: Colors.yellow, size: 16),
+                  icon: Icon(Icons.content_copy, color: AppColors.of(context).supportAccent, size: 16),
                   onPressed: () {
                     // Copier le numéro
                   },
