@@ -391,7 +391,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         final img = friend?.imageUrl ?? '';
         final sending = _sendingId == chat.id;
         return ListTile(
-          leading: CircleAvatar(
+          leading: CircleAvatar(onBackgroundImageError: (img.isNotEmpty ? CachedNetworkImageProvider(img) : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 20,
             backgroundColor: _colors.surfaceVariant,
             backgroundImage: img.isNotEmpty ? CachedNetworkImageProvider(img) : null,
@@ -424,7 +424,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         final img = g['image_url'] as String? ?? '';
         final sending = _sendingId == g['id'];
         return ListTile(
-          leading: CircleAvatar(
+          leading: CircleAvatar(onBackgroundImageError: (img.isNotEmpty ? CachedNetworkImageProvider(img) : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 20,
             backgroundColor: _colors.surfaceVariant,
             backgroundImage: img.isNotEmpty ? CachedNetworkImageProvider(img) : null,

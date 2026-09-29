@@ -124,7 +124,9 @@ class _ProfileCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 5),
         child: Column(
           children: [
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty
+                  ? CachedNetworkImageProvider(imageUrl)
+                  : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 30,
               backgroundColor: colors.surfaceVariant,
               backgroundImage: imageUrl.isNotEmpty

@@ -1447,7 +1447,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
         ),
         child: Row(
           children: [
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: (_, __) {}, 
               radius: 25,
               backgroundImage: NetworkImage(entrepriseData!.urlImage!),
             ),

@@ -217,7 +217,9 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
           const Spacer(),
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserLivesPage())),
-            child: CircleAvatar(
+            child: CircleAvatar(onBackgroundImageError: ((auth.loginUserData.imageUrl?.isNotEmpty == true)
+                  ? CachedNetworkImageProvider(auth.loginUserData.imageUrl!)
+                  : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 18,
               backgroundColor: colors.surfaceVariant,
               backgroundImage: (auth.loginUserData.imageUrl?.isNotEmpty == true)
@@ -454,7 +456,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                   children: [
                     Row(
                       children: [
-                        CircleAvatar(
+                        CircleAvatar(onBackgroundImageError: (live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null) != null ? (Object _, StackTrace? __) {} : null, 
                           radius: 12,
                           backgroundImage: live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null,
                           backgroundColor: colors.surfaceVariant,
@@ -531,7 +533,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                   children: [
                     Row(
                       children: [
-                        CircleAvatar(radius: 9,
+                        CircleAvatar(onBackgroundImageError: (live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null) != null ? (Object _, StackTrace? __) {} : null, radius: 9,
                           backgroundImage: live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null,
                           backgroundColor: colors.surfaceVariant),
                         const SizedBox(width: 6),
@@ -614,7 +616,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                   children: [
                     Row(
                       children: [
-                        CircleAvatar(radius: 9,
+                        CircleAvatar(onBackgroundImageError: (live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null) != null ? (Object _, StackTrace? __) {} : null, radius: 9,
                           backgroundImage: live.hostImage?.isNotEmpty == true ? CachedNetworkImageProvider(live.hostImage!) : null,
                           backgroundColor: colors.surfaceVariant),
                         const SizedBox(width: 6),

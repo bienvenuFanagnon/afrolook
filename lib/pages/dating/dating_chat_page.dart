@@ -1028,7 +1028,9 @@ class _DatingChatPageState extends State<DatingChatPage>
           children: [
             GestureDetector(
               onTap: _goToProfile,
-              child: CircleAvatar(
+              child: CircleAvatar(onBackgroundImageError: (_otherDatingProfile != null
+                    ? NetworkImage(_cdnUrl(_otherDatingProfile!.imageUrl))
+                    : NetworkImage(_cdnUrl(widget.otherUserImage))) != null ? (Object _, StackTrace? __) {} : null, 
                 radius: 20,
                 backgroundImage: _otherDatingProfile != null
                     ? NetworkImage(_cdnUrl(_otherDatingProfile!.imageUrl))

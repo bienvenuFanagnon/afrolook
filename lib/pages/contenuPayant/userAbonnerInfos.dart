@@ -74,7 +74,7 @@ class _ContentOwnerInfoState extends State<ContentOwnerInfo> {
         children: [
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu(userId: _owner!.id!))),
-            child: CircleAvatar(
+            child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
               radius: 30,
               backgroundImage: NetworkImage(_cdnUrl(_owner!.imageUrl)),
               backgroundColor: colors.surfaceVariant,

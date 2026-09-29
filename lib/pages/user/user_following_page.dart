@@ -257,7 +257,7 @@ class _UserFollowingPageState extends State<UserFollowingPage>
     final flag = user.countryData?['flag'];
 
     return ListTile(
-      leading: CircleAvatar(
+      leading: CircleAvatar(onBackgroundImageError: (avatar.isNotEmpty ? CachedNetworkImageProvider(avatar) : null) != null ? (Object _, StackTrace? __) {} : null, 
         radius: 24,
         backgroundColor: colors.surfaceVariant,
         backgroundImage:

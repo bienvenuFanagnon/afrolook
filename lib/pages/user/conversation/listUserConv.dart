@@ -1509,7 +1509,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         ),
         child: Row(
           children: [
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 24,
               backgroundColor: _colors.surfaceVariant,
               backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
@@ -1618,7 +1618,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 30,
                   backgroundColor: _colors.surfaceVariant,
                   backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
@@ -1715,7 +1715,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Stack(
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 26,
             backgroundColor: _colors.surfaceVariant,
             backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
@@ -1997,7 +1997,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                         final friend = chat.chatFriend;
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                          leading: CircleAvatar(
+                          leading: CircleAvatar(onBackgroundImageError: (friend?.imageUrl != null && friend!.imageUrl!.isNotEmpty
+                                ? CachedNetworkImageProvider(friend.imageUrl!)
+                                : null) != null ? (Object _, StackTrace? __) {} : null, 
                             radius: 24,
                             backgroundImage: friend?.imageUrl != null && friend!.imageUrl!.isNotEmpty
                                 ? CachedNetworkImageProvider(friend.imageUrl!)
@@ -2180,7 +2182,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
                     children: [
                       Stack(
                         children: [
-                          CircleAvatar(
+                          CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
                             radius: 26,
                             backgroundColor: _colors.surfaceVariant,
                             backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
@@ -2738,7 +2740,7 @@ class _ConversationListState extends State<ConversationList> {
                 : [],
           ),
           padding: const EdgeInsets.all(2.5),
-          child: CircleAvatar(
+          child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
             radius: 23,
             backgroundImage: widget.imageUrl.isNotEmpty
                 ? NetworkImage(widget.imageUrl)

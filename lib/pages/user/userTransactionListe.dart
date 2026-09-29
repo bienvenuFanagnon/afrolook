@@ -263,7 +263,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
       color: _surface,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(children: [
-        CircleAvatar(
+        CircleAvatar(onBackgroundImageError: (imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
           radius: 22,
           backgroundColor: _card,
           backgroundImage: imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null,

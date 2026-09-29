@@ -146,7 +146,7 @@ class _OnlyUserServiceListPageState extends State<OnlyUserServiceListPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
 
                                       children: [
-                                        CircleAvatar(
+                                        CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                           backgroundImage: NetworkImage(data.user?.imageUrl ?? ''),
                                           radius: 20,
                                         ),

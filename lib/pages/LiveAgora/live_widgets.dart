@@ -341,7 +341,7 @@ class UsersPanelWidget extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
+                        CircleAvatar(onBackgroundImageError: (_, __) {}, 
                           backgroundImage: NetworkImage(user.imageUrl ?? ''),
                           radius: 16,
                         ),

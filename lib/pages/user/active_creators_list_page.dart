@@ -448,7 +448,9 @@ class _CreatorTile extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (user.imageUrl != null && user.imageUrl!.isNotEmpty
+                          ? CachedNetworkImageProvider(user.imageUrl!)
+                          : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 28,
                   backgroundColor: colors.surfaceVariant,
                   backgroundImage:
@@ -598,7 +600,9 @@ class _CanalTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: const Color(0xFF8B0000), width: 2),
               ),
-              child: CircleAvatar(
+              child: CircleAvatar(onBackgroundImageError: (canal.urlImage != null && canal.urlImage!.isNotEmpty
+                        ? CachedNetworkImageProvider(canal.urlImage!)
+                        : null) != null ? (Object _, StackTrace? __) {} : null, 
                 radius: 26,
                 backgroundColor: colors.surfaceVariant,
                 backgroundImage:

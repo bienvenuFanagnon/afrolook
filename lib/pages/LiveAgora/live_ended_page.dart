@@ -93,7 +93,9 @@ class LiveEndedPage extends StatelessWidget {
                         const SizedBox(height: 24),
 
                         // Avatar hôte
-                        CircleAvatar(
+                        CircleAvatar(onBackgroundImageError: (live.hostImage != null && live.hostImage!.isNotEmpty
+                              ? CachedNetworkImageProvider(live.hostImage!)
+                              : null) != null ? (Object _, StackTrace? __) {} : null, 
                           radius: 44,
                           backgroundColor: Colors.white12,
                           backgroundImage: live.hostImage != null && live.hostImage!.isNotEmpty

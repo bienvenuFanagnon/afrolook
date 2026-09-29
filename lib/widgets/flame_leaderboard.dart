@@ -255,7 +255,9 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
                           Stack(
                             alignment: Alignment.topRight,
                             children: [
-                              CircleAvatar(
+                              CircleAvatar(onBackgroundImageError: (imgUrl.isNotEmpty
+                                    ? CachedNetworkImageProvider(imgUrl)
+                                    : null) != null ? (Object _, StackTrace? __) {} : null, 
                                 radius: 26,
                                 backgroundColor: colors.shimmerBase,
                                 backgroundImage: imgUrl.isNotEmpty
@@ -530,7 +532,9 @@ class _LeaderRow extends StatelessWidget {
             const SizedBox(width: 8),
 
             // ── Avatar (taille fixe) ─────────────────────────────────────
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: ((entry.imageUrl?.isNotEmpty == true)
+                  ? CachedNetworkImageProvider(entry.imageUrl!)
+                  : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 16,
               backgroundColor: colors.shimmerBase,
               backgroundImage: (entry.imageUrl?.isNotEmpty == true)

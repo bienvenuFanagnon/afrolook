@@ -213,7 +213,7 @@ class DefiDetailsSection extends StatelessWidget {
                 children: [
                   Text(w.rank >= 1 && w.rank <= 3 ? medals[w.rank - 1] : '${w.rank}.', style: const TextStyle(fontSize: 18)),
                   const SizedBox(width: 8),
-                  CircleAvatar(
+                  CircleAvatar(onBackgroundImageError: (w.imageUrl.isNotEmpty ? NetworkImage(w.imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
                     radius: 14,
                     backgroundColor: _yellowBg,
                     backgroundImage: w.imageUrl.isNotEmpty ? NetworkImage(w.imageUrl) : null,

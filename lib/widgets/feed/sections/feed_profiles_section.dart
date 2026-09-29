@@ -316,7 +316,10 @@ class _RoundCard extends StatelessWidget {
                         : null,
                   ),
                   padding: const EdgeInsets.all(2.5),
-                  child: CircleAvatar(
+                  child: CircleAvatar(onBackgroundImageError: (user.imageUrl != null &&
+                            user.imageUrl!.isNotEmpty
+                        ? CachedNetworkImageProvider(user.imageUrl!)
+                        : null) != null ? (Object _, StackTrace? __) {} : null, 
                     radius: 28,
                     backgroundColor: colors.surfaceVariant,
                     backgroundImage: user.imageUrl != null &&
@@ -463,7 +466,10 @@ class _CanalRoundCard extends StatelessWidget {
                         : null,
                   ),
                   padding: const EdgeInsets.all(2.5),
-                  child: CircleAvatar(
+                  child: CircleAvatar(onBackgroundImageError: (canal.urlImage != null &&
+                            canal.urlImage!.isNotEmpty
+                        ? CachedNetworkImageProvider(canal.urlImage!)
+                        : null) != null ? (Object _, StackTrace? __) {} : null, 
                     radius: 28,
                     backgroundColor: colors.surfaceVariant,
                     backgroundImage: canal.urlImage != null &&

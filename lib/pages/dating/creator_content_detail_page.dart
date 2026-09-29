@@ -653,7 +653,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
             },
             child: Row(
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (_creatorProfile?.imageUrl != null ? NetworkImage(_creatorProfile!.imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 20,
                   backgroundImage: _creatorProfile?.imageUrl != null ? NetworkImage(_creatorProfile!.imageUrl) : null,
                   child: (_creatorProfile?.imageUrl ?? '').isEmpty ? const Icon(Icons.person) : null,

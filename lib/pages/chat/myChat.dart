@@ -1571,7 +1571,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final user = snapshot.data!;
-          return CircleAvatar(
+          return CircleAvatar(onBackgroundImageError: (_, __) {}, 
             backgroundImage: NetworkImage(user.imageUrl!),
           );
         }
@@ -3267,7 +3267,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(2),
-                          child: CircleAvatar(
+                          child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                             radius: 19,
                             backgroundImage: NetworkImage(user.imageUrl ?? ''),
                             backgroundColor: _colors.surfaceVariant,
@@ -3801,7 +3801,9 @@ class _TypingAnimationOverlayState extends State<_TypingAnimationOverlay>
           mainAxisSize: MainAxisSize.min,
           children: [
             // Mini avatar
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: ((widget.avatarUrl?.isNotEmpty == true)
+                  ? NetworkImage(widget.avatarUrl!) as ImageProvider
+                  : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 14,
               backgroundImage: (widget.avatarUrl?.isNotEmpty == true)
                   ? NetworkImage(widget.avatarUrl!) as ImageProvider

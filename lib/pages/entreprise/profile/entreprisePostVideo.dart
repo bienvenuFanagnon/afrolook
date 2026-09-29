@@ -520,7 +520,8 @@ class _ProfileEntreprisePostVideoTabState
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(right: 8.0),
-                            child: CircleAvatar(
+                            child: CircleAvatar(onBackgroundImageError: (NetworkImage(
+                                  '${post.entrepriseData==null?'':post.entrepriseData!.urlImage!}')) != null ? (Object _, StackTrace? __) {} : null, 
                               backgroundImage: NetworkImage(
                                   '${post.entrepriseData==null?'':post.entrepriseData!.urlImage!}'),
                             ),

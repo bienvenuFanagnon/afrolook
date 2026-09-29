@@ -1211,6 +1211,7 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                           image: canal.urlImage != null && canal.urlImage!.isNotEmpty
                               ? DecorationImage(
                             image: NetworkImage(canal.urlImage!),
+                            onError: (_, __) {},
                             fit: BoxFit.cover,
                           )
                               : null,

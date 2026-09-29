@@ -567,7 +567,9 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         final isSelected = _selectedMembers.any((m) => m.id == user.id);
 
         return ListTile(
-          leading: CircleAvatar(
+          leading: CircleAvatar(onBackgroundImageError: (user.imageUrl != null && user.imageUrl!.isNotEmpty
+                ? CachedNetworkImageProvider(user.imageUrl!)
+                : null) != null ? (Object _, StackTrace? __) {} : null, 
             backgroundImage: user.imageUrl != null && user.imageUrl!.isNotEmpty
                 ? CachedNetworkImageProvider(user.imageUrl!)
                 : null,

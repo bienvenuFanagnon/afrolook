@@ -333,7 +333,9 @@ class _CommentItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (avatarUrl.isNotEmpty
+                ? CachedNetworkImageProvider(avatarUrl)
+                : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 15,
             backgroundColor: colors.surface,
             backgroundImage: avatarUrl.isNotEmpty

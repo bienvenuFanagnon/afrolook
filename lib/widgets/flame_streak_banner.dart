@@ -502,7 +502,9 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
                                     Stack(
                                       alignment: Alignment.topRight,
                                       children: [
-                                        CircleAvatar(
+                                        CircleAvatar(onBackgroundImageError: ((user.imageUrl?.isNotEmpty == true)
+                                              ? CachedNetworkImageProvider(user.imageUrl!)
+                                              : null) != null ? (Object _, StackTrace? __) {} : null, 
                                           radius: 20,
                                           backgroundColor: colors.shimmerBase,
                                           backgroundImage: (user.imageUrl?.isNotEmpty == true)

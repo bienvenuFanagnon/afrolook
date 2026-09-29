@@ -263,7 +263,7 @@ class TopFiveUserItem extends StatelessWidget {
           // PROFILE + BADGE VERIFIE
           Stack(
             children: [
-              CircleAvatar(
+              CircleAvatar(onBackgroundImageError: (_, __) {}, 
                 backgroundImage: NetworkImage(user.imageUrl ?? ''),
                 radius: 24,
                 backgroundColor: colors.surfaceVariant,

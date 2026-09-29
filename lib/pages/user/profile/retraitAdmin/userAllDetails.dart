@@ -575,7 +575,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
               shape: BoxShape.circle,
               border: Border.all(color: isBlocked ? _red : _gold, width: 2.5),
             ),
-            child: CircleAvatar(
+            child: CircleAvatar(onBackgroundImageError: (imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 36,
               backgroundColor: _surface,
               backgroundImage: imgUrl.isNotEmpty ? NetworkImage(imgUrl) : null,

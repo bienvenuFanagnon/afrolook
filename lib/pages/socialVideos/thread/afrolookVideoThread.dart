@@ -897,7 +897,7 @@ class _VideoPostItemState extends State<_VideoPostItem> {
         SizedBox(height: 8),
         Row(
           children: [
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: (_, __) {}, 
               radius: 12,
               backgroundImage: NetworkImage(entreprise.urlImage!),
             ),
@@ -942,7 +942,7 @@ class _VideoPostItemState extends State<_VideoPostItem> {
         children: [
           Stack(
             children: [
-              CircleAvatar(
+              CircleAvatar(onBackgroundImageError: (_, __) {}, 
                 radius: 15,
                 backgroundImage: NetworkImage(user.imageUrl!),
               ),

@@ -51,7 +51,9 @@ class CommentLevelWidget extends StatelessWidget {
             child: Row(
               children: [
                 // Avatar
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: ((me.imageUrl?.isNotEmpty == true)
+                      ? CachedNetworkImageProvider(me.imageUrl!)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 18,
                   backgroundImage: (me.imageUrl?.isNotEmpty == true)
                       ? CachedNetworkImageProvider(me.imageUrl!)

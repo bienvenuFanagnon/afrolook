@@ -548,7 +548,9 @@ class _PostShareSheetState extends State<PostShareSheet>
     final friend = chat.chatFriend;
     final isSending = _sendingId == chat.id;
     return ListTile(
-      leading: CircleAvatar(
+      leading: CircleAvatar(onBackgroundImageError: (friend?.imageUrl != null && friend!.imageUrl!.isNotEmpty
+                ? CachedNetworkImageProvider(friend.imageUrl!)
+                : null) != null ? (Object _, StackTrace? __) {} : null, 
         backgroundImage:
             friend?.imageUrl != null && friend!.imageUrl!.isNotEmpty
                 ? CachedNetworkImageProvider(friend.imageUrl!)
@@ -583,7 +585,9 @@ class _PostShareSheetState extends State<PostShareSheet>
     final isSending = _sendingId == groupId;
 
     return ListTile(
-      leading: CircleAvatar(
+      leading: CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty
+            ? CachedNetworkImageProvider(imageUrl)
+            : null) != null ? (Object _, StackTrace? __) {} : null, 
         backgroundImage: imageUrl.isNotEmpty
             ? CachedNetworkImageProvider(imageUrl)
             : null,

@@ -240,7 +240,9 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
                     final text = data['text'] as String? ?? '';
 
                     return ListTile(
-                      leading: CircleAvatar(
+                      leading: CircleAvatar(onBackgroundImageError: (avatar.isNotEmpty
+                            ? CachedNetworkImageProvider(avatar)
+                            : null) != null ? (Object _, StackTrace? __) {} : null, 
                         radius: 18,
                         backgroundColor: colors.shimmerBase,
                         backgroundImage: avatar.isNotEmpty
@@ -279,7 +281,11 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
                 left: 12, right: 12, top: 8, bottom: bottomPadding + 12),
             child: Row(
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: ((_auth.loginUserData.imageUrl?.isNotEmpty ==
+                          true)
+                      ? CachedNetworkImageProvider(
+                          _auth.loginUserData.imageUrl!)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 18,
                   backgroundColor: colors.shimmerBase,
                   backgroundImage: (_auth.loginUserData.imageUrl?.isNotEmpty ==

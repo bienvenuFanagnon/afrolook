@@ -198,7 +198,9 @@ class _RequestCard extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  CircleAvatar(
+                  CircleAvatar(onBackgroundImageError: (request.imageUrl.isNotEmpty
+                        ? CachedNetworkImageProvider(request.imageUrl)
+                        : null) != null ? (Object _, StackTrace? __) {} : null, 
                     radius: 22,
                     backgroundColor: colors.surfaceVariant,
                     backgroundImage: request.imageUrl.isNotEmpty
@@ -321,7 +323,9 @@ class _RequestDetailPage extends StatelessWidget {
             colors: colors,
             child: Row(
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (request.imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(request.imageUrl)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 28,
                   backgroundColor: colors.surfaceVariant,
                   backgroundImage: request.imageUrl.isNotEmpty

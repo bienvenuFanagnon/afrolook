@@ -122,7 +122,7 @@ class _UserPostFormState extends State<UserPostForm> {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Row(
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 22,
             backgroundColor: _colors.border,
             backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,

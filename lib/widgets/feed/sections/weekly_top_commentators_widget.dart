@@ -252,7 +252,9 @@ class _CommentatorCard extends StatelessWidget {
               Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
+                  CircleAvatar(onBackgroundImageError: (imgUrl.isNotEmpty
+                        ? CachedNetworkImageProvider(imgUrl)
+                        : null) != null ? (Object _, StackTrace? __) {} : null, 
                     radius: 40,
                     backgroundColor: colors.shimmerBase,
                     backgroundImage: imgUrl.isNotEmpty
@@ -357,7 +359,9 @@ class _CommentatorCard extends StatelessWidget {
             Stack(
               alignment: Alignment.topRight,
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (imgUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imgUrl)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 28,
                   backgroundColor: colors.shimmerBase,
                   backgroundImage: imgUrl.isNotEmpty

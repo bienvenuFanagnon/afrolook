@@ -186,7 +186,7 @@ class _UserProfilState extends State<UserProfil> {
                               ),
                               shape: BoxShape.circle,
                             ),
-                            child: CircleAvatar(
+                            child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                               radius: 40,
                               backgroundImage: NetworkImage(
                                   '${authProvider.loginUserData!.imageUrl!}'),

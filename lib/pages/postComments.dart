@@ -596,7 +596,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            CircleAvatar(
+                            CircleAvatar(onBackgroundImageError: (avatar != null
+                                  ? NetworkImage(avatar)
+                                  : null) != null ? (Object _, StackTrace? __) {} : null, 
                               radius: 13,
                               backgroundColor: _colors.border,
                               backgroundImage: avatar != null
@@ -714,7 +716,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       leading: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          CircleAvatar(
+                          CircleAvatar(onBackgroundImageError: (avatar != null
+                                ? NetworkImage(avatar)
+                                : null) != null ? (Object _, StackTrace? __) {} : null, 
                             radius: 20,
                             backgroundColor: _colors.border,
                             backgroundImage: avatar != null
@@ -794,7 +798,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                           );
                         }
                       },
-                      child: CircleAvatar(
+                      child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                         radius: 19,
                         backgroundColor: _colors.surfaceVariant,
                         backgroundImage: NetworkImage(
@@ -967,7 +971,13 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               );
             }
           },
-          child: CircleAvatar(
+          child: CircleAvatar(onBackgroundImageError: (pcm.canal_name != null
+                ? (pcm.canal_image != null && pcm.canal_image!.isNotEmpty
+                    ? NetworkImage(pcm.canal_image!)
+                    : null)
+                : (pcm.user?.imageUrl != null && pcm.user!.imageUrl!.isNotEmpty
+                    ? NetworkImage(pcm.user!.imageUrl!)
+                    : null)) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 18,
             backgroundColor: _colors.surfaceVariant,
             backgroundImage: pcm.canal_name != null
@@ -1118,7 +1128,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: ((rpc.user_logo_url != null && rpc.user_logo_url!.isNotEmpty)
+                ? NetworkImage(rpc.user_logo_url!)
+                : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 14,
             backgroundColor: _colors.surfaceVariant,
             backgroundImage: (rpc.user_logo_url != null && rpc.user_logo_url!.isNotEmpty)
@@ -1290,7 +1302,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             final user = suggestedUsers[index];
             return ListTile(
               dense: true,
-              leading: CircleAvatar(
+              leading: CircleAvatar(onBackgroundImageError: ((user.imageUrl != null && user.imageUrl!.isNotEmpty)
+                    ? NetworkImage(user.imageUrl!)
+                    : null) != null ? (Object _, StackTrace? __) {} : null, 
                 radius: 16,
                 backgroundColor: _colors.surfaceVariant,
                 backgroundImage: (user.imageUrl != null && user.imageUrl!.isNotEmpty)

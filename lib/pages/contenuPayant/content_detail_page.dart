@@ -857,7 +857,10 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
           child: Row(
             children: [
               // Avatar
-              CircleAvatar(
+              CircleAvatar(onBackgroundImageError: (_creatorData?.imageUrl != null && _creatorData!.imageUrl!.isNotEmpty
+                    ? CachedNetworkImageProvider(
+                        authProvider.convertToCdnUrl(_creatorData!.imageUrl!, authProvider.appDefaultData))
+                    : null) != null ? (Object _, StackTrace? __) {} : null, 
                 radius: 24,
                 backgroundColor: _colors.primary.withValues(alpha: 0.15),
                 backgroundImage: _creatorData?.imageUrl != null && _creatorData!.imageUrl!.isNotEmpty

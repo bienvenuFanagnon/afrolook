@@ -85,7 +85,7 @@ class _MesAmisState extends State<MesAmis> {
                   },
                   child: Stack(
                     children: [
-                      CircleAvatar(
+                      CircleAvatar(onBackgroundImageError: (_, __) {}, 
                         backgroundImage: NetworkImage("${amigo.friend!.imageUrl!}"),
                         maxRadius: 30,
                       ),

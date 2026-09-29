@@ -679,7 +679,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (_, __) {}, 
             radius: 12,
             backgroundImage: CachedNetworkImageProvider(chronique.userImageUrl),
             backgroundColor: Colors.grey[800],

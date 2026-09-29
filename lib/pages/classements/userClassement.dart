@@ -467,7 +467,9 @@ class _TopFiveUserItemState extends State<TopFiveUserItem> {
           // Avatar utilisateur
           Stack(
             children: [
-              CircleAvatar(
+              CircleAvatar(onBackgroundImageError: (widget.user.imageUrl != null && widget.user.imageUrl!.isNotEmpty
+                    ? NetworkImage(widget.user.imageUrl!)
+                    : null) != null ? (Object _, StackTrace? __) {} : null, 
                 backgroundImage: widget.user.imageUrl != null && widget.user.imageUrl!.isNotEmpty
                     ? NetworkImage(widget.user.imageUrl!)
                     : null,

@@ -480,7 +480,7 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> {
                         : BorderSide.none,
                   ),
                   child: ListTile(
-                    leading: CircleAvatar(
+                    leading: CircleAvatar(onBackgroundImageError: (user['imageUrl'] != null ? NetworkImage(user['imageUrl']) : null) != null ? (Object _, StackTrace? __) {} : null, 
                       backgroundImage: user['imageUrl'] != null ? NetworkImage(user['imageUrl']) : null,
                       backgroundColor: africanGold.withOpacity(0.2),
                       child: user['imageUrl'] == null ? Icon(Icons.person, color: africanGold) : null,

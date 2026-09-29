@@ -347,7 +347,10 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  CircleAvatar(
+                  CircleAvatar(onBackgroundImageError: (creator.imageUrl != null &&
+                            creator.imageUrl!.isNotEmpty
+                        ? CachedNetworkImageProvider(creator.imageUrl!)
+                        : null) != null ? (Object _, StackTrace? __) {} : null, 
                     radius: 20,
                     backgroundColor: colors.surfaceVariant,
                     backgroundImage: creator.imageUrl != null &&

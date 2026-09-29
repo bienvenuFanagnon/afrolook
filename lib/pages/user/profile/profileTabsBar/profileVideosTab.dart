@@ -505,7 +505,7 @@ bool _isLoading=false;
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(right: 8.0),
-                            child: CircleAvatar(
+                            child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                               backgroundImage: NetworkImage(
                                   '${post.user!.imageUrl!}'),
                             ),

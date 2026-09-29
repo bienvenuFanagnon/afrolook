@@ -1151,7 +1151,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                                                           children: [
                                                             Padding(
                                                               padding: const EdgeInsets.only(right: 8.0),
-                                                              child: CircleAvatar(
+                                                              child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                                                 radius: 12,
                                                                 backgroundImage: NetworkImage(
                                                                     '${ datas[index].entrepriseData!.urlImage!}'),
@@ -1208,7 +1208,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                                                         children: [
                                                           Padding(
                                                             padding: const EdgeInsets.only(right: 8.0),
-                                                            child: CircleAvatar(
+                                                            child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                                               radius: 12,
                                                               backgroundImage: NetworkImage(
                                                                   '${ datas[index].user!.imageUrl!}'),

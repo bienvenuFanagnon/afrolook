@@ -428,7 +428,7 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
+                                child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                   backgroundImage: NetworkImage(
                                       '${post.entrepriseData!.urlImage!}'),
                                 ),
@@ -480,7 +480,7 @@ class _ProfileUserEntrepriseVideoTabState extends State<ProfileUserEntrepriseVid
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
+                                child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                   backgroundImage: NetworkImage(
                                       '${post.user!.imageUrl!}'),
                                 ),

@@ -339,7 +339,9 @@ class _ShopVideoItemState extends State<_ShopVideoItem> {
                   if (article.user != null)
                     Row(
                       children: [
-                        CircleAvatar(
+                        CircleAvatar(onBackgroundImageError: ((article.user!.imageUrl?.isNotEmpty == true)
+                              ? CachedNetworkImageProvider(article.user!.imageUrl!)
+                              : null) != null ? (Object _, StackTrace? __) {} : null, 
                           radius: 18,
                           backgroundColor: Colors.grey[800],
                           backgroundImage: (article.user!.imageUrl?.isNotEmpty == true)

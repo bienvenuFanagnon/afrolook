@@ -525,7 +525,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
                                     onTap: () => _navigateToCreatorProfile(snapshot.data!.userId),
                                     child: Row(
                                       children: [
-                                        CircleAvatar(
+                                        CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                           radius: 16,
                                           backgroundImage: NetworkImage(snapshot.data!.imageUrl),
                                           child: snapshot.data!.imageUrl.isEmpty ? Icon(Icons.person, size: 16) : null,

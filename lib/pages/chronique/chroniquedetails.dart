@@ -731,7 +731,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             children: [
               GestureDetector(
                 onTap: () => _showUserProfile(message.userId),
-                child: CircleAvatar(
+                child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                   radius: 14,
                   backgroundImage: CachedNetworkImageProvider(message.userImageUrl),
                 ),
@@ -1756,7 +1756,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           children: [
             GestureDetector(
               onTap: () => _showUserProfile(chronique.userId),
-              child: CircleAvatar(
+              child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                 radius: 16,
                 backgroundImage: CachedNetworkImageProvider(chronique.userImageUrl),
               ),

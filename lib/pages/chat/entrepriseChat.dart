@@ -269,10 +269,10 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
           children: [
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: widget.isEntreprise!=true?   CircleAvatar(
+              child: widget.isEntreprise!=true?   CircleAvatar(onBackgroundImageError: (_, __) {}, 
                 backgroundImage: NetworkImage("${widget.chat.entreprise!.urlImage!}"),
                 //maxRadius: 30,
-              ):CircleAvatar(
+              ):CircleAvatar(onBackgroundImageError: (_, __) {}, 
                 backgroundImage: NetworkImage("${widget.chat.sender!.imageUrl!}"),
                 //maxRadius: 30,
               ),

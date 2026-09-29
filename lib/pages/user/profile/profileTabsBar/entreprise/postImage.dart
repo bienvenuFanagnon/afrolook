@@ -192,7 +192,8 @@ class _ProfileUserEntrepriseImageTabState extends State<ProfileUserEntrepriseIma
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
+                                child: CircleAvatar(onBackgroundImageError: (NetworkImage(
+                                      '${post.entrepriseData!=null?post.entrepriseData!.urlImage!:''}')) != null ? (Object _, StackTrace? __) {} : null, 
                                   backgroundImage: NetworkImage(
                                       '${post.entrepriseData!=null?post.entrepriseData!.urlImage!:''}'),
                                 ),
@@ -244,7 +245,7 @@ class _ProfileUserEntrepriseImageTabState extends State<ProfileUserEntrepriseIma
                             children: [
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
+                                child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                   backgroundImage: NetworkImage(
                                       '${post.user!.imageUrl!}'),
                                 ),

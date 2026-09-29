@@ -3091,7 +3091,10 @@ class _DetailsPostState extends State<DetailsPost>
         children: [
           Stack(
             children: [
-              CircleAvatar(
+              CircleAvatar(onBackgroundImageError: (() {
+                  final url = _optimizeImageUrl(canal?.urlImage ?? user?.imageUrl ?? '');
+                  return url.isNotEmpty ? NetworkImage(url) : null;
+                }()) != null ? (Object _, StackTrace? __) {} : null, 
                 backgroundImage: () {
                   final url = _optimizeImageUrl(canal?.urlImage ?? user?.imageUrl ?? '');
                   return url.isNotEmpty ? NetworkImage(url) : null;

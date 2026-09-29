@@ -227,7 +227,7 @@ class _ConversationListState extends State<ConversationList> {
                     width: 20,
                   ),
                 ),
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (_, __) {}, 
                   backgroundImage: NetworkImage(widget.imageUrl),
                   maxRadius: widget.avatarSize,
                 ),

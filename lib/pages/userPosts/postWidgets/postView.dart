@@ -1375,7 +1375,7 @@ class _PostViewState extends State<PostView>
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8.0),
-                                  child: CircleAvatar(
+                                  child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                     backgroundImage: NetworkImage(
                                         '${post.entrepriseData!.urlImage!}'),
                                   ),
@@ -1449,7 +1449,7 @@ class _PostViewState extends State<PostView>
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8.0),
-                                  child: CircleAvatar(
+                                  child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
                                     backgroundImage: NetworkImage(
                                         '${post.user!.imageUrl!}'),
                                   ),
@@ -2200,7 +2200,7 @@ class _PostViewState extends State<PostView>
                                     ));
                               },
                               child:
-                              CircleAvatar(
+                              CircleAvatar(onBackgroundImageError: (_, __) {}, 
 
                                 backgroundImage:
                                 NetworkImage('${post.user!.imageUrl!}'),

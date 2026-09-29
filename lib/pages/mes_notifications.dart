@@ -854,7 +854,9 @@ class _MesNotificationState extends State<MesNotification> {
               shape: BoxShape.circle,
               border: Border.all(color: borderColor, width: isUnread ? 2 : 1),
             ),
-            child: CircleAvatar(
+            child: CircleAvatar(onBackgroundImageError: (user?.imageUrl != null && user!.imageUrl!.isNotEmpty
+                  ? NetworkImage(user.imageUrl!)
+                  : null) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 22,
               backgroundColor: _colors.surfaceVariant,
               backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty

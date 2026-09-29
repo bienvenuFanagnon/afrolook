@@ -1631,7 +1631,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             if (canal != null) Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
             else if (user != null) showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
           },
-          child: CircleAvatar(
+          child: CircleAvatar(onBackgroundImageError: (() {
+              final url = canal?.urlImage ?? user?.imageUrl ?? '';
+              return url.isNotEmpty ? NetworkImage(url) : null;
+            }()) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 25,
             backgroundImage: () {
               final url = canal?.urlImage ?? user?.imageUrl ?? '';

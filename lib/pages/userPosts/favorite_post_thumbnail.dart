@@ -396,7 +396,9 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
+            CircleAvatar(onBackgroundImageError: (user.imageUrl != null
+                  ? NetworkImage(user.imageUrl!)
+                  : AssetImage('assets/default_profile.png') as ImageProvider) != null ? (Object _, StackTrace? __) {} : null, 
               radius: 10,
               backgroundImage: user.imageUrl != null
                   ? NetworkImage(user.imageUrl!)

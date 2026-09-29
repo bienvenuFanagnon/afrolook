@@ -1845,7 +1845,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 Text(medals[idx], style: TextStyle(fontSize: 12)),
                 SizedBox(width: 4),
                 if (imageUrl.isNotEmpty) ...[
-                  CircleAvatar(backgroundImage: NetworkImage(imageUrl), radius: 9, backgroundColor: Colors.white24),
+                  CircleAvatar(onBackgroundImageError: (_, __) {}, backgroundImage: NetworkImage(imageUrl), radius: 9, backgroundColor: Colors.white24),
                   SizedBox(width: 4),
                 ],
                 Text(
@@ -2048,7 +2048,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
+              CircleAvatar(onBackgroundImageError: (_, __) {}, 
                 backgroundImage: NetworkImage(widget.hostImage),
                 radius: 18,
                 backgroundColor: Colors.white24,
@@ -2345,7 +2345,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
+                        CircleAvatar(onBackgroundImageError: (comment.userImage.isNotEmpty
+                              ? NetworkImage(comment.userImage)
+                              : null) != null ? (Object _, StackTrace? __) {} : null, 
                           backgroundImage: comment.userImage.isNotEmpty
                               ? NetworkImage(comment.userImage)
                               : null,

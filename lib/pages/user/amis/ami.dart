@@ -229,7 +229,7 @@ class _ConversationListState extends State<ConversationList> {
       ),
       child: Row(
         children: <Widget>[
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (_, __) {}, 
             backgroundImage: NetworkImage(widget.imageUrl),
             radius: 28,
             backgroundColor: _colors.background,
@@ -337,7 +337,7 @@ class _InvitationsState extends State<Invitations> {
       ),
       child: Row(
         children: <Widget>[
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (_, __) {}, 
             backgroundImage: NetworkImage(widget.imageUrl),
             radius: 28,
             backgroundColor: _colors.background,

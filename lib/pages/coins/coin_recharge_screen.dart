@@ -478,7 +478,9 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (_targetUserAvatar != null && _targetUserAvatar!.isNotEmpty
+                ? NetworkImage(_targetUserAvatar!)
+                : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 22,
             backgroundColor: colors.surfaceVariant,
             backgroundImage: _targetUserAvatar != null && _targetUserAvatar!.isNotEmpty

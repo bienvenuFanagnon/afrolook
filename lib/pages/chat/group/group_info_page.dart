@@ -581,7 +581,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                     )
                   else
                     ...results.map((u) => ListTile(
-                      leading: CircleAvatar(
+                      leading: CircleAvatar(onBackgroundImageError: ((u.imageUrl ?? '').isNotEmpty
+                            ? CachedNetworkImageProvider(u.imageUrl!)
+                            : null) != null ? (Object _, StackTrace? __) {} : null, 
                         radius: 18,
                         backgroundColor: _colors.surfaceVariant,
                         backgroundImage: (u.imageUrl ?? '').isNotEmpty
@@ -1139,7 +1141,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   ),
                 )
               else
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (imageUrl != null && imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imageUrl)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 44,
                   backgroundColor: _colors.surfaceVariant,
                   backgroundImage: imageUrl != null && imageUrl.isNotEmpty
@@ -1934,7 +1938,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     final showManage = canManage && !isMe && role != 'owner';
 
     return ListTile(
-      leading: CircleAvatar(
+      leading: CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
         backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
         backgroundColor: _colors.surfaceVariant,
         child: imageUrl.isEmpty ? Icon(Icons.person, color: _colors.textSecondary) : null,

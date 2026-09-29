@@ -160,7 +160,7 @@ class _InfluencerRequestsPageState extends State<InfluencerRequestsPage>
     final followers = data['followerCount'] as int? ?? 0;
     return Row(
       children: [
-        CircleAvatar(
+        CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
           radius: 24,
           backgroundColor: _colors.surfaceVariant,
           backgroundImage: imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null,
@@ -291,7 +291,7 @@ class _InfluencerRequestsPageState extends State<InfluencerRequestsPage>
           children: [
             Row(
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? CachedNetworkImageProvider(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 26,
                   backgroundColor: _colors.surfaceVariant,
                   backgroundImage:

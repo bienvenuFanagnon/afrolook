@@ -363,7 +363,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (imageUrl != null && imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imageUrl)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 34,
                   backgroundColor: _colors.surfaceVariant,
                   backgroundImage: imageUrl != null && imageUrl.isNotEmpty
@@ -1492,7 +1494,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                               return ListTile(
                                 contentPadding:
                                     const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                                leading: CircleAvatar(
+                                leading: CircleAvatar(onBackgroundImageError: (img.isNotEmpty ? CachedNetworkImageProvider(img) : null) != null ? (Object _, StackTrace? __) {} : null, 
                                   radius: 18,
                                   backgroundColor: _colors.surfaceVariant,
                                   backgroundImage:
@@ -1880,7 +1882,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         });
                       },
                       title: Text(pseudo, style: TextStyle(color: _colors.textPrimary, fontSize: 14)),
-                      secondary: CircleAvatar(
+                      secondary: CircleAvatar(onBackgroundImageError: (imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null) != null ? (Object _, StackTrace? __) {} : null, 
                         radius: 16,
                         backgroundImage: imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
                         backgroundColor: _colors.surfaceVariant,
@@ -2365,7 +2367,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
           children: [
             Stack(
               children: [
-                CircleAvatar(
+                CircleAvatar(onBackgroundImageError: (imageUrl != null && imageUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(imageUrl)
+                      : null) != null ? (Object _, StackTrace? __) {} : null, 
                   radius: 18,
                   backgroundColor: _colors.surfaceVariant,
                   backgroundImage: imageUrl != null && imageUrl.isNotEmpty
@@ -2782,7 +2786,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    CircleAvatar(
+                    CircleAvatar(onBackgroundImageError: (senderImage.isNotEmpty ? CachedNetworkImageProvider(senderImage) : null) != null ? (Object _, StackTrace? __) {} : null, 
                       radius: 14,
                       backgroundColor: _colors.surfaceVariant,
                       backgroundImage:

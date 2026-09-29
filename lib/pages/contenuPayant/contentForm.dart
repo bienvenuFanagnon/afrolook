@@ -789,7 +789,9 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          CircleAvatar(onBackgroundImageError: (user?.imageUrl != null && user!.imageUrl!.isNotEmpty
+                ? NetworkImage(_cdnUrl(user.imageUrl))
+                : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 25,
             backgroundColor: _colors.primary,
             backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
