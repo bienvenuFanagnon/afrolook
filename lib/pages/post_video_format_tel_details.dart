@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/safe_network_avatar.dart';
 import '../services/followers_count_service.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -3055,13 +3056,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               children: [
                 Container(
                   decoration: BoxDecoration(border: Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
-                  child: CircleAvatar(
-                    radius: 25,
-                    backgroundImage: (canal?.urlImage != null || user?.imageUrl != null)
-                        ? NetworkImage(canal?.urlImage ?? user?.imageUrl ?? '')
-                        : null,
-                    child: (canal == null && user == null) ? const CircularProgressIndicator(strokeWidth: 2) : null,
-                  ),
+                  child: (canal == null && user == null)
+                      ? const CircleAvatar(radius: 25, child: CircularProgressIndicator(strokeWidth: 2))
+                      : SafeNetworkAvatar(url: canal?.urlImage ?? user?.imageUrl, radius: 25),
                 ),
                 _buildSubscribeIcon(post),
               ],

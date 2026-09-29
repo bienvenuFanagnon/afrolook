@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -190,12 +191,7 @@ class _CanalListPageState extends State<CanalListPage> {
                     // Avatar du canal
                     Stack(
                       children: [
-                        CircleAvatar(
-                          radius: 25,
-                          backgroundImage: canal.urlImage != null
-                              ? NetworkImage(canal.urlImage!)
-                              : AssetImage('assets/default_profile.png') as ImageProvider,
-                        ),
+                        SafeNetworkAvatar(url: canal.urlImage, radius: 25, fallbackIcon: Icons.tv_rounded),
                         if (isPrivate)
                           Positioned(
                             bottom: 0,

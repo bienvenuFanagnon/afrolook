@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -278,11 +279,12 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
                 Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: roleColor, width: 2)),
-                  child: CircleAvatar(
+                  child: SafeNetworkAvatar(
+                    url: hasImage ? canal.urlImage : null,
                     radius: 24,
                     backgroundColor: _colors.surfaceVariant,
-                    backgroundImage: hasImage ? NetworkImage(canal.urlImage!) : null,
-                    child: hasImage ? null : Icon(Icons.campaign_rounded, color: roleColor, size: 22),
+                    fallbackIcon: Icons.campaign_rounded,
+                    iconColor: roleColor,
                   ),
                 ),
                 if (canal.isVerify == true)

@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -614,12 +615,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         leading: Stack(
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundImage: user.imageUrl != null
-                  ? NetworkImage(user.imageUrl!)
-                  : AssetImage('assets/default_profile.png') as ImageProvider,
-            ),
+            SafeNetworkAvatar(url: user.imageUrl, radius: 24),
             if (isCreator)
               Positioned(
                 bottom: 0,
@@ -907,12 +903,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundImage: widget.canal.urlImage != null
-                        ? NetworkImage(widget.canal.urlImage!)
-                        : AssetImage('assets/default_profile.png') as ImageProvider,
-                  ),
+                  SafeNetworkAvatar(url: widget.canal.urlImage, radius: 25, fallbackIcon: Icons.tv_rounded),
                   SizedBox(width: 12),
                   Expanded(
                     child: Column(

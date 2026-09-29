@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/safe_network_avatar.dart';
 import '../../services/followers_count_service.dart';
 import '../../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1517,15 +1518,12 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
           },
           child: Stack(
             children: [
-              CircleAvatar(
+              SafeNetworkAvatar(
+                url: (isCanalPost && _creatorCanal?.urlImage != null) ? _creatorCanal!.urlImage : _creatorUser?.imageUrl,
                 radius: 23,
                 backgroundColor: colors.primary,
-                backgroundImage: (isCanalPost && _creatorCanal?.urlImage != null)
-                    ? NetworkImage(_creatorCanal!.urlImage!)
-                    : (_creatorUser?.imageUrl != null ? NetworkImage(_creatorUser!.imageUrl!) : null),
-                child: ((isCanalPost && _creatorCanal?.urlImage == null) || (_creatorUser?.imageUrl == null))
-                    ? Icon(isCanalPost ? Icons.group : Icons.person, color: Colors.white, size: 20)
-                    : null,
+                fallbackIcon: isCanalPost ? Icons.group : Icons.person,
+                iconColor: Colors.white,
               ),
             ],
           ),

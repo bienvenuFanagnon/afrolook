@@ -1,4 +1,5 @@
-﻿import 'package:flutter/gestures.dart';
+﻿import 'package:afrotok/widgets/safe_network_avatar.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1212,7 +1213,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
               children: [
                 Container(
                   decoration: BoxDecoration(border: Border.all(color: _vibeGreen, width: 2), shape: BoxShape.circle),
-                  child: CircleAvatar(radius: 25, backgroundImage: (post.canal?.urlImage != null || post.user?.imageUrl != null) ? NetworkImage(post.canal?.urlImage ?? post.user?.imageUrl ?? '') : null, child: (post.canal == null && post.user == null) ? const CircularProgressIndicator(strokeWidth: 2) : null),
+                  child: (post.canal == null && post.user == null) ? const CircleAvatar(radius: 25, child: CircularProgressIndicator(strokeWidth: 2)) : SafeNetworkAvatar(url: post.canal?.urlImage ?? post.user?.imageUrl, radius: 25),
                 ),
                 _buildSubscribeIcon(post),
               ],

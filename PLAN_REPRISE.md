@@ -138,4 +138,4 @@ Corrigé : cache complété, listes modifiables dans le constructeur, `notifyUse
 - Paysage (`postDetailsVideo.dart`) : `_postSubscription` n'était jamais branchée → abonnement temps réel ajouté ; le bandeau ouvre déjà le détail au tap.
 
 ### 29/09 — Images de canal (403)
-`lib/widgets/safe_network_avatar.dart` (`SafeNetworkAvatar`, `SafeNetworkCover`) : repli sans exception si le lien est vide/périmé. Appliqué à `canaux/detailsCanal.dart` (couverture, avatar, propriétaire). [ ] Étendre aux autres avatars de canaux (`listCanal`, `listCanauxByUser`, fil vidéo, commentaires) et aux profils.
+`lib/widgets/safe_network_avatar.dart` (`SafeNetworkAvatar`, `SafeNetworkCover`) : repli sans exception si le lien est vide/périmé. Appliqué à `canaux/detailsCanal.dart` (couverture, avatar, propriétaire). Étendu à : listCanal, listCanauxByUser, canal_manage_admins, avatars du feed vidéo (youTube card, portrait) et vibes. [ ] Restent : commentaires (`postComments`), fil vidéo Original, profils utilisateurs (~250 autres `NetworkImage`).
