@@ -808,7 +808,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains',
+                  Text('Tous les pays',
                       style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
@@ -952,7 +952,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
     String displayMessage;
     if (_selectAllCountries) {
-      displayMessage = '🌍 Toute l\'Afrique (Premium)';
+      displayMessage = '🌍 Le monde entier (Premium)';
     } else if (_selectedCountries.isEmpty) {
       displayMessage = '⚠️ Aucun pays sélectionné';
     } else {
@@ -1637,7 +1637,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                 SizedBox(height: 16),
                 Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
                 SizedBox(height: 8),
-                Text('Audio • ${_selectAllCountries ? "Toute l'Afrique" : '${_selectedCountries.length} pays'}',
+                Text('Audio • ${_selectAllCountries ? "Le monde entier" : '${_selectedCountries.length} pays'}',
                     style: TextStyle(color: _c.textSecondary, fontSize: 12)),
               ],
             ),
@@ -1805,7 +1805,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                 ],
               ),
               SizedBox(height: 4),
-              Text('Audio • ${_selectAllCountries ? "Toute l'Afrique" : '${_selectedCountries.length} pays'}',
+              Text('Audio • ${_selectAllCountries ? "Le monde entier" : '${_selectedCountries.length} pays'}',
                   style: TextStyle(color: Colors.white, fontSize: 12)),
             ],
           ),

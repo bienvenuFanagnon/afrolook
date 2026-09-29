@@ -655,7 +655,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -821,7 +821,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
     String displayMessage;
     if (_selectAllCountries) {
-      displayMessage = '🌍 Toute l\'Afrique (Premium)';
+      displayMessage = '🌍 Le monde entier (Premium)';
     } else if (_selectedCountries.isEmpty) {
       displayMessage = '⚠️ Aucun pays sélectionné';
     } else {
@@ -1439,7 +1439,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                   Text('Publication en cours...', style: TextStyle(color: _c.textPrimary)),
                   SizedBox(height: 8),
                   Text(
-                    '${_selectedImages.length} image(s) • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}${_isAdvertisement ? ' • Publicité' : ''}',
+                    '${_selectedImages.length} image(s) • ${_selectAllCountries ? 'Le monde entier' : '${_selectedCountries.length} pays'}${_isAdvertisement ? ' • Publicité' : ''}',
                     style: TextStyle(color: _c.textSecondary, fontSize: 12),
                   ),
                 ],
@@ -1631,7 +1631,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             : 'Publication réussie !';
 
         String countryMessage = _selectAllCountries
-            ? 'Visible dans toute l\'Afrique'
+            ? 'Visible dans le monde entier'
             : 'Visible dans ${_selectedCountries.length} pays';
 
         ScaffoldMessenger.of(context).showSnackBar(

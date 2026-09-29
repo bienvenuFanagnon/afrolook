@@ -1371,7 +1371,7 @@ class TopProductsGridModal {
                     children: [
                       if (hasEntreprise) ...[
                         Text(
-                          "🚀 Vendez dans toute l'Afrique !",
+                          "🚀 Vendez partout dans le monde !",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 18,
@@ -1381,7 +1381,7 @@ class TopProductsGridModal {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          "Boostez vos produits et atteignez des millions de clients potentiels\nà travers 54 pays africains",
+                          "Boostez vos produits et atteignez des millions de clients potentiels\nà travers le monde",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
@@ -1416,7 +1416,7 @@ class TopProductsGridModal {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          "Rejoignez Afroshop et vendez vos produits\ndans toute l'Afrique dès aujourd'hui",
+                          "Rejoignez Afroshop et vendez vos produits\npartout dans le monde dès aujourd'hui",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
@@ -1534,7 +1534,7 @@ class TopProductsGridModal {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Ces produits sont boostés et visibles dans toute l'Afrique",
+                      "Ces produits sont boostés et visibles partout dans le monde",
                       style: TextStyle(
                         fontSize: 12,
                         color: colors.textSecondary,
@@ -1598,7 +1598,7 @@ class TopProductsGridModal {
           Text(
             hasEntreprise
                 ? "Soyez le premier à booster vos produits et dominez le marché africain !\n\nVos produits seront visibles dans 54 pays"
-                : "Créez votre entreprise sur Afroshop et vendez vos produits dans toute l'Afrique !\n\nMarché de 1.4 milliard de consommateurs",
+                : "Créez votre entreprise sur Afroshop et vendez vos produits partout dans le monde !\n\nDes millions de clients potentiels",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,

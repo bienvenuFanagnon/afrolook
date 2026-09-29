@@ -430,7 +430,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                     ),
                     SizedBox(width: 10),
                     Text(
-                      _selectAllCountries ? '🌍 Toute l\'Afrique (Premium)' : (_selectedCountries.isEmpty ? '⚠️ Aucun pays' : '${_selectedCountries.length} pays sélectionné(s)'),
+                      _selectAllCountries ? '🌍 Le monde entier (Premium)' : (_selectedCountries.isEmpty ? '⚠️ Aucun pays' : '${_selectedCountries.length} pays sélectionné(s)'),
                       style: TextStyle(color: _selectedCountries.isEmpty && !_selectAllCountries ? _c.warning : _c.textSecondary, fontSize: 14),
                     ),
                   ],
@@ -466,7 +466,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -567,7 +567,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
     String displayMessage;
     if (_selectAllCountries) {
-      displayMessage = '🌍 Toute l\'Afrique (Premium)';
+      displayMessage = '🌍 Le monde entier (Premium)';
     } else if (_selectedCountries.isEmpty) {
       displayMessage = '⚠️ Aucun pays sélectionné';
     } else {
@@ -1252,7 +1252,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                   SizedBox(height: 16),
                   Text('Publication de la vibe...', style: TextStyle(color: _c.textPrimary)),
                   SizedBox(height: 8),
-                  Text('${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _c.textSecondary, fontSize: 12), textAlign: TextAlign.center),
+                  Text('${textLength} caractères • ${_selectAllCountries ? 'Le monde entier' : '${_selectedCountries.length} pays'}', style: TextStyle(color: _c.textSecondary, fontSize: 12), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -1349,7 +1349,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
 
         if (Navigator.canPop(context)) Navigator.pop(context);
 
-        String countryMessage = _selectAllCountries ? 'Visible dans toute l\'Afrique 🌍' : 'Visible dans ${_selectedCountries.length} pays';
+        String countryMessage = _selectAllCountries ? 'Visible dans le monde entier 🌍' : 'Visible dans ${_selectedCountries.length} pays';
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

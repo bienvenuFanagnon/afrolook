@@ -1412,7 +1412,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               ),
               title: Row(
                 children: [
-                  Text('Tous les pays africains', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
+                  Text('Tous les pays', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold)),
                   SizedBox(width: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),

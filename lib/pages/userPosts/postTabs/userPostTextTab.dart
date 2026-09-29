@@ -561,7 +561,7 @@ class _UserPubTextState extends State<UserPubText> {
                     SizedBox(width: 10),
                     Text(
                       _selectAllCountries
-                          ? '🌍 Toute l\'Afrique (Premium)'
+                          ? '🌍 Le monde entier (Premium)'
                           : _selectedCountries.isEmpty
                           ? '⚠️ Aucun pays'
                           : '${_selectedCountries.length} pays sélectionné(s)',
@@ -619,7 +619,7 @@ class _UserPubTextState extends State<UserPubText> {
               title: Row(
                 children: [
                   Text(
-                    'Tous les pays africains',
+                    'Tous les pays',
                     style: TextStyle(
                       color: _c.textPrimary,
                       fontWeight: FontWeight.bold,
@@ -825,7 +825,7 @@ class _UserPubTextState extends State<UserPubText> {
     // Déterminer le message d'affichage
     String displayMessage;
     if (_selectAllCountries) {
-      displayMessage = '🌍 Toute l\'Afrique (Premium)';
+      displayMessage = '🌍 Le monde entier (Premium)';
     } else if (_selectedCountries.isEmpty) {
       displayMessage = '⚠️ Aucun pays sélectionné';
     } else {
@@ -1463,7 +1463,7 @@ class _UserPubTextState extends State<UserPubText> {
               ),
             ),
             SizedBox(height: 10),
-            _buildFeatureItem('🌍 Tous les pays africains'),
+            _buildFeatureItem('🌍 Tous les pays'),
             _buildFeatureItem('✏️ Écrire jusqu\'à 3000 caractères'),
             _buildFeatureItem('⏰ Pas de temps d\'attente entre les posts'),
             _buildFeatureItem('📸 Jusqu\'à 3 images par post'),
@@ -1696,7 +1696,7 @@ class _UserPubTextState extends State<UserPubText> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '${textLength} caractères • ${_selectAllCountries ? 'Toute l\'Afrique' : '${_selectedCountries.length} pays'}',
+                    '${textLength} caractères • ${_selectAllCountries ? 'Le monde entier' : '${_selectedCountries.length} pays'}',
                     style: TextStyle(
                       color: _c.textSecondary,
                       fontSize: 12,
@@ -1846,7 +1846,7 @@ class _UserPubTextState extends State<UserPubText> {
         }
 
         String countryMessage = _selectAllCountries
-            ? 'Visible dans toute l\'Afrique 🌍'
+            ? 'Visible dans le monde entier 🌍'
             : 'Visible dans ${_selectedCountries.length} pays';
 
         ScaffoldMessenger.of(context).showSnackBar(
