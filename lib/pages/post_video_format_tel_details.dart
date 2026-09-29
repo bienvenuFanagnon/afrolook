@@ -1624,6 +1624,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             updatedPost.canal = _videoPosts[index].canal;
             _videoPosts[index] = updatedPost;
           }
+          // La page lit ses posts dans _feedItems (pas _videoPosts) : sans cette mise à jour,
+          // les pièces reçues restaient figées à la valeur du chargement.
+          final feedIndex = _feedItems.indexWhere((e) => e is Post && e.id == post.id);
+          if (feedIndex != -1) {
+            final old = _feedItems[feedIndex] as Post;
+            updatedPost.user ??= old.user;
+            updatedPost.canal ??= old.canal;
+            _feedItems[feedIndex] = updatedPost;
+          }
 
           // Mise à jour des Maps depuis Firestore
           // Ignorer seulement si un like est en vol pour ce post (update optimiste)
@@ -3531,7 +3540,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
       left: 12,
       right: 80,
       bottom: 215,
-      child: SizedBox(
+      // Purement visuel : sans IgnorePointer, cette grande zone bloquait les taps sur la
+      // pastille de pièces et les infos du créateur qui passent dessous.
+      child: IgnorePointer(
+       child: SizedBox(
         height: halfScreen,
         child: ShaderMask(
           shaderCallback: (rect) => const LinearGradient(
@@ -3554,6 +3566,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
             },
           ),
         ),
+       ),
       ),
     );
   }

@@ -132,3 +132,7 @@ Corrigé : cache complété, listes modifiables dans le constructeur, `notifyUse
 ### 29/09 — iOS + groupes
 - Prix d'abonnement de canal affiché en pièces (feed, fil vidéo), bannière pub en pièces, équivalents « 1 FCFA = 2,5 pièces » et « 500 pièces à 250 FCFA » masqués sur iOS. Reste des FCFA à vérifier : `mesLives.dart` (totaux des entrées payantes, ancien champ FCFA), prix d'articles marketplace (masquée sur iOS), pages admin/retrait (légitimes).
 - Groupes : carte « Ce groupe t'a rapporté » (`chat/group/group_revenue_card.dart`) pour le propriétaire, visible au-delà de 1 pièce, calculée depuis `TransactionSoldes` (`purchaseKind=group`). [ ] Vérifier l'accès en lecture aux transactions (règles Firestore) et l'index.
+
+### 29/09 — Pièces du post (vidéos)
+- Portrait (`post_video_format_tel_details.dart`) : la pastille était figée car les mises à jour temps réel ne touchaient que `_videoPosts`, alors que la page lit `_feedItems` → corrigé ; le tap était bloqué par la zone des commentaires en direct (`IgnorePointer` ajouté).
+- Paysage (`postDetailsVideo.dart`) : `_postSubscription` n'était jamais branchée → abonnement temps réel ajouté ; le bandeau ouvre déjà le détail au tap.

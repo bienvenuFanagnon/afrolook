@@ -213,6 +213,19 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _currentPost = widget.initialPost;
 
+    // Suivi en direct du post : pièces reçues, likes, commentaires… restent à jour
+    final _livePid = widget.initialPost.id;
+    if (_livePid != null && _livePid.isNotEmpty) {
+      _postSubscription = _firestore.collection('Posts').doc(_livePid).snapshots().listen((snap) {
+        final data = snap.data();
+        if (!snap.exists || data == null || !mounted) return;
+        final fresh = Post.fromJson({'id': snap.id, ...data});
+        fresh.user ??= _currentPost.user;
+        fresh.canal ??= _currentPost.canal;
+        setState(() => _currentPost = fresh);
+      });
+    }
+
     // Marquer le post comme vu (Tier 1) si l'utilisateur l'ouvre consciemment
     final _pid = widget.initialPost.id;
     if (_pid != null &&
