@@ -779,22 +779,23 @@ class _SplashChargementState extends State<SplashChargement> {
       ));
       return;
     }
-    // Ensuite, une scène de rémunération tous les 2 jours avant la connexion
+    // Ensuite, un tutoriel tous les 2 jours avant la connexion (l'original, puis les scènes publiques)
     if (await TutoRotation.loginSceneDue()) {
-      final scene = await TutoRotation.next('login', publicOnly: true);
+      final pick = await TutoRotation.nextForLogin();
       if (!mounted) return;
-      if (scene != null) {
-        await TutoRotation.markLoginSceneShown();
-        Navigator.pushReplacement(context, PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 500),
-          pageBuilder: (_, __, ___) => TutoBeforeLoginPage(
-            scene: scene,
-            onDone: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser())),
-          ),
-          transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
-        ));
-        return;
-      }
+      await TutoRotation.markLoginSceneShown();
+      final scene = pick.scene;
+      Navigator.pushReplacement(context, PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (_, __, ___) => scene == null
+            ? const MonetizationTutorialPage()
+            : TutoBeforeLoginPage(
+                scene: scene,
+                onDone: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser())),
+              ),
+        transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
+      ));
+      return;
     }
     if (!mounted) return;
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser()));

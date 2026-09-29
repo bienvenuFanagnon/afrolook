@@ -1352,27 +1352,10 @@ class _ConfettiPainter extends CustomPainter {
 // ── Rappel dans le feed ───────────────────────────────────────────────────────
 /// Fréquence : au plus une fois tous les 3 jours par feed, une fois par session.
 class MonetizationReminder {
-  static const _every = Duration(days: 1);
-  static final Set<String> _shownThisSession = {};
+  /// Vrai tant que les 5 tutoriels du jour n'ont pas tous été montrés (voir [TutoRotation]).
+  static Future<bool> due(String feed) async => (await TutoRotation.remainingToday()) > 0;
 
-  static Future<bool> due(String feed) async {
-    if (_shownThisSession.contains(feed)) return false;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final last = prefs.getInt('tuto_feed_last_$feed') ?? 0;
-      return DateTime.now().millisecondsSinceEpoch - last >= _every.inMilliseconds;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<void> markShown(String feed) async {
-    _shownThisSession.add(feed);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('tuto_feed_last_$feed', DateTime.now().millisecondsSinceEpoch);
-    } catch (_) {}
-  }
+  static Future<void> markShown(String feed) async {}
 }
 
 /// Carte animée insérée dans le feed : un post, le like, la pièce qui monte,
@@ -1560,6 +1543,10 @@ class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with Tick
             ),
           ),
         ]),
+        TextButton(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TutoListPage())),
+          child: Text(context.tr('Voir plus de tutoriels'), style: const TextStyle(color: Colors.white60)),
+        ),
         if (widget.fullScreen) ...[
           const SizedBox(height: 18),
           Text(context.tr('Glisse vers le haut pour continuer'),
@@ -1602,17 +1589,18 @@ class FeedMonetizationReminder extends StatefulWidget {
 
 class _RotatingReminderState extends State<FeedMonetizationReminder> {
   bool _ready = false;
-  TutoScene? _scene; // null → animation « like »
+  TutoScene? _scene; // null → « Tutoriel de monétisation » d'origine (animation du like)
+  bool _none = false;
   bool _hidden = false;
 
   @override
   void initState() {
     super.initState();
-    TutoRotation.next(widget.feed, withLikeAnimation: true).then((s) {
+    TutoRotation.takeToday().then((pick) {
       if (!mounted) return;
-      if (s != null) MonetizationReminder.markShown(widget.feed);
       setState(() {
-        _scene = s;
+        _none = pick == null;
+        _scene = pick?.scene;
         _ready = true;
       });
     });
@@ -1620,7 +1608,7 @@ class _RotatingReminderState extends State<FeedMonetizationReminder> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_ready || _hidden) return const SizedBox.shrink();
+    if (!_ready || _hidden || _none) return const SizedBox.shrink();
     final s = _scene;
     if (s == null) return _LikeSceneReminder(feed: widget.feed, fullScreen: widget.fullScreen);
     return TutoSceneCard(

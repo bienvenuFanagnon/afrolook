@@ -139,3 +139,12 @@ Corrigé : cache complété, listes modifiables dans le constructeur, `notifyUse
 
 ### 29/09 — Images de canal (403)
 `lib/widgets/safe_network_avatar.dart` (`SafeNetworkAvatar`, `SafeNetworkCover`) : repli sans exception si le lien est vide/périmé. Appliqué à `canaux/detailsCanal.dart` (couverture, avatar, propriétaire). Étendu à : listCanal, listCanauxByUser, canal_manage_admins, avatars du feed vidéo (youTube card, portrait) et vibes. [ ] Fait aussi en masse : ~100 `CircleAvatar` avec `NetworkImage` (profils, commentaires, chats…) reçoivent `onBackgroundImageError` (silencieux). Restent : `Image.network` sans `errorBuilder` et `DecorationImage` ailleurs.
+
+### 29/09 — LOT 4 refait (tutoriels avec la vraie page)
+Validé par le propriétaire (maquette artifact). Chaque tutoriel = téléphone animé (`TutoPhone`) : maquette de la vraie page → action en lumière (halo, doigt, bulle) → gain qui tombe → « ce que le créateur peut gagner » (exemple indicatif) → bouton d'action. Données dans `tutos/tuto_catalog.dart` (`MockEl`), rendu dans `tuto_scene_card.dart`.
+- Le « Tutoriel de monétisation » d'origine (`MonetizationTutorialPage`, carte « Le savais-tu ? ») est le créneau 0 du cycle, dans les feeds et avant la connexion.
+- Feeds : jusqu'à 5 tutoriels DIFFÉRENTS par jour (quota global `TutoRotation.dailyQuota`), un tous les 5 posts (accueil, sport) + 1 dans le feed vidéo. Avant login : 1 tutoriel tous les 2 jours.
+- Boutons « Voir plus de tutoriels » sur chaque carte (`TutoListPage`) + entrée dans le menu + module admin.
+- Traductions des nouveaux textes ajoutées (7 langues).
+- [ ] À tester sur téléphone : rendu de la maquette (hauteur 470 px dans le feed vidéo plein écran, échelle 0.8), timings, boutons d'action.
+- [ ] Les chiffres d'exemple (3 200 likes, 50 abonnés à 300 pièces, 40 entrées à 250 pièces…) sont indicatifs : à valider.

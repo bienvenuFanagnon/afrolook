@@ -2942,8 +2942,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
       );
 
-      if (i == 1 && _showTutoReminder) {
-        contentWidgets.add(const FeedMonetizationReminder(key: ValueKey('tuto_reminder_sport'), feed: 'sport'));
+      if (i % 5 == 1 && _showTutoReminder) {
+        contentWidgets.add(FeedMonetizationReminder(key: ValueKey('tuto_reminder_sport_$i'), feed: 'sport'));
       }
 
       // T2 fill counter (plus de section découverte en plein feed)

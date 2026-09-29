@@ -7,23 +7,65 @@ import 'tuto_catalog.dart';
 
 const _gold = Color(0xFFF5C542);
 
-/// Rotation des scènes : chaque affichage passe à la scène suivante (index mémorisé par « zone »).
-class TutoRotation {
-  static final Set<String> _shown = {};
+/// Un choix de rotation : [scene] null = « Tutoriel de monétisation » d'origine (animation du like).
+class TutoPick {
+  final TutoScene? scene;
+  const TutoPick(this.scene);
+}
 
-  /// Scène suivante pour [zone]. Avec [withLikeAnimation], le créneau 0 (retour `null`)
-  /// est réservé à l'animation « like » historique du feed.
-  static Future<TutoScene?> next(String zone, {bool publicOnly = false, bool withLikeAnimation = false}) async {
-    final scenes = tutoScenesAvailable(publicOnly: publicOnly);
-    final slots = scenes.length + (withLikeAnimation ? 1 : 0);
+/// Rotation des scènes. Dans les feeds : jusqu'à [dailyQuota] tutoriels DIFFÉRENTS par jour
+/// (tous feeds confondus), toujours le suivant du cycle ; le créneau 0 est l'animation d'origine.
+class TutoRotation {
+  static const dailyQuota = 5;
+
+  static String _today() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month}-${n.day}';
+  }
+
+  static Future<int> _countToday(SharedPreferences prefs) async {
+    if (prefs.getString('tuto_day') != _today()) return 0;
+    return prefs.getInt('tuto_day_count') ?? 0;
+  }
+
+  /// Combien de tutoriels peuvent encore être montrés aujourd'hui.
+  static Future<int> remainingToday() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return dailyQuota - await _countToday(prefs);
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Prend le tutoriel suivant du cycle ; null si les [dailyQuota] du jour sont déjà montrés.
+  static Future<TutoPick?> takeToday() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final count = await _countToday(prefs);
+      if (count >= dailyQuota) return null;
+      final scenes = tutoScenesAvailable();
+      final slots = scenes.length + 1; // +1 : animation d'origine
+      final i = ((prefs.getInt('tuto_ptr') ?? -1) + 1) % slots;
+      await prefs.setInt('tuto_ptr', i);
+      await prefs.setString('tuto_day', _today());
+      await prefs.setInt('tuto_day_count', count + 1);
+      return TutoPick(i == 0 ? null : scenes[i - 1]);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Avant la connexion : scène suivante parmi les scènes publiques (null = tutoriel d'origine).
+  static Future<TutoPick> nextForLogin() async {
+    final scenes = tutoScenesAvailable(publicOnly: true);
     var i = 0;
     try {
       final prefs = await SharedPreferences.getInstance();
-      i = ((prefs.getInt('tuto_scene_idx_$zone') ?? -1) + 1) % slots;
-      await prefs.setInt('tuto_scene_idx_$zone', i);
+      i = ((prefs.getInt('tuto_login_ptr') ?? -1) + 1) % (scenes.length + 1);
+      await prefs.setInt('tuto_login_ptr', i);
     } catch (_) {}
-    if (withLikeAnimation) return i == 0 ? null : scenes[i - 1];
-    return scenes[i];
+    return TutoPick(i == 0 ? null : scenes[i - 1]);
   }
 
   /// Avant la connexion : une scène tous les 2 jours.
@@ -47,7 +89,311 @@ class TutoRotation {
   }
 }
 
-/// Carte d'une scène. Lecture animée dans l'ordre : accroche → étapes → chiffre → bouton.
+/// Téléphone animé : la vraie page de l'app, l'action clé mise en lumière (halo, doigt, bulle),
+/// puis le gain qui tombe. Boucle de 9 s.
+class TutoPhone extends StatefulWidget {
+  final TutoScene scene;
+  const TutoPhone({super.key, required this.scene});
+
+  @override
+  State<TutoPhone> createState() => _TutoPhoneState();
+}
+
+class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(seconds: 9))..repeat();
+
+  static const _green = Color(0xFF2ECC71);
+  static const _greenInk = Color(0xFF06331A);
+  static const _goldInk = Color(0xFF412402);
+  static const _pink = Color(0xFFE91E8C);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  double _seg(double t, double a, double b) => ((t - a) / (b - a)).clamp(0.0, 1.0);
+
+  Widget _el(BuildContext ctx, MockEl e) {
+    switch (e.kind) {
+      case MockKind.cover:
+        return Container(
+          height: e.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            gradient: const LinearGradient(colors: [Color(0xFF1E5D3A), Color(0xFF8A6D18)]),
+          ),
+        );
+      case MockKind.profile:
+        return SizedBox(
+          height: e.height,
+          child: Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle, gradient: LinearGradient(colors: [_green, _gold])),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(ctx.tr(e.a), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+                Text(ctx.tr(e.b), style: const TextStyle(color: Colors.white54, fontSize: 11)),
+              ]),
+            ),
+          ]),
+        );
+      case MockKind.line:
+        return Container(height: 8, decoration: BoxDecoration(color: const Color(0xFF23302A), borderRadius: BorderRadius.circular(4)));
+      case MockKind.tile:
+        return Container(
+          height: e.height,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(color: const Color(0xFF17211C), borderRadius: BorderRadius.circular(10)),
+          child: Row(children: [
+            Expanded(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(ctx.tr(e.a),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11.5)),
+                if (e.b.isNotEmpty)
+                  Text(ctx.tr(e.b), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+              ]),
+            ),
+            if (e.trailing == 'on' || e.trailing == 'off')
+              Container(
+                width: 30,
+                height: 17,
+                padding: const EdgeInsets.all(2),
+                alignment: e.trailing == 'on' ? Alignment.centerRight : Alignment.centerLeft,
+                decoration: BoxDecoration(color: e.trailing == 'on' ? _green : const Color(0xFF33443B), borderRadius: BorderRadius.circular(9)),
+                child: Container(width: 13, height: 13, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+              )
+            else if (e.trailing.isNotEmpty)
+              Text(e.trailing, style: const TextStyle(color: _gold, fontWeight: FontWeight.w800, fontSize: 11.5)),
+          ]),
+        );
+      case MockKind.button:
+        final bg = e.color == 1 ? _gold : (e.color == 2 ? _pink : _green);
+        final fg = e.color == 1 ? _goldInk : (e.color == 2 ? Colors.white : _greenInk);
+        return Container(
+          height: e.height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+          child: Text(ctx.tr(e.a), style: TextStyle(color: fg, fontWeight: FontWeight.w900, fontSize: 11.5)),
+        );
+      case MockKind.chips:
+        return SizedBox(
+          height: e.height,
+          child: Row(children: [
+            for (final it in e.items)
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: const Color(0xFF1D2A23), borderRadius: BorderRadius.circular(12)),
+                child: Text(ctx.tr(it), style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w700)),
+              ),
+          ]),
+        );
+      case MockKind.big:
+        return Container(
+          height: e.height,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(color: const Color(0xFF2A2410), borderRadius: BorderRadius.circular(10)),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(ctx.tr(e.a), style: const TextStyle(color: Colors.white54, fontSize: 10.5)),
+            Text(e.b, style: const TextStyle(color: _gold, fontWeight: FontWeight.w900, fontSize: 20)),
+          ]),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = widget.scene;
+    // Position verticale de l'élément mis en lumière (barre 44 + marge 10, éléments espacés de 8)
+    var y = 54.0;
+    for (var i = 0; i < sc.target; i++) {
+      y += sc.els[i].height + 8;
+    }
+    final target = sc.els[sc.target];
+    final th = target.height;
+    final labelBelow = y + th < 290;
+
+    return SizedBox(
+      width: 240,
+      height: 470,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(color: const Color(0xFF26332C), width: 2),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: Container(
+            color: const Color(0xFF101512),
+            child: AnimatedBuilder(
+              animation: _c,
+              builder: (ctx, _) {
+                final t = _c.value;
+                final ring = _seg(t, .06, .12) * (1 - .65 * _seg(t, .40, .46));
+                final dim = .55 * _seg(t, .06, .12) * (1 - _seg(t, .40, .50));
+                final tapO = _seg(t, .38, .42) * (1 - _seg(t, .56, .60));
+                final tapS = 1.6 - .6 * _seg(t, .38, .44) - .15 * _seg(t, .44, .52);
+                final labelO = _seg(t, .08, .14) * (1 - _seg(t, .40, .48));
+                final gainO = _seg(t, .54, .62) * (1 - _seg(t, .92, 1.0));
+                final popO = _seg(t, .56, .62) * (1 - _seg(t, .84, .92));
+                final popDy = 10 - 56 * _seg(t, .56, .92);
+
+                return Stack(children: [
+                  // 1) La vraie page (maquette)
+                  Column(children: [
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                      color: const Color(0xFF16201B),
+                      alignment: Alignment.centerLeft,
+                      child: Text(ctx.tr(sc.screenTitle),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(children: [
+                        for (var i = 0; i < sc.els.length; i++) ...[
+                          _el(ctx, sc.els[i]),
+                          const SizedBox(height: 8),
+                        ],
+                      ]),
+                    ),
+                  ]),
+                  // 2) Le reste s'assombrit
+                  Positioned.fill(child: IgnorePointer(child: Container(color: Colors.black.withOpacity(dim)))),
+                  // 3) L'action en lumière : l'élément est redessiné au-dessus, avec son halo
+                  Positioned(
+                    top: y,
+                    left: 10,
+                    right: 10,
+                    height: th,
+                    child: Stack(clipBehavior: Clip.none, children: [
+                      Positioned.fill(child: _el(ctx, target)),
+                      Positioned(
+                        left: -5,
+                        right: -5,
+                        top: -5,
+                        bottom: -5,
+                        child: Opacity(
+                          opacity: ring,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(13),
+                              border: Border.all(color: _gold, width: 2),
+                              boxShadow: [BoxShadow(color: _gold.withOpacity(.5), blurRadius: 14)],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                  // 4) Le doigt qui tape
+                  Positioned(
+                    top: y + th / 2 - 16,
+                    right: 26,
+                    child: Opacity(
+                      opacity: tapO,
+                      child: Transform.scale(
+                        scale: tapS,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                              color: Colors.white38, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 5) La bulle qui explique
+                  Positioned(
+                    top: labelBelow ? y + th + 12 : y - 52,
+                    left: 12,
+                    right: 12,
+                    child: Opacity(
+                      opacity: labelO,
+                      child: Transform.translate(
+                        offset: Offset(0, 6 * (1 - _seg(t, .08, .14))),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(color: _gold, borderRadius: BorderRadius.circular(10)),
+                          child: Text(ctx.tr(sc.hint),
+                              style: const TextStyle(color: _goldInk, fontWeight: FontWeight.w900, fontSize: 11.5, height: 1.25)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 6) Le gain qui tombe
+                  Positioned(
+                    left: 74,
+                    bottom: 84,
+                    child: Opacity(
+                      opacity: popO,
+                      child: Transform.translate(
+                        offset: Offset(0, popDy),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(color: _gold, borderRadius: BorderRadius.circular(12)),
+                          child: Text('${sc.gainEmoji} +',
+                              style: const TextStyle(color: _goldInk, fontWeight: FontWeight.w900, fontSize: 12)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 14,
+                    child: Opacity(
+                      opacity: gainO,
+                      child: Transform.translate(
+                        offset: Offset(0, 16 * (1 - _seg(t, .54, .62))),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2A2410),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: _gold, width: 1.5),
+                          ),
+                          child: Row(children: [
+                            Text(sc.gainEmoji, style: const TextStyle(fontSize: 22)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                                Text(ctx.tr(sc.gainTitle),
+                                    style: const TextStyle(color: _gold, fontWeight: FontWeight.w900, fontSize: 15)),
+                                Text(ctx.tr(sc.gainSub), style: const TextStyle(color: Color(0xFFD9C88A), fontSize: 10.5)),
+                              ]),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Carte d'un tutoriel : titre, téléphone animé avec la vraie page, ce que le créateur peut gagner,
+/// puis le bouton d'action de la scène.
 class TutoSceneCard extends StatelessWidget {
   final TutoScene scene;
   final bool fullScreen;
@@ -69,7 +415,7 @@ class TutoSceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = scene.steps;
+    final scale = fullScreen ? 0.8 : 1.0;
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,61 +435,39 @@ class TutoSceneCard extends StatelessWidget {
               icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
             ),
         ]),
-        const SizedBox(height: 10),
-        // 1) Accroche
-        Center(child: Text(scene.emoji, style: TextStyle(fontSize: fullScreen ? 56 : 40))
-            .animate(onPlay: (c) => c.repeat(reverse: true))
-            .scale(begin: const Offset(0.92, 0.92), end: const Offset(1.08, 1.08), duration: 900.ms)),
         const SizedBox(height: 8),
-        Text(context.tr(scene.title),
+        Text('${scene.emoji} ${context.tr(scene.title)}',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: fullScreen ? 26 : 20, fontWeight: FontWeight.w800, height: 1.2))
-            .animate().fadeIn(duration: 350.ms).slideY(begin: 0.2),
-        const SizedBox(height: 6),
+            style: TextStyle(color: Colors.white, fontSize: fullScreen ? 22 : 20, fontWeight: FontWeight.w800, height: 1.2)),
+        const SizedBox(height: 4),
         Text(context.tr(scene.hook),
-            textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4))
-            .animate().fadeIn(delay: 250.ms, duration: 350.ms),
-        const SizedBox(height: 14),
-        // 2) Étapes numérotées, apparition l'une après l'autre
-        for (var i = 0; i < steps.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(children: [
-              Container(
-                width: 26,
-                height: 26,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(color: _gold, shape: BoxShape.circle),
-                child: Text('${i + 1}',
-                    style: const TextStyle(color: Color(0xFF412402), fontWeight: FontWeight.w900, fontSize: 13)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(context.tr(steps[i]),
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-              ),
-            ]).animate().fadeIn(delay: (600 + i * 350).ms, duration: 350.ms).slideX(begin: 0.15),
+            textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4)),
+        const SizedBox(height: 12),
+        Center(
+          child: SizedBox(
+            width: 240 * scale,
+            height: 470 * scale,
+            child: FittedBox(fit: BoxFit.contain, child: TutoPhone(scene: scene)),
           ),
-        const SizedBox(height: 6),
-        // 3) Chiffre clé
+        ),
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFF2A2410),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _gold.withOpacity(0.5)),
           ),
           child: Column(children: [
-            Text(context.tr(scene.figure),
+            Text(context.tr(scene.earn),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: _gold, fontSize: 20, fontWeight: FontWeight.w900)),
+                style: const TextStyle(color: _gold, fontSize: 13.5, fontWeight: FontWeight.w800, height: 1.3)),
             const SizedBox(height: 2),
-            Text(context.tr(scene.figureLabel),
-                textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+            Text(context.tr('Exemple de gains, à titre indicatif'),
+                textAlign: TextAlign.center, style: const TextStyle(color: Colors.white54, fontSize: 11)),
           ]),
-        ).animate().fadeIn(delay: (600 + steps.length * 350).ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9)),
-        const SizedBox(height: 14),
-        // 4) Bouton d'action de la scène
+        ),
+        const SizedBox(height: 12),
         ElevatedButton(
           onPressed: onActionOverride ?? () => scene.action?.call(context),
           style: ElevatedButton.styleFrom(
@@ -155,16 +479,14 @@ class TutoSceneCard extends StatelessWidget {
           ),
           child: Text(context.tr(actionLabelOverride ?? scene.actionLabel),
               style: const TextStyle(fontWeight: FontWeight.w800)),
-        )
-            .animate(delay: (900 + steps.length * 350).ms, onPlay: (c) => c.repeat(reverse: true))
-            .scale(begin: const Offset(1, 1), end: const Offset(1.03, 1.03), duration: 800.ms),
+        ),
         if (onSeeAll != null)
           TextButton(
             onPressed: onSeeAll,
             child: Text(context.tr('Voir tous les tutoriels'), style: const TextStyle(color: Colors.white60)),
           ),
         if (fullScreen) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(context.tr('Glisse vers le haut pour continuer'),
               textAlign: TextAlign.center, style: const TextStyle(color: Colors.white38, fontSize: 12)),
         ],
@@ -173,7 +495,7 @@ class TutoSceneCard extends StatelessWidget {
 
     return Container(
       margin: fullScreen ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      padding: EdgeInsets.fromLTRB(16, fullScreen ? 60 : 14, 16, fullScreen ? 30 : 16),
+      padding: EdgeInsets.fromLTRB(16, fullScreen ? 50 : 14, 16, fullScreen ? 24 : 16),
       decoration: BoxDecoration(
         borderRadius: fullScreen ? null : BorderRadius.circular(22),
         border: fullScreen ? null : Border.all(color: _gold.withOpacity(0.25)),
