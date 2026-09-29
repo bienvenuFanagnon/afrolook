@@ -114,7 +114,7 @@ Fichiers : `lib/pages/intro/tutos/tuto_catalog.dart` (12 scènes, `tutoScenesAva
 - [ ] Ajouter « Tous les tutoriels » (`TutoListPage`) au menu.
 - [ ] Vérifier sur iOS : scène « contenu payant » masquée ; aucun montant en argent dans les textes.
 - [ ] Vérifier chaque `action` (pages ouvertes sans argument requis) et le rendu plein écran (feed vidéo).
-- [ ] Valider les textes/chiffres avec le propriétaire (surtout 70 %/30 % groupes, 2 pièces/commentaire, DÉFI).
+- [ ] Valider les textes/chiffres avec le propriétaire (surtout 70 %/30 % groupes, 1 pièce au créateur par commentaire (le commentateur paie 2), DÉFI).
 
 ### Suite LOT 5 (29/09) — nettoyage prudent
 Supprimé (code mort, aucune référence) : `getChallengeUsers`, `canJoinChallengesFreely`, clé `page_challenge_mois_active`, `FeedType.challenges`.
