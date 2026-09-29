@@ -1,3 +1,5 @@
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -140,9 +142,13 @@ class _UserPostFormState extends State<UserPostForm> {
                   fontSize: 14,
                 ),
               ),
-              Text(
-                '$abonnesCount abonné(s)',
-                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              FollowersCountBuilder(
+                userId: user.id,
+                fallback: abonnesCount,
+                builder: (_, c) => Text(
+                  '${formatCompactCount(c)} abonné(s)',
+                  style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -198,7 +204,7 @@ class _UserPostFormState extends State<UserPostForm> {
                     Icon(Icons.people, size: 13, color: _colors.textSecondary),
                     const SizedBox(width: 4),
                     Text(
-                      '$abonnesCount abonné(s)',
+                      '${formatCompactCount(abonnesCount)} abonné(s)',
                       style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                     ),
                   ],

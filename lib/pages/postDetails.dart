@@ -1,3 +1,4 @@
+import '../services/followers_count_service.dart';
 import '../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
@@ -3213,11 +3214,15 @@ class _DetailsPostState extends State<DetailsPost>
                         _buildTabbarBadge(post.typeTabbar!),
                     ],
                   ),
-                  Text(
-                    context.tr('{a} abonné(s)', {'a': formatCompactCount(user.followersCount)}),
-                    style: TextStyle(
-                      color: _colors.textSecondary,
-                      fontSize: 12,
+                  FollowersCountBuilder(
+                    userId: user.id ?? post.user_id,
+                    fallback: user.followersCount,
+                    builder: (ctx, c) => Text(
+                      ctx.tr('{a} abonné(s)', {'a': formatCompactCount(c)}),
+                      style: TextStyle(
+                        color: _colors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   Text(

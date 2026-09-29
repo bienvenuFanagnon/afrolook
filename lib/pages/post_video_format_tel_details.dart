@@ -1,3 +1,4 @@
+import '../services/followers_count_service.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -3080,10 +3081,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                     ],
                   ],
                 ),
-                Text(
-                  _formatNumber(subscriberCount),
-                  style: const TextStyle(color: Colors.white70, fontSize: 9),
-                ),
+                canal != null
+                    ? Text(_formatNumber(subscriberCount), style: const TextStyle(color: Colors.white70, fontSize: 9))
+                    : FollowersCountBuilder(
+                        userId: user?.id ?? post.user_id,
+                        fallback: subscriberCount,
+                        builder: (_, c) => Text(_formatNumber(c), style: const TextStyle(color: Colors.white70, fontSize: 9)),
+                      ),
               ],
             ),
           ),

@@ -1,3 +1,4 @@
+import '../../../services/followers_count_service.dart';
 import '../../../utils/count_format.dart';
 import 'dart:async';
 import 'dart:math';
@@ -1474,13 +1475,15 @@ class _PostViewState extends State<PostView>
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        TextCustomerUserTitle(
-                                          titre:
-                                          "${formatCompactCount(post.user!.followersCount)} abonné(s)",
+                                        FollowersCountBuilder(
+                                          userId: post.user!.id,
+                                          fallback: post.user!.followersCount,
+                                          builder: (_, c) => TextCustomerUserTitle(
+                                          titre: "${formatCompactCount(c)} abonné(s)",
                                           fontSize: 10,
                                           couleur: ConstColors.textColors,
                                           fontWeight: FontWeight.w400,
-                                        ),
+                                        )),
                                       ],
                                     ),
 
@@ -2221,12 +2224,15 @@ class _PostViewState extends State<PostView>
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  TextCustomerUserTitle(
-                                    titre:
-                                    "${formatCompactCount(post.user!.followersCount)} abonné(s)",
-                                    fontSize: SizeText.homeProfileTextSize,
-                                    couleur: ConstColors.textColors,
-                                    fontWeight: FontWeight.w400,
+                                  FollowersCountBuilder(
+                                    userId: post.user!.id,
+                                    fallback: post.user!.followersCount,
+                                    builder: (_, c) => TextCustomerUserTitle(
+                                      titre: "${formatCompactCount(c)} abonné(s)",
+                                      fontSize: SizeText.homeProfileTextSize,
+                                      couleur: ConstColors.textColors,
+                                      fontWeight: FontWeight.w400,
+                                    ),
                                   ),
                                 ],
                               ),

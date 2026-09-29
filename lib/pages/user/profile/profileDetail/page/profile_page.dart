@@ -1,3 +1,4 @@
+import 'package:afrotok/services/followers_count_service.dart';
 import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -1103,10 +1104,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     SizedBox(height: 15),
-                    NumbersWidget(
-                      followers: authProvider.loginUserData.followersCount,
-                      taux: (authProvider.loginUserData.popularite ?? 0.0) * 100,
-                      creatorScore: authProvider.loginUserData.creatorScore ?? 0,
+                    FollowersCountBuilder(
+                      userId: authProvider.loginUserData.id,
+                      fallback: authProvider.loginUserData.followersCount,
+                      builder: (_, c) => NumbersWidget(
+                        followers: c,
+                        taux: (authProvider.loginUserData.popularite ?? 0.0) * 100,
+                        creatorScore: authProvider.loginUserData.creatorScore ?? 0,
+                      ),
                     ),
                     SizedBox(height: 15),
                     Container(

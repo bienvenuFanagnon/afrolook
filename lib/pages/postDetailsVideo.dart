@@ -1,3 +1,5 @@
+import '../services/followers_count_service.dart';
+import '../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -1641,8 +1643,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 if (user != null) UserBadgeWidget(user: user, size: 15),
                 if (isLocked) Icon(Icons.lock, color: _afroYellow, size: 16),
               ]),
-              if (followerLabel.isNotEmpty)
-                Text(followerLabel, style: TextStyle(color: Colors.grey, fontSize: 12)),
+              if (canal != null)
+                (followerLabel.isNotEmpty ? Text(followerLabel, style: TextStyle(color: Colors.grey, fontSize: 12)) : const SizedBox.shrink())
+              else if (user != null)
+                FollowersCountBuilder(
+                  userId: user.id ?? _currentPost.user_id,
+                  fallback: user.followersCount,
+                  builder: (_, c) => c > 0
+                      ? Text('${formatCompactCount(c)} abonné${c > 1 ? 's' : ''}', style: TextStyle(color: Colors.grey, fontSize: 12))
+                      : const SizedBox.shrink(),
+                ),
             ]),
           ),
         ),

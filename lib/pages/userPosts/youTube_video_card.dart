@@ -1,3 +1,5 @@
+import '../../services/followers_count_service.dart';
+import '../../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:ui';
@@ -1557,19 +1559,22 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                 ],
               ),
-              Builder(builder: (_) {
-                final count = isCanalPost
+              FollowersCountBuilder(
+                userId: isCanalPost ? null : (_creatorUser?.id ?? widget.post.user_id),
+                fallback: isCanalPost
                     ? ((_creatorCanal?.membersCount ?? 0))
-                    : ((_creatorUser?.followersCount ?? 0));
-                if (count == 0) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '$count abonné${count > 1 ? 's' : ''}',
-                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                  ),
-                );
-              }),
+                    : ((_creatorUser?.followersCount ?? 0)),
+                builder: (_, count) {
+                  if (count == 0) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '${formatCompactCount(count)} abonné${count > 1 ? 's' : ''}',
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -1648,19 +1653,22 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   if (_creatorUser != null) UserBadgeWidget(user: _creatorUser, size: 13),
                 ],
               ),
-              Builder(builder: (_) {
-                final count = isCanalPost
+              FollowersCountBuilder(
+                userId: isCanalPost ? null : (_creatorUser?.id ?? widget.post.user_id),
+                fallback: isCanalPost
                     ? ((_creatorCanal?.membersCount ?? 0))
-                    : ((_creatorUser?.followersCount ?? 0));
-                if (count == 0) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '$count abonné${count > 1 ? 's' : ''}',
-                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                  ),
-                );
-              }),
+                    : ((_creatorUser?.followersCount ?? 0)),
+                builder: (_, count) {
+                  if (count == 0) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '${formatCompactCount(count)} abonné${count > 1 ? 's' : ''}',
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),

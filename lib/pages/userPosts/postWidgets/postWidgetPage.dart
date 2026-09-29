@@ -1,3 +1,4 @@
+import '../../../services/followers_count_service.dart';
 import '../../../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
@@ -1343,11 +1344,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     _buildFlameStreakBadge(widget.post.user!.commentStreak),
                 ],
               ),
-              if (_getFollowerCount().isNotEmpty)
-                Text(
-                  _getFollowerCount(),
-                  style: TextStyle(color: colors.textSecondary, fontSize: 11),
-                ),
+              _followersText(TextStyle(color: colors.textSecondary, fontSize: 11)),
             ],
           ),
         ),
@@ -1463,16 +1460,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   _buildCountryBadge(widget.post)
                 ],
               ),
-              if (_getFollowerCount().isNotEmpty) ...[
-                SizedBox(height: 2),
-                Text(
-                  _getFollowerCount(),
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+              _followersText(TextStyle(color: colors.textSecondary, fontSize: 12), topGap: 2),
             ],
           ),
         ),
@@ -1581,16 +1569,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                   ),
                 ],
               ),
-              if (_getFollowerCount().isNotEmpty) ...[
-                SizedBox(height: 2),
-                Text(
-                  _getFollowerCount(),
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+              _followersText(TextStyle(color: colors.textSecondary, fontSize: 12), topGap: 2),
             ],
           ),
         ),
@@ -3186,17 +3165,22 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     return null;
   }
 
-  String _getFollowerCount() {
-    int count;
+  /// Nombre d'abonnés : même source et même format que les pages de détails.
+  Widget _followersText(TextStyle style, {double topGap = 0}) {
     if (currentCanal != null) {
-      count = currentCanal!.membersCount;
-    } else if (currentUser != null) {
-      count = currentUser!.followersCount;
-    } else {
-      return "";
+      final c = currentCanal!.membersCount;
+      if (c == 0) return const SizedBox.shrink();
+      return Padding(padding: EdgeInsets.only(top: topGap), child: Text("${_formatCount(c)} abonné(s)", style: style));
     }
-    if (count == 0) return "";
-    return "${_formatCount(count)} abonné(s)";
+    final user = currentUser;
+    if (user == null) return const SizedBox.shrink();
+    return FollowersCountBuilder(
+      userId: user.id ?? widget.post.user_id,
+      fallback: user.followersCount,
+      builder: (_, c) => c == 0
+          ? const SizedBox.shrink()
+          : Padding(padding: EdgeInsets.only(top: topGap), child: Text("${_formatCount(c)} abonné(s)", style: style)),
+    );
   }
 
   bool _isVerified() {

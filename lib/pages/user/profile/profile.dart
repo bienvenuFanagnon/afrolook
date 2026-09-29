@@ -1,3 +1,5 @@
+import 'package:afrotok/services/followers_count_service.dart';
+import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -234,12 +236,16 @@ class _UserProfilState extends State<UserProfil> {
                               children: [
                                 Column(
                                   children: [
-                                    Text(
-                                      "${formatNumber(authProvider.loginUserData!.followersCount)}",
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: primaryYellow,
+                                    FollowersCountBuilder(
+                                      userId: authProvider.loginUserData.id,
+                                      fallback: authProvider.loginUserData!.followersCount,
+                                      builder: (_, c) => Text(
+                                        formatCompactCount(c),
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: primaryYellow,
+                                        ),
                                       ),
                                     ),
                                     Text(
