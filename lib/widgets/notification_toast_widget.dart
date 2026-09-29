@@ -97,7 +97,7 @@ class _ToastWidgetState extends State<_ToastWidget>
 
     _ctrl.forward();
 
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) _ctrl.reverse().then((_) => widget.onDismiss());
     });
   }
