@@ -306,8 +306,12 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
         if (t['methode_paiement'] == 'commission_parrainage' || type == 'GAIN_PIECES') {
           continue; // versements aux créateurs : pas des recettes du DÉFI
         } else if (type == 'DEPENSE') {
-          final kind = t['defiKind'] ?? ('${t['description'] ?? ''}'.startsWith('Vote') ? 'vote' : 'participation');
-          if (kind == 'vote') { vC += amount; vN++; } else { pC += amount; pN++; }
+          // La cagnotte mise en garantie par le créateur est une dépense : elle n'est PAS un gain du DÉFI.
+          final desc = '${t['description'] ?? ''}';
+          final kind = t['defiKind'] ??
+              (desc.startsWith('Vote') ? 'vote' : (desc.startsWith('Participation') ? 'participation' : null));
+          if (kind == 'vote') { vC += amount; vN++; }
+          else if (kind == 'participation') { pC += amount; pN++; }
         }
       }
       if (mounted) {
