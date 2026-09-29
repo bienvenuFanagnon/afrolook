@@ -1,4 +1,5 @@
 import 'package:afrotok/layout/centered_content.dart';
+import 'group_revenue_card.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:math';
@@ -878,6 +879,10 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   _buildInfoTile(Icons.info_outline_rounded, _groupData['description'] as String),
 
                 const SizedBox(height: 16),
+
+                // Ce que le groupe a rapporté (propriétaire, affiché au-delà de 1 pièce)
+                if (_myRole == 'owner')
+                  GroupRevenueCard(groupId: widget.groupId, ownerId: _auth.loginUserData.id ?? ''),
 
                 // Paramètres admin (Premium)
                 if (isOwnerOrAdmin) ...[

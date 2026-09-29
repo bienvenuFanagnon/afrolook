@@ -128,3 +128,7 @@ Volontairement GARDÉ (compatibilité anciennes données Firestore / catégorie 
 Causes trouvées : (1) le cache de démarrage ne stockait ni les pièces (`giftCoinsBalance`, `lockedCoins`…) ni les listes d'abonnements, et rien ne prévenait les écrans après le rafraîchissement ; (2) les listes par défaut `const []` de `UserData` sont non modifiables → `.add()` levait « Unsupported operation » dans `abonner()` ; (3) `getLoginUser` renvoyait `false` (donc retour au login / pas de rafraîchissement) si une étape secondaire échouait.
 Corrigé : cache complété, listes modifiables dans le constructeur, `notifyUserDataChanged()` après refresh (2 essais), `getLoginUser` tolérant, `abonner()` n'affiche plus d'erreur si seules les étapes secondaires échouent.
 - [ ] À confirmer sur téléphone ; si « @null » persiste, chercher quel écran lit `loginUserData` avant le chargement (pseudo vide dans le cache ?).
+
+### 29/09 — iOS + groupes
+- Prix d'abonnement de canal affiché en pièces (feed, fil vidéo), bannière pub en pièces, équivalents « 1 FCFA = 2,5 pièces » et « 500 pièces à 250 FCFA » masqués sur iOS. Reste des FCFA à vérifier : `mesLives.dart` (totaux des entrées payantes, ancien champ FCFA), prix d'articles marketplace (masquée sur iOS), pages admin/retrait (légitimes).
+- Groupes : carte « Ce groupe t'a rapporté » (`chat/group/group_revenue_card.dart`) pour le propriétaire, visible au-delà de 1 pièce, calculée depuis `TransactionSoldes` (`purchaseKind=group`). [ ] Vérifier l'accès en lecture aux transactions (règles Firestore) et l'index.
