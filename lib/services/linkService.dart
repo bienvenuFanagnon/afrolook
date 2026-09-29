@@ -218,40 +218,34 @@ class AppLinkService {
     switch (type) {
       case AppLinkType.profil:
         return "🚀 Découvre ce profil sur AfroLook !\n"
-            "💰 À partir de 100 vues, gagne jusqu'à 25 000 FCFA/mois !\n"
             "🎁 Code parrainage à l'inscription.";
 
       case AppLinkType.contentpaie:
-        return "🔥 Vends tes contenus sur AfroLook !: "
-            "💰 Formation, Vidéo virale ou Livre - gagne jusqu'à 500 000 FCFA/mois !\n"
-            "⚡️ Dès 100 vues, ton talent te rapporte de l'argent !";
+        return "🔥 Découvre ce contenu sur AfroLook !\n"
+            "🎓 Formation, vidéo ou livre : le talent des créateurs du monde entier.";
 
       case AppLinkType.live:
         return "🎥 Live en cours sur AfroLook !\n"
-            "💰 Gagne jusqu'à 30 000 FCFA/mois dès 100 viewers !\n"
             "📱 Rejoins maintenant.";
 
       case AppLinkType.post:
         return "📱 Publication sur AfroLook !\n"
-            "⚡️ 100 vues - Gagne Jusqu'à 25 000 FCFA/mois!";
+            "⚡️ Découvre et partage avec la communauté.";
 
       case AppLinkType.article:
-        return "🛍️ Vends tes produits sur AfroLook !\n"
-            "💰 Jusqu'à 500 000 FCFA/mois de chiffre d'affaires !\n"
-            "📦 Mode, Beauté, Électronique, Alimentation... Tout se vend !";
+        return "🛍️ Article sur AfroLook !\n"
+            "📦 Mode, beauté, électronique, alimentation...";
 
       case AppLinkType.service:
         return "💼 Service sur AfroLook !\n"
-            "💰 Monétise tes compétences : jusqu'à 100 000 FCFA/mois dès 100 vues !\n"
-            "🚀 Opportunités et revenus garantis.";
+            "🚀 Découvre les compétences des créateurs.";
 
       case AppLinkType.group:
         return "👑 Rejoins mon groupe privé sur AfroLook !\n"
             "Clique sur le lien pour rejoindre directement :";
 
       default:
-        return "🌟 AfroLook - Le réseau social africain qui paie ton talent !\n"
-            "💰 À partir de 100 vues, gagne entre 15 000 et 100 000 FCFA/mois !\n"
+        return "🌟 AfroLook - Le réseau social des créateurs du monde entier !\n"
             "🎁 Utilise mon code de parrainage à l'inscription.";
     }
   }

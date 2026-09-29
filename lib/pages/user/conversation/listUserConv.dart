@@ -2590,7 +2590,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   void _inviteFriend() {
     Share.share(
-      'Rejoins-moi sur Afrolook 🌍 — la plateforme mode & lifestyle africaine !\n'
+      'Rejoins-moi sur Afrolook 🌍 — le réseau social des créateurs du monde entier !\n'
       'Télécharge l\'app : https://afrolook.app',
       subject: 'Invitation Afrolook',
     );

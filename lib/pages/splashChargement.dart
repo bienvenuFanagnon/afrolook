@@ -432,7 +432,7 @@ class _SplashChargementState extends State<SplashChargement> {
               const SizedBox(height: 32),
               Text('Afrolook', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: _colors.primary, letterSpacing: 1.5)),
               const SizedBox(height: 8),
-              Text('Le réseau social africain', style: TextStyle(fontSize: 14, color: _colors.textSecondary)),
+              Text('Le réseau social des créateurs', style: TextStyle(fontSize: 14, color: _colors.textSecondary)),
               const SizedBox(height: 48),
               SizedBox(width: 200, child: LinearProgressIndicator(color: _colors.primary, backgroundColor: _colors.surfaceVariant)),
               const SizedBox(height: 16),
