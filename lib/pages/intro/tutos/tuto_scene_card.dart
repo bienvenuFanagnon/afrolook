@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../l10n/tr.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/pseudo_tag.dart';
 import 'tuto_catalog.dart';
 import 'tuto_layouts.dart';
 
@@ -146,7 +147,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
             const SizedBox(width: 10),
             Expanded(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(ctx.tr(e.a), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+                PseudoTag(label: e.a.startsWith('@') ? e.a : ctx.tr(e.a), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
                 Text(ctx.tr(e.b), style: TextStyle(color: c.textSecondary, fontSize: 11)),
               ]),
             ),

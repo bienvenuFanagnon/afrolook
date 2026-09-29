@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/tr.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/pseudo_tag.dart';
 
 /// Zone de l'écran (224 × 454) où l'action est mise en lumière, pour les écrans « fidèles ».
 class TutoSpot {
@@ -46,15 +47,14 @@ Widget tutoLayoutLive(BuildContext ctx) {
           _avatar(16),
           const SizedBox(width: 5),
           Expanded(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: '$who  ', style: TextStyle(color: gift ? _live : Colors.white60, fontWeight: FontWeight.w800)),
-                TextSpan(text: ctx.tr(text), style: TextStyle(color: gift ? _live : Colors.white, fontWeight: gift ? FontWeight.w800 : FontWeight.w500)),
-              ]),
-              style: const TextStyle(fontSize: 9.5),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              PseudoTag(label: who, style: TextStyle(color: gift ? _live : Colors.white, fontSize: 8, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              Text(ctx.tr(text),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: gift ? _live : Colors.white, fontSize: 9.5, fontWeight: gift ? FontWeight.w800 : FontWeight.w500)),
+            ]),
           ),
         ]),
       );
@@ -93,7 +93,7 @@ Widget tutoLayoutLive(BuildContext ctx) {
             _avatar(24),
             const SizedBox(width: 6),
             Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              const Text('@nadia', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
+              const PseudoTag(label: '@nadia.vibes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 9)),
               Text(ctx.tr('12,4 k abonnés'), style: const TextStyle(color: Colors.white54, fontSize: 8)),
             ]),
             const SizedBox(width: 6),
@@ -127,9 +127,9 @@ Widget tutoLayoutLive(BuildContext ctx) {
         bottom: 96,
         width: 150,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          msg('@kofi', 'Magnifique 🔥'),
-          msg('@awa', '🎁 Couronne +120 pcs', gift: true),
-          msg('@moussa', 'Bravo !'),
+          msg('@kofi.mensah', 'Magnifique 🔥'),
+          msg('@awa.diallo', '🎁 Couronne +120 pcs', gift: true),
+          msg('@moussa.sow', 'Bravo !'),
         ]),
       ),
       // Pied de page
@@ -198,7 +198,7 @@ Widget tutoLayoutLivePrivate(BuildContext ctx) {
             _avatar(24),
             const SizedBox(width: 6),
             Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              const Text('@nadia', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
+              const PseudoTag(label: '@nadia.vibes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 9)),
               Text('🔒 ${ctx.tr('Live privé')}', style: const TextStyle(color: Colors.white54, fontSize: 8)),
             ]),
           ]),
@@ -248,7 +248,7 @@ Widget tutoLayoutComments(BuildContext ctx, AppColors c) {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Text(who, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 10.5)),
+                PseudoTag(label: who, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 9.5)),
                 const SizedBox(width: 5),
                 Text(time, style: TextStyle(color: c.textSecondary, fontSize: 8.5)),
                 if (gift) ...[
@@ -285,7 +285,7 @@ Widget tutoLayoutComments(BuildContext ctx, AppColors c) {
         const SizedBox(width: 8),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('@nadia.vibes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 11)),
+            PseudoTag(label: '@nadia.vibes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 10)),
             Text(ctx.tr('Ma routine selfie du matin ☀️'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 9.5)),
           ]),
         ),
@@ -306,10 +306,10 @@ Widget tutoLayoutComments(BuildContext ctx, AppColors c) {
         Icon(Icons.chevron_right_rounded, size: 15, color: gold),
       ]),
     ),
-    comment('@kofi', '2 h', 'Superbe photo 🔥', likes: '12'),
+    comment('@kofi.mensah', '2 h', 'Superbe photo 🔥', likes: '12'),
     comment('@nadia.vibes', '1 h', 'Merci beaucoup ! 🙏', reply: true),
-    comment('@awa', '1 h', 'J’adore ce look !', likes: '5', gift: true),
-    comment('@moussa', '30 min', 'Trop stylé', likes: '2'),
+    comment('@awa.diallo', '1 h', 'J’adore ce look !', likes: '5', gift: true),
+    comment('@moussa.sow', '30 min', 'Trop stylé', likes: '2'),
     const Spacer(),
     // Barre de saisie
     Container(
@@ -362,7 +362,7 @@ Widget tutoLayoutPost(BuildContext ctx, AppColors c) {
           const SizedBox(width: 8),
           Expanded(
             child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('@nadia.vibes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 11.5)),
+              PseudoTag(label: '@nadia.vibes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 10.5)),
               Text(ctx.tr('12,4 k abonnés'), style: TextStyle(color: c.textSecondary, fontSize: 9.5)),
             ]),
           ),
