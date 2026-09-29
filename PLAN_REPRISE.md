@@ -120,3 +120,6 @@ Fichiers : `lib/pages/intro/tutos/tuto_catalog.dart` (12 scènes, `tutoScenesAva
 Supprimé (code mort, aucune référence) : `getChallengeUsers`, `canJoinChallengesFreely`, clé `page_challenge_mois_active`, `FeedType.challenges`.
 Volontairement GARDÉ (compatibilité anciennes données Firestore / catégorie de contenu) : `PostType.CHALLENGE(PARTICIPATION)`, filtres de `mixed_feedvideo_service`, champs `challenge_id`/`votesChallenge`/`challengeMonth` du modèle, catégorie « Challenges » des contenus payants, textes l10n.
 - [ ] Reste : décider si l'on supprime aussi ces champs après migration des anciens posts.
+
+### 29/09 — Traductions des 12 scènes faites (7 langues, `tr_tuto.dart`). Page admin : module « Tutoriels » (`TutoListPage(showAll: true)`) liste toutes les scènes avec étiquettes (avant connexion / masquée iOS).
+- [ ] Reste : entrée « Tous les tutoriels » dans le menu utilisateur.

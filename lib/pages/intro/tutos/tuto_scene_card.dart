@@ -190,11 +190,13 @@ class TutoSceneCard extends StatelessWidget {
 
 /// Liste de tous les tutoriels, ouvrable depuis les cartes et le menu.
 class TutoListPage extends StatelessWidget {
-  const TutoListPage({super.key});
+  /// Mode admin : toutes les scènes, y compris celles masquées sur iOS, avec leurs étiquettes.
+  final bool showAll;
+  const TutoListPage({super.key, this.showAll = false});
 
   @override
   Widget build(BuildContext context) {
-    final scenes = tutoScenesAvailable();
+    final scenes = showAll ? kTutoScenes : tutoScenesAvailable();
     return Scaffold(
       backgroundColor: const Color(0xFF070B09),
       appBar: AppBar(
@@ -228,6 +230,17 @@ class TutoListPage extends StatelessWidget {
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                     const SizedBox(height: 2),
                     Text(context.tr(s.hook), style: const TextStyle(color: Colors.white60, fontSize: 12.5)),
+                    if (showAll)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          [
+                            s.publicScene ? 'Avant connexion : oui' : 'Avant connexion : non',
+                            if (s.hiddenOnIOS) 'Masquée sur iOS',
+                          ].join(' · '),
+                          style: const TextStyle(color: _gold, fontSize: 11),
+                        ),
+                      ),
                   ]),
                 ),
                 const Icon(Icons.chevron_right_rounded, color: Colors.white38),
