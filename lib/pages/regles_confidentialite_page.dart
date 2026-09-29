@@ -145,7 +145,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
               _rule('Versement des gains',
                   'Tes pièces gagnées se convertissent en argent dans ton portefeuille (« Gains à retirer »), puis tu fais une demande de retrait. Le versement s\'effectue selon les conditions en vigueur dans ton portefeuille.'),
               _rule('Moyens de retrait',
-                  'Tu saisis le montant dans ta devise. Le retrait peut se faire par Mobile Money, ou par virement, carte ou PayPal hors Mobile Money (minimum 100 $ dans ce cas). Le taux de change appliqué est enregistré avec ta demande.'),
+                  'Tu saisis le montant dans ta devise. Le retrait peut se faire par Mobile Money, ou par virement, carte ou PayPal hors Mobile Money (minimum 100 \$ dans ce cas). Le taux de change appliqué est enregistré avec ta demande.'),
             ],
           ),
           _section(
