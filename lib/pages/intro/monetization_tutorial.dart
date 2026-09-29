@@ -14,7 +14,6 @@ import '../../theme/app_colors.dart';
 import '../../utils/platform_guard.dart';
 import '../../widgets/post_coins_earned.dart';
 import '../auth/authTest/Screens/Login/loginPageUser.dart';
-import '../auth/eula_screen.dart';
 import '../../services/currency_service.dart';
 import 'tutos/tuto_catalog.dart';
 import 'tutos/tuto_scene_card.dart';
@@ -422,8 +421,8 @@ class _MonetizationTutorialPageState extends State<MonetizationTutorialPage> wit
       if (signup) nav.pushNamed('/user_posts_form');
       return;
     }
+    // Avant la connexion, les deux boutons mènent à la page de connexion (pas à la création de compte)
     nav.pushReplacement(MaterialPageRoute(builder: (_) => LoginPageUser()));
-    if (signup) nav.push(MaterialPageRoute(builder: (_) => const EulaScreen()));
   }
 
   // ── Mise en forme ────────────────────────────────────────────────────────────
@@ -982,7 +981,7 @@ class _MonetizationTutorialPageState extends State<MonetizationTutorialPage> wit
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               elevation: 0,
             ),
-            child: Text(widget.inApp ? context.tr('Créer un post') : context.tr('Créer mon compte et publier'),
+            child: Text(widget.inApp ? context.tr('Créer un post') : context.tr('Me connecter et publier'),
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
           ),
         ),

@@ -47,7 +47,6 @@ import '../services/sessions/session_service.dart';
 import 'auth/authTest/Screens/Login/loginPageUser.dart';
 import 'intro/introduction.dart';
 import 'intro/monetization_tutorial.dart';
-import 'intro/tutos/tuto_scene_card.dart';
 import 'intro/creator_splash.dart';
 
 import 'auth/authTest/Screens/updateUserData.dart';
@@ -775,24 +774,6 @@ class _SplashChargementState extends State<SplashChargement> {
       Navigator.pushReplacement(context, PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 600),
         pageBuilder: (_, __, ___) => const MonetizationTutorialPage(),
-        transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
-      ));
-      return;
-    }
-    // Ensuite, un tutoriel tous les 2 jours avant la connexion (l'original, puis les scènes publiques)
-    if (await TutoRotation.loginSceneDue()) {
-      final pick = await TutoRotation.nextForLogin();
-      if (!mounted) return;
-      await TutoRotation.markLoginSceneShown();
-      final scene = pick.scene;
-      Navigator.pushReplacement(context, PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 500),
-        pageBuilder: (_, __, ___) => scene == null
-            ? const MonetizationTutorialPage()
-            : TutoBeforeLoginPage(
-                scene: scene,
-                onDone: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPageUser())),
-              ),
         transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
       ));
       return;

@@ -453,7 +453,8 @@ class TutoSceneCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final gold = _goldOn(c);
-    final scale = fullScreen ? 0.8 : 1.0;
+    // Dans les feeds, le téléphone est réduit (même proportions) pour ne pas occuper tout l'écran
+    final scale = fullScreen ? 0.8 : 0.68;
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
