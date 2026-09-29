@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
 import 'package:afrotok/widgets/comment_gift_sheet.dart';
 import 'package:flutter/services.dart';
@@ -970,13 +971,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       children: [
         GestureDetector(
           onTap: () {
-            if (pcm.canal_name == null && pcm.user != null) {
-              showUserDetailsModalDialog(
-                pcm.user!,
-                MediaQuery.of(context).size.width,
-                MediaQuery.of(context).size.height,
-                context,
-              );
+            if (pcm.canal_name != null) {
+              _openCanalFromComment(canalId: pcm.canal_id, canalName: pcm.canal_name);
+            } else {
+              _openUserModal(pcm.user_id, pcm.user);
             }
           },
           child: CircleAvatar(onBackgroundImageError: (pcm.canal_name != null
@@ -1010,12 +1008,22 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               Row(
                 children: [
                   Flexible(
-                    child: NameTag(label: pcm.canal_name != null
-                          ? "#${pcm.canal_name}"
-                          : "@${pcm.user?.pseudo ?? '...'}",
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _colors.textPrimary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (pcm.canal_name != null) {
+                          _openCanalFromComment(canalId: pcm.canal_id, canalName: pcm.canal_name);
+                        } else {
+                          _openUserModal(pcm.user_id, pcm.user);
+                        }
+                      },
+                      child: NameTag(label: pcm.canal_name != null
+                            ? "#${pcm.canal_name}"
+                            : "@${pcm.user?.pseudo ?? '...'}",
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _colors.textPrimary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    ),
                   ),
                   const SizedBox(width: 4),
                   if (pcm.canal_name == null) UserBadgeWidget(user: pcm.user, size: 14),
@@ -1144,7 +1152,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(onBackgroundImageError: ((rpc.user_logo_url != null && rpc.user_logo_url!.isNotEmpty)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _onReplyAuthorTap(rpc),
+            child: CircleAvatar(onBackgroundImageError: ((rpc.user_logo_url != null && rpc.user_logo_url!.isNotEmpty)
                 ? NetworkImage(rpc.user_logo_url!)
                 : null) != null ? (Object _, StackTrace? __) {} : null, 
             radius: 14,
@@ -1156,6 +1167,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 ? Icon(Icons.person, size: 12, color: _colors.textSecondary)
                 : null,
           ),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -1163,10 +1175,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               children: [
                 Row(
                   children: [
-                    NameTag(label: rpc.canal_name != null && rpc.canal_name!.isNotEmpty
-                          ? "#${rpc.canal_name}"
-                          : "@${rpc.user_pseudo ?? ''}",
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: _colors.textPrimary)),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _onReplyAuthorTap(rpc),
+                      child: NameTag(label: rpc.canal_name != null && rpc.canal_name!.isNotEmpty
+                            ? "#${rpc.canal_name}"
+                            : "@${rpc.user_pseudo ?? ''}",
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: _colors.textPrimary)),
+                    ),
                     if (rpc.user_reply_pseudo != null && rpc.user_reply_pseudo!.isNotEmpty) ...[
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _colors.textSecondary),
@@ -1266,6 +1282,55 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         ],
       ),
     );
+  }
+
+  void _onReplyAuthorTap(ResponsePostComment rpc) {
+    if (rpc.canal_name != null && rpc.canal_name!.isNotEmpty) {
+      _openCanalFromComment(canalName: rpc.canal_name);
+    } else {
+      _openUserModal(rpc.user_id, rpc.user);
+    }
+  }
+
+  /// Ouvre le canal quand le commentaire vient du profil canal (propriétaire du canal) : on n'affiche jamais
+  /// le profil utilisateur de son propriétaire dans ce cas.
+  Future<void> _openCanalFromComment({String? canalId, String? canalName}) async {
+    try {
+      final postCanal = widget.post.canal;
+      Canal? canal;
+      if (postCanal != null &&
+          ((canalId != null && postCanal.id == canalId) ||
+              (canalName != null && postCanal.titre == canalName))) {
+        canal = postCanal;
+      } else if (canalId != null && canalId.isNotEmpty) {
+        final d = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).get();
+        if (d.exists) canal = Canal.fromJson(d.data()!);
+      } else if (canalName != null && canalName.isNotEmpty) {
+        final q = await FirebaseFirestore.instance.collection('Canaux').where('titre', isEqualTo: canalName).limit(1).get();
+        if (q.docs.isNotEmpty) canal = Canal.fromJson(q.docs.first.data());
+      }
+      if (canal != null && mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal!)));
+      }
+    } catch (e) {
+      debugPrint('Ouverture du canal : $e');
+    }
+  }
+
+  /// Ouvre le modal de profil d'un utilisateur (charge le profil s'il manque).
+  Future<void> _openUserModal(String? userId, UserData? user) async {
+    try {
+      var u = user;
+      if (u == null && userId != null && userId.isNotEmpty) {
+        final d = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+        if (d.exists) u = UserData.fromJson(d.data()!);
+      }
+      if (u != null && mounted) {
+        showUserDetailsModalDialog(u, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+      }
+    } catch (e) {
+      debugPrint('Ouverture du profil : $e');
+    }
   }
 
   /// Pièces reçues par l'auteur d'un commentaire ou d'une réponse (likes + cadeaux), affichées sous le texte.

@@ -327,7 +327,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                         alignment: Alignment.center,
                         child: TextCustomerPostDescription(
                           titre: "@${widget.user.pseudo}",
-                          fontSize: 15,
+                          fontSize: 13,
                           couleur: ConstColors.textColors,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1254,7 +1254,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
                           ),
                           child: PseudoTag(label: '@${widget.user.pseudo ?? l10n.profileDefaultUser}',
                             style: const TextStyle(
-                              fontSize: 28,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               shadows: [
