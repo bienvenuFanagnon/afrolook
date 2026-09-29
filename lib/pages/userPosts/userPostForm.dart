@@ -51,6 +51,25 @@ class _UserPostFormState extends State<UserPostForm> {
 
   @override
   Widget build(BuildContext context) {
+    // Canal bloqué pour inactivité : publication impossible tant qu'il n'est pas débloqué
+    if (widget.canal?.isBlocked == true) {
+      final c = AppColors.of(context);
+      return Scaffold(
+        backgroundColor: c.background,
+        appBar: AppBar(backgroundColor: c.background, iconTheme: IconThemeData(color: c.textPrimary)),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.lock_rounded, size: 48, color: c.danger),
+              const SizedBox(height: 12),
+              Text('Ce canal est bloqué pour inactivité.\nDébloque-le depuis la page du canal pour publier.',
+                  textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 15, height: 1.4)),
+            ]),
+          ),
+        ),
+      );
+    }
     _colors = AppColors.of(context);
 
     return Scaffold(

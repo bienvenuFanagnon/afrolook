@@ -1,3 +1,5 @@
+import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
+import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import '../../widgets/safe_network_avatar.dart';
 import 'dart:async';
@@ -116,6 +118,8 @@ class _CanalDetailsState extends State<CanalDetails> {
         widget.canal.subscribersId = full.subscribersId;
         widget.canal.suivi = full.suivi ?? widget.canal.suivi;
         widget.canal.isPrivate = full.isPrivate;
+        widget.canal.isBlocked = full.isBlocked;
+        widget.canal.blockedAt = full.blockedAt;
         widget.canal.isVerify = full.isVerify;
         widget.canal.subscriptionPrice = full.subscriptionPrice;
         widget.canal.subscriptionPriceCoinsRaw = full.subscriptionPriceCoinsRaw;
@@ -1239,7 +1243,7 @@ class _CanalDetailsState extends State<CanalDetails> {
             ),
 
             // Bouton POSTER (propriétaire ou admin canal)
-            if (isOwner || widget.canal.adminIds?.contains(authProvider.loginUserData.id) == true) ...[
+            if (!widget.canal.isBlocked && (isOwner || widget.canal.adminIds?.contains(authProvider.loginUserData.id) == true)) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -1760,6 +1764,7 @@ class _CanalDetailsState extends State<CanalDetails> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
+            if (widget.canal.isBlocked) SliverToBoxAdapter(child: _buildBlockedBanner()),
             _buildHeaderSection(),
             _buildInfoSection(),
             _buildPostsSection(),
@@ -1767,6 +1772,141 @@ class _CanalDetailsState extends State<CanalDetails> {
         ),
       ),
     );
+  }
+
+  // ── Canal bloqué pour inactivité (20 jours sans publication) ─────────────────────────────
+
+  bool _unlocking = false;
+
+  Widget _buildBlockedBanner() {
+    final isOwner = authProvider.loginUserData.id == widget.canal.userId;
+    final warn = _colors.danger;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: warn.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: warn.withOpacity(0.5)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.lock_rounded, color: warn, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(context.tr('Canal bloqué : inactif depuis 20 jours'),
+                style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        Text(
+          isOwner
+              ? context.tr('Ton canal n\'a rien publié depuis 20 jours. Il est bloqué : personne ne peut y publier. Débloque-le avec des pièces pour le relancer.')
+              : context.tr('Ce canal est temporairement bloqué : son propriétaire n\'a rien publié depuis 20 jours.'),
+          style: TextStyle(color: _colors.textSecondary, fontSize: 12.5, height: 1.4),
+        ),
+        if (isOwner) ...[
+          const SizedBox(height: 12),
+          FutureBuilder<int?>(
+            future: _unlockQuote(),
+            builder: (context, snap) {
+              final cost = snap.data;
+              return SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: (_unlocking || cost == null) ? null : () => _confirmUnlock(cost),
+                  icon: _unlocking
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.lock_open_rounded, size: 18),
+                  label: Text(
+                    cost == null ? context.tr('Chargement…') : context.tr('Débloquer · {a} pièces', {'a': cost}),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _colors.primary,
+                    foregroundColor: _colors.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Future<int?>? _quoteFuture;
+  Future<int?> _unlockQuote() {
+    return _quoteFuture ??= () async {
+      try {
+        final r = await FirebaseFunctions.instance.httpsCallable('canalUnlockQuote').call({'canalId': widget.canal.id});
+        return (Map<String, dynamic>.from(r.data as Map)['coins'] as num?)?.toInt();
+      } catch (_) {
+        return null;
+      }
+    }();
+  }
+
+  Future<void> _confirmUnlock(int cost) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _colors.surface,
+        title: Text(context.tr('Débloquer le canal ?'), style: TextStyle(color: _colors.textPrimary)),
+        content: Text(
+          context.tr('Le déblocage coûte {a} pièces (selon ton nombre d\'abonnés). Ton canal sera de nouveau actif et le compteur de 20 jours repart de zéro.', {'a': cost}),
+          style: TextStyle(color: _colors.textSecondary),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Annuler'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('Débloquer'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _unlocking = true);
+    try {
+      await FirebaseFunctions.instance.httpsCallable('unlockCanal').call({'canalId': widget.canal.id});
+      final uid = authProvider.loginUserData.id;
+      if (uid != null) {
+        try { await Provider.of<CoinGiftUserProvider>(context, listen: false).refreshBalance(uid); } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() {
+        widget.canal.isBlocked = false;
+        _unlocking = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Canal débloqué !'))));
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() => _unlocking = false);
+      if (e.code == 'resource-exhausted') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: _colors.surface,
+            title: Text(context.tr('Solde insuffisant'), style: TextStyle(color: _colors.textPrimary)),
+            content: Text(context.tr('Il te faut {a} pièces pour débloquer ce canal.', {'a': cost}), style: TextStyle(color: _colors.textSecondary)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Annuler'))),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+                },
+                child: Text(context.tr('Acheter des pièces')),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? context.tr('Déblocage impossible'))));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _unlocking = false);
+    }
   }
 
   double get _contentMaxWidth => AppLayout.isDesktop(context) ? 820 : AppLayout.maxFeedWidth;

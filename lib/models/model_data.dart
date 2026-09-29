@@ -3099,13 +3099,17 @@ class Canal {
     this.categoryUpdatedAt,
     this.canalScore = 0.0,
   });
+  /// Canal bloqué après 20 jours sans publication (débloquable par le propriétaire, en pièces).
+  bool isBlocked = false;
+  int? blockedAt;
+
   factory Canal.fromJson(Map<String, dynamic> json) {
     final isPrivate = json['isPrivate'] ?? false;
     final price = (json['subscriptionPrice'] ?? 0).toDouble();
     // Rétrocompat : canaux existants sans subscriptionType → 'unique' si privé+payant
     final String subType = json['subscriptionType'] ??
         (isPrivate && price > 0 ? 'unique' : 'gratuit');
-    return Canal(
+    final canal = Canal(
       usersSuiviId: List<String>.from(json['usersSuiviId'] ?? []),
       titre: json['titre'],
       type: json['type'],
@@ -3136,6 +3140,10 @@ class Canal {
       categoryUpdatedAt: json['categoryUpdatedAt'],
       canalScore: (json['canalScore'] as num?)?.toDouble() ?? 0.0,
     );
+    // Blocage pour inactivité : écrit par le serveur uniquement, jamais renvoyé par toJson
+    canal.isBlocked = json['isBlocked'] == true;
+    canal.blockedAt = (json['blockedAt'] as num?)?.toInt();
+    return canal;
   }
 
   Map<String, dynamic> toJson() {

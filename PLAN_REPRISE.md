@@ -194,3 +194,8 @@ Serveur (`pseudoMigration.ts`) : normalisation NFKD (lettres stylisées 𝓞, pl
 ### 29/09 — Commentaires : pièces reçues + chargement du cadeau
 - Le serveur cumule les pièces reçues par un commentaire (`coinsEarned`) ou une réponse (`replyCoins.<id>`) à chaque like payé et chaque cadeau ; l'app les affiche sous le texte (« 🪙 N pièces reçues »). Champs en lecture seule côté client (non réécrits par `updateComment`). **Redéployer** `sendCommentLike` et `sendCommentGift`.
 - Feuille de cadeau : voile + roue + « Envoi du cadeau en cours… » pendant l'envoi.
+
+### 29/09 — Canaux inactifs (blocage à 20 jours, déblocage payant)
+- Serveur `functions/src/posts/canalInactivity.ts` : `onCanalPostCreated` (met `lastPostAt`, supprime toute publication sur un canal bloqué), `checkInactiveCanals` (quotidien 03:00 UTC : rappel à 15 j, blocage à 20 j, notification au propriétaire ; canaux existants : dernière publication retrouvée une seule fois, 200 max/jour), `unlockCanal` (propriétaire, paie 500 / 1 500 / 2 000 / 3 000 pièces selon <100 / <2 000 / <3 000 / ≥3 000 abonnés), `canalUnlockQuote`. **À déployer.**
+- App : bandeau « Canal bloqué » + bouton « Débloquer · N pièces » (`detailsCanal.dart`), bouton Publier masqué et `UserPostForm` refusé si bloqué. Règles & Confidentialité mises à jour.
+- [ ] Non fait : masquer les posts/canaux bloqués des feeds et suggestions ; tester le premier passage sur les canaux existants (surveiller le nombre de blocages).
