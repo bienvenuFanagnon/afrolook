@@ -35,13 +35,13 @@ Certaines copies sont en cache sans la liste `userAbonnesIds`, d'autres avec un 
 - [ ] Si besoin, recharger l'utilisateur dans `postDetails` avec la même méthode que le feed.
 - [ ] Vérifier que la Cloud Function tient bien `abonnes` à jour à chaque abonnement/désabonnement.
 
-## LOT 3 — Tutoriel : apparition plus tôt dans les feeds
+## LOT 3 — ✅ FAIT (29/09) — Tutoriel : apparition plus tôt dans les feeds
 Fichiers : `lib/pages/intro/monetization_tutorial.dart` (`MonetizationReminder`, `FeedMonetizationReminder`), inséré dans `HomeConstPost.dart` l.~3750 (`i == 5`), `homeSportPost.dart` l.~2946, `post_video_format_tel_details.dart` l.~3804.
 
 - [ ] Faire apparaître le rappel plus tôt (FAIT : après le 2ᵉ post au lieu du 6ᵉ, et dès le premier affichage du feed de la session).
 - [x] Fréquence décidée : **1 fois par jour** par feed → passer `_every` de 3 jours à 1 jour dans `MonetizationReminder`. Vérifier `_shownThisSession` : la première apparition ne doit pas être bloquée.
 
-## LOT 4 — 10+ tutoriels de rémunération, avec scènes tournantes
+## LOT 4 — 🟡 V1 FAITE (29/09), à tester et compléter — 10+ tutoriels de rémunération, avec scènes tournantes
 Idée : une **liste de tutoriels** (un par fonctionnalité qui rapporte), chacun composé de **scènes**, chaque scène ayant **son bouton d'action** (ex. « Créer mon canal »).
 
 ### 4.1 Liste proposée (à valider avec le propriétaire)
@@ -105,3 +105,13 @@ _(ajouter ici une ligne par lot terminé : date, commit)_
 Nouveau `lib/services/followers_count_service.dart` (`FollowersCountBuilder`) : une seule source (doc `Users`, max(liste, compteur), cache 3 min) + format `formatCompactCount`. Branché sur : feed (`postWidgetPage`, `postView`), détails image/audio (`postDetails`), vidéo paysage/portrait (`postDetailsVideo`, `post_video_format_tel_details`, `youTube_video_card`), Mon profil (`profile.dart`, `profile_page.dart`), création de post (`userPostForm`).
 - [ ] À faire : brancher aussi les listes secondaires (`mesAmis`, `listTopModal`, `detailsOtherUser`, `afrovideo`, `video_details`, `entreprisePost*`, etc.) si l'écart y est vu ; appeler `FollowersCountService.instance.invalidate(userId)` après abonnement/désabonnement.
 - [ ] Vérifier si le compteur `abonnes` et la liste `userAbonnesIds` divergent dans Firestore (cause probable de 171 vs 123) et réparer les données.
+
+### Suite LOT 4 (29/09) — V1 livrée
+Fichiers : `lib/pages/intro/tutos/tuto_catalog.dart` (12 scènes, `tutoScenesAvailable`), `tuto_scene_card.dart` (`TutoSceneCard`, `TutoRotation`, `TutoListPage`, `TutoScenePage`, `TutoBeforeLoginPage`).
+- Feeds : `FeedMonetizationReminder` alterne l'animation « like » (créneau 0) puis les 12 scènes, une nouvelle scène à chaque affichage (1×/jour/feed).
+- Avant login : après le tutoriel initial, une scène publique tous les 2 jours (`splashChargement.dart`).
+- Textes en français seulement (repli si absent de `tr_tuto.dart`) → [ ] ajouter les 7 langues dans `tr_tuto.dart`.
+- [ ] Ajouter « Tous les tutoriels » (`TutoListPage`) au menu.
+- [ ] Vérifier sur iOS : scène « contenu payant » masquée ; aucun montant en argent dans les textes.
+- [ ] Vérifier chaque `action` (pages ouvertes sans argument requis) et le rendu plein écran (feed vidéo).
+- [ ] Valider les textes/chiffres avec le propriétaire (surtout 70 %/30 % groupes, 2 pièces/commentaire, DÉFI).

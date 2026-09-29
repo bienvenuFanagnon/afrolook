@@ -15,6 +15,8 @@ import '../../widgets/post_coins_earned.dart';
 import '../auth/authTest/Screens/Login/loginPageUser.dart';
 import '../auth/eula_screen.dart';
 import '../../services/currency_service.dart';
+import 'tutos/tuto_catalog.dart';
+import 'tutos/tuto_scene_card.dart';
 
 /// Tutoriel animé (motion design) montré une seule fois, avant la connexion :
 /// un like qui rapporte une pièce, trois posts dont les compteurs montent,
@@ -1375,16 +1377,16 @@ class MonetizationReminder {
 
 /// Carte animée insérée dans le feed : un post, le like, la pièce qui monte,
 /// et le rappel « chaque like paie le créateur ». [fullScreen] pour le feed vidéo.
-class FeedMonetizationReminder extends StatefulWidget {
+class _LikeSceneReminder extends StatefulWidget {
   final String feed;
   final bool fullScreen;
-  const FeedMonetizationReminder({super.key, required this.feed, this.fullScreen = false});
+  const _LikeSceneReminder({super.key, required this.feed, this.fullScreen = false});
 
   @override
-  State<FeedMonetizationReminder> createState() => _FeedMonetizationReminderState();
+  State<_LikeSceneReminder> createState() => _FeedMonetizationReminderState();
 }
 
-class _FeedMonetizationReminderState extends State<FeedMonetizationReminder> with TickerProviderStateMixin {
+class _FeedMonetizationReminderState extends State<_LikeSceneReminder> with TickerProviderStateMixin {
   static const _gold = Color(0xFFF5C542);
   late final AnimationController _heartBounce =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 520));
@@ -1585,3 +1587,47 @@ class _FeedMonetizationReminderState extends State<FeedMonetizationReminder> wit
 
 /// Rendu vidéo (outil interne) : branche un récepteur des sons du tutoriel.
 void setMonetizationTutorialSfxHook(void Function(String name, double volume)? hook) => _Sfx.hook = hook;
+
+
+/// Rappel de rémunération inséré dans les feeds : à chaque affichage la scène change
+/// (animation « like » historique, puis les scènes du catalogue `tuto_catalog.dart`).
+class FeedMonetizationReminder extends StatefulWidget {
+  final String feed;
+  final bool fullScreen;
+  const FeedMonetizationReminder({super.key, required this.feed, this.fullScreen = false});
+
+  @override
+  State<FeedMonetizationReminder> createState() => _RotatingReminderState();
+}
+
+class _RotatingReminderState extends State<FeedMonetizationReminder> {
+  bool _ready = false;
+  TutoScene? _scene; // null → animation « like »
+  bool _hidden = false;
+
+  @override
+  void initState() {
+    super.initState();
+    TutoRotation.next(widget.feed, withLikeAnimation: true).then((s) {
+      if (!mounted) return;
+      if (s != null) MonetizationReminder.markShown(widget.feed);
+      setState(() {
+        _scene = s;
+        _ready = true;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_ready || _hidden) return const SizedBox.shrink();
+    final s = _scene;
+    if (s == null) return _LikeSceneReminder(feed: widget.feed, fullScreen: widget.fullScreen);
+    return TutoSceneCard(
+      scene: s,
+      fullScreen: widget.fullScreen,
+      onClose: widget.fullScreen ? null : () => setState(() => _hidden = true),
+      onSeeAll: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TutoListPage())),
+    );
+  }
+}
