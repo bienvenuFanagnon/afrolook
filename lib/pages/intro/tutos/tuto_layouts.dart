@@ -141,7 +141,7 @@ Widget tutoLayoutLive(BuildContext ctx) {
           padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
           decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.black.withOpacity(.92), Colors.transparent])),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Row(children: [
+            FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(color: _live.withOpacity(.15), borderRadius: BorderRadius.circular(11), border: Border.all(color: _live.withOpacity(.4))),
@@ -154,7 +154,7 @@ Widget tutoLayoutLive(BuildContext ctx) {
               quickGift('🌹', '20'),
               quickGift('👑', '120'),
               quickGift('🦁', '500'),
-            ]),
+            ])),
             const SizedBox(height: 6),
             Row(children: [
               Expanded(
@@ -261,13 +261,18 @@ Widget tutoLayoutComments(BuildContext ctx, AppColors c) {
                 Padding(
                   padding: const EdgeInsets.only(top: 3),
                   child: Row(children: [
-                    Icon(Icons.favorite_border_rounded, size: 12, color: c.textSecondary),
+                    // Like agrandi (payant : 2 pièces, dont 1 pour l'auteur), Répondre, Cadeau
+                    Icon(Icons.favorite_border_rounded, size: 16, color: c.textSecondary),
                     const SizedBox(width: 3),
-                    Text(likes, style: TextStyle(color: c.textSecondary, fontSize: 9)),
-                    const SizedBox(width: 12),
+                    Text(likes, style: TextStyle(color: c.textSecondary, fontSize: 9.5, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 10),
                     Icon(Icons.mode_comment_outlined, size: 12, color: c.textSecondary),
                     const SizedBox(width: 3),
                     Text(ctx.tr('Répondre'), style: TextStyle(color: c.textSecondary, fontSize: 9)),
+                    const SizedBox(width: 10),
+                    Icon(Icons.card_giftcard_rounded, size: 13, color: gold),
+                    const SizedBox(width: 3),
+                    Text(ctx.tr('Cadeau'), style: TextStyle(color: gold, fontSize: 9, fontWeight: FontWeight.w800)),
                   ]),
                 ),
             ]),
@@ -338,7 +343,8 @@ Widget tutoLayoutComments(BuildContext ctx, AppColors c) {
     ),
   ]);
 }
-const tutoSpotCommentInput = TutoSpot(410, 4, 4, 44);
+// Ligne ❤ / Répondre / Cadeau du premier commentaire
+const tutoSpotCommentInput = TutoSpot(168, 30, 30, 26);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page de DÉTAILS d'un post (image) : en-tête, média, bandeau des pièces, rangée de stats.
@@ -393,7 +399,7 @@ Widget tutoLayoutPost(BuildContext ctx, AppColors c) {
     Container(
       height: 30,
       margin: const EdgeInsets.fromLTRB(10, 8, 10, 0),
-      child: Row(children: [stat('❤️ 3 200'), stat('💬 42'), stat('🎁 18'), stat('👁 48 k')]),
+      child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Row(mainAxisSize: MainAxisSize.min, children: [stat('❤️ 3 200'), stat('💬 42'), stat('🎁 18'), stat('👁 48 k')])),
     ),
   ]);
 }

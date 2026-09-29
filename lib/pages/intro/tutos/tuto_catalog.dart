@@ -105,11 +105,11 @@ final List<TutoScene> kTutoScenes = [
     actionLabel: 'Voir mon portefeuille', action: (c) => _push(c, MonetisationPage()),
   ),
   TutoScene(
-    id: 'commentaires', emoji: '💬', title: 'Les commentaires paient', hook: 'Une bonne conversation rapporte aussi.',
+    id: 'commentaires', emoji: '💬', title: 'Les commentaires paient', hook: 'Un bon commentaire rapporte, et ceux qui l’aiment aussi.',
     screenTitle: 'Commentaires', layout: 'comments', spot: tutoSpotCommentInput,
-    hint: 'Chaque commentaire te rapporte 1 pièce',
-    gainEmoji: '💬', gainTitle: '+150 pièces', gainSub: 'pour 150 commentaires',
-    earn: 'Exemple : 150 commentaires = 150 pièces pour toi',
+    hint: 'Un like ou un cadeau sur un commentaire rapporte à son auteur',
+    gainEmoji: '💬', gainTitle: '+150 pièces', gainSub: 'pour 150 commentaires, plus les likes reçus',
+    earn: 'Exemple : 150 commentaires = 150 pièces ; chaque like sur ton commentaire = 1 pièce de plus',
     actionLabel: 'Créer un post', action: (c) => Navigator.of(c).pushNamed('/user_posts_form'),
   ),
   TutoScene(

@@ -122,6 +122,143 @@ export const sendComment = onCall({ timeoutSeconds: 20, memory: "256MiB" }, asyn
   });
 });
 
+// ── Commentaires : like payant et cadeau ────────────────────────────────────
+
+const COMMENT_LIKE_COST = 2;
+const COMMENT_LIKE_CREATOR = 1;
+
+interface CommentTarget { authorId: string; postId: string | null }
+
+/** Auteur d'un commentaire, ou d'une réponse (réponses stockées dans responseComments). */
+function commentTarget(data: FirebaseFirestore.DocumentData, replyId?: string): CommentTarget {
+  const postId = (data["post_id"] as string | undefined) ?? null;
+  if (replyId) {
+    const replies = (data["responseComments"] as Array<Record<string, unknown>> | undefined) ?? [];
+    const r = replies.find((x) => x["id"] === replyId);
+    const authorId = r?.["user_id"] as string | undefined;
+    if (!authorId) throw new HttpsError("not-found", "Réponse introuvable.");
+    return { authorId, postId };
+  }
+  const authorId = data["user_id"] as string | undefined;
+  if (!authorId) throw new HttpsError("not-found", "Commentaire introuvable.");
+  return { authorId, postId };
+}
+
+/**
+ * Like d'un commentaire ou d'une réponse : 2 pièces → 1 à l'auteur du commentaire, 1 à l'app.
+ * Payé UNE seule fois par utilisateur et par commentaire (enregistrement CommentLikePayments).
+ * Sans solde suffisant, rien n'est débité : le like reste compté par l'app (réponse { paid: false,
+ * reason: "insufficient" }) et l'app affiche la fenêtre d'insuffisance. Gratuit sur son propre commentaire.
+ */
+export const sendCommentLike = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { commentId, replyId } = request.data as { commentId?: string; replyId?: string };
+  if (!commentId) throw new HttpsError("invalid-argument", "commentId requis.");
+
+  const commentRef = db.collection("PostComments").doc(commentId);
+  const senderRef = db.collection("Users").doc(uid);
+  const payRef = db.collection("CommentLikePayments").doc(`${commentId}_${replyId ?? "root"}_${uid}`);
+
+  return db.runTransaction(async (tx) => {
+    const [commentDoc, senderDoc, payDoc] = await Promise.all([tx.get(commentRef), tx.get(senderRef), tx.get(payRef)]);
+    if (!commentDoc.exists) throw new HttpsError("not-found", "Commentaire introuvable.");
+    if (!senderDoc.exists) throw new HttpsError("not-found", "Compte introuvable.");
+    if (payDoc.exists) return { paid: false, reason: "already_paid", coins: 0 };
+    const { authorId, postId } = commentTarget(commentDoc.data()!, replyId);
+    if (authorId === uid) return { paid: false, reason: "own", coins: 0 };
+
+    const balance = num(senderDoc.data()!["giftCoinsBalance"]);
+    if (balance < COMMENT_LIKE_COST) return { paid: false, reason: "insufficient", coins: COMMENT_LIKE_COST, balance };
+    const now = Date.now();
+
+    tx.update(senderRef, {
+      giftCoinsBalance: FieldValue.increment(-COMMENT_LIKE_COST),
+      totalGiftCoinsSpent: FieldValue.increment(COMMENT_LIKE_COST),
+      updatedAt: now,
+    });
+    tx.update(db.collection("Users").doc(authorId), {
+      giftCoinsBalance: FieldValue.increment(COMMENT_LIKE_CREATOR),
+      totalCoinsEarnedFromLikes: FieldValue.increment(COMMENT_LIKE_CREATOR),
+      updatedAt: now,
+    });
+    if (postId) {
+      tx.update(db.collection("Posts").doc(postId), {
+        totalGiftCoinsSentOnThisPost: FieldValue.increment(COMMENT_LIKE_CREATOR),
+        totalCoinsFromLikes: FieldValue.increment(COMMENT_LIKE_CREATOR),
+      });
+    }
+    tx.set(payRef, { commentId, replyId: replyId ?? null, userId: uid, authorId, coins: COMMENT_LIKE_COST, createdAt: now });
+    recordAppCommission(tx, "likes", COMMENT_LIKE_COST - COMMENT_LIKE_CREATOR, now);
+    return { paid: true, coins: COMMENT_LIKE_COST, authorId };
+  });
+});
+
+/** Cadeau à l'auteur d'un commentaire (ou d'une réponse) : mêmes parts qu'un cadeau sur un post. */
+export const sendCommentGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+  const uid = requireAuth(request.auth?.uid);
+  const { commentId, replyId, coins: rawCoins, giftIcon, giftLabel } = request.data as {
+    commentId?: string; replyId?: string; coins?: number; giftIcon?: string; giftLabel?: string;
+  };
+  if (!commentId) throw new HttpsError("invalid-argument", "commentId requis.");
+  const coins = requireCoins(rawCoins);
+
+  const commentRef = db.collection("PostComments").doc(commentId);
+  const commentSnap = await commentRef.get();
+  if (!commentSnap.exists) throw new HttpsError("not-found", "Commentaire introuvable.");
+  const { authorId: receiverId, postId } = commentTarget(commentSnap.data()!, replyId);
+  if (receiverId === uid) throw new HttpsError("invalid-argument", "Impossible de s'offrir un cadeau.");
+
+  const sponsors = await resolveSponsors(uid, receiverId, coins);
+  const receiverCoins = Math.floor(coins * CREATOR_SHARE);
+  const appCoins = coins - receiverCoins - sponsors.reduce((s, p) => s + p.coins, 0);
+  const icon = (giftIcon ?? "🎁").slice(0, 8);
+  const label = (giftLabel ?? "Cadeau").slice(0, 40);
+
+  const senderRef = db.collection("Users").doc(uid);
+  const receiverRef = db.collection("Users").doc(receiverId);
+
+  return db.runTransaction(async (tx) => {
+    const [senderDoc, receiverDoc] = await Promise.all([tx.get(senderRef), tx.get(receiverRef)]);
+    if (!senderDoc.exists || !receiverDoc.exists) throw new HttpsError("not-found", "Utilisateur introuvable.");
+    const balance = num(senderDoc.data()!["giftCoinsBalance"]);
+    if (balance < coins) insufficient(balance, coins);
+    const now = Date.now();
+    const senderPseudo = senderDoc.data()!["pseudo"] ?? "";
+    const receiverPseudo = receiverDoc.data()!["pseudo"] ?? "";
+
+    tx.update(senderRef, {
+      giftCoinsBalance: FieldValue.increment(-coins),
+      totalGiftCoinsSpent: FieldValue.increment(coins),
+      updatedAt: now,
+    });
+    tx.update(receiverRef, {
+      giftCoinsBalance: FieldValue.increment(receiverCoins),
+      totalCoinsEarnedFromGifts: FieldValue.increment(receiverCoins),
+      updatedAt: now,
+    });
+    const giftRef = db.collection("CommentGifts").doc();
+    tx.set(giftRef, {
+      id: giftRef.id, commentId, replyId: replyId ?? null, postId, senderId: uid, receiverId,
+      giftIcon: icon, giftLabel: label, coinsAmount: coins, createdAt: now,
+    });
+    const txSender = db.collection("TransactionSoldes").doc();
+    tx.set(txSender, {
+      id: txSender.id, user_id: uid, type: "CADEAU_PIECES", statut: "VALIDER",
+      description: `Envoi de ${icon} ${coins} pièces à @${receiverPseudo} (commentaire)`,
+      montant: coins, methode_paiement: "pieces", createdAt: now, updatedAt: now, postId,
+    });
+    const txReceiver = db.collection("TransactionSoldes").doc();
+    tx.set(txReceiver, {
+      id: txReceiver.id, user_id: receiverId, type: "CADEAU_PIECES_RECU", statut: "VALIDER",
+      description: `Réception de ${icon} ${receiverCoins} pièces de @${senderPseudo} (commentaire)`,
+      montant: receiverCoins, methode_paiement: "pieces", createdAt: now, updatedAt: now, postId,
+    });
+    creditSponsors(tx, sponsors, `cadeau de ${coins} pièces`, now, { postId });
+    recordAppCommission(tx, "cadeaux", appCoins, now);
+    return { success: true, coins, receiverCoins, receiverId };
+  });
+});
+
 // ── Cadeau sur un post ───────────────────────────────────────────────────────
 
 export const sendPostGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {

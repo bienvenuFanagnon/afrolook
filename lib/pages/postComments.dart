@@ -1,3 +1,5 @@
+import 'package:afrotok/widgets/comment_gift_sheet.dart';
+import 'package:flutter/services.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -326,6 +328,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         comment.likes = (comment.likes ?? 0) + 1;
         setState(() {});
         if (comment.user!.id != userId) {
+          // Like payant : 2 pièces (1 à l'auteur), une seule fois ; sans solde le like reste compté
+          unawaited(CommentCoins.like(context,
+              commentId: comment.id!, authorId: comment.user!.id!, authorPseudo: comment.user?.pseudo ?? ''));
           await _sendLikeNotification(comment.user!.id!, comment);
         }
       }
@@ -347,6 +352,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         reply.likes = (reply.likes ?? 0) + 1;
         setState(() {});
         if (reply.user_id != userId) {
+          unawaited(CommentCoins.like(context,
+              commentId: parentComment.id!, replyId: reply.id, authorId: reply.user_id!, authorPseudo: reply.user_pseudo ?? ''));
           await _sendLikeNotification(reply.user_id!, parentComment, isReply: true, reply: reply);
         }
       }
@@ -1072,13 +1079,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               const SizedBox(height: 6),
               Row(
                 children: [
-                  _buildActionButton(
-                    icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isLiked ? _colors.danger : _colors.textSecondary,
-                    label: likeCount > 0 ? formatNumber(likeCount) : null,
+                  _buildLikeButton(
+                    isLiked: isLiked,
+                    count: likeCount,
                     onTap: () => _likeComment(pcm),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   _buildActionButton(
                     icon: Icons.mode_comment_outlined,
                     color: _colors.textSecondary,
@@ -1095,6 +1101,16 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       _focusNode.requestFocus();
                     },
                   ),
+                  if (pcm.user?.id != authProvider.loginUserData.id) ...[
+                    const SizedBox(width: 16),
+                    _buildActionButton(
+                      icon: Icons.card_giftcard_rounded,
+                      color: const Color(0xFFD99A00),
+                      label: 'Cadeau',
+                      onTap: () => showCommentGiftSheet(context,
+                          commentId: pcm.id!, authorPseudo: pcm.user?.pseudo ?? ''),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -1204,14 +1220,13 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    _buildActionButton(
-                      icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: isLiked ? _colors.danger : _colors.textSecondary,
-                      label: likeCount > 0 ? formatNumber(likeCount) : null,
+                    _buildLikeButton(
+                      isLiked: isLiked,
+                      count: likeCount,
                       onTap: () => _likeReply(pcm, rpc),
                       small: true,
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 6),
                     _buildActionButton(
                       icon: Icons.mode_comment_outlined,
                       color: _colors.textSecondary,
@@ -1229,12 +1244,59 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       },
                       small: true,
                     ),
+                    if (rpc.user_id != authProvider.loginUserData.id) ...[
+                      const SizedBox(width: 14),
+                      _buildActionButton(
+                        icon: Icons.card_giftcard_rounded,
+                        color: const Color(0xFFD99A00),
+                        label: 'Cadeau',
+                        small: true,
+                        onTap: () => showCommentGiftSheet(context,
+                            commentId: pcm.id!, replyId: rpc.id, authorPseudo: rpc.user_pseudo ?? ''),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Bouton like des commentaires : grande zone de toucher, retour tactile, rebond du cœur.
+  Widget _buildLikeButton({
+    required bool isLiked,
+    required int count,
+    required VoidCallback onTap,
+    bool small = false,
+  }) {
+    final size = small ? 22.0 : 26.0;
+    return InkResponse(
+      radius: 28,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          TweenAnimationBuilder<double>(
+            key: ValueKey(isLiked),
+            tween: Tween(begin: isLiked ? 1.6 : 1.0, end: 1.0),
+            duration: const Duration(milliseconds: 380),
+            curve: Curves.elasticOut,
+            builder: (_, v, child) => Transform.scale(scale: v, child: child),
+            child: Icon(isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                color: isLiked ? _colors.danger : _colors.textSecondary, size: size),
+          ),
+          if (count > 0) ...[
+            const SizedBox(width: 5),
+            Text(formatNumber(count),
+                style: TextStyle(color: isLiked ? _colors.danger : _colors.textSecondary, fontSize: small ? 12 : 13.5, fontWeight: FontWeight.w700)),
+          ],
+        ]),
       ),
     );
   }
