@@ -1,3 +1,4 @@
+import '../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:io';
@@ -3213,7 +3214,7 @@ class _DetailsPostState extends State<DetailsPost>
                     ],
                   ),
                   Text(
-                    context.tr('{a} abonné(s)', {'a': user.followersCount}),
+                    context.tr('{a} abonné(s)', {'a': formatCompactCount(user.followersCount)}),
                     style: TextStyle(
                       color: _colors.textSecondary,
                       fontSize: 12,

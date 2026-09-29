@@ -1,3 +1,4 @@
+import '../../../utils/count_format.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 import 'dart:async';
@@ -3249,11 +3250,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
   }
 
-  String _formatCount(int count) {
-    if (count < 1000) return count.toString();
-    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return '${(count / 1000000).toStringAsFixed(1)}M';
-  }
+  String _formatCount(int count) => formatCompactCount(count);
 
   bool _isVideoPost(Post post) {
     return post.dataType == PostDataType.VIDEO.name ||

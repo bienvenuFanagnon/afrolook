@@ -166,7 +166,7 @@ class DefiDetailsSection extends StatelessWidget {
                 ],
                 if ((isCreator || isAdmin) && defiPost.id != null) ...[
                   const SizedBox(height: 14),
-                  DefiRevenueCard(defiPostId: defiPost.id!, showAppShare: isAdmin),
+                  DefiRevenueCard(defiPostId: defiPost.id!),
                 ],
               ],
             ),
@@ -274,9 +274,8 @@ class DefiDetailsSection extends StatelessWidget {
 // ── Ce que le DÉFI a rapporté — visible par le créateur et les admins ────────
 class DefiRevenueCard extends StatefulWidget {
   final String defiPostId;
-  final bool showAppShare;
 
-  const DefiRevenueCard({super.key, required this.defiPostId, required this.showAppShare});
+  const DefiRevenueCard({super.key, required this.defiPostId});
 
   @override
   State<DefiRevenueCard> createState() => _DefiRevenueCardState();
@@ -285,7 +284,6 @@ class DefiRevenueCard extends StatefulWidget {
 class _DefiRevenueCardState extends State<DefiRevenueCard> {
   bool _loading = true;
   int _voteCoins = 0, _voteCount = 0, _partCoins = 0, _partCount = 0;
-  int _creatorCoins = 0, _sponsorCoins = 0;
 
   @override
   void initState() {
@@ -300,15 +298,13 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
           .collection('TransactionSoldes')
           .where('defiPostId', isEqualTo: widget.defiPostId)
           .get();
-      var vC = 0, vN = 0, pC = 0, pN = 0, cr = 0, sp = 0;
+      var vC = 0, vN = 0, pC = 0, pN = 0;
       for (final d in snap.docs) {
         final t = d.data();
         final amount = (t['montant'] as num? ?? 0).round();
         final type = '${t['type'] ?? ''}';
-        if (t['methode_paiement'] == 'commission_parrainage') {
-          sp += amount;
-        } else if (type == 'GAIN_PIECES') {
-          cr += amount;
+        if (t['methode_paiement'] == 'commission_parrainage' || type == 'GAIN_PIECES') {
+          continue; // versements aux créateurs : pas des recettes du DÉFI
         } else if (type == 'DEPENSE') {
           final kind = t['defiKind'] ?? ('${t['description'] ?? ''}'.startsWith('Vote') ? 'vote' : 'participation');
           if (kind == 'vote') { vC += amount; vN++; } else { pC += amount; pN++; }
@@ -317,7 +313,7 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
       if (mounted) {
         setState(() {
           _voteCoins = vC; _voteCount = vN; _partCoins = pC; _partCount = pN;
-          _creatorCoins = cr; _sponsorCoins = sp; _loading = false;
+          _loading = false;
         });
       }
     } catch (_) {
@@ -330,7 +326,6 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
     final c = AppColors.of(context);
     final n = NumberFormat.decimalPattern('fr');
     final total = _voteCoins + _partCoins;
-    final app = (total - _creatorCoins - _sponsorCoins).clamp(0, total);
 
     Widget line(String k, String v, {String? sub, bool strong = false}) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -362,8 +357,7 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
             child: Text('Ce DÉFI a rapporté',
                 style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
           ),
-          Text(widget.showAppShare ? 'Créateur et admins' : 'Visible par toi seul',
-              style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
+          Text('Visible par toi seul', style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
         ]),
         const SizedBox(height: 6),
         if (_loading)
@@ -372,16 +366,10 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
             child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _yellow))),
           )
         else ...[
-          line('Total payé', '${n.format(total)} pièces', strong: true),
+          line('Total remporté', '${n.format(total)} pièces', strong: true),
           line('Votes', '${n.format(_voteCoins)} pièces', sub: '$_voteCount vote${_voteCount > 1 ? 's' : ''} payant${_voteCount > 1 ? 's' : ''}'),
           line('Participations', '${n.format(_partCoins)} pièces',
               sub: '$_partCount participation${_partCount > 1 ? 's' : ''} payante${_partCount > 1 ? 's' : ''}'),
-          if (widget.showAppShare) ...[
-            Divider(height: 14, color: c.border),
-            line('Part du créateur (70 %)', '${n.format(_creatorCoins)} pièces'),
-            line('Parrainages', '${n.format(_sponsorCoins)} pièces'),
-            line("Part de l'app", '${n.format(app)} pièces', strong: true),
-          ],
         ],
       ]),
     );

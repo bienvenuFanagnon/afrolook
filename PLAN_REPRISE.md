@@ -8,7 +8,7 @@ Voir `git log` : pièces partout, rémunération/commissions côté serveur, DÉ
 
 ---
 
-## LOT 1 — Page détails des DÉFIs : carte « Ce DÉFI a rapporté »
+## LOT 1 — ✅ FAIT (29/09) — Page détails des DÉFIs : carte « Ce DÉFI a rapporté »
 Fichier : `lib/pages/defi/defi_details_section.dart` (classe `DefiRevenueCard`, ~l.274-395 ; appelée l.169).
 
 Problèmes signalés :
@@ -23,7 +23,7 @@ Problèmes signalés :
 - [ ] Vérifier que la cagnotte des gagnants n'est présentée nulle part comme « part de l'app ».
 - [ ] Chercher les autres endroits qui affichent ces parts (`grep -rn "Part de l'app\|Part du créateur" lib`) et nettoyer aussi `lib/l10n/tr_money.dart`.
 
-## LOT 2 — Nombre d'abonnés différent entre détails du post et feed
+## LOT 2 — ✅ FAIT (29/09, cause probable : format « 1,2K » dans le feed vs nombre brut dans les détails ; format unique `lib/utils/count_format.dart`. Si l'écart persiste, vérifier la source du compteur) — Nombre d'abonnés différent entre détails du post et feed
 Constat : les deux utilisent `user.followersCount` (`model_data.dart` ~l.1014 : max entre `userAbonnesIds.length` et `abonnes`). La différence vient donc de la **source de l'objet `user`** :
 - détails : `lib/pages/postDetails.dart` ~l.3216 ;
 - feed : `lib/pages/userPosts/postWidgets/postView.dart` l.1478 et l.2225 ; cartes feed : `lib/widgets/feed/sections/feed_*`.
