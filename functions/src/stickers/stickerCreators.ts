@@ -8,6 +8,7 @@ import { db } from "../shared/firebase";
 import { num } from "../payments/coinShares";
 import { MAX_ANIM_BYTES, tierOf } from "./stickers";
 import { notifyOwner } from "../posts/canalInactivity";
+import { emailTransporter } from "../shared/email_utils";
 
 /**
  * Stickers personnels (« Mes stickers ») et packs de créateurs, avec protection contre les copies.
@@ -128,6 +129,43 @@ export const onUserStickerCreated = onDocumentCreated("UserStickers/{id}", async
 
 interface SubmittedSticker { path: string; category?: string; captions?: Record<string, string>; keywords?: string[]; giftPriceCoins?: number }
 
+
+/** E-mail à l'équipe à chaque pack déposé, pour ne rien oublier de vérifier (même circuit que les demandes de boost). */
+async function notifyTeamNewPack(p: { packId: string; name: string; region: string; price: number; count: number; needsReview: boolean; creator: string; creatorId: string; copies: number }) {
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const warn = p.needsReview
+    ? `<div style="margin-top:16px;padding:14px;background:#FDECEA;border-radius:8px;border-left:4px solid #E21221;"><p style="margin:0;color:#333;font-size:14px;">⚠️ <strong>${p.copies} sticker(s) ressemblent à des stickers déjà publiés.</strong> Compare-les avec l'original avant de valider.</p></div>`
+    : "";
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9f9f9;">
+      <div style="background:#E21221;padding:20px;border-radius:12px 12px 0 0;text-align:center;">
+        <h1 style="color:#FFD700;margin:0;font-size:22px;">Afrolook — Nouveau pack de stickers à vérifier</h1>
+      </div>
+      <div style="background:#fff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #eee;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#666;font-size:14px;">Pack</td><td style="padding:8px 0;font-weight:bold;color:#333;">${esc(p.name)}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;font-size:14px;">Créateur</td><td style="padding:8px 0;font-weight:bold;color:#333;">@${esc(p.creator)}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;font-size:14px;">Stickers</td><td style="padding:8px 0;font-weight:bold;color:#333;">${p.count}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;font-size:14px;">Région</td><td style="padding:8px 0;font-weight:bold;color:#333;">${esc(p.region)}</td></tr>
+          <tr><td style="padding:8px 0;color:#666;font-size:14px;">Prix</td><td style="padding:8px 0;font-weight:bold;color:#333;">${p.price > 0 ? `${p.price} pièces` : "Gratuit"}</td></tr>
+        </table>
+        ${warn}
+        <p style="margin-top:20px;color:#333;font-size:14px;">Ouvre l'application : <strong>Tableau de bord admin → Stickers → À valider</strong>.</p>
+        <p style="color:#999;font-size:12px;">Identifiant du pack : ${p.packId}</p>
+      </div>
+    </div>`;
+  try {
+    await emailTransporter.sendMail({
+      from: '"Afrolook" <epargneplus@epargneplusfinance.com>',
+      to: "officiel.afrolook@gmail.com",
+      subject: `${p.needsReview ? "⚠️ " : "🎨 "}Pack de stickers à vérifier — ${p.name} (@${p.creator})`,
+      html,
+    });
+  } catch (e) {
+    console.error("[stickers] e-mail à l'équipe non envoyé", e);
+  }
+}
+
 export const submitStickerPack = onCall({ timeoutSeconds: 300, memory: "1GiB" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
@@ -216,7 +254,53 @@ export const submitStickerPack = onCall({ timeoutSeconds: 300, memory: "1GiB" },
   });
   for (const s of stickerDocs) batch.set(s.ref, s.data);
   await batch.commit();
+  await notifyTeamNewPack({
+    packId: packRef.id, name, region, price, count: stickerDocs.length, needsReview,
+    creator: String(u["pseudo"] ?? uid), creatorId: uid,
+    copies: stickerDocs.filter((s) => s.data["copyOf"]).length,
+  });
   return { packId: packRef.id, status: "pending", needsReview };
+});
+
+
+// ── Changement de prix par le créateur (gratuit → payant et inversement) ──────
+
+const PRICE_COOLDOWN_MS = 7 * 24 * 3600 * 1000;
+
+/**
+ * Le créateur peut passer son pack de gratuit à payant (ou l'inverse). Règles : 0 à 1 000 pièces, un changement
+ * tous les 7 jours (un admin n'a pas de délai). Un pack qui devient payant s'achète à partir de maintenant ; les
+ * acheteurs déjà enregistrés gardent leur pack, et les commentaires déjà envoyés ne changent pas.
+ */
+export const updateStickerPackPrice = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const { packId, priceCoins } = request.data as { packId?: string; priceCoins?: number };
+  if (!packId) throw new HttpsError("invalid-argument", "packId requis.");
+  const price = Math.floor(num(priceCoins));
+  if (price < 0 || price > MAX_PRICE) throw new HttpsError("invalid-argument", `Le prix doit être entre 0 et ${MAX_PRICE} pièces.`);
+  const ref = db.collection("StickerPacks").doc(packId);
+  const admin = (await db.collection("Users").doc(uid).get()).data()?.["role"] === "ADM";
+  return db.runTransaction(async (tx) => {
+    const d = await tx.get(ref);
+    if (!d.exists) throw new HttpsError("not-found", "Pack introuvable.");
+    if (d.get("creatorId") !== uid && !admin) throw new HttpsError("permission-denied", "Ce pack n'est pas à toi.");
+    if (d.get("creatorId") === "afrolook" && !admin) throw new HttpsError("permission-denied", "Pack officiel.");
+    const status = d.get("status");
+    if (status !== "active" && status !== "pending") throw new HttpsError("failed-precondition", "Ce pack n'est plus modifiable.");
+    const old = num(d.get("priceCoins"));
+    if (old === price) return { ok: true, priceCoins: price, unchanged: true };
+    const last = num(d.get("priceChangedAt"));
+    if (!admin && last && Date.now() - last < PRICE_COOLDOWN_MS) {
+      const days = Math.ceil((PRICE_COOLDOWN_MS - (Date.now() - last)) / 86400000);
+      throw new HttpsError("failed-precondition", `Tu pourras modifier le prix dans ${days} jour(s).`);
+    }
+    const now = Date.now();
+    const history = ((d.get("priceHistory") as Array<Record<string, unknown>> | undefined) ?? []).slice(-9);
+    history.push({ from: old, to: price, at: now, by: uid });
+    tx.update(ref, { priceCoins: price, priceChangedAt: now, priceHistory: history, updatedAt: now });
+    return { ok: true, priceCoins: price, from: old };
+  });
 });
 
 // ── Modération par un administrateur ─────────────────────────────────────────

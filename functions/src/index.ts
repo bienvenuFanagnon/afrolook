@@ -36,6 +36,6 @@ export * from "./posts/canalInactivity";
 export { adminCanalAction } from "./posts/adminCanaux";
 export { stickerAccess, onCommentMediaCreated } from "./stickers/stickers";
 export { stickerGiftSend } from "./stickers/stickerPayments";
-export { onUserStickerCreated, submitStickerPack, adminStickerAction, reportStickerCopy } from "./stickers/stickerCreators";
+export { onUserStickerCreated, submitStickerPack, updateStickerPackPrice, adminStickerAction, reportStickerCopy } from "./stickers/stickerCreators";
 export { convertStickerVideo } from "./stickers/stickerVideo";
 export { creationQuote, onCanalCreatedCharge, onGroupCreatedCharge } from "./payments/creationFees";

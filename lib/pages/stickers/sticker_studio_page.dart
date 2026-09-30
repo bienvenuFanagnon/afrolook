@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -124,7 +125,7 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
                       child: Text(context.tr('Tu n\'as pas encore déposé de pack'), style: TextStyle(color: c.textSecondary)),
                     )
                   else
-                    for (final p in _packs) _packTile(c, p.data()),
+                    for (final p in _packs) _packTile(c, p.data(), p.id),
                   const SizedBox(height: 20),
                   _rules(c),
                 ],
@@ -154,7 +155,51 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
     );
   }
 
-  Widget _packTile(AppColors c, Map<String, dynamic> p) {
+  Future<void> _editPrice(String packId, int current) async {
+    final ctrl = TextEditingController(text: current.toString());
+    final value = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.tr('Modifier le prix')),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(context.tr('Prix du pack en pièces (0 = gratuit, 1000 maximum)')),
+          const SizedBox(height: 10),
+          TextField(controller: ctrl, keyboardType: TextInputType.number, autofocus: true),
+          const SizedBox(height: 10),
+          Text(
+            context.tr('Un pack gratuit peut devenir payant : les nouveaux utilisateurs devront l\'acheter, ceux qui l\'ont déjà acheté le gardent. Tu peux changer le prix une fois tous les 7 jours.'),
+            style: const TextStyle(fontSize: 12.5),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Annuler'))),
+          FilledButton(
+            onPressed: () {
+              final v = int.tryParse(ctrl.text.trim());
+              if (v != null && v >= 0 && v <= 1000) Navigator.pop(ctx, v);
+            },
+            child: Text(context.tr('Enregistrer')),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (value == null || value == current) return;
+    try {
+      await FirebaseFunctions.instance.httpsCallable('updateStickerPackPrice').call({'packId': packId, 'priceCoins': value});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Prix modifié'))));
+      _load();
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? context.tr('Le prix n\'a pas pu être modifié.'))));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le prix n\'a pas pu être modifié.'))));
+    }
+  }
+
+  Widget _packTile(AppColors c, Map<String, dynamic> p, String packId) {
     final status = (p['status'] ?? '').toString();
     final needsReview = p['needsReview'] == true;
     String label;
@@ -224,6 +269,16 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
               '${context.tr('{n} ventes', {'n': sales})}',
               style: TextStyle(color: c.textSecondary, fontSize: 12),
             ),
+            if (status == 'active' || status == 'pending')
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  onPressed: () => _editPrice(packId, price),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: Text(context.tr('Modifier le prix'), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                ),
+              ),
             if (status == 'rejected' && reason.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
