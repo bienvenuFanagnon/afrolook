@@ -274,7 +274,9 @@ service cloud.firestore {
     match /{collection}/{docId} {
       allow read: if isAuth();
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
-      allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig';
+      // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
+      allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
+          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app
@@ -285,7 +287,9 @@ service cloud.firestore {
     // Sous-collections uniquement ({subCollection} impose au moins un segment de plus,
     // sinon {x=**} matcherait aussi le document lui-même et rouvrirait Posts).
     match /{collection}/{docId}/{subCollection}/{subPath=**} {
-      allow read, write: if isAuth();
+      allow read: if isAuth();
+      // Récents des stickers : écrits par le serveur ; lecture réservée à leur propriétaire (ci-dessous)
+      allow write: if isAuth() && subCollection != 'StickerRecents';
     }
   }
 }

@@ -1,0 +1,206 @@
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { FieldValue } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
+import { db } from "../shared/firebase";
+import { num } from "../payments/coinShares";
+
+/**
+ * Stickers et médias dans les commentaires (voir docs/STICKERS_SPEC.md).
+ *
+ * Le serveur décide de tout : abonnement, limites par post et par jour, poids, droit d'usage d'un pack,
+ * solde pour un sticker-cadeau. L'application ne fait que pré-vérifier (callable `stickerAccess`) et afficher.
+ * Un commentaire qui ne respecte pas les règles est supprimé par `onCommentMediaCreated`.
+ */
+
+export type Tier = "free" | "premium" | "gold";
+const LIMITS: Record<Tier, { perPost: number; perDay: number }> = {
+  free: { perPost: 0, perDay: 0 },
+  premium: { perPost: 1, perDay: 5 },
+  gold: { perPost: 3, perDay: 10 },
+};
+export const MAX_IMAGE_BYTES = 300 * 1024;
+export const MAX_ANIM_BYTES = 600 * 1024;
+const MAX_RECENTS = 12;
+
+/** Niveau d'abonnement d'un compte (admin = gold, abonnement expiré = gratuit). */
+export function tierOf(u: FirebaseFirestore.DocumentData | undefined): Tier {
+  if (!u) return "free";
+  if (u["role"] === "ADM") return "gold";
+  const a = u["abonnement"] as { type?: string; dateFin?: string; estActif?: boolean } | undefined;
+  if (!a || (a.type !== "premium" && a.type !== "gold")) return "free";
+  if (a.estActif === false) return "free";
+  const end = a.dateFin ? Date.parse(a.dateFin) : NaN;
+  if (Number.isFinite(end) && end < Date.now()) return "free";
+  return a.type === "gold" ? "gold" : "premium";
+}
+
+function isSuspended(u: FirebaseFirestore.DocumentData | undefined): boolean {
+  if (!u) return false;
+  if (u["suspendedPermanently"] === true) return true;
+  const until = num(u["suspendedUntil"]);
+  return until > 0 && until > Date.now();
+}
+
+function dayKey(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, "");
+}
+
+async function dayUsed(uid: string): Promise<number> {
+  const d = await db.collection("StickerUsage").doc(`${uid}_${dayKey()}`).get();
+  return num(d.data()?.["count"]);
+}
+
+/** Nombre de commentaires avec média déjà postés par cet utilisateur sur ce post (hors commentaire donné). */
+async function postUsed(uid: string, postId: string, excludeId?: string): Promise<number> {
+  const snap = await db.collection("PostComments").where("post_id", "==", postId).where("user_id", "==", uid).limit(60).get();
+  return snap.docs.filter((d) => d.id !== excludeId && d.get("media") != null).length;
+}
+
+type Reason = null | "not_subscribed" | "suspended" | "day_limit" | "post_limit" | "not_owned" | "inactive" | "removed" | "no_coins";
+
+/** Le sticker est-il utilisable par cet utilisateur ? (existence, statut, pack acheté, solde du sticker-cadeau) */
+async function stickerUsable(uid: string, source: string, stickerId: string, balance: number): Promise<{ ok: boolean; reason: Reason; data?: FirebaseFirestore.DocumentData }> {
+  if (source === "mine") {
+    const d = await db.collection("UserStickers").doc(stickerId).get();
+    if (!d.exists) return { ok: false, reason: "removed" };
+    if (d.get("ownerId") !== uid) return { ok: false, reason: "not_owned" };
+    if (d.get("status") && d.get("status") !== "active") return { ok: false, reason: "inactive" };
+    return { ok: true, reason: null, data: d.data() };
+  }
+  const d = await db.collection("Stickers").doc(stickerId).get();
+  if (!d.exists) return { ok: false, reason: "removed" };
+  const s = d.data()!;
+  if (s["status"] !== "active") return { ok: false, reason: "inactive" };
+  const pack = await db.collection("StickerPacks").doc(String(s["packId"] ?? "")).get();
+  if (!pack.exists || pack.get("status") !== "active") return { ok: false, reason: "inactive" };
+  const price = num(pack.get("priceCoins"));
+  if (price > 0 && s["creatorId"] !== uid && pack.get("creatorId") !== uid) {
+    const own = await db.collection("StickerOwnership").doc(`${uid}_${pack.id}`).get();
+    if (!own.exists) return { ok: false, reason: "not_owned" };
+  }
+  const gift = num(s["giftPriceCoins"]);
+  if (gift > 0 && balance < gift) return { ok: false, reason: "no_coins", data: s };
+  return { ok: true, reason: null, data: s };
+}
+
+/** Pré-vérification pour l'application : limites du jour et du post, et état de chaque sticker récent. */
+export const stickerAccess = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const postId = (request.data as { postId?: string })?.postId;
+  const userDoc = await db.collection("Users").doc(uid).get();
+  const u = userDoc.data();
+  const tier = tierOf(u);
+  const lim = LIMITS[tier];
+  const [used, onPost] = await Promise.all([dayUsed(uid), postId ? postUsed(uid, postId) : Promise.resolve(0)]);
+
+  let reason: Reason = null;
+  if (tier === "free") reason = "not_subscribed";
+  else if (isSuspended(u)) reason = "suspended";
+  else if (used >= lim.perDay) reason = "day_limit";
+  else if (postId && onPost >= lim.perPost) reason = "post_limit";
+  const canSend = reason === null;
+
+  const balance = num(u?.["giftCoinsBalance"]);
+  const recSnap = await db.collection("Users").doc(uid).collection("StickerRecents").orderBy("lastUsedAt", "desc").limit(MAX_RECENTS).get();
+  const recents = await Promise.all(recSnap.docs.map(async (r) => {
+    const source = String(r.get("source") ?? "pack");
+    const st = await stickerUsable(uid, source, r.id, balance);
+    const why: Reason = canSend ? st.reason : (reason ?? st.reason);
+    return { stickerId: r.id, source, usable: canSend && st.ok, reason: why, lastUsedAt: num(r.get("lastUsedAt")) };
+  }));
+
+  return { tier, canSend, reason, perPostMax: lim.perPost, perDayMax: lim.perDay, dayUsed: used, postUsed: onPost, recents };
+});
+
+async function rejectComment(ref: FirebaseFirestore.DocumentReference, why: string, uid: string | undefined) {
+  console.log(`[stickers] commentaire ${ref.id} refusé (${why}) pour ${uid}`);
+  await ref.delete();
+  if (uid) {
+    await db.collection("StickerRejections").add({ commentId: ref.id, userId: uid, reason: why, at: Date.now() });
+  }
+}
+
+/** Vérifie chaque commentaire qui porte un média ; supprime celui qui ne respecte pas les règles. */
+export const onCommentMediaCreated = onDocumentCreated("PostComments/{id}", async (event) => {
+  const snap = event.data;
+  if (!snap) return;
+  const media = snap.get("media") as Record<string, unknown> | undefined;
+  if (!media) return;
+  const uid = snap.get("user_id") as string | undefined;
+  const postId = snap.get("post_id") as string | undefined;
+  if (!uid || !postId) return rejectComment(snap.ref, "données manquantes", uid);
+
+  const userDoc = await db.collection("Users").doc(uid).get();
+  const u = userDoc.data();
+  const tier = tierOf(u);
+  if (tier === "free") return rejectComment(snap.ref, "abonnement", uid);
+  if (isSuspended(u)) return rejectComment(snap.ref, "compte suspendu", uid);
+  const lim = LIMITS[tier];
+
+  const type = String(media["type"] ?? "");
+  const balance = num(u?.["giftCoinsBalance"]);
+  let recentId: string | null = null;
+  let recentSource = "pack";
+  let trusted: Record<string, unknown> | null = null;
+
+  if (type === "sticker" || type === "user_sticker") {
+    const stickerId = String(media["stickerId"] ?? "");
+    if (!stickerId) return rejectComment(snap.ref, "sticker manquant", uid);
+    const st = await stickerUsable(uid, type === "user_sticker" ? "mine" : "pack", stickerId, balance);
+    if (!st.ok || !st.data) return rejectComment(snap.ref, st.reason ?? "sticker", uid);
+    // Un sticker-cadeau (prix > 0) ne passe pas par ce chemin : il est envoyé et débité par stickerGiftSend
+    if (num(st.data["giftPriceCoins"]) > 0) return rejectComment(snap.ref, "sticker-cadeau", uid);
+    const size = num(st.data["sizeBytes"]);
+    if (size > MAX_ANIM_BYTES) return rejectComment(snap.ref, "poids", uid);
+    // Les champs du média sont recopiés depuis le sticker : l'app ne peut pas les falsifier
+    trusted = {
+      type, stickerId, url: st.data["url"], thumbUrl: st.data["thumbUrl"] ?? null,
+      w: num(media["w"]) || 512, h: num(media["h"]) || 512, sizeBytes: size, animated: st.data["animated"] === true,
+    };
+    recentId = stickerId;
+    recentSource = type === "user_sticker" ? "mine" : "pack";
+  } else if (type === "image") {
+    const path = String(media["storagePath"] ?? "");
+    if (!path.startsWith(`comment_media/${uid}/`)) return rejectComment(snap.ref, "chemin", uid);
+    try {
+      const file = getStorage().bucket().file(path);
+      const [meta] = await file.getMetadata();
+      const size = Number(meta.size ?? 0);
+      const limit = media["animated"] === true ? MAX_ANIM_BYTES : MAX_IMAGE_BYTES;
+      if (!size || size > limit) {
+        await file.delete({ ignoreNotFound: true });
+        return rejectComment(snap.ref, "poids", uid);
+      }
+      trusted = { ...media, sizeBytes: size };
+    } catch {
+      return rejectComment(snap.ref, "fichier introuvable", uid);
+    }
+  } else {
+    return rejectComment(snap.ref, "type inconnu", uid);
+  }
+
+  // Limites : par post, puis par jour (incrément dans une transaction)
+  if ((await postUsed(uid, postId, snap.id)) >= lim.perPost) return rejectComment(snap.ref, "limite par post", uid);
+  const usageRef = db.collection("StickerUsage").doc(`${uid}_${dayKey()}`);
+  const allowed = await db.runTransaction(async (tx) => {
+    const d = await tx.get(usageRef);
+    const count = num(d.data()?.["count"]);
+    if (count >= lim.perDay) return false;
+    tx.set(usageRef, { userId: uid, day: dayKey(), count: count + 1 }, { merge: true });
+    return true;
+  });
+  if (!allowed) return rejectComment(snap.ref, "limite par jour", uid);
+
+  if (trusted) await snap.ref.update({ media: trusted });
+
+  // Récents : les 12 derniers stickers utilisés (les images de commentaire n'y figurent pas)
+  if (recentId) {
+    const col = db.collection("Users").doc(uid).collection("StickerRecents");
+    await col.doc(recentId).set({ lastUsedAt: Date.now(), source: recentSource });
+    const all = await col.orderBy("lastUsedAt", "desc").get();
+    await Promise.all(all.docs.slice(MAX_RECENTS).map((d) => d.ref.delete()));
+    await db.collection("Stickers").doc(recentId).update({ usageCount: FieldValue.increment(1) }).catch(() => undefined);
+  }
+});

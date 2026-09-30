@@ -34,4 +34,5 @@ export * from "./payments/exchangeRates";
 export { migratePseudos, migrateCanalNames } from "./users/pseudoMigration";
 export * from "./posts/canalInactivity";
 export { adminCanalAction } from "./posts/adminCanaux";
+export { stickerAccess, onCommentMediaCreated } from "./stickers/stickers";
 export { creationQuote, onCanalCreatedCharge, onGroupCreatedCharge } from "./payments/creationFees";
