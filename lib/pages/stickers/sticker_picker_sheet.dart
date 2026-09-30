@@ -12,6 +12,7 @@ import '../../services/stickers/sticker_service.dart';
 import '../../theme/app_colors.dart';
 import 'sticker_gift_tab.dart';
 import 'sticker_mine_tab.dart';
+import 'sticker_studio_page.dart';
 import 'sticker_widgets.dart';
 import 'sticker_world_tab.dart';
 
@@ -275,21 +276,34 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
               ),
             )
           else
-          TabBar(
-            controller: _tabs,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            labelColor: c.primary,
-            unselectedLabelColor: c.textSecondary,
-            indicatorColor: c.primary,
-            dividerColor: c.divider.withOpacity(0.4),
-            labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-            tabs: [
-              Tab(text: context.tr('Afrolook'), height: 36),
-              Tab(text: context.tr('Monde'), height: 36),
-              Tab(text: context.tr('Créateurs'), height: 36),
-              Tab(text: context.tr('Mes stickers'), height: 36),
-              Tab(text: context.tr('Cadeaux'), height: 36),
+          Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                controller: _tabs,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelColor: c.primary,
+                unselectedLabelColor: c.textSecondary,
+                indicatorColor: c.primary,
+                dividerColor: c.divider.withOpacity(0.4),
+                labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                tabs: [
+                  Tab(text: context.tr('Afrolook'), height: 36),
+                  Tab(text: context.tr('Monde'), height: 36),
+                  Tab(text: context.tr('Créateurs'), height: 36),
+                  Tab(text: context.tr('Mes stickers'), height: 36),
+                  Tab(text: context.tr('Cadeaux'), height: 36),
+                ],
+              ),
+              ),
+              Tooltip(
+                message: context.tr('Devenir créateur / Mon studio'),
+                child: IconButton(
+                  icon: Icon(Icons.brush_rounded, color: c.primary, size: 22),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StickerStudioPage())),
+                ),
+              ),
             ],
           ),
           Expanded(

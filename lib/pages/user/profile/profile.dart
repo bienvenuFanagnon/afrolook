@@ -25,6 +25,7 @@ import '../../contenuPayant/profileScreenContent.dart';
 import '../../userPosts/favorites_posts.dart';
 import '../otherUser/otherUser.dart';
 import '../monetisation.dart';
+import '../../stickers/sticker_studio_page.dart';
 import '../userAbonnementPage.dart';
 import '../userPubs/user_my_advertisements_page.dart';
 import '../userPubs/user_profile_boost_page.dart';
@@ -545,6 +546,22 @@ class _UserProfilState extends State<UserProfil> {
                               );
                             },
                           ),
+                      ],
+                    ),
+
+                    SizedBox(height: 15),
+                    // Ligne 4 : studio de stickers (création et envoi de packs)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildMenuButton(
+                          icon: Icons.emoji_emotions_outlined,
+                          label: context.tr('Studio stickers'),
+                          color: const Color(0xFFE91E63),
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const StickerStudioPage()));
+                          },
+                        ),
                       ],
                     ),
 
