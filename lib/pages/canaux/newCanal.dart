@@ -1,4 +1,5 @@
 import 'package:afrotok/services/account_gate.dart';
+import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import '../../utils/platform_guard.dart';
@@ -621,6 +622,8 @@ class _NewCanalState extends State<NewCanal> {
       }
 
       if (!await verifierCanalName(normalizePseudo(_titreController.text))) {
+        // Premier canal gratuit, canaux suivants : 500 pièces chacun
+        if (!await CreationFee.ensurePaid(context, 'canal')) return;
         try {
           setState(() {
             onTapCreatePro = true;

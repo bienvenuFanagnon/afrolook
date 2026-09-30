@@ -1,4 +1,5 @@
 import 'package:afrotok/services/account_gate.dart';
+import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:math';
 
@@ -139,28 +140,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         ? (double.tryParse(_priceController.text.trim()) ?? 0.0)
         : 0.0;
 
-    // Vérifier la limite de groupes (Admin : illimité · Gold : illimité · Premium : 2)
     final myId = _auth.loginUserData.id!;
-    final maxGroups = AbonnementUtils.maxGroupsOwned(
-        _auth.loginUserData.abonnement, role: myRole);
-    if (maxGroups != null && maxGroups > 0) {
-      final existingSnap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .where('owner_id', isEqualTo: myId)
-          .get();
-      if (existingSnap.docs.length >= maxGroups) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-              'Limite atteinte : $maxGroups groupe${maxGroups > 1 ? 's' : ''} maximum (Premium). '
-              'Passez Gold pour des groupes illimités.',
-            ),
-            backgroundColor: Colors.orange,
-          ));
-        }
-        return;
-      }
-    }
 
     // Vérifier que le nom n'est pas déjà pris
     final nameSnap = await FirebaseFirestore.instance
@@ -177,6 +157,10 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       ));
       return;
     }
+
+    // Premier groupe gratuit, groupes suivants : 500 pièces chacun
+    if (!await CreationFee.ensurePaid(context, 'group')) return;
+    if (!mounted) return;
 
     setState(() => _isCreating = true);
 

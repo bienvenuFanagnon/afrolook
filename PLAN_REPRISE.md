@@ -204,3 +204,10 @@ Serveur (`pseudoMigration.ts`) : normalisation NFKD (lettres stylisées 𝓞, pl
 - Serveur : `accountPublishStatus`, `unlockAccount`, `onPostCreatedInactivity`, `onCanalCreatedCheckAccount`, `onGroupCreatedCheckAccount`, `onLiveCreatedCheckAccount` (canalInactivity.ts).
 - Client : `lib/services/account_gate.dart` branché sur post, canal, groupe, live.
 - Exemptés : admins et comptes n'ayant jamais publié. À déployer par l'utilisateur.
+
+### 30/09 — Canaux et groupes : premier gratuit, suivants 500 pièces
+- Serveur : `functions/src/payments/creationFees.ts` (`creationQuote`, `onCanalCreatedCharge`, `onGroupCreatedCharge`) et `payWithCoins` (kinds `canal_create`, `group_create`, +1 ticket `canalCreationCredits` / `groupCreationCredits`). Les administrateurs ne paient pas.
+- App : `lib/services/creation_fee.dart` appelé dans `newCanal.dart` et `create_group_page.dart` (l'ancienne limite Premium de 2 groupes est remplacée).
+- Règles Firestore : les 3 champs `canalCreationCredits`, `groupCreationCredits`, `lastPostAt` ne sont plus modifiables par l'app.
+- Inactivité : dernière publication retrouvée avec les index existants (sans limite de 500 posts), 5 jours de grâce pour les canaux découverts déjà inactifs, `recheckBlockedCanals` (admin, `{dryRun:true}` pour compter) pour débloquer les canaux bloqués à tort.
+- À déployer : functions `creationQuote`, `onCanalCreatedCharge`, `onGroupCreatedCharge`, `payWithCoins`, `checkInactiveCanals`, `onPostCreatedInactivity`, `recheckBlockedCanals`, `accountPublishStatus`, `unlockAccount` + `firebase deploy --only firestore:rules`.

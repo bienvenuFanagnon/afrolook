@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { CREATION_PRICE_COINS, creationCost, creditFieldOf } from "./creationFees";
 import { CREATOR_SHARE, CommissionSource, creditSponsors, recordAppCommission, resolveSponsors } from "./coinShares";
 
 /**
@@ -31,7 +32,7 @@ const AD_COMBINED_FACTOR = 1.5; // publicité + boost de profil (user_create_adv
 
 type Kind = "premium" | "gold" | "official" | "group" | "content" | "canal"
   | "live_entry" | "live_participant" | "ad" | "ad_renew" | "profile_boost" | "product_boost"
-  | "entreprise_premium";
+  | "entreprise_premium" | "canal_create" | "group_create";
 
 const SOURCES: Record<Kind, CommissionSource> = {
   premium: "premium",
@@ -47,6 +48,8 @@ const SOURCES: Record<Kind, CommissionSource> = {
   profile_boost: "pubs_boosts",
   product_boost: "pubs_boosts",
   entreprise_premium: "abonnement_entreprise",
+  canal_create: "canaux",
+  group_create: "groupes",
 };
 
 const LABELS: Record<Kind, string> = {
@@ -63,6 +66,8 @@ const LABELS: Record<Kind, string> = {
   profile_boost: "Boost de profil",
   product_boost: "Boost de produit",
   entreprise_premium: "Abonnement entreprise Premium",
+  canal_create: "Création d'un canal supplémentaire",
+  group_create: "Création d'un groupe supplémentaire",
 };
 
 function num(v: unknown): number {
@@ -117,7 +122,7 @@ async function creatorPrice(
 }
 
 async function priceOf(kind: Kind, refId: string | undefined, dureeMois: number,
-  weeks: number, combined: boolean, days: number): Promise<Priced> {
+  weeks: number, combined: boolean, days: number, uid: string): Promise<Priced> {
   switch (kind) {
     case "premium":
     case "gold": {
@@ -140,6 +145,11 @@ async function priceOf(kind: Kind, refId: string | undefined, dureeMois: number,
     case "profile_boost": return { coins: toCoins(await adPrice(weeks)) };
     case "product_boost": return { coins: toCoins(productBoostFcfa(days)) };
     case "entreprise_premium": return { coins: toCoins(entreprisePremiumFcfa(days)) };
+    case "canal_create":
+    case "group_create": {
+      const q = await creationCost(kind === "canal_create" ? "canal" : "group", uid);
+      return { coins: q.cost > 0 ? CREATION_PRICE_COINS : 0 };
+    }
   }
 }
 
@@ -154,7 +164,7 @@ export const payWithCoins = onCall(
     if (!kind || !(kind in LABELS)) throw new HttpsError("invalid-argument", "Achat inconnu.");
 
     const { coins, ownerId } = await priceOf(kind as Kind, refId, Math.floor(num(dureeMois)) || 1,
-      Math.floor(num(weeks)), combined === true, Math.floor(num(days)));
+      Math.floor(num(weeks)), combined === true, Math.floor(num(days)), uid);
     if (coins <= 0) throw new HttpsError("failed-precondition", "Ce contenu est gratuit.");
 
     // Part du créateur (70 %), sauf s'il paie lui-même
@@ -238,6 +248,11 @@ export const payWithCoins = onCall(
         tx.update(db.collection("lives").doc(refId), {
           paidParticipationTotal: FieldValue.increment(creatorCoins),
         });
+      }
+
+      // 4 bis. Création d'un canal / groupe supplémentaire : ticket de création (consommé à la création du document)
+      if (kind === "canal_create" || kind === "group_create") {
+        tx.update(userRef, { [creditFieldOf(kind === "canal_create" ? "canal" : "group")]: FieldValue.increment(1) });
       }
 
       // 5. App : part restante, enregistrée par source (page admin « Commissions »)

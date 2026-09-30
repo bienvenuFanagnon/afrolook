@@ -100,7 +100,8 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data)
               .affectedKeys()
               .hasAny(['votre_solde_principal', 'solde_ventes',
-                       'solde_affiliation', 'solde_promo']);
+                       'solde_affiliation', 'solde_promo',
+                       'canalCreationCredits', 'groupCreationCredits', 'lastPostAt']);
       allow delete: if false;
     }
 

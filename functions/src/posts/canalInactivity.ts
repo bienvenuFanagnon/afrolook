@@ -18,6 +18,7 @@ import { num, recordAppCommission } from "../payments/coinShares";
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const CANAL_INACTIVE_DAYS = 20;
 const WARN_DAYS = 15;
+const GRACE_DAYS = 5; // délai de grâce des canaux découverts déjà inactifs
 
 export function canalUnlockCost(followers: number): number {
   if (followers < 100) return 500;
@@ -50,6 +51,52 @@ async function notifyOwner(ownerId: string, canalId: string, titre: string, desc
   });
 }
 
+/**
+ * Date de la dernière publication d'un canal ou d'un compte, sans index supplémentaire :
+ * 1. requêtes triées (les index canal_id/user_id + created_at/createdAt existent déjà dans firestore.indexes.json) ;
+ * 2. si un index manque (erreur), lecture par pages triées par identifiant (plafond de sécurité).
+ * `complete = false` : résultat incertain (plafond atteint) → l'appelant ne doit JAMAIS bloquer sur cette base.
+ */
+async function latestPostMs(
+  ownerField: "canal_id" | "user_id", id: string, opts: { excludePostId?: string; skipAds?: boolean } = {},
+): Promise<{ ms: number; complete: boolean }> {
+  let best = 0;
+  let sorted = true;
+  for (const tsField of ["created_at", "createdAt"]) {
+    try {
+      const snap = await db.collection("Posts").where(ownerField, "==", id).orderBy(tsField, "desc").limit(20).get();
+      for (const p of snap.docs) {
+        if (p.id === opts.excludePostId) continue;
+        if (opts.skipAds && p.get("isAdvertisement") === true) continue;
+        const ms = toMs(p.get(tsField));
+        if (ms) { best = Math.max(best, ms); break; } // triés du plus récent au plus ancien : le premier valide suffit
+      }
+    } catch { sorted = false; }
+  }
+  if (sorted) return { ms: best, complete: true };
+
+  // Repli : parcours par pages (sans index), plafonné
+  const CAP = 4000;
+  let scanned = 0;
+  let cursor: string | null = null;
+  best = 0;
+  for (;;) {
+    let q = db.collection("Posts").where(ownerField, "==", id).orderBy(FieldPath.documentId()).limit(500)
+      .select("created_at", "createdAt", "isAdvertisement");
+    if (cursor) q = q.startAfter(cursor);
+    const page = await q.get();
+    for (const p of page.docs) {
+      cursor = p.id;
+      if (p.id === opts.excludePostId) continue;
+      if (opts.skipAds && p.get("isAdvertisement") === true) continue;
+      best = Math.max(best, toMs(p.get("created_at")), toMs(p.get("createdAt")));
+    }
+    scanned += page.size;
+    if (page.size < 500) return { ms: best, complete: true };
+    if (scanned >= CAP) return { ms: best, complete: false };
+  }
+}
+
 // ── Comptes : même règle que les canaux ───────────────────────────────────────────────────────
 //
 // Un compte qui a déjà publié puis reste 20 jours sans rien publier ne peut plus publier (profil ou canal),
@@ -63,13 +110,10 @@ export interface AccountStatus { blocked: boolean; daysInactive: number; followe
 async function lastPostOf(userId: string, userData: FirebaseFirestore.DocumentData, excludePostId?: string): Promise<number> {
   const known = toMs(userData["lastPostAt"]);
   if (known) return known;
-  const posts = await db.collection("Posts").where("user_id", "==", userId).limit(500).get();
-  let last = 0;
-  for (const p of posts.docs) {
-    if (p.id === excludePostId) continue;
-    if (p.get("isAdvertisement") === true) continue;
-    last = Math.max(last, toMs(p.get("created_at")), toMs(p.get("createdAt")));
-  }
+  const found = await latestPostMs("user_id", userId, { excludePostId, skipAds: true });
+  // Résultat incertain (compte avec énormément de posts) : on ne bloque jamais sur une base incomplète
+  if (!found.complete) return Date.now();
+  const last = found.ms;
   if (last) await db.collection("Users").doc(userId).update({ lastPostAt: last });
   return last;
 }
@@ -186,10 +230,11 @@ export const checkInactiveCanals = onSchedule(
           // Canal créé avant ce suivi : dernière publication retrouvée une seule fois (max 200 canaux par jour)
           if (backfills >= 200) continue;
           backfills++;
-          const posts = await db.collection("Posts").where("canal_id", "==", doc.id).limit(500).get();
-          for (const p of posts.docs) last = Math.max(last, toMs(p.get("created_at")), toMs(p.get("createdAt")));
-          if (!last) last = toMs(c["createdAt"]) || now;
-          // Jamais de blocage immédiat pour un canal découvert aujourd'hui : 20 jours pleins à partir de la dernière activité connue
+          const found = await latestPostMs("canal_id", doc.id);
+          if (!found.complete) { await doc.ref.update({ lastPostAt: now }); continue; } // incertain : jamais de blocage
+          last = found.ms || toMs(c["createdAt"]) || now;
+          // Délai de grâce : un canal découvert déjà inactif reçoit un rappel et dispose de 5 jours avant le blocage
+          if ((now - last) / DAY_MS >= CANAL_INACTIVE_DAYS - GRACE_DAYS) last = now - (CANAL_INACTIVE_DAYS - GRACE_DAYS) * DAY_MS;
           await doc.ref.update({ lastPostAt: last });
         }
 
@@ -296,3 +341,41 @@ export const warnInactiveAccounts = onSchedule(
     console.log(`[warnInactiveAccounts] rappels envoyés: ${warned}`);
   }
 );
+
+/**
+ * Admin : revérifie les canaux bloqués pour inactivité avec la vraie date de dernière publication,
+ * débloque (gratuitement) ceux qui ont publié dans les 20 derniers jours, et redonne 5 jours de grâce aux autres.
+ * À lancer une seule fois par un administrateur (paramètre { dryRun: true } pour compter sans modifier).
+ */
+export const recheckBlockedCanals = onCall({ timeoutSeconds: 540, memory: "512MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const admin = await db.collection("Users").doc(uid).get();
+  if (admin.data()?.["role"] !== "ADM") throw new HttpsError("permission-denied", "Réservé aux admins.");
+  const dryRun = (request.data as { dryRun?: boolean })?.dryRun === true;
+  const now = Date.now();
+  let checked = 0, unblocked = 0, regrace = 0, uncertain = 0;
+  const snap = await db.collection("Canaux").where("isBlocked", "==", true).get();
+  for (const doc of snap.docs) {
+    if (doc.get("blockReason") !== "inactive" || toMs(doc.get("unlockedAt")) > toMs(doc.get("blockedAt"))) continue;
+    checked++;
+    const found = await latestPostMs("canal_id", doc.id);
+    const last = found.ms || toMs(doc.get("createdAt"));
+    const recent = last && (now - last) / DAY_MS < CANAL_INACTIVE_DAYS;
+    if (!found.complete || recent) {
+      if (!found.complete) uncertain++; else unblocked++;
+      if (!dryRun) await doc.ref.update({
+        isBlocked: false, lastPostAt: found.complete ? last : now, inactivityWarnedAt: FieldValue.delete(),
+        blockReason: FieldValue.delete(), blockedAt: FieldValue.delete(),
+      });
+    } else {
+      // Réellement inactif : 5 jours de grâce à partir d'aujourd'hui au lieu d'un blocage sec
+      regrace++;
+      if (!dryRun) await doc.ref.update({
+        isBlocked: false, lastPostAt: now - (CANAL_INACTIVE_DAYS - GRACE_DAYS) * DAY_MS,
+        inactivityWarnedAt: FieldValue.delete(), blockReason: FieldValue.delete(), blockedAt: FieldValue.delete(),
+      });
+    }
+  }
+  return { dryRun, checked, unblocked, regrace, uncertain };
+});
