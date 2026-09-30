@@ -25,6 +25,7 @@ import 'moderation_reports_page.dart';
 import 'official_accounts_page.dart';
 import 'payment_methods_admin_page.dart';
 import 'remuneration_admin_page.dart';
+import 'stickers/admin_stickers_page.dart';
 import 'pseudo_migration_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
 
@@ -59,6 +60,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _active90d = 0;
   int _moderationPending = 0;
   int _boostsPending = 0;
+  int _stickersPending = 0;
   int _retraitsTotal = 0;
   int _retraitsPending = 0;
   int _retraitsValides = 0;
@@ -104,6 +106,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         retraits.where('statut', isEqualTo: 'EN_ATTENTE').count().get(), // 13
         retraits.where('statut', isEqualTo: 'VALIDER').count().get(), // 14
         retraits.where('statut', isEqualTo: 'ANNULE').count().get(), // 15
+        _db.collection('StickerPacks').where('status', isEqualTo: 'pending').count().get(), // 16
       ]);
 
       final appData = await context.read<UserAuthProvider>().getAppDataStream().first;
@@ -142,6 +145,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         _retraitsPending = c(13);
         _retraitsValides = c(14);
         _retraitsAnnules = c(15);
+        _stickersPending = c(16);
         _appData = appData;
         _recentEvents = events;
         _loading = false;
@@ -504,6 +508,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.school_rounded, 'Tutoriels', c.supportAccent, 0, const TutoListPage(showAll: true)),
       _Module(Icons.alternate_email_rounded, 'Pseudos', c.info, 0, const PseudoMigrationPage()),
       _Module(Icons.live_tv_rounded, 'Canaux', c.info, 0, const AdminCanauxPage()),
+      _Module(Icons.emoji_emotions_rounded, 'Stickers', c.warning, _stickersPending, const AdminStickersPage()),
       _Module(Icons.tag_rounded, 'Noms de canaux', c.primary, 0, const PseudoMigrationPage(canaux: true)),
     ];
     return GridView.count(
