@@ -186,6 +186,36 @@ class ReglesConfidentialitePage extends StatelessWidget {
           ),
           _section(
             colors,
+            icon: Icons.add_circle_outline,
+            title: 'Création de canaux et de groupes',
+            items: [
+              _rule('Le premier est gratuit',
+                  'Chaque compte peut créer gratuitement un canal et un groupe. Pour créer un canal ou un groupe supplémentaire, il faut payer 500 pièces par canal ou par groupe.'),
+              _rule('Paiement avant la création',
+                  'Le paiement se fait en pièces au moment de créer. Il est vérifié par Afrolook : un canal ou un groupe supplémentaire non payé est refusé. Les administrateurs de la plateforme ne sont pas concernés.'),
+            ],
+          ),
+          _section(
+            colors,
+            icon: Icons.emoji_emotions_outlined,
+            title: 'Stickers & médias dans les commentaires',
+            items: [
+              _rule('Envoyer un sticker ou un média',
+                  'Les abonnés Premium et Gold peuvent ajouter dans un commentaire une image, une image animée ou une courte vidéo de 1 à 3 secondes (sans son), avec un texte de description. Les comptes gratuits voient la fonction avec le signe Premium et peuvent s\'abonner pour l\'utiliser.'),
+              _rule('Limites selon l\'abonnement',
+                  'Premium : 1 sticker ou média par post et 5 par jour. Gold : 3 par post et 10 par jour. Les limites sont appliquées par Afrolook : un commentaire au-dessus de la limite est refusé.'),
+              _rule('Poids des médias',
+                  'Pour rester rapides, les médias sont compressés : une image pèse au plus 300 Ko et une animation au plus 600 Ko. Les fichiers trop lourds sont refusés.'),
+              _rule('Stickers officiels et stickers de créateurs',
+                  'Afrolook propose des packs de stickers officiels. Les créateurs peuvent aussi proposer leurs propres stickers ou packs. Chaque sticker de créateur est vérifié par l\'équipe Afrolook avant d\'être publié.'),
+              _rule('Monétisation des stickers',
+                  'Un créateur peut gagner des pièces avec ses stickers : lorsqu\'un pack payant est acheté, le créateur reçoit 70 % du prix en pièces gagnées et Afrolook 30 %. Un sticker-cadeau, envoyé en pièces sous un commentaire, est réparti entre l\'auteur du commentaire (40 %), le créateur du sticker (30 %) et Afrolook (30 %). Les prix sont toujours en pièces.'),
+              _rule('Droits et contenus interdits',
+                  'Tu ne peux proposer que des stickers dont tu détiens les droits : pas de contenu copié, de marque ou de personne utilisée sans accord. Les contenus violents, haineux, sexuels ou trompeurs sont refusés, et Afrolook peut retirer un sticker ou suspendre ses gains en cas de non-respect.'),
+            ],
+          ),
+          _section(
+            colors,
             icon: Icons.campaign_outlined,
             title: 'Publicité & Boosts',
             items: [
