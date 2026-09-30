@@ -14,6 +14,9 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
 import '../../../../widgets/interests_selector_widget.dart';
+import '../../../../services/chat_service.dart';
+import '../../../chat/myChat.dart';
+import 'package:page_transition/page_transition.dart';
 import '../../mes_gains_post_page.dart';
 import '../../userTransactionListe.dart';
 
@@ -44,6 +47,11 @@ class _UserManagementPageState extends State<UserManagementPage> {
   bool _isLoading = true;
   bool _isUpdating = false;
   bool _infoExpanded = false;
+  bool _isSendingReminder = false;
+  bool _isOpeningChat = false;
+  final ChatService _chatService = ChatService();
+  List<Map<String, dynamic>> _posts = [];
+  bool _postsLoading = true;
 
   @override
   void initState() {
@@ -57,14 +65,525 @@ class _UserManagementPageState extends State<UserManagementPage> {
       if (doc.exists) {
         final data = doc.data()!;
         data['id'] = doc.id;
+        if (!mounted) return;
         setState(() { _userData = UserData.fromJson(data); _isLoading = false; });
+        _loadPosts();
       } else {
+        if (!mounted) return;
         setState(() => _isLoading = false);
       }
     } catch (e) {
       printVm('Erreur chargement user: $e');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
+  }
+
+  // ── Actions de gestion (déplacées depuis le profil public) ───────────────
+
+  Future<void> _openDirectChat() async {
+    if (_isOpeningChat || _userData == null) return;
+    final admin = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    setState(() => _isOpeningChat = true);
+    try {
+      final tempChat = Chat(
+        id: 'temp_${_userData!.id}',
+        senderId: admin.id,
+        receiverId: _userData!.id,
+        chatFriend: _userData,
+        receiver: _userData,
+        type: ChatType.USER.name,
+      );
+      final resultChat = await _chatService.createOrGetChat(
+        chat: tempChat,
+        currentUserId: admin.id!,
+      );
+      if (!mounted) return;
+      Navigator.push(context, PageTransition(
+        type: PageTransitionType.fade,
+        child: MyChat(title: 'Message', chat: resultChat),
+      ));
+    } catch (e) {
+      _showSnack('Erreur: $e', _red);
+    } finally {
+      if (mounted) setState(() => _isOpeningChat = false);
+    }
+  }
+
+  void _showConfirmReminderDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        title: Row(children: [
+          Icon(Icons.email, color: _amber),
+          const SizedBox(width: 10),
+          Text('Envoyer un rappel', style: TextStyle(color: _textP)),
+        ]),
+        content: Text(
+          'Envoyer un email personnalisé à @${_userData?.pseudo ?? ''} ?',
+          style: TextStyle(color: _textS),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: _textS)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _sendReminderEmail();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _amber),
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendReminderEmail() async {
+    if (_isSendingReminder || _userData == null) return;
+    setState(() => _isSendingReminder = true);
+    try {
+      final userDoc = await _firestore.collection('Users').doc(widget.userId).get();
+      if (!userDoc.exists) {
+        throw Exception('Utilisateur non trouvé');
+      }
+      final data = userDoc.data()!;
+      final lastTimeActive = data['last_time_active'] ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final daysInactive = ((now - lastTimeActive) / (24 * 60 * 60 * 1000)).floor();
+
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+      final postsSnapshot = await _firestore
+          .collection('Posts')
+          .where('user_id', isEqualTo: widget.userId)
+          .get();
+
+      int newLikesCount = 0;
+      for (var postDoc in postsSnapshot.docs) {
+        final post = postDoc.data();
+        final postCreatedAt = post['created_at'] ?? 0;
+        if (postCreatedAt > sevenDaysAgo) {
+          newLikesCount += ((post['loves'] ?? 0) as num).toInt();
+        }
+      }
+
+      final userEmailData = {
+        'userId': widget.userId,
+        'userEmail': data['email'] ?? '',
+        'userName': data['pseudo'] ?? 'Utilisateur',
+        'pseudo': data['pseudo'] ?? 'user',
+        'giftCoinsBalance': data['giftCoinsBalance'] ?? 0,
+        'soldePrincipal': data['votre_solde_principal'] ?? 0,
+        'totalCoinsEarned': data['totalCoinsEarnedFromLikes'] ?? 0,
+        'totalLikesReceived': data['totalLikesReceived'] ?? 0,
+        'totalFollowers': (data['userAbonnesIds'] as List?)?.length ?? 0,
+        'daysInactive': daysInactive < 0 ? 3 : daysInactive,
+        'newLikesOnMyPosts': newLikesCount,
+        'newCommentsOnMyPosts': 0,
+      };
+
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('sendInactiveUserReminder')
+          .call({
+        'userId': widget.userId,
+        'userData': userEmailData,
+      });
+
+      if (result.data['success'] == true) {
+        _showSnack('Email envoyé à ${userEmailData['userEmail']}', _green);
+      } else {
+        _showSnack(result.data['message'] ?? 'Erreur lors de l\'envoi', _red);
+      }
+    } catch (e) {
+      _showSnack('Erreur: $e', _red);
+    } finally {
+      if (mounted) setState(() => _isSendingReminder = false);
+    }
+  }
+
+  void _showSuspendDialog() {
+    final reasonCtrl = TextEditingController();
+    int? durationDays;
+    bool isPermanent = false;
+
+    Widget typeBox(bool selected, Color c, IconData icon, String label, VoidCallback onTap) {
+      return Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? c.withOpacity(0.15) : _surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: selected ? c : _border),
+            ),
+            child: Column(children: [
+              Icon(icon, color: selected ? c : _textS, size: 20),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(fontSize: 11, color: selected ? c : _textS)),
+            ]),
+          ),
+        ),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          backgroundColor: _card,
+          title: Row(children: [
+            Icon(Icons.block, color: _red, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Suspendre @${_userData?.pseudo ?? ''}',
+                  style: TextStyle(color: _textP, fontSize: 15)),
+            ),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Type :', style: TextStyle(color: _textS, fontSize: 12)),
+                const SizedBox(height: 6),
+                Row(children: [
+                  typeBox(!isPermanent, _amber, Icons.timer, 'Temporaire',
+                      () => setS(() { isPermanent = false; durationDays = null; })),
+                  const SizedBox(width: 8),
+                  typeBox(isPermanent, _red, Icons.block, 'Définitive',
+                      () => setS(() => isPermanent = true)),
+                ]),
+                const SizedBox(height: 14),
+                if (!isPermanent) ...[
+                  Text('Durée :', style: TextStyle(color: _textS, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [1, 3, 7, 14, 30].map((d) => GestureDetector(
+                      onTap: () => setS(() => durationDays = d),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: durationDays == d ? _amber.withOpacity(0.2) : _surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: durationDays == d ? _amber : _border),
+                        ),
+                        child: Text('${d}j',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: durationDays == d ? _amber : _textS,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                Text('Raison (visible par l\'utilisateur) :',
+                    style: TextStyle(color: _textS, fontSize: 12)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLines: 3,
+                  style: TextStyle(color: _textP, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Ex: Violation des règles de la communauté...',
+                    hintStyle: TextStyle(color: _textS, fontSize: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    contentPadding: const EdgeInsets.all(10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Annuler', style: TextStyle(color: _textS)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: _red),
+              onPressed: () async {
+                if (reasonCtrl.text.trim().isEmpty) return;
+                if (!isPermanent && durationDays == null) return;
+                Navigator.pop(ctx);
+                await _applySuspension(
+                  isPermanent: isPermanent,
+                  durationDays: durationDays,
+                  reason: reasonCtrl.text.trim(),
+                );
+              },
+              child: const Text('Suspendre', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _applySuspension({
+    required bool isPermanent,
+    int? durationDays,
+    required String reason,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'suspensionReason': reason,
+        'suspendedPermanently': isPermanent,
+      };
+      if (isPermanent) {
+        data['suspendedUntil'] = null;
+      } else {
+        final until = DateTime.now().add(Duration(days: durationDays!));
+        data['suspendedUntil'] = until.millisecondsSinceEpoch;
+        data['suspendedPermanently'] = false;
+      }
+      await _firestore.collection('Users').doc(widget.userId).update(data);
+      _showSnack('Compte suspendu', _red);
+      await _loadUserData();
+    } catch (e) {
+      _showSnack('Erreur: $e', _red);
+    }
+  }
+
+  void _showLiftSuspensionDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        title: Text('Lever la suspension', style: TextStyle(color: _textP)),
+        content: Text(
+          'Êtes-vous sûr de vouloir lever la suspension du compte @${_userData?.pseudo ?? ''} ?',
+          style: TextStyle(color: _textS),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: _textS)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _green),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await _firestore.collection('Users').doc(widget.userId).update({
+                  'suspendedUntil': null,
+                  'suspendedPermanently': false,
+                  'suspensionReason': null,
+                });
+                _showSnack('Suspension levée', _green);
+                await _loadUserData();
+              } catch (e) {
+                _showSnack('Erreur: $e', _red);
+              }
+            },
+            child: const Text('Lever', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionsSection() {
+    final suspended = _userData!.isSuspended;
+    Widget btn(IconData icon, String label, Color c, VoidCallback? onTap, {bool busy = false}) {
+      return OutlinedButton.icon(
+        onPressed: busy ? null : onTap,
+        icon: busy
+            ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: c))
+            : Icon(icon, size: 18, color: c),
+        label: Text(label, style: TextStyle(color: c, fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: c.withOpacity(0.6)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          alignment: Alignment.centerLeft,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('ACTIONS DE GESTION'),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: suspended ? _red.withOpacity(0.5) : _border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (suspended) ...[
+                Text(
+                  _userData!.suspendedPermanently == true
+                      ? 'Compte suspendu définitivement'
+                      : 'Compte suspendu jusqu\'au ${_formatDate(_userData!.suspendedUntil ?? 0)}',
+                  style: TextStyle(color: _red, fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                if ((_userData!.suspensionReason ?? '').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('Motif : ${_userData!.suspensionReason}',
+                        style: TextStyle(color: _textS, fontSize: 12)),
+                  ),
+                const SizedBox(height: 10),
+              ],
+              btn(Icons.chat_bubble_outline, 'Message direct', _blue, _openDirectChat, busy: _isOpeningChat),
+              const SizedBox(height: 8),
+              btn(Icons.email_outlined, 'Envoyer un rappel par e-mail', _amber,
+                  _showConfirmReminderDialog, busy: _isSendingReminder),
+              const SizedBox(height: 8),
+              suspended
+                  ? btn(Icons.lock_open_rounded, 'Lever la suspension', _green, _showLiftSuspensionDialog)
+                  : btn(Icons.block_rounded, 'Suspendre ce compte', _red, _showSuspendDialog),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Publications ──────────────────────────────────────────────────────────
+
+  Future<void> _loadPosts() async {
+    if (mounted) setState(() => _postsLoading = true);
+    List<Map<String, dynamic>> result = [];
+    try {
+      QuerySnapshot<Map<String, dynamic>> snap;
+      try {
+        snap = await _firestore
+            .collection('Posts')
+            .where('user_id', isEqualTo: widget.userId)
+            .orderBy('created_at', descending: true)
+            .limit(30)
+            .get();
+      } catch (_) {
+        // Index manquant : récupération puis tri côté client
+        snap = await _firestore
+            .collection('Posts')
+            .where('user_id', isEqualTo: widget.userId)
+            .limit(200)
+            .get();
+      }
+      result = snap.docs.map((d) {
+        final m = Map<String, dynamic>.from(d.data());
+        m['id'] = d.id;
+        return m;
+      }).toList();
+      int ts(Map<String, dynamic> m) => ((m['created_at'] ?? 0) as num).toInt();
+      result.sort((a, b) => ts(b).compareTo(ts(a)));
+      if (result.length > 30) result = result.sublist(0, 30);
+    } catch (e) {
+      printVm('Erreur chargement posts: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      _posts = result;
+      _postsLoading = false;
+    });
+  }
+
+  Future<void> _confirmDeletePost(Map<String, dynamic> post) async {
+    final id = post['id'] as String?;
+    if (id == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        title: Text('Supprimer ce post ?', style: TextStyle(color: _textP)),
+        content: Text('Cette action est irréversible.', style: TextStyle(color: _textS)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Annuler', style: TextStyle(color: _textS)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await _firestore.collection('Posts').doc(id).delete();
+      if (!mounted) return;
+      setState(() => _posts.removeWhere((p) => p['id'] == id));
+      _showSnack('Post supprimé', _green);
+    } catch (e) {
+      _showSnack('Erreur: $e', _red);
+    }
+  }
+
+  Widget _buildPostsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel('PUBLICATIONS'),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+          ),
+          child: _postsLoading
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator(color: _gold)),
+                )
+              : _posts.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('Aucune publication', style: TextStyle(color: _textS)),
+                    )
+                  : Column(
+                      children: _posts.map((p) {
+                        final images = p['images'];
+                        final thumb = (images is List && images.isNotEmpty) ? images.first.toString() : null;
+                        final desc = (p['description'] ?? '').toString().trim();
+                        final created = ((p['created_at'] ?? 0) as num).toInt();
+                        return ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: thumb != null
+                                  ? Image.network(thumb, fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          Icon(Icons.broken_image_outlined, color: _textS))
+                                  : Icon(Icons.article_outlined, color: _textS),
+                            ),
+                          ),
+                          title: Text(
+                            desc.isEmpty ? '(sans texte)' : desc,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: _textP, fontSize: 13),
+                          ),
+                          subtitle: Text(
+                            '${_formatDate(created)}  ·  ${p['loves'] ?? 0} likes',
+                            style: TextStyle(color: _textS, fontSize: 11),
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete_outline_rounded, color: _red),
+                            onPressed: () => _confirmDeletePost(p),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+        ),
+      ],
+    );
   }
 
   // ── Certification ─────────────────────────────────────────────────────────
@@ -470,6 +989,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   const SizedBox(height: 16),
                   _buildBalancesSection(),
                   const SizedBox(height: 16),
+                  _buildActionsSection(),
+                  const SizedBox(height: 16),
                   _buildStatsRow(),
                   const SizedBox(height: 16),
                   _buildInfoSection(),
@@ -477,6 +998,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     const SizedBox(height: 16),
                     _buildInterestsCard(),
                   ],
+                  const SizedBox(height: 16),
+                  _buildPostsSection(),
                 ],
               ),
             ),

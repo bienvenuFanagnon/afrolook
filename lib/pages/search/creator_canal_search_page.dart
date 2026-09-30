@@ -103,10 +103,26 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
           .toList()
         ..sort((a, b) => (b.canalScore ?? 0).compareTo(a.canalScore ?? 0));
 
+      // Canaux mis en avant par l'administration (non expirés) : toujours en tête
+      final popular = <Canal>[];
+      try {
+        final pSnap = await FirebaseFirestore.instance.collection('Canaux').where('isPopular', isEqualTo: true).limit(10).get();
+        final nowMs = DateTime.now().millisecondsSinceEpoch;
+        for (final d in pSnap.docs) {
+          final data = d.data();
+          final until = (data['popularUntil'] as num?)?.toInt() ?? 0;
+          if (until > 0 && until < nowMs) continue;
+          if (data['isBlocked'] == true) continue;
+          popular.add(Canal.fromJson(data)..id = d.id);
+        }
+      } catch (_) {}
+      final popularIds = popular.map((c) => c.id).toSet();
+      final orderedCanaux = [...popular, ...canaux.where((c) => !popularIds.contains(c.id))];
+
       if (!mounted) return;
       setState(() {
         _topCreators = creators.take(3).toList();
-        _topCanaux = canaux.take(3).toList();
+        _topCanaux = orderedCanaux.take(3).toList();
         _loadingDefault = false;
       });
     } catch (_) {

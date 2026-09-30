@@ -42,7 +42,7 @@ import '../userPosts/postWidgets/postWidgetPage.dart';
 
 import 'canal_manage_admins.dart';
 import '../user/userPubs/user_profile_boost_page.dart';
-import '../user/profile/retraitAdmin/userAllDetails.dart';
+import '../admin/admin_canal_detail_page.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
@@ -367,177 +367,10 @@ class _CanalDetailsState extends State<CanalDetails> {
     }
   }
 
-  Future<void> _fillSubscribersWithActiveUsers() async {
-    // Saisie du nombre d'abonnés à ajouter
-    final controller = TextEditingController();
-    final count = await showDialog<int>(
-      context: context,
-      builder: (ctx) {
-        final colors = AppColors.of(ctx);
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: colors.surface,
-          title: Row(children: [
-            Icon(Icons.group_add, color: colors.primary, size: 22),
-            const SizedBox(width: 8),
-            Text(context.tr('Remplir les abonnés'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
-          ]),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.tr('Nombre d\'utilisateurs actifs à ajouter (ex : 1000, 10 000…) :'),
-                style: TextStyle(color: colors.textSecondary, fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: context.tr('Ex : 500'),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Annuler'))),
-            ElevatedButton(
-              onPressed: () {
-                final n = int.tryParse(controller.text.trim());
-                if (n != null && n > 0) Navigator.pop(ctx, n);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary),
-              child: Text(context.tr('Ajouter')),
-            ),
-          ],
-        );
-      },
-    );
-    controller.dispose();
-    if (count == null || !mounted) return;
-
-    // Capturer navigator + messenger AVANT tout await pour éviter l'erreur
-    // "_dependents.isEmpty" causée par l'utilisation de context après async gap
-    final nav = Navigator.of(context, rootNavigator: true);
-    final messenger = ScaffoldMessenger.of(context);
-
-    bool _dialogOpen = true;
-    final progressNotifier = ValueNotifier<String>(context.tr('Initialisation…'));
-    nav.push(PageRouteBuilder(
-      opaque: false,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      pageBuilder: (ctx, _, __) => PopScope(
-        canPop: false,
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 40),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: _colors.surface,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ValueListenableBuilder<String>(
-                valueListenable: progressNotifier,
-                builder: (_, msg, __) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(msg, textAlign: TextAlign.center,
-                        style: TextStyle(color: _colors.textPrimary, fontSize: 14)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ));
-
-    void closeDialog() {
-      if (_dialogOpen) {
-        _dialogOpen = false;
-        nav.pop();
-      }
-    }
-
-    try {
-      final existing = Set<String>.from(widget.canal.usersSuiviId ?? []);
-      existing.add(authProvider.loginUserData.id ?? '');
-
-      final toAdd = <String>[];
-      const int pageSize = 500;
-      DocumentSnapshot? lastDoc;
-
-      outer:
-      while (toAdd.length < count) {
-        progressNotifier.value = context.tr('Recherche des utilisateurs actifs… ({a}/{b})', {'a': toAdd.length, 'b': count});
-
-        var query = firestore
-            .collection('Users')
-            .orderBy('abonnes', descending: true)
-            .limit(pageSize);
-        if (lastDoc != null) query = query.startAfterDocument(lastDoc);
-
-        final snap = await query.get();
-        if (snap.docs.isEmpty) break;
-
-        for (final doc in snap.docs) {
-          if (!existing.contains(doc.id)) {
-            toAdd.add(doc.id);
-            if (toAdd.length >= count) break outer;
-          }
-        }
-        lastDoc = snap.docs.last;
-        if (snap.docs.length < pageSize) break;
-      }
-
-      if (toAdd.isEmpty) {
-        closeDialog();
-        messenger.showSnackBar(SnackBar(content: Text(context.tr('Aucun nouvel utilisateur actif à ajouter.'))));
-        return;
-      }
-
-      const int batchSize = 500;
-      int written = 0;
-      for (int i = 0; i < toAdd.length; i += batchSize) {
-        final chunk = toAdd.sublist(i, (i + batchSize).clamp(0, toAdd.length));
-        progressNotifier.value = context.tr('Écriture… ({a}/{b})', {'a': written, 'b': toAdd.length});
-        await firestore.collection('Canaux').doc(widget.canal.id).update({
-          'usersSuiviId': FieldValue.arrayUnion(chunk),
-          'suivi': FieldValue.increment(chunk.length),
-        });
-        written += chunk.length;
-      }
-
-      closeDialog();
-      if (mounted) {
-        setState(() {
-          widget.canal.usersSuiviId ??= [];
-          widget.canal.usersSuiviId!.addAll(toAdd);
-          widget.canal.suivi = (widget.canal.suivi ?? 0) + toAdd.length;
-        });
-      }
-      messenger.showSnackBar(SnackBar(content: Text(context.tr('{a} abonné(s) ajouté(s) avec succès ✅', {'a': toAdd.length}))));
-    } catch (e) {
-      closeDialog();
-      messenger.showSnackBar(SnackBar(content: Text(context.tr('Erreur : {a}', {'a': e}))));
-    }
-    progressNotifier.dispose();
-  }
-
   Future<void> _deleteCanal() async {
     final myId = authProvider.loginUserData.id!;
-    final isAppAdmin = authProvider.loginUserData.role == 'ADM' || authProvider.loginUserData.role == 'admin';
     final isOwner = myId == widget.canal.userId;
-    if (!isOwner && !isAppAdmin) return;
+    if (!isOwner) return; // la suppression par un admin se fait depuis Admin > Canaux
 
     // Étape 1 : avertissement
     final step1 = await showDialog<bool>(
@@ -1146,9 +979,6 @@ class _CanalDetailsState extends State<CanalDetails> {
                         case 'booster':
                           Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileBoostPage(canal: widget.canal)));
                           break;
-                        case 'remplir_abonnes':
-                          _fillSubscribersWithActiveUsers();
-                          break;
                         case 'supprimer':
                           _deleteCanal();
                           break;
@@ -1180,22 +1010,6 @@ class _CanalDetailsState extends State<CanalDetails> {
                         ]),
                       ),
                       PopupMenuItem(
-                        value: 'remplir_abonnes',
-                        child: Row(children: [
-                          Icon(Icons.group_add, size: 18, color: _colors.primary),
-                          const SizedBox(width: 10),
-                          Expanded(child: Text(context.tr('Remplir les abonnés'), style: TextStyle(color: _colors.textPrimary))),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _colors.primary.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(context.tr('Admin'), style: TextStyle(color: _colors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
-                          ),
-                        ]),
-                      ),
-                      PopupMenuItem(
                         value: 'supprimer',
                         child: Row(children: [
                           const Icon(Icons.delete_forever_rounded, size: 18, color: Colors.red),
@@ -1207,16 +1021,12 @@ class _CanalDetailsState extends State<CanalDetails> {
                   ),
 
                 // Menu 3-points — non-propriétaire : se désabonner, et suppression pour l'admin plateforme
-                if (!isOwner &&
-                    ((isFollowing && _followCheckDone && !_monthlySubscriptionExpired) ||
-                        authProvider.loginUserData.role == 'ADM' ||
-                        authProvider.loginUserData.role == 'admin'))
+                if (!isOwner && isFollowing && _followCheckDone && !_monthlySubscriptionExpired)
                   PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert, color: _colors.textPrimary),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     onSelected: (value) {
                       if (value == 'desabonner') _handleFollowAction();
-                      if (value == 'supprimer') _deleteCanal();
                     },
                     itemBuilder: (_) => [
                       if (isFollowing && _followCheckDone && !_monthlySubscriptionExpired)
@@ -1228,15 +1038,6 @@ class _CanalDetailsState extends State<CanalDetails> {
                             Text(AppLocalizations.of(context).canalUnsubscribeBtn, style: TextStyle(color: _colors.danger)),
                           ]),
                         ),
-                      if (authProvider.loginUserData.role == 'ADM' || authProvider.loginUserData.role == 'admin')
-                      PopupMenuItem(
-                        value: 'supprimer',
-                        child: Row(children: [
-                          Icon(Icons.delete_forever_rounded, size: 18, color: Colors.red),
-                          SizedBox(width: 10),
-                          Text(context.tr('Supprimer le canal'), style: TextStyle(color: Colors.red)),
-                        ]),
-                      ),
                     ],
                   ),
               ],
@@ -1465,14 +1266,14 @@ class _CanalDetailsState extends State<CanalDetails> {
                       TextButton(
                         onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => UserManagementPage(userId: widget.canal.userId!)),
+                          MaterialPageRoute(builder: (_) => AdminCanalDetailPage(canalId: widget.canal.id!)),
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.orange,
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           minimumSize: const Size(0, 32),
                         ),
-                        child: Text(context.tr('Gérer'), style: TextStyle(fontWeight: FontWeight.w700)),
+                        child: Text(context.tr('Gérer le canal'), style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                   ],
                 ),

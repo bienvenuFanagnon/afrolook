@@ -39,7 +39,7 @@ function toMs(v: unknown): number {
   return n > 1e14 ? Math.floor(n / 1000) : n;
 }
 
-async function notifyOwner(ownerId: string, canalId: string, titre: string, description: string) {
+export async function notifyOwner(ownerId: string, canalId: string, titre: string, description: string) {
   const ref = db.collection("Notifications").doc();
   const nowMicros = Date.now() * 1000;
   await ref.set({

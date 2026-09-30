@@ -6,7 +6,6 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/block_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,14 +19,12 @@ import 'package:afrotok/l10n/app_localizations.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../services/linkService.dart';
-import '../../../services/chat_service.dart';
 import '../../home/user_presence_widget.dart';
 import '../../widgetGlobal.dart';
 import '../../../widgets/interests_selector_widget.dart';
 import '../userPubs/user_profile_boost_page.dart';
+import '../profile/retraitAdmin/userAllDetails.dart';
 import '../user_following_page.dart';
-import '../../chat/myChat.dart';
-import 'package:page_transition/page_transition.dart';
 
 class OtherUserPage extends StatefulWidget {
   final UserData otherUser;
@@ -65,9 +62,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
   late UserAuthProvider authProvider;
 
   int _profileLikes = 0;
-  bool _isSendingReminder = false;
-  bool _isOpeningChat = false;
-  final ChatService _chatService = ChatService();
 
   // ── Sélection multiple ─────────────────────────────────────
   bool _isSelectionMode = false;
@@ -79,8 +73,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   int _canalCount = 0;
 
   bool get _canManagePosts =>
-      authProvider.loginUserData.id == widget.otherUser.id ||
-      authProvider.loginUserData.role == 'ADM';
+      authProvider.loginUserData.id == widget.otherUser.id;
 
   @override
   void initState() {
@@ -112,130 +105,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
     } catch (_) {}
   }
 
-  Future<void> _sendReminderEmail() async {
-    if (_isSendingReminder) return;
-
-    setState(() => _isSendingReminder = true);
-
-    try {
-      // Récupérer les données utilisateur
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(widget.otherUser.id)
-          .get();
-
-      if (!userDoc.exists) {
-        throw Exception('Utilisateur non trouvé');
-      }
-
-      final data = userDoc.data()!;
-      final lastTimeActive = data['last_time_active'] ?? 0;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final daysInactive = ((now - lastTimeActive) / (24 * 60 * 60 * 1000)).floor();
-
-      // Compter les nouveaux likes (7 derniers jours)
-      final sevenDaysAgo = DateTime.now().subtract(Duration(days: 7)).millisecondsSinceEpoch;
-      final postsSnapshot = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.otherUser.id)
-          .get();
-
-      int newLikesCount = 0;
-      for (var postDoc in postsSnapshot.docs) {
-        final post = postDoc.data();
-        final postCreatedAt = post['created_at'] ?? 0;
-        if (postCreatedAt > sevenDaysAgo) {
-          newLikesCount += (post['loves'] as int ?? 0);
-        }
-      }
-
-      // Préparer les données
-      final userEmailData = {
-        'userId': widget.otherUser.id,
-        'userEmail': data['email'] ?? '',
-        'userName': data['pseudo'] ?? 'Utilisateur',
-        'pseudo': data['pseudo'] ?? 'user',
-        'giftCoinsBalance': data['giftCoinsBalance'] ?? 0,
-        'soldePrincipal': data['votre_solde_principal'] ?? 0,
-        'totalCoinsEarned': data['totalCoinsEarnedFromLikes'] ?? 0,
-        'totalLikesReceived': data['totalLikesReceived'] ?? 0,
-        'totalFollowers': (data['userAbonnesIds'] as List?)?.length ?? 0,
-        'daysInactive': daysInactive < 0 ? 3 : daysInactive,
-        'newLikesOnMyPosts': newLikesCount,
-        'newCommentsOnMyPosts': 0,
-      };
-
-      // Appeler la Cloud Function
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('sendInactiveUserReminder')
-          .call({
-        'userId': widget.otherUser.id,
-        'userData': userEmailData,
-      });
-
-      if (result.data['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Email envoyé à ${userEmailData['userEmail']}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.data['message'] ?? 'Erreur lors de l\'envoi'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSendingReminder = false);
-      }
-    }
-  }
-
-  void _showConfirmReminderDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Row(
-          children: [
-            Icon(Icons.email, color: Colors.orange),
-            SizedBox(width: 10),
-            Text('Envoyer un rappel', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Text(
-          'Envoyer un email personnalisé à @${widget.otherUser.pseudo} ?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _sendReminderEmail();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: Text('Envoyer'),
-          ),
-        ],
-      ),
-    );
-  }
   @override
   void dispose() {
     _scrollController.dispose();
@@ -414,249 +283,12 @@ class _OtherUserPageState extends State<OtherUserPage> {
     return widget.otherUser.userAbonnesIds?.contains(currentUserId) ?? false;
   }
 
-  Future<void> _openDirectChat() async {
-    if (_isOpeningChat) return;
-    setState(() => _isOpeningChat = true);
-    try {
-      final tempChat = Chat(
-        id: 'temp_${widget.otherUser.id}',
-        senderId: authProvider.loginUserData.id,
-        receiverId: widget.otherUser.id,
-        chatFriend: widget.otherUser,
-        receiver: widget.otherUser,
-        type: ChatType.USER.name,
-      );
-      final resultChat = await _chatService.createOrGetChat(
-        chat: tempChat,
-        currentUserId: authProvider.loginUserData.id!,
-      );
-      if (!mounted) return;
-      Navigator.push(context, PageTransition(
-        type: PageTransitionType.fade,
-        child: MyChat(title: 'Message', chat: resultChat),
-      ));
-    } catch (_) {
-    } finally {
-      if (mounted) setState(() => _isOpeningChat = false);
-    }
-  }
-
-  void _showSuspendDialog() {
-    final colors = AppColors.of(context);
-    final reasonCtrl = TextEditingController();
-    int? durationDays;
-    bool isPermanent = false;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          backgroundColor: colors.surface,
-          title: Row(children: [
-            const Icon(Icons.block, color: Colors.red, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Suspendre @${widget.otherUser.pseudo}',
-              style: TextStyle(color: colors.textPrimary, fontSize: 15),
-            ),
-          ]),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Type de suspension
-                Text('Type :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setS(() { isPermanent = false; durationDays = null; }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: !isPermanent ? Colors.orange.withOpacity(0.15) : colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: !isPermanent ? Colors.orange : colors.divider),
-                          ),
-                          child: Column(children: [
-                            Icon(Icons.timer, color: !isPermanent ? Colors.orange : colors.textSecondary, size: 20),
-                            const SizedBox(height: 4),
-                            Text('Temporaire', style: TextStyle(fontSize: 11, color: !isPermanent ? Colors.orange : colors.textSecondary)),
-                          ]),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setS(() => isPermanent = true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isPermanent ? Colors.red.withOpacity(0.15) : colors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isPermanent ? Colors.red : colors.divider),
-                          ),
-                          child: Column(children: [
-                            Icon(Icons.block, color: isPermanent ? Colors.red : colors.textSecondary, size: 20),
-                            const SizedBox(height: 4),
-                            Text('Définitive', style: TextStyle(fontSize: 11, color: isPermanent ? Colors.red : colors.textSecondary)),
-                          ]),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                // Durée (si temporaire)
-                if (!isPermanent) ...[
-                  Text('Durée :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [1, 3, 7, 14, 30].map((d) => GestureDetector(
-                      onTap: () => setS(() => durationDays = d),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: durationDays == d ? Colors.orange.withOpacity(0.2) : colors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: durationDays == d ? Colors.orange : colors.divider),
-                        ),
-                        child: Text('${d}j', style: TextStyle(fontSize: 12, color: durationDays == d ? Colors.orange : colors.textSecondary, fontWeight: FontWeight.w600)),
-                      ),
-                    )).toList(),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-                // Raison
-                Text('Raison (visible par l\'utilisateur) :', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: reasonCtrl,
-                  maxLines: 3,
-                  style: TextStyle(color: colors.textPrimary, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'Ex: Violation des règles de la communauté...',
-                    hintStyle: TextStyle(color: colors.textSecondary, fontSize: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.all(10),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () async {
-                if (reasonCtrl.text.trim().isEmpty) return;
-                if (!isPermanent && durationDays == null) return;
-                Navigator.pop(ctx);
-                await _applySuspension(
-                  isPermanent: isPermanent,
-                  durationDays: durationDays,
-                  reason: reasonCtrl.text.trim(),
-                );
-              },
-              child: const Text('Suspendre', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _applySuspension({
-    required bool isPermanent,
-    int? durationDays,
-    required String reason,
-  }) async {
-    try {
-      final data = <String, dynamic>{
-        'suspensionReason': reason,
-        'suspendedPermanently': isPermanent,
-      };
-      if (isPermanent) {
-        data['suspendedUntil'] = null;
-      } else {
-        final until = DateTime.now().add(Duration(days: durationDays!));
-        data['suspendedUntil'] = until.millisecondsSinceEpoch;
-        data['suspendedPermanently'] = false;
-      }
-      await _firestore.collection('Users').doc(widget.otherUser.id).update(data);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Compte suspendu'),
-          backgroundColor: Colors.red,
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: Colors.red,
-        ));
-      }
-    }
-  }
-
-  void _showLiftSuspensionDialog() {
-    final colors = AppColors.of(context);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: colors.surface,
-        title: Text('Lever la suspension', style: TextStyle(color: colors.textPrimary)),
-        content: Text(
-          'Êtes-vous sûr de vouloir lever la suspension du compte @${widget.otherUser.pseudo} ?',
-          style: TextStyle(color: colors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _firestore.collection('Users').doc(widget.otherUser.id).update({
-                'suspendedUntil': null,
-                'suspendedPermanently': false,
-                'suspensionReason': null,
-              });
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Suspension levée'),
-                  backgroundColor: Colors.green,
-                ));
-              }
-            },
-            child: const Text('Lever', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── Menu ⋮ ────────────────────────────────────────────────────────────────
 
   Widget _buildMoreMenu() {
     final colors = AppColors.of(context);
     final isOwnProfile = authProvider.loginUserData.id == widget.otherUser.id;
     final isAdmin = authProvider.loginUserData.role == 'ADM';
-    final isSuspended = widget.otherUser.suspendedPermanently == true ||
-        (widget.otherUser.suspendedUntil != null &&
-            DateTime.now().millisecondsSinceEpoch < widget.otherUser.suspendedUntil!);
-    final t = AppLocalizations.of(context);
 
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert_rounded, color: colors.textPrimary),
@@ -683,9 +315,11 @@ class _OtherUserPageState extends State<OtherUserPage> {
               );
             }
             break;
-          case 'chat':     _openDirectChat(); break;
-          case 'email':    _showConfirmReminderDialog(); break;
-          case 'suspend':  isSuspended ? _showLiftSuspensionDialog() : _showSuspendDialog(); break;
+          case 'manage':
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => UserManagementPage(userId: widget.otherUser.id!),
+            ));
+            break;
           case 'boost':
             Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfileBoostPage()));
             break;
@@ -704,13 +338,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         ],
         if (isAdmin) ...[
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'chat',    child: _menuItem(Icons.chat_bubble_outline,  'Message direct (admin)',   colors)),
-          PopupMenuItem(value: 'email',   child: _menuItem(Icons.email_outlined,       t.otherUserSendReminder,    colors)),
-          PopupMenuItem(value: 'suspend', child: _menuItem(
-            isSuspended ? Icons.lock_open_rounded : Icons.block_rounded,
-            isSuspended ? 'Lever la suspension' : 'Suspendre ce compte',
-            colors, danger: !isSuspended,
-          )),
+          PopupMenuItem(value: 'manage', child: _menuItem(Icons.admin_panel_settings_outlined, 'Gérer ce compte', colors)),
         ],
         if (isOwnProfile)
           PopupMenuItem(value: 'boost',  child: _menuItem(Icons.rocket_launch_outlined, 'Booster mon profil',     colors)),

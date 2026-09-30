@@ -15,6 +15,7 @@ import '../user/profile/retraitAdmin/searchUserAdmin.dart';
 import '../weekly_top/weekly_top_commentators_page.dart';
 import 'AfrolookPub/afrolookAdminPubPage.dart';
 import 'ad_admin_page.dart';
+import 'admin_canaux_page.dart';
 import 'admin_email_screen.dart';
 import 'afrolook_group_migration_page.dart';
 import 'commissions_admin_page.dart';
@@ -502,6 +503,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.groups_rounded, 'Groupe Afrolook', c.info, 0, const AfrolookGroupMigrationPage()),
       _Module(Icons.school_rounded, 'Tutoriels', c.supportAccent, 0, const TutoListPage(showAll: true)),
       _Module(Icons.alternate_email_rounded, 'Pseudos', c.info, 0, const PseudoMigrationPage()),
+      _Module(Icons.live_tv_rounded, 'Canaux', c.info, 0, const AdminCanauxPage()),
       _Module(Icons.tag_rounded, 'Noms de canaux', c.primary, 0, const PseudoMigrationPage(canaux: true)),
     ];
     return GridView.count(

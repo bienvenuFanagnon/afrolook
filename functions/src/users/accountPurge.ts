@@ -28,7 +28,7 @@ function storagePathFromUrl(url: unknown): string | null {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-async function deleteFileByUrl(url: unknown) {
+export async function deleteFileByUrl(url: unknown) {
   const p = storagePathFromUrl(url);
   if (!p) return;
   try {
@@ -39,7 +39,7 @@ async function deleteFileByUrl(url: unknown) {
 }
 
 /** Supprime tous les documents d'une requête, par lots. */
-async function deleteQuery(q: Query, onDoc?: (d: FirebaseFirestore.QueryDocumentSnapshot) => Promise<void>) {
+export async function deleteQuery(q: Query, onDoc?: (d: FirebaseFirestore.QueryDocumentSnapshot) => Promise<void>) {
   for (;;) {
     const snap = await q.limit(300).get();
     if (snap.empty) return;
@@ -63,7 +63,7 @@ async function arrayRemoveEverywhere(collection: string, field: string, uid: str
   }
 }
 
-async function deletePostWithMedia(d: FirebaseFirestore.QueryDocumentSnapshot) {
+export async function deletePostWithMedia(d: FirebaseFirestore.QueryDocumentSnapshot) {
   const p = d.data();
   const urls: unknown[] = [...((p["images"] as unknown[]) ?? []), p["url_media"], p["thumbnail"]];
   await Promise.all(urls.map(deleteFileByUrl));
