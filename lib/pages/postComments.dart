@@ -103,6 +103,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   StickerAccess? _stickerAccess;
   List<StickerItem> _recentStickers = [];
   bool _stickerSending = false;
+  StickerItem? _pendingSticker; // sticker choisi, en attente du texte facultatif et de l'envoi
 
   List<_GifterEntry> _topGifters = [];
   bool _giftersLoaded = false;
@@ -190,9 +191,19 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     if (picked != null && mounted) await _sendSticker(picked);
   }
 
+  /// Un sticker choisi (sélecteur ou récents) reste en attente : l'utilisateur peut ajouter un texte, puis envoyer.
   Future<void> _sendSticker(StickerItem s) async {
     if (replying || _stickerSending || _isLoading) return;
+    setState(() => _pendingSticker = s);
+    _focusNode.requestFocus();
+  }
+
+  Future<void> _submit() async {
+    final s = _pendingSticker;
+    if (s == null) return _sendComment();
+    if (replying || _stickerSending || _isLoading) return;
     _stickerSending = true;
+    setState(() => _pendingSticker = null);
     try {
       await _sendComment(sticker: s);
     } finally {
@@ -1737,6 +1748,29 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               onSend: _sendSticker,
             ),
 
+          // Sticker en attente : aperçu + texte facultatif avant l'envoi
+          if (_pendingSticker != null && !replying)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: _colors.primary.withOpacity(0.06),
+              child: Row(
+                children: [
+                  StickerImage(sticker: _pendingSticker!, size: 56),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      context.tr('Ajoutez un texte (facultatif) puis appuyez sur envoyer'),
+                      style: TextStyle(color: _colors.textSecondary, fontSize: 12.5),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _pendingSticker = null),
+                    child: Icon(Icons.close_rounded, size: 20, color: _colors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+
           // Barre de saisie
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1819,7 +1853,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 const SizedBox(width: 8),
                 // Bouton envoi
                 GestureDetector(
-                  onTap: _sendComment,
+                  onTap: _submit,
                   child: Container(
                     width: 40,
                     height: 40,
