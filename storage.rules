@@ -6,7 +6,7 @@ service firebase.storage {
       // Les dossiers ci-dessous ont leurs propres règles (propriétaire et poids maximum) ou sont écrits
       // uniquement par les Cloud Functions / l'administration : la règle générale ne les ouvre pas en écriture.
       allow write: if request.auth != null
-          && !allPaths.matches('stickers/.*|sticker_submissions/.*|user_stickers/.*|comment_media/.*|test_builds/.*');
+          && !allPaths.matches('stickers/.*|sticker_submissions/.*|sticker_video_uploads/.*|user_stickers/.*|comment_media/.*|test_builds/.*');
     }
 
     // Stickers du catalogue : écrits uniquement par les Cloud Functions et l'administration (jamais par l'app)
@@ -20,6 +20,15 @@ service firebase.storage {
       allow create: if request.auth != null && request.auth.uid == uid
                     && request.resource.size < 600 * 1024
                     && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Vidéos courtes envoyées pour devenir un sticker (3 Mo maximum) : converties puis supprimées par le serveur
+    match /sticker_video_uploads/{uid}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 3 * 1024 * 1024
+                    && request.resource.contentType.matches('video/.*');
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 

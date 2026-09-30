@@ -264,6 +264,20 @@ service cloud.firestore {
       allow delete: if isAuth() && (resource.data.user_id == uid() || isAdmin());
     }
 
+    // Stickers personnels : créés et supprimés par leur propriétaire ; seule la légende est modifiable ensuite
+    match /UserStickers/{stickerId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.ownerId == uid();
+      allow update: if isAuth() && resource.data.ownerId == uid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['captions']);
+      allow delete: if isAuth() && resource.data.ownerId == uid();
+    }
+
+    // Signalements de copies : créés par la Cloud Function reportStickerCopy, gérés par les admins
+    match /StickerReports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+
     // ─────────────────────────────────────────────────────────────
     // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
     // ATTENTION : les règles Firestore s'additionnent (une seule règle qui
@@ -276,7 +290,7 @@ service cloud.firestore {
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
       // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
       allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
-          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions']);
+          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app
