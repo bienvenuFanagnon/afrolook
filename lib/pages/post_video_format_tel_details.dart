@@ -2892,7 +2892,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
           postOwnerId: post.user_id!,
           postId: post.id!,
           actionType: 'comment',
-          commentaireMessage: trimmed,
+          commentaireMessage: trimmed.isEmpty && sticker != null ? 'Sticker' : trimmed,
           postDescription: post.description,
           postImageUrl: post.thumbnail ?? post.user?.imageUrl ?? '',
           postDataType: post.dataType,
@@ -2911,7 +2911,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
         if (post.user != null && post.user!.id != userId) {
           try {
-            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
+            final msg = sticker != null
+                ? "@${authProvider.loginUserData.pseudo!} a envoyé un sticker sur votre vidéo"
+                : "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
             final notif = NotificationData(
               id: FirebaseFirestore.instance.collection('Notifications').doc().id,
               titre: "Nouvelle interaction",

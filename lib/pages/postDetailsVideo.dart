@@ -2037,7 +2037,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
           postOwnerId: _currentPost.user_id!,
           postId: _currentPost.id!,
           actionType: 'comment',
-          commentaireMessage: trimmed,
+          commentaireMessage: trimmed.isEmpty && sticker != null ? 'Sticker' : trimmed,
           postDescription: _currentPost.description,
           postImageUrl: _currentPost.thumbnail ?? _currentPost.user?.imageUrl ?? '',
           postDataType: _currentPost.dataType,
@@ -2047,7 +2047,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
         if (_currentPost.user != null && _currentPost.user!.id != userId) {
           try {
-            final msg = "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
+            final msg = sticker != null
+                ? "@${authProvider.loginUserData.pseudo!} a envoyé un sticker sur votre vidéo"
+                : "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
             final notif = NotificationData(
               id: FirebaseFirestore.instance.collection('Notifications').doc().id,
               titre: "Nouvelle interaction",

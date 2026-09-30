@@ -4664,7 +4664,7 @@ class _DetailsPostState extends State<DetailsPost>
           postOwnerId: widget.post.user_id!,
           postId: widget.post.id!,
           actionType: 'comment',
-          commentaireMessage: trimmed,
+          commentaireMessage: trimmed.isEmpty && sticker != null ? 'Sticker' : trimmed,
           postDescription: widget.post.description,
           postImageUrl: widget.post.images?.isNotEmpty == true ? widget.post.images!.first : '',
           postDataType: widget.post.dataType,
@@ -4678,7 +4678,7 @@ class _DetailsPostState extends State<DetailsPost>
             final displayImage = canalImage ?? authProvider.loginUserData.imageUrl ?? '';
             final msg = canalName != null
                 ? "Le canal $displayName a commenté votre publication"
-                : "$displayName a commenté votre publication";
+                : sticker != null ? "$displayName a envoyé un sticker sur votre publication" : "$displayName a commenté votre publication";
             final notif = NotificationData(
               id: FirebaseFirestore.instance.collection('Notifications').doc().id,
               titre: "Nouvelle interaction",
