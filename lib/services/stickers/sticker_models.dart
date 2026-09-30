@@ -81,6 +81,34 @@ class StickerItem {
     );
   }
 
+  /// Sticker personnel (`UserStickers/{id}`, source 'mine').
+  factory StickerItem.fromUserSticker(DocumentSnapshot doc) {
+    final d = (doc.data() as Map<String, dynamic>?) ?? const {};
+    final url = (d['url'] ?? '').toString();
+    final thumb = (d['thumbUrl'] ?? '').toString();
+    final rawCaptions = d['captions'];
+    return StickerItem(
+      id: doc.id,
+      url: url,
+      thumbUrl: thumb.isNotEmpty ? thumb : url,
+      storagePath: d['storagePath']?.toString(),
+      sizeBytes: _asInt(d['sizeBytes']),
+      durationMs: _asInt(d['durationMs']),
+      animated: d['animated'] != false,
+      status: (d['status'] ?? 'pending').toString(),
+      creatorId: d['ownerId']?.toString(),
+      captions: rawCaptions is Map
+          ? {
+              for (final e in rawCaptions.entries)
+                if (e.value != null && e.value.toString().trim().isNotEmpty) e.key.toString(): e.value.toString(),
+            }
+          : const {},
+      w: _asInt(d['w'], 512),
+      h: _asInt(d['h'], 512),
+      source: 'mine',
+    );
+  }
+
   bool get isGift => giftPriceCoins > 0;
 
   /// Champ `media` écrit dans `PostComments/{id}`.
@@ -109,6 +137,7 @@ class StickerPack {
   final int stickerCount;
   final int order;
   final String coverUrl;
+  final int salesCount;
 
   const StickerPack({
     required this.id,
@@ -122,6 +151,7 @@ class StickerPack {
     this.stickerCount = 0,
     this.order = 0,
     this.coverUrl = '',
+    this.salesCount = 0,
   });
 
   factory StickerPack.fromFirestore(DocumentSnapshot doc) {
@@ -141,10 +171,28 @@ class StickerPack {
       stickerCount: _asInt(d['stickerCount']),
       order: _asInt(d['order']),
       coverUrl: (d['coverUrl'] ?? '').toString(),
+      salesCount: _asInt(d['salesCount']),
     );
   }
 
   String localizedName(String lang) => names[lang] ?? names['en'] ?? name;
+
+  bool get isFree => priceCoins <= 0;
+}
+
+/// Créateur d'un pack : pseudo et badge « vérifié » (résolus depuis `Users`).
+class StickerCreatorInfo {
+  final String id;
+  final String pseudo;
+  final bool verified;
+  const StickerCreatorInfo({required this.id, this.pseudo = '', this.verified = false});
+}
+
+/// Cible d'un sticker-cadeau : le commentaire (ou la réponse) à qui on l'offre.
+class StickerGiftTarget {
+  final String commentId;
+  final String? replyId;
+  const StickerGiftTarget({required this.commentId, this.replyId});
 }
 
 /// Statut d'un sticker récent renvoyé par `stickerAccess`.

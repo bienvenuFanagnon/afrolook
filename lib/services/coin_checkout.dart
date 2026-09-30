@@ -105,6 +105,11 @@ class CoinCheckout {
       if (e.code == 'resource-exhausted') {
         await refreshBalance(context);
         if (context.mounted) await insufficient(context, price);
+      } else if (e.code == 'already-exists') {
+        // Achat déjà fait (ex. pack de stickers déjà possédé) : rien n'est débité.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('Tu possèdes déjà cet achat. Tu n\'as pas été débité.'))),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.tr('Le paiement n\'a pas pu être effectué. Tu n\'as pas été débité.'))),

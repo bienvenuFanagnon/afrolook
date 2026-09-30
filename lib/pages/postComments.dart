@@ -107,6 +107,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   List<_GifterEntry> _topGifters = [];
   bool _giftersLoaded = false;
 
+  // Stickers-cadeaux reçus, par commentaire (clé « commentId » ou « commentId|replyId »).
+  Map<String, List<({String thumb, String url})>> _stickerGifts = {};
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +125,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     _loadInitialComments();
     _ensureCanalLoaded();
     _loadTopGifters();
+    _loadStickerGifts();
     _textController.addListener(_onTextChanged);
     if (_canUseStickers) _refreshStickerData();
 
@@ -200,6 +204,97 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) _refreshStickerData();
     });
+  }
+
+  /// Stickers-cadeaux du post (`CommentGifts` avec `stickerId`) : une seule lecture, groupés par commentaire.
+  Future<void> _loadStickerGifts() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('CommentGifts')
+          .where('postId', isEqualTo: widget.post.id)
+          .limit(300)
+          .get();
+      final docs = snap.docs.where((d) => (d.data()['stickerId'] ?? '').toString().isNotEmpty).toList()
+        ..sort((a, b) {
+          final x = (a.data()['createdAt'] as num?) ?? 0;
+          final y = (b.data()['createdAt'] as num?) ?? 0;
+          return x.compareTo(y);
+        });
+      final map = <String, List<({String thumb, String url})>>{};
+      for (final d in docs) {
+        final m = d.data();
+        final url = (m['stickerUrl'] ?? '').toString();
+        final thumb = (m['stickerThumbUrl'] ?? '').toString();
+        if (url.isEmpty && thumb.isEmpty) continue;
+        final cid = (m['commentId'] ?? '').toString();
+        final rid = (m['replyId'] ?? '').toString();
+        map.putIfAbsent(rid.isEmpty ? cid : '$cid|$rid', () => []).add((thumb: thumb.isNotEmpty ? thumb : url, url: url));
+      }
+      if (mounted) setState(() => _stickerGifts = map);
+    } catch (e) {
+      debugPrint('[Stickers] cadeaux de commentaires indisponibles: $e');
+    }
+  }
+
+  /// « Offrir un sticker » : sélecteur ouvert sur les stickers-cadeaux, pour ce commentaire (ou cette réponse).
+  Future<void> _offerSticker(String commentId, {String? replyId}) async {
+    _focusNode.unfocus();
+    await showStickerPicker(
+      context,
+      userId: authProvider.loginUserData.id ?? '',
+      postId: widget.post.id,
+      giftTarget: StickerGiftTarget(commentId: commentId, replyId: replyId),
+    );
+    if (mounted) _loadStickerGifts();
+  }
+
+  /// Stickers-cadeaux reçus sous un commentaire ou une réponse, avec l'image du sticker.
+  Widget _buildStickerGifts(String? commentId, {String? replyId}) {
+    if (commentId == null) return const SizedBox.shrink();
+    final list = _stickerGifts[replyId == null ? commentId : '$commentId|$replyId'];
+    if (list == null || list.isEmpty) return const SizedBox.shrink();
+    final gold = _colors.isDark ? const Color(0xFFF5C542) : const Color(0xFF8A5A00);
+    final shown = list.length > 6 ? list.sublist(list.length - 6) : list;
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: gold.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: gold.withOpacity(0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🎁', style: TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Wrap(
+                spacing: 3,
+                children: [
+                  for (final g in shown)
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: Image.network(
+                        g.thumb,
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (_, __, ___) => Icon(Icons.card_giftcard_rounded, size: 16, color: gold),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (list.length > shown.length) ...[
+              const SizedBox(width: 4),
+              Text('+${list.length - shown.length}', style: TextStyle(color: gold, fontSize: 11, fontWeight: FontWeight.w800)),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   void _onTextChanged() {
@@ -1142,6 +1237,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               if ((pcm.message ?? '').isNotEmpty || pcm.media == null)
                 _buildMentionText(pcm.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
               _buildCoinsEarned(pcm.coinsEarned),
+              _buildStickerGifts(pcm.id),
               if (needsExpandButton)
                 GestureDetector(
                   onTap: () => setState(() => _commentExpanded[pcm.id!] = !isExpanded),
@@ -1154,7 +1250,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   ),
                 ),
               const SizedBox(height: 6),
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                runSpacing: 4,
                 children: [
                   _buildLikeButton(
                     isLiked: isLiked,
@@ -1186,6 +1284,13 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       label: 'Cadeau',
                       onTap: () => showCommentGiftSheet(context,
                           commentId: pcm.id!, authorPseudo: pcm.user?.pseudo ?? ''),
+                    ),
+                    const SizedBox(width: 16),
+                    _buildActionButton(
+                      icon: Icons.sticky_note_2_outlined,
+                      color: const Color(0xFFD99A00),
+                      label: context.tr('Offrir un sticker'),
+                      onTap: () => _offerSticker(pcm.id!),
                     ),
                   ],
                 ],
@@ -1334,6 +1439,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 const SizedBox(height: 3),
                 _buildMentionText(rpc.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
                 _buildCoinsEarned(pcm.replyCoins[rpc.id] ?? 0),
+                _buildStickerGifts(pcm.id, replyId: rpc.id),
                 if (needsExpandButton)
                   GestureDetector(
                     onTap: () => setState(() => _replyExpanded[replyKey] = !isExpanded),
@@ -1346,7 +1452,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     ),
                   ),
                 const SizedBox(height: 5),
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 4,
                   children: [
                     _buildLikeButton(
                       isLiked: isLiked,
@@ -1381,6 +1489,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         small: true,
                         onTap: () => showCommentGiftSheet(context,
                             commentId: pcm.id!, replyId: rpc.id, authorPseudo: rpc.user_pseudo ?? ''),
+                      ),
+                      const SizedBox(width: 14),
+                      _buildActionButton(
+                        icon: Icons.sticky_note_2_outlined,
+                        color: const Color(0xFFD99A00),
+                        label: context.tr('Offrir un sticker'),
+                        small: true,
+                        onTap: () => _offerSticker(pcm.id!, replyId: rpc.id),
                       ),
                     ],
                   ],

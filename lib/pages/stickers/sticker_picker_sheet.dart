@@ -1,21 +1,32 @@
 import 'dart:async';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../l10n/tr.dart';
+import '../../providers/authProvider.dart';
+import '../../services/coin_checkout.dart';
 import '../../services/stickers/sticker_models.dart';
 import '../../services/stickers/sticker_service.dart';
 import '../../theme/app_colors.dart';
+import 'sticker_gift_tab.dart';
+import 'sticker_mine_tab.dart';
 import 'sticker_widgets.dart';
+import 'sticker_world_tab.dart';
 
 /// Ouvre le sélecteur ; renvoie le sticker touché (ou null si fermé).
 /// L'envoi lui-même est fait par l'appelant.
+///
+/// Avec [giftTarget], le sélecteur s'ouvre sur les seuls stickers-cadeaux : le sticker choisi est offert
+/// (`stickerGiftSend`, débit en pièces) à ce commentaire, puis le sélecteur se ferme en renvoyant null.
 Future<StickerItem?> showStickerPicker(
   BuildContext context, {
   required String userId,
   String? postId,
   StickerAccess? initialAccess,
   List<StickerItem> initialRecents = const [],
+  StickerGiftTarget? giftTarget,
 }) {
   final h = MediaQuery.of(context).size.height;
   return showModalBottomSheet<StickerItem>(
@@ -29,6 +40,7 @@ Future<StickerItem?> showStickerPicker(
       postId: postId,
       initialAccess: initialAccess,
       initialRecents: initialRecents,
+      giftTarget: giftTarget,
     ),
   );
 }
@@ -64,6 +76,7 @@ class StickerPickerSheet extends StatefulWidget {
   final String? postId;
   final StickerAccess? initialAccess;
   final List<StickerItem> initialRecents;
+  final StickerGiftTarget? giftTarget;
 
   const StickerPickerSheet({
     super.key,
@@ -71,6 +84,7 @@ class StickerPickerSheet extends StatefulWidget {
     this.postId,
     this.initialAccess,
     this.initialRecents = const [],
+    this.giftTarget,
   });
 
   @override
@@ -90,13 +104,83 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
   String _query = '';
   String _category = '_all'; // '_all', '_recents' ou une catégorie
 
+  bool _gifting = false;
+
+  bool get _giftMode => widget.giftTarget != null;
+
   @override
   void initState() {
     super.initState();
     _access = widget.initialAccess;
     _recents = widget.initialRecents;
     if (_recents.isNotEmpty) _category = '_recents';
-    _load();
+    if (!_giftMode) _load();
+  }
+
+  /// Offre un sticker-cadeau : confirmation, appel serveur, gestion du solde insuffisant.
+  Future<void> _gift(StickerItem s) async {
+    final target = widget.giftTarget;
+    if (target == null || _gifting) return;
+    final price = s.giftPriceCoins;
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    if ((auth.loginUserData.giftCoinsBalance ?? 0) < price) {
+      await CoinCheckout.insufficient(context, price);
+      return;
+    }
+    final c = AppColors.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(ctx.tr('Offrir ce sticker ?'),
+            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(width: 96, height: 96, child: StickerImage(sticker: s)),
+            const SizedBox(height: 8),
+            Text(ctx.tr('{a} pièces', {'a': CoinCheckout.fmt(price)}),
+                style: TextStyle(color: c.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
+            child: Text(ctx.tr('Offrir')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _gifting = true);
+    try {
+      await _service.sendGift(target: target, stickerId: s.id);
+      if (mounted) await CoinCheckout.refreshBalance(context);
+      messenger.showSnackBar(SnackBar(content: Text(tr('Sticker offert !'))));
+      if (mounted) navigator.pop();
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      setState(() => _gifting = false);
+      if (e.code == 'resource-exhausted') {
+        await CoinCheckout.refreshBalance(context);
+        if (mounted) await CoinCheckout.insufficient(context, price);
+      } else {
+        messenger.showSnackBar(SnackBar(
+          content: Text(e.code == 'unavailable' || e.code == 'unimplemented' || (e.message ?? '').isEmpty
+              ? tr('Envoi impossible pour le moment')
+              : e.message!),
+        ));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _gifting = false);
+      messenger.showSnackBar(SnackBar(content: Text(tr('Envoi impossible. Vérifie ta connexion.'))));
+    }
   }
 
   @override
@@ -168,6 +252,16 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
           const SizedBox(height: 8),
           Container(width: 38, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 8),
+          if (_giftMode)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(context.tr('Offrir un sticker'),
+                    style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
+              ),
+            )
+          else
           TabBar(
             controller: _tabs,
             isScrollable: true,
@@ -186,14 +280,27 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
             ],
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabs,
+            child: Stack(
               children: [
-                _buildOfficialTab(c, blockedReason),
-                _comingSoon(c, Icons.public_rounded),
-                _comingSoon(c, Icons.brush_rounded),
-                _comingSoon(c, Icons.add_reaction_outlined),
-                _comingSoon(c, Icons.card_giftcard_rounded),
+                _giftMode
+                    ? StickerGiftTab(target: widget.giftTarget, onGift: _gift)
+                    : TabBarView(
+                        controller: _tabs,
+                        children: [
+                          _buildOfficialTab(c, blockedReason),
+                          StickerWorldTab(userId: widget.userId, canSend: blockedReason == null, onPick: _pick),
+                          StickerCreatorsTab(userId: widget.userId, canSend: blockedReason == null, onPick: _pick),
+                          StickerMineTab(userId: widget.userId, blockedReason: blockedReason, onPick: _pick),
+                          StickerGiftTab(target: null, onGift: _gift),
+                        ],
+                      ),
+                if (_gifting)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: c.surface.withOpacity(0.8),
+                      child: Center(child: CircularProgressIndicator(color: c.primary, strokeWidth: 2.5)),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -202,25 +309,7 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
     );
   }
 
-  Widget _comingSoon(AppColors c, IconData icon) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 44, color: c.textSecondary.withOpacity(0.6)),
-            const SizedBox(height: 10),
-            Text(context.tr('Bientôt disponible'),
-                style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(context.tr('Cette section arrive prochainement.'),
-                textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
-          ],
-        ),
-      ),
-    );
-  }
+  void _pick(StickerItem s) => Navigator.pop(context, s);
 
   Widget _buildOfficialTab(AppColors c, String? blockedReason) {
     final lang = Localizations.localeOf(context).languageCode;
