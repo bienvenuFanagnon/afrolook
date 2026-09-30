@@ -1,3 +1,5 @@
+import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
+import 'package:afrotok/services/stickers/sticker_models.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import '../services/followers_count_service.dart';
 import '../utils/count_format.dart';
@@ -1980,9 +1982,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
     });
   }
 
-  Future<void> _sendQuickComment(String text) async {
+  Future<void> _sendQuickComment(String text, {StickerItem? sticker}) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    if ((trimmed.isEmpty && sticker == null) || _isSendingQuickComment) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
@@ -1993,6 +1995,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
     try {
       final comment = PostComment(
+        media: sticker?.toMedia(),
         id: FirebaseFirestore.instance.collection('PostComments').doc().id,
         user_id: userId,
         user: authProvider.loginUserData,
@@ -2116,6 +2119,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                       isDense: true,
                     ),
                   ),
+                ),
+                StickerQuickButton(
+                  postId: _currentPost.id,
+                  onPicked: (s) => _sendQuickComment(_quickCommentController.text, sticker: s),
                 ),
                 GestureDetector(
                   onTap: () => _sendQuickComment(_quickCommentController.text),

@@ -1817,7 +1817,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                           clipBehavior: Clip.none,
                           alignment: Alignment.center,
                           children: [
-                            Icon(Icons.sticky_note_2_outlined, color: _colors.textSecondary, size: 24),
+                            Icon(Icons.sticky_note_2_rounded, color: kStickerGold, size: 26),
                             if (!_canUseStickers)
                               const Positioned(right: -6, top: -7, child: StickerPremiumBadge()),
                           ],

@@ -1,3 +1,5 @@
+import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
+import 'package:afrotok/services/stickers/sticker_models.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import '../services/followers_count_service.dart';
@@ -4580,9 +4582,9 @@ class _DetailsPostState extends State<DetailsPost>
     });
   }
 
-  Future<void> _sendQuickComment(String text) async {
+  Future<void> _sendQuickComment(String text, {StickerItem? sticker}) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || _isSendingQuickComment) return;
+    if ((trimmed.isEmpty && sticker == null) || _isSendingQuickComment) return;
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
@@ -4617,6 +4619,7 @@ class _DetailsPostState extends State<DetailsPost>
       }
 
       final comment = PostComment(
+        media: sticker?.toMedia(),
         id: FirebaseFirestore.instance.collection('PostComments').doc().id,
         user_id: userId,
         user: authProvider.loginUserData,
@@ -4746,6 +4749,10 @@ class _DetailsPostState extends State<DetailsPost>
                       isDense: true,
                     ),
                   ),
+                ),
+                StickerQuickButton(
+                  postId: widget.post.id,
+                  onPicked: (s) => _sendQuickComment(_quickCommentController.text, sticker: s),
                 ),
                 GestureDetector(
                   onTap: () => _sendQuickComment(_quickCommentController.text),
