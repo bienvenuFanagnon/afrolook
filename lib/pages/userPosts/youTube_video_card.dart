@@ -1267,7 +1267,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.94,
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),

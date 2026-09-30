@@ -997,7 +997,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.94,
         decoration: const BoxDecoration(color: _vibeBlack, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         child: Column(
           children: [

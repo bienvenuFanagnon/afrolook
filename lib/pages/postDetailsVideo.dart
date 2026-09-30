@@ -1284,7 +1284,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: MediaQuery.of(context).size.height * 0.94,
         decoration: BoxDecoration(color: AppColors.of(context).background, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         child: Column(
           children: [
