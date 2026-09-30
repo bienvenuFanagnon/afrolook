@@ -16,8 +16,8 @@ import { num } from "../payments/coinShares";
 export type Tier = "free" | "premium" | "gold";
 const LIMITS: Record<Tier, { perPost: number; perDay: number }> = {
   free: { perPost: 0, perDay: 0 },
-  premium: { perPost: 1, perDay: 5 },
-  gold: { perPost: 3, perDay: 10 },
+  premium: { perPost: 1, perDay: 10 },
+  gold: { perPost: 3, perDay: 50 },
 };
 export const MAX_IMAGE_BYTES = 300 * 1024;
 export const MAX_ANIM_BYTES = 600 * 1024;
@@ -33,6 +33,12 @@ export function tierOf(u: FirebaseFirestore.DocumentData | undefined): Tier {
   const end = a.dateFin ? Date.parse(a.dateFin) : NaN;
   if (Number.isFinite(end) && end < Date.now()) return "free";
   return a.type === "gold" ? "gold" : "premium";
+}
+
+/** Limites du compte : l'admin (role ADM) est illimité, les autres suivent leur abonnement. */
+function limitsOf(u: FirebaseFirestore.DocumentData | undefined, tier: Tier): { perPost: number; perDay: number; unlimited: boolean } {
+  if (u?.["role"] === "ADM") return { perPost: Number.MAX_SAFE_INTEGER, perDay: Number.MAX_SAFE_INTEGER, unlimited: true };
+  return { ...LIMITS[tier], unlimited: false };
 }
 
 function isSuspended(u: FirebaseFirestore.DocumentData | undefined): boolean {
@@ -92,7 +98,7 @@ export const stickerAccess = onCall({ timeoutSeconds: 20, memory: "256MiB" }, as
   const userDoc = await db.collection("Users").doc(uid).get();
   const u = userDoc.data();
   const tier = tierOf(u);
-  const lim = LIMITS[tier];
+  const lim = limitsOf(u, tier);
   const [used, onPost] = await Promise.all([dayUsed(uid), postId ? postUsed(uid, postId) : Promise.resolve(0)]);
 
   let reason: Reason = null;
@@ -111,7 +117,7 @@ export const stickerAccess = onCall({ timeoutSeconds: 20, memory: "256MiB" }, as
     return { stickerId: r.id, source, usable: canSend && st.ok, reason: why, lastUsedAt: num(r.get("lastUsedAt")) };
   }));
 
-  return { tier, canSend, reason, perPostMax: lim.perPost, perDayMax: lim.perDay, dayUsed: used, postUsed: onPost, recents };
+  return { tier, canSend, reason, perPostMax: lim.unlimited ? 0 : lim.perPost, perDayMax: lim.unlimited ? 0 : lim.perDay, unlimited: lim.unlimited, dayUsed: used, postUsed: onPost, recents };
 });
 
 async function rejectComment(ref: FirebaseFirestore.DocumentReference, why: string, uid: string | undefined) {
@@ -137,7 +143,7 @@ export const onCommentMediaCreated = onDocumentCreated("PostComments/{id}", asyn
   const tier = tierOf(u);
   if (tier === "free") return rejectComment(snap.ref, "abonnement", uid);
   if (isSuspended(u)) return rejectComment(snap.ref, "compte suspendu", uid);
-  const lim = LIMITS[tier];
+  const lim = limitsOf(u, tier);
 
   const type = String(media["type"] ?? "");
   const balance = num(u?.["giftCoinsBalance"]);

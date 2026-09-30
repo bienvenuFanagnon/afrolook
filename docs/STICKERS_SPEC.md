@@ -5,7 +5,7 @@ Tout est payé en pièces. Le serveur décide : l'app ne fait que pré-vérifier
 
 ## Règles métier (déjà écrites dans `regles_confidentialite_page.dart`)
 - Compte gratuit : aucun sticker/média en commentaire (bouton visible avec le signe PREMIUM).
-- Premium : 1 sticker/média par post et par utilisateur, 5 par jour. Gold : 3 par post, 10 par jour. Admin (role == 'ADM') : traité comme Gold.
+- Premium : 1 sticker/média par post et par utilisateur, 10 par jour. Gold : 3 par post, 50 par jour. Admin (role == 'ADM') : illimité.
 - Poids : image ≤ 300 Ko, animation ≤ 600 Ko, boucle ≤ 3 s, sans son.
 - Pack payant : ne s'utilise que s'il est acheté. Sticker-cadeau : débité en pièces (phase 4).
 - Stickers personnels (« Mes stickers ») : Premium 10, Gold 50.

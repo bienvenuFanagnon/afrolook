@@ -203,7 +203,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
               _rule('Envoyer un sticker ou un média',
                   'Les abonnés Premium et Gold peuvent ajouter dans un commentaire une image, une image animée ou une courte vidéo de 1 à 3 secondes (sans son), avec un texte de description. Les comptes gratuits voient la fonction avec le signe Premium et peuvent s\'abonner pour l\'utiliser.'),
               _rule('Limites selon l\'abonnement',
-                  'Premium : 1 sticker ou média par post et 5 par jour. Gold : 3 par post et 10 par jour. Les limites sont appliquées par Afrolook : un commentaire au-dessus de la limite est refusé.'),
+                  'Premium : 1 sticker ou média par post et 10 par jour. Gold : 3 par post et 50 par jour. Les limites sont appliquées par Afrolook : un commentaire au-dessus de la limite est refusé.'),
               _rule('Poids des médias',
                   'Pour rester rapides, les médias sont compressés : une image pèse au plus 300 Ko et une animation au plus 600 Ko. Les fichiers trop lourds sont refusés.'),
               _rule('Stickers officiels et stickers de créateurs',
