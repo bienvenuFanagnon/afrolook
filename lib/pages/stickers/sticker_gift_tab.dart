@@ -30,14 +30,21 @@ class _StickerGiftTabState extends State<StickerGiftTab> with AutomaticKeepAlive
   @override
   void initState() {
     super.initState();
-    _load();
+    final cached = StickerService.instance.cachedGiftStickers;
+    if (cached != null) {
+      _items = cached;
+      _loading = false;
+    }
+    _load(silent: cached != null);
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _failed = false;
-    });
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _failed = false;
+      });
+    }
     try {
       final list = await StickerService.instance.loadGiftStickers();
       if (!mounted) return;
@@ -46,7 +53,7 @@ class _StickerGiftTabState extends State<StickerGiftTab> with AutomaticKeepAlive
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || silent) return;
       setState(() {
         _loading = false;
         _failed = true;
@@ -118,7 +125,7 @@ class _StickerGiftTabState extends State<StickerGiftTab> with AutomaticKeepAlive
                                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
                                 child: Column(
                                   children: [
-                                    Expanded(child: Center(child: StickerImage(sticker: s))),
+                                    Expanded(child: Center(child: StickerImage(sticker: s, loadAnimation: false))),
                                     if (caption != null)
                                       Text(caption,
                                           maxLines: 1,

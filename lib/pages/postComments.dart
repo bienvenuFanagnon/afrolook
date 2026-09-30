@@ -127,6 +127,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     _ensureCanalLoaded();
     _loadTopGifters();
     _loadStickerGifts();
+    StickerService.instance.prefetchGiftStickers();
     _textController.addListener(_onTextChanged);
     if (_canUseStickers) _refreshStickerData();
 
@@ -249,6 +250,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   /// « Offrir un sticker » : sélecteur ouvert sur les stickers-cadeaux, pour ce commentaire (ou cette réponse).
   Future<void> _offerSticker(String commentId, {String? replyId}) async {
+    StickerService.instance.prefetchGiftStickers();
     _focusNode.unfocus();
     await showStickerPicker(
       context,

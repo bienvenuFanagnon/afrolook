@@ -117,7 +117,8 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
     if (!_giftMode) _load();
   }
 
-  /// Offre un sticker-cadeau : confirmation, appel serveur, gestion du solde insuffisant.
+  /// Offre un sticker-cadeau, sans attente : solde local vérifié, débit local, modale de succès, puis appel serveur
+  /// en arrière-plan. Si le serveur refuse (solde insuffisant), on rembourse en local et on explique.
   Future<void> _gift(StickerItem s) async {
     final target = widget.giftTarget;
     if (target == null || _gifting) return;
@@ -127,59 +128,71 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
       await CoinCheckout.insufficient(context, price);
       return;
     }
-    final c = AppColors.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(ctx.tr('Offrir ce sticker ?'),
-            style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 17)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(width: 96, height: 96, child: StickerImage(sticker: s)),
-            const SizedBox(height: 8),
-            Text(ctx.tr('{a} pièces', {'a': CoinCheckout.fmt(price)}),
-                style: TextStyle(color: c.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary),
-            child: Text(ctx.tr('Offrir')),
+    _gifting = true;
+    final rootCtx = Navigator.of(context, rootNavigator: true).context;
+    final user = auth.loginUserData;
+    user.giftCoinsBalance = (user.giftCoinsBalance ?? 0) - price;
+    Navigator.of(context).pop();
+    _showGiftSuccess(rootCtx, s, price);
+    unawaited(_sendGiftInBackground(rootCtx, target, s, price));
+  }
+
+  static void _showGiftSuccess(BuildContext ctx, StickerItem s, int price) {
+    final c = AppColors.of(ctx);
+    showDialog<void>(
+      context: ctx,
+      barrierDismissible: true,
+      builder: (dctx) {
+        Future.delayed(const Duration(milliseconds: 1600), () {
+          if (dctx.mounted && Navigator.of(dctx).canPop()) Navigator.of(dctx).pop();
+        });
+        return AlertDialog(
+          backgroundColor: c.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(width: 110, height: 110, child: StickerImage(sticker: s)),
+              const SizedBox(height: 8),
+              Text(dctx.tr('Sticker offert !'),
+                  style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(dctx.tr('{a} pièces', {'a': CoinCheckout.fmt(price)}),
+                  style: TextStyle(color: kStickerGold, fontSize: 14, fontWeight: FontWeight.w800)),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
-    if (ok != true || !mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    setState(() => _gifting = true);
+  }
+
+  Future<void> _sendGiftInBackground(BuildContext rootCtx, StickerGiftTarget target, StickerItem s, int price) async {
+    final auth = Provider.of<UserAuthProvider>(rootCtx, listen: false);
+    Future<void> rollback() async {
+      // Le serveur a refusé : on remet le solde réel (relu) et on ferme la modale de succès si elle est encore là
+      auth.loginUserData.giftCoinsBalance = (auth.loginUserData.giftCoinsBalance ?? 0) + price;
+      await CoinCheckout.refreshBalance(rootCtx);
+    }
+
     try {
       await _service.sendGift(target: target, stickerId: s.id);
-      if (mounted) await CoinCheckout.refreshBalance(context);
-      messenger.showSnackBar(SnackBar(content: Text(tr('Sticker offert !'))));
-      if (mounted) navigator.pop();
+      await CoinCheckout.refreshBalance(rootCtx);
     } on FirebaseFunctionsException catch (e) {
-      if (!mounted) return;
-      setState(() => _gifting = false);
+      await rollback();
+      if (!rootCtx.mounted) return;
       if (e.code == 'resource-exhausted') {
-        await CoinCheckout.refreshBalance(context);
-        if (mounted) await CoinCheckout.insufficient(context, price);
+        await CoinCheckout.insufficient(rootCtx, price);
       } else {
-        messenger.showSnackBar(SnackBar(
+        ScaffoldMessenger.of(rootCtx).showSnackBar(SnackBar(
           content: Text(e.code == 'unavailable' || e.code == 'unimplemented' || (e.message ?? '').isEmpty
-              ? tr('Envoi impossible pour le moment')
+              ? tr('Envoi impossible pour le moment. Tes pièces ont été rendues.')
               : e.message!),
         ));
       }
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _gifting = false);
-      messenger.showSnackBar(SnackBar(content: Text(tr('Envoi impossible. Vérifie ta connexion.'))));
+      await rollback();
+      if (!rootCtx.mounted) return;
+      ScaffoldMessenger.of(rootCtx).showSnackBar(SnackBar(content: Text(tr('Envoi impossible. Vérifie ta connexion. Tes pièces ont été rendues.'))));
     }
   }
 

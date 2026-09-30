@@ -281,6 +281,16 @@ class StickerService {
 
   // ── Cadeaux ────────────────────────────────────────────────────────────────
 
+  /// Cache mémoire des stickers-cadeaux : l'onglet « Cadeaux » s'affiche aussitôt, puis se rafraîchit en douce.
+  List<StickerItem>? _giftCache;
+  List<StickerItem>? get cachedGiftStickers => _giftCache;
+
+  /// À appeler dès l'ouverture des commentaires : la liste est prête quand l'utilisateur touche « Offrir un sticker ».
+  void prefetchGiftStickers() {
+    if (_giftCache != null) return;
+    loadGiftStickers().catchError((_) => <StickerItem>[]);
+  }
+
   /// Stickers-cadeaux : `giftPriceCoins > 0`, statut actif, pack actif. Un seul filtre d'inégalité (pas d'index composite).
   Future<List<StickerItem>> loadGiftStickers({int limit = 200}) async {
     final snap = await _db.collection('Stickers').where('giftPriceCoins', isGreaterThan: 0).limit(limit).get();
@@ -290,8 +300,10 @@ class StickerService {
         .toList();
     final packs = await loadPacksByIds(items.map((s) => s.packId).where((id) => id.isNotEmpty));
     final active = packs.map((p) => p.id).toSet();
-    return items.where((s) => active.contains(s.packId)).toList()
+    final list = items.where((s) => active.contains(s.packId)).toList()
       ..sort((a, b) => a.giftPriceCoins.compareTo(b.giftPriceCoins));
+    _giftCache = list;
+    return list;
   }
 
   /// Offre un sticker-cadeau. Lève `FirebaseFunctionsException` (`resource-exhausted` = solde insuffisant).
