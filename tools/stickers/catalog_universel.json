@@ -1,0 +1,352 @@
+[
+ {
+  "category": "joie",
+  "name": "Joie et rire",
+  "stickers": [
+   {
+    "emoji": "😂",
+    "fr": "MDR",
+    "en": "LOL"
+   },
+   {
+    "emoji": "🤣",
+    "fr": "Fou rire aux larmes",
+    "en": "Crying laughing"
+   },
+   {
+    "emoji": "😄",
+    "fr": "Grand sourire",
+    "en": "Big smile"
+   },
+   {
+    "emoji": "🥳",
+    "fr": "Youpi",
+    "en": "Yay"
+   },
+   {
+    "emoji": "😆",
+    "fr": "Trop drôle",
+    "en": "So funny"
+   },
+   {
+    "emoji": "🙂",
+    "fr": "Petit sourire",
+    "en": "Little smile"
+   },
+   {
+    "emoji": "😁",
+    "fr": "Ravi",
+    "en": "Delighted"
+   },
+   {
+    "emoji": "💃",
+    "fr": "Danse de joie",
+    "en": "Happy dance"
+   },
+   {
+    "emoji": "🤭",
+    "fr": "Hihi",
+    "en": "Hehe"
+   },
+   {
+    "emoji": "😅",
+    "fr": "Rire gêné",
+    "en": "Awkward laugh"
+   },
+   {
+    "emoji": "😊",
+    "fr": "Ça me fait plaisir",
+    "en": "Happy for this"
+   },
+   {
+    "emoji": "🎉",
+    "fr": "On fait la fête",
+    "en": "Party time"
+   }
+  ]
+ },
+ {
+  "category": "reussite",
+  "name": "Félicitations et réussite",
+  "stickers": [
+   {
+    "emoji": "🎉",
+    "fr": "Félicitations",
+    "en": "Congratulations"
+   },
+   {
+    "emoji": "👏",
+    "fr": "Bravo",
+    "en": "Well done"
+   },
+   {
+    "emoji": "🏆",
+    "fr": "Champion",
+    "en": "Champion"
+   },
+   {
+    "emoji": "✅",
+    "fr": "Objectif atteint",
+    "en": "Goal reached"
+   },
+   {
+    "emoji": "🎓",
+    "fr": "Diplômé",
+    "en": "Graduated"
+   },
+   {
+    "emoji": "💼",
+    "fr": "Nouveau travail",
+    "en": "New job"
+   },
+   {
+    "emoji": "📈",
+    "fr": "Promotion",
+    "en": "Promotion"
+   },
+   {
+    "emoji": "🥇",
+    "fr": "Médaille d'or",
+    "en": "Gold medal"
+   },
+   {
+    "emoji": "🙌",
+    "fr": "Standing ovation",
+    "en": "Standing ovation"
+   },
+   {
+    "emoji": "🎩",
+    "fr": "Chapeau",
+    "en": "Hats off"
+   },
+   {
+    "emoji": "💪",
+    "fr": "Tu as réussi",
+    "en": "You did it"
+   },
+   {
+    "emoji": "🚀",
+    "fr": "Record battu",
+    "en": "New record"
+   },
+   {
+    "emoji": "🌟",
+    "fr": "Étoile du jour",
+    "en": "Star of the day"
+   },
+   {
+    "emoji": "🍾",
+    "fr": "On célèbre",
+    "en": "Let's celebrate"
+   }
+  ]
+ },
+ {
+  "category": "compliments",
+  "name": "Compliments",
+  "stickers": [
+   {
+    "emoji": "😍",
+    "fr": "Trop beau",
+    "en": "So beautiful"
+   },
+   {
+    "emoji": "✨",
+    "fr": "Tu brilles",
+    "en": "You shine"
+   },
+   {
+    "emoji": "😎",
+    "fr": "Quelle classe",
+    "en": "So classy"
+   },
+   {
+    "emoji": "👑",
+    "fr": "Tu es un roi, une reine",
+    "en": "You're royalty"
+   },
+   {
+    "emoji": "🔥",
+    "fr": "Tu déchires",
+    "en": "You're on fire"
+   },
+   {
+    "emoji": "🧠",
+    "fr": "Génie",
+    "en": "Genius"
+   },
+   {
+    "emoji": "💎",
+    "fr": "Précieux",
+    "en": "Precious"
+   },
+   {
+    "emoji": "🤩",
+    "fr": "Sublime",
+    "en": "Stunning"
+   },
+   {
+    "emoji": "👌",
+    "fr": "Parfait",
+    "en": "Perfect"
+   },
+   {
+    "emoji": "🫡",
+    "fr": "Respect",
+    "en": "Respect"
+   },
+   {
+    "emoji": "💯",
+    "fr": "Cent pour cent",
+    "en": "100 percent"
+   },
+   {
+    "emoji": "🎨",
+    "fr": "Quel talent",
+    "en": "What talent"
+   }
+  ]
+ },
+ {
+  "category": "amour",
+  "name": "Amour et affection",
+  "stickers": [
+   {
+    "emoji": "❤️",
+    "fr": "Je t'aime",
+    "en": "Love you"
+   },
+   {
+    "emoji": "🤗",
+    "fr": "Câlin",
+    "en": "Hug"
+   },
+   {
+    "emoji": "😘",
+    "fr": "Bisou",
+    "en": "Kiss"
+   },
+   {
+    "emoji": "💓",
+    "fr": "Cœur qui bat",
+    "en": "Heartbeat"
+   },
+   {
+    "emoji": "🥺",
+    "fr": "Tu me manques",
+    "en": "Miss you"
+   },
+   {
+    "emoji": "🙏",
+    "fr": "Merci du fond du cœur",
+    "en": "Heartfelt thanks"
+   },
+   {
+    "emoji": "🤝",
+    "fr": "Amis pour la vie",
+    "en": "Friends for life"
+   },
+   {
+    "emoji": "🌈",
+    "fr": "Bonne énergie",
+    "en": "Good vibes"
+   },
+   {
+    "emoji": "💭",
+    "fr": "Je pense à toi",
+    "en": "Thinking of you"
+   },
+   {
+    "emoji": "💔",
+    "fr": "Cœur brisé",
+    "en": "Heartbroken"
+   }
+  ]
+ },
+ {
+  "category": "reponses",
+  "name": "Réponses rapides",
+  "stickers": [
+   {
+    "emoji": "👍",
+    "fr": "Oui",
+    "en": "Yes"
+   },
+   {
+    "emoji": "🙅",
+    "fr": "Non",
+    "en": "No"
+   },
+   {
+    "emoji": "🤔",
+    "fr": "Peut-être",
+    "en": "Maybe"
+   },
+   {
+    "emoji": "👌",
+    "fr": "D'accord",
+    "en": "OK"
+   },
+   {
+    "emoji": "🙏",
+    "fr": "Merci",
+    "en": "Thanks"
+   },
+   {
+    "emoji": "🤝",
+    "fr": "De rien",
+    "en": "You're welcome"
+   },
+   {
+    "emoji": "👋",
+    "fr": "Bonjour",
+    "en": "Hello"
+   },
+   {
+    "emoji": "🌙",
+    "fr": "Bonne nuit",
+    "en": "Good night"
+   },
+   {
+    "emoji": "🌆",
+    "fr": "Bonsoir",
+    "en": "Good evening"
+   },
+   {
+    "emoji": "🫶",
+    "fr": "À bientôt",
+    "en": "See you soon"
+   },
+   {
+    "emoji": "⏳",
+    "fr": "Un instant",
+    "en": "One moment"
+   },
+   {
+    "emoji": "🚶",
+    "fr": "J'arrive",
+    "en": "On my way"
+   },
+   {
+    "emoji": "📩",
+    "fr": "Bien reçu",
+    "en": "Got it"
+   },
+   {
+    "emoji": "🙆",
+    "fr": "Pas de souci",
+    "en": "No worries"
+   },
+   {
+    "emoji": "🍀",
+    "fr": "Bonne chance",
+    "en": "Good luck"
+   },
+   {
+    "emoji": "🤞",
+    "fr": "Je croise les doigts",
+    "en": "Fingers crossed"
+   }
+  ]
+ }
+]
