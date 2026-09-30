@@ -33,6 +33,11 @@ import 'coins/post_gifts_list.dart';
 import '../services/comment_coins.dart';
 import '../widgets/post_coins_earned.dart';
 import 'pub/afrolook_inline_ad.dart';
+import '../services/stickers/sticker_models.dart';
+import '../services/stickers/sticker_service.dart';
+import 'stickers/sticker_picker_sheet.dart';
+import 'stickers/sticker_recents_bar.dart';
+import 'stickers/sticker_widgets.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 
 class PostComments extends StatefulWidget {
@@ -94,6 +99,11 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   bool _showEmojiPicker = false;
 
+  // Stickers (abonnés) : quotas du jour et derniers stickers utilisés.
+  StickerAccess? _stickerAccess;
+  List<StickerItem> _recentStickers = [];
+  bool _stickerSending = false;
+
   List<_GifterEntry> _topGifters = [];
   bool _giftersLoaded = false;
 
@@ -113,6 +123,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     _ensureCanalLoaded();
     _loadTopGifters();
     _textController.addListener(_onTextChanged);
+    if (_canUseStickers) _refreshStickerData();
 
     if (widget.initialText != null && widget.initialText!.isNotEmpty) {
       _textController.text = widget.initialText!;
@@ -135,6 +146,60 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Abonné actif (Premium ou Gold) ou admin : le serveur tranche, l'app pré-vérifie.
+  bool get _canUseStickers =>
+      AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ||
+      authProvider.loginUserData.role == UserRole.ADM.name;
+
+  /// Rafraîchit les quotas (`stickerAccess`) et les récents.
+  Future<void> _refreshStickerData() async {
+    final uid = authProvider.loginUserData.id;
+    if (uid == null) return;
+    final results = await Future.wait([
+      StickerService.instance.fetchAccess(postId: widget.post.id),
+      StickerService.instance.loadRecents(uid),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _stickerAccess = (results[0] as StickerAccess?) ?? _stickerAccess;
+      _recentStickers = results[1] as List<StickerItem>;
+    });
+  }
+
+  Future<void> _onStickerButtonTap() async {
+    if (!_canUseStickers) {
+      _focusNode.unfocus();
+      await showStickerPremiumInvite(context);
+      return;
+    }
+    _focusNode.unfocus();
+    if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
+    final picked = await showStickerPicker(
+      context,
+      userId: authProvider.loginUserData.id ?? '',
+      postId: widget.post.id,
+      initialAccess: _stickerAccess,
+      initialRecents: _recentStickers,
+    );
+    if (picked != null && mounted) await _sendSticker(picked);
+  }
+
+  Future<void> _sendSticker(StickerItem s) async {
+    if (replying || _stickerSending || _isLoading) return;
+    _stickerSending = true;
+    try {
+      await _sendComment(sticker: s);
+    } finally {
+      _stickerSending = false;
+    }
+    if (!mounted) return;
+    _refreshStickerData();
+    // Le trigger serveur met à jour quotas et récents avec un léger délai.
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) _refreshStickerData();
+    });
   }
 
   void _onTextChanged() {
@@ -1073,7 +1138,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 ],
               ),
               const SizedBox(height: 3),
-              _buildMentionText(pcm.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+              if (pcm.media != null) _buildCommentMedia(pcm.media!),
+              if ((pcm.message ?? '').isNotEmpty || pcm.media == null)
+                _buildMentionText(pcm.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
               _buildCoinsEarned(pcm.coinsEarned),
               if (needsExpandButton)
                 GestureDetector(
@@ -1127,6 +1194,48 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           ),
         ),
       ],
+    );
+  }
+
+  /// Média d'un commentaire (sticker) : lecture seule, sans enregistrement, partage ni appui long.
+  Widget _buildCommentMedia(Map<String, dynamic> media) {
+    final url = (media['url'] ?? '').toString();
+    final thumb = (media['thumbUrl'] ?? '').toString();
+    if (url.isEmpty && thumb.isEmpty) return const SizedBox.shrink();
+    final w = (media['w'] as num?)?.toDouble() ?? 1;
+    final h = (media['h'] as num?)?.toDouble() ?? 1;
+    final ratio = (w > 0 && h > 0) ? (w / h).clamp(0.5, 2.0).toDouble() : 1.0;
+
+    Widget fallback() => Center(
+          child: Icon(Icons.image_not_supported_outlined, size: 22, color: _colors.textSecondary),
+        );
+    Widget thumbImage() => thumb.isEmpty
+        ? const SizedBox.shrink()
+        : Image.network(thumb, fit: BoxFit.cover, gaplessPlayback: true, errorBuilder: (_, __, ___) => fallback());
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4, top: 2),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 160),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: AspectRatio(
+            aspectRatio: ratio,
+            child: ColoredBox(
+              color: _colors.surfaceVariant,
+              child: url.isEmpty
+                  ? thumbImage()
+                  : Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                      frameBuilder: (ctx, child, frame, sync) => (frame == null && !sync) ? thumbImage() : child,
+                      errorBuilder: (_, __, ___) => thumb.isEmpty ? fallback() : thumbImage(),
+                    ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1504,6 +1613,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               child: _buildUserSuggestions(),
             ),
 
+          // Stickers récents (abonnés)
+          if (!replying && _canUseStickers && _recentStickers.isNotEmpty)
+            StickerRecentsBar(
+              recents: _recentStickers,
+              access: _stickerAccess,
+              onSend: _sendSticker,
+            ),
+
           // Barre de saisie
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1535,6 +1652,27 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     ),
                   ),
                 ),
+                // Bouton sticker (pas en mode réponse)
+                if (!replying)
+                  GestureDetector(
+                    onTap: _onStickerButtonTap,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8, right: 6),
+                      child: SizedBox(
+                        width: 28,
+                        height: 26,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(Icons.sticky_note_2_outlined, color: _colors.textSecondary, size: 24),
+                            if (!_canUseStickers)
+                              const Positioned(right: -6, top: -7, child: StickerPremiumBadge()),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 // Champ de texte
                 Expanded(
                   child: Container(
@@ -1624,8 +1762,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   // ─── SEND / DELETE ───────────────────────────────────────────────────────────
 
-  Future<void> _sendComment() async {
-    if (_textController.text.trim().isEmpty) return;
+  Future<void> _sendComment({StickerItem? sticker}) async {
+    // Un sticker n'est jamais envoyé en mode réponse (commentaires principaux seulement).
+    if (sticker != null && replying) return;
+    if (sticker == null && _textController.text.trim().isEmpty) return;
 
     setState(() => _isLoading = true);
     final textComment = _textController.text.trim();
@@ -1698,6 +1838,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         }
 
         final comment = PostComment(
+          media: sticker?.toMedia(),
           id: FirebaseFirestore.instance.collection('PostComments').doc().id,
           user_id: authProvider.loginUserData.id,
           user: authProvider.loginUserData,
@@ -1718,7 +1859,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         if (widget.post.user != null) receiverId = widget.post.user!.id!;
         action = _canalName != null
             ? "Le canal #$_canalName a commenté votre publication"
-            : "commente votre publication";
+            : (sticker != null ? "a envoyé un sticker sur votre publication" : "commente votre publication");
         if (success) {
           _addCommentLocally(comment);
           widget.post.comments = (widget.post.comments ?? 0) + 1;
@@ -1758,7 +1899,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             postOwnerId: widget.post.user_id!,
             postId: widget.post.id!,
             actionType: 'comment',
-            commentaireMessage: textComment,
+            commentaireMessage: textComment.isEmpty && sticker != null ? 'Sticker' : textComment,
             postDescription: widget.post.description,
             postImageUrl: notifImageUrl,
             postDataType: widget.post.dataType,

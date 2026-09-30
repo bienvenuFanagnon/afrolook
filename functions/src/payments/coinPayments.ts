@@ -32,7 +32,7 @@ const AD_COMBINED_FACTOR = 1.5; // publicité + boost de profil (user_create_adv
 
 type Kind = "premium" | "gold" | "official" | "group" | "content" | "canal"
   | "live_entry" | "live_participant" | "ad" | "ad_renew" | "profile_boost" | "product_boost"
-  | "entreprise_premium" | "canal_create" | "group_create";
+  | "entreprise_premium" | "canal_create" | "group_create" | "sticker_pack";
 
 const SOURCES: Record<Kind, CommissionSource> = {
   premium: "premium",
@@ -50,6 +50,7 @@ const SOURCES: Record<Kind, CommissionSource> = {
   entreprise_premium: "abonnement_entreprise",
   canal_create: "canaux",
   group_create: "groupes",
+  sticker_pack: "stickers",
 };
 
 const LABELS: Record<Kind, string> = {
@@ -68,6 +69,7 @@ const LABELS: Record<Kind, string> = {
   entreprise_premium: "Abonnement entreprise Premium",
   canal_create: "Création d'un canal supplémentaire",
   group_create: "Création d'un groupe supplémentaire",
+  sticker_pack: "Pack de stickers",
 };
 
 function num(v: unknown): number {
@@ -145,6 +147,7 @@ async function priceOf(kind: Kind, refId: string | undefined, dureeMois: number,
     case "profile_boost": return { coins: toCoins(await adPrice(weeks)) };
     case "product_boost": return { coins: toCoins(productBoostFcfa(days)) };
     case "entreprise_premium": return { coins: toCoins(entreprisePremiumFcfa(days)) };
+    case "sticker_pack": return creatorPrice("StickerPacks", refId, "priceCoins", "priceCoinsUnused", "creatorId");
     case "canal_create":
     case "group_create": {
       const q = await creationCost(kind === "canal_create" ? "canal" : "group", uid);
@@ -166,6 +169,14 @@ export const payWithCoins = onCall(
     const { coins, ownerId } = await priceOf(kind as Kind, refId, Math.floor(num(dureeMois)) || 1,
       Math.floor(num(weeks)), combined === true, Math.floor(num(days)), uid);
     if (coins <= 0) throw new HttpsError("failed-precondition", "Ce contenu est gratuit.");
+    if (kind === "sticker_pack" && refId) {
+      const [pack, own] = await Promise.all([
+        db.collection("StickerPacks").doc(refId).get(),
+        db.collection("StickerOwnership").doc(`${uid}_${refId}`).get(),
+      ]);
+      if (!pack.exists || pack.get("status") !== "active") throw new HttpsError("failed-precondition", "Pack indisponible.");
+      if (own.exists) throw new HttpsError("already-exists", "Tu possèdes déjà ce pack.");
+    }
 
     // Part du créateur (70 %), sauf s'il paie lui-même
     const creatorId = ownerId && ownerId !== uid ? ownerId : undefined;
@@ -253,6 +264,12 @@ export const payWithCoins = onCall(
       // 4 bis. Création d'un canal / groupe supplémentaire : ticket de création (consommé à la création du document)
       if (kind === "canal_create" || kind === "group_create") {
         tx.update(userRef, { [creditFieldOf(kind === "canal_create" ? "canal" : "group")]: FieldValue.increment(1) });
+      }
+
+      // 4 ter. Pack de stickers : droit d'usage enregistré pour l'acheteur
+      if (kind === "sticker_pack" && refId) {
+        tx.set(db.collection("StickerOwnership").doc(`${uid}_${refId}`), { userId: uid, packId: refId, priceCoins: coins, purchasedAt: now });
+        tx.update(db.collection("StickerPacks").doc(refId), { salesCount: FieldValue.increment(1) });
       }
 
       // 5. App : part restante, enregistrée par source (page admin « Commissions »)

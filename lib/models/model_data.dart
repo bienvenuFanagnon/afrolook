@@ -4134,6 +4134,9 @@ class PostComment {
   // Commentaire auto-généré lors d'un envoi de cadeau
   bool? isAutoGiftComment;
 
+  /// Média (sticker) du commentaire : {type, stickerId, url, thumbUrl, w, h, sizeBytes, animated}.
+  Map<String, dynamic>? media;
+
   /// Pièces reçues par l'auteur grâce aux likes et cadeaux sur ce commentaire (écrit par le serveur, jamais renvoyé par toJson).
   int coinsEarned = 0;
   /// Idem pour chaque réponse : replyId → pièces.
@@ -4157,6 +4160,7 @@ class PostComment {
     this.canal_name,
     this.canal_image,
     this.isAutoGiftComment,
+    this.media,
   });
 
   PostComment.fromJson(Map<String, dynamic> json) {
@@ -4175,6 +4179,7 @@ class PostComment {
     canal_name = json['canal_name'];
     canal_image = json['canal_image'];
     isAutoGiftComment = json['isAutoGiftComment'] == true;
+    media = json['media'] is Map ? Map<String, dynamic>.from(json['media'] as Map) : null;
     coinsEarned = (json['coinsEarned'] as num?)?.toInt() ?? 0;
     replyCoins = {
       for (final e in ((json['replyCoins'] as Map?) ?? const {}).entries) '${e.key}': (e.value as num?)?.toInt() ?? 0,
@@ -4207,6 +4212,7 @@ class PostComment {
     if (canal_name != null) data['canal_name'] = canal_name;
     if (canal_image != null) data['canal_image'] = canal_image;
     if (isAutoGiftComment == true) data['isAutoGiftComment'] = true;
+    if (media != null) data['media'] = media;
 
     return data;
   }

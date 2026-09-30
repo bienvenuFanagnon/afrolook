@@ -2,7 +2,48 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      // Les dossiers ci-dessous ont leurs propres règles (propriétaire et poids maximum) ou sont écrits
+      // uniquement par les Cloud Functions / l'administration : la règle générale ne les ouvre pas en écriture.
+      allow write: if request.auth != null
+          && !allPaths.matches('stickers/.*|sticker_submissions/.*|user_stickers/.*|comment_media/.*|test_builds/.*');
+    }
+
+    // Stickers du catalogue : écrits uniquement par les Cloud Functions et l'administration (jamais par l'app)
+    match /stickers/{allPaths=**} {
+      allow read: if request.auth != null;
+    }
+
+    // Dépôts de packs par les créateurs : le propriétaire écrit ses fichiers (600 Ko maximum, image)
+    match /sticker_submissions/{uid}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 600 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Stickers personnels (« Mes stickers ») : lisibles par les connectés, écrits par leur propriétaire
+    match /user_stickers/{uid}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 600 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Images de commentaire : 600 Ko maximum (300 Ko pour une image fixe, contrôlé aussi par le serveur)
+    match /comment_media/{uid}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 600 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Versions de test de l'application : lues par lien, écrites uniquement par l'administration
+    match /test_builds/{allPaths=**} {
+      allow read: if request.auth != null;
     }
 
     // Photos de profil envoyées pendant l'inscription.
