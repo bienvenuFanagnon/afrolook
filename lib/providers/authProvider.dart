@@ -1728,6 +1728,8 @@ class UserAuthProvider extends ChangeNotifier {
     String? commentaireMessage,
     String? postImageUrl,
     String? postDataType,
+    bool isSticker = false,
+    List<String> excludeUserIds = const [],
   }) async {
     int notifiedCount = 0;
     try {
@@ -1803,9 +1805,13 @@ class UserAuthProvider extends ChangeNotifier {
       switch (actionType) {
         case 'comment':
           actionTitle = "Commentaire 💬";
-          String shortMsg = commentaireMessage ?? '';
+          String shortMsg = (commentaireMessage ?? '').trim();
           if (shortMsg.length > 50) shortMsg = shortMsg.substring(0, 50) + '...';
-          actionMessage = "a commenté : \"$shortMsg\"";
+          if (isSticker) {
+            actionMessage = shortMsg.isEmpty ? "a envoyé un sticker sur" : "a envoyé un sticker (\"$shortMsg\") sur";
+          } else {
+            actionMessage = shortMsg.isEmpty ? "a commenté" : "a commenté : \"$shortMsg\" sur";
+          }
           finalPostDataType = 'COMMENT';
           break;
         case 'favorite':
@@ -1845,7 +1851,7 @@ class UserAuthProvider extends ChangeNotifier {
         for (var userDoc in usersBatch.docs) {
           final userId = userDoc.id;
           // Ne pas notifier l'utilisateur qui a fait l'action
-          if (userId == actionUserId) continue;
+          if (userId == actionUserId || excludeUserIds.contains(userId)) continue;
 
           final userData = userDoc.data();
           final lastNotifTime = userData['lastNotificationTime'] as int? ?? 0;
@@ -1858,7 +1864,8 @@ class UserAuthProvider extends ChangeNotifier {
 
           // Créer la notification Firestore
           final notifId = FirebaseFirestore.instance.collection('Notifications').doc().id;
-          final description = "@$actionUserPseudo $actionMessage  le post de $ownerName : \"$finalDescription\"";
+          final target = postOwnerId == actionUserId ? 'son propre post' : 'le post de $ownerName';
+          final description = "@$actionUserPseudo $actionMessage $target : \"$finalDescription\"";
 if(actionType == 'comment'){
   final notification = NotificationData(
     id: notifId,
@@ -1900,7 +1907,7 @@ if(actionType == 'comment'){
 
         // Envoyer les push notifications (en arrière‑plan)
         if (oneSignalIds.isNotEmpty) {
-          final pushMessage = "@$actionUserPseudo $actionMessage le post de $ownerName";
+          final pushMessage = "@$actionUserPseudo $actionMessage ${postOwnerId == actionUserId ? 'son propre post' : 'le post de $ownerName'}";
 
           unawaited(sendNotification(
             appName: actionTitle,

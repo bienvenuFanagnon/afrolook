@@ -576,12 +576,24 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     } catch (_) {}
   }
 
-  Future<void> _sendMentionNotifications(String message) async {
+  /// Identifiants des utilisateurs cités (@pseudo) dans un message, sans doublon.
+  Set<String> _mentionedUserIds(String message) {
+    final ids = <String>{};
+    for (final username in _extractMentionedUsers(message)) {
+      final u = users.firstWhere((u) => u.pseudo == username, orElse: () => UserData());
+      if (u.id != null) ids.add(u.id!);
+    }
+    return ids;
+  }
+
+  Future<void> _sendMentionNotifications(String message, {Set<String> alreadyNotified = const {}}) async {
     try {
+      final done = <String>{...alreadyNotified};
       final mentionedUsers = _extractMentionedUsers(message);
       for (final username in mentionedUsers) {
         final user = users.firstWhere((u) => u.pseudo == username, orElse: () => UserData());
-        if (user.id != null && user.id != authProvider.loginUserData.id) {
+        if (user.id != null && user.id != authProvider.loginUserData.id && !done.contains(user.id)) {
+          done.add(user.id!);
           final msg = "@${authProvider.loginUserData.pseudo!} vous a mentionne dans un commentaire";
           final mentionNotif = NotificationData(
             id: firestore.collection('Notifications').doc().id,
@@ -1968,7 +1980,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
         success = await postProvider.updateComment(commentSelectedToReply);
         receiverId = replyUser_id;
-        action = "repondu a votre commentaire";
+        action = "répondu à votre commentaire";
 
         if (success) {
           FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
@@ -2010,8 +2022,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         success = await postProvider.newComment(comment);
         if (widget.post.user != null) receiverId = widget.post.user!.id!;
         action = _canalName != null
-            ? "Le canal #$_canalName a commenté votre publication"
-            : (sticker != null ? "a envoyé un sticker sur votre publication" : "commente votre publication");
+            ? (sticker != null
+                ? "Le canal #$_canalName a envoyé un sticker sur votre publication"
+                : "Le canal #$_canalName a commenté votre publication")
+            : (sticker != null ? "envoyé un sticker sur votre publication" : "commenté votre publication");
         if (success) {
           _addCommentLocally(comment);
           widget.post.comments = (widget.post.comments ?? 0) + 1;
@@ -2046,32 +2060,47 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               : (widget.post.images?.isNotEmpty == true
                   ? widget.post.images!.first
                   : '');
-          authProvider.notifySubscribersOfInteraction(
-            actionUserId: authProvider.loginUserData.id!,
-            postOwnerId: widget.post.user_id!,
-            postId: widget.post.id!,
-            actionType: 'comment',
-            commentaireMessage: textComment.isEmpty && sticker != null ? 'Sticker' : textComment,
-            postDescription: widget.post.description,
-            postImageUrl: notifImageUrl,
-            postDataType: widget.post.dataType,
-          );
-          FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
+          final me = authProvider.loginUserData.id!;
+          final isReply = replying;
+          // Personnes déjà prévenues : jamais soi-même, jamais deux fois la même personne
+          final notified = <String>{me};
+          final mentionIds = _mentionedUserIds(textComment)..remove(me);
+          if (!isReply) {
+            // Les abonnés de l'auteur (sauf le propriétaire du post et les personnes citées, prévenus à part).
+            // Une réponse à un commentaire ne prévient pas les abonnés.
+            authProvider.notifySubscribersOfInteraction(
+              actionUserId: me,
+              postOwnerId: widget.post.user_id!,
+              postId: widget.post.id!,
+              actionType: 'comment',
+              commentaireMessage: textComment,
+              isSticker: sticker != null,
+              excludeUserIds: [widget.post.user_id!, ...mentionIds],
+              postDescription: widget.post.description,
+              postImageUrl: notifImageUrl,
+              postDataType: widget.post.dataType,
+            );
+            FeedInteractionService.onPostCommented(widget.post, me);
+          }
 
-          if (widget.post.user != null) {
-            // Affiche le nom/image du canal si c'est un post de canal
+          // Destinataire direct : le propriétaire du post (commentaire) ou l'auteur du commentaire (réponse)
+          if (receiverId.isNotEmpty && !notified.contains(receiverId)) {
+            notified.add(receiverId);
             await _sendCommentNotification(
               receiverId, action, textComment,
-              displayName: _canalName != null
-                  ? '#$_canalName'
-                  : (isCanalPost && widget.post.canal?.titre != null
-                      ? '#${widget.post.canal!.titre}'
-                      : null),
-              displayImage: _canalImage ??
-                  (isCanalPost ? widget.post.canal?.urlImage : null),
+              displayName: isReply
+                  ? null
+                  : (_canalName != null
+                      ? '#$_canalName'
+                      : (isCanalPost && widget.post.canal?.titre != null
+                          ? '#${widget.post.canal!.titre}'
+                          : null)),
+              displayImage: isReply
+                  ? null
+                  : (_canalImage ?? (isCanalPost ? widget.post.canal?.urlImage : null)),
             );
           }
-          await _sendMentionNotifications(textComment);
+          await _sendMentionNotifications(textComment, alreadyNotified: notified);
           authProvider.checkAndRefreshPostDates(widget.post.id!);
         } catch (e) {
           debugPrint('[Comments] notification error: $e');
