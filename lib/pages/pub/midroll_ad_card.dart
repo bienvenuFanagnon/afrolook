@@ -72,26 +72,28 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
     }
   }
 
-  Future<void> _navigateToAdOwner(BuildContext ctx, String ownerId, String? ownerType) async {
+  /// [nav] est capturé AVANT la fermeture de la carte : une fois la pub fermée, ce widget est démonté et
+  /// son BuildContext ne permet plus de naviguer (le bouton d'action fermait la pub sans rien ouvrir).
+  Future<void> _navigateToAdOwner(NavigatorState nav, String ownerId, String? ownerType) async {
     try {
       final fs = FirebaseFirestore.instance;
       switch (ownerType) {
         case 'canal':
           final doc = await fs.collection('Canaux').doc(ownerId).get();
-          if (!doc.exists || !ctx.mounted) return;
+          if (!doc.exists) return;
           final data = Map<String, dynamic>.from(doc.data()!);
           data['id'] = doc.id;
-          Navigator.push(ctx, MaterialPageRoute(
+          nav.push(MaterialPageRoute(
             builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
           ));
           break;
         case 'user':
         default:
           final doc = await fs.collection('Users').doc(ownerId).get();
-          if (!doc.exists || !ctx.mounted) return;
+          if (!doc.exists) return;
           final data = Map<String, dynamic>.from(doc.data()!);
           data['id'] = doc.id;
-          Navigator.push(ctx, MaterialPageRoute(
+          nav.push(MaterialPageRoute(
             builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
           ));
       }
@@ -206,14 +208,15 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                             GestureDetector(
                               onTap: () {
                                 if (post != null && ad != null) {
+                                  final nav = Navigator.of(context);
                                   widget.onClose();
                                   if (post.dataType == PostDataType.VIDEO.name ||
                                       (post.url_media?.contains('.mp4') ?? false)) {
-                                    Navigator.push(context, MaterialPageRoute(
+                                    nav.push(MaterialPageRoute(
                                       builder: (_) => PostDetailsVideoFormatTel(initialPost: post!, isIn: false),
                                     ));
                                   } else {
-                                    Navigator.push(context, MaterialPageRoute(
+                                    nav.push(MaterialPageRoute(
                                       builder: (_) => DetailsPost(post: post!),
                                     ));
                                   }
@@ -387,8 +390,9 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                               final ownerType = ad!.ownerType;
                                               if (ownerId == null) return;
                                               setState(() => _ctaLoading = true);
+                                              final nav = Navigator.of(context);
                                               widget.onClose();
-                                              await _navigateToAdOwner(context, ownerId, ownerType);
+                                              await _navigateToAdOwner(nav, ownerId, ownerType);
                                               if (mounted) setState(() => _ctaLoading = false);
                                             },
                                             child: Container(
@@ -471,8 +475,9 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                                 final ownerType = ad!.ownerType;
                                                 if (ownerId == null) return;
                                                 setState(() => _ctaLoading = true);
+                                                final nav = Navigator.of(context);
                                                 widget.onClose();
-                                                await _navigateToAdOwner(context, ownerId, ownerType);
+                                                await _navigateToAdOwner(nav, ownerId, ownerType);
                                                 if (mounted) setState(() => _ctaLoading = false);
                                               },
                                               child: Container(
@@ -545,21 +550,22 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                     child: GestureDetector(
                                       onTap: _ctaLoading ? null : () async {
                                         if (ad == null) return;
+                                        final nav = Navigator.of(context);
                                         widget.onClose();
                                         if (post != null) {
                                           if (post!.dataType == PostDataType.VIDEO.name ||
                                               (post!.url_media?.contains('.mp4') ?? false)) {
-                                            Navigator.push(context, MaterialPageRoute(
+                                            nav.push(MaterialPageRoute(
                                               builder: (_) => PostDetailsVideoFormatTel(initialPost: post!, isIn: false),
                                             ));
                                           } else {
-                                            Navigator.push(context, MaterialPageRoute(
+                                            nav.push(MaterialPageRoute(
                                               builder: (_) => DetailsPost(post: post!),
                                             ));
                                           }
                                         } else if (ad!.ownerId != null) {
                                           setState(() => _ctaLoading = true);
-                                          await _navigateToAdOwner(context, ad!.ownerId!, ad!.ownerType);
+                                          await _navigateToAdOwner(nav, ad!.ownerId!, ad!.ownerType);
                                           if (mounted) setState(() => _ctaLoading = false);
                                         }
                                       },
@@ -656,8 +662,9 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                     // ── Lien "Ne plus voir" ──
                     GestureDetector(
                       onTap: () {
+                        final nav = Navigator.of(context);
                         widget.onClose();
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen(initialTab: 1)));
+                        nav.push(MaterialPageRoute(builder: (_) => AbonnementScreen(initialTab: 1)));
                       },
                       child: const Text(
                         'Ne plus voir de pubs → Premium',
