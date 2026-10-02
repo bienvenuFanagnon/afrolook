@@ -1,4 +1,4 @@
-﻿
+
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -1769,6 +1769,8 @@ class _UserProfileModalState extends State<UserProfileModal> {
   }
   // Dans le UserProfileModal, ajoutez cette section après les statistiques existantes
   Widget _buildProfileLikesSection() {
+    // Un profil ouvert depuis un aperçu (snapshot de post) peut ne pas avoir d'identifiant : section masquée
+    if (widget.user.id == null || widget.user.id!.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
     final profileLikeProvider = Provider.of<ProfileLikeProvider>(context);
 
@@ -1813,6 +1815,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
     );
   }
   Widget _buildProfileLikeButton() {
+    if (widget.user.id == null || widget.user.id!.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<UserAuthProvider>(context);
     final profileLikeProvider = Provider.of<ProfileLikeProvider>(context);
