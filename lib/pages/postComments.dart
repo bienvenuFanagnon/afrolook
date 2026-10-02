@@ -1346,7 +1346,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     return Padding(
       padding: const EdgeInsets.only(bottom: 4, top: 2),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 160),
+        constraints: const BoxConstraints(maxWidth: 110),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: AspectRatio(
