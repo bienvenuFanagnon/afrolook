@@ -5,8 +5,8 @@ import { CREATOR_SHARE, creditSponsors, num, recordAppCommission, resolveSponsor
 
 /**
  * Interactions payantes en pièces, calculées côté serveur (auparavant dans l'app, donc contournables).
- * - sendLike      : 2 pièces → 1 au créateur, 1 à l'app (pas de parrainage) — seulement si le créateur a activé les likes
- *                   payants sur le post (champ paidLikes ; absent = ancien post = payant). Sinon le like est gratuit.
+ * - sendLike      : 2 pièces → 1 au créateur, 1 à l'app (pas de parrainage) — seulement si le post est monétisé
+ *                   (champ monetized ; absent = ancien post = monétisé). Sinon le like est gratuit.
  * - sendComment   : GRATUIT depuis 2026-10 (plus aucun débit) ; conservé pour les anciennes versions de l'app.
  * - sendPostGift  : cadeau sur un post → 70 % créateur, 2,5 % + 2,5 % parrains, reste à l'app.
  * - sendLiveGift  : cadeau en live → 70 % hôte, 2,5 % + 2,5 % parrains, reste à l'app.
@@ -46,8 +46,9 @@ export const sendLike = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (
     if (!postDoc.exists) throw new HttpsError("not-found", "Post introuvable.");
     if (!senderDoc.exists) throw new HttpsError("not-found", "Compte introuvable.");
     const creatorId = postDoc.data()!["user_id"] as string | undefined;
-    // Likes gratuits : le créateur n'a pas activé les likes payants (champ absent = ancien post = payant)
-    if (postDoc.data()!["paidLikes"] === false) {
+    // Post non monétisé : likes gratuits (champ absent = ancien post = monétisé). `paidLikes` : ancien nom du champ.
+    const monetized = postDoc.data()!["monetized"] ?? postDoc.data()!["paidLikes"];
+    if (monetized === false) {
       tx.update(postRef, {
         loves: FieldValue.increment(1),
         users_love_id: FieldValue.arrayUnion(uid),

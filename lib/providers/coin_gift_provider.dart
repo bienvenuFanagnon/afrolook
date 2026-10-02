@@ -169,7 +169,7 @@ class CoinGiftUserProvider with ChangeNotifier {
     VoidCallback? onReadyToAnimate,
   }) async {
     // Likes gratuits : le créateur n'a pas activé les likes payants sur ce post → ni débit, ni animation « pièces »
-    if (!post.likesArePaid) {
+    if (!post.isMonetized) {
       final postId = post.id;
       if (postId == null) return true;
       await _firestore.collection('Posts').doc(postId).update({

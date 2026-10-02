@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../l10n/tr.dart';
 import '../theme/app_colors.dart';
 
-/// Option de publication : les likes de ce post rapportent-ils des pièces au créateur ?
-/// Désactivée par défaut (likes gratuits). Les commentaires sont gratuits dans tous les cas.
-class PaidLikesOption extends StatelessWidget {
+/// Option de publication : ce post est-il monétisé ?
+/// Monétisé : likes payants (2 pièces : 1 créateur, 1 Afrolook) et vues des abonnés rémunérées.
+/// Non monétisé (par défaut) : likes gratuits, vues non rémunérées. Les commentaires sont gratuits dans tous les cas.
+class MonetizedPostOption extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
-  const PaidLikesOption({super.key, required this.value, required this.onChanged});
+  const MonetizedPostOption({super.key, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,7 @@ class PaidLikesOption extends StatelessWidget {
               const Text('🪙', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(context.tr('Likes payants'),
+                child: Text(context.tr('Post monétisé'),
                     style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
               ),
               Switch(value: value, onChanged: onChanged, activeColor: c.primary),
@@ -39,8 +40,8 @@ class PaidLikesOption extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8, bottom: 2),
             child: Text(
               value
-                  ? context.tr('Activé : chaque like coûte 2 pièces à celui qui like — 1 pièce pour toi, 1 pour Afrolook. Un petit « +1 » s\'affiche sur le cœur.')
-                  : context.tr('Désactivé : les likes de ce post sont gratuits pour tout le monde, tu ne gagnes pas de pièces avec les likes. Active-le pour être payé à chaque like.'),
+                  ? context.tr('Activé : ce post est monétisé. Chaque like coûte 2 pièces à celui qui like (1 pièce pour toi, 1 pour Afrolook, avec un petit « +1 » sur le cœur) et les vues de tes abonnés sont rémunérées.')
+                  : context.tr('Désactivé : ce post n\'est pas monétisé. Les likes sont gratuits et ses vues ne rapportent rien. Active-le pour gagner des pièces et des gains de vues avec ce post.'),
               style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
             ),
           ),

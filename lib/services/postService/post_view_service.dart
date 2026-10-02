@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import '../../models/model_data.dart';
 
@@ -28,6 +28,7 @@ class PostViewService {
   /// N'incrémente le compteur de l'auteur QUE si :
   ///   - le post est de type PostType.POST (pas PUB, CHALLENGE, SERVICE, etc.)
   ///   - l'auteur est connu et différent du viewer (pas ses propres vues)
+  ///   - le post est monétisé (choix du créateur à la publication ; anciens posts = monétisés)
   ///
   /// Sécurité : seules les vues d'abonnés comptent pour la monétisation.
   /// Le compteur de vues du post (uniqueViewsCount) reste incrémenté pour tous.
@@ -58,8 +59,9 @@ class PostViewService {
         'uniqueViewsCount': FieldValue.increment(1),
       }).catchError((e) => printVm('PostViewService post update error: $e'));
 
-      // Compteurs de monétisation : uniquement pour les abonnés
-      if (isSubscriber) {
+      // Compteurs de monétisation : uniquement pour les abonnés, et seulement si le post est monétisé
+      // (un post non monétisé affiche ses vues mais ne rapporte rien)
+      if (isSubscriber && post.isMonetized) {
         await _firestore.collection('Users').doc(authorId).update({
           'totalPostUniqueViews': FieldValue.increment(1),
           'postViewsMonthly.$month': FieldValue.increment(1),
@@ -146,6 +148,8 @@ class PostViewService {
       final postData = doc.data();
 
       if (postData['isAdvertisement'] == true) continue;
+      // Post non monétisé : ses vues ne comptent pas (champ absent = ancien post = monétisé)
+      if ((postData['monetized'] ?? postData['paidLikes']) == false) continue;
 
       final views = (postData['uniqueViewsCount'] as num?)?.toInt()
           ?? (postData['vues'] as num?)?.toInt()

@@ -1285,7 +1285,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(8),
                 color: colors.primary,
-                border: Border.all(color: colors.primary, width: 1.5),
                 image: _getProfileImage() != null
                     ? DecorationImage(image: _getProfileImage()!, fit: BoxFit.cover)
                     : null,
@@ -1393,7 +1392,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               showUserDetailsModalDialog(currentUser!, w, h, context);
             }
           },
-          // 🔥 Bordure verte : ronde pour un utilisateur, carrée pour un canal
+          // Avatar : rond pour un utilisateur, carré (sans bordure) pour un canal
           child: isCanalPost
               ? Container(
                   width: 46,
@@ -1402,7 +1401,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(10),
                     color: colors.primary,
-                    border: Border.all(color: colors.primary, width: 2),
                     image: _getProfileImage() != null
                         ? DecorationImage(image: _getProfileImage()!, fit: BoxFit.cover)
                         : null,
@@ -2733,7 +2731,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               recordUniquePostView();
               widget.onLiked?.call();
             } : null,
-            coinHeart: widget.post.likesArePaid,
+            coinHeart: widget.post.isMonetized,
           ),
           if (widget.post.isAdvertisement != true &&
               authProvider.loginUserData.id != widget.post.user_id)

@@ -1,4 +1,4 @@
-import 'package:afrotok/widgets/paid_likes_option.dart';
+import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -79,7 +79,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
   bool onTap = false;
   bool _canPost = true;
-  bool _paidLikes = false; // likes payants : désactivé par défaut (likes gratuits)
+  bool _monetized = false; // likes payants : désactivé par défaut (likes gratuits)
   String _timeRemaining = '';
 
   String? _selectedPostType;
@@ -1453,7 +1453,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
 
         Post post = Post()
-          ..paidLikes = _paidLikes
+          ..monetized = _monetized
           ..user_id = authProvider.loginUserData.id
           ..description = _descriptionController.text
           ..updatedAt = DateTime.now().microsecondsSinceEpoch
@@ -1986,7 +1986,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
                           ),
                         ),
                         SizedBox(height: 20),
-                        PaidLikesOption(value: _paidLikes, onChanged: (v) => setState(() => _paidLikes = v)),
+                        MonetizedPostOption(value: _monetized, onChanged: (v) => setState(() => _monetized = v)),
                         const SizedBox(height: 16),
                         Container(
                           width: double.infinity,

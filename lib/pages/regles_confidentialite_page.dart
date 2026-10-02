@@ -38,7 +38,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
               _rule('Vues propres exclues',
                   'Tes propres vues sur tes posts ne sont jamais comptabilisées, qu\'elles soient monétisées ou non.'),
               _rule('Types de posts éligibles',
-                  'Seuls les posts de type "Post" standard sont éligibles aux vues monétisées. Les publicités, challenges et services sont exclus.'),
+                  'Seuls les posts de type "Post" standard dont le créateur a activé l\'option « Post monétisé » à la publication sont éligibles aux vues monétisées. Les posts non monétisés, les publicités, challenges et services sont exclus.'),
             ],
           ),
           _section(
@@ -65,10 +65,10 @@ class ReglesConfidentialitePage extends StatelessWidget {
             icon: Icons.favorite_border,
             title: 'Likes, commentaires et cadeaux',
             items: [
-              _rule('Likes payants : le choix du créateur',
-                  'À la publication d\'un post, le créateur choisit si les likes de ce post rapportent des pièces. L\'option « Likes payants » est désactivée par défaut : les likes sont alors gratuits pour tout le monde. Ce choix ne peut plus être modifié après la publication.'),
-              _rule('Like sur un post payant',
-                  'Si le créateur a activé les likes payants, un like coûte 2 pièces : 1 pièce va au créateur du post et 1 pièce à Afrolook. Un petit « +1 » s\'affiche alors sur le cœur. Il n\'y a pas de parrainage sur les likes. Les posts publiés avant cette option gardent des likes payants.'),
+              _rule('Post monétisé : le choix du créateur',
+                  'À la publication d\'un post, le créateur choisit s\'il est monétisé. L\'option « Post monétisé » est désactivée par défaut. Un post monétisé a des likes payants et ses vues d\'abonnés sont rémunérées ; un post non monétisé a des likes gratuits et ses vues ne rapportent rien. Ce choix ne peut plus être modifié après la publication.'),
+              _rule('Like sur un post monétisé',
+                  'Sur un post monétisé, un like coûte 2 pièces : 1 pièce va au créateur du post et 1 pièce à Afrolook. Un petit « +1 » s\'affiche alors sur le cœur. Il n\'y a pas de parrainage sur les likes. Les posts publiés avant cette option restent monétisés.'),
               _rule('Commentaire sur un post',
                   'Commenter est gratuit : aucun commentaire ne débite de pièces, sur aucun post.'),
               _rule('Like sur un commentaire ou une réponse',

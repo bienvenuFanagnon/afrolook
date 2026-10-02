@@ -1,4 +1,4 @@
-import 'package:afrotok/widgets/paid_likes_option.dart';
+import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -80,7 +80,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
 
   String? _selectedVibeCategory;
   bool _canPost = true;
-  bool _paidLikes = false; // likes payants : désactivé par défaut (likes gratuits)
+  bool _monetized = false; // likes payants : désactivé par défaut (likes gratuits)
   String _timeRemaining = '';
   bool _showVideoQualityModal = false;
   bool _hasAcceptedVideoConditions = false;
@@ -1284,7 +1284,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
         String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
 
         Post post = Post();
-        post.paidLikes = _paidLikes;
+        post.monetized = _monetized;
         post.user_id = authProvider.loginUserData.id;
         post.description = _descriptionController.text;
         post.updatedAt = DateTime.now().microsecondsSinceEpoch;
@@ -1817,7 +1817,7 @@ class _UserPubVibeState extends State<UserPubVibe> {
                         SizedBox(height: 30),
 
                         // Bouton publication
-                        PaidLikesOption(value: _paidLikes, onChanged: (v) => setState(() => _paidLikes = v)),
+                        MonetizedPostOption(value: _monetized, onChanged: (v) => setState(() => _monetized = v)),
                         const SizedBox(height: 16),
                         Container(
                           width: double.infinity,
