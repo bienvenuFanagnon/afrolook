@@ -22,6 +22,8 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family
 .ig .nm{font-weight:800;font-size:36px}.ig .sub{font-size:28px;color:#a8a8a8}
 .ig .im{position:relative;width:900px;height:900px;overflow:hidden}
 .ig .im img{width:100%;height:100%;object-fit:cover}
+.ig .im:after{content:'';position:absolute;left:0;right:0;bottom:0;height:62%;background:linear-gradient(transparent,rgba(0,0,0,.72));pointer-events:none}
+.big{z-index:3}.ig .play{z-index:3}
 .ig .ac{height:96px;display:flex;align-items:center;gap:36px;padding:0 28px}
 .ig .tx{padding:0 28px 28px;font-size:32px;line-height:1.35}
 .big{position:absolute;left:30px;font-weight:900;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.7);line-height:1}
@@ -103,16 +105,16 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family
 <div class="scene" id="s2"><div class="glow" style="opacity:.5"></div>
   <div class="abs" style="left:0;width:1080px;top:130px;text-align:center"><span class="pill">SUR UN RÉSEAU CLASSIQUE</span></div>
   <div class="ig" id="igA">
-    <div class="hd"><div class="ring"><img src="img/intro3.jpg"></div><div><div class="nm">awa.styles</div><div class="sub">Abidjan</div></div><div style="margin-left:auto;font-size:44px;letter-spacing:3px">•••</div></div>
-    <div class="im"><img src="img/intro3.jpg" style="object-position:50% 25%">
+    <div class="hd"><div class="ring"><img src="img/n_av_food.jpg"></div><div><div class="nm">awa.styles</div><div class="sub">Abidjan</div></div><div style="margin-left:auto;font-size:44px;letter-spacing:3px">•••</div></div>
+    <div class="im"><img src="img/n_ig_a.jpg" style="object-position:70% 40%">
       <div class="big" style="bottom:200px"><b id="aV">0</b><span>vues</span></div>
       <div class="big" style="bottom:60px"><b id="aL">0</b><span>likes</span></div></div>
     <div class="ac"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s-7.5-4.6-9.5-9.2C1.1 8.3 3.2 5 6.5 5c2 0 3.6 1.2 5.5 3.2C13.900 6.200 15.500 5 17.500 5c3.300 0 5.400 3.300 4 6.800C19.500 16.400 12 21 12 21z"/></svg><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.800 7L3 21l2-5.200A8 8 0 1 1 21 12z"/></svg><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M22 3 2 10.500l7.500 3L12.500 21 22 3z"/></svg></div>
     <div class="tx"><b>Aimé par 186 K personnes</b><br>Nouveau look 💛 #style</div>
   </div>
   <div class="ig" id="igB">
-    <div class="hd"><div class="ring"><img src="img/intro1.jpg"></div><div><div class="nm">kofi.beats</div><div class="sub">Accra</div></div><div style="margin-left:auto;font-size:44px;letter-spacing:3px">•••</div></div>
-    <div class="im"><img src="img/intro2.jpg" style="object-position:50% 20%">
+    <div class="hd"><div class="ring"><img src="img/n_av_dj.jpg"></div><div><div class="nm">kofi.beats</div><div class="sub">Accra</div></div><div style="margin-left:auto;font-size:44px;letter-spacing:3px">•••</div></div>
+    <div class="im"><img src="img/n_ig_b.jpg" style="object-position:50% 50%">
       <div class="play" style="transform:scale(2.2);transform-origin:center"></div>
       <div class="big" style="bottom:200px"><b id="bV">0</b><span>vues</span></div>
       <div class="big" style="bottom:60px"><b id="bL">0</b><span>likes</span></div></div>
@@ -133,41 +135,41 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family
 
     <!-- Post image -->
     <div class="post" id="p1"><div class="thread"></div><div class="row">
-      <div class="av"><img src="img/intro2.jpg" style="object-position:50% 18%"></div>
+      <div class="av"><img src="img/n_av_food.jpg" style="object-position:50% 25%"></div>
       <div class="col">
-        <div class="hdr"><span class="cap2"><span class="m">@</span><span>amina<i>.</i>cuisine</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
+        <div class="hdr"><span class="cap2"><span class="m">@</span><span>chef<i>.</i>amina</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
         <div class="fol">128 k abonné(s)</div>
-        <div class="desc">Mon plat du dimanche 🍲🔥 <em>#cuisine</em> <em>#afrique</em></div>
+        <div class="desc">Le grand barbecue du dimanche 🔥🍖 <em>#cuisine</em> <em>#afrique</em></div>
         <div class="coinchip">🪙 <span id="c1">3 120</span> pièces rapportées</div>
-        <div class="media" style="height:401px"><img src="img/intro1.jpg" style="object-position:50% 20%"><span class="tag" style="left:8px;top:8px;color:#fff">👁 128 k vues</span><span class="tag" style="right:8px;top:8px;background:rgba(46,204,113,.9);color:#0E0E0E">💰 Monétisé</span></div>
+        <div class="media" style="height:401px"><img src="img/n_food.jpg" style="object-position:50% 50%"><span class="tag" style="left:8px;top:8px;color:#fff">👁 128 k vues</span><span class="tag" style="right:8px;top:8px;background:rgba(46,204,113,.9);color:#0E0E0E">💰 Monétisé</span></div>
         <div class="acts" id="a1"></div>
-        <div class="cprev"><b>fatou.k</b> Trop beau ce plat 😍</div>
+        <div class="cprev"><b>fatou.k</b> Ça donne trop faim 😍</div>
         <div class="gifts">🎁🌹👑</div>
       </div></div></div>
 
     <!-- Post vidéo -->
     <div class="post" id="p2"><div class="thread"></div><div class="row">
-      <div class="av"><img src="img/intro5.jpg" style="object-position:50% 25%"></div>
+      <div class="av"><img src="img/n_av_dj.jpg" style="object-position:50% 25%"></div>
       <div class="col">
-        <div class="hdr"><span class="cap2"><span class="m">@</span><span>kofi<i>.</i>dance</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
+        <div class="hdr"><span class="cap2"><span class="m">@</span><span>dj<i>.</i>kofi</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
         <div class="fol">86 k abonné(s)</div>
-        <div class="desc">Nouvelle chorégraphie 💃🔥 <em>#dance</em> <em>#afrobeats</em></div>
+        <div class="desc">Ambiance de folie ce soir 🎧🔥 <em>#dj</em> <em>#afrobeats</em></div>
         <div class="coinchip">🪙 <span id="c2">12 480</span> pièces rapportées</div>
-        <div class="media" style="height:401px"><img src="img/intro5.jpg" style="object-position:50% 20%"><div class="play"></div><span class="tag" style="left:8px;top:8px;color:#fff">👁 2,4 M vues</span><span class="tag" style="right:8px;top:8px;background:rgba(46,204,113,.9);color:#0E0E0E">💰 Monétisé</span><span class="tag" style="right:8px;bottom:8px;color:#fff">0:32</span></div>
+        <div class="media" style="height:401px"><img src="img/n_dj.jpg" style="object-position:45% 50%"><div class="play"></div><span class="tag" style="left:8px;top:8px;color:#fff">👁 2,4 M vues</span><span class="tag" style="right:8px;top:8px;background:rgba(46,204,113,.9);color:#0E0E0E">💰 Monétisé</span><span class="tag" style="right:8px;bottom:8px;color:#fff">0:32</span></div>
         <div class="acts" id="a2"></div>
-        <div class="cprev"><b>yao.pro</b> Fou ce pas de danse 🔥🔥</div>
+        <div class="cprev"><b>yao.pro</b> Quelle ambiance 🔥🔥</div>
         <div class="gifts">🎁💎🚀</div>
       </div></div></div>
 
     <!-- Post audio -->
     <div class="post" id="p3"><div class="thread"></div><div class="row">
-      <div class="av"><img src="img/intro6.jpg" style="object-position:50% 20%"></div>
+      <div class="av"><img src="img/n_av_mic.jpg" style="object-position:50% 20%"></div>
       <div class="col">
         <div class="hdr"><span class="cap2"><span class="m">@</span><span>lina<i>.</i>music</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
         <div class="fol">54 k abonné(s)</div>
         <div class="desc">Mon nouveau son est dehors 🎶 <em>#afrosoul</em></div>
         <div class="coinchip">🪙 <span id="c3">5 060</span> pièces rapportées</div>
-        <div class="audio"><div class="cv"><img src="img/intro6.jpg" style="object-position:50% 15%"></div>
+        <div class="audio"><div class="cv"><img src="img/n_mic.jpg" style="object-position:50% 50%"></div>
           <div style="flex:1;min-width:0"><div class="tg">♪ AUDIO</div><div class="ti">Lina · « Soleil d'Afrique »</div>
             <div style="display:flex;align-items:center;gap:10px"><div class="pb" id="pb"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><rect x="2" y="1" width="3.500" height="12" rx="1"/><rect x="8.500" y="1" width="3.500" height="12" rx="1"/></svg></div><div style="flex:1"><div class="wave" id="wave"></div><div class="tm"><span id="tcur">0:00</span><span>0:42</span></div></div></div></div></div>
         <div class="acts" id="a3"></div>
