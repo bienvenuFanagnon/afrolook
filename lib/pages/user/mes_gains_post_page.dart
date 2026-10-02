@@ -544,6 +544,13 @@ class _MesGainsPageState extends State<MesGainsPage> {
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, Money.fmt(cashed), Icons.check_circle_outline, colors.primary, colors)),
           ]),
+          if (_excludedViews > 0) ...[
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: _statChip(context.tr('Vues non monétisées'), '$_excludedViews', Icons.visibility_off_outlined, colors.textSecondary, colors,
+                  subtitle: context.tr('posts non monétisés : ces vues ne rapportent rien'))),
+            ]),
+          ],
         ],
       ),
     );
