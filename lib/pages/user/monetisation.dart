@@ -1,3 +1,4 @@
+import 'package:afrotok/services/postService/view_earnings_filter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/user/UserRetrait/userRetraitForm.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
   Stream<List<TransactionSolde>>? _txStream;
   String _txFilter = 'tous';
   bool _viewsExpanded = false;
+  int _excludedViews = 0; // vues des posts non monétisés, exclues (comme côté serveur)
 
   @override
   void initState() {
@@ -56,6 +58,10 @@ class _MonetisationPageState extends State<MonetisationPage> {
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
     userStream = authProvider.getUserStream();
+    final uid = authProvider.loginUserData.id;
+    if (uid != null) {
+      ViewEarningsFilter.nonMonetizedViews(uid).then((n) { _excludedViews = n; if (mounted) setState(() {}); });
+    }
   }
 
   void refreshUser() {
@@ -110,7 +116,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
 
           final user = snapshot.data!;
           final double creatorScore = user.creatorScore ?? 0.0;
-          final int totalViews = user.totalPostUniqueViews ?? 0;
+          final int totalViews = ((user.totalPostUniqueViews ?? 0) - _excludedViews).clamp(0, 1 << 40);
           final int creditedViews = user.totalViewsEarningsCredited ?? 0;
 
           return CenteredContent(child: SingleChildScrollView(

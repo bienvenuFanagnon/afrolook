@@ -1,3 +1,4 @@
+import 'package:afrotok/services/postService/view_earnings_filter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -50,8 +51,11 @@ double _fcfaPerView(double creatorScore) {
 
 /// Vues pas encore payées (totalViewsEarningsCredited = vues déjà payées, y compris par
 /// l'ancien paiement automatique supprimé) : une vue n'est payée qu'une seule fois.
+/// Vues des posts non monétisés, exclues du calcul (chargées par la page, comme le fait le serveur).
+int _excludedViews = 0;
+
 int _pendingViews(UserData user) =>
-    ((user.totalPostUniqueViews ?? 0) - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
+    ((user.totalPostUniqueViews ?? 0) - _excludedViews - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
 
 /// Gains encaissables (FCFA) — même calcul que la Cloud Function cashViewEarnings.
 double _availableEarnings(UserData user) =>
@@ -88,6 +92,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
   void initState() {
     super.initState();
     MonetizationConfig.load().then((_) { if (mounted) setState(() {}); });
+    ViewEarningsFilter.nonMonetizedViews(widget.userId).then((n) { _excludedViews = n; if (mounted) setState(() {}); });
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
@@ -481,7 +486,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
     final rate       = _fcfaPerView(score);
     final tierLabel  = tier['label'] as String;
     final tierColor  = Color(tier['color'] as int);
-    final totalViews = user.totalPostUniqueViews ?? 0;
+    final totalViews = ((user.totalPostUniqueViews ?? 0) - _excludedViews).clamp(0, 1 << 40);
     final available  = _availableEarnings(user);
     final cashed     = user.postViewsTotalCashed ?? 0;
 
@@ -966,6 +971,8 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
         return Post.fromJson(data);
       }).where((p) {
         if (p.isAdvertisement == true) return false;
+        // Un post non monétisé ne rapporte rien : il n'apparaît pas dans les gains (ancien post = monétisé)
+        if (p.monetized == false) return false;
         return true;
       }));
     }
