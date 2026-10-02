@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Afrolook — pub</title>
+<style>
+@font-face{font-family:'Nunito';font-weight:400;src:url(fonts/Nunito-Regular.ttf)}
+@font-face{font-family:'Nunito';font-weight:700 900;src:url(fonts/Nunito-ExtraBold.ttf)}
+:root{--bg:#0E0E0E;--surf:#1A1A1A;--surf2:#242424;--line:#2F2F2F;--green:#2ECC71;--yellow:#FFE14D;--tx:#fff;--tx2:#9A9A95;--gold:#EF9F27;--goldfg:#FAC775;--blue:#2196F3;--red:#FF6B6F}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000;font-family:'Nunito',sans-serif;color:#fff}
+#stage{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;background:var(--bg)}
+.scene{position:absolute;inset:0;opacity:0}
+.abs{position:absolute}
+.glow{position:absolute;inset:0;background:radial-gradient(900px 700px at 90% 0%,rgba(46,204,113,.28),transparent 60%),radial-gradient(800px 600px at 0% 100%,rgba(255,225,77,.16),transparent 60%)}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.h1{font-weight:900;font-size:128px;line-height:1.02;letter-spacing:-2px}
+.g{color:var(--green)}.y{color:var(--yellow)}
+/* S2 : réseau classique */
+.pill{display:inline-block;padding:18px 40px;border-radius:60px;border:3px solid #3a3a3a;background:rgba(255,255,255,.06);font-weight:800;font-size:40px;letter-spacing:4px;color:#d8d8d3}
+.ig{position:absolute;left:90px;top:300px;width:900px;background:#000;border-radius:26px;overflow:hidden;border:2px solid #262626;opacity:0}
+.ig .hd{height:120px;display:flex;align-items:center;padding:0 28px;gap:22px}
+.ig .ring{width:78px;height:78px;border-radius:50%;padding:4px;background:conic-gradient(#f9ce34,#ee2a7b,#6228d7,#f9ce34)}
+.ig .ring img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:4px solid #000}
+.ig .nm{font-weight:800;font-size:36px}.ig .sub{font-size:28px;color:#a8a8a8}
+.ig .im{position:relative;width:900px;height:900px;overflow:hidden}
+.ig .im img{width:100%;height:100%;object-fit:cover}
+.ig .im:after{content:'';position:absolute;left:0;right:0;bottom:0;height:62%;background:linear-gradient(transparent,rgba(0,0,0,.72));pointer-events:none}
+.big{z-index:3}.ig .play{z-index:3}
+.ig .ac{height:96px;display:flex;align-items:center;gap:36px;padding:0 28px}
+.ig .tx{padding:0 28px 28px;font-size:32px;line-height:1.35}
+.big{position:absolute;left:30px;font-weight:900;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.7);line-height:1}
+.big b{font-size:150px;letter-spacing:-3px}.big span{font-size:56px;margin-left:16px;font-weight:800}
+.stamp{position:absolute;left:50%;top:1450px;transform:translate(-50%,0);padding:20px 70px;border:10px solid var(--red);border-radius:30px;color:var(--red);font-weight:900;font-size:190px;letter-spacing:-2px;background:rgba(14,14,14,.9);white-space:nowrap}
+.cap{position:absolute;left:0;width:1080px;text-align:center;font-weight:800;font-size:54px;color:#e6e6e1}
+/* transition */
+#wipe{position:absolute;inset:0;background:var(--green);clip-path:circle(0% at 50% 50%)}
+#wipe .t{color:#0E0E0E;font-weight:900}
+/* S4 : app */
+.hud{position:absolute;left:0;top:0;width:1080px;height:250px}
+.wallet{position:absolute;right:40px;top:44px;width:560px;height:150px;border-radius:40px;background:var(--surf);border:4px solid var(--gold);display:flex;align-items:center;padding:0 34px;gap:22px}
+.wallet .lb{font-size:30px;color:var(--goldfg);font-weight:800}.wallet .vl{white-space:nowrap;font-size:56px;font-weight:900;color:var(--yellow);letter-spacing:-1px;line-height:1}
+.fmt{position:absolute;left:40px;top:58px;display:flex;align-items:center;gap:16px}
+.fmt img{width:118px;height:118px;border-radius:30px}
+.chip{display:inline-block;padding:12px 24px;border-radius:50px;background:rgba(46,204,113,.16);border:3px solid var(--green);color:var(--green);font-weight:900;font-size:32px;white-space:nowrap}
+#feedwrap{position:absolute;left:72px;top:250px;width:936px;height:1500px;overflow:hidden;border-radius:44px;background:var(--bg);box-shadow:0 0 0 3px #232323}
+#feed{position:absolute;left:0;top:0;width:390px;transform-origin:0 0;transform:scale(2.4)}
+.post{position:relative;width:390px;padding:12px 12px 8px;background:var(--bg);color:#fff;font-size:14px}
+.post .thread{position:absolute;left:29px;top:56px;bottom:0;width:2px;background:var(--line)}
+.post .row{display:flex;gap:9px;align-items:flex-start}
+.av{width:36px;height:36px;border-radius:50%;background:var(--green);padding:1.6px;flex:none;position:relative;z-index:2}
+.av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;border:1.6px solid var(--bg)}
+.col{flex:1;min-width:0}
+.hdr{display:flex;align-items:center;gap:5px}
+.cap2{display:inline-flex;align-items:center;gap:5px;background:var(--surf2);border:1px solid var(--line);border-radius:99px;padding:2.2px 9px 2.2px 2.7px;font-weight:800;font-size:13.5px}
+.cap2 .m{width:18px;height:18px;border-radius:50%;background:#F5C542;color:#2B1A00;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.cap2 i{font-style:normal;color:#F5C542;font-weight:900}
+.vf{width:13px;height:13px;border-radius:50%;background:#1DA1F2;display:flex;align-items:center;justify-content:center}
+.fol{font-size:11px;color:var(--tx2);margin-top:1px}
+.fbtn{margin-left:auto;background:var(--yellow);color:#111;font-weight:800;font-size:11.5px;padding:4px 12px;border-radius:99px}
+.dots{color:var(--tx2);font-size:18px;line-height:0;margin-left:4px;letter-spacing:1px}
+.desc{margin-top:5px;font-size:14px;line-height:1.35}
+.desc em{font-style:normal;color:var(--green)}
+.coinchip{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:2px 9px;border-radius:12px;background:rgba(239,159,39,.2);border:.8px solid var(--gold);color:var(--goldfg);font-weight:800;font-size:11.5px}
+.media{position:relative;margin-top:8px;border-radius:12px;overflow:hidden;background:#111;border:1px solid var(--line)}
+.media img{width:100%;height:100%;object-fit:cover;display:block}
+.play{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center}
+.play:after{content:"";border-left:17px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:5px}
+.tag{position:absolute;background:rgba(0,0,0,.55);border-radius:8px;padding:2px 7px;font-size:11px;font-weight:800}
+.acts{display:flex;align-items:center;gap:8px;margin-top:9px}
+.act{display:flex;flex-direction:column;align-items:center;padding:4px 7px;color:var(--tx2);font-size:13px;gap:2px;position:relative}
+.act svg{width:20px;height:20px}
+.hw{position:relative;width:33px;height:20px}
+.hw svg{position:absolute;left:0;top:0}
+.pas{position:absolute;right:0;top:0;background:var(--gold);color:#412402;font-size:8.5px;font-weight:900;border-radius:7px;padding:.5px 3.5px;line-height:1.2}
+.cprev{margin-top:4px;font-size:12px;color:var(--tx2)}.cprev b{color:#fff}
+.gifts{margin-top:6px;display:flex;gap:6px;font-size:16px}
+.audio{margin-top:8px;border-radius:16px;background:var(--surf);border:1px solid var(--line);padding:12px;display:flex;gap:12px;align-items:center}
+.audio .cv{width:80px;height:80px;border-radius:12px;overflow:hidden;flex:none}.audio .cv img{width:100%;height:100%;object-fit:cover}
+.audio .tg{display:inline-flex;align-items:center;gap:5px;background:rgba(33,150,243,.2);color:var(--blue);font-weight:900;font-size:10px;padding:2px 7px;border-radius:6px}
+.audio .ti{font-weight:800;font-size:14px;margin:3px 0}
+.audio .pb{width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;flex:none}
+.wave{display:flex;gap:2.5px;align-items:center;height:30px;margin-top:6px}
+.wave i{display:block;width:2px;border-radius:1px;background:#757575}
+.tm{display:flex;justify-content:space-between;font-size:10px;color:#b9b9b4;margin-top:2px}
+.pop{position:absolute;font-weight:900;white-space:nowrap;opacity:0;background:rgba(14,14,14,.88);border:4px solid var(--gold);border-radius:60px;padding:14px 34px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.coin{position:absolute;width:64px;height:64px;font-size:58px;line-height:64px;text-align:center;opacity:0;left:0;top:0}
+.ring2{position:absolute;width:140px;height:140px;border-radius:50%;border:8px solid rgba(255,225,77,.9);opacity:0}
+.cta{position:absolute;inset:0}
+.frow{position:absolute;left:70px;width:940px;height:230px;border-radius:44px;background:var(--surf);border:3px solid var(--line);display:flex;align-items:center;gap:34px;padding:0 44px;opacity:0}
+.frow .ic{width:140px;height:140px;border-radius:38px;display:flex;align-items:center;justify-content:center;font-size:84px;flex:none}
+.frow .a{font-size:46px;font-weight:900;line-height:1.1}.frow .b{font-size:40px;font-weight:800;margin-top:8px}
+.store{display:inline-flex;align-items:center;gap:18px;padding:26px 54px;border-radius:70px;font-weight:900;font-size:50px}
+.legal{position:absolute;left:60px;width:960px;text-align:center;font-size:27px;color:#8c8c87;line-height:1.3}
+
+/* ===== VERSION HORIZONTALE 1920x1080 ===== */
+html,body{width:1920px;height:1080px}#stage{width:1920px;height:1080px}
+.glow{background:radial-gradient(1200px 800px at 95% 0%,rgba(46,204,113,.28),transparent 60%),radial-gradient(1000px 700px at 0% 100%,rgba(255,225,77,.16),transparent 60%)}
+#s1 .h1{font-size:140px}#s1c{font-size:84px!important;margin-top:50px!important}
+#s2>.abs{top:36px!important;width:1920px!important}
+.ig{left:230px;top:120px;width:640px}.ig .hd{height:84px;padding:0 22px;gap:16px}.ig .ring{width:56px;height:56px}.ig .nm{font-size:26px}.ig .sub{font-size:20px}
+.ig .im{width:640px;height:640px}.ig .ac{height:70px;padding:0 22px;gap:26px}.ig .ac svg{width:40px;height:40px}.ig .tx{font-size:22px;padding:0 22px 18px}
+.big{left:22px}.big b{font-size:104px}.big span{font-size:40px}
+.stamp{left:1400px!important;top:380px!important;font-size:170px;padding:16px 56px;border-width:9px}
+.cap{left:1000px!important;width:800px!important;top:700px!important;font-size:46px}
+#w1{font-size:76px!important}#wl{width:200px!important;height:200px!important;margin:24px 0!important;border-radius:52px!important}#w2{font-size:150px!important}
+.fmt{left:110px;top:70px}.fmt img{width:140px;height:140px}.chip{font-size:46px;padding:18px 36px}
+.wallet{left:110px!important;right:auto!important;top:300px!important;width:960px;height:210px;gap:30px;padding:0 44px}
+.wallet .vl{font-size:104px}.wallet .lb{font-size:38px}.wallet>div:first-child{font-size:100px!important}
+#feedwrap{left:1200px;top:30px;width:620px;height:1020px;border-radius:40px}
+#side{position:absolute;left:110px;top:760px;width:1000px;font-size:46px;font-weight:800;line-height:1.3;color:#e6e6e1}
+.frow{width:540px!important;height:600px!important;flex-direction:column;justify-content:center;text-align:center;padding:30px!important;gap:26px!important;top:250px!important;border-radius:48px}
+#f1{left:120px!important}#f2{left:690px!important}#f3{left:1260px!important}
+.frow .ic{width:160px!important;height:160px!important;font-size:96px!important}.frow .a{font-size:42px!important}.frow .b{font-size:36px!important;margin-top:10px!important}
+#s5t{top:70px!important;width:1920px!important}#s5t .h1{font-size:88px!important}
+#s5c{top:930px!important;width:1920px!important}#s5c .chip{font-size:40px!important;padding:16px 36px!important}
+#s6 .center{padding-bottom:0!important;inset:0}#lg{width:230px!important;height:230px!important;border-radius:58px!important}
+#t1{font-size:130px!important;margin-top:24px!important}#t2{font-size:66px!important;margin-top:8px!important}#t3{font-size:38px!important;margin-top:12px!important}
+#st{flex-direction:row!important;margin-top:34px!important;gap:30px!important}.store{padding:20px 46px!important;font-size:42px!important}
+.legal{left:200px!important;width:1520px!important;top:985px!important;font-size:22px!important}
+</style></head><body>
+<div id="stage">
+
+<!-- S1 : accroche -->
+<div class="scene" id="s1"><div class="glow"></div>
+  <div class="abs center" style="inset:0">
+    <div class="h1" id="s1a" style="opacity:0">Tes vues.</div>
+    <div class="h1" id="s1b" style="opacity:0">Tes likes.</div>
+    <div class="h1 y" id="s1c" style="opacity:0;font-size:96px;margin-top:70px">Combien ça te<br>rapporte&nbsp;?</div>
+  </div>
+</div>
+
+<!-- S2 : réseau classique -->
+<div class="scene" id="s2"><div class="glow" style="opacity:.5"></div>
+  <div class="abs" style="left:0;width:1080px;top:130px;text-align:center"><span class="pill">SUR UN RÉSEAU CLASSIQUE</span></div>
+  <div class="ig" id="igA">
+    <div class="hd"><div class="ring"><img src="img/n_av_food.jpg"></div><div><div class="nm">awa.styles</div><div class="sub">Abidjan</div></div><div style="margin-left:auto;font-size:44px;letter-spacing:3px">•••</div></div>
+    <div class="im"><img src="img/n_ig_a.jpg" style="object-position:70% 40%">
+      <div class="big" style="bottom:200px"><b id="aV">0</b><span>vues</span></div>
+      <div class="big" style="bottom:60px"><b id="aL">0</b><span>likes</span></div></div>
+    <div class="ac"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s-7.5-4.6-9.5-9.2C1.1 8.3 3.2 5 6.5 5c2 0 3.6 1.2 5.5 3.2C13.900 6.200 15.500 5 17.500 5c3.300 0 5.400 3.300 4 6.800C19.500 16.400 12 21 12 21z"/></svg><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.800 7L3 21l2-5.200A8 8 0 1 1 21 12z"/></svg><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M22 3 2 10.500l7.500 3L12.500 21 22 3z"/></svg></div>
+    <div class="tx"><b>Aimé par 186 K personnes</b><br>Nouveau look 💛 #style</div>
+  </div>
+  <div class="ig" id="igB">
+    <div class="hd"><div class="ring"><img src="img/n_av_dj.jpg"></div><div><div class="nm">kofi.beats</div><div class="sub">Accra</div></div><div style="margin-left:auto;font-size:44px;letter-spacing:3px">•••</div></div>
+    <div class="im"><img src="img/n_ig_b.jpg" style="object-position:50% 50%">
+      <div class="play" style="transform:scale(2.2);transform-origin:center"></div>
+      <div class="big" style="bottom:200px"><b id="bV">0</b><span>vues</span></div>
+      <div class="big" style="bottom:60px"><b id="bL">0</b><span>likes</span></div></div>
+    <div class="ac"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s-7.500-4.600-9.500-9.200C1.100 8.300 3.200 5 6.500 5c2 0 3.600 1.200 5.500 3.200C13.900 6.200 15.500 5 17.500 5c3.300 0 5.400 3.300 4 6.800C19.500 16.400 12 21 12 21z"/></svg><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.800 7L3 21l2-5.200A8 8 0 1 1 21 12z"/></svg><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M22 3 2 10.500l7.500 3L12.500 21 22 3z"/></svg></div>
+    <div class="tx"><b>Aimé par 890 K personnes</b><br>Nouveau son 🔥 #afrobeats</div>
+  </div>
+  <div class="stamp" id="stamp">0 FCFA</div>
+  <div class="cap" id="cap2" style="top:1700px;opacity:0">…et rien dans ta poche.</div>
+</div>
+
+<!-- S4 : l'application -->
+<div class="scene" id="s4"><div class="glow" style="opacity:.6"></div>
+  <div class="hud">
+    <div class="fmt"><img src="img/logo.png"><div><div id="fmtLbl" class="chip">📷 IMAGE</div></div></div>
+    <div class="wallet" id="wallet"><div style="font-size:64px">🪙</div><div><div class="lb">Tes gains · exemple</div><div class="vl" id="wv">0 FCFA</div></div></div>
+  </div>
+  <div id="feedwrap"><div id="feed">
+
+    <!-- Post image -->
+    <div class="post" id="p1"><div class="thread"></div><div class="row">
+      <div class="av"><img src="img/n_av_food.jpg" style="object-position:50% 25%"></div>
+      <div class="col">
+        <div class="hdr"><span class="cap2"><span class="m">@</span><span>chef<i>.</i>amina</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
+        <div class="fol">128 k abonné(s)</div>
+        <div class="desc">Le grand barbecue du dimanche 🔥🍖 <em>#cuisine</em> <em>#afrique</em></div>
+        <div class="coinchip">🪙 <span id="c1">3 120</span> pièces rapportées</div>
+        <div class="media" style="height:401px"><img src="img/n_food.jpg" style="object-position:50% 50%"><span class="tag" style="left:8px;top:8px;color:#fff">👁 128 k vues</span><span class="tag" style="right:8px;top:8px;background:rgba(46,204,113,.9);color:#0E0E0E">💰 Monétisé</span></div>
+        <div class="acts" id="a1"></div>
+        <div class="cprev"><b>fatou.k</b> Ça donne trop faim 😍</div>
+        <div class="gifts">🎁🌹👑</div>
+      </div></div></div>
+
+    <!-- Post vidéo -->
+    <div class="post" id="p2"><div class="thread"></div><div class="row">
+      <div class="av"><img src="img/n_av_dj.jpg" style="object-position:50% 25%"></div>
+      <div class="col">
+        <div class="hdr"><span class="cap2"><span class="m">@</span><span>dj<i>.</i>kofi</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
+        <div class="fol">86 k abonné(s)</div>
+        <div class="desc">Ambiance de folie ce soir 🎧🔥 <em>#dj</em> <em>#afrobeats</em></div>
+        <div class="coinchip">🪙 <span id="c2">12 480</span> pièces rapportées</div>
+        <div class="media" style="height:401px"><img src="img/n_dj.jpg" style="object-position:45% 50%"><div class="play"></div><span class="tag" style="left:8px;top:8px;color:#fff">👁 2,4 M vues</span><span class="tag" style="right:8px;top:8px;background:rgba(46,204,113,.9);color:#0E0E0E">💰 Monétisé</span><span class="tag" style="right:8px;bottom:8px;color:#fff">0:32</span></div>
+        <div class="acts" id="a2"></div>
+        <div class="cprev"><b>yao.pro</b> Quelle ambiance 🔥🔥</div>
+        <div class="gifts">🎁💎🚀</div>
+      </div></div></div>
+
+    <!-- Post audio -->
+    <div class="post" id="p3"><div class="thread"></div><div class="row">
+      <div class="av"><img src="img/n_av_mic.jpg" style="object-position:50% 20%"></div>
+      <div class="col">
+        <div class="hdr"><span class="cap2"><span class="m">@</span><span>lina<i>.</i>music</span></span><span class="vf"><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.8"><path d="m2 5.200 2 2L8 3"/></svg></span><span class="fbtn">Suivre</span><span class="dots">•••</span></div>
+        <div class="fol">54 k abonné(s)</div>
+        <div class="desc">Mon nouveau son est dehors 🎶 <em>#afrosoul</em></div>
+        <div class="coinchip">🪙 <span id="c3">5 060</span> pièces rapportées</div>
+        <div class="audio"><div class="cv"><img src="img/n_mic.jpg" style="object-position:50% 50%"></div>
+          <div style="flex:1;min-width:0"><div class="tg">♪ AUDIO</div><div class="ti">Lina · « Soleil d'Afrique »</div>
+            <div style="display:flex;align-items:center;gap:10px"><div class="pb" id="pb"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff"><rect x="2" y="1" width="3.500" height="12" rx="1"/><rect x="8.500" y="1" width="3.500" height="12" rx="1"/></svg></div><div style="flex:1"><div class="wave" id="wave"></div><div class="tm"><span id="tcur">0:00</span><span>0:42</span></div></div></div></div></div>
+        <div class="acts" id="a3"></div>
+        <div class="cprev"><b>awa.styles</b> Sublime cette voix 🎧</div>
+        <div class="gifts">🎁🌹💎</div>
+      </div></div></div>
+  </div></div>
+  <div id="side"><div id="sd0">📷 <b class="y">Chaque like</b> d'un post monétisé<br>= <b class="g">+1 pièce</b> pour le créateur</div><div id="sd1" style="display:none">🎬 <b class="y">Chaque vue</b> de tes abonnés<br>= jusqu'à <b class="g">1 000 FCFA</b> / 1 000 vues</div><div id="sd2" style="display:none">🎧 <b class="y">Cadeaux, likes, vues</b><br>= <b class="g">tout se transforme</b> en argent</div></div><div id="fx"></div>
+</div>
+
+<!-- S5 : comment ça marche -->
+<div class="scene" id="s5"><div class="glow"></div>
+  <div class="abs" id="s5t" style="left:0;width:1080px;top:120px;text-align:center"><div class="h1" style="font-size:96px">Tu gagnes <span class="g">à chaque</span><br>interaction</div></div>
+  <div class="frow" id="f1" style="top:520px"><div class="ic" style="background:rgba(33,150,243,.18)">👁️</div><div><div class="a">Chaque vue de tes abonnés</div><div class="b y">jusqu'à 1 000 FCFA / 1 000 vues</div></div></div>
+  <div class="frow" id="f2" style="top:800px"><div class="ic" style="background:rgba(255,107,111,.18)">❤️</div><div><div class="a">Chaque like d'un post monétisé</div><div class="b y">+1 pièce pour toi 🪙</div></div></div>
+  <div class="frow" id="f3" style="top:1080px"><div class="ic" style="background:rgba(46,204,113,.18)">📲</div><div><div class="a">Tu retires ton argent</div><div class="b y">Mobile Money · virement · PayPal</div></div></div>
+  <div class="abs" id="s5c" style="left:0;width:1080px;top:1420px;text-align:center"><span class="chip" style="font-size:44px;padding:22px 44px">📷 Image · 🎬 Vidéo · 🎧 Audio</span></div>
+</div>
+
+<!-- S6 : appel au téléchargement -->
+<div class="scene" id="s6"><div class="glow"></div>
+  <div class="abs center" style="inset:0;padding-bottom:140px">
+    <img id="lg" src="img/logo.png" style="width:300px;height:300px;border-radius:76px;box-shadow:0 0 120px rgba(46,204,113,.5)">
+    <div class="h1" id="t1" style="font-size:150px;margin-top:60px">Afrolook</div>
+    <div class="h1 g" id="t2" style="font-size:78px;margin-top:20px;line-height:1.1">Télécharge-la maintenant</div>
+    <div id="t3" style="font-size:48px;font-weight:800;margin-top:26px;color:#d8d8d3">Gratuit · iPhone &amp; Android</div>
+    <div id="st" style="margin-top:80px;display:flex;gap:30px;flex-direction:column;align-items:center">
+      <div class="store" style="background:#fff;color:#111"> App Store</div>
+      <div class="store" style="background:var(--green);color:#0E0E0E">▶ Google Play</div>
+    </div>
+  </div>
+  <div class="legal" style="top:1740px">Exemples illustratifs. Gains selon ton palier, tes abonnés et les posts monétisés.<br>1 000 FCFA / 1 000 vues = palier maximum.</div>
+</div>
+
+<div id="wipe"><div class="abs center" style="inset:0">
+  <div class="t" id="w1" style="font-size:92px">Et si c'était sur</div>
+  <img id="wl" src="img/logo.png" style="width:300px;height:300px;border-radius:76px;margin:40px 0;box-shadow:0 20px 80px rgba(0,0,0,.35)">
+  <div class="t" id="w2" style="font-size:190px;letter-spacing:-4px;line-height:1">Afrolook&nbsp;?</div>
+</div></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3);
+const eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const ob=x=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const fmt=n=>Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g,' ');
+const short=n=>n>=1e6?(n/1e6).toFixed(1).replace('.',',')+' M':n>=1e3?Math.round(n/1e3)+' K':String(Math.round(n));
+function vis(el,t,a,b,f=.25){el.style.opacity=Math.min(seg(t,a,a+f),1-seg(t,b-f,b))}
+const HEART='M12 21s-7.5-4.6-9.5-9.2C1.1 8.3 3.2 5 6.5 5c2 0 3.6 1.2 5.5 3.2C13.900 6.200 15.500 5 17.500 5c3.300 0 5.400 3.300 4 6.800C19.500 16.400 12 21 12 21z';
+function acts(id,likes,coms,reps,gifts){
+  $(id).innerHTML=`<div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="#9A9A95" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.800 7L3 21l2-5.200A8 8 0 1 1 21 12z"/></svg><span>${coms}</span></div>
+  <div class="act"><div class="hw"><svg viewBox="0 0 24 24" class="hs" fill="none" stroke="#9A9A95" stroke-width="2"><path d="${HEART}"/></svg><span class="pas">+1</span></div><span class="lc">${likes}</span></div>
+  <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="#9A9A95" stroke-width="2"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4m14-1v2a3 3 0 0 1-3 3H3"/></svg><span>${reps}</span></div>
+  <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="#9A9A95" stroke-width="2"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7M12 7H7.500a2.500 2.500 0 1 1 0-5C11 2 12 7 12 7zm0 0h4.500a2.500 2.500 0 1 0 0-5C13 2 12 7 12 7z"/></svg><span>${gifts}</span></div>`;
+}
+acts('#a1','4 218','312','41','128');acts('#a2','18 400','1 204','388','960');acts('#a3','9 806','640','97','210');
+// onde audio
+const W=$('#wave');for(let i=0;i<46;i++){const h=6+Math.abs(Math.sin(i*1.7)*Math.cos(i*.45))*22;W.insertAdjacentHTML('beforeend',`<i style="height:${h}px"></i>`)}
+// pièces volantes + pops
+const FX=$('#fx');
+for(let i=0;i<30;i++)FX.insertAdjacentHTML('beforeend',`<div class="coin" id="co${i}">🪙</div>`);
+for(let i=0;i<3;i++)FX.insertAdjacentHTML('beforeend',`<div class="ring2" id="rg${i}"></div><div class="pop" id="pp${i}"></div>`);
+// planning
+const T={focus:[[11.4,14.9],[14.9,19.6],[19.6,24.8]],tap:[12.3,16.4,21.2],label:['📷 IMAGE','🎬 VIDÉO','🎧 AUDIO'],
+  pops:['+1 🪙 à chaque like','👁 Jusqu\'à 1 000 FCFA / 1 000 vues','🎁 Cadeau reçu · +50 🪙']};
+function center(el){const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}
+function render(t){
+  // S1
+  vis($('#s1'),t,0,2.1,.2);
+  $('#s1a').style.opacity=seg(t,.15,.45);$('#s1a').style.transform=`translateY(${(1-eo(seg(t,.15,.55)))*60}px)`;
+  $('#s1b').style.opacity=seg(t,.7,1.0);$('#s1b').style.transform=`translateY(${(1-eo(seg(t,.7,1.1)))*60}px)`;
+  $('#s1c').style.opacity=seg(t,1.2,1.5);$('#s1c').style.transform=`scale(${.8+.2*ob(seg(t,1.2,1.7))})`;
+  // S2
+  vis($('#s2'),t,1.9,9.4,.3);
+  const A=$('#igA'),B=$('#igB');
+  A.style.opacity=Math.min(seg(t,1.9,2.3),1-seg(t,5.3,5.6));A.style.transform=`translateY(${(1-eo(seg(t,1.9,2.4)))*120}px)`;
+  B.style.opacity=Math.min(seg(t,5.5,5.9),1-seg(t,8.9,9.3));B.style.transform=`translateY(${(1-eo(seg(t,5.5,6)))*120}px)`;
+  $('#aV').textContent=short(2.4e6*eo(seg(t,2.4,4.2)));$('#aL').textContent=short(186e3*eo(seg(t,2.6,4.2)));
+  $('#bV').textContent=short(12.8e6*eo(seg(t,6.0,7.6)));$('#bL').textContent=short(890e3*eo(seg(t,6.2,7.6)));
+  const stA=seg(t,4.3,4.65),stB=seg(t,7.7,8.05);
+  const st=$('#stamp');
+  const inA=t<5.5, p=inA?stA:stB, t0=inA?4.3:7.7;
+  st.style.opacity=p>0&&(t<5.4||t>7.7)&&t<9.1?1:0;
+  st.style.transform=`translate(-50%,0) rotate(${-7}deg) scale(${p>0?1+(1-ob(p))*1.6:1})`;
+  const shake=(t>t0&&t<t0+.35)?Math.sin(t*90)*14*(1-(t-t0)/.35):0;
+  $('#s2').style.transform=`translateX(${shake}px)`;
+  const c2=$('#cap2');c2.style.opacity=(t>4.9&&t<5.4)||(t>8.3&&t<9.1)?1:0;
+  c2.textContent=t<6?'…et rien dans ta poche.':'Des millions de vues. Zéro revenu.';
+  // transition
+  const wp=$('#wipe');
+  const wi=eio(seg(t,9.0,9.7)),wo=eio(seg(t,11.0,11.55));
+  if(t<9.0||t>11.6){wp.style.display='none'}else{wp.style.display='block';
+    wp.style.clipPath=t<10.8?`circle(${wi*150}% at 50% 50%)`:`circle(${(1-wo)*150}% at 50% 50%)`;}
+  $('#w1').style.transform=`translateY(${(1-eo(seg(t,9.35,9.85)))*80}px)`;$('#w1').style.opacity=seg(t,9.35,9.7);
+  $('#wl').style.transform=`scale(${ob(seg(t,9.55,10.1))}) rotate(${(1-eo(seg(t,9.55,10.2)))*-25}deg)`;$('#wl').style.opacity=seg(t,9.55,9.8);
+  $('#w2').style.transform=`scale(${.7+.3*ob(seg(t,9.8,10.4))})`;$('#w2').style.opacity=seg(t,9.8,10.1);
+  // S4
+  vis($('#s4'),t,10.9,25.2,.35);
+  const fw=$('#feed');
+  const posts=['#p1','#p2','#p3'].map(s=>$(s));
+  let idx=0;for(let i=0;i<3;i++)if(t>=T.focus[i][0]-.4)idx=i;
+  const prev=Math.max(0,idx-1);
+  const ty=(i)=>-posts[i].offsetTop*1.58+8;
+  const k=idx===0?1:eio(seg(t,T.focus[idx][0]-.4,T.focus[idx][0]+.35));
+  fw.style.transform=`translateY(${idx===0?ty(0):ty(prev)+(ty(idx)-ty(prev))*k}px) scale(1.58)`;
+  // HUD
+  $('#fmtLbl').textContent=T.label[idx];for(let q=0;q<3;q++)$('#sd'+q).style.display=q===idx?'block':'none';
+  const wallet=184500*eio(seg(t,11.6,24.8));$('#wv').textContent=fmt(wallet)+' FCFA';
+  const wb=1+.05*Math.max(0,...T.tap.map(x=>{const d=t-x-.7;return d>0&&d<.4?Math.sin(d/.4*Math.PI):0}));
+  $('#wallet').style.transform=`scale(${wb})`;
+  // pièces rapportées qui montent
+  $('#c1').textContent=fmt(3120+400*seg(t,11.5,14.8));$('#c2').textContent=fmt(12480+900*seg(t,15,19.4));$('#c3').textContent=fmt(5060+300*seg(t,19.7,24.5));
+  // likes
+  const lk=[['#a1',4218],['#a2',18400],['#a3',9806]];
+  lk.forEach(([id,base],i)=>{const done=t>T.tap[i]+.15;const root=$(id);
+    root.querySelector('.lc').textContent=fmt(base+(done?1:0));
+    const hs=root.querySelector('.hs');hs.setAttribute('fill',done?'#FF6B6F':'none');hs.setAttribute('stroke',done?'#FF6B6F':'#9A9A95');
+    const pulse=done?1+.5*Math.max(0,Math.sin(clamp((t-T.tap[i]-.15)/.5)*Math.PI)):1;root.querySelector('.hw').style.transform=`scale(${pulse})`;
+    const pas=root.querySelector('.pas');pas.style.transform=`scale(${done?1+.4*Math.max(0,Math.sin(clamp((t-T.tap[i]-.2)/.5)*Math.PI)):1})`;});
+  // audio
+  const ap=seg(t,19.8,24.6);$('#tcur').textContent='0:'+String(Math.round(42*ap*.5)).padStart(2,'0');
+  [...W.children].forEach((b,i)=>{const on=i/W.children.length<ap;b.style.background=on?'#2196F3':'#757575';b.style.transform=`scaleY(${on&&i/W.children.length>ap-.08?1.25+.2*Math.sin(t*18+i):1})`;});
+  // FX : anneau, pop et pièces
+  for(let i=0;i<3;i++){
+    const root=$(['#a1','#a2','#a3'][i]);const heart=root.querySelector('.hw');
+    const [hx,hy]=center(heart);const fr=$('#stage').getBoundingClientRect();
+    const d=t-T.tap[i];
+    const rg=$('#rg'+i),pp=$('#pp'+i);
+    const rp=seg(t,T.tap[i],T.tap[i]+.55);
+    rg.style.opacity=d>0&&d<.55?1-rp:0;rg.style.left=(hx-fr.left-70)+'px';rg.style.top=(hy-fr.top-70)+'px';rg.style.transform=`scale(${.3+1.3*eo(rp)})`;
+    const pq=seg(t,T.tap[i]+.15,T.tap[i]+.7),po=1-seg(t,T.tap[i]+2.1,T.tap[i]+2.6);
+    pp.textContent=T.pops[i];pp.style.fontSize='48px';pp.style.color=['#FFE14D','#2ECC71','#FFE14D'][i];
+    pp.style.opacity=d>.15?Math.min(pq,po):0;pp.style.left='560px';pp.style.top=(640-eo(pq)*50)+'px';
+    pp.style.transform=`translateX(-50%) scale(${.6+.4*ob(pq)})`;
+    // 10 pièces vers le portefeuille
+    const wr=$('#wallet').getBoundingClientRect();const wx=wr.left-fr.left+80,wy=wr.top-fr.top+75;
+    for(let j=0;j<10;j++){
+      const c=$('#co'+(i*10+j));const s=T.tap[i]+.25+j*.07,e=s+.95;const q=seg(t,s,e);
+      if(q<=0||q>=1){c.style.opacity=0;continue}
+      const sx=hx-fr.left-32,sy=hy-fr.top-32;
+      const ctrlx=sx+(j%2?160:-160)*(1-q*.5),arc=-330;
+      const u=eio(q);const x=(1-u)*(1-u)*sx+2*(1-u)*u*ctrlx+u*u*(wx-32),y=(1-u)*(1-u)*sy+2*(1-u)*u*(sy+arc)+u*u*(wy-32);
+      c.style.opacity=1;c.style.left=x+'px';c.style.top=y+'px';c.style.transform=`scale(${.7+.5*Math.sin(q*Math.PI)}) rotate(${q*360}deg)`;
+    }
+  }
+  // S5
+  vis($('#s5'),t,24.9,28.7,.3);
+  ['#f1','#f2','#f3'].forEach((id,i)=>{const a=25.3+i*.55,p=seg(t,a,a+.5);$(id).style.opacity=p;$(id).style.transform=`translateY(${(1-ob(p))*240}px)`});
+  // S6
+  vis($('#s6'),t,28.5,33,.3);
+  $('#lg').style.transform=`scale(${ob(seg(t,28.7,29.3))})`;
+  [['#t1',29.0],['#t2',29.4],['#t3',29.8],['#st',30.1]].forEach(([id,a])=>{const p=seg(t,a,a+.5);$(id).style.opacity=p;$(id).style.transform=`translateY(${(1-eo(p))*70}px)`});
+  const pulse=1+.03*Math.sin(t*6);$('#st').style.transform=`translateY(${(1-eo(seg(t,30.1,30.6)))*70}px) scale(${t>30.8?pulse:1})`;
+}
+window.render=render;render(0);
+</script></body></html>
