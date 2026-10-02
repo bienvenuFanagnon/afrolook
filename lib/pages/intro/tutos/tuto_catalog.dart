@@ -136,7 +136,7 @@ final List<TutoScene> kTutoScenes = [
     ],
     target: 3, hint: 'Participe et fais voter ta communauté',
     gainEmoji: '🏆', gainTitle: 'Cagnotte remportée', gainSub: 'les meilleurs se la partagent',
-    earn: 'Les gagnants du DÉFI se partagent la cagnotte ; l’app ne prend qu’une commission',
+    earn: 'Les gagnants du DÉFI se partagent la cagnotte',
     actionLabel: 'Découvrir les DÉFIs', action: (c) => _push(c, const DefiDiscoverPage()), publicScene: false,
   ),
   TutoScene(

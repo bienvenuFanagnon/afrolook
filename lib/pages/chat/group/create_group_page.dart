@@ -530,7 +530,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                '70% vous revient · 30% plateforme · Code unique généré automatiquement',
+                '70% des abonnements vous reviennent · Code unique généré automatiquement',
                 style: TextStyle(color: _colors.textSecondary, fontSize: 11),
               ),
             ],

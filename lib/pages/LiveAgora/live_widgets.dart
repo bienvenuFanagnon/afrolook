@@ -52,7 +52,7 @@ class PaymentRequiredDialog extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              '70% pour le créateur • 30% pour la plateforme',
+              '70% pour le créateur',
               style: TextStyle(color: Colors.green, fontSize: 12),
             ),
             SizedBox(height: 24),

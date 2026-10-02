@@ -149,7 +149,7 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
         Text(context.tr('{n} pièces', {'n': CoinCheckout.fmt(_monthCoins)}),
             style: TextStyle(color: c.primary, fontSize: 28, fontWeight: FontWeight.w900)),
         const SizedBox(height: 6),
-        Text(context.tr('70 % du prix des packs vendus pour toi, 30 % pour Afrolook'),
+        Text(context.tr('70 % du prix de chaque pack vendu te revient, en pièces gagnées'),
             style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
       ]),
     );

@@ -1457,7 +1457,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             icon: Icons.account_balance_wallet_rounded,
             title: 'Revenus sur abonnements',
             subtitle: isGold
-                ? '${paidSubs.length} abonné${paidSubs.length > 1 ? 's' : ''} · 70% vous revient · 30% plateforme'
+                ? '${paidSubs.length} abonné${paidSubs.length > 1 ? 's' : ''} · 70% vous reviennent'
                 : 'Recevez 70% des abonnements de vos membres chaque mois',
             isGold: isGold,
             isActive: isGold && paidSubs.isNotEmpty,
@@ -1844,7 +1844,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               ),
               const Text('Prix d\'abonnement mensuel', style: TextStyle(color: Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text('70% vous revient · 30% plateforme Afrolook', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+              Text('70% des abonnements vous reviennent', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,

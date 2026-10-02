@@ -301,7 +301,7 @@ class _DefiConfigSectionState extends State<DefiConfigSection> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "L'app prend 30% de chaque paiement (arrondi à l'entier supérieur).",
+                  "Tu reçois 70% de chaque paiement des participants et des votants.",
                   style: TextStyle(color: _textSecondary, fontSize: 11),
                 ),
                 const SizedBox(height: 16),

@@ -40,7 +40,7 @@ class MonetizedPostOption extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8, bottom: 2),
             child: Text(
               value
-                  ? context.tr('Activé : ce post est monétisé. Chaque like coûte 2 pièces à celui qui like (1 pièce pour toi, 1 pour Afrolook, avec un petit « +1 » sur le cœur) et les vues de tes abonnés sont rémunérées.')
+                  ? context.tr('Activé : ce post est monétisé. Chaque like coûte 2 pièces à celui qui like (1 pièce te revient, avec un petit « +1 » sur le cœur) et les vues de tes abonnés sont rémunérées.')
                   : context.tr('Désactivé : ce post n\'est pas monétisé. Les likes sont gratuits et ses vues ne rapportent rien. Active-le pour gagner des pièces et des gains de vues avec ce post.'),
               style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
             ),

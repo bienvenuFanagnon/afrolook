@@ -1810,7 +1810,7 @@ class _StepTerms extends StatelessWidget {
           ),
           _TermsBlock(
             title: 'Cadeaux et parrainage',
-            content: 'Les cadeaux reçus en live sont distribués selon la grille en vigueur : 70% créateur, 30% plateforme. Le programme de parrainage génère une commission selon les règles du plan marketing actif.',
+            content: 'Les cadeaux reçus en live sont distribués selon la grille en vigueur : 70% pour le créateur. Le programme de parrainage génère une commission selon les règles du plan marketing actif.',
             colors: colors,
           ),
         ] else ...[
