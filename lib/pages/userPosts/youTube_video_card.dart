@@ -1603,7 +1603,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(8),
                 color: colors.primary,
-                border: Border.all(color: colors.primary, width: 1.5),
                 image: profileImage != null ? DecorationImage(image: profileImage, fit: BoxFit.cover) : null,
               ),
               child: profileImage == null ? Icon(Icons.group, color: colors.onPrimary, size: 16) : null,
