@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
 import 'package:afrotok/services/stickers/sticker_models.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
@@ -3085,8 +3086,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Flexible(
-                      child: Text(
-                        displayName,
+                      child: NameTag(
+                        label: displayName,
                         style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
