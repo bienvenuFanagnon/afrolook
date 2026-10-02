@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/widgets/name_tag.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -2359,14 +2360,16 @@ class _UserPubTextState extends State<UserPubText> {
                                 Icon(Icons.group, color: Colors.blue, size: 16),
                                 SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
-                                    'Publication dans le canal: ${widget.canal!.titre}',
-                                    style: TextStyle(
-                                      color: Colors.blue,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                  child: Row(children: [
+                                    Text('Publication dans le canal : ',
+                                        style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w500)),
+                                    Flexible(
+                                      child: NameTag(
+                                        label: '#${widget.canal!.titre}',
+                                        style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w500),
+                                      ),
                                     ),
-                                  ),
+                                  ]),
                                 ),
                               ],
                             ),

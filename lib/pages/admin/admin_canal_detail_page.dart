@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -255,7 +256,7 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Flexible(child: Text('#$titre', style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
+                Flexible(child: NameTag(label: '#$titre', style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
                 if (verified) ...[const SizedBox(width: 5), Icon(Icons.verified_rounded, size: 18, color: c.info)],
               ]),
               const SizedBox(height: 6),

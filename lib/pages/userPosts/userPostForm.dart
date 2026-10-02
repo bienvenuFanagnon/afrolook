@@ -218,8 +218,8 @@ class _UserPostFormState extends State<UserPostForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '#$titre',
+                NameTag(
+                  label: '#$titre',
                   style: TextStyle(
                     color: _colors.textPrimary,
                     fontWeight: FontWeight.bold,

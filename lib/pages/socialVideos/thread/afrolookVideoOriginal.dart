@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/widgets/name_tag.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -1306,8 +1307,8 @@ class _VideoTikTokPageState extends State<VideoTikTokPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Nom du canal
-                        Text(
-                          canal.titre?.substring(0, min(canal.titre?.length ?? 0, 18)) ?? 'Canal',
+                        NameTag(
+                          label: '#${canal.titre?.substring(0, min(canal.titre?.length ?? 0, 18)) ?? 'Canal'}',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,

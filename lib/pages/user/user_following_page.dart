@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/user/otherUser/otherUser.dart';
@@ -351,8 +352,8 @@ class _UserFollowingPageState extends State<UserFollowingPage>
                 child: Icon(Icons.campaign, color: colors.textSecondary),
               ),
       ),
-      title: Text(
-        nom,
+      title: NameTag(
+        label: '#$nom',
         style: TextStyle(
           color: colors.textPrimary,
           fontWeight: FontWeight.w600,

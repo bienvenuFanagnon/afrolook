@@ -11,6 +11,7 @@ import '../../pages/chat/group/group_chat_page.dart';
 import '../../providers/authProvider.dart';
 import '../../services/utils/group_permission_utils.dart';
 import '../../theme/app_colors.dart';
+import 'share_titles.dart';
 
 /// Bottom sheet pour envoyer un post dans une conversation directe ou un groupe.
 class PostShareSheet extends StatefulWidget {
@@ -32,6 +33,7 @@ class _PostShareSheetState extends State<PostShareSheet>
   bool _loadingChats = true;
   bool _loadingGroups = true;
   String? _sendingId;
+  String? _error; // affiché dans la feuille (un SnackBar serait caché derrière elle)
 
   @override
   void initState() {
@@ -155,7 +157,7 @@ class _PostShareSheetState extends State<PostShareSheet>
       });
       _done();
     } catch (_) {
-      if (mounted) setState(() => _sendingId = null);
+      if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });
     }
   }
 
@@ -280,6 +282,8 @@ class _PostShareSheetState extends State<PostShareSheet>
         'is_encrypted': false,
         'reply_to_id': '',
         'create_at_time_spam': now,
+        // Sans createdAt, le message est exclu de la conversation (elle est triée sur ce champ)
+        'createdAt': FieldValue.serverTimestamp(),
       });
       final otherMembers = (group['member_ids'] as List<dynamic>? ?? [])
           .cast<String>()
@@ -303,7 +307,7 @@ class _PostShareSheetState extends State<PostShareSheet>
       sent = true;
     } catch (e, st) {
       debugPrint('[PostShareSheet] _sendToGroup error: $e\n$st');
-      if (mounted) setState(() => _sendingId = null);
+      if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });
     }
     if (sent && mounted) {
       setState(() => _sendingId = null);
@@ -411,6 +415,15 @@ class _PostShareSheetState extends State<PostShareSheet>
             ],
           ),
           Divider(height: 1, color: _colors.border.withOpacity(0.3)),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.red, size: 16),
+                const SizedBox(width: 6),
+                Expanded(child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12.5))),
+              ]),
+            ),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 300),
             child: TabBarView(
@@ -561,7 +574,8 @@ class _PostShareSheetState extends State<PostShareSheet>
             ? Icon(Icons.person, color: _colors.textSecondary)
             : null,
       ),
-      title: PseudoTag(label: '@${friend?.pseudo ?? '...'}',
+      title: ShareUserTitle(
+        user: friend,
         style: TextStyle(
             color: _colors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -595,8 +609,8 @@ class _PostShareSheetState extends State<PostShareSheet>
             ? Icon(Icons.group_rounded, color: _colors.textSecondary)
             : null,
       ),
-      title: Text(
-        name,
+      title: ShareGroupTitle(
+        group: group,
         style: TextStyle(
             color: _colors.textPrimary,
             fontWeight: FontWeight.w600,

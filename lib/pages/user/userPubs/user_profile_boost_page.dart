@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
@@ -356,7 +357,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
     final entityName = _isGroup
         ? (widget.group!['name'] as String? ?? 'Groupe')
         : _isCanal
-            ? (widget.canal!.titre ?? 'Canal')
+            ? '#${widget.canal!.titre ?? 'Canal'}'
             : ('${_auth.loginUserData.prenom ?? ''} ${_auth.loginUserData.nom ?? ''}'.trim().isNotEmpty
                 ? '${_auth.loginUserData.prenom ?? ''} ${_auth.loginUserData.nom ?? ''}'.trim()
                 : (_auth.loginUserData.pseudo ?? 'Mon profil'));
@@ -459,7 +460,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+                NameTag(label: name, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
                 const SizedBox(height: 2),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

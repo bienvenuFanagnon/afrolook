@@ -14,7 +14,7 @@ class CanalTag extends StatelessWidget {
   /// false : sans contour (pages de listes de canaux)
   final bool bordered;
 
-  const CanalTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign, this.bordered = true});
+  const CanalTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign, this.bordered = false});
 
   /// Le texte est-il un nom de canal à mettre en badge (« #xxx » sans espace) ?
   static bool isCanalLabel(String s) => RegExp(r'^#(?=.*[A-Za-z])[A-Za-z0-9._\-]+$').hasMatch(s);

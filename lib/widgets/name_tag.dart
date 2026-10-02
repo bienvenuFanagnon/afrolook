@@ -13,7 +13,7 @@ class NameTag extends StatelessWidget {
   final TextAlign? textAlign;
   final bool bordered;
 
-  const NameTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign, this.bordered = true});
+  const NameTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign, this.bordered = false});
 
   @override
   Widget build(BuildContext context) {

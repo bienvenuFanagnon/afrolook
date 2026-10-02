@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -278,7 +279,7 @@ class _CanalTile extends StatelessWidget {
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminCanalDetailPage(canalId: doc.id))),
         leading: SafeNetworkAvatar(url: d['urlImage'] as String?, radius: 22, backgroundColor: c.surfaceVariant, iconColor: c.textSecondary),
         title: Row(children: [
-          Flexible(child: Text('#$titre', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700))),
+          Flexible(child: NameTag(label: '#$titre', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700))),
           if (d['isVerify'] == true) ...[const SizedBox(width: 4), Icon(Icons.verified_rounded, size: 15, color: c.info)],
         ]),
         subtitle: Padding(

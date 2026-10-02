@@ -10,6 +10,7 @@ import '../../pages/chat/group/group_chat_page.dart';
 import '../../providers/authProvider.dart';
 import '../../services/utils/group_permission_utils.dart';
 import '../../theme/app_colors.dart';
+import 'share_titles.dart';
 
 /// Partage un produit, un contenu VIP ou un live dans une conversation ou un groupe.
 /// itemType : 'product' | 'vip' | 'live'
@@ -46,6 +47,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
   bool _loadingChats = true;
   bool _loadingGroups = true;
   String? _sendingId;
+  String? _error; // affiché dans la feuille (un SnackBar serait caché derrière elle)
 
   @override
   void initState() {
@@ -152,7 +154,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       });
       _done();
     } catch (_) {
-      if (mounted) setState(() => _sendingId = null);
+      if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });
     }
   }
 
@@ -259,7 +261,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       sent = true;
     } catch (e, st) {
       debugPrint('[GenericShareSheet] _sendToGroup error: $e\n$st');
-      if (mounted) setState(() => _sendingId = null);
+      if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });
     }
     if (sent && mounted) {
       setState(() => _sendingId = null);
@@ -317,6 +319,15 @@ class _GenericShareSheetState extends State<GenericShareSheet>
             tabs: const [Tab(text: 'Conversations'), Tab(text: 'Groupes')],
           ),
           Divider(height: 1, color: _colors.border.withOpacity(0.3)),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.red, size: 16),
+                const SizedBox(width: 6),
+                Expanded(child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12.5))),
+              ]),
+            ),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 300),
             child: TabBarView(
@@ -397,7 +408,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
             backgroundImage: img.isNotEmpty ? CachedNetworkImageProvider(img) : null,
             child: img.isEmpty ? Icon(Icons.person, color: _colors.textSecondary) : null,
           ),
-          title: Text('@$pseudo', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+          title: ShareUserTitle(user: friend, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
           trailing: sending
               ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: _colors.primary))
               : Icon(Icons.send_rounded, color: _colors.primary, size: 20),
@@ -430,7 +441,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
             backgroundImage: img.isNotEmpty ? CachedNetworkImageProvider(img) : null,
             child: img.isEmpty ? Icon(Icons.group_rounded, color: _colors.textSecondary) : null,
           ),
-          title: Text(name, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+          title: ShareGroupTitle(group: g, style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
           trailing: sending
               ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: _colors.primary))
               : Icon(Icons.send_rounded, color: _colors.primary, size: 20),
