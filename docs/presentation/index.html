@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Afrolook — Dossier de présentation</title>
+<link rel="stylesheet" href="fonts_local.css">
+<style>
+@page { size: A4; margin: 0; }
+:root{
+  --bg:#0E0E0E; --surf:#1A1A1A; --surf2:#242424; --line:#2F2F2F;
+  --green:#2ECC71; --green-d:#1FAA59; --yellow:#FFE14D; --yellow-d:#FFD400;
+  --paper:#FAFAF8; --paper2:#F1F1EC; --pline:#E5E5E0; --ink:#121212; --mute:#6f6f6a;
+  --blue:#5B9CFA; --red:#FF6B6F; --orange:#FF9248;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:#777;font-size:10.4pt;line-height:1.5}
+h1,h2,h3,.dsp{font-family:'Poppins','Inter',sans-serif}
+.page{width:210mm;height:297mm;position:relative;overflow:hidden;page-break-after:always;break-after:page;background:var(--paper);padding:17mm 16mm 16mm}
+.dark{background:var(--bg);color:#fff}
+.page:last-child{page-break-after:auto}
+/* en-tête / pied */
+.run{position:absolute;left:16mm;right:16mm;top:8mm;display:flex;justify-content:space-between;font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.dark .run{color:#8a8a85}
+.foot{position:absolute;left:16mm;right:16mm;bottom:8mm;display:flex;justify-content:space-between;font-size:7.5pt;color:var(--mute)}
+.dark .foot{color:#8a8a85}
+.bar{height:3px;width:48px;background:linear-gradient(90deg,var(--green),var(--yellow));border-radius:2px;margin:3mm 0 4mm}
+.kick{font-size:8pt;letter-spacing:.18em;text-transform:uppercase;font-weight:600;color:var(--green-d);margin-top:6mm}
+.dark .kick{color:var(--green)}
+h2{font-size:25pt;line-height:1.12;font-weight:800;letter-spacing:-.01em;max-width:150mm}
+h3{font-size:12.5pt;font-weight:700;margin-bottom:1.5mm}
+p{margin-bottom:2.6mm}
+.lead{font-size:12pt;line-height:1.5;color:#3a3a37;max-width:150mm}
+.dark .lead{color:#c9c9c4}
+.mute{color:var(--mute)}
+.hl{color:var(--green-d)} .dark .hl{color:var(--green)}
+.y{color:#B8860B} .dark .y{color:var(--yellow)}
+/* grilles */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:4.5mm}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:4mm}
+.card{background:#fff;border:1px solid var(--pline);border-radius:5mm;padding:5mm}
+.dark .card{background:var(--surf);border-color:var(--line)}
+.card h3{font-size:11pt}
+.card p{font-size:9.3pt;color:#4a4a46;margin:0}
+.dark .card p{color:#b9b9b4}
+.ico{width:10mm;height:10mm;border-radius:3mm;display:flex;align-items:center;justify-content:center;font-size:15pt;margin-bottom:3mm;background:rgba(46,204,113,.14)}
+.ico.yl{background:rgba(255,212,0,.2)} .ico.bl{background:rgba(91,156,250,.18)} .ico.or{background:rgba(255,146,72,.2)} .ico.rd{background:rgba(255,107,111,.18)}
+.stat .y{color:var(--yellow)}.stat .hl{color:var(--green)}.num{white-space:nowrap;font-family:'Poppins';font-weight:800;font-size:30pt;line-height:1;letter-spacing:-.02em}
+.stat{border-radius:5mm;padding:5mm;background:var(--surf);border:1px solid var(--line);color:#fff}
+.stat small{display:block;color:#a8a8a3;font-size:8.4pt;margin-top:1.5mm;line-height:1.35}
+.pill{display:inline-block;padding:1mm 3mm;border-radius:20mm;font-size:8pt;font-weight:600;background:rgba(46,204,113,.15);color:var(--green-d)}
+.dark .pill{color:var(--green)}
+.pill.y{background:rgba(255,212,0,.2);color:#8a6a00}.dark .pill.y{color:var(--yellow)}
+ul.tick{list-style:none}
+ul.tick li{padding-left:6mm;position:relative;margin-bottom:1.8mm;font-size:9.8pt}
+ul.tick li:before{content:"";position:absolute;left:0;top:1.9mm;width:3mm;height:3mm;border-radius:1mm;background:var(--green)}
+.quote{border-left:4px solid var(--green);padding:2mm 0 2mm 5mm;font-family:'Poppins';font-weight:600;font-size:13pt;line-height:1.35;margin:5mm 0}
+/* téléphone */
+.phone{width:50mm;height:104mm;background:#050505;border-radius:7.5mm;padding:1.8mm;box-shadow:0 6mm 10mm rgba(0,0,0,.28);flex:none;position:relative}
+.phone:before{content:"";position:absolute;top:2.6mm;left:50%;transform:translateX(-50%);width:15mm;height:2.8mm;background:#050505;border-radius:2mm;z-index:5}
+.scr{width:100%;height:100%;border-radius:6mm;overflow:hidden;background:var(--bg);color:#fff;font-size:5.6pt;line-height:1.3;position:relative;display:flex;flex-direction:column}
+.scr.light{background:#FAFAF8;color:#121212}
+.sb{height:6mm;flex:none;display:flex;justify-content:space-between;align-items:flex-end;padding:0 4mm 0.6mm;font-size:5pt;color:#9a9a95}
+.top{display:flex;align-items:center;gap:1.5mm;padding:1.2mm 2.6mm 1.6mm}
+.top b{font-family:'Poppins';font-size:8pt;color:var(--green);flex:1}
+.top i{width:3.4mm;height:3.4mm;border-radius:50%;background:var(--surf2);display:block}
+.chips{display:flex;gap:1mm;padding:0 2.6mm 1.5mm;overflow:hidden}
+.chips span{padding:.5mm 1.8mm;border-radius:6mm;background:var(--surf2);font-size:5pt;color:#c9c9c4;white-space:nowrap}
+.chips span.on{background:var(--green);color:#0E0E0E;font-weight:700}
+.post{margin:0 2mm 2mm;background:var(--surf);border-radius:3mm;padding:1.8mm}
+.post .h{display:flex;align-items:center;gap:1.4mm;margin-bottom:1.2mm}
+.av{width:4.2mm;height:4.2mm;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--yellow));flex:none}
+.av.b{background:linear-gradient(135deg,#5B9CFA,#8a6cff)}.av.o{background:linear-gradient(135deg,#FF9248,#FF6B6F)}
+.post .h b{font-size:5.6pt}.post .h small{display:block;color:#8a8a85;font-size:4.6pt}
+.img{border-radius:2.2mm;height:20mm;background:linear-gradient(135deg,#1FAA59,#0b5d33 55%,#FFD400);position:relative}
+.img.v{background:linear-gradient(135deg,#3a2a8a,#8a3a7a 60%,#FF9248)}
+.img.s{background:linear-gradient(135deg,#0b4d7a,#2a7ab8 60%,#2ECC71)}
+.img:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,rgba(255,255,255,.35),transparent 40%)}
+.play{position:absolute;left:50%;top:50%;width:6mm;height:6mm;margin:-3mm;border-radius:50%;background:rgba(0,0,0,.45);z-index:2;display:flex;align-items:center;justify-content:center;font-size:7pt}
+.acts{display:flex;gap:2.5mm;margin-top:1.4mm;font-size:5pt;color:#b0b0ab}
+.nav{margin-top:auto;display:flex;justify-content:space-around;padding:1.6mm 0 2.4mm;background:var(--surf);font-size:7pt;color:#8a8a85}
+.nav .on{color:var(--green)}
+.btn{display:inline-block;background:var(--green);color:#0E0E0E;font-weight:700;border-radius:6mm;padding:1mm 3mm;font-size:5.2pt}
+.btn.yl{background:var(--yellow);color:#0E0E0E}
+.btn.o{background:transparent;border:1px solid #3a3a3a;color:#ddd}
+.wal{margin:0 2.4mm 2mm;border-radius:3mm;padding:3mm;background:linear-gradient(135deg,#1FAA59,#0b5d33);color:#fff}
+.wal .big{font-family:'Poppins';font-weight:800;font-size:12pt;line-height:1.1}
+.row{display:flex;align-items:center;gap:1.6mm;padding:1.4mm 2.4mm;border-bottom:1px solid #262626}
+.row b{flex:1;font-weight:600}
+.cmt{display:flex;gap:1.4mm;padding:1.2mm 2.4mm}
+.cmt .bub{background:var(--surf);border-radius:2.4mm;padding:1.3mm 2mm;flex:1}
+.cmt .bub img{width:13mm;height:13mm;display:block;margin-top:1mm}
+.input{margin:0 2mm 1.4mm;display:flex;gap:1.2mm;align-items:center;background:var(--surf2);border-radius:6mm;padding:1.2mm 2mm;color:#8a8a85}
+.input .g{color:#D99A00;font-size:7pt}
+.cap{font-size:8.6pt;color:var(--mute);text-align:center;margin-top:4mm;max-width:58mm}
+.dark .cap{color:#9a9a95}
+.shot .phone{zoom:1.16}.shots{display:flex;justify-content:space-around;align-items:flex-start;margin-top:8mm;gap:3mm}
+.shot{display:flex;flex-direction:column;align-items:center}
+/* tableau */
+table{width:100%;border-collapse:collapse;font-size:8.8pt}
+th,td{padding:2.4mm 2.6mm;text-align:left;border-bottom:1px solid var(--pline);vertical-align:top}
+th{font-size:8pt;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);font-weight:600}
+td.c,th.c{text-align:center}
+.yes{color:var(--green-d);font-weight:800}.no{color:#b5b5b0}.mid{color:#d49b00;font-weight:700}
+tr.us td{background:rgba(46,204,113,.09);font-weight:600}
+.dark table th{color:#8a8a85}.dark th,.dark td{border-color:var(--line)}
+/* couverture */
+.cover{padding:0;background:radial-gradient(120% 80% at 85% 0%,rgba(46,204,113,.35),transparent 55%),radial-gradient(90% 60% at 0% 100%,rgba(255,212,0,.22),transparent 55%),var(--bg)}
+.cover .in{position:absolute;left:18mm;right:18mm;top:30mm}
+.logo{width:26mm;height:26mm;border-radius:6mm}
+.cover h1{font-size:44pt;line-height:1.02;font-weight:800;letter-spacing:-.02em;margin:10mm 0 5mm;max-width:150mm}
+.cover .sub{font-size:14pt;color:#cfcfca;max-width:135mm}
+.cover .tag{display:inline-block;margin-top:9mm;padding:1.6mm 4mm;border:1px solid #3a3a3a;border-radius:20mm;font-size:8.5pt;color:#cfcfca;letter-spacing:.06em}
+.cover .phones{position:absolute;right:-6mm;bottom:-22mm;display:flex;gap:4mm;transform:rotate(-8deg)}
+.cover .meta{position:absolute;left:18mm;bottom:16mm;max-width:100mm;font-size:8.5pt;color:#8a8a85}
+/* graphiques */
+.bars{display:flex;align-items:flex-end;gap:3mm;height:48mm;padding:0 2mm;border-bottom:1px solid var(--line)}
+.bars div{flex:1;border-radius:2mm 2mm 0 0;background:linear-gradient(180deg,var(--green),#17803f);position:relative}
+.bars div span{position:absolute;top:-5mm;left:0;right:0;text-align:center;font-size:7.5pt;font-weight:700;color:#fff}
+.bars div em{position:absolute;bottom:-5.5mm;left:0;right:0;text-align:center;font-size:7pt;font-style:normal;color:#8a8a85}
+.rpm{display:flex;flex-direction:column;gap:1.6mm}
+.rpm div{display:flex;align-items:center;gap:3mm;font-size:9pt}
+.rpm i{display:block;height:5mm;border-radius:1.5mm;background:linear-gradient(90deg,var(--green),var(--yellow))}
+.rpm b{width:22mm;font-weight:600}
+.scr .rpm{gap:1mm}.scr .rpm div{font-size:5.4pt;gap:1.6mm}.scr .rpm i{height:2.6mm}.scr .rpm b{width:auto}
+.tight .card{padding:3.8mm}.tight .ico{margin-bottom:2mm}
+.flow{display:flex;align-items:stretch;gap:2mm}
+.flow>div{flex:1;border-radius:4mm;padding:4mm;background:var(--surf);border:1px solid var(--line);text-align:center}
+.flow .a{display:flex;align-items:center;justify-content:center;flex:none;width:6mm;background:none;border:0;color:var(--green);font-size:14pt;padding:0}
+.note{font-size:8pt;color:var(--mute);margin-top:4mm;line-height:1.45}
+.dark .note{color:#8a8a85}
+.step{display:flex;gap:4mm;margin-bottom:4mm;align-items:flex-start}
+.step .n{flex:none;width:9mm;height:9mm;border-radius:50%;background:var(--green);color:#0E0E0E;font-family:'Poppins';font-weight:800;display:flex;align-items:center;justify-content:center}
+.step p{margin:0;font-size:9.6pt}
+.tl{position:relative;padding-left:7mm;border-left:2px solid var(--line);margin-left:2mm}
+.tl>div{position:relative;margin-bottom:5mm}
+.tl>div:before{content:"";position:absolute;left:-9.3mm;top:1.2mm;width:4mm;height:4mm;border-radius:50%;background:var(--green);border:2px solid var(--bg)}
+.tl b{font-family:'Poppins'}
+.stk{display:flex;gap:2mm;margin-top:3mm}
+.stk img{width:15mm;height:15mm;border-radius:3mm;background:var(--surf2);padding:1mm}
+</style>
+</head>
+<body>
+
+<!-- ============ 1. COUVERTURE ============ -->
+<section class="page cover dark">
+  <div class="in">
+    <img class="logo" src="logo.png" alt="Afrolook">
+    <h1>Le réseau social où <span class="hl">chaque créateur est payé.</span></h1>
+    <p class="sub">Dossier de présentation du projet Afrolook : le problème, la solution, le produit, le modèle économique et la vision à un million d'utilisateurs.</p>
+    <span class="tag">Investisseurs · Équipe · Stagiaires et nouveaux arrivants</span>
+  </div>
+  <div class="phones">
+    <div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div><div class="top"><b>Afrolook</b><i></i><i></i></div><div class="chips"><span class="on">Pour toi</span><span>Abonnements</span><span>Défis</span></div>
+      <div class="post"><div class="h"><div class="av"></div><div><b>@amina_cuisine</b><small>2 h · Abidjan</small></div></div><div class="img"></div><div class="acts"><span>♥ 1,2 k</span><span>💬 84</span><span>🎁 12</span></div></div>
+      <div class="post"><div class="h"><div class="av b"></div><div><b>@dj_kofi</b><small>5 h · Accra</small></div></div><div class="img v"><div class="play">▶</div></div><div class="acts"><span>♥ 3,4 k</span><span>💬 210</span></div></div>
+      <div class="nav"><span class="on">⌂</span><span>◎</span><span>＋</span><span>✉</span><span>☺</span></div></div></div>
+    <div class="phone" style="margin-top:14mm"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="wal" style="margin-top:3mm"><small>Gains à retirer</small><div class="big">184 500 FCFA</div><div style="margin-top:2mm"><span class="btn yl">Retirer</span></div></div>
+      <div class="row"><b>Vues monétisées</b><span class="hl">+ 42 300</span></div><div class="row"><b>Cadeaux reçus</b><span class="hl">+ 61 000</span></div><div class="row"><b>Abonnés du canal</b><span class="hl">+ 54 200</span></div><div class="row"><b>Parrainage</b><span class="hl">+ 27 000</span></div>
+      <div class="nav"><span>⌂</span><span>◎</span><span>＋</span><span>✉</span><span class="on">☺</span></div></div></div>
+  </div>
+  <div class="meta">Afrolook · Document confidentiel · Les chiffres de prévision sont des estimations internes, non des garanties.</div>
+</section>
+
+<!-- ============ 2. EN UN COUP D'OEIL ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>Présentation du projet</span></div>
+  <div class="kick">En un coup d'œil</div>
+  <h2>Afrolook en quatre idées</h2><div class="bar"></div>
+  <p class="lead">Afrolook est un réseau social mobile où les créateurs et leur communauté <b>gagnent de l'argent réel</b> grâce à ce qu'ils publient, partagent et soutiennent, avec des paiements pensés pour l'Afrique (Mobile Money) et ouverts au monde entier.</p>
+  <div class="g2" style="margin-top:7mm">
+    <div class="card"><div class="ico">💸</div><h3>1. On paie les créateurs</h3><p>Chaque vue d'abonné, chaque cadeau, chaque abonnement à un canal rapporte au créateur. Il garde <b>70 %</b> de ce que ses fans paient.</p></div>
+    <div class="card"><div class="ico yl">🌍</div><h3>2. Pensé pour nous, ouvert au monde</h3><p>Mobile Money, devises locales, langues multiples (français, anglais, espagnol, allemand, arabe, portugais, chinois, swahili).</p></div>
+    <div class="card"><div class="ico bl">🧩</div><h3>3. Tout au même endroit</h3><p>Fil d'actualité, vidéos, lives, canaux, groupes, messagerie, boutique, défis, stickers : une seule application.</p></div>
+    <div class="card"><div class="ico or">🪙</div><h3>4. Une économie simple : les pièces</h3><p>Tout se paie en pièces. Les pièces gagnées se convertissent en argent et se retirent par Mobile Money ou virement.</p></div>
+  </div>
+  <div class="g3" style="margin-top:6mm">
+    <div class="stat"><div class="num hl">1 M</div><small>d'utilisateurs : l'objectif à atteindre</small></div>
+    <div class="stat"><div class="num y" style="font-size:25pt;padding-top:1.2mm">300–600 k</div><small>FCFA par mois estimés pour les créateurs actifs</small></div>
+    <div class="stat"><div class="num hl">30 M+</div><small>FCFA de revenus mensuels estimés pour la plateforme</small></div>
+  </div>
+  <div class="quote">« Les créateurs africains font vivre les plateformes des autres. Nous construisons celle qui leur rend la valeur qu'ils créent. »</div>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>2</span></div>
+</section>
+
+<!-- ============ 3. PROBLEME ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Le problème</span></div>
+  <div class="kick">La problématique</div>
+  <h2>Des millions de créateurs, presque aucun revenu</h2><div class="bar"></div>
+  <p class="lead">Les grandes plateformes sont gratuites pour les utilisateurs, mais elles captent la valeur. En Afrique et dans la diaspora, la grande majorité des créateurs ne touche rien, ou ne peut pas être payée.</p>
+  <div class="g2" style="margin-top:7mm">
+    <div class="card"><div class="ico rd">⛔</div><h3>Pas de paiement local</h3><p>Les programmes de monétisation exigent des seuils d'abonnés très hauts, un compte bancaire international ou PayPal. Mobile Money n'est presque jamais accepté.</p></div>
+    <div class="card"><div class="ico rd">📉</div><h3>Des seuils inaccessibles</h3><p>Il faut des milliers d'abonnés et d'heures de visionnage avant le premier centime. Les petits créateurs travaillent sans espoir de revenu.</p></div>
+    <div class="card"><div class="ico rd">🔇</div><h3>Une audience noyée</h3><p>Les algorithmes mondiaux favorisent les contenus américains ou européens. Un nouveau créateur africain est rarement découvert.</p></div>
+    <div class="card"><div class="ico rd">💳</div><h3>Soutenir un créateur est difficile</h3><p>Les fans veulent aider leurs créateurs préférés, mais n'ont ni carte bancaire ni moyen simple de donner, d'acheter ou de s'abonner.</p></div>
+  </div>
+  <div class="g3" style="margin-top:6mm">
+    <div class="stat"><div class="num y">+ 1 Md</div><small>d'habitants en Afrique, dont une très grande majorité de moins de 30 ans</small></div>
+    <div class="stat"><div class="num hl">Mobile first</div><small>Internet passe par le téléphone et le Mobile Money, pas par la carte bancaire</small></div>
+    <div class="stat"><div class="num y">Diaspora</div><small>des millions de personnes qui veulent rester connectées au pays et à leurs créateurs</small></div>
+  </div>
+  <p class="note">Ordres de grandeur publics et estimations internes, à actualiser avec des sources avant toute présentation officielle.</p>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>3</span></div>
+</section>
+
+<!-- ============ 4. CIBLE ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>La cible</span></div>
+  <div class="kick">Pour qui ?</div>
+  <h2>Quatre publics, une seule communauté</h2><div class="bar"></div>
+  <div class="g2" style="margin-top:6mm">
+    <div class="card"><div class="ico">🎬</div><h3>Les créateurs</h3><p><b>Qui :</b> vidéastes, musiciens, humoristes, cuisiniers, entrepreneurs, formateurs, influenceurs.<br><b>Besoin :</b> être vus, être payés, simplement.<br><b>Ce qu'ils trouvent :</b> RPM sur les vues, abonnements de canal, ventes de contenu, cadeaux, lives payants.</p></div>
+    <div class="card"><div class="ico yl">👥</div><h3>Les communautés et fans</h3><p><b>Qui :</b> 16 à 35 ans, très mobiles, actifs sur les réseaux.<br><b>Besoin :</b> divertissement, appartenance, soutenir ceux qu'ils aiment.<br><b>Ce qu'ils trouvent :</b> fil riche, canaux, groupes, défis, stickers, cadeaux et parrainage rémunéré.</p></div>
+    <div class="card"><div class="ico bl">🏪</div><h3>Les entrepreneurs et marques locales</h3><p><b>Qui :</b> boutiques, restaurants, services, artistes.<br><b>Besoin :</b> toucher une audience locale à petit prix.<br><b>Ce qu'ils trouvent :</b> boosts de posts, publicités, boutique et services, comptes officiels vérifiés.</p></div>
+    <div class="card"><div class="ico or">✈️</div><h3>La diaspora</h3><p><b>Qui :</b> Africains et Afro-descendants en Europe, aux Amériques, dans le Golfe.<br><b>Besoin :</b> rester proche du pays, de la culture, de la musique.<br><b>Ce qu'ils trouvent :</b> contenus de leur région, canaux, soutien direct, paiements en pièces.</p></div>
+  </div>
+  <h3 style="margin-top:8mm">Marchés de lancement</h3>
+  <div class="g4" style="margin-top:2mm">
+    <div class="card" style="padding:3.5mm"><h3 style="font-size:10pt">Afrique francophone</h3><p>Côte d'Ivoire, Sénégal, Cameroun, Bénin, Togo, RDC…</p></div>
+    <div class="card" style="padding:3.5mm"><h3 style="font-size:10pt">Afrique anglophone</h3><p>Nigeria, Ghana, Kenya, Tanzanie…</p></div>
+    <div class="card" style="padding:3.5mm"><h3 style="font-size:10pt">Diaspora</h3><p>France, Belgique, Royaume-Uni, États-Unis, Canada.</p></div>
+    <div class="card" style="padding:3.5mm"><h3 style="font-size:10pt">Reste du monde</h3><p>Caraïbes, Amérique latine, Moyen-Orient, Asie.</p></div>
+  </div>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>4</span></div>
+</section>
+
+<!-- ============ 5. SOLUTION / VISION ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Notre idée</span></div>
+  <div class="kick">Notre idée</div>
+  <h2>Partager la valeur avec ceux qui la créent</h2><div class="bar"></div>
+  <p class="lead">Afrolook repose sur un principe simple : une partie de ce que la plateforme gagne retourne aux créateurs et à leur communauté, en argent réel et en toute transparence.</p>
+  <div class="flow" style="margin-top:8mm">
+    <div><div class="ico" style="margin:0 auto 2mm">👀</div><h3 style="font-size:10pt">1. On publie</h3><p style="font-size:8.6pt;color:#b9b9b4;margin:0">Photos, vidéos, lives, textes, stickers.</p></div>
+    <div class="a">➜</div>
+    <div><div class="ico yl" style="margin:0 auto 2mm">❤️</div><h3 style="font-size:10pt">2. On engage</h3><p style="font-size:8.6pt;color:#b9b9b4;margin:0">Vues, likes, commentaires, cadeaux, abonnements.</p></div>
+    <div class="a">➜</div>
+    <div><div class="ico or" style="margin:0 auto 2mm">🪙</div><h3 style="font-size:10pt">3. Ça rapporte</h3><p style="font-size:8.6pt;color:#b9b9b4;margin:0">Pièces gagnées, 70 % pour le créateur.</p></div>
+    <div class="a">➜</div>
+    <div><div class="ico bl" style="margin:0 auto 2mm">📲</div><h3 style="font-size:10pt">4. On retire</h3><p style="font-size:8.6pt;color:#b9b9b4;margin:0">Mobile Money, virement, carte, PayPal.</p></div>
+  </div>
+  <div class="g2" style="margin-top:8mm">
+    <div class="card"><h3 class="hl">Notre vision</h3><p>Devenir la première plateforme sociale où un jeune créateur africain peut vivre de son talent, et où le monde entier peut le découvrir et le soutenir.</p></div>
+    <div class="card"><h3 class="y">Notre mission</h3><p>Donner à chaque personne les outils pour publier, être découverte, être payée et retirer son argent simplement, depuis son téléphone.</p></div>
+  </div>
+  <h3 style="margin-top:8mm">Ce qui rend le modèle durable</h3>
+  <ul class="tick" style="margin-top:3mm">
+    <li>Les revenus viennent de ce que les utilisateurs <b>choisissent de payer</b> : abonnements, cadeaux, boosts, publicités, stickers, recharge de pièces.</li>
+    <li>La part de la plateforme est de 30 % des paiements entre utilisateurs ; le créateur ne perd jamais ses 70 %, même avec un parrain.</li>
+    <li>Plus les créateurs gagnent, plus ils publient et invitent : <b>un cercle vertueux de croissance</b>.</li>
+  </ul>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>5</span></div>
+</section>
+
+<!-- ============ 6. CE QUE L'APPLICATION OFFRE ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>Ce que l'application offre</span></div>
+  <div class="kick">Le produit</div>
+  <h2>Tout ce dont une communauté a besoin</h2><div class="bar"></div>
+  <div class="g3 tight" style="margin-top:4mm">
+    <div class="card"><div class="ico">📰</div><h3>Fil « Pour toi »</h3><p>Un fil personnalisé, avec découverte des nouveaux créateurs et contenus des abonnements.</p></div>
+    <div class="card"><div class="ico yl">🎥</div><h3>Vidéos et vibes</h3><p>Vidéos courtes et longues, lecture fluide, publication simple depuis le téléphone.</p></div>
+    <div class="card"><div class="ico rd">🔴</div><h3>Lives</h3><p>Diffusion en direct, cadeaux en direct, lives privés payants avec ticket en pièces.</p></div>
+    <div class="card"><div class="ico bl">📣</div><h3>Canaux</h3><p>Pages de créateurs avec abonnés, canaux gratuits ou privés avec abonnement mensuel payant.</p></div>
+    <div class="card"><div class="ico">💬</div><h3>Groupes et messagerie</h3><p>Discussions, groupes publics ou privés, photos, vidéos, messages vocaux.</p></div>
+    <div class="card"><div class="ico or">🏆</div><h3>Défis</h3><p>Compétitions entre créateurs : votes payants, cagnotte, classement et distribution des gains.</p></div>
+    <div class="card"><div class="ico yl">🛍️</div><h3>Boutique et contenus payants</h3><p>Vente de vidéos, photos, documents, produits et services par les créateurs et marques.</p></div>
+    <div class="card"><div class="ico">🎭</div><h3>Stickers animés</h3><p>Stickers officiels et de créateurs dans les commentaires, packs gratuits ou payants, stickers-cadeaux.</p></div>
+    <div class="card"><div class="ico bl">⭐</div><h3>Comptes Premium et Gold</h3><p>Sans publicités, badges, avantages exclusifs, plus de stickers par jour, mise en avant.</p></div>
+    <div class="card"><div class="ico or">📢</div><h3>Boosts et publicités</h3><p>Les marques et créateurs mettent en avant leurs posts ou leur canal, après validation.</p></div>
+    <div class="card"><div class="ico">🤝</div><h3>Parrainage</h3><p>Le parrain touche 2,5 % des paiements de ses filleuls, pris sur la part de la plateforme.</p></div>
+    <div class="card"><div class="ico rd">🛡️</div><h3>Confiance et sécurité</h3><p>Règles claires, modération, signalements, anti-spam, comptes officiels vérifiés.</p></div>
+  </div>
+  <p class="note" style="margin-top:3mm">Disponible sur Android et iPhone. Les ventes de contenus et certaines options d'achat sont adaptées aux règles de chaque boutique d'applications.</p>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>6</span></div>
+</section>
+
+<!-- ============ 7. INTERFACES I ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Les interfaces</span></div>
+  <div class="kick">Les écrans · 1/3</div>
+  <h2>Découvrir et suivre</h2><div class="bar"></div>
+  <p class="lead">Une interface sombre et rapide, aux couleurs d'Afrolook : noir, vert et jaune. Maquettes de principe.</p>
+  <div class="shots">
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div><div class="top"><b>Afrolook</b><i></i><i></i></div><div class="chips"><span class="on">Pour toi</span><span>Abonnements</span><span>Défis</span><span>Live</span></div>
+      <div class="post"><div class="h"><div class="av"></div><div><b>@amina_cuisine ✔</b><small>2 h · Abidjan</small></div></div><div class="img"></div><div class="acts"><span>♥ 1,2 k</span><span>💬 84</span><span>🎁 12</span><span>↗</span></div></div>
+      <div class="post"><div class="h"><div class="av b"></div><div><b>@dj_kofi</b><small>5 h · Accra</small></div></div><div class="img v"><div class="play">▶</div></div><div class="acts"><span>♥ 3,4 k</span><span>💬 210</span></div></div>
+      <div class="nav"><span class="on">⌂</span><span>◎</span><span>＋</span><span>✉</span><span>☺</span></div></div></div><div class="cap">Le fil « Pour toi » : découverte et abonnements</div></div>
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="height:19mm;background:linear-gradient(135deg,#0b5d33,#FFD400)"></div>
+      <div style="padding:0 3mm;margin-top:-5mm"><div class="av" style="width:11mm;height:11mm;border:1.2mm solid var(--bg)"></div></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">Afro Cuisine Mama ✔</b><br><span style="color:#9a9a95">Recettes d'Afrique · 98 k abonnés</span><div style="margin-top:1.5mm"><span class="btn">S'abonner</span> <span class="btn yl">Canal privé · 500 🪙</span></div></div>
+      <div class="chips" style="margin-top:2mm"><span class="on">Posts</span><span>Vidéos</span><span>À propos</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1mm;padding:0 2mm"><div class="img" style="height:14mm"></div><div class="img v" style="height:14mm"></div><div class="img s" style="height:14mm"></div><div class="img s" style="height:14mm"></div><div class="img" style="height:14mm"></div><div class="img v" style="height:14mm"></div></div>
+      <div class="nav"><span>⌂</span><span class="on">◎</span><span>＋</span><span>✉</span><span>☺</span></div></div></div><div class="cap">Un canal de créateur : abonnement gratuit ou payant</div></div>
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="height:48mm;background:linear-gradient(160deg,#3a2a8a,#8a3a7a 55%,#FF9248);position:relative"><div style="position:absolute;left:2mm;top:2mm"><span class="btn" style="background:#ff4d4f;color:#fff">● LIVE</span></div><div style="position:absolute;right:2mm;top:2mm;background:rgba(0,0,0,.5);padding:.5mm 2mm;border-radius:6mm">👁 2,4 k</div><div style="position:absolute;left:2mm;bottom:2mm;right:2mm"><b style="font-size:6.4pt">Soirée musique live avec DJ Kofi</b></div></div>
+      <div class="cmt"><div class="av"></div><div class="bub"><b>Fatou</b> Quelle ambiance 🔥</div></div>
+      <div class="cmt"><div class="av b"></div><div class="bub"><b>Yao</b> A offert 🎁 Couronne</div></div>
+      <div class="cmt"><div class="av o"></div><div class="bub"><b>Awa</b> Bravo DJ !</div></div>
+      <div class="input"><span>Écrire…</span><span style="margin-left:auto" class="btn yl">🎁 Cadeau</span></div></div></div><div class="cap">Le live : cadeaux et commentaires en direct</div></div>
+  </div>
+  <div class="g3" style="margin-top:9mm">
+    <div class="card"><h3 class="hl">Un fil qui fait découvrir</h3><p>Le fil « Pour toi » mêle abonnements et nouveaux créateurs. Un créateur sans audience peut être découvert grâce à la découverte à froid.</p></div>
+    <div class="card"><h3 class="y">Un canal, un petit média</h3><p>Chaque créateur ou marque a sa page : publications, vidéos, présentation. L'abonnement peut être gratuit ou payant.</p></div>
+    <div class="card"><h3 class="hl">Le live qui rapporte</h3><p>Pendant un live, les spectateurs offrent des cadeaux. Un live peut aussi être privé, avec un ticket d'entrée en pièces.</p></div></div><div class="foot"><span>Afrolook — réseau social monétisé</span><span>7</span></div>
+</section>
+
+<!-- ============ 8. INTERFACES II ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Les interfaces</span></div>
+  <div class="kick">Les écrans · 2/3</div>
+  <h2>Interagir, offrir, s'exprimer</h2><div class="bar"></div>
+  <p class="lead">Les commentaires deviennent un espace vivant : stickers animés, cadeaux en pièces, classement hebdomadaire des meilleurs commentaires.</p>
+  <div class="shots">
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">Commentaires</b></div>
+      <div class="cmt"><div class="av"></div><div class="bub"><b>Fatou</b> Trop fort ce plat !<br><img src="st/amour_je_t_aime_thumb.webp"></div></div>
+      <div class="cmt"><div class="av b"></div><div class="bub"><b>Yao</b> Merci pour la recette<br><img src="st/reussite_bravo_thumb.webp"></div></div>
+      <div class="cmt"><div class="av o"></div><div class="bub"><b>Awa ✔</b> On se retrouve au prochain live ?<br><span class="y">🎁 reçu : Couronne</span></div></div>
+      <div class="input" style="margin-top:auto"><span class="g">▣</span><span>Ajouter un commentaire…</span><span style="margin-left:auto" class="btn">➤</span></div></div></div><div class="cap">Commentaires avec stickers animés (Premium et Gold)</div></div>
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">Offrir un sticker</b></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.6mm;padding:1mm 2.4mm">
+        <div style="text-align:center;background:var(--surf);border-radius:2mm;padding:1mm"><img src="st/cadeau_couronne_thumb.webp" width="52%"><br><b class="y">20 🪙</b></div>
+        <div style="text-align:center;background:var(--surf);border-radius:2mm;padding:1mm"><img src="st/cadeau_coupe_thumb.webp" width="52%"><br><b class="y">50 🪙</b></div>
+        <div style="text-align:center;background:var(--surf);border-radius:2mm;padding:1mm"><img src="st/cadeau_diamant_thumb.webp" width="52%"><br><b class="y">100 🪙</b></div>
+        <div style="text-align:center;background:var(--surf);border-radius:2mm;padding:1mm"><img src="st/cadeau_fusee_thumb.webp" width="52%"><br><b class="y">50 🪙</b></div>
+        <div style="text-align:center;background:var(--surf);border-radius:2mm;padding:1mm"><img src="st/cadeau_surprise_thumb.webp" width="52%"><br><b class="y">100 🪙</b></div>
+        <div style="text-align:center;background:var(--surf);border-radius:2mm;padding:1mm"><img src="st/amour_coeur_qui_bat_thumb.webp" width="52%"><br><b class="y">20 🪙</b></div></div>
+      <div style="padding:2mm 3mm;color:#9a9a95">40 % à l'auteur du commentaire · 30 % au créateur du sticker · 30 % à Afrolook</div></div></div><div class="cap">Stickers-cadeaux à 20, 50 ou 100 pièces</div></div>
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">Stickers</b></div>
+      <div class="chips"><span>Afrolook</span><span>Monde</span><span class="on">Créateurs</span><span>Mes stickers</span></div>
+      <div class="post" style="display:flex;gap:2mm;align-items:center"><div style="display:grid;grid-template-columns:1fr 1fr;gap:.6mm;width:15mm"><img src="st/joie_mdr_thumb.webp" width="100%"><img src="st/reussite_champion_thumb.webp" width="100%"><img src="st/joie_on_fait_la_fete_thumb.webp" width="100%"><img src="st/compliments_tu_dechires_thumb.webp" width="100%"></div><div><b>Humour d'Abidjan</b><br><span class="mute" style="color:#8a8a85">@kouame_art ✔ · 18 stickers</span><br><span class="btn yl">150 🪙</span></div></div>
+      <div class="post" style="display:flex;gap:2mm;align-items:center"><div style="display:grid;grid-template-columns:1fr 1fr;gap:.6mm;width:15mm"><img src="st/amour_je_t_aime_thumb.webp" width="100%"><img src="st/reponses_merci_thumb.webp" width="100%"><img src="st/reussite_bravo_thumb.webp" width="100%"><img src="st/amour_coeur_qui_bat_thumb.webp" width="100%"></div><div><b>Mots doux</b><br><span style="color:#8a8a85">@lina_design · 12 stickers</span><br><span class="btn">Gratuit</span></div></div></div></div><div class="cap">Packs de créateurs, gratuits ou payants</div></div>
+  </div>
+  <div class="g3" style="margin-top:9mm">
+    <div class="card"><h3 class="hl">Des commentaires vivants</h3><p>Les abonnés Premium et Gold envoient des stickers animés. Les meilleurs commentaires de la semaine sont récompensés.</p></div>
+    <div class="card"><h3 class="y">Offrir pour soutenir</h3><p>Un sticker-cadeau coûte 20, 50 ou 100 pièces. Il est partagé : 40 % à l'auteur du commentaire, 30 % au créateur du sticker, 30 % à Afrolook.</p></div>
+    <div class="card"><h3 class="hl">Une économie de créateurs</h3><p>Les créateurs proposent leurs packs, gratuits ou payants. Ils gardent 70 % des ventes. L'équipe vérifie chaque pack avant publication.</p></div></div><div class="foot"><span>Afrolook — réseau social monétisé</span><span>8</span></div>
+</section>
+
+<!-- ============ 9. INTERFACES III ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Les interfaces</span></div>
+  <div class="kick">Les écrans · 3/3</div>
+  <h2>Gagner, retirer, progresser</h2><div class="bar"></div>
+  <p class="lead">Le portefeuille et la page de gains rendent la monétisation visible : ce que chaque vue, chaque cadeau et chaque abonné a rapporté.</p>
+  <div class="shots">
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">Mon portefeuille</b></div>
+      <div class="wal"><small>Gains à retirer</small><div class="big">184 500 FCFA</div><div style="margin-top:1.6mm;color:#d9f5e5">≈ 461 250 pièces gagnées</div><div style="margin-top:2mm"><span class="btn yl">Retirer</span> <span class="btn o" style="border-color:#7fe0a8;color:#fff">Recharger</span></div></div>
+      <div class="row"><b>Pièces achetées</b><span>12 400 🪙</span></div><div class="row"><b>Pièces gagnées</b><span class="hl">461 250 🪙</span></div>
+      <div class="row"><b>Retrait Mobile Money</b><span>⌁</span></div><div class="row"><b>Virement / PayPal</b><span>⌁</span></div></div></div><div class="cap">Le portefeuille : pièces achetées et pièces gagnées</div></div>
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">Gains par vues</b></div>
+      <div class="wal" style="background:linear-gradient(135deg,#8a6a00,#FFD400);color:#121212"><small>Palier actuel</small><div class="big">Expert · 800 F</div><div style="margin-top:1mm">pour 1 000 vues d'abonnés</div></div>
+      <div style="padding:0 3mm"><div class="rpm"><div><b style="width:14mm">Débutant</b><i style="width:8mm"></i></div><div><b style="width:14mm">Standard</b><i style="width:13mm"></i></div><div><b style="width:14mm">Avancé</b><i style="width:19mm"></i></div><div><b style="width:14mm">Expert</b><i style="width:24mm"></i></div><div><b style="width:14mm">Élite</b><i style="width:30mm"></i></div></div></div>
+      <div class="row" style="margin-top:2mm"><b>Vues monétisées</b><span class="hl">52 880</span></div><div class="row"><b>Gains cumulés</b><span class="hl">42 304 FCFA</span></div><div class="row"><span class="btn" style="margin:0 auto">Encaisser</span></div></div></div><div class="cap">Le RPM : plus le score est élevé, plus on gagne</div></div>
+    <div class="shot"><div class="phone"><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div style="padding:1mm 3mm"><b style="font-size:7.5pt">DÉFI · Meilleur danseur</b></div>
+      <div class="wal" style="background:linear-gradient(135deg,#3a2a8a,#8a3a7a)"><small>Cagnotte</small><div class="big">72 500 🪙</div><div style="margin-top:1mm">Se termine dans 2 j 4 h</div></div>
+      <div class="row"><span class="av"></span><b>1. @dj_kofi</b><span class="y">3 120 votes</span></div>
+      <div class="row"><span class="av b"></span><b>2. @awa_dance</b><span class="y">2 840 votes</span></div>
+      <div class="row"><span class="av o"></span><b>3. @yao_pro</b><span class="y">1 460 votes</span></div>
+      <div class="row"><b>Voter pour mon favori</b><span class="btn">Voter</span></div></div></div><div class="cap">Les défis : votes, cagnotte et classement</div></div>
+  </div>
+  <p class="note" style="margin-top:6mm">Les valeurs affichées sur ces maquettes sont des exemples illustratifs et ne représentent pas des revenus réels.</p>
+  <div class="g3" style="margin-top:9mm">
+    <div class="card"><h3 class="hl">Un portefeuille clair</h3><p>Pièces achetées (pour payer) et pièces gagnées (convertibles). Le retrait se fait par Mobile Money, virement, carte ou PayPal.</p></div>
+    <div class="card"><h3 class="y">Un palier qui motive</h3><p>Le RPM va de 200 à 1 000 FCFA pour 1 000 vues d'abonnés. Plus l'engagement et la qualité montent, plus le palier monte.</p></div>
+    <div class="card"><h3 class="hl">Des défis qui animent</h3><p>Les participants s'affrontent, la communauté vote avec des pièces, et la cagnotte est redistribuée aux gagnants.</p></div></div><div class="foot"><span>Afrolook — réseau social monétisé</span><span>9</span></div>
+</section>
+
+<!-- ============ 10. COMMENT ON GAGNE ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>Les règles de monétisation</span></div>
+  <div class="kick">Comment ça rapporte</div>
+  <h2>Six façons de gagner de l'argent</h2><div class="bar"></div>
+  <div class="g3" style="margin-top:4mm">
+    <div class="card"><div class="ico">👁️</div><h3>Vues monétisées (RPM)</h3><p>Les vues des abonnés rapportent de 200 à 1 000 FCFA pour 1 000 vues, selon le score créateur : Débutant 200, Standard 400, Avancé 600, Expert 800, Élite 1 000.</p></div>
+    <div class="card"><div class="ico yl">🎁</div><h3>Cadeaux et likes</h3><p>Cadeaux sur posts, commentaires et lives, likes en pièces : le créateur reçoit des pièces gagnées convertibles.</p></div>
+    <div class="card"><div class="ico bl">🔔</div><h3>Abonnements de canal</h3><p>Un canal privé fait payer un abonnement mensuel défini par le créateur, qui garde 70 %.</p></div>
+    <div class="card"><div class="ico or">🔴</div><h3>Lives privés et contenus</h3><p>Ticket d'entrée en pièces pour un live privé ; vente de vidéos, photos et documents.</p></div>
+    <div class="card"><div class="ico">🏆</div><h3>Défis, votes et classements</h3><p>Participations, votes payants et cagnotte distribuée ; récompenses hebdomadaires des meilleurs commentaires.</p></div>
+    <div class="card"><div class="ico yl">🤝</div><h3>Parrainage et stickers</h3><p>2,5 % sur les paiements des filleuls ; packs de stickers payants avec 70 % pour le créateur.</p></div>
+  </div>
+  <h3 style="margin-top:6mm">Du premier centime au retrait</h3>
+  <div class="step" style="margin-top:3mm"><div class="n">1</div><p><b>Les pièces.</b> Tout se paie en pièces. Les pièces <b>achetées</b> (Mobile Money ou App Store) servent à payer dans l'application. Les pièces <b>gagnées</b> sont convertibles en argent : 25 pièces = 10 FCFA.</p></div>
+  <div class="step"><div class="n">2</div><p><b>Le partage.</b> Sur chaque paiement entre utilisateurs, 70 % au créateur, 30 % à la plateforme. Les commissions de parrainage (2,5 % + 2,5 %) sont prises sur la part d'Afrolook, jamais sur celle du créateur.</p></div>
+  <div class="step"><div class="n">3</div><p><b>Le retrait.</b> Le créateur convertit ses pièces gagnées, demande un retrait en sa devise : Mobile Money, ou virement, carte et PayPal (minimum 100 $ hors Mobile Money). Le taux de change est enregistré avec la demande.</p></div>
+  <div class="step"><div class="n">4</div><p><b>La qualité protège les gains.</b> Les posts signalés perdent du score, ce qui fait baisser le palier et le RPM. Un créateur inactif voit son score décroître, et son compte peut être bloqué après 20 jours sans publication, avec déblocage possible en pièces.</p></div>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>10</span></div>
+</section>
+
+<!-- ============ 11. DIFFERENCE ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>Positionnement</span></div>
+  <div class="kick">La différence</div>
+  <h2>Ce qui nous distingue des autres plateformes</h2><div class="bar"></div>
+  <table style="margin-top:3mm">
+    <tr><th>Critère</th><th class="c">Afrolook</th><th class="c">Réseaux sociaux mondiaux</th><th class="c">Plateformes vidéo</th></tr>
+    <tr class="us"><td>Revenu dès les premiers abonnés</td><td class="c yes">✔</td><td class="c no">✘ (seuils élevés)</td><td class="c mid">Seuils élevés</td></tr>
+    <tr><td>Paiement par Mobile Money</td><td class="c yes">✔</td><td class="c no">✘</td><td class="c no">✘</td></tr>
+    <tr class="us"><td>Part du créateur sur les paiements de ses fans</td><td class="c yes">70 %</td><td class="c mid">Variable</td><td class="c mid">Variable</td></tr>
+    <tr><td>Soutien direct (cadeaux, abonnements, stickers payants)</td><td class="c yes">✔</td><td class="c mid">Limité</td><td class="c mid">Limité</td></tr>
+    <tr class="us"><td>Canaux, groupes, lives, défis, boutique dans une seule application</td><td class="c yes">✔</td><td class="c mid">Plusieurs applications</td><td class="c no">✘</td></tr>
+    <tr><td>Parrainage rémunéré</td><td class="c yes">✔ 2,5 % + 2,5 %</td><td class="c no">✘</td><td class="c no">✘</td></tr>
+    <tr class="us"><td>Découverte des nouveaux créateurs locaux</td><td class="c yes">✔ découverte à froid</td><td class="c mid">Favorise les gros comptes</td><td class="c mid">Favorise les gros comptes</td></tr>
+    <tr><td>Langues et devises locales</td><td class="c yes">8 langues, devise du pays</td><td class="c mid">Partiel</td><td class="c mid">Partiel</td></tr>
+    <tr class="us"><td>Règles de gains publiques et transparentes</td><td class="c yes">✔ page « Règles »</td><td class="c no">✘</td><td class="c mid">Partiel</td></tr>
+  </table>
+  <p class="note">Tableau de positionnement indicatif, établi sur les pratiques publiques générales des grandes plateformes ; il ne cite aucune marque et doit être vérifié avant diffusion externe.</p>
+  <div class="g3" style="margin-top:6mm">
+    <div class="card"><h3 class="hl">Notre avantage 1</h3><p><b>Paiements locaux.</b> Mobile Money et devises du pays : l'argent arrive là où les gens vivent.</p></div>
+    <div class="card"><h3 class="y">Notre avantage 2</h3><p><b>Un seuil d'entrée bas.</b> Un petit créateur peut gagner dès ses premiers abonnés actifs.</p></div>
+    <div class="card"><h3 class="hl">Notre avantage 3</h3><p><b>Une économie intégrée.</b> Une seule monnaie, les pièces, pour payer, offrir, soutenir et gagner.</p></div>
+  </div>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>11</span></div>
+</section>
+
+<!-- ============ 12. MODELE ECONOMIQUE ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Modèle économique</span></div>
+  <div class="kick">Les revenus de la plateforme</div>
+  <h2>Comment Afrolook gagne de l'argent</h2><div class="bar"></div>
+  <p class="lead">Afrolook ne vend pas les données de ses utilisateurs. La plateforme gagne quand l'économie des créateurs fonctionne.</p>
+  <div class="g3" style="margin-top:6mm">
+    <div class="card"><div class="ico">🪙</div><h3>Recharge de pièces</h3><p>Achat de pièces par Mobile Money ou App Store : le revenu principal, lié à l'usage.</p></div>
+    <div class="card"><div class="ico yl">✂️</div><h3>30 % des paiements</h3><p>Part de la plateforme sur abonnements, cadeaux, votes, lives privés, stickers payants.</p></div>
+    <div class="card"><div class="ico bl">⭐</div><h3>Premium et Gold</h3><p>Abonnements mensuels : sans publicités, badges, avantages et limites élargies.</p></div>
+    <div class="card"><div class="ico or">📢</div><h3>Boosts et publicités</h3><p>Mise en avant d'un post ou d'un canal, bannières et pavés natifs, après validation.</p></div>
+    <div class="card"><div class="ico">🔓</div><h3>Déblocage et services</h3><p>Déblocage de compte ou de canal inactif, création d'un canal ou groupe supplémentaire (500 pièces).</p></div>
+    <div class="card"><div class="ico rd">✅</div><h3>Comptes officiels</h3><p>Vérification payante pour marques, médias et personnalités, avec badge officiel.</p></div>
+  </div>
+  <h3 style="margin-top:7mm">Le cercle vertueux</h3>
+  <div class="flow" style="margin-top:3mm">
+    <div><b class="hl">Créateurs gagnent</b><p style="font-size:8.4pt;color:#b9b9b4;margin:1mm 0 0">plus ils publient</p></div><div class="a">➜</div>
+    <div><b class="y">Plus de contenu</b><p style="font-size:8.4pt;color:#b9b9b4;margin:1mm 0 0">plus de fans arrivent</p></div><div class="a">➜</div>
+    <div><b class="hl">Plus d'utilisateurs</b><p style="font-size:8.4pt;color:#b9b9b4;margin:1mm 0 0">plus de pièces dépensées</p></div><div class="a">➜</div>
+    <div><b class="y">Plateforme gagne</b><p style="font-size:8.4pt;color:#b9b9b4;margin:1mm 0 0">et redistribue</p></div>
+  </div>
+  <div class="card" style="margin-top:6mm"><h3>Pourquoi ce modèle protège la croissance</h3><ul class="tick" style="margin-top:2mm">
+    <li>Le paiement des créateurs est <b>proportionnel</b> aux revenus générés : la plateforme ne s'engage jamais au-delà de ce qu'elle encaisse.</li>
+    <li>Le RPM maximum est un plafond ajustable selon l'économie de la plateforme.</li>
+    <li>Les pièces achetées ne sont pas convertibles : elles financent le système sans créer de risque de retrait massif.</li></ul></div>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>12</span></div>
+</section>
+
+<!-- ============ 13. PREVISIONS ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Prévisions</span></div>
+  <div class="kick">Notre objectif</div>
+  <h2>1 000 000 d'utilisateurs</h2><div class="bar"></div>
+  <p class="lead">Notre objectif est d'atteindre <b class="hl">un million d'utilisateurs</b>. À cette échelle, nos estimations donnent les résultats suivants, côté créateurs comme côté plateforme.</p>
+  <div class="g3" style="margin-top:7mm">
+    <div class="stat"><div class="num hl">1 M</div><small>d'utilisateurs inscrits (objectif)</small></div>
+    <div class="stat"><div class="num y" style="font-size:25pt;padding-top:1.2mm">300–600 k</div><small>FCFA par mois estimés pour les vrais créateurs actifs</small></div>
+    <div class="stat"><div class="num hl">30 M+</div><small>FCFA de revenus par mois estimés pour Afrolook</small></div>
+  </div>
+  <h3 style="margin-top:8mm">Trajectoire de croissance visée</h3>
+  <div class="bars" style="margin-top:9mm">
+    <div style="height:8%"><span>10 k</span><em>Mois 3</em></div>
+    <div style="height:18%"><span>50 k</span><em>Mois 6</em></div>
+    <div style="height:34%"><span>150 k</span><em>Mois 9</em></div>
+    <div style="height:52%"><span>350 k</span><em>Mois 12</em></div>
+    <div style="height:72%"><span>600 k</span><em>Mois 18</em></div>
+    <div style="height:96%"><span>1 M</span><em>Mois 24</em></div>
+  </div>
+  <div class="g2" style="margin-top:12mm">
+    <div class="card"><h3 class="hl">Côté créateurs</h3><p>Les créateurs réellement actifs, avec une communauté engagée, pourraient gagner <b>entre 300 000 et 600 000 FCFA par mois</b> en cumulant vues monétisées, cadeaux, abonnements de canal, ventes et parrainage.</p></div>
+    <div class="card"><h3 class="y">Côté plateforme</h3><p>La plateforme pourrait générer <b>plus de 30 000 000 FCFA par mois</b> en cumulant recharge de pièces, part de 30 %, abonnements Premium et Gold, boosts et publicités.</p></div>
+  </div>
+  <p class="note">Estimations internes, fondées sur l'objectif de 1 million d'utilisateurs et sur nos règles de partage actuelles. Ce ne sont ni des garanties ni des promesses de revenu : les résultats dépendront de l'engagement réel, du nombre de créateurs actifs et de la conversion en achats. Le calendrier ci-dessus est indicatif et sera ajusté avec les données réelles.</p>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>13</span></div>
+</section>
+
+<!-- ============ 14. CONFIANCE ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>Confiance et conformité</span></div>
+  <div class="kick">Une plateforme de confiance</div>
+  <h2>Des règles claires pour tous</h2><div class="bar"></div>
+  <p class="lead">La page « Règles et confidentialité » de l'application explique à chaque utilisateur comment l'argent circule, ce qui est autorisé et ce qui est sanctionné.</p>
+  <div class="g2" style="margin-top:6mm">
+    <div class="card"><div class="ico">📜</div><h3>Règles d'utilisation</h3><p>Contenu autorisé et interdit, contenu trompeur, spam et manipulation, respect des utilisateurs.</p></div>
+    <div class="card"><div class="ico yl">©️</div><h3>Droits d'auteur</h3><p>Seuls les contenus dont on détient les droits sont autorisés. Signalement des violations et retrait des contenus.</p></div>
+    <div class="card"><div class="ico bl">🔐</div><h3>Sécurité du compte</h3><p>Un compte par personne, authentification, procédure en cas de compte compromis.</p></div>
+    <div class="card"><div class="ico rd">⚖️</div><h3>Sanctions et modération</h3><p>Avertissement, suspension temporaire, suspension définitive. Signalements traités par l'équipe.</p></div>
+    <div class="card"><div class="ico">🧮</div><h3>Transparence des gains</h3><p>Scores, paliers, RPM, partage 70/30, parrainage et inactivité sont expliqués publiquement.</p></div>
+    <div class="card"><div class="ico or">🗑️</div><h3>Contrôle des données</h3><p>Suppression du compte depuis l'application, restauration possible, respect de la vie privée.</p></div>
+  </div>
+  <h3 style="margin-top:7mm">Protection de l'économie</h3>
+  <ul class="tick" style="margin-top:2mm">
+    <li><b>Anti-spam et anti-fraude :</b> vues propres exclues, seules les vues d'abonnés sont monétisées, qualité avant quantité dans les récompenses de commentaires.</li>
+    <li><b>Stickers de créateurs :</b> vérifiés avant publication, détection des copies et plagiat, retrait par l'équipe en cas d'abus.</li>
+    <li><b>Publicités :</b> validation obligatoire avant diffusion d'un boost.</li>
+    <li><b>Boutiques d'applications :</b> règles de l'App Store et de Google Play respectées (achats de pièces intégrés, suppression de compte, contenu généré par les utilisateurs).</li>
+  </ul>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>14</span></div>
+</section>
+
+<!-- ============ 15. FEUILLE DE ROUTE ============ -->
+<section class="page dark">
+  <div class="run"><span>Afrolook</span><span>Feuille de route</span></div>
+  <div class="kick">Où nous en sommes · Où nous allons</div>
+  <h2>Feuille de route</h2><div class="bar"></div>
+  <div class="tl" style="margin-top:6mm">
+    <div><b class="hl">Aujourd'hui · Base solide</b><p style="margin:1mm 0 0;color:#c9c9c4">Application Android et iPhone, fil, canaux, groupes, lives, défis, boutique, abonnements Premium et Gold, pièces et retraits, règles publiques, stickers animés et stickers-cadeaux.</p></div>
+    <div><b class="y">Prochaine étape · Mise en marché</b><p style="margin:1mm 0 0;color:#c9c9c4">Publication sur l'App Store et Google Play dans le monde entier, programme de créateurs fondateurs, campagnes de lancement et de parrainage, premiers retraits publics.</p></div>
+    <div><b class="hl">6 à 12 mois · Croissance</b><p style="margin:1mm 0 0;color:#c9c9c4">Stickers de créateurs payants, comptes officiels, régie publicitaire, découverte régionale, outils d'analyse pour créateurs, partenariats médias et musique.</p></div>
+    <div><b class="y">12 à 24 mois · Passage à l'échelle</b><p style="margin:1mm 0 0;color:#c9c9c4">Objectif 1 million d'utilisateurs, nouveaux moyens de paiement, recommandations plus fines, modération renforcée, équipes locales dans les marchés clés.</p></div>
+  </div>
+  <div class="g2" style="margin-top:8mm">
+    <div class="card"><h3 class="hl">Ce que nous cherchons</h3><ul class="tick" style="margin-top:2mm"><li>Un financement pour accélérer l'acquisition d'utilisateurs et de créateurs.</li><li>Des partenaires de paiement et de télécommunications.</li><li>Des relais médias et culturels.</li></ul></div>
+    <div class="card"><h3 class="y">Les risques que nous suivons</h3><ul class="tick" style="margin-top:2mm"><li>Équilibre entre paiement des créateurs et revenus réels.</li><li>Modération et lutte contre la fraude à grande échelle.</li><li>Coûts d'infrastructure vidéo.</li></ul></div>
+  </div>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>15</span></div>
+</section>
+
+<!-- ============ 16. GUIDE NOUVEAUX ============ -->
+<section class="page">
+  <div class="run"><span>Afrolook</span><span>Guide pour les nouveaux arrivants</span></div>
+  <div class="kick">Pour les stagiaires et les nouveaux</div>
+  <h2>Comprendre Afrolook en dix minutes</h2><div class="bar"></div>
+  <p class="lead">Les mots à connaître pour parler le même langage que l'équipe.</p>
+  <div class="g2" style="margin-top:5mm">
+    <div class="card"><h3>Pièce</h3><p>La monnaie de l'application. Achetée (non convertible) ou gagnée (convertible : 25 pièces = 10 FCFA).</p></div>
+    <div class="card"><h3>RPM</h3><p>Ce que gagne un créateur pour 1 000 vues d'abonnés. Dépend de son palier.</p></div>
+    <div class="card"><h3>Score créateur</h3><p>Note qui monte avec l'engagement et la qualité, et baisse avec les signalements ou l'inactivité.</p></div>
+    <div class="card"><h3>Palier</h3><p>Débutant, Standard, Avancé, Expert, Élite : il fixe le RPM du créateur.</p></div>
+    <div class="card"><h3>Canal</h3><p>Page d'un créateur ou d'une marque, avec abonnés ; gratuit ou privé avec abonnement mensuel.</p></div>
+    <div class="card"><h3>Défi</h3><p>Compétition entre créateurs, avec votes payants et cagnotte redistribuée.</p></div>
+    <div class="card"><h3>Boost</h3><p>Publicité payée en pièces pour mettre un post ou un canal en avant, validée avant diffusion.</p></div>
+    <div class="card"><h3>Stickers et cadeaux</h3><p>Images animées dans les commentaires ; les stickers-cadeaux (20, 50, 100 pièces) rémunèrent leur auteur.</p></div>
+  </div>
+  <h3 style="margin-top:6mm">Les trois chiffres à retenir</h3>
+  <div class="g3" style="margin-top:2mm">
+    <div class="card" style="text-align:center"><div class="num hl">70 %</div><p>pour le créateur sur ce que paient ses fans</p></div>
+    <div class="card" style="text-align:center"><div class="num y">2,5 %</div><p>pour le parrain, pris sur la part d'Afrolook</p></div>
+    <div class="card" style="text-align:center"><div class="num hl">20 jours</div><p>sans publier avant le blocage d'un compte ou canal</p></div>
+  </div>
+  <p class="note" style="margin-top:6mm">Pour les détails complets et à jour, la référence est la page « Règles et confidentialité » de l'application.</p>
+  <div class="foot"><span>Afrolook — réseau social monétisé</span><span>16</span></div>
+</section>
+
+</body>
+</html>
