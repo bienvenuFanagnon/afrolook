@@ -912,7 +912,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     if (userId == null) return;
 
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-    final hasEnoughCoins = coinProvider.giftCoinsBalance >= 2;
+    final hasEnoughCoins = !post.likesArePaid || coinProvider.giftCoinsBalance >= 2;
 
     if (!hasEnoughCoins) {
       _showInsufficientCoinsForLikeDialog();

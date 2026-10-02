@@ -2733,7 +2733,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
               recordUniquePostView();
               widget.onLiked?.call();
             } : null,
-            coinHeart: true,
+            coinHeart: widget.post.likesArePaid,
           ),
           if (widget.post.isAdvertisement != true &&
               authProvider.loginUserData.id != widget.post.user_id)

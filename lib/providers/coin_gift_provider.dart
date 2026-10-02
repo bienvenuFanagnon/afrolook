@@ -168,6 +168,17 @@ class CoinGiftUserProvider with ChangeNotifier {
     required BuildContext context,
     VoidCallback? onReadyToAnimate,
   }) async {
+    // Likes gratuits : le créateur n'a pas activé les likes payants sur ce post → ni débit, ni animation « pièces »
+    if (!post.likesArePaid) {
+      final postId = post.id;
+      if (postId == null) return true;
+      await _firestore.collection('Posts').doc(postId).update({
+        'loves': FieldValue.increment(1),
+        'users_love_id': FieldValue.arrayUnion([senderId]),
+        'popularity': FieldValue.increment(1),
+      });
+      return true;
+    }
     await ensureCurrentUser();
     // Vérification locale : si solde suffisant, animation immédiate avant la requête Firebase
     if (giftCoinsBalance >= 2) {

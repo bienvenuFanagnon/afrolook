@@ -2450,7 +2450,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             count: widget.post.loves ?? 0,
             color: isLiked ? colors.danger : colors.textSecondary,
             onPressed: (hasAccess && !_isLiking) ? _handleLike : null,
-            coinHeart: true,
+            coinHeart: widget.post.likesArePaid,
           ),
           const SizedBox(width: 4),
           if (!isAd && myId != null && myId != widget.post.user_id)

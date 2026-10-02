@@ -257,7 +257,7 @@ service cloud.firestore {
 
       allow update: if isAuth()
           && !request.resource.data.diff(resource.data).affectedKeys()
-              .hasAny(defiServerKeys().concat(['user_id']))
+              .hasAny(defiServerKeys().concat(['user_id', 'paidLikes']))
           && !(request.resource.data.diff(resource.data).affectedKeys().hasAny(['type'])
                && (resource.data.get('type', '') == 'DEFI' || request.resource.data.get('type', '') == 'DEFI'));
 

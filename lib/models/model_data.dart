@@ -1632,6 +1632,10 @@ class Post {
   int? giftCount;                  // 🔥 NOUVEAU : compteur de cadeaux
   int? totalGiftCoinsSentOnThisPost;
   int? totalCoinsFromLikes;
+  /// Likes payants (2 pièces : 1 créateur, 1 Afrolook) ? Choisi par le créateur à la publication.
+  /// null = post publié avant cette option : les likes y restent payants.
+  bool? paidLikes = false; // un nouveau Post est gratuit par défaut ; fromJson remet null (ancien post) si le champ est absent
+  bool get likesArePaid => paidLikes != false;
   int? totalCoinsFromComments = 0; // pièces gagnées par le créateur via les commentaires (sendComment)
 
   int? eventDate;
@@ -1847,6 +1851,7 @@ class Post {
     favoritesCount = json['favorites_count'] ?? 0;
     totalGiftCoinsSentOnThisPost = json['totalGiftCoinsSentOnThisPost'] ?? 0;
     totalCoinsFromLikes = json['totalCoinsFromLikes'] ?? 0;
+    paidLikes = json['paidLikes'] is bool ? json['paidLikes'] as bool : null;
     totalCoinsFromComments = json['totalCoinsFromComments'] ?? 0;
     giftCount = json['giftCount'] ?? 0;
 
@@ -1928,6 +1933,7 @@ class Post {
     data['colorDomine'] = colorDomine;
     data['colorSecondaire'] = colorSecondaire;
     data['loves'] = loves;
+    if (paidLikes != null) data['paidLikes'] = paidLikes;
     data['contact_whatsapp'] = contact_whatsapp;
     data['challenge_id'] = challenge_id;
     data['dataType'] = dataType;

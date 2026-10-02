@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/paid_likes_option.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -56,6 +57,7 @@ class _UserPubTextState extends State<UserPubText> {
 
   // Contrôle de temps entre les posts
   bool _canPost = true;
+  bool _paidLikes = false; // likes payants : désactivé par défaut (likes gratuits)
   String _timeRemaining = '';
 
   // Variables pour les restrictions
@@ -1712,6 +1714,7 @@ class _UserPubTextState extends State<UserPubText> {
         String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
 
         Post post = Post();
+        post.paidLikes = _paidLikes;
         post.user_id = authProvider.loginUserData.id;
         post.description = _descriptionController.text;
         post.updatedAt = DateTime.now().microsecondsSinceEpoch;
@@ -2222,6 +2225,8 @@ class _UserPubTextState extends State<UserPubText> {
 
                         // Bouton de publication
 // Bouton de publication
+                        PaidLikesOption(value: _paidLikes, onChanged: (v) => setState(() => _paidLikes = v)),
+                        const SizedBox(height: 16),
                         Container(
                           width: double.infinity,
                           height: 55,
