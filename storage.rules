@@ -1,12 +1,15 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
+    // Règle générale : tout fichier, sauf les dossiers ci-dessous qui ont leurs propres règles (propriétaire et
+    // poids maximum) ou sont écrits uniquement par les Cloud Functions / l'administration.
+    match /{folder}/{allPaths=**} {
       allow read: if request.auth != null;
-      // Les dossiers ci-dessous ont leurs propres règles (propriétaire et poids maximum) ou sont écrits
-      // uniquement par les Cloud Functions / l'administration : la règle générale ne les ouvre pas en écriture.
       allow write: if request.auth != null
-          && !allPaths.matches('stickers/.*|sticker_submissions/.*|sticker_video_uploads/.*|user_stickers/.*|comment_media/.*|test_builds/.*');
+          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds']);
+    }
+    match /{rootFile} {
+      allow read, write: if request.auth != null;
     }
 
     // Stickers du catalogue : écrits uniquement par les Cloud Functions et l'administration (jamais par l'app)

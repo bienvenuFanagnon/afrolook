@@ -80,7 +80,7 @@ export const adminCanalAction = onCall({ timeoutSeconds: 300, memory: "512MiB" }
       while (toAdd.length < wanted) {
         let q = db.collection("Users").orderBy("abonnes", "desc").limit(500);
         if (last) q = q.startAfter(last);
-        const page = await q.select().get();
+        const page = await q.select("abonnes").get();
         if (page.empty) break;
         for (const u of page.docs) {
           if (!existing.has(u.id)) { toAdd.push(u.id); if (toAdd.length >= wanted) break; }

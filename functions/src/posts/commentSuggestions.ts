@@ -149,7 +149,7 @@ export const generateCommentSuggestions = onDocumentCreated(
   {
     document: "Posts/{postId}",
     timeoutSeconds: 30,
-    memory: "128MiB",
+    memory: "512MiB",
   },
   async (event) => {
     // ISOLATION TOTALE : toute erreur est absorbée — la création du post n'est jamais bloquée

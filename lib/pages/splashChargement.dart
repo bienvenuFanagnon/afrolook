@@ -499,15 +499,23 @@ class _SplashChargementState extends State<SplashChargement> {
       authProvider.loginUserData = cachedUser;
       if (cachedApp != null) authProvider.appDefaultData = cachedApp;
 
-      // Warmup Firestore gRPC — élimine le cold start de ~3.5s dans HomeConstPost.
-      // Le splash navigue depuis le cache (sans Firestore), donc la connexion gRPC
-      // n'est pas établie. Ce fetch minimal l'initialise pendant _prepareDestination()
-      // pour que T1+T2 trouvent la connexion déjà ouverte.
-      unawaited(
-        FirebaseFirestore.instance.collection('Users').doc(userId).get()
-            .then((_) => printVm('⚡ [SPLASH] Warmup Firestore terminé'))
-            .catchError((_) {}),
-      );
+      // Le cache ne contient qu'un sous-ensemble du profil (ni posts non vus des abonnements, ni abonnement,
+      // ni compteurs...). On relit donc le document utilisateur complet avant d'ouvrir l'accueil — ce qui
+      // réchauffe aussi la connexion Firestore — avec un délai court : hors ligne ou réseau lent, on garde le cache.
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('Users')
+            .doc(userId)
+            .get()
+            .timeout(const Duration(seconds: 2));
+        final data = doc.data();
+        if (data != null) {
+          authProvider.loginUserData = UserData.fromJson(data..['id'] = doc.id);
+          printVm('⚡ [SPLASH] Profil complet relu avant la navigation');
+        }
+      } catch (e) {
+        printVm('⚠️ [SPLASH] Profil complet non relu (cache gardé): $e');
+      }
 
       // final countryCode = cachedUser.countryData?["countryCode"]?.toString();
       // if (countryCode == null || countryCode.isEmpty) {
