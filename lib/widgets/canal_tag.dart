@@ -11,7 +11,7 @@ class CanalTag extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
-  /// false : sans contour (pages de listes de canaux)
+  /// Sans effet : le badge n'a plus de contour
   final bool bordered;
 
   const CanalTag({super.key, required this.label, this.style, this.maxLines, this.overflow, this.textAlign, this.bordered = false});
@@ -44,7 +44,7 @@ class CanalTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: onDark ? Colors.black.withOpacity(.4) : c.surfaceVariant,
         borderRadius: BorderRadius.circular(fs * .5),
-        border: bordered ? Border.all(color: green, width: 1.4) : null,
+        // Pas de bordure : le badge « # » suffit (le paramètre [bordered] est conservé mais sans effet)
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
