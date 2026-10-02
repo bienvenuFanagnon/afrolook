@@ -63,6 +63,11 @@ export const cashViewEarnings = onCall(
 
     const { baseViewRate, scoreTiers } = await loadMonetizationConfig();
     const userRef = db.collection("Users").doc(uid);
+    // Posts NON monétisés du créateur : leurs vues ne rapportent rien (champ monetized == false ;
+    // absent = ancien post = monétisé). Contrôle côté serveur : les anciennes versions de l'app, qui ne
+    // connaissent pas cette règle, incrémentent quand même le compteur de vues.
+    const nonMonetized = await db.collection("Posts").where("user_id", "==", uid).where("monetized", "==", false).select().get();
+    const nonMonetizedIds = nonMonetized.docs.map((d) => d.id);
 
     return db.runTransaction(async (tx) => {
       const snap = await tx.get(userRef);
@@ -73,7 +78,9 @@ export const cashViewEarnings = onCall(
         throw new HttpsError("resource-exhausted", "Encaissement déjà en cours, réessaie dans une minute.");
       }
 
-      const totalViews: number = data.totalPostUniqueViews ?? 0;
+      const perPost = (data.postViewsPerPost ?? {}) as Record<string, number>;
+      const nonMonetizedViews = nonMonetizedIds.reduce((n, id) => n + (Number(perPost[id]) || 0), 0);
+      const totalViews: number = Math.max(0, (data.totalPostUniqueViews ?? 0) - nonMonetizedViews);
       const credited: number = data.totalViewsEarningsCredited ?? 0;
       const pendingViews = Math.max(0, totalViews - credited);
       const { multiplier } = getMultiplierForScore(data.creatorScore ?? 0, scoreTiers);
