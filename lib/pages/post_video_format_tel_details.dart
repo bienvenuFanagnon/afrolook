@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
 import 'package:afrotok/services/stickers/sticker_models.dart';
@@ -2573,6 +2574,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 ],
               ),
             ),
+          if (postTimeAgo(post.createdAt).isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(postTimeAgo(post.createdAt), style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500)),
+            ),
           const SizedBox(height: 4),
           if (post.description != null)
             Container(
@@ -3067,7 +3073,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  decoration: BoxDecoration(border: Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
+                  decoration: BoxDecoration(border: canal != null ? null : Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
                   child: (canal == null && user == null)
                       ? const CircleAvatar(radius: 25, child: CircularProgressIndicator(strokeWidth: 2))
                       : SafeNetworkAvatar(url: canal?.urlImage ?? user?.imageUrl, radius: 25),

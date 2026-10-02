@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
 import 'package:afrotok/services/stickers/sticker_models.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -3175,6 +3176,13 @@ class _DetailsPostState extends State<DetailsPost>
                       fontSize: 12,
                     ),
                   ),
+                  Text(
+                    postTimeAgo(post.createdAt),
+                    style: TextStyle(
+                      color: _colors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                 ] else if (user != null) ...[
                   Row(
                     children: [
@@ -3235,9 +3243,7 @@ class _DetailsPostState extends State<DetailsPost>
                     ),
                   ),
                   Text(
-                    formaterDateTime(
-                      DateTime.fromMicrosecondsSinceEpoch(post.createdAt ?? 0),
-                    ),
+                    postTimeAgo(post.createdAt),
                     style: TextStyle(
                       color: _colors.textSecondary,
                       fontSize: 12,

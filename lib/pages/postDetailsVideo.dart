@@ -1,3 +1,4 @@
+import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
 import 'package:afrotok/services/stickers/sticker_models.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -1672,6 +1673,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                       ? Text('${formatCompactCount(c)} abonné${c > 1 ? 's' : ''}', style: TextStyle(color: Colors.grey, fontSize: 12))
                       : const SizedBox.shrink(),
                 ),
+              if (postTimeAgo(_currentPost.createdAt).isNotEmpty)
+                Text(postTimeAgo(_currentPost.createdAt), style: TextStyle(color: Colors.grey, fontSize: 12)),
             ]),
           ),
         ),
