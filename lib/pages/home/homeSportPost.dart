@@ -70,6 +70,7 @@ import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 
 import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../intro/monetization_tutorial.dart';
+import '../../widgets/feed/sections/social_follow_card.dart';
 
 
 // Constantes de couleur
@@ -656,6 +657,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   void _resetPagination({bool clearPosts = true}) {
+    SocialFollowCard.onFeedReload();
     if (clearPosts) {
       _posts.clear();
       _loadedPostIds.clear();
@@ -2921,6 +2923,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (_hasChroniques) contentWidgets.add(chroniquesSection);
     if (!_hasChroniques) contentWidgets.add(const FeedLiveSection());
 
+    // Invitation Facebook / TikTok : parfois en 1re position
+    contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_top_sport'), variant: SocialFollowVariant.top));
+
     if (finalPosts.isNotEmpty) {
     }
 
@@ -2976,6 +2981,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       final postNumber = i + 1;
 
+      // Bandeau Facebook / TikTok : rare (toutes les 25 publications)
+      if (postNumber % 25 == 0) {
+        contentWidgets.add(SocialFollowCard(key: ValueKey('social_follow_slim_sport_$postNumber'), variant: SocialFollowVariant.slim));
+      }
+
       // Pub : première après le 2ème post (i=1), puis toutes les 8 posts (i=9, 17, 25...).
       // Ignoré si un post isAdvertisement est dans les ±2 adjacents,
       // ou si un autre insert a été ajouté dans les 5 derniers posts.
@@ -3008,6 +3018,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts) {
       // Fin du feed T1 : widget de découverte + boutons d'action
+      contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end_sport'), variant: SocialFollowVariant.end));
       contentWidgets.add(
         FeedEndDiscoverySection(
           pageType: widget.type.isNotEmpty ? widget.type : null,
