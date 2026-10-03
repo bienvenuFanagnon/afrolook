@@ -80,6 +80,7 @@ import '../../widgets/flame_streak_banner.dart';
 import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 import '../../services/feed/end_of_feed_cache.dart';
 import '../intro/monetization_tutorial.dart';
+import '../../widgets/feed/sections/social_follow_card.dart';
 
 
 // Constantes de couleur
@@ -965,6 +966,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   void _resetPagination({bool clearPosts = true}) {
+    SocialFollowCard.onFeedReload();
     if (clearPosts) {
       printVm('🧹 [RESET] _resetPagination clearPosts=true → seenTier1=${_seenTier1PostIds.length} IDs vidés, tier2=${_tier2PostIds.length} IDs vidés');
       _posts.clear();
@@ -3695,6 +3697,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       contentWidgets.add(const FeedLiveSection());
     }
 
+    // Invitation Facebook / TikTok : parfois en 1re position
+    contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_top'), variant: SocialFollowVariant.top));
+
     // Pas de posts : créateurs en haut
     if (finalPosts.isEmpty) {
       contentWidgets.add(_buildProfilesSection());
@@ -3790,6 +3795,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       final postNumber = i + 1;
 
+      // Bandeau Facebook / TikTok : rare (toutes les 25 publications)
+      if (postNumber % 25 == 0) {
+        contentWidgets.add(SocialFollowCard(key: ValueKey('social_follow_slim_$postNumber'), variant: SocialFollowVariant.slim));
+      }
+
       // Pub : première après le 2ème post (i=1), puis toutes les 8 posts (i=9, 17, 25...).
       // Ignoré si un post isAdvertisement est dans les ±2 adjacents,
       // ou si un autre insert (pub ou pool) a été ajouté dans les 5 derniers posts.
@@ -3845,6 +3855,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts) {
+      contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end'), variant: SocialFollowVariant.end));
       contentWidgets.add(FeedEndDiscoverySection(
         pageType: widget.type.isNotEmpty ? widget.type : null,
         onSubscribed: () {
