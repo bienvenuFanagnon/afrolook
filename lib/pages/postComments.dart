@@ -157,9 +157,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   }
 
   /// Abonné actif (Premium ou Gold) ou admin : le serveur tranche, l'app pré-vérifie.
-  bool get _canUseStickers =>
-      AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) ||
-      authProvider.loginUserData.role == UserRole.ADM.name;
+  bool get _canUseStickers {
+    final u = authProvider.loginUserData;
+    if (AbonnementUtils.isPremiumActive(u.abonnement) || u.role == UserRole.ADM.name) return true;
+    // Stickers offerts par les pubs : le quota exact vient du serveur (stickerAccess), à défaut du profil
+    return (_stickerAccess?.bonusRemaining ?? AbonnementUtils.stickerBonusToday(u)) > 0;
+  }
 
   /// Rafraîchit les quotas (`stickerAccess`) et les récents.
   Future<void> _refreshStickerData() async {

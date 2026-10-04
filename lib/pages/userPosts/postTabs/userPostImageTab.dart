@@ -1,4 +1,6 @@
 import 'package:afrotok/widgets/monetized_post_option.dart';
+import 'package:afrotok/ads/rewards_service.dart';
+import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -331,7 +333,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       _maxCharacters = 3000;
       _cooldownMinutes = 0;
     } else {
-      _maxImages = 1;
+      // Gratuit : 1 image, ou 3 avec un crédit gagné en regardant des pubs (page Récompenses)
+      _maxImages = user.multiPhotoCredits > 0 ? 3 : 1;
       _maxCharacters = 300;
       _cooldownMinutes = 5;
     }
@@ -399,6 +402,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           title: 'Limite d\'images atteinte',
           message: 'L\'abonnement gratuit est limité à 1 image.\n\n⭐ Premium : jusqu\'à 3 images\n👑 Gold : jusqu\'à 5 images',
           actionText: 'VOIR LES ABONNEMENTS',
+          adsOffer: RewardsService.available(authProvider.loginUserData),
         );
       }
       return;
@@ -1175,7 +1179,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     );
   }
 
-  void _showPremiumModal({required String title, required String message, required String actionText}) {
+  void _showPremiumModal({required String title, required String message, required String actionText, bool adsOffer = false}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1221,6 +1225,14 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('PAS MAINTENANT', style: TextStyle(color: Colors.grey))),
+          if (adsOffer)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const RewardsPage()));
+              },
+              child: Text('🎁 3 PHOTOS AVEC 2 PUBS', style: TextStyle(color: _c.primary, fontWeight: FontWeight.w700)),
+            ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -1577,6 +1589,17 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         }
 
         printVm('✅ Post créé avec ID: $postId, ${_selectedImages.length} images${_isAdvertisement ? ' (Publicité en attente)' : ''}');
+
+        // Post à plusieurs photos publié grâce à un crédit « pubs » : on consomme le crédit
+        if (_selectedImages.length > 1) {
+          final u = authProvider.loginUserData;
+          final subscriber = AbonnementUtils.isPremiumActive(u.abonnement) || u.role == UserRole.ADM.name;
+          if (!subscriber && u.multiPhotoCredits > 0 && u.id != null) {
+            u.multiPhotoCredits -= 1;
+            FirebaseFirestore.instance.collection('Users').doc(u.id).update({'multiPhotoCredits': FieldValue.increment(-1)}).ignore();
+            _setupRestrictions();
+          }
+        }
 
         _descriptionController.clear();
         setState(() {

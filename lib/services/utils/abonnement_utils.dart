@@ -46,6 +46,19 @@ class AbonnementUtils {
   static bool canJoinSponsorEvents(AfrolookAbonnement? abonnement) =>
       abonnement?.estPremium == true;
 
+  // ── Stickers offerts par les pubs ─────────────────────────────────────────
+
+  /// Stickers offerts restants aujourd'hui (récompense « pubs » ; le serveur décide).
+  static int stickerBonusToday(UserData u) {
+    final n = DateTime.now().toUtc();
+    final today = '${n.year}${n.month.toString().padLeft(2, '0')}${n.day.toString().padLeft(2, '0')}';
+    return u.stickerBonusDay == today ? u.stickerBonusRemaining : 0;
+  }
+
+  /// Peut ouvrir les stickers : Premium/Gold, admin, ou stickers offerts restants aujourd'hui.
+  static bool canUseStickers(UserData u) =>
+      isPremiumActive(u.abonnement) || u.role == 'ADM' || stickerBonusToday(u) > 0;
+
   // ── Publicité ─────────────────────────────────────────────────────────────
 
   /// Règle unique d'affichage des pubs (Afrolook et AdMob) :

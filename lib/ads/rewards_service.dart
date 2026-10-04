@@ -16,7 +16,8 @@ class RewardOffer {
   final int cap;
   final bool premium;
   final int hours; // durée du Premium (offres Premium)
-  const RewardOffer(this.id, this.icon, this.title, this.desc, this.ads, this.cap, {this.premium = false, this.hours = 0});
+  final bool freeOnly; // inutile pour un abonné (déjà inclus dans Premium/Gold)
+  const RewardOffer(this.id, this.icon, this.title, this.desc, this.ads, this.cap, {this.premium = false, this.hours = 0, this.freeOnly = false});
 }
 
 class RewardsStatus {
@@ -39,6 +40,8 @@ class RewardsService {
     RewardOffer('adfree_24h', Icons.block_rounded, 'Une journée sans pub', '24 h sans publicité', 1, 2),
     RewardOffer('coins_2', Icons.monetization_on_rounded, '2 pièces cadeau', 'Pour offrir des cadeaux et liker', 1, 5),
     RewardOffer('flame_shield', Icons.local_fire_department_rounded, 'Bouclier de flamme', 'Protège ta série de commentaires une fois', 1, 1),
+    RewardOffer('stickers_3', Icons.sticky_note_2_rounded, '3 stickers aujourd\'hui', 'Pour les comptes gratuits', 1, 2, freeOnly: true),
+    RewardOffer('photos_3', Icons.photo_library_rounded, 'Post avec 3 photos', 'Une publication avec plusieurs photos', 2, 3, freeOnly: true),
   ];
 
   /// La page et les pubs récompensées sont-elles proposées à cette personne ?
@@ -56,7 +59,8 @@ class RewardsService {
     if (AbonnementUtils.isAdmin(u.role)) return offers;
     final ab = u.abonnement;
     final paidPremium = ab?.estPremium == true && ab?.methodePaiement != 'pubs';
-    return offers.where((o) => !(o.premium && paidPremium)).toList();
+    final anyPremium = ab?.estPremium == true;
+    return offers.where((o) => !(o.premium && paidPremium) && !(o.freeOnly && anyPremium)).toList();
   }
 
   static String _utcDay() => DateTime.now().toUtc().toIso8601String().substring(0, 10).replaceAll('-', '');

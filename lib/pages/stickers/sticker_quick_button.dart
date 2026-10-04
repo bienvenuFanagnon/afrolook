@@ -27,7 +27,7 @@ class StickerQuickButton extends StatelessWidget {
       onTap: () async {
         FocusScope.of(context).unfocus();
         final me = auth.loginUserData;
-        final allowed = AbonnementUtils.isPremiumActive(me.abonnement) || me.role == UserRole.ADM.name;
+        final allowed = AbonnementUtils.canUseStickers(me);
         if (!allowed) {
           await showStickerPremiumInvite(context);
           return;

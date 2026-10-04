@@ -20,7 +20,9 @@ type Offer =
   | { ads: number; cap: number; kind: "premium"; hours: number }
   | { ads: number; cap: number; kind: "adfree" }
   | { ads: number; cap: number; kind: "coins"; coins: number }
-  | { ads: number; cap: number; kind: "shield" };
+  | { ads: number; cap: number; kind: "shield" }
+  | { ads: number; cap: number; kind: "stickers"; count: number }
+  | { ads: number; cap: number; kind: "photos" };
 
 export const OFFERS: Record<string, Offer> = {
   premium_5h: { ads: 2, cap: 3, kind: "premium", hours: 5 },
@@ -29,6 +31,8 @@ export const OFFERS: Record<string, Offer> = {
   adfree_24h: { ads: 1, cap: 2, kind: "adfree" },
   coins_2: { ads: 1, cap: 5, kind: "coins", coins: 2 },
   flame_shield: { ads: 1, cap: 1, kind: "shield" },
+  stickers_3: { ads: 1, cap: 2, kind: "stickers", count: 3 },
+  photos_3: { ads: 2, cap: 3, kind: "photos" },
 };
 
 const dayKey = () => new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -87,6 +91,7 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
     const claims = (d["claims"] ?? {}) as Record<string, number>;
     if (!admin && Number(claims[offerId] ?? 0) >= offer.cap) throw new HttpsError("resource-exhausted", "Limite du jour atteinte pour cette offre.");
 
+    const anyPremium = (ab.type === "premium" || ab.type === "gold") && ab.estActif !== false && Number.isFinite(end) && end > now;
     const out: Record<string, unknown> = { ok: true, offerId };
     if (offer.kind === "premium") {
       if (paidActive && !admin) throw new HttpsError("failed-precondition", "Tu es déjà Premium.");
@@ -110,6 +115,16 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
     } else if (offer.kind === "coins") {
       tx.set(userRef, { giftCoinsBalance: FieldValue.increment(offer.coins) }, { merge: true });
       out["coins"] = offer.coins;
+    } else if (offer.kind === "stickers") {
+      if (anyPremium && !admin) throw new HttpsError("failed-precondition", "Les stickers sont déjà inclus dans ton abonnement.");
+      const b = (u["stickerBonus"] ?? {}) as { day?: string; remaining?: number };
+      const base = b.day === dayKey() ? Number(b.remaining ?? 0) : 0;
+      tx.set(userRef, { stickerBonus: { day: dayKey(), remaining: base + offer.count } }, { merge: true });
+      out["stickers"] = base + offer.count;
+    } else if (offer.kind === "photos") {
+      if (anyPremium && !admin) throw new HttpsError("failed-precondition", "Les photos multiples sont déjà incluses dans ton abonnement.");
+      tx.set(userRef, { multiPhotoCredits: FieldValue.increment(1) }, { merge: true });
+      out["photoCredits"] = Number(u["multiPhotoCredits"] ?? 0) + 1;
     } else {
       const shields = Number(u["streakShields"] ?? 0);
       if (shields >= 3) throw new HttpsError("failed-precondition", "Boucliers déjà au maximum.");

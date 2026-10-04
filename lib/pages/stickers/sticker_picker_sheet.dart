@@ -427,7 +427,9 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
     if (a == null && blockedReason == null) return const SizedBox.shrink();
     final text = blockedReason != null
         ? stickerReasonText(context, blockedReason)
-        : (a!.hasLimits
+        : (a != null && a.tier == 'free' && a.bonusRemaining > 0)
+            ? context.tr('Stickers offerts restants : {n}', {'n': a.bonusRemaining})
+            : (a!.hasLimits
             ? context.tr('Sur ce post {a}/{b} · Aujourd\'hui {c}/{d}', {
                 'a': a.postUsed, 'b': a.perPostMax, 'c': a.dayUsed, 'd': a.perDayMax,
               })

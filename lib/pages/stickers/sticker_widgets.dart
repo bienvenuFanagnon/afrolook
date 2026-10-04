@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import '../../l10n/tr.dart';
 import '../../services/stickers/sticker_models.dart';
 import '../../theme/app_colors.dart';
+import 'package:provider/provider.dart';
+
+import '../../ads/rewards_service.dart';
+import '../../providers/authProvider.dart';
+import '../rewards/rewards_page.dart';
 import '../user/userAbonnementPage.dart';
 
 const Color kStickerGold = Color(0xFFD99A00);
@@ -101,6 +106,16 @@ Future<void> showStickerPremiumInvite(BuildContext context) {
                   child: Text(ctx.tr('Voir les abonnements'), style: const TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ),
+              if (RewardsService.available(Provider.of<UserAuthProvider>(ctx, listen: false).loginUserData))
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage()));
+                  },
+                  icon: const Icon(Icons.card_giftcard_rounded, size: 18, color: kStickerGold),
+                  label: Text(ctx.tr('Ou gagne 3 stickers en regardant une pub'),
+                      style: const TextStyle(color: kStickerGold, fontWeight: FontWeight.w700)),
+                ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text(ctx.tr('Plus tard'), style: TextStyle(color: c.textSecondary)),

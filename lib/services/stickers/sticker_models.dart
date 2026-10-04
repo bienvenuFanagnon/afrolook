@@ -219,6 +219,8 @@ class StickerAccess {
   final int perDayMax;
   final int dayUsed;
   final int postUsed;
+  /// Stickers offerts restants aujourd'hui (récompense « pubs »).
+  final int bonusRemaining;
   final List<StickerRecentStatus> recents;
 
   const StickerAccess({
@@ -229,6 +231,7 @@ class StickerAccess {
     this.perDayMax = 0,
     this.dayUsed = 0,
     this.postUsed = 0,
+    this.bonusRemaining = 0,
     this.recents = const [],
   });
 
@@ -242,6 +245,7 @@ class StickerAccess {
       perDayMax: _asInt(m['perDayMax']),
       dayUsed: _asInt(m['dayUsed']),
       postUsed: _asInt(m['postUsed']),
+      bonusRemaining: _asInt(m['bonusRemaining']),
       recents: rawRecents is List
           ? rawRecents.whereType<Map>().map((r) {
               return StickerRecentStatus(

@@ -867,6 +867,10 @@ class UserData {
   int? userlikes = 0;
   /// Fin (ms) de la journée « sans pub » gagnée avec une pub récompensée (écrit par le serveur).
   int? adFreeUntil;
+  /// Récompenses « pubs » : crédits de post à plusieurs photos, et stickers offerts du jour.
+  int multiPhotoCredits = 0;
+  String? stickerBonusDay; // AAAAMMJJ (UTC)
+  int stickerBonusRemaining = 0;
   int? userjaimes = 0;
   int? likes = 0;
   int? jaimes = 0;
@@ -1279,6 +1283,12 @@ class UserData {
     totalCoinsEarnedFromAdSupport = json['totalCoinsEarnedFromAdSupport'] ?? 0;
     userlikes = json['userlikes'] ?? 0;
     adFreeUntil = (json['adFreeUntil'] as num?)?.toInt();
+    multiPhotoCredits = (json['multiPhotoCredits'] as num?)?.toInt() ?? 0;
+    final sb = json['stickerBonus'];
+    if (sb is Map) {
+      stickerBonusDay = sb['day']?.toString();
+      stickerBonusRemaining = (sb['remaining'] as num?)?.toInt() ?? 0;
+    }
     userjaimes = json['userjaimes'] ?? 0;
     likes = json['likes'] ?? 0;
     jaimes = json['jaimes'] ?? 0;

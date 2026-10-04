@@ -48,6 +48,23 @@ function isSuspended(u: FirebaseFirestore.DocumentData | undefined): boolean {
   return until > 0 && until > Date.now();
 }
 
+/** Stickers offerts du jour (récompense « pubs ») : Users.stickerBonus = {day, remaining}. */
+function bonusRemaining(u: FirebaseFirestore.DocumentData | undefined): number {
+  const b = u?.["stickerBonus"] as { day?: string; remaining?: number } | undefined;
+  return b && b.day === dayKey() ? Math.max(0, num(b.remaining)) : 0;
+}
+
+/** Consomme un sticker offert (transaction) ; faux s'il n'en reste plus. */
+async function takeBonus(uid: string): Promise<boolean> {
+  const ref = db.collection("Users").doc(uid);
+  return db.runTransaction(async (tx) => {
+    const left = bonusRemaining((await tx.get(ref)).data());
+    if (left <= 0) return false;
+    tx.update(ref, { "stickerBonus.remaining": left - 1 });
+    return true;
+  });
+}
+
 function dayKey(): string {
   return new Date().toISOString().slice(0, 10).replace(/-/g, "");
 }
@@ -101,11 +118,12 @@ export const stickerAccess = onCall({ timeoutSeconds: 20, memory: "256MiB" }, as
   const lim = limitsOf(u, tier);
   const [used, onPost] = await Promise.all([dayUsed(uid), postId ? postUsed(uid, postId) : Promise.resolve(0)]);
 
+  const bonus = bonusRemaining(u);
   let reason: Reason = null;
-  if (tier === "free") reason = "not_subscribed";
+  if (tier === "free" && bonus <= 0) reason = "not_subscribed";
   else if (isSuspended(u)) reason = "suspended";
-  else if (used >= lim.perDay) reason = "day_limit";
-  else if (postId && onPost >= lim.perPost) reason = "post_limit";
+  else if (tier !== "free" && used >= lim.perDay) reason = "day_limit";
+  else if (postId && onPost >= (tier === "free" ? 1 : lim.perPost)) reason = "post_limit";
   const canSend = reason === null;
 
   const balance = num(u?.["giftCoinsBalance"]);
@@ -117,7 +135,7 @@ export const stickerAccess = onCall({ timeoutSeconds: 20, memory: "256MiB" }, as
     return { stickerId: r.id, source, usable: canSend && st.ok, reason: why, lastUsedAt: num(r.get("lastUsedAt")) };
   }));
 
-  return { tier, canSend, reason, perPostMax: lim.unlimited ? 0 : lim.perPost, perDayMax: lim.unlimited ? 0 : lim.perDay, unlimited: lim.unlimited, dayUsed: used, postUsed: onPost, recents };
+  return { tier, canSend, reason, bonusRemaining: bonus, perPostMax: lim.unlimited ? 0 : lim.perPost, perDayMax: lim.unlimited ? 0 : lim.perDay, unlimited: lim.unlimited, dayUsed: used, postUsed: onPost, recents };
 });
 
 async function rejectComment(ref: FirebaseFirestore.DocumentReference, why: string, uid: string | undefined) {
@@ -141,9 +159,10 @@ export const onCommentMediaCreated = onDocumentCreated("PostComments/{id}", asyn
   const userDoc = await db.collection("Users").doc(uid).get();
   const u = userDoc.data();
   const tier = tierOf(u);
-  if (tier === "free") return rejectComment(snap.ref, "abonnement", uid);
+  const freeWithBonus = tier === "free" && bonusRemaining(u) > 0;
+  if (tier === "free" && !freeWithBonus) return rejectComment(snap.ref, "abonnement", uid);
   if (isSuspended(u)) return rejectComment(snap.ref, "compte suspendu", uid);
-  const lim = limitsOf(u, tier);
+  const lim = freeWithBonus ? { perPost: 1, perDay: Number.MAX_SAFE_INTEGER, unlimited: false } : limitsOf(u, tier);
 
   const type = String(media["type"] ?? "");
   const balance = num(u?.["giftCoinsBalance"]);
@@ -198,6 +217,7 @@ export const onCommentMediaCreated = onDocumentCreated("PostComments/{id}", asyn
     return true;
   });
   if (!allowed) return rejectComment(snap.ref, "limite par jour", uid);
+  if (freeWithBonus && !(await takeBonus(uid))) return rejectComment(snap.ref, "plus de stickers offerts", uid);
 
   if (trusted) await snap.ref.update({ media: trusted });
 
@@ -247,9 +267,10 @@ export const onReplyMediaUpdated = onDocumentUpdated("PostComments/{id}", async 
     const userDoc = await db.collection("Users").doc(uid).get();
     const u = userDoc.data();
     const tier = tierOf(u);
-    if (tier === "free") { await rejectReply(ref, key, "abonnement", uid); continue; }
+    const freeWithBonus = tier === "free" && bonusRemaining(u) > 0;
+    if (tier === "free" && !freeWithBonus) { await rejectReply(ref, key, "abonnement", uid); continue; }
     if (isSuspended(u)) { await rejectReply(ref, key, "compte suspendu", uid); continue; }
-    const lim = limitsOf(u, tier);
+    const lim = freeWithBonus ? { perPost: 1, perDay: Number.MAX_SAFE_INTEGER, unlimited: false } : limitsOf(u, tier);
 
     const type = String(media["type"] ?? "");
     const stickerId = String(media["stickerId"] ?? "");
@@ -273,6 +294,7 @@ export const onReplyMediaUpdated = onDocumentUpdated("PostComments/{id}", async 
       return true;
     });
     if (!allowed) { await rejectReply(ref, key, "limite par jour", uid); continue; }
+    if (freeWithBonus && !(await takeBonus(uid))) { await rejectReply(ref, key, "plus de stickers offerts", uid); continue; }
 
     // Média recopié depuis le sticker (l'app ne peut pas le falsifier)
     await db.runTransaction(async (tx) => {
