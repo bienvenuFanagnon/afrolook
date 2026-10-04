@@ -81,6 +81,7 @@ import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 import '../../services/feed/end_of_feed_cache.dart';
 import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
+import '../../widgets/feed/sections/ad_free_day_card.dart';
 
 
 // Constantes de couleur
@@ -3755,6 +3756,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Un tutoriel tous les 5 posts (dès le 2e) : jusqu'à 5 tutoriels différents par jour
       if (i % 5 == 1 && _showTutoReminder) {
         contentWidgets.add(FeedMonetizationReminder(key: ValueKey('tuto_reminder_home_$i'), feed: 'home'));
+      }
+
+      // Offre « Une journée sans pub » : après le 5e post (jamais collée à une pub), 1 fois par jour
+      if (i == 4) {
+        contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_home')));
       }
 
       // T2 fill counter

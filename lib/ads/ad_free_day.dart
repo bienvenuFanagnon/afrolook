@@ -10,6 +10,9 @@ import 'admob_service.dart';
 class AdFreeDay {
   AdFreeDay._();
 
+  /// Incrémenté quand 1 jour sans pub vient d'être accordé (les cartes du feed se masquent).
+  static final ValueNotifier<int> changes = ValueNotifier(0);
+
   /// Proposer l'entrée de menu seulement si les pubs sont actives et que la personne en voit.
   static bool available(UserData? user) =>
       AdConfig.isMobile &&
@@ -58,6 +61,7 @@ class AdFreeDay {
         return;
       }
       user.adFreeUntil = until;
+      changes.value++;
       say('C\'est activé : plus de publicité pendant 24 heures. 🎉');
     });
     if (!shown) say('Aucune vidéo disponible pour le moment, réessaie dans un instant.');

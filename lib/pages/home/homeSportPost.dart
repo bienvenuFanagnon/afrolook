@@ -71,6 +71,7 @@ import '../../widgets/feed/sections/feed_recommended_profiles_widget.dart';
 import '../dating/widgets/top_dating_profiles_widget.dart';
 import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
+import '../../widgets/feed/sections/ad_free_day_card.dart';
 
 
 // Constantes de couleur
@@ -2949,6 +2950,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       if (i % 5 == 1 && _showTutoReminder) {
         contentWidgets.add(FeedMonetizationReminder(key: ValueKey('tuto_reminder_sport_$i'), feed: 'sport'));
+      }
+
+      // Offre « Une journée sans pub » : après le 5e post (jamais collée à une pub), 1 fois par jour
+      if (i == 4) {
+        contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_sport')));
       }
 
       // T2 fill counter (plus de section découverte en plein feed)
