@@ -36,7 +36,7 @@ export * from "./payments/exchangeRates";
 export { migratePseudos, migrateCanalNames } from "./users/pseudoMigration";
 export * from "./posts/canalInactivity";
 export { adminCanalAction } from "./posts/adminCanaux";
-export { stickerAccess, onCommentMediaCreated } from "./stickers/stickers";
+export { stickerAccess, onCommentMediaCreated, onReplyMediaUpdated } from "./stickers/stickers";
 export { stickerGiftSend } from "./stickers/stickerPayments";
 export { onUserStickerCreated, submitStickerPack, updateStickerPackPrice, adminStickerAction, reportStickerCopy } from "./stickers/stickerCreators";
 export { convertStickerVideo } from "./stickers/stickerVideo";

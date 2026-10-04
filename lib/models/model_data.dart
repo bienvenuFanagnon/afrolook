@@ -3793,6 +3793,8 @@ class ResponsePostComment {
   // Identité canal — renseigné quand la réponse est postée par un owner/admin de canal
   String? canal_name;
   String? canal_image;
+  /// Sticker de la réponse : {type, stickerId, url, thumbUrl, w, h, sizeBytes, animated} (validé par le serveur).
+  Map<String, dynamic>? media;
 
   ResponsePostComment({
     this.id = '',
@@ -3809,6 +3811,7 @@ class ResponsePostComment {
     this.updatedAt = 0,
     this.canal_name,
     this.canal_image,
+    this.media,
   });
 
   ResponsePostComment.fromJson(Map<String, dynamic> json) {
@@ -3826,6 +3829,7 @@ class ResponsePostComment {
     likes = json['likes'] ?? 0;
     canal_name = json['canal_name'];
     canal_image = json['canal_image'];
+    media = json['media'] is Map ? Map<String, dynamic>.from(json['media'] as Map) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -3844,6 +3848,7 @@ class ResponsePostComment {
     data['likes'] = this.likes;
     if (canal_name != null) data['canal_name'] = canal_name;
     if (canal_image != null) data['canal_image'] = canal_image;
+    if (media != null) data['media'] = media;
 
     return data;
   }

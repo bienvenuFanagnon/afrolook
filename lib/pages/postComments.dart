@@ -194,7 +194,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   /// Un sticker choisi (sélecteur ou récents) reste en attente : l'utilisateur peut ajouter un texte, puis envoyer.
   Future<void> _sendSticker(StickerItem s) async {
-    if (replying || _stickerSending || _isLoading) return;
+    if (_stickerSending || _isLoading) return;
     setState(() => _pendingSticker = s);
     _focusNode.requestFocus();
   }
@@ -202,7 +202,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   Future<void> _submit() async {
     final s = _pendingSticker;
     if (s == null) return _sendComment();
-    if (replying || _stickerSending || _isLoading) return;
+    if (_stickerSending || _isLoading) return;
     _stickerSending = true;
     setState(() => _pendingSticker = null);
     try {
@@ -1328,7 +1328,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   }
 
   /// Média d'un commentaire (sticker) : lecture seule, sans enregistrement, partage ni appui long.
-  Widget _buildCommentMedia(Map<String, dynamic> media) {
+  Widget _buildCommentMedia(Map<String, dynamic> media, {double maxWidth = 110}) {
     final url = (media['url'] ?? '').toString();
     final thumb = (media['thumbUrl'] ?? '').toString();
     if (url.isEmpty && thumb.isEmpty) return const SizedBox.shrink();
@@ -1346,7 +1346,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     return Padding(
       padding: const EdgeInsets.only(bottom: 4, top: 2),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 110),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: AspectRatio(
@@ -1462,7 +1462,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   ],
                 ),
                 const SizedBox(height: 3),
-                _buildMentionText(rpc.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+                // Sticker d'une réponse : plus petit que dans un commentaire
+                if (rpc.media != null) _buildCommentMedia(rpc.media!, maxWidth: 72),
+                if ((rpc.message ?? '').isNotEmpty || rpc.media == null)
+                  _buildMentionText(rpc.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
                 _buildCoinsEarned(pcm.replyCoins[rpc.id] ?? 0),
                 _buildStickerGifts(pcm.id, replyId: rpc.id),
                 if (needsExpandButton)
@@ -1755,7 +1758,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             ),
 
           // Stickers récents (abonnés)
-          if (!replying && _canUseStickers && _recentStickers.isNotEmpty)
+          if (_canUseStickers && _recentStickers.isNotEmpty)
             StickerRecentsBar(
               recents: _recentStickers,
               access: _stickerAccess,
@@ -1763,7 +1766,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             ),
 
           // Sticker en attente : aperçu + texte facultatif avant l'envoi
-          if (_pendingSticker != null && !replying)
+          if (_pendingSticker != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               color: _colors.primary.withOpacity(0.06),
@@ -1816,9 +1819,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     ),
                   ),
                 ),
-                // Bouton sticker (pas en mode réponse)
-                if (!replying)
-                  GestureDetector(
+                // Bouton sticker (commentaire et réponse)
+                GestureDetector(
                     onTap: _onStickerButtonTap,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 8, right: 6),
@@ -1927,8 +1929,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   // ─── SEND / DELETE ───────────────────────────────────────────────────────────
 
   Future<void> _sendComment({StickerItem? sticker}) async {
-    // Un sticker n'est jamais envoyé en mode réponse (commentaires principaux seulement).
-    if (sticker != null && replying) return;
     if (sticker == null && _textController.text.trim().isEmpty) return;
 
     setState(() => _isLoading = true);
@@ -1967,6 +1967,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           user_id: replyUserId,
           user_logo_url: _replyCanalImage ?? authProvider.loginUserData.imageUrl,
           user_pseudo: _replyCanalName ?? authProvider.loginUserData.pseudo,
+          id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+          media: sticker?.toMedia(),
           post_comment_id: commentSelectedToReply.id,
           user_reply_pseudo: replyUser_pseudo,
           message: textComment,
@@ -1980,7 +1982,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
         success = await postProvider.updateComment(commentSelectedToReply);
         receiverId = replyUser_id;
-        action = "répondu à votre commentaire";
+        action = sticker != null ? "répondu par un sticker à votre commentaire" : "répondu à votre commentaire";
 
         if (success) {
           FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);

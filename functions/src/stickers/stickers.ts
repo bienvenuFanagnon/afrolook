@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { db } from "../shared/firebase";
@@ -208,5 +208,83 @@ export const onCommentMediaCreated = onDocumentCreated("PostComments/{id}", asyn
     const all = await col.orderBy("lastUsedAt", "desc").get();
     await Promise.all(all.docs.slice(MAX_RECENTS).map((d) => d.ref.delete()));
     await db.collection("Stickers").doc(recentId).update({ usageCount: FieldValue.increment(1) }).catch(() => undefined);
+  }
+});
+
+type Reply = Record<string, unknown>;
+const replyKey = (r: Reply) => String(r["id"] || `${r["user_id"]}_${r["created_at"]}`);
+
+/** Retire une réponse refusée du commentaire (transaction : ne touche pas aux autres réponses). */
+async function rejectReply(ref: FirebaseFirestore.DocumentReference, key: string, why: string, uid: string | undefined) {
+  console.log(`[stickers] réponse ${key} du commentaire ${ref.id} refusée (${why}) pour ${uid}`);
+  await db.runTransaction(async (tx) => {
+    const d = await tx.get(ref);
+    const list = (d.get("responseComments") ?? []) as Reply[];
+    tx.update(ref, { responseComments: list.filter((r) => replyKey(r) !== key) });
+  });
+  if (uid) await db.collection("StickerRejections").add({ commentId: ref.id, replyId: key, userId: uid, reason: why, at: Date.now() });
+}
+
+/**
+ * Stickers dans les RÉPONSES à un commentaire : les réponses sont stockées dans `responseComments`.
+ * Mêmes règles que les commentaires (abonnement, suspension, droit sur le pack, poids, limite du jour),
+ * sans limite « par post » (une réponse n'est pas retrouvable par auteur). Réponse refusée = retirée.
+ */
+export const onReplyMediaUpdated = onDocumentUpdated("PostComments/{id}", async (event) => {
+  const before = ((event.data?.before.get("responseComments") ?? []) as Reply[]);
+  const after = ((event.data?.after.get("responseComments") ?? []) as Reply[]);
+  if (after.length <= before.length) return;
+  const known = new Set(before.map(replyKey));
+  const fresh = after.filter((r) => r["media"] && !known.has(replyKey(r)));
+  if (fresh.length === 0) return;
+  const ref = event.data!.after.ref;
+
+  for (const reply of fresh) {
+    const key = replyKey(reply);
+    const media = reply["media"] as Record<string, unknown>;
+    const uid = String(reply["user_id"] ?? "");
+    if (!uid) { await rejectReply(ref, key, "données manquantes", undefined); continue; }
+    const userDoc = await db.collection("Users").doc(uid).get();
+    const u = userDoc.data();
+    const tier = tierOf(u);
+    if (tier === "free") { await rejectReply(ref, key, "abonnement", uid); continue; }
+    if (isSuspended(u)) { await rejectReply(ref, key, "compte suspendu", uid); continue; }
+    const lim = limitsOf(u, tier);
+
+    const type = String(media["type"] ?? "");
+    const stickerId = String(media["stickerId"] ?? "");
+    if ((type !== "sticker" && type !== "user_sticker") || !stickerId) { await rejectReply(ref, key, "type", uid); continue; }
+    const st = await stickerUsable(uid, type === "user_sticker" ? "mine" : "pack", stickerId, num(u?.["giftCoinsBalance"]));
+    if (!st.ok || !st.data) { await rejectReply(ref, key, st.reason ?? "sticker", uid); continue; }
+    if (num(st.data["giftPriceCoins"]) > 0) { await rejectReply(ref, key, "sticker-cadeau", uid); continue; }
+    const size = num(st.data["sizeBytes"]);
+    if (size > MAX_ANIM_BYTES) { await rejectReply(ref, key, "poids", uid); continue; }
+    const trusted = {
+      type, stickerId, url: st.data["url"], thumbUrl: st.data["thumbUrl"] ?? null,
+      w: num(media["w"]) || 512, h: num(media["h"]) || 512, sizeBytes: size, animated: st.data["animated"] === true,
+    };
+
+    const usageRef = db.collection("StickerUsage").doc(`${uid}_${dayKey()}`);
+    const allowed = await db.runTransaction(async (tx) => {
+      const d = await tx.get(usageRef);
+      const count = num(d.data()?.["count"]);
+      if (count >= lim.perDay) return false;
+      tx.set(usageRef, { userId: uid, day: dayKey(), count: count + 1 }, { merge: true });
+      return true;
+    });
+    if (!allowed) { await rejectReply(ref, key, "limite par jour", uid); continue; }
+
+    // Média recopié depuis le sticker (l'app ne peut pas le falsifier)
+    await db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      const list = (d.get("responseComments") ?? []) as Reply[];
+      tx.update(ref, { responseComments: list.map((r) => (replyKey(r) === key ? { ...r, media: trusted } : r)) });
+    });
+
+    const col = db.collection("Users").doc(uid).collection("StickerRecents");
+    await col.doc(stickerId).set({ lastUsedAt: Date.now(), source: type === "user_sticker" ? "mine" : "pack" });
+    const all = await col.orderBy("lastUsedAt", "desc").get();
+    await Promise.all(all.docs.slice(MAX_RECENTS).map((d) => d.ref.delete()));
+    await db.collection("Stickers").doc(stickerId).update({ usageCount: FieldValue.increment(1) }).catch(() => undefined);
   }
 });
