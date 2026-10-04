@@ -3,6 +3,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart' show CanalDetails;
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
+import 'package:afrotok/services/weekly_rewards_service.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -92,122 +93,33 @@ class WeeklyTopCreatorsWidget extends StatefulWidget {
     };
   }
 
+  /// Lit le classement enregistré (WeeklyTopCreators) de la semaine écoulée : 5 premiers.
   static Future<List<_TopEntry>> _fetchTopEntries() async {
     try {
-      final range = _lastWeekRangeMicros();
-
-      final snap = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('created_at', isGreaterThanOrEqualTo: range['start'])
-          .where('created_at', isLessThan: range['end'])
-          .limit(300)
-          .get();
-
-      if (snap.docs.isEmpty) return [];
-
-      // Grouper par entité (canal > user) + scorer
-      final Map<String, Map<String, dynamic>> grouped = {};
-
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final canalId = (data['canal_id'] as String? ?? '').trim();
-        final userId = (data['user_id'] as String? ?? '').trim();
-        final entityId = canalId.isNotEmpty ? canalId : userId;
-        if (entityId.isEmpty) continue;
-        final isCanal = canalId.isNotEmpty;
-
-        final loves = (data['loves'] as int? ?? 0);
-        final comments = (data['comments'] as int? ?? 0);
-        final vues = (data['vues'] as int? ?? 0);
-        final giftCount = (data['giftCount'] as int? ?? 0);
-        final partage = (data['partage'] as int? ?? 0);
-        final totalInteractions = (data['totalInteractions'] as int? ?? 0);
-        final uniqueLovers =
-            (data['users_love_id'] as List<dynamic>? ?? []).length;
-        final uniqueCommenters =
-            (data['users_comments_id'] as List<dynamic>? ?? []).length;
-        final uniqueViewers =
-            (data['users_vue_id'] as List<dynamic>? ?? []).length;
-
-        final double postScore = 5.0 +
-            uniqueLovers * 3.0 +
-            loves * 0.3 +
-            uniqueCommenters * 4.0 +
-            comments * 0.3 +
-            uniqueViewers * 1.0 +
-            vues * 0.05 +
-            giftCount * 2.0 +
-            partage * 1.5 +
-            totalInteractions * 0.2;
-
-        grouped.putIfAbsent(entityId, () => {
-          'isCanal': isCanal,
-          'score': 0.0,
-          'postCount': 0,
-          'uniqueLovers': 0,
-          'uniqueCommenters': 0,
-          'totalViews': 0,
-        });
-        grouped[entityId]!['score'] =
-            (grouped[entityId]!['score'] as double) + postScore;
-        grouped[entityId]!['postCount'] =
-            (grouped[entityId]!['postCount'] as int) + 1;
-        grouped[entityId]!['uniqueLovers'] =
-            (grouped[entityId]!['uniqueLovers'] as int) + uniqueLovers;
-        grouped[entityId]!['uniqueCommenters'] =
-            (grouped[entityId]!['uniqueCommenters'] as int) + uniqueCommenters;
-        grouped[entityId]!['totalViews'] =
-            (grouped[entityId]!['totalViews'] as int) + uniqueViewers;
+      final service = WeeklyRewardsService();
+      var weekId = WeeklyRewardsService.getLastWeekId();
+      var rankings = await service.getWeeklyTopCreators(weekId: weekId);
+      if (rankings.isEmpty) {
+        // Classement de la semaine écoulée pas encore publié : dernière semaine disponible
+        final weeks = await service.getAvailableWeekIds('WeeklyTopCreators');
+        if (weeks.isEmpty) return [];
+        weekId = weeks.first;
+        rankings = await service.getWeeklyTopCreators(weekId: weekId);
       }
-
-      // Top 5
-      final sorted = grouped.entries.toList()
-        ..sort((a, b) => (b.value['score'] as double)
-            .compareTo(a.value['score'] as double));
-      final top5 = sorted.take(5).toList();
-
-      // Charger détails Users / Canaux en parallèle
-      final List<_TopEntry> entries = [];
-      await Future.wait(top5.map((entry) async {
-        final entityId = entry.key;
-        final isCanal = entry.value['isCanal'] as bool;
-        try {
-          if (isCanal) {
-            final doc = await FirebaseFirestore.instance
-                .collection('Canaux')
-                .doc(entityId)
-                .get();
-            if (!doc.exists) return;
-            entries.add(_TopEntry(
-              isCanal: true,
-              canal: Canal.fromJson({...doc.data()!, 'id': doc.id}),
-              score: entry.value['score'] as double,
-              postCount: entry.value['postCount'] as int,
-              uniqueLovers: entry.value['uniqueLovers'] as int,
-              uniqueCommenters: entry.value['uniqueCommenters'] as int,
-              totalViews: entry.value['totalViews'] as int,
-            ));
-          } else {
-            final doc = await FirebaseFirestore.instance
-                .collection('Users')
-                .doc(entityId)
-                .get();
-            if (!doc.exists) return;
-            entries.add(_TopEntry(
-              isCanal: false,
-              userData: UserData.fromJson(doc.data()!),
-              score: entry.value['score'] as double,
-              postCount: entry.value['postCount'] as int,
-              uniqueLovers: entry.value['uniqueLovers'] as int,
-              uniqueCommenters: entry.value['uniqueCommenters'] as int,
-              totalViews: entry.value['totalViews'] as int,
-            ));
-          }
-        } catch (_) {}
-      }));
-
-      entries.sort((a, b) => b.score.compareTo(a.score));
-      return entries;
+      return rankings
+          .where((r) => r.isCanal ? r.canal != null : r.user != null)
+          .take(5)
+          .map((r) => _TopEntry(
+                isCanal: r.isCanal,
+                userData: r.user,
+                canal: r.canal,
+                score: r.score,
+                postCount: r.postCount,
+                uniqueLovers: r.uniqueLovers,
+                uniqueCommenters: r.uniqueCommenters,
+                totalViews: r.totalViews,
+              ))
+          .toList();
     } catch (_) {
       return [];
     }
