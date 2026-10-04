@@ -2,6 +2,7 @@ import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart' show CanalDetails;
 import 'package:afrotok/pages/component/showUserDetails.dart';
+import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -374,7 +375,10 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
                     ],
                   ),
                 ),
-                Container(
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const WeeklyTopCreatorsPage())),
+                  child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD400).withOpacity(0.15),
@@ -382,13 +386,14 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
                     border: Border.all(color: const Color(0xFFFFD400), width: 0.8),
                   ),
                   child: const Text(
-                    'Semaine',
+                    'Voir le classement ›',
                     style: TextStyle(
                       color: Color(0xFFFFD400),
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
                 ),
               ],
             ),

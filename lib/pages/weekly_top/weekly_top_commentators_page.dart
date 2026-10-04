@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/weekly_rewards_service.dart';
 import '../../theme/app_colors.dart';
+import 'week_picker.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 
 const _pageSize = 20;
@@ -91,37 +92,14 @@ class _WeeklyTopCommentatorsPageState extends State<WeeklyTopCommentatorsPage> {
     }
   }
 
-  void _pickWeek() {
-    final options = [
-      WeeklyRewardsService.getLastWeekId(),
-      WeeklyRewardsService.getCurrentWeekId(),
-    ];
-    showResponsiveBottomSheet(
-      context: context,
-      builder: (ctx) {
-        final colors = AppColors.of(ctx);
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Text('Choisir une semaine',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: colors.textPrimary)),
-            const SizedBox(height: 8),
-            ...options.map((w) => ListTile(
-              title: Text(_formatWeekId(w), style: TextStyle(color: colors.textPrimary)),
-              subtitle: Text(w, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
-              trailing: _weekId == w ? Icon(Icons.check, color: colors.primary) : null,
-              onTap: () {
-                Navigator.pop(ctx);
-                _service.clearCache();
-                _loadForWeek(w, resetShown: true);
-              },
-            )),
-            const SizedBox(height: 12),
-          ],
-        );
-      },
-    );
+  Future<void> _pickWeek() async {
+    final weeks = await _service.getAvailableWeekIds('WeeklyTopCommentators');
+    if (!mounted) return;
+    final w = await pickWeek(context, weeks, _weekId);
+    if (w != null && w != _weekId) {
+      _service.clearCache();
+      _loadForWeek(w, resetShown: true);
+    }
   }
 
   @override

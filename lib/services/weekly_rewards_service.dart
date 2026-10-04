@@ -47,6 +47,48 @@ class WeeklyPostRanking {
   }
 }
 
+class WeeklyCreatorRanking {
+  final int rank;
+  final String entityId;
+  final bool isCanal;
+  final double score;
+  final int postCount;
+  final int uniqueLovers;
+  final int uniqueCommenters;
+  final int totalViews;
+
+  // Données enrichies (remplies côté Flutter)
+  UserData? user;
+  Canal? canal;
+
+  WeeklyCreatorRanking({
+    required this.rank,
+    required this.entityId,
+    required this.isCanal,
+    required this.score,
+    required this.postCount,
+    required this.uniqueLovers,
+    required this.uniqueCommenters,
+    required this.totalViews,
+  });
+
+  factory WeeklyCreatorRanking.fromMap(Map<String, dynamic> m) {
+    return WeeklyCreatorRanking(
+      rank: (m['rank'] as num?)?.toInt() ?? 0,
+      entityId: m['entityId'] as String? ?? '',
+      isCanal: m['isCanal'] as bool? ?? false,
+      score: (m['score'] as num?)?.toDouble() ?? 0,
+      postCount: (m['postCount'] as num?)?.toInt() ?? 0,
+      uniqueLovers: (m['uniqueLovers'] as num?)?.toInt() ?? 0,
+      uniqueCommenters: (m['uniqueCommenters'] as num?)?.toInt() ?? 0,
+      totalViews: (m['totalViews'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  String get displayName => isCanal ? (canal?.titre ?? '') : (user?.pseudo ?? '');
+  String get imageUrl => isCanal ? (canal?.urlImage ?? '') : (user?.imageUrl ?? '');
+}
+
 class WeeklyCommentatorRanking {
   final int rank;
   final String userId;
@@ -86,9 +128,9 @@ class WeeklyRewardsService {
   final _db = FirebaseFirestore.instance;
 
   // ── Cache en mémoire (durée de session) ────────────────────────────────────
-  List<WeeklyPostRanking>? _cachedPosts;
-  List<WeeklyCommentatorRanking>? _cachedCommentators;
-  String? _cachedWeekId;
+  final Map<String, List<WeeklyPostRanking>> _postsCache = {};
+  final Map<String, List<WeeklyCommentatorRanking>> _commentatorsCache = {};
+  final Map<String, List<WeeklyCreatorRanking>> _creatorsCache = {};
 
   // ── ID de semaine ISO ───────────────────────────────────────────────────────
 
@@ -106,7 +148,7 @@ class WeeklyRewardsService {
     // Calcul de la semaine ISO-8601 (lundi = 1er jour)
     final thursday = date.subtract(Duration(days: date.weekday - 4));
     final yearStart = DateTime.utc(thursday.year, 1, 1);
-    final weekNo = ((thursday.difference(yearStart).inDays) / 7).ceil();
+    final weekNo = (((thursday.difference(yearStart).inDays) + 1) / 7).ceil(); // identique au serveur (ISO)
     return '${thursday.year}-W${weekNo.toString().padLeft(2, '0')}';
   }
 
@@ -134,7 +176,8 @@ class WeeklyRewardsService {
   Future<List<WeeklyPostRanking>> getWeeklyTopPosts({String? weekId}) async {
     final wid = weekId ?? getCurrentWeekId();
 
-    if (_cachedWeekId == wid && _cachedPosts != null) return _cachedPosts!;
+    final hit = _postsCache[wid];
+    if (hit != null) return hit;
 
     final doc = await _db.collection('WeeklyTopPosts').doc(wid).get();
     if (!doc.exists) return [];
@@ -147,8 +190,7 @@ class WeeklyRewardsService {
     // Enrichissement : récupération des posts et auteurs en parallèle
     await _enrichPostRankings(rankings);
 
-    _cachedWeekId = wid;
-    _cachedPosts = rankings;
+    _postsCache[wid] = rankings;
     return rankings;
   }
 
@@ -206,7 +248,8 @@ class WeeklyRewardsService {
   Future<List<WeeklyCommentatorRanking>> getWeeklyTopCommentators({String? weekId}) async {
     final wid = weekId ?? getCurrentWeekId();
 
-    if (_cachedWeekId == wid && _cachedCommentators != null) return _cachedCommentators!;
+    final hit = _commentatorsCache[wid];
+    if (hit != null) return hit;
 
     final doc = await _db.collection('WeeklyTopCommentators').doc(wid).get();
     if (!doc.exists) return [];
@@ -218,8 +261,7 @@ class WeeklyRewardsService {
 
     await _enrichCommentatorRankings(rankings);
 
-    _cachedWeekId = wid;
-    _cachedCommentators = rankings;
+    _commentatorsCache[wid] = rankings;
     return rankings;
   }
 
@@ -237,11 +279,74 @@ class WeeklyRewardsService {
     }
   }
 
+  // ── Semaines disponibles (Top Posts / Top Créateurs / Top Commentateurs) ────
+
+  /// Semaines ayant un classement dans [collection] (WeeklyTopPosts, WeeklyTopCreators,
+  /// WeeklyTopCommentators), de la plus récente à la plus ancienne ; les semaines sans classement sont ignorées.
+  Future<List<String>> getAvailableWeekIds(String collection) async {
+    final snap = await _db
+        .collection(collection)
+        .orderBy(FieldPath.documentId, descending: true)
+        .limit(60)
+        .get();
+    return snap.docs
+        .where((d) => ((d.data()['rankings'] as List?) ?? const []).isNotEmpty)
+        .map((d) => d.id)
+        .toList();
+  }
+
+  /// « 2026-W39 » → « Septembre 2026 — 4e semaine du mois ».
+  static String formatWeekLabel(String weekId) {
+    try {
+      final parts = weekId.split('-W');
+      if (parts.length != 2) return weekId;
+      final year = int.parse(parts[0]);
+      final isoWeek = int.parse(parts[1]);
+      final jan4 = DateTime.utc(year, 1, 4);
+      final day1 = jan4.subtract(Duration(days: jan4.weekday - 1));
+      final monday = day1.add(Duration(days: (isoWeek - 1) * 7));
+      const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août',
+        'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+      final thursday = monday.add(const Duration(days: 3));
+      final weekOfMonth = ((thursday.day - 1) ~/ 7) + 1;
+      final ordinal = weekOfMonth == 1 ? '1re' : '${weekOfMonth}e';
+      return '${months[thursday.month]} ${thursday.year} — $ordinal semaine du mois';
+    } catch (_) {
+      return weekId;
+    }
+  }
+
+  // ── Top Créateurs ───────────────────────────────────────────────────────────
+
+  /// Classement des créateurs (utilisateurs et canaux) de la semaine donnée.
+  Future<List<WeeklyCreatorRanking>> getWeeklyTopCreators({required String weekId}) async {
+    final hit = _creatorsCache[weekId];
+    if (hit != null) return hit;
+    final doc = await _db.collection('WeeklyTopCreators').doc(weekId).get();
+    if (!doc.exists) return [];
+    final rawList = (doc.data()?['rankings'] as List<dynamic>?) ?? [];
+    final rankings = rawList.map((e) => WeeklyCreatorRanking.fromMap(e as Map<String, dynamic>)).toList();
+    await Future.wait(rankings.map((r) async {
+      if (r.entityId.isEmpty) return;
+      try {
+        final d = await _db.collection(r.isCanal ? 'Canaux' : 'Users').doc(r.entityId).get();
+        if (!d.exists) return;
+        if (r.isCanal) {
+          r.canal = Canal.fromJson({...d.data()!, 'id': d.id});
+        } else {
+          r.user = UserData.fromJson(d.data()!)..id = d.id;
+        }
+      } catch (_) {}
+    }));
+    _creatorsCache[weekId] = rankings;
+    return rankings;
+  }
+
   // ── Invalidation cache ──────────────────────────────────────────────────────
 
   void clearCache() {
-    _cachedPosts = null;
-    _cachedCommentators = null;
-    _cachedWeekId = null;
+    _postsCache.clear();
+    _commentatorsCache.clear();
+    _creatorsCache.clear();
   }
 }

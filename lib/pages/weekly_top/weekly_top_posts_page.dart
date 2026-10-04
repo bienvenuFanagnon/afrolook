@@ -9,6 +9,7 @@ import '../../pages/postDetailsVideo.dart';
 import '../../providers/authProvider.dart';
 import '../../services/weekly_rewards_service.dart';
 import '../../theme/app_colors.dart';
+import 'week_picker.dart';
 
 class WeeklyTopPostsPage extends StatefulWidget {
   const WeeklyTopPostsPage({Key? key}) : super(key: key);
@@ -18,26 +19,48 @@ class WeeklyTopPostsPage extends StatefulWidget {
 }
 
 class _WeeklyTopPostsPageState extends State<WeeklyTopPostsPage> {
+  static const _collection = 'WeeklyTopPosts';
   final _service = WeeklyRewardsService();
   List<WeeklyPostRanking> _rankings = [];
+  List<String> _weeks = [];
   bool _loading = true;
   String? _error;
-  String _weekId = WeeklyRewardsService.getCurrentWeekId();
+  String? _weekId; // null = détection de la dernière semaine disponible
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadLatest();
   }
 
-  Future<void> _load() async {
+  /// Dernière semaine ayant un classement (la semaine en cours n'en a pas encore).
+  Future<void> _loadLatest() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await _service.getWeeklyTopPosts(weekId: _weekId);
+      _weeks = await _service.getAvailableWeekIds(_collection);
+      if (_weeks.isEmpty) {
+        if (mounted) setState(() { _rankings = []; _weekId = null; _loading = false; });
+        return;
+      }
+      await _loadForWeek(_weekId != null && _weeks.contains(_weekId) ? _weekId! : _weeks.first);
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _loadForWeek(String weekId) async {
+    setState(() { _loading = true; _error = null; _weekId = weekId; });
+    try {
+      final data = await _service.getWeeklyTopPosts(weekId: weekId);
       if (mounted) setState(() { _rankings = data; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  Future<void> _pick() async {
+    final w = await pickWeek(context, _weeks, _weekId);
+    if (w != null && w != _weekId) _loadForWeek(w);
   }
 
   @override
@@ -54,14 +77,19 @@ class _WeeklyTopPostsPageState extends State<WeeklyTopPostsPage> {
           children: [
             Text('🏆 Top Posts de la semaine',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.textPrimary)),
-            Text(_weekId,
+            Text(_weekId != null ? WeeklyRewardsService.formatWeekLabel(_weekId!) : 'Chargement…',
                 style: TextStyle(fontSize: 11, color: colors.textSecondary)),
           ],
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.calendar_today_outlined, color: colors.primary, size: 20),
+            tooltip: 'Changer de semaine',
+            onPressed: _loading ? null : _pick,
+          ),
+          IconButton(
             icon: Icon(Icons.refresh, color: colors.primary),
-            onPressed: () { _service.clearCache(); _load(); },
+            onPressed: _loading ? null : () { _service.clearCache(); _loadLatest(); },
           ),
         ],
       ),
@@ -82,7 +110,7 @@ class _WeeklyTopPostsPageState extends State<WeeklyTopPostsPage> {
             const SizedBox(height: 12),
             Text('Erreur de chargement', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextButton(onPressed: _load, child: Text('Réessayer', style: TextStyle(color: colors.primary))),
+            TextButton(onPressed: _loadLatest, child: Text('Réessayer', style: TextStyle(color: colors.primary))),
           ],
         ),
       );
@@ -93,44 +121,18 @@ class _WeeklyTopPostsPageState extends State<WeeklyTopPostsPage> {
 
     return RefreshIndicator(
       color: colors.primary,
-      onRefresh: () async { _service.clearCache(); await _load(); },
+      onRefresh: () async { _service.clearCache(); await _loadLatest(); },
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          _buildHeader(colors),
-          ..._rankings.map((r) => _WeeklyPostCard(ranking: r)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(AppColors colors) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFFFFD700).withOpacity(0.15), colors.surface],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('🥇 Récompenses de la semaine',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colors.textPrimary)),
-          const SizedBox(height: 10),
-          _RewardRow(rank: 1, coins: 1000, color: const Color(0xFFFFD700)),
-          _RewardRow(rank: 2, coins: 500, color: const Color(0xFFC0C0C0)),
-          _RewardRow(rank: 3, coins: 300, color: const Color(0xFFCD7F32)),
-          const SizedBox(height: 8),
-          Text(
-            'Score = vues uniques + commentaires uniques + likes uniques',
-            style: TextStyle(fontSize: 10, color: colors.textSecondary, fontStyle: FontStyle.italic),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              'Score = vues uniques + commentaires uniques + personnes ayant aimé',
+              style: TextStyle(fontSize: 11, color: colors.textSecondary, fontStyle: FontStyle.italic),
+            ),
           ),
+          ..._rankings.map((r) => _WeeklyPostCard(ranking: r)),
         ],
       ),
     );
@@ -148,54 +150,11 @@ class _WeeklyTopPostsPageState extends State<WeeklyTopPostsPage> {
             Text('Pas encore de classement',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary)),
             const SizedBox(height: 8),
-            Text('Le classement sera disponible lundi prochain.\nPublie des posts et engage la communauté pour figurer ici !',
+            Text('Le classement de la semaine est publié chaque lundi.\nPublie des posts et engage la communauté pour figurer ici !',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: colors.textSecondary, height: 1.5)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ─── Ligne récompense ─────────────────────────────────────────────────────────
-
-class _RewardRow extends StatelessWidget {
-  final int rank;
-  final int coins;
-  final Color color;
-  const _RewardRow({required this.rank, required this.coins, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final medals = ['🥇', '🥈', '🥉'];
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Text(medals[rank - 1], style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Text('${rank}er post',
-              style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.5)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🪙', style: TextStyle(fontSize: 12)),
-                const SizedBox(width: 4),
-                Text('$coins pièces',
-                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

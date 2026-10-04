@@ -14,6 +14,7 @@ import 'package:afrotok/pages/canaux/listCanal.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
+import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -638,6 +639,11 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFFFFD700),
                       label: context.tr('Top posts de la semaine'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopPostsPage()))),
+                  _dItem(context, colors,
+                      icon: Icons.workspace_premium_rounded,
+                      iconColor: const Color(0xFFFFD700),
+                      label: context.tr('Top créateurs de la semaine'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCreatorsPage()))),
                   _dItem(context, colors,
                       icon: Icons.forum_rounded,
                       label: context.tr('Top commentateurs de la semaine'),

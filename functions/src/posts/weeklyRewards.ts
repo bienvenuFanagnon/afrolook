@@ -3,16 +3,14 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 import { sendToOneSignal } from "../shared/notification_utils";
+import { computeTopPosts, lastWeekId } from "./weeklyRankings";
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
 const COMMENTATOR_REWARDS = [500, 300, 200, 100, 50]; // rangs 1-5
-const POST_REWARDS = [1000, 500, 300]; // rangs 1-3
 const MIN_COMMENT_LENGTH = 10;  // minimum absolu pour être analysé
 const MIN_WORD_COUNT = 2;
 const MIN_ACCOUNT_AGE_DAYS = 7;
-const MIN_POST_SCORE = 10;
-const TOP_POSTS_STORED = 20; // stocke top 20, récompense top 3
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -502,180 +500,14 @@ export const forceWeeklyCommentatorsReward = onCall(
 // ─── 2. TOP POSTS ─────────────────────────────────────────────────────────────
 
 /**
- * Chaque lundi à 00:10 UTC : calcule le top 20 posts de la semaine
- * (score = vues uniques + commentateurs uniques + likeurs uniques)
- * et récompense les 3 premiers.
- *
- * Champs Posts : created_at (microsecondes), user_id, userlikes (array), vue (int),
- *               uniqueViewerIds (array optionnel)
- * Champs PostComments : post_id, user_id, created_at (microsecondes)
+ * Chaque lundi à 00:10 UTC : classement des posts de la semaine écoulée (sans récompense).
+ * Le calcul est dans weeklyRankings.ts (mêmes champs que les posts réels).
  */
 export const weeklyTopPostsReward = onSchedule(
-  {
-    schedule: "10 0 * * MON",
-    timeZone: "UTC",
-    memory: "512MiB",
-    cpu: 1,
-    timeoutSeconds: 540,
-  },
+  { schedule: "10 0 * * MON", timeZone: "UTC", memory: "512MiB", cpu: 1, timeoutSeconds: 540 },
   async () => {
-    const weekId = getLastWeekId();
-    console.log(`[weeklyPosts] Semaine récompensée : ${weekId}`);
-
-    const locked = await acquireLock(weekId, "posts");
-    if (!locked) {
-      console.log(`[weeklyPosts] Déjà traité pour ${weekId}. Abandon.`);
-      return;
-    }
-
-    const lastWeekStartMicros = getLastWeekStartMicros();
-    const thisWeekStartMicros = getWeekStartMicros();
-
-    // ── Récupérer tous les posts publiés la semaine écoulée ──
-    const postsSnap = await db
-      .collection("Posts")
-      .where("created_at", ">=", lastWeekStartMicros)
-      .where("created_at", "<", thisWeekStartMicros)
-      .select("user_id", "userlikes", "vue", "uniqueViewerIds", "created_at")
-      .get();
-
-    console.log(`[weeklyPosts] ${postsSnap.size} posts de la semaine écoulée.`);
-
-    if (postsSnap.empty) {
-      console.log("[weeklyPosts] Aucun post cette semaine.");
-      await db.collection("WeeklyTopPosts").doc(weekId).set({
-        weekId,
-        computedAt: FieldValue.serverTimestamp(),
-        rankings: [],
-        note: "no_posts",
-      });
-      return;
-    }
-
-    type PostScore = {
-      postId: string;
-      authorId: string;
-      score: number;
-      uniqueViews: number;
-      uniqueComments: number;
-      uniqueLikes: number;
-    };
-
-    const scores: PostScore[] = [];
-    const postDocs = postsSnap.docs;
-    const PARALLEL = 10;
-
-    for (let i = 0; i < postDocs.length; i += PARALLEL) {
-      const chunk = postDocs.slice(i, i + PARALLEL);
-
-      const results = await Promise.all(
-        chunk.map(async (doc) => {
-          const data = doc.data();
-          const postId = doc.id;
-          const authorId: string = data.user_id ?? ""; // champ snake_case
-
-          // Vues uniques
-          let uniqueViews = 0;
-          if (Array.isArray(data.uniqueViewerIds)) {
-            uniqueViews = data.uniqueViewerIds.length;
-          } else if (typeof data.vue === "number") {
-            uniqueViews = data.vue;
-          }
-
-          // Likes uniques (userlikes = tableau d'IDs)
-          const uniqueLikes: number = Array.isArray(data.userlikes)
-            ? data.userlikes.length
-            : (typeof data.userlikes === "number" ? data.userlikes : 0);
-
-          // Commentateurs uniques via PostComments (champs snake_case)
-          let uniqueComments = 0;
-          try {
-            const commentsSnap = await db
-              .collection("PostComments")
-              .where("post_id", "==", postId)
-              .where("created_at", ">=", lastWeekStartMicros)
-              .where("created_at", "<", thisWeekStartMicros)
-              .select("user_id")
-              .get();
-
-            const distinctCommenters = new Set(commentsSnap.docs.map((d) => d.data().user_id));
-            uniqueComments = distinctCommenters.size;
-          } catch (err) {
-            console.warn(`[weeklyPosts] Erreur commentaires post ${postId}:`, err);
-            uniqueComments = 0;
-          }
-
-          const score = uniqueViews + uniqueComments + uniqueLikes;
-          return { postId, authorId, score, uniqueViews, uniqueComments, uniqueLikes };
-        })
-      );
-
-      for (const r of results) {
-        if (r.score >= MIN_POST_SCORE) scores.push(r);
-      }
-    }
-
-    scores.sort((a, b) => b.score - a.score);
-    const top20 = scores.slice(0, TOP_POSTS_STORED);
-    const top3 = top20.slice(0, 3);
-
-    if (top20.length === 0) {
-      console.log("[weeklyPosts] Aucun post avec score suffisant.");
-      await db.collection("WeeklyTopPosts").doc(weekId).set({
-        weekId,
-        computedAt: FieldValue.serverTimestamp(),
-        rankings: [],
-        note: "no_eligible_posts",
-      });
-      return;
-    }
-
-    const rankingsAll = top20.map((p, i) => ({
-      rank: i + 1,
-      postId: p.postId,
-      authorId: p.authorId,
-      score: p.score,
-      uniqueViews: p.uniqueViews,
-      uniqueComments: p.uniqueComments,
-      uniqueLikes: p.uniqueLikes,
-      rewardedCoins: POST_REWARDS[i] ?? 0,
-      paid: false,
-    }));
-
-    for (let i = 0; i < top3.length; i++) {
-      const p = top3[i];
-      const coins = POST_REWARDS[i];
-      if (!coins || !p.authorId) continue;
-
-      try {
-        await rewardUser({
-          userId: p.authorId,
-          coins,
-          rank: i + 1,
-          weekId,
-          subType: "top_post",
-          postId: p.postId,
-        });
-        await sendWeeklyRewardNotification({
-          userId: p.authorId,
-          coins,
-          rank: i + 1,
-          weekId,
-          subType: "top_post",
-        });
-        rankingsAll[i].paid = true;
-        console.log(`[weeklyPosts] Rang ${i + 1} — post ${p.postId} — auteur ${p.authorId} — ${coins} pièces`);
-      } catch (err) {
-        console.error(`[weeklyPosts] Erreur paiement rang ${i + 1} :`, err);
-      }
-    }
-
-    await db.collection("WeeklyTopPosts").doc(weekId).set({
-      weekId,
-      computedAt: FieldValue.serverTimestamp(),
-      rankings: rankingsAll,
-    });
-
-    console.log(`[weeklyPosts] Terminé. Top ${top20.length} posts stockés, ${top3.length} récompensés.`);
+    const weekId = lastWeekId();
+    const count = await computeTopPosts(weekId);
+    console.log(`[weeklyPosts] ${weekId} : ${count} posts classés`);
   }
 );
