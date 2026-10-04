@@ -12,9 +12,12 @@ En build debug : pubs de TEST de Google partout, sans condition (pas de pourcent
 plein écran toutes les 2 vidéos). Écran admin : `AdAdminPage` (état, inspecteur AdMob, essai de chaque format).
 
 ## Production
-Configuration dans Firestore `AppConfig/ads` (`tools/ads/set_config.js`). Par défaut **coupée** (`enabled:false`).
-Mise en route : `node tools/ads/set_config.js '{"enabled":true,"rolloutPercent":0}'` → seuls les admins voient les pubs ;
-puis `rolloutPercent` 10, 50, 100. Coupure d'urgence : `{"enabled":false}`.
-Android : emplacements déjà créés (`ad_config.dart`). **iPhone** : renseigner `units.ios`, remplacer
-`GADApplicationIdentifier` dans `ios/Runner/Info.plist`, mettre à jour la fiche de confidentialité de l'App Store,
-puis `{"enabledIos":true}`.
+Configuration dans Firestore `AppConfig/ads` (`tools/ads/set_config.js`), lue au démarrage par la nouvelle version.
+État choisi : **actif pour tout le monde sur Android dès la sortie de la version** (`enabled:true`,
+`enabledAndroid:true`, `rolloutPercent:100`), **iPhone coupé** (`enabledIos:false`). Les anciennes versions de
+l'app ne lisent pas ces réglages. Coupure d'urgence : `node tools/ads/set_config.js '{"enabled":false}'`.
+Les nouveaux comptes n'ont pas de pub AdMob pendant leurs 3 premières sessions (`freeSessions`).
+
+**iPhone, plus tard** : renseigner `units.ios` (emplacements créés dans AdMob), remplacer `GADApplicationIdentifier`
+dans `ios/Runner/Info.plist`, mettre à jour la fiche de confidentialité de l'App Store, puis
+`node tools/ads/set_config.js '{"enabledIos":true}'`.
