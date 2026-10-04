@@ -777,7 +777,7 @@ class _MonetizationTutorialPageState extends State<MonetizationTutorialPage> wit
             AnimatedOpacity(
               opacity: inLike && _wallet > 1 ? 1 : 0,
               duration: const Duration(milliseconds: 500),
-              child: Text(context.tr('+1 pièce pour le créateur à chaque like'),
+              child: Text(context.tr('+1 pièce pour le créateur à chaque like d\'un post monétisé'),
                   textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 15)),
             ),
             AnimatedOpacity(

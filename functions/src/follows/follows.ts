@@ -69,6 +69,14 @@ export const unfollowUser = onCall({ timeoutSeconds: 30 }, async (request) => {
     txn.set(meRef, { followingIds: FieldValue.arrayRemove(target) }, { merge: true });
     return { already: false };
   });
+  // Anciennes relations de la collection `Abonnements` (lues par certains écrans)
+  try {
+    const old = await db.collection("Abonnements")
+      .where("compte_user_id", "==", me).where("abonne_user_id", "==", target).get();
+    await Promise.all(old.docs.map((d) => d.ref.delete()));
+  } catch (e) {
+    console.error("unfollowUser — nettoyage Abonnements :", e);
+  }
   return { ok: true, ...result };
 });
 
