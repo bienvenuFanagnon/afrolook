@@ -1,11 +1,14 @@
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../l10n/tr.dart';
 import '../../../theme/app_colors.dart';
+import '../../../utils/count_format.dart';
 
 /// Où le widget est affiché : carte en 1re position, bandeau entre deux posts,
 /// ou carte de fin de feed.
@@ -29,6 +32,23 @@ class SocialFollowCard extends StatefulWidget {
   /// Réseaux cliqués depuis le dernier rechargement du feed (état « en cours »).
   static final Set<String> _pending = {};
   static final ValueNotifier<int> _changes = ValueNotifier(0);
+
+  /// Nombre de clics par réseau (lu sur le serveur : AppConfig/socialClicks).
+  /// Jamais incrémenté localement : la valeur change au prochain chargement.
+  static final Map<String, int> _counts = {};
+  static DateTime? _countsAt;
+
+  static Future<void> _refreshCounts() async {
+    final at = _countsAt;
+    if (at != null && DateTime.now().difference(at) < const Duration(minutes: 2)) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('socialClicks').get();
+      final d = doc.data() ?? {};
+      _counts['facebook'] = (d['facebook'] as num?)?.toInt() ?? 0;
+      _counts['tiktok'] = (d['tiktok'] as num?)?.toInt() ?? 0;
+      _countsAt = DateTime.now();
+    } catch (_) {}
+  }
 
   /// Tirage « 1re position » fait une seule fois par session (1 ouverture sur 5).
   static bool? _topRoll;
@@ -72,6 +92,7 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
   }
 
   Future<void> _load() async {
+    await SocialFollowCard._refreshCounts();
     var show = false;
     try {
       final sp = await SharedPreferences.getInstance();
@@ -108,6 +129,8 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
       return;
     }
     SocialFollowCard._pending.add(network);
+    // Comptage côté serveur (au plus une fois par heure et par réseau) ; l'affichage ne bouge pas.
+    FirebaseFunctions.instance.httpsCallable('recordSocialClick').call({'network': network}).ignore();
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setInt(SocialFollowCard._kHiddenUntil,
@@ -156,11 +179,17 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
                 Icon(isFb ? Icons.facebook : Icons.music_note_rounded,
                     size: 20, color: isFb ? Colors.white : Colors.black),
                 const SizedBox(width: 8),
-                Text(isFb ? 'Facebook' : 'TikTok',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                        color: isFb ? Colors.white : Colors.black)),
+                Flexible(
+                  child: Text(
+                      (SocialFollowCard._counts[network] ?? 0) > 0
+                          ? '${isFb ? 'Facebook' : 'TikTok'} · ${formatCompactCount(SocialFollowCard._counts[network]!)}'
+                          : (isFb ? 'Facebook' : 'TikTok'),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: isFb ? Colors.white : Colors.black)),
+                ),
               ],
             ),
           ),
