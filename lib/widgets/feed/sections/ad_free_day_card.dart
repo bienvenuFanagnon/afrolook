@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../ads/ad_free_day.dart';
+import '../../../ads/rewards_service.dart';
+import '../../../pages/rewards/rewards_page.dart';
 import '../../../l10n/tr.dart';
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 
-/// Carte du feed : « Une journée sans pub » (pub récompensée de 24 h).
+/// Carte du feed qui mène à la page « Récompenses » (Premium gratuit, journée sans pub, pièces…).
 /// Affichée au plus une fois par jour et par appareil, seulement si les pubs sont actives pour la
 /// personne (jamais pour un Gold) ; la croix la masque 3 jours.
 class AdFreeDayCard extends StatefulWidget {
@@ -28,18 +29,12 @@ class _AdFreeDayCardState extends State<AdFreeDayCard> {
   @override
   void initState() {
     super.initState();
-    AdFreeDay.changes.addListener(_onChange);
     _load();
   }
 
   @override
   void dispose() {
-    AdFreeDay.changes.removeListener(_onChange);
     super.dispose();
-  }
-
-  void _onChange() {
-    if (mounted) setState(() {});
   }
 
   String _today() {
@@ -75,7 +70,7 @@ class _AdFreeDayCardState extends State<AdFreeDayCard> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserAuthProvider>().loginUserData;
-    if (!_visible || !AdFreeDay.available(user)) return const SizedBox.shrink();
+    if (!_visible || !RewardsService.available(user)) return const SizedBox.shrink();
     final colors = AppColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -95,16 +90,16 @@ class _AdFreeDayCardState extends State<AdFreeDayCard> {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(context.tr('Une journée sans pub'),
+            Text(context.tr('Récompenses gratuites'),
                 style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
             const SizedBox(height: 2),
-            Text(context.tr('Regarde une courte vidéo : 24 heures sans publicité.'),
+            Text(context.tr('Regarde des pubs : Premium gratuit, journée sans pub, pièces cadeau…'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3)),
           ]),
         ),
         const SizedBox(width: 8),
         ElevatedButton(
-          onPressed: () => AdFreeDay.show(context, user),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage())),
           style: ElevatedButton.styleFrom(
             backgroundColor: colors.primary,
             foregroundColor: colors.onPrimary,
@@ -112,7 +107,7 @@ class _AdFreeDayCardState extends State<AdFreeDayCard> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           ),
-          child: Text(context.tr('Regarder'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+          child: Text(context.tr('Voir'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
         ),
         GestureDetector(
           onTap: _dismiss,

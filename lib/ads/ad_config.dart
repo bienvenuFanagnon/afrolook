@@ -85,7 +85,10 @@ class AdConfig {
   int get interstitialMaxPerDay => kDebugMode ? 99 : _i('interstitialMaxPerDay', 3).clamp(0, 20);
   int get interstitialWarmupMinutes => kDebugMode ? 0 : _i('interstitialWarmupMinutes', 5).clamp(0, 30);
 
-  // Récompensée (1 jour sans pub)
+  // Récompensée (page Récompenses)
+  bool get rewardsEnabled => _b('rewardsEnabled', true);
+  /// Vérification côté serveur d'AdMob (SSV) : à activer quand l'URL de rappel est saisie dans AdMob.
+  bool get ssvEnabled => _b('ssvEnabled', false);
   bool get rewardedEnabled => _b('rewardedEnabled', true);
   int get rewardedMaxPerDay => _i('rewardedMaxPerDay', 2).clamp(0, 10);
 

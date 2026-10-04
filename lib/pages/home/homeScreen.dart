@@ -15,7 +15,8 @@ import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
-import 'package:afrotok/ads/ad_free_day.dart';
+import 'package:afrotok/ads/rewards_service.dart';
+import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -650,13 +651,13 @@ class _MyHomePageState extends State<MyHomePage>
                       label: context.tr('Top commentateurs de la semaine'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage()))),
 
-                  // Pub récompensée : 1 jour sans publicité (visible seulement si les pubs sont actives)
-                  if (AdFreeDay.available(authProvider.loginUserData))
+                  // Récompenses : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
+                  if (RewardsService.available(authProvider.loginUserData))
                     _dItem(context, colors,
-                        icon: Icons.volunteer_activism_rounded,
+                        icon: Icons.card_giftcard_rounded,
                         iconColor: const Color(0xFFFFD700),
-                        label: context.tr('Une journée sans pub'),
-                        onTap: () => AdFreeDay.show(context, authProvider.loginUserData)),
+                        label: context.tr('Récompenses'),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage()))),
 
                   // ── Mes contenus ───────────────────────────────────────────
                   _dSection(colors, 'Mes contenus'),

@@ -33,6 +33,7 @@ export * from "./posts/unreadCleanup";
 export { weeklyTopCreatorsRanking } from "./posts/weeklyRankings";
 export * from "./social/socialClicks";
 export * from "./ads/adFree";
+export { recordAdView, claimReward, adSsvCallback } from "./ads/rewards";
 export * from "./users/accountPurge";
 export * from "./payments/exchangeRates";
 export { migratePseudos, migrateCanalNames } from "./users/pseudoMigration";
