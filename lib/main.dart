@@ -133,11 +133,6 @@ Future<void> main() async {
     originalOnError?.call(details);
   };
 
-  // Initialisation AdMob (configuration Firestore, consentement, SDK) — sans bloquer le démarrage
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    unawaited(AdService.init());
-  }
-
   // Initialisation caméras (mobile uniquement — sur web, permission demandée à l'usage)
   if (!kIsWeb) {
     try {
@@ -171,6 +166,12 @@ Future<void> main() async {
     );
   } catch (e) {
     printVm("App Check activation failed (non-fatal): $e");
+  }
+
+  // Initialisation AdMob (configuration Firestore, consentement, SDK) — sans bloquer le démarrage.
+  // Doit venir APRÈS Firebase.initializeApp : sinon la configuration est illisible et les pubs restent coupées.
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    unawaited(AdService.init());
   }
 
   // Remote Config
