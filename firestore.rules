@@ -295,6 +295,15 @@ service cloud.firestore {
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app
+    // Réglages publicitaires et récompenses : lisibles dès le démarrage de l'app, avant la connexion
+    // (aucun secret : interrupteurs, fréquences, identifiants d'emplacements). Écriture : serveur seulement.
+    match /AppConfig/ads {
+      allow read: if true;
+    }
+    match /AppConfig/rewards {
+      allow read: if true;
+    }
+
     match /AppConfig/exchangeRates {
       allow read: if true;
     }

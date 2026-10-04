@@ -82,6 +82,7 @@ class _AdSlotState extends State<AdSlot> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<UserAuthProvider>();
+    AdmobService.ensureInit();
     return ValueListenableBuilder<bool>(
       valueListenable: AdmobService.ready,
       builder: (context, _, __) {

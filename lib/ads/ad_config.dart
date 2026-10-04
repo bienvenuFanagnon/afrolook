@@ -12,6 +12,8 @@ class AdConfig {
 
   static AdConfig current = AdConfig._({});
   static DateTime? _loadedAt;
+  /// Vrai quand la configuration Firestore a bien été lue au moins une fois (sinon valeurs par défaut : pubs coupées).
+  static bool get loaded => _loadedAt != null;
 
   /// Identifiants de test officiels de Google (jamais de vraie pub pendant le développement).
   static const _testIds = {

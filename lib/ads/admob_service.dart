@@ -25,6 +25,11 @@ class AdmobService {
     try {
       await AdConfig.load(force: true);
       await AdGate.init();
+      if (!AdConfig.loaded && !kDebugMode) {
+        // Configuration illisible (réseau, connexion pas encore faite) : on réessaiera plus tard (ensureInit)
+        _started = false;
+        return;
+      }
       if (!AdConfig.current.enabled) {
         // Pubs coupées : on n'initialise rien (aucun suivi, aucune demande de consentement).
         _started = false;
@@ -66,6 +71,18 @@ class AdmobService {
         await AppTrackingTransparency.requestTrackingAuthorization();
       }
     } catch (_) {}
+  }
+
+  static DateTime? _lastTry;
+
+  /// Relance l'initialisation si elle n'a pas abouti (configuration pas encore lisible au démarrage).
+  /// Appelée par les emplacements publicitaires ; au plus une tentative toutes les 30 secondes.
+  static void ensureInit() {
+    if (ready.value || _started || !AdConfig.isMobile) return;
+    final t = _lastTry;
+    if (t != null && DateTime.now().difference(t) < const Duration(seconds: 30)) return;
+    _lastTry = DateTime.now();
+    unawaited(init());
   }
 
   static AdRequest request() => const AdRequest();
