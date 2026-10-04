@@ -497,7 +497,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.verified_rounded, 'Comptes officiels', c.info, _officialPending, const OfficialAccountsPage()),
       _Module(Icons.star_rounded, 'Influenceurs', c.supportAccent, _influencerPending, const InfluencerRequestsPage()),
       _Module(Icons.campaign_rounded, 'Publicités', const Color(0xFF8E3CC4), _boostsPending, const AdvertisementManagementPage()),
-      _Module(Icons.ondemand_video_rounded, 'Pub Appodeal', const Color(0xFF8E3CC4), 0, AdAdminPage()),
+      _Module(Icons.ondemand_video_rounded, 'Pub AdMob', const Color(0xFF8E3CC4), 0, AdAdminPage()),
       _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),
