@@ -1,5 +1,6 @@
 ﻿import '../../../services/follow_service.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/widgets/profile_like_section.dart';
 import 'dart:math';
 
 import 'package:afrotok/layout/centered_content.dart';
@@ -1084,7 +1085,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
                     // ── Bouton follow / unfollow ────────────────────────────
                     _buildFollowButton(),
-                    const SizedBox(height: 20),
+
+                    // ── Likes du profil + bouton Like (comme dans le modal de profil) ──
+                    ProfileLikeSection(key: ValueKey('profile_like_${widget.otherUser.id}'), user: widget.otherUser),
+                    const SizedBox(height: 10),
 
                     // ── À propos ───────────────────────────────────────────
                     if ((widget.otherUser.apropos ?? '').trim().isNotEmpty) ...[
