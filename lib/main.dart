@@ -133,11 +133,10 @@ Future<void> main() async {
     originalOnError?.call(details);
   };
 
-  // Initialisation AdMob
-  // if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-  //   AdService.setMode(false);
-  //   await AdService.init();
-  // }
+  // Initialisation AdMob (configuration Firestore, consentement, SDK) — sans bloquer le démarrage
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    unawaited(AdService.init());
+  }
 
   // Initialisation caméras (mobile uniquement — sur web, permission demandée à l'usage)
   if (!kIsWeb) {

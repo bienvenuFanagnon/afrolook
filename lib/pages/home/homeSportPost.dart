@@ -3012,6 +3012,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
     }
 
+    // Feed court ou vide : la pub s'affiche quand même
+    if (finalPosts.length < 2 && !_isLoadingMorePosts) {
+      contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_short_feed'));
+    }
+
     if (_isLoadingMorePosts) {
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());

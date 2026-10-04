@@ -1,3 +1,5 @@
+import '../../../ads/ad_gate.dart';
+import '../../../ads/ad_slot.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../layout/responsive_layout.dart';
@@ -59,6 +61,7 @@ class _FeedAdCarouselState extends State<FeedAdCarousel> {
   Widget build(BuildContext context) {
     return Consumer<UserAuthProvider>(
       builder: (context, auth, _) {
+        if (!AdGate.userSeesAds(auth.loginUserData)) return const SizedBox.shrink();
         final ads = auth.advertisements
             .where((a) => a['isEntityBoost'] != true && a['post'] != null)
             .toList();
@@ -121,27 +124,29 @@ class _FeedUnifiedAdSlotState extends State<FeedUnifiedAdSlot> {
   /// null = pas encore décidé ; true = carousel ; false = bannière
   bool? _showCarousel;
 
+  /// Pub Afrolook de l'emplacement : le format est verrouillé au premier chargement non vide.
+  Widget _ownAd(UserAuthProvider auth) {
+    if (_showCarousel == null) {
+      final hasPostAds = auth.advertisements
+          .any((a) => a['isEntityBoost'] != true && a['post'] != null);
+      if (hasPostAds) {
+        _showCarousel = (FeedUnifiedAdSlot._slotCounter % 2 == 0);
+        FeedUnifiedAdSlot._slotCounter++;
+      } else {
+        _showCarousel = false;
+      }
+    }
+    return _showCarousel == true
+        ? FeedAdCarousel(adKey: widget.adKey)
+        : const AfrolookInlineAd();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<UserAuthProvider>(
       builder: (context, auth, _) {
-        if (auth.advertisements.isEmpty) return const SizedBox.shrink();
-
-        // Verrouiller le format une seule fois, au premier chargement non vide.
-        if (_showCarousel == null) {
-          final hasPostAds = auth.advertisements
-              .any((a) => a['isEntityBoost'] != true && a['post'] != null);
-          if (hasPostAds) {
-            _showCarousel = (FeedUnifiedAdSlot._slotCounter % 2 == 0);
-            FeedUnifiedAdSlot._slotCounter++;
-          } else {
-            _showCarousel = false;
-          }
-        }
-
-        return _showCarousel == true
-            ? FeedAdCarousel(adKey: widget.adKey)
-            : const AfrolookInlineAd();
+        // Pub Afrolook ou pub AdMob (alternance, repli, règles Gold/admin) : voir AdSlot.
+        return AdSlot(kind: AdSlotKind.feed, own: () => _ownAd(auth));
       },
     );
   }
@@ -185,7 +190,9 @@ class _FeedEntityBoostSlotState extends State<FeedEntityBoostSlot> {
         final boosts = auth.advertisements
             .where((a) => a['isEntityBoost'] == true)
             .toList();
-        if (boosts.isEmpty) return widget.fallback ?? const SizedBox.shrink();
+        if (boosts.isEmpty || !AdGate.userSeesAds(auth.loginUserData)) {
+          return widget.fallback ?? const SizedBox.shrink();
+        }
         final idx = (_adIndex ?? 0) % boosts.length;
         try {
           final adMap = boosts[idx]['ad'] as Map<String, dynamic>?;

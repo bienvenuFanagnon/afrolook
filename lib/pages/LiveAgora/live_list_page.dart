@@ -321,26 +321,27 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
             delegate: SliverChildBuilderDelegate(
               (ctx, i) {
                 final live = termines[i];
-                if (i > 0 && i % 4 == 0) {
-                  return Column(
-                    children: [
-                      const SizedBox(height: 10),
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: colors.border),
-                        ),
-                        child: MrecAdWidget(key: ValueKey('ad_$i'), useBanner: true),
+                Widget ad(String k) => Container(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.border),
                       ),
-                      const SizedBox(height: 10),
-                    ],
-                  );
-                }
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildEndedCard(live, colors),
+                      child: MrecAdWidget(key: ValueKey(k), useBanner: true),
+                    );
+                // Une pub avant chaque 5e live ; liste courte (moins de 5) : une pub après le dernier
+                final adBefore = i > 0 && i % 4 == 0;
+                final adAfterShortList = termines.length < 5 && i == termines.length - 1;
+                return Column(
+                  children: [
+                    if (adBefore) ad('ad_$i'),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _buildEndedCard(live, colors),
+                    ),
+                    if (adAfterShortList) ad('ad_end_$i'),
+                  ],
                 );
               },
               childCount: termines.length,

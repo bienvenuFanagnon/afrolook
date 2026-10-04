@@ -1,3 +1,5 @@
+import '../ads/ad_positions.dart';
+import '../ads/ad_slot.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
 import 'package:afrotok/widgets/comment_gift_sheet.dart';
@@ -2354,6 +2356,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     child: AfrolookInlineAd(compact: true),
                   ),
                 ),
+                if (!_isLoading && comments.isEmpty)
+                  SliverToBoxAdapter(
+                    child: AdSlot(
+                      key: const ValueKey('comments_ad_empty'),
+                      kind: AdSlotKind.comments,
+                      own: () => const SizedBox.shrink(),
+                    ),
+                  ),
                 if (_isLoading && comments.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -2370,12 +2380,29 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 else ...[
                   SliverPadding(
                     padding: const EdgeInsets.only(top: 8),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (_, index) => _buildCommentItem(comments[index]),
-                        childCount: comments.length,
-                      ),
-                    ),
+                    sliver: Builder(builder: (_) {
+                      // Une pub après le 6e commentaire, puis tous les 12 ; liste plus courte : une pub en fin de liste
+                      final adAfter = AdPositions.after(comments.length, first: 6, every: 12).toSet();
+                      final entries = <int>[
+                        for (var i = 0; i < comments.length; i++) ...[i, if (adAfter.contains(i)) -1]
+                      ];
+                      return SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, index) {
+                            final e = entries[index];
+                            if (e < 0) {
+                              return AdSlot(
+                                key: ValueKey('comments_ad_$index'),
+                                kind: AdSlotKind.comments,
+                                own: () => const AfrolookInlineAd(compact: true),
+                              );
+                            }
+                            return _buildCommentItem(comments[e]);
+                          },
+                          childCount: entries.length,
+                        ),
+                      );
+                    }),
                   ),
                   SliverToBoxAdapter(
                     child: _hasMoreComments

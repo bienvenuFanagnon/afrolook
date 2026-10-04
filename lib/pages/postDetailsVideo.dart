@@ -1,3 +1,6 @@
+import 'package:afrotok/ads/admob_service.dart';
+import 'package:afrotok/ads/ad_slot.dart';
+import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
 import 'package:afrotok/services/stickers/sticker_models.dart';
@@ -211,6 +214,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData);
+    });
 
     _initSharedPreferences();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -829,6 +835,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   @override
   void dispose() {
+    // Pub plein écran à la fermeture de la vidéo (toutes les N vidéos ; plafonds dans AdmobService)
+    unawaited(AdmobService.onVideoClosed(authProvider.loginUserData));
     _postSubscription?.cancel();
     _midrollTimer?.cancel();
     _midrollVideoController?.dispose();
@@ -990,9 +998,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
 
   // ── Midroll ────────────────────────────────────────────────────────────────
 
-  bool _isUserPremium() =>
-      AbonnementUtils.isPremiumActive(authProvider.loginUserData?.abonnement) ||
-      AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
+  /// Vrai si l'utilisateur ne doit pas voir de pub (Gold ; l'admin en voit toujours) — nom conservé.
+  bool _isUserPremium() => !AdGate.userSeesAds(authProvider.loginUserData);
 
   void _attachMidrollListener() {
     if (_videoController == null) return;
@@ -1301,11 +1308,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
   }
 
   Widget _buildAdBanner({required String key}) {
-    return AfrolookInlineAd(key: ValueKey(key));
+    return AdSlot(key: ValueKey(key), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd());
   }
 
   Widget _buildAdNative({required String key}) {
-    return AfrolookInlineAd(key: ValueKey(key));
+    return AdSlot(key: ValueKey(key), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd());
   }
 
   void _sharePost(Post post) async {
@@ -1533,7 +1540,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
       );
     }
 
-    if (suggestions.isEmpty) return const SizedBox.shrink();
+    // Aucune suggestion : la pub s'affiche quand même
+    if (suggestions.isEmpty) return AdSlot(key: const ValueKey('details_ad_no_suggestion'), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd());
 
     final screenSize = MediaQuery.of(context).size;
 

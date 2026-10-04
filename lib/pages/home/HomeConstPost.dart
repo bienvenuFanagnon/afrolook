@@ -3849,6 +3849,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     }
 
+    // Feed court ou vide : la pub s'affiche quand même (sinon aucun emplacement n'est atteint avant la fin)
+    if (finalPosts.length < 2 && !_isLoadingMorePosts) {
+      contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_short_feed'));
+    }
+
     // ── Section "À suivre pour plus de posts" + fin de feed ─────────────────
     if (_isLoadingMorePosts) {
       contentWidgets.add(_buildShimmerPost());

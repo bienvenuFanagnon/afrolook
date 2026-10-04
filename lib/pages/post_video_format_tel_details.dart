@@ -1,3 +1,5 @@
+import 'package:afrotok/ads/admob_service.dart';
+import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
@@ -264,6 +266,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData);
+    });
     MonetizationReminder.due('video').then((v) {
       if (mounted && v) setState(() => _showTutoReminder = true);
     });
@@ -507,6 +512,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   @override
   void dispose() {
+    // Pub plein écran à la fermeture de la vidéo (toutes les N vidéos ; plafonds dans AdmobService)
+    unawaited(AdmobService.onVideoClosed(authProvider.loginUserData));
     WidgetsBinding.instance.removeObserver(this);
     _likeAnimationTimer?.cancel();
     _liveCommentTimer?.cancel();
@@ -575,7 +582,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
 
   // ── Midroll ad ──────────────────────────────────────────────────────────────
 
-  bool _isUserPremium() => false;
+  /// Vrai si l'utilisateur ne doit pas voir de pub (Gold ; l'admin en voit toujours) — nom conservé.
+  bool _isUserPremium() => !AdGate.userSeesAds(authProvider.loginUserData);
 
   void _attachMidrollListener() {
     if (_currentVideoController == null) return;

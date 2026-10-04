@@ -1,3 +1,4 @@
+import '../../ads/ad_gate.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:video_player/video_player.dart';
@@ -1346,10 +1347,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     final abonnement = auth.loginUserData.abonnement;
     final role = auth.loginUserData.role;
 
-    // TODO: réactiver quand le système premium sera prêt
-    // if (AbonnementUtils.isPremiumActive(abonnement) || AbonnementUtils.isAdmin(role)) {
-    //   return const SizedBox.shrink();
-    // }
+    // Gold : plus de pub ; Premium et gratuit en voient ; un admin en voit toujours (voir AdGate).
+    if (!AdGate.userSeesAds(auth.loginUserData)) return const SizedBox.shrink();
 
     // Retry si advertisements vient d'arriver après initState
     if (_adData == null && auth.advertisements.isNotEmpty) {

@@ -865,6 +865,8 @@ class UserData {
   int? last_time_active = 0;
   int? pointContribution = 0;
   int? userlikes = 0;
+  /// Fin (ms) de la journée « sans pub » gagnée avec une pub récompensée (écrit par le serveur).
+  int? adFreeUntil;
   int? userjaimes = 0;
   int? likes = 0;
   int? jaimes = 0;
@@ -1276,6 +1278,7 @@ class UserData {
     totalAdViewsSupported = json['totalAdViewsSupported'] ?? 0;
     totalCoinsEarnedFromAdSupport = json['totalCoinsEarnedFromAdSupport'] ?? 0;
     userlikes = json['userlikes'] ?? 0;
+    adFreeUntil = (json['adFreeUntil'] as num?)?.toInt();
     userjaimes = json['userjaimes'] ?? 0;
     likes = json['likes'] ?? 0;
     jaimes = json['jaimes'] ?? 0;

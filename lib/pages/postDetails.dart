@@ -1,3 +1,4 @@
+import 'package:afrotok/ads/ad_slot.dart';
 import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
 import 'package:afrotok/services/stickers/sticker_models.dart';
@@ -237,7 +238,8 @@ class _DetailsPostState extends State<DetailsPost>
       );
     }
 
-    if (suggestions.isEmpty) return const SizedBox.shrink();
+    // Aucune suggestion : la pub s'affiche quand même
+    if (suggestions.isEmpty) return AdSlot(key: const ValueKey('details_ad_no_suggestion'), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd());
 
     final screenSize = MediaQuery.of(context).size;
 
@@ -291,7 +293,7 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   Widget _buildAdBannerSuggestion({required String key}) {
-    return AfrolookInlineAd(key: ValueKey(key));
+    return AdSlot(key: ValueKey(key), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd());
   }
 
   Widget _buildYouTubeCard(Post post) {
@@ -855,7 +857,7 @@ class _DetailsPostState extends State<DetailsPost>
     return count.toString();
   }
   Widget _buildAdMrec({required String key}) {
-    return AfrolookInlineAd(key: ValueKey(key));
+    return AdSlot(key: ValueKey(key), kind: AdSlotKind.detailMrec, own: () => const AfrolookInlineAd());
   }
 
   Future<void> _sendSupportNotification(String creatorId, String supporterId, String postId) async {
@@ -3654,7 +3656,7 @@ class _DetailsPostState extends State<DetailsPost>
           _buildMediaContent(post),
 
         // Pub compacte juste sous le média (remplace la 1ère suggestion)
-        AfrolookInlineAd(compact: true, key: const ValueKey('post_details_compact_ad')),
+        AdSlot(key: const ValueKey('post_details_compact_ad'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true)),
       ],
     );
   }

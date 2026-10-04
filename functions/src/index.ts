@@ -32,6 +32,7 @@ export * from "./follows/follows";
 export * from "./posts/unreadCleanup";
 export { weeklyTopCreatorsRanking } from "./posts/weeklyRankings";
 export * from "./social/socialClicks";
+export * from "./ads/adFree";
 export * from "./users/accountPurge";
 export * from "./payments/exchangeRates";
 export { migratePseudos, migrateCanalNames } from "./users/pseudoMigration";

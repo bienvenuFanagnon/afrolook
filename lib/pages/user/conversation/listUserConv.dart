@@ -2596,21 +2596,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
+  // Aucune pub dans les conversations (règle publicitaire : pas de pub là où l'on écrit à quelqu'un).
   Widget _buildAdBanner({required String key}) {
-    return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: _colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _colors.border),
-      ),
-      child: MrecAdWidget(
-        onAdLoaded: () {
-          printVm('✅ Native Ad chargée: $key');
-        },
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   String _formatTime(int? timestamp) {

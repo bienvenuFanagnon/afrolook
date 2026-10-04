@@ -46,6 +46,19 @@ class AbonnementUtils {
   static bool canJoinSponsorEvents(AfrolookAbonnement? abonnement) =>
       abonnement?.estPremium == true;
 
+  // ── Publicité ─────────────────────────────────────────────────────────────
+
+  /// Règle unique d'affichage des pubs (Afrolook et AdMob) :
+  /// - un admin voit TOUJOURS les pubs (pour vérifier que tout fonctionne), même s'il est Gold ;
+  /// - un Gold actif ne voit plus de pub ; Premium et gratuit en voient ;
+  /// - une journée « sans pub » gagnée avec une pub récompensée ([adFreeUntil], ms) masque aussi les pubs.
+  static bool showsAds(AfrolookAbonnement? abonnement, String? role, {int? adFreeUntil}) {
+    if (role == 'ADM') return true;
+    if (abonnement?.estGold == true) return false;
+    if (adFreeUntil != null && adFreeUntil > DateTime.now().millisecondsSinceEpoch) return false;
+    return true;
+  }
+
   // ── Admin — traité comme Gold permanent ──────────────────────────────────
 
   /// Un admin plateforme (role == 'ADM') est effectivement Gold sans expiry.

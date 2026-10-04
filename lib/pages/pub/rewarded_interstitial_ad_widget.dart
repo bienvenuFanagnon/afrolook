@@ -1,18 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:async';
-import 'package:afrotok/pages/component/consoleWidget.dart';
-
 import 'package:flutter/material.dart';
-import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart'; // ✅ SDK Appodeal
 
-import 'package:provider/provider.dart';
+import '../../ads/ad_config.dart';
+import '../../ads/admob_service.dart';
 
-import '../../../providers/authProvider.dart';
-
-import '../../../services/ad_service.dart';
-
-import '../../../services/utils/abonnement_utils.dart';
-
+/// Pub plein écran AdMob déclenchée explicitement par une page ([showAd] via GlobalKey).
+/// Les pubs plein écran « entre deux vidéos » passent par AdmobService.onVideoClosed.
 class InterstitialAdWidget extends StatefulWidget {
   final void Function()? onAdDismissed;
   final void Function()? onAdFailedToShow;
@@ -33,218 +26,23 @@ class InterstitialAdWidget extends StatefulWidget {
 }
 
 class InterstitialAdWidgetState extends State<InterstitialAdWidget> {
-  bool _isPremium = false;
-  bool _isCheckingPremium = true;
-
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) return; // Appodeal n'existe pas sur le web (plantage Platform._operatingSystem)
-    _initCallbacks();
-    _checkPremiumStatus();
+    if (!kIsWeb && AdConfig.current.enabled) AdmobService.preloadInterstitial();
   }
 
-  // ✅ Configuration des Callbacks Appodeal (Remplace FullScreenContentCallback)
-  void _initCallbacks() {
-    Appodeal.setInterstitialCallbacks(
-      onInterstitialLoaded: (isPrecache) => printVm('✅ [APPODEAL INTERSTITIAL] Prêt'),
-      onInterstitialFailedToLoad: () => printVm('❌ [APPODEAL INTERSTITIAL] Échec chargement'),
-      onInterstitialShown: () => printVm('👁️ [APPODEAL INTERSTITIAL] Affiché'),
-      onInterstitialShowFailed: () {
-        printVm('❌ [APPODEAL INTERSTITIAL] Échec affichage');
-        widget.onAdFailedToShow?.call();
-      },
-      onInterstitialClosed: () {
-        printVm('🚪 [APPODEAL INTERSTITIAL] Fermé');
-        widget.onAdDismissed?.call();
-      },
-      onInterstitialClicked: () => printVm('🖱️ [APPODEAL INTERSTITIAL] Clic'),
+  Future<void> showAd() async {
+    if (kIsWeb) {
+      widget.onAdFailedToShow?.call();
+      return;
+    }
+    await AdmobService.showInterstitialNow(
+      onDismissed: widget.onAdDismissed,
+      onFailed: widget.onAdFailedToShow,
     );
   }
 
-  Future<void> _checkPremiumStatus() async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (mounted && context.mounted) {
-        final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-        final user = authProvider.loginUserData;
-        if (user != null) {
-          _isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
-        }
-      }
-    } catch (e) {
-      _isPremium = false;
-    } finally {
-      if (mounted) {
-        setState(() => _isCheckingPremium = false);
-      }
-    }
-  }
-
-  // ✅ Méthode pour afficher l'interstitiel
-  Future<void> showAd() async {
-    // Pas de pub sur le web : on continue comme si elle avait été fermée
-    if (kIsWeb) { widget.onAdDismissed?.call(); return; }
-    // 1. Sécurité Premium
-    if (_isPremium || _isCheckingPremium) {
-      printVm('📢 [INTERSTITIAL] Bypass (Premium ou Vérification)');
-      widget.onAdDismissed?.call();
-      return;
-    }
-
-    // 2. Vérification de disponibilité
-    bool isLoaded = await Appodeal.isLoaded(AppodealAdType.Interstitial);
-
-    if (isLoaded) {
-      await Appodeal.show(AppodealAdType.Interstitial);
-    } else {
-      printVm('⏳ [INTERSTITIAL] Pas encore prêt, on ignore pour ne pas bloquer l\'utilisateur');
-      widget.onAdDismissed?.call();
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
-    // Un interstitiel ne prend pas de place dans l'UI
-    return const SizedBox.shrink();
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
-
-// import 'dart:async';
-// import 'package:flutter/material.dart';
-//
-// import 'package:provider/provider.dart';
-// import '../../../providers/authProvider.dart';
-// import '../../../services/ad_service.dart';
-// import '../../../services/utils/abonnement_utils.dart';
-// import 'base_ad_widget.dart';
-//
-// class InterstitialAdWidget extends BaseAdWidget {
-//   final void Function()? onAdDismissed;
-//   final void Function(AdError error)? onAdFailedToShow;
-//
-//   const InterstitialAdWidget({
-//     Key? key,
-//     this.onAdDismissed,
-//     this.onAdFailedToShow,
-//     bool forceShow = false,
-//   }) : super(key: key, forceShow: forceShow);
-//
-//   @override
-//   InterstitialAdWidgetState createState() => InterstitialAdWidgetState();
-// }
-//
-// class InterstitialAdWidgetState extends BaseAdWidgetState<InterstitialAdWidget> {
-//   InterstitialAd? _interstitialAd;
-//   bool _isAdReady = false;
-//   bool _isPremium = false;
-//   bool _isCheckingPremium = true;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _checkPremiumStatus();
-//   }
-//
-//   Future<void> _checkPremiumStatus() async {
-//     try {
-//       await Future.delayed(Duration(milliseconds: 100));
-//
-//       if (mounted && context.mounted) {
-//         final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-//         final user = authProvider.loginUserData;
-//
-//         if (user != null) {
-//           _isPremium = AbonnementUtils.isPremiumActive(user.abonnement);
-//         }
-//       }
-//     } catch (e) {
-//       printVm('Erreur vérification premium: $e');
-//       _isPremium = false;
-//     } finally {
-//       if (mounted) {
-//         setState(() {
-//           _isCheckingPremium = false;
-//         });
-//       }
-//     }
-//   }
-//
-//   @override
-//   void loadAd() {
-//     // Si l'utilisateur est premium, ne pas charger la pub
-//     if (_isPremium) {
-//       printVm('📢 [INTERSTITIAL] Utilisateur Premium - Pas de publicité chargée');
-//       setLoaded();
-//       return;
-//     }
-//
-//     printVm('📢 [INTERSTITIAL] Chargement ID: ${AdService.interstitialAdId}');
-//
-//     InterstitialAd.load(
-//       adUnitId: AdService.interstitialAdId,
-//       request: const AdRequest(),
-//       adLoadCallback: InterstitialAdLoadCallback(
-//         onAdLoaded: (ad) {
-//           printVm('✅ [INTERSTITIAL] Ad Loaded');
-//           _interstitialAd = ad;
-//           _isAdReady = true;
-//           setLoaded();
-//
-//           ad.fullScreenContentCallback = FullScreenContentCallback(
-//             onAdDismissedFullScreenContent: (ad) {
-//               printVm('🚪 [INTERSTITIAL] Ad Dismissed');
-//               ad.dispose();
-//               widget.onAdDismissed?.call();
-//               loadAd(); // Recharger pour la prochaine fois
-//             },
-//             onAdFailedToShowFullScreenContent: (ad, error) {
-//               printVm('❌ [INTERSTITIAL] Failed to show: $error');
-//               ad.dispose();
-//               widget.onAdFailedToShow?.call(error);
-//               loadAd();
-//             },
-//           );
-//         },
-//         onAdFailedToLoad: (error) {
-//           printVm('❌ [INTERSTITIAL] Failed to load: $error');
-//           setError(error.message);
-//         },
-//       ),
-//     );
-//   }
-//
-//   void showAd() {
-//     // Si l'utilisateur est premium, ne pas afficher la pub
-//     if (_isPremium) {
-//       printVm('📢 [INTERSTITIAL] Utilisateur Premium - Pas de publicité affichée');
-//       widget.onAdDismissed?.call();
-//       return;
-//     }
-//
-//     // Pendant la vérification, ne pas afficher la pub
-//     if (_isCheckingPremium) {
-//       printVm('📢 [INTERSTITIAL] Vérification premium en cours, pas de publicité');
-//       widget.onAdDismissed?.call();
-//       return;
-//     }
-//
-//     if (_isAdReady && _interstitialAd != null) {
-//       _interstitialAd!.show();
-//       _isAdReady = false;
-//     } else {
-//       printVm('⏳ [INTERSTITIAL] Pas encore prêt, on continue sans pub.');
-//       widget.onAdDismissed?.call();
-//     }
-//   }
-//
-//   @override
-//   void disposeAd() {
-//     _interstitialAd?.dispose();
-//   }
-//
-//   @override
-//   Widget buildAdWidget() {
-//     return const SizedBox.shrink();
-//   }
-// }
