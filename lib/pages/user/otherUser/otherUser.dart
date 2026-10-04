@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+﻿import '../../../services/follow_service.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:math';
 
 import 'package:afrotok/layout/centered_content.dart';
@@ -165,23 +166,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       }
 
       // Mise à jour dans Firestore
-      await Future.wait([
-        // Doc du créateur : -1 abonné
-        FirebaseFirestore.instance
-            .collection('Users')
-            .doc(userToUnfollow.id)
-            .update({
-          'userAbonnesIds': FieldValue.arrayRemove([currentUserId]),
-          'abonnes': FieldValue.increment(-1),
-        }),
-        // Doc de l'utilisateur courant : retirer du following
-        FirebaseFirestore.instance
-            .collection('Users')
-            .doc(currentUserId)
-            .update({
-          'followingIds': FieldValue.arrayRemove([userToUnfollow.id!]),
-        }),
-      ]);
+      await FollowService.unfollow(userToUnfollow.id!);
 
       // Supprimer la relation d'abonnement si elle existe
       final querySnapshot = await FirebaseFirestore.instance

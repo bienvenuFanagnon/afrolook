@@ -1,3 +1,4 @@
+import '../../utils/count_format.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -816,7 +817,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '${user?.followersCount ?? 0} abonnés',
+                  '${formatCompactCount(user?.followersCount ?? 0)} abonnés',
                   style: TextStyle(
                     color: _colors.primary,
                     fontSize: 14,

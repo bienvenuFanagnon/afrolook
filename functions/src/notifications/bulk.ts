@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
+import { collectFollowerIds } from "../follows/followersRead";
 import { sendToOneSignal, getCanalImage } from "../shared/notification_utils";
 
 // Interface pour les données
@@ -77,7 +78,7 @@ export const sendBulkNotification = onCall(
         const usersSnapshot = await db.collection("Users").get();
         targetUserIds = usersSnapshot.docs.map(doc => doc.id);
       } else if (targetType === "subscribers") {
-        targetUserIds = senderData?.userAbonnesIds || [];
+        targetUserIds = await collectFollowerIds(senderId, senderData?.userAbonnesIds || []);
       } else if (targetType === "channel" && canalId) {
         const canalDoc = await db.collection("Canaux").doc(canalId).get();
         if (canalDoc.exists) {

@@ -1,3 +1,4 @@
+import '../services/follow_service.dart';
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
@@ -2471,24 +2472,8 @@ if(actionType == 'comment'){
       final creatorId = updateUserData.id!;
       final fs = FirebaseFirestore.instance;
 
-      // Transaction atomique : vérifie + écrit en une seule opération.
-      // arrayUnion est idempotent, increment ne l'est pas → on vérifie d'abord.
-      bool alreadySubscribed = false;
-      await fs.runTransaction((txn) async {
-        final creatorSnap = await txn.get(fs.collection('Users').doc(creatorId));
-        final ids = List<String>.from(creatorSnap.data()?['userAbonnesIds'] ?? []);
-        if (ids.contains(currentUserId)) {
-          alreadySubscribed = true;
-          return;
-        }
-        txn.update(creatorSnap.reference, {
-          'userAbonnesIds': FieldValue.arrayUnion([currentUserId]),
-          'abonnes': FieldValue.increment(1),
-        });
-        txn.update(fs.collection('Users').doc(currentUserId), {
-          'followingIds': FieldValue.arrayUnion([creatorId]),
-        });
-      });
+      // Fonction serveur : crée Follows/{créateur}_{abonné}, tient le compteur et followingIds.
+      final bool alreadySubscribed = await FollowService.follow(creatorId);
 
       if (alreadySubscribed) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -2,6 +2,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { followerIdPages, collectFollowerIds } from "../follows/followersRead";
 
 /**
  * Firestore trigger : quand un post est créé,
@@ -36,11 +37,19 @@ export const updateFollowersNewPostCount = onDocumentCreated(
     // ── Fan-out vers les abonnés du créateur ──────────────────────────────
     const creatorDoc = await db.collection("Users").doc(creatorId).get();
     if (creatorDoc.exists) {
-      const followerIds: string[] = creatorDoc.data()?.userAbonnesIds ?? [];
-      if (followerIds.length > 0) {
-        console.log(`Post ${postId} de ${creatorId} — fan-out créateur vers ${followerIds.length} abonnés`);
-        for (let i = 0; i < followerIds.length; i += BATCH_SIZE) {
-          const chunk = followerIds.slice(i, i + BATCH_SIZE);
+      const legacyIds: string[] = creatorDoc.data()?.userAbonnesIds ?? [];
+      // Abonnés lus dans `Follows` par pages ; repli sur l'ancienne liste si `Follows` est vide.
+      const pages: AsyncIterable<string[]> = (async function* () {
+        let any = false;
+        for await (const p of followerIdPages(creatorId, BATCH_SIZE)) { any = true; yield p; }
+        if (!any) for (let i = 0; i < legacyIds.length; i += BATCH_SIZE) yield legacyIds.slice(i, i + BATCH_SIZE);
+      })();
+      let pageNo = 0;
+      for await (const chunk of pages) {
+        pageNo++;
+        {
+          const i = (pageNo - 1) * BATCH_SIZE;
+          console.log(`Post ${postId} de ${creatorId} — fan-out créateur page ${pageNo} (${chunk.length})`);
           const batch = db.batch();
           for (const followerId of chunk) {
             const ref = db.collection("Users").doc(followerId);
@@ -200,7 +209,7 @@ export const backfillUnreadPosts = onCall(
       if (!(creatorId in creatorFollowersCache)) {
         try {
           const creatorDoc = await db.collection("Users").doc(creatorId).get();
-          creatorFollowersCache[creatorId] = creatorDoc.data()?.userAbonnesIds ?? [];
+          creatorFollowersCache[creatorId] = await collectFollowerIds(creatorId, creatorDoc.data()?.userAbonnesIds ?? []);
         } catch {
           creatorFollowersCache[creatorId] = [];
         }

@@ -128,6 +128,10 @@ async function purgeAccount(uid: string, user: FirebaseFirestore.DocumentData) {
   }
   await db.collection("UserKeys").doc(uid).delete().catch(() => undefined);
 
+  // Abonnements (nouvelle collection) : relations où le compte est abonné ou suivi
+  await deleteQuery(db.collection("Follows").where("followerId", "==", uid));
+  await deleteQuery(db.collection("Follows").where("creatorId", "==", uid));
+
   // Retrait des listes des autres comptes
   await arrayRemoveEverywhere("Users", "userAbonnesIds", uid);
   await arrayRemoveEverywhere("Users", "followingIds", uid);

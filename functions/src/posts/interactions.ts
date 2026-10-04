@@ -1,3 +1,4 @@
+import { collectFollowerIds } from "../follows/followersRead";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
@@ -279,18 +280,22 @@ export const onNewPostFromSubscription = onDocumentCreated(
     try {
       const postOwnerId = post.userId;
 
-      const subscribersSnapshot = await db.collection("Users")
-        .where("userAbonnesIds", "array-contains", postOwnerId)
-        .get();
+      // Abonnés lus dans `Follows` (plus de requête array-contains sur tous les profils)
+      const followerIds = await collectFollowerIds(postOwnerId);
+      const subscriberDocs: FirebaseFirestore.DocumentSnapshot[] = [];
+      for (let i = 0; i < followerIds.length; i += 300) {
+        const snaps = await db.getAll(...followerIds.slice(i, i + 300).map((id) => db.collection("Users").doc(id)));
+        subscriberDocs.push(...snaps.filter((s) => s.exists));
+      }
 
-      if (subscribersSnapshot.empty) return;
+      if (subscriberDocs.length === 0) return;
 
       const postOwnerDoc = await db.collection("Users").doc(postOwnerId).get();
       const postOwnerData = postOwnerDoc.data();
       const posterName = postOwnerData?.pseudo || "Un créateur";
 
-      const subscribers = subscribersSnapshot.docs.filter(doc => {
-        const notifs = doc.data().emailNotifications;
+      const subscribers = subscriberDocs.filter(doc => {
+        const notifs = doc.data()?.emailNotifications;
         return !notifs || notifs.newPosts !== false;
       });
 
@@ -301,7 +306,7 @@ export const onNewPostFromSubscription = onDocumentCreated(
       let emailCount = 0;
 
       for (const subscriberDoc of subscribers) {
-        const subscriberData = subscriberDoc.data();
+        const subscriberData = subscriberDoc.data() ?? {};
         if (!subscriberData.email) continue;
 
         const canSend = await checkEmailRateLimit(subscriberDoc.id);

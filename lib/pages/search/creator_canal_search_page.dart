@@ -1,3 +1,4 @@
+import '../../services/follow_service.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 
@@ -191,15 +192,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
     if (myId.isEmpty) return;
     setState(() => _followedIds.add(uid));
     try {
-      await Future.wait([
-        FirebaseFirestore.instance.collection('Users').doc(uid).update({
-          'userAbonnesIds': FieldValue.arrayUnion([myId]),
-          'abonnes': FieldValue.increment(1),
-        }),
-        FirebaseFirestore.instance.collection('Users').doc(myId).update({
-          'followingIds': FieldValue.arrayUnion([uid]),
-        }),
-      ]);
+      await FollowService.follow(uid);
       auth.loginUserData.followingIds ??= [];
       if (!auth.loginUserData.followingIds!.contains(uid)) {
         auth.loginUserData.followingIds!.add(uid);

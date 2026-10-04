@@ -1,3 +1,4 @@
+import '../../../services/follow_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -69,15 +70,7 @@ class _FeedCreatorPostsCardState extends State<FeedCreatorPostsCard> {
     final fs = FirebaseFirestore.instance;
     try {
       if (isUser) {
-        await Future.wait([
-          fs.collection('Users').doc(ownerId).update({
-            'userAbonnesIds': FieldValue.arrayUnion([myId]),
-            'abonnes': FieldValue.increment(1),
-          }),
-          fs.collection('Users').doc(myId).update({
-            'followingIds': FieldValue.arrayUnion([ownerId]),
-          }),
-        ]);
+        await FollowService.follow(ownerId);
         auth.loginUserData.followingIds ??= [];
         if (!auth.loginUserData.followingIds!.contains(ownerId)) {
           auth.loginUserData.followingIds!.add(ownerId);

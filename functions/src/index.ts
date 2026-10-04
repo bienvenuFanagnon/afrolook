@@ -28,6 +28,7 @@ export * from "./payments/coinPurchase";
 export * from "./payments/appleIap";
 export * from "./moderation/moderation";
 export * from "./users/accountDeletion";
+export * from "./follows/follows";
 export * from "./users/accountPurge";
 export * from "./payments/exchangeRates";
 export { migratePseudos, migrateCanalNames } from "./users/pseudoMigration";

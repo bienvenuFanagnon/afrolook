@@ -90,7 +90,7 @@ async function getInactiveUsersToNotify(limit: number = 10): Promise<any[]> {
           soldePrincipal: userData["votre_solde_principal"] || 0,
           totalCoinsEarned: userData["totalCoinsEarnedFromLikes"] || 0,
           totalLikesReceived: userData["totalLikesReceived"] || 0,
-          totalFollowers: (userData["userAbonnesIds"] as any[])?.length || 0,
+          totalFollowers: Math.max((userData["userAbonnesIds"] as any[])?.length || 0, Number(userData["abonnes"]) || 0),
           daysInactive: Math.floor((now - (userData["last_time_active"] || now)) / (24 * 60 * 60 * 1000)),
           newLikesOnMyPosts: newLikesCount,
           newCommentsOnMyPosts: 0,

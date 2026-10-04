@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+﻿import '../../../utils/count_format.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -334,11 +335,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
     }
   }
 
-  String _formatCount(int count) {
-    if (count < 1000) return count.toString();
-    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return '${(count / 1000000).toStringAsFixed(1)}M';
-  }
+  String _formatCount(int count) => formatCompactCount(count);
 
   Future<void> _handleLike(UserData user) async {
     if (user.id == null) return;

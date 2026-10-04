@@ -289,8 +289,9 @@ service cloud.firestore {
       allow read: if isAuth();
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
       // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
+      // Follows : abonnements écrits uniquement par les Cloud Functions (followUser / unfollowUser)
       allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
-          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports']);
+          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app

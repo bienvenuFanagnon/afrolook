@@ -1,3 +1,4 @@
+import '../../../services/follow_service.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
@@ -212,17 +213,8 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     if (myId.isEmpty) return;
 
     setState(() => _followedIds.add(uid));
-    final fs = FirebaseFirestore.instance;
     try {
-      await Future.wait([
-        fs.collection('Users').doc(uid).update({
-          'userAbonnesIds': FieldValue.arrayUnion([myId]),
-          'abonnes': FieldValue.increment(1),
-        }),
-        fs.collection('Users').doc(myId).update({
-          'followingIds': FieldValue.arrayUnion([uid]),
-        }),
-      ]);
+      await FollowService.follow(uid);
       auth.loginUserData.followingIds ??= [];
       if (!auth.loginUserData.followingIds!.contains(uid)) {
         auth.loginUserData.followingIds!.add(uid);

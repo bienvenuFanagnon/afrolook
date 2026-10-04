@@ -1009,12 +1009,11 @@ class UserData {
   /// « PENDING_DELETION » : suppression demandée, effacement définitif à [deletionScheduledAt] (ms).
   String? accountStatus;
   int? deletionScheduledAt;
-  /// Nombre d'abonnés affiché : la liste réelle, ou le compteur s'il est plus grand
-  /// (la liste est absente des copies en cache).
+  /// Nombre d'abonnés affiché : le compteur tenu par le serveur (`abonnes`).
+  /// Repli sur la liste (ancienne) tant que le compteur n'existe pas.
   int get followersCount {
-    final fromList = userAbonnesIds?.length ?? 0;
     final counter = abonnes ?? 0;
-    return fromList > counter ? fromList : counter;
+    return counter > 0 ? counter : (userAbonnesIds?.length ?? 0);
   }
 
   // ── Suspension de compte ─────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import '../../utils/count_format.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 import 'dart:math';
@@ -284,11 +285,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     showUserDetailsModalDialog(widget.creator, w, h, context);
   }
 
-  String _formatCount(int n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return '$n';
-  }
+  String _formatCount(int n) => formatCompactCount(n);
 
   Widget _buildPostWidget(Post post, double width, double height, int index) {
     return VisibilityDetector(

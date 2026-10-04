@@ -29,9 +29,8 @@ class FollowersCountService {
       final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
       final data = doc.data();
       if (data == null) return null;
-      final list = (data['userAbonnesIds'] as List?)?.length ?? 0;
       final counter = (data['abonnes'] as num?)?.toInt() ?? 0;
-      final count = list > counter ? list : counter; // même règle que UserData.followersCount
+      final count = counter > 0 ? counter : ((data['userAbonnesIds'] as List?)?.length ?? 0); // même règle que UserData.followersCount
       _cache[userId] = (count: count, at: DateTime.now());
       return count;
     } catch (_) {

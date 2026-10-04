@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
+import { collectFollowerIds } from "../follows/followersRead";
 import { sendToOneSignal } from "../shared/notification_utils";
 
 const PUSH_BATCH_SIZE = 2000;
@@ -34,7 +35,7 @@ export const repostFanOut = onCall(
     const reposterData = reposterSnap.data()!;
     const reposterPseudo: string = reposterData.pseudo ?? "Un créateur";
     const reposterImageUrl: string = reposterData.imageUrl ?? "";
-    const followerIds: string[] = reposterData.userAbonnesIds ?? [];
+    const followerIds: string[] = await collectFollowerIds(reposterId, reposterData.userAbonnesIds ?? []);
 
     if (followerIds.length === 0) return { ok: true, added: 0 };
 

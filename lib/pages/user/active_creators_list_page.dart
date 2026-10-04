@@ -1,3 +1,4 @@
+import '../../utils/count_format.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -426,11 +427,7 @@ class _CreatorTile extends StatelessWidget {
       .map((c) => String.fromCharCode(c + 127397))
       .join();
 
-  String _formatCount(int n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return '$n';
-  }
+  String _formatCount(int n) => formatCompactCount(n);
 
   @override
   Widget build(BuildContext context) {
@@ -575,11 +572,7 @@ class _CanalTile extends StatelessWidget {
 
   Canal get canal => activeCanal.canal;
 
-  String _formatCount(int n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-    return '$n';
-  }
+  String _formatCount(int n) => formatCompactCount(n);
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 
+import '../../../../utils/count_format.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/UserServices/detailsUserService.dart';
@@ -156,7 +157,7 @@ class _OnlyUserServiceListPageState extends State<OnlyUserServiceListPage> {
 
                                           children: [
                                             PseudoTag(label: '@${data.user?.pseudo ?? 'Pseudo'}',style: TextStyle(fontWeight: FontWeight.w900)),
-                                            Text('${data.user?.followersCount ?? 0} abonné(s)',style: TextStyle(fontSize: 11,color: Colors.green),),
+                                            Text('${formatCompactCount(data.user?.followersCount ?? 0)} abonné(s)',style: TextStyle(fontSize: 11,color: Colors.green),),
                                           ],
                                         )
                                       ],
