@@ -21,3 +21,12 @@ Les nouveaux comptes n'ont pas de pub AdMob pendant leurs 3 premières sessions 
 **iPhone, plus tard** : renseigner `units.ios` (emplacements créés dans AdMob), remplacer `GADApplicationIdentifier`
 dans `ios/Runner/Info.plist`, mettre à jour la fiche de confidentialité de l'App Store, puis
 `node tools/ads/set_config.js '{"enabledIos":true}'`.
+
+## Page Récompenses : contrôle de l'économie
+Réglages Firestore `AppConfig/rewards` (`tools/ads/set_rewards.js`), appliqués par le serveur ET affichés par l'app :
+- `enabled` : interrupteur général de la page ; `offers.<id>.enabled` : couper une offre (ex. les pièces).
+- `offers.<id>.ads` / `cap` : pubs demandées et limite par jour ; `maxAdsPerDay` : pubs par jour (10 par défaut).
+- **Garde-fous contre la concurrence avec les abonnements** : `premiumMaxHoursPerWeek` (24 h de Premium gratuit par
+  semaine par défaut) et `coinsMaxPerWeek` (20 pièces gagnées avec des pubs par semaine par défaut).
+- Suivi : écran admin « Pub AdMob » (récompenses accordées aujourd'hui, pubs échangées) ; données dans
+  `AdRewardStats/{jour}`.

@@ -13,6 +13,8 @@ import { db } from "../shared/firebase";
  */
 export const MAX_ADS_PER_DAY = 10;
 const MIN_GAP_MS = 5000;
+const DEFAULT_PREMIUM_MAX_HOURS_PER_WEEK = 24; // Premium gratuit : un abonnement payant reste utile au quotidien
+const DEFAULT_COINS_MAX_PER_WEEK = 20;
 const HOUR = 3600 * 1000;
 const MAX_PREMIUM_AHEAD = 48 * HOUR;
 
@@ -29,11 +31,60 @@ export const OFFERS: Record<string, Offer> = {
   premium_10h: { ads: 3, cap: 3, kind: "premium", hours: 10 },
   premium_24h: { ads: 5, cap: 2, kind: "premium", hours: 24 },
   adfree_24h: { ads: 1, cap: 2, kind: "adfree" },
-  coins_2: { ads: 1, cap: 5, kind: "coins", coins: 2 },
+  coins_2: { ads: 1, cap: 3, kind: "coins", coins: 2 },
   flame_shield: { ads: 1, cap: 1, kind: "shield" },
   stickers_3: { ads: 1, cap: 2, kind: "stickers", count: 3 },
   photos_3: { ads: 2, cap: 3, kind: "photos" },
 };
+
+/**
+ * Réglages modifiables sans mise à jour (Firestore AppConfig/rewards), tous facultatifs :
+ * { enabled, maxAdsPerDay, premiumMaxHoursPerWeek, coinsMaxPerWeek,
+ *   offers: { <id>: { enabled, ads, cap, hours, coins, count } } }
+ */
+type RewardsConfig = {
+  enabled: boolean;
+  maxAdsPerDay: number;
+  premiumMaxHoursPerWeek: number;
+  coinsMaxPerWeek: number;
+  offers: Record<string, Record<string, unknown>>;
+};
+
+async function loadRewardsConfig(): Promise<RewardsConfig> {
+  const d = (await db.collection("AppConfig").doc("rewards").get()).data() ?? {};
+  const num = (v: unknown, def: number) => (typeof v === "number" && Number.isFinite(v) ? v : def);
+  return {
+    enabled: d["enabled"] !== false,
+    maxAdsPerDay: Math.max(1, Math.min(30, num(d["maxAdsPerDay"], MAX_ADS_PER_DAY))),
+    premiumMaxHoursPerWeek: Math.max(0, num(d["premiumMaxHoursPerWeek"], DEFAULT_PREMIUM_MAX_HOURS_PER_WEEK)),
+    coinsMaxPerWeek: Math.max(0, num(d["coinsMaxPerWeek"], DEFAULT_COINS_MAX_PER_WEEK)),
+    offers: (d["offers"] && typeof d["offers"] === "object" ? d["offers"] : {}) as Record<string, Record<string, unknown>>,
+  };
+}
+
+/** Offre effective = catalogue + surcharges de la configuration ; null si désactivée. */
+function effectiveOffer(id: string, cfg: RewardsConfig): Offer | null {
+  const base = OFFERS[id];
+  if (!base || !cfg.enabled) return null;
+  const o = cfg.offers[id] ?? {};
+  if (o["enabled"] === false) return null;
+  const n = (v: unknown, def: number) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : def);
+  return { ...base, ads: Math.max(1, n(o["ads"], base.ads)), cap: n(o["cap"], base.cap),
+    ...("hours" in base ? { hours: n(o["hours"], base.hours) } : {}),
+    ...("coins" in base ? { coins: n(o["coins"], base.coins) } : {}),
+    ...("count" in base ? { count: n(o["count"], base.count) } : {}),
+  } as Offer;
+}
+
+/** Semaine ISO courante (clé des plafonds hebdomadaires). */
+function weekKey(): string {
+  const d = new Date();
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const ys = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return `${date.getUTCFullYear()}W${String(Math.ceil(((date.getTime() - ys.getTime()) / 86400000 + 1) / 7)).padStart(2, "0")}`;
+}
 
 const dayKey = () => new Date().toISOString().slice(0, 10).replace(/-/g, "");
 const rewardsRef = (uid: string) => db.collection("AdRewards").doc(`${uid}_${dayKey()}`);
@@ -46,11 +97,12 @@ async function ssvEnabled(): Promise<boolean> {
 
 /** Ajoute une pub regardée à la réserve du jour (plafond quotidien, sauf admin). */
 async function addView(uid: string, gapMs: number): Promise<{ pending: number; watched: number }> {
+  const maxAds = (await loadRewardsConfig()).maxAdsPerDay;
   return db.runTransaction(async (tx) => {
     const [r, u] = await Promise.all([tx.get(rewardsRef(uid)), tx.get(db.collection("Users").doc(uid))]);
     const d = r.data() ?? {};
     const watched = Number(d["adsWatched"] ?? 0);
-    if (!isAdmin(u.data()) && watched >= MAX_ADS_PER_DAY) throw new HttpsError("resource-exhausted", "Limite de pubs du jour atteinte.");
+    if (!isAdmin(u.data()) && watched >= maxAds) throw new HttpsError("resource-exhausted", "Limite de pubs du jour atteinte.");
     if (gapMs > 0 && Date.now() - Number(d["lastViewAt"] ?? 0) < gapMs) throw new HttpsError("resource-exhausted", "Trop rapide.");
     const pending = Number(d["pending"] ?? 0) + 1;
     tx.set(rewardsRef(uid), { userId: uid, day: dayKey(), adsWatched: watched + 1, pending, lastViewAt: Date.now() }, { merge: true });
@@ -71,13 +123,18 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
   const offerId = String(request.data?.offerId ?? "");
-  const offer = OFFERS[offerId];
-  if (!offer) throw new HttpsError("invalid-argument", "Offre inconnue.");
+  if (!OFFERS[offerId]) throw new HttpsError("invalid-argument", "Offre inconnue.");
+  const cfg = await loadRewardsConfig();
+  const offer = effectiveOffer(offerId, cfg);
+  if (!offer) throw new HttpsError("failed-precondition", "Cette offre n'est pas disponible pour le moment.");
   const userRef = db.collection("Users").doc(uid);
+  const weekRef = db.collection("AdRewardsWeek").doc(`${uid}_${weekKey()}`);
+  const statsRef = db.collection("AdRewardStats").doc(dayKey());
 
   const result = await db.runTransaction(async (tx) => {
-    const [r, userSnap] = await Promise.all([tx.get(rewardsRef(uid)), tx.get(userRef)]);
+    const [r, userSnap, weekSnap] = await Promise.all([tx.get(rewardsRef(uid)), tx.get(userRef), tx.get(weekRef)]);
     const u = userSnap.data() ?? {};
+    const week = weekSnap.data() ?? {};
     const admin = isAdmin(u);
     const ab = (u["abonnement"] ?? {}) as { type?: string; dateFin?: string; estActif?: boolean; methodePaiement?: string };
     const now = Date.now();
@@ -98,6 +155,11 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
       const current = ab.methodePaiement === "pubs" && Number.isFinite(end) ? Math.max(end, now) : now;
       const until = Math.min(current + offer.hours * HOUR, now + MAX_PREMIUM_AHEAD);
       if (until <= current) throw new HttpsError("resource-exhausted", "Maximum de Premium cumulé atteint (48 h).");
+      // Plafond hebdomadaire : le Premium gratuit ne remplace pas l'abonnement
+      if (!admin && Number(week["premiumHours"] ?? 0) + offer.hours > cfg.premiumMaxHoursPerWeek) {
+        throw new HttpsError("resource-exhausted", "Maximum de Premium gratuit atteint cette semaine.");
+      }
+      tx.set(weekRef, { userId: uid, premiumHours: Number(week["premiumHours"] ?? 0) + offer.hours }, { merge: true });
       const iso = new Date(until).toISOString();
       tx.set(userRef, {
         abonnement: {
@@ -113,6 +175,10 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
       tx.set(userRef, { adFreeUntil: next }, { merge: true });
       out["until"] = next;
     } else if (offer.kind === "coins") {
+      if (!admin && Number(week["coins"] ?? 0) + offer.coins > cfg.coinsMaxPerWeek) {
+        throw new HttpsError("resource-exhausted", "Maximum de pièces gagnées avec des pubs atteint cette semaine.");
+      }
+      tx.set(weekRef, { userId: uid, coins: Number(week["coins"] ?? 0) + offer.coins }, { merge: true });
       tx.set(userRef, { giftCoinsBalance: FieldValue.increment(offer.coins) }, { merge: true });
       out["coins"] = offer.coins;
     } else if (offer.kind === "stickers") {
@@ -132,6 +198,8 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
       out["shields"] = shields + 1;
     }
     tx.set(rewardsRef(uid), { pending: pending - offer.ads, claims: { ...claims, [offerId]: Number(claims[offerId] ?? 0) + 1 } }, { merge: true });
+    // Suivi pour l'admin : récompenses accordées et pubs échangées, par jour
+    tx.set(statsRef, { day: dayKey(), claims: { [offerId]: FieldValue.increment(1) }, adsSpent: FieldValue.increment(offer.ads) }, { merge: true });
     return out;
   });
   return result;

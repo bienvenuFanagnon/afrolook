@@ -10,6 +10,7 @@ import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
+import '../user/userAbonnementPage.dart';
 
 /// Page « Récompenses » : on regarde des pubs (au choix) pour débloquer du Premium temporaire,
 /// une journée sans pub, des pièces cadeau ou un bouclier de flamme. Le serveur décide de tout.
@@ -33,7 +34,7 @@ class _RewardsPageState extends State<RewardsPage> {
   void initState() {
     super.initState();
     if (AdConfig.current.enabled) AdmobService.loadRewarded();
-    _refresh();
+    RewardsService.loadConfig(force: true).then((_) => _refresh());
   }
 
   Future<void> _refresh() async {
@@ -115,6 +116,7 @@ class _RewardsPageState extends State<RewardsPage> {
     final offers = RewardsService.visibleOffers(user);
     final admin = AbonnementUtils.isAdmin(user.role);
     final remainingAds = RewardsService.maxAdsPerDay - _status.watched;
+    final showUpsell = !admin && user.abonnement?.estPremium != true || (user.abonnement?.methodePaiement == 'pubs' && !admin);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -144,10 +146,46 @@ class _RewardsPageState extends State<RewardsPage> {
                         _progressCard(colors, admin),
                         const SizedBox(height: 12),
                         for (final o in offers) _offerCard(o, colors, admin, remainingAds),
+                        if (showUpsell) _upsellCard(colors),
                       ],
                     ),
                   ),
       ),
+    );
+  }
+
+  /// Invitation à s'abonner : le Premium gratuit par pubs est limité, l'abonnement ne l'est pas.
+  Widget _upsellCard(AppColors colors) {
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.accent.withOpacity(0.5)),
+      ),
+      child: Row(children: [
+        Icon(Icons.workspace_premium_rounded, color: colors.accent, size: 28),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.tr('Envie de plus ?'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+            const SizedBox(height: 2),
+            Text(context.tr('Avec un abonnement : pas de limite par jour ou par semaine, et tout le temps disponible.'),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3)),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen())),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: colors.accent,
+            side: BorderSide(color: colors.accent),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          ),
+          child: Text(context.tr('Voir'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+        ),
+      ]),
     );
   }
 

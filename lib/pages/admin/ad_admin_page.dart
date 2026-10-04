@@ -2,6 +2,8 @@ import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/ads/admob_service.dart';
 import 'package:afrotok/ads/admob_widgets.dart';
+import 'package:afrotok/ads/rewards_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -19,6 +21,22 @@ class AdAdminPage extends StatefulWidget {
 
 class _AdAdminPageState extends State<AdAdminPage> {
   String _status = "En attente d'action...";
+  Map<String, dynamic> _todayStats = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  /// Récompenses accordées aujourd'hui (AdRewardStats, jour UTC) : pour surveiller l'effet sur les abonnements.
+  Future<void> _loadStats() async {
+    try {
+      final day = DateTime.now().toUtc().toIso8601String().substring(0, 10).replaceAll('-', '');
+      final doc = await FirebaseFirestore.instance.collection('AdRewardStats').doc(day).get();
+      if (mounted) setState(() => _todayStats = doc.data() ?? {});
+    } catch (_) {}
+  }
 
   Future<void> _reload() async {
     await AdConfig.load(force: true);
@@ -81,7 +99,30 @@ class _AdAdminPageState extends State<AdAdminPage> {
               ]),
             ),
             const SizedBox(height: 14),
-            btn('Recharger la configuration', _reload),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colors.border),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Récompenses accordées aujourd\'hui (jour UTC)',
+                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+                const SizedBox(height: 6),
+                if (((_todayStats['claims'] as Map?) ?? const {}).isEmpty)
+                  Text('Aucune pour le moment', style: TextStyle(color: colors.textSecondary, fontSize: 12))
+                else
+                  for (final e in (_todayStats['claims'] as Map).entries) row('${e.key}', '${e.value}'),
+                row('Pubs échangées', '${_todayStats['adsSpent'] ?? 0}'),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            btn('Recharger la configuration', () async {
+              await RewardsService.loadConfig(force: true);
+              await _loadStats();
+              await _reload();
+            }),
             btn('Ouvrir l\'inspecteur AdMob', AdmobService.openInspector),
             btn('Essayer la pub plein écran', () async {
               AdmobService.preloadInterstitial();
