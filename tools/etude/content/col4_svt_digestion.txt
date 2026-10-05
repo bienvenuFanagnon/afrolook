@@ -1,0 +1,28 @@
+titre: La digestion et l'absorption
+== fiche
+p: La digestion transforme les aliments en nutriments assez petits pour passer dans le sang. Elle se déroule dans le tube digestif.
+li: Trajet : bouche, pharynx, œsophage, estomac, intestin grêle, gros intestin, anus. Les glandes annexes : glandes salivaires, foie, pancréas.
+li: Digestion mécanique : mastication, brassage dans l'estomac. Digestion chimique : les enzymes digestives (amylase, pepsine, lipase) découpent les aliments.
+li: L'amylase salivaire commence la digestion de l'amidon dans la bouche ; la pepsine digère les protéines dans l'estomac (milieu acide).
+li: Dans l'intestin grêle, le foie (bile) et le pancréas (suc pancréatique) terminent la digestion.
+li: Les nutriments (glucose, acides aminés, acides gras, vitamines, sels minéraux) passent dans le sang à travers les villosités de l'intestin grêle : c'est l'absorption.
+li: Le gros intestin absorbe l'eau et forme les fèces.
+li: Une alimentation équilibrée apporte des glucides (énergie), des lipides (réserve), des protides (construction), des vitamines, des sels minéraux et de l'eau.
+note: Exemple : l'amidon (pain, manioc) est transformé en glucose.
+note: Le tube digestif de l'adulte mesure environ 7 à 9 mètres, l'intestin grêle environ 6 m.
+== questions
+À quoi sert la digestion ? || Transformer les aliments en nutriments absorbables || Fabriquer de l'air || Chauffer le corps || Produire des os || Les nutriments passent ensuite dans le sang.
+Dans quel ordre trouve-t-on ces organes ? || Bouche, œsophage, estomac, intestin grêle || Estomac, bouche, intestin, œsophage || Intestin, estomac, bouche || Œsophage, bouche, estomac || C'est le trajet des aliments.
+Que fait la mastication ? || Elle broie les aliments (digestion mécanique) || Elle absorbe les nutriments || Elle fabrique la bile || Elle rejette les déchets || Les dents coupent et broient.
+Qu'est-ce qu'une enzyme digestive ? || Une substance qui découpe les aliments || Un organe || Une vitamine || Un déchet || Exemple : l'amylase.
+Quelle enzyme de la salive commence la digestion de l'amidon ? || L'amylase || La pepsine || La lipase || La bile || L'amidon est transformé en sucres plus simples.
+Quel est le milieu de l'estomac ? || Acide || Basique || Neutre || Sec || La pepsine agit dans ce milieu acide.
+Quel organe produit la bile ? || Le foie || L'estomac || Le pancréas || Le rein || La bile aide à digérer les graisses.
+Quel organe produit le suc pancréatique ? || Le pancréas || Le foie || L'estomac || L'œsophage || Il contient des enzymes.
+Où se fait l'essentiel de l'absorption des nutriments ? || Dans l'intestin grêle || Dans l'estomac || Dans l'œsophage || Dans la bouche || Ses villosités augmentent la surface d'échange.
+Que sont les villosités intestinales ? || De petits replis qui augmentent la surface d'absorption || Des glandes || Des dents || Des muscles || Elles sont riches en vaisseaux sanguins.
+Que fait le gros intestin ? || Il absorbe l'eau et forme les fèces || Il digère les protéines || Il fabrique la bile || Il broie les aliments || C'est la dernière partie du tube digestif.
+Quel nutriment est la principale source d'énergie ? || Le glucose || L'eau || Le sel || La vitamine A seule || Il vient des glucides.
+Quels aliments contiennent beaucoup de glucides ? || Le riz et le manioc || La viande seule || L'huile || L'eau || L'amidon se transforme en glucose.
+Quels aliments sont riches en protéines ? || Le poisson, la viande, les haricots || Le sucre || L'huile || Le sel || Les protéines servent à construire le corps.
+Qu'apporte une alimentation équilibrée ? || Tous les nutriments en bonnes quantités || Seulement des sucres || Seulement des graisses || Seulement des protéines || Elle comprend aussi vitamines, sels minéraux et eau.

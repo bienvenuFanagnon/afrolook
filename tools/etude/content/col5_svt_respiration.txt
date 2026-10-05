@@ -1,0 +1,27 @@
+titre: La respiration chez l'homme et les animaux
+== fiche
+p: Respirer, c'est absorber du dioxygène (O₂) de l'air et rejeter du dioxyde de carbone (CO₂). Les êtres vivants en ont besoin pour libérer l'énergie.
+li: Chez l'homme, l'air passe par le nez, le pharynx, le larynx, la trachée, les bronches puis les poumons.
+li: Dans les poumons, les alvéoles pulmonaires sont de petits sacs entourés de capillaires : c'est là que le dioxygène passe de l'air au sang et que le CO₂ passe du sang à l'air.
+li: Inspiration : les muscles intercostaux et le diaphragme se contractent, la cage thoracique augmente de volume, l'air entre. Expiration : l'air sort.
+li: L'air expiré contient moins de dioxygène et plus de dioxyde de carbone que l'air inspiré.
+li: Fréquence respiratoire : environ 15 à 20 mouvements par minute au repos chez l'adulte ; elle augmente à l'effort.
+li: Autres animaux : poumons (mammifères, oiseaux, reptiles), branchies (poissons), peau (grenouille adulte en partie), trachées (insectes).
+note: Exemple : le test à l'eau de chaux montre que l'air expiré contient plus de CO₂ : l'eau de chaux se trouble.
+note: Le tabac abîme les poumons et réduit la capacité respiratoire.
+== questions
+Quel gaz absorbons-nous en respirant ? || Le dioxygène || Le dioxyde de carbone || L'azote seulement || L'hydrogène || Il est indispensable à la libération de l'énergie.
+Quel gaz rejetons-nous en expirant en plus grande quantité ? || Le dioxyde de carbone || Le dioxygène || L'hélium || L'ammoniac || C'est un déchet de la respiration.
+Quels organes sont le siège des échanges gazeux chez l'homme ? || Les poumons || L'estomac || Le foie || Les reins || L'oxygène passe de l'air dans le sang.
+Comment s'appelle le conduit qui amène l'air du larynx aux bronches ? || La trachée || L'œsophage || Le pharynx || L'aorte || Elle est soutenue par des anneaux de cartilage.
+Comment s'appellent les petits sacs des poumons où se font les échanges ? || Les alvéoles pulmonaires || Les bronches || Les capillaires || Les artères || Ils sont entourés de capillaires sanguins.
+Quel muscle intervient surtout dans l'inspiration ? || Le diaphragme || Le biceps || Le cœur || Le triceps || Il se contracte et s'abaisse.
+Que se passe-t-il à l'inspiration ? || La cage thoracique augmente de volume || La cage thoracique diminue || Le cœur s'arrête || L'air sort || L'air entre dans les poumons.
+Comment est l'air expiré par rapport à l'air inspiré ? || Plus riche en CO₂ et plus pauvre en O₂ || Plus riche en O₂ || Identique || Sans gaz || Les poumons ont retenu du dioxygène.
+Combien de mouvements respiratoires par minute en moyenne chez l'adulte au repos ? || 15 à 20 || 1 à 2 || 60 à 80 || 100 || La fréquence augmente à l'effort.
+Que devient la fréquence respiratoire pendant un effort ? || Elle augmente || Elle diminue || Elle s'arrête || Elle reste nulle || Les muscles ont besoin de plus de dioxygène.
+Comment respire un poisson ? || Avec des branchies || Avec des poumons || Avec des trachées || Avec la peau seule || Les branchies absorbent l'O₂ dissous dans l'eau.
+Comment respirent les insectes ? || Avec des trachées || Avec des poumons || Avec des branchies || Avec un cœur || Un réseau de tubes distribue l'air.
+Quel test montre la présence de CO₂ ? || L'eau de chaux se trouble || Le papier pH rougit || L'iode bleuit || L'allumette s'éteint seule || Test classique de laboratoire.
+Que fait le tabac aux poumons ? || Il les abîme et réduit la capacité respiratoire || Il les renforce || Il augmente le dioxygène || Il n'a aucun effet || Les fumeurs risquent des maladies graves.
+Quel est le trajet de l'air inspiré ? || Nez, pharynx, larynx, trachée, bronches, poumons || Bouche, estomac, intestin || Nez, œsophage, poumons || Trachée, nez, bronches || C'est l'ordre des organes respiratoires.

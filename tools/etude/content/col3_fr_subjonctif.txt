@@ -1,0 +1,27 @@
+titre: Le subjonctif et les propositions
+== fiche
+p: Le subjonctif est un mode qui exprime le doute, le souhait, l'obligation ou le sentiment. On l'emploie surtout dans les subordonnées introduites par « que ».
+li: On l'emploie après des verbes comme vouloir que, falloir que, souhaiter que, craindre que, douter que, et après des locutions comme bien que, pour que, avant que, afin que.
+li: Présent du subjonctif du 1er groupe : que je chante, que tu chantes, qu'il chante, que nous chantions, que vous chantiez, qu'ils chantent.
+li: Verbes irréguliers : être (que je sois, que nous soyons), avoir (que j'aie, que nous ayons), aller (que j'aille), faire (que je fasse), pouvoir (que je puisse).
+li: Proposition indépendante : une seule proposition (Il chante). Proposition principale + subordonnée : Je veux qu'il chante.
+li: Types de subordonnées : relative (qui, que, dont, où), conjonctive (que, si, quand), circonstancielle (parce que, pour que, bien que).
+li: Les propositions coordonnées sont reliées par et, mais, ou, donc, or, ni, car ; les juxtaposées par la ponctuation.
+note: Exemple : Il faut que tu viennes (subjonctif présent de venir).
+note: « Bien que » est toujours suivi du subjonctif : bien qu'il pleuve.
+== questions
+Dans quel cas emploie-t-on le subjonctif ? || Après « il faut que » || Après « parce que » || Pour raconter une action passée terminée || Pour un ordre direct || « Il faut que » exige le subjonctif.
+Quelle forme est correcte : « Il faut que tu ___ » (venir) ? || viennes || viens || venais || viendras || Après « il faut que » : subjonctif présent.
+Quelle forme est correcte : « Il faut que nous ___ » (être) ? || soyons || sommes || étions || serons || Subjonctif de être : que nous soyons.
+Quelle forme est correcte : « Je veux qu'il ___ » (avoir) ? || ait || a || avait || aura || Subjonctif de avoir : qu'il ait.
+Quelle forme est correcte : « Il faut que j' ___ » (aller) ? || aille || vais || allais || irai || Subjonctif de aller : que j'aille.
+Quelle forme est correcte : « Il faut que vous ___ » (faire) ? || fassiez || faites || faisiez || ferez || Subjonctif de faire : que vous fassiez.
+Quelle locution est suivie du subjonctif ? || Bien que || Parce que || Puisque || Comme || « Bien que » exige le subjonctif.
+Quelle locution de but est suivie du subjonctif ? || Pour que || Parce que || Dès que || Alors que || « Pour que » exprime le but.
+Quelle phrase emploie bien le subjonctif ? || Bien qu'il pleuve, nous sortons. || Bien qu'il pleut, nous sortons. || Bien qu'il pleuvait, nous sortons. || Bien qu'il a plu, nous sortons. || Bien que + subjonctif.
+Qu'est-ce qu'une proposition subordonnée ? || Une proposition qui dépend d'une principale || Une proposition indépendante || Un mot || Une phrase sans verbe || Elle ne peut pas exister seule.
+Combien de verbes conjugués y a-t-il dans « Je veux qu'il chante » ? || Deux || Un || Trois || Aucun || Une principale et une subordonnée.
+Quel pronom relatif convient : « Le livre ___ je lis » ? || que || qui || dont || où || « Que » est COD de « lis ».
+Quel pronom relatif convient : « L'homme ___ parle est mon oncle » ? || qui || que || dont || où || « Qui » est sujet de « parle ».
+Quel pronom relatif convient : « La ville ___ je suis né » ? || où || que || qui || dont || « Où » indique le lieu.
+Quelles conjonctions servent à coordonner ? || Mais, ou, et, donc, or, ni, car || Que, quand, si || Qui, que, dont || Bien que, parce que || On retient : « Mais où est donc Ornicar ? ».

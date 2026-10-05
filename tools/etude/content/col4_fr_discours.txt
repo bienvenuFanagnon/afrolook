@@ -1,0 +1,27 @@
+titre: Discours direct et indirect
+== fiche
+p: On rapporte les paroles de quelqu'un de deux manières : au discours direct ou au discours indirect.
+li: Discours direct : les paroles sont rapportées telles quelles, entre guillemets, après deux-points : Ama dit : « Je viens demain. »
+li: Discours indirect : les paroles sont intégrées dans la phrase par un verbe introducteur et une conjonction (que, si) : Ama dit qu'elle vient le lendemain.
+li: Passage au discours indirect : changement de personne (je → il/elle), de temps (si le verbe introducteur est au passé) et d'indicateurs de temps (demain → le lendemain, hier → la veille, aujourd'hui → ce jour-là).
+li: Concordance des temps : présent → imparfait ; futur → conditionnel ; passé composé → plus-que-parfait.
+li: Question directe → indirecte : « Viens-tu ? » → Il demande si je viens. Ordre → infinitif ou subjonctif : « Sors ! » → Il lui ordonne de sortir.
+li: Verbes introducteurs : dire, répondre, demander, affirmer, ordonner, s'écrier.
+note: Exemple : Il a dit : « J'arrive demain. » → Il a dit qu'il arrivait le lendemain.
+note: Au discours direct, on utilise les guillemets, les tirets pour un dialogue.
+== questions
+Comment reconnaît-on le discours direct ? || Il utilise des guillemets || Il utilise toujours « que » || Il n'a pas de verbe || Il est toujours au passé || Les paroles sont rapportées telles quelles.
+Quelle phrase est au discours direct ? || Ama dit : « Je viens demain. » || Ama dit qu'elle vient demain. || Ama demande si elle peut venir. || Ama dit qu'elle viendra. || Les paroles sont entre guillemets.
+Quelle phrase est au discours indirect ? || Il dit qu'il part. || Il dit : « Je pars. » || « Je pars », dit-il. || Il crie : « Pars ! » || Le verbe introducteur est suivi de « que ».
+Comment passe-t-on de « Je viens » à l'indirect avec « Ama dit » ? || Ama dit qu'elle vient. || Ama dit que je viens. || Ama dit qu'il viens. || Ama dit que viens. || « Je » devient « elle ».
+Comment transforme-t-on « demain » au discours indirect (verbe au passé) ? || Le lendemain || La veille || Hier || Aujourd'hui || Demain devient le lendemain.
+Comment transforme-t-on « hier » au discours indirect (verbe au passé) ? || La veille || Le lendemain || Demain || Maintenant || Hier devient la veille.
+Que devient le présent au discours indirect avec un verbe introducteur au passé ? || L'imparfait || Le futur || Le passé simple || Le subjonctif || Concordance des temps.
+Que devient le futur simple au discours indirect avec un verbe introducteur au passé ? || Le conditionnel présent || L'imparfait || Le passé composé || Le présent || « Je viendrai » devient « il viendrait ».
+Comment transforme-t-on « Viens-tu ? » au discours indirect ? || Il demande si je viens. || Il demande que je viens. || Il demande viens-tu. || Il demande pourquoi. || La question devient une subordonnée avec « si ».
+Quel verbe introducteur convient pour un ordre ? || Ordonner || Demander si || Répondre || Chanter || Il ordonne de sortir.
+Quelle phrase est la bonne transformation de : Il a dit : « J'arrive demain. » ? || Il a dit qu'il arrivait le lendemain. || Il a dit qu'il arrive demain. || Il a dit que j'arrive le lendemain. || Il a dit qu'il arrivera demain. || On change personne, temps et repère temporel.
+Que devient « aujourd'hui » dans le discours indirect passé ? || Ce jour-là || Le lendemain || La veille || Maintenant || Aujourd'hui devient ce jour-là.
+Quel signe de ponctuation précède souvent le discours direct ? || Les deux-points || Le point-virgule || Les points de suspension || La virgule seule || Il annonce la parole rapportée.
+Que signifient les tirets dans un dialogue ? || Le changement de locuteur || Une addition || Un mot barré || Un résumé || Chaque tiret indique qu'un autre personnage parle.
+Comment transforme-t-on « Sors ! » à l'indirect ? || Il lui ordonne de sortir. || Il lui ordonne sors. || Il lui ordonne que sort. || Il lui ordonne qu'il sorte. || L'impératif devient souvent un infinitif.

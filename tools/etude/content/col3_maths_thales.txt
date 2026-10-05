@@ -1,0 +1,27 @@
+titre: Théorème de Thalès
+== fiche
+p: Le théorème de Thalès compare les longueurs de deux triangles dont les côtés sont parallèles.
+li: Configuration : deux droites (BM) et (CN) sécantes en A, avec (BC) // (MN). A, B, M alignés et A, C, N alignés.
+li: Théorème : si (BC) // (MN), alors AB/AM = AC/AN = BC/MN.
+li: On utilise l'égalité pour calculer une longueur inconnue : produit en croix.
+li: Réciproque : si AB/AM = AC/AN avec les points alignés dans le même ordre sur les deux droites, alors (BC) // (MN).
+li: Pour montrer que deux droites ne sont pas parallèles, on montre que les rapports sont différents.
+li: Agrandissement et réduction : un rapport k multiplie les longueurs par k et les aires par k².
+note: Exemple : AB = 3, AM = 6, AC = 4. Alors AN = AC × AM / AB = 4 × 6 / 3 = 8.
+note: Il faut toujours vérifier que les droites sont bien parallèles avant d'appliquer Thalès.
+== questions
+Quelle condition faut-il pour appliquer le théorème de Thalès ? || Deux droites parallèles coupant deux sécantes || Un triangle rectangle || Un cercle || Deux angles égaux seulement || Le parallélisme est indispensable.
+Quel rapport est égal à AB/AM dans la configuration de Thalès ? || AC/AN || BC/AN || AB/AN || AM/AN || Les deux rapports de côtés proportionnels.
+Quelle égalité complète le théorème : AB/AM = AC/AN = ? || BC/MN || BM/CN seulement || AM/AB || AN/AC || Le troisième rapport concerne les côtés parallèles.
+Si AB = 3, AM = 6 et AC = 4, que vaut AN ? || 8 || 2 || 6 || 4,5 || AN = 4 × 6 / 3 = 8.
+Si AB = 2, AM = 5 et BC = 3, que vaut MN ? || 7,5 || 1,2 || 6 || 4,5 || MN = BC × AM / AB = 3 × 5 / 2.
+Que permet de démontrer la réciproque de Thalès ? || Que deux droites sont parallèles || Que deux droites sont perpendiculaires || Que deux triangles sont égaux || Qu'un triangle est rectangle || Elle conclut au parallélisme.
+Pour montrer que deux droites ne sont pas parallèles, que fait-on ? || On montre que les rapports sont différents || On mesure un angle || On compte les côtés || On calcule l'aire || Si les rapports diffèrent, la réciproque ne s'applique pas.
+Un triangle est agrandi d'un rapport 3. Par combien les longueurs sont-elles multipliées ? || 3 || 9 || 6 || 1/3 || Le rapport s'applique à toutes les longueurs.
+Un triangle est agrandi d'un rapport 3. Par combien l'aire est-elle multipliée ? || 9 || 3 || 6 || 27 || Les aires sont multipliées par k².
+Un triangle est réduit d'un rapport 1/2. Par combien l'aire est-elle multipliée ? || 1/4 || 1/2 || 2 || 4 || (1/2)² = 1/4.
+Sur une carte à l'échelle 1/100 000, 3 cm représentent combien ? || 3 km || 300 m || 30 km || 0,3 km || 3 × 100 000 cm = 300 000 cm = 3 km.
+Quel instrument sert à vérifier que deux droites sont parallèles ? || Une équerre et une règle || Un thermomètre || Un compas seul || Un rapporteur seul || On trace des perpendiculaires communes.
+Quel produit en croix permet de calculer x dans 2/3 = x/9 ? || x = 2 × 9 / 3 = 6 || x = 3 × 9 / 2 || x = 2 × 3 || x = 9 − 2 || Les produits en croix sont égaux.
+Dans un triangle ABC, M est le milieu de [AB] et N le milieu de [AC]. Que dire de (MN) et (BC) ? || Elles sont parallèles || Elles sont perpendiculaires || Elles sont confondues || Elles se coupent en A || C'est le théorème des milieux.
+Dans ce cas, comment est MN par rapport à BC ? || La moitié || Le double || Égal || Le tiers || Le théorème des milieux donne MN = BC/2.

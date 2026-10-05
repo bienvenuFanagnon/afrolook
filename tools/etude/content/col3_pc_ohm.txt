@@ -1,0 +1,28 @@
+titre: Loi d'Ohm et puissance électrique
+== fiche
+p: La résistance électrique mesure la difficulté qu'un conducteur oppose au passage du courant. Elle se note R et s'exprime en ohms (Ω).
+li: Loi d'Ohm pour un conducteur ohmique : U = R × I (U en volts, R en ohms, I en ampères). Donc I = U / R et R = U / I.
+li: La caractéristique d'un conducteur ohmique est une droite passant par l'origine.
+li: Associations : résistances en série, R = R₁ + R₂ ; en dérivation, 1/R = 1/R₁ + 1/R₂.
+li: Puissance électrique : P = U × I (en watts, W). Avec la loi d'Ohm : P = R × I² = U²/R.
+li: Énergie électrique consommée : E = P × t (en joules si t en secondes ; en kilowattheures si P en kW et t en heures).
+li: Effet Joule : un conducteur parcouru par un courant s'échauffe (grille-pain, fer à repasser).
+li: Sécurité : un fusible ou un disjoncteur coupe le courant en cas de surintensité.
+note: Exemple : une résistance de 100 Ω soumise à 20 V est traversée par I = 20 / 100 = 0,2 A.
+note: Exemple : une lampe de 60 W allumée 5 h consomme 0,06 × 5 = 0,3 kWh.
+== questions
+Quelle est l'unité de la résistance électrique ? || L'ohm (Ω) || Le volt (V) || L'ampère (A) || Le watt (W) || Elle se note R.
+Quelle est la formule de la loi d'Ohm ? || U = R × I || U = R / I || U = I / R || R = U × I || La tension est proportionnelle à l'intensité.
+Quelle est l'intensité dans une résistance de 100 Ω soumise à 20 V ? || 0,2 A || 5 A || 2000 A || 20 A || I = U / R = 20 / 100.
+Quelle est la valeur d'une résistance traversée par 2 A sous 12 V ? || 6 Ω || 24 Ω || 0,17 Ω || 10 Ω || R = U / I = 12 / 2.
+Quelle est la tension aux bornes d'une résistance de 50 Ω traversée par 0,1 A ? || 5 V || 500 V || 0,5 V || 50,1 V || U = R × I = 50 × 0,1.
+Quelle est la résistance équivalente à 20 Ω et 30 Ω en série ? || 50 Ω || 12 Ω || 10 Ω || 600 Ω || En série, les résistances s'additionnent.
+Quelle est la résistance équivalente à deux résistances de 10 Ω en dérivation ? || 5 Ω || 20 Ω || 10 Ω || 100 Ω || 1/R = 1/10 + 1/10 = 2/10.
+Quelle est la formule de la puissance électrique ? || P = U × I || P = U / I || P = I / U || P = U + I || La puissance s'exprime en watts.
+Quelle est la puissance d'un appareil de 230 V traversé par 2 A ? || 460 W || 115 W || 232 W || 0,0087 W || P = 230 × 2.
+Quelle est l'unité de la puissance ? || Le watt (W) || Le joule (J) || L'ampère (A) || Le volt (V) || Un kilowatt vaut 1000 W.
+Quelle est la formule de l'énergie électrique consommée ? || E = P × t || E = P / t || E = U / I || E = R × t || L'énergie dépend de la puissance et de la durée.
+Quelle énergie consomme une lampe de 60 W allumée 5 h ? || 0,3 kWh || 300 kWh || 12 kWh || 65 kWh || 0,06 kW × 5 h.
+Que désigne l'effet Joule ? || L'échauffement d'un conducteur parcouru par un courant || Le refroidissement d'un fil || La production de lumière sans chaleur || La magnétisation d'un fer || Il explique le fonctionnement du grille-pain.
+À quoi sert un fusible ? || À couper le courant en cas de surintensité || À augmenter la tension || À mesurer la puissance || À stocker de l'énergie || Il protège l'installation.
+Que devient l'intensité si l'on double la tension aux bornes d'une résistance ? || Elle double || Elle est divisée par 2 || Elle reste la même || Elle devient nulle || I = U / R, donc elle est proportionnelle à U.

@@ -1,0 +1,27 @@
+titre: La Terre : continents et océans
+== fiche
+p: La Terre est la planète où nous vivons. Environ 70 % de sa surface est couverte d'eau.
+li: Il y a cinq océans : Pacifique, Atlantique, Indien, Arctique et Austral (ou Antarctique). Le plus grand est le Pacifique.
+li: Il y a six ou sept continents selon les conventions : Afrique, Amérique, Antarctique, Asie, Europe, Océanie.
+li: L'Afrique est le deuxième continent par la superficie et l'un des plus peuplés.
+li: L'équateur est la ligne imaginaire qui sépare la Terre en deux hémisphères : nord et sud. Le méridien de Greenwich sépare l'est de l'ouest.
+li: Les points cardinaux : nord, sud, est, ouest. On s'oriente avec une boussole ou le soleil.
+li: Une carte a un titre, une légende, une échelle et une orientation.
+note: Exemple d'échelle : 1 cm sur la carte représente 1 km sur le terrain.
+note: La Terre tourne sur elle-même en 24 heures (jour et nuit) et autour du Soleil en 365 jours.
+== questions
+Quel est le plus grand océan ? || L'océan Pacifique || L'océan Atlantique || L'océan Indien || L'océan Arctique || Il couvre à peu près un tiers du globe.
+Combien y a-t-il de points cardinaux ? || Quatre || Deux || Six || Huit || Nord, sud, est, ouest.
+Comment s'appelle la ligne qui coupe la Terre en deux hémisphères nord et sud ? || L'équateur || Le méridien de Greenwich || Le tropique du Cancer || Le pôle || L'équateur est à 0° de latitude.
+Quel océan borde la côte du Togo ? || L'océan Atlantique || L'océan Pacifique || L'océan Indien || L'océan Arctique || Le golfe de Guinée fait partie de l'Atlantique.
+Sur quel continent se trouve le Togo ? || L'Afrique || L'Europe || L'Asie || L'Amérique || C'est un pays d'Afrique de l'Ouest.
+Combien de temps met la Terre pour tourner sur elle-même ? || 24 heures || 365 jours || 12 heures || 30 jours || C'est l'alternance du jour et de la nuit.
+Combien de temps met la Terre pour tourner autour du Soleil ? || Environ 365 jours || 24 heures || 30 jours || 7 jours || C'est une année.
+Quel instrument permet de s'orienter avec le nord ? || La boussole || Le thermomètre || Le baromètre || La règle || L'aiguille aimantée indique le nord.
+Quelle est la partie d'une carte qui explique les symboles ? || La légende || Le titre || L'échelle || La rose des vents || Elle indique la signification des couleurs et des signes.
+Que signifie l'échelle 1 cm pour 1 km ? || 1 cm sur la carte représente 1 km réel || 1 km sur la carte représente 1 cm réel || La carte est à taille réelle || La carte est inutile || Elle permet de calculer des distances.
+Quel est le plus grand continent par la superficie ? || L'Asie || L'Afrique || L'Amérique || L'Europe || L'Asie est aussi le plus peuplé.
+Quel est le continent le plus froid ? || L'Antarctique || L'Europe || L'Océanie || L'Asie || Il est recouvert de glace.
+Quel océan est entre l'Afrique et l'Amérique ? || L'océan Atlantique || L'océan Pacifique || L'océan Indien || L'océan Arctique || Les navires l'ont traversé pendant la traite.
+Quelle ligne sépare l'est de l'ouest sur le globe ? || Le méridien de Greenwich || L'équateur || Le tropique || Le cercle polaire || Il passe par l'Observatoire royal de Greenwich.
+Quel pourcentage de la surface terrestre est couvert d'eau ? || Environ 70 % || Environ 30 % || Environ 10 % || Environ 99 % || Les océans occupent la majeure partie du globe.

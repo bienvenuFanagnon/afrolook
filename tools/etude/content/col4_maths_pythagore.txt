@@ -1,0 +1,27 @@
+titre: Théorème de Pythagore
+== fiche
+p: Dans un triangle rectangle, le côté opposé à l'angle droit s'appelle l'hypoténuse : c'est le plus grand côté.
+li: Théorème de Pythagore : si un triangle ABC est rectangle en A, alors BC² = AB² + AC².
+li: Exemple : un triangle de côtés 3, 4 et 5 : 5² = 25 = 3² + 4² = 9 + 16. C'est un triangle rectangle.
+li: Réciproque : si, dans un triangle, le carré du plus grand côté est égal à la somme des carrés des deux autres, alors le triangle est rectangle.
+li: Contraposée : si l'égalité n'est pas vérifiée, le triangle n'est pas rectangle.
+li: Calculer l'hypoténuse : on additionne les carrés des côtés de l'angle droit puis on prend la racine carrée.
+li: Calculer un côté de l'angle droit : on soustrait le carré du côté connu au carré de l'hypoténuse.
+note: Exemple : côtés de l'angle droit 6 et 8 : hypoténuse = √(36 + 64) = √100 = 10.
+note: Le carré de l'hypoténuse est toujours la plus grande valeur dans l'égalité.
+== questions
+Comment appelle-t-on le côté opposé à l'angle droit ? || L'hypoténuse || La médiane || La base || La hauteur || C'est le plus grand côté du triangle rectangle.
+Si ABC est rectangle en A, quelle égalité est vraie ? || BC² = AB² + AC² || AB² = BC² + AC² || BC = AB + AC || AB² + BC² = AC² || BC est l'hypoténuse.
+Quelle est l'hypoténuse d'un triangle rectangle de côtés 3 cm et 4 cm ? || 5 cm || 7 cm || 12 cm || 25 cm || √(9 + 16) = 5.
+Quelle est l'hypoténuse d'un triangle rectangle de côtés 6 cm et 8 cm ? || 10 cm || 14 cm || 48 cm || 100 cm || √(36 + 64) = 10.
+Quelle est l'hypoténuse d'un triangle rectangle de côtés 5 cm et 12 cm ? || 13 cm || 17 cm || 60 cm || 7 cm || 25 + 144 = 169 = 13².
+Un triangle rectangle a une hypoténuse de 10 cm et un côté de 6 cm. Quel est l'autre côté ? || 8 cm || 4 cm || 16 cm || 64 cm || 100 − 36 = 64, donc 8.
+Un triangle a pour côtés 5, 12 et 13. Est-il rectangle ? || Oui, car 13² = 5² + 12² || Non || Oui, car 5 + 12 = 17 || On ne peut pas savoir || La réciproque du théorème s'applique.
+Un triangle a pour côtés 4, 5 et 6. Est-il rectangle ? || Non, car 6² ≠ 4² + 5² || Oui || Oui, car 4 + 5 > 6 || Il est équilatéral || 36 est différent de 16 + 25 = 41.
+Quel est le plus grand côté d'un triangle rectangle ? || L'hypoténuse || Le côté adjacent || La hauteur || La base || Il est opposé à l'angle droit.
+Que vaut √81 ? || 9 || 8 || 81 || 40,5 || 9 × 9 = 81.
+Que vaut √144 ? || 12 || 14 || 72 || 24 || 12 × 12 = 144.
+Quelle est la diagonale d'un carré de côté 1 ? || √2 || 2 || 1 || 1,5 || Pythagore : 1² + 1² = 2.
+Une échelle de 5 m est posée contre un mur, son pied à 3 m du mur. À quelle hauteur touche-t-elle le mur ? || 4 m || 2 m || 8 m || 5 m || 25 − 9 = 16, donc 4.
+Quelle est la diagonale d'un rectangle de 6 cm sur 8 cm ? || 10 cm || 14 cm || 48 cm || 7 cm || C'est l'hypoténuse d'un triangle rectangle de côtés 6 et 8.
+Quel triplet forme un triangle rectangle ? || 8, 15, 17 || 7, 8, 9 || 5, 6, 7 || 4, 4, 7 || 64 + 225 = 289 = 17².

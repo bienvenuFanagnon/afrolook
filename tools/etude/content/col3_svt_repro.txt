@@ -1,0 +1,29 @@
+titre: Reproduction humaine et VIH/SIDA
+== fiche
+p: La reproduction humaine est sexuée : elle fait intervenir un gamète mâle (spermatozoïde) et un gamète femelle (ovule).
+li: À la puberté, le corps se transforme sous l'effet des hormones : chez la fille, règles et ovulation tous les 28 jours environ ; chez le garçon, production continue de spermatozoïdes.
+li: Appareil génital masculin : testicules, canaux déférents, prostate, pénis. Féminin : ovaires, trompes, utérus, vagin.
+li: Fécondation : un spermatozoïde pénètre l'ovule dans la trompe : cela forme l'œuf (zygote). Il migre vers l'utérus où il s'implante (nidation).
+li: La grossesse dure environ 9 mois (40 semaines). Le placenta nourrit l'embryon puis le fœtus. L'accouchement a lieu à la fin de la grossesse.
+li: Contraception : méthodes pour éviter une grossesse (pilule, préservatif, stérilet…). Le préservatif protège aussi contre les IST.
+li: IST : infections sexuellement transmissibles (gonococcie, syphilis, hépatite B, VIH/SIDA).
+li: VIH : se transmet par voie sexuelle non protégée, par le sang (seringues, transfusions non contrôlées) et de la mère à l'enfant. Il ne se transmet pas par un baiser, une poignée de main ou les piqûres de moustiques.
+li: Prévention : abstinence, fidélité, préservatif, tests de dépistage, matériel à usage unique.
+note: Exemple : un test de dépistage VIH est confidentiel et gratuit dans de nombreux centres de santé.
+note: Un traitement antirétroviral permet à une personne séropositive de vivre longtemps en bonne santé.
+== questions
+Comment s'appelle le gamète mâle ? || Le spermatozoïde || L'ovule || Le zygote || L'embryon || Il est produit par les testicules.
+Comment s'appelle le gamète femelle ? || L'ovule || Le spermatozoïde || Le fœtus || Le placenta || Il est produit par les ovaires.
+Où se déroule habituellement la fécondation ? || Dans la trompe || Dans l'utérus || Dans l'ovaire || Dans le vagin || L'ovule y rencontre le spermatozoïde.
+Comment appelle-t-on la cellule issue de la fécondation ? || L'œuf ou zygote || Le fœtus || L'ovule || Le gamète || Il se divise ensuite plusieurs fois.
+Où s'implante l'œuf ? || Dans l'utérus || Dans l'ovaire || Dans la trompe seulement || Dans le vagin || C'est la nidation.
+Combien dure une grossesse environ ? || 9 mois || 3 mois || 6 mois || 12 mois || Environ 40 semaines.
+Quel organe nourrit l'embryon pendant la grossesse ? || Le placenta || Le foie || Le cœur || L'estomac || Il assure les échanges mère-enfant.
+Que se passe-t-il à la puberté ? || Le corps se transforme sous l'effet des hormones || Le corps cesse de grandir || Les os disparaissent || Rien || Apparition des caractères sexuels secondaires.
+Qu'est-ce que la contraception ? || L'ensemble des méthodes qui évitent une grossesse || Un traitement du VIH || Un vaccin || Une opération || Exemples : pilule, préservatif.
+Quelle méthode protège à la fois d'une grossesse et des IST ? || Le préservatif || La pilule || Le retrait || Le stérilet || C'est la seule méthode barrière qui protège des deux.
+Que signifie IST ? || Infection sexuellement transmissible || Inflammation simple de la tête || Infection sans traitement || Immunité spécifique totale || Le VIH en est une.
+Que signifie VIH ? || Virus de l'immunodéficience humaine || Virus infectieux humain || Vaccin immunitaire humain || Voie interne de l'hôte || Il attaque le système immunitaire.
+Que signifie SIDA ? || Syndrome d'immunodéficience acquise || Syndrome infectieux du sang || Système immunitaire diminué à l'avance || Son d'infection du sang || Stade avancé de l'infection par le VIH.
+Par quelle voie le VIH ne se transmet-il pas ? || Une poignée de main || Les rapports sexuels non protégés || Le sang contaminé || De la mère à l'enfant || Il ne passe pas par un contact ordinaire.
+Que permet un traitement antirétroviral ? || De vivre longtemps en bonne santé avec le VIH || De guérir définitivement || De s'immuniser || De transmettre le virus || Il bloque la multiplication du virus.

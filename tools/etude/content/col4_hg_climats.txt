@@ -1,0 +1,28 @@
+titre: Climats et milieux naturels
+== fiche
+p: Le climat est l'ensemble des conditions de température et de précipitations d'un lieu observées sur de nombreuses années. La météo décrit le temps d'un jour.
+li: Trois grandes zones : zone chaude (entre les tropiques), zones tempérées, zones froides (près des pôles).
+li: Climat équatorial : chaud et très humide toute l'année, forêt dense (bassin du Congo, Amazonie).
+li: Climat tropical : alternance de saison sèche et de saison des pluies, savane (Afrique de l'Ouest).
+li: Climat désertique : très peu de pluie, grands écarts de température entre jour et nuit (Sahara).
+li: Climat tempéré : quatre saisons, précipitations réparties (Europe de l'Ouest). Climat polaire : très froid, glace permanente.
+li: Facteurs du climat : latitude, altitude, distance à la mer, courants marins.
+li: Le réchauffement climatique est dû en grande partie aux gaz à effet de serre (CO₂, méthane) produits par les activités humaines.
+note: Exemple : le Togo a un climat tropical au nord (une saison des pluies) et subéquatorial au sud (deux saisons des pluies).
+note: Un climagramme (diagramme ombrothermique) résume températures et précipitations mois par mois.
+== questions
+Quelle est la différence entre météo et climat ? || La météo est le temps d'un jour, le climat une moyenne sur de nombreuses années || Aucune || Le climat change chaque heure || La météo dure des siècles || Le climat est une moyenne sur 30 ans environ.
+Quel climat est chaud et très humide toute l'année ? || Équatorial || Désertique || Polaire || Tempéré || On y trouve la forêt dense.
+Quel climat présente une saison sèche et une saison des pluies ? || Tropical || Polaire || Équatorial || Océanique || La savane est typique de ce climat.
+Quelle végétation correspond au climat tropical ? || La savane || La toundra || La forêt de conifères || Le désert || Herbes hautes et arbres dispersés.
+Quel climat est très sec avec de grands écarts de température ? || Désertique || Équatorial || Tempéré || Tropical humide || Le Sahara en est l'exemple.
+Quel climat est très froid, avec de la glace en permanence ? || Polaire || Tropical || Tempéré || Équatorial || Il se trouve près des pôles.
+Combien de saisons marque le climat tempéré ? || Quatre || Deux || Une || Six || Printemps, été, automne, hiver.
+Quel facteur influence la température selon la hauteur ? || L'altitude || La couleur du sol || La vitesse du vent seul || Le nombre d'habitants || Plus on monte, plus il fait froid.
+Quel facteur influence le climat selon l'éloignement de la mer ? || La distance à la mer || La longueur de la route || L'âge du sol || La taille du pays || La mer adoucit les températures.
+Quelle région du monde a un climat équatorial ? || Le bassin du Congo || Le Sahara || La Sibérie || Les Alpes || Il pleut presque tous les jours.
+Quelle est la principale cause du réchauffement climatique ? || Les gaz à effet de serre produits par les activités humaines || La Lune || Les volcans seulement || Les nuages || Le CO₂ retient la chaleur.
+Quel gaz est un gaz à effet de serre ? || Le dioxyde de carbone (CO₂) || Le dioxygène || L'azote || L'hélium || Il est produit par la combustion du charbon, du pétrole et du gaz.
+Que représente un diagramme ombrothermique ? || Les températures et les précipitations mois par mois || Les routes d'un pays || Les habitants || Le relief || Il résume le climat d'une ville.
+Quel est le mot pour désigner la pluie, la neige, la grêle ? || Les précipitations || Les évaporations || Les températures || Les vents || Elles s'expriment en millimètres.
+Quelle est la conséquence du réchauffement climatique ? || La fonte des glaces et la montée du niveau des mers || Un refroidissement général || La disparition des océans || La fin des saisons seule || Les littoraux sont menacés.

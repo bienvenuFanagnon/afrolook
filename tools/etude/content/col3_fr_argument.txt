@@ -1,0 +1,28 @@
+titre: Texte argumentatif et expression écrite
+== fiche
+p: Un texte argumentatif cherche à convaincre ou à persuader en défendant une thèse avec des arguments et des exemples.
+li: Thèse : l'opinion défendue. Argument : une raison qui soutient la thèse. Exemple : un fait précis qui illustre l'argument.
+li: Les connecteurs logiques organisent le texte : d'abord, ensuite, enfin (addition) ; mais, cependant, pourtant (opposition) ; car, parce que, donc, ainsi (cause et conséquence).
+li: Plan d'un texte argumenté : introduction (présenter le sujet et la question), développement (arguments + exemples), conclusion (bilan et ouverture).
+li: Réfuter : reprendre l'argument adverse pour le contredire (certes… mais…).
+li: Registres : on utilise un niveau de langue soutenu ou courant, pas familier, dans un devoir.
+li: Écrire une lettre formelle : lieu et date, destinataire, objet, formule d'appel (Madame, Monsieur), corps de la lettre, formule de politesse, signature.
+li: Révision : relire pour corriger l'orthographe, la ponctuation et la cohérence.
+note: Exemple : Thèse : « L'école doit être gratuite. » Argument : « Car l'instruction est un droit. » Exemple : « Au Togo, la gratuité du primaire a augmenté le nombre d'élèves. »
+note: Un paragraphe = une idée principale, avec un alinéa au début.
+== questions
+Quel est le but d'un texte argumentatif ? || Convaincre ou persuader || Décrire un lieu || Raconter une histoire || Donner une recette || On défend une opinion avec des arguments.
+Comment appelle-t-on l'opinion défendue dans un texte argumentatif ? || La thèse || L'exemple || La chute || La légende || Elle est soutenue par des arguments.
+Qu'est-ce qu'un argument ? || Une raison qui soutient la thèse || Un exemple chiffré seulement || Une question || Une description || Il rend la thèse crédible.
+À quoi sert un exemple ? || À illustrer un argument || À poser une question || À conclure || À répéter la thèse || Il rend l'argument concret.
+Quel connecteur exprime une opposition ? || Cependant || Ensuite || Donc || Car || « Cependant » introduit une idée contraire.
+Quel connecteur exprime une cause ? || Parce que || Pourtant || Mais || Alors que || « Parce que » explique la raison.
+Quel connecteur exprime une conséquence ? || Donc || Car || Pourtant || Cependant || « Donc » introduit le résultat.
+Quel connecteur sert à ajouter une idée ? || D'abord / ensuite / enfin || Mais || Pourtant || Bien que || Il organise l'ordre des arguments.
+Quel est le plan d'un texte argumenté ? || Introduction, développement, conclusion || Début, milieu, fin sans lien || Titre, légende, image || Question, réponse, question || Chaque partie a un rôle précis.
+Que fait-on dans l'introduction ? || On présente le sujet et la question || On donne la conclusion || On cite tous les exemples || On remercie le lecteur || Elle met le lecteur en situation.
+Que fait-on dans la conclusion ? || On fait le bilan et on ouvre sur un autre aspect || On présente de nouveaux arguments longs || On recopie l'introduction || On pose dix questions || Elle clôt le raisonnement.
+Que veut dire « réfuter » ? || Contredire un argument adverse || Répéter un argument || Résumer un texte || Écrire un poème || Certes… mais… est une façon de le faire.
+Quelle formule d'appel convient pour une lettre à un directeur de sexe inconnu ? || Madame, Monsieur, || Salut, || Cher copain, || Coucou, || C'est la formule neutre et polie.
+Quel niveau de langue convient pour un devoir ? || Courant ou soutenu || Familier || Argot || SMS || Il faut être clair et correct.
+Quelle phrase est une bonne transition ? || Par ailleurs, il faut aussi remarquer que… || Bon alors ben voilà || Hé, écoute || Bref lol || Elle relie deux idées de manière claire.

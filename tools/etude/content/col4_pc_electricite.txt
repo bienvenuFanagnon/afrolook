@@ -1,0 +1,28 @@
+titre: Électricité : circuits et tension
+== fiche
+p: Un circuit électrique est une boucle fermée contenant un générateur (pile, batterie) et des récepteurs (lampe, moteur) reliés par des fils.
+li: Le courant circule seulement si le circuit est fermé. Un interrupteur ouvert coupe le courant.
+li: Matériaux conducteurs : métaux, graphite, eau salée. Matériaux isolants : plastique, bois sec, verre, caoutchouc.
+li: Le courant électrique sort par la borne + du générateur et revient par la borne − (sens conventionnel).
+li: Intensité I du courant : mesurée en ampères (A) avec un ampèremètre branché en série.
+li: Tension U : mesurée en volts (V) avec un voltmètre branché en dérivation (en parallèle) aux bornes du dipôle.
+li: Dans un circuit en série, l'intensité est la même partout et les tensions s'additionnent. Dans un circuit en dérivation, les tensions sont égales et les intensités s'additionnent.
+li: Court-circuit : un fil relie directement les bornes du générateur, danger (surchauffe, incendie).
+note: Exemple : en série, U = U₁ + U₂ ; en dérivation, I = I₁ + I₂.
+note: Sécurité : ne jamais toucher une prise avec les mains mouillées ; les prises de terre et les disjoncteurs protègent.
+== questions
+Dans quel cas la lampe d'un circuit s'allume-t-elle ? || Quand le circuit est fermé || Quand le circuit est ouvert || Quand l'interrupteur est ouvert || Jamais || Le courant doit pouvoir circuler en boucle.
+Quel appareil mesure l'intensité du courant ? || L'ampèremètre || Le voltmètre || Le thermomètre || Le baromètre || Il se branche en série.
+Quel appareil mesure la tension ? || Le voltmètre || L'ampèremètre || La balance || Le chronomètre || Il se branche en dérivation.
+Quelle est l'unité de l'intensité ? || L'ampère (A) || Le volt (V) || Le watt (W) || L'ohm (Ω) || C'est le courant qui traverse le circuit.
+Quelle est l'unité de la tension ? || Le volt (V) || L'ampère (A) || Le watt (W) || Le joule (J) || La tension se mesure aux bornes d'un dipôle.
+Lequel de ces matériaux est un conducteur ? || Le cuivre || Le plastique || Le bois sec || Le verre || Les métaux conduisent bien le courant.
+Lequel de ces matériaux est un isolant ? || Le caoutchouc || Le fer || L'aluminium || Le cuivre || Il empêche le passage du courant.
+Comment branche-t-on un ampèremètre ? || En série || En dérivation || Aux bornes de la pile seulement || Il ne se branche pas || Le courant doit le traverser.
+Comment branche-t-on un voltmètre ? || En dérivation || En série || Dans un fil seul || Il ne se branche pas || Il se place aux bornes du dipôle.
+Dans un circuit en série, que dire de l'intensité ? || Elle est la même partout || Elle double à chaque lampe || Elle disparaît || Elle est nulle || Le courant n'a qu'un seul chemin.
+Dans un circuit en série, comment sont les tensions ? || Elles s'additionnent || Elles sont égales || Elles sont nulles || Elles se multiplient || U = U₁ + U₂.
+Dans un circuit en dérivation, que dire des tensions aux bornes des branches ? || Elles sont égales || Elles s'additionnent || Elles sont nulles || Elles varient || Chaque branche est reliée aux mêmes bornes.
+Quelle est la tension totale de deux piles de 4,5 V montées en série ? || 9 V || 4,5 V || 2,25 V || 0 V || Les tensions s'additionnent.
+Que peut provoquer un court-circuit ? || Une surchauffe et un risque d'incendie || Une lumière plus forte sans danger || Un refroidissement || Rien || Le fil ne limite plus le courant.
+Dans un circuit en dérivation, deux branches ont des intensités de 0,2 A et 0,3 A. Quelle est l'intensité dans le fil principal ? || 0,5 A || 0,1 A || 0,06 A || 0,25 A || I = I₁ + I₂.

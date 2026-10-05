@@ -1,0 +1,28 @@
+titre: Present simple et present continuous
+== fiche
+p: En anglais, deux temps du présent s'emploient souvent : le present simple (habitudes, vérités générales) et le present continuous (action en cours).
+li: Present simple : base verbale, avec -s à la 3e personne du singulier : I play, he plays, she watches, it goes.
+li: Négation : do not (don't) / does not (doesn't) + base verbale : He doesn't play. Question : Do you play ? Does she play ?
+li: Marqueurs du present simple : always, usually, often, sometimes, never, every day, on Mondays.
+li: Present continuous : to be (am / is / are) + verbe en -ing : I am playing, she is reading, they are eating.
+li: Négation : I am not playing. Question : Are you playing ?
+li: Marqueurs du present continuous : now, at the moment, today, right now.
+li: Orthographe du -ing : run → running, write → writing, play → playing.
+note: Exemple : He plays football every Saturday (habitude), but he is studying now (en cours).
+note: Les verbes d'état (know, like, love, want) ne s'emploient pas à la forme -ing.
+== questions
+Complète : She ___ English every day. || speaks || speak || is speaking || speaking || Habitude : present simple, -s à la 3e personne.
+Complète : I ___ my homework now. || am doing || do || does || doing || Now : present continuous.
+Complète : They ___ football on Sundays. || play || plays || are play || playing || They va avec la base verbale.
+Complète : He ___ to school by bus. || goes || go || going || is go || He + verbe : go devient goes.
+Complète : We ___ watching TV at the moment. || are || is || am || do || At the moment : present continuous avec are.
+Quelle négation du present simple est correcte ? || She doesn't like fish. || She don't like fish. || She doesn't likes fish. || She not like fish. || Après doesn't, on emploie la base verbale.
+Quelle question est correcte ? || Does he play tennis? || Do he play tennis? || Does he plays tennis? || Is he play tennis? || Does + sujet + base verbale.
+Quelle phrase est au present continuous ? || The children are playing. || The children play. || The children played. || The children plays. || be + verbe en -ing.
+Quelle est la forme -ing de « run » ? || running || runing || runs || runned || On double la consonne finale.
+Quelle est la forme -ing de « write » ? || writing || writeing || writting || writes || On supprime le e final.
+Quel mot indique souvent le present simple ? || always || now || at the moment || right now || Il exprime une habitude.
+Quel mot indique souvent le present continuous ? || now || usually || every day || never || Il situe l'action au moment présent.
+Quelle négation du present continuous est correcte ? || I am not working today. || I not working today. || I don't working today. || I am no working today. || Négation du present continuous : am not + -ing.
+Quelle phrase est incorrecte ? || I am knowing the answer. || I know the answer. || She likes music. || We want water. || Know est un verbe d'état, il ne prend pas -ing.
+Complète : Look! It ___ . || is raining || rains || rain || are raining || Look! indique une action en cours.

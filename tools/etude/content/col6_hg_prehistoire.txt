@@ -1,0 +1,27 @@
+titre: De la préhistoire aux premières civilisations
+== fiche
+p: La préhistoire commence avec les premiers humains et se termine avec l'invention de l'écriture. L'histoire commence avec l'écriture (vers 3 300 avant J.-C.).
+li: Paléolithique (âge de la pierre taillée) : chasse, cueillette, vie nomade, découverte du feu, outils en pierre.
+li: Néolithique (pierre polie) : agriculture et élevage, vie sédentaire, villages, poterie.
+li: L'âge des métaux : cuivre, bronze puis fer.
+li: Les premières civilisations naissent près des fleuves : l'Égypte au bord du Nil, la Mésopotamie entre le Tigre et l'Euphrate.
+li: L'Égypte antique : pharaons, pyramides, hiéroglyphes, momification. Le Nil apporte l'eau et le limon fertile.
+li: Les premières écritures : hiéroglyphes (Égypte) et écriture cunéiforme (Mésopotamie).
+note: Vocabulaire : nomade = qui se déplace ; sédentaire = qui reste au même endroit.
+note: Lucy, un australopithèque de 3,2 millions d'années, a été découverte en Éthiopie.
+== questions
+Qu'est-ce qui marque la fin de la préhistoire ? || L'invention de l'écriture || La découverte du feu || L'invention de la roue || La naissance de Jésus || L'histoire commence avec l'écriture.
+Quelle découverte a changé la vie des premiers humains au paléolithique ? || Le feu || Le téléphone || L'électricité || Le papier || Il permettait de se chauffer, cuire et se protéger.
+Comment vivaient les humains au paléolithique ? || De chasse et de cueillette, en nomades || D'agriculture, dans des villes || De commerce maritime || Dans des palais || Ils suivaient le gibier.
+Quel changement apporte le néolithique ? || L'agriculture et l'élevage || La chasse seule || L'invention de l'écriture || L'imprimerie || Les humains deviennent sédentaires.
+Que signifie « sédentaire » ? || Qui reste au même endroit || Qui se déplace sans cesse || Qui chasse || Qui voyage sur l'eau || Le contraire de nomade.
+Quel fleuve est au cœur de la civilisation égyptienne ? || Le Nil || Le Niger || Le Congo || Le Zambèze || Il déborde chaque année en déposant du limon.
+Comment s'appelle le roi d'Égypte ? || Le pharaon || Le sultan || L'empereur || Le calife || Il était considéré comme un dieu vivant.
+Comment s'appelle l'écriture des anciens Égyptiens ? || Les hiéroglyphes || Le cunéiforme || L'alphabet latin || Le braille || Ils dessinaient des signes sur la pierre et le papyrus.
+À quoi servaient les pyramides ? || À abriter les tombeaux des pharaons || À stocker l'eau || À observer la mer || À loger les soldats || Ce sont des monuments funéraires.
+Sur quoi les Égyptiens écrivaient-ils souvent ? || Sur le papyrus || Sur le plastique || Sur le coton || Sur l'ardoise || Il est fabriqué à partir d'une plante du Nil.
+Entre quels fleuves se développe la Mésopotamie ? || Le Tigre et l'Euphrate || Le Nil et le Congo || Le Niger et la Volta || Le Rhin et la Seine || Le mot signifie « entre les fleuves ».
+Comment s'appelle l'écriture de la Mésopotamie ? || Le cunéiforme || Les hiéroglyphes || L'alphabet grec || Le sanskrit || Les signes sont gravés dans l'argile en forme de clous.
+Où a été découverte Lucy, un fossile vieux de 3,2 millions d'années ? || En Éthiopie || En France || Au Japon || Au Brésil || L'Afrique de l'Est est un berceau de l'humanité.
+Quelle matière sert à fabriquer les outils au néolithique ? || La pierre polie || L'acier || Le plastique || Le verre || Les haches sont polies pour être plus efficaces.
+Quel métal est découvert après le cuivre et le bronze ? || Le fer || L'or || L'aluminium || L'argent || L'âge du fer suit l'âge du bronze.

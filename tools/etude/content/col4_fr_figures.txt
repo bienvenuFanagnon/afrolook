@@ -1,0 +1,28 @@
+titre: Le récit et les figures de style
+== fiche
+p: Un récit raconte une histoire. Il s'organise en situation initiale, élément perturbateur, péripéties, élément de résolution et situation finale (schéma narratif).
+li: Le narrateur raconte : à la 1re personne (narrateur personnage) ou à la 3e personne (narrateur extérieur).
+li: Les temps du récit : passé simple et imparfait (imparfait pour le décor, passé simple pour l'action).
+li: Comparaison : rapproche deux éléments avec un outil de comparaison (comme, tel, semblable à) : Il est fort comme un lion.
+li: Métaphore : comparaison sans outil : Cet homme est un lion.
+li: Personnification : on donne des qualités humaines à un animal ou à une chose : Le vent murmure.
+li: Hyperbole : exagération : Je meurs de faim. Antithèse : opposition de deux mots : le jour et la nuit.
+li: Le champ lexical est l'ensemble des mots qui se rapportent à un même thème (mer : vague, plage, sable).
+note: Exemple : « Le soleil sourit aux enfants » est une personnification.
+note: Le schéma narratif commence par la situation initiale : qui, où, quand.
+== questions
+Comment s'appelle le début d'un récit qui présente les personnages et le lieu ? || La situation initiale || L'élément perturbateur || La résolution || La chute || Il décrit la situation de départ.
+Que provoque l'élément perturbateur ? || Un changement dans l'histoire || La fin de l'histoire || Le titre || La morale || Il lance les péripéties.
+Quelle figure de style est « Il est fort comme un lion » ? || Une comparaison || Une métaphore || Une hyperbole || Une personnification || Elle utilise l'outil « comme ».
+Quelle figure de style est « Cet homme est un lion » ? || Une métaphore || Une comparaison || Une antithèse || Une litote || C'est une comparaison sans outil.
+Quelle figure de style est « Le vent murmure » ? || Une personnification || Une comparaison || Une hyperbole || Une antithèse || Le vent reçoit une action humaine.
+Quelle figure de style est « Je meurs de faim » ? || Une hyperbole || Une comparaison || Une métaphore || Une personnification || Elle exagère pour insister.
+Quelle figure de style oppose deux idées, comme « le jour et la nuit » ? || L'antithèse || La métaphore || La comparaison || L'hyperbole || Les deux termes sont contraires.
+Qu'est-ce qu'un champ lexical ? || L'ensemble des mots d'un même thème || Une forme de verbe || Une figure de style || Un type de phrase || Exemple : vague, plage, sable pour la mer.
+Quel temps du récit décrit le décor ? || L'imparfait || Le passé simple || Le futur || Le plus-que-parfait || Le passé simple raconte les actions principales.
+Quel temps du récit raconte les actions brèves ? || Le passé simple || L'imparfait || Le futur || Le conditionnel || Exemple : il ouvrit la porte.
+À quelle personne parle un narrateur qui est aussi un personnage ? || À la 1re personne || À la 3e personne || À la 2e personne || Il n'y a pas de personne || Il dit « je ».
+Quelle phrase contient une comparaison ? || Elle chante comme un rossignol. || Elle est un rossignol. || Le rossignol chante. || Elle chante magnifiquement. || « Comme » est l'outil de comparaison.
+Quelle phrase contient une métaphore ? || Ce garçon est un lion. || Ce garçon est fort comme un lion. || Ce garçon court. || Ce garçon rugit comme un lion. || Aucun outil de comparaison.
+Quelle phrase contient une personnification ? || La lune veille sur le village. || La lune est ronde. || Il regarde la lune. || La lune brille la nuit. || La lune « veille », comme une personne.
+Comment s'appelle la dernière étape du schéma narratif ? || La situation finale || La situation initiale || L'élément perturbateur || Les péripéties || Elle montre le nouvel équilibre.

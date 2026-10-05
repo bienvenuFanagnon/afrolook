@@ -1,0 +1,27 @@
+titre: Types de phrases et compléments
+== fiche
+p: Selon l'intention de celui qui parle, on distingue quatre types de phrases.
+li: Déclarative : elle affirme ou raconte (se termine par un point). Interrogative : elle pose une question (point d'interrogation). Impérative : elle donne un ordre ou un conseil. Exclamative : elle exprime un sentiment (point d'exclamation).
+li: Forme affirmative ou négative : la négation encadre le verbe (ne … pas, ne … jamais, ne … plus, ne … rien).
+li: Le complément d'objet direct (COD) répond à « quoi ? / qui ? » sans préposition (Il mange une mangue).
+li: Le complément d'objet indirect (COI) est introduit par une préposition (à, de) : Elle parle à son frère.
+li: Le complément circonstanciel (CC) précise le lieu, le temps ou la manière : Il joue dans la cour (lieu), le soir (temps), joyeusement (manière).
+li: Le complément du nom précise un nom (la maison de mon père).
+note: Exemple : « Ama offre un cadeau à sa mère demain. » COD : un cadeau ; COI : à sa mère ; CC de temps : demain.
+note: Les compléments circonstanciels peuvent se déplacer ou se supprimer ; le COD, non.
+== questions
+Quel type de phrase est : « Ferme la porte ! » ? || Impérative || Déclarative || Interrogative || Exclamative || Elle exprime un ordre.
+Quel type de phrase est : « Où habites-tu ? » ? || Interrogative || Déclarative || Impérative || Exclamative || Elle pose une question.
+Quel type de phrase est : « Quelle belle journée ! » ? || Exclamative || Déclarative || Interrogative || Impérative || Elle exprime une émotion.
+Quel type de phrase est : « Les enfants jouent. » ? || Déclarative || Interrogative || Impérative || Exclamative || Elle énonce un fait.
+Quelle phrase est à la forme négative ? || Il ne mange pas. || Il mange tout. || Il mange bien. || Il mange déjà. || La négation encadre le verbe.
+Quelle est la négation de « Il chante » ? || Il ne chante pas. || Il chante pas. || Il pas chante. || Il ne pas chante. || On place ne devant le verbe et pas derrière.
+Quel est le COD dans « Ama mange une mangue » ? || Une mangue || Ama || Mange || Aucun || On répond à « Ama mange quoi ? ».
+Quel est le COI dans « Elle parle à son frère » ? || À son frère || Elle || Parle || Son || Le complément est introduit par la préposition à.
+Quel est le CC de lieu dans « Il joue dans la cour » ? || Dans la cour || Il || Joue || Aucun || Il répond à « où ? ».
+Quel est le CC de temps dans « Nous partirons demain » ? || Demain || Nous || Partirons || Aucun || Il répond à « quand ? ».
+Quel est le CC de manière dans « Il marche lentement » ? || Lentement || Il || Marche || Aucun || Il répond à « comment ? ».
+Quel est le complément du nom dans « le livre de mon frère » ? || De mon frère || Le livre || Livre || Mon || Il précise le nom « livre ».
+Quelle phrase contient un COD ? || Il lit un livre. || Il dort dans son lit. || Il vient demain. || Il est content. || Lire quoi ? un livre.
+Lequel de ces compléments peut être supprimé sans changer le sens de la phrase ? || Un complément circonstanciel || Le COD || Le sujet || Le verbe || Les CC sont facultatifs.
+Quelle phrase est interrogative ? || Veux-tu venir ? || Viens ici. || Tu viens. || Quelle surprise ! || L'inversion du sujet marque la question.

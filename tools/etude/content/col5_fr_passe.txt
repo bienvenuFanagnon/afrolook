@@ -1,0 +1,27 @@
+titre: Les temps du passé
+== fiche
+p: Pour raconter une histoire passée, on utilise plusieurs temps : l'imparfait, le passé composé et le passé simple.
+li: Imparfait : décrit, exprime une habitude ou une action qui dure (Il pleuvait ; elle chantait chaque matin).
+li: Passé composé : action terminée, souvent récente. Formé avec l'auxiliaire avoir ou être au présent + participe passé (j'ai mangé, elle est partie).
+li: Passé simple : action terminée et brève dans un récit écrit (il ouvrit la porte). Terminaisons du 1er groupe : -ai, -as, -a, -âmes, -âtes, -èrent.
+li: Plus-que-parfait : action passée avant une autre action passée (il avait mangé quand elle est arrivée).
+li: Accord du participe passé avec l'auxiliaire être : il s'accorde avec le sujet (elles sont parties). Avec avoir : il s'accorde avec le COD placé avant (les fleurs que j'ai cueillies).
+li: Verbes de mouvement conjugués avec être : aller, venir, partir, arriver, entrer, sortir, monter, descendre, tomber, naître, mourir.
+note: Exemple : Il pleuvait (imparfait, décor) quand nous sommes sortis (passé composé, action).
+note: Participe passé du 1er groupe : -é (chanté) ; du 2e groupe : -i (fini) ; 3e groupe : -u, -is, -it (vu, pris, dit).
+== questions
+Quel temps exprime une habitude dans le passé ? || L'imparfait || Le futur || Le présent || Le conditionnel || Il décrit ce qui se répétait.
+Comment forme-t-on le passé composé ? || Auxiliaire au présent + participe passé || Infinitif + -ai || Radical + -ais || Seulement le radical || Exemple : j'ai chanté.
+Quel est le passé composé de « je mange » ? || J'ai mangé || Je mangeai || Je mangeais || Je mangerai || Avec l'auxiliaire avoir et le participe mangé.
+Quel est le passé composé de « elle part » ? || Elle est partie || Elle a parti || Elle partait || Elle partira || Partir se conjugue avec être.
+Quel auxiliaire utilise-t-on avec « aller » ? || Être || Avoir || Aucun || Les deux || Je suis allé(e).
+Complète : « Il ___ quand nous sommes sortis » (pleuvoir, imparfait). || pleuvait || pleut || pleuvra || a plu || L'imparfait décrit le décor.
+Quelle phrase est au passé simple ? || Il ouvrit la porte. || Il ouvre la porte. || Il ouvrait la porte. || Il a ouvert la porte. || Le passé simple s'emploie surtout à l'écrit.
+Quelle est la terminaison du passé simple pour « ils chanter » ? || Ils chantèrent || Ils chantaient || Ils ont chanté || Ils chanteront || Terminaison du 1er groupe : -èrent.
+Quel est le participe passé du verbe « finir » ? || Fini || Finé || Finit || Finu || Les verbes du 2e groupe donnent -i.
+Quel est le participe passé du verbe « prendre » ? || Pris || Prendu || Pri || Prit || C'est un verbe du 3e groupe irrégulier.
+Comment écrit-on : « Elles sont ___ » (partir, passé composé) ? || parties || partis || parti || partie || Avec être, le participe s'accorde avec le sujet féminin pluriel.
+Quel temps exprime une action passée avant une autre action passée ? || Le plus-que-parfait || L'imparfait || Le futur antérieur seulement || Le présent || Il avait mangé quand elle est arrivée.
+Quelle forme convient : « Hier, nous ___ au marché » (aller, passé composé) ? || sommes allés || avons allé || allions || irons || Aller se conjugue avec être.
+Quelle phrase respecte l'accord du participe passé ? || Les fleurs que j'ai cueillies sont belles. || Les fleurs que j'ai cueilli sont belles. || Les fleurs que j'ai cueillis sont belles. || Les fleurs que j'ai cueillie sont belles. || Le COD « que » (fleurs) est placé avant : accord au féminin pluriel.
+Quel verbe se conjugue avec l'auxiliaire être ? || Naître || Manger || Chanter || Écrire || Naître, mourir, aller, venir… utilisent être.

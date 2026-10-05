@@ -1,0 +1,26 @@
+titre: Conjugaison : présent, imparfait, futur
+== fiche
+p: Un verbe se conjugue selon la personne (je, tu, il…), le nombre et le temps. Le verbe a un radical et une terminaison.
+li: Trois groupes : 1er groupe (verbes en -er : chanter), 2e groupe (en -ir comme finir, participe en -issant), 3e groupe (les autres : prendre, aller, faire).
+li: Présent du 1er groupe : je chante, tu chantes, il chante, nous chantons, vous chantez, ils chantent.
+li: Imparfait (habitudes, descriptions dans le passé) : terminaisons -ais, -ais, -ait, -ions, -iez, -aient (je chantais).
+li: Futur simple (action à venir) : terminaisons -ai, -as, -a, -ons, -ez, -ont ajoutées à l'infinitif (je chanterai).
+li: Auxiliaires : être (je suis, j'étais, je serai) et avoir (j'ai, j'avais, j'aurai).
+note: Exemple : Hier, il chantait ; aujourd'hui, il chante ; demain, il chantera.
+note: Attention aux homophones : « ont » (avoir) et « on » (pronom) ; « sont » (être) et « son » (déterminant).
+== questions
+À quel groupe appartient le verbe « chanter » ? || 1er groupe || 2e groupe || 3e groupe || Aucun groupe || Les verbes en -er (sauf aller) sont du 1er groupe.
+À quel groupe appartient le verbe « finir » ? || 2e groupe || 1er groupe || 3e groupe || Aucun || Il fait finissons, finissant.
+À quel groupe appartient le verbe « prendre » ? || 3e groupe || 1er groupe || 2e groupe || Aucun || Il fait partie des verbes irréguliers.
+Quelle est la terminaison de « tu » au présent pour chanter ? || Tu chantes || Tu chante || Tu chantais || Tu chanteras || La 2e personne du singulier se termine par -es.
+Comment conjugue-t-on « nous chanter » au présent ? || Nous chantons || Nous chantez || Nous chantent || Nous chante || La terminaison est -ons.
+Quel temps exprime une action à venir ? || Le futur || L'imparfait || Le présent || Le passé composé || Demain, il chantera.
+Comment s'écrit « je chanter » à l'imparfait ? || Je chantais || Je chanterai || Je chante || Je chantai || L'imparfait se termine par -ais à la 1re personne.
+Comment s'écrit « il chanter » au futur ? || Il chantera || Il chantait || Il chante || Il chantara || Futur : infinitif + -a.
+Quel est le présent de « avoir » à la 1re personne ? || J'ai || Je suis || J'avais || J'aurai || « J'ai » est le présent du verbe avoir.
+Quel est le présent de « être » à la 3e personne du pluriel ? || Ils sont || Ils ont || Ils étaient || Ils seront || « Sont » vient du verbe être.
+Quelle est la forme correcte : « Ils ___ des amis » (être, présent) ? || sont || ont || son || on || Il s'agit du verbe être.
+Quelle est la forme correcte : « Ils ___ faim » (avoir, présent) ? || ont || sont || on || son || C'est le verbe avoir.
+Quelle forme convient : « Hier, nous ___ au marché » (aller, imparfait) ? || allions || irons || allons || allez || L'imparfait de « nous » se termine par -ions.
+Quel temps utilise-t-on pour décrire une habitude passée ? || L'imparfait || Le futur || Le présent || Le passé simple seulement || Autrefois, il pêchait chaque matin.
+Quelle forme convient : « Demain, je ___ à l'école » (aller, futur) ? || irai || vais || allais || allai || Le futur de « aller » est irrégulier : j'irai.

@@ -1,0 +1,27 @@
+titre: Greetings, to be and to have
+== fiche
+p: Pour parler anglais au quotidien, on commence par saluer, se présenter et utiliser les verbes « to be » (être) et « to have » (avoir).
+li: Salutations : Hello / Hi (salut), Good morning (bonjour, le matin), Good afternoon (bon après-midi), Good evening (bonsoir), Goodbye / Bye (au revoir).
+li: To be au présent : I am, you are, he/she/it is, we are, you are, they are. Contractions : I'm, you're, he's, she's, we're, they're.
+li: To have au présent : I have, you have, he/she/it has, we have, you have, they have.
+li: Forme négative de to be : I am not, he is not (isn't), they are not (aren't). Question : Are you a student ?
+li: Se présenter : My name is Ama. I am twelve years old. I am from Togo.
+li: Nombres 1 à 10 : one, two, three, four, five, six, seven, eight, nine, ten. Jours : Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.
+note: Attention : « he has » (et non « he have »).
+note: « How are you ? » appelle la réponse « I'm fine, thank you. And you ? »
+== questions
+Comment dit-on « Bonjour » le matin en anglais ? || Good morning || Good night || Goodbye || Good evening || Good morning se dit avant midi.
+Comment dit-on « Au revoir » en anglais ? || Goodbye || Hello || Please || Sorry || On peut aussi dire Bye.
+Complète : I ___ a student. || am || is || are || be || I va toujours avec am.
+Complète : She ___ my sister. || is || am || are || have || She, he, it vont avec is.
+Complète : They ___ friends. || are || is || am || has || They va avec are.
+Complète : We ___ from Togo. || are || is || am || be || We va avec are.
+Complète : I ___ a book. || have || has || am || is || I va avec have.
+Complète : He ___ a bicycle. || has || have || is || are || À la 3e personne du singulier, have devient has.
+Quelle est la contraction de « I am » ? || I'm || I's || Im || Ia'm || On remplace a par une apostrophe.
+Comment dit-on « Comment vas-tu ? » ? || How are you? || Who are you? || Where are you? || What is you? || Réponse possible : I'm fine, thank you.
+Comment dit-on « Je m'appelle Ama » ? || My name is Ama. || I am call Ama. || Me name Ama. || I name Ama. || My name is… sert à se présenter.
+Quel est le nombre « seven » ? || 7 || 6 || 8 || 17 || Seven est sept.
+Quel jour vient après Monday ? || Tuesday || Sunday || Friday || Thursday || Monday, Tuesday, Wednesday…
+Quelle est la forme négative de « He is a teacher » ? || He is not a teacher. || He not is a teacher. || He do not a teacher. || He isn't are a teacher. || On place not après is.
+Comment poser la question « Tu es un élève ? » ? || Are you a student? || You is a student? || Do you are a student? || Is you a student? || On inverse le verbe et le sujet.

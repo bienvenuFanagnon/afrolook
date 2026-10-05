@@ -1,0 +1,28 @@
+titre: La population mondiale
+== fiche
+p: La population mondiale dépasse 8 milliards d'habitants. Elle est inégalement répartie sur la planète.
+li: Les régions très peuplées : Asie de l'Est (Chine, Japon), sous-continent indien, Europe de l'Ouest, côte est des États-Unis, delta du Nil, golfe de Guinée.
+li: Les régions peu peuplées : déserts (Sahara), forêts équatoriales, régions polaires, hautes montagnes.
+li: La densité de population = nombre d'habitants ÷ superficie (en habitants par km²).
+li: La Chine et l'Inde sont les pays les plus peuplés du monde, avec plus d'un milliard quatre cents millions d'habitants chacun.
+li: Le taux de natalité (naissances pour 1 000 habitants) et le taux de mortalité expliquent la croissance démographique.
+li: L'Afrique a une population jeune et en forte croissance. L'urbanisation : de plus en plus de personnes vivent dans les villes (Lagos, Kinshasa, Abidjan…).
+li: Les migrations sont des déplacements de population (exode rural, migrations internationales).
+note: Exemple : un pays de 100 000 km² avec 5 millions d'habitants a une densité de 50 hab./km².
+note: L'exode rural est le départ des habitants des campagnes vers les villes.
+== questions
+Comment calcule-t-on la densité de population ? || Habitants ÷ superficie || Superficie ÷ habitants || Habitants × superficie || Naissances − décès || Elle s'exprime en habitants par km².
+Quelle est la densité d'un pays de 100 000 km² et de 5 millions d'habitants ? || 50 hab./km² || 500 hab./km² || 5 hab./km² || 20 hab./km² || 5 000 000 ÷ 100 000 = 50.
+Quels sont les deux pays les plus peuplés du monde ? || La Chine et l'Inde || Les États-Unis et le Brésil || La Russie et le Japon || Le Nigeria et l'Égypte || Ils comptent chacun plus de 1,4 milliard d'habitants.
+Quelle région est très peu peuplée ? || Le Sahara || Le delta du Nil || La côte est de la Chine || Le golfe de Guinée || Le désert est hostile à l'installation humaine.
+Quel est un facteur de peuplement ? || La présence d'eau et de terres fertiles || Un climat extrêmement sec || De hautes montagnes glacées || Une forêt dense inhabitée || Les humains s'installent là où ils trouvent des ressources.
+Que mesure le taux de natalité ? || Le nombre de naissances pour 1 000 habitants || Le nombre de décès || La superficie || Le revenu || C'est un indicateur démographique.
+Que signifie « exode rural » ? || Le départ des campagnes vers les villes || Le départ des villes vers les campagnes || Un voyage touristique || Une guerre || Les ruraux cherchent du travail en ville.
+Que signifie « urbanisation » ? || L'augmentation de la part de population vivant en ville || La construction d'une route || La baisse de la population || Un retour à la campagne || Les villes grandissent partout dans le monde.
+Quelle est la plus grande ville du Nigeria ? || Lagos || Abuja || Kano || Ibadan || C'est l'une des plus grandes villes d'Afrique.
+Quel est le continent le plus peuplé ? || L'Asie || L'Afrique || L'Europe || L'Amérique || Plus de la moitié des humains y vivent.
+Comment est la population africaine en moyenne ? || Jeune, en forte croissance || Très âgée || En forte baisse || Constante || Une grande partie a moins de 25 ans.
+Qu'est-ce qu'une migration ? || Un déplacement de population || Un recensement || Une naissance || Un impôt || Elle peut être interne ou internationale.
+Qu'est-ce qu'un recensement ? || Un comptage de la population d'un pays || Un voyage || Un impôt || Une élection || Il permet de connaître l'âge, le sexe et le lieu de vie.
+Que signifie une forte densité de population ? || Beaucoup d'habitants pour peu d'espace || Peu d'habitants pour beaucoup d'espace || Un pays sans habitant || Un climat froid || Exemple : les villes comme Tokyo ou Lagos.
+Quel est le nombre approximatif d'habitants sur Terre ? || Plus de 8 milliards || 1 milliard || 80 millions || 800 milliards || La population mondiale a dépassé 8 milliards en 2022.

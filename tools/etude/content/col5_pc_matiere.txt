@@ -1,0 +1,27 @@
+titre: États de la matière et mélanges
+== fiche
+p: La matière existe sous trois états : solide, liquide et gazeux. Un même corps pur peut changer d'état sans changer de nature.
+li: Solide : forme propre et volume propre. Liquide : volume propre mais pas de forme propre (il prend la forme du récipient). Gaz : ni forme ni volume propres, il occupe tout l'espace disponible.
+li: Changements d'état : fusion (solide → liquide), solidification (liquide → solide), vaporisation (liquide → gaz), liquéfaction (gaz → liquide), sublimation (solide → gaz).
+li: À la pression normale, l'eau fond (ou se solidifie) à 0 °C et bout à 100 °C.
+li: Un mélange est homogène si on ne distingue pas ses constituants (eau sucrée), hétérogène sinon (eau et huile, sable dans l'eau).
+li: Séparer un mélange : décantation, filtration, évaporation, distillation.
+li: Un corps pur est constitué d'une seule espèce chimique ; l'eau minérale est un mélange, l'eau distillée est un corps pur.
+note: Exemple : pour séparer le sel de l'eau salée, on fait évaporer l'eau ; pour séparer du sable dans l'eau, on filtre.
+note: Pendant un changement d'état d'un corps pur, la température reste constante.
+== questions
+Quels sont les trois états de la matière ? || Solide, liquide, gaz || Chaud, froid, tiède || Dur, mou, liquide || Eau, air, terre || Un même corps peut passer d'un état à l'autre.
+Quel état a une forme et un volume propres ? || Le solide || Le liquide || Le gaz || Aucun || Un morceau de fer garde sa forme.
+Quel état prend la forme de son récipient ? || Le liquide || Le solide || Le gaz seulement || Aucun || Il garde son volume mais pas sa forme.
+Comment appelle-t-on le passage du solide au liquide ? || La fusion || La solidification || La vaporisation || La liquéfaction || Exemple : la glace qui fond.
+Comment appelle-t-on le passage du liquide au gaz ? || La vaporisation || La fusion || La condensation || La solidification || L'eau qui bout se vaporise.
+Comment appelle-t-on le passage du liquide au solide ? || La solidification || La fusion || La vaporisation || La sublimation || L'eau qui gèle se solidifie.
+À quelle température l'eau bout-elle à la pression normale ? || 100 °C || 0 °C || 50 °C || 37 °C || C'est la température d'ébullition de l'eau.
+À quelle température la glace fond-elle à la pression normale ? || 0 °C || 100 °C || 10 °C || −10 °C || C'est la température de fusion de l'eau.
+Qu'est-ce qu'un mélange homogène ? || Un mélange dont on ne distingue pas les constituants || Un mélange avec plusieurs couches visibles || Un corps pur || Un solide || Exemple : l'eau sucrée.
+Qu'est-ce qu'un mélange hétérogène ? || Un mélange dont on distingue les constituants || Un mélange sans couleur || Un seul liquide || Un gaz pur || Exemple : eau et huile.
+Comment séparer du sable mélangé à de l'eau ? || Par filtration || Par évaporation || Par distillation || Par fusion || Le filtre retient le sable.
+Comment récupérer le sel dans de l'eau salée ? || Par évaporation de l'eau || Par filtration simple || Par décantation || Par fusion || L'eau part en vapeur, le sel reste.
+Que devient la température d'un corps pur pendant un changement d'état ? || Elle reste constante || Elle augmente sans cesse || Elle diminue sans cesse || Elle devient nulle || C'est un palier de température.
+Laquelle de ces substances est un corps pur ? || L'eau distillée || L'eau de mer || Le lait || L'air || Il n'y a qu'une seule espèce chimique.
+Comment appelle-t-on le passage direct du solide au gaz ? || La sublimation || La fusion || La condensation || La liquéfaction || Exemple : la naphtaline qui disparaît.

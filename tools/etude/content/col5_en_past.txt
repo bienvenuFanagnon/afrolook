@@ -1,0 +1,27 @@
+titre: Le prétérit (past simple)
+== fiche
+p: Le past simple exprime une action terminée dans le passé, souvent avec une indication de temps (yesterday, last week, in 2020, ago).
+li: Verbes réguliers : on ajoute -ed à la base verbale : play → played, work → worked, visit → visited.
+li: Verbes en -e : on ajoute -d (live → lived). Verbes en consonne + y : y devient ied (study → studied).
+li: Verbes irréguliers à connaître : be → was/were, go → went, have → had, see → saw, eat → ate, make → made, take → took, come → came, do → did, say → said.
+li: Négation : did not (didn't) + base verbale : I didn't go. Question : Did you go ? (did + sujet + base verbale).
+li: Réponses courtes : Yes, I did. / No, I didn't.
+li: Marqueurs de temps : yesterday, last night, last week, two days ago, in 1990.
+note: Attention : après did, le verbe reste à la base : « Did she eat ? » et non « Did she ate ? ».
+note: To be : I was, you were, he/she/it was, we were, you were, they were.
+== questions
+Quel est le past simple de « play » ? || played || plaied || plays || playing || On ajoute -ed aux verbes réguliers.
+Quel est le past simple de « go » ? || went || goed || gone || going || Go est un verbe irrégulier.
+Quel est le past simple de « have » ? || had || haved || has || having || Verbe irrégulier.
+Quel est le past simple de « see » ? || saw || seed || seen || sees || Il est irrégulier.
+Quel est le past simple de « study » ? || studied || studyed || studys || studing || Consonne + y devient ied.
+Complète : Yesterday, I ___ football. || played || play || plays || playing || Yesterday indique un passé terminé.
+Complète : She ___ to school last week. || went || go || goes || going || Last week : past simple.
+Complète : They ___ happy yesterday. || were || was || are || be || They va avec were au passé.
+Complète : I ___ at home last night. || was || were || am || be || I va avec was au passé.
+Comment forme-t-on la négation du past simple ? || did not + base verbale || not + verbe au passé || don't + passé || did + passé || Exemple : I did not go.
+Quelle question anglaise est correcte ? || Did you eat? || Did you ate? || Do you ate? || You did ate? || Après did, on utilise la base verbale.
+Quelle négation anglaise est correcte ? || He didn't come. || He didn't came. || He not came. || He doesn't came. || Après didn't, on garde la base.
+Quelle est la réponse courte correcte à « Did you see him? » (oui) ? || Yes, I did. || Yes, I saw. || Yes, I do. || Yes, I did see. || On reprend l'auxiliaire did.
+Quel mot indique souvent le past simple ? || yesterday || tomorrow || now || always || Il situe l'action dans le passé.
+Quel est le past simple de « make » ? || made || maked || maken || making || Verbe irrégulier.

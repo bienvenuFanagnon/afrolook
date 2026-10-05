@@ -1,0 +1,27 @@
+titre: Triangles et angles
+== fiche
+p: Un triangle est un polygone à trois côtés, trois sommets et trois angles.
+li: La somme des angles d'un triangle vaut toujours 180°.
+li: Triangle isocèle : deux côtés égaux et deux angles égaux (à la base). Triangle équilatéral : trois côtés égaux, trois angles de 60°.
+li: Triangle rectangle : un angle droit (90°) ; les deux autres angles sont aigus et leur somme vaut 90°.
+li: Inégalité triangulaire : la longueur d'un côté est inférieure à la somme des deux autres.
+li: Hauteur : droite issue d'un sommet et perpendiculaire au côté opposé. Médiane : joint un sommet au milieu du côté opposé.
+li: Aire d'un triangle : (base × hauteur) ÷ 2. Périmètre : somme des trois côtés.
+note: Exemple : un triangle avec des angles de 50° et 60° a un troisième angle de 180 − 110 = 70°.
+note: Un triangle ne peut pas avoir deux angles droits ni deux angles obtus.
+== questions
+Combien vaut la somme des angles d'un triangle ? || 180° || 90° || 360° || 100° || C'est une propriété de tous les triangles.
+Un triangle a deux angles de 50° et 60°. Combien mesure le troisième ? || 70° || 80° || 60° || 110° || 180 − 50 − 60 = 70.
+Comment appelle-t-on un triangle qui a trois côtés égaux ? || Équilatéral || Isocèle || Rectangle || Scalène || Chaque angle mesure 60°.
+Comment appelle-t-on un triangle qui a deux côtés égaux ? || Isocèle || Équilatéral || Rectangle || Plat || Les angles à la base sont égaux.
+Comment appelle-t-on un triangle qui a un angle droit ? || Rectangle || Isocèle || Équilatéral || Obtus || Il a un angle de 90°.
+Quelle est la mesure de chaque angle d'un triangle équilatéral ? || 60° || 90° || 45° || 30° || 180 ÷ 3 = 60.
+Quelle est la somme des deux angles aigus d'un triangle rectangle ? || 90° || 180° || 60° || 45° || 180° − 90° = 90°.
+Un triangle isocèle a un angle au sommet de 40°. Combien mesure chaque angle à la base ? || 70° || 40° || 140° || 100° || (180 − 40) ÷ 2 = 70.
+Quelle formule donne l'aire d'un triangle ? || (base × hauteur) ÷ 2 || base × hauteur || base + hauteur || (base + hauteur) ÷ 2 || Un triangle est la moitié d'un rectangle de mêmes dimensions.
+Quelle est l'aire d'un triangle de base 8 cm et de hauteur 5 cm ? || 20 cm² || 40 cm² || 13 cm² || 26 cm² || 8 × 5 ÷ 2 = 20.
+Quel est le périmètre d'un triangle de côtés 3 cm, 4 cm et 5 cm ? || 12 cm || 60 cm || 7 cm || 9 cm || On additionne les trois côtés.
+Peut-on construire un triangle de côtés 2 cm, 3 cm et 7 cm ? || Non, car 2 + 3 < 7 || Oui || Oui, s'il est isocèle || Oui, s'il est rectangle || Il faut que le plus grand côté soit inférieur à la somme des autres.
+Qu'est-ce qu'une hauteur d'un triangle ? || Une droite d'un sommet perpendiculaire au côté opposé || Une droite qui passe par le milieu d'un côté || Un côté du triangle || Un angle || Elle forme un angle droit avec le côté opposé.
+Qu'est-ce qu'une médiane ? || Un segment joignant un sommet au milieu du côté opposé || Un segment perpendiculaire à un côté || Un côté || Un angle de 90° || Elle coupe le côté opposé en deux parties égales.
+Un triangle peut-il avoir deux angles droits ? || Non || Oui || Seulement s'il est isocèle || Seulement s'il est équilatéral || La somme dépasserait 180°.

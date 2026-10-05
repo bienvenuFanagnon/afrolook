@@ -1,0 +1,28 @@
+titre: Le monde après 1945 : l'ONU
+== fiche
+p: Après la Seconde Guerre mondiale (1939-1945), les États veulent éviter une nouvelle guerre et créent l'Organisation des Nations unies (ONU) en 1945 à San Francisco.
+li: But de l'ONU : maintenir la paix et la sécurité, favoriser la coopération, défendre les droits de l'homme. Siège : New York. Elle compte 193 États membres.
+li: Organes principaux : l'Assemblée générale (tous les États, un vote chacun), le Conseil de sécurité (15 membres dont 5 permanents avec droit de veto : États-Unis, Russie, Chine, France, Royaume-Uni), le Secrétariat dirigé par le secrétaire général, la Cour internationale de justice (La Haye).
+li: Institutions spécialisées : UNESCO (éducation, culture), OMS (santé), FAO (alimentation), UNICEF (enfance), HCR (réfugiés).
+li: La Déclaration universelle des droits de l'homme est adoptée en 1948.
+li: La guerre froide (1947-1991) oppose deux blocs : les États-Unis (capitalisme) et l'URSS (communisme), sans affrontement direct.
+li: Événements : blocus de Berlin, guerre de Corée, crise de Cuba (1962), construction du mur de Berlin (1961), chute du mur (1989), disparition de l'URSS (1991).
+li: Les Casques bleus sont les soldats de l'ONU chargés de maintenir la paix.
+note: Exemple : l'UNICEF protège les enfants ; l'OMS lutte contre les épidémies.
+note: Le droit de veto d'un membre permanent peut bloquer une décision du Conseil de sécurité.
+== questions
+En quelle année est créée l'ONU ? || 1945 || 1919 || 1960 || 1989 || Après la Seconde Guerre mondiale.
+Où se trouve le siège de l'ONU ? || À New York || À Paris || À Genève || À Londres || Elle y a un grand bâtiment au bord de l'East River.
+Quel est le but principal de l'ONU ? || Maintenir la paix et la sécurité || Gagner des guerres || Vendre des produits || Créer des empires || Elle favorise aussi la coopération.
+Combien de membres permanents compte le Conseil de sécurité ? || Cinq || Dix || Quinze || Deux || États-Unis, Russie, Chine, France, Royaume-Uni.
+Quel est le droit propre aux membres permanents ? || Le droit de veto || Le droit de vote double || Le droit de guerre || Le droit d'asile || Il permet de bloquer une résolution.
+Que signifie UNESCO ? || Organisation des Nations unies pour l'éducation, la science et la culture || Union des nations d'Europe et du Sud || Union nationale de l'école || Un traité de commerce || Elle protège aussi le patrimoine mondial.
+Quelle institution de l'ONU s'occupe de la santé ? || L'OMS || La FAO || L'UNICEF || Le HCR || L'Organisation mondiale de la santé.
+Quelle institution de l'ONU protège les enfants ? || L'UNICEF || La FAO || L'OMS || L'UNESCO || Elle défend les droits de l'enfant.
+Quelle institution s'occupe des réfugiés ? || Le HCR || L'OMS || La FAO || L'UNICEF || Haut-Commissariat pour les réfugiés.
+Comment appelle-t-on les soldats de l'ONU qui maintiennent la paix ? || Les Casques bleus || Les Bérets verts || Les Gardes rouges || Les Chevaliers || Ils portent un casque bleu.
+En quelle année est adoptée la Déclaration universelle des droits de l'homme ? || 1948 || 1789 || 1945 || 1960 || Elle proclame les droits fondamentaux de chaque personne.
+Quels sont les deux blocs de la guerre froide ? || États-Unis et URSS || France et Allemagne || Chine et Japon || Brésil et Argentine || Ils s'affrontent par rivalités, sans guerre directe.
+En quelle année tombe le mur de Berlin ? || 1989 || 1961 || 1945 || 1991 || Il symbolisait la division de l'Europe.
+En quelle année l'URSS disparaît-elle ? || 1991 || 1945 || 1961 || 1989 || La fin de l'URSS clôt la guerre froide.
+Combien d'États membres compte l'ONU ? || 193 || 55 || 100 || 250 || L'Afrique en compte 54 ou 55 selon le décompte.

@@ -1,0 +1,27 @@
+titre: La phrase et la nature des mots
+== fiche
+p: Une phrase commence par une majuscule et se termine par un point (., ?, !). Elle a du sens et contient au moins un verbe conjugué.
+li: Le nom désigne une personne, un animal, une chose ou une idée (un enfant, la liberté). Il est précédé d'un déterminant (le, la, un, des).
+li: L'adjectif qualificatif précise le nom et s'accorde avec lui (une petite fille).
+li: Le verbe exprime une action ou un état et se conjugue (il mange, elle est contente).
+li: Le pronom remplace un nom (il, elle, nous…). L'adverbe complète un verbe, un adjectif ou un autre adverbe (très, vite).
+li: Le sujet fait l'action ; on le trouve avec « Qui est-ce qui… ? » placé devant le verbe.
+li: Phrase simple : un seul verbe conjugué ; phrase complexe : plusieurs verbes conjugués.
+note: Exemple : « Les enfants joyeux jouent dans la cour. » Sujet : les enfants ; verbe : jouent ; adjectif : joyeux.
+note: Le pluriel des noms ajoute en général un s ; les adjectifs s'accordent en genre et en nombre.
+== questions
+Par quoi commence une phrase ? || Par une majuscule || Par une virgule || Par un chiffre || Par un verbe obligatoirement || La majuscule marque le début, le point la fin.
+Quelle est la nature du mot « maison » dans « La maison est grande » ? || Nom || Verbe || Adjectif || Adverbe || Il désigne une chose.
+Quelle est la nature du mot « grande » dans « La maison est grande » ? || Adjectif qualificatif || Nom || Verbe || Pronom || Il décrit la maison.
+Quelle est la nature du mot « mange » dans « Il mange du riz » ? || Verbe || Nom || Adjectif || Adverbe || Il exprime une action.
+Quel est le sujet dans « Les enfants jouent dans la cour » ? || Les enfants || La cour || Jouent || Dans la cour || On répond à « Qui est-ce qui joue ? ».
+Quelle est la nature du mot « il » ? || Pronom || Nom || Verbe || Adjectif || Il remplace un nom.
+Quelle est la nature du mot « très » dans « très grand » ? || Adverbe || Adjectif || Nom || Pronom || Il renforce l'adjectif.
+Combien de verbes conjugués contient une phrase simple ? || Un seul || Deux || Aucun || Trois || Plusieurs verbes conjugués forment une phrase complexe.
+Quel déterminant convient devant « fille » ? || La || Le || Les || Un seulement || Fille est un nom féminin singulier.
+Quel est le pluriel de « cheval » ? || Chevaux || Chevals || Chevaus || Chevales || Les noms en -al font souvent -aux.
+Comment s'accorde l'adjectif dans « une petite fille » ? || Au féminin singulier || Au masculin pluriel || Il ne s'accorde pas || Au féminin pluriel || Il s'accorde avec le nom.
+Quelle phrase est correcte ? || Les élèves sont attentifs. || Les élève sont attentif. || Les élèves est attentifs. || Les élèves sont attentif. || Le verbe et l'adjectif s'accordent avec le sujet.
+Quelle ponctuation termine une question ? || Le point d'interrogation || Le point || Les deux-points || La virgule || Exemple : « Où vas-tu ? ».
+Quelle est la nature de « rapidement » ? || Adverbe || Adjectif || Nom || Verbe || Il se termine en -ment et complète un verbe.
+Dans « Ama chante et danse », combien y a-t-il de verbes conjugués ? || Deux || Un || Trois || Aucun || « Chante » et « danse » sont conjugués.

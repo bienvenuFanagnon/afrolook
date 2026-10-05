@@ -1,0 +1,28 @@
+titre: Futur et conditionnel : will, would, if
+== fiche
+p: En anglais, on exprime le futur avec will ou going to, et la condition avec if.
+li: Futur simple : will + base verbale : I will help you. Négation : will not (won't). Question : Will you come ?
+li: Be going to : projet ou prévision : I am going to study tonight. It is going to rain.
+li: First conditional (condition réalisable) : If + present simple, will + base verbale : If it rains, we will stay at home.
+li: Second conditional (condition imaginaire ou peu probable) : If + past simple, would + base verbale : If I had money, I would buy a car.
+li: Pour le verbe be au second conditional, on emploie souvent were : If I were you, I would study.
+li: Would sert aussi à formuler une demande polie : Would you like some tea ?
+li: Marqueurs du futur : tomorrow, next week, soon, in two days, tonight.
+note: Exemple : If you study, you will pass the exam. (condition réalisable)
+note: Attention : après if on n'emploie pas will dans la proposition de condition.
+== questions
+Comment forme-t-on le futur simple en anglais ? || will + base verbale || to be + -ing || did + base verbale || have + participe || Exemple : I will help you.
+Complète : Tomorrow, I ___ visit my aunt. || will || did || have || was || « will » exprime le futur.
+Quelle est la forme négative de « will » ? || won't || willn't || don't will || not will || « Will not » se contracte en won't.
+Quelle question au futur est correcte ? || Will you come tomorrow? || Do you will come tomorrow? || Does you will come tomorrow? || Are you will come? || On inverse will et le sujet.
+Quelle phrase exprime un projet ? || I am going to study tonight. || I studied last night. || I study every day. || I have studied. || Be going to exprime une intention.
+Complète : It is cloudy. It ___ rain. || is going to || did || has || was || Prévision basée sur ce qu'on voit.
+Complète : If it rains, we ___ at home. || will stay || would stay || stayed || staying || First conditional : if + présent, will + base.
+Complète : If you study, you ___ the exam. || will pass || would pass || passed || passing || Condition réalisable.
+Complète : If I had money, I ___ a car. || would buy || will buy || bought || buy || Second conditional : if + past, would + base.
+Complète : If I ___ you, I would study. || were || am || be || being || On emploie were dans les conseils.
+Quel auxiliaire sert à demander poliment ? || Would || Did || Do || Was || « Would you like some tea? » est poli.
+Quelle phrase conditionnelle est incorrecte ? || If it will rain, we will stay. || If it rains, we will stay. || We will stay if it rains. || If it rains, we stay. || On n'emploie pas will après if.
+Quelle phrase est un first conditional ? || If you call me, I will answer. || If you called me, I would answer. || If you had called me, I would have answered. || You called me. || If + présent, will + base.
+Quelle phrase est un second conditional ? || If I were rich, I would travel. || If I am rich, I will travel. || I was rich. || I travel when I am rich. || If + past, would + base.
+Quel marqueur indique le futur ? || next week || last week || yesterday || ago || Il situe l'action dans l'avenir.

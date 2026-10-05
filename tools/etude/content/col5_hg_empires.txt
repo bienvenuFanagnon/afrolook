@@ -1,0 +1,27 @@
+titre: Les grands empires africains : Ghana, Mali, Songhaï
+== fiche
+p: Entre le IVe et le XVIe siècle, de grands royaumes se développent en Afrique de l'Ouest grâce au commerce de l'or, du sel et à l'organisation de leurs États.
+li: L'empire du Ghana (ou Wagadu), vers le VIIIe – XIe siècle : capitale Koumbi Saleh, richesse fondée sur l'or, impôts sur les caravanes.
+li: L'empire du Mali, XIIIe – XVe siècle : fondé par Soundiata Keïta après la victoire de Kirina (vers 1235). Son plus célèbre empereur est Kankan Moussa (Mansa Moussa), qui fit un pèlerinage à La Mecque en 1324.
+li: Tombouctou devient une grande ville de commerce et de savoir avec des universités, des mosquées et des manuscrits.
+li: L'empire songhaï, XVe – XVIe siècle : capitale Gao ; souverains Sonni Ali Ber et Askia Mohammed ; chute en 1591 face à l'armée marocaine à Tondibi.
+li: Le commerce transsaharien : les caravanes de chameaux transportaient l'or, le sel, l'ivoire, les esclaves et des étoffes.
+li: Les empires sont organisés en provinces, avec une armée, des impôts et des griots qui transmettent l'histoire.
+note: Exemple : la charte du Manden (Kouroukan Fouga), attribuée à Soundiata, est un texte oral qui organise la société mandingue.
+note: Kankan Moussa est souvent présenté comme l'un des hommes les plus riches de l'histoire.
+== questions
+Sur quoi s'appuyait surtout la richesse de l'empire du Ghana ? || Sur l'or et le commerce || Sur le pétrole || Sur le cacao || Sur le café || Le Ghana ancien contrôlait les routes de l'or.
+Quelle était la capitale de l'empire du Ghana ? || Koumbi Saleh || Gao || Tombouctou || Niani || Elle se trouvait dans l'actuelle Mauritanie.
+Qui a fondé l'empire du Mali ? || Soundiata Keïta || Kankan Moussa || Askia Mohammed || Sonni Ali Ber || Il a gagné la bataille de Kirina vers 1235.
+Quel est l'empereur du Mali connu pour son pèlerinage à La Mecque ? || Kankan Moussa || Soundiata Keïta || Askia Mohammed || Sonni Ali Ber || Il y est allé en 1324 avec une immense caravane.
+Quelle ville est célèbre pour ses manuscrits et ses universités ? || Tombouctou || Dakar || Lomé || Abidjan || Elle fut un centre de savoir et de commerce.
+Quelle était la capitale de l'empire songhaï ? || Gao || Koumbi Saleh || Niani || Abomey || Gao est située sur le fleuve Niger.
+Quel souverain songhaï a renforcé l'État au XVe siècle ? || Sonni Ali Ber || Soundiata || Samory Touré || Béhanzin || Il a conquis Tombouctou en 1468.
+Quel événement a marqué la fin de l'empire songhaï en 1591 ? || La bataille de Tondibi contre les Marocains || La bataille de Kirina || La traite des Noirs || Le pèlerinage || L'armée marocaine avait des armes à feu.
+Quelles marchandises circulaient dans le commerce transsaharien ? || L'or, le sel, l'ivoire, des étoffes || Le pétrole et le gaz || Les téléphones || Le plastique || Les caravanes de chameaux traversaient le Sahara.
+Quel animal transportait les marchandises à travers le désert ? || Le chameau || Le cheval seulement || L'éléphant || Le zèbre || Il supporte la chaleur et la soif.
+Qui transmettait l'histoire oralement dans les empires ouest-africains ? || Les griots || Les prêtres de Rome || Les ingénieurs || Les ouvriers || Ils racontent les généalogies et les exploits.
+Quel texte oral attribué à Soundiata organise la société mandingue ? || La charte du Manden || La Magna Carta || La Constitution de 1958 || La Déclaration des droits de l'homme || Elle date du XIIIe siècle.
+Quelle bataille a ouvert l'histoire de l'empire du Mali ? || Kirina || Tondibi || Waterloo || Diên Biên Phu || Soundiata y a vaincu Soumaoro Kanté.
+Quel empire a précédé l'empire du Mali ? || L'empire du Ghana || L'empire songhaï || L'empire ashanti || L'empire du Dahomey || Le Ghana ancien s'est affaibli aux XIe-XIIe siècles.
+Quel pays actuel correspond au cœur de l'empire du Mali ? || Le Mali et la Guinée (le Manden) || La Côte d'Ivoire seulement || Le Kenya || L'Afrique du Sud || Le Manden s'étendait entre Niger et Sénégal.

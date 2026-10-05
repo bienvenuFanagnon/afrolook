@@ -1,0 +1,27 @@
+titre: Trigonométrie dans le triangle rectangle
+== fiche
+p: La trigonométrie relie les angles et les longueurs d'un triangle rectangle.
+li: Dans un triangle rectangle, pour un angle aigu, on distingue le côté adjacent (qui touche l'angle, hors hypoténuse), le côté opposé et l'hypoténuse.
+li: cosinus = côté adjacent / hypoténuse ; sinus = côté opposé / hypoténuse ; tangente = côté opposé / côté adjacent (moyen mnémotechnique : CAH SOH TOA).
+li: Valeurs remarquables : cos 60° = 0,5 ; sin 30° = 0,5 ; sin 45° = cos 45° ≈ 0,707 ; tan 45° = 1.
+li: cos² + sin² = 1 pour un même angle.
+li: On calcule une longueur avec un rapport trigonométrique et une calculatrice en mode degrés.
+li: On retrouve un angle avec les touches cos⁻¹, sin⁻¹, tan⁻¹.
+note: Exemple : dans un triangle rectangle, hypoténuse 10, angle de 30° : côté opposé = 10 × sin 30° = 5.
+note: Attention : régler la calculatrice en degrés (DEG).
+== questions
+Quelle est la formule du cosinus d'un angle aigu ? || adjacent / hypoténuse || opposé / hypoténuse || opposé / adjacent || hypoténuse / adjacent || CAH : Cosinus = Adjacent / Hypoténuse.
+Quelle est la formule du sinus d'un angle aigu ? || opposé / hypoténuse || adjacent / hypoténuse || opposé / adjacent || adjacent / opposé || SOH : Sinus = Opposé / Hypoténuse.
+Quelle est la formule de la tangente d'un angle aigu ? || opposé / adjacent || adjacent / hypoténuse || opposé / hypoténuse || hypoténuse / opposé || TOA : Tangente = Opposé / Adjacent.
+Que vaut sin 30° ? || 0,5 || 1 || 0,866 || 0 || C'est une valeur remarquable.
+Que vaut cos 60° ? || 0,5 || 1 || 0,866 || 0 || cos 60° = sin 30°.
+Que vaut tan 45° ? || 1 || 0,5 || 0 || 2 || Opposé et adjacent sont égaux.
+Dans un triangle rectangle d'hypoténuse 10 et d'angle 30°, combien vaut le côté opposé ? || 5 || 10 || 8,66 || 20 || 10 × sin 30°.
+Dans un triangle rectangle d'hypoténuse 10 et d'angle 60°, combien vaut le côté adjacent ? || 5 || 10 || 8,66 || 6 || 10 × cos 60°.
+Quel est le côté opposé à l'angle A dans un triangle rectangle ? || Celui qui ne touche pas A || L'hypoténuse || Celui qui touche A || Aucun || Il est en face de l'angle.
+Quel est le côté adjacent à l'angle A ? || Celui qui touche A (hors hypoténuse) || L'hypoténuse || Le côté en face || Aucun || Il forme l'angle avec l'hypoténuse.
+Si tan A = 1, que vaut l'angle A ? || 45° || 30° || 60° || 90° || tan 45° = 1.
+Combien vaut cos² A + sin² A ? || 1 || 0 || 2 || 0,5 || C'est la relation fondamentale.
+Dans un triangle rectangle, côté opposé = 3 et côté adjacent = 4. Que vaut tan A ? || 0,75 || 1,33 || 0,6 || 0,8 || 3 / 4 = 0,75.
+Dans un triangle rectangle de côtés 3, 4, 5 (5 est l'hypoténuse), que vaut sin A pour A en face du côté 3 ? || 0,6 || 0,8 || 0,75 || 1,25 || 3 / 5.
+Dans quel mode doit être la calculatrice pour calculer un angle en degrés ? || DEG || RAD || GRAD || BIN || DEG signifie degrés.

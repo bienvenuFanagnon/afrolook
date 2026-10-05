@@ -1,0 +1,27 @@
+titre: Équations, inéquations et systèmes
+== fiche
+p: Résoudre une équation, c'est trouver la ou les valeurs de l'inconnue qui rendent l'égalité vraie.
+li: Équation du premier degré ax + b = c : on isole x en faisant les mêmes opérations des deux côtés. 3x + 2 = 11 donne 3x = 9 puis x = 3.
+li: Quand on passe un terme de l'autre côté, on change son signe (addition ↔ soustraction, multiplication ↔ division).
+li: Équation produit : A × B = 0 équivaut à A = 0 ou B = 0.
+li: Inéquation : 2x − 3 < 7 donne 2x < 10 donc x < 5. Quand on multiplie ou divise par un nombre négatif, le sens de l'inégalité change.
+li: Système de deux équations à deux inconnues : par substitution (on exprime une inconnue) ou par combinaison (on additionne les équations).
+li: Mise en équation d'un problème : choisir l'inconnue, écrire l'équation, résoudre, vérifier, répondre.
+note: Exemple : x + y = 10 et x − y = 2. On additionne : 2x = 12, x = 6, puis y = 4.
+note: Vérifie toujours la solution en la remplaçant dans l'équation de départ.
+== questions
+Quelle est la solution de 3x + 2 = 11 ? || x = 3 || x = 4 || x = 13/3 || x = 9 || 3x = 9, donc x = 3.
+Quelle est la solution de x − 5 = 2 ? || x = 7 || x = −3 || x = 3 || x = 10 || x = 2 + 5.
+Quelle est la solution de 2x = 10 ? || x = 5 || x = 20 || x = 12 || x = 8 || On divise les deux membres par 2.
+Quelle est la solution de 5x − 3 = 2x + 9 ? || x = 4 || x = 3 || x = 2 || x = 12 || 3x = 12, donc x = 4.
+Quelle est la solution de (x − 2)(x + 3) = 0 ? || x = 2 ou x = −3 || x = −2 ou x = 3 || x = 2 seulement || x = 0 || Un produit est nul si un facteur est nul.
+Quelle est la solution de 2x − 3 < 7 ? || x < 5 || x > 5 || x < 2 || x > 2 || 2x < 10 donc x < 5.
+Quelle est la solution de −2x > 6 ? || x < −3 || x > −3 || x < 3 || x > 3 || On divise par −2 : le sens change.
+Quel est le nombre qui, multiplié par 4 et augmenté de 3, donne 19 ? || 4 || 5 || 3 || 16 || 4x + 3 = 19 donne x = 4.
+Résous le système x + y = 10 et x − y = 2. Que vaut x ? || 6 || 4 || 5 || 8 || En additionnant : 2x = 12.
+Dans ce système, que vaut y ? || 4 || 6 || 2 || 8 || y = 10 − 6 = 4.
+Résous y = 2x et x + y = 9. Que valent x et y ? || x = 3 et y = 6 || x = 6 et y = 3 || x = 4 et y = 8 || x = 9 et y = 0 || On substitue : x + 2x = 9.
+Le double d'un nombre augmenté de 5 vaut 17. Quel est ce nombre ? || 6 || 11 || 12 || 5 || 2x + 5 = 17.
+La somme de deux nombres vaut 20 et leur différence 4. Quel est le plus grand ? || 12 || 8 || 16 || 10 || (20 + 4) / 2 = 12.
+Un père a 30 ans de plus que son fils. La somme de leurs âges est 50. Quel est l'âge du fils ? || 10 ans || 20 ans || 30 ans || 40 ans || x + (x + 30) = 50 donne x = 10.
+Pour quelle valeur de x a-t-on 4(x − 1) = 12 ? || x = 4 || x = 3 || x = 2 || x = 13 || x − 1 = 3.

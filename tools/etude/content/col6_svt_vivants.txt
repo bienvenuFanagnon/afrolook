@@ -1,0 +1,27 @@
+titre: Les êtres vivants et leur milieu
+== fiche
+p: Un être vivant naît, se nourrit, respire, grandit, se reproduit et meurt. Il vit dans un milieu avec lequel il échange de la matière.
+li: Les êtres vivants se répartissent en règne animal et règne végétal (et d'autres groupes comme les champignons).
+li: Un milieu de vie (biotope) et les êtres qui y vivent (biocénose) forment un écosystème : forêt, mare, savane, désert.
+li: Les êtres vivants sont adaptés à leur milieu : le poisson a des branchies et des nageoires, le chameau stocke des réserves dans sa bosse.
+li: Régime alimentaire : herbivore (plantes), carnivore (animaux), omnivore (les deux).
+li: Chaîne alimentaire : un végétal est mangé par un herbivore, lui-même mangé par un carnivore (producteur → consommateur).
+li: Les plantes vertes fabriquent leur matière avec la lumière du soleil : c'est la photosynthèse.
+note: Exemple de chaîne : herbe → criquet → grenouille → serpent.
+note: L'homme est un omnivore ; il transforme souvent son milieu (champs, villes) et doit le protéger.
+== questions
+Quelle est une caractéristique de tous les êtres vivants ? || Ils respirent et se reproduisent || Ils sont tous verts || Ils vivent dans l'eau || Ils volent || Respiration, nutrition et reproduction sont communes.
+Comment appelle-t-on un animal qui mange seulement des plantes ? || Herbivore || Carnivore || Omnivore || Insectivore || Par exemple la vache ou la chèvre.
+Comment appelle-t-on un animal qui mange des animaux ? || Carnivore || Herbivore || Omnivore || Végétal || Par exemple le lion.
+Comment appelle-t-on un être qui mange des plantes et des animaux ? || Omnivore || Herbivore || Carnivore || Producteur || L'homme est omnivore.
+Dans une chaîne alimentaire, par quoi commence-t-on ? || Un végétal || Un carnivore || Un décomposeur seulement || Un champignon || Les plantes produisent la matière de base.
+Quelle chaîne alimentaire est correcte ? || Herbe → criquet → grenouille → serpent || Serpent → herbe → criquet || Grenouille → herbe → serpent || Criquet → serpent → herbe || La flèche indique « est mangé par ».
+Quel processus permet aux plantes vertes de fabriquer leur matière ? || La photosynthèse || La digestion || La respiration seulement || La transpiration || Elle utilise la lumière, l'eau et le dioxyde de carbone.
+Comment appelle-t-on l'ensemble d'un milieu et des êtres qui y vivent ? || Un écosystème || Un organe || Un aliment || Un fossile || Exemples : la mare, la forêt.
+À quel milieu le poisson est-il adapté ? || Au milieu aquatique || Au désert || À l'air || Au sol || Il a des branchies et des nageoires.
+Quel est l'avantage de la bosse du chameau ? || Elle stocke des réserves de graisse || Elle stocke de l'eau pure || Elle le protège du froid || Elle sert à voler || Cela l'aide à survivre dans le désert.
+Quel est le gaz absorbé par les plantes pour la photosynthèse ? || Le dioxyde de carbone || Le dioxygène || L'azote || L'hydrogène || Elles rejettent du dioxygène.
+Quel gaz les plantes rejettent-elles pendant la photosynthèse ? || Le dioxygène || Le dioxyde de carbone || L'azote || La vapeur seulement || C'est le gaz que nous respirons.
+Pourquoi faut-il protéger l'environnement ? || Parce que les êtres vivants en dépendent || Pour décorer la ville || Pour faire du bruit || Ce n'est pas utile || Si le milieu disparaît, les êtres vivants meurent.
+Quel est un exemple d'adaptation d'un animal à son milieu ? || Les oiseaux ont des plumes pour voler || Les poissons ont des poumons || Les chameaux ont des nageoires || Les lions ont des branchies || Les plumes et les ailes permettent le vol.
+Quel élément n'est pas vivant ? || Une pierre || Un arbre || Un champignon || Un chat || La pierre ne respire ni ne se reproduit.
