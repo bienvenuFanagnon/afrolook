@@ -793,7 +793,7 @@ class _TxGroupedList extends StatefulWidget {
 class _TxGroupedListState extends State<_TxGroupedList> {
   static const _groups = {
     'Entrées':     ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
-    'Dépenses':    ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
+    'Dépenses':    ['DEPENSE', 'PAIEMENT_PIECES', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
     'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
     'Conversions': ['CONVERSION_PIECES'],
   };
@@ -811,7 +811,7 @@ class _TxGroupedListState extends State<_TxGroupedList> {
     for (final e in _groups.entries) {
       if (e.value.contains(type?.toUpperCase())) return e.key;
     }
-    return context.tr('Entrées');
+    return 'Entrées';
   }
 
   Color _groupColor(String group, AppColors c) {
@@ -883,7 +883,7 @@ class _TxGroupedListState extends State<_TxGroupedList> {
                 Icon(_groupIcons[group], color: color, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(group,
+                  child: Text(context.tr(group),
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: c.textPrimary)),
                 ),
                 Text('${items.length}',

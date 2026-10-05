@@ -594,7 +594,7 @@ export const etudeUnlock = onCall({ timeoutSeconds: 20 }, async (request) => {
       tx.update(userRef, { giftCoinsBalance: FieldValue.increment(-item.price), totalGiftCoinsSpent: FieldValue.increment(item.price), updatedAt: now });
       const t = db.collection("TransactionSoldes").doc();
       tx.set(t, {
-        id: t.id, user_id: uid, type: "PAIEMENT_PIECES", statut: "VALIDER",
+        id: t.id, user_id: uid, type: "DEPENSE", statut: "VALIDER",
         description: `Étude : ${item.title} — ${item.price} pièces`,
         montant: item.price, frais: 0, montant_total: item.price, methode_paiement: "pieces", createdAt: now, updatedAt: now,
         purchaseKind: "etude", purchaseRefId: itemId,

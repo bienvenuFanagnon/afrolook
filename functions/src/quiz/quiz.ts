@@ -527,7 +527,7 @@ export const quizBuyHearts = onCall({ timeoutSeconds: 15 }, async (request) => {
     tx.update(userRef, { giftCoinsBalance: FieldValue.increment(-price), totalGiftCoinsSpent: FieldValue.increment(price), updatedAt: now });
     const t = db.collection("TransactionSoldes").doc();
     tx.set(t, {
-      id: t.id, user_id: uid, type: "PAIEMENT_PIECES", statut: "VALIDER",
+      id: t.id, user_id: uid, type: "DEPENSE", statut: "VALIDER",
       description: gain > 1 ? `Quiz : ${gain} cœurs rechargés — ${price} pièces` : `Quiz : 1 cœur rechargé — ${price} pièces`,
       montant: price, frais: 0, montant_total: price, methode_paiement: "pieces", createdAt: now, updatedAt: now,
       purchaseKind: "quiz_hearts",
