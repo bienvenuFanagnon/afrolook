@@ -47,3 +47,4 @@ docs/Afrolook_Pub_32s_horizontal.mp4
 
 # Quiz : fichier produit par tools/quiz/build_levels.js (contient les réponses, régénérable)
 tools/quiz/levels.json
+tools/quiz/levels_*.json

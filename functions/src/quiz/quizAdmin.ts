@@ -2,6 +2,7 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { FieldValue } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import { db } from "../shared/firebase";
+import { regionOf } from "./regions";
 
 /**
  * Outils admin du Quiz : participation du jour, temps passé, questions (avec leur taux de réussite).
@@ -122,12 +123,14 @@ export const quizAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async 
     // Photographie de la progression
     const dayNo = Math.floor(now / DAY);
     let total = 0, playedToday = 0, dailyDone = 0, chalToday = 0, chalPlayers = 0, ptsToday = 0, lifetime = 0, streak3 = 0, wins = 0;
+    const byRegion: Record<string, number> = { af: 0, eu: 0, as: 0, am: 0, mx: 0 };
     const levelBuckets = [0, 0, 0, 0, 0, 0]; // 1-5, 6-20, 21-50, 51-100, 101-200, terminé
     const chalBest = new Array(16).fill(0);
     const activeToday: string[] = [];
     progSnap.docs.forEach((d) => {
       const p = d.data();
       total += 1;
+      byRegion[regionOf(String(p["country"] ?? ""))] += 1;
       lifetime += num(p["lifetime"]);
       const lvl = num(p["level"]);
       levelBuckets[lvl > 200 ? 5 : lvl > 100 ? 4 : lvl > 50 ? 3 : lvl > 20 ? 2 : lvl > 5 ? 1 : 0] += 1;
@@ -159,7 +162,7 @@ export const quizAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async 
     return {
       ok: true, today,
       days: keys.map((k) => ({ day: k, ...perDay[k], avgSec: perDay[k].players ? Math.round(perDay[k].sec / perDay[k].players) : 0 })),
-      overview: { total, playedToday, dailyDone, chalPlayers, chalToday, ptsToday, lifetime, streak3, chalWins: wins, levelBuckets, chalBest },
+      overview: { byRegion, total, playedToday, dailyDone, chalPlayers, chalToday, ptsToday, lifetime, streak3, chalWins: wins, levelBuckets, chalBest },
       retention: { yesterday: y.size, back },
       top: top.map((u) => ({ ...u, ...(nm[u.uid] ?? { name: "", photo: "", country: "" }) })),
       config: cfg,
@@ -171,7 +174,8 @@ export const quizAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async 
     const u = Math.round(num(request.data?.u));
     if (u < 1 || u > 40) throw new HttpsError("invalid-argument", "u invalide.");
     const first = (u - 1) * 5 + 1;
-    const refs = [0, 1, 2, 3, 4].map((k) => db.collection("QuizLevels").doc(String(first + k).padStart(3, "0")));
+    const region = ["af", "eu", "as", "am", "mx"].includes(String(request.data?.region)) ? String(request.data?.region) : "af";
+    const refs = [0, 1, 2, 3, 4].map((k) => db.collection("QuizLevels").doc(`${region}_${String(first + k).padStart(3, "0")}`));
     const [levels, attempts] = await Promise.all([
       db.getAll(...refs),
       db.collection("QuizAttempts").where("unit", "==", u).limit(3000).get(),
@@ -188,8 +192,8 @@ export const quizAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async 
       });
     });
     return {
-      ok: true, u,
-      levels: levels.map((s) => {
+      ok: true, u, region,
+      levels: levels.filter((s) => s.exists).map((s) => {
         const l = s.data() as { n: number; theme: string; tier: number; questions: { q: string; o: string[]; a: number; e: string }[] };
         return {
           n: l.n, theme: l.theme, tier: l.tier,
