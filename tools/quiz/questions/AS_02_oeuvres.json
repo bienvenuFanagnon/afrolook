@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel pays est le berceau des mangas et du dessin animé « Dragon Ball » ?",
+"c": "Le Japon",
+"w": [
+"La Chine",
+"La Corée du Sud",
+"Singapour"
+],
+"e": "Les mangas se lisent de droite à gauche."
+},
+{
+"q": "Quel studio d'animation japonais a produit « Le Voyage de Chihiro » ?",
+"c": "Le studio Ghibli",
+"w": [
+"Toei Animation",
+"Pixar",
+"Sunrise"
+],
+"e": "Le film a reçu l'Oscar du meilleur film d'animation en 2003."
+},
+{
+"q": "Quel réalisateur japonais a signé « Mon voisin Totoro » et « Princesse Mononoké » ?",
+"c": "Hayao Miyazaki",
+"w": [
+"Akira Kurosawa",
+"Isao Takahata",
+"Satoshi Kon"
+],
+"e": "Il a cofondé le studio Ghibli."
+},
+{
+"q": "Comment s'appelle le court poème japonais de trois vers de 5, 7 et 5 syllabes ?",
+"c": "Le haïku",
+"w": [
+"Le sonnet",
+"Le tanka",
+"La ballade"
+],
+"e": "Il évoque souvent une saison ou un instant de nature."
+},
+{
+"q": "Dans quelle ville indienne se trouve le Taj Mahal ?",
+"c": "Agra",
+"w": [
+"Delhi",
+"Jaipur",
+"Bombay"
+],
+"e": "Il a été construit au XVIIe siècle au bord de la rivière Yamuna."
+},
+{
+"q": "Comment appelle-t-on l'industrie du cinéma indien en hindi, basée à Bombay ?",
+"c": "Bollywood",
+"w": [
+"Hollywood",
+"Nollywood",
+"Tollywood"
+],
+"e": "Son nom vient de la fusion de « Bombay » et « Hollywood »."
+},
+{
+"q": "Quel temple khmer du Cambodge est le plus grand monument religieux du monde ?",
+"c": "Angkor Vat",
+"w": [
+"Borobudur",
+"Bagan",
+"Prambanan"
+],
+"e": "Il figure sur le drapeau du Cambodge."
+},
+{
+"q": "Quel écrivain indien a reçu le prix Nobel de littérature en 1913, premier non-Européen à l'obtenir ?",
+"c": "Rabindranath Tagore",
+"w": [
+"Salman Rushdie",
+"Mahatma Gandhi",
+"Vikram Seth"
+],
+"e": "Il est l'auteur de l'hymne national de l'Inde."
+},
+{
+"q": "Quel film sud-coréen a remporté l'Oscar du meilleur film en 2020 ?",
+"c": "Parasite",
+"w": [
+"Oldboy",
+"Burning",
+"Train to Busan"
+],
+"e": "C'était la première fois qu'un film non anglophone gagnait cet Oscar."
+},
+{
+"q": "Quel réalisateur sud-coréen a réalisé « Parasite » ?",
+"c": "Bong Joon-ho",
+"w": [
+"Park Chan-wook",
+"Kim Ki-duk",
+"Lee Chang-dong"
+],
+"e": "Il a aussi réalisé « Snowpiercer » et « The Host »."
+},
+{
+"q": "Quel personnage de manga est un chat robot venu du futur pour aider le jeune Nobita ?",
+"c": "Doraemon",
+"w": [
+"Astro Boy",
+"Pikachu",
+"Totoro"
+],
+"e": "Il sort ses gadgets de la poche de son ventre."
+},
+{
+"q": "Quel roman chinois classique raconte le voyage du moine Tripitaka accompagné du Roi Singe ?",
+"c": "La Pérégrination vers l'Ouest",
+"w": [
+"Le Rêve du pavillon rouge",
+"Les Trois Royaumes",
+"Au bord de l'eau"
+],
+"e": "Il date du XVIe siècle."
+},
+{
+"q": "Quelle grande épopée indienne raconte la guerre entre les Pandavas et les Kauravas ?",
+"c": "Le Mahabharata",
+"w": [
+"Le Ramayana",
+"Le Râmâyana de Tulsidas",
+"Les Vedas"
+],
+"e": "Il contient la Bhagavad-Gita."
+},
+{
+"q": "Quelle grande épopée indienne raconte l'histoire du prince Rama et de son épouse Sita ?",
+"c": "Le Ramayana",
+"w": [
+"Le Mahabharata",
+"Le Panchatantra",
+"Les Upanishads"
+],
+"e": "Elle est fêtée lors de la fête de Diwali."
+},
+{
+"q": "Quel peintre japonais a réalisé l'estampe « La Grande Vague de Kanagawa » ?",
+"c": "Hokusai",
+"w": [
+"Hiroshige",
+"Utamaro",
+"Kuniyoshi"
+],
+"e": "Elle fait partie de la série des « Trente-six vues du mont Fuji »."
+},
+{
+"q": "Quel écrivain japonais a reçu le prix Nobel de littérature en 1968, auteur de « Pays de neige » ?",
+"c": "Yasunari Kawabata",
+"w": [
+"Yukio Mishima",
+"Kenzaburō Ōe",
+"Haruki Murakami"
+],
+"e": "Il est le premier Japonais à avoir reçu ce prix."
+},
+{
+"q": "Quel écrivain japonais a reçu le prix Nobel de littérature en 1994 ?",
+"c": "Kenzaburō Ōe",
+"w": [
+"Yasunari Kawabata",
+"Yukio Mishima",
+"Kazuo Ishiguro"
+],
+"e": "Il est l'auteur d'« Une affaire personnelle »."
+},
+{
+"q": "Quel écrivain japonais a écrit « La Ballade de l'impossible » et « Kafka sur le rivage » ?",
+"c": "Haruki Murakami",
+"w": [
+"Yukio Mishima",
+"Banana Yoshimoto",
+"Natsume Sōseki"
+],
+"e": "Il est l'un des auteurs japonais les plus lus à l'étranger."
+},
+{
+"q": "Quel cinéaste japonais a réalisé « Les Sept Samouraïs » en 1954 ?",
+"c": "Akira Kurosawa",
+"w": [
+"Yasujirō Ozu",
+"Hayao Miyazaki",
+"Takeshi Kitano"
+],
+"e": "Le film a inspiré le western « Les Sept Mercenaires »."
+},
+{
+"q": "Quel écrivain chinois a reçu le prix Nobel de littérature en 2012 ?",
+"c": "Mo Yan",
+"w": [
+"Gao Xingjian",
+"Liu Xiaobo",
+"Lu Xun"
+],
+"e": "Son pseudonyme signifie « ne parle pas »."
+},
+{
+"q": "Quel romancier chinois du XVIIIe siècle a écrit « Le Rêve du pavillon rouge » ?",
+"c": "Cao Xueqin",
+"w": [
+"Luo Guanzhong",
+"Wu Cheng'en",
+"Lu Xun"
+],
+"e": "Ce roman est considéré comme un sommet de la littérature chinoise classique."
+},
+{
+"q": "Quel écrivain britannique né à Bombay a écrit « Les Enfants de minuit » ?",
+"c": "Salman Rushdie",
+"w": [
+"V. S. Naipaul",
+"Vikram Seth",
+"Kazuo Ishiguro"
+],
+"e": "Ce roman a reçu le Booker Prize en 1981."
+},
+{
+"q": "Quelle romancière indienne a reçu le Booker Prize en 1997 pour « Le Dieu des petits riens » ?",
+"c": "Arundhati Roy",
+"w": [
+"Anita Desai",
+"Jhumpa Lahiri",
+"Kiran Desai"
+],
+"e": "Elle est aussi connue pour son engagement politique."
+},
+{
+"q": "Quel réalisateur indien a signé « La Complainte du sentier » en 1955 ?",
+"c": "Satyajit Ray",
+"w": [
+"Raj Kapoor",
+"Mira Nair",
+"Yash Chopra"
+],
+"e": "Ce film ouvre la trilogie d'Apu."
+},
+{
+"q": "Quel réalisateur taïwanais a réalisé « Tigre et Dragon » et « L'Odyssée de Pi » ?",
+"c": "Ang Lee",
+"w": [
+"Zhang Yimou",
+"Wong Kar-wai",
+"John Woo"
+],
+"e": "Il a reçu deux fois l'Oscar du meilleur réalisateur."
+},
+{
+"q": "Quel réalisateur de Hong Kong a signé « In the Mood for Love » en 2000 ?",
+"c": "Wong Kar-wai",
+"w": [
+"John Woo",
+"Ang Lee",
+"Jackie Chan"
+],
+"e": "Le film se passe à Hong Kong dans les années 1960."
+},
+{
+"q": "Quel poète persan du XIIIe siècle est l'auteur du « Masnavi » ?",
+"c": "Rumi",
+"w": [
+"Hafez",
+"Saadi",
+"Ferdowsi"
+],
+"e": "Il est enterré à Konya, en Turquie, où naquit l'ordre des derviches tourneurs."
+},
+{
+"q": "Quel poète persan est l'auteur des célèbres « Rubaiyat » ?",
+"c": "Omar Khayyam",
+"w": [
+"Rumi",
+"Hafez",
+"Ferdowsi"
+],
+"e": "Il était aussi mathématicien et astronome."
+},
+{
+"q": "Quel écrivain turc a reçu le prix Nobel de littérature en 2006 ?",
+"c": "Orhan Pamuk",
+"w": [
+"Nazim Hikmet",
+"Yaşar Kemal",
+"Elif Shafak"
+],
+"e": "Il est l'auteur de « Mon nom est Rouge » et « Istanbul »."
+},
+{
+"q": "Quel écrivain japonais, auteur du « Pavillon d'or », s'est donné la mort en 1970 ?",
+"c": "Yukio Mishima",
+"w": [
+"Yasunari Kawabata",
+"Osamu Dazai",
+"Haruki Murakami"
+],
+"e": "Il a tenté un coup d'État en pleine ville de Tokyo avant son suicide."
+},
+{
+"q": "Quelle romancière japonaise du XIe siècle a écrit « Le Dit du Genji », souvent considéré comme le premier roman du monde ?",
+"c": "Murasaki Shikibu",
+"w": [
+"Sei Shōnagon",
+"Banana Yoshimoto",
+"Higuchi Ichiyō"
+],
+"e": "Elle vivait à la cour de Kyoto."
+},
+{
+"q": "Quel poète japonais du XVIIe siècle, maître du haïku, a écrit « La Sente étroite du Bout-du-Monde » ?",
+"c": "Matsuo Bashō",
+"w": [
+"Kobayashi Issa",
+"Yosa Buson",
+"Masaoka Shiki"
+],
+"e": "Il a beaucoup voyagé à pied à travers le Japon."
+},
+{
+"q": "Quel peintre japonais a réalisé la série d'estampes « Cinquante-trois relais du Tōkaidō » ?",
+"c": "Hiroshige",
+"w": [
+"Hokusai",
+"Utamaro",
+"Sharaku"
+],
+"e": "Son travail a inspiré Van Gogh et Monet."
+},
+{
+"q": "Quelle artiste japonaise contemporaine est célèbre pour ses œuvres couvertes de pois ?",
+"c": "Yayoi Kusama",
+"w": [
+"Yoko Ono",
+"Takashi Murakami",
+"Mariko Mori"
+],
+"e": "Ses salles de miroirs infinis attirent des foules."
+},
+{
+"q": "Quel architecte japonais a conçu le stade national de Tokyo pour les Jeux olympiques de 2020 ?",
+"c": "Kengo Kuma",
+"w": [
+"Tadao Ando",
+"Kenzō Tange",
+"Shigeru Ban"
+],
+"e": "Il utilise beaucoup le bois dans ses constructions."
+},
+{
+"q": "Quel architecte japonais a dessiné le gymnase olympique de Yoyogi pour les Jeux de 1964 ?",
+"c": "Kenzō Tange",
+"w": [
+"Tadao Ando",
+"Kengo Kuma",
+"Toyo Ito"
+],
+"e": "Il a reçu le prix Pritzker en 1987."
+},
+{
+"q": "Quel temple de Java, en Indonésie, est le plus grand temple bouddhiste du monde ?",
+"c": "Borobudur",
+"w": [
+"Angkor Vat",
+"Prambanan",
+"Shwedagon"
+],
+"e": "Il est classé au patrimoine mondial de l'UNESCO."
+},
+{
+"q": "Quel pays est célèbre pour le wayang, un théâtre de marionnettes d'ombres ?",
+"c": "L'Indonésie",
+"w": [
+"La Thaïlande",
+"Le Vietnam",
+"La Birmanie"
+],
+"e": "Les marionnettes sont projetées sur un écran éclairé."
+},
+{
+"q": "Quel théâtre japonais très ancien est joué avec des masques et une mise en scène très lente ?",
+"c": "Le nô",
+"w": [
+"Le kabuki",
+"Le bunraku",
+"Le kyōgen"
+],
+"e": "Il remonte au XIVe siècle."
+},
+{
+"q": "Quel théâtre japonais est interprété par des acteurs maquillés dans des costumes flamboyants ?",
+"c": "Le kabuki",
+"w": [
+"Le nô",
+"Le bunraku",
+"Le rakugo"
+],
+"e": "Il est inscrit au patrimoine immatériel de l'UNESCO."
+},
+{
+"q": "Comment appelle-t-on l'art japonais du pliage de papier ?",
+"c": "L'origami",
+"w": [
+"Le kirigami",
+"Le shodō",
+"L'ikebana"
+],
+"e": "Il consiste à créer des formes sans couper ni coller."
+},
+{
+"q": "Comment appelle-t-on l'art japonais d'arranger les fleurs ?",
+"c": "L'ikebana",
+"w": [
+"L'origami",
+"Le bonsaï",
+"Le shodō"
+],
+"e": "L'harmonie des lignes y compte plus que la quantité de fleurs."
+},
+{
+"q": "Quel film d'animation japonais de 1988 raconte l'histoire de deux orphelins pendant la guerre ?",
+"c": "Le Tombeau des lucioles",
+"w": [
+"Akira",
+"Totoro",
+"Ponyo"
+],
+"e": "Il a été réalisé par Isao Takahata."
+},
+{
+"q": "Quelle série de mangas raconte l'aventure d'un jeune pirate, Luffy, au chapeau de paille ?",
+"c": "One Piece",
+"w": [
+"Naruto",
+"Bleach",
+"Dragon Ball"
+],
+"e": "C'est l'une des séries de mangas les plus vendues de l'histoire."
+},
+{
+"q": "Quel réalisateur japonais a signé « Voyage à Tokyo » en 1953 ?",
+"c": "Yasujirō Ozu",
+"w": [
+"Akira Kurosawa",
+"Kenji Mizoguchi",
+"Nagisa Ōshima"
+],
+"e": "Le film est souvent classé parmi les meilleurs de tous les temps."
+},
+{
+"q": "Quel réalisateur japonais a réalisé « Godzilla » en 1954 ?",
+"c": "Ishirō Honda",
+"w": [
+"Akira Kurosawa",
+"Hayao Miyazaki",
+"Takeshi Kitano"
+],
+"e": "Le monstre est né des peurs liées à la bombe atomique."
+},
+{
+"q": "Quel réalisateur chinois a signé « Hero » et « Le Secret des poignards volants » ?",
+"c": "Zhang Yimou",
+"w": [
+"Ang Lee",
+"John Woo",
+"Chen Kaige"
+],
+"e": "Il a aussi dirigé la cérémonie d'ouverture des Jeux de Pékin en 2008."
+},
+{
+"q": "Quel acteur indien est surnommé « le roi de Bollywood » ?",
+"c": "Shah Rukh Khan",
+"w": [
+"Amitabh Bachchan",
+"Aamir Khan",
+"Salman Khan"
+],
+"e": "Il joue dans des films depuis les années 1990."
+},
+{
+"q": "Quel film indien a remporté en 2023 l'Oscar de la meilleure chanson avec « Naatu Naatu » ?",
+"c": "RRR",
+"w": [
+"Lagaan",
+"Dangal",
+"Slumdog Millionaire"
+],
+"e": "« Naatu Naatu » est une danse énergique du film."
+},
+{
+"q": "Quel film britannique tourné à Bombay a remporté huit Oscars en 2009 ?",
+"c": "Slumdog Millionaire",
+"w": [
+"Lagaan",
+"Gandhi",
+"La Cité de la joie"
+],
+"e": "Le film raconte l'histoire d'un jeune garçon qui participe à un jeu télévisé."
+},
+{
+"q": "Quel réalisateur néo-zélandais a mis en scène la trilogie « Le Seigneur des anneaux » ?",
+"c": "Peter Jackson",
+"w": [
+"James Cameron",
+"Taika Waititi",
+"Jane Campion"
+],
+"e": "Il a aussi réalisé « King Kong » en 2005."
+},
+{
+"q": "Quel pays a servi de décor aux paysages de la Terre du Milieu dans les films de Peter Jackson ?",
+"c": "La Nouvelle-Zélande",
+"w": [
+"L'Australie",
+"L'Irlande",
+"L'Islande"
+],
+"e": "Hobbitebourg a été construit près de Matamata."
+},
+{
+"q": "Quel réalisateur australien a créé la saga « Mad Max » ?",
+"c": "George Miller",
+"w": [
+"Peter Weir",
+"Baz Luhrmann",
+"Russell Mulcahy"
+],
+"e": "Le premier film est sorti en 1979."
+},
+{
+"q": "Quel film australien de 1986 met en scène un aventurier chasseur de crocodiles ?",
+"c": "Crocodile Dundee",
+"w": [
+"Mad Max",
+"Priscilla",
+"Picnic at Hanging Rock"
+],
+"e": "Il a été un énorme succès mondial."
+},
+{
+"q": "Quel architecte danois a dessiné l'Opéra de Sydney, inauguré en 1973 ?",
+"c": "Jørn Utzon",
+"w": [
+"Frank Gehry",
+"Norman Foster",
+"Renzo Piano"
+],
+"e": "Son toit est composé de grandes voiles blanches."
+},
+{
+"q": "Quelle écrivaine australienne a écrit « Les Oiseaux se cachent pour mourir » ?",
+"c": "Colleen McCullough",
+"w": [
+"Nevil Shute",
+"Patrick White",
+"Helen Garner"
+],
+"e": "Le roman a été adapté en série télévisée."
+},
+{
+"q": "Quel artiste chinois contemporain a présenté « Graines de tournesol » à la Tate Modern de Londres en 2010 ?",
+"c": "Ai Weiwei",
+"w": [
+"Cai Guo-Qiang",
+"Zhang Xiaogang",
+"Yue Minjun"
+],
+"e": "Il était composé de millions de graines en porcelaine."
+},
+{
+"q": "Quel écrivain chinois d'origine, installé en France, a reçu le prix Nobel de littérature en 2000 ?",
+"c": "Gao Xingjian",
+"w": [
+"Mo Yan",
+"Liu Xiaobo",
+"Ha Jin"
+],
+"e": "Il est l'auteur de « La Montagne de l'âme »."
+},
+{
+"q": "Quelle écrivaine sud-coréenne a reçu le prix Nobel de littérature en 2024 ?",
+"c": "Han Kang",
+"w": [
+"Kim Young-ha",
+"Shin Kyung-sook",
+"Park Wan-suh"
+],
+"e": "Elle est l'autrice de « La Végétarienne »."
+},
+{
+"q": "Quel auteur chinois est associé au roman « Les Trois Royaumes », écrit au XIVe siècle ?",
+"c": "Luo Guanzhong",
+"w": [
+"Cao Xueqin",
+"Wu Cheng'en",
+"Shi Nai'an"
+],
+"e": "Le roman raconte l'époque des guerres entre trois royaumes chinois."
+},
+{
+"q": "Quel écrivain japonais a écrit « Je suis un chat » au début du XXe siècle ?",
+"c": "Natsume Sōseki",
+"w": [
+"Osamu Dazai",
+"Ryūnosuke Akutagawa",
+"Jun'ichirō Tanizaki"
+],
+"e": "Le roman est raconté du point de vue d'un chat."
+},
+{
+"q": "Quel écrivain japonais est l'auteur de la nouvelle « Rashōmon », portée à l'écran par Kurosawa ?",
+"c": "Ryūnosuke Akutagawa",
+"w": [
+"Yukio Mishima",
+"Natsume Sōseki",
+"Haruki Murakami"
+],
+"e": "Il est mort en 1927, à 35 ans."
+},
+{
+"q": "Quel romancier indien a reçu le Booker Prize en 2008 pour « Le Tigre blanc » ?",
+"c": "Aravind Adiga",
+"w": [
+"Salman Rushdie",
+"Amitav Ghosh",
+"Vikram Seth"
+],
+"e": "Le roman est une satire sociale de l'Inde moderne."
+},
+{
+"q": "Quel écrivain britannique né au Japon a reçu le prix Nobel de littérature en 2017 ?",
+"c": "Kazuo Ishiguro",
+"w": [
+"Salman Rushdie",
+"V. S. Naipaul",
+"Haruki Murakami"
+],
+"e": "Il est l'auteur de « Les Vestiges du jour »."
+},
+{
+"q": "Quelle réalisatrice néo-zélandaise a remporté la Palme d'or à Cannes en 1993 avec « La Leçon de piano » ?",
+"c": "Jane Campion",
+"w": [
+"Niki Caro",
+"Taika Waititi",
+"Gillian Armstrong"
+],
+"e": "Elle est la première femme à avoir reçu cette récompense."
+},
+{
+"q": "Quel cinéaste iranien a remporté la Palme d'or en 1997 avec « Le Goût de la cerise » ?",
+"c": "Abbas Kiarostami",
+"w": [
+"Asghar Farhadi",
+"Jafar Panahi",
+"Mohsen Makhmalbaf"
+],
+"e": "Il est l'un des grands noms du cinéma iranien."
+},
+{
+"q": "Quel cinéaste iranien a remporté l'Oscar du meilleur film étranger en 2012 avec « Une séparation » ?",
+"c": "Asghar Farhadi",
+"w": [
+"Abbas Kiarostami",
+"Jafar Panahi",
+"Majid Majidi"
+],
+"e": "Il a reçu un second Oscar en 2017 pour « Le Client »."
+},
+{
+"q": "Quel cinéaste thaïlandais a reçu la Palme d'or en 2010 avec « Oncle Boonmee » ?",
+"c": "Apichatpong Weerasethakul",
+"w": [
+"Wong Kar-wai",
+"Bong Joon-ho",
+"Hirokazu Kore-eda"
+],
+"e": "Son nom est souvent abrégé en « Joe » par ses amis."
+},
+{
+"q": "Quelle œuvre de Marjane Satrapi est un roman graphique autobiographique sur l'Iran de son enfance ?",
+"c": "Persépolis",
+"w": [
+"Maus",
+"Habibi",
+"Blankets"
+],
+"e": "L'œuvre a été adaptée en film d'animation en 2007."
+},
+{
+"q": "Quel roman de Khaled Hosseini se déroule en Afghanistan et raconte l'amitié de deux garçons ?",
+"c": "Les Cerfs-volants de Kaboul",
+"w": [
+"Mille soleils splendides",
+"Le Libraire de Kaboul",
+"L'Attentat"
+],
+"e": "Le roman est devenu un succès mondial."
+},
+{
+"q": "Quel peintre indien est surnommé « le Picasso de l'Inde » ?",
+"c": "M. F. Husain",
+"w": [
+"Satish Gujral",
+"Raja Ravi Varma",
+"S. H. Raza"
+],
+"e": "Il avait l'habitude de peindre pieds nus."
+},
+{
+"q": "Quel film sud-coréen de Park Chan-wook a reçu le Grand Prix à Cannes en 2004 ?",
+"c": "Old Boy",
+"w": [
+"Parasite",
+"Burning",
+"Memories of Murder"
+],
+"e": "Le film est devenu culte dans le monde entier."
+},
+{
+"q": "Quel manga d'Osamu Tezuka raconte les aventures d'un petit robot doté de sentiments ?",
+"c": "Astro Boy",
+"w": [
+"Doraemon",
+"Dragon Ball",
+"Naruto"
+],
+"e": "Tezuka est surnommé « le dieu du manga »."
+},
+{
+"q": "Quel réalisateur japonais a signé « Akira » en 1988 ?",
+"c": "Katsuhiro Ōtomo",
+"w": [
+"Hayao Miyazaki",
+"Mamoru Oshii",
+"Satoshi Kon"
+],
+"e": "Le film est un jalon de l'animation japonaise dans le monde."
+},
+{
+"q": "Quelle entreprise japonaise a créé le personnage du plombier moustachu Mario ?",
+"c": "Nintendo",
+"w": [
+"Sega",
+"Sony",
+"Capcom"
+],
+"e": "Mario est apparu pour la première fois en 1981 dans « Donkey Kong »."
+}
+]

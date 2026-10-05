@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel pays a co-organisé avec la Corée du Sud la Coupe du monde de football 2002 ?",
+"c": "Le Japon",
+"w": [
+"La Chine",
+"Le Qatar",
+"L'Australie"
+],
+"e": "C'était la première Coupe du monde organisée en Asie."
+},
+{
+"q": "Quel pays asiatique a atteint les demi-finales de la Coupe du monde 2002 ?",
+"c": "La Corée du Sud",
+"w": [
+"Le Japon",
+"La Chine",
+"L'Iran"
+],
+"e": "C'est à ce jour la meilleure performance d'une équipe asiatique."
+},
+{
+"q": "Quel attaquant sud-coréen, capitaine de la sélection, joue à Tottenham ?",
+"c": "Son Heung-min",
+"w": [
+"Park Ji-sung",
+"Lee Kang-in",
+"Kim Min-jae"
+],
+"e": "Il est l'un des meilleurs joueurs asiatiques de l'histoire."
+},
+{
+"q": "Quelle équipe nationale est surnommée « les Samouraïs bleus » ?",
+"c": "Le Japon",
+"w": [
+"La Corée du Sud",
+"La Chine",
+"L'Iran"
+],
+"e": "Elle joue en bleu et affiche un samouraï sur son logo."
+},
+{
+"q": "Quelle équipe nationale est surnommée « les Socceroos » ?",
+"c": "L'Australie",
+"w": [
+"La Nouvelle-Zélande",
+"Fidji",
+"La Papouasie-Nouvelle-Guinée"
+],
+"e": "Le nom associe « soccer » et « kangaroos »."
+},
+{
+"q": "Quelle équipe nationale est surnommée « les All Whites » ?",
+"c": "La Nouvelle-Zélande",
+"w": [
+"L'Australie",
+"Fidji",
+"Tahiti"
+],
+"e": "Elle joue en blanc, comme l'indique son surnom."
+},
+{
+"q": "Quel pays a remporté la Coupe d'Asie des nations en 2019 puis en 2023 ?",
+"c": "Le Qatar",
+"w": [
+"Le Japon",
+"L'Iran",
+"L'Arabie saoudite"
+],
+"e": "Il a gagné les deux fois à domicile ou presque, avec le même sélectionneur."
+},
+{
+"q": "Quel pays détient le plus de victoires en Coupe d'Asie des nations ?",
+"c": "Le Japon",
+"w": [
+"L'Arabie saoudite",
+"L'Iran",
+"La Corée du Sud"
+],
+"e": "Il compte quatre titres : 1992, 2000, 2004 et 2011."
+},
+{
+"q": "Quel pays a gagné la Coupe d'Asie 2015, organisée chez lui ?",
+"c": "L'Australie",
+"w": [
+"Le Japon",
+"La Corée du Sud",
+"Le Qatar"
+],
+"e": "C'était sa première victoire dans la compétition."
+},
+{
+"q": "Quel milieu japonais a joué à Manchester United entre 2012 et 2014 ?",
+"c": "Shinji Kagawa",
+"w": [
+"Keisuke Honda",
+"Takefusa Kubo",
+"Hidetoshi Nakata"
+],
+"e": "Il avait aussi brillé à Dortmund."
+},
+{
+"q": "Quel attaquant de Tottenham a été co-meilleur buteur de la Premier League 2021-2022, avec Mohamed Salah ?",
+"c": "Son Heung-min",
+"w": [
+"Harry Kane",
+"Dejan Kulusevski",
+"Richarlison"
+],
+"e": "Il est le premier Asiatique à avoir reçu ce prix."
+},
+{
+"q": "Quel milieu japonais a remporté le championnat d'Italie avec la Roma en 2001 ?",
+"c": "Hidetoshi Nakata",
+"w": [
+"Shunsuke Nakamura",
+"Keisuke Honda",
+"Shinji Kagawa"
+],
+"e": "Il a pris sa retraite à 29 ans pour voyager à travers le monde."
+},
+{
+"q": "Quel pays asiatique a participé à la Coupe du monde 1938 sous le nom d'Indes orientales néerlandaises ?",
+"c": "L'Indonésie",
+"w": [
+"Le Vietnam",
+"La Thaïlande",
+"Les Philippines"
+],
+"e": "Ce fut la première participation d'une équipe asiatique."
+},
+{
+"q": "Comment s'appelle le championnat professionnel de football du Japon ?",
+"c": "La J.League",
+"w": [
+"La K League",
+"La Super League",
+"La A-League"
+],
+"e": "Elle a été créée en 1992."
+},
+{
+"q": "Quel pays a organisé la Coupe d'Asie des nations 2023, jouée en janvier 2024 ?",
+"c": "Le Qatar",
+"w": [
+"La Chine",
+"Le Japon",
+"Les Émirats arabes unis"
+],
+"e": "Il l'a organisée un an après la Coupe du monde."
+},
+{
+"q": "Quel attaquant australien a marqué le premier but de l'Australie en Coupe du monde, en 2006 ?",
+"c": "Tim Cahill",
+"w": [
+"Harry Kewell",
+"Mark Viduka",
+"Mile Jedinak"
+],
+"e": "Il a marqué contre le Japon."
+},
+{
+"q": "Quelle équipe a battu l'Allemagne 2 à 1 lors du premier tour de la Coupe du monde 2022 ?",
+"c": "Le Japon",
+"w": [
+"La Corée du Sud",
+"L'Arabie saoudite",
+"L'Iran"
+],
+"e": "Les Japonais ont ensuite battu l'Espagne."
+},
+{
+"q": "Quelle équipe a battu l'Allemagne 2 à 0 lors de la Coupe du monde 2018 et l'a éliminée ?",
+"c": "La Corée du Sud",
+"w": [
+"Le Japon",
+"L'Arabie saoudite",
+"L'Iran"
+],
+"e": "Les Allemands, champions du monde en titre, ont terminé derniers de leur groupe."
+},
+{
+"q": "Quel club saoudien a recruté Neymar en 2023 ?",
+"c": "Al-Hilal",
+"w": [
+"Al-Nassr",
+"Al-Ittihad",
+"Al-Ahli"
+],
+"e": "Le Brésilien est resté moins de deux ans au club."
+},
+{
+"q": "Quel club saoudien a recruté Karim Benzema en 2023 ?",
+"c": "Al-Ittihad",
+"w": [
+"Al-Hilal",
+"Al-Nassr",
+"Al-Ahli"
+],
+"e": "Il a quitté le Real Madrid après quatorze ans."
+},
+{
+"q": "Comment s'appelle la compétition qui réunit les meilleurs clubs d'Asie ?",
+"c": "La Ligue des champions de l'AFC",
+"w": [
+"La Copa Libertadores",
+"La Ligue Europa",
+"La Coupe du Golfe"
+],
+"e": "AFC signifie Confédération asiatique de football."
+},
+{
+"q": "Quel pays organisera la Coupe du monde de football masculine en 2034 ?",
+"c": "L'Arabie saoudite",
+"w": [
+"Le Japon",
+"La Chine",
+"L'Australie"
+],
+"e": "Le pays accueillera la compétition pour la première fois."
+},
+{
+"q": "Quel joueur indien est le capitaine et meilleur buteur de l'histoire de la sélection de l'Inde ?",
+"c": "Sunil Chhetri",
+"w": [
+"Bhaichung Bhutia",
+"Gurpreet Singh Sandhu",
+"Sandesh Jhingan"
+],
+"e": "Il est l'un des plus grands buteurs internationaux de l'histoire."
+},
+{
+"q": "Comment s'appelle le championnat de football professionnel de Corée du Sud ?",
+"c": "La K League",
+"w": [
+"La J.League",
+"La Super League",
+"La A-League"
+],
+"e": "Elle a été créée en 1983."
+},
+{
+"q": "Quel pays a un championnat nommé « Super League » avec des stars comme Oscar à Shanghai ?",
+"c": "La Chine",
+"w": [
+"Le Japon",
+"L'Inde",
+"La Thaïlande"
+],
+"e": "Le championnat a recruté beaucoup de stars étrangères dans les années 2010."
+},
+{
+"q": "Quel sélectionneur néerlandais a mené la Corée du Sud en demi-finale de la Coupe du monde 2002 ?",
+"c": "Guus Hiddink",
+"w": [
+"Louis van Gaal",
+"Dick Advocaat",
+"Marco van Basten"
+],
+"e": "Il est devenu un héros national en Corée."
+},
+{
+"q": "Quel entraîneur français a dirigé le Japon pendant la Coupe du monde 2002 ?",
+"c": "Philippe Troussier",
+"w": [
+"Arsène Wenger",
+"Henri Michel",
+"Claude Le Roy"
+],
+"e": "Il a aussi dirigé plusieurs équipes africaines."
+},
+{
+"q": "Quel pays a co-organisé la Coupe du monde féminine 2023 avec la Nouvelle-Zélande ?",
+"c": "L'Australie",
+"w": [
+"Le Japon",
+"Le Canada",
+"Les États-Unis"
+],
+"e": "La finale s'est jouée à Sydney."
+},
+{
+"q": "Quel pays a gagné la Coupe du monde féminine en 2011 ?",
+"c": "Le Japon",
+"w": [
+"Les États-Unis",
+"L'Allemagne",
+"La Suède"
+],
+"e": "Il a battu les États-Unis aux tirs au but en finale."
+},
+{
+"q": "Quelle joueuse japonaise a mené son pays au titre mondial de 2011 ?",
+"c": "Homare Sawa",
+"w": [
+"Aya Miyama",
+"Saki Kumagai",
+"Mana Iwabuchi"
+],
+"e": "Elle a été élue meilleure joueuse du tournoi."
+},
+{
+"q": "Quel stade a accueilli la finale de la Coupe du monde 2002 ?",
+"c": "Le stade international de Yokohama",
+"w": [
+"Le stade de Séoul",
+"Le stade national de Tokyo",
+"Le stade d'Osaka"
+],
+"e": "Le Brésil y a battu l'Allemagne 2 à 0."
+},
+{
+"q": "Quel Brésilien a marqué deux buts en finale de la Coupe du monde 2002 ?",
+"c": "Ronaldo",
+"w": [
+"Rivaldo",
+"Ronaldinho",
+"Cafu"
+],
+"e": "Il avait connu de graves blessures aux genoux avant ce tournoi."
+},
+{
+"q": "Quel milieu sud-coréen a joué à Manchester United de 2005 à 2012 ?",
+"c": "Park Ji-sung",
+"w": [
+"Son Heung-min",
+"Lee Young-pyo",
+"Ki Sung-yueng"
+],
+"e": "Il était connu pour son endurance exceptionnelle."
+},
+{
+"q": "Quel joueur a marqué le but de la victoire du Japon contre l'Allemagne à la Coupe du monde 2022 ?",
+"c": "Takuma Asano",
+"w": [
+"Kaoru Mitoma",
+"Daichi Kamada",
+"Junya Ito"
+],
+"e": "Le Japon était mené 1 à 0 à la mi-temps."
+},
+{
+"q": "Quel club japonais de Saitama a gagné la Ligue des champions de l'AFC en 2007, 2017 et 2022 ?",
+"c": "Urawa Red Diamonds",
+"w": [
+"Kashima Antlers",
+"Gamba Osaka",
+"Yokohama F. Marinos"
+],
+"e": "Il est l'un des clubs les plus suivis du Japon."
+},
+{
+"q": "Quel attaquant néo-zélandais, capitaine des All Whites, a joué en Premier League, notamment à Nottingham Forest ?",
+"c": "Chris Wood",
+"w": [
+"Winston Reid",
+"Ryan Thomas",
+"Sarpreet Singh"
+],
+"e": "Il est le meilleur buteur de l'histoire de la sélection."
+},
+{
+"q": "Quel entraîneur australien a mené l'Australie à la victoire de la Coupe d'Asie 2015 ?",
+"c": "Ange Postecoglou",
+"w": [
+"Graham Arnold",
+"Holger Osieck",
+"Guus Hiddink"
+],
+"e": "Il a ensuite dirigé le Celtic Glasgow et Tottenham."
+},
+{
+"q": "Quelle équipe a éliminé l'Australie en huitièmes de finale de la Coupe du monde 2022 ?",
+"c": "L'Argentine",
+"w": [
+"La France",
+"La Croatie",
+"Le Maroc"
+],
+"e": "L'Australie avait battu la Tunisie et le Danemark au premier tour."
+},
+{
+"q": "Quelle équipe a éliminé le Japon aux tirs au but en huitièmes de la Coupe du monde 2022 ?",
+"c": "La Croatie",
+"w": [
+"L'Espagne",
+"L'Allemagne",
+"Le Brésil"
+],
+"e": "Les Japonais ont perdu après un but égalisateur en prolongation."
+},
+{
+"q": "Quel pays asiatique a battu l'Italie à la Coupe du monde 1966 et atteint les quarts de finale ?",
+"c": "La Corée du Nord",
+"w": [
+"La Corée du Sud",
+"Le Japon",
+"La Chine"
+],
+"e": "Ce fut une immense surprise à l'époque."
+},
+{
+"q": "Quel pays a remporté la Coupe d'Asie 1992, disputée à Hiroshima ?",
+"c": "Le Japon",
+"w": [
+"L'Arabie saoudite",
+"L'Iran",
+"La Chine"
+],
+"e": "C'est le premier titre asiatique du pays."
+},
+{
+"q": "Quel club chinois a remporté la Ligue des champions d'Asie en 2013 puis en 2015 ?",
+"c": "Guangzhou Evergrande",
+"w": [
+"Shanghai SIPG",
+"Beijing Guoan",
+"Shandong Luneng"
+],
+"e": "Il était dirigé par Marcello Lippi."
+},
+{
+"q": "Quel attaquant iranien a marqué 109 buts en sélection, un record pendant des années ?",
+"c": "Ali Daei",
+"w": [
+"Mehdi Taremi",
+"Sardar Azmoun",
+"Karim Bagheri"
+],
+"e": "Il a joué au Bayern Munich et à Hertha Berlin."
+},
+{
+"q": "Quel attaquant iranien a joué au FC Porto avant de rejoindre l'Inter Milan ?",
+"c": "Mehdi Taremi",
+"w": [
+"Sardar Azmoun",
+"Alireza Jahanbakhsh",
+"Ali Karimi"
+],
+"e": "Il est l'un des meilleurs buteurs de l'histoire de l'Iran."
+},
+{
+"q": "Quel Japonais, surnommé « King Kazu », joue encore au football après 55 ans ?",
+"c": "Kazuyoshi Miura",
+"w": [
+"Hidetoshi Nakata",
+"Shunsuke Nakamura",
+"Yasuhito Endo"
+],
+"e": "Il a joué en Serie A à Gênes dès 1994."
+},
+{
+"q": "Quelle équipe a éliminé l'Italie en huitièmes de finale de la Coupe du monde 2002 ?",
+"c": "La Corée du Sud",
+"w": [
+"Le Japon",
+"Le Mexique",
+"Les États-Unis"
+],
+"e": "Elle l'a emporté en prolongation, grâce à un « but en or »."
+},
+{
+"q": "Quel joueur sud-coréen a marqué le but en or contre l'Italie en 2002 ?",
+"c": "Ahn Jung-hwan",
+"w": [
+"Park Ji-sung",
+"Hong Myung-bo",
+"Seol Ki-hyeon"
+],
+"e": "Il jouait alors en Italie, à Pérouse."
+},
+{
+"q": "Quelle équipe a éliminé la Corée du Sud en demi-finale de la Coupe du monde 2002 ?",
+"c": "L'Allemagne",
+"w": [
+"Le Brésil",
+"L'Espagne",
+"La Turquie"
+],
+"e": "Elle a gagné 1 à 0 grâce à un but de Michael Ballack."
+},
+{
+"q": "Quel jeune attaquant japonais, surnommé « le Messi japonais », joue à la Real Sociedad ?",
+"c": "Takefusa Kubo",
+"w": [
+"Kaoru Mitoma",
+"Daizen Maeda",
+"Ayase Ueda"
+],
+"e": "Il a été formé au FC Barcelone."
+},
+{
+"q": "Quel ailier japonais de Brighton est célèbre pour ses dribbles ?",
+"c": "Kaoru Mitoma",
+"w": [
+"Takefusa Kubo",
+"Junya Ito",
+"Ritsu Doan"
+],
+"e": "Il a sauvé un ballon sur la ligne pendant la Coupe du monde 2022."
+},
+{
+"q": "Quel milieu sud-coréen a rejoint le Paris Saint-Germain en 2023 ?",
+"c": "Lee Kang-in",
+"w": [
+"Son Heung-min",
+"Hwang Hee-chan",
+"Cho Gue-sung"
+],
+"e": "Il a été formé à Valence, en Espagne."
+},
+{
+"q": "Quel défenseur sud-coréen a rejoint le Bayern Munich en 2023 ?",
+"c": "Kim Min-jae",
+"w": [
+"Hwang In-beom",
+"Hong Myung-bo",
+"Kim Young-gwon"
+],
+"e": "Il avait auparavant joué à Naples, où il a gagné le championnat."
+},
+{
+"q": "Quel Saoudien a marqué en 1994, après un slalom, un but contre la Belgique ?",
+"c": "Saeed Al-Owairan",
+"w": [
+"Sami Al-Jaber",
+"Majed Abdullah",
+"Yasser Al-Qahtani"
+],
+"e": "Ce but est considéré comme l'un des plus beaux de l'histoire de la Coupe du monde."
+},
+{
+"q": "Quel Saoudien a marqué le but de la victoire contre l'Argentine à la Coupe du monde 2022, en seconde période ?",
+"c": "Salem Al-Dawsari",
+"w": [
+"Saleh Al-Shehri",
+"Firas Al-Buraikan",
+"Mohamed Kanno"
+],
+"e": "Le score final a été de 2 à 1."
+},
+{
+"q": "Quel attaquant chinois a joué à l'Espanyol de Barcelone ?",
+"c": "Wu Lei",
+"w": [
+"Zheng Zhi",
+"Yang Mi",
+"Zhang Linpeng"
+],
+"e": "Il est devenu le premier Chinois à marquer en Liga."
+},
+{
+"q": "Comment s'appelle le championnat professionnel d'Australie ?",
+"c": "L'A-League",
+"w": [
+"La J.League",
+"La Super League",
+"La K League"
+],
+"e": "Il réunit aussi des équipes néo-zélandaises."
+},
+{
+"q": "Quel sélectionneur japonais a conduit les « Samouraïs bleus » aux victoires de 2022 contre l'Allemagne et l'Espagne ?",
+"c": "Hajime Moriyasu",
+"w": [
+"Akira Nishino",
+"Takeshi Okada",
+"Alberto Zaccheroni"
+],
+"e": "Il avait été joueur et assistant du Japon."
+},
+{
+"q": "Quelle attaquante australienne de Chelsea est la capitaine des Matildas ?",
+"c": "Sam Kerr",
+"w": [
+"Caitlin Foord",
+"Ellie Carpenter",
+"Mary Fowler"
+],
+"e": "Elle est l'une des meilleures buteuses de l'histoire du football féminin."
+},
+{
+"q": "Quel pays asiatique est membre de l'UEFA, la confédération européenne, depuis 2002 ?",
+"c": "Le Kazakhstan",
+"w": [
+"La Turquie",
+"L'Azerbaïdjan",
+"La Géorgie"
+],
+"e": "Il a quitté la confédération asiatique pour rejoindre l'Europe."
+},
+{
+"q": "Quelle équipe a remporté la Coupe du monde féminine 2023 en battant l'Angleterre en finale ?",
+"c": "L'Espagne",
+"w": [
+"L'Allemagne",
+"Les États-Unis",
+"Le Japon"
+],
+"e": "C'était son premier titre mondial."
+},
+{
+"q": "Quel pays a organisé les Jeux asiatiques 2022, disputés en 2023 à Hangzhou ?",
+"c": "La Chine",
+"w": [
+"Le Japon",
+"Le Qatar",
+"La Corée du Sud"
+],
+"e": "Ils avaient été reportés d'un an à cause de la pandémie."
+},
+{
+"q": "Quelle équipe a gagné le tournoi masculin de football des Jeux olympiques de Tokyo, en 2021 ?",
+"c": "Le Brésil",
+"w": [
+"L'Espagne",
+"Le Mexique",
+"Le Japon"
+],
+"e": "Elle a battu l'Espagne en finale, après prolongation."
+},
+{
+"q": "Quel stade a accueilli la finale de la Coupe du monde 2022 au Qatar ?",
+"c": "Le stade de Lusail",
+"w": [
+"Le stade Al-Bayt",
+"Le stade Khalifa",
+"Le stade Al-Janoub"
+],
+"e": "Il peut accueillir environ 80 000 spectateurs."
+},
+{
+"q": "Quel pays a gagné la Coupe d'Asie 2007, jouée dans quatre pays d'Asie du Sud-Est ?",
+"c": "L'Irak",
+"w": [
+"L'Arabie saoudite",
+"La Corée du Sud",
+"Le Japon"
+],
+"e": "Son équipe avait réuni les joueurs d'un pays en guerre."
+},
+{
+"q": "Quel pays d'Océanie est membre de la Confédération asiatique de football depuis 2006 ?",
+"c": "L'Australie",
+"w": [
+"La Nouvelle-Zélande",
+"Fidji",
+"La Papouasie-Nouvelle-Guinée"
+],
+"e": "Il a quitté la confédération d'Océanie pour trouver de meilleurs adversaires."
+},
+{
+"q": "Dans quelle ville a eu lieu la finale de la Coupe du monde féminine 2023 ?",
+"c": "Sydney",
+"w": [
+"Auckland",
+"Melbourne",
+"Wellington"
+],
+"e": "L'Espagne y a battu l'Angleterre 1 à 0."
+},
+{
+"q": "Quel est le surnom de l'équipe féminine de football d'Australie ?",
+"c": "Les Matildas",
+"w": [
+"Les Kangourous",
+"Les Wallabies",
+"Les Opals"
+],
+"e": "Le nom vient de la chanson « Waltzing Matilda »."
+},
+{
+"q": "Quel est le surnom de l'équipe féminine de football du Japon ?",
+"c": "Nadeshiko Japan",
+"w": [
+"Les Samouraïs",
+"Les Cerisiers",
+"Les Geishas"
+],
+"e": "Le nom désigne une fleur, l'œillet du Japon."
+},
+{
+"q": "Quel est le surnom de l'équipe nationale de Corée du Sud ?",
+"c": "Les Guerriers Taeguk",
+"w": [
+"Les Dragons",
+"Les Tigres",
+"Les Aigles"
+],
+"e": "Le nom vient du symbole du drapeau coréen."
+},
+{
+"q": "Quel est le surnom de l'équipe nationale de Thaïlande ?",
+"c": "Les Éléphants de guerre",
+"w": [
+"Les Tigres",
+"Les Dragons",
+"Les Lions"
+],
+"e": "L'éléphant est un animal emblématique du pays."
+},
+{
+"q": "Quel est le surnom de l'équipe nationale d'Irak ?",
+"c": "Les Lions de Mésopotamie",
+"w": [
+"Les Faucons",
+"Les Chameaux",
+"Les Tigres"
+],
+"e": "Le nom rappelle la région entre le Tigre et l'Euphrate."
+},
+{
+"q": "Quel est le surnom de l'équipe nationale d'Arabie saoudite ?",
+"c": "Les Faucons verts",
+"w": [
+"Les Lions",
+"Les Aigles",
+"Les Chameaux"
+],
+"e": "Le vert est la couleur du drapeau du pays."
+},
+{
+"q": "Quel attaquant sud-coréen, surnommé « Cha Boom », a connu une grande carrière en Bundesliga dans les années 1980 ?",
+"c": "Cha Bum-kun",
+"w": [
+"Hong Myung-bo",
+"Park Chu-young",
+"Ki Sung-yueng"
+],
+"e": "Il a joué à Francfort et à Leverkusen."
+},
+{
+"q": "Dans quelle ville se sont déroulés les Jeux olympiques d'été de 2020, joués en 2021 ?",
+"c": "Tokyo",
+"w": [
+"Pékin",
+"Séoul",
+"Sydney"
+],
+"e": "Les Jeux avaient été reportés d'un an à cause de la pandémie."
+},
+{
+"q": "Quel entraîneur portugais dirigeait la Corée du Sud lors de la Coupe du monde 2022 ?",
+"c": "Paulo Bento",
+"w": [
+"José Mourinho",
+"Fernando Santos",
+"Jorge Jesus"
+],
+"e": "Les Sud-Coréens ont battu le Portugal 2 à 1 au premier tour."
+}
+]

@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel pays est le berceau de la K-pop, la pop coréenne mondialement connue ?",
+"c": "La Corée du Sud",
+"w": [
+"Le Japon",
+"La Chine",
+"Taïwan"
+],
+"e": "Ses groupes mêlent chant, danse et clips très travaillés."
+},
+{
+"q": "Quel chanteur sud-coréen a fait danser le monde avec « Gangnam Style » en 2012 ?",
+"c": "PSY",
+"w": [
+"G-Dragon",
+"Rain",
+"Taeyang"
+],
+"e": "Le clip a été le premier à dépasser le milliard de vues sur YouTube."
+},
+{
+"q": "Quel groupe sud-coréen de sept membres a chanté « Dynamite » en 2020 ?",
+"c": "BTS",
+"w": [
+"BLACKPINK",
+"EXO",
+"Seventeen"
+],
+"e": "Il a fait de la K-pop un phénomène mondial."
+},
+{
+"q": "Quel groupe féminin sud-coréen a chanté « Kill This Love » ?",
+"c": "BLACKPINK",
+"w": [
+"Girls' Generation",
+"TWICE",
+"Red Velvet"
+],
+"e": "Il compte quatre membres : Jisoo, Jennie, Rosé et Lisa."
+},
+{
+"q": "Quel groupe australien de hard rock a chanté « Highway to Hell » ?",
+"c": "AC/DC",
+"w": [
+"INXS",
+"Midnight Oil",
+"Men at Work"
+],
+"e": "Son guitariste Angus Young porte un costume d'écolier."
+},
+{
+"q": "Quelle chanteuse australienne a chanté « Can't Get You Out of My Head » en 2001 ?",
+"c": "Kylie Minogue",
+"w": [
+"Sia",
+"Dannii Minogue",
+"Natalie Imbruglia"
+],
+"e": "Elle est née à Melbourne."
+},
+{
+"q": "Quelle chanteuse néo-zélandaise a connu un succès mondial avec « Royals » en 2013 ?",
+"c": "Lorde",
+"w": [
+"Kiri Te Kanawa",
+"Hayley Westenra",
+"Brooke Fraser"
+],
+"e": "Elle avait seulement 16 ans lorsqu'elle a écrit la chanson."
+},
+{
+"q": "Quel instrument aborigène d'Australie est un long tube de bois dans lequel on souffle ?",
+"c": "Le didgeridoo",
+"w": [
+"Le bâton de pluie",
+"Le bullroarer",
+"Le clapsticks"
+],
+"e": "Son son grave est facilement reconnaissable."
+},
+{
+"q": "Quel petit instrument à quatre cordes est associé à Hawaï ?",
+"c": "L'ukulélé",
+"w": [
+"Le banjo",
+"La mandoline",
+"Le sitar"
+],
+"e": "Son nom signifie « puce sauteuse » en hawaïen."
+},
+{
+"q": "Quel instrument indien à cordes a été popularisé en Occident par Ravi Shankar ?",
+"c": "Le sitar",
+"w": [
+"Le sarod",
+"La vina",
+"Le santour"
+],
+"e": "George Harrison l'a utilisé dans plusieurs chansons des Beatles."
+},
+{
+"q": "Quel instrument japonais à treize cordes se joue posé sur le sol ?",
+"c": "Le koto",
+"w": [
+"Le shamisen",
+"Le biwa",
+"Le shakuhachi"
+],
+"e": "Il est joué avec des plectres fixés aux doigts."
+},
+{
+"q": "Quelle activité de chant sur un accompagnement instrumental a été inventée au Japon ?",
+"c": "Le karaoké",
+"w": [
+"Le slam",
+"Le chœur",
+"La chorale"
+],
+"e": "Son nom signifie « orchestre vide » en japonais."
+},
+{
+"q": "Quelle chanteuse virtuelle japonaise aux longs cheveux turquoise donne des concerts en hologramme ?",
+"c": "Hatsune Miku",
+"w": [
+"Sailor Moon",
+"Lara Croft",
+"Ariana Grande"
+],
+"e": "Sa voix est créée par un logiciel de synthèse vocale."
+},
+{
+"q": "Quel musicien indien a fait découvrir le sitar aux Beatles dans les années 1960 ?",
+"c": "Ravi Shankar",
+"w": [
+"Zakir Hussain",
+"Hariprasad Chaurasia",
+"A. R. Rahman"
+],
+"e": "Il est le père de la sitariste Anoushka Shankar."
+},
+{
+"q": "Comment s'appelle l'orchestre traditionnel d'Indonésie, composé de gongs et de métallophones ?",
+"c": "Le gamelan",
+"w": [
+"Le gagaku",
+"Le kecak",
+"Le wayang"
+],
+"e": "Il accompagne les danses et le théâtre d'ombres à Java et Bali."
+},
+{
+"q": "Quel compositeur indien a écrit la musique de « Slumdog Millionaire » et reçu deux Oscars en 2009 ?",
+"c": "A. R. Rahman",
+"w": [
+"Ravi Shankar",
+"Pritam",
+"Shankar Mahadevan"
+],
+"e": "Sa chanson « Jai Ho » est devenue très célèbre."
+},
+{
+"q": "Quelle chanteuse indienne, surnommée « le rossignol de l'Inde », a enregistré des milliers de chansons de films ?",
+"c": "Lata Mangeshkar",
+"w": [
+"Asha Bhosle",
+"Shreya Ghoshal",
+"Alka Yagnik"
+],
+"e": "Elle a chanté pendant plus de soixante-dix ans."
+},
+{
+"q": "Quel groupe australien a chanté « Down Under » en 1981 ?",
+"c": "Men at Work",
+"w": [
+"INXS",
+"AC/DC",
+"Midnight Oil"
+],
+"e": "La chanson est devenue un hymne officieux de l'Australie."
+},
+{
+"q": "Quel groupe australien, avec Michael Hutchence, a chanté « Need You Tonight » ?",
+"c": "INXS",
+"w": [
+"Men at Work",
+"AC/DC",
+"Silverchair"
+],
+"e": "Le titre date de 1987."
+},
+{
+"q": "Quel groupe néo-zélandais a chanté « Don't Dream It's Over » ?",
+"c": "Crowded House",
+"w": [
+"Split Enz",
+"The Chills",
+"Dragon"
+],
+"e": "Le groupe a été fondé à Melbourne par le Néo-Zélandais Neil Finn."
+},
+{
+"q": "Quelle chanteuse australienne, connue pour sa perruque, a chanté « Chandelier » ?",
+"c": "Sia",
+"w": [
+"Kylie Minogue",
+"Tones and I",
+"Delta Goodrem"
+],
+"e": "Elle cache souvent son visage pendant ses concerts."
+},
+{
+"q": "Quel groupe australien de rock psychédélique a sorti « Let It Happen » ?",
+"c": "Tame Impala",
+"w": [
+"Midnight Oil",
+"Silverchair",
+"Cold Chisel"
+],
+"e": "Il est mené par Kevin Parker."
+},
+{
+"q": "Quel chanteur d'origine belge, élevé en Australie, a chanté « Somebody That I Used to Know » ?",
+"c": "Gotye",
+"w": [
+"Sia",
+"Nick Cave",
+"Tame Impala"
+],
+"e": "Le titre a été numéro un dans plus de vingt pays."
+},
+{
+"q": "Quelle chanteuse libanaise est surnommée « l'ambassadrice auprès des étoiles » ?",
+"c": "Fairuz",
+"w": [
+"Oum Kalthoum",
+"Dalida",
+"Asmahan"
+],
+"e": "Ses chansons du matin sont écoutées dans tout le monde arabe."
+},
+{
+"q": "Quel pianiste et compositeur japonais a composé la musique de « Furyo » (« Merry Christmas, Mr. Lawrence ») ?",
+"c": "Ryuichi Sakamoto",
+"w": [
+"Joe Hisaishi",
+"Yiruma",
+"Ludovico Einaudi"
+],
+"e": "Il a aussi reçu un Oscar pour « Le Dernier Empereur »."
+},
+{
+"q": "Quel compositeur japonais a écrit les musiques de la plupart des films de Miyazaki ?",
+"c": "Joe Hisaishi",
+"w": [
+"Ryuichi Sakamoto",
+"Koji Kondo",
+"Hans Zimmer"
+],
+"e": "Il a aussi été chef d'orchestre."
+},
+{
+"q": "Quelle chanteuse japonaise est l'autrice de « First Love » en 1999 ?",
+"c": "Hikaru Utada",
+"w": [
+"Ayumi Hamasaki",
+"Namie Amuro",
+"Kyary Pamyu Pamyu"
+],
+"e": "L'album « First Love » est l'un des plus vendus de l'histoire du Japon."
+},
+{
+"q": "Quel groupe féminin de K-pop a chanté « Gee » en 2009 ?",
+"c": "Girls' Generation",
+"w": [
+"Wonder Girls",
+"BLACKPINK",
+"2NE1"
+],
+"e": "Il a compté jusqu'à neuf membres."
+},
+{
+"q": "Quelle chanteuse taïwanaise, très populaire des années 1970 aux années 1990, est connue pour « La Lune représente mon cœur » ?",
+"c": "Teresa Teng",
+"w": [
+"Faye Wong",
+"Jolin Tsai",
+"Coco Lee"
+],
+"e": "Ses chansons sont encore écoutées dans tous les pays de culture chinoise."
+},
+{
+"q": "Quel chanteur taïwanais mêle R&B et musique chinoise et est star depuis les années 2000 ?",
+"c": "Jay Chou",
+"w": [
+"Jackie Chan",
+"Andy Lau",
+"Eason Chan"
+],
+"e": "Il joue aussi du piano et compose lui-même."
+},
+{
+"q": "Quel instrument chinois à deux cordes se joue avec un archet ?",
+"c": "L'erhu",
+"w": [
+"Le pipa",
+"Le guzheng",
+"Le dizi"
+],
+"e": "On l'appelle parfois « le violon chinois »."
+},
+{
+"q": "Quel instrument chinois à cordes pincées ressemble à un luth en forme de poire ?",
+"c": "Le pipa",
+"w": [
+"L'erhu",
+"Le guqin",
+"Le sanxian"
+],
+"e": "Il est joué depuis plus de deux mille ans."
+},
+{
+"q": "Quel instrument japonais à trois cordes se joue avec un grand plectre ?",
+"c": "Le shamisen",
+"w": [
+"Le koto",
+"Le biwa",
+"Le taiko"
+],
+"e": "Il accompagne le théâtre kabuki."
+},
+{
+"q": "Quel instrument indien est une paire de tambours joués avec les doigts ?",
+"c": "Le tabla",
+"w": [
+"Le mridangam",
+"Le dholak",
+"Le sarangi"
+],
+"e": "Il accompagne souvent le sitar."
+},
+{
+"q": "Quel chant de gorge, pratiqué en Mongolie et en Touva, permet de produire deux notes en même temps ?",
+"c": "Le chant diphonique",
+"w": [
+"Le yodel",
+"Le chant grégorien",
+"Le fado"
+],
+"e": "On l'appelle « khöömii » en Mongolie."
+},
+{
+"q": "Quel instrument à cordes mongol, dont le manche est sculpté en forme de tête de cheval, est très célèbre ?",
+"c": "Le morin khuur",
+"w": [
+"Le sitar",
+"L'erhu",
+"Le shamisen"
+],
+"e": "Il est considéré comme un symbole de la Mongolie."
+},
+{
+"q": "Quelle danse maorie, exécutée par les joueurs de rugby néo-zélandais avant les matchs, est un chant de guerre ?",
+"c": "Le haka",
+"w": [
+"Le kapa haka",
+"Le hula",
+"Le taiko"
+],
+"e": "Les All Blacks l'exécutent depuis plus d'un siècle."
+},
+{
+"q": "Quel chanteur pakistanais, surnommé « Shahenshah-e-Qawwali », a fait connaître le qawwali dans le monde ?",
+"c": "Nusrat Fateh Ali Khan",
+"w": [
+"Rahat Fateh Ali Khan",
+"Atif Aslam",
+"Abida Parveen"
+],
+"e": "Il est mort en 1997, mais ses enregistrements sont toujours très écoutés."
+},
+{
+"q": "Quel style de chant dévotionnel soufi est surtout pratiqué au Pakistan et en Inde ?",
+"c": "Le qawwali",
+"w": [
+"Le bhajan",
+"Le ghazal",
+"Le raï"
+],
+"e": "Il est souvent chanté en groupe, avec des applaudissements."
+},
+{
+"q": "Quel genre musical populaire d'Indonésie mêle influences indiennes, arabes et malaises ?",
+"c": "Le dangdut",
+"w": [
+"Le gamelan",
+"Le kecak",
+"Le keroncong"
+],
+"e": "Il tient son nom du son de ses tambours."
+},
+{
+"q": "Quelle chanteuse israélienne a remporté l'Eurovision 2018 avec « Toy » ?",
+"c": "Netta",
+"w": [
+"Noa",
+"Dana International",
+"Ofra Haza"
+],
+"e": "Elle s'est imposée à Lisbonne."
+},
+{
+"q": "Quel chanteur turc est l'auteur du tube « Şımarık », connu en Europe sous le nom « Kiss Kiss » ?",
+"c": "Tarkan",
+"w": [
+"Sezen Aksu",
+"Barış Manço",
+"Mustafa Sandal"
+],
+"e": "Il est l'une des plus grandes stars de la pop turque."
+},
+{
+"q": "Quelle chanteuse philippine a joué Kim dans « Miss Saigon » et prêté sa voix aux princesses Jasmine et Mulan de Disney ?",
+"c": "Lea Salonga",
+"w": [
+"Regine Velasquez",
+"Sarah Geronimo",
+"Charice"
+],
+"e": "Elle est l'une des plus grandes voix des Philippines."
+},
+{
+"q": "Quel chef d'orchestre japonais a dirigé l'Orchestre symphonique de Boston pendant 29 ans ?",
+"c": "Seiji Ozawa",
+"w": [
+"Zubin Mehta",
+"Gustavo Dudamel",
+"Daniel Barenboim"
+],
+"e": "Il est décédé en 2024."
+},
+{
+"q": "Quel violoniste japonais a créé une méthode d'enseignement de la musique pour les très jeunes enfants ?",
+"c": "Shinichi Suzuki",
+"w": [
+"Joshua Bell",
+"Ryuichi Sakamoto",
+"Seiji Ozawa"
+],
+"e": "Sa méthode repose sur l'apprentissage par imitation, comme pour la langue maternelle."
+},
+{
+"q": "Quel violoncelliste, né à Paris de parents chinois, est célèbre pour ses enregistrements des suites de Bach ?",
+"c": "Yo-Yo Ma",
+"w": [
+"Mstislav Rostropovitch",
+"Pablo Casals",
+"Gautier Capuçon"
+],
+"e": "Il vit aux États-Unis depuis l'enfance."
+},
+{
+"q": "Quel pianiste chinois a remporté le Concours international Chopin en 2000, à 18 ans ?",
+"c": "Yundi Li",
+"w": [
+"Lang Lang",
+"Yuja Wang",
+"Daniil Trifonov"
+],
+"e": "Il est l'un des plus jeunes lauréats de ce concours."
+},
+{
+"q": "Quel pianiste chinois est devenu l'une des plus grandes stars de la musique classique dans le monde ?",
+"c": "Lang Lang",
+"w": [
+"Yundi Li",
+"Yiruma",
+"Seong-Jin Cho"
+],
+"e": "Il a joué à la cérémonie d'ouverture des Jeux de Pékin en 2008."
+},
+{
+"q": "Quel groupe de K-pop a chanté « God's Menu » en 2020 ?",
+"c": "Stray Kids",
+"w": [
+"EXO",
+"NCT",
+"Seventeen"
+],
+"e": "Il est formé de huit membres."
+},
+{
+"q": "Quel duo japonais a chanté « Idol », générique de l'anime « Oshi no Ko », en 2023 ?",
+"c": "YOASOBI",
+"w": [
+"Perfume",
+"Official HIGE DANdism",
+"King Gnu"
+],
+"e": "Le titre a rapidement battu des records mondiaux d'écoute."
+},
+{
+"q": "Quel compositeur japonais est l'auteur de la célèbre musique de « The Legend of Zelda » ?",
+"c": "Koji Kondo",
+"w": [
+"Nobuo Uematsu",
+"Joe Hisaishi",
+"Yasunori Mitsuda"
+],
+"e": "Il a aussi composé le thème de « Super Mario Bros. »."
+},
+{
+"q": "Quel groupe japonais a influencé la musique électronique mondiale avec ses synthétiseurs dans les années 1970-80 ?",
+"c": "Yellow Magic Orchestra",
+"w": [
+"X Japan",
+"Perfume",
+"Babymetal"
+],
+"e": "Ryuichi Sakamoto en était l'un des membres."
+},
+{
+"q": "Quel chanteur indien est connu pour ses chansons de films de Bollywood comme « Tum Hi Ho » ?",
+"c": "Arijit Singh",
+"w": [
+"Sonu Nigam",
+"Kishore Kumar",
+"Mohammed Rafi"
+],
+"e": "Il est l'un des artistes les plus écoutés du monde sur Spotify."
+},
+{
+"q": "Quelle chanteuse indienne, sœur de Lata Mangeshkar, est aussi une légende de Bollywood ?",
+"c": "Asha Bhosle",
+"w": [
+"Shreya Ghoshal",
+"Sunidhi Chauhan",
+"Alka Yagnik"
+],
+"e": "Elle a enregistré des milliers de chansons."
+},
+{
+"q": "Quelle musicienne, fille de Ravi Shankar, est une grande joueuse de sitar ?",
+"c": "Anoushka Shankar",
+"w": [
+"Norah Jones",
+"Lata Mangeshkar",
+"Shreya Ghoshal"
+],
+"e": "Sa demi-sœur est la chanteuse américaine Norah Jones."
+},
+{
+"q": "Quel style de musique et de danse du Pendjab est rythmé et joyeux ?",
+"c": "Le bhangra",
+"w": [
+"Le kathak",
+"Le bharatanatyam",
+"Le garba"
+],
+"e": "Il est très populaire lors des mariages indiens."
+},
+{
+"q": "Quelle soprano néo-zélandaise, d'origine maorie, est célèbre dans le monde de l'opéra ?",
+"c": "Kiri Te Kanawa",
+"w": [
+"Joan Sutherland",
+"Nellie Melba",
+"Hayley Westenra"
+],
+"e": "Elle a chanté au mariage du prince Charles et de Diana en 1981."
+},
+{
+"q": "Quelle soprano australienne était surnommée « La Stupenda » ?",
+"c": "Joan Sutherland",
+"w": [
+"Nellie Melba",
+"Kiri Te Kanawa",
+"Maria Callas"
+],
+"e": "Elle a été l'une des plus grandes voix du XXe siècle."
+},
+{
+"q": "Quel groupe pop australien a chanté « Truly Madly Deeply » ?",
+"c": "Savage Garden",
+"w": [
+"INXS",
+"Little Pattie",
+"Hoodoo Gurus"
+],
+"e": "Le titre est sorti en 1997."
+},
+{
+"q": "Quel chanteur australien de rock sombre est l'auteur de « The Mercy Seat » ?",
+"c": "Nick Cave",
+"w": [
+"Michael Hutchence",
+"Angus Young",
+"Paul Kelly"
+],
+"e": "Il dirige le groupe Nick Cave and the Bad Seeds."
+},
+{
+"q": "Quelle flûte japonaise en bambou est souvent associée aux moines zen ?",
+"c": "Le shakuhachi",
+"w": [
+"Le koto",
+"Le fue",
+"Le taiko"
+],
+"e": "Les moines la jouaient comme exercice de méditation."
+},
+{
+"q": "Quel instrument iranien est une cithare dont les cordes sont frappées avec deux petits marteaux ?",
+"c": "Le santour",
+"w": [
+"Le setar",
+"Le tar",
+"Le kamanche"
+],
+"e": "Il est l'un des plus anciens instruments de musique de Perse."
+},
+{
+"q": "Comment s'appelle le luth du Moyen-Orient, ancêtre du luth européen ?",
+"c": "Le oud",
+"w": [
+"Le saz",
+"Le buzuq",
+"Le qanun"
+],
+"e": "Il a un manche court et un dos arrondi."
+},
+{
+"q": "Quel instrument coréen est une cithare à douze cordes ?",
+"c": "Le gayageum",
+"w": [
+"Le koto",
+"Le guzheng",
+"Le haegeum"
+],
+"e": "Il est joué depuis plus de mille cinq cents ans."
+},
+{
+"q": "Comment s'appelle l'opéra traditionnel chinois, célèbre pour ses maquillages et ses costumes colorés ?",
+"c": "L'opéra de Pékin",
+"w": [
+"Le kabuki",
+"Le nô",
+"Le kunqu"
+],
+"e": "Il mêle chant, acrobaties, théâtre et arts martiaux."
+},
+{
+"q": "Comment s'appelle le chant rythmé de Bali, où des dizaines d'hommes imitent des singes ?",
+"c": "Le kecak",
+"w": [
+"Le wayang",
+"Le gamelan",
+"Le legong"
+],
+"e": "Il raconte une scène de l'épopée du Ramayana."
+},
+{
+"q": "Quel chanteur kazakh est célèbre pour sa voix de plusieurs octaves ?",
+"c": "Dimash Kudaibergen",
+"w": [
+"Psy",
+"Arijit Singh",
+"Jackson Wang"
+],
+"e": "Il s'est fait connaître grâce à des concours chantés à la télévision."
+},
+{
+"q": "Quelle chanteuse et actrice d'origine britannique, devenue australienne, a joué dans « Grease » ?",
+"c": "Olivia Newton-John",
+"w": [
+"Kylie Minogue",
+"Sia",
+"Delta Goodrem"
+],
+"e": "Elle est née à Cambridge et a grandi à Melbourne."
+},
+{
+"q": "Quel groupe de rock australien est l'auteur de « Beds Are Burning » ?",
+"c": "Midnight Oil",
+"w": [
+"Men at Work",
+"INXS",
+"AC/DC"
+],
+"e": "Il est mené par Peter Garrett, qui est ensuite devenu ministre."
+},
+{
+"q": "Quelle chanson est considérée comme l'hymne officieux de l'Australie ?",
+"c": "Waltzing Matilda",
+"w": [
+"Advance Australia Fair",
+"God Save the Queen",
+"Down Under"
+],
+"e": "Elle raconte l'histoire d'un vagabond et d'un mouton volé."
+},
+{
+"q": "Quel groupe néo-zélandais d'origine a chanté « I Got You » en 1980 ?",
+"c": "Split Enz",
+"w": [
+"Crowded House",
+"The Chills",
+"Dragon"
+],
+"e": "Neil Finn en était l'un des membres."
+},
+{
+"q": "Quel chanteur japonais a obtenu un tube mondial avec « Sukiyaki » en 1963 ?",
+"c": "Kyu Sakamoto",
+"w": [
+"Ryuichi Sakamoto",
+"Hikaru Utada",
+"Masaharu Fukuyama"
+],
+"e": "Son vrai titre est « Ue o muite arukō »."
+},
+{
+"q": "Quelle chanteuse chinoise est une des grandes voix de la pop chinoise et a joué dans « Chungking Express » ?",
+"c": "Faye Wong",
+"w": [
+"Teresa Teng",
+"Jolin Tsai",
+"Zhang Ziyi"
+],
+"e": "Elle est née à Pékin et a connu le succès à Hong Kong."
+},
+{
+"q": "Quel chanteur et acteur de Hong Kong a joué dans « Adieu ma concubine » ?",
+"c": "Leslie Cheung",
+"w": [
+"Jackie Chan",
+"Andy Lau",
+"Tony Leung"
+],
+"e": "Il est mort en 2003 à Hong Kong."
+},
+{
+"q": "Quel compositeur chinois a écrit la musique du film « Tigre et Dragon » ?",
+"c": "Tan Dun",
+"w": [
+"Joe Hisaishi",
+"Lang Lang",
+"Ryuichi Sakamoto"
+],
+"e": "Il a reçu un Oscar pour cette musique en 2001."
+}
+]
