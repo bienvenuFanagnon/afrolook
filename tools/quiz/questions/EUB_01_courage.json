@@ -1,0 +1,332 @@
+[
+{
+"t": 1,
+"q": "Quelle jeune Française a conduit l'armée royale à la victoire à Orléans en 1429 ?",
+"c": "Jeanne d'Arc",
+"w": [
+"Anne de Bretagne",
+"Aliénor d'Aquitaine",
+"Catherine de Médicis"
+],
+"e": "Elle a été brûlée vive à Rouen en 1431."
+},
+{
+"t": 1,
+"q": "Quel Premier ministre britannique a dirigé le pays pendant la Seconde Guerre mondiale ?",
+"c": "Winston Churchill",
+"w": [
+"Neville Chamberlain",
+"Clement Attlee",
+"Margaret Thatcher"
+],
+"e": "Il a prononcé le discours « sang, labeur, larmes et sueur »."
+},
+{
+"t": 1,
+"q": "Quel navigateur portugais a mené la première expédition par mer vers l'Inde en 1498 ?",
+"c": "Vasco de Gama",
+"w": [
+"Magellan",
+"Bartolomeu Dias",
+"Henri le Navigateur"
+],
+"e": "Il a contourné le cap de Bonne-Espérance."
+},
+{
+"t": 1,
+"q": "Quelle infirmière britannique est surnommée « la dame à la lampe » ?",
+"c": "Florence Nightingale",
+"w": [
+"Edith Cavell",
+"Mary Seacole",
+"Clara Barton"
+],
+"e": "Elle a soigné des soldats en Crimée."
+},
+{
+"t": 2,
+"q": "Quel explorateur norvégien a été le premier à atteindre le pôle Sud en 1911 ?",
+"c": "Roald Amundsen",
+"w": [
+"Robert Falcon Scott",
+"Ernest Shackleton",
+"Fridtjof Nansen"
+],
+"e": "Il a devancé l'expédition britannique de Scott."
+},
+{
+"t": 2,
+"q": "Quelle suffragette britannique est morte en 1913 en se jetant devant le cheval du roi ?",
+"c": "Emily Davison",
+"w": [
+"Emmeline Pankhurst",
+"Millicent Fawcett",
+"Christabel Pankhurst"
+],
+"e": "Elle voulait obtenir le droit de vote des femmes."
+},
+{
+"t": 2,
+"q": "Quel capitaine britannique est mort avec son équipage en 1912 lors du naufrage du Titanic ?",
+"c": "Edward Smith",
+"w": [
+"Arthur Rostron",
+"Charles Lightoller",
+"Joseph Bruce Ismay"
+],
+"e": "Le paquebot a heurté un iceberg dans l'Atlantique Nord."
+},
+{
+"t": 2,
+"q": "Quelle institutrice polonaise a sauvé 2 500 enfants juifs du ghetto de Varsovie ?",
+"c": "Irena Sendler",
+"w": [
+"Janusz Korczak",
+"Anne Frank",
+"Hannah Szenes"
+],
+"e": "Elle les a cachés dans des familles et des couvents."
+},
+{
+"t": 2,
+"q": "Quel pédiatre polonais a accompagné volontairement ses orphelins jusqu'à Treblinka ?",
+"c": "Janusz Korczak",
+"w": [
+"Irena Sendler",
+"Marek Edelman",
+"Mordechai Anielewicz"
+],
+"e": "Il avait refusé de les abandonner."
+},
+{
+"t": 2,
+"q": "Quel mouvement a été créé en Pologne par Lech Wałęsa en 1980 ?",
+"c": "Solidarność",
+"w": [
+"Tel Quel",
+"Charte 77",
+"Pussy Riot"
+],
+"e": "Il a joué un rôle clé dans la fin du communisme."
+},
+{
+"t": 2,
+"q": "Quelle écolière suédoise a lancé en 2018 les grèves scolaires pour le climat ?",
+"c": "Greta Thunberg",
+"w": [
+"Malala Yousafzai",
+"Vanessa Nakate",
+"Luisa Neubauer"
+],
+"e": "Elle a commencé seule devant le Parlement suédois."
+},
+{
+"t": 3,
+"q": "Quelle jeune Allemande, membre de la Rose blanche, a été guillotinée en 1943 pour avoir distribué des tracts ?",
+"c": "Sophie Scholl",
+"w": [
+"Anne Frank",
+"Rosa Luxemburg",
+"Käthe Kollwitz"
+],
+"e": "Elle avait 21 ans."
+},
+{
+"t": 3,
+"q": "Quel roi belge est resté avec son armée sur le front de l'Yser pendant la Première Guerre mondiale ?",
+"c": "Albert Ier",
+"w": [
+"Léopold II",
+"Baudouin",
+"Philippe"
+],
+"e": "Il est surnommé « le roi-chevalier »."
+},
+{
+"t": 3,
+"q": "Quel résistant français a réuni les mouvements de la Résistance en 1943 avant d'être arrêté à Caluire ?",
+"c": "Jean Moulin",
+"w": [
+"Pierre Brossolette",
+"Henri Frenay",
+"Lucie Aubrac"
+],
+"e": "Il est mort sous la torture."
+},
+{
+"t": 3,
+"q": "Quelle Française, résistante, a organisé l'évasion de son mari Raymond en 1943 ?",
+"c": "Lucie Aubrac",
+"w": [
+"Geneviève de Gaulle",
+"Danielle Casanova",
+"Berty Albrecht"
+],
+"e": "Son histoire a été adaptée au cinéma."
+},
+{
+"t": 3,
+"q": "Quel pilote français a disparu en 1944 en mission de reconnaissance, auteur du « Petit Prince » ?",
+"c": "Antoine de Saint-Exupéry",
+"w": [
+"Jean Mermoz",
+"Roland Garros",
+"Henri Guillaumet"
+],
+"e": "Son avion a été retrouvé au large de Marseille."
+},
+{
+"t": 3,
+"q": "Quel pilote français a effectué le premier courrier postal aérien jusqu'en Amérique du Sud ?",
+"c": "Jean Mermoz",
+"w": [
+"Louis Blériot",
+"Henri Guillaumet",
+"Roland Garros"
+],
+"e": "Il a traversé l'Atlantique Sud en 1930."
+},
+{
+"t": 3,
+"q": "Quel Italien a conduit en 1860 l'expédition des Mille pour unifier l'Italie ?",
+"c": "Giuseppe Garibaldi",
+"w": [
+"Cavour",
+"Victor-Emmanuel II",
+"Giuseppe Mazzini"
+],
+"e": "Ses « chemises rouges » ont conquis la Sicile."
+},
+{
+"t": 4,
+"q": "Quel général athénien a conduit la victoire de Marathon en 490 avant J.-C. ?",
+"c": "Miltiade",
+"w": [
+"Thémistocle",
+"Périclès",
+"Alcibiade"
+],
+"e": "Il a battu l'armée perse de Darius."
+},
+{
+"t": 4,
+"q": "Quel messager grec, selon la légende, aurait couru de Marathon à Athènes pour annoncer la victoire ?",
+"c": "Phidippidès",
+"w": [
+"Léonidas",
+"Thémistocle",
+"Pausanias"
+],
+"e": "Cette course a inspiré le marathon moderne."
+},
+{
+"t": 4,
+"q": "Quel prisonnier politique tchèque est devenu président après la révolution de Velours ?",
+"c": "Václav Havel",
+"w": [
+"Alexander Dubček",
+"Edvard Beneš",
+"Miloš Zeman"
+],
+"e": "Il était dramaturge."
+},
+{
+"t": 4,
+"q": "Quel étudiant tchèque s'est immolé par le feu en 1969 pour protester contre l'invasion soviétique ?",
+"c": "Jan Palach",
+"w": [
+"Jan Hus",
+"Jan Zajíc",
+"Václav Havel"
+],
+"e": "Une plaque lui rend hommage sur la place Venceslas."
+},
+{
+"t": 4,
+"q": "Quelle Britannique a été exécutée en 1915 pour avoir aidé des soldats alliés à fuir la Belgique ?",
+"c": "Edith Cavell",
+"w": [
+"Noor Inayat Khan",
+"Violette Szabo",
+"Nancy Wake"
+],
+"e": "Elle était infirmière."
+},
+{
+"t": 4,
+"q": "Quel roi d'Espagne a défendu la démocratie lors de la tentative de coup d'État du 23 février 1981 ?",
+"c": "Juan Carlos Ier",
+"w": [
+"Alphonse XIII",
+"Felipe VI",
+"Francisco Franco"
+],
+"e": "Il est apparu à la télévision pour condamner le putsch."
+},
+{
+"t": 5,
+"q": "Quel jeune chef a dirigé l'insurrection du ghetto de Varsovie en 1943 ?",
+"c": "Mordechai Anielewicz",
+"w": [
+"Marek Edelman",
+"Janusz Korczak",
+"Adam Czerniaków"
+],
+"e": "Il dirigeait l'Organisation juive de combat."
+},
+{
+"t": 5,
+"q": "Quel diplomate japonais en Lituanie a délivré des visas à des milliers de Juifs en 1940 ?",
+"c": "Chiune Sugihara",
+"w": [
+"Raoul Wallenberg",
+"Aristides de Sousa Mendes",
+"Giorgio Perlasca"
+],
+"e": "Il a signé des visas jour et nuit."
+},
+{
+"t": 5,
+"q": "Quel consul portugais à Bordeaux a signé des visas pour des milliers de réfugiés en 1940 ?",
+"c": "Aristides de Sousa Mendes",
+"w": [
+"Chiune Sugihara",
+"Raoul Wallenberg",
+"Carl Lutz"
+],
+"e": "Il a été sanctionné par son gouvernement."
+},
+{
+"t": 5,
+"q": "Quel Suisse a sauvé des milliers de Juifs hongrois en 1944 avec des lettres de protection ?",
+"c": "Carl Lutz",
+"w": [
+"Raoul Wallenberg",
+"Chiune Sugihara",
+"Aristides de Sousa Mendes"
+],
+"e": "Il était vice-consul à Budapest."
+},
+{
+"t": 5,
+"q": "Quel Italien a sauvé des milliers de Juifs à Budapest en se faisant passer pour un consul espagnol ?",
+"c": "Giorgio Perlasca",
+"w": [
+"Carl Lutz",
+"Raoul Wallenberg",
+"Oskar Schindler"
+],
+"e": "Il a agi dans l'ombre en 1944."
+},
+{
+"t": 5,
+"q": "Quel pilote britannique de la bataille d'Angleterre a continué à voler après l'amputation de ses deux jambes ?",
+"c": "Douglas Bader",
+"w": [
+"Neville Chamberlain",
+"Hugh Dowding",
+"Arthur Harris"
+],
+"e": "Il a ensuite été abattu et fait prisonnier en 1941."
+}
+]
