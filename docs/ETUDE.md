@@ -167,3 +167,16 @@ Pays : **Togo** (départ), **Bénin**, **Burkina Faso**, **Côte d'Ivoire**, **M
 - **App** : menu Étude dans la barre de navigation (à la place d'Afrolove) ; le Quiz prend la tête de « Applications » dans le menu et Afro Love passe en bas du menu.
 - **Admin** : module « Étude » du tableau de bord admin (fonction `etudeAdmin`).
 - **À faire ensuite** : relire le contenu avec des enseignants, pays suivants (section 10), séries lycée A, C, E…, plus de chapitres par classe, examens blancs, révision espacée, duels.
+
+## 12. À faire plus tard (après un premier suivi de l'utilisation)
+
+On met en ligne ce qui existe, on regarde l'utilisation dans l'admin (module « Étude ») et on décide ensuite.
+
+1. Régler la valeur des pubs avec le vrai eCPM AdMob (`adValueCoins`, `interstitialValueCoins` dans `AppConfig/etude`).
+2. Faire relire le contenu publié par des enseignants, puis corriger d'après les signalements.
+3. Plus de chapitres par classe et par matière ; français, anglais, philosophie et histoire-géo au lycée.
+4. Autres séries du lycée : A, C, E, F, G.
+5. Pays suivants de l'UEMOA (section 10) avec leur histoire-géo, leur éducation civique et leurs diplômes.
+6. Examens blancs chronométrés, révision des questions ratées, duels et classements par filière ou université.
+7. Rappels de révision, fiches PDF, enseignants partenaires, tuteur par IA avec plafond de coût.
+8. Traduction complète de l'interface dans les 8 langues.
