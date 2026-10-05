@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../l10n/tr.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
+import '../../services/quiz/quiz_usage.dart';
 import '../../theme/app_colors.dart';
 import 'quiz_challenge_page.dart';
 import 'quiz_daily.dart';
@@ -41,10 +42,12 @@ class _QuizHomePageState extends State<QuizHomePage> {
   HawkMood _mood = HawkMood.wave;
   int _heartLeft = 0;
   bool _scrolled = false;
+  final QuizUsageTracker _usage = QuizUsageTracker();
 
   @override
   void initState() {
     super.initState();
+    _usage.start();
     QuizSound.isMuted().then((m) {
       if (mounted) setState(() => _muted = m);
     });
@@ -63,6 +66,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
 
   @override
   void dispose() {
+    _usage.stop();
     _tick?.cancel();
     _scroll.dispose();
     super.dispose();

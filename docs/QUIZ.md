@@ -61,3 +61,12 @@ Clés : `enabled`, `heartsMax`, `heartRegenMinutes`, `pointsPerCorrect`, `perfec
 - `widgets/feed/sections/quiz_feed_card.dart` : carte du fil (après le 3e post, rappel après le 17e).
 - Entrée dans le menu latéral (« Quiz »). Traductions : `l10n/tr_quiz.dart`.
 - Aucune dépendance native ni fichier ajouté : une mise à jour Shorebird (`shorebird patch android`) suffit.
+
+## Admin (menu admin → « Quiz »)
+Page `lib/pages/admin/quiz_admin_page.dart`, données de la fonction `quizAdmin` (rôle `ADM` obligatoire) :
+- **Aujourd'hui** : joueurs du jour, quiz du jour finis, niveaux terminés, parties du Défi, temps moyen et total, points donnés,
+  part des joueurs d'hier revenus aujourd'hui, top 20 du temps passé, répartition du parcours, scores du Défi, réglages actuels.
+- **Jours** : 7, 14 ou 30 jours (joueurs, temps moyen, temps total, niveaux).
+- **Questions** : les 200 niveaux par difficulté et thème, bonne réponse en vert, explication et taux de réussite réel de chaque question.
+Le temps vient de l'app (`QuizUsageTracker` : une mesure par minute quand le quiz est ouvert et au premier plan → `quizPing` → `QuizUsage/{jour}_{uid}`).
+Il ne compte que les joueurs ayant la version de l'app qui contient ce suivi.

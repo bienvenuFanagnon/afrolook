@@ -367,6 +367,16 @@ class QuizService {
 
   Future<QuizState> refillHeart() async => _publish(await _call('quizRefillHeart'));
 
+  /// Temps passé dans le quiz (statistiques admin) ; sans importance si ça échoue.
+  Future<void> ping(int seconds) async {
+    try {
+      await _call('quizPing', {'sec': seconds});
+    } catch (_) {}
+  }
+
+  /// Outils admin (réservés au rôle ADM côté serveur).
+  Future<Map<String, dynamic>> admin(Map<String, dynamic> data) => _call('quizAdmin', data);
+
   // ── Grand Défi ──
   Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? extra]) async {
     final m = await _call('quizChallenge', {'action': action, ...?extra});
