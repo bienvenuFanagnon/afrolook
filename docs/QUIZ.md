@@ -49,8 +49,13 @@ Clés : `enabled`, `heartsMax`, `heartRegenMinutes`, `pointsPerCorrect`, `perfec
 
 ## Les questions (tools/quiz)
 - `questions/01..08_*.json` : 125 questions par thème (bonne réponse, 3 fausses, explication), classées par difficulté croissante.
-- `node build_levels.js` : contrôle (doublons, longueurs, 4 réponses distinctes) et produit `levels.json` (200 niveaux, réponses mélangées).
-- `GOOGLE_APPLICATION_CREDENTIALS=... node upload_levels.js` : importe dans Firestore (écrase les niveaux existants).
+- `node build_levels.js` : contrôle (doublons, longueurs, 4 réponses distinctes) et produit cinq jeux de 200 niveaux : `levels_af/eu/as/am/mx.json` (réponses mélangées).
+- `GOOGLE_APPLICATION_CREDENTIALS=... node upload_levels.js [af eu as am mx]` : importe dans Firestore `QuizLevels/{région}_{NNN}` (écrase les niveaux existants).
+
+### Questions par région
+- Région du joueur déduite de `Users.countryData.countryCode` (`functions/src/quiz/regions.ts`) : `af` Afrique, `eu` Europe, `as` Asie + Océanie, `am` Amériques ; pays inconnu → `mx` (mélange égal des 4 régions + monde).
+- Chaque jeu régional : environ 60 % de questions de sa région, le reste « monde » et autres régions.
+- Fichiers : `01_…08_` (125 questions, région indiquée dans `regions.json`) + `EU_/AS_/AM_NN_thème.json` (75 questions chacun, 5 difficultés de 15).
 - Pour ajouter des niveaux au-delà de 200 : agrandir les fichiers de questions, adapter `LEVELS` dans `quiz.ts`, redéployer, réimporter.
 - **Relire les questions avant toute extension** : elles ont été rédigées avec l'aide d'une IA ; vérifier les faits précis.
 - Les questions sont en français. Une traduction côté serveur reste possible plus tard.
