@@ -1,0 +1,752 @@
+[
+{
+"q": "En quelle année Christophe Colomb a-t-il atteint pour la première fois les Amériques ?",
+"c": "1492",
+"w": [
+"1453",
+"1519",
+"1607"
+],
+"e": "Il a touché terre aux Bahamas le 12 octobre."
+},
+{
+"q": "Quel navire a transporté en 1620 les Pères pèlerins vers la Nouvelle-Angleterre ?",
+"c": "Le Mayflower",
+"w": [
+"Le Santa Maria",
+"La Pinta",
+"Le Titanic"
+],
+"e": "Ils ont fondé la colonie de Plymouth."
+},
+{
+"q": "Quel jour les États-Unis célèbrent-ils leur fête nationale ?",
+"c": "Le 4 juillet",
+"w": [
+"Le 14 juillet",
+"Le 1er janvier",
+"Le 11 novembre"
+],
+"e": "Il commémore la Déclaration d'indépendance de 1776."
+},
+{
+"q": "Comment appelle-t-on la guerre civile américaine entre le Nord et le Sud, de 1861 à 1865 ?",
+"c": "La guerre de Sécession",
+"w": [
+"La guerre d'indépendance",
+"La guerre de Corée",
+"La guerre du Vietnam"
+],
+"e": "Elle a opposé les États de l'Union aux États confédérés."
+},
+{
+"q": "Quel président américain figure sur le mont Rushmore avec Washington, Jefferson et Theodore Roosevelt ?",
+"c": "Abraham Lincoln",
+"w": [
+"Franklin Roosevelt",
+"John F. Kennedy",
+"Ulysses Grant"
+],
+"e": "Les visages mesurent environ dix-huit mètres de haut."
+},
+{
+"q": "Quelle civilisation a construit les pyramides de Chichén Itzá, au Mexique ?",
+"c": "Les Mayas",
+"w": [
+"Les Incas",
+"Les Aztèques",
+"Les Olmèques"
+],
+"e": "La pyramide d'El Castillo est son monument le plus célèbre."
+},
+{
+"q": "Quelle civilisation a construit la cité de Machu Picchu, dans les Andes ?",
+"c": "Les Incas",
+"w": [
+"Les Mayas",
+"Les Aztèques",
+"Les Toltèques"
+],
+"e": "Elle date du XVe siècle et est perchée à 2 400 mètres d'altitude."
+},
+{
+"q": "Quelle capitale aztèque était construite sur une île au milieu d'un lac ?",
+"c": "Tenochtitlan",
+"w": [
+"Cuzco",
+"Machu Picchu",
+"Teotihuacan"
+],
+"e": "Elle se trouve sous l'actuelle Mexico."
+},
+{
+"q": "Quel pays a vendu la Louisiane aux États-Unis en 1803 ?",
+"c": "La France",
+"w": [
+"L'Espagne",
+"Le Royaume-Uni",
+"Le Mexique"
+],
+"e": "Napoléon Bonaparte avait besoin d'argent pour ses guerres."
+},
+{
+"q": "Quel pays a vendu l'Alaska aux États-Unis en 1867 ?",
+"c": "La Russie",
+"w": [
+"Le Canada",
+"Le Royaume-Uni",
+"La France"
+],
+"e": "Le prix était d'environ 7 millions de dollars."
+},
+{
+"q": "Quel canal, ouvert en 1914, relie l'océan Atlantique à l'océan Pacifique ?",
+"c": "Le canal de Panama",
+"w": [
+"Le canal de Suez",
+"Le canal de Corinthe",
+"Le canal de Kiel"
+],
+"e": "Il raccourcit énormément la route entre les deux océans."
+},
+{
+"q": "Quelle célèbre statue accueille les bateaux à l'entrée du port de New York ?",
+"c": "La statue de la Liberté",
+"w": [
+"Le Christ rédempteur",
+"Le Penseur",
+"Le David"
+],
+"e": "Elle a été offerte par la France en 1886."
+},
+{
+"q": "Quelle île de New York a accueilli des millions d'immigrants arrivant aux États-Unis, de 1892 à 1954 ?",
+"c": "Ellis Island",
+"w": [
+"Manhattan",
+"Staten Island",
+"Long Island"
+],
+"e": "On y examinait les passagers avant de les laisser entrer."
+},
+{
+"q": "Comment appelle-t-on la période de 1848-1849 où de nombreux chercheurs sont arrivés en Californie ?",
+"c": "La ruée vers l'or",
+"w": [
+"La Prohibition",
+"La Grande Dépression",
+"La Reconstruction"
+],
+"e": "San Francisco est devenue une grande ville en quelques années."
+},
+{
+"q": "Quels peuples amérindiens chassaient le bison dans les Grandes Plaines ?",
+"c": "Les Sioux et les Comanches",
+"w": [
+"Les Iroquois et les Hurons",
+"Les Inuits et les Aléoutes",
+"Les Aztèques et les Mayas"
+],
+"e": "Ils vivaient souvent dans des tipis."
+},
+{
+"q": "Quel conquistador a vaincu l'empire aztèque entre 1519 et 1521 ?",
+"c": "Hernán Cortés",
+"w": [
+"Francisco Pizarro",
+"Christophe Colomb",
+"Pedro de Alvarado"
+],
+"e": "Il est arrivé avec environ 500 hommes."
+},
+{
+"q": "Quel conquistador a mis fin à l'empire inca en 1532-1533 ?",
+"c": "Francisco Pizarro",
+"w": [
+"Hernán Cortés",
+"Pedro de Valdivia",
+"Vasco Núñez de Balboa"
+],
+"e": "Il a fondé la ville de Lima."
+},
+{
+"q": "Quel navigateur italien a donné son prénom au continent américain ?",
+"c": "Amerigo Vespucci",
+"w": [
+"Christophe Colomb",
+"Giovanni Caboto",
+"Marco Polo"
+],
+"e": "Le cartographe Waldseemüller a inscrit « America » sur sa carte de 1507."
+},
+{
+"q": "Quel pays a colonisé le Brésil à partir du XVIe siècle ?",
+"c": "Le Portugal",
+"w": [
+"L'Espagne",
+"La France",
+"Les Pays-Bas"
+],
+"e": "Voilà pourquoi on y parle portugais."
+},
+{
+"q": "Quel traité de 1494 a partagé le Nouveau Monde entre l'Espagne et le Portugal ?",
+"c": "Le traité de Tordesillas",
+"w": [
+"Le traité de Paris",
+"Le traité de Versailles",
+"Le traité d'Utrecht"
+],
+"e": "Il a été signé sous l'autorité du pape."
+},
+{
+"q": "Quel pays a colonisé la plus grande partie de l'Amérique du Sud ?",
+"c": "L'Espagne",
+"w": [
+"Le Portugal",
+"La France",
+"Le Royaume-Uni"
+],
+"e": "C'est pourquoi on y parle surtout espagnol."
+},
+{
+"q": "Quel explorateur français a descendu le Mississippi jusqu'à son embouchure en 1682 ?",
+"c": "René Robert Cavelier de La Salle",
+"w": [
+"Jacques Cartier",
+"Samuel de Champlain",
+"Louis Jolliet"
+],
+"e": "Il a donné à la région le nom de Louisiane, en l'honneur de Louis XIV."
+},
+{
+"q": "Quel explorateur français a remonté le Saint-Laurent en 1534 et a pris possession du Canada ?",
+"c": "Jacques Cartier",
+"w": [
+"Samuel de Champlain",
+"Cavelier de La Salle",
+"Pierre de Coubertin"
+],
+"e": "Il a rencontré des Iroquoiens à Stadaconé, près du futur Québec."
+},
+{
+"q": "Comment s'appelle la guerre de 1775 à 1783 qui a donné naissance aux États-Unis ?",
+"c": "La guerre d'indépendance",
+"w": [
+"La guerre de Sécession",
+"La guerre de Sept Ans",
+"La guerre de 1812"
+],
+"e": "Les Treize colonies se sont libérées de la Couronne britannique."
+},
+{
+"q": "Quel général français a combattu aux côtés de George Washington pendant la guerre d'indépendance ?",
+"c": "La Fayette",
+"w": [
+"Rochambeau",
+"Napoléon",
+"Lafayette Jr."
+],
+"e": "Il avait seulement 19 ans lorsqu'il est arrivé aux États-Unis."
+},
+{
+"q": "Quel président américain est le principal rédacteur de la Déclaration d'indépendance de 1776 ?",
+"c": "Thomas Jefferson",
+"w": [
+"George Washington",
+"Benjamin Franklin",
+"John Adams"
+],
+"e": "Il est devenu le troisième président des États-Unis."
+},
+{
+"q": "Quelle expédition de 1804-1806 a exploré l'Ouest américain après l'achat de la Louisiane ?",
+"c": "L'expédition de Lewis et Clark",
+"w": [
+"L'expédition de Magellan",
+"L'expédition Kon-Tiki",
+"L'expédition de Cook"
+],
+"e": "Elle est partie de Saint-Louis jusqu'à l'océan Pacifique."
+},
+{
+"q": "Quel événement de 1773 à Boston a vu des colons jeter du thé à la mer pour protester contre les taxes ?",
+"c": "La Boston Tea Party",
+"w": [
+"La bataille de Lexington",
+"Le massacre de Boston",
+"Le Stamp Act"
+],
+"e": "Il a été l'un des événements déclencheurs de la révolution américaine."
+},
+{
+"q": "Quelle guerre de 1846-1848 a opposé les États-Unis au Mexique ?",
+"c": "La guerre américano-mexicaine",
+"w": [
+"La guerre de Sécession",
+"La guerre hispano-américaine",
+"La guerre du Texas"
+],
+"e": "Le Mexique a perdu près de la moitié de son territoire."
+},
+{
+"q": "Quel fort de San Antonio, au Texas, a été le théâtre d'un siège célèbre en 1836 ?",
+"c": "Fort Alamo",
+"w": [
+"Fort Knox",
+"Fort Sumter",
+"Fort Apache"
+],
+"e": "Les défenseurs ont tous été tués, dont Davy Crockett."
+},
+{
+"q": "Quel événement de 1929 a lancé la Grande Dépression aux États-Unis ?",
+"c": "Le krach de Wall Street",
+"w": [
+"La Prohibition",
+"Pearl Harbor",
+"La crise de Cuba"
+],
+"e": "Des millions de personnes ont perdu leur emploi."
+},
+{
+"q": "Comment s'appelle le programme de Franklin Roosevelt dans les années 1930 pour relancer l'économie américaine ?",
+"c": "Le New Deal",
+"w": [
+"Le plan Marshall",
+"La Grande Société",
+"Le Fair Deal"
+],
+"e": "Il a créé de grands travaux publics et la Sécurité sociale."
+},
+{
+"q": "Quelle crise de 1962 a failli provoquer une guerre nucléaire entre les États-Unis et l'URSS ?",
+"c": "La crise des missiles de Cuba",
+"w": [
+"La crise de Suez",
+"La crise de Berlin",
+"La crise du Golfe"
+],
+"e": "Elle a duré treize jours en octobre."
+},
+{
+"q": "Quelle guerre a vu les États-Unis s'engager massivement en Asie du Sud-Est, de 1965 à 1973 ?",
+"c": "La guerre du Vietnam",
+"w": [
+"La guerre de Corée",
+"La guerre du Golfe",
+"La guerre d'Irak"
+],
+"e": "Elle s'est terminée par le retrait des troupes américaines."
+},
+{
+"q": "Quel scandale a poussé le président Nixon à démissionner en 1974 ?",
+"c": "Le Watergate",
+"w": [
+"L'Irangate",
+"Le Monicagate",
+"Le scandale Teapot Dome"
+],
+"e": "Il impliquait des écoutes illégales au siège du parti démocrate."
+},
+{
+"q": "Quels bâtiments new-yorkais ont été détruits par les attentats du 11 septembre 2001 ?",
+"c": "Les tours jumelles du World Trade Center",
+"w": [
+"L'Empire State Building",
+"La Trump Tower",
+"Le Rockefeller Center"
+],
+"e": "Près de 3 000 personnes y ont perdu la vie."
+},
+{
+"q": "Quel dictateur cubain a été renversé en 1959 par la révolution de Fidel Castro ?",
+"c": "Fulgencio Batista",
+"w": [
+"Rafael Trujillo",
+"Augusto Pinochet",
+"Anastasio Somoza"
+],
+"e": "Il s'est enfui de Cuba la nuit du Nouvel An."
+},
+{
+"q": "Quel pays d'Amérique du Sud porte le nom de Simón Bolívar ?",
+"c": "La Bolivie",
+"w": [
+"Le Venezuela",
+"La Colombie",
+"L'Équateur"
+],
+"e": "Il a été le premier président de ce pays en 1825."
+},
+{
+"q": "Quel pays est devenu un Dominion britannique en 1867 ?",
+"c": "Le Canada",
+"w": [
+"L'Australie",
+"La Nouvelle-Zélande",
+"L'Afrique du Sud"
+],
+"e": "Sa fête nationale est célébrée le 1er juillet."
+},
+{
+"q": "Quelle province canadienne est majoritairement francophone ?",
+"c": "Le Québec",
+"w": [
+"L'Ontario",
+"L'Alberta",
+"La Colombie-Britannique"
+],
+"e": "Sa capitale est la ville de Québec."
+},
+{
+"q": "Quel pays des Caraïbes s'appelait autrefois Saint-Domingue lorsqu'il était une colonie française ?",
+"c": "Haïti",
+"w": [
+"Cuba",
+"La Jamaïque",
+"La République dominicaine"
+],
+"e": "Il était la colonie la plus riche de la France."
+},
+{
+"q": "Quelle révolution de 1910 a renversé le président mexicain Porfirio Díaz ?",
+"c": "La révolution mexicaine",
+"w": [
+"La révolution cubaine",
+"La révolution russe",
+"La révolution haïtienne"
+],
+"e": "Elle a duré environ dix ans."
+},
+{
+"q": "Quel traité de 1848 a cédé la Californie et une grande partie du Sud-Ouest aux États-Unis ?",
+"c": "Le traité de Guadalupe Hidalgo",
+"w": [
+"Le traité de Paris",
+"Le traité de Versailles",
+"Le traité de Tordesillas"
+],
+"e": "Il a mis fin à la guerre américano-mexicaine."
+},
+{
+"q": "Quelle guerre de 1879-1884 a opposé le Chili au Pérou et à la Bolivie ?",
+"c": "La guerre du Pacifique",
+"w": [
+"La guerre de la Triple Alliance",
+"La guerre du Chaco",
+"La guerre des Malouines"
+],
+"e": "La Bolivie y a perdu son accès à la mer."
+},
+{
+"q": "Quelle bataille de 1863 est considérée comme le tournant de la guerre de Sécession ?",
+"c": "Gettysburg",
+"w": [
+"Bull Run",
+"Antietam",
+"Vicksburg"
+],
+"e": "Lincoln y a prononcé un célèbre discours quelques mois plus tard."
+},
+{
+"q": "Quel général sudiste a commandé l'armée de Virginie du Nord pendant la guerre de Sécession ?",
+"c": "Robert E. Lee",
+"w": [
+"Ulysses Grant",
+"Stonewall Jackson",
+"George McClellan"
+],
+"e": "Il s'est rendu à Appomattox en avril 1865."
+},
+{
+"q": "Quel général nordiste est devenu le 18e président des États-Unis ?",
+"c": "Ulysses Grant",
+"w": [
+"William Sherman",
+"George Custer",
+"Robert E. Lee"
+],
+"e": "Il a obtenu la reddition du général Lee."
+},
+{
+"q": "Quel État a été le premier à faire sécession, en décembre 1860 ?",
+"c": "La Caroline du Sud",
+"w": [
+"La Virginie",
+"La Géorgie",
+"Le Texas"
+],
+"e": "La guerre a commencé quelques mois plus tard à Fort Sumter."
+},
+{
+"q": "Quelle grande réalisation de 1869 a relié l'est et l'ouest des États-Unis ?",
+"c": "Le premier chemin de fer transcontinental",
+"w": [
+"Le canal de Panama",
+"Le pont de Brooklyn",
+"La route 66"
+],
+"e": "Elle a été célébrée à Promontory Summit, dans l'Utah."
+},
+{
+"q": "Quel pays européen a envahi le Mexique en 1862, sous Napoléon III ?",
+"c": "La France",
+"w": [
+"L'Espagne",
+"Le Royaume-Uni",
+"L'Allemagne"
+],
+"e": "L'invasion a conduit à l'installation d'un empereur."
+},
+{
+"q": "Quel archiduc autrichien a été imposé comme empereur du Mexique en 1864 ?",
+"c": "Maximilien Ier",
+"w": [
+"François-Joseph",
+"Charles Quint",
+"Napoléon III"
+],
+"e": "Il a été fusillé en 1867."
+},
+{
+"q": "Quelle civilisation d'Amérique centrale utilisait un calendrier très précis et une écriture hiéroglyphique ?",
+"c": "Les Mayas",
+"w": [
+"Les Aztèques",
+"Les Incas",
+"Les Olmèques"
+],
+"e": "Ses prêtres étaient aussi de grands astronomes."
+},
+{
+"q": "Quelle cité des Andes, redécouverte en 1911 par Hiram Bingham, est aujourd'hui l'un des sites les plus visités du Pérou ?",
+"c": "Machu Picchu",
+"w": [
+"Cuzco",
+"Teotihuacan",
+"Tikal"
+],
+"e": "Elle a été construite vers 1450 pour l'empereur Pachacutec."
+},
+{
+"q": "Quelle confédération amérindienne du nord-est de l'Amérique du Nord était composée de six nations ?",
+"c": "La confédération iroquoise",
+"w": [
+"La confédération sioux",
+"La confédération cherokee",
+"La confédération apache"
+],
+"e": "Elle est aussi appelée Haudenosaunee."
+},
+{
+"q": "Comment appelle-t-on la marche forcée de 1838-1839 qui a déporté les Cherokees vers l'Ouest ?",
+"c": "La Piste des larmes",
+"w": [
+"La Longue Marche",
+"La Marche du sel",
+"La Grande Migration"
+],
+"e": "Des milliers de Cherokees sont morts pendant le trajet."
+},
+{
+"q": "Quelle loi de 1830 a organisé le déplacement forcé de nombreux peuples amérindiens vers l'Ouest ?",
+"c": "L'Indian Removal Act",
+"w": [
+"Le Homestead Act",
+"Le Civil Rights Act",
+"Le Patriot Act"
+],
+"e": "Le président Andrew Jackson l'a signée."
+},
+{
+"q": "Quel massacre de 1890 est considéré comme la fin des guerres indiennes ?",
+"c": "Wounded Knee",
+"w": [
+"Little Bighorn",
+"Sand Creek",
+"Alamo"
+],
+"e": "Il a eu lieu dans le Dakota du Sud."
+},
+{
+"q": "Quel président américain a décidé d'utiliser la bombe atomique contre le Japon en 1945 ?",
+"c": "Harry Truman",
+"w": [
+"Franklin Roosevelt",
+"Dwight Eisenhower",
+"John F. Kennedy"
+],
+"e": "Il est devenu président quelques mois plus tôt, à la mort de Roosevelt."
+},
+{
+"q": "Comment s'appelle le programme secret américain qui a produit la bombe atomique ?",
+"c": "Le projet Manhattan",
+"w": [
+"Le projet Apollo",
+"Le projet Mercury",
+"Le projet Gemini"
+],
+"e": "Il a mobilisé des scientifiques de plusieurs pays."
+},
+{
+"q": "Quelle dictature argentine, de 1976 à 1983, a fait environ 30 000 disparus ?",
+"c": "La junte militaire",
+"w": [
+"Le péronisme",
+"La Triple A",
+"L'Estado Novo"
+],
+"e": "Les Mères de la place de Mai réclament toujours la vérité."
+},
+{
+"q": "Quel dictateur a dirigé la République dominicaine de 1930 à 1961 ?",
+"c": "Rafael Trujillo",
+"w": [
+"François Duvalier",
+"Anastasio Somoza",
+"Fulgencio Batista"
+],
+"e": "Il a été assassiné en 1961."
+},
+{
+"q": "Quel dictateur haïtien, surnommé « Papa Doc », a dirigé le pays de 1957 à 1971 ?",
+"c": "François Duvalier",
+"w": [
+"Jean-Claude Duvalier",
+"Jean-Bertrand Aristide",
+"Dessalines"
+],
+"e": "Son fils lui a succédé sous le nom de « Baby Doc »."
+},
+{
+"q": "Quel mouvement a renversé le dictateur Somoza au Nicaragua en 1979 ?",
+"c": "Les sandinistes",
+"w": [
+"Les zapatistes",
+"Les Tupamaros",
+"Les Montoneros"
+],
+"e": "Il portait le nom du héros Augusto Sandino."
+},
+{
+"q": "Quel pays d'Amérique centrale a aboli son armée en 1948 ?",
+"c": "Le Costa Rica",
+"w": [
+"Le Panama",
+"Le Honduras",
+"Le Guatemala"
+],
+"e": "Il a depuis investi dans l'éducation et la santé."
+},
+{
+"q": "Quel pays a connu la guérilla maoïste du « Sentier lumineux », dans les années 1980 et 1990 ?",
+"c": "Le Pérou",
+"w": [
+"La Colombie",
+"La Bolivie",
+"L'Équateur"
+],
+"e": "Elle a fait des dizaines de milliers de victimes."
+},
+{
+"q": "Quel trafiquant colombien a dominé le cartel de Medellín avant d'être tué en 1993 ?",
+"c": "Pablo Escobar",
+"w": [
+"Joaquín « El Chapo » Guzmán",
+"Manuel Noriega",
+"Carlos Lehder"
+],
+"e": "Il a été l'un des hommes les plus riches du monde."
+},
+{
+"q": "Quelle guerre de 1982 a opposé l'Argentine et le Royaume-Uni pour un archipel de l'Atlantique sud ?",
+"c": "La guerre des Malouines",
+"w": [
+"La guerre du Chaco",
+"La guerre du Pacifique",
+"La guerre des Six Jours"
+],
+"e": "Elle a duré environ soixante-dix jours."
+},
+{
+"q": "Quelle petite île des Caraïbes a été envahie par les États-Unis en 1983 ?",
+"c": "La Grenade",
+"w": [
+"Cuba",
+"Haïti",
+"La Jamaïque"
+],
+"e": "Cette opération a eu lieu après un coup d'État."
+},
+{
+"q": "Quel président américain était à la Maison-Blanche pendant la crise des missiles de Cuba ?",
+"c": "John F. Kennedy",
+"w": [
+"Dwight Eisenhower",
+"Lyndon Johnson",
+"Richard Nixon"
+],
+"e": "Il a négocié avec Nikita Khrouchtchev."
+},
+{
+"q": "Quel amendement de la Constitution américaine a donné le droit de vote aux femmes en 1920 ?",
+"c": "Le 19e",
+"w": [
+"Le 13e",
+"Le 15e",
+"Le 26e"
+],
+"e": "Son adoption est le fruit de décennies de militantisme."
+},
+{
+"q": "Comment appelle-t-on la période de 1920 à 1933 pendant laquelle l'alcool était interdit aux États-Unis ?",
+"c": "La Prohibition",
+"w": [
+"La Grande Dépression",
+"La Reconstruction",
+"L'ère progressiste"
+],
+"e": "Elle a favorisé l'essor des gangsters."
+},
+{
+"q": "Quel gangster de Chicago a été condamné pour fraude fiscale en 1931 ?",
+"c": "Al Capone",
+"w": [
+"John Dillinger",
+"Lucky Luciano",
+"Bugsy Siegel"
+],
+"e": "Il avait longtemps échappé à la justice grâce à la corruption."
+},
+{
+"q": "Quelle ville américaine a été en grande partie détruite par un incendie en 1871 avant d'être rebâtie ?",
+"c": "Chicago",
+"w": [
+"San Francisco",
+"Boston",
+"New York"
+],
+"e": "Elle est ensuite devenue le berceau des gratte-ciels."
+},
+{
+"q": "Quelle catastrophe de 1906 a détruit une grande partie de San Francisco ?",
+"c": "Un tremblement de terre",
+"w": [
+"Un ouragan",
+"Un incendie de forêt",
+"Une inondation"
+],
+"e": "Des incendies ont ensuite ravagé la ville pendant plusieurs jours."
+},
+{
+"q": "Quelle plus ancienne grande civilisation de Mésoamérique est connue pour ses têtes colossales en pierre ?",
+"c": "Les Olmèques",
+"w": [
+"Les Mayas",
+"Les Aztèques",
+"Les Toltèques"
+],
+"e": "Elle s'est développée il y a plus de 3 000 ans, sur la côte du golfe du Mexique."
+}
+]
