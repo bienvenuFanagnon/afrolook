@@ -44,3 +44,4 @@ export { stickerGiftSend } from "./stickers/stickerPayments";
 export { onUserStickerCreated, submitStickerPack, updateStickerPackPrice, adminStickerAction, reportStickerCopy } from "./stickers/stickerCreators";
 export { convertStickerVideo } from "./stickers/stickerVideo";
 export { creationQuote, onCanalCreatedCharge, onGroupCreatedCharge } from "./payments/creationFees";
+export * from "./quiz/quiz";

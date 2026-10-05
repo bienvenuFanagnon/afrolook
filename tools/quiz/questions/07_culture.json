@@ -1,0 +1,1252 @@
+[
+{
+"q": "Quel plat ivoirien est une semoule de manioc fermenté, cuite à la vapeur ?",
+"c": "L'attiéké",
+"w": [
+"Le foutou",
+"Le placali",
+"Le kédjenou"
+],
+"e": "On le mange souvent avec du poisson grillé."
+},
+{
+"q": "Quel plat ouest-africain est une pâte élastique de manioc, d'igname ou de plantain pilé ?",
+"c": "Le fufu",
+"w": [
+"Le couscous",
+"L'injera",
+"Le tô"
+],
+"e": "On le mange avec une sauce, en le prenant avec les doigts."
+},
+{
+"q": "Quel plat de riz rouge, cuit dans une sauce à la tomate, fait l'objet d'une rivalité amicale entre le Nigeria, le Ghana et le Sénégal ?",
+"c": "Le riz jollof",
+"w": [
+"Le riz au gras",
+"Le riz cantonais",
+"Le riz pilaf"
+],
+"e": "Son nom viendrait de l'empire wolof."
+},
+{
+"q": "Quel plat de poisson et de riz est considéré comme le plat national du Sénégal ?",
+"c": "Le thiéboudienne",
+"w": [
+"Le mafé",
+"Le yassa",
+"Le tô"
+],
+"e": "Il est inscrit au patrimoine culturel immatériel de l'UNESCO."
+},
+{
+"q": "Quelle galette spongieuse à base de teff est le pain traditionnel de l'Éthiopie ?",
+"c": "L'injera",
+"w": [
+"Le fufu",
+"Le naan",
+"Le chapati"
+],
+"e": "On la sert avec des ragoûts."
+},
+{
+"q": "Quel plat à base de semoule est très consommé au Maghreb ?",
+"c": "Le couscous",
+"w": [
+"Le fufu",
+"L'attiéké",
+"Le tô"
+],
+"e": "Il est inscrit au patrimoine culturel immatériel de l'UNESCO."
+},
+{
+"q": "Quel plat marocain est cuit dans un récipient en terre à couvercle conique ?",
+"c": "Le tajine",
+"w": [
+"Le couscous",
+"Le mafé",
+"Le tô"
+],
+"e": "Le plat porte le nom du récipient."
+},
+{
+"q": "Quel plat à base de pâte de maïs est très consommé au Togo ?",
+"c": "L'akoumé",
+"w": [
+"L'attiéké",
+"Le fufu",
+"L'injera"
+],
+"e": "On le mange avec des sauces comme la sauce gombo."
+},
+{
+"q": "Quel tissu coloré tissé en bandes est célèbre au Ghana ?",
+"c": "Le kente",
+"w": [
+"Le bogolan",
+"Le wax",
+"Le bazin"
+],
+"e": "Il est porté par les rois ashantis et les Ewés."
+},
+{
+"q": "Quel vêtement ample, porté dans toute l'Afrique de l'Ouest, s'appelle le boubou ?",
+"c": "Une longue tunique ample",
+"w": [
+"Un pagne court",
+"Un turban",
+"Un pantalon étroit"
+],
+"e": "Il existe en version pour hommes et pour femmes."
+},
+{
+"q": "Quelle longue robe à capuche est portée au Maroc ?",
+"c": "La djellaba",
+"w": [
+"Le boubou",
+"Le kaftan",
+"Le kente"
+],
+"e": "Elle peut être en laine ou en coton."
+},
+{
+"q": "Quel peuple d'Afrique de l'Est est connu pour ses étoffes rouges, les shukas, et ses sauts ?",
+"c": "Les Masaïs",
+"w": [
+"Les Zoulous",
+"Les Ashantis",
+"Les Yorubas"
+],
+"e": "Ils vivent au Kenya et en Tanzanie."
+},
+{
+"q": "Quelle langue africaine est parlée dans plusieurs pays d'Afrique de l'Est ?",
+"c": "Le swahili",
+"w": [
+"Le wolof",
+"Le yoruba",
+"Le zoulou"
+],
+"e": "Il est langue officielle en Tanzanie et au Kenya."
+},
+{
+"q": "Quelle est la langue officielle du Togo ?",
+"c": "Le français",
+"w": [
+"L'anglais",
+"Le portugais",
+"L'ewé"
+],
+"e": "L'ewé et le kabyè sont les principales langues nationales."
+},
+{
+"q": "Quelles sont les deux principales langues nationales du Togo ?",
+"c": "L'ewé et le kabyè",
+"w": [
+"Le fon et le yoruba",
+"Le wolof et le bambara",
+"Le haoussa et le peul"
+],
+"e": "Elles sont parlées respectivement au sud et au nord du pays."
+},
+{
+"q": "Quelle langue est la plus parlée dans le sud du Togo ?",
+"c": "L'ewé",
+"w": [
+"Le kabyè",
+"Le haoussa",
+"Le dioula"
+],
+"e": "On le parle aussi dans le sud-est du Ghana."
+},
+{
+"q": "Quelle langue est très parlée dans le nord du Togo, dans la région de la Kara ?",
+"c": "Le kabyè",
+"w": [
+"L'ewé",
+"Le fon",
+"Le mina"
+],
+"e": "On y pratique la lutte traditionnelle evala."
+},
+{
+"q": "Quelle est la monnaie utilisée au Togo ?",
+"c": "Le franc CFA",
+"w": [
+"Le cedi",
+"Le naira",
+"Le dirham"
+],
+"e": "Elle est partagée avec sept autres pays d'Afrique de l'Ouest."
+},
+{
+"q": "Que veut dire CFA en Afrique de l'Ouest ?",
+"c": "Communauté financière africaine",
+"w": [
+"Centre financier africain",
+"Caisse fédérale africaine",
+"Coopération franco-africaine"
+],
+"e": "Le sigle a signifié autrefois « colonies françaises d'Afrique »."
+},
+{
+"q": "Quelle est la monnaie du Nigeria ?",
+"c": "Le naira",
+"w": [
+"Le cedi",
+"Le rand",
+"Le shilling"
+],
+"e": "Elle est divisée en 100 kobos."
+},
+{
+"q": "Quelle est la monnaie du Ghana ?",
+"c": "Le cedi",
+"w": [
+"Le naira",
+"Le leone",
+"Le franc"
+],
+"e": "Le mot cedi veut dire « cauri » en akan."
+},
+{
+"q": "Quelle est la monnaie du Maroc ?",
+"c": "Le dirham",
+"w": [
+"Le dinar",
+"Le franc",
+"La livre"
+],
+"e": "Elle est divisée en 100 centimes."
+},
+{
+"q": "Quelle est la monnaie de l'Afrique du Sud ?",
+"c": "Le rand",
+"w": [
+"Le dollar",
+"La livre",
+"Le kwacha"
+],
+"e": "Son nom vient du Witwatersrand, région de l'or."
+},
+{
+"q": "Quelle est la monnaie du Kenya ?",
+"c": "Le shilling kényan",
+"w": [
+"Le dollar",
+"Le rand",
+"Le birr"
+],
+"e": "Elle est divisée en 100 cents."
+},
+{
+"q": "Quelle est la monnaie de la Tanzanie ?",
+"c": "Le shilling tanzanien",
+"w": [
+"Le kwacha",
+"Le dollar",
+"Le rand"
+],
+"e": "Elle est aussi utilisée à Zanzibar."
+},
+{
+"q": "Quelle étoffe malienne en coton, teinte avec de la boue, porte le nom de bogolan ?",
+"c": "Le tissu de boue",
+"w": [
+"Le tissu de paille",
+"Le tissu de soie",
+"Le tissu de peau"
+],
+"e": "Le mot « bogolan » signifie « fait avec de la terre » en bambara."
+},
+{
+"q": "Quel peuple du Mali est célèbre pour ses masques et ses falaises de Bandiagara ?",
+"c": "Les Dogons",
+"w": [
+"Les Peuls",
+"Les Touaregs",
+"Les Bambaras"
+],
+"e": "Leur pays est inscrit au patrimoine mondial de l'UNESCO."
+},
+{
+"q": "Quel peuple d'Afrique du Sud est célèbre pour ses maisons peintes de motifs géométriques colorés ?",
+"c": "Les Ndébélés",
+"w": [
+"Les Zoulous",
+"Les Xhosas",
+"Les Sothos"
+],
+"e": "Les femmes peignent les murs."
+},
+{
+"q": "Comment s'appellent les symboles ghanéens imprimés sur du tissu, qui expriment des proverbes ?",
+"c": "Les adinkra",
+"w": [
+"Les kente",
+"Les wax",
+"Les bogolans"
+],
+"e": "Chaque symbole porte un sens, comme la sagesse ou la force."
+},
+{
+"q": "Que signifie le symbole adinkra « Sankofa » ?",
+"c": "Retourner chercher ce qu'on a oublié, apprendre du passé",
+"w": [
+"Marcher vers l'avenir sans peur",
+"Garder le secret",
+"Partager avec les autres"
+],
+"e": "Il est souvent représenté par un oiseau qui regarde en arrière."
+},
+{
+"q": "Que veut dire le mot « ubuntu » en Afrique australe ?",
+"c": "Je suis parce que nous sommes",
+"w": [
+"Le chemin est long",
+"La terre est notre mère",
+"Le temps est un fleuve"
+],
+"e": "Il exprime l'idée que les êtres humains sont liés entre eux."
+},
+{
+"q": "Que désigne-t-on par « arbre à palabres » en Afrique ?",
+"c": "Un lieu où l'on se réunit pour discuter et régler les différends",
+"w": [
+"Un arbre qui produit des fruits rares",
+"Un arbre sacré qu'on ne touche jamais",
+"Un arbre planté à la naissance d'un enfant"
+],
+"e": "Les anciens y rendent souvent la justice du village."
+},
+{
+"q": "Quel jeu de société africain consiste à semer des graines dans des trous creusés dans une planche ?",
+"c": "L'awalé",
+"w": [
+"Le dominos",
+"Le ludo",
+"Les dames"
+],
+"e": "On le connaît aussi sous le nom de mancala."
+},
+{
+"q": "Combien de mois compte le calendrier éthiopien ?",
+"c": "13",
+"w": [
+"10",
+"12",
+"14"
+],
+"e": "Douze mois de 30 jours, plus un petit mois de 5 ou 6 jours."
+},
+{
+"q": "De combien d'années le calendrier éthiopien est-il en retard sur le calendrier grégorien ?",
+"c": "7 à 8 ans",
+"w": [
+"1 à 2 ans",
+"20 ans",
+"50 ans"
+],
+"e": "Les Éthiopiens ont fêté l'an 2000 en septembre 2007."
+},
+{
+"q": "Dans quel pays le café serait-il né, selon la légende du berger Kaldi ?",
+"c": "L'Éthiopie",
+"w": [
+"Le Brésil",
+"La Colombie",
+"Le Yémen"
+],
+"e": "Il est encore très consommé lors de cérémonies du café."
+},
+{
+"q": "Quelle boisson est un symbole d'hospitalité au Maroc ?",
+"c": "Le thé à la menthe",
+"w": [
+"Le café noir",
+"Le lait de chamelle",
+"Le jus de grenade"
+],
+"e": "On le verse de haut dans de petits verres."
+},
+{
+"q": "Quelle boisson rouge, à base de fleurs d'hibiscus, est très populaire en Afrique de l'Ouest ?",
+"c": "Le bissap",
+"w": [
+"Le gnamankoudji",
+"Le zoom-koom",
+"Le tamarin"
+],
+"e": "On la boit froide et sucrée."
+},
+{
+"q": "Quelle boisson traditionnelle à base de sorgho ou de mil fermenté s'appelle tchoukoutou au Togo et au Bénin ?",
+"c": "La bière de mil",
+"w": [
+"Le vin de palme",
+"Le jus de gingembre",
+"Le lait caillé"
+],
+"e": "On l'appelle dolo au Burkina Faso et au Mali."
+},
+{
+"q": "Quel arbre d'Afrique de l'Ouest donne un beurre utilisé pour la peau et la cuisine ?",
+"c": "Le karité",
+"w": [
+"Le baobab",
+"Le palmier",
+"Le manguier"
+],
+"e": "Le beurre est fabriqué surtout par des femmes."
+},
+{
+"q": "Quel arbre géant d'Afrique est surnommé « l'arbre de vie » ?",
+"c": "Le baobab",
+"w": [
+"Le karité",
+"Le cocotier",
+"L'acajou"
+],
+"e": "Il peut vivre plusieurs milliers d'années."
+},
+{
+"q": "Quelle noix est offerte en signe de bienvenue dans de nombreuses cultures d'Afrique de l'Ouest ?",
+"c": "La noix de cola",
+"w": [
+"La noix de coco",
+"La noix de cajou",
+"L'arachide"
+],
+"e": "Elle est aussi mâchée pour sa teneur en caféine."
+},
+{
+"q": "Quel pays est le premier producteur de café du continent africain ?",
+"c": "L'Éthiopie",
+"w": [
+"Le Kenya",
+"L'Ouganda",
+"La Côte d'Ivoire"
+],
+"e": "L'Ouganda est le deuxième producteur africain."
+},
+{
+"q": "Quel pays africain est le premier producteur de vanille du monde ?",
+"c": "Madagascar",
+"w": [
+"Maurice",
+"Les Comores",
+"Le Kenya"
+],
+"e": "Il produit plus de la moitié de la vanille mondiale."
+},
+{
+"q": "Quelle île tanzanienne est surnommée « l'île aux épices » ?",
+"c": "Zanzibar",
+"w": [
+"Madagascar",
+"Maurice",
+"Pemba"
+],
+"e": "On y cultive girofle, cannelle, poivre et vanille."
+},
+{
+"q": "Quelle ville du Maroc est célèbre pour ses tanneries traditionnelles, comme Chouara ?",
+"c": "Fès",
+"w": [
+"Rabat",
+"Tanger",
+"Agadir"
+],
+"e": "Les peaux y sont teintes dans des cuves à ciel ouvert."
+},
+{
+"q": "Quel spectacle de cavaliers au galop, avec des tirs de fusils, est une tradition du Maghreb ?",
+"c": "La fantasia",
+"w": [
+"Le méchoui",
+"Le fandango",
+"Le sabar"
+],
+"e": "On l'appelle aussi tbourida au Maroc."
+},
+{
+"q": "Quel peuple du Sahara est surnommé « les hommes bleus » à cause de leurs voiles indigo ?",
+"c": "Les Touaregs",
+"w": [
+"Les Peuls",
+"Les Masaïs",
+"Les Dogons"
+],
+"e": "Leur écriture s'appelle le tifinagh."
+},
+{
+"q": "Quel peuple d'éleveurs, présent dans une grande partie de l'Afrique de l'Ouest, est aussi appelé Fulani ?",
+"c": "Les Peuls",
+"w": [
+"Les Ewés",
+"Les Ashantis",
+"Les Zoulous"
+],
+"e": "Ils sont connus pour l'élevage de bœufs à longues cornes."
+},
+{
+"q": "Quelle lutte traditionnelle des Kabyè, au Togo, est liée à l'initiation des jeunes garçons ?",
+"c": "L'evala",
+"w": [
+"Le sabar",
+"Le zangbéto",
+"Le gèlèdè"
+],
+"e": "Elle se déroule chaque année à Kara."
+},
+{
+"q": "Quelle fête annuelle d'Aného, au Togo, rappelle l'histoire du peuple Guin ?",
+"c": "L'Épé-Ekpé",
+"w": [
+"L'Evala",
+"Le Hogbetsotso",
+"Le Zangbéto"
+],
+"e": "Elle se déroule chaque année dans le sud du pays."
+},
+{
+"q": "Quelle fête célèbre la récolte des ignames dans de nombreuses régions d'Afrique de l'Ouest ?",
+"c": "La fête des ignames",
+"w": [
+"La fête de la pluie",
+"La fête du feu",
+"La fête des moissons de mil"
+],
+"e": "On la célèbre à la fin de la saison des pluies."
+},
+{
+"q": "Quelle fête nationale du Bénin, le 10 janvier, honore les religions traditionnelles ?",
+"c": "La fête du Vodun",
+"w": [
+"La fête de l'igname",
+"La fête du Hogbetsotso",
+"La fête du Zangbéto"
+],
+"e": "La ville de Ouidah en est le grand centre."
+},
+{
+"q": "Dans quelle région d'Afrique le vodun est-il né ?",
+"c": "Dans le golfe de Guinée, autour du Bénin et du Togo",
+"w": [
+"En Afrique du Sud",
+"En Éthiopie",
+"Au Maroc"
+],
+"e": "Il a été emporté aux Amériques par la traite et a donné le vaudou haïtien."
+},
+{
+"q": "Quelle société secrète du Bénin et du Togo protège les villages la nuit, sous la forme d'un cône de paille ?",
+"c": "Le zangbéto",
+"w": [
+"L'egungun",
+"Le gèlèdè",
+"Le poro"
+],
+"e": "Le zangbéto fait des danses spectaculaires."
+},
+{
+"q": "Quelle mascarade yoruba honore les ancêtres ?",
+"c": "L'egungun",
+"w": [
+"Le zangbéto",
+"Le gèlèdè",
+"Le poro"
+],
+"e": "Les danseurs portent des costumes colorés qui couvrent tout le corps."
+},
+{
+"q": "Quel spectacle de masques yoruba, inscrit à l'UNESCO, honore les mères et les femmes ?",
+"c": "Le gèlèdè",
+"w": [
+"L'egungun",
+"Le zangbéto",
+"Le dogon"
+],
+"e": "Il est pratiqué au Bénin, au Nigeria et au Togo."
+},
+{
+"q": "Comment appelle-t-on la fête musulmane du mouton en Afrique de l'Ouest francophone ?",
+"c": "La Tabaski",
+"w": [
+"La Korité",
+"Le Gamou",
+"Le Magal"
+],
+"e": "Elle rappelle le sacrifice d'Abraham."
+},
+{
+"q": "Comment appelle-t-on la fête de fin du Ramadan en Afrique de l'Ouest francophone ?",
+"c": "La Korité",
+"w": [
+"La Tabaski",
+"Le Gamou",
+"Le Magal"
+],
+"e": "On y échange des vœux et on partage des repas."
+},
+{
+"q": "Quelle fête célèbre la naissance du Prophète au Sénégal, à Tivaouane ?",
+"c": "Le Gamou",
+"w": [
+"Le Magal",
+"La Tabaski",
+"La Korité"
+],
+"e": "Elle rassemble des centaines de milliers de fidèles."
+},
+{
+"q": "Quel grand pèlerinage annuel des mourides se tient à Touba, au Sénégal ?",
+"c": "Le Magal",
+"w": [
+"Le Gamou",
+"La Tabaski",
+"Le Panafest"
+],
+"e": "Il rappelle l'exil de cheikh Ahmadou Bamba."
+},
+{
+"q": "Quel festival panafricain se tient au Ghana pour honorer l'histoire de la diaspora africaine ?",
+"c": "Le Panafest",
+"w": [
+"Le FESPACO",
+"Le MASA",
+"Le FESTAC"
+],
+"e": "Il a lieu notamment à Cape Coast et à Elmina."
+},
+{
+"q": "Selon la tradition, de quelle ville du Togo les ancêtres des Ewés ont-ils fui le roi Agokoli ?",
+"c": "Notsé",
+"w": [
+"Kpalimé",
+"Aného",
+"Tsévié"
+],
+"e": "Leur départ est célébré lors du Hogbetsotso, au Ghana."
+},
+{
+"q": "Que signifie « Homowo », fête des Ga d'Accra ?",
+"c": "Se moquer de la faim",
+"w": [
+"Le retour des ancêtres",
+"La fête de l'eau",
+"La danse des guerriers"
+],
+"e": "Elle rappelle une famine passée suivie d'une bonne récolte."
+},
+{
+"q": "Comment s'appelle la danse des guerriers masaïs, faite de grands sauts ?",
+"c": "L'adumu",
+"w": [
+"Le gumboot",
+"Le sabar",
+"Le coupé-décalé"
+],
+"e": "Le plus haut sauteur est le plus admiré."
+},
+{
+"q": "Quelle danse sud-africaine, née chez les mineurs, utilise des bottes en caoutchouc ?",
+"c": "Le gumboot",
+"w": [
+"Le pantsula",
+"Le sabar",
+"L'adumu"
+],
+"e": "Les mineurs ne pouvaient pas parler et communiquaient en frappant leurs bottes."
+},
+{
+"q": "Quelle sauce verte et filante, à base de légume, accompagne souvent la pâte en Afrique de l'Ouest ?",
+"c": "La sauce gombo",
+"w": [
+"La sauce tomate",
+"La sauce arachide",
+"La sauce blanche"
+],
+"e": "Le gombo est riche en fibres."
+},
+{
+"q": "Quel plat camerounais est préparé avec des feuilles amères, des arachides et de la viande ou du poisson ?",
+"c": "Le ndolé",
+"w": [
+"Le poulet DG",
+"Le koki",
+"L'eru"
+],
+"e": "Il est souvent servi avec du plantain ou du bobolo."
+},
+{
+"q": "Quel plat camerounais associe du poulet, des plantains frits et des légumes ?",
+"c": "Le poulet DG",
+"w": [
+"Le ndolé",
+"Le mafé",
+"Le kedjenou"
+],
+"e": "« DG » veut dire « directeur général », en référence à un plat de luxe."
+},
+{
+"q": "Quel plat sénégalais est préparé avec du poulet ou du poisson, des oignons et du citron ?",
+"c": "Le yassa",
+"w": [
+"Le mafé",
+"Le thiéboudienne",
+"Le tô"
+],
+"e": "Il vient de Casamance."
+},
+{
+"q": "Quel plat d'Afrique de l'Ouest est cuit dans une sauce à base de pâte d'arachide ?",
+"c": "Le mafé",
+"w": [
+"Le yassa",
+"L'attiéké",
+"Le tô"
+],
+"e": "Il est très populaire au Mali et au Sénégal."
+},
+{
+"q": "Quel plat ivoirien est du poulet mijoté à l'étouffée avec des légumes ?",
+"c": "Le kédjenou",
+"w": [
+"L'alloco",
+"Le foutou",
+"Le placali"
+],
+"e": "Il cuit lentement, dans une jarre en terre."
+},
+{
+"q": "Quel plat ivoirien est fait de bananes plantains frites ?",
+"c": "L'alloco",
+"w": [
+"L'attiéké",
+"Le foutou",
+"Le kédjenou"
+],
+"e": "On le mange avec de la sauce pimentée."
+},
+{
+"q": "Quelle soupe nigériane, épaisse, est préparée avec des graines de melon ?",
+"c": "L'egusi",
+"w": [
+"L'okra",
+"Le ndolé",
+"Le mafé"
+],
+"e": "Elle est servie avec du fufu ou du riz."
+},
+{
+"q": "Comment appelle-t-on le barbecue traditionnel en Afrique du Sud ?",
+"c": "Le braai",
+"w": [
+"Le suya",
+"Le nyama choma",
+"Le méchoui"
+],
+"e": "C'est une institution sociale dans tout le pays."
+},
+{
+"q": "Quel est le nom des palais royaux d'Abomey, inscrits au patrimoine mondial de l'UNESCO en 1985 ?",
+"c": "Les palais royaux d'Abomey",
+"w": [
+"Les palais d'Ouidah",
+"Les palais de Porto-Novo",
+"Les palais de Cotonou"
+],
+"e": "Ils ont été les résidences des rois du Dahomey."
+},
+{
+"q": "Quelle ville de Tunisie abrite l'une des plus anciennes mosquées d'Afrique du Nord, fondée au VIIe siècle ?",
+"c": "Kairouan",
+"w": [
+"Sousse",
+"Sfax",
+"Tunis"
+],
+"e": "Elle est inscrite au patrimoine mondial de l'UNESCO."
+},
+{
+"q": "Quelle ville du Maroc abrite l'université Al Quaraouiyine, fondée en 859 ?",
+"c": "Fès",
+"w": [
+"Marrakech",
+"Rabat",
+"Meknès"
+],
+"e": "Elle est considérée comme l'une des plus anciennes du monde encore en activité."
+},
+{
+"q": "Quelle ville est surnommée « la Blanche » en Algérie ?",
+"c": "Alger",
+"w": [
+"Oran",
+"Constantine",
+"Annaba"
+],
+"e": "Ses maisons blanches descendent vers la mer."
+},
+{
+"q": "Quel village de Tunisie est célèbre pour ses maisons blanches aux portes et volets bleus ?",
+"c": "Sidi Bou Saïd",
+"w": [
+"Hammamet",
+"Tozeur",
+"Djerba"
+],
+"e": "Il domine le golfe de Tunis."
+},
+{
+"q": "Quelle ville du Maroc est surnommée « la perle bleue » ?",
+"c": "Chefchaouen",
+"w": [
+"Fès",
+"Essaouira",
+"Meknès"
+],
+"e": "Ses ruelles sont peintes en bleu."
+},
+{
+"q": "Quel pays abrite le temple d'Abou Simbel, taillé dans la roche ?",
+"c": "L'Égypte",
+"w": [
+"Le Soudan",
+"L'Éthiopie",
+"La Libye"
+],
+"e": "Il a été construit sous le règne de Ramsès II."
+},
+{
+"q": "Quel peuple est le plus nombreux dans le sud-ouest du Nigeria ?",
+"c": "Les Yorubas",
+"w": [
+"Les Igbos",
+"Les Haoussas",
+"Les Peuls"
+],
+"e": "Ils vivent aussi au Bénin et au Togo."
+},
+{
+"q": "Quel peuple est majoritaire dans le nord du Nigeria ?",
+"c": "Les Haoussas",
+"w": [
+"Les Yorubas",
+"Les Igbos",
+"Les Ewés"
+],
+"e": "Leur langue est parlée dans toute l'Afrique de l'Ouest."
+},
+{
+"q": "Quel peuple est majoritaire dans le sud-est du Nigeria ?",
+"c": "Les Igbos",
+"w": [
+"Les Yorubas",
+"Les Haoussas",
+"Les Fons"
+],
+"e": "Ils sont connus pour leur sens du commerce."
+},
+{
+"q": "Quel groupe ethnique est majoritaire au Ghana ?",
+"c": "Les Akans",
+"w": [
+"Les Ewés",
+"Les Haoussas",
+"Les Dagombas"
+],
+"e": "Les Ashantis en font partie."
+},
+{
+"q": "Quel est le principal groupe ethnique du Sénégal ?",
+"c": "Les Wolofs",
+"w": [
+"Les Peuls",
+"Les Sérères",
+"Les Diolas"
+],
+"e": "Leur langue sert de langue commune dans une grande partie du pays."
+},
+{
+"q": "Quel est le principal groupe ethnique du Mali ?",
+"c": "Les Bambaras",
+"w": [
+"Les Peuls",
+"Les Touaregs",
+"Les Dogons"
+],
+"e": "Leur langue, le bambara, est la plus parlée du pays."
+},
+{
+"q": "Quel est le principal groupe ethnique du Bénin ?",
+"c": "Les Fons",
+"w": [
+"Les Yorubas",
+"Les Baribas",
+"Les Adja"
+],
+"e": "Ils ont fondé le royaume du Dahomey."
+},
+{
+"q": "Quel alphabet a été inventé en 1949 par Solomana Kanté pour écrire les langues mandingues ?",
+"c": "Le N'Ko",
+"w": [
+"Le tifinagh",
+"Le guèze",
+"L'ajami"
+],
+"e": "Il s'écrit de droite à gauche."
+},
+{
+"q": "Quelle écriture est utilisée pour écrire l'amharique, langue de l'Éthiopie ?",
+"c": "Le guèze",
+"w": [
+"Le N'Ko",
+"Le tifinagh",
+"L'ajami"
+],
+"e": "Elle compte plus de 200 signes."
+},
+{
+"q": "Quel alphabet est utilisé pour écrire les langues berbères ?",
+"c": "Le tifinagh",
+"w": [
+"Le guèze",
+"Le N'Ko",
+"L'ajami"
+],
+"e": "Les Touaregs l'utilisent encore."
+},
+{
+"q": "Quelle langue est la plus parlée comme langue maternelle en Afrique du Sud ?",
+"c": "Le zoulou",
+"w": [
+"L'anglais",
+"L'afrikaans",
+"Le xhosa"
+],
+"e": "Elle est parlée par environ un quart de la population."
+},
+{
+"q": "À quelle famille de langues appartient le malgache, parlé à Madagascar ?",
+"c": "Les langues austronésiennes",
+"w": [
+"Les langues bantoues",
+"Les langues sémitiques",
+"Les langues nilotiques"
+],
+"e": "Elle est proche des langues d'Indonésie."
+},
+{
+"q": "Quel pays est surnommé « le pays de la Téranga » ?",
+"c": "Le Sénégal",
+"w": [
+"Le Mali",
+"Le Ghana",
+"Le Bénin"
+],
+"e": "« Téranga » veut dire « hospitalité » en wolof."
+},
+{
+"q": "Quel pays est surnommé « la perle de l'Afrique », selon Winston Churchill ?",
+"c": "L'Ouganda",
+"w": [
+"Le Rwanda",
+"Le Kenya",
+"Le Sénégal"
+],
+"e": "Il a de nombreux lacs, des montagnes et une faune riche."
+},
+{
+"q": "Quel pays est surnommé « la nation arc-en-ciel » ?",
+"c": "L'Afrique du Sud",
+"w": [
+"Le Nigeria",
+"Le Kenya",
+"Le Ghana"
+],
+"e": "L'expression est attribuée à Desmond Tutu."
+},
+{
+"q": "Quel pays est surnommé « le pays des hommes intègres » ?",
+"c": "Le Burkina Faso",
+"w": [
+"Le Mali",
+"Le Niger",
+"Le Togo"
+],
+"e": "Le nom a été choisi en 1984."
+},
+{
+"q": "Quel pays est surnommé « le géant de l'Afrique » ?",
+"c": "Le Nigeria",
+"w": [
+"L'Égypte",
+"L'Éthiopie",
+"L'Afrique du Sud"
+],
+"e": "Il est le pays le plus peuplé du continent."
+},
+{
+"q": "Quel pays africain est surnommé « l'île rouge », à cause de la couleur de sa terre ?",
+"c": "Madagascar",
+"w": [
+"Maurice",
+"Les Seychelles",
+"Zanzibar"
+],
+"e": "Sa terre est riche en fer."
+},
+{
+"q": "Quel masque blanc du Gabon représente un esprit d'ancêtre, souvent utilisé dans des danses sur échasses ?",
+"c": "Le masque punu",
+"w": [
+"Le masque dogon",
+"Le masque dan",
+"Le masque baoulé"
+],
+"e": "Il est porté par des danseurs sur échasses."
+},
+{
+"q": "Quel peuple de Côte d'Ivoire et du Liberia est célèbre pour ses masques « dan » ?",
+"c": "Les Dan",
+"w": [
+"Les Dogons",
+"Les Baoulés",
+"Les Bamilékés"
+],
+"e": "Ces masques sont aujourd'hui dans de nombreux musées."
+},
+{
+"q": "Quel peuple du Cameroun est connu pour son sultanat et sa ville de Foumban ?",
+"c": "Les Bamouns",
+"w": [
+"Les Bamilékés",
+"Les Doualas",
+"Les Fangs"
+],
+"e": "Le palais de Foumban abrite un musée."
+},
+{
+"q": "Quel peuple du Kenya est célèbre pour ses coureurs de fond ?",
+"c": "Les Kalenjins",
+"w": [
+"Les Masaïs",
+"Les Kikuyus",
+"Les Luos"
+],
+"e": "Beaucoup de champions olympiques viennent de cette région."
+},
+{
+"q": "Quelle culture du Nigeria a produit des sculptures en terre cuite il y a plus de 2 000 ans ?",
+"c": "La culture Nok",
+"w": [
+"La culture Ife",
+"La culture Igbo-Ukwu",
+"La culture Kanem"
+],
+"e": "Elles font partie des plus anciennes sculptures d'Afrique de l'Ouest."
+},
+{
+"q": "Quelle cité yoruba est célèbre pour ses têtes en laiton et en terre cuite du XIIe-XVe siècle ?",
+"c": "Ife",
+"w": [
+"Oyo",
+"Abomey",
+"Kano"
+],
+"e": "Elle est considérée comme le berceau spirituel des Yorubas."
+},
+{
+"q": "Quelle est la monnaie de l'Éthiopie ?",
+"c": "Le birr",
+"w": [
+"Le shilling",
+"Le kwacha",
+"Le dinar"
+],
+"e": "Elle est divisée en 100 santim."
+},
+{
+"q": "Que signifie le mot « pula », monnaie du Botswana, en tswana ?",
+"c": "La pluie",
+"w": [
+"Le soleil",
+"Le diamant",
+"Le fleuve"
+],
+"e": "La pluie est précieuse dans un pays aussi sec."
+},
+{
+"q": "Quel pays africain a lancé en 2021 une monnaie numérique de banque centrale, l'eNaira ?",
+"c": "Le Nigeria",
+"w": [
+"Le Ghana",
+"Le Kenya",
+"L'Afrique du Sud"
+],
+"e": "Il a été l'un des premiers pays au monde à le faire."
+},
+{
+"q": "Quelle est la devise du Togo ?",
+"c": "Travail, Liberté, Patrie",
+"w": [
+"Union, Discipline, Travail",
+"Unité, Progrès, Justice",
+"Fraternité, Justice, Travail"
+],
+"e": "La devise figure sur les armoiries du pays."
+},
+{
+"q": "Quelle est la devise de la Côte d'Ivoire ?",
+"c": "Union, Discipline, Travail",
+"w": [
+"Travail, Liberté, Patrie",
+"Unité, Progrès, Justice",
+"Paix, Travail, Patrie"
+],
+"e": "Elle a été adoptée à l'indépendance."
+},
+{
+"q": "Quelle est la devise du Bénin ?",
+"c": "Fraternité, Justice, Travail",
+"w": [
+"Union, Discipline, Travail",
+"Travail, Liberté, Patrie",
+"Unité, Progrès, Justice"
+],
+"e": "Elle figure sur les armoiries du pays."
+},
+{
+"q": "Quelle est la devise du Sénégal ?",
+"c": "Un peuple, un but, une foi",
+"w": [
+"Union, Discipline, Travail",
+"Travail, Liberté, Patrie",
+"Paix, Travail, Patrie"
+],
+"e": "Le Mali a la même devise."
+},
+{
+"q": "Quelle est la devise du Burkina Faso ?",
+"c": "Unité, Progrès, Justice",
+"w": [
+"Un peuple, un but, une foi",
+"Union, Discipline, Travail",
+"Paix, Travail, Patrie"
+],
+"e": "Elle est écrite sur ses armoiries."
+},
+{
+"q": "Quelle est la devise du Cameroun ?",
+"c": "Paix, Travail, Patrie",
+"w": [
+"Union, Discipline, Travail",
+"Unité, Progrès, Justice",
+"Travail, Liberté, Patrie"
+],
+"e": "Elle figure sur les armoiries du pays."
+},
+{
+"q": "Quelle est la devise du Gabon ?",
+"c": "Union, Travail, Justice",
+"w": [
+"Paix, Travail, Patrie",
+"Union, Discipline, Travail",
+"Unité, Progrès, Justice"
+],
+"e": "Elle est écrite sur ses armoiries."
+},
+{
+"q": "Quel élément se trouve dans le coin supérieur gauche du drapeau du Togo ?",
+"c": "Un carré rouge avec une étoile blanche",
+"w": [
+"Un soleil jaune",
+"Un lion",
+"Une croix blanche"
+],
+"e": "L'étoile symbolise la nation et la liberté."
+},
+{
+"q": "Combien de bandes horizontales compte le drapeau du Togo ?",
+"c": "5",
+"w": [
+"3",
+"4",
+"7"
+],
+"e": "Trois bandes vertes et deux jaunes en alternance."
+},
+{
+"q": "Quel est le titre de l'hymne national du Cameroun ?",
+"c": "Ô Cameroun, berceau de nos ancêtres",
+"w": [
+"L'Abidjanaise",
+"Le Lion rouge",
+"Le Ditanyè"
+],
+"e": "On l'appelle aussi « Chant de ralliement »."
+},
+{
+"q": "Quel est le titre de l'hymne national du Bénin ?",
+"c": "L'Aube nouvelle",
+"w": [
+"Salut à toi, pays de nos aïeux",
+"L'Abidjanaise",
+"Le Lion rouge"
+],
+"e": "Il a été écrit par l'abbé Gilbert Dagnon."
+},
+{
+"q": "Quel est le titre de l'hymne national de la Côte d'Ivoire ?",
+"c": "L'Abidjanaise",
+"w": [
+"L'Aube nouvelle",
+"Salut à toi, pays de nos aïeux",
+"Le Ditanyè"
+],
+"e": "Il a été composé en 1960."
+},
+{
+"q": "Quel est le titre de l'hymne national du Sénégal, écrit par Léopold Sédar Senghor ?",
+"c": "Le Lion rouge",
+"w": [
+"L'Abidjanaise",
+"Salut à toi, pays de nos aïeux",
+"L'Aube nouvelle"
+],
+"e": "Il commence par « Pincez tous vos koras, frappez les balafons »."
+},
+{
+"q": "Quel est le titre de l'hymne national du Burkina Faso ?",
+"c": "Le Ditanyè",
+"w": [
+"L'Abidjanaise",
+"Le Lion rouge",
+"L'Aube nouvelle"
+],
+"e": "« Ditanyè » veut dire « chant de la victoire » en dioula."
+},
+{
+"q": "Quelle est la monnaie de l'Algérie ?",
+"c": "Le dinar",
+"w": [
+"Le dirham",
+"Le franc",
+"La livre"
+],
+"e": "Elle est divisée en 100 centimes."
+},
+{
+"q": "Quelle est la monnaie de l'Égypte ?",
+"c": "La livre égyptienne",
+"w": [
+"Le dinar",
+"Le dirham",
+"Le rial"
+],
+"e": "Elle est divisée en 100 piastres."
+}
+]

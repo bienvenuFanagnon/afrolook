@@ -17,6 +17,7 @@ import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
+import 'package:afrotok/pages/quiz/quiz_home_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -650,6 +651,13 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.forum_rounded,
                       label: context.tr('Top commentateurs de la semaine'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage()))),
+
+                  // Quiz : parcours de questions avec mascotte, classement, boutique de points
+                  _dItem(context, colors,
+                      icon: Icons.quiz_rounded,
+                      iconColor: const Color(0xFF2ECC71),
+                      label: context.tr('Quiz'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizHomePage()))),
 
                   // Récompenses : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
                   if (RewardsService.available(authProvider.loginUserData))

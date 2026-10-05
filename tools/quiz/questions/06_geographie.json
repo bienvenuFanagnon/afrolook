@@ -1,0 +1,1252 @@
+[
+{
+"q": "Quel est le continent le plus peuplé du monde ?",
+"c": "L'Asie",
+"w": [
+"L'Afrique",
+"L'Europe",
+"L'Amérique"
+],
+"e": "Plus de la moitié de l'humanité y vit."
+},
+{
+"q": "Quel est le deuxième plus grand continent du monde par la superficie ?",
+"c": "L'Afrique",
+"w": [
+"L'Amérique du Nord",
+"L'Europe",
+"L'Antarctique"
+],
+"e": "Seule l'Asie est plus grande."
+},
+{
+"q": "Quel est le plus grand désert chaud du monde ?",
+"c": "Le Sahara",
+"w": [
+"Le Kalahari",
+"Le Namib",
+"Le Gobi"
+],
+"e": "Il couvre une grande partie de l'Afrique du Nord."
+},
+{
+"q": "Quel fleuve traverse l'Égypte avant de se jeter dans la Méditerranée ?",
+"c": "Le Nil",
+"w": [
+"Le Congo",
+"Le Niger",
+"Le Zambèze"
+],
+"e": "Il est l'un des plus longs fleuves du monde."
+},
+{
+"q": "Quelle est la capitale du Togo ?",
+"c": "Lomé",
+"w": [
+"Kara",
+"Sokodé",
+"Atakpamé"
+],
+"e": "Lomé se trouve au bord du golfe de Guinée."
+},
+{
+"q": "Quelle est la capitale officielle du Bénin ?",
+"c": "Porto-Novo",
+"w": [
+"Cotonou",
+"Parakou",
+"Abomey"
+],
+"e": "Cotonou est le siège du gouvernement et la plus grande ville."
+},
+{
+"q": "Quelle est la capitale du Ghana ?",
+"c": "Accra",
+"w": [
+"Kumasi",
+"Tamale",
+"Takoradi"
+],
+"e": "Accra est au bord du golfe de Guinée."
+},
+{
+"q": "Quelle est la capitale du Nigeria ?",
+"c": "Abuja",
+"w": [
+"Lagos",
+"Kano",
+"Ibadan"
+],
+"e": "Lagos reste la plus grande ville."
+},
+{
+"q": "Quelle est la capitale du Sénégal ?",
+"c": "Dakar",
+"w": [
+"Saint-Louis",
+"Thiès",
+"Touba"
+],
+"e": "Dakar est la ville la plus à l'ouest du continent africain."
+},
+{
+"q": "Quelle est la capitale du Cameroun ?",
+"c": "Yaoundé",
+"w": [
+"Douala",
+"Garoua",
+"Bafoussam"
+],
+"e": "Douala est la capitale économique."
+},
+{
+"q": "Quelle est la capitale du Burkina Faso ?",
+"c": "Ouagadougou",
+"w": [
+"Bobo-Dioulasso",
+"Niamey",
+"Bamako"
+],
+"e": "Bobo-Dioulasso est la deuxième ville du pays."
+},
+{
+"q": "Quelle est la capitale du Mali ?",
+"c": "Bamako",
+"w": [
+"Tombouctou",
+"Ségou",
+"Kayes"
+],
+"e": "Bamako se trouve sur le fleuve Niger."
+},
+{
+"q": "Quelle est la capitale du Niger ?",
+"c": "Niamey",
+"w": [
+"Zinder",
+"Agadez",
+"Maradi"
+],
+"e": "Niamey se trouve sur le fleuve Niger."
+},
+{
+"q": "Quelle est la capitale officielle de la Côte d'Ivoire ?",
+"c": "Yamoussoukro",
+"w": [
+"Abidjan",
+"Bouaké",
+"San-Pédro"
+],
+"e": "Abidjan est la capitale économique."
+},
+{
+"q": "Quelle est la capitale de la République démocratique du Congo ?",
+"c": "Kinshasa",
+"w": [
+"Brazzaville",
+"Lubumbashi",
+"Goma"
+],
+"e": "Kinshasa et Brazzaville se font face de chaque côté du fleuve Congo."
+},
+{
+"q": "Quelle est la capitale du Kenya ?",
+"c": "Nairobi",
+"w": [
+"Mombasa",
+"Kisumu",
+"Nakuru"
+],
+"e": "Nairobi est l'une des plus grandes villes d'Afrique de l'Est."
+},
+{
+"q": "Quelle est la capitale de l'Éthiopie ?",
+"c": "Addis-Abeba",
+"w": [
+"Dire Dawa",
+"Gondar",
+"Harar"
+],
+"e": "Elle est le siège de l'Union africaine."
+},
+{
+"q": "Quelle est la capitale du Maroc ?",
+"c": "Rabat",
+"w": [
+"Casablanca",
+"Marrakech",
+"Fès"
+],
+"e": "Casablanca est la plus grande ville."
+},
+{
+"q": "Quelle est la capitale de l'Algérie ?",
+"c": "Alger",
+"w": [
+"Oran",
+"Constantine",
+"Annaba"
+],
+"e": "Alger est au bord de la Méditerranée."
+},
+{
+"q": "Quelle est la capitale de l'Égypte ?",
+"c": "Le Caire",
+"w": [
+"Alexandrie",
+"Assouan",
+"Louxor"
+],
+"e": "Le Caire est la plus grande ville d'Afrique du Nord."
+},
+{
+"q": "Quelle est la capitale de la Tunisie ?",
+"c": "Tunis",
+"w": [
+"Sfax",
+"Sousse",
+"Kairouan"
+],
+"e": "Elle est proche des ruines de Carthage."
+},
+{
+"q": "Quelle est la capitale officielle de la Tanzanie ?",
+"c": "Dodoma",
+"w": [
+"Dar es Salaam",
+"Arusha",
+"Zanzibar"
+],
+"e": "Dar es Salaam est la plus grande ville."
+},
+{
+"q": "Quelle est la capitale du Gabon ?",
+"c": "Libreville",
+"w": [
+"Port-Gentil",
+"Franceville",
+"Lambaréné"
+],
+"e": "Son nom fait référence à des esclaves libérés."
+},
+{
+"q": "Quelle est la capitale du Rwanda ?",
+"c": "Kigali",
+"w": [
+"Butare",
+"Gisenyi",
+"Musanze"
+],
+"e": "Kigali est réputée pour sa propreté."
+},
+{
+"q": "Quel est le plus long fleuve d'Afrique ?",
+"c": "Le Nil",
+"w": [
+"Le Congo",
+"Le Niger",
+"Le Zambèze"
+],
+"e": "Il mesure environ 6 650 kilomètres."
+},
+{
+"q": "Quel est le fleuve africain le plus profond et le plus puissant par son débit ?",
+"c": "Le Congo",
+"w": [
+"Le Nil",
+"Le Niger",
+"Le Sénégal"
+],
+"e": "Il traverse la forêt équatoriale."
+},
+{
+"q": "Quelle est la plus haute montagne d'Afrique ?",
+"c": "Le Kilimandjaro",
+"w": [
+"Le mont Kenya",
+"Le mont Cameroun",
+"Le mont Stanley"
+],
+"e": "Il mesure environ 5 895 mètres, en Tanzanie."
+},
+{
+"q": "Dans quel pays se trouve le Kilimandjaro ?",
+"c": "La Tanzanie",
+"w": [
+"Le Kenya",
+"L'Ouganda",
+"L'Éthiopie"
+],
+"e": "Il est visible depuis le Kenya voisin."
+},
+{
+"q": "Quel est le plus grand lac d'Afrique ?",
+"c": "Le lac Victoria",
+"w": [
+"Le lac Tchad",
+"Le lac Malawi",
+"Le lac Tanganyika"
+],
+"e": "Il est partagé entre le Kenya, l'Ouganda et la Tanzanie."
+},
+{
+"q": "Quel est le pays le plus peuplé d'Afrique ?",
+"c": "Le Nigeria",
+"w": [
+"L'Éthiopie",
+"L'Égypte",
+"La République démocratique du Congo"
+],
+"e": "Il compte plus de 200 millions d'habitants."
+},
+{
+"q": "Quel est le plus grand pays d'Afrique par la superficie ?",
+"c": "L'Algérie",
+"w": [
+"La République démocratique du Congo",
+"Le Soudan",
+"La Libye"
+],
+"e": "Elle est devenue la plus grande depuis la division du Soudan en 2011."
+},
+{
+"q": "Quel est le plus petit pays d'Afrique par la superficie ?",
+"c": "Les Seychelles",
+"w": [
+"La Gambie",
+"Maurice",
+"Djibouti"
+],
+"e": "C'est un archipel de l'océan Indien."
+},
+{
+"q": "Quelle est la plus grande île d'Afrique ?",
+"c": "Madagascar",
+"w": [
+"Zanzibar",
+"Maurice",
+"La Réunion"
+],
+"e": "C'est aussi l'une des plus grandes îles du monde."
+},
+{
+"q": "Quel océan borde la côte ouest de l'Afrique ?",
+"c": "L'océan Atlantique",
+"w": [
+"L'océan Indien",
+"L'océan Pacifique",
+"L'océan Arctique"
+],
+"e": "Le golfe de Guinée en fait partie."
+},
+{
+"q": "Quelle mer sépare l'Afrique de l'Europe, au nord ?",
+"c": "La mer Méditerranée",
+"w": [
+"La mer Rouge",
+"La mer Noire",
+"La mer Baltique"
+],
+"e": "Le détroit de Gibraltar la relie à l'Atlantique."
+},
+{
+"q": "Quelle chute d'eau, entre la Zambie et le Zimbabwe, est l'une des plus grandes du monde ?",
+"c": "Les chutes Victoria",
+"w": [
+"Les chutes du Niagara",
+"Les chutes Iguazú",
+"Les chutes d'Angel"
+],
+"e": "Les habitants l'appellent « la fumée qui gronde »."
+},
+{
+"q": "Quel pays africain est coupé en deux par l'équateur ?",
+"c": "Le Kenya",
+"w": [
+"Le Ghana",
+"Le Togo",
+"Le Sénégal"
+],
+"e": "L'équateur traverse aussi le Gabon, le Congo, la RDC, l'Ouganda et la Somalie."
+},
+{
+"q": "Quel pays d'Afrique de l'Ouest n'a pas d'accès à la mer ?",
+"c": "Le Burkina Faso",
+"w": [
+"Le Ghana",
+"Le Togo",
+"Le Bénin"
+],
+"e": "Le Mali et le Niger sont aussi enclavés."
+},
+{
+"q": "Quel pays est situé entre le Ghana et le Bénin ?",
+"c": "Le Togo",
+"w": [
+"La Côte d'Ivoire",
+"Le Nigeria",
+"Le Burkina Faso"
+],
+"e": "Il est long et étroit, du nord au sud."
+},
+{
+"q": "Quel pays est situé à l'est du Togo ?",
+"c": "Le Bénin",
+"w": [
+"Le Ghana",
+"Le Nigeria",
+"Le Niger"
+],
+"e": "Il partage aussi une frontière avec le Nigeria."
+},
+{
+"q": "Quel pays est situé à l'ouest du Togo ?",
+"c": "Le Ghana",
+"w": [
+"Le Bénin",
+"La Côte d'Ivoire",
+"Le Nigeria"
+],
+"e": "La frontière suit le fleuve Volta par endroits."
+},
+{
+"q": "Quel pays africain a pour capitale Antananarivo ?",
+"c": "Madagascar",
+"w": [
+"Maurice",
+"Les Comores",
+"Le Mozambique"
+],
+"e": "Elle se trouve sur les hauts plateaux de l'île."
+},
+{
+"q": "Quel pays africain a pour capitale Windhoek ?",
+"c": "La Namibie",
+"w": [
+"Le Botswana",
+"L'Angola",
+"La Zambie"
+],
+"e": "Le désert du Namib porte le même nom que le pays."
+},
+{
+"q": "Quel pays africain a pour capitale Lusaka ?",
+"c": "La Zambie",
+"w": [
+"Le Zimbabwe",
+"Le Malawi",
+"Le Mozambique"
+],
+"e": "La Zambie doit son nom au fleuve Zambèze."
+},
+{
+"q": "Quel pays africain a pour capitale Harare ?",
+"c": "Le Zimbabwe",
+"w": [
+"La Zambie",
+"Le Botswana",
+"Le Malawi"
+],
+"e": "Le pays a pour voisin l'Afrique du Sud."
+},
+{
+"q": "Quel pays africain a pour capitale Maputo ?",
+"c": "Le Mozambique",
+"w": [
+"Le Malawi",
+"La Tanzanie",
+"L'Angola"
+],
+"e": "Maputo est au bord de l'océan Indien."
+},
+{
+"q": "Quel pays africain a pour capitale Luanda ?",
+"c": "L'Angola",
+"w": [
+"Le Congo",
+"La Namibie",
+"Le Gabon"
+],
+"e": "Luanda est au bord de l'océan Atlantique."
+},
+{
+"q": "Quel pays africain a pour capitale Kampala ?",
+"c": "L'Ouganda",
+"w": [
+"Le Kenya",
+"Le Rwanda",
+"La Tanzanie"
+],
+"e": "Kampala est proche du lac Victoria."
+},
+{
+"q": "Quel pays africain a pour capitale Mogadiscio ?",
+"c": "La Somalie",
+"w": [
+"Djibouti",
+"L'Érythrée",
+"L'Éthiopie"
+],
+"e": "Mogadiscio est au bord de l'océan Indien."
+},
+{
+"q": "Quelles sont les capitales de l'Afrique du Sud ?",
+"c": "Pretoria, Le Cap et Bloemfontein",
+"w": [
+"Johannesburg seulement",
+"Durban et Le Cap",
+"Pretoria seulement"
+],
+"e": "Le pays a trois capitales : exécutive, législative et judiciaire."
+},
+{
+"q": "Quelle ville est la plus grande d'Afrique de l'Ouest par la population, avec plus de 15 millions d'habitants ?",
+"c": "Lagos",
+"w": [
+"Abidjan",
+"Dakar",
+"Accra"
+],
+"e": "Elle est la plus grande ville du Nigeria."
+},
+{
+"q": "Quel pays africain a pour capitale Conakry ?",
+"c": "La Guinée",
+"w": [
+"La Guinée-Bissau",
+"La Sierra Leone",
+"Le Liberia"
+],
+"e": "Elle est bâtie sur une péninsule."
+},
+{
+"q": "Quel pays africain a pour capitale Monrovia ?",
+"c": "Le Liberia",
+"w": [
+"La Sierra Leone",
+"La Guinée",
+"La Gambie"
+],
+"e": "Elle porte le nom du président américain James Monroe."
+},
+{
+"q": "Quel pays africain a pour capitale Freetown ?",
+"c": "La Sierra Leone",
+"w": [
+"Le Liberia",
+"La Gambie",
+"La Guinée"
+],
+"e": "Son nom signifie « ville libre »."
+},
+{
+"q": "Quel pays africain a pour capitale Banjul ?",
+"c": "La Gambie",
+"w": [
+"Le Sénégal",
+"La Guinée-Bissau",
+"La Mauritanie"
+],
+"e": "La Gambie est entourée par le Sénégal."
+},
+{
+"q": "Quel pays africain a pour capitale Nouakchott ?",
+"c": "La Mauritanie",
+"w": [
+"Le Mali",
+"Le Sénégal",
+"L'Algérie"
+],
+"e": "Nouakchott se trouve près de l'océan Atlantique."
+},
+{
+"q": "Quel pays africain a pour capitale Praia ?",
+"c": "Le Cap-Vert",
+"w": [
+"Les Comores",
+"Sao Tomé-et-Principe",
+"Maurice"
+],
+"e": "C'est un archipel de l'océan Atlantique."
+},
+{
+"q": "Quel pays africain a pour capitale Malabo ?",
+"c": "La Guinée équatoriale",
+"w": [
+"Le Gabon",
+"Le Cameroun",
+"Sao Tomé-et-Principe"
+],
+"e": "Malabo se trouve sur l'île de Bioko."
+},
+{
+"q": "Quel pays africain a pour capitale Bangui ?",
+"c": "La République centrafricaine",
+"w": [
+"Le Tchad",
+"Le Congo",
+"Le Cameroun"
+],
+"e": "Bangui est au bord du fleuve Oubangui."
+},
+{
+"q": "Quel pays africain a pour capitale N'Djamena ?",
+"c": "Le Tchad",
+"w": [
+"Le Niger",
+"Le Soudan",
+"La Centrafrique"
+],
+"e": "La ville est près du lac Tchad."
+},
+{
+"q": "Quel pays africain a pour capitale Khartoum ?",
+"c": "Le Soudan",
+"w": [
+"Le Soudan du Sud",
+"L'Égypte",
+"L'Érythrée"
+],
+"e": "Elle se trouve là où se rejoignent le Nil Bleu et le Nil Blanc."
+},
+{
+"q": "Quelle est la capitale du Soudan du Sud ?",
+"c": "Djouba",
+"w": [
+"Khartoum",
+"Malakal",
+"Wau"
+],
+"e": "C'est la capitale du plus jeune pays du monde."
+},
+{
+"q": "Quel désert occupe une grande partie de la Namibie, au bord de l'Atlantique ?",
+"c": "Le désert du Namib",
+"w": [
+"Le Sahara",
+"Le Kalahari",
+"Le Gobi"
+],
+"e": "Il est considéré comme l'un des plus anciens déserts du monde."
+},
+{
+"q": "Quel désert se trouve principalement au Botswana ?",
+"c": "Le Kalahari",
+"w": [
+"Le Namib",
+"Le Sahara",
+"Le Karoo"
+],
+"e": "On y trouve le delta de l'Okavango."
+},
+{
+"q": "Quelle forêt africaine est la deuxième plus grande forêt tropicale du monde ?",
+"c": "La forêt du bassin du Congo",
+"w": [
+"La forêt de Taï",
+"La forêt de Kakamega",
+"La forêt de Sinharaja"
+],
+"e": "Seule l'Amazonie est plus grande."
+},
+{
+"q": "Quel est le nom du grand parc national de Tanzanie et du Kenya connu pour la grande migration des gnous ?",
+"c": "Le Serengeti",
+"w": [
+"Le Kruger",
+"L'Etosha",
+"Le Virunga"
+],
+"e": "Plus d'un million de gnous y migrent chaque année."
+},
+{
+"q": "Quel grand parc national d'Afrique du Sud est célèbre pour les safaris ?",
+"c": "Le parc Kruger",
+"w": [
+"Le Serengeti",
+"L'Etosha",
+"Le Masai Mara"
+],
+"e": "Il abrite les « Big Five »."
+},
+{
+"q": "Quels animaux forment les « Big Five » des safaris ?",
+"c": "Lion, léopard, éléphant, buffle et rhinocéros",
+"w": [
+"Lion, girafe, zèbre, hippopotame et crocodile",
+"Guépard, hyène, éléphant, antilope et gnou",
+"Éléphant, girafe, léopard, zèbre et singe"
+],
+"e": "Le nom vient des chasseurs, qui les trouvaient difficiles à chasser."
+},
+{
+"q": "Quel est le plus grand animal terrestre vivant ?",
+"c": "L'éléphant d'Afrique",
+"w": [
+"La girafe",
+"Le rhinocéros blanc",
+"L'hippopotame"
+],
+"e": "Il peut peser plus de six tonnes."
+},
+{
+"q": "Quel est l'animal terrestre le plus rapide ?",
+"c": "Le guépard",
+"w": [
+"Le lion",
+"Le léopard",
+"L'antilope"
+],
+"e": "Il peut dépasser 100 km/h sur de courtes distances."
+},
+{
+"q": "Quel est le plus grand lac d'eau douce d'Afrique du point de vue de la profondeur ?",
+"c": "Le lac Tanganyika",
+"w": [
+"Le lac Victoria",
+"Le lac Tchad",
+"Le lac Albert"
+],
+"e": "C'est le deuxième plus profond du monde."
+},
+{
+"q": "Quel lac rose, près de Dakar, doit sa couleur à des algues ?",
+"c": "Le lac Rose, ou lac Retba",
+"w": [
+"Le lac Tchad",
+"Le lac Nakuru",
+"Le lac Assal"
+],
+"e": "Il est célèbre pour sa forte teneur en sel."
+},
+{
+"q": "Quel est le point le plus bas de l'Afrique, situé à Djibouti ?",
+"c": "Le lac Assal",
+"w": [
+"Le lac Tchad",
+"Le lac Rose",
+"Le lac Natron"
+],
+"e": "Il se trouve à environ 155 mètres sous le niveau de la mer."
+},
+{
+"q": "Quelle chaîne de montagnes traverse le Maroc, l'Algérie et la Tunisie ?",
+"c": "L'Atlas",
+"w": [
+"Le Drakensberg",
+"L'Himalaya",
+"Les Andes"
+],
+"e": "Le mont Toubkal en est le sommet."
+},
+{
+"q": "Quelle chaîne de montagnes se trouve en Afrique du Sud et au Lesotho ?",
+"c": "Le Drakensberg",
+"w": [
+"L'Atlas",
+"Les Rwenzori",
+"Le Kilimandjaro"
+],
+"e": "Son nom veut dire « montagne du dragon »."
+},
+{
+"q": "Quel est le plus haut sommet du Cameroun et de l'Afrique de l'Ouest ?",
+"c": "Le mont Cameroun",
+"w": [
+"Le mont Nimba",
+"Le mont Kenya",
+"Le mont Elgon"
+],
+"e": "C'est un volcan encore actif."
+},
+{
+"q": "Quel pays d'Afrique du Nord est surtout recouvert par le Sahara ?",
+"c": "La Libye",
+"w": [
+"Le Maroc",
+"La Tunisie",
+"L'Éthiopie"
+],
+"e": "La plus grande partie du pays est désertique."
+},
+{
+"q": "Quel est le point le plus à l'ouest du continent africain, au Sénégal ?",
+"c": "La pointe des Almadies",
+"w": [
+"Le cap Bon",
+"Le cap des Aiguilles",
+"Le cap Guardafui"
+],
+"e": "Il se trouve près de Dakar."
+},
+{
+"q": "Quel est le point le plus au sud du continent africain ?",
+"c": "Le cap des Aiguilles",
+"w": [
+"Le cap de Bonne-Espérance",
+"Le cap Bon",
+"Le cap Vert"
+],
+"e": "Il est en Afrique du Sud."
+},
+{
+"q": "Quel détroit sépare l'Afrique de l'Europe, entre le Maroc et l'Espagne ?",
+"c": "Le détroit de Gibraltar",
+"w": [
+"Le détroit du Bosphore",
+"Le détroit de Magellan",
+"Le détroit de Messine"
+],
+"e": "Il mesure environ 14 kilomètres de large."
+},
+{
+"q": "Quelle mer sépare l'Afrique de l'Arabie ?",
+"c": "La mer Rouge",
+"w": [
+"La mer Noire",
+"La mer Morte",
+"La mer Caspienne"
+],
+"e": "Le canal de Suez la relie à la Méditerranée."
+},
+{
+"q": "Quel pays africain est le plus grand producteur d'or d'Afrique ?",
+"c": "Le Ghana",
+"w": [
+"Le Mali",
+"L'Afrique du Sud",
+"La Tanzanie"
+],
+"e": "Il était autrefois appelé la Côte-de-l'Or."
+},
+{
+"q": "Quel est le fleuve qui traverse le Mali, le Niger et le Nigeria ?",
+"c": "Le fleuve Niger",
+"w": [
+"Le fleuve Sénégal",
+"Le fleuve Congo",
+"Le fleuve Zambèze"
+],
+"e": "Il se jette dans le golfe de Guinée."
+},
+{
+"q": "Quel fleuve forme une partie de la frontière entre le Sénégal et la Mauritanie ?",
+"c": "Le fleuve Sénégal",
+"w": [
+"Le fleuve Niger",
+"Le fleuve Gambie",
+"Le fleuve Volta"
+],
+"e": "Il se jette dans l'Atlantique près de Saint-Louis."
+},
+{
+"q": "Quel grand lac artificiel du Ghana a été créé par le barrage d'Akosombo ?",
+"c": "Le lac Volta",
+"w": [
+"Le lac Bosumtwi",
+"Le lac Tchad",
+"Le lac Kariba"
+],
+"e": "C'est l'un des plus grands lacs artificiels du monde."
+},
+{
+"q": "Quel pays africain est le plus grand producteur de pétrole du continent ?",
+"c": "Le Nigeria",
+"w": [
+"La Libye",
+"L'Angola",
+"L'Algérie"
+],
+"e": "Le delta du Niger concentre une grande partie de la production."
+},
+{
+"q": "Quel pays d'Afrique a le plus de pyramides au monde ?",
+"c": "Le Soudan",
+"w": [
+"L'Égypte",
+"Le Mexique",
+"La Libye"
+],
+"e": "Elles sont plus petites que celles d'Égypte."
+},
+{
+"q": "Quel pays africain est célèbre pour ses ruines d'églises de Lalibela ?",
+"c": "L'Éthiopie",
+"w": [
+"Le Soudan",
+"L'Érythrée",
+"Djibouti"
+],
+"e": "Les églises sont taillées dans le roc."
+},
+{
+"q": "Quelle ville est surnommée « la ville rouge » au Maroc ?",
+"c": "Marrakech",
+"w": [
+"Casablanca",
+"Fès",
+"Rabat"
+],
+"e": "Ses remparts sont en terre rougeâtre."
+},
+{
+"q": "Quelle est la plus grande ville du Maroc ?",
+"c": "Casablanca",
+"w": [
+"Rabat",
+"Marrakech",
+"Tanger"
+],
+"e": "C'est la capitale économique du pays."
+},
+{
+"q": "Quelle ville est la plus grande d'Afrique du Sud ?",
+"c": "Johannesburg",
+"w": [
+"Le Cap",
+"Pretoria",
+"Durban"
+],
+"e": "Elle est née de la ruée vers l'or."
+},
+{
+"q": "Quelle est la plus grande ville de la Côte d'Ivoire ?",
+"c": "Abidjan",
+"w": [
+"Yamoussoukro",
+"Bouaké",
+"San-Pédro"
+],
+"e": "Elle est l'une des plus grandes villes francophones du monde."
+},
+{
+"q": "Quelle est la plus grande ville du Cameroun ?",
+"c": "Douala",
+"w": [
+"Yaoundé",
+"Garoua",
+"Bamenda"
+],
+"e": "Elle abrite le premier port du pays."
+},
+{
+"q": "Quelle est la plus grande ville du Togo ?",
+"c": "Lomé",
+"w": [
+"Sokodé",
+"Kara",
+"Aného"
+],
+"e": "Elle est aussi la capitale."
+},
+{
+"q": "Quelle est la plus grande ville du Bénin ?",
+"c": "Cotonou",
+"w": [
+"Porto-Novo",
+"Parakou",
+"Abomey-Calavi"
+],
+"e": "Elle est le centre économique du pays."
+},
+{
+"q": "Quel est le fleuve qui forme la frontière entre le Zimbabwe et la Zambie ?",
+"c": "Le Zambèze",
+"w": [
+"Le Limpopo",
+"Le Congo",
+"Le Nil"
+],
+"e": "Les chutes Victoria y sont situées."
+},
+{
+"q": "Quel pays africain possède le plus grand nombre de langues parlées ?",
+"c": "Le Nigeria",
+"w": [
+"L'Égypte",
+"La Tanzanie",
+"La Côte d'Ivoire"
+],
+"e": "On y parle plus de 500 langues."
+},
+{
+"q": "Quel pays africain est célèbre pour ses « Big Five » et sa grande migration, avec le parc du Masai Mara ?",
+"c": "Le Kenya",
+"w": [
+"La Tanzanie",
+"L'Ouganda",
+"Le Botswana"
+],
+"e": "Le Masai Mara est lié au Serengeti, côté tanzanien."
+},
+{
+"q": "Quelle île de l'océan Indien est célèbre pour ses lémuriens ?",
+"c": "Madagascar",
+"w": [
+"Maurice",
+"Zanzibar",
+"Les Seychelles"
+],
+"e": "La plupart des espèces n'existent nulle part ailleurs."
+},
+{
+"q": "Dans quel pays se trouve le point le plus à l'est du continent africain ?",
+"c": "La Somalie",
+"w": [
+"L'Éthiopie",
+"Djibouti",
+"L'Érythrée"
+],
+"e": "Ras Hafun, en Somalie, est le point le plus à l'est du continent."
+},
+{
+"q": "Quel pays africain est entouré entièrement par l'Afrique du Sud ?",
+"c": "Le Lesotho",
+"w": [
+"Le Swaziland",
+"Le Botswana",
+"La Namibie"
+],
+"e": "C'est un des rares pays enclavés dans un autre."
+},
+{
+"q": "Quel est le pays le plus haut d'Afrique par son altitude moyenne ?",
+"c": "Le Lesotho",
+"w": [
+"L'Éthiopie",
+"Le Kenya",
+"Le Rwanda"
+],
+"e": "Son point le plus bas est à plus de 1 400 mètres."
+},
+{
+"q": "Quel est le pays le plus à l'ouest de l'Afrique continentale ?",
+"c": "Le Sénégal",
+"w": [
+"La Mauritanie",
+"La Gambie",
+"Le Cap-Vert"
+],
+"e": "Le Cap-Vert est un archipel, à l'ouest du Sénégal."
+},
+{
+"q": "Quel est le plus long fleuve d'Amérique du Sud, au débit gigantesque ?",
+"c": "L'Amazone",
+"w": [
+"L'Orénoque",
+"Le Paraná",
+"Le Magdalena"
+],
+"e": "Il traverse le Brésil."
+},
+{
+"q": "Quelle est la plus haute montagne du monde ?",
+"c": "L'Everest",
+"w": [
+"Le K2",
+"Le Mont Blanc",
+"Le Kilimandjaro"
+],
+"e": "Elle mesure environ 8 849 mètres."
+},
+{
+"q": "Quel est le plus grand océan du monde ?",
+"c": "L'océan Pacifique",
+"w": [
+"L'océan Atlantique",
+"L'océan Indien",
+"L'océan Arctique"
+],
+"e": "Il couvre plus de 30 % de la surface de la Terre."
+},
+{
+"q": "Quel est le plus grand pays du monde par la superficie ?",
+"c": "La Russie",
+"w": [
+"Le Canada",
+"La Chine",
+"Les États-Unis"
+],
+"e": "Il s'étend sur onze fuseaux horaires."
+},
+{
+"q": "Quel est le pays le plus peuplé du monde, avec plus d'1,4 milliard d'habitants ?",
+"c": "L'Inde",
+"w": [
+"La Chine",
+"Les États-Unis",
+"L'Indonésie"
+],
+"e": "Elle a dépassé la Chine en 2023."
+},
+{
+"q": "Quelle est la capitale de l'Australie ?",
+"c": "Canberra",
+"w": [
+"Sydney",
+"Melbourne",
+"Perth"
+],
+"e": "Sydney est la plus grande ville."
+},
+{
+"q": "Quelle est la capitale du Brésil ?",
+"c": "Brasilia",
+"w": [
+"Rio de Janeiro",
+"São Paulo",
+"Salvador"
+],
+"e": "Elle a été inaugurée en 1960."
+},
+{
+"q": "Quelle est la capitale du Canada ?",
+"c": "Ottawa",
+"w": [
+"Toronto",
+"Montréal",
+"Vancouver"
+],
+"e": "Elle se trouve en Ontario."
+},
+{
+"q": "Quelle est la capitale de la Turquie ?",
+"c": "Ankara",
+"w": [
+"Istanbul",
+"Izmir",
+"Antalya"
+],
+"e": "Istanbul est la plus grande ville."
+},
+{
+"q": "Quel est le plus grand désert du monde, tous types confondus ?",
+"c": "L'Antarctique",
+"w": [
+"Le Sahara",
+"Le Gobi",
+"L'Arabie"
+],
+"e": "Un désert se définit par le manque de précipitations."
+},
+{
+"q": "Quelle est la plus grande île du monde ?",
+"c": "Le Groenland",
+"w": [
+"Madagascar",
+"Bornéo",
+"La Nouvelle-Guinée"
+],
+"e": "Elle appartient au Danemark."
+},
+{
+"q": "Quelle mer a un taux de sel si élevé qu'on y flotte facilement ?",
+"c": "La mer Morte",
+"w": [
+"La mer Rouge",
+"La mer Noire",
+"La mer Baltique"
+],
+"e": "Elle est bordée par Israël, la Jordanie et la Cisjordanie."
+},
+{
+"q": "Quelle ligne imaginaire divise la Terre en deux hémisphères Nord et Sud ?",
+"c": "L'équateur",
+"w": [
+"Le méridien de Greenwich",
+"Le tropique du Cancer",
+"Le cercle polaire"
+],
+"e": "Il mesure environ 40 000 kilomètres."
+},
+{
+"q": "Quelle ligne imaginaire passe par le Togo, le Ghana et le Mali et sert de méridien d'origine ?",
+"c": "Le méridien de Greenwich",
+"w": [
+"L'équateur",
+"Le tropique du Capricorne",
+"Le méridien de Paris"
+],
+"e": "Il passe aussi par le Royaume-Uni, la France et l'Algérie."
+},
+{
+"q": "Quelle est la superficie approximative du Sahara ?",
+"c": "9 millions de kilomètres carrés",
+"w": [
+"1 million de kilomètres carrés",
+"3 millions de kilomètres carrés",
+"20 millions de kilomètres carrés"
+],
+"e": "Il est presque aussi grand que les États-Unis."
+},
+{
+"q": "Quel pays africain a pour capitale Kigali et est surnommé « le pays des mille collines » ?",
+"c": "Le Rwanda",
+"w": [
+"Le Burundi",
+"L'Ouganda",
+"La Tanzanie"
+],
+"e": "Il est l'un des pays les plus densément peuplés d'Afrique."
+},
+{
+"q": "Quelle est la capitale du Burundi, siège du gouvernement depuis 2019 ?",
+"c": "Gitega",
+"w": [
+"Bujumbura",
+"Ngozi",
+"Kayanza"
+],
+"e": "Bujumbura est restée la capitale économique."
+},
+{
+"q": "Quel site togolais, inscrit à l'UNESCO, est connu pour ses habitations en terre à étage ?",
+"c": "Koutammakou, le pays des Batammariba",
+"w": [
+"Les chutes de Kpalimé",
+"Le lac Togo",
+"Le mont Agou"
+],
+"e": "Les Batammariba construisent des cases fortifiées en terre."
+},
+{
+"q": "Quel est le plus haut sommet du Togo ?",
+"c": "Le mont Agou",
+"w": [
+"Le mont Kara",
+"Le mont Atakora",
+"Le mont Kenya"
+],
+"e": "Il culmine à environ 986 mètres."
+},
+{
+"q": "Quel lac du sud du Togo borde la ville d'Aného ?",
+"c": "Le lac Togo",
+"w": [
+"Le lac Volta",
+"Le lac Nokoué",
+"Le lac Ahémé"
+],
+"e": "Il est séparé de l'océan par un cordon sableux."
+},
+{
+"q": "Quel est le nom du golfe qui borde le Togo, le Bénin, le Ghana et le Nigeria ?",
+"c": "Le golfe de Guinée",
+"w": [
+"Le golfe d'Aden",
+"Le golfe Persique",
+"Le golfe du Mexique"
+],
+"e": "Il fait partie de l'océan Atlantique."
+},
+{
+"q": "Quel lac du Bénin abrite la cité lacustre de Ganvié ?",
+"c": "Le lac Nokoué",
+"w": [
+"Le lac Ahémé",
+"Le lac Togo",
+"Le lac Volta"
+],
+"e": "On surnomme Ganvié « la Venise de l'Afrique »."
+}
+]

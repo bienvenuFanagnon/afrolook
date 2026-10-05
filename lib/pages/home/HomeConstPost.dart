@@ -82,6 +82,7 @@ import '../../services/feed/end_of_feed_cache.dart';
 import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
 import '../../widgets/feed/sections/ad_free_day_card.dart';
+import '../../widgets/feed/sections/quiz_feed_card.dart';
 
 
 // Constantes de couleur
@@ -3761,6 +3762,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Offre « Une journée sans pub » : après le 5e post (jamais collée à une pub), 1 fois par jour
       if (i == 4) {
         contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_home')));
+      }
+
+      // Quiz : les 3 questions du jour après le 3e post, puis un rappel plus loin si la personne n'a pas joué
+      if (i == 2) {
+        contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_1'), slot: 1));
+      }
+      if (i == 16) {
+        contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_2'), slot: 2));
       }
 
       // T2 fill counter
