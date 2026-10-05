@@ -17,6 +17,7 @@ import 'quiz_level_page.dart';
 import 'quiz_shop_page.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_loading.dart';
+import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
 
@@ -152,6 +153,11 @@ class _QuizHomePageState extends State<QuizHomePage> {
         iconTheme: IconThemeData(color: c.textPrimary),
         title: Text(context.tr('Quiz'), style: TextStyle(fontWeight: FontWeight.w900, color: c.textPrimary)),
         actions: [
+          IconButton(
+            tooltip: context.tr('Voix'),
+            icon: const Icon(Icons.record_voice_over_rounded),
+            onPressed: () => showQuizVoiceSheet(context),
+          ),
           IconButton(
             tooltip: context.tr('Son'),
             icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),

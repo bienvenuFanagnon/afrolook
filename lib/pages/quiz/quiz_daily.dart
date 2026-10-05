@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import '../../l10n/tr.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
+import '../../services/quiz/quiz_voice.dart';
 import '../../theme/app_colors.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_loading.dart';
+import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_widgets.dart';
 
 /// Les 3 questions du jour : même chose pour tout le monde, jouables directement dans le fil
@@ -33,6 +35,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
   int _correct = 0;
   HawkMood _mood = HawkMood.idle;
   final ConfettiController _confetti = ConfettiController(duration: const Duration(seconds: 2));
+  final QuizPace _pace = QuizPace();
 
   @override
   void initState() {
@@ -42,6 +45,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
 
   @override
   void dispose() {
+    _pace.dispose();
     _confetti.dispose();
     super.dispose();
   }
@@ -56,14 +60,26 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
         _i = d.answered;
         _correct = d.results.where((r) => r.correct).length;
       });
+      if (!widget.compact) {
+        QuizVoice.instance.load().then((_) => QuizVoice.instance.prefetch(d.questions.map((x) => (q: x.q, o: x.o))));
+        _begin();
+      }
     } catch (_) {
       if (mounted) setState(() => _error = true);
     }
   }
 
+  /// Lecture à voix haute et chrono (page du quiz du jour seulement, pas dans le fil).
+  void _begin() {
+    final d = _daily;
+    if (d == null || widget.compact || _i >= d.questions.length) return;
+    _pace.start(question: d.questions[_i].q, options: d.questions[_i].o);
+  }
+
   Future<void> _choose(int idx) async {
     final d = _daily;
     if (d == null || _busy || _result != null) return;
+    if (!widget.compact) QuizVoice.instance.stop();
     QuizSound.fx(QuizSfx.tap);
     setState(() {
       _selected = idx;
@@ -73,6 +89,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
       try {
         final r = await QuizService.instance.dailyAnswer(_i, idx);
         if (!mounted) return;
+        if (!widget.compact) _pace.answered(correct: r.result.correct);
         QuizSound.fx(r.result.correct ? QuizSfx.ok : QuizSfx.bad);
         setState(() {
           _result = r.result;
@@ -124,6 +141,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
       _result = null;
       _mood = HawkMood.idle;
     });
+    _begin();
   }
 
   @override
@@ -175,6 +193,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
             ),
           ),
           const Spacer(),
+          if (!widget.compact) QuizVoiceButtons(onReplay: () => QuizVoice.instance.speakQuestion(q.q, q.o)),
           for (var k = 0; k < d.questions.length; k++)
             Container(
               width: 22,
@@ -188,7 +207,9 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
         ]),
         const SizedBox(height: 10),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          HawkMascot(mood: _mood, size: widget.compact ? 64 : 84, accessory: equipped),
+          widget.compact
+              ? HawkMascot(mood: _mood, size: 64, accessory: equipped)
+              : QuizPaceHawk(pace: _pace, mood: _mood, answered: answered, size: 84, accessory: equipped),
           const SizedBox(width: 10),
           Expanded(
             child: QuizBubble(
@@ -196,6 +217,10 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
             ),
           ),
         ]),
+        if (!widget.compact && !answered) ...[
+          const SizedBox(height: 8),
+          QuizPaceBar(pace: _pace),
+        ],
         const SizedBox(height: 12),
         for (var k = 0; k < q.o.length; k++)
           Padding(

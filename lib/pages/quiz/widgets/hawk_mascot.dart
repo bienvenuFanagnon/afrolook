@@ -3,18 +3,21 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Humeur de la mascotte : elle réagit aux réponses du joueur.
-enum HawkMood { idle, cheer, sad, wave, think }
+enum HawkMood { idle, cheer, sad, wave, think, hurry }
 
 /// Épervier, mascotte du quiz, dessiné en code (aucune image à charger) et animé :
 /// il respire, cligne des yeux, saute de joie, baisse la tête quand on se trompe, salue de l'aile.
 /// [accessory] : `acc_glasses`, `acc_cap` ou `acc_crown` (objets de la boutique).
 class HawkMascot extends StatefulWidget {
-  const HawkMascot({super.key, this.mood = HawkMood.idle, this.size = 120, this.accessory, this.flip = false});
+  const HawkMascot({super.key, this.mood = HawkMood.idle, this.size = 120, this.accessory, this.flip = false, this.speaking = false});
 
   final HawkMood mood;
   final double size;
   final String? accessory;
   final bool flip;
+
+  /// Le bec s'ouvre et se ferme (pendant la lecture d'une question à voix haute).
+  final bool speaking;
 
   @override
   State<HawkMascot> createState() => _HawkMascotState();
@@ -61,7 +64,7 @@ class _HawkMascotState extends State<HawkMascot> with TickerProviderStateMixin {
             alignment: Alignment.center,
             transform: widget.flip ? (Matrix4.identity()..scale(-1.0, 1.0)) : Matrix4.identity(),
             child: CustomPaint(
-              painter: _HawkPainter(_idle.value, _react.value, widget.mood, widget.accessory),
+              painter: _HawkPainter(_idle.value, _react.value, widget.mood, widget.accessory, widget.speaking),
             ),
           ),
         ),
@@ -71,11 +74,12 @@ class _HawkMascotState extends State<HawkMascot> with TickerProviderStateMixin {
 }
 
 class _HawkPainter extends CustomPainter {
-  _HawkPainter(this.idle, this.react, this.mood, this.accessory);
+  _HawkPainter(this.idle, this.react, this.mood, this.accessory, this.speaking);
 
   final double idle, react;
   final HawkMood mood;
   final String? accessory;
+  final bool speaking;
 
   static const slate = Color(0xFF6F86A8);
   static const slateDark = Color(0xFF4C6086);
@@ -121,6 +125,13 @@ class _HawkPainter extends CustomPainter {
       case HawkMood.think:
         tilt = 0.08 * settle;
         break;
+      case HawkMood.hurry:
+        // Il s'agite : ailes qui battent, petits sauts nerveux
+        jump = -math.sin(idle * 2 * math.pi * 6).abs() * 6;
+        flapL = math.sin(idle * 2 * math.pi * 8) * 0.45 + 0.45;
+        flapR = math.sin(idle * 2 * math.pi * 8 + 1.2) * 0.45 + 0.45;
+        tilt = math.sin(idle * 2 * math.pi * 5) * 0.04;
+        break;
       case HawkMood.idle:
         break;
     }
@@ -146,6 +157,20 @@ class _HawkPainter extends CustomPainter {
     canvas.restore();
 
     if (mood == HawkMood.cheer && react < 0.95) _sparkles(canvas);
+    if (mood == HawkMood.hurry) _sweat(canvas);
+  }
+
+  /// Gouttes de sueur qui glissent le long du front quand il est pressé.
+  void _sweat(Canvas canvas) {
+    for (var k = 0; k < 2; k++) {
+      final t = (idle * 3 + k * 0.5) % 1.0;
+      final c = Offset(146 + k * 14, 40 + t * 34);
+      final drop = Path()
+        ..moveTo(c.dx, c.dy - 8)
+        ..quadraticBezierTo(c.dx + 6, c.dy + 1, c.dx, c.dy + 5)
+        ..quadraticBezierTo(c.dx - 6, c.dy + 1, c.dx, c.dy - 8);
+      canvas.drawPath(drop, _fill(const Color(0xFF6EC6FF).withOpacity((1 - t).clamp(0.0, 1.0) * 0.9)));
+    }
   }
 
   void _tail(Canvas canvas) {
@@ -288,11 +313,16 @@ class _HawkPainter extends CustomPainter {
     if (mood == HawkMood.cheer) {
       canvas.drawOval(Rect.fromCenter(center: const Offset(100, 105), width: 12, height: 7), _fill(const Color(0xFFE4572E)));
     }
+    // Bec qui parle : le bas s'abaisse au rythme de la voix
+    final open = speaking ? (math.sin(idle * 2 * math.pi * 22).abs() * 0.7 + math.sin(idle * 2 * math.pi * 13).abs() * 0.3) * 6 : 0.0;
+    if (open > 0.5) {
+      canvas.drawOval(Rect.fromCenter(center: Offset(100, 104 + open * 0.5), width: 14, height: 4 + open), _fill(const Color(0xFF8E2B1F)));
+    }
     final beak = Path()
       ..moveTo(87, 88)
       ..quadraticBezierTo(100, 79, 113, 88)
-      ..quadraticBezierTo(112, 107, 100, 113)
-      ..quadraticBezierTo(98, 100, 87, 88)
+      ..quadraticBezierTo(112, 107 + open, 100, 113 + open)
+      ..quadraticBezierTo(98, 100 + open * 0.5, 87, 88)
       ..close();
     canvas.drawPath(beak, _fill(beakColor));
     canvas.drawOval(Rect.fromCenter(center: const Offset(100, 88), width: 26, height: 8), _fill(cere));
@@ -359,5 +389,5 @@ class _HawkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HawkPainter old) =>
-      old.idle != idle || old.react != react || old.mood != mood || old.accessory != accessory;
+      old.idle != idle || old.react != react || old.mood != mood || old.accessory != accessory || old.speaking != speaking;
 }

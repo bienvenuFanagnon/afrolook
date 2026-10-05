@@ -6,10 +6,15 @@ service firebase.storage {
     match /{folder}/{allPaths=**} {
       allow read: if request.auth != null;
       allow write: if request.auth != null
-          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds']);
+          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds', 'quiz_tts']);
     }
     match /{rootFile} {
       allow read, write: if request.auth != null;
+    }
+
+    // Voix du quiz (lecture des questions) : lisibles par tous, écrites seulement par l'administration (script tools/quiz/gen_tts.js)
+    match /quiz_tts/{allPaths=**} {
+      allow read: if true;
     }
 
     // Stickers du catalogue : écrits uniquement par les Cloud Functions et l'administration (jamais par l'app)

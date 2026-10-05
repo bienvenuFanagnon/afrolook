@@ -12,10 +12,12 @@ import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
+import '../../services/quiz/quiz_voice.dart';
 import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_loading.dart';
+import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
 
@@ -45,15 +47,18 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
   bool _doubled = false;
   bool _doubling = false;
   final ConfettiController _confetti = ConfettiController(duration: const Duration(seconds: 3));
+  final QuizPace _pace = QuizPace();
 
   @override
   void initState() {
     super.initState();
+    QuizVoice.instance.load();
     _load();
   }
 
   @override
   void dispose() {
+    _pace.dispose();
     _confetti.dispose();
     super.dispose();
   }
@@ -67,6 +72,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
       _result = null;
       _finish = null;
       _combo = 0;
+      _pace.fast = 0;
       _mood = HawkMood.idle;
     });
     try {
@@ -80,6 +86,8 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         _hearts = s.state.hearts;
       });
       QuizSound.fx(QuizSfx.hi);
+      QuizVoice.instance.prefetch(s.questions.map((x) => (q: x.q, o: x.o)));
+      _beginQuestion();
     } on QuizException catch (e) {
       if (!mounted) return;
       if (e.code.contains('NO_HEARTS')) {
@@ -95,8 +103,16 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
     }
   }
 
+  /// Lecture à voix haute et chrono de la question affichée.
+  void _beginQuestion() {
+    final q = _start?.questions[_i];
+    if (q == null) return;
+    _pace.start(question: q.q, options: q.o);
+  }
+
   Future<void> _choose(int idx) async {
     if (_busy || _result != null || _start == null) return;
+    QuizVoice.instance.stop();
     QuizSound.fx(QuizSfx.tap);
     setState(() {
       _selected = idx;
@@ -130,6 +146,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
     }
     if (!mounted || res == null) return;
     final r = res;
+    _pace.answered(correct: r.correct);
     QuizSound.fx(r.correct ? QuizSfx.ok : QuizSfx.bad);
     setState(() {
       _result = r;
@@ -150,6 +167,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         _result = null;
         _mood = HawkMood.idle;
       });
+      _beginQuestion();
       return;
     }
     setState(() => _finishing = true);
@@ -366,6 +384,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
           ),
           const SizedBox(width: 12),
           QuizPill(icon: Icons.favorite_rounded, label: '$_hearts', color: c.danger),
+          QuizVoiceButtons(onReplay: _replay),
         ]),
       ),
       if (s.practice)
@@ -382,7 +401,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Column(children: [
-                HawkMascot(mood: _mood, size: 92, accessory: equipped),
+                QuizPaceHawk(pace: _pace, mood: _mood, answered: answered, accessory: equipped),
                 if (_combo >= 2)
                   Container(
                     margin: const EdgeInsets.only(top: 2),
@@ -401,6 +420,8 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
                 ),
               ),
             ]),
+            const SizedBox(height: 8),
+            if (!answered) QuizPaceBar(pace: _pace),
             const SizedBox(height: 6),
             Text(
               context.tr('Question {i} sur {n}', {'i': _i + 1, 'n': total}),
@@ -429,6 +450,12 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         child: answered ? _feedback(c, _result!, s) : const SizedBox(key: ValueKey('nofeedback'), width: double.infinity),
       ),
     ]);
+  }
+
+  void _replay() {
+    final q = _start?.questions[_i];
+    if (q == null || _result != null) return;
+    QuizVoice.instance.speakQuestion(q.q, q.o);
   }
 
   QuizOptionState _optionState(int k) {
@@ -516,6 +543,11 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
           const SizedBox(width: 10),
           Expanded(child: _statCard(c, Icons.local_fire_department_rounded, c.warning, f.state.streak, context.tr('jours'))),
         ]),
+        if (_pace.fast > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Center(child: QuizPill(icon: Icons.bolt_rounded, label: context.tr('{n} réponses éclair', {'n': _pace.fast}), color: c.accent)),
+          ),
         if (f.practice)
           _note(c, context.tr("Entraînement : ce niveau était déjà gagné, il ne rapporte pas de points."))
         else if (f.capped)
