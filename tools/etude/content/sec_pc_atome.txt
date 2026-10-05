@@ -1,0 +1,28 @@
+titre: L'atome et la classification périodique
+== fiche
+p: La matière est faite d'atomes. Un atome est composé d'un noyau (protons et neutrons) et d'électrons qui tournent autour.
+li: Proton : charge positive. Électron : charge négative. Neutron : pas de charge. L'atome est électriquement neutre : autant d'électrons que de protons.
+li: Numéro atomique Z : nombre de protons (donc d'électrons). Nombre de masse A : nombre de nucléons (protons + neutrons). Nombre de neutrons N = A − Z.
+li: Notation : ᴬ_Z X (exemple ¹²₆C : 6 protons, 6 neutrons, 6 électrons).
+li: Isotopes : atomes du même élément (même Z) avec un nombre de neutrons différent.
+li: Répartition des électrons en couches : K (2 électrons au maximum), L (8), M (8 puis 18). Couche externe : électrons de valence.
+li: Classification périodique : éléments rangés par numéro atomique croissant. Les éléments d'une même colonne ont des propriétés semblables (même nombre d'électrons de valence).
+li: Ion : atome qui a gagné ou perdu des électrons. Cation : charge positive (Na⁺). Anion : charge négative (Cl⁻).
+note: Exemple : le sodium (Z = 11) a la structure K² L⁸ M¹ ; il perd facilement 1 électron et donne l'ion Na⁺.
+note: Le chlore (Z = 17) : K² L⁸ M⁷ ; il gagne 1 électron et donne l'ion Cl⁻.
+== questions
+Quelles particules forment le noyau d'un atome ? || Les protons et les neutrons || Les électrons || Les protons et les électrons || Les neutrons et les électrons || Les électrons sont autour du noyau.
+Quelle est la charge d'un proton ? || Positive || Négative || Nulle || Variable || Le proton porte la charge élémentaire positive.
+Quelle est la charge d'un électron ? || Négative || Positive || Nulle || Variable || Il est attiré par le noyau.
+Quelle est la charge d'un neutron ? || Nulle || Positive || Négative || Variable || Il est neutre.
+Que représente le numéro atomique Z ? || Le nombre de protons || Le nombre de neutrons || Le nombre de nucléons || La masse en grammes || Z est aussi le nombre d'électrons de l'atome neutre.
+Que représente le nombre de masse A ? || Le nombre de protons plus de neutrons || Le nombre d'électrons || Le nombre de couches || La charge || Il compte les nucléons.
+Combien de neutrons contient ¹²₆C ? || 6 || 12 || 18 || 0 || N = A − Z = 12 − 6.
+Combien d'électrons contient un atome neutre de sodium (Z = 11) ? || 11 || 12 || 23 || 1 || Autant que de protons.
+Quelle est la structure électronique du sodium (Z = 11) ? || K² L⁸ M¹ || K² L⁹ || K¹ L⁸ M² || K² L⁸ M⁸ || 2 + 8 + 1 = 11.
+Quel ion forme le sodium ? || Na⁺ || Na⁻ || Na²⁻ || Na²⁺ || Il perd un électron.
+Quel ion forme le chlore (Z = 17) ? || Cl⁻ || Cl⁺ || Cl²⁺ || Cl²⁻ || Il gagne un électron pour compléter sa couche externe.
+Que sont des isotopes ? || Des atomes de même Z avec un nombre de neutrons différent || Des atomes de même masse || Des atomes de même charge || Deux ions || Exemple : ¹²C et ¹⁴C.
+Comment sont classés les éléments dans le tableau périodique ? || Par numéro atomique croissant || Par ordre alphabétique || Par couleur || Par masse décroissante || Dmitri Mendeleïev a proposé ce classement.
+Que dire des éléments d'une même colonne ? || Ils ont des propriétés chimiques semblables || Ils ont le même numéro atomique || Ils ont la même masse || Ils sont des gaz || Ils ont le même nombre d'électrons de valence.
+Combien d'électrons au maximum sur la couche K ? || 2 || 8 || 18 || 1 || Elle est la plus proche du noyau.

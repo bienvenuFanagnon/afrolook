@@ -1,0 +1,28 @@
+titre: Arbres et algorithmes de tri
+== fiche
+p: Un arbre est une structure hiérarchique formée de nœuds reliés. Le nœud du haut est la racine ; les nœuds sans enfant sont les feuilles.
+li: Arbre binaire : chaque nœud a au plus deux fils (gauche et droit). Hauteur : plus long chemin de la racine à une feuille.
+li: Parcours : préfixe (racine, gauche, droite), infixe (gauche, racine, droite), suffixe (gauche, droite, racine), en largeur (niveau par niveau).
+li: Arbre binaire de recherche (ABR) : pour chaque nœud, les valeurs de gauche sont plus petites et celles de droite plus grandes. Parcours infixe = valeurs triées.
+li: Recherche dans un ABR équilibré : O(log n) ; dans un ABR déséquilibré : jusqu'à O(n).
+li: Tri par sélection et tri à bulles : O(n²). Tri par insertion : O(n²) au pire, très bon sur des données presque triées.
+li: Tri fusion (merge sort) : diviser pour régner, O(n log n) toujours. Tri rapide (quick sort) : O(n log n) en moyenne, O(n²) au pire.
+li: Un tri est stable s'il conserve l'ordre des éléments égaux.
+note: Exemple : dans un ABR contenant 5, 3, 8, la racine est 5, 3 est à gauche et 8 à droite.
+note: Chercher dans une liste triée de 1 000 éléments par dichotomie demande au plus environ 10 comparaisons (log₂ 1000).
+== questions
+Comment s'appelle le nœud le plus haut d'un arbre ? || La racine || La feuille || Le fils || Le parent || Tous les autres nœuds en descendent.
+Comment s'appelle un nœud sans enfant ? || Une feuille || Une racine || Un parent || Un sommet || Il termine une branche.
+Combien de fils a au plus un nœud d'un arbre binaire ? || Deux || Un || Trois || Quatre || Fils gauche et fils droit.
+Quelle propriété définit un arbre binaire de recherche ? || Gauche plus petit, droite plus grand || Tous les nœuds sont égaux || Il est toujours plein || Il n'a que des feuilles || Cette règle s'applique à chaque nœud.
+Que donne le parcours infixe d'un ABR ? || Les valeurs triées par ordre croissant || Les valeurs triées par ordre décroissant || Les valeurs dans le désordre || Seulement la racine || Gauche, racine, droite.
+Quel est l'ordre du parcours préfixe ? || Racine, gauche, droite || Gauche, racine, droite || Gauche, droite, racine || Droite, racine, gauche || La racine est traitée en premier.
+Quelle est la complexité d'une recherche dans un ABR équilibré ? || O(log n) || O(n) || O(1) || O(n²) || On élimine la moitié des nœuds à chaque étape.
+Quelle est la complexité du tri à bulles ? || O(n²) || O(n log n) || O(n) || O(1) || Il compare des paires voisines dans deux boucles imbriquées.
+Quelle est la complexité du tri fusion ? || O(n log n) || O(n²) || O(n) || O(log n) || Il divise le tableau en deux puis fusionne.
+Quel principe utilise le tri fusion ? || Diviser pour régner || La force brute || L'aléatoire seul || La pile || On trie deux moitiés puis on les fusionne.
+Quelle est la complexité moyenne du tri rapide ? || O(n log n) || O(n²) || O(n) || O(1) || Au pire cas, elle atteint O(n²).
+Qu'est-ce qu'un tri stable ? || Un tri qui conserve l'ordre des éléments égaux || Un tri qui ne plante jamais || Un tri qui change l'ordre des égaux || Un tri sans comparaison || La stabilité est utile pour trier selon plusieurs critères.
+Combien de comparaisons au maximum pour une recherche dichotomique dans 1 000 éléments triés ? || Environ 10 || 1 000 || 100 || 500 || log₂ 1000 ≈ 10.
+Quel est le parcours d'un arbre niveau par niveau ? || Le parcours en largeur || Le parcours infixe || Le parcours suffixe || Le parcours préfixe || Il utilise souvent une file.
+Que signifie la hauteur d'un arbre ? || La longueur du plus long chemin de la racine à une feuille || Le nombre de feuilles || Le nombre de nœuds || La valeur maximale || Un arbre équilibré a une hauteur proche de log n.

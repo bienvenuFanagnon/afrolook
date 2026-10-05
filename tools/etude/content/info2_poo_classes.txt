@@ -1,0 +1,29 @@
+titre: Classes et objets
+== fiche
+p: La programmation orientée objet (POO) organise le code autour d'objets qui regroupent des données (attributs) et des comportements (méthodes).
+li: Une classe est un modèle ; un objet (ou instance) est un exemplaire créé à partir de la classe.
+li: Le constructeur initialise l'objet (en Python : __init__, en Java : méthode portant le nom de la classe).
+li: Encapsulation : on protège les attributs (private, protected) et on y accède par des méthodes (getters, setters).
+li: Les méthodes agissent sur l'objet (self en Python, this en Java).
+li: Attributs de classe (partagés par toutes les instances) et attributs d'instance (propres à chaque objet).
+li: Méthode statique : appartient à la classe, appelée sans créer d'objet.
+li: Exemple Python : class Compte: def __init__(self, solde): self.solde = solde ; c = Compte(100).
+li: Avantages : réutilisation du code, modularité, maintenance facilitée.
+note: Exemple : la classe Voiture avec attributs marque et vitesse ; l'objet ma_voiture = Voiture("Toyota", 0).
+note: Plusieurs objets d'une même classe ont leurs propres valeurs d'attributs.
+== questions
+Qu'est-ce qu'une classe en POO ? || Un modèle qui décrit des objets || Un objet précis || Une boucle || Une variable simple || On crée des objets à partir de la classe.
+Qu'est-ce qu'un objet (instance) ? || Un exemplaire créé à partir d'une classe || Une classe abstraite || Un type de donnée de base || Une fonction seule || Il possède des valeurs propres.
+Que sont les attributs ? || Les données d'un objet || Les fonctions d'un objet || Les classes parentes || Les messages || Ex. marque et vitesse d'une voiture.
+Que sont les méthodes ? || Les comportements (fonctions) d'un objet || Les données seulement || Les erreurs || Les fichiers || Ex. accélérer, freiner.
+Comment s'appelle la méthode qui initialise un objet ? || Le constructeur || Le destructeur || Le compilateur || Le décorateur || En Python : __init__.
+En Python, que représente self ? || L'objet courant || La classe parente || Le module || Une variable globale || Il permet d'accéder aux attributs de l'objet.
+Que signifie l'encapsulation ? || Protéger les données et passer par des méthodes || Hériter d'une classe || Créer plusieurs objets || Compiler le code || Elle évite des modifications incontrôlées.
+Quel mot-clé indique en Java qu'un attribut est inaccessible depuis l'extérieur ? || private || public || static || final seul || Il protège l'attribut.
+Que fait Compte(100) en Python avec le __init__(self, solde) ? || Crée un objet avec un solde de 100 || Crée une classe || Supprime un compte || Affiche 100 || Le constructeur reçoit la valeur 100.
+Qu'est-ce qu'un attribut de classe ? || Un attribut partagé par toutes les instances || Un attribut propre à une seule instance || Une méthode || Un objet || Il est défini au niveau de la classe.
+Qu'est-ce qu'une méthode statique ? || Une méthode qu'on appelle sans créer d'objet || Une méthode privée || Une méthode qui ne fait rien || Un constructeur || Elle appartient à la classe.
+Quel est un avantage de la POO ? || La réutilisation du code || La suppression des fonctions || Le code toujours plus court || Pas de bugs || Elle facilite aussi la maintenance.
+Deux objets de la même classe peuvent-ils avoir des valeurs d'attributs différentes ? || Oui || Non || Seulement en Java || Seulement si la classe est abstraite || Chaque instance a son propre état.
+Que fait un « getter » ? || Il lit la valeur d'un attribut || Il crée un objet || Il supprime un attribut || Il hérite d'une classe || Un setter la modifie.
+Quel terme désigne la création d'un objet à partir d'une classe ? || L'instanciation || L'héritage || L'encapsulation || La compilation || Ma_voiture = Voiture() est une instanciation.

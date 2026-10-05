@@ -1,0 +1,28 @@
+titre: La quantité de matière (la mole)
+== fiche
+p: La mole est l'unité de quantité de matière. Une mole contient 6,02 × 10²³ entités (atomes, molécules, ions) : c'est le nombre d'Avogadro, Nₐ.
+li: Masse molaire M (g/mol) : masse d'une mole. M(H) = 1 g/mol, M(C) = 12, M(O) = 16, M(N) = 14, M(Na) = 23, M(Cl) = 35,5.
+li: Masse molaire moléculaire : somme des masses molaires atomiques. M(H₂O) = 2 × 1 + 16 = 18 g/mol. M(CO₂) = 12 + 2 × 16 = 44 g/mol.
+li: Quantité de matière : n = m / M (m en g, M en g/mol, n en mol).
+li: Volume molaire des gaz : Vm ≈ 24 L/mol à 20 °C et pression normale (22,4 L/mol à 0 °C). n = V / Vm.
+li: Concentration molaire : C = n / V (mol/L). Donc n = C × V.
+li: Dilution : la quantité de soluté se conserve : C₁V₁ = C₂V₂.
+li: Pour une solution de masse volumique ρ, la masse est m = ρ × V.
+note: Exemple : 36 g d'eau contiennent n = 36 / 18 = 2 mol, soit 2 × 6,02 × 10²³ molécules.
+note: Pour préparer 0,5 L d'une solution à 0,1 mol/L de sel (M = 58,5 g/mol), il faut 0,05 mol, soit 2,925 g.
+== questions
+Combien d'entités contient une mole ? || 6,02 × 10²³ || 10 || 1 000 || 6,02 × 10⁻²³ || C'est le nombre d'Avogadro.
+Quelle est l'unité de la quantité de matière ? || La mole || Le gramme || Le litre || Le mètre || Elle se note mol.
+Quelle est la masse molaire de l'hydrogène ? || 1 g/mol || 2 g/mol || 16 g/mol || 12 g/mol || M(H) = 1 g/mol.
+Quelle est la masse molaire de l'eau H₂O ? || 18 g/mol || 16 g/mol || 10 g/mol || 20 g/mol || 2 × 1 + 16.
+Quelle est la masse molaire de CO₂ ? || 44 g/mol || 28 g/mol || 32 g/mol || 56 g/mol || 12 + 2 × 16.
+Quelle formule donne la quantité de matière ? || n = m / M || n = M × V || n = m × M || n = M − m || n s'exprime en moles.
+Quelle quantité de matière représentent 36 g d'eau ? || 2 mol || 0,5 mol || 18 mol || 36 mol || 36 / 18 = 2.
+Quelle est la masse de 0,5 mol de NaCl (M = 58,5 g/mol) ? || 29,25 g || 117 g || 58,5 g || 0,5 g || m = n × M.
+Quelle quantité représente 11 g de CO₂ ? || 0,25 mol || 4 mol || 0,5 mol || 1 mol || 11 / 44 = 0,25.
+Quel est le volume molaire des gaz à 20 °C et pression normale ? || Environ 24 L/mol || 1 L/mol || 100 L/mol || 0,024 L/mol || Un gaz occupe ce volume par mole.
+Quel volume occupent 2 mol de gaz (Vm = 24 L/mol) ? || 48 L || 12 L || 24 L || 2 L || V = n × Vm.
+Quelle est la concentration molaire ? || C = n / V || C = V / n || C = n × V || C = m / n || Elle s'exprime en mol/L.
+Quelle est la concentration d'une solution contenant 0,2 mol dans 0,5 L ? || 0,4 mol/L || 0,1 mol/L || 2,5 mol/L || 0,25 mol/L || C = 0,2 / 0,5.
+Combien de moles faut-il pour 250 mL d'une solution à 0,2 mol/L ? || 0,05 mol || 0,5 mol || 5 mol || 0,25 mol || n = C × V = 0,2 × 0,25.
+Que reste-t-il constant lors d'une dilution ? || La quantité de soluté || La concentration || Le volume || La température || C₁V₁ = C₂V₂.

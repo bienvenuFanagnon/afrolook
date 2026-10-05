@@ -1,0 +1,28 @@
+titre: Trigonométrie et cercle trigonométrique
+== fiche
+p: Le cercle trigonométrique est un cercle de rayon 1 centré à l'origine, sur lequel on mesure les angles en radians ou en degrés.
+li: Conversion : 180° = π radians ; 90° = π/2 ; 60° = π/3 ; 45° = π/4 ; 30° = π/6.
+li: Pour un angle x, cos x est l'abscisse et sin x l'ordonnée du point du cercle. Donc −1 ≤ cos x ≤ 1 et −1 ≤ sin x ≤ 1.
+li: Relation fondamentale : cos²x + sin²x = 1. Tangente : tan x = sin x / cos x (cos x ≠ 0).
+li: Valeurs remarquables : cos 0 = 1, sin 0 = 0 ; cos π/6 = √3/2, sin π/6 = 1/2 ; cos π/4 = sin π/4 = √2/2 ; cos π/3 = 1/2, sin π/3 = √3/2 ; cos π/2 = 0, sin π/2 = 1 ; cos π = −1, sin π = 0.
+li: Périodicité : cos et sin sont 2π-périodiques. cos(−x) = cos x (paire), sin(−x) = −sin x (impaire).
+li: Angles associés : cos(π − x) = −cos x ; sin(π − x) = sin x ; cos(π/2 − x) = sin x.
+li: Formules d'addition : cos(a + b) = cos a cos b − sin a sin b ; sin(a + b) = sin a cos b + cos a sin b.
+note: Exemple : cos²x + sin²x = 1 donc si cos x = 0,6 et x aigu, sin x = 0,8.
+note: Les angles se comptent positivement dans le sens inverse des aiguilles d'une montre.
+== questions
+À combien de radians correspond 180° ? || π || π/2 || 2π || 1 || Un demi-tour vaut π radians.
+À combien de radians correspond 90° ? || π/2 || π || π/4 || 2π || Un quart de tour vaut π/2.
+À combien de degrés correspond π/3 ? || 60° || 30° || 45° || 90° || 180° ÷ 3 = 60°.
+À combien de degrés correspond π/6 ? || 30° || 60° || 45° || 15° || 180° ÷ 6 = 30°.
+Que représente cos x sur le cercle trigonométrique ? || L'abscisse du point || L'ordonnée du point || Le rayon || La tangente || Le sinus est l'ordonnée.
+Que vaut cos²x + sin²x ? || 1 || 0 || 2 || cos 2x || C'est la relation fondamentale.
+Que vaut cos(π/3) ? || 1/2 || √3/2 || √2/2 || 0 || Valeur remarquable.
+Que vaut sin(π/4) ? || √2/2 || 1/2 || √3/2 || 1 || cos π/4 = sin π/4.
+Que vaut sin(π/2) ? || 1 || 0 || −1 || 1/2 || Le point est en haut du cercle.
+Que vaut cos(π) ? || −1 || 1 || 0 || π || Le point est à gauche du cercle.
+Que vaut tan x ? || sin x / cos x || cos x / sin x || sin x × cos x || 1 / sin x || Elle n'existe pas quand cos x = 0.
+Quelle est la période de cos et sin ? || 2π || π || π/2 || 4π || Un tour complet.
+cos est-elle paire ou impaire ? || Paire || Impaire || Ni l'une ni l'autre || Les deux || cos(−x) = cos x.
+sin est-elle paire ou impaire ? || Impaire || Paire || Ni l'une ni l'autre || Les deux || sin(−x) = −sin x.
+Si cos x = 0,6 et x est aigu, que vaut sin x ? || 0,8 || 0,4 || 0,64 || 0,36 || sin²x = 1 − 0,36 = 0,64.

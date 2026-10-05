@@ -1,0 +1,28 @@
+titre: Le système nerveux et le réflexe
+== fiche
+p: Le système nerveux reçoit des informations, les analyse et commande des réponses. Il comprend le système nerveux central (encéphale et moelle épinière) et les nerfs.
+li: L'encéphale (cerveau, cervelet, tronc cérébral) est protégé par le crâne ; la moelle épinière par la colonne vertébrale.
+li: Le neurone est la cellule nerveuse : corps cellulaire, dendrites (reçoivent), axone (transmet).
+li: Le message nerveux est un signal électrique (potentiel d'action) qui circule le long de l'axone. Entre deux neurones, la synapse transmet le message grâce à des neurotransmetteurs.
+li: Nerfs sensitifs : vers le centre ; nerfs moteurs : du centre vers les muscles.
+li: Arc réflexe : récepteur sensoriel → nerf sensitif → centre nerveux (moelle épinière) → nerf moteur → effecteur (muscle). Le réflexe est rapide, involontaire et inné.
+li: Exemple : le réflexe rotulien, ou le retrait de la main brûlée.
+li: Les drogues, l'alcool et certains médicaments perturbent le fonctionnement des synapses.
+note: Exemple : en cas de brûlure, le muscle du bras se contracte avant même que la douleur ne soit ressentie dans le cerveau.
+note: Le temps de réaction est plus long pour un acte volontaire que pour un réflexe.
+== questions
+Comment s'appelle la cellule du système nerveux ? || Le neurone || L'hématie || Le leucocyte || Le myocyte || Il transmet les messages nerveux.
+Quelle partie du neurone transmet le message vers un autre neurone ? || L'axone || Les dendrites || Le noyau || La membrane || Elle conduit le signal électrique.
+Quelles parties du neurone reçoivent les messages ? || Les dendrites || L'axone || La myéline || Le muscle || Elles se ramifient autour du corps cellulaire.
+Qu'est-ce qu'une synapse ? || La zone de contact entre deux neurones || Un muscle || Un os || Une artère || Le message passe grâce aux neurotransmetteurs.
+Quelle est la nature du message nerveux le long de l'axone ? || Un signal électrique || Un son || Un courant d'air || Un liquide pur || Il s'agit d'un potentiel d'action.
+Comment s'appellent les substances chimiques de la synapse ? || Les neurotransmetteurs || Les hormones sexuelles || Les enzymes digestives || Les anticorps || Elles transmettent le message d'un neurone à l'autre.
+Où se trouve la moelle épinière ? || Dans la colonne vertébrale || Dans le crâne || Dans le thorax || Dans le bras || Elle relie l'encéphale au corps.
+Quel nerf conduit un message vers le centre nerveux ? || Le nerf sensitif || Le nerf moteur || Le nerf optique seulement || Aucun || Les récepteurs sensoriels envoient l'information.
+Quel nerf conduit un message du centre nerveux vers un muscle ? || Le nerf moteur || Le nerf sensitif || Le nerf sciatique seulement || Aucun || Il commande la contraction.
+Quel est l'ordre correct d'un arc réflexe ? || Récepteur, nerf sensitif, centre nerveux, nerf moteur, effecteur || Effecteur, nerf moteur, centre, nerf sensitif, récepteur || Centre, récepteur, effecteur || Nerf moteur, récepteur, nerf sensitif || C'est le trajet du message.
+Quelle est une caractéristique du réflexe ? || Il est rapide, involontaire et inné || Il est lent et volontaire || Il s'apprend en classe || Il passe toujours par le cerveau || Il passe souvent par la moelle épinière.
+Lequel de ces actes est un réflexe ? || Retirer sa main d'un objet brûlant || Écrire une lettre || Jouer au football || Résoudre un exercice || Il est involontaire.
+Que protège le crâne ? || L'encéphale || La moelle épinière || Le cœur || Les poumons || La colonne vertébrale protège la moelle.
+Quel effet les drogues ont-elles sur le système nerveux ? || Elles perturbent les synapses || Elles renforcent les os || Elles guérissent les neurones || Elles n'ont aucun effet || Elles modifient la transmission des messages.
+Pourquoi le temps de réaction est-il plus court pour un réflexe ? || Le message ne passe pas par le cerveau pour être traité || Le muscle est plus fort || Les nerfs sont plus gros || On y pense longtemps || Le circuit est plus court.

@@ -1,0 +1,28 @@
+titre: Généralités sur les fonctions
+== fiche
+p: Une fonction f associe à chaque nombre x de son ensemble de définition un unique nombre f(x), appelé image de x.
+li: Ensemble de définition : valeurs de x pour lesquelles f(x) existe. Pour f(x) = 1/x : tous les réels sauf 0. Pour f(x) = √x : x ≥ 0.
+li: Représentation graphique : la courbe formée des points (x ; f(x)). Antécédent : x tel que f(x) = y.
+li: Fonction affine : f(x) = ax + b ; la courbe est une droite de pente a et d'ordonnée à l'origine b. Elle est croissante si a > 0, décroissante si a < 0.
+li: Fonction carré : f(x) = x² ; décroissante sur ]−∞ ; 0], croissante sur [0 ; +∞[ ; paire (symétrique par rapport à l'axe des ordonnées).
+li: Fonction inverse : f(x) = 1/x ; impaire.
+li: Fonction paire : f(−x) = f(x). Fonction impaire : f(−x) = −f(x).
+li: Résoudre graphiquement f(x) = k : lire les abscisses des points d'intersection de la courbe avec la droite y = k.
+note: Exemple : f(x) = 2x + 1 donne f(3) = 7 et l'antécédent de 5 est x = 2.
+note: Une courbe est celle d'une fonction si une droite verticale la coupe au plus une fois.
+== questions
+Qu'appelle-t-on image de x par la fonction f ? || Le nombre f(x) || Le nombre x || La dérivée de f || L'aire sous la courbe || À chaque x correspond une seule image.
+Quel est l'ensemble de définition de f(x) = 1/x ? || Tous les réels sauf 0 || Tous les réels || Les réels positifs || Les entiers || On ne peut pas diviser par 0.
+Quel est l'ensemble de définition de f(x) = √x ? || [0 ; +∞[ || ℝ || ]−∞ ; 0] || ]0 ; 1[ || La racine carrée n'existe que pour x ≥ 0.
+Que vaut f(3) pour f(x) = 2x + 1 ? || 7 || 5 || 6 || 9 || 2 × 3 + 1 = 7.
+Quel est l'antécédent de 5 par f(x) = 2x + 1 ? || 2 || 11 || 3 || 5 || 2x + 1 = 5 donne x = 2.
+Quelle est la nature de la courbe de f(x) = ax + b ? || Une droite || Une parabole || Une hyperbole || Un cercle || a est la pente et b l'ordonnée à l'origine.
+Quand une fonction affine est-elle croissante ? || Quand a > 0 || Quand a < 0 || Quand b > 0 || Toujours || La pente est positive.
+Sur quel intervalle f(x) = x² est-elle croissante ? || [0 ; +∞[ || ]−∞ ; 0] || ℝ entier || ]−1 ; 0[ || Elle décroît avant 0 puis croît après.
+Quelle est la parité de f(x) = x² ? || Paire || Impaire || Ni paire ni impaire || Les deux || f(−x) = f(x).
+Quelle est la parité de f(x) = 1/x ? || Impaire || Paire || Ni l'une ni l'autre || Les deux || f(−x) = −f(x).
+Quelle symétrie présente la courbe d'une fonction paire ? || Par rapport à l'axe des ordonnées || Par rapport à l'origine || Par rapport à l'axe des abscisses || Aucune || Les points (x ; y) et (−x ; y) sont sur la courbe.
+Quelle symétrie présente la courbe d'une fonction impaire ? || Par rapport à l'origine || Par rapport à l'axe des ordonnées || Par rapport à la droite y = x seulement || Aucune || Le point (−x ; −y) est aussi sur la courbe.
+Quelle est l'ordonnée à l'origine de f(x) = 3x − 4 ? || −4 || 3 || 4 || 0 || C'est f(0).
+Comment résout-on f(x) = k graphiquement ? || En cherchant les points de la courbe d'ordonnée k || En cherchant le sommet || En traçant la tangente || En mesurant l'aire || On lit les abscisses des points d'intersection.
+Une droite verticale peut-elle couper la courbe d'une fonction en deux points ? || Non || Oui || Seulement pour une fonction affine || Seulement pour la fonction carré || Chaque x a une seule image.

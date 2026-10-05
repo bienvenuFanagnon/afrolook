@@ -1,0 +1,28 @@
+titre: La contraction musculaire
+== fiche
+p: Les muscles squelettiques permettent le mouvement. Ils sont reliés aux os par des tendons.
+li: Un muscle est formé de fibres musculaires, elles-mêmes composées de myofibrilles qui contiennent des filaments d'actine et de myosine.
+li: Lors de la contraction, les filaments d'actine et de myosine glissent les uns sur les autres : le muscle se raccourcit et se durcit.
+li: L'énergie de la contraction vient de l'ATP, produit à partir du glucose et du dioxygène (respiration) ou sans dioxygène (fermentation lactique).
+li: Muscles antagonistes : le biceps fléchit l'avant-bras, le triceps l'étend. Quand l'un se contracte, l'autre se relâche.
+li: Une commande nerveuse arrive au muscle par un nerf moteur ; la jonction neuromusculaire libère un neurotransmetteur qui déclenche la contraction.
+li: Fatigue : accumulation d'acide lactique et épuisement des réserves de glycogène. Crampe : contraction involontaire et douloureuse.
+li: L'entraînement augmente le volume des muscles et améliore la circulation. Une bonne hygiène de vie (alimentation, sommeil, échauffement) prévient les blessures.
+note: Exemple : en soulevant un objet avec l'avant-bras, le biceps se contracte et le triceps se relâche.
+note: Le muscle cardiaque est un muscle involontaire qui se contracte toute la vie.
+== questions
+Comment les muscles sont-ils reliés aux os ? || Par des tendons || Par des ligaments uniquement || Par des vaisseaux || Par la peau || Les ligaments relient les os entre eux.
+Quelles protéines sont responsables de la contraction ? || L'actine et la myosine || L'hémoglobine || La mélanine || L'insuline || Elles glissent les unes sur les autres.
+Que devient un muscle lorsqu'il se contracte ? || Il se raccourcit et se durcit || Il s'allonge || Il disparaît || Il devient mou || Il tire sur l'os.
+Quelle molécule fournit l'énergie de la contraction ? || L'ATP || L'ADN || L'oxygène seul || Le calcium seul || Elle est produite à partir du glucose.
+Que fait le biceps lorsqu'on plie le bras ? || Il se contracte || Il se relâche || Il s'allonge || Il se détache || Il fléchit l'avant-bras.
+Quel muscle est antagoniste du biceps ? || Le triceps || Le deltoïde || Le trapèze || Le diaphragme || Quand l'un se contracte, l'autre se relâche.
+Que se passe-t-il pour le triceps quand le biceps se contracte ? || Il se relâche || Il se contracte aussi || Il disparaît || Il durcit || Ils sont antagonistes.
+Quel nerf commande la contraction d'un muscle ? || Un nerf moteur || Un nerf sensitif || Un nerf optique || Aucun || Il part du centre nerveux.
+Quelle substance s'accumule pendant un effort sans oxygène ? || L'acide lactique || Le glucose || L'eau pure || L'azote || Elle est liée à la fermentation lactique.
+Qu'est-ce qu'une crampe ? || Une contraction involontaire et douloureuse || Un étirement volontaire || Une inflammation du nerf || Une fracture || Elle peut venir de la fatigue ou d'un manque d'eau.
+Quel type de muscle est le cœur ? || Un muscle involontaire || Un muscle volontaire || Un os || Un tendon || Il bat sans qu'on y pense.
+Quel est un effet de l'entraînement sur les muscles ? || Leur volume augmente || Ils s'atrophient || Ils disparaissent || Ils deviennent des os || Ils s'adaptent à l'effort.
+Pourquoi s'échauffer avant un effort ? || Pour préparer les muscles et prévenir les blessures || Pour se fatiguer || Pour ralentir le cœur || Pour dormir || L'échauffement augmente la température et la circulation.
+Quel est le principal carburant du muscle ? || Le glucose || Le sel || Le calcium seul || La vitamine D || Il est stocké sous forme de glycogène.
+Qu'est-ce qu'un tendon ? || Un cordon fibreux qui relie le muscle à l'os || Un nerf || Un vaisseau sanguin || Un os || Il transmet la force du muscle.

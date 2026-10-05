@@ -1,0 +1,29 @@
+titre: Adressage IP et services
+== fiche
+p: Chaque machine d'un réseau possède une adresse IP qui l'identifie.
+li: IPv4 : 4 nombres de 0 à 255 séparés par des points (192.168.1.10), soit 32 bits. IPv6 : 128 bits en hexadécimal, adopté face à la pénurie d'adresses IPv4.
+li: Un masque de sous-réseau sépare la partie réseau de la partie machine. 255.255.255.0 équivaut à /24 (24 bits de réseau).
+li: Adresses privées : 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. Elles ne sont pas routées sur Internet.
+li: Passerelle (gateway) : routeur par lequel on sort du réseau local. DHCP : distribue automatiquement les adresses IP.
+li: NAT : traduit les adresses privées en une adresse publique pour sortir sur Internet.
+li: Adresse MAC : identifiant matériel de 48 bits de la carte réseau (ex. 00:1A:2B:3C:4D:5E).
+li: Un réseau /24 contient 254 machines utilisables (256 − adresse du réseau − adresse de diffusion).
+li: Services courants : Web (HTTP/HTTPS), messagerie (SMTP, IMAP), DNS, FTP, SSH.
+note: Exemple : 192.168.1.10/24 est dans le réseau 192.168.1.0 ; l'adresse de diffusion est 192.168.1.255.
+note: La commande ping teste la communication avec une machine ; ipconfig (Windows) ou ip a (Linux) affiche la configuration.
+== questions
+Combien de bits comporte une adresse IPv4 ? || 32 || 64 || 128 || 16 || Quatre octets de 8 bits.
+Combien de bits comporte une adresse IPv6 ? || 128 || 32 || 64 || 48 || Elle résout la pénurie d'adresses IPv4.
+Laquelle de ces adresses est une IPv4 valide ? || 192.168.1.10 || 192.168.1.256 || 300.1.1.1 || 192.168.1 || Chaque nombre est compris entre 0 et 255.
+À quoi équivaut le masque 255.255.255.0 ? || /24 || /8 || /16 || /32 || Il fixe 24 bits de réseau.
+Combien de machines utilisables dans un réseau /24 ? || 254 || 256 || 255 || 253 || On retire l'adresse du réseau et celle de diffusion.
+Laquelle de ces adresses est privée ? || 192.168.0.5 || 8.8.8.8 || 41.202.1.1 || 197.1.1.1 || Les plages 10/8, 172.16/12 et 192.168/16 sont privées.
+À quoi sert le DHCP ? || Distribuer automatiquement les adresses IP || Traduire les noms || Chiffrer le trafic || Surveiller le réseau || Il évite la configuration manuelle.
+À quoi sert la passerelle par défaut ? || Sortir du réseau local vers d'autres réseaux || Traduire les adresses MAC || Chiffrer les paquets || Stocker les sites || C'est le routeur du réseau.
+À quoi sert le NAT ? || Traduire des adresses privées en adresse publique || Distribuer des adresses || Résoudre les noms || Détecter les virus || Il permet de partager une adresse publique.
+Qu'est-ce qu'une adresse MAC ? || L'identifiant matériel d'une carte réseau || Une adresse IP privée || Un nom de domaine || Un mot de passe || Elle compte 48 bits.
+Quelle est l'adresse de diffusion du réseau 192.168.1.0/24 ? || 192.168.1.255 || 192.168.1.254 || 192.168.1.0 || 192.168.0.255 || C'est la dernière adresse du réseau.
+Quelle commande teste la communication avec une machine ? || ping || route || mkdir || echo || Elle envoie des paquets ICMP.
+Quel protocole sert à envoyer des courriels ? || SMTP || FTP || DNS || DHCP || IMAP et POP servent à les recevoir.
+Quel protocole permet le transfert de fichiers ? || FTP || SMTP || SSH seulement || DNS || Port 21.
+Laquelle de ces adresses est publique ? || 8.8.8.8 || 10.0.0.1 || 172.16.5.4 || 192.168.1.1 || Elle est routée sur Internet.

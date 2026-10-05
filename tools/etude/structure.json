@@ -367,12 +367,104 @@
         {
           "id": "lyc_2nde",
           "title": "Seconde",
-          "subjects": []
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "sec_maths_second_degre",
+                  "title": "Équations du second degré"
+                },
+                {
+                  "id": "sec_maths_fonctions",
+                  "title": "Généralités sur les fonctions"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "sec_pc_atome",
+                  "title": "L'atome et la classification périodique"
+                },
+                {
+                  "id": "sec_pc_mole",
+                  "title": "La quantité de matière (la mole)"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "sec_svt_cellule",
+                  "title": "La cellule et l'ADN"
+                },
+                {
+                  "id": "sec_svt_ecosystemes",
+                  "title": "Écosystèmes et biodiversité"
+                }
+              ]
+            }
+          ]
         },
         {
           "id": "lyc_1d",
           "title": "Première D",
-          "subjects": []
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "prem_maths_limites",
+                  "title": "Limites et continuité"
+                },
+                {
+                  "id": "prem_maths_trigo",
+                  "title": "Trigonométrie et cercle trigonométrique"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "prem_pc_energie",
+                  "title": "Travail et énergie"
+                },
+                {
+                  "id": "prem_pc_organique",
+                  "title": "Chimie organique : alcanes et alcools"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "prem_svt_nerveux",
+                  "title": "Le système nerveux et le réflexe"
+                },
+                {
+                  "id": "prem_svt_muscle",
+                  "title": "La contraction musculaire"
+                }
+              ]
+            }
+          ]
         },
         {
           "id": "lyc_td",
@@ -527,12 +619,104 @@
         {
           "id": "info_l2",
           "title": "Licence 2",
-          "subjects": []
+          "subjects": [
+            {
+              "id": "sd",
+              "title": "Structures de données",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "info2_sd_listes",
+                  "title": "Listes, piles et files"
+                },
+                {
+                  "id": "info2_sd_arbres",
+                  "title": "Arbres et algorithmes de tri"
+                }
+              ]
+            },
+            {
+              "id": "poo",
+              "title": "Programmation orientée objet",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "info2_poo_classes",
+                  "title": "Classes et objets"
+                },
+                {
+                  "id": "info2_poo_heritage",
+                  "title": "Héritage et polymorphisme"
+                }
+              ]
+            },
+            {
+              "id": "reseaux",
+              "title": "Réseaux",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "info2_res_modeles",
+                  "title": "Modèles OSI et TCP/IP"
+                },
+                {
+                  "id": "info2_res_ip",
+                  "title": "Adressage IP et services"
+                }
+              ]
+            }
+          ]
         },
         {
           "id": "info_l3",
           "title": "Licence 3",
-          "subjects": []
+          "subjects": [
+            {
+              "id": "gl",
+              "title": "Génie logiciel",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "info3_gl_cycle",
+                  "title": "Cycles de développement et tests"
+                },
+                {
+                  "id": "info3_gl_uml",
+                  "title": "Modélisation UML"
+                }
+              ]
+            },
+            {
+              "id": "sys",
+              "title": "Systèmes d'exploitation",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "info3_sys_processus",
+                  "title": "Processus et mémoire"
+                },
+                {
+                  "id": "info3_sys_fichiers",
+                  "title": "Fichiers et commandes"
+                }
+              ]
+            },
+            {
+              "id": "ia",
+              "title": "Intelligence artificielle et sécurité",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "info3_ia_bases",
+                  "title": "Intelligence artificielle : bases"
+                },
+                {
+                  "id": "info3_secu_bases",
+                  "title": "Sécurité informatique"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

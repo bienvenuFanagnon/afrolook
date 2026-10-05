@@ -1,0 +1,29 @@
+titre: Travail et énergie
+== fiche
+p: L'énergie est la capacité d'un système à produire un travail ou de la chaleur. Elle s'exprime en joules (J).
+li: Travail d'une force constante F sur un déplacement AB : W = F × AB × cos α, α étant l'angle entre la force et le déplacement. W en joules, F en newtons, AB en mètres.
+li: Si α = 0° (force dans le sens du mouvement), W = F × AB : travail moteur. Si α = 90°, W = 0. Si α = 180°, W < 0 : travail résistant.
+li: Travail du poids : W = m × g × h, positif à la descente, négatif à la montée (h = variation d'altitude).
+li: Énergie cinétique : Ec = ½ m v² (en joules, m en kg, v en m/s).
+li: Énergie potentielle de pesanteur : Ep = m × g × h.
+li: Théorème de l'énergie cinétique : la variation d'énergie cinétique est égale à la somme des travaux des forces.
+li: Énergie mécanique : Em = Ec + Ep ; elle se conserve s'il n'y a pas de frottements.
+li: Puissance moyenne : P = W / t (en watts). 1 W = 1 J/s.
+note: Exemple : une masse de 2 kg lancée à 10 m/s a Ec = ½ × 2 × 100 = 100 J.
+note: Une force perpendiculaire au déplacement (comme la réaction d'un sol horizontal) ne travaille pas.
+== questions
+Quelle est l'unité du travail et de l'énergie ? || Le joule || Le watt || Le newton || Le volt || Elle se note J.
+Quelle est la formule du travail d'une force constante dans le sens du déplacement ? || W = F × AB || W = F / AB || W = F + AB || W = AB / F || Le travail est le produit de la force par le déplacement.
+Quel est le travail d'une force perpendiculaire au déplacement ? || Zéro || Positif || Négatif || Infini || cos 90° = 0.
+Quand un travail est-il résistant ? || Quand la force s'oppose au déplacement (angle 180°) || Quand la force est nulle || Quand le déplacement est nul || Quand l'angle est de 0° || Il est alors négatif.
+Quelle est la formule de l'énergie cinétique ? || Ec = ½ m v² || Ec = m v || Ec = m g h || Ec = F v || Elle dépend de la masse et du carré de la vitesse.
+Quelle est l'énergie cinétique d'une masse de 2 kg à 10 m/s ? || 100 J || 20 J || 200 J || 10 J || ½ × 2 × 100.
+Quelle est la formule de l'énergie potentielle de pesanteur ? || Ep = m g h || Ep = ½ m v² || Ep = m v || Ep = F h || Elle dépend de l'altitude.
+Quelle est l'énergie potentielle d'une masse de 5 kg à 10 m (g = 10 N/kg) ? || 500 J || 50 J || 5 J || 150 J || 5 × 10 × 10.
+Quel est le travail du poids d'une masse de 2 kg qui descend de 5 m (g = 10) ? || +100 J || −100 J || 0 J || 10 J || W = m g h pour une descente.
+Quelle est l'unité de la puissance mécanique ? || Le watt || Le joule || Le newton || L'ampère || 1 W = 1 J/s.
+Quelle est la formule de la puissance moyenne ? || P = W / t || P = W × t || P = t / W || P = F + v || Travail par unité de temps.
+Que devient l'énergie mécanique sans frottements ? || Elle se conserve || Elle augmente || Elle diminue || Elle s'annule || Em = Ec + Ep reste constante.
+Que dit le théorème de l'énergie cinétique ? || ΔEc = somme des travaux des forces || ΔEc = 0 toujours || Ec = Ep || Ec = P × t seulement || La variation d'énergie cinétique vient du travail.
+Quel est le travail d'une force de 50 N qui déplace un objet de 4 m dans le sens de la force ? || 200 J || 54 J || 12,5 J || 46 J || 50 × 4.
+Quelle puissance développe un moteur qui fournit 6000 J en 30 s ? || 200 W || 180 000 W || 5 W || 6030 W || 6000 / 30.

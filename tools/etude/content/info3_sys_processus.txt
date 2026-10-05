@@ -1,0 +1,29 @@
+titre: Processus et mémoire
+== fiche
+p: Le système d'exploitation (Windows, Linux, macOS, Android) gère les ressources de la machine : processeur, mémoire, disques, périphériques.
+li: Un programme est un fichier inerte ; un processus est un programme en cours d'exécution, avec sa mémoire et son état.
+li: États d'un processus : prêt, en cours d'exécution, bloqué (attente d'une ressource), terminé.
+li: Ordonnancement : l'ordonnanceur choisit quel processus s'exécute (tourniquet / round robin, priorités, premier arrivé premier servi).
+li: Thread (fil d'exécution) : unité d'exécution légère qui partage la mémoire du processus.
+li: Mémoire : RAM (volatile, rapide), mémoire virtuelle (le disque sert d'extension), pagination (blocs de taille fixe).
+li: Interblocage (deadlock) : plusieurs processus s'attendent mutuellement sans fin. Sémaphores et mutex protègent les sections critiques.
+li: Noyau (kernel) : cœur du système ; appels système : interface entre programmes et noyau.
+li: Linux : processus identifié par un PID ; commandes ps, top, kill.
+note: Exemple : le navigateur lance plusieurs processus ; chaque onglet peut être un processus indépendant.
+note: Une condition de concurrence apparaît quand deux threads modifient la même donnée sans synchronisation.
+== questions
+Quelle différence entre programme et processus ? || Un processus est un programme en cours d'exécution || Un programme est plus rapide || Un processus est un fichier || Ils sont identiques || Le processus a un état et une mémoire.
+Quel est le rôle d'un système d'exploitation ? || Gérer les ressources de la machine || Concevoir des sites || Créer des images || Remplacer le processeur || Il fait le lien entre les applications et le matériel.
+Quels sont les états d'un processus ? || Prêt, en cours d'exécution, bloqué, terminé || Rouge, vert, bleu || Ouvert, fermé || Chaud, froid || Ils évoluent au fil de l'exécution.
+Qui choisit le processus à exécuter ? || L'ordonnanceur || Le compilateur || Le pilote || Le shell || Il alloue le processeur.
+Quel algorithme d'ordonnancement donne un temps égal à chaque processus tour à tour ? || Le tourniquet (round robin) || Le plus court d'abord || La priorité fixe || Le hasard pur || Chaque processus reçoit un quantum de temps.
+Qu'est-ce qu'un thread ? || Une unité d'exécution qui partage la mémoire du processus || Un processus indépendant || Un fichier || Un périphérique || Il est plus léger qu'un processus.
+Quelle mémoire est volatile et rapide ? || La RAM || Le disque dur || Le SSD || Le DVD || Elle perd son contenu sans courant.
+À quoi sert la mémoire virtuelle ? || Étendre la RAM avec le disque || Remplacer le processeur || Accélérer le réseau || Chiffrer les fichiers || Elle utilise l'espace d'échange (swap).
+Qu'est-ce qu'un interblocage (deadlock) ? || Des processus qui s'attendent mutuellement sans fin || Un processus trop rapide || Une panne de courant || Un virus || Chacun détient la ressource attendue par l'autre.
+À quoi sert un mutex ? || Protéger une section critique || Dupliquer un fichier || Compresser des données || Détecter un virus || Un seul thread à la fois y accède.
+Qu'est-ce qu'une condition de concurrence ? || Un résultat qui dépend de l'ordre d'exécution des threads || Une course entre deux sites || Un bug de réseau || Un test || Elle provient d'un accès partagé non synchronisé.
+Que désigne le noyau (kernel) ? || Le cœur du système d'exploitation || Un antivirus || Un navigateur || Un compilateur || Il gère processeur, mémoire et périphériques.
+Que signifie PID sous Linux ? || L'identifiant d'un processus || Un type de fichier || Un protocole || Un pilote || Process IDentifier.
+Quelle commande Linux liste les processus ? || ps || ls || cd || cat || On peut aussi utiliser top.
+Quelle commande Linux termine un processus ? || kill || mkdir || echo || grep || Elle envoie un signal au PID indiqué.

@@ -1,0 +1,28 @@
+titre: Écosystèmes et biodiversité
+== fiche
+p: Un écosystème est formé d'un milieu (biotope) et des êtres vivants qui y vivent (biocénose), en relation les uns avec les autres.
+li: Facteurs abiotiques : lumière, température, eau, sol. Facteurs biotiques : relations entre êtres vivants (prédation, compétition, parasitisme, symbiose).
+li: Réseau trophique : ensemble de chaînes alimentaires reliées. Producteurs (plantes), consommateurs (herbivores, carnivores), décomposeurs (bactéries, champignons).
+li: Flux d'énergie : à chaque niveau, une grande partie de l'énergie est perdue (environ 90 %) ; le nombre d'individus diminue en montant dans la chaîne.
+li: Cycle de la matière : les décomposeurs transforment la matière morte en sels minéraux réutilisables par les plantes.
+li: Biodiversité : variété des espèces, des gènes et des écosystèmes. Elle est menacée par la déforestation, la pollution, la surpêche et le changement climatique.
+li: Aires protégées : parcs nationaux (par exemple Fazao-Malfakassa au Togo, Pendjari au Bénin).
+li: Développement durable : répondre aux besoins d'aujourd'hui sans compromettre ceux des générations futures.
+note: Exemple de symbiose : les bactéries fixatrices d'azote sur les racines des légumineuses.
+note: La déforestation détruit les habitats et accélère le changement climatique.
+== questions
+Qu'est-ce qu'un écosystème ? || Un milieu et les êtres vivants qui y vivent || Un seul animal || Un seul arbre || Une machine || Il comprend un biotope et une biocénose.
+Que désigne le biotope ? || Le milieu physique || L'ensemble des êtres vivants || Un animal || Une espèce rare || Sol, eau, climat.
+Que désigne la biocénose ? || L'ensemble des êtres vivants du milieu || Le sol || Le climat || La pluie || Elle comprend plantes, animaux et microbes.
+Lequel est un facteur abiotique ? || La température || Un lion || Une plante || Un champignon || Il ne s'agit pas d'un être vivant.
+Lequel est un facteur biotique ? || La prédation || La lumière || La pluie || Le sol || C'est une relation entre êtres vivants.
+Qui sont les producteurs dans un écosystème ? || Les plantes vertes || Les lions || Les champignons || Les vautours || Ils fabriquent leur matière par photosynthèse.
+Qui sont les décomposeurs ? || Les bactéries et champignons || Les herbivores || Les carnivores || Les plantes || Ils transforment la matière morte.
+Que se passe-t-il pour l'énergie quand on monte dans une chaîne alimentaire ? || Elle diminue fortement || Elle augmente || Elle reste identique || Elle disparaît d'un coup || Environ 90 % est perdue à chaque niveau.
+Qu'est-ce qu'une symbiose ? || Une relation où les deux êtres vivants en profitent || Une relation où l'un mange l'autre || Une relation où l'un nuit à l'autre || L'absence de relation || Exemple : bactéries et légumineuses.
+Qu'est-ce que le parasitisme ? || Un être vit aux dépens d'un autre || Les deux profitent || Un être mange un autre || Aucun lien || Exemple : le ver intestinal.
+Qu'est-ce que la biodiversité ? || La variété des espèces, des gènes et des écosystèmes || Le nombre d'habitants || Le nombre d'arbres || Un type de forêt || Elle est précieuse et fragile.
+Quelle activité menace la biodiversité ? || La déforestation || La plantation raisonnée || La protection || La réutilisation || Elle détruit les habitats.
+Qu'est-ce qu'une aire protégée ? || Un espace où la faune et la flore sont protégées || Une zone de chasse libre || Un parking || Une ville || Exemple : un parc national.
+Que signifie développement durable ? || Répondre aux besoins d'aujourd'hui sans compromettre ceux de demain || Produire le plus possible || Tout consommer rapidement || Arrêter toute activité || Il concilie économie, société et environnement.
+Que deviennent les cadavres dans un écosystème ? || Ils sont décomposés en sels minéraux || Ils disparaissent sans trace || Ils deviennent du plastique || Ils restent intacts || Les plantes réutilisent ces sels.

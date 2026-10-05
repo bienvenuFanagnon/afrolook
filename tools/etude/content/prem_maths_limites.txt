@@ -1,0 +1,28 @@
+titre: Limites et continuité
+== fiche
+p: La limite d'une fonction décrit son comportement quand x s'approche d'une valeur ou tend vers l'infini.
+li: Limites usuelles en +∞ : lim xⁿ = +∞ (n > 0) ; lim 1/x = 0 ; lim 1/xⁿ = 0.
+li: En 0 : lim 1/x² = +∞ ; lim 1/x à droite de 0 = +∞, à gauche = −∞.
+li: Opérations : la limite d'une somme, d'un produit, d'un quotient se calcule à partir des limites, sauf formes indéterminées : ∞ − ∞, 0 × ∞, ∞/∞, 0/0.
+li: Pour un polynôme en ±∞ : la limite est celle de son terme de plus haut degré. Pour une fraction rationnelle : rapport des termes de plus haut degré.
+li: Asymptote verticale x = a si lim f(x) = ±∞ quand x tend vers a. Asymptote horizontale y = L si lim f(x) = L quand x tend vers ±∞.
+li: Continuité : f est continue en a si lim f(x) = f(a). Un polynôme est continu sur ℝ. Une fonction continue sur un intervalle vérifie le théorème des valeurs intermédiaires.
+li: Théorème des valeurs intermédiaires : si f est continue sur [a ; b] et que k est compris entre f(a) et f(b), l'équation f(x) = k a au moins une solution.
+note: Exemple : lim (3x² − x + 1) en +∞ = lim 3x² = +∞.
+note: Exemple : lim (2x + 1)/(x − 3) en +∞ = lim 2x/x = 2, donc asymptote horizontale y = 2.
+== questions
+Que vaut la limite de 1/x quand x tend vers +∞ ? || 0 || +∞ || 1 || −∞ || Plus x est grand, plus 1/x est petit.
+Que vaut la limite de x² quand x tend vers +∞ ? || +∞ || 0 || 1 || −∞ || Le carré croît sans limite.
+Que vaut la limite de 3x² − x + 1 quand x tend vers +∞ ? || +∞ || 3 || −∞ || 1 || Elle est donnée par le terme de plus haut degré 3x².
+Que vaut la limite de (2x + 1)/(x − 3) quand x tend vers +∞ ? || 2 || +∞ || 0 || 1/3 || On compare 2x et x.
+Quelle asymptote a la courbe de f(x) = (2x + 1)/(x − 3) ? || Horizontale y = 2 et verticale x = 3 || Seulement horizontale y = 3 || Aucune || Verticale x = 2 || Le dénominateur s'annule en 3.
+Que vaut la limite de 1/x² quand x tend vers 0 ? || +∞ || 0 || −∞ || 1 || x² est positif et proche de 0.
+Que vaut la limite de 1/x quand x tend vers 0 par valeurs positives ? || +∞ || −∞ || 0 || 1 || 1/x devient très grand.
+Que vaut la limite de 1/x quand x tend vers 0 par valeurs négatives ? || −∞ || +∞ || 0 || 1 || 1/x devient très négatif.
+Laquelle de ces formes est indéterminée ? || ∞ − ∞ || 5 + ∞ || 3 × ∞ || 1/∞ || Il faut transformer l'expression.
+Parmi ces formes, laquelle est aussi indéterminée ? || 0/0 || 2/0 par valeurs positives || 5 × 3 || 0 + 4 || Il faut factoriser ou simplifier.
+Quelle droite est asymptote verticale d'une courbe ? || x = a où la limite vaut ±∞ || y = a où la limite vaut ∞ || La tangente || L'axe des abscisses seulement || Le dénominateur s'y annule souvent.
+Quand une fonction est-elle continue en a ? || Quand lim f(x) = f(a) || Quand f(a) = 0 || Quand elle est croissante || Quand elle est dérivable partout || Pas de saut en ce point.
+Un polynôme est-il continu sur ℝ ? || Oui || Non || Seulement sur [0 ; 1] || Seulement s'il est de degré 1 || Les polynômes sont continus partout.
+Que dit le théorème des valeurs intermédiaires ? || Pour f continue sur [a ; b], toute valeur entre f(a) et f(b) est atteinte || Toute fonction a un maximum || Toute fonction est dérivable || Une fonction croissante est continue || Il garantit l'existence d'une solution.
+Que vaut la limite de (x² − 1)/(x − 1) quand x tend vers 1 ? || 2 || 0 || +∞ || 1 || (x − 1)(x + 1)/(x − 1) = x + 1.

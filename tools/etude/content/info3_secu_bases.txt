@@ -1,0 +1,29 @@
+titre: Sécurité informatique
+== fiche
+p: La sécurité informatique protège les systèmes et les données. Elle repose sur trois objectifs : confidentialité, intégrité, disponibilité (triade CIA).
+li: Confidentialité : seules les personnes autorisées accèdent aux données. Intégrité : les données ne sont pas modifiées sans autorisation. Disponibilité : le service reste accessible.
+li: Menaces : virus, vers, chevaux de Troie, rançongiciels (ransomware), logiciels espions, hameçonnage (phishing), attaque par force brute, déni de service (DDoS), injection SQL, attaque de l'homme du milieu.
+li: Hameçonnage : faux message qui vole des identifiants. Ingénierie sociale : manipuler les gens plutôt que les machines.
+li: Défenses : mises à jour, antivirus, pare-feu, sauvegardes, mots de passe longs et uniques, authentification à deux facteurs (2FA), principe du moindre privilège.
+li: Cryptographie : chiffrement symétrique (une clé, ex. AES) et asymétrique (clé publique / clé privée, ex. RSA). Hachage : empreinte à sens unique (SHA-256).
+li: Certificats et HTTPS (TLS) : protègent les échanges entre navigateur et serveur ; le cadenas indique une connexion chiffrée.
+li: Stockage des mots de passe : jamais en clair ; on stocke un hachage salé.
+li: Réagir à un incident : isoler, analyser, corriger, prévenir. RGPD / lois sur les données personnelles.
+note: Exemple : une injection SQL s'évite par des requêtes préparées et la validation des entrées.
+note: Conseil : un mot de passe long (phrase) vaut mieux qu'un mot court avec des symboles.
+== questions
+Que signifie la triade CIA en sécurité ? || Confidentialité, intégrité, disponibilité || Contrôle, identité, accès || Code, internet, application || Chiffrement, infrastructure, audit || Ce sont les trois objectifs de la sécurité.
+Que garantit la confidentialité ? || Que seules les personnes autorisées accèdent aux données || Que les données ne changent pas || Que le service est toujours en ligne || Que les données sont sauvegardées || Elle protège contre la divulgation.
+Que garantit l'intégrité ? || Que les données ne sont pas altérées sans autorisation || Que les données sont secrètes || Que le service est disponible || Que les données sont compressées || Elle protège contre la modification.
+Qu'est-ce que le hameçonnage (phishing) ? || Un faux message qui vole des identifiants || Un virus de disque || Une panne || Un pare-feu || Souvent un faux courriel d'une banque.
+Qu'est-ce qu'un rançongiciel ? || Un logiciel qui chiffre les données et demande une rançon || Un antivirus || Un pare-feu || Un navigateur || Il bloque l'accès aux fichiers.
+Qu'est-ce qu'une attaque par déni de service (DDoS) ? || Une surcharge qui rend un service indisponible || Un vol de mot de passe || Une copie de fichier || Un virus || Elle vise la disponibilité.
+Qu'est-ce que l'ingénierie sociale ? || Manipuler des personnes pour obtenir des informations || Un type de logiciel || Une attaque sur le réseau seulement || Un chiffrement || Elle exploite la confiance.
+Quel est l'avantage de l'authentification à deux facteurs ? || Un mot de passe volé ne suffit pas || Elle supprime les mots de passe || Elle accélère la connexion || Elle chiffre le disque || Elle ajoute un second justificatif.
+Quel est un bon mot de passe ? || Long, unique et difficile à deviner || Le prénom || 123456 || Le même partout || Une phrase de passe est facile à retenir.
+Comment doit-on stocker les mots de passe d'un site ? || Hachés et salés || En clair || Chiffrés avec la même clé partout || Dans un fichier texte || Le hachage est à sens unique.
+Quel chiffrement utilise une clé publique et une clé privée ? || Asymétrique || Symétrique || Hachage || Compression || Exemple : RSA.
+Quel algorithme est un chiffrement symétrique courant ? || AES || RSA || SHA-256 || MD5 || Il utilise la même clé pour chiffrer et déchiffrer.
+À quoi sert le hachage ? || Produire une empreinte à sens unique || Chiffrer pour déchiffrer plus tard || Compresser un fichier || Envoyer un courriel || Exemple : SHA-256.
+Que signifie le cadenas d'un navigateur ? || La connexion est chiffrée (HTTPS) || Le site est sûr à 100 % || Le site est gratuit || Le site est ancien || Il ne garantit pas que le site soit honnête.
+Comment se protéger d'une injection SQL ? || Requêtes préparées et validation des entrées || Chiffrer le disque || Éteindre le serveur || Changer de navigateur || Les entrées utilisateur ne sont jamais collées dans la requête.

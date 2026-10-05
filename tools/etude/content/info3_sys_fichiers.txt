@@ -1,0 +1,28 @@
+titre: Fichiers et commandes
+== fiche
+p: Le système de fichiers organise les données sur le disque en fichiers et en dossiers (répertoires).
+li: Arborescence : racine / sous Linux (C:\ sous Windows). Chemin absolu : depuis la racine (/home/ama/doc.txt) ; chemin relatif : depuis le dossier courant (../doc.txt).
+li: Commandes Linux : pwd (dossier courant), ls (lister), cd (changer de dossier), mkdir (créer un dossier), rm (supprimer), cp (copier), mv (déplacer ou renommer), cat (afficher), touch (créer un fichier vide).
+li: Recherche : grep motif fichier ; find pour chercher des fichiers.
+li: Droits : lecture (r), écriture (w), exécution (x) pour le propriétaire, le groupe et les autres. chmod 755 donne rwx au propriétaire et r-x aux autres.
+li: Redirections : > écrit dans un fichier (écrase), >> ajoute à la fin, | (pipe) envoie la sortie d'une commande vers une autre.
+li: Systèmes de fichiers : NTFS (Windows), ext4 (Linux), APFS (macOS), FAT32 (clés USB).
+li: Sauvegarde : règle 3-2-1 (3 copies, 2 supports, 1 hors site).
+note: Exemple : ls -l | grep ".txt" liste les fichiers texte avec leurs droits.
+note: Attention : rm -r supprime un dossier et son contenu sans corbeille.
+== questions
+Quelle commande Linux affiche le dossier courant ? || pwd || ls || cd || cat || Print Working Directory.
+Quelle commande liste le contenu d'un dossier ? || ls || cd || mkdir || mv || Avec -l, elle affiche les détails.
+Quelle commande change de dossier ? || cd || ls || rm || cp || cd /home va dans /home.
+Quelle commande crée un dossier ? || mkdir || touch || rm || cat || make directory.
+Quelle commande copie un fichier ? || cp || mv || rm || ls || cp source destination.
+Quelle commande déplace ou renomme un fichier ? || mv || cp || rm || cat || mv ancien nouveau renomme.
+Quelle commande supprime un fichier ? || rm || mv || cp || ls || Elle ne passe pas par une corbeille.
+Quelle commande affiche le contenu d'un fichier ? || cat || ls || cd || touch || Elle concatène et affiche.
+Que signifie le chemin ../doc.txt ? || Le fichier doc.txt du dossier parent || Le fichier doc.txt à la racine || Le fichier doc.txt du dossier courant || Un dossier caché || .. désigne le dossier parent.
+Que signifie la permission chmod 755 ? || rwx pour le propriétaire, r-x pour les autres || rw- pour tous || r-- pour tous || rwx pour tous || 7 = rwx, 5 = r-x.
+Que signifie la permission x ? || Exécution || Lecture || Écriture || Suppression || r est la lecture, w l'écriture.
+Que fait la redirection > ? || Écrit la sortie dans un fichier en l'écrasant || Ajoute à la fin d'un fichier || Lit un fichier || Supprime un fichier || >> ajoute sans écraser.
+Que fait le symbole | (pipe) ? || Envoie la sortie d'une commande vers une autre || Écrit dans un fichier || Efface l'écran || Lance un programme en arrière-plan || Ex. ls | grep txt.
+Quelle commande cherche un motif dans un fichier ? || grep || find seulement || cat seul || tail || grep motif fichier.
+Que dit la règle de sauvegarde 3-2-1 ? || 3 copies, 2 supports, 1 hors site || 3 disques, 2 ordinateurs, 1 clé || 3 jours, 2 mois, 1 an || 3 sauvegardes sur le même disque || Elle protège contre la perte de données.

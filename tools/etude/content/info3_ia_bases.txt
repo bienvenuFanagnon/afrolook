@@ -1,0 +1,29 @@
+titre: Intelligence artificielle : bases
+== fiche
+p: L'intelligence artificielle (IA) regroupe les techniques qui permettent à une machine d'accomplir des tâches demandant de l'intelligence : reconnaître une image, comprendre un texte, jouer, recommander.
+li: Apprentissage automatique (machine learning) : la machine apprend à partir de données au lieu d'être programmée règle par règle.
+li: Apprentissage supervisé : données étiquetées (images avec leur classe) ; sert à classer (spam / non spam) ou à prédire une valeur (régression).
+li: Apprentissage non supervisé : pas d'étiquettes ; on cherche des groupes (clustering, ex. k-means).
+li: Apprentissage par renforcement : un agent apprend par essais, récompenses et pénalités (jeux, robots).
+li: Réseau de neurones : couches de neurones artificiels ; apprentissage profond (deep learning) quand il y a de nombreuses couches. Utilisé en vision et en langage.
+li: Données : jeu d'entraînement, jeu de validation, jeu de test. Surapprentissage (overfitting) : le modèle mémorise l'entraînement mais généralise mal.
+li: Évaluation : exactitude (accuracy), précision, rappel. Les biais des données peuvent produire des décisions injustes.
+li: Éthique : vie privée, transparence, biais, responsabilité, impact sur l'emploi.
+note: Exemple : un filtre anti-spam est entraîné sur des courriels déjà classés spam ou non spam.
+note: Les grands modèles de langage (chatbots) apprennent à prédire du texte à partir de gigantesques corpus.
+== questions
+Que signifie « apprentissage automatique » ? || Une machine apprend à partir de données || Un humain apprend à utiliser un ordinateur || Un programme est écrit règle par règle || Une machine est mise à jour || En anglais : machine learning.
+Quel type d'apprentissage utilise des données étiquetées ? || Supervisé || Non supervisé || Par renforcement || Aléatoire || Chaque exemple a la bonne réponse.
+Quel type d'apprentissage cherche des groupes sans étiquettes ? || Non supervisé || Supervisé || Par renforcement || Par transfert uniquement || Exemple : le clustering.
+Quel type d'apprentissage utilise des récompenses et des pénalités ? || Par renforcement || Supervisé || Non supervisé || Statique || Un agent apprend par essais et erreurs.
+Un filtre anti-spam appartient surtout à quel type de tâche ? || La classification || Le clustering || La compression || Le rendu 3D || Un courriel est classé spam ou non spam.
+Qu'est-ce qu'un réseau de neurones ? || Un modèle formé de couches de neurones artificiels || Un réseau Wi-Fi || Un réseau social || Un câble || Il s'inspire librement du cerveau.
+Que signifie « apprentissage profond » ? || Un réseau de neurones à nombreuses couches || Un apprentissage très lent || Un apprentissage avec peu de données || Un cours avancé || Deep learning.
+Que signifie surapprentissage (overfitting) ? || Le modèle mémorise l'entraînement et généralise mal || Le modèle est trop simple || Le modèle ne démarre pas || Le jeu de données est trop petit seulement || Il échoue sur de nouvelles données.
+À quoi sert un jeu de test ? || Évaluer le modèle sur des données jamais vues || Entraîner le modèle || Supprimer des erreurs || Compresser le modèle || Il mesure la performance réelle.
+Quelle mesure indique la part de bonnes prédictions ? || L'exactitude (accuracy) || Le temps || La mémoire || Le rappel seul || Bonnes prédictions ÷ total.
+Pourquoi les biais des données posent-ils problème ? || Ils peuvent produire des décisions injustes || Ils accélèrent le modèle || Ils protègent la vie privée || Ils améliorent toujours la précision || Un modèle reproduit les biais des données.
+Quel est un enjeu éthique de l'IA ? || La protection de la vie privée || La couleur de l'écran || La taille du clavier || Le prix du câble || Les données personnelles sont sensibles.
+Que fait l'algorithme k-means ? || Regroupe les données en k groupes || Classe selon des étiquettes || Chiffre des fichiers || Prédit un prix seulement || C'est un algorithme de clustering.
+Comment un grand modèle de langage (chatbot) apprend-il ? || En apprenant à prédire du texte sur d'énormes corpus || En recopiant un dictionnaire || En lisant seulement le Web en direct || Sans données || Il généralise à partir de grands volumes de texte.
+Quel élément est essentiel au machine learning ? || Les données || Le papier || Le clavier || Le papier peint || Sans données de qualité, pas de bon modèle.

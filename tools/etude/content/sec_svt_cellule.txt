@@ -1,0 +1,28 @@
+titre: La cellule et l'ADN
+== fiche
+p: La cellule est l'unité de base de tous les êtres vivants. Certains organismes n'ont qu'une cellule (bactéries), d'autres des milliards.
+li: Cellule animale : membrane plasmique, cytoplasme, noyau, mitochondries. Cellule végétale : en plus, paroi, vacuole et chloroplastes.
+li: Cellule eucaryote : noyau délimité par une membrane. Cellule procaryote (bactéries) : pas de vrai noyau.
+li: Le noyau contient les chromosomes faits d'ADN. L'ADN (acide désoxyribonucléique) porte l'information génétique.
+li: Structure de l'ADN : double hélice formée de deux brins ; les bases azotées s'associent par paires : A avec T, C avec G.
+li: Un gène est une portion d'ADN qui code une protéine. Les protéines déterminent les caractères d'un individu.
+li: Mitose : division cellulaire qui donne deux cellules filles identiques, avec le même nombre de chromosomes (croissance, renouvellement).
+li: Méiose : division qui produit les gamètes avec moitié moins de chromosomes.
+note: Exemple : la cellule humaine possède 46 chromosomes ; un gamète n'en possède que 23.
+note: L'ADN est découvert comme structure en double hélice par Watson et Crick en 1953.
+== questions
+Quelle est l'unité de base des êtres vivants ? || La cellule || L'organe || Le tissu || L'atome || Tous les vivants sont faits d'au moins une cellule.
+Quelle structure contient les chromosomes ? || Le noyau || La membrane || La vacuole || Le cytoplasme || Le noyau contrôle l'activité de la cellule.
+Quel organite produit l'énergie pour la cellule ? || La mitochondrie || Le noyau || Le chloroplaste || La paroi || Il réalise la respiration cellulaire.
+Quel organite est propre aux cellules végétales vertes ? || Le chloroplaste || La mitochondrie || Le noyau || Le cytoplasme || Il réalise la photosynthèse.
+Que possède une cellule végétale en plus d'une cellule animale ? || Une paroi, des chloroplastes, une vacuole || Un noyau || Une membrane || Des mitochondries || La paroi donne sa rigidité.
+Qu'est-ce qu'une cellule eucaryote ? || Une cellule avec un noyau délimité || Une cellule sans noyau || Une bactérie || Un virus || Les animaux et les plantes sont eucaryotes.
+Que signifie ADN ? || Acide désoxyribonucléique || Acide dynamique nucléaire || Assemblage de noyaux || Aucun mot || Il porte l'information génétique.
+Quelle est la forme de la molécule d'ADN ? || Une double hélice || Un cercle simple || Un cube || Une chaîne droite à un brin || Découverte par Watson et Crick en 1953.
+Avec quelle base la base A s'associe-t-elle dans l'ADN ? || T || C || G || U || A-T et C-G.
+Avec quelle base la base C s'associe-t-elle dans l'ADN ? || G || A || T || U || Les paires sont complémentaires.
+À quoi correspond un gène sur la molécule d'ADN ? || Une portion d'ADN qui code une protéine || Une cellule entière || Un organe || Un chromosome sexuel || Les gènes déterminent les caractères.
+Combien de chromosomes contient une cellule du corps humain (cellule somatique) ? || 46 || 23 || 48 || 92 || 23 paires.
+Combien de chromosomes contient un spermatozoïde ou un ovule humain ? || 23 || 46 || 92 || 12 || Il a moitié moins de chromosomes.
+Que produit la mitose ? || Deux cellules filles identiques || Quatre gamètes || Un œuf || Une protéine || Elle sert à la croissance et au renouvellement.
+Que produit la méiose ? || Des gamètes avec moitié moins de chromosomes || Deux cellules identiques || Une bactérie || Un virus || Elle a lieu dans les organes reproducteurs.

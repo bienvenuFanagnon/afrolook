@@ -1,0 +1,29 @@
+titre: Chimie organique : alcanes et alcools
+== fiche
+p: La chimie organique étudie les composés du carbone. Les hydrocarbures ne contiennent que du carbone et de l'hydrogène.
+li: Alcanes : hydrocarbures saturés de formule CₙH₂ₙ₊₂. Méthane CH₄, éthane C₂H₆, propane C₃H₈, butane C₄H₁₀, pentane C₅H₁₂.
+li: Nomenclature : préfixe selon le nombre de carbones (méth-, éth-, prop-, but-, pent-, hex-) + terminaison -ane.
+li: Isomères : composés de même formule brute mais de formules développées différentes (butane et méthylpropane).
+li: Combustion complète d'un alcane : alcane + dioxygène → CO₂ + H₂O. Combustion incomplète : formation de CO et de carbone (suie), dangereuse.
+li: Alcools : groupe hydroxyle –OH lié à un carbone saturé. Formule CₙH₂ₙ₊₁OH : méthanol CH₃OH, éthanol C₂H₅OH.
+li: Classes d'alcools : primaire, secondaire, tertiaire selon le nombre de carbones liés au carbone portant –OH.
+li: Éthanol : obtenu par fermentation du sucre ; solvant, désinfectant, carburant (bioéthanol) ; toxique en excès.
+li: Oxydation ménagée d'un alcool primaire : aldéhyde puis acide carboxylique ; d'un alcool secondaire : cétone.
+note: Exemple : combustion du méthane : CH₄ + 2 O₂ → CO₂ + 2 H₂O.
+note: Les alcanes sont les principaux constituants du gaz naturel et du pétrole.
+== questions
+Quelle est la formule générale des alcanes ? || CₙH₂ₙ₊₂ || CₙH₂ₙ || CₙHₙ || CₙH₂ₙ₋₂ || Ce sont des hydrocarbures saturés.
+Quelle est la formule du méthane ? || CH₄ || C₂H₆ || C₃H₈ || CO₂ || Il a un seul atome de carbone.
+Quelle est la formule du propane ? || C₃H₈ || C₃H₆ || C₄H₁₀ || C₂H₆ || 3 carbones : 2 × 3 + 2 = 8 hydrogènes.
+Quelle est la formule du butane ? || C₄H₁₀ || C₄H₈ || C₅H₁₂ || C₃H₈ || 4 carbones : 10 hydrogènes.
+Quelle est la formule du pentane ? || C₅H₁₂ || C₅H₁₀ || C₆H₁₄ || C₄H₁₀ || 5 carbones : 12 hydrogènes.
+Comment appelle-t-on des composés de même formule brute mais de formules développées différentes ? || Des isomères || Des isotopes || Des ions || Des polymères || Exemple : butane et méthylpropane.
+Que produit la combustion complète d'un alcane ? || Du CO₂ et de l'eau || Du CO et du carbone || Du dihydrogène seul || De l'azote || Alcane + O₂ → CO₂ + H₂O.
+Pourquoi la combustion incomplète est-elle dangereuse ? || Elle produit du monoxyde de carbone toxique || Elle produit de l'oxygène || Elle ne produit pas de chaleur || Elle refroidit l'air || Le CO est un gaz mortel sans odeur.
+Quelle est l'équation de la combustion complète du méthane ? || CH₄ + 2 O₂ → CO₂ + 2 H₂O || CH₄ + O₂ → CO + H₂ || CH₄ → C + 2 H₂ || CH₄ + H₂O → CO₂ || L'équation est équilibrée.
+Quel groupe caractérise les alcools ? || Le groupe hydroxyle –OH || Le groupe carboxyle –COOH || Le groupe amine –NH₂ || Le groupe carbonyle seul || Ils ont un –OH lié à un carbone saturé.
+Quelle est la formule de l'éthanol ? || C₂H₅OH || CH₃OH || C₃H₇OH || C₂H₆ || Il est présent dans les boissons alcoolisées.
+Quelle est la formule du méthanol ? || CH₃OH || C₂H₅OH || CH₄ || C₃H₈ || Il est très toxique.
+Comment obtient-on l'éthanol à partir du sucre ? || Par fermentation alcoolique || Par combustion || Par distillation seule du sucre || Par électrolyse || Les levures transforment le glucose en éthanol et CO₂.
+Que forme l'oxydation ménagée d'un alcool secondaire ? || Une cétone || Un acide carboxylique || Un alcane || Un aldéhyde || Les alcools primaires donnent d'abord un aldéhyde.
+Dans quelle classe est le propan-2-ol (le carbone portant –OH est lié à deux autres carbones) ? || Secondaire || Primaire || Tertiaire || Aucune || Le nombre de carbones voisins détermine la classe.

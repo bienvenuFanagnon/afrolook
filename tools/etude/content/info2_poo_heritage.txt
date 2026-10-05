@@ -1,0 +1,29 @@
+titre: Héritage et polymorphisme
+== fiche
+p: L'héritage permet à une classe (fille) de reprendre les attributs et méthodes d'une autre classe (mère) et de les compléter.
+li: Exemple : Animal (classe mère) ; Chien et Chat (classes filles). Chien hérite de Animal.
+li: En Python : class Chien(Animal): ... ; en Java : class Chien extends Animal.
+li: Redéfinition (override) : la classe fille remplace une méthode de la mère par sa propre version.
+li: super() permet d'appeler la méthode ou le constructeur de la classe mère.
+li: Polymorphisme : un même appel de méthode produit des comportements différents selon l'objet (animal.parler() donne « Ouaf » ou « Miaou »).
+li: Classe abstraite : classe qui ne peut pas être instanciée et qui définit des méthodes à implémenter. Interface : contrat de méthodes à fournir.
+li: Relation « est un » (héritage) et « a un » (composition) : un Chien est un Animal ; une Voiture a un Moteur.
+li: Héritage multiple : une classe qui hérite de plusieurs mères (possible en Python, interdit en Java pour les classes).
+note: Exemple : la classe Forme avec la méthode aire() ; Cercle et Rectangle la redéfinissent.
+note: Préférer la composition à l'héritage quand la relation « est un » n'est pas évidente.
+== questions
+Que permet l'héritage ? || Reprendre et compléter une classe existante || Supprimer une classe || Compiler plus vite || Cacher tous les attributs || La classe fille réutilise le code de la mère.
+Quelle syntaxe Python déclare que Chien hérite de Animal ? || class Chien(Animal): || class Chien extends Animal || class Chien : Animal; || class Chien from Animal || C'est la syntaxe Python.
+Quel mot-clé Java exprime l'héritage ? || extends || inherits || implements seulement || super seul || class Chien extends Animal.
+Qu'est-ce que redéfinir une méthode ? || La remplacer dans la classe fille || La supprimer || La rendre privée || La copier || On parle d'override.
+À quoi sert super() ? || Appeler la classe mère || Créer une classe abstraite || Supprimer un objet || Arrêter le programme || Souvent utilisé dans le constructeur.
+Que signifie polymorphisme ? || Un même appel donne des comportements différents selon l'objet || Plusieurs classes portent le même nom || Un objet a plusieurs attributs || Un programme écrit en plusieurs langages || Exemple : parler() de Chien et de Chat.
+Qu'est-ce qu'une classe abstraite ? || Une classe qu'on ne peut pas instancier directement || Une classe sans méthode || Une classe privée || Une classe finale || Elle sert de modèle aux classes filles.
+Qu'est-ce qu'une interface ? || Un contrat de méthodes à implémenter || Une fenêtre graphique || Un attribut || Un objet particulier || Une classe peut en implémenter plusieurs.
+Quelle relation exprime l'héritage ? || « est un » || « a un » || « utilise un » || « est composé de » || Un Chien est un Animal.
+Quelle relation exprime la composition ? || « a un » || « est un » || « hérite de » || « remplace » || Une Voiture a un Moteur.
+Un Rectangle et un Cercle redéfinissent aire(). Quel principe cela illustre-t-il ? || Le polymorphisme || L'encapsulation || La récursivité || Le typage statique || Chaque forme calcule son aire différemment.
+Peut-on instancier directement une classe abstraite ? || Non || Oui || Seulement en Python || Seulement si elle a un constructeur || Elle doit d'abord être étendue.
+Une classe Java peut-elle hériter de plusieurs classes ? || Non, un seul parent || Oui, sans limite || Oui, jusqu'à deux || Seulement des interfaces || Elle peut en revanche implémenter plusieurs interfaces.
+Que peut faire la classe fille avec les attributs de la classe mère ? || Les utiliser (selon leur visibilité) || Les supprimer || Les ignorer toujours || Les rendre inaccessibles à la mère || Les attributs protégés ou publics sont accessibles.
+Pourquoi préfère-t-on parfois la composition à l'héritage ? || Elle est plus flexible quand la relation « est un » n'est pas évidente || Elle est toujours plus rapide || Elle évite les objets || Elle est obligatoire || Elle limite le couplage entre classes.

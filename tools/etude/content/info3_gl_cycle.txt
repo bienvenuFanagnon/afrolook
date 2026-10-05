@@ -1,0 +1,29 @@
+titre: Cycles de développement et tests
+== fiche
+p: Le génie logiciel organise la conception, la réalisation, le test et la maintenance d'un logiciel.
+li: Cycle en cascade : spécification, conception, implémentation, tests, déploiement, maintenance, chaque phase suivant la précédente.
+li: Cycle en V : chaque phase de conception est associée à une phase de test correspondante.
+li: Méthodes agiles (Scrum, Kanban) : développement itératif par petits incréments, livraisons fréquentes, retours des utilisateurs.
+li: Scrum : rôles Product Owner, Scrum Master, équipe ; sprint de 1 à 4 semaines ; backlog ; mêlée quotidienne ; revue et rétrospective.
+li: Tests : unitaires (une fonction), d'intégration (modules ensemble), système, d'acceptation (client). Tests de régression après modification.
+li: Gestion de versions avec Git : commit, branche, merge, pull request ; dépôt distant (GitHub, GitLab).
+li: Intégration continue (CI) : build et tests automatiques à chaque modification ; déploiement continu (CD).
+li: Qualité : revue de code, couverture de tests, dette technique, documentation.
+note: Exemple : un test unitaire vérifie que additionner(2, 3) renvoie 5.
+note: Une branche permet de développer une fonctionnalité sans perturber la version stable.
+== questions
+Quelle méthode enchaîne les phases les unes après les autres ? || Le cycle en cascade || Scrum || Kanban || L'intégration continue || Chaque phase attend la fin de la précédente.
+Quelle méthode propose des itérations courtes et des retours fréquents ? || Les méthodes agiles || Le cycle en cascade || Le cycle en V || La documentation seule || Scrum est un exemple.
+Combien dure en général un sprint Scrum ? || 1 à 4 semaines || 1 jour || 6 mois || 1 an || C'est un cycle court.
+Qui priorise les besoins dans Scrum ? || Le Product Owner || Le Scrum Master || Le testeur || Le client final seul || Il gère le backlog.
+Que fait le Scrum Master ? || Il aide l'équipe à appliquer Scrum || Il écrit tout le code || Il décide du budget || Il teste seul || Il élimine les obstacles.
+Qu'est-ce que le backlog ? || La liste des fonctionnalités à réaliser || La liste des bugs corrigés || Une base de données || Un test automatique || Elle est ordonnée par priorité.
+Quel est le rôle d'un test unitaire ? || Vérifier une petite unité de code || Tester tout le système || Mesurer les performances || Remplacer le client || Exemple : une seule fonction.
+Que vérifie un test d'intégration ? || Que plusieurs modules fonctionnent ensemble || Une seule ligne || L'interface graphique seulement || La sécurité || Il détecte les erreurs d'interfaçage.
+Que valide un test d'acceptation ? || Que le logiciel répond au besoin du client || Le temps de compilation || La syntaxe || Les versions || Il est souvent réalisé avec le client.
+Qu'est-ce qu'un test de régression ? || Un test qui vérifie que les modifications n'ont rien cassé || Un test de performance || Un test sur une nouvelle fonction seulement || Un test manuel || Il rejoue des tests existants.
+Quel outil sert à gérer les versions du code ? || Git || Excel || Photoshop || Word || Git suit les modifications.
+À quoi sert une branche Git ? || Développer une fonctionnalité sans toucher à la version stable || Supprimer le dépôt || Compiler le code || Sauvegarder des images || On la fusionne ensuite (merge).
+Que signifie CI ? || Intégration continue || Code interne || Contrôle d'identité || Connexion internet || Les tests tournent à chaque modification.
+Qu'est-ce que la dette technique ? || Les raccourcis de conception qui coûteront du temps plus tard || Une dette d'argent || Un bug || Une licence || Plus elle est élevée, plus la maintenance est difficile.
+Quel est l'intérêt d'une revue de code ? || Améliorer la qualité et partager les connaissances || Remplacer les tests || Allonger les délais || Supprimer la documentation || Un collègue relit le code.

@@ -1,0 +1,28 @@
+titre: Équations du second degré
+== fiche
+p: Une équation du second degré s'écrit ax² + bx + c = 0 avec a ≠ 0.
+li: Discriminant : Δ = b² − 4ac.
+li: Si Δ > 0 : deux solutions réelles x₁ = (−b − √Δ) / (2a) et x₂ = (−b + √Δ) / (2a).
+li: Si Δ = 0 : une solution double x = −b / (2a).
+li: Si Δ < 0 : aucune solution réelle.
+li: Somme et produit des racines : x₁ + x₂ = −b/a et x₁ × x₂ = c/a.
+li: Forme factorisée : ax² + bx + c = a(x − x₁)(x − x₂) quand Δ ≥ 0.
+li: Signe du trinôme : pour a > 0 il est du signe de a à l'extérieur des racines et du signe contraire entre les racines.
+note: Exemple : x² − 5x + 6 = 0 : Δ = 25 − 24 = 1 ; x = (5 ± 1)/2 donc 2 ou 3.
+note: Pour x² − 4 = 0, on peut factoriser (x − 2)(x + 2) = 0.
+== questions
+Quelle est la forme générale d'une équation du second degré ? || ax² + bx + c = 0 avec a ≠ 0 || ax + b = 0 || ax³ + b = 0 || a = 0 || Le terme en x² doit être présent.
+Quelle est la formule du discriminant ? || Δ = b² − 4ac || Δ = b² + 4ac || Δ = 4ac − b² || Δ = −b / 2a || Il détermine le nombre de solutions.
+Combien de solutions réelles si Δ > 0 ? || Deux || Une || Aucune || Trois || Deux solutions distinctes.
+Combien de solutions réelles si Δ = 0 ? || Une (double) || Deux || Aucune || Trois || x = −b / (2a).
+Combien de solutions réelles si Δ < 0 ? || Aucune || Une || Deux || Une infinité || La racine carrée d'un négatif n'est pas réelle.
+Que vaut Δ pour x² − 5x + 6 = 0 ? || 1 || 49 || 11 || 25 || 25 − 24 = 1.
+Quelles sont les solutions de x² − 5x + 6 = 0 ? || 2 et 3 || −2 et −3 || 1 et 6 || 5 et 6 || (5 ± 1) / 2.
+Quelles sont les solutions de x² − 4 = 0 ? || 2 et −2 || 4 || 2 seulement || 16 et −16 || x² = 4.
+Que vaut Δ pour x² + x + 1 = 0 ? || −3 || 3 || 1 || 0 || 1 − 4 = −3 : pas de solution réelle.
+Quelle est la somme des racines de x² − 7x + 10 = 0 ? || 7 || −7 || 10 || 3 || x₁ + x₂ = −b/a = 7.
+Quel est le produit des racines de x² − 7x + 10 = 0 ? || 10 || 7 || −10 || 3 || x₁ × x₂ = c/a = 10.
+Quelles sont les racines de x² − 7x + 10 = 0 ? || 2 et 5 || 1 et 10 || −2 et −5 || 3 et 4 || 2 + 5 = 7 et 2 × 5 = 10.
+Quelle est la solution double de x² − 6x + 9 = 0 ? || 3 || −3 || 9 || 6 || Δ = 0 et x = 6/2.
+Quel est le signe de x² − 4 pour x entre −2 et 2 ? || Négatif || Positif || Nul || Impossible à dire || Entre les racines, le trinôme est du signe contraire à a.
+Quelles sont les solutions de 2x² − 8 = 0 ? || 2 et −2 || 4 et −4 || 8 || 0 || x² = 4.

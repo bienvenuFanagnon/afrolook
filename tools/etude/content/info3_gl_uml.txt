@@ -1,0 +1,29 @@
+titre: Modélisation UML
+== fiche
+p: UML (Unified Modeling Language) est un langage graphique de modélisation des logiciels.
+li: Diagramme de cas d'utilisation : montre les acteurs (utilisateurs, systèmes externes) et les fonctionnalités qu'ils utilisent.
+li: Diagramme de classes : classes, attributs, méthodes et relations (association, héritage, composition, agrégation).
+li: Diagramme de séquence : échanges de messages entre objets dans le temps (ligne de vie verticale, flèches horizontales).
+li: Diagramme d'activité : enchaînement des actions, décisions et parallélisme (workflow).
+li: Diagramme d'états-transitions : états d'un objet et événements qui le font changer d'état.
+li: Cardinalités : 1, 0..1, 1..*, 0..*. Exemple : un client passe 0..* commandes.
+li: Visibilité : + public, − privé, # protégé.
+li: Un modèle conceptuel de données (MCD, méthode Merise) se traduit en modèle logique relationnel (tables).
+note: Exemple : dans un diagramme de classes, la flèche à triangle vide pointe vers la classe mère (héritage).
+note: Un acteur est extérieur au système ; un cas d'utilisation est un service rendu à l'acteur.
+== questions
+Que signifie UML ? || Unified Modeling Language || Universal Machine Learning || Unique Markup Language || Unit Management Logic || C'est un langage de modélisation graphique.
+Quel diagramme montre les acteurs et les fonctionnalités d'un système ? || Le diagramme de cas d'utilisation || Le diagramme de classes || Le diagramme de séquence || Le diagramme d'états || Il décrit le besoin vu de l'extérieur.
+Quel diagramme décrit les classes et leurs relations ? || Le diagramme de classes || Le diagramme d'activité || Le diagramme de cas d'utilisation || Le diagramme de séquence || Il montre attributs et méthodes.
+Quel diagramme montre les échanges de messages dans le temps ? || Le diagramme de séquence || Le diagramme de classes || Le diagramme de composants || Le diagramme de déploiement || Il utilise des lignes de vie.
+Quel diagramme décrit l'enchaînement des actions d'un processus ? || Le diagramme d'activité || Le diagramme de classes || Le diagramme de cas d'utilisation || Le diagramme d'objets || Il ressemble à un organigramme.
+Quel diagramme décrit les états successifs d'un objet ? || Le diagramme d'états-transitions || Le diagramme de classes || Le diagramme de séquence || Le diagramme de packages || Les événements provoquent les transitions.
+Qu'est-ce qu'un acteur dans un cas d'utilisation ? || Une entité extérieure qui interagit avec le système || Une classe interne || Un attribut || Une base de données || Il peut être une personne ou un système.
+Que représente le signe « + » devant un attribut ? || Public || Privé || Protégé || Statique || − signifie privé, # protégé.
+Que représente le signe « − » devant un attribut ? || Privé || Public || Protégé || Final || Il n'est visible que dans la classe.
+Que signifie la cardinalité 0..* ? || Zéro ou plusieurs || Exactement un || Un ou plusieurs || Au plus un || Elle indique qu'il peut n'y en avoir aucun.
+Que signifie la cardinalité 1..* ? || Un ou plusieurs || Zéro ou plusieurs || Exactement un || Zéro ou un || Au moins un.
+Comment représente-t-on l'héritage dans un diagramme de classes ? || Une flèche à triangle vide vers la classe mère || Un losange plein || Une ligne pointillée || Un cercle || Le triangle pointe vers la classe générale.
+Quelle relation exprime « est composé de » avec dépendance forte ? || La composition (losange plein) || L'héritage || L'association simple || La dépendance || Si le tout disparaît, les parties aussi.
+Que fait-on à partir d'un MCD ? || On le traduit en modèle relationnel (tables) || On le compile || On l'installe || On le chiffre || Les entités deviennent des tables.
+Dans un diagramme de séquence, que représente une ligne de vie verticale ? || L'existence d'un objet dans le temps || Une classe || Un attribut || Une exception || Le temps s'écoule de haut en bas.

@@ -1,0 +1,28 @@
+titre: Modèles OSI et TCP/IP
+== fiche
+p: Un réseau informatique relie des machines pour qu'elles échangent des données. Les protocoles sont les règles de la communication.
+li: Modèle OSI : 7 couches. 1 Physique, 2 Liaison de données, 3 Réseau, 4 Transport, 5 Session, 6 Présentation, 7 Application.
+li: Modèle TCP/IP : 4 couches. Accès réseau, Internet (IP), Transport (TCP/UDP), Application (HTTP, FTP, SMTP, DNS…).
+li: IP : adressage et routage des paquets. TCP : transport fiable avec connexion, ordre et reprise des erreurs. UDP : transport sans connexion, rapide (vidéo, jeux).
+li: Équipements : câble, carte réseau, concentrateur (hub), commutateur (switch, couche 2), routeur (couche 3), pare-feu.
+li: Topologies : bus, étoile, anneau, maillée. L'étoile est la plus répandue.
+li: Types de réseaux : LAN (local), MAN (métropolitain), WAN (étendu, Internet).
+li: Ports courants : HTTP 80, HTTPS 443, FTP 21, SSH 22, SMTP 25, DNS 53.
+note: Exemple : en visitant un site, HTTP (application) utilise TCP (transport) sur IP (internet) via Wi-Fi ou Ethernet (accès réseau).
+note: Mnémonique OSI de bas en haut : Physique, Liaison, Réseau, Transport, Session, Présentation, Application.
+== questions
+Combien de couches compte le modèle OSI ? || 7 || 4 || 5 || 3 || Physique à Application.
+Combien de couches compte le modèle TCP/IP ? || 4 || 7 || 5 || 3 || Accès réseau, Internet, Transport, Application.
+Quelle est la couche 1 du modèle OSI ? || Physique || Application || Réseau || Transport || Elle gère les signaux électriques ou radio.
+Quelle couche OSI gère le routage des paquets ? || Réseau || Transport || Liaison || Application || L'IP y travaille.
+Quel protocole assure un transport fiable avec connexion ? || TCP || UDP || IP || ARP || Il garantit ordre et reprise d'erreur.
+Quel protocole de transport est sans connexion et rapide ? || UDP || TCP || FTP || HTTP || Utilisé en streaming et en jeux.
+À quoi sert le protocole IP ? || À adresser et acheminer les paquets || À traduire des noms || À chiffrer les données || À afficher les pages || Il fonctionne couche Internet.
+Quel service traduit un nom de domaine en adresse IP ? || DNS || DHCP || FTP || SMTP || Il évite de retenir les adresses numériques.
+Quel port est utilisé par HTTPS ? || 443 || 80 || 21 || 22 || HTTPS est HTTP sécurisé par TLS.
+Quel port est utilisé par HTTP ? || 80 || 443 || 25 || 53 || HTTP est le protocole du Web.
+Quel port est utilisé par SSH ? || 22 || 21 || 25 || 80 || SSH permet l'accès à distance sécurisé.
+Quel équipement relie des réseaux différents et fait le routage ? || Le routeur || Le switch || Le hub || Le câble || Il travaille au niveau IP.
+Quelle topologie est la plus répandue dans les réseaux locaux ? || L'étoile || Le bus || L'anneau || La maille seule || Chaque machine est reliée à un commutateur.
+Que signifie LAN ? || Réseau local || Réseau étendu || Réseau mondial || Réseau sans fil || Local Area Network.
+Que signifie WAN ? || Réseau étendu || Réseau local || Réseau de bureaux seulement || Réseau privé virtuel || Internet est le plus grand WAN.

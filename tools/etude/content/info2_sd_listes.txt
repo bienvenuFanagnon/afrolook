@@ -1,0 +1,28 @@
+titre: Listes, piles et files
+== fiche
+p: Une structure de données organise des informations pour les stocker et les retrouver efficacement.
+li: Tableau : éléments contigus en mémoire, accès direct par indice en temps constant O(1), insertion au milieu coûteuse O(n).
+li: Liste chaînée : chaque élément (nœud) contient une valeur et un pointeur vers le suivant. Insertion en tête en O(1), accès à un élément en O(n).
+li: Pile (stack) : LIFO, dernier entré, premier sorti. Opérations : empiler (push), dépiler (pop), sommet (peek).
+li: File (queue) : FIFO, premier entré, premier sorti. Opérations : enfiler (enqueue), défiler (dequeue).
+li: Usages : pile pour l'historique « annuler », la gestion des appels de fonctions, l'évaluation d'expressions ; file pour les tâches à traiter dans l'ordre d'arrivée (impression, attente).
+li: Complexité : O(1) constant, O(log n) logarithmique, O(n) linéaire, O(n²) quadratique.
+li: Table de hachage (dictionnaire) : accès moyen en O(1) grâce à une fonction de hachage.
+note: Exemple : empiler 1, 2, 3 puis dépiler donne 3 en premier (LIFO). Enfiler 1, 2, 3 puis défiler donne 1 en premier (FIFO).
+note: En Python, une liste sert souvent de pile (append et pop) ; collections.deque convient pour une file.
+== questions
+Que signifie LIFO ? || Dernier entré, premier sorti || Premier entré, premier sorti || Dernier entré, dernier sorti || Premier entré, dernier entré || C'est le principe de la pile.
+Que signifie FIFO ? || Premier entré, premier sorti || Dernier entré, premier sorti || Dernier entré, dernier sorti || Premier sorti, dernier entré || C'est le principe de la file.
+Quelle structure suit le principe LIFO ? || La pile || La file || Le tableau seul || La table de hachage || On ajoute et retire au sommet.
+Quelle structure suit le principe FIFO ? || La file || La pile || L'arbre binaire || Le graphe || Comme une file d'attente.
+Quel élément sort en premier d'une pile où l'on a empilé 1, 2, 3 ? || 3 || 1 || 2 || Aucun || Le dernier empilé est dépilé en premier.
+Quel élément sort en premier d'une file où l'on a enfilé 1, 2, 3 ? || 1 || 3 || 2 || Aucun || Le premier arrivé est servi en premier.
+Quelle est la complexité de l'accès à un élément d'un tableau par son indice ? || O(1) || O(n) || O(log n) || O(n²) || L'adresse se calcule directement.
+Quelle est la complexité de l'insertion en tête d'une liste chaînée ? || O(1) || O(n) || O(n²) || O(log n) || Il suffit de changer un pointeur.
+Quelle structure convient pour le bouton « annuler » d'un éditeur ? || Une pile || Une file || Un tableau trié || Une matrice || On annule la dernière action en premier.
+Quelle structure convient pour une file d'impression ? || Une file || Une pile || Un arbre || Une table de hachage || Les documents s'impriment dans l'ordre d'arrivée.
+Que contient un nœud d'une liste chaînée ? || Une valeur et un pointeur vers le suivant || Seulement une valeur || Seulement un pointeur || Un indice || C'est ce qui forme la chaîne.
+Quel est l'inconvénient d'une liste chaînée par rapport à un tableau ? || L'accès par position est en O(n) || L'insertion en tête est lente || Elle est limitée en taille fixe || Elle ne stocke que des entiers || Il faut parcourir les nœuds.
+Que fait l'opération « pop » sur une pile ? || Elle retire l'élément du sommet || Elle ajoute un élément || Elle trie la pile || Elle vide la mémoire || Elle renvoie souvent la valeur retirée.
+Quelle est la complexité moyenne de l'accès dans une table de hachage ? || O(1) || O(n) || O(n²) || O(log n²) || La fonction de hachage donne directement l'emplacement.
+Que signifie O(n) ? || Le temps croît proportionnellement à n || Le temps est constant || Le temps croît comme n² || Le temps croît comme log n || Complexité linéaire.
