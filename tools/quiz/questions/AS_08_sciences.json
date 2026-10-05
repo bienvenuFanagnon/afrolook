@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel pays est le berceau du papier, de la poudre, de l'imprimerie et de la boussole ?",
+"c": "La Chine",
+"w": [
+"L'Inde",
+"Le Japon",
+"L'Égypte"
+],
+"e": "On parle des « quatre grandes inventions » de l'ancienne Chine."
+},
+{
+"q": "Quel matériau a été perfectionné en Chine vers l'an 105 pour écrire plus facilement ?",
+"c": "Le papier",
+"w": [
+"Le papyrus",
+"Le parchemin",
+"Le bambou"
+],
+"e": "Il a ensuite voyagé en Asie centrale, puis en Europe."
+},
+{
+"q": "Quel pays a inventé le train à grande vitesse « Shinkansen » en 1964 ?",
+"c": "Le Japon",
+"w": [
+"La France",
+"L'Allemagne",
+"La Chine"
+],
+"e": "Il a été mis en service juste avant les Jeux olympiques de Tokyo."
+},
+{
+"q": "Quelle sonde chinoise a atterri sur la face cachée de la Lune en 2019 ?",
+"c": "Chang'e 4",
+"w": [
+"Apollo 11",
+"Chandrayaan-2",
+"Hayabusa2"
+],
+"e": "C'était une première mondiale."
+},
+{
+"q": "Quel pays a envoyé la mission Chandrayaan-3 près du pôle Sud de la Lune en 2023 ?",
+"c": "L'Inde",
+"w": [
+"La Chine",
+"Le Japon",
+"La Corée du Sud"
+],
+"e": "Il est devenu le quatrième pays à se poser sur la Lune."
+},
+{
+"q": "Comment s'appelle l'agence spatiale de l'Inde ?",
+"c": "L'ISRO",
+"w": [
+"La JAXA",
+"La CNSA",
+"La NASA"
+],
+"e": "Elle a été fondée en 1969."
+},
+{
+"q": "Quelle entreprise japonaise a lancé le Walkman en 1979 ?",
+"c": "Sony",
+"w": [
+"Panasonic",
+"Toshiba",
+"Nintendo"
+],
+"e": "Il a permis d'écouter de la musique partout."
+},
+{
+"q": "Quelle entreprise sud-coréenne est l'un des plus grands fabricants de téléphones, avec sa gamme « Galaxy » ?",
+"c": "Samsung",
+"w": [
+"LG",
+"Huawei",
+"Xiaomi"
+],
+"e": "Elle fabrique aussi des téléviseurs et des puces électroniques."
+},
+{
+"q": "Quel pays est connu pour ses robots humanoïdes, comme Asimo de Honda ?",
+"c": "Le Japon",
+"w": [
+"La France",
+"Le Canada",
+"L'Inde"
+],
+"e": "Asimo pouvait marcher, courir et monter des escaliers."
+},
+{
+"q": "Quel mammifère australien pond des œufs ?",
+"c": "L'ornithorynque",
+"w": [
+"Le koala",
+"Le wombat",
+"Le kangourou"
+],
+"e": "Il a un bec de canard et une queue de castor."
+},
+{
+"q": "Quel animal d'Australie dort près de vingt heures par jour et mange des feuilles d'eucalyptus ?",
+"c": "Le koala",
+"w": [
+"Le kangourou",
+"Le wombat",
+"Le dingo"
+],
+"e": "C'est un marsupial, pas un ours."
+},
+{
+"q": "Quel est le plus grand reptile du monde, présent en Australie et en Asie du Sud-Est ?",
+"c": "Le crocodile marin",
+"w": [
+"L'alligator",
+"Le dragon de Komodo",
+"Le gavial"
+],
+"e": "Il peut dépasser cinq mètres de long."
+},
+{
+"q": "Quel est le plus grand lézard du monde, qui vit en Indonésie ?",
+"c": "Le dragon de Komodo",
+"w": [
+"L'iguane vert",
+"Le varan du Nil",
+"Le caméléon"
+],
+"e": "Il peut mesurer trois mètres de long."
+},
+{
+"q": "Quel grand félin rayé vit en Inde et au Bangladesh ?",
+"c": "Le tigre du Bengale",
+"w": [
+"Le lion d'Asie",
+"Le léopard des neiges",
+"Le jaguar"
+],
+"e": "C'est l'animal national de l'Inde."
+},
+{
+"q": "Quel grand animal d'Asie est plus petit que son cousin africain et a de plus petites oreilles ?",
+"c": "L'éléphant d'Asie",
+"w": [
+"Le rhinocéros",
+"Le buffle",
+"Le chameau"
+],
+"e": "On l'utilise parfois pour le travail et les cérémonies."
+},
+{
+"q": "Quel scientifique indien a reçu le prix Nobel de physique en 1930 pour ses travaux sur la diffusion de la lumière ?",
+"c": "C. V. Raman",
+"w": [
+"Satyendra Nath Bose",
+"Homi Bhabha",
+"Subrahmanyan Chandrasekhar"
+],
+"e": "Il est le premier Asiatique à avoir reçu un Nobel scientifique."
+},
+{
+"q": "Quel mathématicien indien autodidacte a collaboré avec Hardy à Cambridge ?",
+"c": "Srinivasa Ramanujan",
+"w": [
+"Aryabhata",
+"Brahmagupta",
+"Harish-Chandra"
+],
+"e": "Il est mort à 32 ans, après avoir laissé près de 4 000 résultats."
+},
+{
+"q": "Quel concept mathématique a été développé en Inde et est devenu un nombre à part entière ?",
+"c": "Le zéro",
+"w": [
+"Le pi",
+"L'infini",
+"Les fractions"
+],
+"e": "On le trouve notamment chez le mathématicien Brahmagupta."
+},
+{
+"q": "Comment appelle-t-on les chiffres que nous utilisons aujourd'hui, nés en Inde et transmis par les Arabes ?",
+"c": "Les chiffres indo-arabes",
+"w": [
+"Les chiffres romains",
+"Les chiffres babyloniens",
+"Les chiffres mayas"
+],
+"e": "Ils remplacent depuis des siècles les chiffres romains en Europe."
+},
+{
+"q": "Quelle invention de trois chercheurs japonais a reçu le prix Nobel de physique en 2014 ?",
+"c": "La diode électroluminescente bleue",
+"w": [
+"Le laser",
+"Le transistor",
+"Le disque dur"
+],
+"e": "Elle a permis d'inventer les ampoules à économie d'énergie."
+},
+{
+"q": "Quel chercheur japonais a reçu le prix Nobel de médecine en 2012 pour ses travaux sur les cellules souches ?",
+"c": "Shinya Yamanaka",
+"w": [
+"Yoshinori Ohsumi",
+"Satoshi Ōmura",
+"Tasuku Honjo"
+],
+"e": "Il a montré qu'on peut reprogrammer des cellules adultes."
+},
+{
+"q": "Quel chercheur japonais a reçu le prix Nobel de médecine en 2016 pour ses travaux sur l'autophagie ?",
+"c": "Yoshinori Ohsumi",
+"w": [
+"Shinya Yamanaka",
+"Satoshi Ōmura",
+"Tasuku Honjo"
+],
+"e": "L'autophagie est le processus par lequel les cellules recyclent leurs déchets."
+},
+{
+"q": "Quelle chercheuse chinoise a reçu le prix Nobel de médecine en 2015 pour un traitement contre le paludisme ?",
+"c": "Tu Youyou",
+"w": [
+"Chien-Shiung Wu",
+"Li Wenliang",
+"Zhong Nanshan"
+],
+"e": "Elle a découvert l'artémisinine à partir d'une plante."
+},
+{
+"q": "Quel physicien japonais est le premier Japonais à avoir reçu un prix Nobel, en 1949 ?",
+"c": "Hideki Yukawa",
+"w": [
+"Shin'ichirō Tomonaga",
+"Leo Esaki",
+"Masatoshi Koshiba"
+],
+"e": "Il avait prédit l'existence du méson."
+},
+{
+"q": "Quelle bactérie, découverte par deux Australiens, est à l'origine des ulcères de l'estomac ?",
+"c": "Helicobacter pylori",
+"w": [
+"Escherichia coli",
+"Salmonella",
+"Listeria"
+],
+"e": "Barry Marshall a avalé la bactérie pour le prouver."
+},
+{
+"q": "Quel Australien a inventé la boîte noire pour les avions ?",
+"c": "David Warren",
+"w": [
+"Howard Florey",
+"John Logie Baird",
+"Lawrence Hargrave"
+],
+"e": "Il l'a imaginée après un accident d'avion dans les années 1950."
+},
+{
+"q": "Quel organisme australien de recherche a joué un rôle important dans l'invention du Wi-Fi ?",
+"c": "Le CSIRO",
+"w": [
+"La NASA",
+"Le CERN",
+"Le MIT"
+],
+"e": "Ses chercheurs ont déposé des brevets dans les années 1990."
+},
+{
+"q": "Comment appelle-t-on la zone de volcans et de séismes qui entoure l'océan Pacifique ?",
+"c": "La ceinture de feu",
+"w": [
+"L'arc des Antilles",
+"La dorsale atlantique",
+"Le rift est-africain"
+],
+"e": "Elle compte environ les trois quarts des volcans actifs du monde."
+},
+{
+"q": "Quel mot japonais désigne une vague géante provoquée par un séisme sous-marin ?",
+"c": "Tsunami",
+"w": [
+"Typhon",
+"Kamikaze",
+"Tsukimi"
+],
+"e": "Il signifie « vague de port »."
+},
+{
+"q": "Quel volcan indonésien a explosé en 1883 avec un bruit entendu à des milliers de kilomètres ?",
+"c": "Krakatoa",
+"w": [
+"Tambora",
+"Merapi",
+"Pinatubo"
+],
+"e": "Son explosion a provoqué un énorme tsunami."
+},
+{
+"q": "Quel volcan indonésien a explosé en 1815 et provoqué « l'année sans été » en Europe ?",
+"c": "Tambora",
+"w": [
+"Krakatoa",
+"Merapi",
+"Pinatubo"
+],
+"e": "Sa poussière a refroidi le climat de la planète."
+},
+{
+"q": "Quel événement de décembre 2004 a déclenché un immense tsunami dans l'océan Indien ?",
+"c": "Un séisme au large de Sumatra",
+"w": [
+"L'éruption du Krakatoa",
+"Un typhon",
+"La chute d'une météorite"
+],
+"e": "Il a fait plus de 200 000 morts dans plusieurs pays."
+},
+{
+"q": "Quelle catastrophe de mars 2011 a provoqué l'accident nucléaire de Fukushima ?",
+"c": "Un séisme suivi d'un tsunami",
+"w": [
+"Un typhon",
+"Une éruption volcanique",
+"Une explosion de gaz"
+],
+"e": "Le séisme de 9 de magnitude était l'un des plus puissants jamais enregistrés."
+},
+{
+"q": "Quel pays a construit le barrage des Trois-Gorges, l'une des plus grandes centrales hydroélectriques du monde ?",
+"c": "La Chine",
+"w": [
+"L'Inde",
+"Le Brésil",
+"La Russie"
+],
+"e": "Il a été mis en service au début des années 2000."
+},
+{
+"q": "Sur quel fleuve est construit le barrage des Trois-Gorges ?",
+"c": "Le Yangtsé",
+"w": [
+"Le fleuve Jaune",
+"Le Mékong",
+"Le Gange"
+],
+"e": "Il a créé un immense lac de retenue."
+},
+{
+"q": "Quelle ville possède un train à sustentation magnétique qui relie le centre à l'aéroport depuis 2004 ?",
+"c": "Shanghai",
+"w": [
+"Tokyo",
+"Séoul",
+"Dubaï"
+],
+"e": "Il peut dépasser les 400 km/h."
+},
+{
+"q": "Quel pays possède le plus long réseau de trains à grande vitesse du monde ?",
+"c": "La Chine",
+"w": [
+"Le Japon",
+"La France",
+"L'Espagne"
+],
+"e": "Il compte des dizaines de milliers de kilomètres de lignes."
+},
+{
+"q": "Quelle est la plus haute tour du monde, située à Dubaï ?",
+"c": "Le Burj Khalifa",
+"w": [
+"La Shanghai Tower",
+"La Tokyo Skytree",
+"La Petronas Tower"
+],
+"e": "Elle mesure plus de 800 mètres."
+},
+{
+"q": "Comment s'appelait le premier satellite indien, lancé en 1975 ?",
+"c": "Aryabhata",
+"w": [
+"Chandrayaan",
+"Mangalyaan",
+"Insat"
+],
+"e": "Il a été lancé depuis la Russie."
+},
+{
+"q": "Quelle station spatiale chinoise est en orbite depuis 2021 ?",
+"c": "Tiangong",
+"w": [
+"Mir",
+"Skylab",
+"Salyut"
+],
+"e": "Son nom signifie « Palais céleste »."
+},
+{
+"q": "Comment s'appelle le robot chinois qui a roulé sur Mars en 2021 ?",
+"c": "Zhurong",
+"w": [
+"Curiosity",
+"Perseverance",
+"Sojourner"
+],
+"e": "Il a été transporté par la mission Tianwen-1."
+},
+{
+"q": "Comment s'appelle la sonde indienne qui s'est mise en orbite autour de Mars en 2014 ?",
+"c": "Mangalyaan",
+"w": [
+"Chandrayaan",
+"Hope",
+"Maven"
+],
+"e": "L'Inde a réussi du premier coup avec un budget très faible."
+},
+{
+"q": "Comment s'appelle la sonde japonaise qui a rapporté des échantillons de l'astéroïde Ryugu en 2020 ?",
+"c": "Hayabusa2",
+"w": [
+"Voyager",
+"Rosetta",
+"Akatsuki"
+],
+"e": "Hayabusa veut dire « faucon pèlerin » en japonais."
+},
+{
+"q": "Quel pays a construit FAST, le plus grand radiotélescope à antenne unique du monde ?",
+"c": "La Chine",
+"w": [
+"L'Inde",
+"Le Japon",
+"Les États-Unis"
+],
+"e": "Il est installé dans une vallée du Guizhou."
+},
+{
+"q": "Quel pays d'Océanie accueille une partie du futur radiotélescope géant SKA, avec l'Afrique du Sud ?",
+"c": "L'Australie",
+"w": [
+"La Nouvelle-Zélande",
+"Fidji",
+"Les Philippines"
+],
+"e": "Le site australien se trouve dans la région de Murchison."
+},
+{
+"q": "Quel astrophysicien indien a donné son nom à la limite de masse des étoiles naines blanches ?",
+"c": "Subrahmanyan Chandrasekhar",
+"w": [
+"Jayant Narlikar",
+"Meghnad Saha",
+"Homi Bhabha"
+],
+"e": "Il a reçu le prix Nobel de physique en 1983."
+},
+{
+"q": "Quel physicien indien a donné son nom à la famille de particules appelées bosons ?",
+"c": "Satyendra Nath Bose",
+"w": [
+"C. V. Raman",
+"Homi Bhabha",
+"Meghnad Saha"
+],
+"e": "Ses travaux ont été développés avec Einstein."
+},
+{
+"q": "Quel scientifique, surnommé « l'homme-missile », est devenu président de l'Inde en 2002 ?",
+"c": "A. P. J. Abdul Kalam",
+"w": [
+"Homi Bhabha",
+"Vikram Sarabhai",
+"Narendra Modi"
+],
+"e": "Il était très aimé des étudiants."
+},
+{
+"q": "Quel agronome chinois est considéré comme le père du riz hybride ?",
+"c": "Yuan Longping",
+"w": [
+"Mo Yan",
+"Deng Xiaoping",
+"Tu Youyou"
+],
+"e": "Ses travaux ont aidé à nourrir des centaines de millions de personnes."
+},
+{
+"q": "Quelle physicienne sino-américaine a montré en 1956 la violation de la parité en physique ?",
+"c": "Chien-Shiung Wu",
+"w": [
+"Marie Curie",
+"Lise Meitner",
+"Maria Goeppert Mayer"
+],
+"e": "On l'appelait « la première dame de la physique »."
+},
+{
+"q": "Quelle entreprise japonaise a conçu le disque compact avec Philips ?",
+"c": "Sony",
+"w": [
+"Toshiba",
+"Panasonic",
+"Nintendo"
+],
+"e": "Le CD est apparu en 1982."
+},
+{
+"q": "Quel pays est à l'origine du code QR, inventé en 1994 ?",
+"c": "Le Japon",
+"w": [
+"La Corée du Sud",
+"La Chine",
+"Les États-Unis"
+],
+"e": "Il a été créé par l'entreprise Denso Wave."
+},
+{
+"q": "Quel Japonais a inventé les nouilles instantanées en 1958 ?",
+"c": "Momofuku Ando",
+"w": [
+"Akio Morita",
+"Soichiro Honda",
+"Kiichiro Toyoda"
+],
+"e": "Elles sont devenues l'un des aliments les plus consommés au monde."
+},
+{
+"q": "Quelle console de jeux Nintendo, sortie en 2017, peut être utilisée à la maison ou en déplacement ?",
+"c": "La Switch",
+"w": [
+"La Wii",
+"La Game Boy",
+"La PlayStation"
+],
+"e": "Elle a connu un énorme succès mondial."
+},
+{
+"q": "Quel chercheur japonais a reçu le prix Nobel de chimie 2019 pour ses travaux sur la batterie lithium-ion ?",
+"c": "Akira Yoshino",
+"w": [
+"Shuji Nakamura",
+"Shinya Yamanaka",
+"Hideki Shirakawa"
+],
+"e": "Il a partagé le prix avec deux chercheurs américains et britannique."
+},
+{
+"q": "Quel pays est le premier producteur mondial de terres rares, indispensables à l'électronique ?",
+"c": "La Chine",
+"w": [
+"L'Inde",
+"L'Australie",
+"Le Brésil"
+],
+"e": "Elles sont utilisées dans les téléphones et les éoliennes."
+},
+{
+"q": "Dans quel pays se trouve TSMC, le plus grand fabricant de puces électroniques du monde ?",
+"c": "Taïwan",
+"w": [
+"La Corée du Sud",
+"Le Japon",
+"La Chine"
+],
+"e": "Ses puces équipent de nombreux téléphones et ordinateurs."
+},
+{
+"q": "Quel pays est le premier producteur mondial de panneaux solaires ?",
+"c": "La Chine",
+"w": [
+"Le Japon",
+"L'Allemagne",
+"L'Inde"
+],
+"e": "Il fabrique la majorité des panneaux utilisés dans le monde."
+},
+{
+"q": "Quel pays a vu naître la marque de drones DJI, l'une des plus utilisées au monde ?",
+"c": "La Chine",
+"w": [
+"Le Japon",
+"La Corée du Sud",
+"Taïwan"
+],
+"e": "Son siège est à Shenzhen."
+},
+{
+"q": "Quelle famille japonaise a fondé Toyota après avoir inventé un métier à tisser automatique ?",
+"c": "La famille Toyoda",
+"w": [
+"La famille Honda",
+"La famille Suzuki",
+"La famille Mitsubishi"
+],
+"e": "Le nom a été légèrement modifié pour la marque."
+},
+{
+"q": "Quelle est la fosse océanique la plus profonde du monde, dans le Pacifique ?",
+"c": "La fosse des Mariannes",
+"w": [
+"La fosse de Java",
+"La fosse du Japon",
+"La fosse de Porto Rico"
+],
+"e": "Elle descend à près de 11 000 mètres."
+},
+{
+"q": "Quel savant chinois a inventé en l'an 132 le premier sismoscope ?",
+"c": "Zhang Heng",
+"w": [
+"Cai Lun",
+"Shen Kuo",
+"Zu Chongzhi"
+],
+"e": "Son appareil indiquait la direction d'un séisme éloigné."
+},
+{
+"q": "Quel astronome de Samarcande a fait construire un grand observatoire au XVe siècle ?",
+"c": "Ulugh Beg",
+"w": [
+"Al-Khwarizmi",
+"Omar Khayyam",
+"Avicenne"
+],
+"e": "Il était à la fois prince et savant."
+},
+{
+"q": "Quel astronome et mathématicien indien du Ve siècle a calculé pi avec précision et proposé que la Terre tourne ?",
+"c": "Aryabhata",
+"w": [
+"Brahmagupta",
+"Ramanujan",
+"Bhaskara"
+],
+"e": "Le premier satellite indien porte son nom."
+},
+{
+"q": "Quel médecin de l'Inde ancienne est considéré comme le père de la chirurgie ?",
+"c": "Sushruta",
+"w": [
+"Charaka",
+"Aryabhata",
+"Patanjali"
+],
+"e": "Il décrivait déjà des opérations du nez et de la cataracte."
+},
+{
+"q": "Quel Chinois est associé à l'amélioration de la fabrication du papier vers l'an 105 ?",
+"c": "Cai Lun",
+"w": [
+"Zhang Heng",
+"Confucius",
+"Sun Tzu"
+],
+"e": "Il travaillait à la cour des Han."
+},
+{
+"q": "Comment s'appelle la médecine traditionnelle indienne basée sur trois énergies appelées « doshas » ?",
+"c": "L'ayurveda",
+"w": [
+"L'acupuncture",
+"L'homéopathie",
+"La phytothérapie chinoise"
+],
+"e": "Elle est pratiquée depuis plus de trois mille ans."
+},
+{
+"q": "Comment s'appelle la technique de médecine chinoise qui consiste à piquer de fines aiguilles en certains points du corps ?",
+"c": "L'acupuncture",
+"w": [
+"L'ayurveda",
+"La réflexologie",
+"Le massage shiatsu"
+],
+"e": "Elle est pratiquée depuis plus de deux mille ans."
+},
+{
+"q": "Quelle plante utilisée en médecine chinoise est à l'origine de l'artémisinine contre le paludisme ?",
+"c": "L'armoise annuelle",
+"w": [
+"Le ginseng",
+"Le ginkgo",
+"Le thé vert"
+],
+"e": "Tu Youyou l'a étudiée à partir de textes anciens."
+},
+{
+"q": "Quel marsupial carnivore, ressemblant à un loup rayé, vivait en Tasmanie jusqu'au XXe siècle ?",
+"c": "Le thylacine",
+"w": [
+"Le diable de Tasmanie",
+"Le dingo",
+"Le quokka"
+],
+"e": "Le dernier individu connu est mort en captivité en 1936."
+},
+{
+"q": "Quel oiseau qui ne vole pas est le symbole de la Nouvelle-Zélande ?",
+"c": "Le kiwi",
+"w": [
+"L'émeu",
+"L'autruche",
+"Le manchot"
+],
+"e": "Il vit surtout la nuit et mange des insectes et des vers."
+},
+{
+"q": "Quel grand oiseau australien ne vole pas et peut mesurer presque deux mètres ?",
+"c": "L'émeu",
+"w": [
+"Le kiwi",
+"Le casoar",
+"Le kookaburra"
+],
+"e": "Il figure avec le kangourou sur les armoiries de l'Australie."
+},
+{
+"q": "Quel petit marsupial carnivore de Tasmanie est connu pour ses cris effrayants ?",
+"c": "Le diable de Tasmanie",
+"w": [
+"Le thylacine",
+"Le wombat",
+"Le quokka"
+],
+"e": "Il a l'une des morsures les plus puissantes du monde animal par rapport à sa taille."
+},
+{
+"q": "Quel grand singe roux vit dans les forêts de Sumatra et de Bornéo ?",
+"c": "L'orang-outan",
+"w": [
+"Le gorille",
+"Le chimpanzé",
+"Le gibbon"
+],
+"e": "Son nom signifie « homme de la forêt » en malais."
+},
+{
+"q": "Quel oiseau australien est célèbre pour sa capacité à imiter une grande variété de sons, même des appareils humains ?",
+"c": "L'oiseau-lyre",
+"w": [
+"Le kookaburra",
+"Le perroquet",
+"Le cacatoès"
+],
+"e": "Sa queue ressemble à une lyre."
+}
+]
