@@ -1,3 +1,4 @@
+import 'etude_admin_page.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -500,6 +501,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.campaign_rounded, 'Publicités', const Color(0xFF8E3CC4), _boostsPending, const AdvertisementManagementPage()),
       _Module(Icons.ondemand_video_rounded, 'Pub AdMob', const Color(0xFF8E3CC4), 0, AdAdminPage()),
       _Module(Icons.quiz_rounded, 'Quiz', const Color(0xFFE0A100), 0, const QuizAdminPage()),
+      _Module(Icons.school_rounded, 'Étude', const Color(0xFF1FAA59), 0, const EtudeAdminPage()),
       _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),

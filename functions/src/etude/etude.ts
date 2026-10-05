@@ -652,3 +652,64 @@ export const etudeVerifyDiploma = onCall({ timeoutSeconds: 10 }, async (request)
   if (!d) return { ok: true, valid: false };
   return { ok: true, valid: true, title: d["title"], name: d["name"], pct: d["pct"], at: d["at"] };
 });
+
+// ── Tableau de bord admin ───────────────────────────────────────────────────
+
+/** Vue d'ensemble pour l'équipe : participants, parcours commencés, classes validées, diplômes, déblocages, pubs. Réservé au rôle ADM. */
+export const etudeAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async (request) => {
+  const uid = uidOf(request);
+  const me = await db.collection("Users").doc(uid).get();
+  if (me.data()?.["role"] !== "ADM") throw new HttpsError("permission-denied", "Réservé aux admins.");
+  const now = Date.now();
+  const today = dayKey(now);
+  const [progSnap, tracks, cfg] = await Promise.all([db.collection("EtudeProgress").limit(10000).get(), loadCatalog(), loadCfg()]);
+
+  const started: Record<string, number> = {};
+  const classes: Record<string, number> = {};
+  const diplomas: Record<string, number> = {};
+  const unlocks: Record<string, number> = { ch: 0, cls: 0, compo: 0, exam: 0, cert: 0 };
+  const chapterDone: Record<string, number> = {};
+  let learners = 0;
+  let activeToday = 0;
+  let active7 = 0;
+  let xp = 0;
+  let answered = 0;
+  let correct = 0;
+  progSnap.docs.forEach((d) => {
+    const p = normalise(d.data() as Prog);
+    learners++;
+    xp += p.xp;
+    answered += p.answered;
+    correct += p.correct;
+    if (p.streak.last === today) activeToday++;
+    if (p.streak.last && p.streak.last >= dayKey(now - 6 * DAY)) active7++;
+    Object.keys(p.entries).forEach((t) => (started[t] = (started[t] ?? 0) + 1));
+    Object.keys(p.classes).forEach((c) => (classes[c] = (classes[c] ?? 0) + 1));
+    Object.keys(p.diplomas).forEach((c) => (diplomas[c] = (diplomas[c] ?? 0) + 1));
+    Object.keys(p.unlocked).forEach((k) => { const t = k.split(":")[0]; unlocks[t] = (unlocks[t] ?? 0) + 1; });
+    Object.entries(p.levels).forEach(([ch, lv]) => { if (lv >= 3) chapterDone[ch] = (chapterDone[ch] ?? 0) + 1; });
+  });
+
+  // pubs et pièces des 7 derniers jours
+  const keys: string[] = [];
+  for (let k = 0; k < 7; k++) keys.push(dayKey(now - k * DAY));
+  const stats = await db.getAll(...keys.map((k) => db.collection("AdRewardStats").doc(k)));
+  let rewarded = 0;
+  let interstitial = 0;
+  stats.forEach((s) => { const d = s.data() ?? {}; rewarded += num(d["etudeRewarded"], 0); interstitial += num(d["etudeInterstitials"], 0); });
+  const comm = await db.getAll(...keys.map((k) => db.collection("CommissionsDaily").doc(k)));
+  let coins7 = 0;
+  comm.forEach((s) => { coins7 += num((s.data() ?? {})["etude"], 0); });
+
+  const idx = chapterIndex(tracks);
+  const topChapters = Object.entries(chapterDone).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([id, n]) => ({ id, title: idx.get(id)?.ch.title ?? id, n }));
+  return {
+    ok: true, learners, activeToday, active7, avgXp: learners ? Math.round(xp / learners) : 0,
+    successRate: answered ? Math.round((correct * 100) / answered) : 0,
+    started, classes, diplomas, unlocks, topChapters,
+    ads7: { rewarded, interstitial }, coins7,
+    tracks: tracks.map((t) => ({ id: t.id, title: t.title, kind: t.kind, classes: t.classes.length, chapters: t.classes.reduce((a, c) => a + classChapters(c).length, 0) })),
+    config: { adValueCoins: cfg.adValueCoins, interstitialValueCoins: cfg.interstitialValueCoins, chapterPrice: cfg.chapterPrice, compoPrice: cfg.compoPrice, examPrice: cfg.examPrice, certPrice: cfg.certPrice, classPassPrice: cfg.classPassPrice, dailyFreeUnlocks: cfg.dailyFreeUnlocks },
+    truncated: progSnap.size >= 10000,
+  };
+});

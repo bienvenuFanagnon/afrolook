@@ -316,5 +316,8 @@ class EtudeService {
     return m['unlocked'] == true;
   }
 
+  /// Vue d'ensemble pour les admins.
+  Future<Map<String, dynamic>> admin() => _call('etudeAdmin');
+
   Future<Map<String, dynamic>> verifyDiploma(String serial) => _call('etudeVerifyDiploma', {'serial': serial});
 }
