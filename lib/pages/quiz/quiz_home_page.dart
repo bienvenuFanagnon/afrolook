@@ -8,6 +8,7 @@ import '../../l10n/tr.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
+import 'quiz_challenge_page.dart';
 import 'quiz_daily.dart';
 import 'quiz_history_page.dart';
 import 'quiz_leaderboard_page.dart';
@@ -171,6 +172,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
               slivers: [
                 SliverToBoxAdapter(child: _header(c, s)),
                 SliverToBoxAdapter(child: _dailyCard(c, s)),
+                SliverToBoxAdapter(child: _challengeCard(c, s)),
                 SliverToBoxAdapter(child: _links(c)),
                 SliverToBoxAdapter(child: SizedBox(key: _mapKey, height: 6)),
                 SliverFixedExtentList(
@@ -315,6 +317,44 @@ class _QuizHomePageState extends State<QuizHomePage> {
               ]),
             ),
             if (!done) Icon(Icons.chevron_right_rounded, color: c.primary, size: 30),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _challengeCard(AppColors c, QuizState s) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: GestureDetector(
+        onTap: () => _open(const QuizChallengePage()),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [c.accent.withOpacity(0.30), c.surface], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: c.accent, width: 1.5),
+          ),
+          child: Row(children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: c.primary, borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.emoji_events_rounded, color: c.onPrimary, size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(context.tr('Grand Défi'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: c.textPrimary)),
+                Text(
+                  s.challengeBest > 0
+                      ? context.tr('15 bonnes réponses d\'affilée. Ton record : {n}/15', {'n': s.challengeBest})
+                      : context.tr('15 bonnes réponses d\'affilée, paliers et jokers. Oseras-tu ?'),
+                  style: TextStyle(color: c.textSecondary, fontSize: 12.5),
+                ),
+              ]),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.accent, size: 30),
           ]),
         ),
       ),

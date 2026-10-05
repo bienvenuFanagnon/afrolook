@@ -36,6 +36,12 @@ const DEFAULTS = {
   refillMaxPerDay: 3,
   minAnswerMs: 600,
   shieldMax: 3,
+  challengeEnabled: true,
+  challengeFree: 1,
+  challengeExtraMax: 2,
+  challengeSeconds: 30,
+  challengeDailyCap: 1500,
+  challengeRescue: true,
 };
 
 type Cfg = typeof DEFAULTS & { shop: Record<string, { price?: number; enabled?: boolean }> };
@@ -66,7 +72,9 @@ type Prog = {
   heartsAt: number;
   correct: number;
   answered: number;
-  day: { id: string; pts: number; doubled: number; refills: number };
+  day: { id: string; pts: number; doubled: number; refills: number; chal?: number; chalPts?: number };
+  chalBest?: number;
+  chalWins?: number;
   inventory: Record<string, boolean>;
   equipped: Record<string, string>;
   daily: { day: number; done: boolean; gain: number };
@@ -204,6 +212,8 @@ function publicState(p: Prog, cfg: Cfg, now: number) {
     dailyPoints: p.day.pts, dailyCap: cfg.dailyPointsCap,
     refillsLeft: Math.max(0, cfg.refillMaxPerDay - p.day.refills),
     doublesLeft: Math.max(0, cfg.doubleMaxPerDay - p.day.doubled),
+    challengeLeft: Math.max(0, cfg.challengeFree - (p.day.chal ?? 0)),
+    challengeBest: p.chalBest ?? 0,
     levels: LEVELS,
   };
 }
@@ -525,6 +535,216 @@ export const quizDailyAnswer = onCall({ timeoutSeconds: 15 }, async (request) =>
       finished, gain, correctCount: s.answers.filter((a) => a.ok).length,
       weekId: p.week.id, state: publicState(p, cfg, now),
     };
+  });
+  if (out.gain > 0) await addWeekly(uid, out.weekId, out.gain, out.state.equipped);
+  return out;
+});
+
+// ── Grand Défi : 15 questions d'affilée, de plus en plus dures, avec paliers et jokers ──────────────
+
+const CH_STEPS = 15;
+/** Points gagnés si on s'arrête (ou si on tombe) après chaque bonne réponse. */
+const CH_PRIZES = [10, 20, 30, 50, 100, 150, 200, 300, 400, 600, 800, 1000, 1500, 2000, 3000];
+/** Après la 5e et la 10e bonne réponse, le gain est garanti. */
+const CH_FLOOR = (step: number) => (step >= 10 ? CH_PRIZES[9] : step >= 5 ? CH_PRIZES[4] : 0);
+const chalRef = (uid: string) => sessRef(`${uid}_c`);
+
+type ChalSess = {
+  uid: string; status: "open" | "pending" | "done"; step: number; refs: string[]; perms: string[];
+  shownAt: number; startedAt: number; j50: boolean; swap: boolean; rescue: boolean; hide: string; prize: number;
+};
+
+/** Question tirée au hasard dans la difficulté de l'étape (3 questions par difficulté), jamais deux fois la même. */
+function chalPick(step: number, used: Set<string>): string {
+  const tier = Math.floor(step / 3);
+  for (let k = 0; k < 30; k++) {
+    const ref = `${tier * 40 + crypto.randomInt(1, 41)}:${crypto.randomInt(0, PER_LEVEL)}`;
+    if (!used.has(ref)) return ref;
+  }
+  return `${tier * 40 + 1}:0`;
+}
+
+async function chalQuestion(ref: string) {
+  const [n, i] = ref.split(":").map(Number);
+  return (await getLevel(n)).questions[i];
+}
+
+async function chalView(s: ChalSess) {
+  const q = await chalQuestion(s.refs[s.step]);
+  const perm = dec(s.perms[s.step]);
+  return {
+    step: s.step, q: q.q, o: perm.map((orig) => q.o[orig]),
+    hide: s.hide ? s.hide.split("").map(Number) : [],
+    j50: s.j50, swap: s.swap, rescue: s.rescue,
+    prize: s.step > 0 ? CH_PRIZES[s.step - 1] : 0,
+  };
+}
+
+export const quizChallenge = onCall({ timeoutSeconds: 20 }, async (request) => {
+  const uid = uidOf(request);
+  const cfg = await loadCfg();
+  if (!cfg.enabled || !cfg.challengeEnabled) throw new HttpsError("failed-precondition", "QUIZ_OFF");
+  const action = String(request.data?.action ?? "");
+  const info = await userInfo(uid);
+  const now = Date.now();
+  const lateMs = (cfg.challengeSeconds + 4) * 1000;
+
+  const out = await db.runTransaction(async (tx) => {
+    const [ps, ss] = await Promise.all([tx.get(progRef(uid)), tx.get(chalRef(uid))]);
+    const p = normalise(ps.exists ? (ps.data() as Prog) : freshProg(info.country), cfg, now);
+    let s: ChalSess | null = ss.exists ? (ss.data() as ChalSess) : null;
+    let gain = 0;
+    let ended = false;
+    const end = (prize: number) => {
+      const capLeft = Math.max(0, cfg.challengeDailyCap - (p.day.chalPts ?? 0));
+      gain = Math.min(prize, capLeft);
+      p.points += gain; p.lifetime += gain; p.week.pts += gain;
+      p.day.chalPts = (p.day.chalPts ?? 0) + gain;
+      p.chalBest = Math.max(p.chalBest ?? 0, s!.step);
+      if (s!.step >= CH_STEPS) p.chalWins = (p.chalWins ?? 0) + 1;
+      bumpStreak(p, now);
+      s!.status = "done";
+      s!.prize = prize;
+      ended = true;
+    };
+    const late = !!s && s.status === "open" && now - s.shownAt > lateMs;
+
+    // Le joueur est parti sans finir : une question restée sans réponse ou une chance non utilisée compte comme une chute
+    if (s && ["info", "start", "resume"].includes(action)) {
+      if (s.status === "pending" || late) end(CH_FLOOR(s.step));
+    }
+    const savePush = () => {
+      if (s) tx.set(chalRef(uid), s);
+      tx.set(progRef(uid), p);
+    };
+    const attempts = () => ({
+      free: cfg.challengeFree, extraMax: cfg.challengeExtraMax, used: p.day.chal ?? 0,
+      left: Math.max(0, cfg.challengeFree - (p.day.chal ?? 0)),
+      extraLeft: Math.max(0, cfg.challengeFree + cfg.challengeExtraMax - Math.max(p.day.chal ?? 0, cfg.challengeFree)),
+    });
+    const base = () => ({ ok: true, ended, gain, prizes: CH_PRIZES, seconds: cfg.challengeSeconds, capLeft: Math.max(0, cfg.challengeDailyCap - (p.day.chalPts ?? 0)), best: p.chalBest ?? 0, wins: p.chalWins ?? 0, attempts: attempts(), state: publicState(p, cfg, now), weekId: p.week.id });
+
+    if (action === "info") {
+      savePush();
+      return { ...base(), active: !!s && s.status === "open" };
+    }
+
+    if (action === "start") {
+      if (s && s.status === "open") throw new HttpsError("failed-precondition", "ALREADY_ACTIVE");
+      const used = p.day.chal ?? 0;
+      const extra = request.data?.extra === true;
+      if (!(used < cfg.challengeFree || (extra && used < cfg.challengeFree + cfg.challengeExtraMax))) throw new HttpsError("failed-precondition", "NO_ATTEMPTS");
+      p.day.chal = used + 1;
+      const refs: string[] = [];
+      const seen = new Set<string>();
+      for (let k = 0; k < CH_STEPS; k++) {
+        const r = chalPick(k, seen);
+        seen.add(r);
+        refs.push(r);
+      }
+      s = { uid, status: "open", step: 0, refs, perms: refs.map(() => enc(randomPerm())), shownAt: now, startedAt: now, j50: false, swap: false, rescue: false, hide: "", prize: 0 };
+      savePush();
+      return { ...base(), question: await chalView(s) };
+    }
+
+    if (!s) throw new HttpsError("failed-precondition", "NO_SESSION");
+
+    if (action === "resume") {
+      if (s.status !== "open") throw new HttpsError("failed-precondition", "NO_SESSION");
+      savePush();
+      return { ...base(), question: await chalView(s) };
+    }
+
+    if (action === "giveup") {
+      if (s.status !== "pending") throw new HttpsError("failed-precondition", "NO_SESSION");
+      end(CH_FLOOR(s.step));
+      savePush();
+      return { ...base(), reached: s.step, prize: s.prize };
+    }
+
+    if (action === "rescue") {
+      if (s.status !== "pending" || s.rescue || !cfg.challengeRescue) throw new HttpsError("failed-precondition", "NO_RESCUE");
+      s.rescue = true;
+      s.status = "open";
+      s.refs[s.step] = chalPick(s.step, new Set(s.refs));
+      s.perms[s.step] = enc(randomPerm());
+      s.hide = "";
+      s.shownAt = now;
+      savePush();
+      return { ...base(), question: await chalView(s) };
+    }
+
+    if (s.status !== "open") throw new HttpsError("failed-precondition", "NO_SESSION");
+
+    if (action === "answer") {
+      const choice = intArg(request.data?.choice, -1, 3, "choice"); // -1 : temps écoulé
+      if (now - s.shownAt < cfg.minAnswerMs) throw new HttpsError("resource-exhausted", "TOO_FAST");
+      const q = await chalQuestion(s.refs[s.step]);
+      const perm = dec(s.perms[s.step]);
+      const ok = !late && choice >= 0 && perm[choice] === q.a;
+      p.answered += 1;
+      const res = { correct: ok, late: late || choice < 0, correctIndex: perm.indexOf(q.a), explanation: q.e };
+      if (ok) {
+        p.correct += 1;
+        s.step += 1;
+        s.hide = "";
+        s.shownAt = now;
+        if (s.step >= CH_STEPS) {
+          end(CH_PRIZES[CH_STEPS - 1]);
+          savePush();
+          return { ...base(), ...res, win: true, reached: s.step, prize: s.prize };
+        }
+        savePush();
+        return { ...base(), ...res, question: await chalView(s) };
+      }
+      const canRescue = cfg.challengeRescue && !s.rescue && !late;
+      if (canRescue) {
+        s.status = "pending";
+        savePush();
+        return { ...base(), ...res, pending: true, canRescue: true, floor: CH_FLOOR(s.step) };
+      }
+      end(CH_FLOOR(s.step));
+      savePush();
+      return { ...base(), ...res, reached: s.step, prize: s.prize };
+    }
+
+    if (late) {
+      end(CH_FLOOR(s.step));
+      savePush();
+      return { ...base(), expired: true, reached: s.step, prize: s.prize };
+    }
+
+    if (action === "cashout") {
+      if (s.step <= 0) throw new HttpsError("failed-precondition", "NOTHING_TO_KEEP");
+      end(CH_PRIZES[s.step - 1]);
+      savePush();
+      return { ...base(), reached: s.step, prize: s.prize };
+    }
+
+    if (action === "j50") {
+      if (s.j50) throw new HttpsError("failed-precondition", "JOKER_USED");
+      const q = await chalQuestion(s.refs[s.step]);
+      const perm = dec(s.perms[s.step]);
+      const wrong = [0, 1, 2, 3].filter((d) => perm[d] !== q.a);
+      const keep = wrong[crypto.randomInt(0, wrong.length)];
+      s.hide = wrong.filter((d) => d !== keep).join("");
+      s.j50 = true;
+      savePush();
+      return { ...base(), question: await chalView(s) };
+    }
+
+    if (action === "swap") {
+      if (s.swap) throw new HttpsError("failed-precondition", "JOKER_USED");
+      s.swap = true;
+      s.refs[s.step] = chalPick(s.step, new Set(s.refs));
+      s.perms[s.step] = enc(randomPerm());
+      s.hide = "";
+      s.shownAt = now;
+      savePush();
+      return { ...base(), question: await chalView(s) };
+    }
+
+    throw new HttpsError("invalid-argument", "action invalide.");
   });
   if (out.gain > 0) await addWeekly(uid, out.weekId, out.gain, out.state.equipped);
   return out;

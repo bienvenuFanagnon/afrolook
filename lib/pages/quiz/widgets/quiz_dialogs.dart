@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../ads/ad_config.dart';
 import '../../../ads/ad_gate.dart';
@@ -135,4 +136,34 @@ class _NoHeartsSheetState extends State<_NoHeartsSheet> {
       ),
     );
   }
+}
+
+
+/// Pub plein écran à la sortie d'une partie, selon les mêmes plafonds que les niveaux (réglable à distance).
+/// [done] est appelé une fois la pub fermée, ou tout de suite s'il n'y en a pas.
+Future<void> quizMaybeInterstitial(BuildContext context, VoidCallback done) async {
+  try {
+    final cfg = QuizService.instance.config;
+    final user = context.read<UserAuthProvider>().loginUserData;
+    if (cfg.adsEnabled && AdGate.canShowType(user, 'interstitial')) {
+      final sp = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final day = '${now.year}-${now.month}-${now.day}';
+      if (sp.getString('quiz_ad_day') != day) {
+        await sp.setString('quiz_ad_day', day);
+        await sp.setInt('quiz_ad_count', 0);
+      }
+      final since = (sp.getInt('quiz_lv_since_ad') ?? 0) + 1;
+      final shown = sp.getInt('quiz_ad_count') ?? 0;
+      if (since >= cfg.interstitialEveryLevels && shown < cfg.interstitialMaxPerDay) {
+        await sp.setInt('quiz_lv_since_ad', 0);
+        await sp.setInt('quiz_ad_count', shown + 1);
+        final shownNow = await AdmobService.showInterstitialNow(onDismissed: done, onFailed: done);
+        if (!shownNow) done();
+        return;
+      }
+      await sp.setInt('quiz_lv_since_ad', since);
+    }
+  } catch (_) {}
+  done();
 }

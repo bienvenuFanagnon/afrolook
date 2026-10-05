@@ -38,11 +38,13 @@ class QuizState {
     this.refillsLeft = 0,
     this.doublesLeft = 0,
     this.levels = 200,
+    this.challengeLeft = 0,
+    this.challengeBest = 0,
     this.enabled = true,
   });
 
   final int level, completed, points, lifetime, weeklyPoints, streak, shields, hearts, heartsMax, nextHeartInSec;
-  final int dailyPoints, dailyCap, refillsLeft, doublesLeft, levels;
+  final int dailyPoints, dailyCap, refillsLeft, doublesLeft, levels, challengeLeft, challengeBest;
   final bool playedToday, dailyDone, enabled;
   final Map<String, bool> inventory;
   final Map<String, String> equipped;
@@ -71,6 +73,8 @@ class QuizState {
       refillsLeft: _i(m['refillsLeft']),
       doublesLeft: _i(m['doublesLeft']),
       levels: _i(m['levels'], 200),
+      challengeLeft: _i(m['challengeLeft']),
+      challengeBest: _i(m['challengeBest']),
       enabled: m.containsKey('enabled') ? _b(m['enabled'], true) : enabled,
     );
   }
@@ -151,6 +155,87 @@ class QuizDaily {
   final List<QuizAnswerResult> results;
   final bool done;
   int get answered => results.length;
+}
+
+/// Question du Grand Défi telle que le serveur la donne (sans la réponse).
+class QuizChalQuestion {
+  const QuizChalQuestion({required this.step, required this.q, required this.o, required this.hide, required this.j50, required this.swap, required this.rescue, required this.prize});
+  final int step, prize;
+  final String q;
+  final List<String> o;
+  final List<int> hide;
+  final bool j50, swap, rescue;
+  factory QuizChalQuestion.fromMap(Map<String, dynamic> m) => QuizChalQuestion(
+        step: _i(m['step']),
+        q: '${m['q']}',
+        o: (m['o'] as List).map((e) => '$e').toList(),
+        hide: (m['hide'] is List) ? (m['hide'] as List).map((e) => _i(e)).toList() : const [],
+        j50: _b(m['j50']),
+        swap: _b(m['swap']),
+        rescue: _b(m['rescue']),
+        prize: _i(m['prize']),
+      );
+}
+
+/// Réponse du serveur à une action du Grand Défi.
+class QuizChalReply {
+  const QuizChalReply({
+    this.question,
+    this.correct = false,
+    this.late = false,
+    this.correctIndex = -1,
+    this.explanation = '',
+    this.pending = false,
+    this.canRescue = false,
+    this.floor = 0,
+    this.win = false,
+    this.ended = false,
+    this.expired = false,
+    this.gain = 0,
+    this.reached = 0,
+    this.prize = 0,
+    this.prizes = const [],
+    this.seconds = 30,
+    this.attemptsLeft = 0,
+    this.extraLeft = 0,
+    this.best = 0,
+    this.wins = 0,
+    this.capLeft = 0,
+    this.active = false,
+  });
+  final QuizChalQuestion? question;
+  final bool correct, late, pending, canRescue, win, ended, expired, active;
+  final int correctIndex, floor, gain, reached, prize, seconds, attemptsLeft, extraLeft, best, wins, capLeft;
+  final String explanation;
+  final List<int> prizes;
+
+  factory QuizChalReply.fromMap(Map<String, dynamic> m) {
+    final at = m['attempts'] is Map ? Map<String, dynamic>.from(m['attempts'] as Map) : <String, dynamic>{};
+    return QuizChalReply(
+      question: m['question'] is Map ? QuizChalQuestion.fromMap(Map<String, dynamic>.from(m['question'] as Map)) : null,
+      correct: _b(m['correct']),
+      late: _b(m['late']),
+      correctIndex: _i(m['correctIndex'], -1),
+      explanation: '${m['explanation'] ?? ''}',
+      pending: _b(m['pending']),
+      canRescue: _b(m['canRescue']),
+      floor: _i(m['floor']),
+      win: _b(m['win']),
+      ended: _b(m['ended']),
+      expired: _b(m['expired']),
+      gain: _i(m['gain']),
+      reached: _i(m['reached']),
+      prize: _i(m['prize']),
+      prizes: (m['prizes'] is List) ? (m['prizes'] as List).map((e) => _i(e)).toList() : const [],
+      seconds: _i(m['seconds'], 30),
+      attemptsLeft: _i(at['left']),
+      extraLeft: _i(at['extraLeft']),
+      best: _i(m['best']),
+      wins: _i(m['wins']),
+      capLeft: _i(m['capLeft']),
+      active: _b(m['active']),
+    );
+  }
 }
 
 class QuizWeeklyEntry {
@@ -281,6 +366,24 @@ class QuizService {
   }
 
   Future<QuizState> refillHeart() async => _publish(await _call('quizRefillHeart'));
+
+  // ── Grand Défi ──
+  Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? extra]) async {
+    final m = await _call('quizChallenge', {'action': action, ...?extra});
+    final st = m['state'];
+    if (st is Map) _publish(Map<String, dynamic>.from(st));
+    return QuizChalReply.fromMap(m);
+  }
+
+  Future<QuizChalReply> challengeInfo() => _chal('info');
+  Future<QuizChalReply> challengeStart({bool extra = false}) => _chal('start', {'extra': extra});
+  Future<QuizChalReply> challengeResume() => _chal('resume');
+  Future<QuizChalReply> challengeAnswer(int choice) => _chal('answer', {'choice': choice});
+  Future<QuizChalReply> challengeFiftyFifty() => _chal('j50');
+  Future<QuizChalReply> challengeSwap() => _chal('swap');
+  Future<QuizChalReply> challengeRescue() => _chal('rescue');
+  Future<QuizChalReply> challengeGiveUp() => _chal('giveup');
+  Future<QuizChalReply> challengeCashOut() => _chal('cashout');
 
   Future<QuizDaily> dailyGet() async {
     final m = await _call('quizDailyGet');

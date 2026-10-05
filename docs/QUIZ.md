@@ -7,6 +7,11 @@ les points servent au classement et à la boutique (cadres, titres, accessoires,
 - **Parcours** : 200 niveaux de 5 questions, en 40 unités de 5 niveaux (8 thèmes × 5 paliers de difficulté).
   Il faut 3 bonnes réponses sur 5 pour passer. Une erreur coûte un cœur (5 cœurs, 1 cœur rendu toutes les 30 min).
 - **Quiz du jour** : 3 questions identiques pour tout le monde, jouables dans le fil ou sur une page.
+- **Grand Défi** (façon « Qui veut gagner des millions ») : 15 questions d'affilée de plus en plus dures (3 par difficulté),
+  30 s par question, paliers garantis à la 5e et à la 10e bonne réponse, jokers 50/50 et « Changer de question »,
+  « M'arrêter ici » pour garder ses points. Une erreur ramène au dernier palier. 1 partie gratuite par jour,
+  2 de plus contre une vidéo, et une seconde chance (nouvelle question) contre une vidéo. Un seul callable serveur : `quizChallenge`
+  (actions info, start, resume, answer, j50, swap, rescue, giveup, cashout). Gains : 10, 20, 30, 50, 100, 150, 200, 300, 400, 600, 800, 1000, 1500, 2000, 3000 points.
 - **Série** (jours consécutifs), **classement** de la semaine (joueurs, pays), **historique** (à répondre / déjà répondu),
   **boutique** de points.
 - Pubs : native sur l'écran de fin, interstitiel tous les N niveaux (jamais pendant une question),
@@ -39,6 +44,7 @@ rejouer un niveau déjà gagné = entraînement sans points ni cœurs, aucune va
 Sans mise à jour de l'app : `node tools/quiz/set_config.js '{"dailyPointsCap":300}'` (sans argument : affiche la configuration).
 Clés : `enabled`, `heartsMax`, `heartRegenMinutes`, `pointsPerCorrect`, `perfectBonus`, `passMin`, `dailyPointsCap`,
 `dailyCorrect`, `dailyBonus`, `doubleMaxPerDay`, `refillMaxPerDay`, `minAnswerMs`, `shieldMax`, `shop` (prix et `enabled` par objet),
+`challengeEnabled`, `challengeFree`, `challengeExtraMax`, `challengeSeconds`, `challengeDailyCap`, `challengeRescue`,
 `adsEnabled`, `interstitialEveryLevels`, `interstitialMaxPerDay`, `feedCardEnabled`.
 
 ## Les questions (tools/quiz)
