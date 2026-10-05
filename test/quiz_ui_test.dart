@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/quiz/widgets/hawk_mascot.dart';
+import 'package:afrotok/pages/quiz/widgets/quiz_loading.dart';
 import 'package:afrotok/pages/quiz/widgets/quiz_widgets.dart';
 import 'package:afrotok/services/quiz/quiz_sound.dart';
 import 'package:flutter/material.dart';
@@ -63,5 +64,21 @@ void main() {
     expect(quizUnitOf(200), 39);
     expect(quizThemeOfUnit(8).key, 'courage');
     expect(quizClock(125), '02:05');
+  });
+
+  testWidgets("l'attente anime l'épervier et fait défiler les phrases", (tester) async {
+    for (final kind in QuizLoadingKind.values) {
+      for (final compact in [false, true]) {
+        await tester.pumpWidget(MaterialApp(home: Scaffold(body: QuizLoading(kind: kind, compact: compact))));
+        final first = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList();
+        for (var k = 0; k < 6; k++) {
+          await tester.pump(const Duration(milliseconds: 1900));
+        }
+        final later = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList();
+        expect(later, isNot(equals(first)), reason: '$kind');
+        expect(tester.takeException(), isNull, reason: '$kind');
+        await tester.pumpWidget(const SizedBox());
+      }
+    }
   });
 }

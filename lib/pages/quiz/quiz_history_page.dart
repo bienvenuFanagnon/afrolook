@@ -4,6 +4,7 @@ import '../../l10n/tr.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../theme/app_colors.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_widgets.dart';
 
 /// « Mes questions » : ce qu'il reste à répondre dans le parcours, et tout ce qui a déjà été répondu.
@@ -146,7 +147,7 @@ class _QuizHistoryPageState extends State<QuizHistoryPage> {
       child: FutureBuilder<List<QuizAttempt>>(
         future: _history,
         builder: (_, snap) {
-          if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snap.connectionState != ConnectionState.done) return const QuizLoading(kind: QuizLoadingKind.history);
           final list = snap.data ?? const <QuizAttempt>[];
           if (snap.hasError || list.isEmpty) {
             return ListView(children: [

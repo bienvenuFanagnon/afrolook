@@ -15,6 +15,7 @@ import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
 
@@ -283,7 +284,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
                 child: Container(
                   color: c.background.withOpacity(0.7),
                   alignment: Alignment.center,
-                  child: const CircularProgressIndicator(),
+                  child: const QuizLoading(kind: QuizLoadingKind.saving),
                 ),
               ),
           ]),
@@ -296,13 +297,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
     if (_error != null) return _errorView(c);
     final s = _start;
     if (s == null) {
-      return Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const HawkMascot(size: 120),
-          const SizedBox(height: 12),
-          Text(context.tr('Chargement…'), style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700)),
-        ]),
-      );
+      return const QuizLoading(kind: QuizLoadingKind.level);
     }
     if (_finish != null) return _resultView(c, _finish!);
     return _lesson(c, s);

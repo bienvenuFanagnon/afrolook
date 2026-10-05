@@ -6,6 +6,7 @@ import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_widgets.dart';
 
 /// Les 3 questions du jour : même chose pour tout le monde, jouables directement dans le fil
@@ -136,7 +137,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
     }
     final d = _daily;
     if (d == null) {
-      return _frame(c, const SizedBox(height: 90, child: Center(child: CircularProgressIndicator(strokeWidth: 2.5))));
+      return _frame(c, const QuizLoading(kind: QuizLoadingKind.daily, compact: true));
     }
     if (_i >= d.questions.length) return _summary(c, d);
     return _question(c, d);

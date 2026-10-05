@@ -6,6 +6,7 @@ import '../../providers/authProvider.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../theme/app_colors.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_widgets.dart';
 
 /// Classement de la semaine : joueurs et pays. Les points ne valent pas d'argent : seulement la fierté.
@@ -98,7 +99,7 @@ class _QuizLeaderboardPageState extends State<QuizLeaderboardPage> {
       child: FutureBuilder<List<QuizWeeklyEntry>>(
         future: _top,
         builder: (_, snap) {
-          if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snap.connectionState != ConnectionState.done) return const QuizLoading(kind: QuizLoadingKind.ranking);
           final list = snap.data ?? const <QuizWeeklyEntry>[];
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -204,7 +205,7 @@ class _QuizLeaderboardPageState extends State<QuizLeaderboardPage> {
       child: FutureBuilder<List<QuizCountryRow>>(
         future: _countries,
         builder: (_, snap) {
-          if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snap.connectionState != ConnectionState.done) return const QuizLoading(kind: QuizLoadingKind.ranking);
           final list = snap.data ?? const <QuizCountryRow>[];
           if (snap.hasError || list.isEmpty) {
             return ListView(children: [

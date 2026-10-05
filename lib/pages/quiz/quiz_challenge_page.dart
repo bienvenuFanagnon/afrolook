@@ -15,6 +15,7 @@ import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'quiz_leaderboard_page.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
 
@@ -417,7 +418,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
         ),
         body: Stack(children: [
           switch (_phase) {
-            _Phase.loading => const Center(child: CircularProgressIndicator()),
+            _Phase.loading => const QuizLoading(kind: QuizLoadingKind.challenge),
             _Phase.error => _errorView(c),
             _Phase.intro => _intro(c),
             _Phase.play => _play(c),

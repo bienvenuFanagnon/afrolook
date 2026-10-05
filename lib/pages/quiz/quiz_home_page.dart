@@ -16,6 +16,7 @@ import 'quiz_leaderboard_page.dart';
 import 'quiz_level_page.dart';
 import 'quiz_shop_page.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
 
@@ -166,7 +167,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
         valueListenable: QuizService.instance.state,
         builder: (_, s, __) {
           if (_error != null && s == null) return _errorView(c);
-          if (s == null || _loading) return const Center(child: CircularProgressIndicator());
+          if (s == null || _loading) return const QuizLoading(kind: QuizLoadingKind.home);
           if (!s.enabled) return _pausedView(c);
           return RefreshIndicator(
             onRefresh: () => _refresh(),
