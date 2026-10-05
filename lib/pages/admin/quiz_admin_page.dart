@@ -108,7 +108,7 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
   Widget _bar(AppColors c, String label, int value, int max, {Color? color}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(children: [
-          SizedBox(width: 74, child: Text(label, style: TextStyle(fontSize: 12, color: c.textSecondary, fontWeight: FontWeight.w700))),
+          SizedBox(width: 92, child: Text(label, style: TextStyle(fontSize: 12, color: c.textSecondary, fontWeight: FontWeight.w700))),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(5),
@@ -145,6 +145,12 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(padding: const EdgeInsets.all(16), children: [
+        _card(c,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Joueurs par région', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: c.textPrimary)),
+              const SizedBox(height: 8),
+              for (final e in _kRegions.entries) _bar(c, e.value, _n((ov['byRegion'] as Map?)?[e.key]), total, color: c.primary),
+            ])),
         _card(c,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text("Aujourd'hui", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: c.textPrimary)),
@@ -270,7 +276,10 @@ class _QuestionsTab extends StatefulWidget {
   State<_QuestionsTab> createState() => _QuestionsTabState();
 }
 
+const _kRegions = {'af': 'Afrique', 'eu': 'Europe', 'as': 'Asie-Océanie', 'am': 'Amériques', 'mx': 'Mélange'};
+
 class _QuestionsTabState extends State<_QuestionsTab> {
+  String _region = 'af';
   int _tier = 1;
   int _theme = 0;
   Map<String, dynamic>? _data;
@@ -292,7 +301,7 @@ class _QuestionsTabState extends State<_QuestionsTab> {
       _data = null;
     });
     try {
-      final m = await QuizService.instance.admin({'action': 'unit', 'u': _unit});
+      final m = await QuizService.instance.admin({'action': 'unit', 'u': _unit, 'region': _region});
       if (mounted) setState(() => _data = m);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -305,6 +314,20 @@ class _QuestionsTabState extends State<_QuestionsTab> {
     final c = AppColors.of(context);
     final levels = _data == null ? <Map<String, dynamic>>[] : (_data!['levels'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
     return ListView(padding: const EdgeInsets.all(16), children: [
+      Text('Région du jeu', style: TextStyle(fontWeight: FontWeight.w800, color: c.textSecondary, fontSize: 12)),
+      const SizedBox(height: 4),
+      Wrap(spacing: 8, runSpacing: 4, children: [
+        for (final e in _kRegions.entries)
+          ChoiceChip(
+            label: Text(e.value),
+            selected: _region == e.key,
+            onSelected: (_) {
+              _region = e.key;
+              _load();
+            },
+          ),
+      ]),
+      const SizedBox(height: 8),
       Text('Difficulté', style: TextStyle(fontWeight: FontWeight.w800, color: c.textSecondary, fontSize: 12)),
       const SizedBox(height: 4),
       Wrap(spacing: 8, children: [
