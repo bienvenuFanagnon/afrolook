@@ -25,6 +25,9 @@ const num = (v: unknown, def: number) => (typeof v === "number" && Number.isFini
 const DEFAULTS = {
   enabled: true,
   adValueCoins: 3, // 1 pub regardée = 3 pièces de prix de déblocage (à ajuster avec le vrai eCPM des pubs récompensées)
+  interstitialValueCoins: 2, // 1 pub plein écran = 2 pièces de prix de déblocage
+  interstitialMaxPerDay: 12,
+  interstitialGapSec: 15,
   chapterPrice: 20,
   classPassPrice: 150,
   compoPrice: 30,
@@ -264,7 +267,7 @@ async function publicState(uid: string, p: Prog, cfg: Cfg, tracks: CatTrack[]) {
     diplomas: Object.values(p.diplomas),
     tracks: status, certs,
     pendingAds: await pendingAds(uid),
-    config: { adValueCoins: cfg.adValueCoins, chapterPrice: cfg.chapterPrice, classPassPrice: cfg.classPassPrice, compoPrice: cfg.compoPrice, examPrice: cfg.examPrice, certPrice: cfg.certPrice, prices: cfg.prices },
+    config: { adValueCoins: cfg.adValueCoins, interstitialValueCoins: cfg.interstitialValueCoins, chapterPrice: cfg.chapterPrice, classPassPrice: cfg.classPassPrice, compoPrice: cfg.compoPrice, examPrice: cfg.examPrice, certPrice: cfg.certPrice, prices: cfg.prices },
     level: Math.floor(Math.sqrt(p.xp / 50)) + 1,
   };
 }
@@ -546,28 +549,32 @@ export const etudeFinish = onCall({ timeoutSeconds: 20 }, async (request) => {
 
 // ── Déblocage : pièces ou pubs ──────────────────────────────────────────────
 
-/** Nombre de pubs équivalent à un prix en pièces. */
-const adsFor = (price: number, cfg: Cfg) => Math.max(1, Math.ceil(price / Math.max(1, cfg.adValueCoins)));
-
+/**
+ * Déblocage. Pubs : la jauge d'un contenu se remplit en « pièces équivalentes » (adsPaid) ; elle est pleine quand elle atteint le prix.
+ *  - format « rewarded » : pub avec récompense, prise dans la réserve de la journée (AdRewards.pending) ; vaut adValueCoins.
+ *  - format « interstitial » : pub plein écran, déclarée par l'app (plafond par jour, délai minimum) ; vaut interstitialValueCoins.
+ */
 export const etudeUnlock = onCall({ timeoutSeconds: 20 }, async (request) => {
   const uid = uidOf(request);
   const cfg = await loadCfg();
   if (!cfg.enabled) throw new HttpsError("failed-precondition", "ETUDE_OFF");
   const itemId = String(request.data?.item ?? "");
   const via = String(request.data?.via ?? "coins");
+  const format = String(request.data?.format ?? "rewarded");
   if (via !== "coins" && via !== "ads") throw new HttpsError("invalid-argument", "Mode inconnu.");
+  if (format !== "rewarded" && format !== "interstitial") throw new HttpsError("invalid-argument", "Format inconnu.");
   const tracks = await loadCatalog();
   const item = itemInfo(itemId, tracks, cfg);
   if (!item) throw new HttpsError("not-found", "Contenu introuvable ou déjà gratuit.");
   const now = Date.now();
   const userRef = db.collection("Users").doc(uid);
   const adsRef = db.collection("AdRewards").doc(`${uid}_${dayKey(now)}`);
+  const viewsRef = db.collection("EtudeAds").doc(`${uid}_${dayKey(now)}`);
 
   const out = await db.runTransaction(async (tx) => {
-    const [ps, us, ar] = await Promise.all([tx.get(progRef(uid)), tx.get(userRef), tx.get(adsRef)]);
+    const [ps, us, ar, vr] = await Promise.all([tx.get(progRef(uid)), tx.get(userRef), tx.get(adsRef), tx.get(viewsRef)]);
     const p = normalise(ps.exists ? (ps.data() as Prog) : freshProg());
-    if (p.unlocked[itemId]) return { unlocked: true, already: true, spent: 0, adsPaid: p.adsPaid[itemId] ?? 0, adsNeeded: adsFor(item.price, cfg) };
-    const adsNeeded = adsFor(item.price, cfg);
+    if (p.unlocked[itemId]) return { unlocked: true, already: true, spent: 0, adsPaid: p.adsPaid[itemId] ?? 0, adsNeeded: item.price };
     if (via === "coins") {
       const balance = num(us.data()?.["giftCoinsBalance"], 0);
       if (balance < item.price) throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins: item.price, balance });
@@ -583,26 +590,43 @@ export const etudeUnlock = onCall({ timeoutSeconds: 20 }, async (request) => {
       p.unlocked[itemId] = true;
       delete p.adsPaid[itemId];
       tx.set(progRef(uid), p);
-      return { unlocked: true, spent: item.price, adsPaid: 0, adsNeeded };
+      return { unlocked: true, spent: item.price, adsPaid: 0, adsNeeded: item.price };
     }
-    // pubs : on prend dans la réserve du jour (les pubs regardées via « Récompenses » ou ici)
-    const pending = num(ar.data()?.["pending"], 0);
     const paid = p.adsPaid[itemId] ?? 0;
-    const take = Math.min(pending, adsNeeded - paid);
-    if (take <= 0) throw new HttpsError("failed-precondition", "NO_ADS");
-    p.adsPaid[itemId] = paid + take;
-    tx.set(adsRef, { pending: pending - take }, { merge: true });
-    const unlocked = p.adsPaid[itemId] >= adsNeeded;
+    let gain = 0;
+    let used = 0;
+    if (format === "rewarded") {
+      const pending = num(ar.data()?.["pending"], 0);
+      const each = Math.max(1, cfg.adValueCoins);
+      const want = Math.ceil((item.price - paid) / each);
+      used = Math.min(pending, want);
+      if (used <= 0) throw new HttpsError("failed-precondition", "NO_ADS");
+      gain = used * each;
+      tx.set(adsRef, { pending: pending - used }, { merge: true });
+    } else {
+      const v = (vr.data() ?? {}) as { n?: number; lastAt?: number };
+      if (num(v.n, 0) >= cfg.interstitialMaxPerDay) throw new HttpsError("resource-exhausted", "Limite de pubs du jour atteinte.");
+      if (now - num(v.lastAt, 0) < cfg.interstitialGapSec * 1000) throw new HttpsError("resource-exhausted", "Trop rapide.");
+      used = 1;
+      gain = Math.max(1, cfg.interstitialValueCoins);
+      tx.set(viewsRef, { userId: uid, day: dayKey(now), n: num(v.n, 0) + 1, lastAt: now }, { merge: true });
+    }
+    p.adsPaid[itemId] = Math.min(item.price, paid + gain);
+    const unlocked = p.adsPaid[itemId] >= item.price;
+    const shown = p.adsPaid[itemId];
     if (unlocked) {
       p.unlocked[itemId] = true;
       delete p.adsPaid[itemId];
     }
     tx.set(progRef(uid), p);
-    tx.set(db.collection("AdRewardStats").doc(dayKey(now)), { day: dayKey(now), claims: { [`etude_${itemId.split(":")[0]}`]: FieldValue.increment(unlocked ? 1 : 0) }, adsSpent: FieldValue.increment(take) }, { merge: true });
-    return { unlocked, spent: 0, adsPaid: unlocked ? adsNeeded : paid + take, adsNeeded };
+    tx.set(db.collection("AdRewardStats").doc(dayKey(now)), {
+      day: dayKey(now), claims: { [`etude_${itemId.split(":")[0]}`]: FieldValue.increment(unlocked ? 1 : 0) }, adsSpent: FieldValue.increment(used),
+      ...(format === "interstitial" ? { etudeInterstitials: FieldValue.increment(1) } : { etudeRewarded: FieldValue.increment(used) }),
+    }, { merge: true });
+    return { unlocked, spent: 0, adsPaid: unlocked ? item.price : shown, adsNeeded: item.price };
   });
-  const [p2, tr2] = [await readProg(uid), tracks];
-  return { ok: true, ...out, state: await publicState(uid, p2, cfg, tr2) };
+  const p2 = await readProg(uid);
+  return { ok: true, ...out, state: await publicState(uid, p2, cfg, tracks) };
 });
 
 // ── Vérification d'un diplôme par son numéro ────────────────────────────────

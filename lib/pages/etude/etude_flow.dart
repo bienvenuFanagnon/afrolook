@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../ads/ad_config.dart';
+import '../../ads/ad_gate.dart';
 import '../../ads/admob_service.dart';
 import '../../ads/rewards_service.dart';
 import '../../l10n/tr.dart';
@@ -40,6 +44,7 @@ class _UnlockSheetState extends State<_UnlockSheet> {
   void initState() {
     super.initState();
     AdmobService.loadRewarded();
+    AdmobService.warmUpInterstitial(context.read<UserAuthProvider>().loginUserData);
   }
 
   Future<void> _pay() async {
@@ -67,7 +72,47 @@ class _UnlockSheetState extends State<_UnlockSheet> {
     }
   }
 
-  /// Une pub regardée remplit la jauge du contenu ; quand elle est pleine, il est débloqué.
+  /// Pub plein écran : elle remplit la jauge d'un peu moins qu'une pub avec récompense.
+  Future<void> _watchInterstitial() async {
+    setState(() => _busy = true);
+    final done = Completer<bool>();
+    final shown = await AdmobService.showInterstitialNow(onDismissed: () => done.complete(true), onFailed: () {
+      if (!done.isCompleted) done.complete(false);
+    });
+    if (!shown) {
+      if (mounted) {
+        setState(() => _busy = false);
+        quizToast(context, context.tr("La pub n'est pas disponible pour le moment. Réessaie dans un instant."), error: true);
+      }
+      return;
+    }
+    final ok = await done.future;
+    if (!mounted) return;
+    if (!ok) {
+      setState(() => _busy = false);
+      return;
+    }
+    try {
+      final unlocked = await EtudeService.instance.unlock(widget.item, via: 'ads', format: 'interstitial');
+      if (!mounted) return;
+      if (unlocked) {
+        Navigator.pop(context, true);
+      } else {
+        setState(() => _busy = false);
+        AdmobService.warmUpInterstitial(context.read<UserAuthProvider>().loginUserData);
+      }
+    } on EtudeException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      quizToast(
+        context,
+        e.code.contains('limite') ? context.tr("Tu as atteint la limite de pubs d'aujourd'hui. Reviens demain ou paie en pièces.") : context.tr("La pub n'a pas pu être comptée. Réessaie."),
+        error: true,
+      );
+    }
+  }
+
+  /// Une pub avec récompense regardée remplit la jauge du contenu ; quand elle est pleine, il est débloqué.
   Future<void> _watch() async {
     setState(() => _busy = true);
     final ok = await AdmobService.watchRewarded(userId: EtudeService.instance.uid);
@@ -115,10 +160,12 @@ class _UnlockSheetState extends State<_UnlockSheet> {
     final c = AppColors.of(context);
     final s = _s;
     final price = s.priceOf(widget.item);
-    final need = s.adsFor(price);
-    final paid = (s.adsPaid[widget.item] ?? 0).clamp(0, need);
+    final paid = (s.adsPaid[widget.item] ?? 0).clamp(0, price);
+    final left = price - paid;
     final user = context.read<UserAuthProvider>().loginUserData;
-    final canAds = RewardsService.available(user);
+    final canRewarded = RewardsService.available(user);
+    final canInterstitial = AdConfig.isMobile && AdConfig.current.interstitialEnabled && AdGate.canShowType(user, 'interstitial') && user.abonnement?.estGold != true;
+    final canAds = canRewarded || canInterstitial;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(color: c.background, borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), border: Border.all(color: c.border)),
@@ -161,25 +208,36 @@ class _UnlockSheetState extends State<_UnlockSheet> {
             const SizedBox(height: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(value: paid / need, minHeight: 10, backgroundColor: c.surfaceVariant, valueColor: AlwaysStoppedAnimation(c.accent)),
+              child: LinearProgressIndicator(value: paid / price, minHeight: 10, backgroundColor: c.surfaceVariant, valueColor: AlwaysStoppedAnimation(c.accent)),
             ),
             const SizedBox(height: 6),
             Text(
               paid == 0
-                  ? context.tr('Regarde {n} pubs pour débloquer', {'n': '$need'})
-                  : context.tr('{a} pub(s) regardée(s) sur {n} : encore {r}', {'a': '$paid', 'n': '$need', 'r': '${need - paid}'}),
+                  ? context.tr('Débloque avec des pubs : {a} avec récompense ou {b} plein écran', {'a': '${s.rewardedFor(price)}', 'b': '${s.interstitialFor(price)}'})
+                  : context.tr('Jauge {p}/{n} : encore {a} pubs avec récompense ou {b} plein écran', {'p': '$paid', 'n': '$price', 'a': '${s.rewardedFor(left)}', 'b': '${s.interstitialFor(left)}'}),
               textAlign: TextAlign.center,
               style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w600, fontSize: 13),
             ),
             const SizedBox(height: 10),
-            QuizChunkyButton(
-              label: context.tr('Regarder une pub'),
-              icon: Icons.play_circle_fill_rounded,
-              color: c.accent,
-              textColor: c.onAccent,
-              loading: _busy,
-              onPressed: _watch,
-            ),
+            if (canRewarded)
+              QuizChunkyButton(
+                label: context.tr('Pub avec récompense (+{n} pièces)', {'n': '${s.adValueCoins}'}),
+                icon: Icons.play_circle_fill_rounded,
+                color: c.accent,
+                textColor: c.onAccent,
+                loading: _busy,
+                onPressed: _watch,
+              ),
+            if (canRewarded && canInterstitial) const SizedBox(height: 6),
+            if (canInterstitial)
+              QuizChunkyButton(
+                label: context.tr('Pub plein écran (+{n} pièces)', {'n': '${s.interstitialValueCoins}'}),
+                icon: Icons.fullscreen_rounded,
+                color: c.surfaceVariant,
+                textColor: c.textPrimary,
+                loading: _busy,
+                onPressed: _watchInterstitial,
+              ),
           ],
           const SizedBox(height: 6),
           TextButton(onPressed: _busy ? null : () => Navigator.pop(context, false), child: Text(context.tr('Plus tard'), style: TextStyle(color: c.textSecondary))),

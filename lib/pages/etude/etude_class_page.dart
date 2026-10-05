@@ -170,7 +170,7 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
               else
                 Text(
                   paid > 0
-                      ? context.tr('{p} · {a}/{n} pubs', {'p': CoinCheckout.coinsLabel(st.priceOf('ch:${ch.id}')), 'a': '$paid', 'n': '${st.adsFor(st.priceOf('ch:${ch.id}'))}'})
+                      ? context.tr('{p} · jauge {a}/{n}', {'p': CoinCheckout.coinsLabel(st.priceOf('ch:${ch.id}')), 'a': '$paid', 'n': '${st.priceOf('ch:${ch.id}')}'})
                       : CoinCheckout.coinsLabel(st.priceOf('ch:${ch.id}')),
                   style: TextStyle(color: c.textSecondary, fontSize: 12),
                 ),

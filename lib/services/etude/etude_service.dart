@@ -107,10 +107,11 @@ class EtudeState {
     this.freeEpreuve = const {},
     this.pendingAds = 0,
     this.adValueCoins = 3,
+    this.interstitialValueCoins = 2,
     this.config = const {},
   });
 
-  final int xp, level, streak, pendingAds, adValueCoins;
+  final int xp, level, streak, pendingAds, adValueCoins, interstitialValueCoins;
   final Map<String, dynamic> config;
   final Map<String, int> levels, adsPaid;
   final Map<String, bool> unlocked;
@@ -139,8 +140,11 @@ class EtudeState {
     }
   }
 
-  /// Nombre de pubs qui valent un prix en pièces.
-  int adsFor(int price) => ((price + adValueCoins - 1) ~/ adValueCoins).clamp(1, 1000);
+  /// Nombre de pubs avec récompense qui valent [coins] pièces.
+  int rewardedFor(int coins) => ((coins + adValueCoins - 1) ~/ adValueCoins).clamp(1, 1000);
+
+  /// Nombre de pubs plein écran qui valent [coins] pièces.
+  int interstitialFor(int coins) => ((coins + interstitialValueCoins - 1) ~/ interstitialValueCoins).clamp(1, 1000);
 
   factory EtudeState.fromMap(Map<String, dynamic> m) {
     final tracks = <String, EtudeTrackStatus>{};
@@ -167,6 +171,7 @@ class EtudeState {
       freeEpreuve: _m(m['freeEpreuve']),
       pendingAds: _i(m['pendingAds']),
       adValueCoins: _i(_m(m['config'])['adValueCoins'], 3).clamp(1, 1000),
+      interstitialValueCoins: _i(_m(m['config'])['interstitialValueCoins'], 2).clamp(1, 1000),
       config: _m(m['config']),
     );
   }
@@ -302,8 +307,9 @@ class EtudeService {
   }
 
   /// Débloque un contenu avec des pièces ou des pubs en réserve. Retourne true quand il est débloqué.
-  Future<bool> unlock(String item, {required String via}) async {
-    final m = await _call('etudeUnlock', {'item': item, 'via': via});
+  /// [format] pour les pubs : rewarded (avec récompense) ou interstitial (plein écran).
+  Future<bool> unlock(String item, {required String via, String format = 'rewarded'}) async {
+    final m = await _call('etudeUnlock', {'item': item, 'via': via, 'format': format});
     if (m['state'] is Map) _publish(_m(m['state']));
     return m['unlocked'] == true;
   }

@@ -35,9 +35,10 @@ void main() {
     expect(s.priceOf('ch:x'), 20);
     expect(s.priceOf('ch:vip'), 50);
     expect(s.priceOf('exam:lycee_d'), 60);
-    // 20 pièces à 3 pièces par pub : 7 pubs
-    expect(s.adsFor(20), 7);
-    expect(s.adsFor(3), 1);
+    // 20 pièces : 7 pubs avec récompense (3 pièces) ou 10 pubs plein écran (2 pièces)
+    expect(s.rewardedFor(20), 7);
+    expect(s.interstitialFor(20), 10);
+    expect(s.rewardedFor(3), 1);
   });
 
   test('un parcours se lit depuis le catalogue', () {
