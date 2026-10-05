@@ -23,7 +23,10 @@ class AdGate {
 
   /// Règle d'abonnement : admin toujours, Gold jamais, Premium oui (voir [AbonnementUtils.showsAds]).
   static bool userSeesAds(UserData? u) =>
-      u != null && AbonnementUtils.showsAds(u.abonnement, u.role, adFreeUntil: u.adFreeUntil);
+      u != null && (subscriptionBypass > 0 || AbonnementUtils.showsAds(u.abonnement, u.role, adFreeUntil: u.adFreeUntil));
+
+  /// > 0 pendant qu'une page d'Afrolook Étude est ouverte : l'abonnement Gold n'y retire pas (encore) les pubs.
+  static int subscriptionBypass = 0;
 
   static bool _isAdmin(UserData u) => AbonnementUtils.isAdmin(u.role);
 
@@ -57,5 +60,20 @@ class AdGate {
     final isAdmob = _slotCounter % n == n - 1;
     _slotCounter++;
     return isAdmob;
+  }
+}
+
+/// À ajouter aux pages d'Afrolook Étude : tant qu'elles sont ouvertes, les pubs s'affichent aussi aux comptes Gold.
+mixin EtudeAdBypass<T extends StatefulWidget> on State<T> {
+  @override
+  void initState() {
+    super.initState();
+    AdGate.subscriptionBypass++;
+  }
+
+  @override
+  void dispose() {
+    if (AdGate.subscriptionBypass > 0) AdGate.subscriptionBypass--;
+    super.dispose();
   }
 }

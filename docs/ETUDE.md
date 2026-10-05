@@ -195,3 +195,7 @@ Deux attestations (non officielles) : **IA — bases** (c'est quoi l'IA, écrire
 - Pub plein écran à la fin d'un niveau réussi : Quiz tous les 3 niveaux (max 6/jour, réglable `AppConfig/quiz`), Étude tous les 3 niveaux (max 6/jour).
 - Jamais pendant une question, jamais pour les comptes Gold (`AdGate`).
 - iPhone : pubs de test Google tant que `AppConfig/ads.units.ios` est vide (voir docs iOS ci-dessous).
+
+## 15. Gold et pubs dans Étude
+
+Pour le moment, l'abonnement Gold ne retire pas les pubs dans Afrolook Étude (les pubs y financent les déblocages) : `AdGate.subscriptionBypass` est actif tant qu'une page Étude est ouverte (mixin `EtudeAdBypass`). Le reste de l'app, et le Quiz, gardent la règle Gold = aucune pub. Pour revenir en arrière : retirer `with EtudeAdBypass` des pages `lib/pages/etude/`.

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_gate.dart';
 import '../../l10n/tr.dart';
 import '../../services/etude/etude_service.dart';
 import '../../services/quiz/quiz_sound.dart';
@@ -23,7 +24,7 @@ class EtudePlayPage extends StatefulWidget {
   State<EtudePlayPage> createState() => _EtudePlayPageState();
 }
 
-class _EtudePlayPageState extends State<EtudePlayPage> {
+class _EtudePlayPageState extends State<EtudePlayPage> with EtudeAdBypass {
   int _i = 0;
   int? _selected;
   EtudeAnswerResult? _result;

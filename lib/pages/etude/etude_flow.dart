@@ -36,7 +36,7 @@ class _UnlockSheet extends StatefulWidget {
   State<_UnlockSheet> createState() => _UnlockSheetState();
 }
 
-class _UnlockSheetState extends State<_UnlockSheet> {
+class _UnlockSheetState extends State<_UnlockSheet> with EtudeAdBypass {
   bool _busy = false;
 
   EtudeState get _s => EtudeService.instance.state.value ?? const EtudeState();
@@ -178,7 +178,7 @@ class _UnlockSheetState extends State<_UnlockSheet> {
     final left = price - paid;
     final user = context.read<UserAuthProvider>().loginUserData;
     final canRewarded = RewardsService.available(user);
-    final canInterstitial = AdConfig.isMobile && AdConfig.current.interstitialEnabled && AdGate.canShowType(user, 'interstitial') && user.abonnement?.estGold != true;
+    final canInterstitial = AdConfig.isMobile && AdConfig.current.interstitialEnabled && AdGate.canShowType(user, 'interstitial');
     final canAds = canRewarded || canInterstitial;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),

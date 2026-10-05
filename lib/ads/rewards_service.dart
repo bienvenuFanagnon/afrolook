@@ -1,3 +1,4 @@
+import 'ad_gate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -76,7 +77,7 @@ class RewardsService {
     final c = AdConfig.current;
     if (!c.enabled || !c.rewardsEnabled || !enabledByConfig || c.unit('rewarded').isEmpty) return false;
     if (AbonnementUtils.isAdmin(u.role)) return true;
-    return u.abonnement?.estGold != true;
+    return AdGate.subscriptionBypass > 0 || u.abonnement?.estGold != true;
   }
 
   /// Offres affichées selon le rôle : un vrai Premium (payé) ne voit pas les offres Premium.

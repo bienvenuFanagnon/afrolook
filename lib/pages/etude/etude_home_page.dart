@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_gate.dart';
 import '../../l10n/tr.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
@@ -20,7 +21,7 @@ class EtudeHomePage extends StatefulWidget {
   State<EtudeHomePage> createState() => _EtudeHomePageState();
 }
 
-class _EtudeHomePageState extends State<EtudeHomePage> {
+class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
   List<EtudeTrack>? _tracks;
   String? _error;
   bool _busy = false; // rechargement : la mascotte s'anime

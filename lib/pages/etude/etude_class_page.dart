@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_gate.dart';
 import '../../l10n/tr.dart';
 import '../../services/coin_checkout.dart';
 import '../../services/etude/etude_service.dart';
@@ -47,7 +48,7 @@ class EtudeClassPage extends StatefulWidget {
   State<EtudeClassPage> createState() => _EtudeClassPageState();
 }
 
-class _EtudeClassPageState extends State<EtudeClassPage> {
+class _EtudeClassPageState extends State<EtudeClassPage> with EtudeAdBypass {
   bool _busy = false; // rechargement : la mascotte s'anime
 
   @override
