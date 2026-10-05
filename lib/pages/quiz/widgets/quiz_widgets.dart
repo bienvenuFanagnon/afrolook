@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../l10n/tr.dart';
@@ -178,10 +180,13 @@ enum QuizOptionState { idle, selected, correct, wrong, dimmed }
 
 /// Une réponse possible.
 class QuizOption extends StatelessWidget {
-  const QuizOption({super.key, required this.letter, required this.text, required this.state, required this.onTap});
+  const QuizOption({super.key, required this.letter, required this.text, required this.state, required this.onTap, this.checking = false});
   final String letter, text;
   final QuizOptionState state;
   final VoidCallback? onTap;
+
+  /// La réponse est en cours de vérification : la case pulse et un petit cercle tourne à la place de la lettre.
+  final bool checking;
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +221,8 @@ class QuizOption extends StatelessWidget {
       case QuizOptionState.idle:
         break;
     }
-    return GestureDetector(
+    final waiting = checking && state == QuizOptionState.selected;
+    final tile = GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
@@ -237,12 +243,85 @@ class QuizOption extends StatelessWidget {
                 ? Icon(Icons.check_rounded, size: 18, color: badgeFg)
                 : state == QuizOptionState.wrong
                     ? Icon(Icons.close_rounded, size: 18, color: badgeFg)
-                    : Text(letter, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: badgeFg)),
+                    : waiting
+                        ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+                        : Text(letter, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: badgeFg)),
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(text, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: fg, height: 1.25))),
         ]),
       ),
+    );
+    return waiting ? _Pulse(child: tile) : tile;
+  }
+}
+
+class _Pulse extends StatefulWidget {
+  const _Pulse({required this.child});
+  final Widget child;
+
+  @override
+  State<_Pulse> createState() => _PulseState();
+}
+
+class _PulseState extends State<_Pulse> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 650))..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(opacity: Tween(begin: 0.55, end: 1.0).animate(_c), child: widget.child);
+}
+
+/// « Je vérifie ta réponse… » : petite attente animée entre le choix et le verdict.
+class QuizChecking extends StatefulWidget {
+  const QuizChecking({super.key});
+
+  @override
+  State<QuizChecking> createState() => _QuizCheckingState();
+}
+
+class _QuizCheckingState extends State<QuizChecking> {
+  static const _texts = ['Je vérifie ta réponse…', 'Je consulte les sages…', 'Verdict dans un instant…'];
+  Timer? _t;
+  int _i = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _t = Timer.periodic(const Duration(milliseconds: 1100), (_) {
+      if (mounted) setState(() => _i = (_i + 1) % _texts.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _t?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = _texts[_i];
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 6),
+      child: Column(children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          transitionBuilder: (child, a) => FadeTransition(opacity: a, child: SlideTransition(position: Tween(begin: const Offset(0, 0.4), end: Offset.zero).animate(a), child: child)),
+          child: Text(context.tr(text), key: ValueKey(text), style: TextStyle(color: c.info, fontWeight: FontWeight.w800, fontSize: 13.5)),
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(minHeight: 4, backgroundColor: c.surfaceVariant, valueColor: AlwaysStoppedAnimation(c.info)),
+        ),
+      ]),
     );
   }
 }

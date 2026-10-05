@@ -117,6 +117,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
     setState(() {
       _selected = idx;
       _busy = true;
+      _mood = HawkMood.think;
     });
     QuizAnswerResult? res;
     for (var attempt = 0; attempt < 2 && res == null; attempt++) {
@@ -435,9 +436,11 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
                   letter: 'ABCD'[k],
                   text: q.o[k],
                   state: _optionState(k),
+                  checking: _busy && !answered,
                   onTap: answered || _busy ? null : () => _choose(k),
                 ),
               ),
+            if (_busy && !answered) const QuizChecking(),
           ]),
         ),
       ),

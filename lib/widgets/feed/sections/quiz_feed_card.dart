@@ -29,6 +29,8 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
   static DateTime? _sharedAt;
 
   QuizState? _state;
+  bool _dailyOpen = false;
+  int _reload = 0;
   bool _ready = false;
   bool _hidden = false;
 
@@ -58,13 +60,30 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
       }
       return;
     }
+    final cfg = await QuizService.instance.loadConfig();
+    if (!cfg.enabled || !cfg.feedCardEnabled) {
+      if (mounted) setState(() => _ready = true);
+      return;
+    }
+    // Les questions du jour décident seules s'il faut montrer le quiz (pas besoin d'attendre la progression) :
+    // on les affiche tout de suite si on les a déjà, sinon dès que le serveur les envoie.
+    if (widget.slot == 1) {
+      final cached = await QuizService.instance.dailyCached();
+      if (cached != null && !cached.done && mounted) {
+        setState(() {
+          _dailyOpen = true;
+          _ready = true;
+        });
+      }
+      QuizService.instance.dailyGet().then((d) {
+        if (mounted) setState(() => _dailyOpen = !d.done);
+      }).catchError((Object _) {});
+    }
     final stale = _sharedAt == null || DateTime.now().difference(_sharedAt!).inMinutes > 10;
     if (_shared == null || stale) {
       _sharedAt = DateTime.now();
       _shared = () async {
         try {
-          final cfg = await QuizService.instance.loadConfig();
-          if (!cfg.enabled || !cfg.feedCardEnabled) return null;
           return await QuizService.instance.refresh();
         } catch (_) {
           return null;
@@ -94,22 +113,36 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
     if (mounted) _load();
   }
 
+  /// Reprendre les questions du jour sur la page du quiz, à la question suivante.
+  Future<void> _openDaily() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizDailyPage()));
+    _shared = null;
+    if (mounted) {
+      setState(() => _reload++);
+      _load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_ready || _hidden || _state == null) return const SizedBox.shrink();
-    final s = _state!;
-    if (widget.slot == 2 && s.playedToday) return const SizedBox.shrink();
+    if (!_ready || _hidden) return const SizedBox.shrink();
     final c = AppColors.of(context);
+    final s = _state;
+    final showDaily = widget.slot == 1 && _dailyOpen;
+    if (!showDaily && s == null) return const SizedBox.shrink();
+    if (!showDaily && widget.slot == 2 && s!.playedToday) return const SizedBox.shrink();
 
-    final Widget body = (widget.slot == 1 && !s.dailyDone)
+    final Widget body = showDaily
         ? QuizDailyPlayer(
+            key: ValueKey('daily$_reload'),
             compact: true,
             onContinue: _openQuiz,
+            onContinueDaily: _openDaily,
             onFinished: () {
               _shared = null;
             },
           )
-        : _invite(c, s);
+        : _invite(c, s!);
 
     return Stack(children: [
       body,

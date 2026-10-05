@@ -200,6 +200,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     setState(() {
       _selected = choice;
       _busy = true;
+      _mood = HawkMood.think;
     });
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
@@ -647,9 +648,11 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
             letter: 'ABCD'[k],
             text: q.o[k],
             state: optState(k),
+            checking: _busy && !answered,
             onTap: answered || _busy || q.hide.contains(k) ? null : () => _submit(k),
           ),
         ),
+      if (_busy && !answered && _selected != null) const QuizChecking(),
       if (!answered) ...[
         const SizedBox(height: 4),
         Row(children: [

@@ -100,4 +100,23 @@ void main() {
       }
     }
   });
+
+  testWidgets("la réponse choisie pulse pendant la vérification", (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Column(children: [
+          QuizOption(letter: 'A', text: 'Réponse', state: QuizOptionState.selected, checking: true, onTap: null),
+          const QuizChecking(),
+        ]),
+      ),
+    ));
+    final first = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList();
+    for (var k = 0; k < 4; k++) {
+      await tester.pump(const Duration(milliseconds: 1200));
+    }
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList(), isNot(equals(first)));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

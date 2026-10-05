@@ -77,4 +77,8 @@ const Map<String, Map<String, String>> kTrQuizChallenge = {
   'Voix d\'homme': {'en': 'Man\'s voice', 'es': 'Voz de hombre', 'de': 'Männerstimme', 'ar': 'صوت رجل', 'pt': 'Voz masculina', 'zh': '男声', 'sw': 'Sauti ya mwanaume'},
   'Écouter un exemple': {'en': 'Hear an example', 'es': 'Escuchar un ejemplo', 'de': 'Beispiel anhören', 'ar': 'استمع إلى مثال', 'pt': 'Ouvir um exemplo', 'zh': '试听', 'sw': 'Sikiliza mfano'},
   '{n} réponses éclair': {'en': '{n} lightning answers', 'es': '{n} respuestas rayo', 'de': '{n} Blitz-Antworten', 'ar': '{n} إجابات برق', 'pt': '{n} respostas relâmpago', 'zh': '{n} 个闪电回答', 'sw': 'Majibu {n} ya umeme'},
+  'Je vérifie ta réponse…': {'en': 'Checking your answer…', 'es': 'Comprobando tu respuesta…', 'de': 'Ich prüfe deine Antwort…', 'ar': 'أتحقق من إجابتك…', 'pt': 'Verificando sua resposta…', 'zh': '正在检查你的答案…', 'sw': 'Naangalia jibu lako…'},
+  'Je consulte les sages…': {'en': 'Consulting the wise ones…', 'es': 'Consultando a los sabios…', 'de': 'Ich frage die Weisen…', 'ar': 'أستشير الحكماء…', 'pt': 'Consultando os sábios…', 'zh': '正在请教智者…', 'sw': 'Nawauliza wenye hekima…'},
+  'Verdict dans un instant…': {'en': 'Verdict in a moment…', 'es': 'Veredicto en un instante…', 'de': 'Urteil gleich…', 'ar': 'الحكم بعد لحظة…', 'pt': 'Veredito em instantes…', 'zh': '马上揭晓…', 'sw': 'Hukumu punde…'},
+  'Continuer dans le Quiz': {'en': 'Continue in the Quiz', 'es': 'Continuar en el Quiz', 'de': 'Im Quiz weitermachen', 'ar': 'تابع في الاختبار', 'pt': 'Continuar no Quiz', 'zh': '在问答中继续', 'sw': 'Endelea kwenye Maswali'},
 };

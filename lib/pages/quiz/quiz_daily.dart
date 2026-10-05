@@ -14,9 +14,12 @@ import 'widgets/quiz_widgets.dart';
 /// Les 3 questions du jour : même chose pour tout le monde, jouables directement dans le fil
 /// ([compact]) ou sur une page entière.
 class QuizDailyPlayer extends StatefulWidget {
-  const QuizDailyPlayer({super.key, this.compact = false, this.onContinue, this.onFinished});
+  const QuizDailyPlayer({super.key, this.compact = false, this.onContinue, this.onContinueDaily, this.onFinished});
   final bool compact;
   final VoidCallback? onContinue;
+
+  /// Dans le fil : après une réponse, la suite se joue sur la page du quiz (à la question suivante) et non dans le fil.
+  final VoidCallback? onContinueDaily;
   final VoidCallback? onFinished;
 
   @override
@@ -52,20 +55,30 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
 
   Future<void> _load() async {
     setState(() => _error = false);
+    // Affichage immédiat avec les dernières questions connues, puis mise à jour avec la réponse du serveur
+    final cached = await QuizService.instance.dailyCached();
+    if (cached != null && mounted && _daily == null && !cached.done) _show(cached);
     try {
       final d = await QuizService.instance.dailyGet();
       if (!mounted) return;
-      setState(() {
-        _daily = d;
-        _i = d.answered;
-        _correct = d.results.where((r) => r.correct).length;
-      });
-      if (!widget.compact) {
-        QuizVoice.instance.load().then((_) => QuizVoice.instance.prefetch(d.questions.map((x) => (q: x.q, o: x.o))));
-        _begin();
-      }
+      // Le joueur est déjà en train de répondre : on ne touche à rien (sauf si le serveur en sait plus que nous)
+      if (_daily != null && (_busy || _result != null || (_selected != null && d.answered <= _i))) return;
+      if (_daily == null || d.answered != _i || d.done != _daily!.done) _show(d);
     } catch (_) {
-      if (mounted) setState(() => _error = true);
+      if (mounted && _daily == null) setState(() => _error = true);
+    }
+  }
+
+  void _show(QuizDaily d) {
+    setState(() {
+      _daily = d;
+      _i = d.answered;
+      _selected = null;
+      _correct = d.results.where((r) => r.correct).length;
+    });
+    if (!widget.compact) {
+      QuizVoice.instance.load().then((_) => QuizVoice.instance.prefetch(d.questions.map((x) => (q: x.q, o: x.o))));
+      _begin();
     }
   }
 
@@ -84,6 +97,7 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
     setState(() {
       _selected = idx;
       _busy = true;
+      _mood = HawkMood.think;
     });
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
@@ -229,9 +243,11 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
               letter: 'ABCD'[k],
               text: q.o[k],
               state: _state(k),
+              checking: _busy && !answered,
               onTap: answered || _busy ? null : () => _choose(k),
             ),
           ),
+        if (_busy && !answered) const QuizChecking(),
         if (answered) ...[
           const SizedBox(height: 2),
           Text(
@@ -242,10 +258,13 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
           Text(_result!.explanation, style: TextStyle(color: c.textPrimary, fontSize: 13, height: 1.35)),
           const SizedBox(height: 10),
           QuizChunkyButton(
-            label: last ? context.tr('Voir mon score') : context.tr('Continuer'),
+            label: last
+                ? context.tr('Voir mon score')
+                : (widget.compact && widget.onContinueDaily != null ? context.tr('Continuer dans le Quiz') : context.tr('Continuer')),
+            icon: !last && widget.compact && widget.onContinueDaily != null ? Icons.arrow_forward_rounded : null,
             color: _result!.correct ? c.primary : c.danger,
             textColor: _result!.correct ? c.onPrimary : Colors.white,
-            onPressed: _next,
+            onPressed: !last && widget.compact && widget.onContinueDaily != null ? widget.onContinueDaily : _next,
           ),
         ],
       ]),

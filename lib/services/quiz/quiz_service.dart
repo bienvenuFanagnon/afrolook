@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Erreur renvoyée par le serveur du quiz ; [code] est un mot-clé stable (NO_HEARTS, LEVEL_LOCKED, TOO_FAST…).
 class QuizException implements Exception {
@@ -395,24 +397,64 @@ class QuizService {
   Future<QuizChalReply> challengeGiveUp() => _chal('giveup');
   Future<QuizChalReply> challengeCashOut() => _chal('cashout');
 
-  Future<QuizDaily> dailyGet() async {
-    final m = await _call('quizDailyGet');
-    return QuizDaily(
-      day: _i(m['day']),
-      done: _b(m['done']),
-      questions: (m['questions'] as List).map((e) => QuizQuestion.fromMap(Map<String, dynamic>.from(e as Map))).toList(),
-      results: (m['results'] as List)
-          .map((e) {
-            final r = Map<String, dynamic>.from(e as Map);
-            return QuizAnswerResult(_b(r['correct']), _i(r['correctIndex']), '${r['explanation']}', 0);
-          })
-          .toList(),
-    );
+  Future<QuizDaily>? _dailyFuture;
+  DateTime? _dailyAt;
+
+  QuizDaily _parseDaily(Map<String, dynamic> m) => QuizDaily(
+        day: _i(m['day']),
+        done: _b(m['done']),
+        questions: (m['questions'] as List).map((e) => QuizQuestion.fromMap(Map<String, dynamic>.from(e as Map))).toList(),
+        results: (m['results'] as List)
+            .map((e) {
+              final r = Map<String, dynamic>.from(e as Map);
+              return QuizAnswerResult(_b(r['correct']), _i(r['correctIndex']), '${r['explanation']}', 0);
+            })
+            .toList(),
+      );
+
+  /// Les questions du jour. La demande est partagée (le fil et la page n'interrogent pas le serveur deux fois) et la dernière
+  /// réponse est gardée sur le téléphone pour pouvoir afficher la carte tout de suite à l'ouverture suivante.
+  Future<QuizDaily> dailyGet({bool force = false}) {
+    final at = _dailyAt;
+    if (!force && _dailyFuture != null && at != null && DateTime.now().difference(at).inMinutes < 5) return _dailyFuture!;
+    _dailyAt = DateTime.now();
+    final f = () async {
+      final m = await _call('quizDailyGet');
+      try {
+        final sp = await SharedPreferences.getInstance();
+        await sp.setString('quiz_daily_cache', jsonEncode({'uid': uid, 'data': m}));
+      } catch (_) {}
+      return _parseDaily(m);
+    }();
+    _dailyFuture = f;
+    f.catchError((Object _) {
+      if (identical(_dailyFuture, f)) _dailyFuture = null;
+      return const QuizDaily(day: 0, questions: [], results: [], done: false);
+    });
+    return f;
+  }
+
+  /// Dernières questions du jour connues (de ce joueur, du jour en cours) : affichage immédiat avant la réponse du serveur.
+  Future<QuizDaily?> dailyCached() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString('quiz_daily_cache');
+      if (raw == null) return null;
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      if (j['uid'] != uid) return null;
+      final d = _parseDaily(Map<String, dynamic>.from(j['data'] as Map));
+      if (d.day != DateTime.now().toUtc().millisecondsSinceEpoch ~/ 86400000) return null;
+      return d;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Retourne le résultat de la réponse ; [gain] > 0 quand c'était la dernière question du jour.
   Future<({QuizAnswerResult result, bool finished, int gain, int correctCount})> dailyAnswer(int i, int choice) async {
     final m = await _call('quizDailyAnswer', {'i': i, 'choice': choice});
+    _dailyFuture = null;
+    SharedPreferences.getInstance().then((sp) => sp.remove('quiz_daily_cache')).catchError((Object _) => false);
     final st = m['state'];
     if (st is Map) _publish(Map<String, dynamic>.from(st));
     return (
