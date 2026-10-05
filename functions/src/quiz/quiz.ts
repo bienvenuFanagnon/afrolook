@@ -247,9 +247,11 @@ export const quizGetState = onCall({ timeoutSeconds: 15 }, async (request) => {
   const now = Date.now();
   const state = await db.runTransaction(async (tx) => {
     const snap = await tx.get(progRef(uid));
+    const before = snap.exists ? JSON.stringify(snap.data()) : "";
     const p = normalise(snap.exists ? (snap.data() as Prog) : freshProg(info.country), cfg, now);
     if (info.country && p.country !== info.country) p.country = info.country;
-    tx.set(progRef(uid), p);
+    // Pas d'écriture quand rien n'a changé (le fil appelle cette fonction à chaque session)
+    if (JSON.stringify(p) !== before) tx.set(progRef(uid), p);
     return publicState(p, cfg, now);
   });
   return { ok: true, enabled: cfg.enabled, ...state };
@@ -611,6 +613,22 @@ export const quizMergeCountryBoard = onSchedule(
         .sort((a, b) => b.points - a.points)
         .slice(0, 40);
       await db.collection("QuizCountryBoard").doc(weekId).set({ weekId, countries, updatedAt: now });
+    }
+  },
+);
+
+/** Chaque nuit : supprime les parties de plus de 7 jours (surtout les sessions du quiz du jour, une par joueur et par jour). */
+export const quizCleanupSessions = onSchedule(
+  { schedule: "every day 03:30", region: "us-central1", timeZone: "UTC", timeoutSeconds: 300, memory: "256MiB" },
+  async () => {
+    const limit = Date.now() - 7 * DAY;
+    for (let round = 0; round < 20; round++) {
+      const snap = await db.collection("QuizSessions").where("startedAt", "<", limit).limit(400).get();
+      if (snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      if (snap.size < 400) break;
     }
   },
 );
