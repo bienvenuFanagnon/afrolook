@@ -3662,6 +3662,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           SliverList(
             delegate: SliverChildListDelegate([
               if (widget.type.isEmpty) _buildNoNewPostsBanner(),
+              const QuizFeedCard(key: ValueKey('quiz_card_home_end_empty'), slot: 3),
               FeedEndDiscoverySection(
                 pageType: widget.type.isNotEmpty ? widget.type : null,
                 onSubscribed: () {
@@ -3875,6 +3876,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       contentWidgets.add(_buildShimmerPost());
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts) {
+      // Plus de posts à voir : le quiz s'affiche avant les widgets de fin
+      contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_end'), slot: 3));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end'), variant: SocialFollowVariant.end));
       contentWidgets.add(FeedEndDiscoverySection(
         pageType: widget.type.isNotEmpty ? widget.type : null,

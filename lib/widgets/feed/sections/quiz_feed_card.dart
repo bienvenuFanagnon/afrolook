@@ -11,6 +11,7 @@ import '../../../theme/app_colors.dart';
 
 /// Carte du quiz dans le fil.
 ///  - [slot] 1 : les 3 questions du jour, jouables sans quitter le fil ; une fois terminées, une invitation à continuer l'aventure.
+///  - [slot] 3 : fin du fil (plus de posts à voir), avant les widgets de fin : les questions du jour si elles restent, sinon l'invitation à continuer.
 ///  - [slot] 2 : un rappel plus loin dans le fil, seulement si la personne n'a pas encore joué aujourd'hui.
 /// La croix masque la carte jusqu'à demain. Réglable à distance (AppConfig/quiz : enabled, feedCardEnabled).
 class QuizFeedCard extends StatefulWidget {
@@ -67,7 +68,7 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
     }
     // Les questions du jour décident seules s'il faut montrer le quiz (pas besoin d'attendre la progression) :
     // on les affiche tout de suite si on les a déjà, sinon dès que le serveur les envoie.
-    if (widget.slot == 1) {
+    if (widget.slot == 1 || widget.slot == 3) {
       final cached = await QuizService.instance.dailyCached();
       if (cached != null && !cached.done && mounted) {
         setState(() {
@@ -128,7 +129,7 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
     if (!_ready || _hidden) return const SizedBox.shrink();
     final c = AppColors.of(context);
     final s = _state;
-    final showDaily = widget.slot == 1 && _dailyOpen;
+    final showDaily = (widget.slot == 1 || widget.slot == 3) && _dailyOpen;
     if (!showDaily && s == null) return const SizedBox.shrink();
     if (!showDaily && widget.slot == 2 && s!.playedToday) return const SizedBox.shrink();
 

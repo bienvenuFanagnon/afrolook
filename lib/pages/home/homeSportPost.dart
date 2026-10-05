@@ -3038,6 +3038,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       contentWidgets.add(_buildShimmerPost());
     } else if (!_hasMorePosts) {
       // Fin du feed T1 : widget de découverte + boutons d'action
+      contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_sport_end'), slot: 3));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end_sport'), variant: SocialFollowVariant.end));
       contentWidgets.add(
         FeedEndDiscoverySection(
