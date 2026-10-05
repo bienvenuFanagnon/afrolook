@@ -1,0 +1,310 @@
+[
+{
+"t": 1,
+"q": "Quel pays asiatique a envoyé le rover Chandrayaan sur la Lune ?",
+"c": "L'Inde",
+"w": [
+"Le Japon",
+"La Chine",
+"Le Pakistan"
+],
+"e": "Chandrayaan-3 a atterri près du pôle sud lunaire en 2023."
+},
+{
+"t": 1,
+"q": "Quel pays asiatique a envoyé le robot Yutu sur la Lune ?",
+"c": "La Chine",
+"w": [
+"L'Inde",
+"Le Japon",
+"La Corée du Sud"
+],
+"e": "La mission Chang'e 3 a posé Yutu en 2013."
+},
+{
+"t": 1,
+"q": "Quel train japonais rapide est surnommé « train-bullet » ?",
+"c": "Le Shinkansen",
+"w": [
+"Le TGV",
+"L'ICE",
+"Le Maglev"
+],
+"e": "Il circule depuis 1964."
+},
+{
+"t": 1,
+"q": "Quel animal est un symbole de la Chine et mange du bambou ?",
+"c": "Le panda géant",
+"w": [
+"Le tigre",
+"Le yack",
+"Le singe doré"
+],
+"e": "Il vit dans les montagnes du Sichuan."
+},
+{
+"t": 1,
+"q": "Quelle grande entreprise japonaise a créé la console PlayStation ?",
+"c": "Sony",
+"w": [
+"Nintendo",
+"Sega",
+"Toshiba"
+],
+"e": "La première PlayStation date de 1994."
+},
+{
+"t": 2,
+"q": "Quel pays asiatique est le premier producteur mondial de riz ?",
+"c": "La Chine",
+"w": [
+"L'Inde",
+"Le Japon",
+"Le Vietnam"
+],
+"e": "L'Inde est le deuxième producteur."
+},
+{
+"t": 2,
+"q": "Quel est le plus gros félin du monde, vivant en Asie ?",
+"c": "Le tigre",
+"w": [
+"Le lion",
+"Le jaguar",
+"Le léopard des neiges"
+],
+"e": "Le tigre de Sibérie est le plus grand."
+},
+{
+"t": 2,
+"q": "Quel animal d'Asie est le plus grand lézard du monde ?",
+"c": "Le dragon de Komodo",
+"w": [
+"Le varan du Nil",
+"L'iguane",
+"Le gecko"
+],
+"e": "Il vit sur quelques îles d'Indonésie."
+},
+{
+"t": 2,
+"q": "Quelle entreprise sud-coréenne est un géant mondial des smartphones ?",
+"c": "Samsung",
+"w": [
+"Xiaomi",
+"Huawei",
+"Oppo"
+],
+"e": "Son siège est à Suwon."
+},
+{
+"t": 2,
+"q": "Quelle entreprise japonaise a créé le jeu Super Mario ?",
+"c": "Nintendo",
+"w": [
+"Sony",
+"Sega",
+"Capcom"
+],
+"e": "Le personnage est apparu en 1981."
+},
+{
+"t": 2,
+"q": "Quel grand séisme suivi d'un tsunami a frappé le Japon en 2011 ?",
+"c": "Le séisme de Tōhoku",
+"w": [
+"Le séisme de Kobe",
+"Le séisme de Kantō",
+"Le séisme de Niigata"
+],
+"e": "Il a provoqué l'accident de Fukushima."
+},
+{
+"t": 3,
+"q": "Quel scientifique indien a reçu le Nobel de physique en 1930 pour l'effet qui porte son nom ?",
+"c": "C. V. Raman",
+"w": [
+"Jagadish Chandra Bose",
+"Homi Bhabha",
+"Satyendra Nath Bose"
+],
+"e": "Il a étudié la diffusion de la lumière."
+},
+{
+"t": 3,
+"q": "Quel physicien indien a donné son nom aux bosons ?",
+"c": "Satyendra Nath Bose",
+"w": [
+"C. V. Raman",
+"Homi Bhabha",
+"Subrahmanyan Chandrasekhar"
+],
+"e": "Il a collaboré avec Einstein."
+},
+{
+"t": 3,
+"q": "Quel astrophysicien d'origine indienne a reçu le Nobel de physique en 1983 ?",
+"c": "Subrahmanyan Chandrasekhar",
+"w": [
+"C. V. Raman",
+"Abdus Salam",
+"Hans Bethe"
+],
+"e": "Il a calculé une limite de masse des naines blanches."
+},
+{
+"t": 3,
+"q": "Quel physicien pakistanais a reçu le prix Nobel de physique en 1979 ?",
+"c": "Abdus Salam",
+"w": [
+"C. V. Raman",
+"Fazlur Rahman",
+"Munir Ahmad Khan"
+],
+"e": "Il a partagé le prix avec Glashow et Weinberg."
+},
+{
+"t": 3,
+"q": "Quelle scientifique chinoise a reçu le prix Nobel de médecine en 2015 pour un traitement contre le paludisme ?",
+"c": "Tu Youyou",
+"w": [
+"Chien-Shiung Wu",
+"Lu Gwei-djen",
+"Yang Chen-Ning"
+],
+"e": "Elle a découvert l'artémisinine."
+},
+{
+"t": 3,
+"q": "Quel scientifique japonais a reçu le prix Nobel de médecine en 2012 pour les cellules souches induites ?",
+"c": "Shinya Yamanaka",
+"w": [
+"Yoshinori Ohsumi",
+"Satoshi Ōmura",
+"Tasuku Honjo"
+],
+"e": "Il a reprogrammé des cellules adultes."
+},
+{
+"t": 4,
+"q": "Quel physicien japonais a reçu le Nobel en 1949 pour avoir prédit le méson ?",
+"c": "Hideki Yukawa",
+"w": [
+"Shin'ichirō Tomonaga",
+"Masatoshi Koshiba",
+"Yoichiro Nambu"
+],
+"e": "Il a été le premier Japonais à recevoir un Nobel."
+},
+{
+"t": 4,
+"q": "Quel physicien japonais a reçu le Nobel en 2002 pour la détection de neutrinos ?",
+"c": "Masatoshi Koshiba",
+"w": [
+"Takaaki Kajita",
+"Yoichiro Nambu",
+"Hideki Yukawa"
+],
+"e": "Il a conçu le détecteur Kamiokande."
+},
+{
+"t": 4,
+"q": "Quelle physicienne sino-américaine est célèbre pour l'expérience de Wu sur la violation de la parité ?",
+"c": "Chien-Shiung Wu",
+"w": [
+"Tu Youyou",
+"Maria Goeppert Mayer",
+"Lise Meitner"
+],
+"e": "Elle a été surnommée « la première dame de la physique »."
+},
+{
+"t": 4,
+"q": "Quel ingénieur indien est le père du programme spatial indien ?",
+"c": "Vikram Sarabhai",
+"w": [
+"A. P. J. Abdul Kalam",
+"Homi Bhabha",
+"Satish Dhawan"
+],
+"e": "L'ISRO a été fondée sous son impulsion."
+},
+{
+"t": 4,
+"q": "Quel président indien est surnommé « l'homme-fusée de l'Inde » ?",
+"c": "A. P. J. Abdul Kalam",
+"w": [
+"Rajendra Prasad",
+"Pranab Mukherjee",
+"Ram Nath Kovind"
+],
+"e": "Il a dirigé le programme de missiles indien."
+},
+{
+"t": 4,
+"q": "Quelle sonde indienne a atteint l'orbite de Mars en 2014 ?",
+"c": "Mangalyaan",
+"w": [
+"Chandrayaan",
+"Aryabhata",
+"Cartosat"
+],
+"e": "L'Inde a réussi du premier coup."
+},
+{
+"t": 5,
+"q": "Quel physicien japonais a reçu le Nobel de physique en 2014 pour les LED bleues ?",
+"c": "Shuji Nakamura",
+"w": [
+"Isamu Akasaki",
+"Hiroshi Amano",
+"Leo Esaki"
+],
+"e": "Il a partagé le prix avec deux autres."
+},
+{
+"t": 5,
+"q": "Quel biologiste japonais a reçu le Nobel de médecine en 2016 pour l'autophagie ?",
+"c": "Yoshinori Ohsumi",
+"w": [
+"Tasuku Honjo",
+"Shinya Yamanaka",
+"Satoshi Ōmura"
+],
+"e": "Il a étudié les cellules de levure."
+},
+{
+"t": 5,
+"q": "Quelle sonde japonaise a rapporté des échantillons de l'astéroïde Ryugu en 2020 ?",
+"c": "Hayabusa2",
+"w": [
+"Akatsuki",
+"Kaguya",
+"Hayabusa"
+],
+"e": "Elle a été lancée en 2014."
+},
+{
+"t": 5,
+"q": "Quel chimiste japonais a reçu le Nobel de chimie en 2010 pour des couplages catalysés par le palladium ?",
+"c": "Ei-ichi Negishi",
+"w": [
+"Osamu Shimomura",
+"Ryōji Noyori",
+"Hideki Shirakawa"
+],
+"e": "Il partage le prix avec Richard Heck et Akira Suzuki."
+},
+{
+"t": 5,
+"q": "Quel pays asiatique a lancé le premier satellite artificiel d'Asie en 1970 ?",
+"c": "Le Japon",
+"w": [
+"La Chine",
+"L'Inde",
+"La Corée du Sud"
+],
+"e": "Il s'appelait Ōsumi."
+}
+]
