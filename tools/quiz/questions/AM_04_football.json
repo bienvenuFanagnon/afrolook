@@ -1,0 +1,752 @@
+[
+{
+"q": "Quelle équipe nationale est surnommée « la Seleção » ?",
+"c": "Le Brésil",
+"w": [
+"L'Argentine",
+"La Colombie",
+"Le Mexique"
+],
+"e": "Elle joue en jaune et en bleu."
+},
+{
+"q": "Quelle équipe nationale est surnommée « l'Albiceleste » ?",
+"c": "L'Argentine",
+"w": [
+"L'Uruguay",
+"Le Chili",
+"Le Paraguay"
+],
+"e": "Son maillot est à rayures bleu ciel et blanches."
+},
+{
+"q": "Quel stade légendaire de Rio de Janeiro a accueilli les finales de la Coupe du monde 1950 et 2014 ?",
+"c": "Le Maracanã",
+"w": [
+"Le Morumbi",
+"Le Mineirão",
+"L'Arena Corinthians"
+],
+"e": "Il porte officiellement le nom du journaliste Mário Filho."
+},
+{
+"q": "Quel Brésilien, Ballon d'Or 2005, est célèbre pour son sourire et ses dribbles ?",
+"c": "Ronaldinho",
+"w": [
+"Kaká",
+"Rivaldo",
+"Ronaldo"
+],
+"e": "Il a brillé au FC Barcelone entre 2003 et 2008."
+},
+{
+"q": "Quel attaquant brésilien est le meilleur buteur de l'histoire de la Seleção ?",
+"c": "Neymar",
+"w": [
+"Pelé",
+"Ronaldo",
+"Romário"
+],
+"e": "Il a dépassé Pelé en 2023."
+},
+{
+"q": "Quel club de Rio de Janeiro, aux couleurs rouge et noir, est le plus populaire du Brésil ?",
+"c": "Flamengo",
+"w": [
+"Fluminense",
+"Botafogo",
+"Vasco da Gama"
+],
+"e": "Il a gagné la Copa Libertadores en 2019 et 2022."
+},
+{
+"q": "Quel club de Buenos Aires est surnommé « Boca » et porte un maillot bleu et jaune ?",
+"c": "Boca Juniors",
+"w": [
+"River Plate",
+"Independiente",
+"San Lorenzo"
+],
+"e": "Son stade s'appelle « la Bombonera »."
+},
+{
+"q": "Quel grand club argentin, rival de Boca, joue en blanc avec une bande rouge ?",
+"c": "River Plate",
+"w": [
+"Racing Club",
+"Independiente",
+"Estudiantes"
+],
+"e": "Son stade s'appelle El Monumental."
+},
+{
+"q": "Comment s'appelle le derby entre Boca Juniors et River Plate ?",
+"c": "Le Superclásico",
+"w": [
+"Le Clásico",
+"L'Old Firm",
+"Le Derby della Madonnina"
+],
+"e": "Il est considéré comme l'un des matchs les plus chauds du monde."
+},
+{
+"q": "Quel pays a gagné la Copa América 2021, disputée au Maracanã ?",
+"c": "L'Argentine",
+"w": [
+"Le Brésil",
+"L'Uruguay",
+"La Colombie"
+],
+"e": "C'était le premier grand titre de Messi avec la sélection."
+},
+{
+"q": "Quel gardien argentin, surnommé « Dibu », a été l'un des héros de la Coupe du monde 2022 ?",
+"c": "Emiliano Martínez",
+"w": [
+"Sergio Romero",
+"Franco Armani",
+"Willy Caballero"
+],
+"e": "Il a arrêté un tir au but décisif en finale."
+},
+{
+"q": "Dans quels pays se joue le championnat de football appelé MLS ?",
+"c": "Les États-Unis et le Canada",
+"w": [
+"Le Mexique et les États-Unis",
+"Le Brésil et l'Argentine",
+"Le Canada seul"
+],
+"e": "La Major League Soccer a été fondée en 1993."
+},
+{
+"q": "Quel stade de Mexico a accueilli les finales de la Coupe du monde 1970 et 1986 ?",
+"c": "Le stade Azteca",
+"w": [
+"Le stade Olympique",
+"Le stade Jalisco",
+"Le stade Chivas"
+],
+"e": "Il a accueilli la finale de Maradona en 1986."
+},
+{
+"q": "Quel pays a organisé la Coupe du monde de football en 1970 et en 1986 ?",
+"c": "Le Mexique",
+"w": [
+"Le Brésil",
+"L'Argentine",
+"Les États-Unis"
+],
+"e": "Il est le premier pays à l'avoir organisée deux fois."
+},
+{
+"q": "Quel pays organisera la Coupe du monde 2026 avec le Mexique et le Canada ?",
+"c": "Les États-Unis",
+"w": [
+"Le Brésil",
+"L'Argentine",
+"Cuba"
+],
+"e": "C'est la première Coupe du monde à 48 équipes."
+},
+{
+"q": "Quel ailier brésilien était surnommé « la joie du peuple » ?",
+"c": "Garrincha",
+"w": [
+"Pelé",
+"Zico",
+"Jairzinho"
+],
+"e": "Il a gagné deux Coupes du monde, en 1958 et 1962."
+},
+{
+"q": "Combien de Coupes du monde Pelé a-t-il remportées avec le Brésil ?",
+"c": "3",
+"w": [
+"2",
+"4",
+"5"
+],
+"e": "Il a gagné en 1958, 1962 et 1970."
+},
+{
+"q": "Quel capitaine brésilien a soulevé la Coupe du monde 1994 ?",
+"c": "Dunga",
+"w": [
+"Cafu",
+"Romário",
+"Taffarel"
+],
+"e": "Il était connu pour son tempérament de combattant."
+},
+{
+"q": "Quel latéral brésilien a disputé trois finales de Coupe du monde consécutives (1994, 1998 et 2002) ?",
+"c": "Cafu",
+"w": [
+"Roberto Carlos",
+"Dunga",
+"Júnior"
+],
+"e": "Il a soulevé la coupe en 2002 comme capitaine."
+},
+{
+"q": "Quel attaquant brésilien est surnommé « le Phénomène » ?",
+"c": "Ronaldo",
+"w": [
+"Ronaldinho",
+"Romário",
+"Neymar"
+],
+"e": "Il a marqué 15 buts en Coupes du monde."
+},
+{
+"q": "Quel Brésilien a reçu le Ballon d'Or en 2007 ?",
+"c": "Kaká",
+"w": [
+"Ronaldinho",
+"Rivaldo",
+"Neymar"
+],
+"e": "Il était alors joueur de l'AC Milan."
+},
+{
+"q": "Quel attaquant argentin était surnommé « Batigol » ?",
+"c": "Gabriel Batistuta",
+"w": [
+"Hernán Crespo",
+"Diego Milito",
+"Claudio Caniggia"
+],
+"e": "Il a joué à la Fiorentina et à la Roma."
+},
+{
+"q": "Quel Argentin a marqué le « but du siècle » contre l'Angleterre à la Coupe du monde 1986 ?",
+"c": "Diego Maradona",
+"w": [
+"Jorge Valdano",
+"Claudio Caniggia",
+"Mario Kempes"
+],
+"e": "Il a dribblé la moitié de l'équipe adverse avant de marquer."
+},
+{
+"q": "Quel entraîneur argentin a mené l'Argentine au titre mondial en 2022 ?",
+"c": "Lionel Scaloni",
+"w": [
+"Diego Simeone",
+"Marcelo Bielsa",
+"Jorge Sampaoli"
+],
+"e": "Il avait pris la tête de l'équipe en 2018."
+},
+{
+"q": "Quel joueur argentin a marqué en finale de la Coupe du monde 2022, avec Messi, contre la France ?",
+"c": "Ángel Di María",
+"w": [
+"Julián Álvarez",
+"Lautaro Martínez",
+"Paulo Dybala"
+],
+"e": "Il a joué à Paris, à Manchester United et à Benfica."
+},
+{
+"q": "Quel attaquant argentin surnommé « le Kun » a joué à Manchester City ?",
+"c": "Sergio Agüero",
+"w": [
+"Carlos Tévez",
+"Gonzalo Higuaín",
+"Paulo Dybala"
+],
+"e": "Il a marqué le but du titre en 2012, à la dernière seconde."
+},
+{
+"q": "Quel attaquant uruguayen, surnommé « El Matador », a joué au PSG et à Manchester United ?",
+"c": "Edinson Cavani",
+"w": [
+"Luis Suárez",
+"Diego Forlán",
+"Darwin Núñez"
+],
+"e": "Il est le meilleur buteur de l'histoire du PSG avant Mbappé."
+},
+{
+"q": "Quel Colombien a été meilleur buteur de la Coupe du monde 2014 ?",
+"c": "James Rodríguez",
+"w": [
+"Radamel Falcao",
+"Carlos Valderrama",
+"Juan Cuadrado"
+],
+"e": "Il a marqué un but splendide de volée contre l'Uruguay."
+},
+{
+"q": "Quel gardien colombien est célèbre pour son « coup du scorpion » ?",
+"c": "René Higuita",
+"w": [
+"Faryd Mondragón",
+"David Ospina",
+"Óscar Córdoba"
+],
+"e": "Il a effectué ce geste à Wembley en 1995."
+},
+{
+"q": "Quel attaquant chilien a joué à Arsenal et à l'Inter Milan ?",
+"c": "Alexis Sánchez",
+"w": [
+"Arturo Vidal",
+"Eduardo Vargas",
+"Marcelo Salas"
+],
+"e": "Il est le meilleur buteur de l'histoire de la sélection chilienne."
+},
+{
+"q": "Quel pays a gagné la Copa América en 2015 et en 2016 ?",
+"c": "Le Chili",
+"w": [
+"L'Argentine",
+"L'Uruguay",
+"La Colombie"
+],
+"e": "Il a battu l'Argentine en finale les deux fois."
+},
+{
+"q": "Quel pays a remporté la Copa América 2019, disputée chez lui ?",
+"c": "Le Brésil",
+"w": [
+"L'Argentine",
+"Le Chili",
+"Le Pérou"
+],
+"e": "Il a battu le Pérou en finale au Maracanã."
+},
+{
+"q": "Quel pays a remporté la Copa América en 2011 ?",
+"c": "L'Uruguay",
+"w": [
+"Le Brésil",
+"Le Paraguay",
+"L'Argentine"
+],
+"e": "Il a battu le Paraguay en finale."
+},
+{
+"q": "Quel club argentin détient le record de victoires en Copa Libertadores, avec sept titres ?",
+"c": "Independiente",
+"w": [
+"Boca Juniors",
+"River Plate",
+"Estudiantes"
+],
+"e": "On l'appelle « le Roi de Coupes »."
+},
+{
+"q": "Quel club brésilien a gagné la Copa Libertadores en 2019 et en 2022 ?",
+"c": "Flamengo",
+"w": [
+"Palmeiras",
+"Corinthians",
+"Santos"
+],
+"e": "Il a gagné la finale 2019 contre River Plate dans les dernières minutes."
+},
+{
+"q": "Quel club de São Paulo, en maillot blanc et noir, a gagné la Coupe du monde des clubs en 2012 ?",
+"c": "Corinthians",
+"w": [
+"Palmeiras",
+"São Paulo FC",
+"Santos"
+],
+"e": "Il a battu Chelsea en finale."
+},
+{
+"q": "Quel club brésilien a révélé le jeune Pelé ?",
+"c": "Santos",
+"w": [
+"Flamengo",
+"Corinthians",
+"Palmeiras"
+],
+"e": "Pelé y a joué presque toute sa carrière."
+},
+{
+"q": "Quel club argentin a lancé Maradona en première division ?",
+"c": "Argentinos Juniors",
+"w": [
+"Boca Juniors",
+"River Plate",
+"Newell's Old Boys"
+],
+"e": "Maradona y a débuté à seize ans."
+},
+{
+"q": "Quel club de Rosario a formé Lionel Messi enfant ?",
+"c": "Newell's Old Boys",
+"w": [
+"Rosario Central",
+"Boca Juniors",
+"River Plate"
+],
+"e": "Messi y a joué avant de partir à Barcelone à treize ans."
+},
+{
+"q": "Quel club chilien de Santiago, le plus populaire du pays, a gagné la Copa Libertadores en 1991 ?",
+"c": "Colo-Colo",
+"w": [
+"Universidad de Chile",
+"Universidad Católica",
+"Cobreloa"
+],
+"e": "C'est le seul club chilien à avoir gagné cette coupe."
+},
+{
+"q": "Quel club mexicain, surnommé « les Aigles », est le plus titré du pays ?",
+"c": "Club América",
+"w": [
+"Chivas de Guadalajara",
+"Cruz Azul",
+"Pumas UNAM"
+],
+"e": "Il est basé à Mexico."
+},
+{
+"q": "Quel club mexicain de Guadalajara n'a longtemps aligné que des joueurs mexicains ?",
+"c": "Les Chivas",
+"w": [
+"Club América",
+"Tigres UANL",
+"Monterrey"
+],
+"e": "Cette tradition est un élément de son identité."
+},
+{
+"q": "Quel attaquant mexicain surnommé « Chicharito » a joué à Manchester United et au Real Madrid ?",
+"c": "Javier Hernández",
+"w": [
+"Hirving Lozano",
+"Raúl Jiménez",
+"Rafael Márquez"
+],
+"e": "Son surnom signifie « petit pois »."
+},
+{
+"q": "Quel gardien mexicain s'est illustré à la Coupe du monde 2014 contre le Brésil ?",
+"c": "Guillermo Ochoa",
+"w": [
+"Jesús Corona",
+"Oswaldo Sánchez",
+"Jorge Campos"
+],
+"e": "Il a arrêté presque tous les tirs du match."
+},
+{
+"q": "Quel défenseur mexicain a joué au FC Barcelone et participé à cinq Coupes du monde ?",
+"c": "Rafael Márquez",
+"w": [
+"Hugo Sánchez",
+"Carlos Salcido",
+"Andrés Guardado"
+],
+"e": "Il a été l'un des rares joueurs à jouer cinq éditions."
+},
+{
+"q": "Quelle équipe a battu le Brésil en finale de la Coupe du monde 1950, lors du « Maracanazo » ?",
+"c": "L'Uruguay",
+"w": [
+"L'Argentine",
+"La Suède",
+"L'Italie"
+],
+"e": "Près de 200 000 spectateurs étaient au stade."
+},
+{
+"q": "Quel pays a organisé et gagné la Coupe du monde 1978 ?",
+"c": "L'Argentine",
+"w": [
+"Le Brésil",
+"L'Italie",
+"L'Allemagne"
+],
+"e": "La finale s'est jouée à Buenos Aires contre les Pays-Bas."
+},
+{
+"q": "Quel pays a organisé la Coupe du monde 1994 ?",
+"c": "Les États-Unis",
+"w": [
+"Le Mexique",
+"Le Brésil",
+"L'Argentine"
+],
+"e": "La finale s'est jouée à Pasadena."
+},
+{
+"q": "Quel pays a gagné la finale de la Coupe du monde 1994 aux tirs au but contre l'Italie ?",
+"c": "Le Brésil",
+"w": [
+"L'Argentine",
+"L'Allemagne",
+"La Suède"
+],
+"e": "Roberto Baggio a manqué le dernier tir au but."
+},
+{
+"q": "Quel pays d'Amérique du Nord a atteint les demi-finales de la première Coupe du monde, en 1930 ?",
+"c": "Les États-Unis",
+"w": [
+"Le Mexique",
+"Cuba",
+"Le Canada"
+],
+"e": "Ils ont été battus par l'Argentine."
+},
+{
+"q": "Quel pays d'Amérique centrale a atteint les quarts de finale de la Coupe du monde 2014 ?",
+"c": "Le Costa Rica",
+"w": [
+"Le Honduras",
+"Le Panama",
+"Le Salvador"
+],
+"e": "Il a été battu aux tirs au but par les Pays-Bas."
+},
+{
+"q": "Quel pays des Caraïbes a participé à la Coupe du monde 1974 en Allemagne ?",
+"c": "Haïti",
+"w": [
+"Cuba",
+"La Jamaïque",
+"Trinité-et-Tobago"
+],
+"e": "Emmanuel Sanon a marqué le premier but haïtien en Coupe du monde."
+},
+{
+"q": "Comment s'appelle la compétition des équipes nationales d'Amérique du Nord, centrale et des Caraïbes ?",
+"c": "La Gold Cup",
+"w": [
+"La Copa América",
+"La Ligue des nations",
+"La Coupe des Caraïbes"
+],
+"e": "Elle est organisée par la Concacaf."
+},
+{
+"q": "Quel pays a remporté le plus souvent la Gold Cup ?",
+"c": "Le Mexique",
+"w": [
+"Les États-Unis",
+"Le Canada",
+"Le Costa Rica"
+],
+"e": "Il domine la compétition depuis sa création."
+},
+{
+"q": "Quel Canadien est l'un des joueurs les plus rapides du Bayern Munich ?",
+"c": "Alphonso Davies",
+"w": [
+"Jonathan David",
+"Cyle Larin",
+"Stephen Eustáquio"
+],
+"e": "Il est né dans un camp de réfugiés au Ghana."
+},
+{
+"q": "Quel Américain a joué à Chelsea avant de rejoindre l'AC Milan en 2023 ?",
+"c": "Christian Pulisic",
+"w": [
+"Weston McKennie",
+"Tyler Adams",
+"Giovanni Reyna"
+],
+"e": "Il est surnommé « Captain America »."
+},
+{
+"q": "Quel gardien paraguayen était réputé pour marquer des coups francs et des penalties ?",
+"c": "José Luis Chilavert",
+"w": [
+"Roberto Fernández",
+"Justo Villar",
+"Rubén Ruiz Díaz"
+],
+"e": "Il a marqué plus de 60 buts dans sa carrière."
+},
+{
+"q": "Quelle joueuse brésilienne a été élue six fois meilleure joueuse du monde ?",
+"c": "Marta",
+"w": [
+"Cristiane",
+"Formiga",
+"Debinha"
+],
+"e": "Elle est considérée comme l'une des plus grandes joueuses de l'histoire."
+},
+{
+"q": "Quel pays a remporté le plus de Coupes du monde féminines, avec quatre titres ?",
+"c": "Les États-Unis",
+"w": [
+"L'Allemagne",
+"Le Japon",
+"La Suède"
+],
+"e": "Elles ont gagné en 1991, 1999, 2015 et 2019."
+},
+{
+"q": "Quelle joueuse américaine a reçu le Ballon d'Or féminin en 2019 ?",
+"c": "Megan Rapinoe",
+"w": [
+"Alex Morgan",
+"Carli Lloyd",
+"Mallory Swanson"
+],
+"e": "Elle est aussi connue pour son engagement pour l'égalité."
+},
+{
+"q": "Quel sélectionneur brésilien a mené la Seleção au titre mondial 2002 ?",
+"c": "Luiz Felipe Scolari",
+"w": [
+"Carlos Alberto Parreira",
+"Mário Zagallo",
+"Tite"
+],
+"e": "On l'appelait « Felipão »."
+},
+{
+"q": "Quel sélectionneur brésilien a conduit l'équipe au titre mondial 1994 ?",
+"c": "Carlos Alberto Parreira",
+"w": [
+"Luiz Felipe Scolari",
+"Mário Zagallo",
+"Telê Santana"
+],
+"e": "Il a dirigé plusieurs sélections dans sa carrière, dont l'Afrique du Sud."
+},
+{
+"q": "Quel gardien brésilien a gagné la Ligue des champions 2019 avec Liverpool ?",
+"c": "Alisson",
+"w": [
+"Ederson",
+"Dida",
+"Taffarel"
+],
+"e": "Il est l'un des meilleurs gardiens du monde."
+},
+{
+"q": "Quel entraîneur argentin, surnommé « El Loco », a dirigé le Chili, l'Argentine et Leeds ?",
+"c": "Marcelo Bielsa",
+"w": [
+"Diego Simeone",
+"Jorge Sampaoli",
+"Mauricio Pochettino"
+],
+"e": "Il est célèbre pour son football offensif."
+},
+{
+"q": "Quel meneur de jeu argentin est une légende de Boca Juniors dans les années 2000 ?",
+"c": "Juan Román Riquelme",
+"w": [
+"Ariel Ortega",
+"Pablo Aimar",
+"Javier Mascherano"
+],
+"e": "Il est devenu président du club en 2023."
+},
+{
+"q": "Quel Brésilien a été élu meilleur joueur de la Coupe du monde 1994 ?",
+"c": "Romário",
+"w": [
+"Bebeto",
+"Ronaldo",
+"Dunga"
+],
+"e": "Il a marqué cinq buts durant le tournoi."
+},
+{
+"q": "Quel Brésilien a reçu le Ballon d'Or en 1999 ?",
+"c": "Rivaldo",
+"w": [
+"Ronaldo",
+"Ronaldinho",
+"Kaká"
+],
+"e": "Il jouait alors au FC Barcelone."
+},
+{
+"q": "Quel stade de Buenos Aires est surnommé « La Bombonera » ?",
+"c": "Celui de Boca Juniors",
+"w": [
+"Celui de River Plate",
+"Celui de San Lorenzo",
+"Celui d'Independiente"
+],
+"e": "Sa forme rappelle une boîte de chocolats."
+},
+{
+"q": "Quel stade de Buenos Aires a accueilli la finale de la Coupe du monde 1978 ?",
+"c": "El Monumental",
+"w": [
+"La Bombonera",
+"Le stade du Centenario",
+"Le Maracanã"
+],
+"e": "Il est le stade de River Plate."
+},
+{
+"q": "Quel stade de Montevideo a accueilli la première finale de la Coupe du monde en 1930 ?",
+"c": "Le stade du Centenario",
+"w": [
+"Le Maracanã",
+"El Monumental",
+"Le stade Azteca"
+],
+"e": "Il a été construit pour célébrer les cent ans de la constitution uruguayenne."
+},
+{
+"q": "Quelle ville américaine a accueilli la finale de la Coupe du monde 1994 au Rose Bowl ?",
+"c": "Pasadena",
+"w": [
+"Los Angeles",
+"New York",
+"Miami"
+],
+"e": "Le stade se trouve près de Los Angeles."
+},
+{
+"q": "Quel Brésilien est le premier homme à avoir gagné la Coupe du monde en tant que joueur et en tant qu'entraîneur ?",
+"c": "Mário Zagallo",
+"w": [
+"Pelé",
+"Zico",
+"Carlos Alberto"
+],
+"e": "Il a ensuite été imité par Beckenbauer et Deschamps."
+},
+{
+"q": "Quel pays d'Amérique du Sud a retrouvé la Coupe du monde en 2018 après 36 ans d'absence ?",
+"c": "Le Pérou",
+"w": [
+"La Bolivie",
+"Le Venezuela",
+"L'Équateur"
+],
+"e": "Les supporters l'ont suivi en grand nombre en Russie."
+},
+{
+"q": "Comment s'appelle la compétition qui réunit les meilleurs clubs d'Amérique du Sud ?",
+"c": "La Copa Libertadores",
+"w": [
+"La Copa América",
+"La Ligue des champions",
+"La Gold Cup"
+],
+"e": "Elle a été créée en 1960."
+},
+{
+"q": "Quel pays a remporté la Coupe du monde des moins de 20 ans en 2023 ?",
+"c": "L'Uruguay",
+"w": [
+"L'Italie",
+"Le Brésil",
+"L'Argentine"
+],
+"e": "Il a battu l'Italie en finale."
+}
+]
