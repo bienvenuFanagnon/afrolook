@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel alpiniste néo-zélandais a atteint le sommet de l'Everest en 1953 avec le sherpa Tenzing Norgay ?",
+"c": "Edmund Hillary",
+"w": [
+"Robert Falcon Scott",
+"George Mallory",
+"James Cook"
+],
+"e": "Ils sont les premiers hommes confirmés au sommet de la plus haute montagne du monde."
+},
+{
+"q": "Quelle opposante birmane, longtemps assignée à résidence, a reçu le prix Nobel de la paix en 1991 ?",
+"c": "Aung San Suu Kyi",
+"w": [
+"Malala Yousafzai",
+"Indira Gandhi",
+"Benazir Bhutto"
+],
+"e": "Elle est la fille du héros de l'indépendance birmane Aung San."
+},
+{
+"q": "Quel chef spirituel tibétain, exilé en Inde depuis 1959, a reçu le prix Nobel de la paix en 1989 ?",
+"c": "Le dalaï-lama",
+"w": [
+"Le pape",
+"Le panchen-lama",
+"Mahatma Gandhi"
+],
+"e": "Il vit à Dharamsala, dans le nord de l'Inde."
+},
+{
+"q": "Quel héros philippin, médecin et écrivain, a été fusillé par les Espagnols en 1896 ?",
+"c": "José Rizal",
+"w": [
+"Andrés Bonifacio",
+"Ferdinand Marcos",
+"Emilio Aguinaldo"
+],
+"e": "Son roman « Noli me tangere » a inspiré la révolution philippine."
+},
+{
+"q": "Quel dirigeant, surnommé « l'oncle Hô », a proclamé l'indépendance du Vietnam en 1945 ?",
+"c": "Hô Chi Minh",
+"w": [
+"Võ Nguyên Giáp",
+"Ngô Đình Diệm",
+"Pol Pot"
+],
+"e": "Saïgon porte aujourd'hui son nom en son honneur."
+},
+{
+"q": "Quel général vietnamien a gagné la bataille de Diên Biên Phu en 1954 contre l'armée française ?",
+"c": "Võ Nguyên Giáp",
+"w": [
+"Hô Chi Minh",
+"Phạm Văn Đồng",
+"Nguyễn Văn Thiệu"
+],
+"e": "Cette défaite a mis fin à la présence française en Indochine."
+},
+{
+"q": "Quelle légende chinoise raconte l'histoire d'une jeune fille qui part à la guerre à la place de son père ?",
+"c": "Mulan",
+"w": [
+"Cendrillon",
+"Kaguya",
+"Sita"
+],
+"e": "L'histoire a été adaptée en film d'animation par Disney."
+},
+{
+"q": "Quel amiral chinois du XVe siècle a dirigé de grandes expéditions maritimes jusqu'en Afrique de l'Est ?",
+"c": "Zheng He",
+"w": [
+"Marco Polo",
+"Gengis Khan",
+"Sun Tzu"
+],
+"e": "Ses flottes comptaient des centaines de navires."
+},
+{
+"q": "Quel amiral coréen a battu la flotte japonaise au XVIe siècle avec des « bateaux-tortues » ?",
+"c": "Yi Sun-sin",
+"w": [
+"Sejong",
+"Wang Geon",
+"Kim Gu"
+],
+"e": "Il est resté invaincu et est vénéré comme un héros national."
+},
+{
+"q": "Quelle petite Japonaise, touchée par les radiations d'Hiroshima, a plié des grues en papier en espérant guérir ?",
+"c": "Sadako Sasaki",
+"w": [
+"Yoko Ono",
+"Sadako Ogata",
+"Kaguya"
+],
+"e": "Les grues en papier sont devenues un symbole de paix."
+},
+{
+"q": "Quel diplomate japonais a sauvé en 1940, avec des visas, plusieurs milliers de Juifs en Lituanie ?",
+"c": "Chiune Sugihara",
+"w": [
+"Hideki Tojo",
+"Shinzō Abe",
+"Isoroku Yamamoto"
+],
+"e": "Il a signé des visas jusqu'au dernier moment, quand son train partait."
+},
+{
+"q": "Quel chien japonais a attendu son maître à la gare de Shibuya pendant près de dix ans après sa mort ?",
+"c": "Hachikō",
+"w": [
+"Laïka",
+"Rintintin",
+"Balto"
+],
+"e": "Une statue lui rend hommage devant la gare."
+},
+{
+"q": "Quel héros indien, mort pendu à 23 ans en 1931, est devenu un symbole de la lutte contre les Britanniques ?",
+"c": "Bhagat Singh",
+"w": [
+"Subhas Chandra Bose",
+"Jawaharlal Nehru",
+"Mahatma Gandhi"
+],
+"e": "Il est encore très populaire chez les jeunes Indiens."
+},
+{
+"q": "Quelle reine indienne a combattu les Britanniques lors de la révolte de 1857 ?",
+"c": "Rani Lakshmibai de Jhansi",
+"w": [
+"Indira Gandhi",
+"Sarojini Naidu",
+"Razia Sultan"
+],
+"e": "Elle est morte au combat à environ 29 ans."
+},
+{
+"q": "Quel révolutionnaire est considéré comme le père de la République de Chine, proclamée en 1912 ?",
+"c": "Sun Yat-sen",
+"w": [
+"Mao Zedong",
+"Tchang Kaï-chek",
+"Deng Xiaoping"
+],
+"e": "Il a mis fin à plus de deux mille ans d'empire."
+},
+{
+"q": "Quelle Néo-Zélandaise a mené le combat pour le droit de vote des femmes, obtenu en 1893 ?",
+"c": "Kate Sheppard",
+"w": [
+"Jacinda Ardern",
+"Helen Clark",
+"Whina Cooper"
+],
+"e": "Son portrait figure sur le billet de dix dollars néo-zélandais."
+},
+{
+"q": "Quel pays a été le premier à accorder le droit de vote aux femmes, en 1893 ?",
+"c": "La Nouvelle-Zélande",
+"w": [
+"L'Australie",
+"La Suède",
+"La Grande-Bretagne"
+],
+"e": "Elles ne pouvaient pas encore se présenter aux élections."
+},
+{
+"q": "Quel soldat australien a transporté des blessés avec un âne pendant la bataille de Gallipoli en 1915 ?",
+"c": "John Simpson Kirkpatrick",
+"w": [
+"Albert Jacka",
+"Douglas Mawson",
+"Ned Kelly"
+],
+"e": "Il est devenu un symbole de courage pour les Anzacs."
+},
+{
+"q": "Quelle athlète aborigène a allumé la flamme olympique puis gagné le 400 mètres aux Jeux de Sydney en 2000 ?",
+"c": "Cathy Freeman",
+"w": [
+"Jana Pittman",
+"Betty Cuthbert",
+"Sally Pearson"
+],
+"e": "Elle a couru en portant le drapeau aborigène et le drapeau australien."
+},
+{
+"q": "Comment appelle-t-on les premiers habitants de l'Australie, présents depuis plus de 50 000 ans ?",
+"c": "Les Aborigènes",
+"w": [
+"Les Maoris",
+"Les Polynésiens",
+"Les Mélanésiens"
+],
+"e": "Leur culture est l'une des plus anciennes du monde."
+},
+{
+"q": "Quel peuple de Nouvelle-Zélande a signé en 1840 le traité de Waitangi avec la Couronne britannique ?",
+"c": "Les Maoris",
+"w": [
+"Les Aborigènes",
+"Les Samoans",
+"Les Fidjiens"
+],
+"e": "Ce traité est considéré comme le texte fondateur de la Nouvelle-Zélande."
+},
+{
+"q": "Quel militant indien a reçu le prix Nobel de la paix en 2014 pour son combat contre le travail des enfants ?",
+"c": "Kailash Satyarthi",
+"w": [
+"Narendra Modi",
+"Amartya Sen",
+"Rabindranath Tagore"
+],
+"e": "Il a partagé le prix avec Malala Yousafzai."
+},
+{
+"q": "Quel Bangladais a reçu le prix Nobel de la paix en 2006 pour ses travaux sur le microcrédit ?",
+"c": "Muhammad Yunus",
+"w": [
+"Sheikh Mujibur Rahman",
+"Amartya Sen",
+"Abhijit Banerjee"
+],
+"e": "Il a fondé la Grameen Bank."
+},
+{
+"q": "Quelle avocate iranienne a reçu le prix Nobel de la paix en 2003, première musulmane à l'obtenir ?",
+"c": "Shirin Ebadi",
+"w": [
+"Narges Mohammadi",
+"Tawakkol Karman",
+"Nadia Murad"
+],
+"e": "Elle défend les droits des femmes et des enfants."
+},
+{
+"q": "Quelle militante yéménite a reçu le prix Nobel de la paix en 2011, à 32 ans ?",
+"c": "Tawakkol Karman",
+"w": [
+"Malala Yousafzai",
+"Shirin Ebadi",
+"Nadia Murad"
+],
+"e": "Elle était l'une des figures du printemps arabe au Yémen."
+},
+{
+"q": "Quel écrivain chinois, emprisonné, a reçu le prix Nobel de la paix en 2010 ?",
+"c": "Liu Xiaobo",
+"w": [
+"Mo Yan",
+"Gao Xingjian",
+"Ai Weiwei"
+],
+"e": "Il n'a pas pu recevoir son prix : sa chaise est restée vide."
+},
+{
+"q": "Quel président sud-coréen a reçu le prix Nobel de la paix en 2000 pour sa politique de rapprochement avec le Nord ?",
+"c": "Kim Dae-jung",
+"w": [
+"Park Chung-hee",
+"Moon Jae-in",
+"Syngman Rhee"
+],
+"e": "Il avait été condamné à mort sous la dictature avant d'être gracié."
+},
+{
+"q": "Quelle jeune Yézidie irakienne a reçu le prix Nobel de la paix en 2018 pour son combat contre les violences sexuelles de guerre ?",
+"c": "Nadia Murad",
+"w": [
+"Malala Yousafzai",
+"Shirin Ebadi",
+"Tawakkol Karman"
+],
+"e": "Elle a partagé le prix avec le docteur Denis Mukwege."
+},
+{
+"q": "Quelle journaliste philippine a reçu le prix Nobel de la paix en 2021 ?",
+"c": "Maria Ressa",
+"w": [
+"Corazon Aquino",
+"Gloria Arroyo",
+"Leni Robredo"
+],
+"e": "Elle a cofondé le site d'information Rappler."
+},
+{
+"q": "Quelle militante iranienne emprisonnée a reçu le prix Nobel de la paix en 2023 ?",
+"c": "Narges Mohammadi",
+"w": [
+"Shirin Ebadi",
+"Masih Alinejad",
+"Nasrin Sotoudeh"
+],
+"e": "Elle a milité pour les droits des femmes et contre la peine de mort."
+},
+{
+"q": "Quel est le nom du premier Premier ministre de l'Inde indépendante, en fonction de 1947 à 1964 ?",
+"c": "Jawaharlal Nehru",
+"w": [
+"Mahatma Gandhi",
+"Sardar Patel",
+"Lal Bahadur Shastri"
+],
+"e": "Il était un proche de Gandhi."
+},
+{
+"q": "Quel leader indien, surnommé « Netaji », a créé l'Armée nationale indienne pour combattre les Britanniques ?",
+"c": "Subhas Chandra Bose",
+"w": [
+"Bhagat Singh",
+"Jawaharlal Nehru",
+"Sardar Patel"
+],
+"e": "Il s'est allié aux Japonais pendant la Seconde Guerre mondiale."
+},
+{
+"q": "Quel dirigeant a proclamé l'indépendance de l'Indonésie en 1945 et en est devenu le premier président ?",
+"c": "Soekarno",
+"w": [
+"Soeharto",
+"Joko Widodo",
+"Mohammad Hatta"
+],
+"e": "Il l'a proclamée le 17 août 1945, jour de la fête nationale."
+},
+{
+"q": "Quelle héroïne indonésienne, pionnière de l'éducation des filles, est fêtée chaque 21 avril ?",
+"c": "Raden Adjeng Kartini",
+"w": [
+"Cut Nyak Dhien",
+"Dewi Sartika",
+"Megawati Sukarnoputri"
+],
+"e": "Ses lettres ont été publiées après sa mort sous le titre « Habis Gelap Terbitlah Terang »."
+},
+{
+"q": "Quel chef philippin a vaincu et tué Magellan à Mactan en 1521 ?",
+"c": "Lapu-Lapu",
+"w": [
+"José Rizal",
+"Andrés Bonifacio",
+"Rajah Humabon"
+],
+"e": "Il est considéré comme le premier héros de la résistance contre les Européens."
+},
+{
+"q": "Quelles sœurs vietnamiennes ont mené une révolte contre l'occupation chinoise, en l'an 40 ?",
+"c": "Les sœurs Trưng",
+"w": [
+"Les sœurs Bà Triệu",
+"Les sœurs Lê",
+"Les sœurs Nguyễn"
+],
+"e": "Elles sont vénérées comme des héroïnes nationales au Vietnam."
+},
+{
+"q": "Quel samouraï, surnommé « le dernier samouraï », a mené en 1877 la rébellion de Satsuma ?",
+"c": "Saigō Takamori",
+"w": [
+"Miyamoto Musashi",
+"Oda Nobunaga",
+"Tokugawa Ieyasu"
+],
+"e": "Il est devenu une figure légendaire au Japon."
+},
+{
+"q": "Quel escrimeur japonais du XVIIe siècle a écrit « Le Livre des cinq anneaux » ?",
+"c": "Miyamoto Musashi",
+"w": [
+"Oda Nobunaga",
+"Takeda Shingen",
+"Toyotomi Hideyoshi"
+],
+"e": "Il aurait gagné plus de soixante duels."
+},
+{
+"q": "Quelle jeune Coréenne, morte en prison à 17 ans, est devenue une héroïne de la lutte pour l'indépendance en 1919 ?",
+"c": "Yu Gwan-sun",
+"w": [
+"Shin Saimdang",
+"Hwang Jini",
+"Park Geun-hye"
+],
+"e": "Le mouvement du 1er mars 1919 a marqué la résistance contre le Japon."
+},
+{
+"q": "Quel roi coréen a fait créer l'alphabet hangeul au XVe siècle ?",
+"c": "Sejong le Grand",
+"w": [
+"Gojong",
+"Taejo",
+"Yeongjo"
+],
+"e": "Il voulait que tout le monde puisse apprendre à lire facilement."
+},
+{
+"q": "Quel empereur a unifié la Chine en 221 av. J.-C. et fait construire l'armée de terre cuite ?",
+"c": "Qin Shi Huang",
+"w": [
+"Han Wudi",
+"Kubilai Khan",
+"Puyi"
+],
+"e": "Plus de 8 000 soldats de terre cuite gardent sa tombe."
+},
+{
+"q": "Quel est le premier Chinois à être allé dans l'espace, en 2003 ?",
+"c": "Yang Liwei",
+"w": [
+"Zhai Zhigang",
+"Jing Haipeng",
+"Liu Yang"
+],
+"e": "Il a effectué 14 révolutions autour de la Terre à bord de Shenzhou 5."
+},
+{
+"q": "Quelle ville japonaise a été détruite par la première bombe atomique, le 6 août 1945 ?",
+"c": "Hiroshima",
+"w": [
+"Nagasaki",
+"Tokyo",
+"Kyoto"
+],
+"e": "Chaque année, une cérémonie de paix y a lieu en mémoire des victimes."
+},
+{
+"q": "Quelle ville japonaise a subi la deuxième bombe atomique, le 9 août 1945 ?",
+"c": "Nagasaki",
+"w": [
+"Hiroshima",
+"Osaka",
+"Yokohama"
+],
+"e": "Elle est surtout connue pour son port."
+},
+{
+"q": "Quelle astronaute indienne est morte en 2003 lors de l'accident de la navette Columbia ?",
+"c": "Kalpana Chawla",
+"w": [
+"Sunita Williams",
+"Valentina Terechkova",
+"Indira Gandhi"
+],
+"e": "Elle était la première femme d'origine indienne dans l'espace."
+},
+{
+"q": "Quel Sherpa a atteint le sommet de l'Everest avec Edmund Hillary en 1953 ?",
+"c": "Tenzing Norgay",
+"w": [
+"Apa Sherpa",
+"Pasang Dawa Lama",
+"Ang Rita"
+],
+"e": "Il est devenu un héros au Népal et en Inde."
+},
+{
+"q": "Quelle alpiniste japonaise a été la première femme à gravir l'Everest, en 1975 ?",
+"c": "Junko Tabei",
+"w": [
+"Wanda Rutkiewicz",
+"Edurne Pasaban",
+"Gerlinde Kaltenbrunner"
+],
+"e": "Elle a aussi gravi les sept plus hauts sommets des sept continents."
+},
+{
+"q": "Quel moine bouddhiste vietnamien s'est immolé par le feu à Saïgon en 1963 pour protester contre le régime ?",
+"c": "Thích Quảng Đức",
+"w": [
+"Thích Nhất Hạnh",
+"Hô Chi Minh",
+"Võ Nguyên Giáp"
+],
+"e": "La photo de son geste a fait le tour du monde."
+},
+{
+"q": "Quel fondateur du Pakistan est devenu le premier gouverneur général du pays en 1947 ?",
+"c": "Muhammad Ali Jinnah",
+"w": [
+"Liaquat Ali Khan",
+"Zulfikar Ali Bhutto",
+"Imran Khan"
+],
+"e": "Il est surnommé « Quaid-e-Azam », le Grand Chef."
+},
+{
+"q": "Quelle ancienne Première ministre du Pakistan, première femme à diriger un pays musulman, a été assassinée en 2007 ?",
+"c": "Benazir Bhutto",
+"w": [
+"Indira Gandhi",
+"Sheikh Hasina",
+"Begum Khaleda Zia"
+],
+"e": "Elle a dirigé le pays deux fois."
+},
+{
+"q": "Quelle Première ministre indienne a été assassinée en 1984 par ses gardes du corps ?",
+"c": "Indira Gandhi",
+"w": [
+"Benazir Bhutto",
+"Sonia Gandhi",
+"Sarojini Naidu"
+],
+"e": "Elle était la fille de Jawaharlal Nehru."
+},
+{
+"q": "Quel dirigeant, surnommé « Bangabandhu », a proclamé l'indépendance du Bangladesh en 1971 ?",
+"c": "Sheikh Mujibur Rahman",
+"w": [
+"Ziaur Rahman",
+"Muhammad Yunus",
+"Hussain Muhammad Ershad"
+],
+"e": "Il est considéré comme le père de la nation bangladaise."
+},
+{
+"q": "Quel dirigeant a proclamé la République populaire de Chine en 1949 ?",
+"c": "Mao Zedong",
+"w": [
+"Deng Xiaoping",
+"Tchang Kaï-chek",
+"Zhou Enlai"
+],
+"e": "L'annonce a eu lieu place Tian'anmen, à Pékin."
+},
+{
+"q": "Quelle grande place de Pékin a été le théâtre de manifestations étudiantes écrasées en 1989 ?",
+"c": "La place Tian'anmen",
+"w": [
+"La place Rouge",
+"La place de la Concorde",
+"La place Taksim"
+],
+"e": "Elles réclamaient plus de liberté et la fin de la corruption."
+},
+{
+"q": "Quel pays a connu en 1980 le soulèvement de Gwangju, violemment réprimé par l'armée ?",
+"c": "La Corée du Sud",
+"w": [
+"La Corée du Nord",
+"Le Japon",
+"Taïwan"
+],
+"e": "Il a ouvert la voie à la démocratisation du pays."
+},
+{
+"q": "Comment appelle-t-on les manifestations de moines bouddhistes en Birmanie en 2007, réprimées par la junte ?",
+"c": "La révolution safran",
+"w": [
+"La révolution de velours",
+"La révolution orange",
+"Le printemps de Prague"
+],
+"e": "Le nom vient de la couleur des robes des moines."
+},
+{
+"q": "Quel dirigeant timorais a reçu le prix Nobel de la paix en 1996 avec Mgr Belo ?",
+"c": "José Ramos-Horta",
+"w": [
+"Xanana Gusmão",
+"Suharto",
+"Jusuf Habibie"
+],
+"e": "Le Timor oriental est devenu indépendant en 2002."
+},
+{
+"q": "Quel aviateur australien a réalisé en 1928 la première traversée de l'océan Pacifique en avion ?",
+"c": "Charles Kingsford Smith",
+"w": [
+"Amy Johnson",
+"Charles Lindbergh",
+"Douglas Mawson"
+],
+"e": "Son avion s'appelait le Southern Cross."
+},
+{
+"q": "Quels explorateurs australiens ont traversé le continent du sud au nord en 1860-1861 avant de mourir au retour ?",
+"c": "Burke et Wills",
+"w": [
+"Lewis et Clark",
+"Hillary et Tenzing",
+"Cook et Banks"
+],
+"e": "Leur expédition est restée un symbole de l'exploration australienne."
+},
+{
+"q": "Quel capitaine britannique a cartographié les côtes de la Nouvelle-Zélande et de l'est de l'Australie au XVIIIe siècle ?",
+"c": "James Cook",
+"w": [
+"Francis Drake",
+"Abel Tasman",
+"Matthew Flinders"
+],
+"e": "Il a effectué trois grands voyages dans le Pacifique."
+},
+{
+"q": "Quel amiral japonais a planifié l'attaque de Pearl Harbor en 1941 ?",
+"c": "Isoroku Yamamoto",
+"w": [
+"Hideki Tojo",
+"Tomoyuki Yamashita",
+"Heihachirō Tōgō"
+],
+"e": "Il est mort en 1943 quand son avion a été abattu."
+},
+{
+"q": "Quel empereur japonais a annoncé la capitulation de son pays à la radio, en août 1945 ?",
+"c": "Hirohito",
+"w": [
+"Meiji",
+"Akihito",
+"Taishō"
+],
+"e": "C'était la première fois que les Japonais entendaient la voix de leur empereur."
+},
+{
+"q": "Quel dernier empereur de Chine est monté sur le trône à deux ans, en 1908 ?",
+"c": "Puyi",
+"w": [
+"Guangxu",
+"Pu Jie",
+"Yuan Shikai"
+],
+"e": "Sa vie a inspiré le film « Le Dernier Empereur »."
+},
+{
+"q": "Quel chef mongol a fondé en 1206 le plus vaste empire continu de l'histoire ?",
+"c": "Gengis Khan",
+"w": [
+"Kubilai Khan",
+"Tamerlan",
+"Attila"
+],
+"e": "Son empire s'étendait de la Chine à l'Europe de l'Est."
+},
+{
+"q": "Quel petit-fils de Gengis Khan a fondé la dynastie Yuan en Chine ?",
+"c": "Kubilai Khan",
+"w": [
+"Ögödei",
+"Tamerlan",
+"Batu"
+],
+"e": "Il a fait de Pékin sa capitale."
+},
+{
+"q": "Quel explorateur vénitien a voyagé en Chine à la cour de Kubilai Khan ?",
+"c": "Marco Polo",
+"w": [
+"Christophe Colomb",
+"Vasco de Gama",
+"Ibn Battuta"
+],
+"e": "Son récit s'appelle « Le Devisement du monde »."
+},
+{
+"q": "Quel empereur moghol a fait construire le Taj Mahal pour son épouse ?",
+"c": "Shah Jahan",
+"w": [
+"Akbar",
+"Aurangzeb",
+"Babur"
+],
+"e": "Elle s'appelait Mumtaz Mahal."
+},
+{
+"q": "Quel empereur indien s'est converti au bouddhisme après la sanglante bataille de Kalinga ?",
+"c": "Ashoka",
+"w": [
+"Akbar",
+"Chandragupta",
+"Shah Jahan"
+],
+"e": "Il a ensuite prôné la non-violence dans son empire."
+},
+{
+"q": "Quel prince indien est devenu le Bouddha, « l'Éveillé » ?",
+"c": "Siddhartha Gautama",
+"w": [
+"Ashoka",
+"Mahavira",
+"Rama"
+],
+"e": "Il a vécu vers le VIe siècle av. J.-C. dans l'actuel Népal."
+},
+{
+"q": "Quel Premier ministre israélien a signé les accords d'Oslo avec Yasser Arafat en 1993 ?",
+"c": "Yitzhak Rabin",
+"w": [
+"David Ben Gourion",
+"Menahem Begin",
+"Shimon Peres"
+],
+"e": "Il a été assassiné en 1995."
+},
+{
+"q": "Quel dirigeant palestinien a reçu le prix Nobel de la paix en 1994 avec Rabin et Peres ?",
+"c": "Yasser Arafat",
+"w": [
+"Mahmoud Abbas",
+"Ismaïl Haniyeh",
+"Marwan Barghouti"
+],
+"e": "Il a dirigé l'Autorité palestinienne."
+},
+{
+"q": "Quelle femme a été Première ministre d'Israël de 1969 à 1974 ?",
+"c": "Golda Meir",
+"w": [
+"Tzipi Livni",
+"Indira Gandhi",
+"Margaret Thatcher"
+],
+"e": "Elle est née à Kiev et a grandi aux États-Unis."
+},
+{
+"q": "Quel dignitaire religieux a dirigé la révolution islamique d'Iran en 1979 ?",
+"c": "L'ayatollah Khomeini",
+"w": [
+"Le shah Reza Pahlavi",
+"Mohammad Mossadegh",
+"Ali Khamenei"
+],
+"e": "Il est revenu d'exil en France le 1er février 1979."
+},
+{
+"q": "Quelle Première ministre néo-zélandaise a dirigé le pays après l'attentat de Christchurch en 2019 ?",
+"c": "Jacinda Ardern",
+"w": [
+"Helen Clark",
+"Julia Gillard",
+"Kate Sheppard"
+],
+"e": "Elle a été saluée pour sa réaction compatissante."
+},
+{
+"q": "Quelle légende des arts martiaux, née à San Francisco, a grandi à Hong Kong et est devenue une icône du cinéma ?",
+"c": "Bruce Lee",
+"w": [
+"Jackie Chan",
+"Jet Li",
+"Chuck Norris"
+],
+"e": "Il est mort en 1973, à 32 ans."
+}
+]
