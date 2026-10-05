@@ -18,7 +18,7 @@ import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/quiz/quiz_home_page.dart';
-import 'package:afrotok/pages/etude/etude_home_page.dart';
+import 'package:afrotok/pages/quiz/quiz_etude_hub_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -582,81 +582,12 @@ class _MyHomePageState extends State<MyHomePage>
 
                   // ── Applications ───────────────────────────────────────────
                   _dSection(colors, 'Applications'),
-                  // Quiz : parcours de questions avec mascotte, classement, boutique de points (à la place d'Afro Love, qui passe en bas du menu)
-                  _dItem(context, colors,
-                      icon: Icons.quiz_rounded,
-                      iconColor: const Color(0xFF2ECC71),
-                      label: context.tr('Quiz'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizHomePage()))),
-                  // Étude : parcours scolaire (collège, lycée, université), diplômes et attestations
+                  // Quiz & Étude : un seul module (jeu de culture, parcours scolaires et diplômes), à la place d'Afro Love qui passe en bas du menu
                   _dItem(context, colors,
                       icon: Icons.school_rounded,
-                      iconColor: colors.primary,
-                      label: context.tr('Étude'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage()))),
-                  // AfroShop Market — mis en avant (masqué sur iPhone/iPad)
-                  if (!kIsAppleStore) Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: colors.primary.withOpacity(0.4)),
-                    ),
-                    child: _dItem(context, colors,
-                        icon: Icons.store_mall_directory_rounded,
-                        label: l10n.menuAfroshopMarket,
-                        labelColor: colors.primary,
-                        bold: true,
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0A500),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            context.tr('VIDÉOS'),
-                            style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                          ),
-                        ),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeAfroshopPage(title: '')))),
-                  ),
-                  _dItem(context, colors,
-                      icon: Icons.handyman_rounded,
-                      label: l10n.menuServicesJobs,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserServiceListPage()))),
-
-                  // ── Communauté ─────────────────────────────────────────────
-                  _dSection(colors, 'Communauté'),
-                  _dItem(context, colors,
-                      icon: Icons.group_rounded,
-                      label: l10n.menuFriends,
-                      onTap: () => Navigator.pushNamed(context, '/amis')),
-                  _dItem(context, colors,
-                      icon: FontAwesome.forumbee,
-                      label: l10n.menuCanaux,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
-                  _dItem(context, colors,
-                      icon: Icons.search_rounded,
-                      label: l10n.menuSearchUsers,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddListAmis()))),
-                  _dItem(context, colors,
-                      icon: Entypo.trophy,
-                      label: l10n.menuTopStars,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserClassement()))),
-                  _dItem(context, colors,
-                      icon: Icons.trending_up_rounded,
-                      iconColor: const Color(0xFFFFD700),
-                      label: context.tr('Top posts de la semaine'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopPostsPage()))),
-                  _dItem(context, colors,
-                      icon: Icons.workspace_premium_rounded,
-                      iconColor: const Color(0xFFFFD700),
-                      label: context.tr('Top créateurs de la semaine'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCreatorsPage()))),
-                  _dItem(context, colors,
-                      icon: Icons.forum_rounded,
-                      label: context.tr('Top commentateurs de la semaine'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage()))),
+                      iconColor: const Color(0xFF2ECC71),
+                      label: context.tr('Quiz & Étude'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage()))),
 
                   // Récompenses : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
                   if (RewardsService.available(authProvider.loginUserData))
@@ -1773,13 +1704,13 @@ class _MyHomePageState extends State<MyHomePage>
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage())),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage())),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.school_rounded, color: colors.primary, size: navIconSize),
                               const SizedBox(height: 2),
-                              Text(context.tr('Étude'), style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                              Text(context.tr('Quiz & Étude'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -2421,8 +2352,8 @@ class _MyHomePageState extends State<MyHomePage>
                   _sidebarItem(
                     context: context,
                     icon: Icons.school_rounded,
-                    label: context.tr('Étude'),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage())),
+                    label: context.tr('Quiz & Étude'),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage())),
                     wide: wide,
                     colors: colors,
                     iconColor: colors.primary,

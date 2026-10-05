@@ -164,7 +164,7 @@ Pays : **Togo** (départ), **Bénin**, **Burkina Faso**, **Côte d'Ivoire**, **M
 - **Déblocage** : premier chapitre de chaque matière gratuit, plus **un chapitre offert par jour** ; chapitres, pass de classe, compositions, examens et attestations en pièces ou en pubs (jauge en pièces équivalentes) ; première épreuve de chaque parcours offerte. Prix (pièces) : chapitre 9, composition 15, attestation 18, examen 24, pass de classe 54. Pubs : avec récompense = 3 pièces (3 pubs pour un chapitre), plein écran = 2 pièces (5 pubs pour un chapitre).
 - **Contenu** (`tools/etude/`) : `structure.json` + un fichier texte par chapitre (`content/*.txt`, 15 questions et une fiche) ; `node tools/etude/build_etude.js [--upload]`.
 - **Contenu publié** : collège 6e à 3e (36 chapitres, BEPC), seconde, première D et Terminale D (18 chapitres, BAC D), Licence d'informatique L1, L2, L3 (28 chapitres), entretien d'embauche (5), soit 1 260 questions. Les chapitres n'ont pas encore été relus par des enseignants.
-- **App** : menu Étude dans la barre de navigation (à la place d'Afrolove) ; le Quiz prend la tête de « Applications » dans le menu et Afro Love passe en bas du menu.
+- **App** : le Quiz et Étude forment un seul module, **« Quiz & Étude »** (page d'accueil `quiz_etude_hub_page.dart` avec deux grandes cartes). Il remplace Afrolove dans la barre de navigation, prend la tête de « Applications » dans le menu, et Afro Love passe en bas du menu. La page Quiz garde une carte vers Étude.
 - **Admin** : module « Étude » du tableau de bord admin (fonction `etudeAdmin`).
 - **À faire ensuite** : relire le contenu avec des enseignants, pays suivants (section 10), séries lycée A, C, E…, plus de chapitres par classe, examens blancs, révision espacée, duels.
 
