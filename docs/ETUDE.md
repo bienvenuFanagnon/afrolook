@@ -180,3 +180,7 @@ On met en ligne ce qui existe, on regarde l'utilisation dans l'admin (module « 
 6. Examens blancs chronométrés, révision des questions ratées, duels et classements par filière ou université.
 7. Rappels de révision, fiches PDF, enseignants partenaires, tuteur par IA avec plafond de coût.
 8. Traduction complète de l'interface dans les 8 langues.
+
+## 13. Prochaine étape : universités et domaines
+
+Le plan détaillé (liste des domaines, priorités, volumes, évolutions de l'application, marche à suivre) est dans `docs/ETUDE_UNIVERSITES.md`. Le travail se concentre désormais sur l'université et les attestations.
