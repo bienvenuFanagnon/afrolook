@@ -83,4 +83,10 @@ const Map<String, Map<String, String>> kTrEtude = {
   'La pub n\'a pas pu être comptée. Réessaie.': {'en': 'The ad could not be counted. Try again.'},
   'Réessayer': {'en': 'Retry'},
   'Connexion impossible. Vérifie ta connexion.': {'en': 'Cannot connect. Check your connection.'},
+  'Diplôme de réussite': {'en': 'Diploma of achievement', 'es': 'Diploma de logro', 'de': 'Erfolgsdiplom', 'ar': 'شهادة نجاح', 'pt': 'Diploma de conclusão', 'zh': '成就文凭', 'sw': 'Stashahada ya mafanikio'},
+  'Attestation de réussite': {'en': 'Certificate of achievement', 'es': 'Certificado de logro', 'de': 'Erfolgszertifikat', 'ar': 'شهادة إنجاز', 'pt': 'Certificado de conclusão', 'zh': '成就证书', 'sw': 'Cheti cha mafanikio'},
+  'Terminer': {'en': 'Finish', 'es': 'Terminar', 'de': 'Beenden', 'ar': 'إنهاء', 'pt': 'Concluir', 'zh': '完成', 'sw': 'Maliza'},
+  'Diplôme de réussite': {'en': 'Diploma of achievement', 'es': 'Diploma de logro', 'de': 'Erfolgsdiplom', 'ar': 'شهادة نجاح', 'pt': 'Diploma de conclusão', 'zh': '成就文凭', 'sw': 'Stashahada ya mafanikio'},
+  'Attestation de réussite': {'en': 'Certificate of achievement', 'es': 'Certificado de logro', 'de': 'Erfolgszertifikat', 'ar': 'شهادة إنجاز', 'pt': 'Certificado de conclusão', 'zh': '成就证书', 'sw': 'Cheti cha mafanikio'},
+  'Terminer': {'en': 'Finish', 'es': 'Terminar', 'de': 'Beenden', 'ar': 'إنهاء', 'pt': 'Concluir', 'zh': '完成', 'sw': 'Maliza'},
 };

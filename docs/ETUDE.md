@@ -156,3 +156,13 @@ Pays : **Togo** (départ), **Bénin**, **Burkina Faso**, **Côte d'Ivoire**, **M
 **Ordre des pays** : Togo, Bénin, Côte d'Ivoire, Burkina Faso, Sénégal, Mali, Niger, puis Guinée-Bissau.
 
 **Université et emploi** : les mêmes contenus servent à tous les pays (informatique, maths, entretien d'embauche) ; seuls les concours et les exemples locaux changent.
+
+## 11. État de l'étape 1 (réalisé)
+
+- **Serveur** (`functions/src/etude/etude.ts`) : `etudeGetState`, `etudeStartTrack`, `etudeOpenChapter`, `etudeStart`, `etudeAnswer`, `etudeFinish`, `etudeUnlock`, `etudeVerifyDiploma`.
+- **Parcours** : classes à valider (composition de 20 questions, 50 %), diplôme du parcours (BEPC, BAC D, Licence d'Informatique) quand toutes les classes sont validées, attestations par domaine (70 %). Le joueur choisit sa classe de départ ; le diplôme d'avant se déclare ou se gagne.
+- **Déblocage** : premier chapitre de chaque matière gratuit ; chapitres, pass de classe, compositions, examens et attestations en pièces ou en pubs (jauge) ; première épreuve de chaque parcours offerte.
+- **Contenu** (`tools/etude/`) : `structure.json` + un fichier texte par chapitre (`content/*.txt`, 15 questions et une fiche) ; `node tools/etude/build_etude.js [--upload]`.
+- **Contenu publié** : Terminale D (maths, physique-chimie, SVT : 9 chapitres), Licence 1 d'informatique (algorithmique, Python, bases de données : 10 chapitres), entretien d'embauche (5 chapitres), soit 360 questions. Les autres classes (collège, seconde, première, L2, L3) sont déclarées dans l'app avec la mention « Bientôt ».
+- **App** : menu Étude dans la barre de navigation (à la place d'Afrolove) ; le Quiz prend la tête de « Applications » dans le menu et Afro Love passe en bas du menu.
+- **À faire ensuite** : relire le contenu avec des enseignants, pays suivants (section 10), tableau de bord admin Étude, classes manquantes, examens blancs, révision espacée, duels.
