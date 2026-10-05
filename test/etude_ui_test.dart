@@ -27,15 +27,17 @@ void main() {
           'diploma': null,
         },
       },
-      'config': {'adValueCoins': 3, 'chapterPrice': 20, 'prices': {'ch:vip': 50}},
+      'config': {'adValueCoins': 3, 'chapterPrice': 9, 'prices': {'ch:vip': 50}},
     });
     expect(s.level, 2);
     expect(s.tracks['lycee_d']!.examReady, true);
     expect(s.tracks['lycee_d']!.classes['lyc_td']!.pct, 80);
-    expect(s.priceOf('ch:x'), 20);
+    expect(s.priceOf('ch:x'), 9);
     expect(s.priceOf('ch:vip'), 50);
-    expect(s.priceOf('exam:lycee_d'), 60);
+    expect(s.priceOf('exam:lycee_d'), 24);
     // 20 pièces : 7 pubs avec récompense (3 pièces) ou 10 pubs plein écran (2 pièces)
+    expect(s.rewardedFor(9), 3);
+    expect(s.interstitialFor(9), 5);
     expect(s.rewardedFor(20), 7);
     expect(s.interstitialFor(20), 10);
     expect(s.rewardedFor(3), 1);

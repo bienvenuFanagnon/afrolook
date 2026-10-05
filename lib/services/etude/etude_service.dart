@@ -106,12 +106,13 @@ class EtudeState {
     this.certs = const {},
     this.freeEpreuve = const {},
     this.pendingAds = 0,
+    this.dailyFreeLeft = 0,
     this.adValueCoins = 3,
     this.interstitialValueCoins = 2,
     this.config = const {},
   });
 
-  final int xp, level, streak, pendingAds, adValueCoins, interstitialValueCoins;
+  final int xp, level, streak, pendingAds, adValueCoins, interstitialValueCoins, dailyFreeLeft;
   final Map<String, dynamic> config;
   final Map<String, int> levels, adsPaid;
   final Map<String, bool> unlocked;
@@ -128,15 +129,15 @@ class EtudeState {
     if (prices[item] is num) return _i(prices[item]);
     switch (item.split(':').first) {
       case 'cls':
-        return _i(config['classPassPrice'], 150);
+        return _i(config['classPassPrice'], 54);
       case 'compo':
-        return _i(config['compoPrice'], 30);
+        return _i(config['compoPrice'], 15);
       case 'exam':
-        return _i(config['examPrice'], 60);
+        return _i(config['examPrice'], 24);
       case 'cert':
-        return _i(config['certPrice'], 40);
+        return _i(config['certPrice'], 18);
       default:
-        return _i(config['chapterPrice'], 20);
+        return _i(config['chapterPrice'], 9);
     }
   }
 
@@ -170,6 +171,7 @@ class EtudeState {
       certs: _m(m['certs']),
       freeEpreuve: _m(m['freeEpreuve']),
       pendingAds: _i(m['pendingAds']),
+      dailyFreeLeft: _i(m['dailyFreeLeft']),
       adValueCoins: _i(_m(m['config'])['adValueCoins'], 3).clamp(1, 1000),
       interstitialValueCoins: _i(_m(m['config'])['interstitialValueCoins'], 2).clamp(1, 1000),
       config: _m(m['config']),

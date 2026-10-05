@@ -28,11 +28,12 @@ const DEFAULTS = {
   interstitialValueCoins: 2, // 1 pub plein écran = 2 pièces de prix de déblocage
   interstitialMaxPerDay: 12,
   interstitialGapSec: 15,
-  chapterPrice: 20,
-  classPassPrice: 150,
-  compoPrice: 30,
-  examPrice: 60,
-  certPrice: 40,
+  chapterPrice: 9, // 3 pubs avec récompense
+  classPassPrice: 54,
+  compoPrice: 15,
+  examPrice: 24,
+  certPrice: 18,
+  dailyFreeUnlocks: 1, // un chapitre offert chaque jour
   minAnswerMs: 500,
   xpPerCorrect: 5,
   levelPerfectBonus: 10,
@@ -58,6 +59,7 @@ type Content = { id: string; title: string; lesson: { t: string; x: string }[]; 
 type Prog = {
   entries: Record<string, string>; // parcours → classe de départ
   declared: Record<string, boolean>; // parcours précédent déclaré déjà réussi
+  dailyFree: { day: string; used: number }; // chapitres offerts du jour
   freeEpreuve: Record<string, string>; // parcours → première épreuve offerte (composition, examen ou attestation)
   xp: number;
   streak: { count: number; last: string };
@@ -128,7 +130,7 @@ const classChapters = (cls: CatClass) => cls.subjects.flatMap((s) => s.chapters)
 
 function freshProg(): Prog {
   return {
-    entries: {}, declared: {}, freeEpreuve: {}, xp: 0, streak: { count: 0, last: "" }, levels: {}, classes: {}, unlocked: {}, adsPaid: {},
+    entries: {}, declared: {}, dailyFree: { day: "", used: 0 }, freeEpreuve: {}, xp: 0, streak: { count: 0, last: "" }, levels: {}, classes: {}, unlocked: {}, adsPaid: {},
     diplomas: {}, answered: 0, correct: 0, createdAt: Date.now(),
   };
 }
@@ -262,7 +264,7 @@ async function publicState(uid: string, p: Prog, cfg: Cfg, tracks: CatTrack[]) {
     }
   }
   return {
-    entries: p.entries, declared: p.declared, freeEpreuve: p.freeEpreuve, xp: p.xp, streak: p.streak.last === dayKey() || p.streak.last === dayKey(Date.now() - DAY) ? p.streak.count : 0,
+    entries: p.entries, declared: p.declared, freeEpreuve: p.freeEpreuve, dailyFreeLeft: Math.max(0, cfg.dailyFreeUnlocks - (p.dailyFree.day === dayKey() ? p.dailyFree.used : 0)), xp: p.xp, streak: p.streak.last === dayKey() || p.streak.last === dayKey(Date.now() - DAY) ? p.streak.count : 0,
     levels: p.levels, classes: p.classes, unlocked: p.unlocked, adsPaid: p.adsPaid,
     diplomas: Object.values(p.diplomas),
     tracks: status, certs,
@@ -561,7 +563,7 @@ export const etudeUnlock = onCall({ timeoutSeconds: 20 }, async (request) => {
   const itemId = String(request.data?.item ?? "");
   const via = String(request.data?.via ?? "coins");
   const format = String(request.data?.format ?? "rewarded");
-  if (via !== "coins" && via !== "ads") throw new HttpsError("invalid-argument", "Mode inconnu.");
+  if (via !== "coins" && via !== "ads" && via !== "daily") throw new HttpsError("invalid-argument", "Mode inconnu.");
   if (format !== "rewarded" && format !== "interstitial") throw new HttpsError("invalid-argument", "Format inconnu.");
   const tracks = await loadCatalog();
   const item = itemInfo(itemId, tracks, cfg);
@@ -575,6 +577,17 @@ export const etudeUnlock = onCall({ timeoutSeconds: 20 }, async (request) => {
     const [ps, us, ar, vr] = await Promise.all([tx.get(progRef(uid)), tx.get(userRef), tx.get(adsRef), tx.get(viewsRef)]);
     const p = normalise(ps.exists ? (ps.data() as Prog) : freshProg());
     if (p.unlocked[itemId]) return { unlocked: true, already: true, spent: 0, adsPaid: p.adsPaid[itemId] ?? 0, adsNeeded: item.price };
+    if (via === "daily") {
+      if (!itemId.startsWith("ch:")) throw new HttpsError("failed-precondition", "Seuls les chapitres peuvent être offerts.");
+      const today = dayKey(now);
+      const used = p.dailyFree.day === today ? p.dailyFree.used : 0;
+      if (used >= cfg.dailyFreeUnlocks) throw new HttpsError("resource-exhausted", "DAILY_USED");
+      p.dailyFree = { day: today, used: used + 1 };
+      p.unlocked[itemId] = true;
+      delete p.adsPaid[itemId];
+      tx.set(progRef(uid), p);
+      return { unlocked: true, spent: 0, adsPaid: 0, adsNeeded: item.price };
+    }
     if (via === "coins") {
       const balance = num(us.data()?.["giftCoinsBalance"], 0);
       if (balance < item.price) throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins: item.price, balance });

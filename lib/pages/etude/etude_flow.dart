@@ -72,6 +72,19 @@ class _UnlockSheetState extends State<_UnlockSheet> {
     }
   }
 
+  /// Chapitre offert du jour : un déblocage gratuit par jour.
+  Future<void> _daily() async {
+    setState(() => _busy = true);
+    try {
+      await EtudeService.instance.unlock(widget.item, via: 'daily');
+      if (mounted) Navigator.pop(context, true);
+    } on EtudeException {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      quizToast(context, context.tr("Le chapitre offert d'aujourd'hui est déjà pris."), error: true);
+    }
+  }
+
   /// Pub plein écran : elle remplit la jauge d'un peu moins qu'une pub avec récompense.
   Future<void> _watchInterstitial() async {
     setState(() => _busy = true);
@@ -190,6 +203,17 @@ class _UnlockSheetState extends State<_UnlockSheet> {
             ),
           ]),
           const SizedBox(height: 18),
+          if (widget.item.startsWith('ch:') && s.dailyFreeLeft > 0) ...[
+            QuizChunkyButton(
+              label: context.tr("Chapitre offert aujourd'hui"),
+              icon: Icons.card_giftcard_rounded,
+              color: c.accent,
+              textColor: c.onAccent,
+              loading: _busy,
+              onPressed: _daily,
+            ),
+            const SizedBox(height: 10),
+          ],
           QuizChunkyButton(
             label: context.tr('Payer {p}', {'p': CoinCheckout.coinsLabel(price)}),
             icon: Icons.monetization_on_rounded,
