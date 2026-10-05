@@ -9,6 +9,12 @@ admin.initializeApp({ credential: admin.credential.cert(require(process.env.GOOG
   const wanted = process.argv.slice(2);
   const sets = (wanted.length ? wanted : ['af', 'eu', 'as', 'am', 'mx']);
   const db = admin.firestore();
+  const poolFile = path.join(__dirname, 'pool.json');
+  if (fs.existsSync(poolFile)) {
+    const pools = JSON.parse(fs.readFileSync(poolFile, 'utf8'));
+    for (const [k, list] of Object.entries(pools)) await db.collection('QuizPool').doc(k).set({ list });
+    console.log(`${Object.keys(pools).length} réservoirs de rejeu importés.`);
+  }
   for (const set of sets) {
     const file = path.join(__dirname, `levels_${set}.json`);
     if (!fs.existsSync(file)) { console.log(`levels_${set}.json absent, ignoré`); continue; }

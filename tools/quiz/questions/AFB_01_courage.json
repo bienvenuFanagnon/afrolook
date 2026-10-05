@@ -1,0 +1,156 @@
+[
+{
+"t": 1,
+"q": "Quel pays africain a été dirigé par Nelson Mandela de 1994 à 1999 ?",
+"c": "L'Afrique du Sud",
+"w": [
+"Le Zimbabwe",
+"La Namibie",
+"Le Botswana"
+],
+"e": "Il est le premier président noir de son pays."
+},
+{
+"t": 1,
+"q": "Quelle reine africaine a résisté aux Portugais en Angola au XVIIe siècle ?",
+"c": "Nzinga",
+"w": [
+"Cléopâtre",
+"Amina",
+"Yaa Asantewaa"
+],
+"e": "Elle est devenue un symbole de résistance en Angola."
+},
+{
+"t": 1,
+"q": "Quelle reine de Ghana a mené la guerre du Trône d'or contre les Britanniques en 1900 ?",
+"c": "Yaa Asantewaa",
+"w": [
+"Nzinga",
+"Taytu",
+"Candace"
+],
+"e": "Elle a défendu le trône sacré des Ashanti."
+},
+{
+"t": 1,
+"q": "Quel empereur éthiopien a vaincu l'armée italienne à Adoua en 1896 ?",
+"c": "Ménélik II",
+"w": [
+"Haïlé Sélassié",
+"Théodoros II",
+"Yohannes IV"
+],
+"e": "Sa victoire a assuré l'indépendance de l'Éthiopie."
+},
+{
+"t": 1,
+"q": "Quel héros congolais est connu pour avoir dirigé l'indépendance de son pays en 1960 ?",
+"c": "Patrice Lumumba",
+"w": [
+"Joseph Kasa-Vubu",
+"Mobutu",
+"Laurent Kabila"
+],
+"e": "Il est devenu le premier Premier ministre du pays."
+},
+{
+"t": 1,
+"q": "Quel leader a mené l'indépendance de la Guinée en 1958 en disant « non » à la France ?",
+"c": "Ahmed Sékou Touré",
+"w": [
+"Félix Houphouët-Boigny",
+"Léopold Senghor",
+"Modibo Keïta"
+],
+"e": "Le « non » au référendum de de Gaulle l'a rendu célèbre."
+},
+{
+"t": 1,
+"q": "Quel Africain a reçu le prix Nobel de la paix en 1984 pour sa lutte contre l'apartheid ?",
+"c": "Desmond Tutu",
+"w": [
+"Kofi Annan",
+"Nelson Mandela",
+"Albert Luthuli"
+],
+"e": "Il était archevêque du Cap."
+},
+{
+"t": 1,
+"q": "Quel jeune Sud-Africain a été tué en 1976 lors du soulèvement de Soweto, devenu un symbole ?",
+"c": "Hector Pieterson",
+"w": [
+"Steve Biko",
+"Chris Hani",
+"Oliver Tambo"
+],
+"e": "Une célèbre photo a fait le tour du monde."
+},
+{
+"t": 1,
+"q": "Quelle Sud-Africaine, épouse de Nelson Mandela, a lutté contre l'apartheid pendant son incarcération ?",
+"c": "Winnie Madikizela-Mandela",
+"w": [
+"Miriam Makeba",
+"Helen Suzman",
+"Albertina Sisulu"
+],
+"e": "Elle était surnommée « la mère de la nation »."
+},
+{
+"t": 1,
+"q": "Qui a dirigé le Ghana à l'indépendance en 1957 ?",
+"c": "Kwame Nkrumah",
+"w": [
+"Jerry Rawlings",
+"John Kufuor",
+"Kofi Annan"
+],
+"e": "Il a défendu l'unité africaine."
+},
+{
+"t": 3,
+"q": "Quel roi bamoun a inventé l'écriture shü-mom au Cameroun ?",
+"c": "Ibrahim Njoya",
+"w": [
+"Rudolf Duala Manga Bell",
+"Ahmadou Ahidjo",
+"Paul Biya"
+],
+"e": "Il a aussi fondé un musée et créé une écriture à Foumban."
+},
+{
+"t": 3,
+"q": "Quel président du Mozambique, premier chef d'État du pays, a mené la lutte contre le colonialisme portugais ?",
+"c": "Samora Machel",
+"w": [
+"Joaquim Chissano",
+"Eduardo Mondlane",
+"Armando Guebuza"
+],
+"e": "Il est mort dans un accident d'avion en 1986."
+},
+{
+"t": 5,
+"q": "Quel ancien chef de l'ANC a été secrétaire général du Parti communiste sud-africain avant d'être assassiné en 1993 ?",
+"c": "Chris Hani",
+"w": [
+"Walter Sisulu",
+"Oliver Tambo",
+"Steve Biko"
+],
+"e": "Sa mort a failli faire basculer le pays dans la violence."
+},
+{
+"t": 5,
+"q": "Quel Kényan, emprisonné par les Britanniques dans les années 1950, est devenu le premier président du pays ?",
+"c": "Jomo Kenyatta",
+"w": [
+"Tom Mboya",
+"Daniel arap Moi",
+"Raila Odinga"
+],
+"e": "Il est le père de l'indépendance du Kenya en 1963."
+}
+]

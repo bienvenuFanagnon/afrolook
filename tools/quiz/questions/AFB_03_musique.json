@@ -1,0 +1,134 @@
+[
+{
+"t": 1,
+"q": "Quelle chanteuse sud-africaine est surnommée « Mama Africa » ?",
+"c": "Miriam Makeba",
+"w": [
+"Brenda Fassie",
+"Yvonne Chaka Chaka",
+"Angélique Kidjo"
+],
+"e": "Elle a chanté « Pata Pata »."
+},
+{
+"t": 1,
+"q": "Quelle chanteuse béninoise a remporté plusieurs Grammy Awards ?",
+"c": "Angélique Kidjo",
+"w": [
+"Aïcha Koné",
+"Stella Mwangi",
+"Zap Mama"
+],
+"e": "Elle est ambassadrice de bonne volonté de l'UNICEF."
+},
+{
+"t": 1,
+"q": "Quel chanteur nigérian est surnommé « le roi de l'afrobeat » ?",
+"c": "Fela Kuti",
+"w": [
+"King Sunny Adé",
+"Burna Boy",
+"Wizkid"
+],
+"e": "Il a fondé le club The Shrine à Lagos."
+},
+{
+"t": 1,
+"q": "Quel chanteur malien albinos est surnommé « la voix d'or de l'Afrique » ?",
+"c": "Salif Keita",
+"w": [
+"Ali Farka Touré",
+"Toumani Diabaté",
+"Oumou Sangaré"
+],
+"e": "Il est albinos et chante depuis les années 1960."
+},
+{
+"t": 1,
+"q": "Quel instrument malien à 21 cordes est joué par Toumani Diabaté ?",
+"c": "La kora",
+"w": [
+"Le djembé",
+"Le balafon",
+"Le n'goni"
+],
+"e": "La kora est une harpe-luth d'Afrique de l'Ouest."
+},
+{
+"t": 1,
+"q": "Quel instrument d'Afrique de l'Ouest, en forme de gobelet, se joue avec les mains ?",
+"c": "Le djembé",
+"w": [
+"La guitare",
+"Le violon",
+"La flûte"
+],
+"e": "Il est joué dans de nombreuses cérémonies."
+},
+{
+"t": 1,
+"q": "Quelle chanteuse capverdienne est surnommée « la diva aux pieds nus » ?",
+"c": "Cesária Évora",
+"w": [
+"Mayra Andrade",
+"Lura",
+"Tété"
+],
+"e": "Elle chantait la morna."
+},
+{
+"t": 1,
+"q": "Quel chanteur ivoirien est célèbre pour son reggae et pour le titre « Jérusalem » ?",
+"c": "Alpha Blondy",
+"w": [
+"Tiken Jah Fakoly",
+"DJ Arafat",
+"Serge Beynaud"
+],
+"e": "Il chante en dioula, en anglais et en français."
+},
+{
+"t": 1,
+"q": "Quel chanteur congolais, surnommé « le Grand Maître », a dominé la rumba congolaise ?",
+"c": "Franco Luambo Makiadi",
+"w": [
+"Papa Wemba",
+"Koffi Olomidé",
+"Fally Ipupa"
+],
+"e": "Il dirigeait l'orchestre TPOK Jazz."
+},
+{
+"t": 3,
+"q": "Quel chanteur camerounais a inventé le makossa avec le titre « Soul Makossa » ?",
+"c": "Manu Dibango",
+"w": [
+"Richard Bona",
+"Eboa Lotin",
+"Francis Bebey"
+],
+"e": "Le morceau date de 1972."
+},
+{
+"t": 5,
+"q": "Quel chanteur sénégalais, ancien ministre de la Culture, a été membre du Super Étoile de Dakar ?",
+"c": "Youssou N'Dour",
+"w": [
+"Baaba Maal",
+"Ismaïla Lô",
+"Omar Pène"
+],
+"e": "Il a chanté « 7 Seconds » avec Neneh Cherry."
+},
+{
+"t": 5,
+"q": "Quel chanteur de reggae sud-africain a été assassiné en 2007 ?",
+"c": "Lucky Dube",
+"w": [
+"Johnny Clegg",
+"Hugh Masekela",
+"Brenda Fassie"
+],
+"e": "Il chantait « Prisoner »."
+}
+]

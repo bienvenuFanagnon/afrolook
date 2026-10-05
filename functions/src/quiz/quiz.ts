@@ -59,7 +59,7 @@ const SHOP: Record<string, ShopItem> = {
   acc_crown: { price: 900, kind: "cosmetic", slot: "accessory" },
 };
 
-type Level = { n: number; region?: string; unit: number; tier: number; theme: string; questions: { q: string; o: string[]; a: number; e: string }[] };
+type Level = { n: number; region?: string; unit: number; tier: number; theme: string; questions: { q: string; o: string[]; a: number; e: string; r?: string }[] };
 
 type Prog = {
   level: number;
@@ -134,6 +134,31 @@ async function getLevel(n: number, region: string = "af"): Promise<Level> {
     }
   }
   throw new HttpsError("not-found", "Niveau introuvable.");
+}
+
+type PoolQ = { q: string; c: string; w: string[]; e: string; r: string };
+const poolCache = new Map<string, { at: number; list: PoolQ[] }>();
+/** Toutes les questions d'une même difficulté et d'un même thème (toutes régions), de la plus facile à la plus difficile. */
+async function getPool(theme: string, tier: number): Promise<PoolQ[]> {
+  const key = `${theme}_${tier}`;
+  const hit = poolCache.get(key);
+  if (hit && Date.now() - hit.at < 600000) return hit.list;
+  const snap = await db.collection("QuizPool").doc(key).get();
+  const list = snap.exists ? ((snap.data()?.["list"] ?? []) as PoolQ[]) : [];
+  poolCache.set(key, { at: Date.now(), list });
+  return list;
+}
+
+/** Rejouer un niveau déjà gagné : 5 questions nouvelles du même thème et de la même difficulté (4 de sa région, 1 d'ailleurs), tirées au hasard. */
+function practiceQuestions(lv: Level, pool: PoolQ[], region: string): Level["questions"] {
+  const seen = new Set(lv.questions.map((q) => q.q));
+  const idx = pool.map((x, i) => i).filter((i) => !seen.has(pool[i].q));
+  const shuffle = <T>(a: T[]) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const own = shuffle(idx.filter((i) => region !== "mx" && pool[i].r === region));
+  const rest = shuffle(idx.filter((i) => !own.includes(i)));
+  const pick = [...own.slice(0, region === "mx" ? 0 : PER_LEVEL - 1), ...rest].slice(0, PER_LEVEL);
+  if (pick.length < PER_LEVEL) return lv.questions; // réservoir absent ou trop petit : mêmes questions
+  return pick.sort((a, b) => a - b).map((i) => ({ q: pool[i].q, o: [pool[i].c, ...pool[i].w], a: 0, e: pool[i].e }));
 }
 
 /** Région du joueur d'après son profil (ou le pays gardé dans sa progression). */
@@ -309,6 +334,7 @@ export const quizStartLevel = onCall({ timeoutSeconds: 20 }, async (request) => 
   const info = await userInfo(uid);
   const region = await regionFor(uid, info);
   const lv = await getLevel(n, region);
+  const pool = await getPool(lv.theme, lv.tier);
   const now = Date.now();
   const sid = `${uid}_${n}`;
 
@@ -318,15 +344,16 @@ export const quizStartLevel = onCall({ timeoutSeconds: 20 }, async (request) => 
     if (n > p.level) throw new HttpsError("failed-precondition", "LEVEL_LOCKED");
     const practice = n < p.level;
     if (!practice && p.hearts <= 0) throw new HttpsError("failed-precondition", "NO_HEARTS");
-    const perms = lv.questions.map(() => randomPerm());
-    tx.set(sessRef(sid), { uid, n, practice, region, startedAt: now, lastAt: now, perms: perms.map(enc), answers: [], status: "open" });
+    const qs = practice ? practiceQuestions(lv, pool, region) : lv.questions;
+    const perms = qs.map(() => randomPerm());
+    tx.set(sessRef(sid), { uid, n, practice, region, startedAt: now, lastAt: now, perms: perms.map(enc), answers: [], status: "open", ...(practice && qs !== lv.questions ? { pq: qs } : {}) });
     tx.set(progRef(uid), p);
-    return { practice, perms, state: publicState(p, cfg, now) };
+    return { practice, perms, qs, state: publicState(p, cfg, now) };
   });
 
   return {
     ok: true, n, practice: result.practice, unit: lv.unit, theme: lv.theme,
-    questions: lv.questions.map((q, i) => ({ q: q.q, o: result.perms[i].map((orig) => q.o[orig]) })),
+    questions: result.qs.map((q, i) => ({ q: q.q, o: result.perms[i].map((orig) => q.o[orig]) })),
     ...result.state,
   };
 });
@@ -339,14 +366,14 @@ export const quizAnswer = onCall({ timeoutSeconds: 15 }, async (request) => {
   const choice = intArg(request.data?.choice, 0, 3, "choice");
   const sid = `${uid}_${n}`;
   const lv = await getLevel(n, await sessionRegion(sid));
-  const q = lv.questions[i];
   const now = Date.now();
 
   return db.runTransaction(async (tx) => {
     const [ss, ps] = await Promise.all([tx.get(sessRef(sid)), tx.get(progRef(uid))]);
-    const s = ss.data() as { uid: string; practice: boolean; lastAt: number; perms: string[]; answers: { c: number; ok: boolean }[]; status: string } | undefined;
+    const s = ss.data() as { uid: string; practice: boolean; lastAt: number; perms: string[]; answers: { c: number; ok: boolean }[]; status: string; pq?: Level["questions"] } | undefined;
     if (!s || s.uid !== uid || s.status !== "open") throw new HttpsError("failed-precondition", "NO_SESSION");
     if (s.answers.length !== i) throw new HttpsError("failed-precondition", "OUT_OF_ORDER");
+    const q = (s.pq ?? lv.questions)[i];
     if (now - s.lastAt < cfg.minAnswerMs) throw new HttpsError("resource-exhausted", "TOO_FAST");
     const perm = dec(s.perms[i]);
     const ok = perm[choice] === q.a;
@@ -379,7 +406,7 @@ export const quizFinishLevel = onCall({ timeoutSeconds: 20 }, async (request) =>
 
   const out = await db.runTransaction(async (tx) => {
     const [ss, ps] = await Promise.all([tx.get(sessRef(sid)), tx.get(progRef(uid))]);
-    const s = ss.data() as { uid: string; practice: boolean; perms: string[]; answers: { c: number; ok: boolean }[]; status: string; result?: Record<string, unknown> } | undefined;
+    const s = ss.data() as { uid: string; practice: boolean; perms: string[]; answers: { c: number; ok: boolean }[]; status: string; result?: Record<string, unknown>; pq?: Level["questions"] } | undefined;
     if (!s || s.uid !== uid) throw new HttpsError("failed-precondition", "NO_SESSION");
     if (s.status === "done" && s.result) return { replay: true, result: s.result };
     if (s.answers.length !== PER_LEVEL) throw new HttpsError("failed-precondition", "NOT_FINISHED");
@@ -404,7 +431,7 @@ export const quizFinishLevel = onCall({ timeoutSeconds: 20 }, async (request) =>
     }
     if (!s.practice && pass) bumpStreak(p, now);
 
-    const details = lv.questions.map((q, i) => ({
+    const details = (s.pq ?? lv.questions).map((q, i) => ({
       q: q.q, a: q.o[q.a], c: q.o[dec(s.perms[i])[s.answers[i].c]], ok: s.answers[i].ok,
     }));
     const attempt = s.practice ?
@@ -477,13 +504,29 @@ export const quizRefillHeart = onCall({ timeoutSeconds: 15 }, async (request) =>
 
 // ── Questions du jour ───────────────────────────────────────────────────────
 
-/** Les 3 questions du jour sont les mêmes pour tout le monde (tirées de la banque selon la date). */
-async function dailyQuestions(dayNo: number) {
-  const out: { q: string; o: string[]; a: number; e: string }[] = [];
+/** Part de questions de la région du joueur (quiz du jour et Grand Défi) ; le reste vient d'ailleurs. Région inconnue : tout est mélangé. */
+const OWN_SHARE = 0.8;
+
+/** Les questions du jour sont les mêmes pour tous les joueurs d'une même région (tirées de son jeu selon la date, ~80 % de sa région). */
+async function dailyQuestions(dayNo: number, region: string) {
+  const out: Level["questions"] = [];
+  const seenQ = new Set<string>();
   for (let k = 0; k < DAILY_COUNT; k++) {
-    const g = (dayNo * DAILY_COUNT + k) % POOL;
-    const lv = await getLevel(Math.floor(g / PER_LEVEL) + 1, "mx"); // le quiz du jour est le même pour tout le monde : jeu mélangé
-    out.push(lv.questions[g % PER_LEVEL]);
+    const h = crypto.createHash("sha256").update(`${dayNo}:${region}:${k}`).digest();
+    const wantOwn = region === "mx" || h[0] % 100 < OWN_SHARE * 100;
+    let pick: Level["questions"][number] | null = null;
+    for (let t = 0; t < 30 && !pick; t++) {
+      const g = (h.readUInt32BE((t * 4) % 28) + t * 7919) % POOL;
+      const lv = await getLevel(Math.floor(g / PER_LEVEL) + 1, region);
+      const q = lv.questions[g % PER_LEVEL];
+      if (seenQ.has(q.q)) continue;
+      const own = !q.r || region === "mx" || q.r === region;
+      if (t < 25 && own !== wantOwn && q.r) continue;
+      pick = q;
+    }
+    if (!pick) pick = (await getLevel(1, region)).questions[k];
+    seenQ.add(pick.q);
+    out.push(pick);
   }
   return out;
 }
@@ -492,13 +535,17 @@ export const quizDailyGet = onCall({ timeoutSeconds: 15 }, async (request) => {
   const uid = uidOf(request);
   const now = Date.now();
   const dayNo = Math.floor(now / DAY);
-  const qs = await dailyQuestions(dayNo);
+  const info = await userInfo(uid);
+  const region = await regionFor(uid, info);
   const sid = `${uid}_d${dayNo}`;
+  // le jeu du jour est figé à la première ouverture (si le pays change en cours de journée, les questions restent les mêmes)
+  const stored = (await sessRef(sid).get()).data() as { region?: string } | undefined;
+  const qs = await dailyQuestions(dayNo, stored?.region ?? region);
   const perms = await db.runTransaction(async (tx) => {
     const ss = await tx.get(sessRef(sid));
     if (ss.exists) return (ss.data() as { perms: string[] }).perms.map(dec);
     const pm = qs.map(() => randomPerm());
-    tx.set(sessRef(sid), { uid, daily: true, day: dayNo, startedAt: now, lastAt: 0, perms: pm.map(enc), answers: [], status: "open" });
+    tx.set(sessRef(sid), { uid, daily: true, day: dayNo, region, startedAt: now, lastAt: 0, perms: pm.map(enc), answers: [], status: "open" });
     return pm;
   });
   const sess = (await sessRef(sid).get()).data() as { answers: { c: number; ok: boolean }[] };
@@ -519,9 +566,9 @@ export const quizDailyAnswer = onCall({ timeoutSeconds: 15 }, async (request) =>
   const choice = intArg(request.data?.choice, 0, 3, "choice");
   const now = Date.now();
   const dayNo = Math.floor(now / DAY);
-  const qs = await dailyQuestions(dayNo);
-  const q = qs[i];
   const sid = `${uid}_d${dayNo}`;
+  const qs = await dailyQuestions(dayNo, await sessionRegion(sid));
+  const q = qs[i];
   const info = await userInfo(uid);
 
   const out = await db.runTransaction(async (tx) => {
@@ -576,14 +623,22 @@ type ChalSess = {
   region?: string; shownAt: number; startedAt: number; j50: boolean; swap: boolean; rescue: boolean; hide: string; prize: number;
 };
 
-/** Question tirée au hasard dans la difficulté de l'étape (3 questions par difficulté), jamais deux fois la même. */
-function chalPick(step: number, used: Set<string>): string {
+/** Question tirée au hasard dans la difficulté de l'étape (3 questions par difficulté), jamais deux fois la même, ~80 % de la région du joueur. */
+async function chalPick(step: number, used: Set<string>, region: string): Promise<string> {
   const tier = Math.floor(step / 3);
-  for (let k = 0; k < 30; k++) {
-    const ref = `${tier * 40 + crypto.randomInt(1, 41)}:${crypto.randomInt(0, PER_LEVEL)}`;
-    if (!used.has(ref)) return ref;
+  const wantOwn = region === "mx" || Math.random() < OWN_SHARE;
+  let last = `${tier * 40 + 1}:0`;
+  for (let k = 0; k < 40; k++) {
+    const n = tier * 40 + crypto.randomInt(1, 41);
+    const i = crypto.randomInt(0, PER_LEVEL);
+    const ref = `${n}:${i}`;
+    if (used.has(ref)) continue;
+    last = ref;
+    const q = (await getLevel(n, region)).questions[i];
+    const own = !q.r || region === "mx" || q.r === region;
+    if (own === wantOwn || !q.r) return ref;
   }
-  return `${tier * 40 + 1}:0`;
+  return last;
 }
 
 async function chalQuestion(ref: string, region: string = "af") {
@@ -657,14 +712,15 @@ export const quizChallenge = onCall({ timeoutSeconds: 20 }, async (request) => {
       const extra = request.data?.extra === true;
       if (!(used < cfg.challengeFree || (extra && used < cfg.challengeFree + cfg.challengeExtraMax))) throw new HttpsError("failed-precondition", "NO_ATTEMPTS");
       p.day.chal = used + 1;
+      const region = regionOf(info.country || p.country);
       const refs: string[] = [];
       const seen = new Set<string>();
       for (let k = 0; k < CH_STEPS; k++) {
-        const r = chalPick(k, seen);
+        const r = await chalPick(k, seen, region);
         seen.add(r);
         refs.push(r);
       }
-      s = { uid, status: "open", step: 0, region: regionOf(info.country || p.country), refs, perms: refs.map(() => enc(randomPerm())), shownAt: now, startedAt: now, j50: false, swap: false, rescue: false, hide: "", prize: 0 };
+      s = { uid, status: "open", step: 0, region, refs, perms: refs.map(() => enc(randomPerm())), shownAt: now, startedAt: now, j50: false, swap: false, rescue: false, hide: "", prize: 0 };
       savePush();
       return { ...base(), question: await chalView(s) };
     }
@@ -688,7 +744,7 @@ export const quizChallenge = onCall({ timeoutSeconds: 20 }, async (request) => {
       if (s.status !== "pending" || s.rescue || !cfg.challengeRescue) throw new HttpsError("failed-precondition", "NO_RESCUE");
       s.rescue = true;
       s.status = "open";
-      s.refs[s.step] = chalPick(s.step, new Set(s.refs));
+      s.refs[s.step] = await chalPick(s.step, new Set(s.refs), s.region ?? "af");
       s.perms[s.step] = enc(randomPerm());
       s.hide = "";
       s.shownAt = now;
@@ -758,7 +814,7 @@ export const quizChallenge = onCall({ timeoutSeconds: 20 }, async (request) => {
     if (action === "swap") {
       if (s.swap) throw new HttpsError("failed-precondition", "JOKER_USED");
       s.swap = true;
-      s.refs[s.step] = chalPick(s.step, new Set(s.refs));
+      s.refs[s.step] = await chalPick(s.step, new Set(s.refs), s.region ?? "af");
       s.perms[s.step] = enc(randomPerm());
       s.hide = "";
       s.shownAt = now;

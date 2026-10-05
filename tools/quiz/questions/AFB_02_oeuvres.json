@@ -1,0 +1,233 @@
+[
+{
+"t": 1,
+"q": "Quel écrivain nigérian a écrit « Things Fall Apart » (Le Monde s'effondre) ?",
+"c": "Chinua Achebe",
+"w": [
+"Wole Soyinka",
+"Ngũgĩ wa Thiong'o",
+"Ben Okri"
+],
+"e": "Ce roman de 1958 est l'un des plus lus d'Afrique."
+},
+{
+"t": 1,
+"q": "Quel écrivain nigérian a reçu le prix Nobel de littérature en 1986 ?",
+"c": "Wole Soyinka",
+"w": [
+"Chinua Achebe",
+"Chimamanda Ngozi Adichie",
+"Ben Okri"
+],
+"e": "Il fut le premier Africain à recevoir ce prix."
+},
+{
+"t": 1,
+"q": "Quelle écrivaine nigériane a écrit « L'Hibiscus pourpre » ?",
+"c": "Chimamanda Ngozi Adichie",
+"w": [
+"Buchi Emecheta",
+"Mariama Bâ",
+"Calixthe Beyala"
+],
+"e": "Elle est aussi l'autrice de « Americanah »."
+},
+{
+"t": 1,
+"q": "Quelle romancière sénégalaise a écrit « Une si longue lettre » ?",
+"c": "Mariama Bâ",
+"w": [
+"Aminata Sow Fall",
+"Ken Bugul",
+"Fatou Diome"
+],
+"e": "Le roman est paru en 1979."
+},
+{
+"t": 1,
+"q": "Quel poète sénégalais, premier président de son pays, est l'un des fondateurs de la négritude ?",
+"c": "Léopold Sédar Senghor",
+"w": [
+"Aimé Césaire",
+"Léon-Gontran Damas",
+"Birago Diop"
+],
+"e": "Il est aussi le premier Africain à siéger à l'Académie française."
+},
+{
+"t": 1,
+"q": "Quel auteur camerounais a écrit « Une vie de boy » ?",
+"c": "Ferdinand Oyono",
+"w": [
+"Mongo Beti",
+"Cheikh Hamidou Kane",
+"Amadou Hampâté Bâ"
+],
+"e": "Le roman raconte la vie d'un jeune domestique sous la colonisation."
+},
+{
+"t": 1,
+"q": "Quel auteur malien est célèbre pour avoir dit « En Afrique, quand un vieillard meurt, c'est une bibliothèque qui brûle » ?",
+"c": "Amadou Hampâté Bâ",
+"w": [
+"Yambo Ouologuem",
+"Ousmane Sembène",
+"Seydou Badian"
+],
+"e": "Il a défendu la tradition orale africaine."
+},
+{
+"t": 1,
+"q": "Quel réalisateur sénégalais est surnommé « le père du cinéma africain » ?",
+"c": "Ousmane Sembène",
+"w": [
+"Djibril Diop Mambéty",
+"Souleymane Cissé",
+"Idrissa Ouédraogo"
+],
+"e": "Il a réalisé « La Noire de... » en 1966."
+},
+{
+"t": 1,
+"q": "Quel festival de cinéma panafricain a lieu tous les deux ans à Ouagadougou ?",
+"c": "Le FESPACO",
+"w": [
+"Le FIFA",
+"Le Festival de Cannes",
+"Le Festival de Carthage"
+],
+"e": "Il récompense l'Étalon de Yennenga."
+},
+{
+"t": 1,
+"q": "Quel prix du FESPACO récompense le meilleur film ?",
+"c": "L'Étalon d'or de Yennenga",
+"w": [
+"Le Lion d'or",
+"La Palme d'or",
+"L'Ours d'or"
+],
+"e": "Il porte le nom d'une princesse légendaire."
+},
+{
+"t": 1,
+"q": "Quel pays est le premier producteur de films du continent avec « Nollywood » ?",
+"c": "Le Nigeria",
+"w": [
+"L'Afrique du Sud",
+"Le Ghana",
+"L'Égypte"
+],
+"e": "Nollywood est l'une des plus grandes industries de cinéma au monde."
+},
+{
+"t": 1,
+"q": "Quelle capitale africaine accueille le grand festival de cinéma « Écrans noirs » ?",
+"c": "Yaoundé",
+"w": [
+"Dakar",
+"Abidjan",
+"Lomé"
+],
+"e": "Il se tient chaque année au Cameroun."
+},
+{
+"t": 1,
+"q": "Quel réalisateur burkinabè a reçu l'Étalon d'or de Yennenga pour « Tilaï » ?",
+"c": "Idrissa Ouédraogo",
+"w": [
+"Gaston Kaboré",
+"Dani Kouyaté",
+"Fanta Régina Nacro"
+],
+"e": "Le film a aussi reçu le Grand Prix à Cannes en 1990."
+},
+{
+"t": 1,
+"q": "Quel Ivoirien est l'auteur de « Les Soleils des indépendances » ?",
+"c": "Ahmadou Kourouma",
+"w": [
+"Bernard Dadié",
+"Tidiane Dem",
+"Jean-Marie Adiaffi"
+],
+"e": "Le roman est paru en 1968."
+},
+{
+"t": 1,
+"q": "Quel écrivain congolais est l'auteur de « Verre cassé » ?",
+"c": "Alain Mabanckou",
+"w": [
+"Sony Labou Tansi",
+"Henri Lopes",
+"Emmanuel Dongala"
+],
+"e": "Il a reçu le prix Renaudot en 2006 pour « Mémoires de porc-épic »."
+},
+{
+"t": 3,
+"q": "Quel écrivain kényan a écrit « Décoloniser l'esprit » et choisi d'écrire en kikuyu ?",
+"c": "Ngũgĩ wa Thiong'o",
+"w": [
+"Meja Mwangi",
+"Binyavanga Wainaina",
+"Chinua Achebe"
+],
+"e": "Il a abandonné l'anglais pour sa langue maternelle."
+},
+{
+"t": 3,
+"q": "Quelle autrice sud-africaine a reçu le prix Nobel de littérature en 1991 ?",
+"c": "Nadine Gordimer",
+"w": [
+"Doris Lessing",
+"Toni Morrison",
+"Alice Munro"
+],
+"e": "Elle a décrit l'apartheid dans ses romans."
+},
+{
+"t": 3,
+"q": "Quel écrivain sud-africain a reçu le Nobel de littérature en 2003 ?",
+"c": "J. M. Coetzee",
+"w": [
+"André Brink",
+"Alan Paton",
+"Breyten Breytenbach"
+],
+"e": "Il est l'auteur de « Disgrâce »."
+},
+{
+"t": 4,
+"q": "Quel écrivain tanzanien a reçu le prix Nobel de littérature en 2021 ?",
+"c": "Abdulrazak Gurnah",
+"w": [
+"Ngũgĩ wa Thiong'o",
+"Wole Soyinka",
+"Nuruddin Farah"
+],
+"e": "Il est né à Zanzibar."
+},
+{
+"t": 5,
+"q": "Quel écrivain égyptien a reçu le prix Nobel de littérature en 1988 ?",
+"c": "Naguib Mahfouz",
+"w": [
+"Taha Hussein",
+"Tawfiq al-Hakim",
+"Alaa al-Aswani"
+],
+"e": "Il est l'auteur de la « Trilogie du Caire »."
+},
+{
+"t": 5,
+"q": "Quel écrivain malien, premier Africain à recevoir le prix Renaudot, est l'auteur de « Le Devoir de violence » ?",
+"c": "Yambo Ouologuem",
+"w": [
+"Amadou Hampâté Bâ",
+"Seydou Badian",
+"Moussa Konaté"
+],
+"e": "Le roman est paru en 1968."
+}
+]

@@ -17,6 +17,8 @@ const THEMES = ['courage', 'oeuvres', 'musique', 'football', 'histoire', 'geogra
 const FILES = ['01_courage', '02_oeuvres', '03_musique', '04_football', '05_histoire', '06_geographie', '07_culture', '08_sciences'];
 const LETTER = { A: 'af', E: 'eu', S: 'as', M: 'am', W: 'world' };
 const NEW_PREFIX = { EU: 'eu', AS: 'as', AM: 'am' };
+// Compléments (XB_NN_thème.json) : chaque question porte sa difficulté « t » (1 à 5), pour combler les séries où une région manque de questions.
+const EXTRA_PREFIX = { AFB: 'af', EUB: 'eu', ASB: 'as', AMB: 'am' };
 const REGIONS = ['af', 'eu', 'as', 'am'];
 const SETS = ['af', 'eu', 'as', 'am', 'mx'];
 const QUESTIONS_PER_LEVEL = 5;
@@ -75,6 +77,19 @@ for (const [prefix, region] of Object.entries(NEW_PREFIX)) {
     items.forEach((it, i) => {
       check(it, `${prefix}_${f} #${i + 1}`);
       pool[ti][Math.floor(i / per)].push({ it, region, d: (i % per) / per, id: `${prefix}_${f}#${i + 1}` });
+    });
+  });
+}
+for (const [prefix, region] of Object.entries(EXTRA_PREFIX)) {
+  FILES.forEach((f, ti) => {
+    const file = path.join(__dirname, 'questions', `${prefix}_${f}.json`);
+    if (!fs.existsSync(file)) return;
+    const items = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const count = [0, 0, 0, 0, 0];
+    items.forEach((it, i) => {
+      check(it, `${prefix}_${f} #${i + 1}`);
+      if (!(it.t >= 1 && it.t <= 5)) { problems.push(`${prefix}_${f} #${i + 1} : difficulté t manquante`); return; }
+      pool[ti][it.t - 1].push({ it, region, d: (count[it.t - 1]++ + 0.5) / 40, id: `${prefix}_${f}#${i + 1}` });
     });
   });
 }
@@ -148,6 +163,13 @@ function compose(set, ti, tier) {
   return levels;
 }
 
+// Réservoir pour rejouer un niveau : toutes les questions d'un thème et d'une difficulté, classées de la plus facile à la plus difficile.
+const poolOut = {};
+THEMES.forEach((t, ti) => pool[ti].forEach((list, tier) => {
+  poolOut[`${t}_${tier + 1}`] = list.slice().sort(byD).map((x) => ({ q: x.it.q, c: x.it.c, w: x.it.w, e: x.it.e, r: x.region }));
+}));
+fs.writeFileSync(path.join(__dirname, 'pool.json'), JSON.stringify(poolOut));
+
 const report = [];
 for (const set of SETS) {
   const levels = [];
@@ -171,7 +193,7 @@ for (const set of SETS) {
         }
         const a = opts.indexOf(x.it.c);
         positions[a]++;
-        return { q: x.it.q, o: opts, a, e: x.it.e };
+        return { q: x.it.q, o: opts, a, e: x.it.e, r: x.region };
       });
       levels.push({ n, unit: u + 1, tier: tier + 1, theme: THEMES[ti], region: set, questions });
     }
