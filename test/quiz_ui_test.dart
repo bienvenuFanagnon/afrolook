@@ -2,7 +2,6 @@ import 'package:afrotok/pages/quiz/widgets/hawk_mascot.dart';
 import 'package:afrotok/pages/quiz/widgets/quiz_loading.dart';
 import 'package:afrotok/pages/quiz/widgets/quiz_widgets.dart';
 import 'package:afrotok/services/quiz/quiz_sound.dart';
-import 'package:afrotok/services/quiz/quiz_voice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -83,17 +82,10 @@ void main() {
     }
   });
 
-  test("l'empreinte des textes est la même que celle du script de fabrication des voix", () {
-    // Valeurs calculées par tools/quiz/gen_tts.js
-    expect(QuizVoice.hash('A.'), '09087807b5a10fa6');
-    expect(QuizVoice.hash('Écoute à Lomé'), 'de36d1cec5ecb740');
-    expect(QuizVoice.hash('  A.  '), QuizVoice.hash('A.'));
-  });
-
-  testWidgets("l'épervier parle, s'agite et se dessine sans erreur", (tester) async {
+  testWidgets("l'épervier s'agite et se dessine sans erreur", (tester) async {
     for (final mood in HawkMood.values) {
-      for (final speaking in [false, true]) {
-        await tester.pumpWidget(MaterialApp(home: Scaffold(body: Center(child: HawkMascot(mood: mood, size: 140, speaking: speaking)))));
+      for (final speaking in [false]) {
+        await tester.pumpWidget(MaterialApp(home: Scaffold(body: Center(child: HawkMascot(mood: mood, size: 140)))));
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 700));
         expect(tester.takeException(), isNull, reason: '$mood / $speaking');

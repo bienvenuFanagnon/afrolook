@@ -11,13 +11,11 @@ import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
-import '../../services/quiz/quiz_voice.dart';
 import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'quiz_leaderboard_page.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_loading.dart';
-import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
 
@@ -53,13 +51,11 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
   @override
   void initState() {
     super.initState();
-    QuizVoice.instance.load();
     _load();
   }
 
   @override
   void dispose() {
-    QuizVoice.instance.stop();
     _timer?.cancel();
     _confetti.dispose();
     super.dispose();
@@ -131,13 +127,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     });
     if (restartTimer) {
       _startTimer(_info?.seconds ?? 30);
-      _read(q);
     }
-  }
-
-  /// Lecture à voix haute de la question (les réponses retirées par le 50/50 ne sont pas lues).
-  void _read(QuizChalQuestion q) {
-    QuizVoice.instance.speakQuestion(q.q, [for (var k = 0; k < q.o.length; k++) q.hide.contains(k) ? null : q.o[k]]);
   }
 
   Future<bool> _watchAd() async {
@@ -195,7 +185,6 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     final q = _q;
     if (q == null || _busy || _selected != null) return;
     _stopTimer();
-    QuizVoice.instance.stop();
     if (choice >= 0) QuizSound.fx(QuizSfx.tap);
     setState(() {
       _selected = choice;
@@ -594,20 +583,15 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
         QuizPill(icon: Icons.flag_rounded, label: context.tr('Question {n}/15', {'n': q.step + 1}), color: c.info),
         const Spacer(),
         QuizPill(icon: Icons.star_rounded, label: context.tr('{n} pts en jeu', {'n': prizes[q.step]}), color: c.accent),
-        QuizVoiceButtons(onReplay: () => _read(q)),
       ]),
       const SizedBox(height: 10),
       _ladder(c, q.step),
       const SizedBox(height: 8),
       Row(children: [
-        ValueListenableBuilder<bool>(
-          valueListenable: QuizVoice.instance.speaking,
-          builder: (_, speaking, __) => HawkMascot(
-            mood: (!answered && _left <= 10) ? HawkMood.hurry : _mood,
-            size: 64,
-            accessory: QuizService.instance.state.value?.equipped['accessory'],
-            speaking: speaking && !answered,
-          ),
+        HawkMascot(
+          mood: (!answered && _left <= 10) ? HawkMood.hurry : _mood,
+          size: 64,
+          accessory: QuizService.instance.state.value?.equipped['accessory'],
         ),
         const SizedBox(width: 10),
         Expanded(

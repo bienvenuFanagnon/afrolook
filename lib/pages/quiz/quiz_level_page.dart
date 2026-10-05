@@ -12,7 +12,6 @@ import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
-import '../../services/quiz/quiz_voice.dart';
 import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'widgets/hawk_mascot.dart';
@@ -52,7 +51,6 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
   @override
   void initState() {
     super.initState();
-    QuizVoice.instance.load();
     _load();
   }
 
@@ -86,7 +84,6 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         _hearts = s.state.hearts;
       });
       QuizSound.fx(QuizSfx.hi);
-      QuizVoice.instance.prefetch(s.questions.map((x) => (q: x.q, o: x.o)));
       _beginQuestion();
     } on QuizException catch (e) {
       if (!mounted) return;
@@ -103,16 +100,14 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
     }
   }
 
-  /// Lecture à voix haute et chrono de la question affichée.
+  /// Chrono de la question affichée.
   void _beginQuestion() {
-    final q = _start?.questions[_i];
-    if (q == null) return;
-    _pace.start(question: q.q, options: q.o);
+    if (_start == null) return;
+    _pace.start();
   }
 
   Future<void> _choose(int idx) async {
     if (_busy || _result != null || _start == null) return;
-    QuizVoice.instance.stop();
     QuizSound.fx(QuizSfx.tap);
     setState(() {
       _selected = idx;
@@ -385,7 +380,6 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
           ),
           const SizedBox(width: 12),
           QuizPill(icon: Icons.favorite_rounded, label: '$_hearts', color: c.danger),
-          QuizVoiceButtons(onReplay: _replay),
         ]),
       ),
       if (s.practice)
@@ -453,12 +447,6 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         child: answered ? _feedback(c, _result!, s) : const SizedBox(key: ValueKey('nofeedback'), width: double.infinity),
       ),
     ]);
-  }
-
-  void _replay() {
-    final q = _start?.questions[_i];
-    if (q == null || _result != null) return;
-    QuizVoice.instance.speakQuestion(q.q, q.o);
   }
 
   QuizOptionState _optionState(int k) {

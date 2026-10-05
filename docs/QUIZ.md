@@ -71,13 +71,9 @@ Page `lib/pages/admin/quiz_admin_page.dart`, données de la fonction `quizAdmin`
 Le temps vient de l'app (`QuizUsageTracker` : une mesure par minute quand le quiz est ouvert et au premier plan → `quizPing` → `QuizUsage/{jour}_{uid}`).
 Il ne compte que les joueurs ayant la version de l'app qui contient ce suivi.
 
-## Voix et rythme
-- **Lecture à voix haute** : la question puis les réponses (« A. … B. … »), voix de femme par défaut, voix d'homme au choix,
-  réglable (et désactivable) dans l'icône « Voix » de l'accueil du quiz et pendant les questions. Réglages gardés sur le téléphone.
-- Les voix sont **fabriquées à l'avance** (Google Cloud Text-to-Speech, voix Chirp3-HD `Kore` et `Orus`) par `node tools/quiz/gen_tts.js`
-  (relançable : ne refait que ce qui manque ; à relancer après tout changement de questions) et stockées dans Storage `quiz_tts/{f|m}/{empreinte}.mp3`
-  (lecture publique, écriture réservée à l'administration). L'app retrouve un fichier grâce à l'empreinte FNV-1a 64 bits du texte
-  (`QuizVoice.hash`, identique au script) et le garde en cache. Un fichier manquant est simplement sauté.
-- **Rythme** (`quiz_pace.dart`) : barre de temps douce de 25 s (rien n'est retiré au joueur), l'épervier s'agite après 15 s
-  (ailes, sueur), « réponse éclair » (juste en moins de 10 s) avec étincelle et son, compteur sur l'écran de fin.
-  Grand Défi : le vrai chronomètre de 30 s, l'épervier s'agite sous 10 s. Le bec de l'épervier bouge quand la voix parle.
+## Rythme
+- **Barre de temps douce** de 25 s (rien n'est retiré au joueur) ; l'épervier s'agite après 15 s (ailes, sueur) ;
+  « réponse éclair » (juste en moins de 10 s) avec étincelle et son, compteur sur l'écran de fin (`quiz_pace.dart`).
+  Grand Défi : le vrai chronomètre de 30 s, l'épervier s'agite sous 10 s.
+- La lecture des questions à voix haute (Google Text-to-Speech) a été essayée puis abandonnée pour éviter une facturation :
+  l'API est désactivée et les fichiers de voix supprimés.

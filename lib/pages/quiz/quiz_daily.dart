@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../../l10n/tr.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
-import '../../services/quiz/quiz_voice.dart';
 import '../../theme/app_colors.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_loading.dart';
@@ -77,22 +76,20 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
       _correct = d.results.where((r) => r.correct).length;
     });
     if (!widget.compact) {
-      QuizVoice.instance.load().then((_) => QuizVoice.instance.prefetch(d.questions.map((x) => (q: x.q, o: x.o))));
       _begin();
     }
   }
 
-  /// Lecture à voix haute et chrono (page du quiz du jour seulement, pas dans le fil).
+  /// Chrono (page du quiz du jour seulement, pas dans le fil).
   void _begin() {
     final d = _daily;
     if (d == null || widget.compact || _i >= d.questions.length) return;
-    _pace.start(question: d.questions[_i].q, options: d.questions[_i].o);
+    _pace.start();
   }
 
   Future<void> _choose(int idx) async {
     final d = _daily;
     if (d == null || _busy || _result != null) return;
-    if (!widget.compact) QuizVoice.instance.stop();
     QuizSound.fx(QuizSfx.tap);
     setState(() {
       _selected = idx;
@@ -207,7 +204,6 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
             ),
           ),
           const Spacer(),
-          if (!widget.compact) QuizVoiceButtons(onReplay: () => QuizVoice.instance.speakQuestion(q.q, q.o)),
           for (var k = 0; k < d.questions.length; k++)
             Container(
               width: 22,
