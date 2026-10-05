@@ -132,10 +132,12 @@ class QuizConfig {
     this.feedCardEnabled = true,
     this.interstitialEveryLevels = 3,
     this.interstitialMaxPerDay = 6,
+    this.heartPriceCoins = 25,
+    this.heartsFullPriceCoins = 100,
     this.shop = const {},
   });
   final bool enabled, adsEnabled, feedCardEnabled;
-  final int interstitialEveryLevels, interstitialMaxPerDay;
+  final int interstitialEveryLevels, interstitialMaxPerDay, heartPriceCoins, heartsFullPriceCoins;
   final Map<String, Map<String, dynamic>> shop;
 
   factory QuizConfig.fromMap(Map<String, dynamic> d) => QuizConfig(
@@ -144,6 +146,8 @@ class QuizConfig {
         feedCardEnabled: d['feedCardEnabled'] != false,
         interstitialEveryLevels: _i(d['interstitialEveryLevels'], 3).clamp(1, 20),
         interstitialMaxPerDay: _i(d['interstitialMaxPerDay'], 6).clamp(0, 50),
+        heartPriceCoins: _i(d['heartPriceCoins'], 25).clamp(1, 100000),
+        heartsFullPriceCoins: _i(d['heartsFullPriceCoins'], 100).clamp(1, 100000),
         shop: d['shop'] is Map
             ? (d['shop'] as Map).map((k, v) => MapEntry('$k', v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{}))
             : const {},
@@ -368,6 +372,9 @@ class QuizService {
   }
 
   Future<QuizState> refillHeart() async => _publish(await _call('quizRefillHeart'));
+
+  /// Recharge de cœurs avec des pièces : [pack] « one » (1 cœur) ou « full » (tous les cœurs manquants).
+  Future<QuizState> buyHearts(String pack) async => _publish(await _call('quizBuyHearts', {'pack': pack}));
 
   /// Temps passé dans le quiz (statistiques admin) ; sans importance si ça échoue.
   Future<void> ping(int seconds) async {

@@ -1,0 +1,288 @@
+[
+{
+"t": 1,
+"q": "Quel leader indien a mené la lutte non violente pour l'indépendance de l'Inde ?",
+"c": "Mahatma Gandhi",
+"w": [
+"Jawaharlal Nehru",
+"Subhas Chandra Bose",
+"Bhagat Singh"
+],
+"e": "Il est surnommé « Bapu »."
+},
+{
+"t": 1,
+"q": "Quel moine tibétain est le chef spirituel du bouddhisme tibétain en exil ?",
+"c": "Le dalaï-lama",
+"w": [
+"Le pape",
+"Le grand rabbin",
+"Le mufti"
+],
+"e": "Il vit en Inde depuis 1959."
+},
+{
+"t": 1,
+"q": "Quelle jeune Pakistanaise a reçu le prix Nobel de la paix à 17 ans ?",
+"c": "Malala Yousafzai",
+"w": [
+"Benazir Bhutto",
+"Aung San Suu Kyi",
+"Shirin Ebadi"
+],
+"e": "Elle défend l'éducation des filles."
+},
+{
+"t": 1,
+"q": "Quel alpiniste néo-zélandais a atteint le sommet de l'Everest en 1953 ?",
+"c": "Edmund Hillary",
+"w": [
+"Reinhold Messner",
+"George Mallory",
+"Tenzing Norgay"
+],
+"e": "Il était accompagné d'un sherpa."
+},
+{
+"t": 1,
+"q": "Quel Sherpa népalais a atteint l'Everest avec Hillary en 1953 ?",
+"c": "Tenzing Norgay",
+"w": [
+"Apa Sherpa",
+"Pasang Lhamu",
+"Ang Rita"
+],
+"e": "Il est devenu un héros au Népal et en Inde."
+},
+{
+"t": 1,
+"q": "Quel pays d'Asie a été dirigé par Mao Zedong de 1949 à 1976 ?",
+"c": "La Chine",
+"w": [
+"Le Japon",
+"La Corée du Nord",
+"Le Vietnam"
+],
+"e": "Il a fondé la République populaire."
+},
+{
+"t": 2,
+"q": "Quel pays dirigeait Ho Chi Minh ?",
+"c": "Le Vietnam",
+"w": [
+"La Chine",
+"Le Cambodge",
+"Le Laos"
+],
+"e": "Il est surnommé « l'Oncle Hô »."
+},
+{
+"t": 2,
+"q": "Quelle opposante birmane a reçu le prix Nobel de la paix en 1991 ?",
+"c": "Aung San Suu Kyi",
+"w": [
+"Malala Yousafzai",
+"Benazir Bhutto",
+"Corazon Aquino"
+],
+"e": "Elle a passé quinze ans en résidence surveillée."
+},
+{
+"t": 2,
+"q": "Quelle Philippine a mené la révolution du pouvoir du peuple en 1986 ?",
+"c": "Corazon Aquino",
+"w": [
+"Gloria Arroyo",
+"Imelda Marcos",
+"Leni Robredo"
+],
+"e": "Elle est devenue présidente des Philippines."
+},
+{
+"t": 2,
+"q": "Quel héros philippin, écrivain et médecin, a été fusillé en 1896 ?",
+"c": "José Rizal",
+"w": [
+"Andrés Bonifacio",
+"Emilio Aguinaldo",
+"Ferdinand Marcos"
+],
+"e": "Il est l'auteur de « Noli me tangere »."
+},
+{
+"t": 2,
+"q": "Quelle militante iranienne a reçu le prix Nobel de la paix en 2003 ?",
+"c": "Shirin Ebadi",
+"w": [
+"Narges Mohammadi",
+"Malala Yousafzai",
+"Tawakkol Karman"
+],
+"e": "Elle est avocate et défend les droits humains."
+},
+{
+"t": 2,
+"q": "Quel leader sud-africain d'origine indienne a mené la résistance non violente en Afrique du Sud avant l'Inde ?",
+"c": "Gandhi",
+"w": [
+"Nehru",
+"Jinnah",
+"Tagore"
+],
+"e": "Il y a vécu de 1893 à 1914."
+},
+{
+"t": 3,
+"q": "Quel dissident chinois a reçu le prix Nobel de la paix en 2010 alors qu'il était en prison ?",
+"c": "Liu Xiaobo",
+"w": [
+"Ai Weiwei",
+"Wei Jingsheng",
+"Xu Zhiyong"
+],
+"e": "Il est mort en détention en 2017."
+},
+{
+"t": 3,
+"q": "Quel juriste indien, né dans une caste d'intouchables, a présidé la rédaction de la Constitution de l'Inde ?",
+"c": "Bhimrao Ambedkar",
+"w": [
+"Mahatma Gandhi",
+"Jawaharlal Nehru",
+"Rabindranath Tagore"
+],
+"e": "Il a défendu les droits des dalits."
+},
+{
+"t": 3,
+"q": "Quelle infirmière d'origine albanaise a consacré sa vie aux plus pauvres de Calcutta ?",
+"c": "Mère Teresa",
+"w": [
+"Indira Gandhi",
+"Sarojini Naidu",
+"Pandita Ramabai"
+],
+"e": "Elle a reçu le prix Nobel de la paix en 1979."
+},
+{
+"t": 3,
+"q": "Quelle Pakistanaise a été la première femme à diriger un pays musulman, en 1988 ?",
+"c": "Benazir Bhutto",
+"w": [
+"Malala Yousafzai",
+"Indira Gandhi",
+"Sheikh Hasina"
+],
+"e": "Elle a été assassinée en 2007."
+},
+{
+"t": 3,
+"q": "Quelle Indienne a été la première femme Premier ministre de son pays ?",
+"c": "Indira Gandhi",
+"w": [
+"Sonia Gandhi",
+"Pratibha Patil",
+"Sarojini Naidu"
+],
+"e": "Elle a gouverné de 1966 à 1977 puis de 1980 à 1984."
+},
+{
+"t": 4,
+"q": "Quel général vietnamien a vaincu les Français à Diên Biên Phu en 1954 ?",
+"c": "Võ Nguyên Giáp",
+"w": [
+"Ho Chi Minh",
+"Ngô Đình Diệm",
+"Lê Duẩn"
+],
+"e": "Il a dirigé l'armée populaire."
+},
+{
+"t": 4,
+"q": "Quel empereur japonais a annoncé la capitulation du Japon en 1945 ?",
+"c": "Hirohito",
+"w": [
+"Meiji",
+"Akihito",
+"Taishō"
+],
+"e": "C'était la première fois que les Japonais entendaient sa voix."
+},
+{
+"t": 4,
+"q": "Quel Chinois a fondé la République de Chine en 1912 après avoir renversé les Qing ?",
+"c": "Sun Yat-sen",
+"w": [
+"Mao Zedong",
+"Chiang Kai-shek",
+"Yuan Shikai"
+],
+"e": "Il est considéré comme « le père de la nation »."
+},
+{
+"t": 4,
+"q": "Quel Vietnamien a protesté en s'immolant par le feu en 1963 à Saïgon ?",
+"c": "Thích Quảng Đức",
+"w": [
+"Võ Nguyên Giáp",
+"Ngô Đình Diệm",
+"Nguyễn Văn Thiệu"
+],
+"e": "La photo a fait le tour du monde."
+},
+{
+"t": 4,
+"q": "Quel samouraï a combattu le gouvernement japonais en 1877 lors de la rébellion de Satsuma ?",
+"c": "Saigō Takamori",
+"w": [
+"Oda Nobunaga",
+"Tokugawa Ieyasu",
+"Miyamoto Musashi"
+],
+"e": "Il est le « dernier samouraï »."
+},
+{
+"t": 5,
+"q": "Quel Japonais a sauvé de nombreux Juifs en délivrant des visas en 1940 ?",
+"c": "Chiune Sugihara",
+"w": [
+"Hideki Tojo",
+"Shigeru Yoshida",
+"Yasuhiro Nakasone"
+],
+"e": "Il a signé des milliers de visas à Kaunas."
+},
+{
+"t": 5,
+"q": "Quel dirigeant a mené la Corée du Sud vers la démocratie et reçu le Nobel de la paix en 2000 ?",
+"c": "Kim Dae-jung",
+"w": [
+"Park Chung-hee",
+"Roh Moo-hyun",
+"Syngman Rhee"
+],
+"e": "Il a lancé la « politique du rayon de soleil »."
+},
+{
+"t": 5,
+"q": "Quel Indien a reçu le prix Nobel de la paix en 2014 pour son combat contre le travail des enfants ?",
+"c": "Kailash Satyarthi",
+"w": [
+"Amartya Sen",
+"Narendra Modi",
+"Abhijit Banerjee"
+],
+"e": "Il a partagé le prix avec Malala Yousafzai."
+},
+{
+"t": 5,
+"q": "Quel révolutionnaire indien est connu pour avoir fondé l'Armée nationale indienne ?",
+"c": "Subhas Chandra Bose",
+"w": [
+"Bhagat Singh",
+"Chandrashekhar Azad",
+"Lala Lajpat Rai"
+],
+"e": "Il est surnommé « Netaji »."
+}
+]

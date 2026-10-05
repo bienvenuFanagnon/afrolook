@@ -5,6 +5,7 @@ import * as crypto from "crypto";
 import { db } from "../shared/firebase";
 import { isoWeekId } from "../posts/weeklyRankings";
 import { regionOf, QuizRegion } from "./regions";
+import { recordAppCommission } from "../payments/coinShares";
 
 /**
  * Quiz Afrolook : parcours de 200 niveaux de 5 questions + 3 questions du jour.
@@ -43,6 +44,8 @@ const DEFAULTS = {
   challengeSeconds: 30,
   challengeDailyCap: 1500,
   challengeRescue: true,
+  heartPriceCoins: 25,
+  heartsFullPriceCoins: 100,
 };
 
 type Cfg = typeof DEFAULTS & { shop: Record<string, { price?: number; enabled?: boolean }> };
@@ -499,6 +502,41 @@ export const quizRefillHeart = onCall({ timeoutSeconds: 15 }, async (request) =>
     if (p.hearts >= cfg.heartsMax) p.heartsAt = now;
     tx.set(progRef(uid), p);
     return { ok: true, ...publicState(p, cfg, now) };
+  });
+});
+
+/** Recharge de cœurs avec des pièces : « one » = 1 cœur, « full » = tous les cœurs manquants (prix fixe, plus avantageux). */
+export const quizBuyHearts = onCall({ timeoutSeconds: 15 }, async (request) => {
+  const uid = uidOf(request);
+  const cfg = await loadCfg();
+  const pack = String(request.data?.pack ?? "one");
+  if (pack !== "one" && pack !== "full") throw new HttpsError("invalid-argument", "Offre inconnue.");
+  const now = Date.now();
+  const info = await userInfo(uid);
+  const userRef = db.collection("Users").doc(uid);
+  return db.runTransaction(async (tx) => {
+    const [snap, us] = await Promise.all([tx.get(progRef(uid)), tx.get(userRef)]);
+    if (!us.exists) throw new HttpsError("not-found", "Compte introuvable.");
+    const p = normalise(snap.exists ? (snap.data() as Prog) : freshProg(info.country), cfg, now);
+    if (p.hearts >= cfg.heartsMax) throw new HttpsError("failed-precondition", "ALREADY_FULL");
+    const missing = cfg.heartsMax - p.hearts;
+    const price = pack === "full" ? Math.min(cfg.heartsFullPriceCoins, missing * cfg.heartPriceCoins) : cfg.heartPriceCoins;
+    const gain = pack === "full" ? missing : 1;
+    const balance = num(us.data()?.["giftCoinsBalance"], 0);
+    if (balance < price) throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins: price, balance });
+    tx.update(userRef, { giftCoinsBalance: FieldValue.increment(-price), totalGiftCoinsSpent: FieldValue.increment(price), updatedAt: now });
+    const t = db.collection("TransactionSoldes").doc();
+    tx.set(t, {
+      id: t.id, user_id: uid, type: "PAIEMENT_PIECES", statut: "VALIDER",
+      description: gain > 1 ? `Quiz : ${gain} cœurs rechargés — ${price} pièces` : `Quiz : 1 cœur rechargé — ${price} pièces`,
+      montant: price, frais: 0, montant_total: price, methode_paiement: "pieces", createdAt: now, updatedAt: now,
+      purchaseKind: "quiz_hearts",
+    });
+    recordAppCommission(tx, "quiz", price, now);
+    p.hearts += gain;
+    if (p.hearts >= cfg.heartsMax) p.heartsAt = now;
+    tx.set(progRef(uid), p);
+    return { ok: true, price, gain, ...publicState(p, cfg, now) };
   });
 });
 

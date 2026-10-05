@@ -30,6 +30,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
     'cadeaux': ('Cadeaux sur les posts', Icons.card_giftcard_rounded),
     'cadeaux_live': ('Cadeaux en live', Icons.live_tv_rounded),
     'stickers': ('Stickers', Icons.emoji_emotions_rounded),
+    'quiz': ('Quiz (cœurs)', Icons.quiz_rounded),
     'defi': ('DÉFI (votes, participations)', Icons.emoji_events_rounded),
     'groupes': ('Abonnements groupes', Icons.groups_rounded),
     'canaux': ('Abonnements canaux', Icons.campaign_rounded),

@@ -1,0 +1,332 @@
+[
+{
+"t": 1,
+"q": "Quel empereur a unifié la Chine en 221 avant J.-C. et fait construire une armée de terre cuite ?",
+"c": "Qin Shi Huang",
+"w": [
+"Han Wudi",
+"Kublai Khan",
+"Tang Taizong"
+],
+"e": "Son mausolée se trouve près de Xi'an."
+},
+{
+"t": 1,
+"q": "Quelle grande muraille protège le nord de la Chine ?",
+"c": "La Grande Muraille de Chine",
+"w": [
+"Le mur d'Hadrien",
+"Le mur de Berlin",
+"La muraille d'Angkor"
+],
+"e": "Elle s'étend sur des milliers de kilomètres."
+},
+{
+"t": 1,
+"q": "Quel pays asiatique a subi deux bombes atomiques en août 1945 ?",
+"c": "Le Japon",
+"w": [
+"La Chine",
+"La Corée",
+"Le Vietnam"
+],
+"e": "Hiroshima et Nagasaki ont été touchées."
+},
+{
+"t": 1,
+"q": "Quel empire mongol a été fondé par Gengis Khan ?",
+"c": "L'Empire mongol",
+"w": [
+"L'Empire ottoman",
+"L'Empire perse",
+"L'Empire moghol"
+],
+"e": "Il est devenu le plus grand empire terrestre contigu."
+},
+{
+"t": 1,
+"q": "Quelle dynastie chinoise est associée à la Cité interdite ?",
+"c": "Les Ming",
+"w": [
+"Les Han",
+"Les Tang",
+"Les Song"
+],
+"e": "La Cité interdite a été construite au XVe siècle."
+},
+{
+"t": 1,
+"q": "Quel pays asiatique fut colonisé par les Britanniques jusqu'en 1947 ?",
+"c": "L'Inde",
+"w": [
+"La Chine",
+"Le Japon",
+"La Thaïlande"
+],
+"e": "Il est devenu indépendant le 15 août 1947."
+},
+{
+"t": 2,
+"q": "Quel mouvement a conduit à la partition de l'Inde en 1947 ?",
+"c": "La création du Pakistan",
+"w": [
+"La guerre froide",
+"La révolution de Velours",
+"La révolution verte"
+],
+"e": "Elle a provoqué d'immenses déplacements de population."
+},
+{
+"t": 2,
+"q": "Quel dirigeant a fondé le Pakistan en 1947 ?",
+"c": "Muhammad Ali Jinnah",
+"w": [
+"Liaquat Ali Khan",
+"Zulfikar Ali Bhutto",
+"Ayub Khan"
+],
+"e": "Il est appelé « Quaid-e-Azam »."
+},
+{
+"t": 2,
+"q": "Quelle guerre a divisé la péninsule coréenne en 1950 ?",
+"c": "La guerre de Corée",
+"w": [
+"La guerre du Vietnam",
+"La guerre sino-japonaise",
+"La guerre d'Indochine"
+],
+"e": "Un armistice a été signé en 1953."
+},
+{
+"t": 2,
+"q": "Quelle ville japonaise a été la capitale impériale jusqu'en 1868 ?",
+"c": "Kyoto",
+"w": [
+"Osaka",
+"Nara",
+"Nagoya"
+],
+"e": "Tokyo est devenue capitale ensuite."
+},
+{
+"t": 2,
+"q": "Quel pays asiatique est devenu une République populaire en 1949 ?",
+"c": "La Chine",
+"w": [
+"Le Vietnam",
+"La Mongolie",
+"La Corée du Nord"
+],
+"e": "Mao a proclamé la République populaire."
+},
+{
+"t": 2,
+"q": "Quelle ville chinoise a été rendue à la Chine par le Royaume-Uni en 1997 ?",
+"c": "Hong Kong",
+"w": [
+"Macao",
+"Shanghai",
+"Canton"
+],
+"e": "Elle est depuis une région administrative spéciale."
+},
+{
+"t": 3,
+"q": "Quel empereur moghol a fait construire le Taj Mahal ?",
+"c": "Shah Jahan",
+"w": [
+"Akbar",
+"Aurangzeb",
+"Babur"
+],
+"e": "Il l'a construit en mémoire de son épouse Mumtaz Mahal."
+},
+{
+"t": 3,
+"q": "Quel empereur moghol, grand-père de Shah Jahan, a tenté de réunir les religions ?",
+"c": "Akbar",
+"w": [
+"Babur",
+"Humayun",
+"Aurangzeb"
+],
+"e": "Il a régné de 1556 à 1605."
+},
+{
+"t": 3,
+"q": "Quel conquérant mongol a pris Bagdad en 1258 ?",
+"c": "Houlagou",
+"w": [
+"Gengis Khan",
+"Kubilai",
+"Tamerlan"
+],
+"e": "Il a mis fin au califat abbasside."
+},
+{
+"t": 3,
+"q": "Quel explorateur vénitien est allé à la cour de Kubilai Khan ?",
+"c": "Marco Polo",
+"w": [
+"Vasco de Gama",
+"Ibn Battuta",
+"Christophe Colomb"
+],
+"e": "Il a écrit « Le Livre des merveilles »."
+},
+{
+"t": 3,
+"q": "Quel amiral chinois a mené de grandes expéditions maritimes au XVe siècle ?",
+"c": "Zheng He",
+"w": [
+"Sun Tzu",
+"Yue Fei",
+"Qi Jiguang"
+],
+"e": "Ses flottes ont atteint l'Afrique de l'Est."
+},
+{
+"t": 3,
+"q": "Quel shogun a unifié le Japon et fondé l'ère d'Edo en 1603 ?",
+"c": "Tokugawa Ieyasu",
+"w": [
+"Oda Nobunaga",
+"Toyotomi Hideyoshi",
+"Minamoto no Yoritomo"
+],
+"e": "Edo est devenue Tokyo."
+},
+{
+"t": 4,
+"q": "Quelle bataille de 1905 a vu le Japon vaincre la flotte russe ?",
+"c": "Tsushima",
+"w": [
+"Port-Arthur",
+"Mukden",
+"Pearl Harbor"
+],
+"e": "Elle a surpris le monde entier."
+},
+{
+"t": 4,
+"q": "Quelle révolution a eu lieu en Chine de 1966 à 1976 sous Mao ?",
+"c": "La Révolution culturelle",
+"w": [
+"Le Grand Bond en avant",
+"La révolution Xinhai",
+"La Longue Marche"
+],
+"e": "Les Gardes rouges y ont joué un rôle."
+},
+{
+"t": 4,
+"q": "Quel dirigeant cambodgien a dirigé les Khmers rouges ?",
+"c": "Pol Pot",
+"w": [
+"Sihanouk",
+"Hun Sen",
+"Lon Nol"
+],
+"e": "Le régime a causé la mort d'environ deux millions de personnes."
+},
+{
+"t": 4,
+"q": "Quelle bataille de 1954 a mis fin à la présence française en Indochine ?",
+"c": "Diên Biên Phu",
+"w": [
+"Dak To",
+"Khe Sanh",
+"Hanoï"
+],
+"e": "Elle s'est conclue par la défaite française."
+},
+{
+"t": 4,
+"q": "Quel réformateur chinois a lancé la politique d'ouverture économique en 1978 ?",
+"c": "Deng Xiaoping",
+"w": [
+"Mao Zedong",
+"Hu Jintao",
+"Zhou Enlai"
+],
+"e": "Il a dit : « Peu importe que le chat soit noir ou blanc »."
+},
+{
+"t": 4,
+"q": "Quel empereur japonais a donné son nom à l'ère de modernisation de 1868 ?",
+"c": "Meiji",
+"w": [
+"Taishō",
+"Shōwa",
+"Heisei"
+],
+"e": "Le Japon s'est ouvert à l'Occident."
+},
+{
+"t": 5,
+"q": "Quelle dynastie a gouverné la Chine de 1644 à 1912 ?",
+"c": "Les Qing",
+"w": [
+"Les Ming",
+"Les Song",
+"Les Yuan"
+],
+"e": "Ce fut la dernière dynastie impériale."
+},
+{
+"t": 5,
+"q": "Quelle guerre a opposé la Chine et le Royaume-Uni au XIXe siècle à propos de l'opium ?",
+"c": "La guerre de l'opium",
+"w": [
+"La guerre de Corée",
+"La guerre sino-japonaise",
+"La guerre des Boxers"
+],
+"e": "Elle a conduit à la cession de Hong Kong."
+},
+{
+"t": 5,
+"q": "Quelle rébellion de 1900 en Chine s'en est prise aux étrangers ?",
+"c": "La révolte des Boxers",
+"w": [
+"La révolte des Taiping",
+"La Longue Marche",
+"La révolution Xinhai"
+],
+"e": "Elle a été réprimée par une coalition de huit nations."
+},
+{
+"t": 5,
+"q": "Quel royaume d'Asie du Sud-Est a construit Angkor Vat ?",
+"c": "L'Empire khmer",
+"w": [
+"Le royaume de Siam",
+"L'Empire de Majapahit",
+"Le royaume du Champa"
+],
+"e": "C'est le plus grand monument religieux du monde."
+},
+{
+"t": 5,
+"q": "Quelle ville d'Asie est le siège de la Cité interdite ?",
+"c": "Pékin",
+"w": [
+"Shanghai",
+"Nankin",
+"Xi'an"
+],
+"e": "Elle a été la résidence de 24 empereurs."
+},
+{
+"t": 5,
+"q": "Quel pays asiatique n'a jamais été colonisé par les Européens ?",
+"c": "La Thaïlande",
+"w": [
+"La Birmanie",
+"L'Indonésie",
+"Le Vietnam"
+],
+"e": "Le Siam a su jouer sur les rivalités."
+}
+]
