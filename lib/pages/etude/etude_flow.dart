@@ -229,7 +229,7 @@ class _UnlockSheetState extends State<_UnlockSheet> {
             const SizedBox(height: 10),
           ],
           QuizChunkyButton(
-            label: context.tr('Payer {p}', {'p': CoinCheckout.coinsLabel(price)}),
+            label: context.tr('Payer {p}', {'p': context.tr('{a} pièces', {'a': CoinCheckout.fmt(price)})}),
             icon: Icons.monetization_on_rounded,
             color: c.primary,
             textColor: c.onPrimary,

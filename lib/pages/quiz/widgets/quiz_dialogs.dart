@@ -163,7 +163,7 @@ class _NoHeartsSheetState extends State<_NoHeartsSheet> {
             ),
           const SizedBox(height: 4),
           QuizChunkyButton(
-            label: context.tr('Tous les cœurs ({n}) : {p}', {'n': '$missing', 'p': CoinCheckout.coinsLabel(fullPrice)}),
+            label: context.tr('Tous les cœurs ({n}) : {p}', {'n': '$missing', 'p': context.tr('{a} pièces', {'a': CoinCheckout.fmt(fullPrice)})}),
             icon: Icons.favorite_rounded,
             color: c.primary,
             textColor: c.onPrimary,
@@ -172,7 +172,7 @@ class _NoHeartsSheetState extends State<_NoHeartsSheet> {
           ),
           const SizedBox(height: 4),
           QuizChunkyButton(
-            label: context.tr('1 cœur : {p}', {'p': CoinCheckout.coinsLabel(onePrice)}),
+            label: context.tr('1 cœur : {p}', {'p': context.tr('{a} pièces', {'a': CoinCheckout.fmt(onePrice)})}),
             icon: Icons.favorite_border_rounded,
             color: c.surfaceVariant,
             textColor: c.textPrimary,

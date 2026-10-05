@@ -130,7 +130,7 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.tr('Pass de la classe'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900)),
-            Text(context.tr('Tous les chapitres et la composition : {p}', {'p': CoinCheckout.coinsLabel(price)}), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+            Text(context.tr('Tous les chapitres et la composition : {p}', {'p': context.tr('{a} pièces', {'a': CoinCheckout.fmt(price)})}), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
           ]),
         ),
         TextButton(onPressed: _classPass, child: Text(context.tr('Débloquer'))),
@@ -187,8 +187,8 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
               else
                 Text(
                   paid > 0
-                      ? context.tr('{p} · jauge {a}/{n}', {'p': CoinCheckout.coinsLabel(st.priceOf('ch:${ch.id}')), 'a': '$paid', 'n': '${st.priceOf('ch:${ch.id}')}'})
-                      : CoinCheckout.coinsLabel(st.priceOf('ch:${ch.id}')),
+                      ? context.tr('{p} · jauge {a}/{n}', {'p': context.tr('{a} pièces', {'a': CoinCheckout.fmt(st.priceOf('ch:${ch.id}'))}), 'a': '$paid', 'n': '${st.priceOf('ch:${ch.id}')}'})
+                      : context.tr('{a} pièces', {'a': CoinCheckout.fmt(st.priceOf('ch:${ch.id}'))}),
                   style: TextStyle(color: c.textSecondary, fontSize: 12),
                 ),
             ]),
