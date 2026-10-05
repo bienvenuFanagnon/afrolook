@@ -48,12 +48,17 @@ L'application étant surtout utilisée par des étudiants, **l'université et l'
 | Fiches PDF de révision, corrigés détaillés | Pièces |
 | Cœurs supplémentaires | Pièces **ou** pub |
 
-**Règle d'équivalence pub / pièces** (vous fixez une seule valeur dans la config) :
-- *1 pub récompensée = V pièces* (proposition de départ : V = 5 pièces).
-- Un contenu à P pièces demande **⌈P ÷ V⌉ pubs**, avec un plafond de pubs par jour pour éviter l'abus.
-- Exemples avec V = 5 : chapitre 25 pièces = 5 pubs ; examen blanc 50 pièces = 10 pubs ; module complet 250 pièces = 50 pubs (étalées sur plusieurs jours).
-- Les gros modules se débloquent **par étapes** : chaque pub remplit une jauge, le déblocage se fait quand la jauge est pleine, et la jauge est gardée si le joueur s'arrête. Il voit toujours « encore 3 pubs ou 15 pièces ».
-- Pas de pub pour les comptes Gold (comme partout dans l'app) : ils paient en pièces ou ont des remises.
+**Première épreuve offerte** : dans chaque parcours, la première épreuve (composition de classe, examen ou attestation) est gratuite. Les suivantes se débloquent avec des pièces ou des pubs.
+
+**Règle d'équivalence pub / pièces** (une seule valeur à régler : `adValueCoins` dans `AppConfig/etude`) :
+- Une pièce vaut 0,4 FCFA (25 pièces pour 10 FCFA). Une pub récompensée rapporte *eCPM ÷ 1000* dollars, soit à peu près `eCPM × 0,6` FCFA par pub (1 dollar ≈ 600 FCFA).
+- On donne au joueur au plus 70 % de ce que la pub rapporte, ce qui donne **V ≈ eCPM en dollars** (en pièces par pub).
+- Exemples : eCPM 1 $ → 1 pièce par pub ; eCPM 3 $ → 3 pièces ; eCPM 6 $ → 6 pièces.
+- Valeur actuelle : **V = 3** (hypothèse prudente pour la zone UEMOA, tant que le vrai eCPM n'est pas connu). Le circuit existant « Récompenses » donne 2 pièces par pub, soit un eCPM supposé de 2 $.
+- Un contenu à P pièces demande **⌈P ÷ V⌉ pubs**, avec le plafond de pubs par jour déjà en place (10) : chapitre 20 pièces = 7 pubs ; composition 30 pièces = 10 pubs ; examen 60 pièces = 20 pubs sur deux jours.
+- Les gros contenus se débloquent **par étapes** : chaque pub remplit une jauge, gardée si le joueur s'arrête. Il voit toujours « encore 3 pubs ou 15 pièces ».
+- Pas de pub pour les comptes Gold (comme partout dans l'app).
+- À faire avec le vrai chiffre : relever dans AdMob (Rapports, format « Avec récompense », par pays) l'eCPM de la zone, puis régler V.
 
 **Autres idées à vendre** : booster de série, correction personnalisée d'un devoir par un professeur partenaire, abonnement mensuel « Étudiant » (accès à tout), packs de classe pour un établissement.
 
@@ -117,6 +122,37 @@ L'application étant surtout utilisée par des étudiants, **l'université et l'
 
 1. Public prioritaire : université, BAC, ou les deux en parallèle ?
 2. Pays de départ pour les programmes (proposition : Togo).
-3. Valeur de la pub : V = 5 pièces par pub vous convient-il ?
-4. Gratuit ou payant par défaut pour les examens blancs.
+3. Valeur de la pub : régler V avec le vrai eCPM des pubs récompensées (voir section 4).
+4. Examens et compositions : première épreuve offerte, puis pièces ou pubs.
 5. Accepter dès maintenant des enseignants partenaires, ou plus tard.
+
+## 10. Pays : UEMOA / BCEAO d'abord
+
+Pays : **Togo** (départ), **Bénin**, **Burkina Faso**, **Côte d'Ivoire**, **Mali**, **Niger**, **Sénégal**, **Guinée-Bissau**. Les autres pays viendront ensuite.
+
+**Principe** : un tronc commun ouest-africain francophone, plus une couche propre à chaque pays.
+- **Commun** (une seule rédaction pour les 7 pays francophones) : mathématiques, physique-chimie, SVT, français, anglais, philosophie, informatique, économie. Les programmes se ressemblent beaucoup.
+- **Propre à chaque pays** : histoire-géographie et éducation civique (histoire nationale, institutions), noms des diplômes et des séries, formats des examens (nombre d'épreuves, coefficients), concours nationaux.
+- **Guinée-Bissau** : système lusophone (portugais). Parcours séparé, contenu en portugais : à traiter en dernier de ce groupe.
+
+| Pays | Brevet | BAC (séries) | Notes |
+|---|---|---|---|
+| Togo | BEPC | BAC I, BAC II (A4, C, D, E, F, G…) | Pays pilote |
+| Bénin | BEPC | BAC (A, B, C, D, E, F, G…) | |
+| Burkina Faso | BEPC | BAC (A, C, D, E, F, G…) | |
+| Côte d'Ivoire | BEPC | BAC (A, C, D, E, F, G…) | |
+| Mali | DEF | BAC (séries Sciences, Lettres, Économie…) | À confirmer |
+| Niger | BEPC | BAC (A, C, D, E…) | |
+| Sénégal | BFEM | BAC (L, S1, S2, S3, G, T…) | Séries propres au pays |
+| Guinée-Bissau | 9.º ano | 12.º ano | Portugais |
+
+**Ordre de travail pour chaque pays** (le pays pilote sert de modèle) :
+1. Fiche pays : diplômes, séries, matières, coefficients, concours principaux (à vérifier avec des enseignants du pays).
+2. Parcours : classes, matières et chapitres d'après le programme officiel.
+3. Contenu commun réutilisé, puis contenu propre (histoire-géo, éducation civique) rédigé pays par pays.
+4. Un enseignant ou étudiant relecteur du pays valide le premier lot.
+5. Ouverture du pays dans l'app (détecté d'après le pays du profil, comme pour le Quiz).
+
+**Ordre des pays** : Togo, Bénin, Côte d'Ivoire, Burkina Faso, Sénégal, Mali, Niger, puis Guinée-Bissau.
+
+**Université et emploi** : les mêmes contenus servent à tous les pays (informatique, maths, entretien d'embauche) ; seuls les concours et les exemples locaux changent.

@@ -304,12 +304,12 @@ service cloud.firestore {
       // Quiz : questions, parties et progression sont secrètes (lues seulement par les Cloud Functions ; le joueur lit
       // sa propre progression et son historique grâce aux règles dédiées plus haut)
       allow read: if isAuth()
-          && !(collection in ['QuizLevels', 'QuizPool', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent']);
+          && !(collection in ['QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent']);
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
       // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
       // Follows : abonnements écrits uniquement par les Cloud Functions (followUser / unfollowUser)
       allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
-          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizPool', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent']);
+          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeCatalog', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app

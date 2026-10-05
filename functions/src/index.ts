@@ -46,3 +46,4 @@ export { convertStickerVideo } from "./stickers/stickerVideo";
 export { creationQuote, onCanalCreatedCharge, onGroupCreatedCharge } from "./payments/creationFees";
 export * from "./quiz/quiz";
 export * from "./quiz/quizAdmin";
+export * from "./etude/etude";
