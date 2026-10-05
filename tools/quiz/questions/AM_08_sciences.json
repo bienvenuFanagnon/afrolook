@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel pays d'Amérique du Nord a lancé la fusée Falcon 9 de SpaceX ?",
+"c": "Les États-Unis",
+"w": [
+"Le Canada",
+"Le Mexique",
+"Le Brésil"
+],
+"e": "SpaceX est basée à Hawthorne, en Californie."
+},
+{
+"q": "Quelle agence spatiale américaine a envoyé des hommes sur la Lune ?",
+"c": "La NASA",
+"w": [
+"L'ESA",
+"Roscosmos",
+"La JAXA"
+],
+"e": "Elle a été créée en 1958."
+},
+{
+"q": "Quel animal d'Amérique du Sud est connu pour sa laine douce, proche du lama ?",
+"c": "L'alpaga",
+"w": [
+"Le zèbre",
+"Le kangourou",
+"Le yack"
+],
+"e": "Il est élevé dans les Andes pour sa laine."
+},
+{
+"q": "Quel oiseau est l'emblème des États-Unis ?",
+"c": "Le pygargue à tête blanche",
+"w": [
+"Le condor",
+"Le perroquet",
+"Le hibou"
+],
+"e": "On le voit sur le grand sceau du pays."
+},
+{
+"q": "Quel est le plus grand fleuve d'Amérique du Sud par son débit ?",
+"c": "L'Amazone",
+"w": [
+"L'Orénoque",
+"Le Paraná",
+"Le Magdalena"
+],
+"e": "Il rejette plus d'eau que tout autre fleuve du monde."
+},
+{
+"q": "Quel inventeur américain a mis au point l'ampoule électrique commercialisable ?",
+"c": "Thomas Edison",
+"w": [
+"Nikola Tesla",
+"Alexander Graham Bell",
+"Henry Ford"
+],
+"e": "Il a déposé de nombreux brevets à Menlo Park."
+},
+{
+"q": "Quel réseau social lancé en 2004 par Mark Zuckerberg est né dans une université américaine ?",
+"c": "Facebook",
+"w": [
+"Twitter",
+"TikTok",
+"Snapchat"
+],
+"e": "Il est né à l'université de Harvard."
+},
+{
+"q": "Quel animal géant d'Amérique du Sud vit dans la forêt amazonienne et peut mesurer plus de 8 mètres ?",
+"c": "L'anaconda vert",
+"w": [
+"Le python réticulé",
+"Le cobra royal",
+"La vipère du Gabon"
+],
+"e": "C'est l'un des serpents les plus lourds du monde."
+},
+{
+"q": "Quelle forêt d'Amérique du Sud est surnommée le poumon de la planète ?",
+"c": "L'Amazonie",
+"w": [
+"La forêt de Sherwood",
+"Le Congo",
+"La taïga"
+],
+"e": "Elle abrite une immense biodiversité."
+},
+{
+"q": "Quel fruit d'origine américaine est à la base du chocolat ?",
+"c": "Le cacao",
+"w": [
+"Le café",
+"Le coton",
+"Le thé"
+],
+"e": "Les Aztèques et les Mayas le consommaient déjà."
+},
+{
+"q": "Quel légume, venu des Andes, est aujourd'hui cultivé partout dans le monde ?",
+"c": "La pomme de terre",
+"w": [
+"Le manioc",
+"L'igname",
+"Le riz"
+],
+"e": "Elle vient du Pérou et de la Bolivie."
+},
+{
+"q": "Quel animal marin colossal visite les côtes de l'Alaska et du Mexique pour se reproduire ?",
+"c": "La baleine à bosse",
+"w": [
+"Le requin-baleine",
+"Le dauphin",
+"Le morse"
+],
+"e": "Elle migre sur de très longues distances."
+},
+{
+"q": "Quel désert d'Amérique du Nord se trouve surtout dans le sud-ouest des États-Unis et le nord du Mexique ?",
+"c": "Le désert de Sonora",
+"w": [
+"Le Sahara",
+"Le Gobi",
+"Le Kalahari"
+],
+"e": "On y trouve de grands cactus saguaros."
+},
+{
+"q": "Quelle plante américaine est utilisée pour fabriquer la tequila ?",
+"c": "L'agave",
+"w": [
+"Le maïs",
+"La canne à sucre",
+"Le blé"
+],
+"e": "On utilise surtout l'agave bleu."
+},
+{
+"q": "Quel physicien américain d'origine allemande a reçu le prix Nobel et vécu à Princeton à partir de 1933 ?",
+"c": "Albert Einstein",
+"w": [
+"Max Planck",
+"Niels Bohr",
+"Werner Heisenberg"
+],
+"e": "Il s'était installé aux États-Unis en fuyant le nazisme."
+},
+{
+"q": "Quelle mission a posé le premier homme sur la Lune en 1969 ?",
+"c": "Apollo 11",
+"w": [
+"Apollo 13",
+"Gemini 4",
+"Mercury 3"
+],
+"e": "Armstrong et Aldrin ont marché sur le sol lunaire."
+},
+{
+"q": "Quel est le nom de la navette spatiale américaine qui a explosé au décollage en 1986 ?",
+"c": "Challenger",
+"w": [
+"Discovery",
+"Atlantis",
+"Endeavour"
+],
+"e": "Sept astronautes ont perdu la vie."
+},
+{
+"q": "Quelle ville américaine abrite le centre de contrôle des vols habités de la NASA ?",
+"c": "Houston",
+"w": [
+"Chicago",
+"Seattle",
+"Denver"
+],
+"e": "Le célèbre message « Houston, nous avons un problème » vient de là."
+},
+{
+"q": "Quel inventeur américain est connu pour avoir créé la chaîne de montage de l'automobile Ford T ?",
+"c": "Henry Ford",
+"w": [
+"Karl Benz",
+"Louis Renault",
+"Gottlieb Daimler"
+],
+"e": "Il a rendu l'automobile accessible au grand public."
+},
+{
+"q": "Quel scientifique américain a découvert que la foudre était de l'électricité avec un cerf-volant ?",
+"c": "Benjamin Franklin",
+"w": [
+"Thomas Edison",
+"Samuel Morse",
+"Robert Fulton"
+],
+"e": "Il est aussi l'inventeur du paratonnerre."
+},
+{
+"q": "Quel médecin américain a mis au point le premier vaccin oral contre la polio ?",
+"c": "Albert Sabin",
+"w": [
+"Jonas Salk",
+"Louis Pasteur",
+"Edward Jenner"
+],
+"e": "Salk avait mis au point le vaccin injectable."
+},
+{
+"q": "Quelle île d'Amérique du Sud est célèbre pour avoir inspiré la théorie de l'évolution de Darwin ?",
+"c": "Les îles Galápagos",
+"w": [
+"L'île de Pâques",
+"La Barbade",
+"Cuba"
+],
+"e": "Elles appartiennent à l'Équateur."
+},
+{
+"q": "Quel est le plus haut sommet des Amériques ?",
+"c": "L'Aconcagua",
+"w": [
+"Le Denali",
+"Le Chimborazo",
+"Le Mont Whitney"
+],
+"e": "Il culmine à environ 6 960 mètres en Argentine."
+},
+{
+"q": "Quel est le plus haut sommet d'Amérique du Nord ?",
+"c": "Le Denali",
+"w": [
+"Le Mont Logan",
+"Le Pico de Orizaba",
+"Le Mont Rainier"
+],
+"e": "Il se trouve en Alaska, il a été appelé McKinley."
+},
+{
+"q": "Quelle cascade se trouve à la frontière entre les États-Unis et le Canada ?",
+"c": "Les chutes du Niagara",
+"w": [
+"Les chutes Victoria",
+"Les chutes d'Iguazú",
+"Le Salto Ángel"
+],
+"e": "Elles attirent des millions de touristes chaque année."
+},
+{
+"q": "Quelle cascade est la plus haute du monde, située au Venezuela ?",
+"c": "Le Salto Ángel",
+"w": [
+"Les chutes du Niagara",
+"Les chutes Victoria",
+"Les chutes de Yosemite"
+],
+"e": "Elle fait 979 mètres de hauteur."
+},
+{
+"q": "Quelle civilisation d'Amérique centrale a inventé un calendrier très précis et un système d'écriture glyphique ?",
+"c": "Les Mayas",
+"w": [
+"Les Vikings",
+"Les Romains",
+"Les Perses"
+],
+"e": "Ils ont aussi construit des pyramides comme Chichén Itzá."
+},
+{
+"q": "Quel peuple des Andes a construit le Machu Picchu ?",
+"c": "Les Incas",
+"w": [
+"Les Aztèques",
+"Les Mayas",
+"Les Olmèques"
+],
+"e": "Il a été édifié vers le XVe siècle."
+},
+{
+"q": "Quel scientifique américain a découvert l'expansion de l'Univers en observant les galaxies ?",
+"c": "Edwin Hubble",
+"w": [
+"Carl Sagan",
+"Neil deGrasse Tyson",
+"Robert Oppenheimer"
+],
+"e": "Le télescope spatial porte son nom."
+},
+{
+"q": "Quel est le nom du plus grand télescope spatial lancé par la NASA en 2021 ?",
+"c": "Le James Webb",
+"w": [
+"Le Hubble",
+"Le Kepler",
+"Le Spitzer"
+],
+"e": "Il observe surtout l'Univers en infrarouge."
+},
+{
+"q": "Quel robot de la NASA a atterri sur Mars en 2021 ?",
+"c": "Perseverance",
+"w": [
+"Spirit",
+"Opportunity",
+"Sojourner"
+],
+"e": "Il est accompagné d'un petit hélicoptère nommé Ingenuity."
+},
+{
+"q": "Quelle région des États-Unis est connue pour ses geysers comme Old Faithful ?",
+"c": "Le parc de Yellowstone",
+"w": [
+"Le parc de Yosemite",
+"Les Everglades",
+"Le Grand Canyon"
+],
+"e": "Yellowstone est le plus ancien parc national du pays."
+},
+{
+"q": "Quel inventeur d'origine écossaise a déposé le brevet du téléphone en 1876 aux États-Unis ?",
+"c": "Alexander Graham Bell",
+"w": [
+"Samuel Morse",
+"Guglielmo Marconi",
+"Thomas Edison"
+],
+"e": "Il a réalisé le premier appel avec son assistant Watson."
+},
+{
+"q": "Quels frères américains ont réussi le premier vol à moteur contrôlé en 1903 ?",
+"c": "Les frères Wright",
+"w": [
+"Les frères Lumière",
+"Les frères Montgolfier",
+"Les frères Marx"
+],
+"e": "Leur avion s'appelait le Flyer."
+},
+{
+"q": "Quel Américain a été le premier homme à voler dans l'espace en orbite autour de la Terre à bord d'un vaisseau américain ?",
+"c": "John Glenn",
+"w": [
+"Neil Armstrong",
+"Alan Shepard",
+"Buzz Aldrin"
+],
+"e": "Il l'a fait en 1962 avec la capsule Friendship 7."
+},
+{
+"q": "Quelle astronaute américaine a été la première femme dans l'espace pour les États-Unis en 1983 ?",
+"c": "Sally Ride",
+"w": [
+"Valentina Terechkova",
+"Mae Jemison",
+"Christa McAuliffe"
+],
+"e": "Elle a volé à bord de la navette Challenger."
+},
+{
+"q": "Quelle astronaute américaine a été la première femme noire à aller dans l'espace en 1992 ?",
+"c": "Mae Jemison",
+"w": [
+"Sally Ride",
+"Peggy Whitson",
+"Kalpana Chawla"
+],
+"e": "Elle a volé à bord d'Endeavour."
+},
+{
+"q": "Quel scientifique noir américain a inventé de nombreux produits à base d'arachide à Tuskegee ?",
+"c": "George Washington Carver",
+"w": [
+"Garrett Morgan",
+"Lewis Latimer",
+"Charles Drew"
+],
+"e": "Il a aussi promu la rotation des cultures."
+},
+{
+"q": "Quel inventeur noir américain a perfectionné l'ampoule électrique en créant un filament en carbone durable ?",
+"c": "Lewis Latimer",
+"w": [
+"Granville Woods",
+"Elijah McCoy",
+"Frederick Jones"
+],
+"e": "Il a travaillé avec Edison et Bell."
+},
+{
+"q": "Quel chirurgien noir américain a pratiqué l'une des premières opérations à cœur ouvert en 1893 ?",
+"c": "Daniel Hale Williams",
+"w": [
+"Charles Drew",
+"Ben Carson",
+"Vivien Thomas"
+],
+"e": "Il a fondé l'hôpital Provident à Chicago."
+},
+{
+"q": "Quel médecin américain a créé les banques de sang et organisé le stockage du plasma ?",
+"c": "Charles Drew",
+"w": [
+"Alexander Fleming",
+"Karl Landsteiner",
+"Jonas Salk"
+],
+"e": "Ses travaux ont sauvé de nombreux blessés pendant la guerre."
+},
+{
+"q": "Quel scientifique brésilien est connu pour son travail sur le sérum antivenin et la maladie de Chagas ?",
+"c": "Carlos Chagas",
+"w": [
+"Oswaldo Cruz",
+"Santos-Dumont",
+"Vital Brazil"
+],
+"e": "Il a découvert la maladie qui porte son nom."
+},
+{
+"q": "Quel pionnier brésilien est considéré dans son pays comme l'inventeur de l'avion ?",
+"c": "Alberto Santos-Dumont",
+"w": [
+"Pedro Álvares Cabral",
+"Oswaldo Cruz",
+"Pelé"
+],
+"e": "Il a volé avec le 14-bis à Paris en 1906."
+},
+{
+"q": "Quelle maladie, transmise par un moustique, a été combattue par Oswaldo Cruz à Rio de Janeiro ?",
+"c": "La fièvre jaune",
+"w": [
+"La grippe",
+"La rougeole",
+"La tuberculose"
+],
+"e": "Il a mené une grande campagne sanitaire au début du XXe siècle."
+},
+{
+"q": "Quel scientifique mexicain a reçu le prix Nobel de chimie en 1995 pour ses travaux sur la couche d'ozone ?",
+"c": "Mario Molina",
+"w": [
+"Octavio Paz",
+"Luis Miramontes",
+"Guillermo Haro"
+],
+"e": "Il a étudié l'effet des CFC sur l'atmosphère."
+},
+{
+"q": "Quel inventeur mexicain a mis au point la première pilule contraceptive en 1951 ?",
+"c": "Luis Miramontes",
+"w": [
+"Mario Molina",
+"Guillermo González Camarena",
+"Miguel Hidalgo"
+],
+"e": "Il avait seulement 25 ans lors de la synthèse."
+},
+{
+"q": "Quel inventeur mexicain a conçu un système de télévision en couleurs dans les années 1940 ?",
+"c": "Guillermo González Camarena",
+"w": [
+"Luis Miramontes",
+"Emilio Azcárraga",
+"Mario Molina"
+],
+"e": "Il a déposé le brevet de son système en 1940."
+},
+{
+"q": "Quel scientifique argentin a reçu le prix Nobel de médecine en 1947 pour ses travaux sur l'hormone hypophysaire ?",
+"c": "Bernardo Houssay",
+"w": [
+"César Milstein",
+"Luis Leloir",
+"Ernesto Sabato"
+],
+"e": "Il fut le premier Latino-Américain à recevoir un Nobel scientifique."
+},
+{
+"q": "Quel scientifique argentin a reçu le prix Nobel de chimie en 1970 ?",
+"c": "Luis Federico Leloir",
+"w": [
+"Bernardo Houssay",
+"César Milstein",
+"René Favaloro"
+],
+"e": "Il a étudié le rôle des sucres dans le métabolisme."
+},
+{
+"q": "Quel chirurgien argentin a réalisé le premier pontage coronarien moderne dans les années 1960 ?",
+"c": "René Favaloro",
+"w": [
+"Bernardo Houssay",
+"Luis Leloir",
+"César Milstein"
+],
+"e": "Il exerçait à la Cleveland Clinic aux États-Unis."
+},
+{
+"q": "Quel scientifique argentin a reçu le Nobel de médecine en 1984 pour ses travaux sur les anticorps monoclonaux ?",
+"c": "César Milstein",
+"w": [
+"Bernardo Houssay",
+"Luis Leloir",
+"Mario Bunge"
+],
+"e": "Il a travaillé à Cambridge avec Georges Köhler."
+},
+{
+"q": "Quel observatoire du désert d'Atacama, au Chili, abrite de grands télescopes grâce à son ciel très pur ?",
+"c": "Paranal",
+"w": [
+"Mauna Kea",
+"Arecibo",
+"Jodrell Bank"
+],
+"e": "Il appartient à l'Observatoire européen austral."
+},
+{
+"q": "Quel radiotélescope géant de Porto Rico s'est effondré en 2020 ?",
+"c": "Arecibo",
+"w": [
+"Green Bank",
+"Parkes",
+"FAST"
+],
+"e": "Il a servi pour le message envoyé en 1974."
+},
+{
+"q": "Quel est le plus grand réseau de radiotélescopes situé au Chili ?",
+"c": "ALMA",
+"w": [
+"VLA",
+"LOFAR",
+"MeerKAT"
+],
+"e": "Il compte 66 antennes à plus de 5 000 mètres d'altitude."
+},
+{
+"q": "Quel projet américain a développé la première bombe atomique durant la Seconde Guerre mondiale ?",
+"c": "Le projet Manhattan",
+"w": [
+"Le projet Apollo",
+"Le projet Gemini",
+"Le projet Mercury"
+],
+"e": "Robert Oppenheimer dirigeait le laboratoire de Los Alamos."
+},
+{
+"q": "Quel physicien américain a dirigé le laboratoire de Los Alamos ?",
+"c": "Robert Oppenheimer",
+"w": [
+"Richard Feynman",
+"Enrico Fermi",
+"Edward Teller"
+],
+"e": "Il a été surnommé le père de la bombe atomique."
+},
+{
+"q": "Quel physicien italien a réalisé la première réaction nucléaire en chaîne contrôlée à Chicago en 1942 ?",
+"c": "Enrico Fermi",
+"w": [
+"Niels Bohr",
+"Ernest Lawrence",
+"Leo Szilard"
+],
+"e": "Elle a eu lieu sous les gradins d'un stade de l'université de Chicago."
+},
+{
+"q": "Quel physicien américain, prix Nobel 1965, est célèbre pour ses diagrammes en électrodynamique quantique ?",
+"c": "Richard Feynman",
+"w": [
+"Murray Gell-Mann",
+"Steven Weinberg",
+"Carl Sagan"
+],
+"e": "Ses diagrammes décrivent les interactions des particules."
+},
+{
+"q": "Quel prix Nobel américain a découvert le transistor aux laboratoires Bell en 1947 ?",
+"c": "John Bardeen",
+"w": [
+"Steve Jobs",
+"Gordon Moore",
+"Linus Torvalds"
+],
+"e": "Il a aussi remporté un second Nobel pour la supraconductivité."
+},
+{
+"q": "Quel ingénieur américain a imaginé la loi qui prévoit le doublement des transistors tous les deux ans ?",
+"c": "Gordon Moore",
+"w": [
+"Bill Gates",
+"Andy Grove",
+"Robert Noyce"
+],
+"e": "Il est cofondateur d'Intel."
+},
+{
+"q": "Quelle mathématicienne américaine a calculé les trajectoires des vols spatiaux de la NASA, notamment pour John Glenn ?",
+"c": "Katherine Johnson",
+"w": [
+"Ada Lovelace",
+"Grace Hopper",
+"Emmy Noether"
+],
+"e": "Son histoire est racontée dans le film « Les Figures de l'ombre »."
+},
+{
+"q": "Quelle informaticienne américaine a inventé le premier compilateur et popularisé le mot « bug » ?",
+"c": "Grace Hopper",
+"w": [
+"Ada Lovelace",
+"Margaret Hamilton",
+"Hedy Lamarr"
+],
+"e": "Elle a servi comme amirale dans la marine américaine."
+},
+{
+"q": "Quelle ingénieure américaine a dirigé la programmation du logiciel de vol d'Apollo 11 ?",
+"c": "Margaret Hamilton",
+"w": [
+"Katherine Johnson",
+"Dorothy Vaughan",
+"Mary Jackson"
+],
+"e": "Elle a popularisé le terme « génie logiciel »."
+},
+{
+"q": "Quel est le nom de la sonde américaine qui a visité Pluton en 2015 ?",
+"c": "New Horizons",
+"w": [
+"Voyager 1",
+"Cassini",
+"Galileo"
+],
+"e": "Elle a survolé Pluton après neuf ans de voyage."
+},
+{
+"q": "Quelle sonde américaine, lancée en 1977, est aujourd'hui l'objet fabriqué par l'humain le plus éloigné de la Terre ?",
+"c": "Voyager 1",
+"w": [
+"Pioneer 10",
+"Cassini",
+"Juno"
+],
+"e": "Elle est entrée dans l'espace interstellaire en 2012."
+},
+{
+"q": "Quel observatoire américain a détecté pour la première fois des ondes gravitationnelles en 2015 ?",
+"c": "LIGO",
+"w": [
+"CERN",
+"ALMA",
+"Fermilab"
+],
+"e": "Il est installé en Louisiane et dans l'État de Washington."
+},
+{
+"q": "Quel est le nom de la grande formation volcanique des États-Unis qui sommeille sous Yellowstone ?",
+"c": "Une supercaldeira",
+"w": [
+"Un atoll",
+"Un delta",
+"Un fjord"
+],
+"e": "Elle a connu de très grosses éruptions il y a des centaines de milliers d'années."
+},
+{
+"q": "Quelle faille géologique célèbre traverse la Californie ?",
+"c": "La faille de San Andreas",
+"w": [
+"La faille d'Anatolie",
+"La faille du Rift",
+"La faille de Cascadia"
+],
+"e": "Elle est à l'origine de nombreux séismes dans la région."
+},
+{
+"q": "Quel fruit tropical américain est à l'origine du mot « ananas » dans de nombreuses langues ?",
+"c": "L'ananas",
+"w": [
+"La mangue",
+"La papaye",
+"La banane"
+],
+"e": "Il est originaire d'Amérique du Sud, probablement du Brésil."
+},
+{
+"q": "Quelle plante américaine fournit le caoutchouc naturel, exploité en Amazonie ?",
+"c": "L'hévéa",
+"w": [
+"Le palmier",
+"Le teck",
+"L'ébène"
+],
+"e": "On récolte son latex en entaillant l'écorce."
+},
+{
+"q": "Quel animal américain, au corps couvert de piquants, se défend en les dressant ?",
+"c": "Le porc-épic",
+"w": [
+"Le lièvre",
+"Le renard",
+"Le castor"
+],
+"e": "Il vit dans les forêts du Canada et des États-Unis."
+},
+{
+"q": "Quel animal construit des barrages sur les rivières du Canada ?",
+"c": "Le castor",
+"w": [
+"La loutre",
+"Le rat musqué",
+"Le raton laveur"
+],
+"e": "Il est l'emblème du Canada."
+},
+{
+"q": "Quel parc américain abrite le plus célèbre canyon creusé par le fleuve Colorado ?",
+"c": "Le Grand Canyon",
+"w": [
+"Le Bryce Canyon",
+"Le Zion",
+"Le Yosemite"
+],
+"e": "Il mesure environ 450 kilomètres de long."
+},
+{
+"q": "Quel grand lac d'Amérique du Sud est le plus haut navigable du monde, entre le Pérou et la Bolivie ?",
+"c": "Le lac Titicaca",
+"w": [
+"Le lac Maracaibo",
+"Le lac Nicaragua",
+"Le lac Atitlán"
+],
+"e": "Il se situe à plus de 3 800 mètres d'altitude."
+},
+{
+"q": "Quel mathématicien et philosophe américain a reçu le prix Nobel d'économie en 1994 pour sa théorie des jeux, inspirant « Un homme d'exception » ?",
+"c": "John Nash",
+"w": [
+"Richard Feynman",
+"Claude Shannon",
+"Norbert Wiener"
+],
+"e": "Le film raconte sa vie avec Russell Crowe."
+}
+]

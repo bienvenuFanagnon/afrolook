@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel animal est traditionnellement mangé pour la fête de Thanksgiving aux États-Unis ?",
+"c": "La dinde",
+"w": [
+"Le poulet",
+"L'oie",
+"Le canard"
+],
+"e": "Elle est servie avec de la sauce aux canneberges et de la tarte à la citrouille."
+},
+{
+"q": "Quelle fête mexicaine, célébrée les 1er et 2 novembre, honore les défunts avec des autels colorés ?",
+"c": "Le Día de los Muertos",
+"w": [
+"Le Cinco de Mayo",
+"La Toussaint",
+"La Posada"
+],
+"e": "Elle est inscrite au patrimoine immatériel de l'UNESCO."
+},
+{
+"q": "Quel plat mexicain est une galette de maïs garnie de viande, de légumes et de sauce ?",
+"c": "Le taco",
+"w": [
+"Le burger",
+"La pizza",
+"Le sushi"
+],
+"e": "On le mange généralement avec les mains."
+},
+{
+"q": "Quel sandwich américain est composé d'une viande hachée grillée dans un pain rond ?",
+"c": "Le hamburger",
+"w": [
+"Le hot-dog",
+"Le sandwich club",
+"Le panini"
+],
+"e": "Il tient son nom de la ville allemande de Hambourg."
+},
+{
+"q": "Quel cocktail brésilien est préparé avec de la cachaça, du citron vert et du sucre ?",
+"c": "La caïpirinha",
+"w": [
+"Le mojito",
+"La piña colada",
+"Le pisco sour"
+],
+"e": "Il est servi avec de la glace pilée."
+},
+{
+"q": "Quel plat brésilien est un ragoût de haricots noirs et de viande de porc ?",
+"c": "La feijoada",
+"w": [
+"Le churrasco",
+"Le moqueca",
+"Le vatapá"
+],
+"e": "On le sert traditionnellement le samedi."
+},
+{
+"q": "Quelle sauce mexicaine est préparée à base d'avocat écrasé ?",
+"c": "Le guacamole",
+"w": [
+"Le houmous",
+"La salsa",
+"Le tzatziki"
+],
+"e": "On le mange avec des chips de maïs."
+},
+{
+"q": "Quelle fête brésilienne, célébrée avant le Carême, est connue pour ses défilés de samba ?",
+"c": "Le carnaval de Rio",
+"w": [
+"La Festa Junina",
+"Le Réveillon",
+"Le Círio de Nazaré"
+],
+"e": "Les écoles de samba défilent au sambodrome."
+},
+{
+"q": "Quel plat argentin désigne de la viande grillée au feu de bois ?",
+"c": "L'asado",
+"w": [
+"Le ceviche",
+"L'empanada",
+"Le mole"
+],
+"e": "C'est un repas social, très important pour les Argentins."
+},
+{
+"q": "Quelle boisson amère à base d'herbes est partagée dans une calebasse en Argentine et en Uruguay ?",
+"c": "Le maté",
+"w": [
+"Le thé",
+"Le café",
+"Le guaraná"
+],
+"e": "On la boit avec une paille en métal appelée « bombilla »."
+},
+{
+"q": "Quel produit sucré est un emblème du Canada, tiré de la sève d'un arbre ?",
+"c": "Le sirop d'érable",
+"w": [
+"Le miel",
+"Le sucre de canne",
+"La mélasse"
+],
+"e": "Le Québec en produit la majorité mondiale."
+},
+{
+"q": "Quel plat québécois est composé de frites, de fromage en grains et de sauce brune ?",
+"c": "La poutine",
+"w": [
+"La tourtière",
+"La tarte au sucre",
+"Le pâté chinois"
+],
+"e": "Elle est née dans les années 1950 au Québec."
+},
+{
+"q": "Quelle feuille orne le drapeau du Canada ?",
+"c": "La feuille d'érable",
+"w": [
+"La feuille de chêne",
+"La feuille de vigne",
+"La feuille de trèfle"
+],
+"e": "Le drapeau a été adopté en 1965."
+},
+{
+"q": "Quelle langue est la plus parlée en Amérique latine ?",
+"c": "L'espagnol",
+"w": [
+"Le portugais",
+"Le français",
+"L'anglais"
+],
+"e": "Plus de 400 millions de personnes le parlent comme langue maternelle sur le continent."
+},
+{
+"q": "Quelle langue est parlée au Brésil, le plus grand pays d'Amérique du Sud ?",
+"c": "Le portugais",
+"w": [
+"L'espagnol",
+"Le français",
+"L'anglais"
+],
+"e": "Le Brésil est le plus grand pays lusophone du monde."
+},
+{
+"q": "Quel sport est considéré comme le sport national du Canada en hiver ?",
+"c": "Le hockey sur glace",
+"w": [
+"Le curling",
+"Le ski",
+"Le patinage"
+],
+"e": "Les Canadiens l'appellent « le sport roi »."
+},
+{
+"q": "Quel sport américain se joue avec un ballon ovale, des « touchdowns » et un Super Bowl ?",
+"c": "Le football américain",
+"w": [
+"Le rugby",
+"Le baseball",
+"Le basket-ball"
+],
+"e": "Le Super Bowl est suivi par des millions de téléspectateurs."
+},
+{
+"q": "Quel sport américain oppose des équipes comme les Yankees et les Red Sox ?",
+"c": "Le baseball",
+"w": [
+"Le football américain",
+"Le basket-ball",
+"Le hockey"
+],
+"e": "Il est surnommé « le passe-temps national »."
+},
+{
+"q": "Quel sport américain est associé à des équipes comme les Lakers et les Bulls ?",
+"c": "Le basket-ball",
+"w": [
+"Le baseball",
+"Le football américain",
+"Le hockey"
+],
+"e": "Il a été inventé en 1891 par James Naismith."
+},
+{
+"q": "Quel jour est célébrée Thanksgiving aux États-Unis ?",
+"c": "Le quatrième jeudi de novembre",
+"w": [
+"Le 4 juillet",
+"Le 25 décembre",
+"Le premier lundi de septembre"
+],
+"e": "Elle commémore un repas partagé entre pèlerins et Amérindiens."
+},
+{
+"q": "Quelle monnaie est utilisée au Mexique ?",
+"c": "Le peso mexicain",
+"w": [
+"Le dollar",
+"Le real",
+"Le sol"
+],
+"e": "Son symbole est le même que celui du dollar : $."
+},
+{
+"q": "Quelle monnaie est utilisée au Brésil ?",
+"c": "Le real",
+"w": [
+"Le peso",
+"Le bolívar",
+"Le sol"
+],
+"e": "Le pluriel de real est « reais »."
+},
+{
+"q": "Quelle monnaie est utilisée au Canada ?",
+"c": "Le dollar canadien",
+"w": [
+"Le dollar américain",
+"La livre",
+"Le peso"
+],
+"e": "Sa pièce d'un dollar porte un oiseau, le huard."
+},
+{
+"q": "Quelle monnaie est utilisée aux États-Unis ?",
+"c": "Le dollar américain",
+"w": [
+"L'euro",
+"La livre",
+"Le peso"
+],
+"e": "Le billet de un dollar porte le portrait de George Washington."
+},
+{
+"q": "Quelle monnaie est utilisée au Pérou ?",
+"c": "Le sol",
+"w": [
+"Le peso",
+"Le real",
+"Le boliviano"
+],
+"e": "Son nom signifie « soleil » en espagnol."
+},
+{
+"q": "Quelle monnaie est utilisée en Colombie ?",
+"c": "Le peso colombien",
+"w": [
+"Le sol",
+"Le real",
+"Le bolívar"
+],
+"e": "Il est divisé en centavos."
+},
+{
+"q": "Quelle monnaie est utilisée au Chili ?",
+"c": "Le peso chilien",
+"w": [
+"Le sol",
+"Le real",
+"Le guaraní"
+],
+"e": "Il est l'une des plus anciennes monnaies d'Amérique du Sud."
+},
+{
+"q": "Quelle monnaie est utilisée en Argentine ?",
+"c": "Le peso argentin",
+"w": [
+"Le real",
+"Le sol",
+"Le boliviano"
+],
+"e": "Le pays a connu plusieurs périodes d'inflation importante."
+},
+{
+"q": "Quelle monnaie est utilisée à Cuba ?",
+"c": "Le peso cubain",
+"w": [
+"Le dollar",
+"Le real",
+"Le sol"
+],
+"e": "Le pays a longtemps eu deux monnaies."
+},
+{
+"q": "Quelle monnaie est utilisée en Haïti ?",
+"c": "La gourde",
+"w": [
+"Le dollar",
+"Le peso",
+"Le franc"
+],
+"e": "Son nom vient d'un mot qui désignait une calebasse."
+},
+{
+"q": "Quelles sont les couleurs principales du drapeau du Brésil ?",
+"c": "Vert, jaune, bleu et blanc",
+"w": [
+"Rouge, blanc et bleu",
+"Vert, blanc et rouge",
+"Jaune et rouge"
+],
+"e": "Il porte un globe bleu avec la devise « Ordem e Progresso »."
+},
+{
+"q": "Quel élément figure sur le drapeau du Canada ?",
+"c": "Une feuille d'érable rouge sur fond blanc",
+"w": [
+"Un castor",
+"Un huard",
+"Une croix rouge"
+],
+"e": "Elle est encadrée par deux bandes rouges verticales."
+},
+{
+"q": "Quel animal est représenté sur le drapeau du Mexique ?",
+"c": "Un aigle sur un cactus",
+"w": [
+"Un jaguar",
+"Un condor",
+"Un serpent"
+],
+"e": "Il rappelle la légende de la fondation de Tenochtitlan."
+},
+{
+"q": "Combien d'étoiles compte le drapeau des États-Unis ?",
+"c": "50",
+"w": [
+"13",
+"48",
+"52"
+],
+"e": "Chaque étoile représente un État."
+},
+{
+"q": "Que représentent les treize bandes rouges et blanches du drapeau des États-Unis ?",
+"c": "Les treize colonies d'origine",
+"w": [
+"Les treize premiers présidents",
+"Les treize guerres",
+"Les treize océans"
+],
+"e": "Elles rappellent les colonies qui ont déclaré l'indépendance en 1776."
+},
+{
+"q": "Quel pays d'Amérique du Sud a un drapeau avec une étoile blanche sur un carré bleu, et deux bandes blanche et rouge ?",
+"c": "Le Chili",
+"w": [
+"L'Argentine",
+"La Colombie",
+"Le Pérou"
+],
+"e": "Le bleu symbolise le ciel et le blanc la neige des Andes."
+},
+{
+"q": "Quel pays d'Amérique du Sud a un drapeau bleu et blanc, orné d'un soleil ?",
+"c": "L'Argentine",
+"w": [
+"Le Chili",
+"L'Uruguay",
+"Le Paraguay"
+],
+"e": "Ce soleil s'appelle le « Soleil de Mai »."
+},
+{
+"q": "Quel pays des Caraïbes a un drapeau avec un triangle rouge portant une étoile blanche ?",
+"c": "Cuba",
+"w": [
+"Haïti",
+"La République dominicaine",
+"La Jamaïque"
+],
+"e": "Le drapeau comprend aussi cinq bandes bleues et blanches."
+},
+{
+"q": "Quel pays des Caraïbes a un drapeau bleu et rouge portant des armoiries au centre ?",
+"c": "Haïti",
+"w": [
+"Cuba",
+"La Barbade",
+"Trinité-et-Tobago"
+],
+"e": "Le slogan « L'union fait la force » y est inscrit."
+},
+{
+"q": "Quel pays d'Amérique du Sud a un drapeau avec trois bandes horizontales jaune, bleue et rouge ?",
+"c": "La Colombie",
+"w": [
+"Le Pérou",
+"Le Chili",
+"La Bolivie"
+],
+"e": "Il est proche de ceux du Venezuela et de l'Équateur."
+},
+{
+"q": "Quel pays d'Amérique du Sud a un drapeau avec trois bandes verticales rouge, blanche et rouge ?",
+"c": "Le Pérou",
+"w": [
+"Le Chili",
+"La Colombie",
+"La Bolivie"
+],
+"e": "Il porte un écusson au centre."
+},
+{
+"q": "Quel pays des Caraïbes a un drapeau avec une croix jaune en forme de X sur fond vert et noir ?",
+"c": "La Jamaïque",
+"w": [
+"Cuba",
+"Haïti",
+"Les Bahamas"
+],
+"e": "Elle est la seule nation au monde à avoir ces couleurs sans rouge, blanc ni bleu."
+},
+{
+"q": "Quelle langue est parlée en Haïti avec le français ?",
+"c": "Le créole haïtien",
+"w": [
+"L'espagnol",
+"L'anglais",
+"Le portugais"
+],
+"e": "Elle est parlée par la quasi-totalité des Haïtiens."
+},
+{
+"q": "Quelle langue amérindienne est parlée par des millions de personnes au Pérou et en Bolivie ?",
+"c": "Le quechua",
+"w": [
+"Le guarani",
+"Le nahuatl",
+"Le maya"
+],
+"e": "C'était la langue des Incas."
+},
+{
+"q": "Quelle langue amérindienne est, avec l'espagnol, langue officielle du Paraguay ?",
+"c": "Le guarani",
+"w": [
+"Le quechua",
+"L'aymara",
+"Le nahuatl"
+],
+"e": "La majorité des Paraguayens la parlent."
+},
+{
+"q": "Quel plat péruvien est composé de poisson cru mariné dans du jus de citron vert ?",
+"c": "Le ceviche",
+"w": [
+"Le tamal",
+"Le lomo saltado",
+"Les empanadas"
+],
+"e": "Il est considéré comme le plat national du Pérou."
+},
+{
+"q": "Quel plat mexicain est du poulet ou du porc servi dans une sauce au chocolat et aux piments ?",
+"c": "Le mole",
+"w": [
+"Le taco",
+"Le pozole",
+"Les enchiladas"
+],
+"e": "Il existe de nombreuses variantes, dont le mole poblano."
+},
+{
+"q": "Quel chausson farci de viande, d'oignons et d'œufs est très populaire en Argentine ?",
+"c": "L'empanada",
+"w": [
+"Le burrito",
+"Le pastel",
+"Le tamal"
+],
+"e": "Chaque région a sa propre recette."
+},
+{
+"q": "Quelle confiserie à base de lait caramélisé est très populaire en Amérique latine ?",
+"c": "Le dulce de leche",
+"w": [
+"La pâte de coing",
+"Le churro",
+"Le flan"
+],
+"e": "On l'étale sur le pain ou on l'utilise dans les gâteaux."
+},
+{
+"q": "Quel pain plat de farine de maïs est un plat de base au Venezuela et en Colombie ?",
+"c": "L'arepa",
+"w": [
+"Le taco",
+"La tortilla",
+"Le pupusa"
+],
+"e": "On le garnit de fromage, de viande ou d'avocat."
+},
+{
+"q": "Quelle soupe haïtienne, mangée chaque 1er janvier, symbolise l'indépendance du pays ?",
+"c": "La soupe joumou",
+"w": [
+"Le bouillon",
+"Le lalo",
+"Le riz djon-djon"
+],
+"e": "Elle était autrefois interdite aux esclaves."
+},
+{
+"q": "Quel plat jamaïcain est une viande marinée dans des épices et grillée ?",
+"c": "Le poulet jerk",
+"w": [
+"Le poulet DG",
+"Le colombo",
+"Le mafé"
+],
+"e": "Il se prépare avec du piment et du piment de la Jamaïque."
+},
+{
+"q": "Quel cocktail cubain est préparé avec du rhum, de la menthe, du citron vert et de l'eau gazeuse ?",
+"c": "Le mojito",
+"w": [
+"La caïpirinha",
+"La piña colada",
+"Le daïquiri"
+],
+"e": "Hemingway en était un grand amateur à La Havane."
+},
+{
+"q": "Quel cocktail péruvien et chilien est préparé avec du pisco ?",
+"c": "Le pisco sour",
+"w": [
+"La margarita",
+"Le mojito",
+"La sangria"
+],
+"e": "Il est servi avec une mousse de blanc d'œuf."
+},
+{
+"q": "Quel alcool mexicain est distillé à partir de l'agave bleue ?",
+"c": "La tequila",
+"w": [
+"Le rhum",
+"Le pisco",
+"La cachaça"
+],
+"e": "Son nom vient de la ville de Tequila, dans l'État de Jalisco."
+},
+{
+"q": "Quelle fève, originaire des Amériques, est à l'origine du chocolat ?",
+"c": "Le cacao",
+"w": [
+"Le café",
+"La vanille",
+"Le soja"
+],
+"e": "Les Mayas et les Aztèques en faisaient déjà une boisson."
+},
+{
+"q": "Quel légume, originaire des Andes, a été rapporté en Europe au XVIe siècle ?",
+"c": "La pomme de terre",
+"w": [
+"La carotte",
+"L'aubergine",
+"Le chou"
+],
+"e": "Il existe des milliers de variétés dans les Andes."
+},
+{
+"q": "Quelle céréale est à la base de l'alimentation des peuples de Mésoamérique ?",
+"c": "Le maïs",
+"w": [
+"Le riz",
+"Le blé",
+"L'orge"
+],
+"e": "Il était considéré comme sacré par les Mayas."
+},
+{
+"q": "Dans quelle ville américaine le Coca-Cola a-t-il été inventé en 1886 ?",
+"c": "Atlanta",
+"w": [
+"New York",
+"Chicago",
+"Los Angeles"
+],
+"e": "Son inventeur était un pharmacien nommé John Pemberton."
+},
+{
+"q": "Comment s'appelle la tradition d'Halloween où les enfants demandent des bonbons de porte en porte ?",
+"c": "Trick or treat (des bonbons ou un sort)",
+"w": [
+"Thanksgiving",
+"Mardi gras",
+"Cinco de Mayo"
+],
+"e": "Ils sont déguisés pour l'occasion."
+},
+{
+"q": "Quelle fête des Andes honore la Terre-Mère, avec des offrandes au début du mois d'août ?",
+"c": "La Pachamama",
+"w": [
+"L'Inti Raymi",
+"Le Carnaval d'Oruro",
+"Le Día de la Raza"
+],
+"e": "Les offrandes sont brûlées ou enterrées."
+},
+{
+"q": "Quelle fête péruvienne célèbre le dieu Soleil des Incas chaque 24 juin ?",
+"c": "L'Inti Raymi",
+"w": [
+"La Pachamama",
+"Le Carnaval",
+"La Semaine sainte"
+],
+"e": "Elle est jouée à Cuzco, avec des costumes d'époque."
+},
+{
+"q": "Quel carnaval colombien est inscrit à l'UNESCO au patrimoine immatériel ?",
+"c": "Le carnaval de Barranquilla",
+"w": [
+"Le carnaval de Rio",
+"Le carnaval de Port-au-Prince",
+"Le carnaval de Trinidad"
+],
+"e": "Il se déroule dans le nord de la Colombie."
+},
+{
+"q": "Quel personnage est la mascotte du carnaval d'hiver de Québec ?",
+"c": "Bonhomme Carnaval",
+"w": [
+"Le Père Noël",
+"Le Grand Manitou",
+"Le Castor"
+],
+"e": "Il est un bonhomme de neige portant une ceinture fléchée."
+},
+{
+"q": "Quel jour est célébrée la fête nationale du Canada ?",
+"c": "Le 1er juillet",
+"w": [
+"Le 4 juillet",
+"Le 14 juillet",
+"Le 24 juin"
+],
+"e": "Elle commémore la naissance de la Confédération en 1867."
+},
+{
+"q": "Quelle fête est célébrée au Québec chaque 24 juin ?",
+"c": "La Saint-Jean-Baptiste",
+"w": [
+"Le Jour de l'An",
+"La Saint-Patrick",
+"La Toussaint"
+],
+"e": "Elle est devenue la fête nationale du Québec."
+},
+{
+"q": "Quelle fête mexicaine, le 16 septembre, commémore le début de l'indépendance ?",
+"c": "La fête de l'Indépendance",
+"w": [
+"Le Cinco de Mayo",
+"Le Día de los Muertos",
+"La Guelaguetza"
+],
+"e": "Le président y refait chaque année le « Cri de Dolores »."
+},
+{
+"q": "Quelle danse-lutte brésilienne, d'origine africaine, se pratique en rond au son du berimbau ?",
+"c": "La capoeira",
+"w": [
+"La samba",
+"Le forró",
+"Le frevo"
+],
+"e": "Elle est inscrite au patrimoine immatériel de l'UNESCO."
+},
+{
+"q": "Quelle religion cubaine mêle catholicisme et croyances yoruba d'Afrique de l'Ouest ?",
+"c": "La santería",
+"w": [
+"Le vaudou",
+"Le candomblé",
+"Le rastafarisme"
+],
+"e": "Ses divinités s'appellent les orishas."
+},
+{
+"q": "Quelle religion afro-brésilienne vénère les orishas, notamment à Bahia ?",
+"c": "Le candomblé",
+"w": [
+"La santería",
+"Le vaudou",
+"Le rastafarisme"
+],
+"e": "Elle est née de la rencontre entre traditions africaines et catholicisme."
+},
+{
+"q": "Quelle religion d'origine africaine est largement pratiquée en Haïti ?",
+"c": "Le vaudou",
+"w": [
+"La santería",
+"Le candomblé",
+"Le rastafarisme"
+],
+"e": "Elle est reconnue officiellement comme religion depuis 2003."
+},
+{
+"q": "Quel dieu aztèque est représenté sous la forme d'un serpent à plumes ?",
+"c": "Quetzalcóatl",
+"w": [
+"Huitzilopochtli",
+"Tlaloc",
+"Tezcatlipoca"
+],
+"e": "Son nom signifie « serpent à plumes » en nahuatl."
+},
+{
+"q": "Quel système de cordelettes nouées servait aux Incas à compter et à transmettre des informations ?",
+"c": "Le quipu",
+"w": [
+"Le codex",
+"Le glyphe",
+"L'abaque"
+],
+"e": "Il n'a toujours pas été entièrement déchiffré."
+},
+{
+"q": "Quel grand disque de pierre sculpté, conservé à Mexico, représente le calendrier aztèque ?",
+"c": "La pierre du Soleil",
+"w": [
+"La pierre de Rosette",
+"Le monolithe de Tiwanaku",
+"La stèle de Tikal"
+],
+"e": "Il pèse environ vingt-quatre tonnes."
+},
+{
+"q": "Quel jeu de balle ancien, pratiqué par les Mayas et les Aztèques, se jouait avec une balle de caoutchouc ?",
+"c": "Le jeu de balle mésoaméricain",
+"w": [
+"Le basket-ball",
+"Le polo",
+"Le tennis"
+],
+"e": "On l'appelle « ullamaliztli » en nahuatl."
+}
+]
