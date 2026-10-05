@@ -127,14 +127,14 @@ class _AdAdminPageState extends State<AdAdminPage> {
             btn('Essayer la pub plein écran', () async {
               AdmobService.preloadInterstitial();
               final ok = await AdmobService.showInterstitialNow(
-                onFailed: () => setState(() => _status = 'Plein écran indisponible (en chargement ?)'),
+                onFailed: () => setState(() => _status = 'Plein écran indisponible : ${AdmobService.lastErrors['plein écran'] ?? 'en chargement, réessaie dans quelques secondes'}'),
               );
               if (ok) setState(() => _status = 'Plein écran affiché');
             }),
             btn('Essayer la pub récompensée', () {
               AdmobService.loadRewarded();
               final ok = AdmobService.showRewarded(onEarned: () => setState(() => _status = 'Récompense obtenue'));
-              if (!ok) setState(() => _status = 'Récompensée indisponible (en chargement ?)');
+              if (!ok) setState(() => _status = 'Récompensée indisponible : ${AdmobService.lastErrors['récompensée'] ?? 'en chargement, réessaie dans quelques secondes'}');
             }),
             const SizedBox(height: 8),
             Text('Essai bannière et native', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
@@ -142,6 +142,15 @@ class _AdAdminPageState extends State<AdAdminPage> {
             const AdmobNativeWidget(),
             const SizedBox(height: 12),
             Text(_status, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            const SizedBox(height: 12),
+            btn('Voir les erreurs renvoyées par Google', () => setState(() {})),
+            const SizedBox(height: 8),
+            Text(
+              AdmobService.lastErrors.isEmpty
+                  ? 'Aucune erreur enregistrée'
+                  : AdmobService.lastErrors.entries.map((e) => '${e.key} → ${e.value}').join('\n'),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
+            ),
           ],
         ),
       ),

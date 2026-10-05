@@ -19,6 +19,13 @@ class AdmobService {
   static final ValueNotifier<bool> ready = ValueNotifier(false);
   static bool _started = false;
 
+  /// Dernières erreurs de chargement renvoyées par Google (affichées dans l'écran admin).
+  static final Map<String, String> lastErrors = {};
+  static void _err(String type, LoadAdError e) {
+    lastErrors[type] = 'code ${e.code} : ${e.message}';
+    debugPrint('[Ads] $type : ${lastErrors[type]}');
+  }
+
   static Future<void> init() async {
     if (_started || !AdConfig.isMobile) return;
     _started = true;
@@ -106,7 +113,10 @@ class AdmobService {
           _interstitial = ad;
           _loadingInterstitial = false;
         },
-        onAdFailedToLoad: (_) => _loadingInterstitial = false,
+        onAdFailedToLoad: (e) {
+          _loadingInterstitial = false;
+          _err('plein écran', e);
+        },
       ),
     );
   }
@@ -194,7 +204,10 @@ class AdmobService {
           _loadingRewarded = false;
           rewardedReadyNotifier.value = true;
         },
-        onAdFailedToLoad: (_) => _loadingRewarded = false,
+        onAdFailedToLoad: (e) {
+          _loadingRewarded = false;
+          _err('récompensée', e);
+        },
       ),
     );
   }

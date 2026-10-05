@@ -53,7 +53,8 @@ class _AdmobBannerWidgetState extends State<AdmobBannerWidget> {
         onAdLoaded: (a) {
           if (mounted) setState(() => _loaded = true);
         },
-        onAdFailedToLoad: (a, _) {
+        onAdFailedToLoad: (a, e) {
+          AdmobService.lastErrors['bannière'] = 'code ${e.code} : ${e.message}';
           a.dispose();
           _ad = null;
           widget.onFailed?.call();
@@ -127,7 +128,8 @@ class _AdmobNativeWidgetState extends State<AdmobNativeWidget> {
         onAdLoaded: (a) {
           if (mounted) setState(() => _loaded = true);
         },
-        onAdFailedToLoad: (a, _) {
+        onAdFailedToLoad: (a, e) {
+          AdmobService.lastErrors['natif'] = 'code ${e.code} : ${e.message}';
           a.dispose();
           _ad = null;
           widget.onFailed?.call();
