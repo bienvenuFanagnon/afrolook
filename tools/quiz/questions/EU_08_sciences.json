@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel philosophe et savant français a écrit « Je pense, donc je suis » ?",
+"c": "René Descartes",
+"w": [
+"Blaise Pascal",
+"Voltaire",
+"Jean-Jacques Rousseau"
+],
+"e": "Il a aussi inventé les coordonnées cartésiennes."
+},
+{
+"q": "Quel inventeur écossais a perfectionné la machine à vapeur au XVIIIe siècle ?",
+"c": "James Watt",
+"w": [
+"George Stephenson",
+"Thomas Newcomen",
+"Isambard Brunel"
+],
+"e": "L'unité de puissance, le watt, porte son nom."
+},
+{
+"q": "Quels frères français ont inventé le cinématographe en 1895 ?",
+"c": "Les frères Lumière",
+"w": [
+"Les frères Montgolfier",
+"Les frères Pathé",
+"Les frères Goncourt"
+],
+"e": "Leur première projection publique a eu lieu à Paris."
+},
+{
+"q": "Quel physicien britannique, atteint d'une maladie neurologique, a écrit « Une brève histoire du temps » ?",
+"c": "Stephen Hawking",
+"w": [
+"Roger Penrose",
+"Paul Dirac",
+"Brian Cox"
+],
+"e": "Il a étudié les trous noirs et l'origine de l'Univers."
+},
+{
+"q": "Quel Italien a inventé la radio et reçu le prix Nobel de physique en 1909 ?",
+"c": "Guglielmo Marconi",
+"w": [
+"Alessandro Volta",
+"Enrico Fermi",
+"Galileo Ferraris"
+],
+"e": "Il a réalisé une liaison radio à travers l'Atlantique en 1901."
+},
+{
+"q": "Quel artiste de la Renaissance a dessiné des machines volantes, des chars et des sous-marins ?",
+"c": "Léonard de Vinci",
+"w": [
+"Michel-Ange",
+"Raphaël",
+"Botticelli"
+],
+"e": "Ses carnets contiennent des milliers de croquis scientifiques."
+},
+{
+"q": "Quelle organisation européenne, installée près de Genève, exploite le plus grand accélérateur de particules du monde ?",
+"c": "Le CERN",
+"w": [
+"L'ESA",
+"Le CNES",
+"La NASA"
+],
+"e": "Son accélérateur est le LHC, un anneau de 27 kilomètres."
+},
+{
+"q": "Comment s'appelle la brebis née en 1996 en Écosse, premier mammifère cloné à partir d'une cellule adulte ?",
+"c": "Dolly",
+"w": [
+"Molly",
+"Polly",
+"Shaun"
+],
+"e": "Elle est morte en 2003."
+},
+{
+"q": "Quel Français aveugle a inventé en 1829 un système d'écriture en points en relief ?",
+"c": "Louis Braille",
+"w": [
+"Valentin Haüy",
+"Nicolas Appert",
+"Charles Barbier"
+],
+"e": "Son système est utilisé dans le monde entier."
+},
+{
+"q": "Quelle famille de fusées européennes décolle depuis Kourou, en Guyane française ?",
+"c": "Ariane",
+"w": [
+"Soyouz",
+"Falcon",
+"Saturn"
+],
+"e": "Le site se trouve près de l'équateur, ce qui aide les lancements."
+},
+{
+"q": "Quel mathématicien français a inventé une machine à calculer, la Pascaline, à dix-neuf ans ?",
+"c": "Blaise Pascal",
+"w": [
+"René Descartes",
+"Pierre de Fermat",
+"Joseph Fourier"
+],
+"e": "L'unité de pression, le pascal, porte aussi son nom."
+},
+{
+"q": "Quel chimiste français est considéré comme le père de la chimie moderne ?",
+"c": "Antoine Lavoisier",
+"w": [
+"Louis Pasteur",
+"Marcellin Berthelot",
+"Joseph Gay-Lussac"
+],
+"e": "Il a donné son nom à l'oxygène et à l'hydrogène."
+},
+{
+"q": "Quel moine tchèque est considéré comme le père de la génétique grâce à ses expériences sur les pois ?",
+"c": "Gregor Mendel",
+"w": [
+"Charles Darwin",
+"Louis Pasteur",
+"Francis Crick"
+],
+"e": "Ses travaux n'ont été reconnus qu'après sa mort."
+},
+{
+"q": "Quel ingénieur allemand a construit en 1886 l'une des premières automobiles à moteur à essence ?",
+"c": "Karl Benz",
+"w": [
+"Rudolf Diesel",
+"Henry Ford",
+"Louis Renault"
+],
+"e": "Sa voiture avait trois roues."
+},
+{
+"q": "Quelle agence regroupe plusieurs pays européens pour explorer l'espace ?",
+"c": "L'Agence spatiale européenne",
+"w": [
+"La NASA",
+"Roscosmos",
+"Le CNES"
+],
+"e": "Elle est basée à Paris."
+},
+{
+"q": "Quel physicien danois a proposé en 1913 un modèle de l'atome avec des électrons sur des orbites ?",
+"c": "Niels Bohr",
+"w": [
+"Max Planck",
+"Ernest Rutherford",
+"Werner Heisenberg"
+],
+"e": "Il a reçu le prix Nobel de physique en 1922."
+},
+{
+"q": "Quel physicien allemand est le père de la théorie des quanta ?",
+"c": "Max Planck",
+"w": [
+"Albert Einstein",
+"Erwin Schrödinger",
+"Wilhelm Röntgen"
+],
+"e": "Il a reçu le prix Nobel de physique en 1918."
+},
+{
+"q": "Quel physicien autrichien est célèbre pour son expérience de pensée du chat à la fois mort et vivant ?",
+"c": "Erwin Schrödinger",
+"w": [
+"Niels Bohr",
+"Wolfgang Pauli",
+"Max Born"
+],
+"e": "Cette expérience illustre un paradoxe de la mécanique quantique."
+},
+{
+"q": "Quel ingénieur allemand a donné son nom à un moteur à combustion à allumage par compression ?",
+"c": "Rudolf Diesel",
+"w": [
+"Karl Benz",
+"Gottlieb Daimler",
+"Nikolaus Otto"
+],
+"e": "Il a disparu en mer en 1913."
+},
+{
+"q": "Quel savant britannique a découvert l'induction électromagnétique en 1831 ?",
+"c": "Michael Faraday",
+"w": [
+"James Clerk Maxwell",
+"Isaac Newton",
+"Humphry Davy"
+],
+"e": "Son nom a été donné à l'unité de capacité électrique, le farad."
+},
+{
+"q": "Quel médecin autrichien est le fondateur de la psychanalyse ?",
+"c": "Sigmund Freud",
+"w": [
+"Carl Gustav Jung",
+"Alfred Adler",
+"Jean Piaget"
+],
+"e": "Il a écrit « L'Interprétation des rêves »."
+},
+{
+"q": "Quel physiologiste russe est célèbre pour ses expériences sur le réflexe conditionné chez le chien ?",
+"c": "Ivan Pavlov",
+"w": [
+"Sigmund Freud",
+"Dmitri Mendeleïev",
+"Alexandre Popov"
+],
+"e": "Il a reçu le prix Nobel de médecine en 1904."
+},
+{
+"q": "Quel naturaliste suédois a inventé la classification des êtres vivants en genre et espèce ?",
+"c": "Carl von Linné",
+"w": [
+"Charles Darwin",
+"Georges Cuvier",
+"Jean-Baptiste de Lamarck"
+],
+"e": "Il a publié son « Systema Naturae » en 1735."
+},
+{
+"q": "Quel savant italien a inventé le baromètre au XVIIe siècle ?",
+"c": "Evangelista Torricelli",
+"w": [
+"Galilée",
+"Alessandro Volta",
+"Giovanni Cassini"
+],
+"e": "Il était l'élève de Galilée."
+},
+{
+"q": "Quel chirurgien britannique a introduit l'antisepsie dans les opérations vers 1865 ?",
+"c": "Joseph Lister",
+"w": [
+"Alexander Fleming",
+"Edward Jenner",
+"Ignace Semmelweis"
+],
+"e": "Il utilisait l'acide phénique pour désinfecter les plaies."
+},
+{
+"q": "Quel médecin hongrois a prouvé, au XIXe siècle, l'importance du lavage des mains à l'hôpital ?",
+"c": "Ignace Semmelweis",
+"w": [
+"Louis Pasteur",
+"Joseph Lister",
+"Robert Koch"
+],
+"e": "Il a réduit fortement la mortalité des mères à la maternité de Vienne."
+},
+{
+"q": "Quel Français a réalisé vers 1826 la première photographie permanente ?",
+"c": "Nicéphore Niépce",
+"w": [
+"Louis Daguerre",
+"Auguste Lumière",
+"Étienne-Jules Marey"
+],
+"e": "Il l'a prise depuis la fenêtre de sa maison de Bourgogne."
+},
+{
+"q": "Quel géophysicien allemand a proposé en 1912 la théorie de la dérive des continents ?",
+"c": "Alfred Wegener",
+"w": [
+"Charles Lyell",
+"Harry Hess",
+"Alexander von Humboldt"
+],
+"e": "Il avait remarqué que les continents semblaient s'emboîter comme un puzzle."
+},
+{
+"q": "Comment s'appelle le petit atterrisseur de la mission européenne Rosetta qui s'est posé sur une comète en 2014 ?",
+"c": "Philae",
+"w": [
+"Huygens",
+"Pathfinder",
+"Gaia"
+],
+"e": "Il s'est posé sur la comète Tchouri."
+},
+{
+"q": "Quelle particule, confirmée au CERN en 2012, explique l'origine de la masse des autres particules ?",
+"c": "Le boson de Higgs",
+"w": [
+"Le neutron",
+"Le quark top",
+"Le photon"
+],
+"e": "Peter Higgs a reçu le prix Nobel en 2013."
+},
+{
+"q": "Quel physicien écossais a unifié l'électricité et le magnétisme avec quatre équations ?",
+"c": "James Clerk Maxwell",
+"w": [
+"Michael Faraday",
+"Lord Kelvin",
+"Isaac Newton"
+],
+"e": "Ses équations datent de 1865."
+},
+{
+"q": "Quel physicien allemand a énoncé le principe d'incertitude en 1927 ?",
+"c": "Werner Heisenberg",
+"w": [
+"Max Planck",
+"Wolfgang Pauli",
+"Max Born"
+],
+"e": "Le principe dit qu'on ne peut connaître avec certitude à la fois la position et la vitesse d'une particule."
+},
+{
+"q": "Quel astronome danois a mesuré avec une grande précision la position des planètes avant l'invention de la lunette ?",
+"c": "Tycho Brahe",
+"w": [
+"Johannes Kepler",
+"Nicolas Copernic",
+"Ole Rømer"
+],
+"e": "Ses observations ont permis à Kepler de découvrir ses lois."
+},
+{
+"q": "Comment s'appelle le satellite européen lancé en 2013 pour cartographier des milliards d'étoiles de la Voie lactée ?",
+"c": "Gaia",
+"w": [
+"Hubble",
+"Planck",
+"Rosetta"
+],
+"e": "Il est placé à un million et demi de kilomètres de la Terre."
+},
+{
+"q": "Quel astronome suédois a proposé en 1742 une échelle de température en degrés ?",
+"c": "Anders Celsius",
+"w": [
+"Lord Kelvin",
+"Daniel Fahrenheit",
+"Réaumur"
+],
+"e": "Son échelle était d'abord inversée par rapport à celle utilisée aujourd'hui."
+},
+{
+"q": "Quel physicien allemand a donné son nom à l'unité de fréquence ?",
+"c": "Heinrich Hertz",
+"w": [
+"Georg Ohm",
+"Werner von Siemens",
+"Wilhelm Weber"
+],
+"e": "Il a prouvé l'existence des ondes électromagnétiques."
+},
+{
+"q": "Quel physicien français a découvert la radioactivité en 1896 ?",
+"c": "Henri Becquerel",
+"w": [
+"Pierre Curie",
+"Marie Curie",
+"Paul Langevin"
+],
+"e": "Il a partagé le Nobel de physique 1903 avec les Curie."
+},
+{
+"q": "Quel savant français a donné son nom à l'unité d'intensité du courant électrique ?",
+"c": "André-Marie Ampère",
+"w": [
+"Charles de Coulomb",
+"Alessandro Volta",
+"Joseph Fourier"
+],
+"e": "Il est considéré comme le père de l'électrodynamique."
+},
+{
+"q": "Quel physicien français a mesuré en 1849 la vitesse de la lumière sur Terre, sans passer par l'astronomie ?",
+"c": "Hippolyte Fizeau",
+"w": [
+"Léon Foucault",
+"Augustin Fresnel",
+"Jean Perrin"
+],
+"e": "Il a utilisé une roue dentée en rotation rapide."
+},
+{
+"q": "Quel physicien français a montré en 1851 la rotation de la Terre avec un pendule suspendu au Panthéon ?",
+"c": "Léon Foucault",
+"w": [
+"Hippolyte Fizeau",
+"André-Marie Ampère",
+"Blaise Pascal"
+],
+"e": "Le pendule oscille dans un plan qui semble tourner."
+},
+{
+"q": "Quel mathématicien suisse, très prolifique, a introduit la notation f(x) ?",
+"c": "Leonhard Euler",
+"w": [
+"Carl Friedrich Gauss",
+"Blaise Pascal",
+"Bernhard Riemann"
+],
+"e": "Il a continué de travailler même devenu aveugle."
+},
+{
+"q": "Quel mathématicien allemand est surnommé « le prince des mathématiciens » ?",
+"c": "Carl Friedrich Gauss",
+"w": [
+"Bernhard Riemann",
+"David Hilbert",
+"Leonhard Euler"
+],
+"e": "Il a fait des découvertes étonnantes dès l'adolescence."
+},
+{
+"q": "Quelle mathématicienne allemande a révolutionné l'algèbre abstraite et la physique théorique au début du XXe siècle ?",
+"c": "Emmy Noether",
+"w": [
+"Sofia Kovalevskaïa",
+"Hypatie",
+"Sophie Germain"
+],
+"e": "Einstein la considérait comme un génie des mathématiques."
+},
+{
+"q": "Quel mathématicien britannique a démontré en 1994-1995 le « dernier théorème de Fermat » ?",
+"c": "Andrew Wiles",
+"w": [
+"Alan Turing",
+"Stephen Hawking",
+"John Conway"
+],
+"e": "Le problème était resté sans solution pendant plus de 350 ans."
+},
+{
+"q": "Quel mathématicien français du XVIIe siècle a énoncé le fameux « dernier théorème » resté célèbre pendant plus de trois siècles ?",
+"c": "Pierre de Fermat",
+"w": [
+"René Descartes",
+"Blaise Pascal",
+"Évariste Galois"
+],
+"e": "Il l'avait noté dans la marge d'un livre."
+},
+{
+"q": "Quel physicien italien a dirigé en 1942 la première pile atomique, à Chicago ?",
+"c": "Enrico Fermi",
+"w": [
+"Guglielmo Marconi",
+"Galileo Galilei",
+"Ettore Majorana"
+],
+"e": "Il a reçu le prix Nobel de physique en 1938."
+},
+{
+"q": "Quel physicien britannique a découvert l'électron en 1897 ?",
+"c": "J. J. Thomson",
+"w": [
+"Ernest Rutherford",
+"James Chadwick",
+"Niels Bohr"
+],
+"e": "Il dirigeait le laboratoire Cavendish à Cambridge."
+},
+{
+"q": "Quel physicien d'origine néo-zélandaise a découvert le noyau de l'atome à Manchester en 1911 ?",
+"c": "Ernest Rutherford",
+"w": [
+"J. J. Thomson",
+"James Chadwick",
+"Niels Bohr"
+],
+"e": "Il est aussi connu pour avoir identifié le proton."
+},
+{
+"q": "Quelle chercheuse britannique a obtenu la célèbre « photographie 51 » de la structure de l'ADN ?",
+"c": "Rosalind Franklin",
+"w": [
+"Marie Curie",
+"Dorothy Hodgkin",
+"Barbara McClintock"
+],
+"e": "Son cliché a aidé Watson et Crick à décrire la double hélice."
+},
+{
+"q": "Quel astronome néerlandais a découvert Titan, la plus grande lune de Saturne, en 1655 ?",
+"c": "Christiaan Huygens",
+"w": [
+"Antoni van Leeuwenhoek",
+"Willem Snellius",
+"Hans Lippershey"
+],
+"e": "Il a aussi inventé l'horloge à pendule."
+},
+{
+"q": "Quel astronome britannique d'origine allemande a découvert la planète Uranus en 1781 ?",
+"c": "William Herschel",
+"w": [
+"Edmond Halley",
+"Isaac Newton",
+"John Flamsteed"
+],
+"e": "Il l'a d'abord prise pour une comète."
+},
+{
+"q": "Quel astronome français a prédit par le calcul l'existence de la planète Neptune ?",
+"c": "Urbain Le Verrier",
+"w": [
+"Pierre-Simon Laplace",
+"Camille Flammarion",
+"Charles Messier"
+],
+"e": "Neptune a été observée peu après, en 1846."
+},
+{
+"q": "Quel astronome britannique a calculé le retour de la comète qui porte son nom ?",
+"c": "Edmond Halley",
+"w": [
+"William Herschel",
+"Isaac Newton",
+"Patrick Moore"
+],
+"e": "La comète repasse près de la Terre environ tous les 76 ans."
+},
+{
+"q": "Quel physicien britannique a découvert le neutron en 1932 ?",
+"c": "James Chadwick",
+"w": [
+"J. J. Thomson",
+"Ernest Rutherford",
+"Paul Dirac"
+],
+"e": "Il a reçu le prix Nobel de physique en 1935."
+},
+{
+"q": "Quel chimiste allemand a découvert la fission nucléaire en 1938 ?",
+"c": "Otto Hahn",
+"w": [
+"Max Planck",
+"Werner Heisenberg",
+"Fritz Haber"
+],
+"e": "Il a reçu le prix Nobel de chimie en 1944."
+},
+{
+"q": "Quelle physicienne autrichienne a contribué à expliquer la fission nucléaire en 1938 ?",
+"c": "Lise Meitner",
+"w": [
+"Marie Curie",
+"Emmy Noether",
+"Irène Joliot-Curie"
+],
+"e": "L'élément 109, le meitnérium, porte son nom."
+},
+{
+"q": "Quel ingénieur britannique a inventé le moteur à réaction ?",
+"c": "Frank Whittle",
+"w": [
+"Alan Turing",
+"Barnes Wallis",
+"Geoffrey de Havilland"
+],
+"e": "Il a déposé son brevet en 1930."
+},
+{
+"q": "Quel ingénieur allemand a conçu la fusée V2 puis travaillé pour la NASA ?",
+"c": "Wernher von Braun",
+"w": [
+"Konrad Zuse",
+"Hermann Oberth",
+"Werner Heisenberg"
+],
+"e": "Il a dirigé le développement de la fusée Saturn V."
+},
+{
+"q": "Comment s'appelle la sonde européenne qui s'est posée sur Titan, lune de Saturne, en 2005 ?",
+"c": "Huygens",
+"w": [
+"Cassini",
+"Voyager",
+"Galileo"
+],
+"e": "Elle était transportée par la sonde américaine Cassini."
+},
+{
+"q": "Quel physicien français a reçu le prix Nobel de physique 2022 pour ses expériences sur l'intrication quantique ?",
+"c": "Alain Aspect",
+"w": [
+"Serge Haroche",
+"Gérard Mourou",
+"Claude Cohen-Tannoudji"
+],
+"e": "Il a partagé le prix avec John Clauser et Anton Zeilinger."
+},
+{
+"q": "Quel physicien britannique a reçu le prix Nobel de physique 2020 pour ses travaux sur les trous noirs ?",
+"c": "Roger Penrose",
+"w": [
+"Stephen Hawking",
+"Peter Higgs",
+"Brian Josephson"
+],
+"e": "Il a partagé le prix avec Reinhard Genzel et Andrea Ghez."
+},
+{
+"q": "Quelle chercheuse française a reçu, avec Jennifer Doudna, le prix Nobel de chimie 2020 pour les « ciseaux génétiques » CRISPR ?",
+"c": "Emmanuelle Charpentier",
+"w": [
+"Françoise Barré-Sinoussi",
+"Marie Curie",
+"Irène Joliot-Curie"
+],
+"e": "Cet outil permet de modifier précisément l'ADN."
+},
+{
+"q": "Quel chercheur français a codécouvert le virus du sida en 1983 ?",
+"c": "Luc Montagnier",
+"w": [
+"Louis Pasteur",
+"Jean Dausset",
+"Jacques Monod"
+],
+"e": "Il a reçu le prix Nobel de médecine en 2008."
+},
+{
+"q": "Quelle chercheuse française a reçu le prix Nobel de médecine en 2008 pour la découverte du VIH ?",
+"c": "Françoise Barré-Sinoussi",
+"w": [
+"Marie Curie",
+"Irène Joliot-Curie",
+"Christiane Nüsslein-Volhard"
+],
+"e": "Elle a partagé le prix avec Luc Montagnier et Harald zur Hausen."
+},
+{
+"q": "Quel physicien néerlandais a découvert la supraconductivité en 1911 ?",
+"c": "Heike Kamerlingh Onnes",
+"w": [
+"Christiaan Huygens",
+"Hendrik Lorentz",
+"Pieter Zeeman"
+],
+"e": "Il avait réussi à liquéfier l'hélium trois ans plus tôt."
+},
+{
+"q": "Dans quel pays est installé le CERN, qui chevauche aussi la frontière française ?",
+"c": "La Suisse",
+"w": [
+"L'Allemagne",
+"La Belgique",
+"L'Autriche"
+],
+"e": "Il a été fondé en 1954."
+},
+{
+"q": "Quelle fusée européenne a lancé le télescope spatial James Webb en décembre 2021 ?",
+"c": "Ariane 5",
+"w": [
+"Vega",
+"Soyouz",
+"Falcon 9"
+],
+"e": "Elle a décollé de Kourou, en Guyane française."
+},
+{
+"q": "Quel astronaute français a séjourné à bord de la Station spatiale internationale en 2016-2017 puis en 2021 ?",
+"c": "Thomas Pesquet",
+"w": [
+"Jean-François Clervoy",
+"Claudie Haigneré",
+"Michel Tognini"
+],
+"e": "Il a réalisé plusieurs sorties dans l'espace."
+},
+{
+"q": "Quel est le premier Français à avoir voyagé dans l'espace, en 1982, à bord de Soyouz T-6 ?",
+"c": "Jean-Loup Chrétien",
+"w": [
+"Patrick Baudry",
+"Philippe Perrin",
+"Léopold Eyharts"
+],
+"e": "Il a ensuite effectué d'autres missions, aussi avec la NASA."
+},
+{
+"q": "Quelle astronaute italienne de l'ESA a séjourné à bord de l'ISS en 2014-2015 puis en 2022 ?",
+"c": "Samantha Cristoforetti",
+"w": [
+"Claudie Haigneré",
+"Anne McClain",
+"Ellen Ochoa"
+],
+"e": "Elle a aussi commandé la Station en 2022."
+},
+{
+"q": "Quel psychologue suisse est célèbre pour ses travaux sur le développement de l'enfant ?",
+"c": "Jean Piaget",
+"w": [
+"Carl Gustav Jung",
+"Sigmund Freud",
+"Alfred Binet"
+],
+"e": "Il a décrit des stades du développement intellectuel."
+},
+{
+"q": "Quel chimiste suisse a découvert en 1938 les effets du LSD ?",
+"c": "Albert Hofmann",
+"w": [
+"Paul Müller",
+"Paul Karrer",
+"Tadeusz Reichstein"
+],
+"e": "Il travaillait pour un laboratoire pharmaceutique à Bâle."
+},
+{
+"q": "Quel chimiste britannique a découvert l'hydrogène en 1766 ?",
+"c": "Henry Cavendish",
+"w": [
+"Joseph Priestley",
+"Humphry Davy",
+"Michael Faraday"
+],
+"e": "Il l'appelait « air inflammable »."
+},
+{
+"q": "Quel chimiste allemand a découvert la structure du benzène après avoir rêvé d'un serpent qui se mord la queue ?",
+"c": "August Kekulé",
+"w": [
+"Justus von Liebig",
+"Friedrich Wöhler",
+"Robert Bunsen"
+],
+"e": "Sa découverte date de 1865."
+},
+{
+"q": "Quel médecin allemand a découvert en 1882 le bacille de la tuberculose ?",
+"c": "Robert Koch",
+"w": [
+"Louis Pasteur",
+"Paul Ehrlich",
+"Emil von Behring"
+],
+"e": "Il a reçu le prix Nobel de médecine en 1905."
+}
+]

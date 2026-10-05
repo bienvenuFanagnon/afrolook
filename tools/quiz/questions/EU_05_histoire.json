@@ -1,0 +1,752 @@
+[
+{
+"q": "En quelle année a débuté la Révolution française ?",
+"c": "1789",
+"w": [
+"1776",
+"1804",
+"1815"
+],
+"e": "Elle a mis fin à la monarchie absolue en France."
+},
+{
+"q": "Quelle prison parisienne a été prise par la foule le 14 juillet 1789 ?",
+"c": "La Bastille",
+"w": [
+"La Conciergerie",
+"La Santé",
+"Fresnes"
+],
+"e": "Le 14 juillet est devenu la fête nationale française."
+},
+{
+"q": "Quel empereur français a été vaincu à Waterloo en 1815 ?",
+"c": "Napoléon Ier",
+"w": [
+"Louis XVI",
+"Napoléon III",
+"Charlemagne"
+],
+"e": "Il a ensuite été exilé à Sainte-Hélène, où il est mort en 1821."
+},
+{
+"q": "Quelle guerre a opposé de grandes puissances européennes de 1914 à 1918 ?",
+"c": "La Première Guerre mondiale",
+"w": [
+"La guerre de Cent Ans",
+"La guerre de Crimée",
+"La guerre franco-prussienne"
+],
+"e": "Elle a fait environ dix millions de morts militaires."
+},
+{
+"q": "Quel dictateur a dirigé l'Allemagne nazie de 1933 à 1945 ?",
+"c": "Adolf Hitler",
+"w": [
+"Benito Mussolini",
+"Joseph Staline",
+"Francisco Franco"
+],
+"e": "Il s'est suicidé à Berlin en avril 1945."
+},
+{
+"q": "Quel roi de France était surnommé « le Roi-Soleil » ?",
+"c": "Louis XIV",
+"w": [
+"Louis XVI",
+"Henri IV",
+"François Ier"
+],
+"e": "Il a fait construire le château de Versailles."
+},
+{
+"q": "Quelle reine britannique a régné de 1837 à 1901 ?",
+"c": "Victoria",
+"w": [
+"Élisabeth Ire",
+"Anne",
+"Marie Tudor"
+],
+"e": "Son règne a donné son nom à l'époque victorienne."
+},
+{
+"q": "Quel peuple de l'Antiquité a construit le Colisée à Rome ?",
+"c": "Les Romains",
+"w": [
+"Les Grecs",
+"Les Étrusques",
+"Les Phéniciens"
+],
+"e": "Le Colisée pouvait accueillir des dizaines de milliers de spectateurs."
+},
+{
+"q": "Quelle cité grecque est considérée comme le berceau de la démocratie ?",
+"c": "Athènes",
+"w": [
+"Sparte",
+"Corinthe",
+"Thèbes"
+],
+"e": "Les citoyens y votaient les lois à l'assemblée."
+},
+{
+"q": "Quel peuple a envahi l'Angleterre en 1066 avec Guillaume le Conquérant ?",
+"c": "Les Normands",
+"w": [
+"Les Vikings",
+"Les Romains",
+"Les Saxons"
+],
+"e": "Ils sont venus de Normandie, dans le nord de la France."
+},
+{
+"q": "Comment appelle-t-on l'époque qui a suivi le Moyen Âge et célébré les arts et les sciences en Europe ?",
+"c": "La Renaissance",
+"w": [
+"Les Lumières",
+"La Réforme",
+"Le Romantisme"
+],
+"e": "Elle est née en Italie au XVe siècle."
+},
+{
+"q": "Quelle épidémie du XIVe siècle a tué environ un tiers des Européens ?",
+"c": "La peste noire",
+"w": [
+"Le choléra",
+"La variole",
+"La grippe espagnole"
+],
+"e": "Elle est arrivée en Europe vers 1347 par les ports de la Méditerranée."
+},
+{
+"q": "Quelle ville italienne a été ensevelie par l'éruption du Vésuve en l'an 79 ?",
+"c": "Pompéi",
+"w": [
+"Rome",
+"Naples",
+"Syracuse"
+],
+"e": "Les cendres ont conservé la ville presque intacte."
+},
+{
+"q": "Quel pays a vu naître la Renaissance au XVe siècle ?",
+"c": "L'Italie",
+"w": [
+"La France",
+"L'Espagne",
+"L'Angleterre"
+],
+"e": "Florence en est l'un des grands centres."
+},
+{
+"q": "Quelle reine de France a été guillotinée en 1793 ?",
+"c": "Marie-Antoinette",
+"w": [
+"Catherine de Médicis",
+"Anne d'Autriche",
+"Joséphine de Beauharnais"
+],
+"e": "Elle était l'épouse de Louis XVI."
+},
+{
+"q": "Quel traité a mis fin à la guerre avec l'Allemagne en 1919 ?",
+"c": "Le traité de Versailles",
+"w": [
+"Le traité de Rome",
+"Le traité de Westphalie",
+"Le traité de Vienne"
+],
+"e": "Il a imposé de lourdes réparations à l'Allemagne."
+},
+{
+"q": "Quel événement de juin 1914, à Sarajevo, a déclenché la Première Guerre mondiale ?",
+"c": "L'assassinat de l'archiduc François-Ferdinand",
+"w": [
+"La chute du tsar",
+"L'invasion de la Belgique",
+"Le torpillage du Lusitania"
+],
+"e": "L'Autriche-Hongrie a ensuite déclaré la guerre à la Serbie."
+},
+{
+"q": "Quelle bataille de 1916, sur le front ouest, est devenue le symbole de la Première Guerre mondiale pour les Français ?",
+"c": "Verdun",
+"w": [
+"La Marne",
+"Le Chemin des Dames",
+"Waterloo"
+],
+"e": "Elle a duré environ dix mois."
+},
+{
+"q": "En quelle année a commencé la Seconde Guerre mondiale en Europe ?",
+"c": "1939",
+"w": [
+"1914",
+"1941",
+"1936"
+],
+"e": "Elle a commencé avec l'invasion de la Pologne par l'Allemagne."
+},
+{
+"q": "Quel jour les Alliés ont-ils débarqué en Normandie ?",
+"c": "Le 6 juin 1944",
+"w": [
+"Le 8 mai 1945",
+"Le 11 novembre 1918",
+"Le 14 juillet 1944"
+],
+"e": "On l'appelle le « jour J »."
+},
+{
+"q": "Quelle date marque la fin de la Seconde Guerre mondiale en Europe ?",
+"c": "Le 8 mai 1945",
+"w": [
+"Le 6 juin 1944",
+"Le 11 novembre 1918",
+"Le 2 septembre 1945"
+],
+"e": "C'est le jour de la capitulation de l'Allemagne nazie."
+},
+{
+"q": "Quel dictateur italien a fondé le fascisme ?",
+"c": "Benito Mussolini",
+"w": [
+"Antonio Salazar",
+"Francisco Franco",
+"Silvio Berlusconi"
+],
+"e": "Il a dirigé l'Italie de 1922 à 1943."
+},
+{
+"q": "Quel dirigeant a dirigé l'Union soviétique de 1924 à 1953 ?",
+"c": "Joseph Staline",
+"w": [
+"Vladimir Lénine",
+"Nikita Khrouchtchev",
+"Léonid Brejnev"
+],
+"e": "Son régime a envoyé des millions de personnes dans les camps du Goulag."
+},
+{
+"q": "Quel roi d'Angleterre a eu six épouses au XVIe siècle ?",
+"c": "Henri VIII",
+"w": [
+"Henri V",
+"Édouard VI",
+"Charles II"
+],
+"e": "Il a rompu avec Rome pour pouvoir divorcer."
+},
+{
+"q": "Quelle reine a régné sur le Royaume-Uni de 1952 à 2022 ?",
+"c": "Élisabeth II",
+"w": [
+"Victoria",
+"Anne",
+"Marie II"
+],
+"e": "Elle a connu quinze Premiers ministres."
+},
+{
+"q": "Quel empereur romain a fondé Constantinople en 330 ?",
+"c": "Constantin",
+"w": [
+"Auguste",
+"Hadrien",
+"Justinien"
+],
+"e": "La ville s'appelle aujourd'hui Istanbul."
+},
+{
+"q": "En quelle année Napoléon Bonaparte a-t-il été sacré empereur à Notre-Dame de Paris ?",
+"c": "1804",
+"w": [
+"1789",
+"1799",
+"1815"
+],
+"e": "Il s'est couronné lui-même devant le pape Pie VII."
+},
+{
+"q": "Quel général romain a franchi le Rubicon en 49 av. J.-C., déclenchant une guerre civile ?",
+"c": "Jules César",
+"w": [
+"Pompée",
+"Marc Antoine",
+"Auguste"
+],
+"e": "« Alea jacta est » (le sort en est jeté) aurait-il dit."
+},
+{
+"q": "Quelle année marque traditionnellement la chute de l'Empire romain d'Occident ?",
+"c": "476",
+"w": [
+"330",
+"800",
+"1066"
+],
+"e": "Le dernier empereur, Romulus Augustule, est alors déposé."
+},
+{
+"q": "Quel roi des Francs a été couronné empereur à Rome en l'an 800 ?",
+"c": "Charlemagne",
+"w": [
+"Clovis",
+"Pépin le Bref",
+"Hugues Capet"
+],
+"e": "Il a étendu son empire sur une grande partie de l'Europe occidentale."
+},
+{
+"q": "Comment s'appelle la guerre qui a opposé la France et l'Angleterre de 1337 à 1453 ?",
+"c": "La guerre de Cent Ans",
+"w": [
+"La guerre de Trente Ans",
+"La guerre de Sept Ans",
+"La guerre des Deux-Roses"
+],
+"e": "Jeanne d'Arc y a joué un rôle célèbre."
+},
+{
+"q": "Quels traités de 1648 ont mis fin à la guerre de Trente Ans ?",
+"c": "Les traités de Westphalie",
+"w": [
+"Les traités de Rome",
+"Les traités de Vienne",
+"Les traités d'Utrecht"
+],
+"e": "Ils ont posé les bases de l'équilibre européen."
+},
+{
+"q": "Quel pape a lancé en 1095 l'appel à la première croisade ?",
+"c": "Urbain II",
+"w": [
+"Grégoire VII",
+"Innocent III",
+"Jules II"
+],
+"e": "Il l'a fait lors du concile de Clermont."
+},
+{
+"q": "Quel roi de France a signé l'édit de Nantes en 1598 pour apaiser les guerres de Religion ?",
+"c": "Henri IV",
+"w": [
+"Louis XIII",
+"François Ier",
+"Charles IX"
+],
+"e": "L'édit accordait des droits aux protestants."
+},
+{
+"q": "Comment appelle-t-on le massacre de protestants commis à Paris en août 1572 ?",
+"c": "La Saint-Barthélemy",
+"w": [
+"La Terreur",
+"Les dragonnades",
+"La Fronde"
+],
+"e": "Il a commencé quelques jours après un mariage royal."
+},
+{
+"q": "Quel roi d'Angleterre a été décapité en 1649 ?",
+"c": "Charles Ier",
+"w": [
+"Henri VIII",
+"Jacques II",
+"Richard III"
+],
+"e": "Il a été jugé par le Parlement pendant la guerre civile."
+},
+{
+"q": "Quel dirigeant a mené la révolution bolchevique de 1917 en Russie ?",
+"c": "Lénine",
+"w": [
+"Staline",
+"Trotski",
+"Nicolas II"
+],
+"e": "Il a fondé l'Union soviétique en 1922."
+},
+{
+"q": "Quelle ville russe a subi un siège de 872 jours pendant la Seconde Guerre mondiale ?",
+"c": "Léningrad",
+"w": [
+"Moscou",
+"Stalingrad",
+"Kiev"
+],
+"e": "Elle s'appelle aujourd'hui Saint-Pétersbourg."
+},
+{
+"q": "Quelle bataille de 1942-1943 a marqué le tournant de la guerre sur le front de l'Est ?",
+"c": "Stalingrad",
+"w": [
+"Koursk",
+"Moscou",
+"Verdun"
+],
+"e": "Les Allemands y ont subi une défaite majeure."
+},
+{
+"q": "Comment appelle-t-on la bataille aérienne de l'été 1940 entre la RAF et la Luftwaffe ?",
+"c": "La bataille d'Angleterre",
+"w": [
+"Le Blitz",
+"L'opération Overlord",
+"La bataille de l'Atlantique"
+],
+"e": "Les pilotes britanniques ont empêché l'invasion de leur pays."
+},
+{
+"q": "Quelle organisation européenne a été fondée en 1957 par le traité de Rome ?",
+"c": "La Communauté économique européenne",
+"w": [
+"L'OTAN",
+"L'Union européenne",
+"Le Conseil de l'Europe"
+],
+"e": "Elle est l'ancêtre de l'Union européenne."
+},
+{
+"q": "Quelle monnaie commune est entrée en circulation en 2002 dans de nombreux pays de l'Union européenne ?",
+"c": "L'euro",
+"w": [
+"Le franc européen",
+"L'écu",
+"Le florin"
+],
+"e": "Elle est utilisée aujourd'hui par une vingtaine de pays."
+},
+{
+"q": "Quel traité de 1992 a créé l'Union européenne ?",
+"c": "Le traité de Maastricht",
+"w": [
+"Le traité de Rome",
+"Le traité de Lisbonne",
+"Le traité de Paris"
+],
+"e": "Il a aussi prévu la création de l'euro."
+},
+{
+"q": "Quel pays a quitté l'Union européenne le 31 janvier 2020 ?",
+"c": "Le Royaume-Uni",
+"w": [
+"La Norvège",
+"La Suisse",
+"La Hongrie"
+],
+"e": "Les Britanniques avaient voté en 2016 lors d'un référendum."
+},
+{
+"q": "Quel pays a été divisé en deux États, la RFA et la RDA, de 1949 à 1990 ?",
+"c": "L'Allemagne",
+"w": [
+"L'Autriche",
+"La Pologne",
+"La Tchécoslovaquie"
+],
+"e": "Elle a été réunifiée le 3 octobre 1990."
+},
+{
+"q": "Quelle bataille de 1066 a vu la victoire de Guillaume le Conquérant sur le roi Harold ?",
+"c": "Hastings",
+"w": [
+"Azincourt",
+"Crécy",
+"Bouvines"
+],
+"e": "Elle est représentée sur la tapisserie de Bayeux."
+},
+{
+"q": "Quelle bataille de 1415 a vu le roi d'Angleterre Henri V battre l'armée française ?",
+"c": "Azincourt",
+"w": [
+"Crécy",
+"Poitiers",
+"Orléans"
+],
+"e": "Les archers anglais y ont joué un rôle décisif."
+},
+{
+"q": "Quelle bataille de 1805, remportée par Napoléon, est surnommée « la bataille des Trois Empereurs » ?",
+"c": "Austerlitz",
+"w": [
+"Wagram",
+"Iéna",
+"Eylau"
+],
+"e": "Elle a opposé la France à l'Autriche et à la Russie."
+},
+{
+"q": "Quel congrès de 1814-1815 a redessiné la carte de l'Europe après la chute de Napoléon ?",
+"c": "Le congrès de Vienne",
+"w": [
+"Le congrès de Berlin",
+"Le congrès de Paris",
+"Le congrès de Westphalie"
+],
+"e": "Il a été dominé par le prince de Metternich."
+},
+{
+"q": "Quel chancelier prussien a mené l'unification de l'Allemagne en 1871 ?",
+"c": "Otto von Bismarck",
+"w": [
+"Helmuth von Moltke",
+"Guillaume II",
+"Konrad Adenauer"
+],
+"e": "Il est surnommé « le chancelier de fer »."
+},
+{
+"q": "Dans quelle galerie du château de Versailles l'Empire allemand a-t-il été proclamé en 1871 ?",
+"c": "La galerie des Glaces",
+"w": [
+"La chapelle royale",
+"La salle du Jeu de paume",
+"L'Orangerie"
+],
+"e": "La même salle a vu signer le traité de 1919."
+},
+{
+"q": "Quel roi est devenu en 1861 le premier roi de l'Italie unifiée ?",
+"c": "Victor-Emmanuel II",
+"w": [
+"Charles-Albert",
+"Humbert Ier",
+"Garibaldi"
+],
+"e": "Il était roi de Piémont-Sardaigne."
+},
+{
+"q": "Quelle reine de Castille a financé en 1492 le voyage de Christophe Colomb ?",
+"c": "Isabelle la Catholique",
+"w": [
+"Jeanne la Folle",
+"Catherine d'Aragon",
+"Marie de Médicis"
+],
+"e": "Elle a aussi mené, avec Ferdinand d'Aragon, la fin de la Reconquista."
+},
+{
+"q": "Comment appelle-t-on la reconquête de la péninsule Ibérique, achevée en 1492 avec la prise de Grenade ?",
+"c": "La Reconquista",
+"w": [
+"La Croisade des Albigeois",
+"La Contre-Réforme",
+"La Réforme"
+],
+"e": "Elle a duré près de huit siècles."
+},
+{
+"q": "Quelle bataille navale de 1571 a vu la flotte chrétienne de la Sainte Ligue battre les Ottomans ?",
+"c": "Lépante",
+"w": [
+"Trafalgar",
+"Actium",
+"Salamine"
+],
+"e": "Le romancier Cervantès y a été blessé."
+},
+{
+"q": "Quelle flotte espagnole a été défaite en 1588 en tentant d'envahir l'Angleterre ?",
+"c": "L'Invincible Armada",
+"w": [
+"La flotte des Indes",
+"La flotte de Lépante",
+"La flotte de Trafalgar"
+],
+"e": "Les tempêtes ont aggravé la défaite des Espagnols."
+},
+{
+"q": "Quel empire a pris Constantinople en 1453 ?",
+"c": "L'Empire ottoman",
+"w": [
+"L'Empire russe",
+"L'Empire mongol",
+"L'Empire perse"
+],
+"e": "Cette date est souvent retenue comme la fin du Moyen Âge."
+},
+{
+"q": "Quel tsar a aboli le servage en Russie en 1861 ?",
+"c": "Alexandre II",
+"w": [
+"Pierre le Grand",
+"Nicolas Ier",
+"Ivan IV"
+],
+"e": "Il a été assassiné en 1881."
+},
+{
+"q": "Quelle impératrice de Russie a régné de 1762 à 1796 ?",
+"c": "Catherine II",
+"w": [
+"Élisabeth Ire",
+"Anne Ire",
+"Alexandra Feodorovna"
+],
+"e": "On l'appelle aussi Catherine la Grande."
+},
+{
+"q": "Quelle famille de banquiers a dominé Florence à la Renaissance et soutenu de grands artistes ?",
+"c": "Les Médicis",
+"w": [
+"Les Borgia",
+"Les Habsbourg",
+"Les Bourbons"
+],
+"e": "Léonard de Vinci et Michel-Ange ont travaillé pour elle."
+},
+{
+"q": "Quels accords de 1938 ont vu la France et le Royaume-Uni céder les Sudètes à Hitler ?",
+"c": "Les accords de Munich",
+"w": [
+"Les accords de Yalta",
+"Les accords de Locarno",
+"Les accords de Potsdam"
+],
+"e": "Ils n'ont pas empêché la guerre l'année suivante."
+},
+{
+"q": "Quel pacte a été signé en août 1939 entre l'Allemagne nazie et l'URSS ?",
+"c": "Le pacte germano-soviétique",
+"w": [
+"Le pacte de Varsovie",
+"Le pacte Briand-Kellogg",
+"Le pacte d'acier"
+],
+"e": "Il prévoyait notamment un partage de la Pologne."
+},
+{
+"q": "Quelle conférence de février 1945 a réuni Churchill, Roosevelt et Staline en Crimée ?",
+"c": "Yalta",
+"w": [
+"Potsdam",
+"Téhéran",
+"Casablanca"
+],
+"e": "Les trois dirigeants y ont préparé l'après-guerre."
+},
+{
+"q": "Quel plan américain de 1947 a aidé à reconstruire l'Europe de l'Ouest après la guerre ?",
+"c": "Le plan Marshall",
+"w": [
+"Le plan Schuman",
+"Le plan Monnet",
+"Le plan Dawes"
+],
+"e": "Il a apporté plus de dix milliards de dollars."
+},
+{
+"q": "Quelle expression Churchill a-t-il popularisée en 1946 pour décrire la division de l'Europe ?",
+"c": "Le rideau de fer",
+"w": [
+"Le mur de l'Atlantique",
+"La ligne Maginot",
+"Le pont aérien"
+],
+"e": "Il l'a prononcée lors d'un discours à Fulton, aux États-Unis."
+},
+{
+"q": "Quel pacte militaire a été créé en 1955 par l'URSS et ses alliés ?",
+"c": "Le pacte de Varsovie",
+"w": [
+"L'OTAN",
+"Le pacte germano-soviétique",
+"Le Komintern"
+],
+"e": "Il a été dissous en 1991."
+},
+{
+"q": "Quelle organisation militaire occidentale a été fondée en 1949 ?",
+"c": "L'OTAN",
+"w": [
+"Le pacte de Varsovie",
+"L'ONU",
+"L'UEO"
+],
+"e": "Son siège est à Bruxelles."
+},
+{
+"q": "Quel chancelier allemand s'est agenouillé devant le monument du ghetto de Varsovie en 1970 ?",
+"c": "Willy Brandt",
+"w": [
+"Konrad Adenauer",
+"Helmut Kohl",
+"Angela Merkel"
+],
+"e": "Son geste a marqué la réconciliation avec la Pologne."
+},
+{
+"q": "Quel dirigeant soviétique a lancé la perestroïka et la glasnost ?",
+"c": "Mikhaïl Gorbatchev",
+"w": [
+"Boris Eltsine",
+"Léonid Brejnev",
+"Nikita Khrouchtchev"
+],
+"e": "Ces mots veulent dire « reconstruction » et « transparence »."
+},
+{
+"q": "En quelle année l'Union soviétique a-t-elle été dissoute ?",
+"c": "1991",
+"w": [
+"1989",
+"1985",
+"1999"
+],
+"e": "Quinze États indépendants lui ont succédé."
+},
+{
+"q": "Quelle capitale a subi un siège de près de quatre ans dans les années 1990, pendant la guerre de Bosnie ?",
+"c": "Sarajevo",
+"w": [
+"Zagreb",
+"Belgrade",
+"Skopje"
+],
+"e": "Le siège a duré de 1992 à 1996."
+},
+{
+"q": "Quel traité signé en 2007 a modifié le fonctionnement de l'Union européenne ?",
+"c": "Le traité de Lisbonne",
+"w": [
+"Le traité de Maastricht",
+"Le traité de Nice",
+"Le traité d'Amsterdam"
+],
+"e": "Il est entré en vigueur en 2009."
+},
+{
+"q": "Quel pays est devenu en 2013 le 28e membre de l'Union européenne ?",
+"c": "La Croatie",
+"w": [
+"La Serbie",
+"La Roumanie",
+"La Turquie"
+],
+"e": "Elle est entrée dans l'Union après une longue négociation."
+},
+{
+"q": "Dans quelle ville allemande a eu lieu le procès des principaux dirigeants nazis, après la guerre ?",
+"c": "Nuremberg",
+"w": [
+"Berlin",
+"Munich",
+"Francfort"
+],
+"e": "Le procès s'est ouvert en novembre 1945."
+},
+{
+"q": "Quel général britannique a battu Napoléon à Waterloo avec l'aide des Prussiens ?",
+"c": "Wellington",
+"w": [
+"Nelson",
+"Montgomery",
+"Marlborough"
+],
+"e": "Arthur Wellesley, duc de Wellington, est devenu ensuite Premier ministre."
+}
+]

@@ -1,0 +1,752 @@
+[
+{
+"q": "Dans quel pays se joue la Premier League, l'un des championnats les plus suivis du monde ?",
+"c": "L'Angleterre",
+"w": [
+"L'Espagne",
+"L'Italie",
+"L'Allemagne"
+],
+"e": "Elle réunit vingt clubs, dont Manchester City et Liverpool."
+},
+{
+"q": "Quel club anglais est surnommé les « Red Devils » ?",
+"c": "Manchester United",
+"w": [
+"Liverpool",
+"Arsenal",
+"Chelsea"
+],
+"e": "Le club joue à Old Trafford."
+},
+{
+"q": "Quel club italien porte un maillot rayé noir et blanc ?",
+"c": "La Juventus",
+"w": [
+"L'AC Milan",
+"L'Inter Milan",
+"L'AS Roma"
+],
+"e": "Il est basé à Turin et surnommé « la Vieille Dame »."
+},
+{
+"q": "Quel club allemand a remporté le plus de titres de champion de Bundesliga ?",
+"c": "Le Bayern Munich",
+"w": [
+"Le Borussia Dortmund",
+"Schalke 04",
+"Le Werder Brême"
+],
+"e": "Le club est basé à Munich et joue à l'Allianz Arena."
+},
+{
+"q": "Quel club parisien joue au Parc des Princes ?",
+"c": "Le Paris Saint-Germain",
+"w": [
+"L'Olympique de Marseille",
+"L'Olympique lyonnais",
+"L'AS Monaco"
+],
+"e": "Il a été fondé en 1970."
+},
+{
+"q": "Quelle équipe nationale est surnommée « la Roja » ?",
+"c": "L'Espagne",
+"w": [
+"Le Portugal",
+"La Belgique",
+"La Suisse"
+],
+"e": "Son maillot est rouge, d'où ce surnom."
+},
+{
+"q": "Quelle équipe nationale est surnommée « la Squadra Azzurra » ?",
+"c": "L'Italie",
+"w": [
+"La France",
+"La Grèce",
+"L'Écosse"
+],
+"e": "Son maillot est bleu."
+},
+{
+"q": "Quel club madrilène joue en rouge et blanc et rivalise avec le Real Madrid ?",
+"c": "L'Atlético de Madrid",
+"w": [
+"Le FC Séville",
+"Valence CF",
+"Le Betis"
+],
+"e": "Son stade est le Metropolitano."
+},
+{
+"q": "Quelle équipe nationale est surnommée « la Mannschaft » ?",
+"c": "L'Allemagne",
+"w": [
+"L'Autriche",
+"La Suisse",
+"Les Pays-Bas"
+],
+"e": "Le mot veut dire « l'équipe » en allemand."
+},
+{
+"q": "Quel gardien italien, capitaine de la Juventus, a été champion du monde en 2006 ?",
+"c": "Gianluigi Buffon",
+"w": [
+"Dino Zoff",
+"Walter Zenga",
+"Gianluigi Donnarumma"
+],
+"e": "Il a joué plus de vingt ans au plus haut niveau."
+},
+{
+"q": "Quel attaquant polonais a battu en 2021 le record de buts en une saison de Bundesliga, avec 41 buts ?",
+"c": "Robert Lewandowski",
+"w": [
+"Arkadiusz Milik",
+"Jakub Błaszczykowski",
+"Zbigniew Boniek"
+],
+"e": "Il a battu un record vieux de près de cinquante ans, détenu par Gerd Müller."
+},
+{
+"q": "Quel club londonien joue à l'Emirates Stadium ?",
+"c": "Arsenal",
+"w": [
+"Chelsea",
+"Tottenham",
+"West Ham"
+],
+"e": "Ses supporters sont surnommés les « Gunners »."
+},
+{
+"q": "Quel club londonien joue à Stamford Bridge ?",
+"c": "Chelsea",
+"w": [
+"Arsenal",
+"Fulham",
+"Tottenham"
+],
+"e": "Il a remporté la Ligue des champions en 2012 et 2021."
+},
+{
+"q": "Quel est le surnom de l'équipe nationale d'Angleterre ?",
+"c": "Les Trois Lions",
+"w": [
+"Les Dragons",
+"Les Aigles",
+"Les Loups"
+],
+"e": "L'emblème de la fédération représente trois lions."
+},
+{
+"q": "Quel concours de clubs européens est considéré comme le plus prestigieux, avec une musique d'ouverture célèbre ?",
+"c": "La Ligue des champions",
+"w": [
+"La Ligue Europa",
+"La Coupe des vainqueurs de coupe",
+"La Supercoupe de l'UEFA"
+],
+"e": "Elle remplace la Coupe des clubs champions européens depuis 1992."
+},
+{
+"q": "Quel Néerlandais, pilier de l'Ajax et de Barcelone, a imposé le « football total » ?",
+"c": "Johan Cruyff",
+"w": [
+"Marco van Basten",
+"Dennis Bergkamp",
+"Ruud Gullit"
+],
+"e": "Il est mort en 2016 à Barcelone."
+},
+{
+"q": "Quel club néerlandais d'Amsterdam a gagné quatre fois la Ligue des champions ?",
+"c": "L'Ajax",
+"w": [
+"Le PSV Eindhoven",
+"Feyenoord",
+"AZ Alkmaar"
+],
+"e": "Il a gagné trois fois d'affilée, de 1971 à 1973."
+},
+{
+"q": "Quel entraîneur écossais a dirigé Manchester United pendant plus de 26 ans ?",
+"c": "Alex Ferguson",
+"w": [
+"Matt Busby",
+"José Mourinho",
+"Jürgen Klopp"
+],
+"e": "Il a pris sa retraite en 2013."
+},
+{
+"q": "Quel milieu anglais, surnommé « Becks », a joué à Manchester United et au Real Madrid ?",
+"c": "David Beckham",
+"w": [
+"Steven Gerrard",
+"Wayne Rooney",
+"Frank Lampard"
+],
+"e": "Il était réputé pour ses coups francs et ses centres."
+},
+{
+"q": "Quel attaquant suédois a porté les couleurs du Milan AC, du PSG et de Manchester United ?",
+"c": "Zlatan Ibrahimović",
+"w": [
+"Henrik Larsson",
+"Freddie Ljungberg",
+"Alexander Isak"
+],
+"e": "Il est connu pour ses buts acrobatiques et sa personnalité."
+},
+{
+"q": "Quel club italien joue au stade San Siro, avec son voisin l'Inter ?",
+"c": "L'AC Milan",
+"w": [
+"La Juventus",
+"L'AS Roma",
+"La Lazio"
+],
+"e": "Le stade s'appelle aussi stade Giuseppe-Meazza."
+},
+{
+"q": "Quel défenseur italien, capitaine de l'AC Milan, a remporté cinq Ligues des champions ?",
+"c": "Paolo Maldini",
+"w": [
+"Franco Baresi",
+"Fabio Cannavaro",
+"Alessandro Nesta"
+],
+"e": "Il a joué toute sa carrière dans le même club."
+},
+{
+"q": "Quel buteur anglais a été meilleur buteur de la Coupe du monde 2018, avec six buts ?",
+"c": "Harry Kane",
+"w": [
+"Raheem Sterling",
+"Marcus Rashford",
+"Jamie Vardy"
+],
+"e": "Il a joué à Tottenham puis au Bayern Munich."
+},
+{
+"q": "Quel club allemand, rival du Bayern, joue au Signal Iduna Park devant son célèbre « mur jaune » ?",
+"c": "Le Borussia Dortmund",
+"w": [
+"Schalke 04",
+"Le Bayer Leverkusen",
+"Hambourg"
+],
+"e": "Son stade est le plus grand d'Allemagne par sa capacité."
+},
+{
+"q": "Quel club portugais de Lisbonne joue à l'Estádio da Luz ?",
+"c": "Benfica",
+"w": [
+"Le Sporting",
+"Porto",
+"Braga"
+],
+"e": "Ses supporters le surnomment « les Aigles »."
+},
+{
+"q": "Quel grand club portugais, rival de Benfica, est basé dans le nord du pays, à Porto ?",
+"c": "Le FC Porto",
+"w": [
+"Le Sporting",
+"Braga",
+"Boavista"
+],
+"e": "Il a gagné la Ligue des champions en 1987 et en 2004."
+},
+{
+"q": "Quel entraîneur portugais, surnommé « The Special One », a dirigé Chelsea, l'Inter et Manchester United ?",
+"c": "José Mourinho",
+"w": [
+"Carlo Ancelotti",
+"Arsène Wenger",
+"Fabio Capello"
+],
+"e": "Il a remporté la Ligue des champions avec Porto puis avec l'Inter."
+},
+{
+"q": "Quel milieu croate a reçu le Ballon d'Or en 2018, après la finale du Mondial ?",
+"c": "Luka Modrić",
+"w": [
+"Ivan Rakitić",
+"Mario Mandžukić",
+"Ivan Perišić"
+],
+"e": "Il a mis fin à dix ans de domination de Messi et Ronaldo."
+},
+{
+"q": "Quel gardien allemand a longtemps été le titulaire du Bayern Munich et de la Mannschaft ?",
+"c": "Manuel Neuer",
+"w": [
+"Oliver Kahn",
+"Marc-André ter Stegen",
+"Jens Lehmann"
+],
+"e": "Il était champion du monde en 2014."
+},
+{
+"q": "Quel entraîneur espagnol a dirigé Barcelone, le Bayern Munich et Manchester City ?",
+"c": "Pep Guardiola",
+"w": [
+"Luis Enrique",
+"Xavi",
+"Unai Emery"
+],
+"e": "Il a gagné la Ligue des champions avec Barcelone puis avec Manchester City."
+},
+{
+"q": "Quel entraîneur français a dirigé Arsenal pendant 22 ans ?",
+"c": "Arsène Wenger",
+"w": [
+"Didier Deschamps",
+"Zinédine Zidane",
+"Gérard Houllier"
+],
+"e": "Il a mené Arsenal à une saison de championnat sans défaite, en 2003-2004."
+},
+{
+"q": "Quel attaquant français, champion du monde 1998, est le meilleur buteur de l'histoire d'Arsenal ?",
+"c": "Thierry Henry",
+"w": [
+"David Trezeguet",
+"Nicolas Anelka",
+"Robert Pirès"
+],
+"e": "Une statue le représente devant l'Emirates Stadium."
+},
+{
+"q": "Quel attaquant néerlandais a marqué un but spectaculaire de volée en finale de l'Euro 1988 ?",
+"c": "Marco van Basten",
+"w": [
+"Ruud Gullit",
+"Dennis Bergkamp",
+"Patrick Kluivert"
+],
+"e": "Les Pays-Bas ont gagné l'Euro 1988 contre l'URSS."
+},
+{
+"q": "Quel Allemand détient le record de buts en phases finales de Coupe du monde, avec 16 ?",
+"c": "Miroslav Klose",
+"w": [
+"Gerd Müller",
+"Thomas Müller",
+"Jürgen Klinsmann"
+],
+"e": "Il a dépassé le Brésilien Ronaldo en 2014."
+},
+{
+"q": "Quel pays a organisé l'Euro 2016 et a perdu en finale contre le Portugal ?",
+"c": "La France",
+"w": [
+"L'Allemagne",
+"L'Espagne",
+"L'Angleterre"
+],
+"e": "La finale a eu lieu au Stade de France."
+},
+{
+"q": "Quel pays a créé la surprise en gagnant l'Euro 2004 ?",
+"c": "La Grèce",
+"w": [
+"Le Portugal",
+"La Tchéquie",
+"Le Danemark"
+],
+"e": "Elle a battu le Portugal en finale, 1 à 0."
+},
+{
+"q": "Quel pays a gagné l'Euro 1992 après avoir remplacé la Yougoslavie au dernier moment ?",
+"c": "Le Danemark",
+"w": [
+"La Suède",
+"Les Pays-Bas",
+"L'Allemagne"
+],
+"e": "Les joueurs sont revenus de vacances pour disputer le tournoi."
+},
+{
+"q": "Quel défenseur italien a reçu le Ballon d'Or en 2006, après la victoire à la Coupe du monde ?",
+"c": "Fabio Cannavaro",
+"w": [
+"Alessandro Nesta",
+"Paolo Maldini",
+"Franco Baresi"
+],
+"e": "C'est l'un des rares défenseurs à avoir reçu cette récompense."
+},
+{
+"q": "Quel club a remporté la Ligue des champions 2005 à Istanbul après avoir été mené 3 à 0 par le Milan AC ?",
+"c": "Liverpool",
+"w": [
+"Chelsea",
+"Arsenal",
+"Manchester United"
+],
+"e": "Le match est resté célèbre comme « le miracle d'Istanbul »."
+},
+{
+"q": "Quel club a gagné la Ligue des champions 1999 en marquant deux buts dans les arrêts de jeu face au Bayern ?",
+"c": "Manchester United",
+"w": [
+"Barcelone",
+"Liverpool",
+"Juventus"
+],
+"e": "Il a réalisé le triplé championnat, coupe et Ligue des champions cette année-là."
+},
+{
+"q": "Quel club anglais a remporté pour la première fois la Ligue des champions en 2023 ?",
+"c": "Manchester City",
+"w": [
+"Arsenal",
+"Tottenham",
+"Newcastle United"
+],
+"e": "Il a battu l'Inter Milan en finale à Istanbul."
+},
+{
+"q": "Quel club détient le record du nombre de victoires en Ligue des champions ?",
+"c": "Le Real Madrid",
+"w": [
+"Le Milan AC",
+"Liverpool",
+"Le Bayern Munich"
+],
+"e": "Il a gagné la compétition de façon consécutive de 1956 à 1960."
+},
+{
+"q": "Quel stade de Londres, rouvert en 2007, est le plus grand du Royaume-Uni ?",
+"c": "Wembley",
+"w": [
+"Twickenham",
+"Stamford Bridge",
+"Old Trafford"
+],
+"e": "Il peut accueillir environ 90 000 spectateurs."
+},
+{
+"q": "Quel attaquant norvégien est devenu en 2022 une star de Manchester City ?",
+"c": "Erling Haaland",
+"w": [
+"Martin Ødegaard",
+"Ole Gunnar Solskjær",
+"Alexander Sørloth"
+],
+"e": "Il est le fils d'un ancien joueur de Leeds et de Manchester City."
+},
+{
+"q": "Quel jeune ailier espagnol a été élu meilleur jeune joueur de l'Euro 2024, à 17 ans ?",
+"c": "Lamine Yamal",
+"w": [
+"Pedri",
+"Gavi",
+"Nico Williams"
+],
+"e": "Il évolue au FC Barcelone."
+},
+{
+"q": "Quel joueur est le meilleur buteur de l'histoire de l'équipe d'Angleterre depuis 2023 ?",
+"c": "Harry Kane",
+"w": [
+"Wayne Rooney",
+"Gary Lineker",
+"Bobby Charlton"
+],
+"e": "Il a dépassé Wayne Rooney lors d'un match contre l'Italie."
+},
+{
+"q": "Quel club français a remporté la Ligue des champions en 1993, une première pour un club de son pays ?",
+"c": "L'Olympique de Marseille",
+"w": [
+"Le Paris Saint-Germain",
+"L'AS Saint-Étienne",
+"L'Olympique lyonnais"
+],
+"e": "Il a battu le Milan AC en finale à Munich."
+},
+{
+"q": "Quel pays a gagné la Coupe du monde 1954 en battant la Hongrie lors du « miracle de Berne » ?",
+"c": "L'Allemagne de l'Ouest",
+"w": [
+"L'Italie",
+"L'Autriche",
+"L'Uruguay"
+],
+"e": "La Hongrie, favorite, avait pourtant gagné 8 à 3 en match de poule."
+},
+{
+"q": "Quel pays était surnommé « l'équipe d'or », avec Ferenc Puskás, dans les années 1950 ?",
+"c": "La Hongrie",
+"w": [
+"La Pologne",
+"La Tchécoslovaquie",
+"La Yougoslavie"
+],
+"e": "Elle est restée invaincue pendant plus de quatre ans."
+},
+{
+"q": "Quel pays a organisé et gagné la Coupe du monde 1934 ?",
+"c": "L'Italie",
+"w": [
+"L'Uruguay",
+"La Tchécoslovaquie",
+"L'Autriche"
+],
+"e": "C'était la deuxième édition de la compétition."
+},
+{
+"q": "Quel pays a gagné la Coupe du monde 1974, avec Franz Beckenbauer comme capitaine ?",
+"c": "L'Allemagne de l'Ouest",
+"w": [
+"Les Pays-Bas",
+"La Pologne",
+"L'Italie"
+],
+"e": "Elle a battu les Pays-Bas de Johan Cruyff en finale."
+},
+{
+"q": "Quel Allemand, surnommé « Der Kaiser », a gagné la Coupe du monde comme capitaine puis comme entraîneur ?",
+"c": "Franz Beckenbauer",
+"w": [
+"Gerd Müller",
+"Lothar Matthäus",
+"Karl-Heinz Rummenigge"
+],
+"e": "Il a gagné en 1974 comme joueur et en 1990 comme sélectionneur."
+},
+{
+"q": "Quel Italien a marqué six buts à la Coupe du monde 1982 et en a été le meilleur buteur ?",
+"c": "Paolo Rossi",
+"w": [
+"Roberto Baggio",
+"Francesco Totti",
+"Alessandro Del Piero"
+],
+"e": "L'Italie a battu la RFA en finale."
+},
+{
+"q": "Quel gardien soviétique est le seul gardien de but à avoir reçu le Ballon d'Or, en 1963 ?",
+"c": "Lev Yachine",
+"w": [
+"Dino Zoff",
+"Gordon Banks",
+"Peter Schmeichel"
+],
+"e": "Il était surnommé « l'Araignée noire » pour sa tenue sombre."
+},
+{
+"q": "Quel club de Glasgow joue en vert et blanc ?",
+"c": "Le Celtic",
+"w": [
+"Les Rangers",
+"Hearts",
+"Aberdeen"
+],
+"e": "Il est le grand rival des Rangers."
+},
+{
+"q": "Comment s'appelle le derby de Glasgow entre le Celtic et les Rangers ?",
+"c": "L'Old Firm",
+"w": [
+"Le Clásico",
+"Le derby de la Madonnina",
+"Le derby de la Tamise"
+],
+"e": "C'est l'un des plus anciens et des plus chauds derbys du monde."
+},
+{
+"q": "Comment appelle-t-on le match entre le FC Barcelone et le Real Madrid ?",
+"c": "El Clásico",
+"w": [
+"Le derby de la Madonnina",
+"Le Classique",
+"Le Derby della Capitale"
+],
+"e": "C'est l'un des matchs les plus suivis au monde."
+},
+{
+"q": "Comment s'appelle le derby entre l'AC Milan et l'Inter Milan ?",
+"c": "Le derby de la Madonnina",
+"w": [
+"Le derby della Mole",
+"Le derby d'Italie",
+"Le derby de la Lanterne"
+],
+"e": "Il doit son nom à la statue de la Vierge au sommet du dôme de Milan."
+},
+{
+"q": "Quelle récompense individuelle est remise chaque année depuis 1956 au meilleur joueur de football par le magazine France Football ?",
+"c": "Le Ballon d'Or",
+"w": [
+"Le Soulier d'or",
+"Le Golden Boy",
+"Le Trophée Puskás"
+],
+"e": "Elle a été créée par le journaliste Gabriel Hanot."
+},
+{
+"q": "Quel joueur anglais a reçu le premier Ballon d'Or, en 1956 ?",
+"c": "Stanley Matthews",
+"w": [
+"Bobby Charlton",
+"Kevin Keegan",
+"Michael Owen"
+],
+"e": "Il jouait encore à plus de quarante ans."
+},
+{
+"q": "Quel joueur anglais a marqué trois buts en finale de la Coupe du monde 1966 ?",
+"c": "Geoff Hurst",
+"w": [
+"Bobby Charlton",
+"Gordon Banks",
+"Bobby Moore"
+],
+"e": "Il est le seul à avoir marqué un triplé en finale de Coupe du monde, jusqu'à Mbappé en 2022."
+},
+{
+"q": "Quel gardien a soulevé la Coupe du monde 2018 en tant que capitaine de l'équipe de France ?",
+"c": "Hugo Lloris",
+"w": [
+"Antoine Griezmann",
+"Raphaël Varane",
+"Paul Pogba"
+],
+"e": "La France a battu la Croatie 4 à 2 en finale."
+},
+{
+"q": "Quel pays a organisé la Coupe du monde 2006, remportée par l'Italie ?",
+"c": "L'Allemagne",
+"w": [
+"La France",
+"L'Espagne",
+"Le Portugal"
+],
+"e": "La finale s'est jouée à Berlin."
+},
+{
+"q": "Quel pays a organisé la Coupe du monde 1966 ?",
+"c": "L'Angleterre",
+"w": [
+"L'Allemagne",
+"L'Italie",
+"La France"
+],
+"e": "Ce fut l'unique victoire des Anglais dans la compétition."
+},
+{
+"q": "Quel club a gagné la Ligue des champions 2012 à Munich, contre le Bayern, aux tirs au but ?",
+"c": "Chelsea",
+"w": [
+"Arsenal",
+"Barcelone",
+"Real Madrid"
+],
+"e": "C'était le premier titre européen de Chelsea."
+},
+{
+"q": "Quel pays a gagné l'Euro 1976 contre l'Allemagne de l'Ouest, aux tirs au but ?",
+"c": "La Tchécoslovaquie",
+"w": [
+"La Yougoslavie",
+"Les Pays-Bas",
+"La Hongrie"
+],
+"e": "La finale s'est jouée à Belgrade."
+},
+{
+"q": "Quel joueur tchécoslovaque a inventé le tir au but « en cuillère » lors de la finale de l'Euro 1976 ?",
+"c": "Antonín Panenka",
+"w": [
+"Pavel Nedvěd",
+"Petr Čech",
+"Tomáš Rosický"
+],
+"e": "Ce geste porte désormais son nom : une « Panenka »."
+},
+{
+"q": "Quel Allemand a marqué le but de la victoire en finale de la Coupe du monde 2014 ?",
+"c": "Mario Götze",
+"w": [
+"Thomas Müller",
+"Miroslav Klose",
+"Toni Kroos"
+],
+"e": "Il est entré en cours de match et a marqué en prolongation."
+},
+{
+"q": "Quel entraîneur italien a gagné la Ligue des champions avec le Milan AC puis avec le Real Madrid ?",
+"c": "Carlo Ancelotti",
+"w": [
+"Fabio Capello",
+"Marcello Lippi",
+"Antonio Conte"
+],
+"e": "Il est l'entraîneur le plus titré de l'histoire de la compétition."
+},
+{
+"q": "Quel club italien a gagné la Ligue des champions 2010, sous les ordres de José Mourinho ?",
+"c": "L'Inter Milan",
+"w": [
+"La Juventus",
+"L'AC Milan",
+"L'AS Roma"
+],
+"e": "Il a réalisé le triplé cette saison-là."
+},
+{
+"q": "Quel club allemand a remporté la Ligue des champions en 2020, jouée sans public à Lisbonne ?",
+"c": "Le Bayern Munich",
+"w": [
+"Le Borussia Dortmund",
+"Le RB Leipzig",
+"Le Bayer Leverkusen"
+],
+"e": "Il a battu le Paris Saint-Germain en finale."
+},
+{
+"q": "Contre quel club le Real Madrid a-t-il gagné la Ligue des champions 2022 ?",
+"c": "Liverpool",
+"w": [
+"Manchester City",
+"Chelsea",
+"Juventus"
+],
+"e": "La finale s'est jouée au Stade de France."
+},
+{
+"q": "Quel pays a gagné la Ligue des nations de l'UEFA en 2023 ?",
+"c": "L'Espagne",
+"w": [
+"La Croatie",
+"L'Italie",
+"Les Pays-Bas"
+],
+"e": "Elle a battu la Croatie aux tirs au but."
+},
+{
+"q": "Quel pays a gagné l'Euro 2020, joué en 2021, contre l'Angleterre ?",
+"c": "L'Italie",
+"w": [
+"L'Espagne",
+"La France",
+"La Belgique"
+],
+"e": "La finale s'est jouée à Wembley et s'est terminée aux tirs au but."
+},
+{
+"q": "Quel gardien italien a été élu meilleur joueur de l'Euro 2020 ?",
+"c": "Gianluigi Donnarumma",
+"w": [
+"Gianluigi Buffon",
+"Salvatore Sirigu",
+"Samir Handanović"
+],
+"e": "Il n'avait que 22 ans."
+}
+]

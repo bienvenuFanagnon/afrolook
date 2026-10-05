@@ -1,0 +1,752 @@
+[
+{
+"q": "Quelle est la capitale de l'Italie ?",
+"c": "Rome",
+"w": [
+"Milan",
+"Naples",
+"Venise"
+],
+"e": "On l'appelle « la Ville éternelle »."
+},
+{
+"q": "Quel fleuve traverse Paris ?",
+"c": "La Seine",
+"w": [
+"La Loire",
+"Le Rhône",
+"La Garonne"
+],
+"e": "Elle se jette dans la Manche, près du Havre."
+},
+{
+"q": "Quel est le plus long fleuve d'Europe ?",
+"c": "La Volga",
+"w": [
+"Le Danube",
+"Le Rhin",
+"La Loire"
+],
+"e": "Elle traverse la Russie sur plus de 3 500 kilomètres."
+},
+{
+"q": "Quelle est la capitale de l'Allemagne ?",
+"c": "Berlin",
+"w": [
+"Munich",
+"Hambourg",
+"Francfort"
+],
+"e": "Elle est redevenue capitale après la réunification, en 1990."
+},
+{
+"q": "Quelle est la capitale de l'Espagne ?",
+"c": "Madrid",
+"w": [
+"Barcelone",
+"Séville",
+"Valence"
+],
+"e": "Elle est située au centre du pays."
+},
+{
+"q": "Quelle est la capitale du Royaume-Uni ?",
+"c": "Londres",
+"w": [
+"Édimbourg",
+"Manchester",
+"Cardiff"
+],
+"e": "Elle est traversée par la Tamise."
+},
+{
+"q": "Quelle est la capitale du Portugal ?",
+"c": "Lisbonne",
+"w": [
+"Porto",
+"Faro",
+"Coimbra"
+],
+"e": "Elle est située sur l'estuaire du Tage."
+},
+{
+"q": "Quelle est la plus haute montagne des Alpes et d'Europe occidentale ?",
+"c": "Le mont Blanc",
+"w": [
+"Le Cervin",
+"Le mont Rose",
+"L'Eiger"
+],
+"e": "Il culmine à environ 4 800 mètres, à la frontière franco-italienne."
+},
+{
+"q": "Quelle mer borde le sud de l'Europe, entre l'Espagne, l'Italie et la Grèce ?",
+"c": "La Méditerranée",
+"w": [
+"La mer du Nord",
+"La mer Baltique",
+"La mer Noire"
+],
+"e": "Elle sépare aussi l'Europe de l'Afrique."
+},
+{
+"q": "Quel pays européen a la forme d'une botte ?",
+"c": "L'Italie",
+"w": [
+"L'Espagne",
+"La Grèce",
+"Le Portugal"
+],
+"e": "Sa « pointe » touche presque la Sicile."
+},
+{
+"q": "Quelle chaîne de montagnes traverse la Suisse, l'Autriche et le nord de l'Italie ?",
+"c": "Les Alpes",
+"w": [
+"Les Pyrénées",
+"Les Carpates",
+"L'Oural"
+],
+"e": "Elles s'étendent sur plus de 1 000 kilomètres."
+},
+{
+"q": "Quel pays est célèbre pour ses tulipes et ses moulins à vent ?",
+"c": "Les Pays-Bas",
+"w": [
+"La Belgique",
+"Le Danemark",
+"L'Allemagne"
+],
+"e": "Une grande partie du pays est située sous le niveau de la mer."
+},
+{
+"q": "Quelle est la capitale de la Belgique ?",
+"c": "Bruxelles",
+"w": [
+"Anvers",
+"Gand",
+"Liège"
+],
+"e": "La ville abrite aussi de nombreuses institutions de l'Union européenne."
+},
+{
+"q": "Quel fleuve traverse Londres ?",
+"c": "La Tamise",
+"w": [
+"La Severn",
+"La Mersey",
+"La Tyne"
+],
+"e": "Elle se jette dans la mer du Nord."
+},
+{
+"q": "Quelle est la capitale de la Grèce ?",
+"c": "Athènes",
+"w": [
+"Thessalonique",
+"Patras",
+"Héraklion"
+],
+"e": "Elle est dominée par l'Acropole."
+},
+{
+"q": "Quelle est la capitale de l'Autriche ?",
+"c": "Vienne",
+"w": [
+"Salzbourg",
+"Graz",
+"Innsbruck"
+],
+"e": "Elle est traversée par le Danube."
+},
+{
+"q": "Quelle est la capitale de la Pologne ?",
+"c": "Varsovie",
+"w": [
+"Cracovie",
+"Gdańsk",
+"Poznań"
+],
+"e": "Elle a été reconstruite presque entièrement après la Seconde Guerre mondiale."
+},
+{
+"q": "Quelle est la capitale de la Suède ?",
+"c": "Stockholm",
+"w": [
+"Göteborg",
+"Malmö",
+"Uppsala"
+],
+"e": "Elle est construite sur quatorze îles."
+},
+{
+"q": "Quelle est la capitale de la Norvège ?",
+"c": "Oslo",
+"w": [
+"Bergen",
+"Trondheim",
+"Stavanger"
+],
+"e": "Elle est située au fond d'un fjord."
+},
+{
+"q": "Quelle est la capitale du Danemark ?",
+"c": "Copenhague",
+"w": [
+"Aarhus",
+"Odense",
+"Aalborg"
+],
+"e": "La statue de la Petite Sirène s'y trouve."
+},
+{
+"q": "Quelle est la capitale de la Finlande ?",
+"c": "Helsinki",
+"w": [
+"Tampere",
+"Turku",
+"Oulu"
+],
+"e": "Elle borde le golfe de Finlande."
+},
+{
+"q": "Quelle est la capitale de l'Irlande ?",
+"c": "Dublin",
+"w": [
+"Cork",
+"Galway",
+"Limerick"
+],
+"e": "Elle est traversée par la rivière Liffey."
+},
+{
+"q": "Quelle est la capitale de la Suisse ?",
+"c": "Berne",
+"w": [
+"Zurich",
+"Genève",
+"Lausanne"
+],
+"e": "Zurich est la plus grande ville, mais ce n'est pas la capitale."
+},
+{
+"q": "Quelle est la capitale des Pays-Bas ?",
+"c": "Amsterdam",
+"w": [
+"La Haye",
+"Rotterdam",
+"Utrecht"
+],
+"e": "Le gouvernement siège cependant à La Haye."
+},
+{
+"q": "Quelle est la capitale de la Hongrie ?",
+"c": "Budapest",
+"w": [
+"Debrecen",
+"Szeged",
+"Pécs"
+],
+"e": "Elle est née de la réunion de Buda et Pest, de chaque côté du Danube."
+},
+{
+"q": "Quelle est la capitale de la République tchèque ?",
+"c": "Prague",
+"w": [
+"Brno",
+"Ostrava",
+"Plzeň"
+],
+"e": "Elle est surnommée « la ville aux cent clochers »."
+},
+{
+"q": "Quelle est la capitale de la Roumanie ?",
+"c": "Bucarest",
+"w": [
+"Cluj-Napoca",
+"Timișoara",
+"Constanța"
+],
+"e": "Elle est la plus grande ville du pays."
+},
+{
+"q": "Quel fleuve traverse Vienne, Bratislava, Budapest et Belgrade ?",
+"c": "Le Danube",
+"w": [
+"Le Rhin",
+"L'Elbe",
+"La Vistule"
+],
+"e": "Il traverse ou longe dix pays avant la mer Noire."
+},
+{
+"q": "Quel fleuve naît en Suisse, borde la France et l'Allemagne, puis traverse les Pays-Bas ?",
+"c": "Le Rhin",
+"w": [
+"Le Rhône",
+"La Meuse",
+"L'Elbe"
+],
+"e": "Il se jette dans la mer du Nord."
+},
+{
+"q": "Quelle est la plus grande île de la Méditerranée ?",
+"c": "La Sicile",
+"w": [
+"La Sardaigne",
+"La Corse",
+"Chypre"
+],
+"e": "Elle est dominée par le volcan Etna."
+},
+{
+"q": "Quelle est la capitale de l'Ukraine ?",
+"c": "Kiev",
+"w": [
+"Kharkiv",
+"Odessa",
+"Lviv"
+],
+"e": "Elle est traversée par le Dniepr."
+},
+{
+"q": "Quelle est la capitale de la Bulgarie ?",
+"c": "Sofia",
+"w": [
+"Plovdiv",
+"Varna",
+"Bourgas"
+],
+"e": "Elle est entourée de montagnes."
+},
+{
+"q": "Quelle est la capitale de la Croatie ?",
+"c": "Zagreb",
+"w": [
+"Split",
+"Dubrovnik",
+"Rijeka"
+],
+"e": "Dubrovnik est surnommée « la perle de l'Adriatique »."
+},
+{
+"q": "Quelle est la capitale de la Serbie ?",
+"c": "Belgrade",
+"w": [
+"Novi Sad",
+"Niš",
+"Kragujevac"
+],
+"e": "Elle est située au confluent du Danube et de la Save."
+},
+{
+"q": "Quelle est la capitale de la Lituanie ?",
+"c": "Vilnius",
+"w": [
+"Kaunas",
+"Klaipėda",
+"Šiauliai"
+],
+"e": "C'est l'un des trois États baltes."
+},
+{
+"q": "Quelle est la capitale de la Lettonie ?",
+"c": "Riga",
+"w": [
+"Daugavpils",
+"Liepāja",
+"Jelgava"
+],
+"e": "Elle borde la mer Baltique."
+},
+{
+"q": "Quelle est la capitale de l'Estonie ?",
+"c": "Tallinn",
+"w": [
+"Tartu",
+"Narva",
+"Pärnu"
+],
+"e": "Sa vieille ville est inscrite à l'UNESCO."
+},
+{
+"q": "Quel pays européen a pour capitale Reykjavik ?",
+"c": "L'Islande",
+"w": [
+"Le Groenland",
+"La Norvège",
+"L'Irlande"
+],
+"e": "C'est l'une des capitales les plus au nord du monde."
+},
+{
+"q": "Quel est le plus petit État du monde, enclavé dans la ville de Rome ?",
+"c": "Le Vatican",
+"w": [
+"Monaco",
+"Saint-Marin",
+"Le Liechtenstein"
+],
+"e": "Il est dirigé par le pape."
+},
+{
+"q": "Quelle principauté, située sur la Côte d'Azur, est célèbre pour son Grand Prix de Formule 1 ?",
+"c": "Monaco",
+"w": [
+"Andorre",
+"Le Liechtenstein",
+"Saint-Marin"
+],
+"e": "Elle est entourée par la France."
+},
+{
+"q": "Quelle chaîne de montagnes sépare la France de l'Espagne ?",
+"c": "Les Pyrénées",
+"w": [
+"Les Alpes",
+"Les Vosges",
+"Le Jura"
+],
+"e": "Andorre est enclavé dans cette chaîne."
+},
+{
+"q": "Quelle chaîne de montagnes sépare l'Europe de l'Asie, en Russie ?",
+"c": "L'Oural",
+"w": [
+"Le Caucase",
+"Les Carpates",
+"L'Altaï"
+],
+"e": "Elle s'étend du nord au sud sur plus de 2 000 kilomètres."
+},
+{
+"q": "Quelle mer sépare la Grande-Bretagne de la France ?",
+"c": "La Manche",
+"w": [
+"La mer du Nord",
+"La mer d'Irlande",
+"La mer Baltique"
+],
+"e": "Le tunnel sous la Manche relie les deux pays depuis 1994."
+},
+{
+"q": "Quel sommet du Caucase est souvent considéré comme le plus haut d'Europe ?",
+"c": "L'Elbrouz",
+"w": [
+"Le mont Blanc",
+"L'Ararat",
+"Le Kazbek"
+],
+"e": "Il culmine à environ 5 640 mètres."
+},
+{
+"q": "Quel est le plus grand lac d'Europe ?",
+"c": "Le lac Ladoga",
+"w": [
+"Le lac Léman",
+"Le lac Balaton",
+"Le lac de Constance"
+],
+"e": "Il est situé en Russie, près de Saint-Pétersbourg."
+},
+{
+"q": "Quelle est la capitale de la Slovaquie ?",
+"c": "Bratislava",
+"w": [
+"Košice",
+"Žilina",
+"Prešov"
+],
+"e": "Elle est située au bord du Danube."
+},
+{
+"q": "Quelle est la capitale de la Slovénie ?",
+"c": "Ljubljana",
+"w": [
+"Maribor",
+"Celje",
+"Koper"
+],
+"e": "C'est une petite capitale réputée pour ses ponts."
+},
+{
+"q": "Quelle est la capitale de l'Albanie ?",
+"c": "Tirana",
+"w": [
+"Durrës",
+"Vlorë",
+"Shkodër"
+],
+"e": "Ses maisons sont souvent peintes de couleurs vives."
+},
+{
+"q": "Quelle est la capitale de la Macédoine du Nord ?",
+"c": "Skopje",
+"w": [
+"Ohrid",
+"Bitola",
+"Tetovo"
+],
+"e": "Elle est traversée par le Vardar."
+},
+{
+"q": "Quelle est la capitale de la Moldavie ?",
+"c": "Chișinău",
+"w": [
+"Tiraspol",
+"Bălți",
+"Cahul"
+],
+"e": "Le pays est situé entre la Roumanie et l'Ukraine."
+},
+{
+"q": "Quel micro-État d'Europe a pour capitale Vaduz ?",
+"c": "Le Liechtenstein",
+"w": [
+"Andorre",
+"Saint-Marin",
+"Monaco"
+],
+"e": "Il est situé entre la Suisse et l'Autriche."
+},
+{
+"q": "Quelle île française de la Méditerranée a pour capitale régionale Ajaccio ?",
+"c": "La Corse",
+"w": [
+"La Sardaigne",
+"Malte",
+"Majorque"
+],
+"e": "Napoléon Bonaparte y est né."
+},
+{
+"q": "Quelle ville italienne est construite sur une lagune et traversée par des canaux ?",
+"c": "Venise",
+"w": [
+"Gênes",
+"Naples",
+"Bari"
+],
+"e": "Elle est bâtie sur plus de cent îlots."
+},
+{
+"q": "Quel pays européen a pour capitale La Valette ?",
+"c": "Malte",
+"w": [
+"Chypre",
+"Monaco",
+"Andorre"
+],
+"e": "C'est le plus petit État de l'Union européenne."
+},
+{
+"q": "Quel pays européen est célèbre pour ses fjords ?",
+"c": "La Norvège",
+"w": [
+"La Suisse",
+"La Pologne",
+"L'Écosse"
+],
+"e": "Le Sognefjord est l'un des plus longs au monde."
+},
+{
+"q": "Comment s'appelle la grande péninsule du sud-ouest de l'Europe qui abrite l'Espagne et le Portugal ?",
+"c": "La péninsule Ibérique",
+"w": [
+"La péninsule balkanique",
+"La péninsule scandinave",
+"La péninsule italienne"
+],
+"e": "Elle est séparée de la France par les Pyrénées."
+},
+{
+"q": "Quel volcan de Sicile est l'un des plus actifs d'Europe ?",
+"c": "L'Etna",
+"w": [
+"Le Vésuve",
+"Le Stromboli",
+"Le Teide"
+],
+"e": "Il est entré en éruption de nombreuses fois ces dernières années."
+},
+{
+"q": "Quel pays est le plus peuplé de l'Union européenne ?",
+"c": "L'Allemagne",
+"w": [
+"La France",
+"L'Italie",
+"L'Espagne"
+],
+"e": "Il compte environ 84 millions d'habitants."
+},
+{
+"q": "Quel est le plus grand pays entièrement situé en Europe ?",
+"c": "L'Ukraine",
+"w": [
+"La France",
+"L'Espagne",
+"La Suède"
+],
+"e": "La Russie est plus grande mais s'étend aussi en Asie."
+},
+{
+"q": "Quel détroit relie la mer Noire à la mer de Marmara, à Istanbul ?",
+"c": "Le Bosphore",
+"w": [
+"Les Dardanelles",
+"Gibraltar",
+"Messine"
+],
+"e": "Il sépare la partie européenne et la partie asiatique de la ville."
+},
+{
+"q": "Quel détroit sépare l'Italie de la Sicile ?",
+"c": "Le détroit de Messine",
+"w": [
+"Le détroit de Gibraltar",
+"Le Bosphore",
+"Le détroit de Bonifacio"
+],
+"e": "Il mesure environ trois kilomètres à son point le plus étroit."
+},
+{
+"q": "Quel pays européen compte environ 188 000 lacs et est surnommé « le pays des mille lacs » ?",
+"c": "La Finlande",
+"w": [
+"La Suède",
+"La Norvège",
+"L'Estonie"
+],
+"e": "Il se dit « Suomi » en finnois."
+},
+{
+"q": "Quelle ville russe, ancienne capitale impériale, a été fondée sur la Neva par Pierre le Grand ?",
+"c": "Saint-Pétersbourg",
+"w": [
+"Moscou",
+"Novgorod",
+"Kazan"
+],
+"e": "Elle a porté le nom de Léningrad de 1924 à 1991."
+},
+{
+"q": "Quel archipel espagnol, au large de l'Afrique, est une destination touristique très prisée ?",
+"c": "Les Canaries",
+"w": [
+"Les Baléares",
+"Les Açores",
+"Madère"
+],
+"e": "Tenerife en est l'île la plus grande."
+},
+{
+"q": "Quel archipel portugais, en plein Atlantique, est célèbre pour ses volcans ?",
+"c": "Les Açores",
+"w": [
+"Madère",
+"Les Canaries",
+"Les Cyclades"
+],
+"e": "Il est situé à environ 1 400 kilomètres de Lisbonne."
+},
+{
+"q": "Quelle région du nord de l'Europe est le pays traditionnel du peuple sami et des aurores boréales ?",
+"c": "La Laponie",
+"w": [
+"La Scanie",
+"La Carélie",
+"La Poméranie"
+],
+"e": "Elle s'étend sur la Norvège, la Suède, la Finlande et la Russie."
+},
+{
+"q": "Quel lac alpin borde les villes de Genève et de Lausanne ?",
+"c": "Le lac Léman",
+"w": [
+"Le lac de Constance",
+"Le lac de Côme",
+"Le lac Balaton"
+],
+"e": "Il est partagé entre la Suisse et la France."
+},
+{
+"q": "Quel petit pays est enclavé dans les Pyrénées, entre la France et l'Espagne ?",
+"c": "Andorre",
+"w": [
+"Monaco",
+"Saint-Marin",
+"Le Liechtenstein"
+],
+"e": "Sa langue officielle est le catalan."
+},
+{
+"q": "Quelle ville espagnole abrite l'Alhambra, un palais construit par les rois maures ?",
+"c": "Grenade",
+"w": [
+"Cordoue",
+"Séville",
+"Tolède"
+],
+"e": "Elle se trouve au pied de la Sierra Nevada."
+},
+{
+"q": "Quelle ville, à la frontière franco-allemande, est le siège du Parlement européen ?",
+"c": "Strasbourg",
+"w": [
+"Bruxelles",
+"Luxembourg",
+"Francfort"
+],
+"e": "Le Parlement siège aussi à Bruxelles pour certaines séances."
+},
+{
+"q": "Quelle mer est bordée par la Suède, la Pologne, la Finlande et l'Estonie ?",
+"c": "La mer Baltique",
+"w": [
+"La mer du Nord",
+"La mer Noire",
+"La mer Adriatique"
+],
+"e": "Elle est peu salée et gèle parfois en hiver."
+},
+{
+"q": "Quelle presqu'île danoise prolonge le nord de l'Allemagne ?",
+"c": "Le Jutland",
+"w": [
+"La Scanie",
+"La Zélande",
+"La Poméranie"
+],
+"e": "Elle sépare la mer du Nord de la mer Baltique."
+},
+{
+"q": "Quel est le plus haut sommet des Pyrénées ?",
+"c": "L'Aneto",
+"w": [
+"Le mont Perdu",
+"Le Vignemale",
+"Le pic du Midi"
+],
+"e": "Il culmine à environ 3 400 mètres, en Espagne."
+},
+{
+"q": "Quelle île de la Méditerranée orientale a pour capitale Nicosie, divisée en deux ?",
+"c": "Chypre",
+"w": [
+"Malte",
+"Rhodes",
+"La Crète"
+],
+"e": "Une zone tampon sépare le nord et le sud de l'île depuis 1974."
+},
+{
+"q": "Quel grand-duché d'Europe est situé entre la France, la Belgique et l'Allemagne ?",
+"c": "Le Luxembourg",
+"w": [
+"Le Liechtenstein",
+"Monaco",
+"Andorre"
+],
+"e": "Sa capitale porte le même nom que le pays."
+}
+]

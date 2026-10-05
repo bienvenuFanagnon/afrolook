@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel groupe britannique a chanté « Bohemian Rhapsody » avec Freddie Mercury ?",
+"c": "Queen",
+"w": [
+"Les Rolling Stones",
+"Pink Floyd",
+"Genesis"
+],
+"e": "La chanson est sortie en 1975 et dure près de six minutes."
+},
+{
+"q": "Quel groupe suédois a chanté « Dancing Queen » et « Mamma Mia » ?",
+"c": "ABBA",
+"w": [
+"Roxette",
+"Europe",
+"Ace of Base"
+],
+"e": "Le nom vient des initiales des prénoms des quatre membres."
+},
+{
+"q": "Quel chanteur français a chanté « La Mer » et « Douce France » ?",
+"c": "Charles Trenet",
+"w": [
+"Georges Brassens",
+"Yves Montand",
+"Maurice Chevalier"
+],
+"e": "On l'appelait « le Fou chantant »."
+},
+{
+"q": "Quelle chanteuse française, surnommée « la Môme », a chanté « La Vie en rose » ?",
+"c": "Édith Piaf",
+"w": [
+"Dalida",
+"Barbara",
+"Juliette Gréco"
+],
+"e": "Elle est née à Paris en 1915 et morte en 1963."
+},
+{
+"q": "Quel groupe britannique a sorti « Satisfaction » en 1965 ?",
+"c": "The Rolling Stones",
+"w": [
+"The Who",
+"The Kinks",
+"Led Zeppelin"
+],
+"e": "Mick Jagger est son chanteur depuis les débuts."
+},
+{
+"q": "Quel duo de musique électronique français a sorti « Get Lucky » avec Pharrell Williams ?",
+"c": "Daft Punk",
+"w": [
+"Justice",
+"Air",
+"Cassius"
+],
+"e": "Les deux membres portaient des casques de robot."
+},
+{
+"q": "Quel chanteur britannique a sorti « Shape of You » en 2017 ?",
+"c": "Ed Sheeran",
+"w": [
+"Harry Styles",
+"Sam Smith",
+"Calum Scott"
+],
+"e": "Le titre est resté des mois en tête des classements."
+},
+{
+"q": "Quel groupe irlandais, mené par Bono, a chanté « With or Without You » ?",
+"c": "U2",
+"w": [
+"The Cranberries",
+"The Pogues",
+"Thin Lizzy"
+],
+"e": "Le groupe est originaire de Dublin."
+},
+{
+"q": "Quel compositeur allemand a écrit les « Concertos brandebourgeois » au XVIIIe siècle ?",
+"c": "Jean-Sébastien Bach",
+"w": [
+"Georg Friedrich Haendel",
+"Joseph Haydn",
+"Johannes Brahms"
+],
+"e": "Il a aussi écrit « L'Art de la fugue »."
+},
+{
+"q": "Quel compositeur russe a écrit « Le Lac des cygnes » et « Casse-noisette » ?",
+"c": "Piotr Ilitch Tchaïkovski",
+"w": [
+"Sergueï Rachmaninov",
+"Igor Stravinsky",
+"Nikolaï Rimski-Korsakov"
+],
+"e": "Ce sont deux des ballets les plus joués au monde."
+},
+{
+"q": "Quel groupe britannique a sorti en 1973 l'album « The Dark Side of the Moon » ?",
+"c": "Pink Floyd",
+"w": [
+"Genesis",
+"Deep Purple",
+"Yes"
+],
+"e": "L'album est resté plus de dix ans dans le classement américain."
+},
+{
+"q": "Quel chanteur belge a interprété « Ne me quitte pas » ?",
+"c": "Jacques Brel",
+"w": [
+"Salvatore Adamo",
+"Django Reinhardt",
+"Stromae"
+],
+"e": "Il est né à Bruxelles en 1929."
+},
+{
+"q": "Quel instrument traditionnel écossais est souvent joué lors des défilés et des cérémonies ?",
+"c": "La cornemuse",
+"w": [
+"Le violon",
+"L'accordéon",
+"La harpe celtique"
+],
+"e": "Ses tuyaux sont alimentés par un sac rempli d'air."
+},
+{
+"q": "Quel pays est le berceau de la valse viennoise ?",
+"c": "L'Autriche",
+"w": [
+"L'Allemagne",
+"La Hongrie",
+"La Suisse"
+],
+"e": "La valse est dansée depuis le XVIIIe siècle dans les salons de Vienne."
+},
+{
+"q": "Quel concours de chanson, créé en 1956, réunit chaque année des pays européens à la télévision ?",
+"c": "L'Eurovision",
+"w": [
+"La Star Academy",
+"The Voice",
+"Le Grand Prix des Amériques"
+],
+"e": "Il a été lancé pour rapprocher les pays d'Europe après la guerre."
+},
+{
+"q": "Quel groupe allemand de hard rock a chanté « Wind of Change » après la chute du mur de Berlin ?",
+"c": "Scorpions",
+"w": [
+"Rammstein",
+"Kraftwerk",
+"Tokio Hotel"
+],
+"e": "La chanson est devenue un hymne de la fin de la guerre froide."
+},
+{
+"q": "Quel groupe britannique de Manchester, mené par les frères Gallagher, a chanté « Wonderwall » ?",
+"c": "Oasis",
+"w": [
+"Blur",
+"Radiohead",
+"The Smiths"
+],
+"e": "Le titre est sorti en 1995."
+},
+{
+"q": "Quel groupe britannique de rock a chanté « Stairway to Heaven » ?",
+"c": "Led Zeppelin",
+"w": [
+"Deep Purple",
+"Black Sabbath",
+"The Who"
+],
+"e": "Robert Plant en est le chanteur."
+},
+{
+"q": "Quel chanteur britannique a sorti « Rocket Man » et « Your Song » ?",
+"c": "Elton John",
+"w": [
+"David Bowie",
+"Rod Stewart",
+"Phil Collins"
+],
+"e": "Il a été anobli par la reine Élisabeth II en 1998."
+},
+{
+"q": "Quelle chanteuse islandaise a sorti « Human Behaviour » ?",
+"c": "Björk",
+"w": [
+"Sigur Rós",
+"Enya",
+"Dido"
+],
+"e": "Elle est née à Reykjavik."
+},
+{
+"q": "Quel chanteur français a chanté « Les Champs-Élysées » et « L'Été indien » ?",
+"c": "Joe Dassin",
+"w": [
+"Michel Sardou",
+"Claude François",
+"Alain Barrière"
+],
+"e": "Il était né à New York mais a fait carrière en France."
+},
+{
+"q": "Quel groupe italien a remporté l'Eurovision 2021 avec « Zitti e buoni » ?",
+"c": "Måneskin",
+"w": [
+"Il Volo",
+"Negramaro",
+"Subsonica"
+],
+"e": "Le groupe est originaire de Rome."
+},
+{
+"q": "Quel chanteur italien aveugle a chanté « Con te partirò » ?",
+"c": "Andrea Bocelli",
+"w": [
+"Eros Ramazzotti",
+"Zucchero",
+"Laura Pausini"
+],
+"e": "Il a aussi chanté en duo avec Sarah Brightman."
+},
+{
+"q": "Quel ténor italien, l'un des « Trois ténors », est mort en 2007 ?",
+"c": "Luciano Pavarotti",
+"w": [
+"Plácido Domingo",
+"José Carreras",
+"Enrico Caruso"
+],
+"e": "Il était né à Modène."
+},
+{
+"q": "Quel girls band britannique a chanté « Wannabe » en 1996 ?",
+"c": "Les Spice Girls",
+"w": [
+"Girls Aloud",
+"Little Mix",
+"Sugababes"
+],
+"e": "Le titre est devenu numéro un dans de nombreux pays."
+},
+{
+"q": "Quelle chanteuse britannique a sorti l'album « Back to Black » en 2006 ?",
+"c": "Amy Winehouse",
+"w": [
+"Lily Allen",
+"Duffy",
+"Dua Lipa"
+],
+"e": "Elle est morte en 2011 à Londres."
+},
+{
+"q": "Quel compositeur italien a écrit « La Traviata » et « Aïda » ?",
+"c": "Giuseppe Verdi",
+"w": [
+"Giacomo Puccini",
+"Gioachino Rossini",
+"Vincenzo Bellini"
+],
+"e": "Il est l'un des plus grands noms de l'opéra italien."
+},
+{
+"q": "Quel compositeur italien a écrit « La Bohème » et « Tosca » ?",
+"c": "Giacomo Puccini",
+"w": [
+"Giuseppe Verdi",
+"Gaetano Donizetti",
+"Antonio Vivaldi"
+],
+"e": "Il était originaire de Lucques, en Toscane."
+},
+{
+"q": "Quel compositeur allemand a écrit « L'Anneau du Nibelung », une série de quatre opéras ?",
+"c": "Richard Wagner",
+"w": [
+"Johannes Brahms",
+"Richard Strauss",
+"Robert Schumann"
+],
+"e": "Il a fait construire un théâtre à Bayreuth pour ses œuvres."
+},
+{
+"q": "Quel compositeur finlandais a écrit « Finlandia » ?",
+"c": "Jean Sibelius",
+"w": [
+"Edvard Grieg",
+"Carl Nielsen",
+"Jean Mouton"
+],
+"e": "Ce poème symphonique est devenu un symbole de l'identité finlandaise."
+},
+{
+"q": "Quel compositeur norvégien a écrit la suite « Peer Gynt » ?",
+"c": "Edvard Grieg",
+"w": [
+"Jean Sibelius",
+"Franz Liszt",
+"Antonín Dvořák"
+],
+"e": "« Dans l'antre du roi de la montagne » en est le morceau le plus célèbre."
+},
+{
+"q": "Quel compositeur tchèque a écrit « La Moldau » ?",
+"c": "Bedřich Smetana",
+"w": [
+"Antonín Dvořák",
+"Leoš Janáček",
+"Gustav Mahler"
+],
+"e": "La Moldau est le fleuve qui traverse Prague."
+},
+{
+"q": "Quel compositeur hongrois, pianiste virtuose, a écrit les « Rhapsodies hongroises » ?",
+"c": "Franz Liszt",
+"w": [
+"Béla Bartók",
+"Zoltán Kodály",
+"Johannes Brahms"
+],
+"e": "Il a donné des concerts dans toute l'Europe au XIXe siècle."
+},
+{
+"q": "Quel compositeur russe a écrit « Le Sacre du printemps », un ballet qui a fait scandale en 1913 ?",
+"c": "Igor Stravinsky",
+"w": [
+"Sergueï Prokofiev",
+"Dmitri Chostakovitch",
+"Piotr Ilitch Tchaïkovski"
+],
+"e": "La première, à Paris, s'est terminée dans le tumulte."
+},
+{
+"q": "Quel compositeur français a écrit « Clair de lune » et « La Mer » ?",
+"c": "Claude Debussy",
+"w": [
+"Maurice Ravel",
+"Erik Satie",
+"Gabriel Fauré"
+],
+"e": "Il est l'une des grandes figures de l'impressionnisme musical."
+},
+{
+"q": "Quel compositeur français a écrit « Le Carnaval des animaux » ?",
+"c": "Camille Saint-Saëns",
+"w": [
+"Georges Bizet",
+"Hector Berlioz",
+"Jacques Offenbach"
+],
+"e": "« Le Cygne » en est le mouvement le plus célèbre."
+},
+{
+"q": "Quel compositeur d'origine allemande, installé à Londres, a écrit « Le Messie » ?",
+"c": "Georg Friedrich Haendel",
+"w": [
+"Johann Sebastian Bach",
+"Henry Purcell",
+"Joseph Haydn"
+],
+"e": "Le « Alléluia » de cette œuvre est chanté dans le monde entier."
+},
+{
+"q": "Quel compositeur autrichien a écrit « Le Beau Danube bleu » ?",
+"c": "Johann Strauss fils",
+"w": [
+"Franz Schubert",
+"Joseph Haydn",
+"Gustav Mahler"
+],
+"e": "On l'appelle « le roi de la valse »."
+},
+{
+"q": "Quel groupe britannique a sorti l'opéra rock « Tommy » en 1969 ?",
+"c": "The Who",
+"w": [
+"Pink Floyd",
+"The Kinks",
+"Queen"
+],
+"e": "Pete Townshend en est le guitariste et le compositeur."
+},
+{
+"q": "Quel groupe britannique a sorti « Creep » et « Paranoid Android » ?",
+"c": "Radiohead",
+"w": [
+"Blur",
+"Coldplay",
+"Muse"
+],
+"e": "Thom Yorke en est le chanteur."
+},
+{
+"q": "Quel groupe britannique de new wave, mené par Sting, a chanté « Every Breath You Take » ?",
+"c": "The Police",
+"w": [
+"Duran Duran",
+"The Cure",
+"Dire Straits"
+],
+"e": "Le titre date de 1983."
+},
+{
+"q": "Dans quelle île africaine est né Freddie Mercury, le chanteur de Queen ?",
+"c": "Zanzibar",
+"w": [
+"Madagascar",
+"Maurice",
+"La Réunion"
+],
+"e": "Il est né dans l'actuelle Tanzanie, de parents d'origine indienne."
+},
+{
+"q": "Quel chanteur français d'origine arménienne a chanté « La Bohème » et « Emmenez-moi » ?",
+"c": "Charles Aznavour",
+"w": [
+"Gilbert Bécaud",
+"Yves Montand",
+"Serge Reggiani"
+],
+"e": "Il a écrit plus de mille chansons."
+},
+{
+"q": "Quel chanteur français, surnommé « l'idole des jeunes », est mort en 2017 ?",
+"c": "Johnny Hallyday",
+"w": [
+"Eddy Mitchell",
+"Jacques Dutronc",
+"Michel Polnareff"
+],
+"e": "Il a rempli le Stade de France à plusieurs reprises."
+},
+{
+"q": "Quel groupe allemand, pionnier de la musique électronique, a sorti l'album « Autobahn » en 1974 ?",
+"c": "Kraftwerk",
+"w": [
+"Rammstein",
+"Tangerine Dream",
+"Scorpions"
+],
+"e": "Son nom signifie « centrale électrique » en allemand."
+},
+{
+"q": "Quel groupe allemand de métal industriel a chanté « Du hast » ?",
+"c": "Rammstein",
+"w": [
+"Scorpions",
+"Kraftwerk",
+"Tokio Hotel"
+],
+"e": "Le chanteur du groupe s'appelle Till Lindemann."
+},
+{
+"q": "Quel DJ suédois est l'auteur de « Wake Me Up » et « Levels » ?",
+"c": "Avicii",
+"w": [
+"Calvin Harris",
+"Martin Garrix",
+"David Guetta"
+],
+"e": "Il est mort en 2018."
+},
+{
+"q": "Quel groupe norvégien a chanté « Take On Me » en 1985 ?",
+"c": "a-ha",
+"w": [
+"Roxette",
+"Europe",
+"Depeche Mode"
+],
+"e": "Le clip du titre mêlait dessin animé et prises de vues réelles."
+},
+{
+"q": "Quel groupe suédois a chanté « The Sign » dans les années 1990 ?",
+"c": "Ace of Base",
+"w": [
+"ABBA",
+"Roxette",
+"The Cardigans"
+],
+"e": "Le groupe est originaire de Göteborg."
+},
+{
+"q": "Quelle chanteuse britannique a chanté « Je t'aime… moi non plus » avec Serge Gainsbourg en 1969 ?",
+"c": "Jane Birkin",
+"w": [
+"Françoise Hardy",
+"Catherine Deneuve",
+"Brigitte Bardot"
+],
+"e": "Un sac célèbre porte son nom."
+},
+{
+"q": "Quel compositeur britannique a écrit « Le Fantôme de l'Opéra » et « Cats » ?",
+"c": "Andrew Lloyd Webber",
+"w": [
+"Elton John",
+"Paul McCartney",
+"Benjamin Britten"
+],
+"e": "Ses comédies musicales se jouent à Londres depuis des décennies."
+},
+{
+"q": "Quel compositeur espagnol a écrit le « Concerto d'Aranjuez » pour guitare ?",
+"c": "Joaquín Rodrigo",
+"w": [
+"Isaac Albéniz",
+"Manuel de Falla",
+"Enrique Granados"
+],
+"e": "Il était aveugle depuis l'enfance."
+},
+{
+"q": "Quel compositeur russe a écrit « Pierre et le Loup », un conte musical pour enfants ?",
+"c": "Sergueï Prokofiev",
+"w": [
+"Dmitri Chostakovitch",
+"Igor Stravinsky",
+"Modeste Moussorgski"
+],
+"e": "Chaque personnage est joué par un instrument différent."
+},
+{
+"q": "Quel compositeur russe a écrit la suite symphonique « Shéhérazade » ?",
+"c": "Nikolaï Rimski-Korsakov",
+"w": [
+"Piotr Ilitch Tchaïkovski",
+"Alexandre Borodine",
+"Sergueï Rachmaninov"
+],
+"e": "L'œuvre s'inspire des « Mille et Une Nuits »."
+},
+{
+"q": "Quel violoniste italien du XIXe siècle, surnommé « le violoniste du diable », était un virtuose légendaire ?",
+"c": "Niccolò Paganini",
+"w": [
+"Antonio Vivaldi",
+"Arcangelo Corelli",
+"Giuseppe Tartini"
+],
+"e": "Ses « Caprices » sont encore redoutés des violonistes."
+},
+{
+"q": "Quel compositeur allemand a écrit « Un requiem allemand » ?",
+"c": "Johannes Brahms",
+"w": [
+"Robert Schumann",
+"Richard Wagner",
+"Felix Mendelssohn"
+],
+"e": "Il l'a composé après la mort de sa mère."
+},
+{
+"q": "Quel compositeur français a écrit les « Gymnopédies » pour piano ?",
+"c": "Erik Satie",
+"w": [
+"Claude Debussy",
+"Maurice Ravel",
+"Francis Poulenc"
+],
+"e": "Sa musique douce a été reprise dans de nombreux films."
+},
+{
+"q": "Quel groupe irlandais a chanté « Zombie » en 1994 ?",
+"c": "The Cranberries",
+"w": [
+"U2",
+"The Corrs",
+"Westlife"
+],
+"e": "Sa chanteuse, Dolores O'Riordan, est morte en 2018."
+},
+{
+"q": "Quel groupe de Manchester a chanté « Love Will Tear Us Apart » ?",
+"c": "Joy Division",
+"w": [
+"The Smiths",
+"New Order",
+"The Stone Roses"
+],
+"e": "Son chanteur, Ian Curtis, est mort en 1980."
+},
+{
+"q": "Quelle chanteuse d'opéra gréco-américaine, surnommée « La Divine », a marqué le rôle de la Tosca ?",
+"c": "Maria Callas",
+"w": [
+"Montserrat Caballé",
+"Renata Tebaldi",
+"Cecilia Bartoli"
+],
+"e": "Elle est morte à Paris en 1977."
+},
+{
+"q": "Quel compositeur grec a écrit la musique du film « Zorba le Grec » ?",
+"c": "Mikis Theodorakis",
+"w": [
+"Vangelis",
+"Manos Hadjidakis",
+"Yanni"
+],
+"e": "La danse sirtaki est devenue célèbre grâce à ce film."
+},
+{
+"q": "Quel compositeur italien a écrit la musique du film « Il était une fois dans l'Ouest » ?",
+"c": "Ennio Morricone",
+"w": [
+"Nino Rota",
+"Andrea Morricone",
+"Luciano Berio"
+],
+"e": "Il a composé plus de 400 musiques de films."
+},
+{
+"q": "Quel compositeur français a écrit la musique des « Parapluies de Cherbourg » ?",
+"c": "Michel Legrand",
+"w": [
+"Francis Lai",
+"Maurice Jarre",
+"Georges Delerue"
+],
+"e": "Tous les dialogues du film sont chantés."
+},
+{
+"q": "Quel chef d'orchestre autrichien a longtemps dirigé l'Orchestre philharmonique de Berlin ?",
+"c": "Herbert von Karajan",
+"w": [
+"Leonard Bernstein",
+"Arturo Toscanini",
+"Daniel Barenboim"
+],
+"e": "Il l'a dirigé de 1955 à 1989."
+},
+{
+"q": "Quel compositeur britannique a écrit la suite « Les Planètes » ?",
+"c": "Gustav Holst",
+"w": [
+"Edward Elgar",
+"Benjamin Britten",
+"Ralph Vaughan Williams"
+],
+"e": "« Mars, qui apporte la guerre » en est le premier mouvement."
+},
+{
+"q": "Quel compositeur britannique a écrit les « Pomp and Circumstance Marches », dont l'une accompagne le « Land of Hope and Glory » ?",
+"c": "Edward Elgar",
+"w": [
+"Gustav Holst",
+"Henry Purcell",
+"Arthur Sullivan"
+],
+"e": "Cette marche est chantée chaque année aux « Last Night of the Proms »."
+},
+{
+"q": "Quel compositeur hongrois a écrit « Le Château de Barbe-Bleue » et collecté de nombreux chants populaires ?",
+"c": "Béla Bartók",
+"w": [
+"Zoltán Kodály",
+"Franz Liszt",
+"György Ligeti"
+],
+"e": "Il parcourait villages et campagnes pour enregistrer les chants."
+},
+{
+"q": "Quel compositeur français a écrit l'opéra « Carmen » en 1875 ?",
+"c": "Georges Bizet",
+"w": [
+"Jules Massenet",
+"Charles Gounod",
+"Jacques Offenbach"
+],
+"e": "L'opéra se passe à Séville."
+},
+{
+"q": "Quel compositeur allemand a écrit les « Quatre Derniers Lieder » à la fin de sa vie ?",
+"c": "Richard Strauss",
+"w": [
+"Richard Wagner",
+"Gustav Mahler",
+"Johannes Brahms"
+],
+"e": "Il les a composés en 1948, un an avant sa mort."
+},
+{
+"q": "Quelle ville autrichienne, ville natale de Mozart, accueille chaque été un grand festival de musique ?",
+"c": "Salzbourg",
+"w": [
+"Vienne",
+"Innsbruck",
+"Graz"
+],
+"e": "Le festival a été créé en 1920."
+},
+{
+"q": "Dans quelle ville est donné chaque 1er janvier le célèbre concert du Nouvel An de l'Orchestre philharmonique ?",
+"c": "Vienne",
+"w": [
+"Berlin",
+"Prague",
+"Budapest"
+],
+"e": "Il est diffusé dans des dizaines de pays."
+},
+{
+"q": "Quelle célèbre salle d'opéra de Milan est considérée comme l'une des plus prestigieuses au monde ?",
+"c": "La Scala",
+"w": [
+"La Fenice",
+"L'Opéra Garnier",
+"Le Covent Garden"
+],
+"e": "Elle a été inaugurée en 1778."
+},
+{
+"q": "Quel groupe britannique de punk a chanté « God Save the Queen » en 1977 ?",
+"c": "Sex Pistols",
+"w": [
+"The Clash",
+"The Ramones",
+"The Damned"
+],
+"e": "Le titre est sorti pour le jubilé de la reine."
+},
+{
+"q": "Quel grand festival de musique britannique se tient dans une ferme du Somerset ?",
+"c": "Glastonbury",
+"w": [
+"Reading",
+"Wacken",
+"Coachella"
+],
+"e": "Il a lieu presque chaque été depuis 1970."
+},
+{
+"q": "Quel groupe britannique, mené par Chris Martin, a chanté « Viva la Vida » en 2008 ?",
+"c": "Coldplay",
+"w": [
+"Muse",
+"Keane",
+"Snow Patrol"
+],
+"e": "Le titre a été numéro un dans de nombreux pays."
+}
+]

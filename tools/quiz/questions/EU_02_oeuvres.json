@@ -1,0 +1,752 @@
+[
+{
+"q": "Quelle pièce de Shakespeare contient la célèbre phrase « Être ou ne pas être » ?",
+"c": "Hamlet",
+"w": [
+"Macbeth",
+"Othello",
+"Le Roi Lear"
+],
+"e": "C'est le monologue du prince du Danemark, face au crâne de Yorick."
+},
+{
+"q": "Quel peintre catalan est célèbre pour ses montres molles dans « La Persistance de la mémoire » ?",
+"c": "Salvador Dalí",
+"w": [
+"Joan Miró",
+"Pablo Picasso",
+"Antoni Tàpies"
+],
+"e": "Il est l'un des grands noms du surréalisme."
+},
+{
+"q": "Quel ingénieur a donné son nom à la tour construite pour l'Exposition universelle de Paris de 1889 ?",
+"c": "Gustave Eiffel",
+"w": [
+"Gaston Eiffel",
+"Ferdinand de Lesseps",
+"Georges Haussmann"
+],
+"e": "La tour mesure environ 330 mètres avec ses antennes."
+},
+{
+"q": "Quel écrivain danois a écrit « La Petite Sirène » et « Le Vilain Petit Canard » ?",
+"c": "Hans Christian Andersen",
+"w": [
+"Søren Kierkegaard",
+"Astrid Lindgren",
+"Selma Lagerlöf"
+],
+"e": "Ses contes ont été traduits dans plus de cent langues."
+},
+{
+"q": "Quels frères allemands ont recueilli les contes de « Blanche-Neige » et « Hansel et Gretel » ?",
+"c": "Les frères Grimm",
+"w": [
+"Les frères Lumière",
+"Les frères Wright",
+"Les frères Goncourt"
+],
+"e": "Jacob et Wilhelm Grimm ont publié leurs contes au début du XIXe siècle."
+},
+{
+"q": "Quel dramaturge français a écrit « Le Malade imaginaire » et « Tartuffe » ?",
+"c": "Molière",
+"w": [
+"Racine",
+"Corneille",
+"Marivaux"
+],
+"e": "Il est mort en 1673 après une représentation du « Malade imaginaire »."
+},
+{
+"q": "Quel écrivain britannique a créé le détective Sherlock Holmes ?",
+"c": "Arthur Conan Doyle",
+"w": [
+"Agatha Christie",
+"Charles Dickens",
+"H. G. Wells"
+],
+"e": "Holmes habite au 221B Baker Street, à Londres."
+},
+{
+"q": "Quelle romancière britannique a créé les détectives Hercule Poirot et Miss Marple ?",
+"c": "Agatha Christie",
+"w": [
+"Jane Austen",
+"Daphne du Maurier",
+"Virginia Woolf"
+],
+"e": "Elle est l'une des autrices les plus lues au monde."
+},
+{
+"q": "Quel auteur du XVIIe siècle a mis par écrit « Cendrillon » et « La Belle au bois dormant » dans leur version française ?",
+"c": "Charles Perrault",
+"w": [
+"Jean de La Fontaine",
+"Alexandre Dumas",
+"Jules Verne"
+],
+"e": "Ses « Contes de ma mère l'Oye » datent de 1697."
+},
+{
+"q": "Quel peintre français est le chef de file de l'impressionnisme avec « Impression, soleil levant » ?",
+"c": "Claude Monet",
+"w": [
+"Auguste Renoir",
+"Edgar Degas",
+"Paul Gauguin"
+],
+"e": "Le nom du mouvement vient du titre de ce tableau."
+},
+{
+"q": "Quel peintre néerlandais du XVIIe siècle a réalisé « La Ronde de nuit » ?",
+"c": "Rembrandt",
+"w": [
+"Johannes Vermeer",
+"Frans Hals",
+"Pieter de Hooch"
+],
+"e": "Le tableau est exposé au Rijksmuseum d'Amsterdam."
+},
+{
+"q": "Quel roman de Victor Hugo a pour héroïne la bohémienne Esmeralda ?",
+"c": "Notre-Dame de Paris",
+"w": [
+"Quatre-vingt-treize",
+"Les Travailleurs de la mer",
+"Ruy Blas"
+],
+"e": "Quasimodo, le sonneur de cloches, est amoureux d'elle."
+},
+{
+"q": "Quel dramaturge irlandais a écrit « En attendant Godot » ?",
+"c": "Samuel Beckett",
+"w": [
+"Oscar Wilde",
+"George Bernard Shaw",
+"James Joyce"
+],
+"e": "Il a reçu le prix Nobel de littérature en 1969."
+},
+{
+"q": "Quel réalisateur britannique, maître du suspense, a tourné « Psychose » et « Les Oiseaux » ?",
+"c": "Alfred Hitchcock",
+"w": [
+"Stanley Kubrick",
+"Ridley Scott",
+"David Lean"
+],
+"e": "Il apparaît en un bref clin d'œil dans presque tous ses films."
+},
+{
+"q": "Quelle chapelle du Vatican a un plafond peint par Michel-Ange ?",
+"c": "La chapelle Sixtine",
+"w": [
+"La Sainte-Chapelle",
+"La chapelle Notre-Dame-du-Haut",
+"La chapelle de Versailles"
+],
+"e": "Michel-Ange y a travaillé de 1508 à 1512."
+},
+{
+"q": "Quel écrivain français a écrit « À la recherche du temps perdu » ?",
+"c": "Marcel Proust",
+"w": [
+"Gustave Flaubert",
+"André Gide",
+"Honoré de Balzac"
+],
+"e": "Le goût d'une madeleine y réveille les souvenirs du narrateur."
+},
+{
+"q": "Quel écrivain pragois a écrit « La Métamorphose », où un homme se réveille transformé en insecte ?",
+"c": "Franz Kafka",
+"w": [
+"Milan Kundera",
+"Stefan Zweig",
+"Thomas Mann"
+],
+"e": "Il écrivait en allemand et vivait à Prague."
+},
+{
+"q": "Quelle romancière britannique a écrit « Orgueil et Préjugés » ?",
+"c": "Jane Austen",
+"w": [
+"Charlotte Brontë",
+"George Eliot",
+"Mary Shelley"
+],
+"e": "Le roman a été publié en 1813."
+},
+{
+"q": "Quel écrivain russe a écrit « Crime et Châtiment » ?",
+"c": "Fiodor Dostoïevski",
+"w": [
+"Léon Tolstoï",
+"Anton Tchekhov",
+"Nicolas Gogol"
+],
+"e": "Le héros du roman s'appelle Raskolnikov."
+},
+{
+"q": "Quel écrivain allemand a écrit « Faust » ?",
+"c": "Johann Wolfgang von Goethe",
+"w": [
+"Friedrich Schiller",
+"Thomas Mann",
+"Heinrich Heine"
+],
+"e": "Faust y signe un pacte avec le diable Méphistophélès."
+},
+{
+"q": "Quel écrivain britannique a écrit « 1984 » et « La Ferme des animaux » ?",
+"c": "George Orwell",
+"w": [
+"Aldous Huxley",
+"H. G. Wells",
+"Rudyard Kipling"
+],
+"e": "« Big Brother vous regarde » vient de « 1984 »."
+},
+{
+"q": "Quel écrivain britannique a écrit « Oliver Twist » et « Un conte de Noël » ?",
+"c": "Charles Dickens",
+"w": [
+"Thomas Hardy",
+"William Thackeray",
+"Oscar Wilde"
+],
+"e": "Il a décrit la pauvreté dans la Londres du XIXe siècle."
+},
+{
+"q": "Quel peintre espagnol de cour a réalisé « Les Ménines » en 1656 ?",
+"c": "Diego Vélasquez",
+"w": [
+"Francisco de Goya",
+"El Greco",
+"Bartolomé Murillo"
+],
+"e": "Le tableau montre l'infante Marguerite entourée de ses dames d'honneur."
+},
+{
+"q": "Quel peintre autrichien a réalisé « Le Baiser », orné de feuilles d'or ?",
+"c": "Gustav Klimt",
+"w": [
+"Egon Schiele",
+"Oskar Kokoschka",
+"Edvard Munch"
+],
+"e": "Il appartient au mouvement de la Sécession viennoise."
+},
+{
+"q": "Quel peintre néerlandais est connu pour ses compositions de carrés rouges, jaunes et bleus séparés par des lignes noires ?",
+"c": "Piet Mondrian",
+"w": [
+"Vincent van Gogh",
+"Johannes Vermeer",
+"Rembrandt"
+],
+"e": "Il est l'un des pionniers de l'art abstrait."
+},
+{
+"q": "Quel peintre français a scandalisé le public en 1863 avec « Le Déjeuner sur l'herbe » ?",
+"c": "Édouard Manet",
+"w": [
+"Gustave Courbet",
+"Edgar Degas",
+"Camille Pissarro"
+],
+"e": "Il montre une femme nue assise avec deux hommes habillés."
+},
+{
+"q": "Quel peintre flamand du XVIe siècle a peint « Les Chasseurs dans la neige » ?",
+"c": "Pieter Bruegel l'Ancien",
+"w": [
+"Jan van Eyck",
+"Pierre Paul Rubens",
+"Jérôme Bosch"
+],
+"e": "Ce tableau représente un paysage d'hiver."
+},
+{
+"q": "Quel cinéaste italien a réalisé « La Dolce Vita » en 1960 ?",
+"c": "Federico Fellini",
+"w": [
+"Luchino Visconti",
+"Roberto Rossellini",
+"Sergio Leone"
+],
+"e": "Le film a reçu la Palme d'or à Cannes."
+},
+{
+"q": "Quel réalisateur français a signé « Les 400 coups » en 1959 ?",
+"c": "François Truffaut",
+"w": [
+"Jean Renoir",
+"Claude Chabrol",
+"Louis Malle"
+],
+"e": "Le film est l'un des symboles de la Nouvelle Vague."
+},
+{
+"q": "Quel cinéaste suédois a réalisé « Le Septième Sceau » et « Cris et Chuchotements » ?",
+"c": "Ingmar Bergman",
+"w": [
+"Lars von Trier",
+"Roy Andersson",
+"Bo Widerberg"
+],
+"e": "Dans « Le Septième Sceau », un chevalier joue aux échecs avec la Mort."
+},
+{
+"q": "Quel écrivain portugais a reçu le prix Nobel de littérature en 1998 ?",
+"c": "José Saramago",
+"w": [
+"Fernando Pessoa",
+"António Lobo Antunes",
+"Eça de Queiroz"
+],
+"e": "Il est l'auteur de « L'Aveuglement »."
+},
+{
+"q": "Quel écrivain irlandais a publié « Ulysse » en 1922 ?",
+"c": "James Joyce",
+"w": [
+"W. B. Yeats",
+"Samuel Beckett",
+"Oscar Wilde"
+],
+"e": "Le roman raconte une seule journée à Dublin, le 16 juin 1904."
+},
+{
+"q": "Quel philosophe et écrivain français a refusé le prix Nobel de littérature en 1964 ?",
+"c": "Jean-Paul Sartre",
+"w": [
+"Albert Camus",
+"André Malraux",
+"Louis Aragon"
+],
+"e": "Il a justifié ce refus par son refus des honneurs officiels."
+},
+{
+"q": "Quelle romancière française a publié « Bonjour tristesse » à dix-huit ans ?",
+"c": "Françoise Sagan",
+"w": [
+"Marguerite Duras",
+"Simone de Beauvoir",
+"Colette"
+],
+"e": "Le roman a connu un énorme succès en 1954."
+},
+{
+"q": "Quel écrivain allemand a écrit « À l'Ouest, rien de nouveau » sur la Première Guerre mondiale ?",
+"c": "Erich Maria Remarque",
+"w": [
+"Thomas Mann",
+"Hermann Hesse",
+"Günter Grass"
+],
+"e": "Les nazis ont brûlé ses livres."
+},
+{
+"q": "Quel poète anglais a écrit « Le Paradis perdu » au XVIIe siècle ?",
+"c": "John Milton",
+"w": [
+"William Blake",
+"John Keats",
+"Lord Byron"
+],
+"e": "Devenu aveugle, il a dicté ce long poème à ses filles."
+},
+{
+"q": "Quel écrivain russe a écrit « Le Maître et Marguerite », où le diable visite Moscou ?",
+"c": "Mikhaïl Boulgakov",
+"w": [
+"Anton Tchekhov",
+"Nicolas Gogol",
+"Boris Pasternak"
+],
+"e": "Le roman n'a été publié qu'après la mort de l'auteur."
+},
+{
+"q": "Quel peintre et graveur allemand de la Renaissance a réalisé « Melencolia I » ?",
+"c": "Albrecht Dürer",
+"w": [
+"Hans Holbein",
+"Lucas Cranach",
+"Matthias Grünewald"
+],
+"e": "Il est aussi l'auteur d'un célèbre « Autoportrait » de 1500."
+},
+{
+"q": "Quel peintre italien de la Renaissance a peint « La Naissance de Vénus » ?",
+"c": "Sandro Botticelli",
+"w": [
+"Raphaël",
+"Titien",
+"Giotto"
+],
+"e": "Le tableau est exposé à Florence, à la galerie des Offices."
+},
+{
+"q": "Quel peintre italien, maître du clair-obscur, a peint « La Vocation de saint Matthieu » ?",
+"c": "Le Caravage",
+"w": [
+"Raphaël",
+"Tintoret",
+"Véronèse"
+],
+"e": "Il a vécu une vie violente au tournant du XVIIe siècle."
+},
+{
+"q": "Quel architecte catalan a conçu la Sagrada Família, toujours en construction à Barcelone ?",
+"c": "Antoni Gaudí",
+"w": [
+"Santiago Calatrava",
+"Josep Puig i Cadafalch",
+"Ricardo Bofill"
+],
+"e": "La basilique a été commencée en 1882."
+},
+{
+"q": "Quel architecte a conçu la pyramide de verre du musée du Louvre, inaugurée en 1989 ?",
+"c": "Ieoh Ming Pei",
+"w": [
+"Jean Nouvel",
+"Renzo Piano",
+"Norman Foster"
+],
+"e": "Elle sert d'entrée principale au musée."
+},
+{
+"q": "Quel acteur et réalisateur britannique a créé le personnage de Charlot ?",
+"c": "Charlie Chaplin",
+"w": [
+"Buster Keaton",
+"Laurel et Hardy",
+"Harold Lloyd"
+],
+"e": "Charlot porte une moustache, un chapeau melon et une canne."
+},
+{
+"q": "Quel réalisateur espagnol a signé « Tout sur ma mère » et « Parle avec elle » ?",
+"c": "Pedro Almodóvar",
+"w": [
+"Luis Buñuel",
+"Alejandro Amenábar",
+"Carlos Saura"
+],
+"e": "« Tout sur ma mère » a reçu l'Oscar du meilleur film étranger en 2000."
+},
+{
+"q": "Quel cinéaste allemand a réalisé « Metropolis » en 1927 ?",
+"c": "Fritz Lang",
+"w": [
+"Friedrich Murnau",
+"Wim Wenders",
+"Werner Herzog"
+],
+"e": "Ce film muet a influencé toute la science-fiction."
+},
+{
+"q": "Quel poète espagnol, fusillé en 1936 au début de la guerre civile, a écrit « Noces de sang » ?",
+"c": "Federico García Lorca",
+"w": [
+"Antonio Machado",
+"Rafael Alberti",
+"Miguel Hernández"
+],
+"e": "Il est aussi l'auteur du « Romancero gitan »."
+},
+{
+"q": "Quel écrivain italien a écrit « Le Nom de la rose », un roman policier médiéval ?",
+"c": "Umberto Eco",
+"w": [
+"Italo Calvino",
+"Primo Levi",
+"Alberto Moravia"
+],
+"e": "Le roman a été publié en 1980."
+},
+{
+"q": "Quel écrivain tchèque, installé en France, a écrit « L'Insoutenable Légèreté de l'être » ?",
+"c": "Milan Kundera",
+"w": [
+"Václav Havel",
+"Bohumil Hrabal",
+"Franz Kafka"
+],
+"e": "Le roman se déroule à Prague au moment du Printemps de 1968."
+},
+{
+"q": "Quel dramaturge norvégien a écrit « Une maison de poupée » ?",
+"c": "Henrik Ibsen",
+"w": [
+"August Strindberg",
+"Knut Hamsun",
+"Edvard Munch"
+],
+"e": "Nora, l'héroïne, quitte à la fin son mari et sa maison."
+},
+{
+"q": "Quel écrivain autrichien a écrit « Le Joueur d'échecs » et « Le Monde d'hier » ?",
+"c": "Stefan Zweig",
+"w": [
+"Robert Musil",
+"Joseph Roth",
+"Arthur Schnitzler"
+],
+"e": "Il s'est exilé au Brésil, où il est mort en 1942."
+},
+{
+"q": "Quel poète français a écrit « Le Bateau ivre » à seize ans ?",
+"c": "Arthur Rimbaud",
+"w": [
+"Paul Verlaine",
+"Charles Baudelaire",
+"Stéphane Mallarmé"
+],
+"e": "Il a cessé d'écrire à vingt ans environ."
+},
+{
+"q": "Quel peintre belge a peint « Ceci n'est pas une pipe » ?",
+"c": "René Magritte",
+"w": [
+"James Ensor",
+"Paul Delvaux",
+"Pierre Paul Rubens"
+],
+"e": "Le tableau s'appelle « La Trahison des images »."
+},
+{
+"q": "Quel peintre britannique est célèbre pour ses paysages de mer et de lumière comme « Le Téméraire remorqué à son dernier mouillage » ?",
+"c": "J. M. W. Turner",
+"w": [
+"John Constable",
+"David Hockney",
+"Francis Bacon"
+],
+"e": "Il est considéré comme un précurseur de l'impressionnisme."
+},
+{
+"q": "Quel peintre français du XIXe siècle a peint « Les Glaneuses » et « L'Angélus » ?",
+"c": "Jean-François Millet",
+"w": [
+"Gustave Courbet",
+"Jean-Baptiste Camille Corot",
+"Honoré Daumier"
+],
+"e": "Il a peint la vie des paysans."
+},
+{
+"q": "Quel peintre post-impressionniste a peint « Les Joueurs de cartes » et de nombreuses vues de la montagne Sainte-Victoire ?",
+"c": "Paul Cézanne",
+"w": [
+"Paul Gauguin",
+"Georges Seurat",
+"Henri de Toulouse-Lautrec"
+],
+"e": "Picasso l'appelait « le père de nous tous »."
+},
+{
+"q": "Quel sculpteur d'origine roumaine a créé « La Colonne sans fin » et « L'Oiseau dans l'espace » ?",
+"c": "Constantin Brâncuși",
+"w": [
+"Auguste Rodin",
+"Alberto Giacometti",
+"Henry Moore"
+],
+"e": "Il a vécu longtemps à Paris."
+},
+{
+"q": "Quel réalisateur italien a tourné « Le Voleur de bicyclette » en 1948 ?",
+"c": "Vittorio De Sica",
+"w": [
+"Federico Fellini",
+"Michelangelo Antonioni",
+"Pier Paolo Pasolini"
+],
+"e": "C'est un chef-d'œuvre du néoréalisme italien."
+},
+{
+"q": "Quel cinéaste russe a réalisé « Le Cuirassé Potemkine » en 1925 ?",
+"c": "Sergueï Eisenstein",
+"w": [
+"Andreï Tarkovski",
+"Dziga Vertov",
+"Nikita Mikhalkov"
+],
+"e": "La scène de l'escalier d'Odessa est restée célèbre."
+},
+{
+"q": "Quel cinéaste français a réalisé « À bout de souffle » en 1960 ?",
+"c": "Jean-Luc Godard",
+"w": [
+"François Truffaut",
+"Éric Rohmer",
+"Jacques Rivette"
+],
+"e": "Jean-Paul Belmondo y joue le rôle principal."
+},
+{
+"q": "Quelle romancière britannique a écrit « Les Hauts de Hurlevent » ?",
+"c": "Emily Brontë",
+"w": [
+"Charlotte Brontë",
+"Jane Austen",
+"George Eliot"
+],
+"e": "Le roman raconte l'amour tragique de Heathcliff et Catherine."
+},
+{
+"q": "Quel écrivain allemand a reçu le prix Nobel de littérature en 1929 pour « Les Buddenbrook » ?",
+"c": "Thomas Mann",
+"w": [
+"Hermann Hesse",
+"Bertolt Brecht",
+"Heinrich Böll"
+],
+"e": "Il est aussi l'auteur de « La Montagne magique »."
+},
+{
+"q": "Quel écrivain franco-mauricien a reçu le prix Nobel de littérature en 2008 ?",
+"c": "J. M. G. Le Clézio",
+"w": [
+"Patrick Modiano",
+"Claude Simon",
+"Gao Xingjian"
+],
+"e": "Il est l'auteur du « Procès-verbal » et d'« Onitsha »."
+},
+{
+"q": "Quelle poétesse polonaise a reçu le prix Nobel de littérature en 1996 ?",
+"c": "Wisława Szymborska",
+"w": [
+"Olga Tokarczuk",
+"Anna Achmatova",
+"Herta Müller"
+],
+"e": "Elle était connue pour son humour discret et ses poèmes courts."
+},
+{
+"q": "Quel poète irlandais a reçu le prix Nobel de littérature en 1995 ?",
+"c": "Seamus Heaney",
+"w": [
+"William Butler Yeats",
+"Samuel Beckett",
+"Patrick Kavanagh"
+],
+"e": "Beaucoup de ses poèmes parlent de la vie rurale en Irlande."
+},
+{
+"q": "Quelle écrivaine française a reçu le prix Nobel de littérature en 2022 ?",
+"c": "Annie Ernaux",
+"w": [
+"Marguerite Duras",
+"Nathalie Sarraute",
+"Marguerite Yourcenar"
+],
+"e": "Elle est l'autrice de « La Place » et des « Années »."
+},
+{
+"q": "Quel peintre russe, pionnier de l'art abstrait, a peint « Carré noir sur fond blanc » en 1915 ?",
+"c": "Kazimir Malevitch",
+"w": [
+"Vassily Kandinsky",
+"Marc Chagall",
+"Ilia Répine"
+],
+"e": "Il a fondé le mouvement du suprématisme."
+},
+{
+"q": "Quel peintre français a réalisé « Le Radeau de la Méduse », inspiré d'un naufrage de 1816 ?",
+"c": "Théodore Géricault",
+"w": [
+"Eugène Delacroix",
+"Jacques-Louis David",
+"Gustave Courbet"
+],
+"e": "Le tableau est exposé au Louvre."
+},
+{
+"q": "Quel peintre français, chef de file du néoclassicisme, a réalisé « Le Sacre de Napoléon » ?",
+"c": "Jacques-Louis David",
+"w": [
+"Jean-Auguste-Dominique Ingres",
+"François Boucher",
+"Antoine Watteau"
+],
+"e": "Le tableau mesure près de dix mètres de large."
+},
+{
+"q": "Quel peintre allemand de la Renaissance a réalisé « Les Ambassadeurs » en 1533 ?",
+"c": "Hans Holbein le Jeune",
+"w": [
+"Albrecht Dürer",
+"Lucas Cranach l'Ancien",
+"Matthias Grünewald"
+],
+"e": "Le tableau contient un crâne déformé, visible sous un certain angle."
+},
+{
+"q": "Quel peintre flamand du XVe siècle a réalisé, avec son frère, « L'Agneau mystique » à Gand ?",
+"c": "Jan van Eyck",
+"w": [
+"Rogier van der Weyden",
+"Hans Memling",
+"Jérôme Bosch"
+],
+"e": "Ce polyptyque est conservé dans la cathédrale Saint-Bavon."
+},
+{
+"q": "Quel écrivain français a publié « Voyage au bout de la nuit » en 1932 ?",
+"c": "Louis-Ferdinand Céline",
+"w": [
+"Albert Camus",
+"André Malraux",
+"Jean Giono"
+],
+"e": "Le roman est connu pour son style oral et sa noirceur."
+},
+{
+"q": "Quel écrivain italien a écrit « Le Décaméron » au XIVe siècle ?",
+"c": "Boccace",
+"w": [
+"Dante",
+"Pétrarque",
+"Machiavel"
+],
+"e": "Le livre raconte cent histoires contées par dix jeunes gens réfugiés pendant la peste."
+},
+{
+"q": "Quel roman de Mary Shelley, publié en 1818, met en scène un savant qui crée une créature à partir de cadavres ?",
+"c": "Frankenstein",
+"w": [
+"Dracula",
+"Le Docteur Jekyll et Mister Hyde",
+"Le Fantôme de l'Opéra"
+],
+"e": "La créature n'a pas de nom : Frankenstein est le nom du savant."
+},
+{
+"q": "Quel écrivain irlandais a publié « Dracula » en 1897 ?",
+"c": "Bram Stoker",
+"w": [
+"Oscar Wilde",
+"Robert Louis Stevenson",
+"Arthur Conan Doyle"
+],
+"e": "Le comte vit en Transylvanie dans le roman."
+},
+{
+"q": "Quel cinéaste polonais, Palme d'or en 1981 avec « L'Homme de fer », est un monument du cinéma de son pays ?",
+"c": "Andrzej Wajda",
+"w": [
+"Krzysztof Kieślowski",
+"Roman Polanski",
+"Jerzy Skolimowski"
+],
+"e": "« L'Homme de fer » raconte la naissance de Solidarność."
+}
+]

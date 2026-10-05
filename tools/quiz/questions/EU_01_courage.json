@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel roi de Sparte a défendu le défilé des Thermopyles avec 300 guerriers contre l'armée perse en 480 av. J.-C. ?",
+"c": "Léonidas",
+"w": [
+"Périclès",
+"Alexandre le Grand",
+"Achille"
+],
+"e": "Léonidas et ses hommes ont retardé l'immense armée de Xerxès Ier."
+},
+{
+"q": "Quel Premier ministre britannique a promis « du sang, du labeur, des larmes et de la sueur » en mai 1940 ?",
+"c": "Winston Churchill",
+"w": [
+"Margaret Thatcher",
+"Harold Wilson",
+"David Lloyd George"
+],
+"e": "Churchill a prononcé ce discours dès son arrivée au pouvoir, au début de la Seconde Guerre mondiale."
+},
+{
+"q": "Quel général français a lancé l'appel du 18 juin 1940 depuis Londres pour continuer la lutte ?",
+"c": "Charles de Gaulle",
+"w": [
+"Philippe Pétain",
+"Jean Moulin",
+"Maxime Weygand"
+],
+"e": "Diffusé par la BBC, cet appel marque le début de la France libre."
+},
+{
+"q": "Quel héros de la Résistance française, arrêté en 1943 à Caluire, est mort après avoir été torturé sans parler ?",
+"c": "Jean Moulin",
+"w": [
+"Pierre Mendès France",
+"Georges Bidault",
+"Léon Blum"
+],
+"e": "Jean Moulin avait unifié les mouvements de la Résistance."
+},
+{
+"q": "Quelle infirmière britannique, surnommée « la dame à la lampe », a soigné les soldats pendant la guerre de Crimée ?",
+"c": "Florence Nightingale",
+"w": [
+"Edith Cavell",
+"Marie Curie",
+"Agatha Christie"
+],
+"e": "Elle a révolutionné les soins infirmiers et l'hygiène dans les hôpitaux."
+},
+{
+"q": "Quel industriel allemand a sauvé plus de mille Juifs en les employant dans ses usines pendant la Seconde Guerre mondiale ?",
+"c": "Oskar Schindler",
+"w": [
+"Albert Speer",
+"Erwin Rommel",
+"Claus von Stauffenberg"
+],
+"e": "Son histoire a été portée à l'écran par Steven Spielberg dans « La Liste de Schindler »."
+},
+{
+"q": "Quelle Polonaise a sauvé environ 2 500 enfants juifs du ghetto de Varsovie ?",
+"c": "Irena Sendler",
+"w": [
+"Marie Curie",
+"Wisława Szymborska",
+"Rosa Luxemburg"
+],
+"e": "Elle faisait sortir les enfants en secret et notait leurs vrais noms pour les retrouver."
+},
+{
+"q": "Quel diplomate suédois a délivré des milliers de passeports de protection à des Juifs de Budapest en 1944 ?",
+"c": "Raoul Wallenberg",
+"w": [
+"Dag Hammarskjöld",
+"Folke Bernadotte",
+"Olof Palme"
+],
+"e": "Il a disparu en 1945 après son arrestation par les Soviétiques."
+},
+{
+"q": "Quelle étudiante allemande du groupe de la Rose blanche a été exécutée en 1943 pour avoir distribué des tracts contre Hitler ?",
+"c": "Sophie Scholl",
+"w": [
+"Clara Zetkin",
+"Hannah Arendt",
+"Marlene Dietrich"
+],
+"e": "Elle avait 21 ans lorsqu'elle a été guillotinée avec son frère Hans."
+},
+{
+"q": "Quel électricien polonais a fondé le syndicat Solidarność et reçu le prix Nobel de la paix en 1983 ?",
+"c": "Lech Wałęsa",
+"w": [
+"Wojciech Jaruzelski",
+"Karol Wojtyła",
+"Donald Tusk"
+],
+"e": "Né à Gdańsk en 1980, Solidarność a contribué à la chute du communisme."
+},
+{
+"q": "Quel navigateur portugais a lancé le premier tour du monde, achevé par son équipage en 1522 ?",
+"c": "Ferdinand de Magellan",
+"w": [
+"Vasco de Gama",
+"Christophe Colomb",
+"Jacques Cartier"
+],
+"e": "Magellan est mort aux Philippines, mais un de ses navires est revenu en Espagne."
+},
+{
+"q": "Quel navigateur génois a traversé l'Atlantique en 1492 pour le compte de l'Espagne ?",
+"c": "Christophe Colomb",
+"w": [
+"Amerigo Vespucci",
+"Marco Polo",
+"Francis Drake"
+],
+"e": "Il pensait atteindre les Indes et a abordé les Caraïbes."
+},
+{
+"q": "Quel explorateur norvégien a atteint le premier le pôle Sud, en décembre 1911 ?",
+"c": "Roald Amundsen",
+"w": [
+"Robert Falcon Scott",
+"Ernest Shackleton",
+"Fridtjof Nansen"
+],
+"e": "Il a devancé de quelques semaines l'expédition britannique de Scott."
+},
+{
+"q": "Quel savant italien a été jugé par l'Inquisition en 1633 pour avoir défendu que la Terre tourne autour du Soleil ?",
+"c": "Galilée",
+"w": [
+"Giordano Bruno",
+"Léonard de Vinci",
+"Nicolas Copernic"
+],
+"e": "Condamné, il a fini sa vie assigné à résidence."
+},
+{
+"q": "Quelle femme politique française, rescapée d'Auschwitz, a fait voter la loi sur l'interruption volontaire de grossesse en 1975 ?",
+"c": "Simone Veil",
+"w": [
+"Simone de Beauvoir",
+"Édith Cresson",
+"Ségolène Royal"
+],
+"e": "Ministre de la Santé, elle a défendu cette loi devant une assemblée très hostile."
+},
+{
+"q": "Quelle écrivaine française a rédigé en 1791 la « Déclaration des droits de la femme et de la citoyenne » ?",
+"c": "Olympe de Gouges",
+"w": [
+"Louise Michel",
+"George Sand",
+"Madame de Staël"
+],
+"e": "Elle a été guillotinée en 1793 pour ses idées."
+},
+{
+"q": "Quelle institutrice française est devenue l'une des figures de la Commune de Paris en 1871 ?",
+"c": "Louise Michel",
+"w": [
+"Olympe de Gouges",
+"Simone Veil",
+"Flora Tristan"
+],
+"e": "Déportée en Nouvelle-Calédonie, elle a continué à défendre les opprimés."
+},
+{
+"q": "Quel général italien a mené en 1860 l'expédition des Mille pour unifier l'Italie ?",
+"c": "Giuseppe Garibaldi",
+"w": [
+"Victor-Emmanuel II",
+"Giuseppe Mazzini",
+"Camillo de Cavour"
+],
+"e": "Ses volontaires étaient surnommés les « Chemises rouges »."
+},
+{
+"q": "Quel chevalier écossais a battu les Anglais à Stirling Bridge en 1297 ?",
+"c": "William Wallace",
+"w": [
+"Robert Bruce",
+"Rob Roy",
+"Macbeth"
+],
+"e": "Son histoire a inspiré le film « Braveheart »."
+},
+{
+"q": "Quel pasteur allemand, opposant à Hitler, a été pendu en 1945 quelques jours avant la fin de la guerre ?",
+"c": "Dietrich Bonhoeffer",
+"w": [
+"Martin Niemöller",
+"Karl Barth",
+"Hans Küng"
+],
+"e": "Il avait participé à des complots contre le régime nazi."
+},
+{
+"q": "Quel officier allemand a placé une bombe pour tuer Hitler le 20 juillet 1944 ?",
+"c": "Claus von Stauffenberg",
+"w": [
+"Erwin Rommel",
+"Hermann Göring",
+"Rudolf Hess"
+],
+"e": "Hitler a survécu à l'attentat et Stauffenberg a été fusillé le soir même."
+},
+{
+"q": "Quel prêtre polonais est mort à Auschwitz en 1941 après avoir pris la place d'un autre prisonnier condamné ?",
+"c": "Maximilien Kolbe",
+"w": [
+"Jean-Paul II",
+"Jerzy Popiełuszko",
+"Stefan Wyszyński"
+],
+"e": "Il a été déclaré saint en 1982."
+},
+{
+"q": "Quel Britannique a organisé en 1939 le départ de 669 enfants, surtout tchèques, vers le Royaume-Uni ?",
+"c": "Nicholas Winton",
+"w": [
+"Oskar Schindler",
+"Winston Churchill",
+"Alan Turing"
+],
+"e": "Il a gardé son action secrète pendant près de cinquante ans."
+},
+{
+"q": "Quelle infirmière britannique a été fusillée en 1915 à Bruxelles pour avoir aidé des soldats alliés à s'échapper ?",
+"c": "Edith Cavell",
+"w": [
+"Florence Nightingale",
+"Marie Curie",
+"Vera Brittain"
+],
+"e": "Elle soignait aussi bien les blessés alliés que les blessés allemands."
+},
+{
+"q": "Quel physicien russe, père de la bombe H soviétique, est devenu un dissident et a reçu le prix Nobel de la paix en 1975 ?",
+"c": "Andreï Sakharov",
+"w": [
+"Alexandre Soljenitsyne",
+"Mikhaïl Gorbatchev",
+"Boris Pasternak"
+],
+"e": "Il défendait les droits de l'homme en URSS."
+},
+{
+"q": "Quel dramaturge tchèque, emprisonné sous le régime communiste, est devenu président en 1989 ?",
+"c": "Václav Havel",
+"w": [
+"Alexander Dubček",
+"Milan Kundera",
+"Antonín Novotný"
+],
+"e": "Il a mené la « révolution de velours », sans violence."
+},
+{
+"q": "Quel dirigeant italien a été enlevé puis tué par les Brigades rouges en 1978 ?",
+"c": "Aldo Moro",
+"w": [
+"Giulio Andreotti",
+"Silvio Berlusconi",
+"Bettino Craxi"
+],
+"e": "Son corps a été retrouvé à Rome dans le coffre d'une voiture."
+},
+{
+"q": "Quel pape polonais a visité son pays natal en 1979 et encouragé les opposants au communisme ?",
+"c": "Jean-Paul II",
+"w": [
+"Benoît XVI",
+"Jean XXIII",
+"Paul VI"
+],
+"e": "Son voyage a redonné courage aux Polonais, un an avant Solidarność."
+},
+{
+"q": "Quel explorateur britannique a survécu en 1916 à la perte du navire Endurance, pris dans les glaces de l'Antarctique ?",
+"c": "Ernest Shackleton",
+"w": [
+"Robert Falcon Scott",
+"James Cook",
+"Francis Drake"
+],
+"e": "Tous ses hommes sont rentrés vivants après plus de deux ans."
+},
+{
+"q": "Quel explorateur norvégien a traversé le Groenland à ski en 1888 et reçu le prix Nobel de la paix en 1922 ?",
+"c": "Fridtjof Nansen",
+"w": [
+"Roald Amundsen",
+"Thor Heyerdahl",
+"Leif Erikson"
+],
+"e": "Il a aussi organisé l'aide aux réfugiés après la Première Guerre mondiale."
+},
+{
+"q": "Quel moine allemand a refusé en 1521, devant la Diète de Worms, de renier ses écrits ?",
+"c": "Martin Luther",
+"w": [
+"Jean Calvin",
+"Érasme",
+"Jan Hus"
+],
+"e": "Ce refus a lancé la Réforme protestante."
+},
+{
+"q": "Quel théologien tchèque a été brûlé vif en 1415 à Constance pour avoir critiqué l'Église ?",
+"c": "Jan Hus",
+"w": [
+"Martin Luther",
+"Thomas More",
+"Giordano Bruno"
+],
+"e": "Il est devenu un symbole national en Bohême."
+},
+{
+"q": "Quel philosophe italien a été brûlé à Rome en 1600 pour ses idées sur l'infini de l'univers ?",
+"c": "Giordano Bruno",
+"w": [
+"Galilée",
+"Machiavel",
+"Thomas d'Aquin"
+],
+"e": "Il pensait que les étoiles étaient d'autres soleils."
+},
+{
+"q": "Quel chancelier d'Angleterre a refusé de reconnaître Henri VIII comme chef de l'Église et a été exécuté en 1535 ?",
+"c": "Thomas More",
+"w": [
+"Thomas Cromwell",
+"Thomas Becket",
+"Francis Bacon"
+],
+"e": "Il est l'auteur du livre « Utopie »."
+},
+{
+"q": "Quelle militante britannique a fondé en 1903 le mouvement des suffragettes pour le droit de vote des femmes ?",
+"c": "Emmeline Pankhurst",
+"w": [
+"Virginia Woolf",
+"Margaret Thatcher",
+"Elizabeth Fry"
+],
+"e": "Les Britanniques ont obtenu le vote des femmes en 1918, sous conditions d'âge."
+},
+{
+"q": "Quelle suffragette est morte en 1913 après être tombée devant le cheval du roi pendant le Derby d'Epsom ?",
+"c": "Emily Davison",
+"w": [
+"Emmeline Pankhurst",
+"Millicent Fawcett",
+"Sylvia Pankhurst"
+],
+"e": "Son geste est resté un symbole de la lutte pour le vote des femmes."
+},
+{
+"q": "Quelle Néerlandaise a caché des Juifs chez elle à Haarlem et a survécu à la déportation à Ravensbrück ?",
+"c": "Corrie ten Boom",
+"w": [
+"Anne Frank",
+"Miep Gies",
+"Etty Hillesum"
+],
+"e": "Son histoire est racontée dans le livre « La Cachette »."
+},
+{
+"q": "Quelle agente secrète britannique d'origine indienne, opératrice radio à Paris, a été exécutée à Dachau en 1944 ?",
+"c": "Noor Inayat Khan",
+"w": [
+"Violette Szabo",
+"Odette Hallowes",
+"Vera Atkins"
+],
+"e": "Elle est restée un symbole de courage de la Résistance."
+},
+{
+"q": "Dans quel pays un soulèvement contre l'occupation soviétique a-t-il été écrasé par les chars à Budapest en 1956 ?",
+"c": "La Hongrie",
+"w": [
+"La Pologne",
+"La Tchécoslovaquie",
+"La Roumanie"
+],
+"e": "Des milliers de Hongrois ont fui le pays après la répression."
+},
+{
+"q": "Quel mouvement tchécoslovaque de 1968, écrasé par les chars du pacte de Varsovie, avait promis un « socialisme à visage humain » ?",
+"c": "Le Printemps de Prague",
+"w": [
+"Solidarność",
+"La révolution de velours",
+"Le dégel de Khrouchtchev"
+],
+"e": "Alexander Dubček en était le dirigeant."
+},
+{
+"q": "Quel étudiant tchèque s'est immolé par le feu en janvier 1969 pour protester contre l'invasion soviétique ?",
+"c": "Jan Palach",
+"w": [
+"Václav Havel",
+"Jan Hus",
+"Alexander Dubček"
+],
+"e": "Son geste a bouleversé les Tchécoslovaques."
+},
+{
+"q": "Quel mur, construit en 1961 pour diviser une ville européenne, est tombé le 9 novembre 1989 ?",
+"c": "Le mur de Berlin",
+"w": [
+"Le mur de Budapest",
+"Le mur de Prague",
+"Le mur de Varsovie"
+],
+"e": "Sa chute a ouvert la voie à la réunification allemande."
+},
+{
+"q": "Quel athlète britannique a couru le premier mile en moins de quatre minutes, en 1954 ?",
+"c": "Roger Bannister",
+"w": [
+"Sebastian Coe",
+"Steve Ovett",
+"Mo Farah"
+],
+"e": "On croyait ce temps impossible pour un être humain."
+},
+{
+"q": "Quel aviateur français a traversé la Manche en avion pour la première fois, en 1909 ?",
+"c": "Louis Blériot",
+"w": [
+"Clément Ader",
+"Henri Farman",
+"Alberto Santos-Dumont"
+],
+"e": "Il a volé de Calais à Douvres en une trentaine de minutes."
+},
+{
+"q": "Quel aviateur français, auteur du « Petit Prince », a disparu en vol en 1944 pendant une mission de reconnaissance ?",
+"c": "Antoine de Saint-Exupéry",
+"w": [
+"Jean Mermoz",
+"Henri Guillaumet",
+"Roland Garros"
+],
+"e": "Son avion a été retrouvé en mer au large de Marseille."
+},
+{
+"q": "Quel explorateur français a fondé la ville de Québec en 1608 ?",
+"c": "Samuel de Champlain",
+"w": [
+"Jacques Cartier",
+"René Robert Cavelier de La Salle",
+"Pierre de Coubertin"
+],
+"e": "Il est considéré comme le père de la Nouvelle-France."
+},
+{
+"q": "Quel tsar russe a vaincu les Suédois à Poltava en 1709 et fondé Saint-Pétersbourg ?",
+"c": "Pierre le Grand",
+"w": [
+"Ivan le Terrible",
+"Nicolas II",
+"Alexandre Ier"
+],
+"e": "Il a modernisé la Russie en s'inspirant de l'Europe de l'Ouest."
+},
+{
+"q": "Quel chef grec, surnommé « le Vieux de Morée », a été l'un des héros de la guerre d'indépendance de 1821 contre les Ottomans ?",
+"c": "Théodoros Kolokotronis",
+"w": [
+"Ioannis Kapodistrias",
+"Rigas Feraios",
+"Eleftherios Venizelos"
+],
+"e": "La Grèce est devenue indépendante en 1830."
+},
+{
+"q": "Quel héros légendaire suisse aurait tiré sur une pomme posée sur la tête de son fils ?",
+"c": "Guillaume Tell",
+"w": [
+"Arnold Winkelried",
+"Ulrich Zwingli",
+"Henri Dufour"
+],
+"e": "Il est un symbole de la résistance des Suisses contre les Habsbourg."
+},
+{
+"q": "Quel héros national hongrois a mené la révolution de 1848 contre les Habsbourg ?",
+"c": "Lajos Kossuth",
+"w": [
+"István Széchenyi",
+"Imre Nagy",
+"Miklós Horthy"
+],
+"e": "Il a dû s'exiler après l'échec de la révolution."
+},
+{
+"q": "Quel dirigeant hongrois, symbole de la révolte de 1956, a été exécuté en 1958 ?",
+"c": "Imre Nagy",
+"w": [
+"János Kádár",
+"Lajos Kossuth",
+"Béla Kun"
+],
+"e": "Il a été réhabilité en 1989 et enterré en héros."
+},
+{
+"q": "Quel général polonais a dirigé l'insurrection de Varsovie contre l'occupant allemand en 1944 ?",
+"c": "Tadeusz Bór-Komorowski",
+"w": [
+"Józef Piłsudski",
+"Władysław Sikorski",
+"Wojciech Jaruzelski"
+],
+"e": "L'insurrection a duré 63 jours et la ville a été en grande partie détruite."
+},
+{
+"q": "Quel capitaine français a été injustement condamné en 1894 pour trahison, dans une affaire qui a divisé la France ?",
+"c": "Alfred Dreyfus",
+"w": [
+"Ferdinand Esterhazy",
+"Georges Picquart",
+"Henri Dupuy"
+],
+"e": "Il a été réhabilité en 1906 après de longues années de combat."
+},
+{
+"q": "Quel écrivain a publié en 1898 l'article « J'accuse…! » pour défendre le capitaine Dreyfus ?",
+"c": "Émile Zola",
+"w": [
+"Victor Hugo",
+"Marcel Proust",
+"Anatole France"
+],
+"e": "Condamné pour diffamation, il a dû s'exiler quelque temps en Angleterre."
+},
+{
+"q": "Quel poète a écrit en 1942 le poème « Liberté », dont des exemplaires ont été parachutés par la RAF sur la France occupée ?",
+"c": "Paul Éluard",
+"w": [
+"Louis Aragon",
+"Jacques Prévert",
+"René Char"
+],
+"e": "« Sur mes cahiers d'écolier… j'écris ton nom : Liberté. »"
+},
+{
+"q": "Quel dirigeant yougoslave a rompu avec Staline en 1948 ?",
+"c": "Tito",
+"w": [
+"Slobodan Milošević",
+"Alija Izetbegović",
+"Enver Hoxha"
+],
+"e": "Il a gardé la Yougoslavie hors du bloc soviétique."
+},
+{
+"q": "Quel plateau du Dauphiné a servi de forteresse à la Résistance française en 1944 ?",
+"c": "Le Vercors",
+"w": [
+"Le Larzac",
+"La Chartreuse",
+"Le Jura"
+],
+"e": "Les maquisards y ont été attaqués par les Allemands en juillet 1944."
+},
+{
+"q": "Quel missionnaire belge est mort en 1889 après avoir soigné les lépreux de l'île de Molokai, à Hawaï ?",
+"c": "Le père Damien",
+"w": [
+"Don Bosco",
+"Vincent de Paul",
+"Maximilien Kolbe"
+],
+"e": "Il a été déclaré saint en 2009."
+},
+{
+"q": "Quelle reine d'Angleterre a harangué ses troupes à Tilbury en 1588 avant l'arrivée de l'Invincible Armada ?",
+"c": "Élisabeth Ire",
+"w": [
+"Victoria",
+"Marie Tudor",
+"Anne Boleyn"
+],
+"e": "Elle a déclaré avoir « le cœur et l'estomac d'un roi »."
+},
+{
+"q": "Dans quel pays des ouvriers d'un chantier naval de Gdańsk ont-ils lancé en 1980 la grève qui a donné naissance à Solidarność ?",
+"c": "La Pologne",
+"w": [
+"La Hongrie",
+"La RDA",
+"La Roumanie"
+],
+"e": "Ce mouvement a rassemblé près de dix millions de membres."
+},
+{
+"q": "Quel roi de Pologne a vaincu les Ottomans devant Vienne en 1683 ?",
+"c": "Jean III Sobieski",
+"w": [
+"Étienne Báthory",
+"Casimir III",
+"Stanislas Auguste Poniatowski"
+],
+"e": "Cette victoire a mis fin à la menace ottomane sur l'Europe centrale."
+},
+{
+"q": "Quel héros albanais a résisté à l'Empire ottoman au XVe siècle ?",
+"c": "Skanderbeg",
+"w": [
+"Ali Pacha",
+"Ismail Qemali",
+"Enver Hoxha"
+],
+"e": "Il est le héros national de l'Albanie."
+},
+{
+"q": "Quel prince de Valachie, surnommé « l'Empaleur », a combattu les Ottomans au XVe siècle ?",
+"c": "Vlad III Basarab",
+"w": [
+"Étienne le Grand",
+"Michel le Brave",
+"Mircea l'Ancien"
+],
+"e": "Il a inspiré le personnage de Dracula."
+},
+{
+"q": "Quel prince de Moldavie a été surnommé « le Grand » après ses victoires contre les Ottomans ?",
+"c": "Étienne le Grand",
+"w": [
+"Vlad III Basarab",
+"Michel le Brave",
+"Mircea l'Ancien"
+],
+"e": "Il a régné de 1457 à 1504 et fait construire de nombreux monastères."
+},
+{
+"q": "Quel écrivain russe a dénoncé les camps soviétiques dans « L'Archipel du Goulag » ?",
+"c": "Alexandre Soljenitsyne",
+"w": [
+"Boris Pasternak",
+"Fiodor Dostoïevski",
+"Vassili Grossman"
+],
+"e": "Il a reçu le prix Nobel de littérature en 1970 et a été expulsé d'URSS en 1974."
+},
+{
+"q": "Quel capitaine britannique a été le premier à traverser la Manche à la nage, en 1875 ?",
+"c": "Matthew Webb",
+"w": [
+"Edward Whymper",
+"Ernest Shackleton",
+"Robert Falcon Scott"
+],
+"e": "Il a nagé près de 22 heures pour relier l'Angleterre à la France."
+},
+{
+"q": "Quel alpiniste italien, avec Achille Compagnoni, a atteint le sommet du K2 en 1954 ?",
+"c": "Lino Lacedelli",
+"w": [
+"Reinhold Messner",
+"Walter Bonatti",
+"Hermann Buhl"
+],
+"e": "Le K2 est le deuxième plus haut sommet du monde."
+},
+{
+"q": "Quel alpiniste italien est le premier à avoir gravi les quatorze sommets de plus de 8 000 mètres, sans oxygène en bouteille ?",
+"c": "Reinhold Messner",
+"w": [
+"Walter Bonatti",
+"Maurice Herzog",
+"Hermann Buhl"
+],
+"e": "Il a terminé son projet en 1986."
+},
+{
+"q": "Quel Français a dirigé en 1950 l'expédition qui a gravi l'Annapurna, premier sommet de plus de 8 000 mètres jamais atteint ?",
+"c": "Maurice Herzog",
+"w": [
+"Lionel Terray",
+"Gaston Rébuffat",
+"Jean Couzy"
+],
+"e": "Il est revenu gravement blessé, avec des amputations."
+},
+{
+"q": "Quelle navigatrice britannique a battu en 2005 le record du tour du monde en solitaire sans escale à la voile ?",
+"c": "Ellen MacArthur",
+"w": [
+"Florence Arthaud",
+"Isabelle Autissier",
+"Clare Francis"
+],
+"e": "Elle a bouclé le tour en un peu plus de 71 jours."
+},
+{
+"q": "Quel cosmonaute soviétique a réalisé la première sortie dans l'espace, en 1965 ?",
+"c": "Alexeï Léonov",
+"w": [
+"Youri Gagarine",
+"Gherman Titov",
+"Vladimir Komarov"
+],
+"e": "Il est resté une douzaine de minutes à l'extérieur de la capsule."
+},
+{
+"q": "Quelle cosmonaute soviétique est la première femme à être allée dans l'espace, en 1963 ?",
+"c": "Valentina Terechkova",
+"w": [
+"Svetlana Savitskaïa",
+"Elena Kondakova",
+"Anna Kikina"
+],
+"e": "Elle a effectué près de 48 révolutions autour de la Terre."
+},
+{
+"q": "Quel nom de code désigne l'évacuation de plus de 330 000 soldats alliés bloqués à Dunkerque en 1940 ?",
+"c": "L'opération Dynamo",
+"w": [
+"L'opération Overlord",
+"L'opération Barbarossa",
+"L'opération Market Garden"
+],
+"e": "Des centaines de petits bateaux civils ont participé au sauvetage."
+},
+{
+"q": "Quel épisode de Noël 1914 a vu des soldats britanniques et allemands cesser le feu et se serrer la main sur le front ?",
+"c": "La trêve de Noël",
+"w": [
+"L'armistice de Rethondes",
+"La bataille de la Marne",
+"La paix d'Amiens"
+],
+"e": "Des matchs de football improvisés auraient même eu lieu."
+},
+{
+"q": "Quel amiral britannique, héros de la bataille de Trafalgar, est mort en 1805 sur son navire ?",
+"c": "Horatio Nelson",
+"w": [
+"Arthur Wellesley",
+"Francis Drake",
+"James Cook"
+],
+"e": "Sa victoire a empêché Napoléon d'envahir l'Angleterre."
+}
+]

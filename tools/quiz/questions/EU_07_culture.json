@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel plat italien est composé d'une pâte garnie de tomate et de mozzarella ?",
+"c": "La pizza",
+"w": [
+"Les lasagnes",
+"Le risotto",
+"Les gnocchis"
+],
+"e": "La pizza napolitaine est inscrite au patrimoine de l'UNESCO."
+},
+{
+"q": "Quel plat espagnol associe du riz, du safran, des légumes et de la viande ou des fruits de mer ?",
+"c": "La paella",
+"w": [
+"Le gaspacho",
+"La tortilla",
+"Les churros"
+],
+"e": "Elle est originaire de la région de Valence."
+},
+{
+"q": "Quelle boisson pétillante est produite dans une région du nord-est de la France ?",
+"c": "Le champagne",
+"w": [
+"Le cidre",
+"Le cognac",
+"Le pastis"
+],
+"e": "Seuls les vins issus de cette région peuvent porter ce nom."
+},
+{
+"q": "Quel pays est célèbre pour son chocolat, ses montres et ses coffres bancaires ?",
+"c": "La Suisse",
+"w": [
+"La Suède",
+"La Norvège",
+"L'Autriche"
+],
+"e": "Le pays compte quatre langues officielles."
+},
+{
+"q": "Dans quelle ville italienne se tient un carnaval célèbre pour ses masques ?",
+"c": "Venise",
+"w": [
+"Rome",
+"Florence",
+"Naples"
+],
+"e": "Les personnes y portent des costumes d'époque."
+},
+{
+"q": "Quelle fête, célébrée le 31 octobre, est associée aux citrouilles et aux déguisements ?",
+"c": "Halloween",
+"w": [
+"Pâques",
+"La Toussaint",
+"Mardi gras"
+],
+"e": "Elle est venue d'Irlande et d'Écosse, puis des États-Unis."
+},
+{
+"q": "Quelle fête chrétienne est célébrée le 25 décembre ?",
+"c": "Noël",
+"w": [
+"Pâques",
+"L'Épiphanie",
+"La Pentecôte"
+],
+"e": "Elle célèbre la naissance de Jésus."
+},
+{
+"q": "Quelle ville allemande accueille chaque automne la fête de la bière, l'Oktoberfest ?",
+"c": "Munich",
+"w": [
+"Berlin",
+"Hambourg",
+"Cologne"
+],
+"e": "Elle attire des millions de visiteurs."
+},
+{
+"q": "Que s'offre-t-on traditionnellement à Pâques en Europe, souvent en chocolat ?",
+"c": "Des œufs",
+"w": [
+"Des citrouilles",
+"Des sapins",
+"Des bougies"
+],
+"e": "Ils symbolisent la vie nouvelle."
+},
+{
+"q": "Quelle danse espagnole est accompagnée de guitare, de chants et parfois de castagnettes ?",
+"c": "Le flamenco",
+"w": [
+"La valse",
+"Le tango",
+"La samba"
+],
+"e": "Elle est née en Andalousie."
+},
+{
+"q": "Quel pays est célèbre pour son thé de cinq heures et ses fish and chips ?",
+"c": "Le Royaume-Uni",
+"w": [
+"L'Irlande",
+"La France",
+"La Belgique"
+],
+"e": "Le thé de l'après-midi est une tradition britannique."
+},
+{
+"q": "Quelle est la langue officielle de l'Allemagne ?",
+"c": "L'allemand",
+"w": [
+"Le néerlandais",
+"L'anglais",
+"Le polonais"
+],
+"e": "Elle est aussi parlée en Autriche et en Suisse."
+},
+{
+"q": "Quel plat belge associe des moules et des frites ?",
+"c": "Les moules-frites",
+"w": [
+"La carbonade",
+"Le waterzooi",
+"Les boulets liégeois"
+],
+"e": "Il est servi dans de nombreux restaurants de Bruxelles."
+},
+{
+"q": "Quelle ville italienne est célèbre pour sa tour penchée ?",
+"c": "Pise",
+"w": [
+"Florence",
+"Vérone",
+"Sienne"
+],
+"e": "La tour est un clocher construit entre 1173 et 1372."
+},
+{
+"q": "De quelles couleurs est le drapeau de la France ?",
+"c": "Bleu, blanc, rouge",
+"w": [
+"Rouge, blanc, bleu horizontalement",
+"Vert, blanc, rouge",
+"Noir, rouge, jaune"
+],
+"e": "Les bandes sont verticales, le bleu étant près de la hampe."
+},
+{
+"q": "Quel plat écossais est préparé à partir d'abats de mouton, d'avoine et d'oignon ?",
+"c": "Le haggis",
+"w": [
+"Le black pudding",
+"Le shepherd's pie",
+"Le cullen skink"
+],
+"e": "Il est traditionnellement servi lors de la Burns Night."
+},
+{
+"q": "Quelle boisson alcoolisée est la spécialité de l'Écosse ?",
+"c": "Le whisky",
+"w": [
+"Le cidre",
+"La vodka",
+"Le cognac"
+],
+"e": "On l'appelle « Scotch » dans le monde entier."
+},
+{
+"q": "Quelle fête irlandaise est célébrée le 17 mars ?",
+"c": "La Saint-Patrick",
+"w": [
+"La Saint-Valentin",
+"La Saint-Jean",
+"Beltane"
+],
+"e": "Elle est aussi fêtée par les Irlandais dans le monde entier."
+},
+{
+"q": "Quelle couleur est associée à la Saint-Patrick et à l'Irlande ?",
+"c": "Le vert",
+"w": [
+"Le bleu",
+"Le rouge",
+"L'orange"
+],
+"e": "Le trèfle à trois feuilles en est le symbole."
+},
+{
+"q": "Dans quelle ville espagnole se déroule la Tomatina, où l'on se lance des tomates ?",
+"c": "Buñol",
+"w": [
+"Madrid",
+"Séville",
+"Barcelone"
+],
+"e": "Elle a lieu le dernier mercredi d'août."
+},
+{
+"q": "Dans quelle ville espagnole se déroulent chaque juillet les fêtes avec lâcher de taureaux dans les rues ?",
+"c": "Pampelune",
+"w": [
+"Valence",
+"Grenade",
+"Bilbao"
+],
+"e": "On les appelle les fêtes de San Fermín."
+},
+{
+"q": "Quel plat grec est composé d'aubergines, de viande hachée et de béchamel ?",
+"c": "La moussaka",
+"w": [
+"Les souvlakis",
+"Le tzatziki",
+"Les dolmas"
+],
+"e": "Il est souvent servi chaud en plat principal."
+},
+{
+"q": "Quel fromage grec, fait avec du lait de brebis, est indispensable dans la salade grecque ?",
+"c": "La feta",
+"w": [
+"La mozzarella",
+"Le halloumi",
+"Le brie"
+],
+"e": "Elle est conservée dans de la saumure."
+},
+{
+"q": "Quel dessert italien, dont le nom signifie « remonte-moi », contient du café et du mascarpone ?",
+"c": "Le tiramisu",
+"w": [
+"La panna cotta",
+"La cassata",
+"Le cannoli"
+],
+"e": "Il est souvent saupoudré de cacao."
+},
+{
+"q": "Quel plat italien est constitué de couches de pâte, de sauce à la viande et de béchamel ?",
+"c": "Les lasagnes",
+"w": [
+"Les ravioli",
+"Les tagliatelles",
+"Le risotto"
+],
+"e": "Elles sont cuites au four."
+},
+{
+"q": "Quelle spécialité suisse est un fromage fondu dans un caquelon ?",
+"c": "La fondue",
+"w": [
+"La raclette",
+"Le rösti",
+"Les pizokels"
+],
+"e": "On y trempe des morceaux de pain avec de longues fourchettes."
+},
+{
+"q": "Comment s'appelle la soupe froide espagnole à base de tomates, de poivrons et de concombre ?",
+"c": "Le gaspacho",
+"w": [
+"Le bortsch",
+"La bouillabaisse",
+"Le minestrone"
+],
+"e": "Elle est surtout servie en été."
+},
+{
+"q": "Quelle monnaie est utilisée au Royaume-Uni ?",
+"c": "La livre sterling",
+"w": [
+"L'euro",
+"Le dollar",
+"Le franc"
+],
+"e": "Le symbole de la livre est £."
+},
+{
+"q": "Quelle monnaie est utilisée en Suisse ?",
+"c": "Le franc suisse",
+"w": [
+"L'euro",
+"La couronne",
+"Le florin"
+],
+"e": "Le pays n'a jamais adopté l'euro."
+},
+{
+"q": "Quelle monnaie est utilisée en Pologne ?",
+"c": "Le zloty",
+"w": [
+"L'euro",
+"Le forint",
+"La couronne"
+],
+"e": "Le mot signifie « doré » en polonais."
+},
+{
+"q": "Quel gâteau au chocolat est une spécialité de Vienne ?",
+"c": "La Sachertorte",
+"w": [
+"La forêt-noire",
+"Le tiramisu",
+"Le fraisier"
+],
+"e": "Elle est garnie de confiture d'abricot."
+},
+{
+"q": "Quel plat hongrois est un ragoût de bœuf épicé au paprika ?",
+"c": "Le goulasch",
+"w": [
+"Le bortsch",
+"Les pierogi",
+"La moussaka"
+],
+"e": "Il est considéré comme le plat national hongrois."
+},
+{
+"q": "Quelle soupe de betterave est une spécialité de Russie et d'Ukraine ?",
+"c": "Le bortsch",
+"w": [
+"Le gaspacho",
+"Le goulasch",
+"Le minestrone"
+],
+"e": "Elle est souvent servie avec de la crème fraîche."
+},
+{
+"q": "Quel poisson séché et salé est la base de nombreux plats portugais ?",
+"c": "La morue",
+"w": [
+"Le thon",
+"La sardine",
+"Le saumon"
+],
+"e": "On dit qu'il y a mille façons de l'accommoder."
+},
+{
+"q": "Quelle petite tartelette à la crème est une pâtisserie célèbre de Lisbonne ?",
+"c": "Le pastel de nata",
+"w": [
+"Le churro",
+"La madeleine",
+"Le cannelé"
+],
+"e": "Il est souvent saupoudré de cannelle."
+},
+{
+"q": "Dans quel pays la Sainte-Lucie, le 13 décembre, est-elle célébrée avec des couronnes de bougies ?",
+"c": "La Suède",
+"w": [
+"L'Italie",
+"La France",
+"L'Espagne"
+],
+"e": "Une jeune fille y porte une couronne de bougies."
+},
+{
+"q": "Quelle fête du Nouvel An est célébrée en Écosse avec le nom de « Hogmanay » ?",
+"c": "La Saint-Sylvestre",
+"w": [
+"Noël",
+"La Saint-André",
+"La nuit de Burns"
+],
+"e": "Elle est célébrée par de grandes fêtes de rue, notamment à Édimbourg."
+},
+{
+"q": "Quelle monnaie est utilisée en Suède ?",
+"c": "La couronne suédoise",
+"w": [
+"L'euro",
+"Le zloty",
+"La livre"
+],
+"e": "Le pays fait partie de l'Union européenne sans avoir adopté l'euro."
+},
+{
+"q": "Quelle monnaie est utilisée en Roumanie ?",
+"c": "Le leu",
+"w": [
+"L'euro",
+"Le forint",
+"La couronne"
+],
+"e": "Le mot signifie « lion » en roumain."
+},
+{
+"q": "Quelle monnaie est utilisée en Hongrie ?",
+"c": "Le forint",
+"w": [
+"L'euro",
+"Le zloty",
+"Le leu"
+],
+"e": "Le pays n'a pas encore adopté l'euro."
+},
+{
+"q": "Quelle est la langue la plus parlée en Europe comme langue maternelle ?",
+"c": "Le russe",
+"w": [
+"L'allemand",
+"Le français",
+"L'anglais"
+],
+"e": "Elle est parlée par plus de 100 millions de personnes en Europe."
+},
+{
+"q": "Quelle langue est parlée en Catalogne et à Andorre ?",
+"c": "Le catalan",
+"w": [
+"L'espagnol",
+"Le portugais",
+"L'occitan"
+],
+"e": "Elle est la langue officielle d'Andorre."
+},
+{
+"q": "Quelle langue du pays basque n'a aucun lien connu avec les autres langues européennes ?",
+"c": "Le basque",
+"w": [
+"Le catalan",
+"Le breton",
+"Le gaélique"
+],
+"e": "On l'appelle « euskara » dans cette langue."
+},
+{
+"q": "Quel alphabet est utilisé pour écrire le russe ?",
+"c": "L'alphabet cyrillique",
+"w": [
+"L'alphabet latin",
+"L'alphabet grec",
+"L'alphabet arabe"
+],
+"e": "Il porte le nom du moine Cyrille."
+},
+{
+"q": "Combien d'étoiles compte le drapeau de l'Union européenne ?",
+"c": "12",
+"w": [
+"10",
+"15",
+"27"
+],
+"e": "Le nombre ne dépend pas du nombre d'États membres."
+},
+{
+"q": "Quelle fête des Pays-Bas célèbre l'anniversaire du roi, avec des vêtements orange ?",
+"c": "La fête du Roi",
+"w": [
+"La Saint-Nicolas",
+"La fête des Moulins",
+"La fête de la Reine mère"
+],
+"e": "Elle a lieu le 27 avril."
+},
+{
+"q": "Dans quel pays la Saint-Nicolas est-elle fêtée avec un personnage appelé Sinterklaas ?",
+"c": "Les Pays-Bas",
+"w": [
+"L'Espagne",
+"La Norvège",
+"La Grèce"
+],
+"e": "Il arrive en bateau depuis l'Espagne, selon la tradition."
+},
+{
+"q": "Quelle fête britannique du 5 novembre rappelle l'échec du complot des Poudres ?",
+"c": "La Bonfire Night",
+"w": [
+"Halloween",
+"La Saint-George",
+"Le Boxing Day"
+],
+"e": "Elle est célébrée avec des feux et des feux d'artifice."
+},
+{
+"q": "Comment appelle-t-on le drapeau du Royaume-Uni ?",
+"c": "L'Union Jack",
+"w": [
+"Le Saint-Georges",
+"Le Dannebrog",
+"Le Tricolore"
+],
+"e": "Il mêle les croix de Saint-Georges, de Saint-André et de Saint-Patrick."
+},
+{
+"q": "Quelle croix rouge sur fond blanc figure sur le drapeau de l'Angleterre ?",
+"c": "La croix de Saint-Georges",
+"w": [
+"La croix de Saint-André",
+"La croix de Saint-Patrick",
+"La croix de Lorraine"
+],
+"e": "Elle date du Moyen Âge."
+},
+{
+"q": "Quel pays européen a un drapeau rouge avec une croix blanche carrée ?",
+"c": "La Suisse",
+"w": [
+"Le Danemark",
+"La Géorgie",
+"L'Autriche"
+],
+"e": "C'est l'un des deux seuls drapeaux nationaux carrés au monde."
+},
+{
+"q": "Quel pays a un drapeau bleu avec une croix jaune ?",
+"c": "La Suède",
+"w": [
+"La Finlande",
+"L'Ukraine",
+"La Norvège"
+],
+"e": "Les couleurs rappellent le blason de la Suède."
+},
+{
+"q": "Quel pays a le drapeau « Dannebrog », rouge avec une croix blanche décalée ?",
+"c": "Le Danemark",
+"w": [
+"La Norvège",
+"La Suisse",
+"L'Islande"
+],
+"e": "C'est l'un des plus anciens drapeaux nationaux au monde."
+},
+{
+"q": "Quelles sont les trois couleurs du drapeau de l'Allemagne ?",
+"c": "Noir, rouge, or",
+"w": [
+"Bleu, blanc, rouge",
+"Rouge, blanc, noir",
+"Vert, blanc, rouge"
+],
+"e": "Les bandes sont horizontales, le noir en haut."
+},
+{
+"q": "Quelles sont les trois couleurs du drapeau de l'Italie ?",
+"c": "Vert, blanc, rouge",
+"w": [
+"Bleu, blanc, rouge",
+"Rouge, blanc, vert, horizontalement",
+"Rouge, jaune, vert"
+],
+"e": "Les bandes sont verticales, le vert étant près de la hampe."
+},
+{
+"q": "Quelles sont les couleurs principales du drapeau de l'Espagne ?",
+"c": "Rouge et jaune",
+"w": [
+"Bleu et blanc",
+"Rouge et blanc",
+"Vert et jaune"
+],
+"e": "Il comprend aussi les armoiries du pays."
+},
+{
+"q": "Quel fromage italien à pâte dure est souvent râpé sur les pâtes ?",
+"c": "Le parmesan",
+"w": [
+"La mozzarella",
+"Le gorgonzola",
+"Le pecorino"
+],
+"e": "On l'appelle aussi « parmigiano reggiano »."
+},
+{
+"q": "Quel fromage néerlandais, vendu en meules rondes, est l'un des plus connus au monde ?",
+"c": "Le gouda",
+"w": [
+"Le brie",
+"Le camembert",
+"Le cheddar"
+],
+"e": "Il porte le nom d'une ville du pays."
+},
+{
+"q": "Quel pays est célèbre pour ses gaufres et ses chocolats ?",
+"c": "La Belgique",
+"w": [
+"La Grèce",
+"L'Irlande",
+"La Pologne"
+],
+"e": "Bruxelles et Liège ont chacune leur propre gaufre."
+},
+{
+"q": "Quelle fête chrétienne, célébrée le 6 janvier, est associée à la galette des rois en France ?",
+"c": "L'Épiphanie",
+"w": [
+"La Chandeleur",
+"La Pentecôte",
+"L'Ascension"
+],
+"e": "Elle commémore la visite des Rois mages."
+},
+{
+"q": "Quel pays est le berceau du sauna, utilisé depuis des siècles ?",
+"c": "La Finlande",
+"w": [
+"La Suède",
+"La Russie",
+"L'Estonie"
+],
+"e": "Il y a près de trois millions de saunas dans ce pays de cinq millions d'habitants."
+},
+{
+"q": "Quel pays est célèbre pour son art de vivre « hygge », fait de confort et de convivialité ?",
+"c": "Le Danemark",
+"w": [
+"La Suisse",
+"L'Espagne",
+"La Grèce"
+],
+"e": "Le mot décrit une ambiance chaleureuse, avec des bougies et des plaids."
+},
+{
+"q": "Quelle danse à trois temps, née en Autriche, est souvent dansée dans les salons de bal ?",
+"c": "La valse",
+"w": [
+"Le tango",
+"La polka",
+"La mazurka"
+],
+"e": "Les bals de Vienne sont célèbres chaque hiver."
+},
+{
+"q": "Quel instrument en bois, très long, est joué dans les montagnes suisses ?",
+"c": "Le cor des Alpes",
+"w": [
+"La cornemuse",
+"Le violon",
+"L'accordéon"
+],
+"e": "On peut l'entendre à longue distance dans les vallées."
+},
+{
+"q": "Quelle langue compte le plus de locuteurs natifs dans l'Union européenne ?",
+"c": "L'allemand",
+"w": [
+"Le français",
+"L'italien",
+"L'espagnol"
+],
+"e": "Elle est parlée par environ 95 millions de personnes."
+},
+{
+"q": "Combien de langues officielles compte la Suisse ?",
+"c": "4",
+"w": [
+"2",
+"3",
+"5"
+],
+"e": "L'allemand, le français, l'italien et le romanche."
+},
+{
+"q": "Quelles sont les trois langues officielles de la Belgique ?",
+"c": "Le néerlandais, le français et l'allemand",
+"w": [
+"L'anglais, le français et le néerlandais",
+"Le français, l'italien et l'allemand",
+"Le néerlandais, le français et le luxembourgeois"
+],
+"e": "Le néerlandais est la langue la plus parlée."
+},
+{
+"q": "Quel sport traditionnel écossais consiste à lancer un long tronc de bois ?",
+"c": "Le lancer de tronc",
+"w": [
+"Le curling",
+"Le hammer throw",
+"Le tir à la corde"
+],
+"e": "Il est présenté lors des Highland Games."
+},
+{
+"q": "Quelle région française est célèbre pour ses crêpes, ses bagadou et ses fest-noz ?",
+"c": "La Bretagne",
+"w": [
+"L'Alsace",
+"La Provence",
+"La Corse"
+],
+"e": "La langue bretonne y est enseignée dans certaines écoles."
+},
+{
+"q": "Quelle spécialité polonaise est un raviolis farci de pommes de terre, de fromage ou de viande ?",
+"c": "Les pierogi",
+"w": [
+"Les goulaschs",
+"Les blinis",
+"Les kebabs"
+],
+"e": "Ils sont souvent servis avec de la crème."
+},
+{
+"q": "Quel pays est célèbre pour ses poupées russes, les matriochkas ?",
+"c": "La Russie",
+"w": [
+"La Pologne",
+"La Bulgarie",
+"La Roumanie"
+],
+"e": "Chaque poupée en contient une plus petite."
+},
+{
+"q": "Quelle ville allemande est célèbre pour son eau de Cologne et sa cathédrale gothique ?",
+"c": "Cologne",
+"w": [
+"Düsseldorf",
+"Brême",
+"Dresde"
+],
+"e": "La cathédrale a mis plus de six siècles à être achevée."
+},
+{
+"q": "Quelle ville belge est célèbre pour ses dentelles, ses canaux et son beffroi ?",
+"c": "Bruges",
+"w": [
+"Gand",
+"Anvers",
+"Liège"
+],
+"e": "Elle est surnommée « la Venise du Nord »."
+},
+{
+"q": "Quelle ville espagnole accueille chaque année, pendant la Semaine sainte, de grandes processions religieuses ?",
+"c": "Séville",
+"w": [
+"Barcelone",
+"Bilbao",
+"Valence"
+],
+"e": "Les participants défilent avec de grands « pasos » portés à l'épaule."
+},
+{
+"q": "Quelle spécialité savoyarde associe pommes de terre, lardons, oignons et reblochon fondu ?",
+"c": "La tartiflette",
+"w": [
+"La raclette",
+"Le gratin dauphinois",
+"La potée auvergnate"
+],
+"e": "Elle a été popularisée dans les stations de ski des Alpes."
+}
+]
