@@ -588,6 +588,12 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFF2ECC71),
                       label: context.tr('Quiz'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizHomePage()))),
+                  // Étude : parcours scolaire (collège, lycée, université), diplômes et attestations
+                  _dItem(context, colors,
+                      icon: Icons.school_rounded,
+                      iconColor: colors.primary,
+                      label: context.tr('Étude'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage()))),
                   // AfroShop Market — mis en avant (masqué sur iPhone/iPad)
                   if (!kIsAppleStore) Container(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),

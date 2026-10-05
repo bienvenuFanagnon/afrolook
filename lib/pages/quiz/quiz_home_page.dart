@@ -9,6 +9,7 @@ import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
 import '../../services/quiz/quiz_usage.dart';
 import '../../theme/app_colors.dart';
+import '../etude/etude_home_page.dart';
 import 'quiz_challenge_page.dart';
 import 'quiz_daily.dart';
 import 'quiz_history_page.dart';
@@ -137,13 +138,43 @@ class _QuizHomePageState extends State<QuizHomePage> {
     if (mounted) _refresh(silent: true);
   }
 
+  /// Phrases de la mascotte : variées (une par jour et par étape) et tournées vers le jeu, les points et le classement.
+  String _pick(List<String> lines, QuizState s, [Map<String, Object?> args = const {}]) {
+    final d = DateTime.now();
+    final i = (d.year * 372 + d.month * 31 + d.day + s.completed) % lines.length;
+    return context.tr(lines[i], args);
+  }
+
   String _message(QuizState s) {
     if (s.finishedAll) return context.tr("Tu as terminé toute l'aventure, bravo ! De nouveaux niveaux arrivent bientôt.");
     if (s.hearts <= 0) return context.tr('Plus de cœurs… Reviens dans un moment ou regarde une pub !');
-    if (s.completed == 0) return context.tr("Salut, je suis ton guide ! Commençons l'aventure.");
-    if (!s.playedToday && s.streak > 0) return context.tr('Ne perds pas ta série de {n} jours !', {'n': s.streak});
-    if (s.playedToday && s.streak > 1) return context.tr('Série de {n} jours, continue comme ça !', {'n': s.streak});
-    return context.tr('Prêt pour le niveau {n} ?', {'n': s.level});
+    if (s.completed == 0) {
+      return _pick(const [
+        'Un quiz, des points, un classement… prêt à montrer ce que tu sais ?',
+        'Réponds juste, gagne des points et grimpe au classement !',
+        'Chaque bonne réponse compte : montre ce que tu as dans la tête !',
+        '3, 2, 1… à toi de jouer, ta première question t\'attend !',
+      ], s);
+    }
+    if (!s.playedToday && s.streak > 0) {
+      return _pick(const [
+        'Ne perds pas ta série de {n} jours !',
+        'Ta série de {n} jours t\'attend : une partie suffit !',
+      ], s, {'n': s.streak});
+    }
+    if (s.playedToday && s.streak > 1) {
+      return _pick(const [
+        'Série de {n} jours, continue comme ça !',
+        '{n} jours d\'affilée : tu es en feu !',
+        '{n} jours de suite : le classement te regarde !',
+      ], s, {'n': s.streak});
+    }
+    return _pick(const [
+      'Prêt pour le niveau {n} ?',
+      'Niveau {n} : réponds vite et bien pour les bonus !',
+      'Un nouveau défi t\'attend au niveau {n} !',
+      'Fais mieux qu\'hier : niveau {n}, c\'est parti !',
+    ], s, {'n': s.level});
   }
 
   @override
@@ -183,6 +214,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
                 SliverToBoxAdapter(child: _header(c, s)),
                 SliverToBoxAdapter(child: _dailyCard(c, s)),
                 SliverToBoxAdapter(child: _challengeCard(c, s)),
+                SliverToBoxAdapter(child: _etudeCard(c)),
                 SliverToBoxAdapter(child: _links(c)),
                 SliverToBoxAdapter(child: SizedBox(key: _mapKey, height: 6)),
                 SliverFixedExtentList(
@@ -365,6 +397,40 @@ class _QuizHomePageState extends State<QuizHomePage> {
               ]),
             ),
             Icon(Icons.chevron_right_rounded, color: c.accent, size: 30),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Entrée vers Étude : le quiz de culture et les parcours scolaires sont deux modules séparés.
+  Widget _etudeCard(AppColors c) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: GestureDetector(
+        onTap: () => _open(const EtudeHomePage()),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [c.info.withOpacity(0.22), c.surface], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: c.info, width: 1.5),
+          ),
+          child: Row(children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: c.info, borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.school_rounded, color: Colors.white, size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(context.tr('Étude'), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: c.textPrimary)),
+                Text(context.tr('Collège, lycée, université, entretien d\'embauche : valide tes classes et décroche ton diplôme.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+              ]),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.info, size: 30),
           ]),
         ),
       ),

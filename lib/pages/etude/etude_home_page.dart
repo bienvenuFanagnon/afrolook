@@ -134,6 +134,18 @@ class _EtudeHomePageState extends State<EtudeHomePage> {
         ]),
       );
 
+  /// Phrase d'accroche de l'en-tête (change chaque jour).
+  String _hook(EtudeState st) {
+    const lines = [
+      'Chapitre après chapitre, ton diplôme se construit ici.',
+      'Réponds, valide ta classe, décroche ton diplôme !',
+      'Chaque bonne réponse te rapproche de ton examen.',
+      'Révise malin : un chapitre par jour fait la différence.',
+    ];
+    final d = DateTime.now();
+    return context.tr(lines[(d.year * 372 + d.month * 31 + d.day + st.xp ~/ 50) % lines.length]);
+  }
+
   Widget _header(AppColors c, EtudeState st) {
     final into = st.xpInLevel.clamp(0, st.xpForLevel);
     return Container(
@@ -154,6 +166,8 @@ class _EtudeHomePageState extends State<EtudeHomePage> {
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(value: st.xpForLevel == 0 ? 0 : into / st.xpForLevel, minHeight: 9, backgroundColor: c.surfaceVariant, valueColor: AlwaysStoppedAnimation(c.accent)),
             ),
+            const SizedBox(height: 6),
+            Text(_hook(st), style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 12.5, height: 1.3)),
             const SizedBox(height: 6),
             Wrap(spacing: 8, runSpacing: 6, children: [
               QuizPill(icon: Icons.bolt_rounded, label: '${st.xp} XP', color: c.accent),
