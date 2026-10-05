@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  busyOverlayTests();
   testWidgets('la mascotte se dessine dans toutes les humeurs et avec tous les accessoires', (tester) async {
     for (final mood in HawkMood.values) {
       for (final acc in [null, 'acc_glasses', 'acc_cap', 'acc_crown']) {
@@ -110,5 +111,20 @@ void main() {
     expect(tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).toList(), isNot(equals(first)));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+  });
+}
+
+void busyOverlayTests() {
+  testWidgets("la mascotte s'anime pendant un rechargement et disparaît ensuite", (tester) async {
+    Widget app(bool busy) => MaterialApp(home: Scaffold(body: QuizBusyOverlay(busy: busy, kind: QuizLoadingKind.etude, child: const Center(child: Text('contenu')))));
+    await tester.pumpWidget(app(false));
+    expect(find.byType(HawkMascot), findsNothing);
+    await tester.pumpWidget(app(true));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(HawkMascot), findsOneWidget);
+    await tester.pumpWidget(app(false));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(HawkMascot), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }

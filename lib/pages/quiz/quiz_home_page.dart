@@ -40,6 +40,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
   final GlobalKey _mapKey = GlobalKey();
   Timer? _tick;
   bool _loading = true;
+  bool _busy = false; // rechargement : la mascotte s'anime
   String? _error;
   bool _muted = false;
   HawkMood _mood = HawkMood.wave;
@@ -66,7 +67,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
       if (_heartLeft > 0) {
         setState(() => _heartLeft--);
       } else {
-        _refresh(silent: true);
+        _refresh(silent: true, background: true);
       }
     });
   }
@@ -79,12 +80,14 @@ class _QuizHomePageState extends State<QuizHomePage> {
     super.dispose();
   }
 
-  Future<void> _refresh({bool silent = false, bool scroll = false}) async {
+  Future<void> _refresh({bool silent = false, bool scroll = false, bool background = false}) async {
     if (!silent) setState(() => _error = null);
+    if (!background && mounted && !_loading) setState(() => _busy = true);
     try {
-      final s = await QuizService.instance.refresh();
+      final s = await (background || _loading ? QuizService.instance.refresh() : quizMinTime(QuizService.instance.refresh(), ms: 650));
       if (!mounted) return;
       setState(() {
+        _busy = false;
         _loading = false;
         _heartLeft = s.nextHeartInSec;
         if (!silent) _mood = HawkMood.wave;
@@ -94,10 +97,13 @@ class _QuizHomePageState extends State<QuizHomePage> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
       }
     } catch (_) {
-      if (mounted && !silent) {
+      if (mounted) {
         setState(() {
-          _loading = false;
-          _error = 'x';
+          _busy = false;
+          if (!silent) {
+            _loading = false;
+            _error = 'x';
+          }
         });
       }
     }
@@ -205,8 +211,12 @@ class _QuizHomePageState extends State<QuizHomePage> {
           if (_error != null && s == null) return _errorView(c);
           if (s == null || _loading) return const QuizLoading(kind: QuizLoadingKind.home);
           if (!s.enabled) return _pausedView(c);
-          return RefreshIndicator(
-            onRefresh: () => _refresh(),
+          return QuizBusyOverlay(
+            busy: _busy,
+            child: RefreshIndicator(
+            onRefresh: () async {
+              _refresh();
+            },
             child: CustomScrollView(
               controller: _scroll,
               physics: const AlwaysScrollableScrollPhysics(),
@@ -227,6 +237,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
+          ),
           );
         },
       ),

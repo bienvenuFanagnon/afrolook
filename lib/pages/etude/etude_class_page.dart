@@ -5,6 +5,7 @@ import '../../services/coin_checkout.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
 import '../quiz/widgets/quiz_widgets.dart';
+import '../quiz/widgets/quiz_loading.dart';
 import 'etude_chapter_page.dart';
 import 'etude_flow.dart';
 
@@ -46,10 +47,22 @@ class EtudeClassPage extends StatefulWidget {
 }
 
 class _EtudeClassPageState extends State<EtudeClassPage> {
+  bool _busy = false; // rechargement : la mascotte s'anime
+
   @override
   void initState() {
     super.initState();
-    EtudeService.instance.refresh().catchError((Object _) => const EtudeState());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+  }
+
+  /// Recharge la progression en montrant la mascotte.
+  Future<void> _reload() async {
+    if (!mounted) return;
+    setState(() => _busy = true);
+    try {
+      await quizMinTime(EtudeService.instance.refresh(), ms: 650);
+    } catch (_) {}
+    if (mounted) setState(() => _busy = false);
   }
 
   bool _chapterDone(EtudeState s, EtudeChapter ch) => (s.levels[ch.id] ?? 0) >= ch.levels;
@@ -58,18 +71,18 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
 
   Future<void> _openChapter(EtudeChapter ch) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => EtudeChapterPage(chapter: ch)));
-    if (mounted) await EtudeService.instance.refresh().catchError((Object _) => const EtudeState());
+    if (mounted) await _reload();
   }
 
   Future<void> _compo() async {
     final id = widget.cls.id;
     final ok = await etudeLaunch(context, kind: 'compo', id: id, item: 'compo:$id', title: context.tr('Composition · {c}', {'c': widget.cls.title}));
-    if (ok && mounted) await EtudeService.instance.refresh().catchError((Object _) => const EtudeState());
+    if (ok && mounted) await _reload();
   }
 
   Future<void> _classPass() async {
     final ok = await showEtudeUnlock(context, item: 'cls:${widget.cls.id}', title: context.tr('Pass {c}', {'c': widget.cls.title}));
-    if (ok && mounted) await EtudeService.instance.refresh().catchError((Object _) => const EtudeState());
+    if (ok && mounted) await _reload();
   }
 
   @override
@@ -83,7 +96,10 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
         iconTheme: IconThemeData(color: c.textPrimary),
         title: Text(widget.cls.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900)),
       ),
-      body: ValueListenableBuilder<EtudeState?>(
+      body: QuizBusyOverlay(
+        busy: _busy,
+        kind: QuizLoadingKind.etude,
+        child: ValueListenableBuilder<EtudeState?>(
         valueListenable: EtudeService.instance.state,
         builder: (context, s, _) {
           final st = s ?? const EtudeState();
@@ -97,6 +113,7 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
             if (widget.track.isCycle) _compoCard(c, st, allDone, validated),
           ]);
         },
+      ),
       ),
     );
   }

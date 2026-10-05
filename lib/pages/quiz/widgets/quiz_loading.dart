@@ -6,7 +6,7 @@ import '../../../l10n/tr.dart';
 import '../../../theme/app_colors.dart';
 import 'hawk_mascot.dart';
 
-enum QuizLoadingKind { home, level, challenge, daily, ranking, history, saving }
+enum QuizLoadingKind { home, level, challenge, daily, ranking, history, saving, etude, lesson, exam, unlock }
 
 const Map<QuizLoadingKind, List<String>> _messages = {
   QuizLoadingKind.home: [
@@ -51,7 +51,65 @@ const Map<QuizLoadingKind, List<String>> _messages = {
     'Je compte tes points…',
     'Je prépare ta récompense…',
   ],
+  QuizLoadingKind.etude: [
+    'Je range les cahiers…',
+    "Je prépare ton parcours d'études…",
+    'Je compte tes XP et ta série…',
+    'Je ressors tes diplômes…',
+    'Presque prêt !',
+  ],
+  QuizLoadingKind.lesson: [
+    "J'ouvre ton chapitre…",
+    'Je prépare la fiche de cours…',
+    "J'aiguise mes crayons…",
+    'Un instant, ça arrive !',
+  ],
+  QuizLoadingKind.exam: [
+    'Je prépare tes questions…',
+    'Je mélange les réponses…',
+    'Je règle le chronomètre…',
+    'Respire, tout va bien se passer !',
+  ],
+  QuizLoadingKind.unlock: [
+    'Je vérifie ton déblocage…',
+    'Je compte tes pièces et tes pubs…',
+    "Je t'ouvre la porte…",
+  ],
 };
+
+/// Garde l'animation de la mascotte visible au moins [ms] millisecondes, même si les données arrivent tout de suite.
+Future<T> quizMinTime<T>(Future<T> task, {int ms = 700}) async {
+  final wait = Future<void>.delayed(Duration(milliseconds: ms));
+  final r = await task;
+  await wait;
+  return r;
+}
+
+/// Superpose la mascotte animée au contenu pendant un rechargement des données.
+class QuizBusyOverlay extends StatelessWidget {
+  const QuizBusyOverlay({super.key, required this.busy, required this.child, this.kind = QuizLoadingKind.home});
+  final bool busy;
+  final Widget child;
+  final QuizLoadingKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Stack(children: [
+      child,
+      Positioned.fill(
+        child: IgnorePointer(
+          ignoring: !busy,
+          child: AnimatedOpacity(
+            opacity: busy ? 1 : 0,
+            duration: const Duration(milliseconds: 220),
+            child: busy ? Container(color: c.background.withOpacity(0.93), child: QuizLoading(kind: kind)) : const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    ]);
+  }
+}
 
 /// Attente du quiz : l'épervier flotte et change d'humeur, les phrases défilent et une barre avance doucement,
 /// pour que la personne sente que quelque chose se prépare au lieu de fixer un cercle.

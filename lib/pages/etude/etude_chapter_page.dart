@@ -19,6 +19,7 @@ class EtudeChapterPage extends StatefulWidget {
 class _EtudeChapterPageState extends State<EtudeChapterPage> {
   EtudeLesson? _lesson;
   String? _error;
+  bool _busy = false; // rechargement : la mascotte s'anime
 
   @override
   void initState() {
@@ -49,8 +50,14 @@ class _EtudeChapterPageState extends State<EtudeChapterPage> {
   Future<void> _play(int level) async {
     final done = await etudeLaunch(context, kind: 'level', id: '${widget.chapter.id}:$level', item: 'ch:${widget.chapter.id}', title: widget.chapter.title);
     if (done && mounted) {
-      final l = await EtudeService.instance.openChapter(widget.chapter.id).catchError((Object _) => _lesson!);
-      if (mounted) setState(() => _lesson = l);
+      setState(() => _busy = true);
+      final l = await quizMinTime(EtudeService.instance.openChapter(widget.chapter.id).catchError((Object _) => _lesson!), ms: 650);
+      if (mounted) {
+        setState(() {
+          _lesson = l;
+          _busy = false;
+        });
+      }
     }
   }
 
@@ -74,14 +81,14 @@ class _EtudeChapterPageState extends State<EtudeChapterPage> {
               TextButton(onPressed: _load, child: Text(context.tr('Réessayer'))),
             ]))
           : l == null
-              ? const QuizLoading(kind: QuizLoadingKind.level)
-              : ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
+              ? const QuizLoading(kind: QuizLoadingKind.lesson)
+              : QuizBusyOverlay(busy: _busy, kind: QuizLoadingKind.lesson, child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
                   _lessonCard(c, l),
                   const SizedBox(height: 18),
                   Text(context.tr('Exercices'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 18)),
                   const SizedBox(height: 8),
                   for (var k = 1; k <= l.levels; k++) _levelTile(c, l, k),
-                ]),
+                ])),
     );
   }
 

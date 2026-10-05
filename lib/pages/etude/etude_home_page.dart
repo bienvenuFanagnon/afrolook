@@ -22,6 +22,7 @@ class EtudeHomePage extends StatefulWidget {
 class _EtudeHomePageState extends State<EtudeHomePage> {
   List<EtudeTrack>? _tracks;
   String? _error;
+  bool _busy = false; // rechargement : la mascotte s'anime
 
   @override
   void initState() {
@@ -30,14 +31,33 @@ class _EtudeHomePageState extends State<EtudeHomePage> {
   }
 
   Future<void> _load() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      if (_tracks != null) _busy = true;
+    });
     try {
-      final r = await Future.wait([EtudeService.instance.catalog(force: true), EtudeService.instance.refresh()]);
-      if (mounted) setState(() => _tracks = r[0] as List<EtudeTrack>);
+      final job = Future.wait([EtudeService.instance.catalog(force: true), EtudeService.instance.refresh()]);
+      final r = await (_tracks == null ? job : quizMinTime(job, ms: 650));
+      if (mounted) {
+        setState(() {
+          _tracks = r[0] as List<EtudeTrack>;
+          _busy = false;
+        });
+      }
     } on EtudeException catch (e) {
-      if (mounted) setState(() => _error = e.code);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.code;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _error = 'NETWORK');
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = 'NETWORK';
+        });
+      }
     }
   }
 
@@ -89,10 +109,14 @@ class _EtudeHomePageState extends State<EtudeHomePage> {
               ]),
             )
           : _tracks == null
-              ? const QuizLoading(kind: QuizLoadingKind.home)
-              : ValueListenableBuilder<EtudeState?>(
-                  valueListenable: EtudeService.instance.state,
-                  builder: (context, s, _) => _content(c, s ?? const EtudeState()),
+              ? const QuizLoading(kind: QuizLoadingKind.etude)
+              : QuizBusyOverlay(
+                  busy: _busy,
+                  kind: QuizLoadingKind.etude,
+                  child: ValueListenableBuilder<EtudeState?>(
+                    valueListenable: EtudeService.instance.state,
+                    builder: (context, s, _) => _content(c, s ?? const EtudeState()),
+                  ),
                 ),
     );
   }
@@ -102,7 +126,9 @@ class _EtudeHomePageState extends State<EtudeHomePage> {
     final cycles = tracks.where((t) => t.isCycle).toList();
     final certs = etudeCerts(tracks);
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () async {
+        _load();
+      },
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 32), children: [
         _header(c, st),
         const SizedBox(height: 18),

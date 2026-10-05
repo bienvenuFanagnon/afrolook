@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../services/coin_checkout.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
+import '../quiz/widgets/quiz_loading.dart';
 import '../quiz/widgets/quiz_widgets.dart';
 import 'etude_play_page.dart';
 
@@ -179,6 +180,19 @@ class _UnlockSheetState extends State<_UnlockSheet> {
     final canRewarded = RewardsService.available(user);
     final canInterstitial = AdConfig.isMobile && AdConfig.current.interstitialEnabled && AdGate.canShowType(user, 'interstitial') && user.abonnement?.estGold != true;
     final canAds = canRewarded || canInterstitial;
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: Stack(children: [
+        _sheetBody(context, c, s, price, paid, left, canRewarded, canInterstitial, canAds),
+        if (_busy)
+          Positioned.fill(
+            child: Container(color: c.background.withOpacity(0.94), child: const QuizLoading(kind: QuizLoadingKind.unlock, compact: true)),
+          ),
+      ]),
+    );
+  }
+
+  Widget _sheetBody(BuildContext context, AppColors c, EtudeState s, int price, int paid, int left, bool canRewarded, bool canInterstitial, bool canAds) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(color: c.background, borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), border: Border.all(color: c.border)),
@@ -282,9 +296,13 @@ Future<bool> etudeLaunch(
 }) async {
   EtudeStart? st;
   for (var attempt = 0; attempt < 2 && st == null; attempt++) {
+    // La mascotte s'anime pendant que le serveur prépare les questions
+    final busy = _showBusy(context, kind == 'level' ? QuizLoadingKind.level : QuizLoadingKind.exam);
     try {
-      st = await EtudeService.instance.start(kind, id);
+      st = await quizMinTime(EtudeService.instance.start(kind, id), ms: 700);
+      busy();
     } on EtudeException catch (e) {
+      busy();
       if (!context.mounted) return false;
       if (e.code.contains('LOCKED') && !e.code.contains('LEVEL') && !e.code.contains('PREVIOUS') && attempt == 0) {
         if (!await showEtudeUnlock(context, item: item, title: title)) return false;
@@ -302,6 +320,7 @@ Future<bool> etudeLaunch(
       quizToast(context, msg, error: true);
       return false;
     } catch (_) {
+      busy();
       if (context.mounted) quizToast(context, context.tr('Connexion impossible. Vérifie ta connexion.'), error: true);
       return false;
     }
@@ -309,4 +328,24 @@ Future<bool> etudeLaunch(
   if (st == null || !context.mounted) return false;
   final res = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => EtudePlayPage(start: st!)));
   return res == true;
+}
+
+/// Affiche la mascotte animée en plein écran ; l'appel retourné la referme.
+VoidCallback _showBusy(BuildContext context, QuizLoadingKind kind) {
+  var open = true;
+  showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 160),
+    pageBuilder: (ctx, _, __) => PopScope(
+      canPop: false,
+      child: Material(color: AppColors.of(ctx).background.withOpacity(0.96), child: QuizLoading(kind: kind)),
+    ),
+  );
+  return () {
+    if (!open) return;
+    open = false;
+    if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+  };
 }
