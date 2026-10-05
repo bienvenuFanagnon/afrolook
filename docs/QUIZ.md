@@ -54,7 +54,10 @@ Clés : `enabled`, `heartsMax`, `heartRegenMinutes`, `pointsPerCorrect`, `perfec
 
 ### Questions par région
 - Région du joueur déduite de `Users.countryData.countryCode` (`functions/src/quiz/regions.ts`) : `af` Afrique, `eu` Europe, `as` Asie + Océanie, `am` Amériques ; pays inconnu → `mx` (mélange égal des 4 régions + monde).
-- Chaque jeu régional : environ 60 % de questions de sa région, le reste « monde » et autres régions.
+- Chaque jeu régional : 80 % de questions de sa région (4 sur 5 dans chaque niveau), le reste « monde » et autres régions. Le quiz du jour et le Grand Défi appliquent la même règle (région figée à la première ouverture / au lancement). Région inconnue : mélange égal.
+- Compléments : `AFB_/EUB_/ASB_/AMB_NN_thème.json` (chaque question porte sa difficulté `t` de 1 à 5), pour atteindre au moins 20 questions de la région par thème et par difficulté.
+- Rejouer un niveau déjà gagné : le serveur tire 5 nouvelles questions du même thème et de la même difficulté (4 de la région du joueur) dans `QuizPool/{thème}_{difficulté}` (produit par `build_levels.js` : `pool.json`, importé par `upload_levels.js`).
+- Cœurs : `quizBuyHearts` (1 cœur = `heartPriceCoins`, tous les cœurs manquants = `heartsFullPriceCoins` au maximum), payés en pièces (`giftCoinsBalance`) ; solde insuffisant → fenêtre de recharge de l'app. Gain enregistré dans `CommissionsDaily.quiz`.
 - Fichiers : `01_…08_` (125 questions, région indiquée dans `regions.json`) + `EU_/AS_/AM_NN_thème.json` (75 questions chacun, 5 difficultés de 15).
 - Pour ajouter des niveaux au-delà de 200 : agrandir les fichiers de questions, adapter `LEVELS` dans `quiz.ts`, redéployer, réimporter.
 - **Relire les questions avant toute extension** : elles ont été rédigées avec l'aide d'une IA ; vérifier les faits précis.
