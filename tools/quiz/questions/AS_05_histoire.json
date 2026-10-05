@@ -1,0 +1,752 @@
+[
+{
+"q": "Quelle célèbre construction chinoise s'étend sur des milliers de kilomètres au nord du pays ?",
+"c": "La Grande Muraille",
+"w": [
+"La Cité interdite",
+"Le Palais d'été",
+"La tour de la Cloche"
+],
+"e": "Elle a été construite et reconstruite pendant plus de deux mille ans."
+},
+{
+"q": "Quel pays est surnommé « le pays du Soleil-Levant » ?",
+"c": "Le Japon",
+"w": [
+"La Corée du Sud",
+"La Chine",
+"L'Inde"
+],
+"e": "Le nom du pays, « Nihon », veut dire « origine du soleil »."
+},
+{
+"q": "Quelle ville japonaise a été la capitale impériale pendant plus de mille ans ?",
+"c": "Kyoto",
+"w": [
+"Tokyo",
+"Osaka",
+"Nara"
+],
+"e": "Elle comptait des milliers de temples et de sanctuaires."
+},
+{
+"q": "Quel explorateur britannique a atteint les îles Hawaï en 1778 ?",
+"c": "James Cook",
+"w": [
+"Francis Drake",
+"Abel Tasman",
+"Vasco de Gama"
+],
+"e": "Il y est mort l'année suivante."
+},
+{
+"q": "Quel empire fondé par Gengis Khan est devenu le plus vaste empire continu de l'histoire ?",
+"c": "L'empire mongol",
+"w": [
+"L'empire perse",
+"L'empire ottoman",
+"L'empire moghol"
+],
+"e": "Il s'étendait de la Chine à l'Europe de l'Est."
+},
+{
+"q": "Quelle civilisation de l'Asie du Sud, avec les villes de Harappa et Mohenjo-daro, est née il y a plus de 4 500 ans ?",
+"c": "La civilisation de l'Indus",
+"w": [
+"La civilisation khmère",
+"La civilisation sumérienne",
+"La civilisation minoenne"
+],
+"e": "Ses villes avaient des rues en damier et des égouts."
+},
+{
+"q": "Quelle religion est née en Inde au Ve siècle av. J.-C. avec l'enseignement du Bouddha ?",
+"c": "Le bouddhisme",
+"w": [
+"L'hindouisme",
+"Le jaïnisme",
+"Le sikhisme"
+],
+"e": "Elle s'est ensuite répandue en Chine, au Japon et en Asie du Sud-Est."
+},
+{
+"q": "Quel prophète de l'islam est né à La Mecque vers 570 ?",
+"c": "Mahomet",
+"w": [
+"Moïse",
+"Abraham",
+"Jésus"
+],
+"e": "Il est le fondateur de l'islam."
+},
+{
+"q": "Quelle dynastie chinoise a fait construire la Cité interdite à Pékin ?",
+"c": "Les Ming",
+"w": [
+"Les Han",
+"Les Tang",
+"Les Qing"
+],
+"e": "Elle a été le palais impérial pendant près de cinq siècles."
+},
+{
+"q": "Quel pays, colonisé par le Royaume-Uni, est devenu indépendant en 1947 ?",
+"c": "L'Inde",
+"w": [
+"La Birmanie",
+"La Malaisie",
+"Singapour"
+],
+"e": "Gandhi a dirigé le mouvement pour son indépendance."
+},
+{
+"q": "Quel empire d'Asie du Sud-Est a construit le temple d'Angkor Vat ?",
+"c": "L'empire khmer",
+"w": [
+"L'empire du Siam",
+"L'empire du Majapahit",
+"L'empire birman"
+],
+"e": "Sa capitale, Angkor, comptait plus d'un million d'habitants."
+},
+{
+"q": "Quel peuple est arrivé en Nouvelle-Zélande en pirogue vers 1300 ?",
+"c": "Les Maoris",
+"w": [
+"Les Aborigènes",
+"Les Fidjiens",
+"Les Samoans"
+],
+"e": "Ils venaient des îles de la Polynésie orientale."
+},
+{
+"q": "Quelle colonie britannique a été fondée à Sydney en 1788 ?",
+"c": "Une colonie pénitentiaire",
+"w": [
+"Une base militaire",
+"Un comptoir commercial",
+"Une mission religieuse"
+],
+"e": "Les premiers arrivants étaient surtout des condamnés."
+},
+{
+"q": "Quel pays d'Asie du Sud-Est n'a jamais été colonisé par une puissance européenne ?",
+"c": "La Thaïlande",
+"w": [
+"Le Vietnam",
+"La Birmanie",
+"Le Cambodge"
+],
+"e": "Il s'appelait alors le Siam."
+},
+{
+"q": "Quelle route commerciale reliait la Chine à l'Europe à travers l'Asie centrale ?",
+"c": "La route de la soie",
+"w": [
+"La route des épices",
+"La route de l'encens",
+"La route de l'ambre"
+],
+"e": "On y échangeait aussi des idées et des religions."
+},
+{
+"q": "En quelle année l'Inde a-t-elle obtenu son indépendance ?",
+"c": "1947",
+"w": [
+"1935",
+"1950",
+"1962"
+],
+"e": "Elle a été proclamée le 15 août."
+},
+{
+"q": "Quel événement de 1947 a donné naissance à l'Inde et au Pakistan ?",
+"c": "La partition des Indes britanniques",
+"w": [
+"La révolte des Cipayes",
+"La Longue Marche",
+"La guerre de Corée"
+],
+"e": "Elle a provoqué le déplacement de millions de personnes."
+},
+{
+"q": "Quelle dynastie a été la dernière de Chine, avant la proclamation de la République en 1912 ?",
+"c": "Les Qing",
+"w": [
+"Les Ming",
+"Les Han",
+"Les Tang"
+],
+"e": "Elle a régné de 1644 à 1912."
+},
+{
+"q": "Quelles guerres du XIXe siècle ont obligé la Chine à ouvrir ses ports aux Occidentaux ?",
+"c": "Les guerres de l'opium",
+"w": [
+"Les guerres des Boxers",
+"Les guerres de Corée",
+"Les guerres des Trois Royaumes"
+],
+"e": "Elles ont opposé la Chine au Royaume-Uni et à la France."
+},
+{
+"q": "Comment appelle-t-on la période de modernisation du Japon qui a commencé en 1868 ?",
+"c": "L'ère Meiji",
+"w": [
+"L'ère Edo",
+"L'ère Heian",
+"L'ère Taishō"
+],
+"e": "L'empereur Meiji a mis fin au pouvoir des shoguns."
+},
+{
+"q": "Quelle famille de shoguns a gouverné le Japon de 1603 à 1868 ?",
+"c": "Les Tokugawa",
+"w": [
+"Les Minamoto",
+"Les Taira",
+"Les Fujiwara"
+],
+"e": "Leur capitale était Edo, l'actuelle Tokyo."
+},
+{
+"q": "Quel nom portait la ville de Tokyo avant 1868 ?",
+"c": "Edo",
+"w": [
+"Kyoto",
+"Nara",
+"Osaka"
+],
+"e": "Elle est devenue la capitale impériale en 1868."
+},
+{
+"q": "Quelle bataille navale de 1905 a vu la flotte japonaise écraser la flotte russe ?",
+"c": "Tsushima",
+"w": [
+"Midway",
+"Trafalgar",
+"Lépante"
+],
+"e": "La victoire du Japon a surpris l'Europe."
+},
+{
+"q": "Quel événement du 7 décembre 1941 a poussé les États-Unis à entrer dans la Seconde Guerre mondiale ?",
+"c": "L'attaque de Pearl Harbor",
+"w": [
+"L'attaque de Hiroshima",
+"La bataille de Midway",
+"La bataille de Guadalcanal"
+],
+"e": "Elle a été lancée par l'aviation japonaise."
+},
+{
+"q": "Quelle guerre a divisé la péninsule coréenne de 1950 à 1953 ?",
+"c": "La guerre de Corée",
+"w": [
+"La guerre du Vietnam",
+"La guerre d'Indochine",
+"La guerre sino-japonaise"
+],
+"e": "Elle s'est terminée par un armistice, sans traité de paix."
+},
+{
+"q": "Quel parallèle sépare la Corée du Nord et la Corée du Sud ?",
+"c": "Le 38e parallèle",
+"w": [
+"Le 17e parallèle",
+"Le 45e parallèle",
+"Le 21e parallèle"
+],
+"e": "Une zone démilitarisée y est maintenue depuis 1953."
+},
+{
+"q": "Quelle guerre a opposé le Nord et le Sud du Vietnam jusqu'en 1975 ?",
+"c": "La guerre du Vietnam",
+"w": [
+"La guerre de Corée",
+"La guerre d'Indochine",
+"La guerre sino-vietnamienne"
+],
+"e": "Elle s'est terminée par la chute de Saïgon."
+},
+{
+"q": "Quelle ville vietnamienne s'appelait autrefois Saïgon ?",
+"c": "Hô Chi Minh-Ville",
+"w": [
+"Hanoï",
+"Da Nang",
+"Hué"
+],
+"e": "Elle a été rebaptisée en 1976."
+},
+{
+"q": "Quel régime a causé la mort de près de deux millions de Cambodgiens entre 1975 et 1979 ?",
+"c": "Les Khmers rouges",
+"w": [
+"Les Viêt-Minh",
+"Les Viêt-Cong",
+"Les Taliban"
+],
+"e": "Les victimes sont mortes de famine, de travail forcé et d'exécutions."
+},
+{
+"q": "Quel dirigeant a gouverné le Cambodge à la tête des Khmers rouges ?",
+"c": "Pol Pot",
+"w": [
+"Hô Chi Minh",
+"Norodom Sihanouk",
+"Hun Sen"
+],
+"e": "Il a voulu créer une société entièrement rurale."
+},
+{
+"q": "Comment appelle-t-on le mouvement lancé par Mao en 1966 pour consolider son pouvoir en Chine ?",
+"c": "La Révolution culturelle",
+"w": [
+"Le Grand Bond en avant",
+"La Longue Marche",
+"La Réforme de 1978"
+],
+"e": "Il a provoqué de profondes violences et fermé les écoles."
+},
+{
+"q": "Comment appelle-t-on la campagne de 1958 qui voulait industrialiser la Chine très rapidement ?",
+"c": "Le Grand Bond en avant",
+"w": [
+"La Révolution culturelle",
+"La Longue Marche",
+"Les Cent Fleurs"
+],
+"e": "Elle a provoqué une famine terrible."
+},
+{
+"q": "Quel dirigeant chinois a lancé en 1978 les réformes d'ouverture économique ?",
+"c": "Deng Xiaoping",
+"w": [
+"Mao Zedong",
+"Hu Jintao",
+"Zhou Enlai"
+],
+"e": "Il a dit : « Peu importe qu'un chat soit noir ou blanc, pourvu qu'il attrape les souris. »"
+},
+{
+"q": "Quelle ville a été rendue à la Chine par le Royaume-Uni en 1997 ?",
+"c": "Hong Kong",
+"w": [
+"Macao",
+"Shanghai",
+"Singapour"
+],
+"e": "Elle est devenue une région administrative spéciale."
+},
+{
+"q": "Quelle ville a été rendue à la Chine par le Portugal en 1999 ?",
+"c": "Macao",
+"w": [
+"Hong Kong",
+"Canton",
+"Taïpei"
+],
+"e": "Elle est connue pour ses casinos."
+},
+{
+"q": "Comment appelle-t-on l'ère de l'empereur Hirohito, qui a duré de 1926 à 1989 ?",
+"c": "L'ère Shōwa",
+"w": [
+"L'ère Meiji",
+"L'ère Heisei",
+"L'ère Taishō"
+],
+"e": "Elle a vu la guerre, la défaite puis le « miracle économique » japonais."
+},
+{
+"q": "Quel pays a envahi la Mandchourie, dans le nord-est de la Chine, en 1931 ?",
+"c": "Le Japon",
+"w": [
+"La Russie",
+"La Corée",
+"La Mongolie"
+],
+"e": "Cette invasion a marqué le début de la guerre sino-japonaise."
+},
+{
+"q": "Dans quelle ville chinoise a eu lieu en 1937 un massacre de civils par l'armée japonaise ?",
+"c": "Nankin",
+"w": [
+"Shanghai",
+"Pékin",
+"Canton"
+],
+"e": "On parle d'environ 300 000 victimes selon les estimations chinoises."
+},
+{
+"q": "Comment appelle-t-on le long déplacement des communistes chinois en 1934-1935, mené notamment par Mao ?",
+"c": "La Longue Marche",
+"w": [
+"Le Grand Bond en avant",
+"La Révolution culturelle",
+"La Marche du sel"
+],
+"e": "Elle a duré environ un an et couvert des milliers de kilomètres."
+},
+{
+"q": "Quel parti a gouverné Taïwan après 1949, après avoir perdu la guerre civile en Chine continentale ?",
+"c": "Le Kuomintang",
+"w": [
+"Le Parti communiste",
+"Le Parti libéral",
+"Le Parti du peuple"
+],
+"e": "Il était dirigé par Tchang Kaï-chek."
+},
+{
+"q": "Quel pays a été occupé par le Japon de 1910 à 1945 ?",
+"c": "La Corée",
+"w": [
+"Le Vietnam",
+"Les Philippines",
+"La Birmanie"
+],
+"e": "Il a retrouvé son indépendance après la défaite du Japon."
+},
+{
+"q": "Quel pays d'Asie du Sud-Est faisait partie de l'Indochine française avec le Vietnam et le Cambodge ?",
+"c": "Le Laos",
+"w": [
+"La Thaïlande",
+"La Malaisie",
+"La Birmanie"
+],
+"e": "Il est resté longtemps un pays rural et enclavé."
+},
+{
+"q": "Quel surnom était donné à l'Inde sous domination britannique ?",
+"c": "La perle de l'Empire",
+"w": [
+"Le joyau de la Couronne",
+"Le jardin de la Reine",
+"L'étoile de l'Orient"
+],
+"e": "Elle était la colonie la plus importante de l'Empire britannique."
+},
+{
+"q": "Quelle compagnie commerciale britannique a dominé l'Inde avant que la Couronne ne la gouverne directement ?",
+"c": "La Compagnie des Indes orientales",
+"w": [
+"La Compagnie de la baie d'Hudson",
+"La Compagnie du Congo",
+"La Compagnie du Canal de Suez"
+],
+"e": "Elle possédait sa propre armée."
+},
+{
+"q": "Comment appelle-t-on la révolte de 1857 en Inde contre les Britanniques, partie d'une révolte de soldats indiens ?",
+"c": "La révolte des Cipayes",
+"w": [
+"La Longue Marche",
+"La guerre de l'opium",
+"La révolte des Boxers"
+],
+"e": "Elle a conduit à la fin du pouvoir de la Compagnie des Indes."
+},
+{
+"q": "Quelle dynastie musulmane a gouverné une grande partie de l'Inde du XVIe au XIXe siècle ?",
+"c": "Les Moghols",
+"w": [
+"Les Maurya",
+"Les Gupta",
+"Les Mamelouks"
+],
+"e": "Elle a laissé de grands monuments comme le Fort rouge et le Taj Mahal."
+},
+{
+"q": "Quel empereur moghol est connu pour sa tolérance religieuse au XVIe siècle ?",
+"c": "Akbar",
+"w": [
+"Aurangzeb",
+"Babur",
+"Humayun"
+],
+"e": "Il a invité des penseurs de plusieurs religions à sa cour."
+},
+{
+"q": "Quel sultan ottoman a conquis Constantinople en 1453 ?",
+"c": "Mehmed II",
+"w": [
+"Soliman le Magnifique",
+"Selim Ier",
+"Bayezid Ier"
+],
+"e": "Il avait alors vingt et un ans."
+},
+{
+"q": "Quelle bataille de 1526 a ouvert la voie à la création de l'empire moghol en Inde ?",
+"c": "La bataille de Panipat",
+"w": [
+"La bataille de Plassey",
+"La bataille de Talas",
+"La bataille de Gaugamèles"
+],
+"e": "Babur y a battu le sultan de Delhi."
+},
+{
+"q": "Quel navigateur néerlandais a découvert la Tasmanie et la Nouvelle-Zélande en 1642 ?",
+"c": "Abel Tasman",
+"w": [
+"James Cook",
+"Willem Janszoon",
+"Vasco de Gama"
+],
+"e": "L'île de Tasmanie porte son nom."
+},
+{
+"q": "Quel capitaine britannique a conduit la Première Flotte vers Sydney en 1788 ?",
+"c": "Arthur Phillip",
+"w": [
+"James Cook",
+"Matthew Flinders",
+"William Bligh"
+],
+"e": "Il est devenu le premier gouverneur de la colonie."
+},
+{
+"q": "Quelle guerre a opposé le Japon à la Chine en 1894-1895 ?",
+"c": "La première guerre sino-japonaise",
+"w": [
+"La guerre russo-japonaise",
+"La guerre de Corée",
+"La guerre de l'opium"
+],
+"e": "Le Japon l'a gagnée et a obtenu Taïwan."
+},
+{
+"q": "Quel traité a mis fin à la guerre russo-japonaise en 1905 ?",
+"c": "Le traité de Portsmouth",
+"w": [
+"Le traité de Versailles",
+"Le traité de Nankin",
+"Le traité de Shimonoseki"
+],
+"e": "Il a été négocié aux États-Unis."
+},
+{
+"q": "Quelle dynastie chinoise a précédé les Ming ?",
+"c": "Les Yuan",
+"w": [
+"Les Tang",
+"Les Han",
+"Les Qing"
+],
+"e": "Elle a été fondée par les Mongols."
+},
+{
+"q": "Quel commodore américain a forcé le Japon à s'ouvrir au commerce en 1853 ?",
+"c": "Matthew Perry",
+"w": [
+"Douglas MacArthur",
+"Chester Nimitz",
+"George Dewey"
+],
+"e": "Ses « navires noirs » sont entrés dans la baie d'Edo."
+},
+{
+"q": "Comment appelle-t-on la période des guerres civiles japonaises entre le XVe et le XVIe siècle ?",
+"c": "L'ère Sengoku",
+"w": [
+"L'ère Heian",
+"L'ère Edo",
+"L'ère Meiji"
+],
+"e": "Les seigneurs de guerre s'y affrontaient pour le pouvoir."
+},
+{
+"q": "Quel seigneur de guerre japonais a commencé l'unification du pays avant d'être trahi en 1582 ?",
+"c": "Oda Nobunaga",
+"w": [
+"Toyotomi Hideyoshi",
+"Tokugawa Ieyasu",
+"Takeda Shingen"
+],
+"e": "Il est mort au temple Honnō-ji."
+},
+{
+"q": "Quel shogun a fondé le shogunat Tokugawa en 1603 ?",
+"c": "Tokugawa Ieyasu",
+"w": [
+"Oda Nobunaga",
+"Toyotomi Hideyoshi",
+"Minamoto no Yoritomo"
+],
+"e": "Il a installé son gouvernement à Edo."
+},
+{
+"q": "Quel pays est devenu indépendant de l'Indonésie en 2002 ?",
+"c": "Le Timor oriental",
+"w": [
+"Brunei",
+"La Papouasie",
+"Singapour"
+],
+"e": "Il avait été occupé par l'Indonésie pendant 24 ans."
+},
+{
+"q": "Quelle bataille aéronavale de juin 1942 a été un tournant de la guerre du Pacifique ?",
+"c": "Midway",
+"w": [
+"Guadalcanal",
+"Iwo Jima",
+"Okinawa"
+],
+"e": "Les Américains y ont coulé quatre porte-avions japonais."
+},
+{
+"q": "Quelle bataille, entre août 1942 et février 1943, a opposé Américains et Japonais dans les îles Salomon ?",
+"c": "Guadalcanal",
+"w": [
+"Midway",
+"Iwo Jima",
+"Okinawa"
+],
+"e": "Elle a marqué le début de la reconquête alliée dans le Pacifique."
+},
+{
+"q": "Quel pays a colonisé l'Indonésie jusqu'en 1949 ?",
+"c": "Les Pays-Bas",
+"w": [
+"La France",
+"Le Portugal",
+"L'Espagne"
+],
+"e": "On l'appelait alors les « Indes néerlandaises »."
+},
+{
+"q": "Quel pays a gouverné les Philippines de 1565 à 1898 ?",
+"c": "L'Espagne",
+"w": [
+"Le Portugal",
+"Les États-Unis",
+"Les Pays-Bas"
+],
+"e": "Le nom du pays vient du roi Philippe II d'Espagne."
+},
+{
+"q": "Quel pays a gouverné les Philippines de 1898 à 1946 ?",
+"c": "Les États-Unis",
+"w": [
+"L'Espagne",
+"Le Japon",
+"Le Royaume-Uni"
+],
+"e": "Elles ont gagné leur indépendance en 1946."
+},
+{
+"q": "Quel pays a colonisé la Birmanie, actuel Myanmar ?",
+"c": "Le Royaume-Uni",
+"w": [
+"La France",
+"Les Pays-Bas",
+"Le Portugal"
+],
+"e": "Elle a obtenu son indépendance en 1948."
+},
+{
+"q": "Quel pays a colonisé le Vietnam à partir de la deuxième moitié du XIXe siècle ?",
+"c": "La France",
+"w": [
+"Le Royaume-Uni",
+"Le Portugal",
+"Les Pays-Bas"
+],
+"e": "Il faisait partie de l'Indochine française."
+},
+{
+"q": "Comment appelle-t-on la révolution de 1979 qui a renversé le shah d'Iran ?",
+"c": "La révolution islamique",
+"w": [
+"La révolution orange",
+"La révolution des Œillets",
+"La révolution de velours"
+],
+"e": "Elle a instauré une république islamique."
+},
+{
+"q": "Quelle guerre de 1980 à 1988 a opposé l'Iran et l'Irak ?",
+"c": "La guerre Iran-Irak",
+"w": [
+"La guerre du Golfe",
+"La guerre des Six Jours",
+"La guerre du Kippour"
+],
+"e": "Elle a fait des centaines de milliers de morts."
+},
+{
+"q": "Quel pays a envahi le Koweït en août 1990 ?",
+"c": "L'Irak",
+"w": [
+"L'Iran",
+"La Syrie",
+"L'Arabie saoudite"
+],
+"e": "Une coalition internationale l'a repoussé en 1991."
+},
+{
+"q": "Quel dirigeant irakien a été renversé en 2003 par l'invasion américaine ?",
+"c": "Saddam Hussein",
+"w": [
+"Hafez el-Assad",
+"Mouammar Kadhafi",
+"Hosni Moubarak"
+],
+"e": "Il a été jugé puis exécuté en 2006."
+},
+{
+"q": "Quel État a été proclamé en mai 1948 au Proche-Orient ?",
+"c": "Israël",
+"w": [
+"La Jordanie",
+"Le Liban",
+"La Palestine"
+],
+"e": "David Ben Gourion l'a proclamé à Tel-Aviv."
+},
+{
+"q": "Quel pays est né en 1971 après la séparation du Pakistan oriental ?",
+"c": "Le Bangladesh",
+"w": [
+"Le Sri Lanka",
+"Le Népal",
+"Le Bhoutan"
+],
+"e": "La guerre d'indépendance a duré neuf mois."
+},
+{
+"q": "Quel empire a été fondé au VIe siècle av. J.-C. par Cyrus le Grand ?",
+"c": "L'empire perse",
+"w": [
+"L'empire ottoman",
+"L'empire mongol",
+"L'empire romain"
+],
+"e": "Il s'étendait de l'Inde à la mer Égée."
+},
+{
+"q": "Quelle ville, capitale de l'empire perse, a été détruite par Alexandre le Grand en 330 av. J.-C. ?",
+"c": "Persépolis",
+"w": [
+"Babylone",
+"Suse",
+"Ninive"
+],
+"e": "Ses ruines se trouvent en Iran."
+},
+{
+"q": "Quelle révolte chinoise de 1900 visait les étrangers et a été écrasée par une coalition de puissances ?",
+"c": "La révolte des Boxers",
+"w": [
+"La révolte des Taiping",
+"La guerre de l'opium",
+"La révolution de 1911"
+],
+"e": "Elle s'est achevée par l'occupation de Pékin."
+}
+]

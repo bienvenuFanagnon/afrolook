@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel plat japonais associe du riz vinaigré et du poisson cru ?",
+"c": "Les sushis",
+"w": [
+"Les ramen",
+"Les tempuras",
+"Les takoyaki"
+],
+"e": "On les prépare traditionnellement avec des baguettes ou à la main."
+},
+{
+"q": "Quelle boisson est la plus consommée en Chine et au Japon ?",
+"c": "Le thé",
+"w": [
+"Le café",
+"Le lait",
+"Le jus de fruit"
+],
+"e": "La Chine est l'un des berceaux de cette boisson."
+},
+{
+"q": "Quel pays célèbre chaque printemps le hanami, la contemplation des cerisiers en fleurs ?",
+"c": "Le Japon",
+"w": [
+"La Chine",
+"La Thaïlande",
+"L'Inde"
+],
+"e": "Les gens pique-niquent sous les arbres en fleurs."
+},
+{
+"q": "Quel art martial coréen est devenu un sport olympique ?",
+"c": "Le taekwondo",
+"w": [
+"Le judo",
+"Le kung-fu",
+"Le karaté"
+],
+"e": "Son nom veut dire « la voie du pied et du poing »."
+},
+{
+"q": "Quel plat coréen de chou fermenté et épicé est servi à presque tous les repas ?",
+"c": "Le kimchi",
+"w": [
+"Le bibimbap",
+"Le bulgogi",
+"Le japchae"
+],
+"e": "Il peut se conserver pendant des mois."
+},
+{
+"q": "Comment s'appelle la fête indienne des lumières, célébrée avec des lampes à huile ?",
+"c": "Diwali",
+"w": [
+"Holi",
+"Navratri",
+"Eid"
+],
+"e": "Elle symbolise la victoire de la lumière sur les ténèbres."
+},
+{
+"q": "Quelle fête indienne est célèbre pour ses poudres colorées lancées dans les rues ?",
+"c": "Holi",
+"w": [
+"Diwali",
+"Navratri",
+"Durga Puja"
+],
+"e": "Elle marque l'arrivée du printemps."
+},
+{
+"q": "Quelle fête chinoise de janvier ou février est célébrée avec des dragons, des lanternes et des enveloppes rouges ?",
+"c": "Le Nouvel An chinois",
+"w": [
+"La fête des lanternes",
+"La fête du Double Neuf",
+"Le Qingming"
+],
+"e": "Chaque année est associée à un animal du zodiaque."
+},
+{
+"q": "Quel animal est le symbole de la Chine ?",
+"c": "Le panda géant",
+"w": [
+"Le tigre",
+"Le yack",
+"Le singe"
+],
+"e": "Il vit dans les montagnes du Sichuan."
+},
+{
+"q": "Quel vêtement traditionnel japonais est une longue robe croisée serrée par une ceinture ?",
+"c": "Le kimono",
+"w": [
+"Le hanbok",
+"Le cheongsam",
+"Le sari"
+],
+"e": "On le porte surtout pour les grandes occasions."
+},
+{
+"q": "Quel vêtement traditionnel indien est un long tissu drapé porté par les femmes ?",
+"c": "Le sari",
+"w": [
+"Le kimono",
+"Le kaftan",
+"Le hanbok"
+],
+"e": "Il peut mesurer jusqu'à neuf mètres de long."
+},
+{
+"q": "Quelle épice indienne donne leur couleur jaune au curry ?",
+"c": "Le curcuma",
+"w": [
+"Le safran",
+"Le paprika",
+"Le gingembre"
+],
+"e": "On lui prête aussi des vertus médicinales."
+},
+{
+"q": "Quelle boisson indienne est un thé noir cuit avec du lait et des épices ?",
+"c": "Le chai",
+"w": [
+"Le lassi",
+"Le matcha",
+"Le saké"
+],
+"e": "On le sert dans de petits verres ou des tasses en terre cuite."
+},
+{
+"q": "Quel plat vietnamien est une soupe de nouilles de riz au bœuf ou au poulet ?",
+"c": "Le phở",
+"w": [
+"Le bánh mì",
+"Le nem",
+"Le bún chả"
+],
+"e": "Il est très populaire au petit-déjeuner."
+},
+{
+"q": "Quel plat thaïlandais associe nouilles de riz sautées, cacahuètes et crevettes ?",
+"c": "Le pad thaï",
+"w": [
+"Le tom yum",
+"Le curry vert",
+"Le nasi goreng"
+],
+"e": "Il est servi avec un quartier de citron vert."
+},
+{
+"q": "Quel sport traditionnel japonais oppose de puissants lutteurs dans un cercle de sable ?",
+"c": "Le sumo",
+"w": [
+"Le judo",
+"Le karaté",
+"Le kendo"
+],
+"e": "Les combats durent souvent moins d'une minute."
+},
+{
+"q": "Quel sport est le plus populaire en Inde, devant le football ?",
+"c": "Le cricket",
+"w": [
+"Le hockey sur gazon",
+"Le kabaddi",
+"Le badminton"
+],
+"e": "L'Inde a gagné la Coupe du monde de cricket en 1983 et en 2011."
+},
+{
+"q": "Quel sport est considéré comme une religion en Nouvelle-Zélande, avec les All Blacks ?",
+"c": "Le rugby",
+"w": [
+"Le football",
+"Le cricket",
+"Le netball"
+],
+"e": "L'équipe exécute le haka avant chaque match."
+},
+{
+"q": "Quel sport australien se joue sur un terrain ovale, avec une balle ovale et 18 joueurs par équipe ?",
+"c": "Le football australien",
+"w": [
+"Le rugby à XIII",
+"Le cricket",
+"Le hockey sur gazon"
+],
+"e": "On l'appelle aussi « Aussie rules »."
+},
+{
+"q": "Quelle cérémonie japonaise consiste à préparer et à servir du thé vert en poudre avec des gestes précis ?",
+"c": "La cérémonie du thé",
+"w": [
+"Le hanami",
+"L'ikebana",
+"Le matsuri"
+],
+"e": "Elle est inspirée par le bouddhisme zen."
+},
+{
+"q": "Quel jeu de stratégie d'origine chinoise se joue avec des pierres noires et blanches sur un plateau quadrillé ?",
+"c": "Le go",
+"w": [
+"Les échecs",
+"Le shogi",
+"Le mah-jong"
+],
+"e": "Il est très populaire en Chine, au Japon et en Corée."
+},
+{
+"q": "Quel jeu chinois de tuiles est très populaire dans toute l'Asie ?",
+"c": "Le mah-jong",
+"w": [
+"Le go",
+"Le shogi",
+"Les dominos"
+],
+"e": "Il se joue à quatre autour d'une table."
+},
+{
+"q": "Comment s'appelle l'art japonais de miniaturiser les arbres dans des pots ?",
+"c": "Le bonsaï",
+"w": [
+"L'ikebana",
+"Le kintsugi",
+"Le origami"
+],
+"e": "Certains bonsaïs vivent depuis plus de cent ans."
+},
+{
+"q": "Quel peuple d'Australie associe ses peintures au « Temps du rêve » ?",
+"c": "Les Aborigènes",
+"w": [
+"Les Maoris",
+"Les Polynésiens",
+"Les Mélanésiens"
+],
+"e": "Ces peintures racontent la création du monde."
+},
+{
+"q": "Quel mot maori signifie « bonjour » en Nouvelle-Zélande ?",
+"c": "Kia ora",
+"w": [
+"Aloha",
+"Mahalo",
+"Talofa"
+],
+"e": "Il est aussi utilisé en anglais néo-zélandais."
+},
+{
+"q": "Quel mot hawaïen signifie à la fois « bonjour », « au revoir » et « amour » ?",
+"c": "Aloha",
+"w": [
+"Kia ora",
+"Mahalo",
+"Ohana"
+],
+"e": "Il fait partie de la culture et de l'esprit d'Hawaï."
+},
+{
+"q": "Quelle danse hawaïenne raconte des histoires avec des mouvements de hanches et de mains ?",
+"c": "Le hula",
+"w": [
+"Le haka",
+"Le kecak",
+"Le flamenco"
+],
+"e": "Elle est accompagnée de chants et de percussions."
+},
+{
+"q": "Quelle langue compte le plus de locuteurs natifs dans le monde ?",
+"c": "Le mandarin",
+"w": [
+"L'anglais",
+"L'espagnol",
+"L'hindi"
+],
+"e": "Plus de 900 millions de personnes le parlent comme langue maternelle."
+},
+{
+"q": "Quelle langue est la plus parlée en Inde ?",
+"c": "Le hindi",
+"w": [
+"L'anglais",
+"Le tamoul",
+"Le bengali"
+],
+"e": "Le pays compte 22 langues officielles reconnues."
+},
+{
+"q": "Quelle monnaie est utilisée au Japon ?",
+"c": "Le yen",
+"w": [
+"Le yuan",
+"Le won",
+"Le baht"
+],
+"e": "Son symbole est ¥."
+},
+{
+"q": "Quelle monnaie est utilisée en Chine ?",
+"c": "Le yuan",
+"w": [
+"Le yen",
+"Le won",
+"Le dong"
+],
+"e": "On l'appelle aussi « renminbi », la monnaie du peuple."
+},
+{
+"q": "Quelle monnaie est utilisée en Inde ?",
+"c": "La roupie",
+"w": [
+"Le taka",
+"Le baht",
+"Le dirham"
+],
+"e": "Son symbole est ₹."
+},
+{
+"q": "Quelle monnaie est utilisée en Corée du Sud ?",
+"c": "Le won",
+"w": [
+"Le yen",
+"Le yuan",
+"Le baht"
+],
+"e": "Son symbole est ₩."
+},
+{
+"q": "Quelle monnaie est utilisée en Thaïlande ?",
+"c": "Le baht",
+"w": [
+"Le dong",
+"Le ringgit",
+"La roupie"
+],
+"e": "Son symbole est ฿."
+},
+{
+"q": "Quelle monnaie est utilisée en Australie ?",
+"c": "Le dollar australien",
+"w": [
+"Le dollar néo-zélandais",
+"La livre",
+"Le rand"
+],
+"e": "Elle est surnommée « Aussie dollar »."
+},
+{
+"q": "Quelle monnaie est utilisée en Indonésie ?",
+"c": "La roupie indonésienne",
+"w": [
+"Le ringgit",
+"Le baht",
+"Le peso"
+],
+"e": "Les billets portent de grands nombres comme 100 000."
+},
+{
+"q": "Quelle monnaie est utilisée au Vietnam ?",
+"c": "Le dong",
+"w": [
+"Le yuan",
+"Le baht",
+"Le riel"
+],
+"e": "Son nom vient d'un mot qui veut dire « cuivre »."
+},
+{
+"q": "Quelle monnaie est utilisée en Turquie ?",
+"c": "La livre turque",
+"w": [
+"L'euro",
+"Le dinar",
+"Le lev"
+],
+"e": "Son code est TRY."
+},
+{
+"q": "Quelle monnaie est utilisée en Arabie saoudite ?",
+"c": "Le riyal",
+"w": [
+"Le dirham",
+"Le dinar",
+"La livre"
+],
+"e": "Un riyal est divisé en cent halalas."
+},
+{
+"q": "Quelle monnaie est utilisée aux Émirats arabes unis ?",
+"c": "Le dirham",
+"w": [
+"Le riyal",
+"Le dinar",
+"Le shekel"
+],
+"e": "Un dirham est divisé en cent fils."
+},
+{
+"q": "De quelle couleur est le grand cercle au centre du drapeau du Japon ?",
+"c": "Rouge",
+"w": [
+"Bleu",
+"Noir",
+"Jaune"
+],
+"e": "Il représente le soleil."
+},
+{
+"q": "Quel symbole est au centre du drapeau de l'Inde ?",
+"c": "La roue de la loi",
+"w": [
+"Une étoile",
+"Un lotus",
+"Un croissant"
+],
+"e": "Elle a vingt-quatre rayons."
+},
+{
+"q": "Quel drapeau est rouge avec une grande étoile jaune au centre ?",
+"c": "Le Vietnam",
+"w": [
+"La Turquie",
+"Le Japon",
+"Le Cambodge"
+],
+"e": "Les cinq branches de l'étoile représentent les cinq classes sociales."
+},
+{
+"q": "Quel drapeau est rouge avec un croissant et une étoile blancs ?",
+"c": "La Turquie",
+"w": [
+"La Tunisie",
+"Le Pakistan",
+"L'Algérie"
+],
+"e": "Il est l'un des plus anciens symboles nationaux du monde."
+},
+{
+"q": "Quel drapeau porte l'Union Jack, la Croix du Sud et une grande étoile à sept branches ?",
+"c": "L'Australie",
+"w": [
+"La Nouvelle-Zélande",
+"Fidji",
+"La Papouasie-Nouvelle-Guinée"
+],
+"e": "La Nouvelle-Zélande a un drapeau proche mais avec des étoiles rouges."
+},
+{
+"q": "Quel plat japonais est fait de fines tranches de poisson cru servies sans riz ?",
+"c": "Le sashimi",
+"w": [
+"Les sushis",
+"Le tempura",
+"Le yakitori"
+],
+"e": "On le sert avec de la sauce soja et du wasabi."
+},
+{
+"q": "Quelle soupe japonaise est faite avec de la pâte de soja fermentée ?",
+"c": "La soupe miso",
+"w": [
+"Le ramen",
+"L'udon",
+"Le dashi"
+],
+"e": "Elle est souvent servie au petit-déjeuner."
+},
+{
+"q": "Quelle soupe de nouilles japonaise est servie dans un bouillon avec du porc et un œuf ?",
+"c": "Le ramen",
+"w": [
+"Le sashimi",
+"Les onigiri",
+"Le soba froid"
+],
+"e": "Elle vient à l'origine de Chine."
+},
+{
+"q": "Quel plat coréen est du bœuf mariné et grillé ?",
+"c": "Le bulgogi",
+"w": [
+"Le kimchi",
+"Le bibimbap",
+"Le japchae"
+],
+"e": "Son nom veut dire « viande au feu »."
+},
+{
+"q": "Quel petit chausson indien frit est fourré de pommes de terre et d'épices ?",
+"c": "Le samosa",
+"w": [
+"Le naan",
+"Le dosa",
+"Le chapati"
+],
+"e": "Il a souvent une forme de triangle."
+},
+{
+"q": "Quel pain indien plat est cuit dans un four en terre appelé tandoor ?",
+"c": "Le naan",
+"w": [
+"Le chapati",
+"Le dosa",
+"La pita"
+],
+"e": "Il accompagne souvent les currys."
+},
+{
+"q": "Quel plat indien est du poulet dans une sauce tomate, beurre et crème ?",
+"c": "Le poulet au beurre",
+"w": [
+"Le tandoori",
+"Le biryani",
+"Le korma"
+],
+"e": "Il a été inventé à Delhi dans les années 1950."
+},
+{
+"q": "Quel plat malaisien est du riz cuit dans du lait de coco, servi avec des anchois et des cacahuètes ?",
+"c": "Le nasi lemak",
+"w": [
+"Le nasi goreng",
+"Le satay",
+"Le laksa"
+],
+"e": "Il est considéré comme le plat national de la Malaisie."
+},
+{
+"q": "Quel plat indonésien est composé de brochettes de viande grillées servies avec une sauce aux cacahuètes ?",
+"c": "Le satay",
+"w": [
+"Le nasi goreng",
+"Le rendang",
+"Le gado-gado"
+],
+"e": "Il est aussi populaire en Malaisie et en Thaïlande."
+},
+{
+"q": "Quels petits plats chinois sont cuits à la vapeur dans des paniers en bambou ?",
+"c": "Les dim sum",
+"w": [
+"Les nems",
+"Les sushis",
+"Les tempuras"
+],
+"e": "On les mange traditionnellement avec du thé."
+},
+{
+"q": "Quel plat de Pékin est un canard à la peau croustillante, servi avec des crêpes fines ?",
+"c": "Le canard laqué",
+"w": [
+"Le poulet kung pao",
+"Le porc aigre-doux",
+"Le riz cantonais"
+],
+"e": "Il existe depuis plus de cinq siècles."
+},
+{
+"q": "Quelle soupe thaïlandaise épicée et acide est souvent préparée avec des crevettes ?",
+"c": "Le tom yum",
+"w": [
+"Le pad thaï",
+"Le massaman",
+"Le som tam"
+],
+"e": "Elle est parfumée à la citronnelle et au galanga."
+},
+{
+"q": "Quel fruit à l'odeur très forte est surnommé « le roi des fruits » en Asie du Sud-Est ?",
+"c": "Le durian",
+"w": [
+"Le mangoustan",
+"Le litchi",
+"Le ramboutan"
+],
+"e": "Il est interdit dans certains hôtels et transports à cause de son odeur."
+},
+{
+"q": "Quel biscuit, à base de flocons d'avoine et de noix de coco, est associé à l'Australie et à la Nouvelle-Zélande ?",
+"c": "Le biscuit Anzac",
+"w": [
+"Le lamington",
+"Le shortbread",
+"Le macaron"
+],
+"e": "Les épouses de soldats les envoyaient pendant la Première Guerre mondiale."
+},
+{
+"q": "Quelle fête japonaise du 5 mai, consacrée aux enfants, est célébrée avec des carpes en tissu ?",
+"c": "Kodomo no hi",
+"w": [
+"Tanabata",
+"Obon",
+"Hanami"
+],
+"e": "Les carpes symbolisent la force et la persévérance."
+},
+{
+"q": "Quelle fête bouddhiste célèbre la naissance, l'éveil et la mort du Bouddha ?",
+"c": "Vesak",
+"w": [
+"Diwali",
+"Holi",
+"Songkran"
+],
+"e": "Elle est célébrée à la pleine lune du mois de mai."
+},
+{
+"q": "Quelle fête thaïlandaise consiste à déposer de petits bateaux de fleurs et de bougies sur l'eau ?",
+"c": "Loy Krathong",
+"w": [
+"Songkran",
+"Vesak",
+"Diwali"
+],
+"e": "Elle a lieu à la pleine lune de novembre."
+},
+{
+"q": "Quelle fête de l'eau marque le Nouvel An thaïlandais, en avril ?",
+"c": "Songkran",
+"w": [
+"Loy Krathong",
+"Vesak",
+"Holi"
+],
+"e": "Les gens s'aspergent d'eau dans les rues."
+},
+{
+"q": "Quelle fête chinoise célèbre la pleine lune d'automne avec des gâteaux de lune ?",
+"c": "La fête de la mi-automne",
+"w": [
+"Le Nouvel An chinois",
+"La fête des lanternes",
+"Le Qingming"
+],
+"e": "Les familles se réunissent pour admirer la lune."
+},
+{
+"q": "Quelle grande fête coréenne de la récolte est célébrée en automne ?",
+"c": "Chuseok",
+"w": [
+"Seollal",
+"Tanabata",
+"Obon"
+],
+"e": "Les Coréens rendent visite à leur famille et honorent leurs ancêtres."
+},
+{
+"q": "Quelle fête hindoue célèbre le dieu à tête d'éléphant ?",
+"c": "Ganesh Chaturthi",
+"w": [
+"Holi",
+"Diwali",
+"Navratri"
+],
+"e": "Elle est particulièrement fêtée à Mumbai."
+},
+{
+"q": "Quel dieu hindou, fils de Shiva et de Parvati, a une tête d'éléphant ?",
+"c": "Ganesh",
+"w": [
+"Hanuman",
+"Vishnou",
+"Krishna"
+],
+"e": "On l'invoque avant de commencer une nouvelle entreprise."
+},
+{
+"q": "Quelle ville du Pendjab abrite le Temple d'or, lieu saint des sikhs ?",
+"c": "Amritsar",
+"w": [
+"Delhi",
+"Jaipur",
+"Agra"
+],
+"e": "Le temple est entouré d'un bassin sacré."
+},
+{
+"q": "Quel pays est le berceau du yoga ?",
+"c": "L'Inde",
+"w": [
+"La Chine",
+"Le Japon",
+"La Thaïlande"
+],
+"e": "La Journée internationale du yoga est célébrée le 21 juin."
+},
+{
+"q": "Quel art martial japonais se pratique avec des sabres en bambou et une armure ?",
+"c": "Le kendo",
+"w": [
+"L'aïkido",
+"Le judo",
+"Le karaté"
+],
+"e": "Il est inspiré de l'escrime des samouraïs."
+},
+{
+"q": "Quel art martial japonais, dont le nom veut dire « la voie de l'harmonie des énergies », utilise des projections et des clés ?",
+"c": "L'aïkido",
+"w": [
+"Le kendo",
+"Le karaté",
+"Le taekwondo"
+],
+"e": "Il a été fondé par Morihei Ueshiba."
+},
+{
+"q": "Quel art martial chinois est une gymnastique douce, pratiquée en mouvements lents ?",
+"c": "Le tai-chi",
+"w": [
+"Le kung-fu",
+"Le judo",
+"Le taekwondo"
+],
+"e": "On le voit souvent pratiqué dans les parcs, le matin."
+},
+{
+"q": "Comment appelle-t-on les caractères d'origine chinoise utilisés dans l'écriture japonaise ?",
+"c": "Les kanjis",
+"w": [
+"Les hiraganas",
+"Les katakanas",
+"Les hanjas"
+],
+"e": "Un lettré japonais en connaît plusieurs milliers."
+},
+{
+"q": "Quel pays asiatique a pour langue nationale le filipino, basé sur le tagalog ?",
+"c": "Les Philippines",
+"w": [
+"L'Indonésie",
+"La Malaisie",
+"Le Vietnam"
+],
+"e": "L'anglais y est aussi langue officielle."
+},
+{
+"q": "Quel plat de riz sauté est très populaire en Indonésie et en Malaisie ?",
+"c": "Le nasi goreng",
+"w": [
+"Le nasi lemak",
+"Le satay",
+"Le laksa"
+],
+"e": "Son nom signifie « riz frit »."
+}
+]

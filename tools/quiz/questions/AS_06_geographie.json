@@ -1,0 +1,752 @@
+[
+{
+"q": "Quelle est la capitale du Japon ?",
+"c": "Tokyo",
+"w": [
+"Kyoto",
+"Osaka",
+"Hiroshima"
+],
+"e": "C'est l'une des plus grandes agglomérations du monde."
+},
+{
+"q": "Quelle est la capitale de la Chine ?",
+"c": "Pékin",
+"w": [
+"Shanghai",
+"Canton",
+"Hong Kong"
+],
+"e": "La Cité interdite s'y trouve."
+},
+{
+"q": "Quelle est la capitale de l'Inde ?",
+"c": "New Delhi",
+"w": [
+"Bombay",
+"Calcutta",
+"Bangalore"
+],
+"e": "Elle a été inaugurée comme capitale en 1931."
+},
+{
+"q": "Quelle est la capitale de la Corée du Sud ?",
+"c": "Séoul",
+"w": [
+"Pusan",
+"Incheon",
+"Pyongyang"
+],
+"e": "Elle est traversée par le fleuve Han."
+},
+{
+"q": "Quelle est la capitale de la Thaïlande ?",
+"c": "Bangkok",
+"w": [
+"Chiang Mai",
+"Phuket",
+"Pattaya"
+],
+"e": "Son nom thaï est l'un des plus longs noms de capitale du monde."
+},
+{
+"q": "Quelle est la capitale du Vietnam ?",
+"c": "Hanoï",
+"w": [
+"Hô Chi Minh-Ville",
+"Da Nang",
+"Hué"
+],
+"e": "Elle est située dans le nord du pays."
+},
+{
+"q": "Quelle est la capitale de la Nouvelle-Zélande ?",
+"c": "Wellington",
+"w": [
+"Auckland",
+"Christchurch",
+"Queenstown"
+],
+"e": "Elle est située à l'extrémité sud de l'île du Nord."
+},
+{
+"q": "Quel fleuve est considéré comme sacré en Inde ?",
+"c": "Le Gange",
+"w": [
+"Le Mékong",
+"Le Yangtsé",
+"Le Tigre"
+],
+"e": "Des millions de pèlerins s'y baignent chaque année."
+},
+{
+"q": "Quel est le plus long fleuve de Chine ?",
+"c": "Le Yangtsé",
+"w": [
+"Le fleuve Jaune",
+"Le Mékong",
+"Le Gange"
+],
+"e": "Il traverse la Chine d'ouest en est sur plus de 6 000 kilomètres."
+},
+{
+"q": "Quel grand désert occupe le nord de la Chine et le sud de la Mongolie ?",
+"c": "Le désert de Gobi",
+"w": [
+"Le désert du Thar",
+"Le Taklamakan",
+"Le Kalahari"
+],
+"e": "On y a découvert de nombreux fossiles de dinosaures."
+},
+{
+"q": "Quel est le plus grand pays d'Océanie ?",
+"c": "L'Australie",
+"w": [
+"La Nouvelle-Zélande",
+"La Papouasie-Nouvelle-Guinée",
+"Fidji"
+],
+"e": "Il occupe presque tout un continent."
+},
+{
+"q": "Quel immense rocher rouge sacré se trouve au centre de l'Australie ?",
+"c": "Uluru",
+"w": [
+"Kata Tjuta",
+"Le mont Kosciuszko",
+"Le mont Olga"
+],
+"e": "On l'appelle aussi Ayers Rock."
+},
+{
+"q": "Quel est le plus grand récif corallien du monde, situé au large de l'Australie ?",
+"c": "La Grande Barrière de corail",
+"w": [
+"Le récif de Belize",
+"Les Maldives",
+"Le récif de la mer Rouge"
+],
+"e": "Il est visible depuis l'espace."
+},
+{
+"q": "Quel animal australien emblématique se déplace en sautant et porte son petit dans une poche ?",
+"c": "Le kangourou",
+"w": [
+"Le koala",
+"Le wombat",
+"Le diable de Tasmanie"
+],
+"e": "Il figure sur les armoiries de l'Australie."
+},
+{
+"q": "Comment s'appelle le plus haut sommet du Japon, un volcan sacré ?",
+"c": "Le mont Fuji",
+"w": [
+"Le mont Aso",
+"Le mont Asama",
+"Le mont Ontake"
+],
+"e": "Il culmine à 3 776 mètres."
+},
+{
+"q": "Quelle est la capitale de l'Indonésie ?",
+"c": "Jakarta",
+"w": [
+"Bali",
+"Surabaya",
+"Bandung"
+],
+"e": "Le pays prévoit de transférer la capitale à Nusantara."
+},
+{
+"q": "Quelle est la capitale du Pakistan ?",
+"c": "Islamabad",
+"w": [
+"Karachi",
+"Lahore",
+"Peshawar"
+],
+"e": "Karachi est la plus grande ville mais n'est pas la capitale."
+},
+{
+"q": "Quelle est la capitale des Philippines ?",
+"c": "Manille",
+"w": [
+"Cebu",
+"Davao",
+"Quezon City"
+],
+"e": "Le pays est composé de plus de 7 000 îles."
+},
+{
+"q": "Quelle est la capitale de la Malaisie ?",
+"c": "Kuala Lumpur",
+"w": [
+"Penang",
+"Johor Bahru",
+"Malacca"
+],
+"e": "Les tours Petronas s'y trouvent."
+},
+{
+"q": "Quelle ville-État d'Asie du Sud-Est est célèbre pour son hôtel Marina Bay Sands ?",
+"c": "Singapour",
+"w": [
+"Hong Kong",
+"Macao",
+"Brunei"
+],
+"e": "Elle est située à la pointe sud de la péninsule malaise."
+},
+{
+"q": "Quelle est la capitale de l'Iran ?",
+"c": "Téhéran",
+"w": [
+"Ispahan",
+"Chiraz",
+"Tabriz"
+],
+"e": "Elle est dominée par la chaîne de l'Elbourz."
+},
+{
+"q": "Quelle est la capitale de l'Arabie saoudite ?",
+"c": "Riyad",
+"w": [
+"La Mecque",
+"Djeddah",
+"Médine"
+],
+"e": "Elle est située au centre du pays."
+},
+{
+"q": "Quelle ville sainte de l'islam, en Arabie saoudite, accueille chaque année le grand pèlerinage ?",
+"c": "La Mecque",
+"w": [
+"Médine",
+"Jérusalem",
+"Riyad"
+],
+"e": "Elle abrite la Kaaba."
+},
+{
+"q": "Quelle est la capitale de l'Irak ?",
+"c": "Bagdad",
+"w": [
+"Bassora",
+"Mossoul",
+"Erbil"
+],
+"e": "Elle est traversée par le Tigre."
+},
+{
+"q": "Quelle est la capitale du Bangladesh ?",
+"c": "Dacca",
+"w": [
+"Chittagong",
+"Sylhet",
+"Khulna"
+],
+"e": "C'est l'une des villes les plus densément peuplées du monde."
+},
+{
+"q": "Quelle est la capitale du Népal ?",
+"c": "Katmandou",
+"w": [
+"Pokhara",
+"Lhassa",
+"Thimphou"
+],
+"e": "Elle est située dans une vallée de l'Himalaya."
+},
+{
+"q": "Quelle île de l'océan Indien, au sud de l'Inde, forme un pays en forme de larme ?",
+"c": "Le Sri Lanka",
+"w": [
+"Les Maldives",
+"Madagascar",
+"Maurice"
+],
+"e": "Elle est célèbre pour son thé."
+},
+{
+"q": "Quelle est la capitale de la Mongolie ?",
+"c": "Oulan-Bator",
+"w": [
+"Karakorum",
+"Erdenet",
+"Darkhan"
+],
+"e": "C'est l'une des capitales les plus froides du monde."
+},
+{
+"q": "Quelle est la plus grande ville d'Australie ?",
+"c": "Sydney",
+"w": [
+"Melbourne",
+"Canberra",
+"Brisbane"
+],
+"e": "Elle est célèbre pour son opéra et son pont."
+},
+{
+"q": "Quelle est la plus grande ville de Nouvelle-Zélande ?",
+"c": "Auckland",
+"w": [
+"Wellington",
+"Christchurch",
+"Dunedin"
+],
+"e": "Elle est surnommée « la ville des voiles »."
+},
+{
+"q": "Quelle est la capitale du Cambodge ?",
+"c": "Phnom Penh",
+"w": [
+"Siem Reap",
+"Battambang",
+"Sihanoukville"
+],
+"e": "Elle est située au confluent du Mékong et du Tonlé Sap."
+},
+{
+"q": "Quelle est la capitale du Laos ?",
+"c": "Vientiane",
+"w": [
+"Luang Prabang",
+"Pakse",
+"Savannakhet"
+],
+"e": "Elle est située au bord du Mékong."
+},
+{
+"q": "Quelle est la capitale du Myanmar (Birmanie) depuis 2006 ?",
+"c": "Naypyidaw",
+"w": [
+"Rangoun",
+"Mandalay",
+"Bagan"
+],
+"e": "Elle a été construite en quelques années au centre du pays."
+},
+{
+"q": "Quelle est la capitale de l'Afghanistan ?",
+"c": "Kaboul",
+"w": [
+"Kandahar",
+"Hérat",
+"Mazar-e Charif"
+],
+"e": "Elle est située à environ 1 800 mètres d'altitude."
+},
+{
+"q": "Quelle est la capitale du Kazakhstan ?",
+"c": "Astana",
+"w": [
+"Almaty",
+"Chymkent",
+"Karaganda"
+],
+"e": "Elle porte à nouveau ce nom depuis 2022."
+},
+{
+"q": "Quelle est la capitale de l'Ouzbékistan ?",
+"c": "Tachkent",
+"w": [
+"Samarcande",
+"Boukhara",
+"Khiva"
+],
+"e": "Samarcande est célèbre pour ses monuments de la route de la soie."
+},
+{
+"q": "Quelle est la plus grande ville de Turquie ?",
+"c": "Istanbul",
+"w": [
+"Ankara",
+"Izmir",
+"Antalya"
+],
+"e": "Elle est située à cheval sur deux continents."
+},
+{
+"q": "Quelle est la capitale des Émirats arabes unis ?",
+"c": "Abou Dhabi",
+"w": [
+"Dubaï",
+"Charjah",
+"Ajman"
+],
+"e": "Dubaï est la ville la plus peuplée mais n'est pas la capitale."
+},
+{
+"q": "Quelle est la capitale du Qatar ?",
+"c": "Doha",
+"w": [
+"Al Khor",
+"Lusail",
+"Al Wakrah"
+],
+"e": "Elle a accueilli la finale de la Coupe du monde 2022 dans sa banlieue, à Lusail."
+},
+{
+"q": "Quelle est la capitale de la Jordanie ?",
+"c": "Amman",
+"w": [
+"Pétra",
+"Aqaba",
+"Irbid"
+],
+"e": "Elle est bâtie sur plusieurs collines."
+},
+{
+"q": "Quelle est la capitale du Liban ?",
+"c": "Beyrouth",
+"w": [
+"Tripoli",
+"Saïda",
+"Tyr"
+],
+"e": "Elle était surnommée « le Paris du Moyen-Orient »."
+},
+{
+"q": "Quelle est la capitale de la Syrie ?",
+"c": "Damas",
+"w": [
+"Alep",
+"Homs",
+"Lattaquié"
+],
+"e": "C'est l'une des plus anciennes capitales habitées du monde."
+},
+{
+"q": "Quelle est la capitale de la Papouasie-Nouvelle-Guinée ?",
+"c": "Port Moresby",
+"w": [
+"Lae",
+"Rabaul",
+"Madang"
+],
+"e": "Elle se trouve sur la côte sud de l'île principale."
+},
+{
+"q": "Quelle est la capitale des Fidji ?",
+"c": "Suva",
+"w": [
+"Nadi",
+"Lautoka",
+"Labasa"
+],
+"e": "Elle est située sur l'île principale de Viti Levu."
+},
+{
+"q": "Quelle est la plus grande ville de Polynésie française, sur l'île de Tahiti ?",
+"c": "Papeete",
+"w": [
+"Bora Bora",
+"Moorea",
+"Faa'a"
+],
+"e": "Elle est le chef-lieu de la collectivité."
+},
+{
+"q": "Quel est le lac le plus profond du monde, situé en Sibérie ?",
+"c": "Le lac Baïkal",
+"w": [
+"Le lac Tanganyika",
+"Le lac Victoria",
+"Le lac Supérieur"
+],
+"e": "Il contient environ un cinquième de l'eau douce liquide de la planète."
+},
+{
+"q": "Quel sommet est le deuxième plus haut du monde, à la frontière entre le Pakistan et la Chine ?",
+"c": "Le K2",
+"w": [
+"Le Kangchenjunga",
+"Le Lhotse",
+"Le Makalu"
+],
+"e": "On l'appelle aussi « la montagne sauvage »."
+},
+{
+"q": "Quelle chaîne de montagnes sépare l'Inde du plateau tibétain ?",
+"c": "L'Himalaya",
+"w": [
+"Le Karakoram",
+"L'Hindou Kouch",
+"Le Pamir"
+],
+"e": "Son nom veut dire « demeure des neiges » en sanskrit."
+},
+{
+"q": "Quel plateau d'Asie est surnommé « le toit du monde » ?",
+"c": "Le plateau tibétain",
+"w": [
+"Le plateau du Deccan",
+"Le plateau mongol",
+"Le plateau iranien"
+],
+"e": "Son altitude moyenne dépasse 4 500 mètres."
+},
+{
+"q": "Quel fleuve traverse Bangkok ?",
+"c": "Le Chao Phraya",
+"w": [
+"Le Mékong",
+"Le Salween",
+"L'Irrawaddy"
+],
+"e": "On l'appelle « le fleuve des rois »."
+},
+{
+"q": "Quel fleuve traverse Hanoï ?",
+"c": "Le fleuve Rouge",
+"w": [
+"Le Mékong",
+"Le Chao Phraya",
+"Le Yangtsé"
+],
+"e": "Il doit son nom à la couleur de ses eaux, chargées en limon."
+},
+{
+"q": "Quel grand fleuve d'Asie du Sud-Est traverse le Laos, le Cambodge et le Vietnam avant de se jeter dans la mer ?",
+"c": "Le Mékong",
+"w": [
+"Le Gange",
+"Le Chao Phraya",
+"L'Irrawaddy"
+],
+"e": "Il naît sur le plateau tibétain."
+},
+{
+"q": "Quel pays est le plus grand archipel du monde, avec plus de 17 000 îles ?",
+"c": "L'Indonésie",
+"w": [
+"Les Philippines",
+"Le Japon",
+"La Malaisie"
+],
+"e": "Il s'étend sur plus de 5 000 kilomètres d'est en ouest."
+},
+{
+"q": "Quelle île indonésienne est la plus peuplée du monde ?",
+"c": "Java",
+"w": [
+"Bali",
+"Sumatra",
+"Bornéo"
+],
+"e": "Elle abrite la capitale, Jakarta."
+},
+{
+"q": "Quelle île indonésienne est célèbre pour ses temples, ses rizières et ses plages ?",
+"c": "Bali",
+"w": [
+"Java",
+"Lombok",
+"Sulawesi"
+],
+"e": "Elle est surnommée « l'île des dieux »."
+},
+{
+"q": "Quel détroit relie l'océan Indien à la mer de Chine méridionale, entre la Malaisie et l'Indonésie ?",
+"c": "Le détroit de Malacca",
+"w": [
+"Le détroit de Taïwan",
+"Le détroit d'Ormuz",
+"Le détroit de Béring"
+],
+"e": "C'est l'une des routes maritimes les plus fréquentées du monde."
+},
+{
+"q": "Quelle mer sépare le Japon de la Corée et de la Russie ?",
+"c": "La mer du Japon",
+"w": [
+"La mer Jaune",
+"La mer de Chine orientale",
+"La mer d'Okhotsk"
+],
+"e": "Elle est aussi appelée « mer de l'Est » en Corée."
+},
+{
+"q": "Quelle est la plus grande île du Japon ?",
+"c": "Honshū",
+"w": [
+"Hokkaidō",
+"Kyūshū",
+"Shikoku"
+],
+"e": "Tokyo, Kyoto et Osaka s'y trouvent."
+},
+{
+"q": "Quel est le plus grand lac d'Australie, souvent à sec ?",
+"c": "Le lac Eyre",
+"w": [
+"Le lac Argyle",
+"Le lac Burley Griffin",
+"Le lac Taupo"
+],
+"e": "Il se remplit seulement après de fortes pluies."
+},
+{
+"q": "Quel est le plus haut sommet d'Australie continentale ?",
+"c": "Le mont Kosciuszko",
+"w": [
+"Le mont Townsend",
+"Uluru",
+"Le mont Wellington"
+],
+"e": "Il culmine à 2 228 mètres."
+},
+{
+"q": "Quelle grande île, partagée entre l'Indonésie et un autre pays, est la deuxième plus grande île du monde ?",
+"c": "La Nouvelle-Guinée",
+"w": [
+"Bornéo",
+"Madagascar",
+"Sumatra"
+],
+"e": "L'autre moitié forme la Papouasie-Nouvelle-Guinée."
+},
+{
+"q": "Quel pays de l'océan Indien est composé de près de 1 200 îles coraliennes ?",
+"c": "Les Maldives",
+"w": [
+"Les Seychelles",
+"Maurice",
+"Sri Lanka"
+],
+"e": "Il est l'un des pays les plus bas du monde."
+},
+{
+"q": "Quel pays compte la plus grande population de musulmans au monde ?",
+"c": "L'Indonésie",
+"w": [
+"L'Inde",
+"Le Pakistan",
+"L'Arabie saoudite"
+],
+"e": "Il compte environ 230 millions de musulmans."
+},
+{
+"q": "Quel désert occupe le sud de l'Arabie et est surnommé « le Quart vide » ?",
+"c": "Le Rub al-Khali",
+"w": [
+"Le Néfoud",
+"Le Gobi",
+"Le Thar"
+],
+"e": "C'est l'un des plus grands déserts de sable du monde."
+},
+{
+"q": "Quelle grande mer salée d'Asie centrale s'est presque asséchée en quelques décennies ?",
+"c": "La mer d'Aral",
+"w": [
+"La mer Caspienne",
+"La mer Morte",
+"La mer de Barents"
+],
+"e": "Le détournement des fleuves pour l'irrigation en est la cause."
+},
+{
+"q": "Quel est le point le plus bas de la surface terrestre émergée, situé au bord d'une mer salée du Proche-Orient ?",
+"c": "Les rives de la mer Morte",
+"w": [
+"Le lac Assal",
+"La vallée de la Mort",
+"La dépression de Qattara"
+],
+"e": "Il se trouve à plus de 430 mètres sous le niveau de la mer."
+},
+{
+"q": "Quel petit royaume himalayen mesure le « bonheur national brut » ?",
+"c": "Le Bhoutan",
+"w": [
+"Le Népal",
+"Le Sikkim",
+"Le Brunei"
+],
+"e": "C'est un indicateur de bien-être inventé dans ce pays."
+},
+{
+"q": "Quelle ville indienne est surnommée « la ville rose » ?",
+"c": "Jaipur",
+"w": [
+"Jodhpur",
+"Udaipur",
+"Agra"
+],
+"e": "Elle est la capitale du Rajasthan."
+},
+{
+"q": "Quelle ville indienne, sur le Gange, est considérée comme la plus sainte pour les hindous ?",
+"c": "Bénarès, ou Varanasi",
+"w": [
+"Jaipur",
+"Mumbai",
+"Chennai"
+],
+"e": "Les pèlerins y viennent se baigner et faire des cérémonies."
+},
+{
+"q": "Quel détroit sépare l'Asie de l'Amérique du Nord ?",
+"c": "Le détroit de Béring",
+"w": [
+"Le détroit de Malacca",
+"Le détroit de Gibraltar",
+"Le détroit d'Ormuz"
+],
+"e": "Il sépare la Russie de l'Alaska."
+},
+{
+"q": "Quelle île est la plus au nord de l'archipel japonais ?",
+"c": "Hokkaidō",
+"w": [
+"Honshū",
+"Kyūshū",
+"Shikoku"
+],
+"e": "Elle est célèbre pour ses hivers froids et ses stations de ski."
+},
+{
+"q": "Quelle grande ville chinoise est le premier port du pays, à l'embouchure du Yangtsé ?",
+"c": "Shanghai",
+"w": [
+"Canton",
+"Shenzhen",
+"Tianjin"
+],
+"e": "C'est l'une des plus grandes villes du monde."
+},
+{
+"q": "Quelle ville chinoise est célèbre pour son centre de recherche et d'élevage des pandas géants ?",
+"c": "Chengdu",
+"w": [
+"Xi'an",
+"Wuhan",
+"Nankin"
+],
+"e": "Elle est la capitale de la province du Sichuan."
+},
+{
+"q": "Quel État d'Australie a pour capitale Perth ?",
+"c": "L'Australie-Occidentale",
+"w": [
+"La Tasmanie",
+"Le Queensland",
+"Le Victoria"
+],
+"e": "C'est le plus grand État de l'Australie."
+},
+{
+"q": "Quelle ville australienne est la capitale de l'État de Victoria ?",
+"c": "Melbourne",
+"w": [
+"Sydney",
+"Adélaïde",
+"Hobart"
+],
+"e": "Elle est réputée pour son café et ses tramways."
+}
+]
