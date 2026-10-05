@@ -21,7 +21,7 @@ const REGIONS = ['af', 'eu', 'as', 'am'];
 const SETS = ['af', 'eu', 'as', 'am', 'mx'];
 const QUESTIONS_PER_LEVEL = 5;
 const PER_UNIT = 25;
-const SHARE = { own: 15, world: 5, other: 5 };
+const SHARE = { own: 20, world: 2, other: 3 }; // par unité de 25 : jusqu'à 4 questions de sa région par niveau, le reste monde / autres régions
 
 // Mélange reproductible (mulberry32) : la bonne réponse n'est pas toujours à la même place.
 function rng(seed) {
@@ -93,7 +93,9 @@ function spread(list, k) {
 }
 const byD = (a, b) => a.d - b.d || (a.id < b.id ? -1 : 1);
 
-/** Les 25 questions d'une unité pour un jeu donné, de la plus facile à la plus difficile. */
+/** Les 5 niveaux (5 questions chacun) d'une unité pour un jeu donné.
+ *  Chaque niveau a la même composition : jeu régional = 4 de sa région (3 si le réservoir est court) + le reste « monde / autres régions » ;
+ *  jeu « mx » = 1 de chaque région + 1 « monde ». Dans un niveau, de la plus facile à la plus difficile. */
 function compose(set, ti, tier) {
   const all = pool[ti][tier];
   const used = new Set();
@@ -103,27 +105,47 @@ function compose(set, ti, tier) {
     got.forEach((x) => used.add(x.id));
     return got;
   };
-  const chosen = [];
   const world = all.filter((x) => x.region === 'world');
+  const groups = [];
   if (set === 'mx') {
-    const each = 5;
-    REGIONS.forEach((r) => chosen.push(...take(all.filter((x) => x.region === r), each)));
-    chosen.push(...take(world, 5));
+    REGIONS.forEach((r) => groups.push(take(all.filter((x) => x.region === r), 5)));
+    groups.push(take(world, 5));
   } else {
-    chosen.push(...take(all.filter((x) => x.region === set), SHARE.own));
-    chosen.push(...take(world, SHARE.world));
-    chosen.push(...take(all.filter((x) => x.region !== set && x.region !== 'world'), SHARE.other));
+    groups.push(take(all.filter((x) => x.region === set), SHARE.own));
+    // « autres » : monde et autres régions, en alternant pour qu'aucun des deux ne domine
+    const others = all.filter((x) => x.region !== set);
+    const w = take(world, SHARE.world);
+    const o = take(others.filter((x) => x.region !== 'world'), SHARE.other);
+    groups.push([...w, ...o].sort(byD));
   }
-  // Complète si un réservoir était trop petit : d'abord la région du jeu, puis le monde, puis le reste
-  const order = (x) => (x.region === set ? 0 : x.region === 'world' ? 1 : 2);
-  const rest = all.filter((x) => !used.has(x.id)).sort((a, b) => order(a) - order(b) || byD(a, b));
-  while (chosen.length < PER_UNIT && rest.length) {
-    const x = rest.shift();
-    used.add(x.id);
-    chosen.push(x);
+  // Complète un réservoir trop petit avec ce qui reste. Si la région du joueur manque de questions, ce sont les autres qui comblent.
+  const want = set === 'mx' ? [5, 5, 5, 5, 5] : [SHARE.own, SHARE.world + SHARE.other];
+  const rest = all.filter((x) => !used.has(x.id)).sort(byD);
+  const fill = (g, n) => { while (g.length < n && rest.length) { const x = rest.shift(); used.add(x.id); g.push(x); } return g.sort(byD); };
+  const levels = [];
+  if (set === 'mx') {
+    groups.forEach((g, i) => fill(g, want[i]));
+    for (let k = 0; k < 5; k++) levels.push(groups.map((g) => g[k]).filter(Boolean));
+  } else {
+    // chaque niveau a la même part de questions de la région : on répartit celles-ci régulièrement, les autres comblent le reste
+    const own = groups[0].slice(0, SHARE.own).sort(byD);
+    const others = fill(groups[1], 25 - own.length);
+    const ownPer = (k) => Math.round(((k + 1) * own.length) / 5) - Math.round((k * own.length) / 5);
+    let oi = 0;
+    let ni = 0;
+    for (let k = 0; k < 5; k++) {
+      const a = own.slice(Math.round((k * own.length) / 5), Math.round(((k + 1) * own.length) / 5));
+      const b = others.slice(ni, ni + QUESTIONS_PER_LEVEL - ownPer(k));
+      ni += b.length;
+      oi += a.length;
+      levels.push([...a, ...b]);
+    }
   }
-  if (chosen.length < PER_UNIT) throw new Error(`jeu ${set}, thème ${THEMES[ti]}, difficulté ${tier + 1} : ${chosen.length} questions seulement`);
-  return chosen.slice(0, PER_UNIT).sort(byD);
+  levels.forEach((lv, k) => {
+    if (lv.length !== QUESTIONS_PER_LEVEL) throw new Error(`jeu ${set}, thème ${THEMES[ti]}, difficulté ${tier + 1}, niveau ${k + 1} : ${lv.length} questions`);
+    lv.sort(byD);
+  });
+  return levels;
 }
 
 const report = [];
@@ -137,7 +159,7 @@ for (const set of SETS) {
     const unit = compose(set, ti, tier);
     for (let rank = 0; rank < 5; rank++) {
       const n = u * 5 + rank + 1;
-      const questions = unit.slice(rank * 5, rank * 5 + 5).map((x, k) => {
+      const questions = unit[rank].map((x, k) => {
         if (x.region === set) mix.own++;
         else if (x.region === 'world') mix.world++;
         else mix.other++;
