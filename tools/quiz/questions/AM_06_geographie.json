@@ -1,0 +1,752 @@
+[
+{
+"q": "Quelle est la capitale des États-Unis ?",
+"c": "Washington, D.C.",
+"w": [
+"New York",
+"Los Angeles",
+"Chicago"
+],
+"e": "Elle porte le nom du premier président du pays."
+},
+{
+"q": "Quelle est la capitale du Mexique ?",
+"c": "Mexico",
+"w": [
+"Guadalajara",
+"Monterrey",
+"Cancún"
+],
+"e": "Elle a été construite sur l'ancienne cité aztèque de Tenochtitlan."
+},
+{
+"q": "Quelle est la capitale de l'Argentine ?",
+"c": "Buenos Aires",
+"w": [
+"Córdoba",
+"Rosario",
+"Mendoza"
+],
+"e": "Elle est située au bord du Río de la Plata."
+},
+{
+"q": "Quelle est la capitale du Chili ?",
+"c": "Santiago",
+"w": [
+"Valparaíso",
+"Concepción",
+"Antofagasta"
+],
+"e": "Elle est dominée par la cordillère des Andes."
+},
+{
+"q": "Quelle est la capitale du Pérou ?",
+"c": "Lima",
+"w": [
+"Cuzco",
+"Arequipa",
+"Trujillo"
+],
+"e": "Elle a été fondée par Pizarro en 1535."
+},
+{
+"q": "Quelle est la capitale de la Colombie ?",
+"c": "Bogota",
+"w": [
+"Medellín",
+"Cali",
+"Carthagène"
+],
+"e": "Elle est située à environ 2 600 mètres d'altitude."
+},
+{
+"q": "Quelle est la capitale de Cuba ?",
+"c": "La Havane",
+"w": [
+"Santiago de Cuba",
+"Varadero",
+"Camagüey"
+],
+"e": "Sa vieille ville est inscrite à l'UNESCO."
+},
+{
+"q": "Quelle est la capitale du Venezuela ?",
+"c": "Caracas",
+"w": [
+"Maracaibo",
+"Valencia",
+"Barquisimeto"
+],
+"e": "Elle se trouve dans une vallée proche de la côte caribéenne."
+},
+{
+"q": "Quel est le plus grand pays d'Amérique du Sud ?",
+"c": "Le Brésil",
+"w": [
+"L'Argentine",
+"Le Pérou",
+"La Colombie"
+],
+"e": "Il occupe près de la moitié du continent."
+},
+{
+"q": "Quelle chaîne de montagnes est la plus longue du monde, le long de la côte ouest de l'Amérique du Sud ?",
+"c": "Les Andes",
+"w": [
+"Les Rocheuses",
+"Les Alpes",
+"L'Himalaya"
+],
+"e": "Elle s'étend sur environ 7 000 kilomètres."
+},
+{
+"q": "Quelles célèbres chutes d'eau se trouvent entre le Canada et les États-Unis ?",
+"c": "Les chutes du Niagara",
+"w": [
+"Les chutes Victoria",
+"Les chutes d'Iguazú",
+"Les chutes Angel"
+],
+"e": "Elles sont alimentées par le lac Érié."
+},
+{
+"q": "Quel désert d'Amérique du Sud est considéré comme le plus aride du monde ?",
+"c": "Le désert d'Atacama",
+"w": [
+"Le désert de Sonora",
+"Le désert de Patagonie",
+"Le désert de Mojave"
+],
+"e": "Il se trouve surtout au nord du Chili."
+},
+{
+"q": "Quelle immense forêt tropicale d'Amérique du Sud est la plus grande du monde ?",
+"c": "L'Amazonie",
+"w": [
+"La forêt du Congo",
+"La taïga",
+"La forêt de Bornéo"
+],
+"e": "Elle est souvent appelée « le poumon de la planète »."
+},
+{
+"q": "Quel fleuve américain est surnommé « le Père des eaux » ?",
+"c": "Le Mississippi",
+"w": [
+"Le Colorado",
+"L'Hudson",
+"L'Ohio"
+],
+"e": "Il se jette dans le golfe du Mexique."
+},
+{
+"q": "Quel canyon de l'Arizona a été creusé par le fleuve Colorado ?",
+"c": "Le Grand Canyon",
+"w": [
+"Le canyon de Chelly",
+"Monument Valley",
+"Bryce Canyon"
+],
+"e": "Il mesure près de 450 kilomètres de long."
+},
+{
+"q": "Quelle est la capitale de l'Équateur ?",
+"c": "Quito",
+"w": [
+"Guayaquil",
+"Cuenca",
+"Loja"
+],
+"e": "Elle est située à plus de 2 800 mètres d'altitude."
+},
+{
+"q": "Quelle ville bolivienne, siège du gouvernement, est la capitale la plus haute du monde ?",
+"c": "La Paz",
+"w": [
+"Sucre",
+"Santa Cruz",
+"Cochabamba"
+],
+"e": "Elle se trouve à plus de 3 600 mètres d'altitude."
+},
+{
+"q": "Quelle est la capitale de l'Uruguay ?",
+"c": "Montevideo",
+"w": [
+"Punta del Este",
+"Salto",
+"Colonia"
+],
+"e": "Près de la moitié des habitants du pays y vit."
+},
+{
+"q": "Quelle est la capitale du Paraguay ?",
+"c": "Asunción",
+"w": [
+"Ciudad del Este",
+"Encarnación",
+"Luque"
+],
+"e": "Elle est située au bord du fleuve Paraguay."
+},
+{
+"q": "Quelle est la capitale du Panama ?",
+"c": "Panama",
+"w": [
+"Colón",
+"David",
+"Santiago"
+],
+"e": "Elle se trouve à l'entrée du canal."
+},
+{
+"q": "Quelle est la capitale du Costa Rica ?",
+"c": "San José",
+"w": [
+"Alajuela",
+"Limón",
+"Cartago"
+],
+"e": "Le pays est connu pour ses parcs naturels et sa biodiversité."
+},
+{
+"q": "Quelle est la capitale du Guatemala ?",
+"c": "Guatemala",
+"w": [
+"Antigua",
+"Quetzaltenango",
+"Flores"
+],
+"e": "Le pays est la patrie des Mayas."
+},
+{
+"q": "Quelle est la capitale d'Haïti ?",
+"c": "Port-au-Prince",
+"w": [
+"Cap-Haïtien",
+"Jacmel",
+"Les Cayes"
+],
+"e": "Elle est située sur la côte ouest de l'île."
+},
+{
+"q": "Quelle est la capitale de la République dominicaine ?",
+"c": "Saint-Domingue",
+"w": [
+"Punta Cana",
+"Santiago",
+"Puerto Plata"
+],
+"e": "C'est la plus ancienne ville fondée par des Européens dans les Amériques."
+},
+{
+"q": "Quelle est la capitale de la Jamaïque ?",
+"c": "Kingston",
+"w": [
+"Montego Bay",
+"Ocho Rios",
+"Negril"
+],
+"e": "Elle est la patrie de Bob Marley."
+},
+{
+"q": "Quelle est la plus grande ville du Canada ?",
+"c": "Toronto",
+"w": [
+"Montréal",
+"Vancouver",
+"Ottawa"
+],
+"e": "Elle abrite la tour CN."
+},
+{
+"q": "Quelle est la plus grande ville des États-Unis ?",
+"c": "New York",
+"w": [
+"Los Angeles",
+"Chicago",
+"Houston"
+],
+"e": "Elle est surnommée « la Grosse Pomme »."
+},
+{
+"q": "Quelle est la plus grande ville du Brésil ?",
+"c": "São Paulo",
+"w": [
+"Rio de Janeiro",
+"Brasilia",
+"Salvador"
+],
+"e": "Elle compte plus de 12 millions d'habitants."
+},
+{
+"q": "Quelle ville américaine est surnommée « la ville du vent » ?",
+"c": "Chicago",
+"w": [
+"Boston",
+"Seattle",
+"San Francisco"
+],
+"e": "Elle est située au bord du lac Michigan."
+},
+{
+"q": "Quelle ville américaine est célèbre pour son pont Golden Gate ?",
+"c": "San Francisco",
+"w": [
+"Los Angeles",
+"Seattle",
+"San Diego"
+],
+"e": "Le pont est de couleur orange international."
+},
+{
+"q": "Quelle est la capitale du Honduras ?",
+"c": "Tégucigalpa",
+"w": [
+"San Pedro Sula",
+"La Ceiba",
+"Choluteca"
+],
+"e": "Son nom signifie « colline d'argent » dans une langue indigène."
+},
+{
+"q": "Quelle est la capitale du Nicaragua ?",
+"c": "Managua",
+"w": [
+"León",
+"Granada",
+"Masaya"
+],
+"e": "Elle est située au bord d'un grand lac."
+},
+{
+"q": "Quelle est la capitale du Salvador ?",
+"c": "San Salvador",
+"w": [
+"Santa Ana",
+"San Miguel",
+"Soyapango"
+],
+"e": "Le pays est le plus petit d'Amérique centrale."
+},
+{
+"q": "Quelle est la capitale du Belize ?",
+"c": "Belmopan",
+"w": [
+"Belize City",
+"San Ignacio",
+"Orange Walk"
+],
+"e": "Elle a été construite après un ouragan qui avait détruit l'ancienne capitale."
+},
+{
+"q": "Quelle est la capitale des Bahamas ?",
+"c": "Nassau",
+"w": [
+"Freeport",
+"Miami",
+"Kingston"
+],
+"e": "Elle est située sur l'île de New Providence."
+},
+{
+"q": "Quelle est la capitale du Guyana ?",
+"c": "Georgetown",
+"w": [
+"Paramaribo",
+"Cayenne",
+"Caracas"
+],
+"e": "Le pays est le seul d'Amérique du Sud où l'anglais est langue officielle."
+},
+{
+"q": "Quelle est la capitale du Suriname ?",
+"c": "Paramaribo",
+"w": [
+"Georgetown",
+"Cayenne",
+"Port of Spain"
+],
+"e": "Le néerlandais y est la langue officielle."
+},
+{
+"q": "Quelle est la capitale de Trinité-et-Tobago ?",
+"c": "Port-d'Espagne",
+"w": [
+"Kingston",
+"Bridgetown",
+"San Fernando"
+],
+"e": "Elle est située sur l'île de Trinité."
+},
+{
+"q": "Quelle est la capitale de la Barbade ?",
+"c": "Bridgetown",
+"w": [
+"Kingston",
+"Nassau",
+"Port-d'Espagne"
+],
+"e": "C'est le pays natal de la chanteuse Rihanna."
+},
+{
+"q": "Quelle ville est la préfecture de la Martinique ?",
+"c": "Fort-de-France",
+"w": [
+"Pointe-à-Pitre",
+"Basse-Terre",
+"Saint-Pierre"
+],
+"e": "L'île est un département français d'outre-mer."
+},
+{
+"q": "Quelle est la plus grande ville du Québec ?",
+"c": "Montréal",
+"w": [
+"Québec",
+"Laval",
+"Gatineau"
+],
+"e": "Elle est l'une des plus grandes villes francophones du monde."
+},
+{
+"q": "Quelle ville est la capitale de la Colombie-Britannique, au Canada ?",
+"c": "Victoria",
+"w": [
+"Vancouver",
+"Calgary",
+"Edmonton"
+],
+"e": "Elle est située sur l'île de Vancouver."
+},
+{
+"q": "Quelle ville canadienne a accueilli les Jeux olympiques d'hiver de 2010 ?",
+"c": "Vancouver",
+"w": [
+"Calgary",
+"Montréal",
+"Toronto"
+],
+"e": "Whistler a accueilli les épreuves de ski."
+},
+{
+"q": "Quelle ville de Louisiane est surnommée « Big Easy » ?",
+"c": "La Nouvelle-Orléans",
+"w": [
+"Baton Rouge",
+"Lafayette",
+"Shreveport"
+],
+"e": "Elle est célèbre pour son carnaval et pour son jazz."
+},
+{
+"q": "Quelle ville de Floride est célèbre pour ses plages, son architecture Art déco et sa population latino ?",
+"c": "Miami",
+"w": [
+"Orlando",
+"Tampa",
+"Jacksonville"
+],
+"e": "Elle est située sur la côte atlantique."
+},
+{
+"q": "Combien de Grands Lacs se trouvent entre le Canada et les États-Unis ?",
+"c": "5",
+"w": [
+"3",
+"4",
+"7"
+],
+"e": "Ce sont le Supérieur, Michigan, Huron, Érié et Ontario."
+},
+{
+"q": "Quel est le plus grand des Grands Lacs d'Amérique du Nord ?",
+"c": "Le lac Supérieur",
+"w": [
+"Le lac Michigan",
+"Le lac Huron",
+"Le lac Ontario"
+],
+"e": "C'est aussi l'un des plus grands lacs d'eau douce du monde."
+},
+{
+"q": "Quel fleuve sépare le Texas du Mexique ?",
+"c": "Le Rio Grande",
+"w": [
+"Le Colorado",
+"Le Mississippi",
+"Le Missouri"
+],
+"e": "Il se jette dans le golfe du Mexique."
+},
+{
+"q": "Quel grand fleuve traverse Montréal et Québec avant de se jeter dans l'Atlantique ?",
+"c": "Le Saint-Laurent",
+"w": [
+"Le Mackenzie",
+"Le Yukon",
+"L'Hudson"
+],
+"e": "Il relie les Grands Lacs à l'océan."
+},
+{
+"q": "Quel détroit relie l'Atlantique et le Pacifique au sud du Chili ?",
+"c": "Le détroit de Magellan",
+"w": [
+"Le détroit de Drake",
+"Le détroit de Béring",
+"Le canal de Beagle"
+],
+"e": "Il a été exploré par Magellan en 1520."
+},
+{
+"q": "Quel cap marque l'extrémité sud de l'Amérique du Sud ?",
+"c": "Le cap Horn",
+"w": [
+"Le cap de Bonne-Espérance",
+"Le cap Canaveral",
+"Le cap Cod"
+],
+"e": "Les marins le redoutaient pour ses tempêtes."
+},
+{
+"q": "Comment s'appelle l'archipel partagé entre le Chili et l'Argentine, à l'extrême sud du continent ?",
+"c": "La Terre de Feu",
+"w": [
+"Les Malouines",
+"Les Galápagos",
+"Les Antilles"
+],
+"e": "Son nom vient des feux allumés par les habitants."
+},
+{
+"q": "Quel est le plus haut sommet d'Amérique du Nord, en Alaska ?",
+"c": "Le Denali",
+"w": [
+"Le mont Logan",
+"Le mont Whitney",
+"Le mont Rainier"
+],
+"e": "Il culmine à environ 6 190 mètres."
+},
+{
+"q": "Quel est le plus haut sommet d'Amérique du Sud, en Argentine ?",
+"c": "L'Aconcagua",
+"w": [
+"Le Chimborazo",
+"Le Huascarán",
+"L'Ojos del Salado"
+],
+"e": "Il culmine à environ 6 960 mètres."
+},
+{
+"q": "Quelle est la plus grande île des Caraïbes ?",
+"c": "Cuba",
+"w": [
+"La Jamaïque",
+"Hispaniola",
+"Porto Rico"
+],
+"e": "Elle est située à 150 kilomètres de la Floride."
+},
+{
+"q": "Quels deux pays d'Amérique du Sud n'ont pas d'accès à la mer ?",
+"c": "La Bolivie et le Paraguay",
+"w": [
+"Le Chili et le Pérou",
+"L'Équateur et la Colombie",
+"L'Uruguay et le Brésil"
+],
+"e": "Tous deux sont situés au cœur du continent."
+},
+{
+"q": "Quel lac, situé entre le Pérou et la Bolivie, est le plus haut lac navigable du monde ?",
+"c": "Le lac Titicaca",
+"w": [
+"Le lac Maracaibo",
+"Le lac Nicaragua",
+"Le lac Poopó"
+],
+"e": "Il se trouve à environ 3 800 mètres d'altitude."
+},
+{
+"q": "Quelles chutes d'eau sont situées à la frontière entre l'Argentine et le Brésil ?",
+"c": "Les chutes d'Iguazú",
+"w": [
+"Les chutes du Niagara",
+"Les chutes Angel",
+"Les chutes Victoria"
+],
+"e": "Elles comptent près de 270 cascades."
+},
+{
+"q": "Quelle ville brésilienne est dominée par la statue du Christ Rédempteur ?",
+"c": "Rio de Janeiro",
+"w": [
+"São Paulo",
+"Salvador",
+"Brasilia"
+],
+"e": "La statue se trouve au sommet du Corcovado."
+},
+{
+"q": "Quelle capitale sud-américaine est surnommée « le Paris de l'Amérique du Sud » ?",
+"c": "Buenos Aires",
+"w": [
+"Santiago",
+"Lima",
+"Bogota"
+],
+"e": "Son architecture rappelle celle de plusieurs villes européennes."
+},
+{
+"q": "Quelle péninsule du sud-est du Mexique abrite la ville de Cancún ?",
+"c": "Le Yucatán",
+"w": [
+"La Basse-Californie",
+"La Floride",
+"La péninsule de Nicoya"
+],
+"e": "On y trouve aussi les ruines de Chichén Itzá."
+},
+{
+"q": "Quel archipel équatorien est célèbre pour ses tortues géantes et pour Charles Darwin ?",
+"c": "Les Galápagos",
+"w": [
+"Les Malouines",
+"Les Açores",
+"Les Antilles"
+],
+"e": "Darwin y a étudié les pinsons, qui ont inspiré sa théorie."
+},
+{
+"q": "Quelle île chilienne du Pacifique est célèbre pour ses statues géantes appelées moaï ?",
+"c": "L'île de Pâques",
+"w": [
+"Les Galápagos",
+"Robinson Crusoé",
+"Chiloé"
+],
+"e": "On l'appelle « Rapa Nui » dans la langue locale."
+},
+{
+"q": "Quelle ancienne capitale de l'empire inca, dans les Andes, est aujourd'hui une ville du Pérou ?",
+"c": "Cuzco",
+"w": [
+"Lima",
+"Arequipa",
+"La Paz"
+],
+"e": "Son nom signifie « nombril » en quechua."
+},
+{
+"q": "Quel pays d'Amérique du Sud est très étroit et très long, entre la cordillère des Andes et l'océan ?",
+"c": "Le Chili",
+"w": [
+"L'Argentine",
+"Le Pérou",
+"L'Uruguay"
+],
+"e": "Il mesure plus de 4 000 kilomètres du nord au sud."
+},
+{
+"q": "Quel pays d'Amérique du Sud porte le nom de la ligne imaginaire qui le traverse ?",
+"c": "L'Équateur",
+"w": [
+"La Colombie",
+"Le Pérou",
+"La Bolivie"
+],
+"e": "Quito se trouve à quelques kilomètres de cette ligne."
+},
+{
+"q": "Quel désert de sel de Bolivie est le plus grand du monde ?",
+"c": "Le salar d'Uyuni",
+"w": [
+"Le salar de Atacama",
+"Le lac Assal",
+"La mer Morte"
+],
+"e": "Il devient un immense miroir après la pluie."
+},
+{
+"q": "Quelle chute d'eau, située au Venezuela, est la plus haute du monde, avec environ 979 mètres ?",
+"c": "Le Salto Ángel",
+"w": [
+"Les chutes Victoria",
+"Les chutes d'Iguazú",
+"Les chutes du Niagara"
+],
+"e": "Elle tombe depuis un plateau appelé Auyán-tepui."
+},
+{
+"q": "Quel golfe borde le sud des États-Unis et l'est du Mexique ?",
+"c": "Le golfe du Mexique",
+"w": [
+"Le golfe de Californie",
+"Le golfe de Guinée",
+"Le golfe du Maine"
+],
+"e": "Il communique avec l'Atlantique par le détroit de Floride."
+},
+{
+"q": "Quelle mer borde Cuba, Haïti, la Jamaïque et de nombreuses autres îles ?",
+"c": "La mer des Caraïbes",
+"w": [
+"La mer des Sargasses",
+"La mer de Weddell",
+"La mer de Béring"
+],
+"e": "Elle est célèbre pour ses eaux chaudes et turquoise."
+},
+{
+"q": "Quel État américain est un archipel au milieu de l'océan Pacifique ?",
+"c": "Hawaï",
+"w": [
+"L'Alaska",
+"La Californie",
+"La Floride"
+],
+"e": "Il est devenu le 50e État en 1959."
+},
+{
+"q": "Quel État américain est le plus étendu ?",
+"c": "L'Alaska",
+"w": [
+"Le Texas",
+"La Californie",
+"Le Montana"
+],
+"e": "Il est plus grand que la France, l'Espagne et l'Allemagne réunies."
+},
+{
+"q": "Quel État américain est le plus peuplé ?",
+"c": "La Californie",
+"w": [
+"Le Texas",
+"La Floride",
+"New York"
+],
+"e": "Il compte près de 39 millions d'habitants."
+},
+{
+"q": "Quelle vallée de Californie est célèbre pour ses vignobles ?",
+"c": "La Napa Valley",
+"w": [
+"La Vallée de la Mort",
+"La Silicon Valley",
+"La Yosemite Valley"
+],
+"e": "Elle produit certains des vins les plus connus des États-Unis."
+},
+{
+"q": "Quel parc national américain est célèbre pour ses geysers, dont Old Faithful ?",
+"c": "Yellowstone",
+"w": [
+"Yosemite",
+"Grand Canyon",
+"Everglades"
+],
+"e": "C'est le premier parc national du monde, créé en 1872."
+}
+]
