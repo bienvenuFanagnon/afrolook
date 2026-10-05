@@ -379,6 +379,72 @@ class QuizService {
   /// Outils admin (réservés au rôle ADM côté serveur).
   Future<Map<String, dynamic>> admin(Map<String, dynamic> data) => _call('quizAdmin', data);
 
+  // ── Avertissement accepté et signalements ──
+  static const consentVersion = 1;
+
+  String get _consentKey => 'quiz_consent_v${consentVersion}_$uid';
+
+  /// Le joueur a-t-il déjà accepté l'avertissement du quiz (version en cours) ?
+  Future<bool> consentOk() async {
+    final id = uid;
+    if (id == null) return false;
+    try {
+      final sp = await SharedPreferences.getInstance();
+      if (sp.getBool(_consentKey) == true) return true;
+      final d = await FirebaseFirestore.instance.collection('QuizConsent').doc(id).get();
+      final v = d.data()?['version'];
+      if (v is num && v >= consentVersion) {
+        await sp.setBool(_consentKey, true);
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[Quiz] consentement : $e');
+    }
+    return false;
+  }
+
+  /// Enregistre l'acceptation (preuve datée côté serveur : QuizConsent/{uid}).
+  Future<void> acceptConsent() async {
+    final id = uid;
+    if (id == null) return;
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setBool(_consentKey, true);
+    } catch (_) {}
+    try {
+      await FirebaseFirestore.instance.collection('QuizConsent').doc(id).set({
+        'version': consentVersion,
+        'acceptedAt': FieldValue.serverTimestamp(),
+        'platform': defaultTargetPlatform.name,
+      });
+    } catch (e) {
+      debugPrint('[Quiz] consentement non enregistré : $e');
+    }
+  }
+
+  /// Signale une question dont la réponse validée semble fausse (ou ambiguë, ou mal écrite).
+  Future<void> report({
+    required String kind,
+    int? n,
+    required String question,
+    required List<String> options,
+    required String shown,
+    String? chosen,
+    required String reason,
+    String comment = '',
+  }) async {
+    await _call('quizReport', {
+      'kind': kind,
+      'n': n ?? 0,
+      'q': question,
+      'options': options,
+      'shown': shown,
+      'chosen': chosen ?? '',
+      'reason': reason,
+      'comment': comment,
+    });
+  }
+
   // ── Grand Défi ──
   Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? extra]) async {
     final m = await _call('quizChallenge', {'action': action, ...?extra});

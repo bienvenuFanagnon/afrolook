@@ -1,5 +1,6 @@
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
+import * as crypto from "crypto";
 import { db } from "../shared/firebase";
 
 /**
@@ -28,6 +29,39 @@ export const quizPing = onCall({ timeoutSeconds: 10 }, async (request) => {
   const day = dayKey();
   await db.collection("QuizUsage").doc(`${day}_${uid}`).set({
     day, uid, sec: FieldValue.increment(sec), pings: FieldValue.increment(1), lastAt: Date.now(),
+  }, { merge: true });
+  return { ok: true };
+});
+
+
+const REASONS = ["wrong", "ambiguous", "typo", "other"];
+const clip = (v: unknown, n: number) => String(v ?? "").trim().slice(0, n);
+
+/**
+ * Signalement d'une question par un joueur (réponse validée fausse, question ambiguë…).
+ * Un seul signalement par joueur et par question (il est mis à jour s'il recommence) ; 15 par jour au maximum.
+ */
+export const quizReport = onCall({ timeoutSeconds: 15 }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const q = clip(request.data?.q, 400);
+  if (q.length < 5) throw new HttpsError("invalid-argument", "Question invalide.");
+  const reason = REASONS.includes(String(request.data?.reason)) ? String(request.data?.reason) : "other";
+  const kind = ["level", "daily", "challenge"].includes(String(request.data?.kind)) ? String(request.data?.kind) : "level";
+  const options = (Array.isArray(request.data?.options) ? request.data.options : []).slice(0, 4).map((o: unknown) => clip(o, 160));
+  const qHash = crypto.createHash("sha1").update(q).digest("hex").slice(0, 16);
+  const id = `${qHash}_${uid}`;
+  const day = dayKey();
+  const ref = db.collection("QuizReports").doc(id);
+  const exists = (await ref.get()).exists;
+  if (!exists) {
+    const today = await db.collection("QuizReports").where("uid", "==", uid).where("day", "==", day).count().get();
+    if (today.data().count >= 15) throw new HttpsError("resource-exhausted", "TOO_MANY");
+  }
+  await ref.set({
+    uid, qHash, q, options, shown: clip(request.data?.shown, 160), chosen: clip(request.data?.chosen, 160),
+    reason, comment: clip(request.data?.comment, 400), kind, n: Math.round(num(request.data?.n)),
+    day, status: "open", updatedAt: Date.now(), ...(exists ? {} : { createdAt: Date.now() }),
   }, { merge: true });
   return { ok: true };
 });
@@ -163,6 +197,32 @@ export const quizAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async 
         };
       }),
     };
+  }
+
+  if (action === "reports") {
+    const snap = await db.collection("QuizReports").where("status", "==", "open").limit(500).get();
+    const groups: Record<string, { qHash: string; q: string; options: string[]; shown: string; count: number; reasons: Record<string, number>; comments: string[]; last: number }> = {};
+    snap.docs.forEach((d) => {
+      const x = d.data();
+      const g = (groups[x["qHash"]] ??= { qHash: x["qHash"], q: x["q"], options: x["options"] ?? [], shown: x["shown"] ?? "", count: 0, reasons: {}, comments: [], last: 0 });
+      g.count += 1;
+      g.reasons[x["reason"]] = (g.reasons[x["reason"]] ?? 0) + 1;
+      if (x["comment"] && g.comments.length < 5) g.comments.push(x["comment"]);
+      g.last = Math.max(g.last, num(x["updatedAt"]));
+    });
+    const list = Object.values(groups).sort((a, b) => b.count - a.count || b.last - a.last);
+    return { ok: true, total: snap.size, reports: list };
+  }
+
+  if (action === "resolve") {
+    const qHash = clip(request.data?.qHash, 40);
+    const status = request.data?.status === "ignored" ? "ignored" : "done";
+    if (!qHash) throw new HttpsError("invalid-argument", "qHash manquant.");
+    const snap = await db.collection("QuizReports").where("qHash", "==", qHash).get();
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.update(d.ref, { status, resolvedAt: Date.now() }));
+    await batch.commit();
+    return { ok: true, updated: snap.size };
   }
 
   throw new HttpsError("invalid-argument", "action invalide.");

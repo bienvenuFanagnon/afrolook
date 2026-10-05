@@ -285,6 +285,13 @@ service cloud.firestore {
     match /QuizAttempts/{attemptId} {
       allow read: if isAuth() && resource.data.uid == request.auth.uid;
     }
+    // Quiz : preuve que le joueur a lu et accepté l'avertissement (questions pouvant contenir des erreurs, signalement)
+    match /QuizConsent/{consentUid} {
+      allow read: if isAuth() && request.auth.uid == consentUid;
+      allow create, update: if isAuth() && request.auth.uid == consentUid
+        && request.resource.data.keys().hasOnly(['version', 'acceptedAt', 'platform'])
+        && request.resource.data.version is int;
+    }
 
     // ─────────────────────────────────────────────────────────────
     // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
@@ -297,12 +304,12 @@ service cloud.firestore {
       // Quiz : questions, parties et progression sont secrètes (lues seulement par les Cloud Functions ; le joueur lit
       // sa propre progression et son historique grâce aux règles dédiées plus haut)
       allow read: if isAuth()
-          && !(collection in ['QuizLevels', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage']);
+          && !(collection in ['QuizLevels', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent']);
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
       // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
       // Follows : abonnements écrits uniquement par les Cloud Functions (followUser / unfollowUser)
       allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
-          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage']);
+          && !(collection in ['Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app

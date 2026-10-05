@@ -6,6 +6,7 @@ import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_consent.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_widgets.dart';
@@ -90,6 +91,8 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
   Future<void> _choose(int idx) async {
     final d = _daily;
     if (d == null || _busy || _result != null) return;
+    if (!await quizEnsureConsent(context)) return;
+    if (!mounted) return;
     QuizSound.fx(QuizSfx.tap);
     setState(() {
       _selected = idx;
@@ -252,7 +255,14 @@ class _QuizDailyPlayerState extends State<QuizDailyPlayer> {
           ),
           const SizedBox(height: 4),
           Text(_result!.explanation, style: TextStyle(color: c.textPrimary, fontSize: 13, height: 1.35)),
-          const SizedBox(height: 10),
+          QuizReportButton(
+            kind: 'daily',
+            question: q.q,
+            options: q.o,
+            shown: _result!.correctIndex >= 0 && _result!.correctIndex < q.o.length ? q.o[_result!.correctIndex] : '',
+            chosen: _selected == null ? null : q.o[_selected!],
+          ),
+          const SizedBox(height: 6),
           QuizChunkyButton(
             label: last
                 ? context.tr('Voir mon score')

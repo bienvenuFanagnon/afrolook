@@ -15,6 +15,7 @@ import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'quiz_leaderboard_page.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_consent.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
@@ -669,6 +670,13 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
             padding: const EdgeInsets.only(bottom: 10),
             child: QuizBubble(child: Text(fb.explanation, style: TextStyle(color: c.textPrimary, height: 1.35, fontWeight: FontWeight.w600))),
           ),
+        QuizReportButton(
+          kind: 'challenge',
+          question: q.q,
+          options: q.o,
+          shown: fb.correctIndex >= 0 && fb.correctIndex < q.o.length ? q.o[fb.correctIndex] : '',
+          chosen: (_selected != null && _selected! >= 0) ? q.o[_selected!] : null,
+        ),
         if (fb.late && !fb.correct)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),

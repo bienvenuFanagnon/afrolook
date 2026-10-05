@@ -16,6 +16,7 @@ import 'quiz_leaderboard_page.dart';
 import 'quiz_level_page.dart';
 import 'quiz_shop_page.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_consent.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
@@ -49,6 +50,10 @@ class _QuizHomePageState extends State<QuizHomePage> {
   void initState() {
     super.initState();
     _usage.start();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (!await quizEnsureConsent(context) && mounted) Navigator.pop(context);
+    });
     QuizSound.isMuted().then((m) {
       if (mounted) setState(() => _muted = m);
     });

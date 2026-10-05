@@ -15,6 +15,7 @@ import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'widgets/hawk_mascot.dart';
+import 'widgets/quiz_consent.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_dialogs.dart';
@@ -486,7 +487,15 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         ],
         const SizedBox(height: 6),
         Text(r.explanation, style: TextStyle(color: c.textPrimary, fontSize: 13.5, height: 1.35)),
-        const SizedBox(height: 12),
+        QuizReportButton(
+          kind: 'level',
+          n: widget.n,
+          question: _start!.questions[_i].q,
+          options: _start!.questions[_i].o,
+          shown: _start!.questions[_i].o[r.correctIndex],
+          chosen: _selected == null ? null : _start!.questions[_i].o[_selected!],
+        ),
+        const SizedBox(height: 8),
         SafeArea(
           top: false,
           child: QuizChunkyButton(

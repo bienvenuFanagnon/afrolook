@@ -55,7 +55,7 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: c.background,
         appBar: AppBar(
@@ -69,7 +69,8 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
             labelColor: c.primary,
             unselectedLabelColor: c.textSecondary,
             labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-            tabs: const [Tab(text: "Aujourd'hui"), Tab(text: 'Jours'), Tab(text: 'Questions')],
+            isScrollable: true,
+            tabs: const [Tab(text: "Aujourd'hui"), Tab(text: 'Jours'), Tab(text: 'Questions'), Tab(text: 'Signalements')],
           ),
         ),
         body: _loading && _stats == null
@@ -84,7 +85,7 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
                       ]),
                     ),
                   )
-                : TabBarView(children: [_today(c), _daysTab(c), const _QuestionsTab()]),
+                : TabBarView(children: [_today(c), _daysTab(c), const _QuestionsTab(), const _ReportsTab()]),
       ),
     );
   }
@@ -370,5 +371,105 @@ class _QuestionsTabState extends State<_QuestionsTab> {
           ),
       ],
     ]);
+  }
+}
+
+/// Signalements des joueurs : questions dont la réponse validée est contestée (les plus signalées d'abord).
+class _ReportsTab extends StatefulWidget {
+  const _ReportsTab();
+
+  @override
+  State<_ReportsTab> createState() => _ReportsTabState();
+}
+
+class _ReportsTabState extends State<_ReportsTab> {
+  List<Map<String, dynamic>>? _reports;
+  String? _error;
+
+  static const _reasons = {'wrong': 'Réponse fausse', 'ambiguous': 'Plusieurs réponses possibles', 'typo': 'Faute / texte', 'other': 'Autre'};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _error = null);
+    try {
+      final m = await QuizService.instance.admin({'action': 'reports'});
+      if (mounted) setState(() => _reports = (m['reports'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList());
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    }
+  }
+
+  Future<void> _resolve(String qHash, String status) async {
+    try {
+      await QuizService.instance.admin({'action': 'resolve', 'qHash': qHash, 'status': status});
+      if (mounted) setState(() => _reports?.removeWhere((r) => r['qHash'] == qHash));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    if (_error != null) return Center(child: Text(_error!, style: TextStyle(color: c.danger)));
+    final list = _reports;
+    if (list == null) return const Center(child: CircularProgressIndicator());
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        if (list.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text('Aucun signalement en attente.', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700)),
+          ),
+        for (final r in list)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border, width: 1.2)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: _n(r['count']) >= 3 ? c.danger : c.warning, borderRadius: BorderRadius.circular(999)),
+                  child: Text('${_n(r['count'])} signalement${_n(r['count']) > 1 ? 's' : ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text((r['reasons'] as Map).entries.map((e) => '${_reasons[e.key] ?? e.key} (${e.value})').join(' · '),
+                      style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text('${r['q']}', style: TextStyle(fontWeight: FontWeight.w800, color: c.textPrimary, height: 1.3)),
+              const SizedBox(height: 6),
+              for (final o in (r['options'] as List))
+                Text('${o == r['shown'] ? '✔ ' : '• '}$o',
+                    style: TextStyle(color: o == r['shown'] ? c.primary : c.textPrimary, fontWeight: o == r['shown'] ? FontWeight.w900 : FontWeight.w500, fontSize: 13)),
+              if ((r['comments'] as List).isNotEmpty) ...[
+                const SizedBox(height: 8),
+                for (final cm in (r['comments'] as List))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text('« $cm »', style: TextStyle(color: c.textSecondary, fontStyle: FontStyle.italic, fontSize: 12.5)),
+                  ),
+              ],
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: OutlinedButton(onPressed: () => _resolve('${r['qHash']}', 'ignored'), child: const Text('Ignorer'))),
+                const SizedBox(width: 10),
+                Expanded(child: FilledButton(onPressed: () => _resolve('${r['qHash']}', 'done'), child: const Text('Traité'))),
+              ]),
+            ]),
+          ),
+        Text('Pour corriger une question : modifier tools/quiz/questions/*.json puis relancer build_levels.js et upload_levels.js.',
+            style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+      ]),
+    );
   }
 }

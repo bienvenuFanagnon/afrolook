@@ -77,3 +77,14 @@ Il ne compte que les joueurs ayant la version de l'app qui contient ce suivi.
   Grand Défi : le vrai chronomètre de 30 s, l'épervier s'agite sous 10 s.
 - La lecture des questions à voix haute (Google Text-to-Speech) a été essayée puis abandonnée pour éviter une facturation :
   l'API est désactivée et les fichiers de voix supprimés.
+
+## Avertissement et signalements
+- **Avertissement** à accepter avant de jouer (accueil du quiz, et avant la première réponse du quiz du jour dans le fil) :
+  le quiz peut contenir des erreurs, les réponses ne sont pas une source officielle, les points n'ont aucune valeur en argent,
+  signaler avec le bouton ou écrire à officiel.afrolook@gmail.com. L'acceptation est enregistrée avec la date serveur dans
+  `QuizConsent/{uid}` (`{version, acceptedAt, platform}`) ; changer `QuizService.consentVersion` le redemande à tout le monde.
+- **« Signaler une erreur »** sous chaque question corrigée (niveaux, quiz du jour, Grand Défi) : motif + commentaire, fonction `quizReport`
+  (1 signalement par joueur et par question, 15 par jour) → `QuizReports`. Admin → Quiz → onglet **Signalements** : questions
+  regroupées, les plus signalées d'abord, boutons « Traité » / « Ignorer ». Correction : modifier `tools/quiz/questions/*.json`,
+  `build_levels.js`, `upload_levels.js`.
+- Ce texte est une information claire pour les joueurs ; il ne remplace pas l'avis d'un juriste sur les conditions d'utilisation.
