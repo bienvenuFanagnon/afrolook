@@ -50,7 +50,7 @@ type CatTrack = {
   exam?: { id: string; title: string; diploma: string; price?: number; count?: number; passPct?: number; seconds?: number };
   cert?: { id: string; title: string; from: string[]; price?: number; count?: number; passPct?: number; seconds?: number };
 };
-type Content = { id: string; title: string; lesson: { t: string; x: string }[]; levels: Q[][] };
+type Content = { id: string; title: string; lesson: { t: string; x: string }[]; levels: { questions: Q[] }[] };
 
 type Prog = {
   entries: Record<string, string>; // parcours → classe de départ
@@ -357,7 +357,7 @@ function pickBalanced(groups: Q[][], count: number): Q[] {
 
 async function chapterQuestions(ids: string[]): Promise<Q[][]> {
   const cs = await Promise.all(ids.map((id) => loadContent(id)));
-  return cs.map((c) => c.levels.flat());
+  return cs.map((c) => c.levels.flatMap((l) => l.questions));
 }
 
 type SessDoc = { uid: string; kind: string; ref: string; title: string; pct: number; seconds: number; qs: Q[]; perms: string[]; answers: { c: number; ok: boolean }[]; status: string; lastAt: number; result?: Record<string, unknown> };
@@ -386,7 +386,7 @@ export const etudeStart = onCall({ timeoutSeconds: 25 }, async (request) => {
     if (lv > done + 1) throw new HttpsError("failed-precondition", "LEVEL_LOCKED");
     practice = lv <= done;
     const c = await loadContent(chapterId);
-    qs = c.levels[lv - 1];
+    qs = c.levels[lv - 1].questions;
     title = `${r.ch.title} · niveau ${lv}`;
     pct = cfg.levelPassMin / qs.length;
   } else if (kind === "compo") {

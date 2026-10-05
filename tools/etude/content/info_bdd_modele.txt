@@ -1,0 +1,27 @@
+titre: Le modèle relationnel
+== fiche
+p: Une base de données organise l'information pour la retrouver et la modifier facilement. Le modèle relationnel la range dans des tables.
+li: Une table est faite de lignes (enregistrements) et de colonnes (attributs ou champs).
+li: Une clé primaire identifie de façon unique chaque ligne (ex. numéro d'étudiant). Elle ne peut pas être vide ni répétée.
+li: Une clé étrangère est une colonne qui renvoie à la clé primaire d'une autre table : elle crée le lien entre les tables.
+li: Une relation peut être un-à-plusieurs (un enseignant, plusieurs cours) ou plusieurs-à-plusieurs (étudiants et cours, via une table de liaison).
+li: Normaliser, c'est éviter de répéter les mêmes informations à plusieurs endroits.
+li: Un SGBD (MySQL, PostgreSQL, SQLite…) est le logiciel qui gère les bases.
+note: Exemple : table Etudiant(id, nom, filiere) avec id clé primaire ; table Note(id_etudiant, matiere, valeur) où id_etudiant est une clé étrangère vers Etudiant.
+note: Règle : jamais deux lignes avec la même clé primaire.
+== questions
+Dans une table, que représente une ligne ? || Un enregistrement || Un attribut || Une clé || Un type || Chaque ligne décrit un élément (un étudiant, un produit…).
+Dans une table, que représente une colonne ? || Un attribut ou champ || Un enregistrement || Une base || Une requête || Par exemple le nom ou la date de naissance.
+Que fait une clé primaire ? || Identifie chaque ligne de façon unique || Trie les lignes || Supprime les doublons de colonnes || Chiffre les données || Elle ne peut pas être répétée.
+Une clé primaire peut-elle être vide (NULL) ? || Non || Oui || Seulement pour du texte || Seulement une fois || Elle doit toujours avoir une valeur.
+Que fait une clé étrangère ? || Relie une table à une autre || Identifie une ligne seule || Supprime une table || Trie une colonne || Elle contient la clé primaire d'une autre table.
+Que signifie SGBD ? || Système de gestion de bases de données || Service général de bases de données || Système graphique de bureau || Stockage global de données || MySQL et PostgreSQL en sont des exemples.
+Quel est un exemple de SGBD relationnel ? || PostgreSQL || Photoshop || Excel Online seulement || Zoom || PostgreSQL stocke des tables reliées.
+Quelle colonne conviendrait comme clé primaire d'une table Etudiant ? || Le numéro d'étudiant || Le prénom || La ville || La filière || Il est unique pour chaque étudiant.
+Pourquoi le nom d'un étudiant n'est-il pas une bonne clé primaire ? || Deux étudiants peuvent avoir le même nom || Il est trop court || Il est un nombre || Il change de colonne || Une clé doit être unique.
+Quel type de relation existe entre « enseignant » et « cours » si un enseignant donne plusieurs cours ? || Un-à-plusieurs || Un-à-un || Aucune || Plusieurs-à-zéro || Une ligne côté enseignant correspond à plusieurs côté cours.
+Comment représente-t-on une relation plusieurs-à-plusieurs (étudiants et cours) ? || Avec une table de liaison || Avec une seule colonne || Avec une boucle || Sans clé || La table de liaison contient deux clés étrangères.
+Que veut dire normaliser une base ? || Éviter de répéter des informations || Ajouter des colonnes inutiles || Supprimer les clés || Copier la base || On range chaque information une seule fois.
+Quel problème pose la répétition d'une même adresse dans 100 lignes ? || Incohérences et mises à jour difficiles || Aucun problème || La base est plus rapide || Les clés disparaissent || Il faut corriger 100 lignes si l'adresse change.
+Dans Note(id_etudiant, matiere, valeur), que représente id_etudiant ? || Une clé étrangère vers Etudiant || La clé primaire de Etudiant || Une valeur numérique de note || Un SGBD || Elle pointe vers un étudiant précis.
+Que se passe-t-il si l'on tente d'insérer deux lignes avec la même clé primaire ? || Le SGBD refuse la seconde || Les deux sont acceptées || Elles sont fusionnées automatiquement || La table est supprimée || L'unicité de la clé est garantie par le SGBD.

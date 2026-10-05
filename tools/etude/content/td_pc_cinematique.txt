@@ -1,0 +1,27 @@
+titre: Cinématique du point
+== fiche
+p: La cinématique décrit le mouvement d'un point sans chercher ses causes. On a besoin d'un repère (origine, axes) et d'une horloge.
+li: Vitesse moyenne : v = d / t (distance divisée par la durée) ; unité : m/s. 1 m/s = 3,6 km/h.
+li: Vecteur vitesse : tangent à la trajectoire ; vecteur accélération : mesure la variation de la vitesse.
+li: Mouvement rectiligne uniforme (MRU) : vitesse constante ; x = x₀ + v·t ; accélération nulle.
+li: Mouvement rectiligne uniformément varié (MRUV) : accélération a constante ; v = v₀ + a·t ; x = x₀ + v₀·t + ½·a·t².
+li: Relation indépendante du temps : v² − v₀² = 2a(x − x₀).
+li: Chute libre sans frottement : a = g ≈ 9,8 m/s² (souvent arrondi à 10) vers le bas.
+note: Exemple : un mobile part du repos avec a = 2 m/s² : après 5 s, v = 10 m/s et il a parcouru x = ½ × 2 × 25 = 25 m.
+note: Un mouvement est uniforme si la vitesse est constante, et non si la trajectoire est droite.
+== questions
+Quelle est l'unité de la vitesse dans le Système international ? || Le mètre par seconde (m/s) || Le kilomètre (km) || Le newton (N) || Le joule (J) || La vitesse est une distance par unité de temps.
+Que vaut 36 km/h en m/s ? || 10 m/s || 36 m/s || 3,6 m/s || 100 m/s || On divise par 3,6.
+Quelle est la vitesse moyenne d'un mobile qui parcourt 100 m en 20 s ? || 5 m/s || 20 m/s || 2 m/s || 0,2 m/s || v = 100 / 20 = 5 m/s.
+Que vaut l'accélération dans un mouvement rectiligne uniforme ? || Zéro || Constante non nulle || Infinie || Négative || La vitesse ne change pas.
+Quelle est l'équation horaire d'un MRU ? || x = x₀ + v·t || x = x₀ + ½·a·t² || x = v·t² || x = x₀ − g·t || La position varie proportionnellement au temps.
+Quelle est l'équation de la vitesse dans un MRUV ? || v = v₀ + a·t || v = v₀ × t || v = a / t || v = x₀ + a·t || La vitesse varie de façon linéaire avec le temps.
+Un mobile part du repos avec a = 2 m/s². Quelle est sa vitesse après 5 s ? || 10 m/s || 7 m/s || 2,5 m/s || 25 m/s || v = a·t = 2 × 5 = 10 m/s.
+Quelle distance parcourt-il pendant ces 5 s ? || 25 m || 10 m || 50 m || 5 m || x = ½ × 2 × 5² = 25 m.
+Quelle est la valeur approchée de g sur Terre ? || 9,8 m/s² || 1 m/s² || 98 m/s² || 0,98 m/s² || C'est l'accélération de la pesanteur.
+Quelle est la direction de l'accélération en chute libre ? || Verticale vers le bas || Horizontale || Vers le haut || Elle est nulle || La pesanteur attire vers le centre de la Terre.
+Un objet tombe en chute libre sans vitesse initiale pendant 2 s (g = 10 m/s²). Quelle vitesse atteint-il ? || 20 m/s || 10 m/s || 5 m/s || 40 m/s || v = g·t = 10 × 2.
+Quelle hauteur a-t-il parcourue pendant ces 2 s ? || 20 m || 10 m || 40 m || 5 m || h = ½ × 10 × 2² = 20 m.
+Quel est le sens du vecteur vitesse ? || Tangent à la trajectoire, dans le sens du mouvement || Perpendiculaire à la trajectoire || Toujours vertical || Opposé au mouvement || Il indique où va le mobile à l'instant considéré.
+Un mobile roule à 20 m/s et freine avec a = −5 m/s². Combien de temps met-il à s'arrêter ? || 4 s || 5 s || 25 s || 100 s || v = 20 − 5t = 0 donne t = 4 s.
+Quelle distance parcourt-il pendant ce freinage ? || 40 m || 80 m || 20 m || 100 m || v² − v₀² = 2a·d donne d = 400 / 10 = 40 m.

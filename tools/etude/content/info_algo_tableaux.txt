@@ -1,0 +1,27 @@
+titre: Tableaux et fonctions
+== fiche
+p: Un tableau regroupe plusieurs valeurs de même type sous un seul nom. Une fonction regroupe des instructions réutilisables.
+li: Un tableau T de n éléments a des indices de 0 à n − 1 (dans la plupart des langages) ou de 1 à n (dans certains algorithmes).
+li: Accès à un élément : T[i]. Parcours complet avec une boucle POUR.
+li: Recherche d'un maximum : on garde le plus grand vu jusqu'ici et on le compare à chaque élément.
+li: Une fonction a un nom, des paramètres (entrées) et retourne une valeur (sortie).
+li: Une procédure fait une action sans retourner de valeur.
+li: Les variables locales n'existent que dans la fonction ; les paramètres sont des copies (passage par valeur) sauf indication contraire.
+note: Exemple : FONCTION carré(x) : retourner x × x ; carré(5) vaut 25.
+note: Accéder à T[n] quand les indices vont de 0 à n − 1 provoque une erreur de dépassement de tableau.
+== questions
+Qu'est-ce qu'un tableau ? || Une suite de valeurs de même type sous un même nom || Une boucle || Un type booléen || Une condition || Chaque élément est repéré par son indice.
+Quel est l'indice du premier élément dans la plupart des langages (Python, C, Java) ? || 0 || 1 || −1 || Cela dépend du type || Les indices commencent à 0.
+Un tableau a 5 éléments (indices de 0 à 4). Quel est le dernier indice ? || 4 || 5 || 6 || 0 || Avec 5 éléments, les indices vont de 0 à 4.
+Si T = [3, 8, 1], que vaut T[1] ? || 8 || 3 || 1 || Erreur || T[0] = 3, T[1] = 8, T[2] = 1.
+Que renvoie une fonction ? || Une valeur de retour || Rien jamais || Seulement un texte || Un tableau obligatoirement || Elle peut être utilisée dans une expression.
+Que vaut carré(5) avec FONCTION carré(x) : retourner x × x ? || 25 || 10 || 5 || 55 || 5 × 5 = 25.
+Que sont les paramètres d'une fonction ? || Les valeurs données en entrée || Les valeurs retournées || Les boucles || Les commentaires || Ils sont renseignés quand on appelle la fonction.
+Quelle différence entre fonction et procédure ? || La procédure ne retourne pas de valeur || La fonction est plus lente || La procédure est un tableau || Il n'y en a pas || Une procédure exécute seulement une action.
+Que contient m à la fin ? m ← T[0] ; POUR i DE 1 À n−1 : SI T[i] > m ALORS m ← T[i] || Le maximum du tableau || Le minimum || La somme || La moyenne || On garde le plus grand élément rencontré.
+Pour T = [4, 9, 2], quelle est la somme calculée par s ← 0 ; POUR i DE 0 À 2 : s ← s + T[i] ? || 15 || 9 || 6 || 4 || 4 + 9 + 2 = 15.
+Qu'arrive-t-il si l'on accède à T[5] dans un tableau de 5 éléments (indices 0 à 4) ? || Une erreur de dépassement || Le dernier élément est renvoyé || 0 est renvoyé || Rien || L'indice 5 n'existe pas.
+Quelle est la portée d'une variable locale ? || Uniquement la fonction où elle est déclarée || Tout le programme || Tous les fichiers || Aucune || Elle disparaît à la fin de la fonction.
+Quelle valeur renvoie FONCTION f(n) : SI n ≤ 1 ALORS retourner 1 SINON retourner n × f(n − 1) pour f(4) ? || 24 || 10 || 4 || 1 || C'est la factorielle : 4 × 3 × 2 × 1 = 24.
+Comment s'appelle une fonction qui s'appelle elle-même ? || Une fonction récursive || Une fonction locale || Une procédure || Une boucle || Elle doit avoir un cas d'arrêt pour ne pas s'appeler à l'infini.
+Que fait le tri à bulles ? || Échange les éléments voisins mal placés, tour après tour || Cherche le maximum seulement || Supprime les doublons || Inverse le tableau || Les plus grands éléments « remontent » à la fin.

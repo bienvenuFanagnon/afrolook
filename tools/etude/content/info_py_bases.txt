@@ -1,0 +1,27 @@
+titre: Python : les bases
+== fiche
+p: Python est un langage lisible, très utilisé en sciences, en web et en intelligence artificielle. Le code est structuré par l'indentation.
+li: Variables : x = 5 ; nom = "Ama" ; pas de déclaration de type, Python le devine.
+li: Types de base : int (entier), float (réel), str (texte), bool (True / False).
+li: Affichage : print("Bonjour") ; lecture clavier : input("Nom ? ") renvoie toujours un texte.
+li: Conversion : int("12") donne 12 ; str(12) donne "12".
+li: Opérateurs : + − * / (division réelle), // (division entière), % (reste), ** (puissance).
+li: Condition : if x > 3: … elif … else: … ; boucles : for i in range(5): et while condition:.
+note: range(5) donne 0, 1, 2, 3, 4 (5 exclu). range(1, 4) donne 1, 2, 3.
+note: Commentaires avec #. L'indentation (4 espaces) délimite les blocs : une mauvaise indentation provoque une erreur.
+== questions
+Quel symbole commence un commentaire en Python ? || # || // || /* || -- || Tout ce qui suit # sur la ligne est ignoré.
+Que fait print("Bonjour") ? || Affiche Bonjour à l'écran || Lit un texte au clavier || Déclare une variable || Termine le programme || print sert à afficher.
+Quel est le type de 3.14 en Python ? || float || int || str || bool || Un nombre à virgule est un float.
+Quel est le type de "12" en Python ? || str || int || float || bool || Les guillemets indiquent un texte.
+Que renvoie input("Nom ? ") ? || Un texte (str) || Un entier || Un booléen || Rien || Même si on tape un nombre, c'est un texte.
+Que vaut 7 // 2 ? || 3 || 3.5 || 4 || 1 || // est la division entière.
+Que vaut 7 % 2 ? || 1 || 3 || 0 || 3.5 || % donne le reste de la division.
+Que vaut 2 ** 3 ? || 8 || 6 || 5 || 9 || ** est la puissance : 2 × 2 × 2.
+Que vaut 7 / 2 en Python 3 ? || 3.5 || 3 || 4 || Erreur || / donne toujours un résultat réel.
+Que donne list(range(3)) ? || [0, 1, 2] || [1, 2, 3] || [0, 1, 2, 3] || [3] || range(n) s'arrête avant n.
+Quel est le résultat de int("12") + 3 ? || 15 || 123 || "123" || Erreur || int convertit le texte en entier.
+Que produit "12" + "3" ? || "123" || 15 || Erreur || "15" || Avec des textes, + concatène.
+Que fait ce code : for i in range(1, 4): print(i) ? || Affiche 1, 2 puis 3 || Affiche 1, 2, 3, 4 || Affiche 0, 1, 2, 3 || Affiche 4 || range(1, 4) exclut 4.
+Quel code est correct ? || if x > 3: puis une ligne indentée || if (x > 3) puis { } || if x > 3 then || if x > 3 end || En Python, le deux-points et l'indentation sont obligatoires.
+Que vaut s après : s = 0 ; for i in range(1, 5): s += i ? || 10 || 15 || 4 || 5 || 1 + 2 + 3 + 4 = 10.

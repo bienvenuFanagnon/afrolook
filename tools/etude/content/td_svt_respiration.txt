@@ -1,0 +1,27 @@
+titre: Respiration et fermentation
+== fiche
+p: Les cellules produisent leur énergie à partir de la dégradation de matière organique, avec ou sans dioxygène.
+li: Respiration cellulaire (avec O₂) : glucose + dioxygène → dioxyde de carbone + eau + énergie. Elle se déroule dans les mitochondries (après la glycolyse dans le cytoplasme).
+li: Rendement : environ 36 à 38 molécules d'ATP par molécule de glucose (l'ATP est la « monnaie énergétique » de la cellule).
+li: Fermentation (sans O₂) : dégradation incomplète du glucose, rendement faible (2 ATP).
+li: Fermentation alcoolique (levures) : glucose → éthanol + CO₂ (pain, bière, vin).
+li: Fermentation lactique (bactéries lactiques, cellules musculaires en manque d'O₂) : glucose → acide lactique (yaourt, crampes).
+li: Les échanges respiratoires se mesurent par la consommation de O₂ et le rejet de CO₂.
+note: Exemple : une pâte à pain gonfle car les levures libèrent du CO₂ en fermentant le sucre de la farine.
+note: Le CO₂ trouble l'eau de chaux : c'est le test de reconnaissance.
+== questions
+Quel est le rôle de la respiration cellulaire ? || Libérer de l'énergie à partir des nutriments || Fabriquer du glucose || Transporter l'oxygène dans le sang || Produire de la chlorophylle || Elle produit de l'ATP utilisable par la cellule.
+Où se déroule l'essentiel de la respiration cellulaire ? || Dans les mitochondries || Dans le noyau || Dans les chloroplastes || Dans la membrane de la cellule seulement || Ce sont les « centrales énergétiques » de la cellule.
+Quels sont les produits de la respiration cellulaire ? || Du CO₂, de l'eau et de l'énergie || De l'O₂ seulement || De l'alcool || De l'acide lactique || Le glucose est complètement oxydé.
+Quel gaz est consommé par la respiration cellulaire ? || Le dioxygène || Le dioxyde de carbone || L'azote || L'hydrogène || Il est utilisé pour oxyder le glucose.
+Comment reconnaît-on le CO₂ ? || Il trouble l'eau de chaux || Il fait rougir un papier pH || Il enflamme une allumette || Il bleuit un amidon || Test classique de laboratoire.
+Que signifie ATP ? || Adénosine triphosphate, molécule porteuse d'énergie || Acide thermique pur || Aliment total pour la plante || Aucune de ces réponses || Elle fournit l'énergie aux réactions cellulaires.
+Qu'est-ce qu'une fermentation ? || Une dégradation du glucose sans dioxygène || Une respiration avec O₂ || Une photosynthèse || Une digestion || Le rendement énergétique est faible.
+Quel produit forme la fermentation alcoolique ? || De l'éthanol et du CO₂ || De l'acide lactique || De l'eau seule || De l'oxygène || Elle est réalisée par les levures.
+Pourquoi la pâte à pain gonfle-t-elle ? || Les levures libèrent du CO₂ || Le sel produit de l'air || La farine chauffe || L'eau s'évapore || Le gaz forme des bulles qui la font lever.
+Quel produit forme la fermentation lactique ? || De l'acide lactique || De l'éthanol || De l'eau || Du glucose || Elle a lieu dans le yaourt ou dans le muscle sans oxygène.
+Pourquoi des crampes peuvent-elles apparaître après un effort intense ? || L'acide lactique s'accumule dans les muscles || Le muscle manque de glucose pur || Le sang est trop riche en O₂ || Le muscle se refroidit || Le manque d'O₂ entraîne une fermentation lactique.
+Quel est le rendement approximatif en ATP de la fermentation d'une molécule de glucose ? || 2 ATP || 36 ATP || 100 ATP || 0 ATP || Beaucoup moins que la respiration.
+Quel est le rendement approximatif de la respiration cellulaire pour une molécule de glucose ? || Environ 36 à 38 ATP || 2 ATP || 10 ATP || 1 ATP || La respiration est beaucoup plus efficace.
+Quelle étape précède la respiration et la fermentation dans le cytoplasme ? || La glycolyse || La photosynthèse || La mitose || La digestion || Le glucose y est transformé en pyruvate.
+Que deviennent le CO₂ et l'H₂O dans la respiration d'un être humain ? || Ils sont rejetés par l'expiration et la sueur/urine || Ils sont stockés || Ils sont transformés en glucose || Ils restent dans les mitochondries || L'organisme élimine ces déchets.

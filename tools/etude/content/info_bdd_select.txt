@@ -1,0 +1,27 @@
+titre: SQL : interroger une table
+== fiche
+p: SQL est le langage pour interroger et modifier une base. L'instruction SELECT lit des données sans les modifier.
+li: SELECT colonnes FROM table : choisit des colonnes. SELECT * prend toutes les colonnes.
+li: WHERE filtre les lignes : WHERE age >= 18 AND ville = 'Lomé'.
+li: ORDER BY trie : ORDER BY nom ASC (croissant) ou DESC (décroissant).
+li: LIMIT n garde les n premières lignes.
+li: Comparer du texte : valeurs entre apostrophes ; LIKE 'A%' cherche les textes qui commencent par A.
+li: INSERT INTO table (col1, col2) VALUES (…) ajoute ; UPDATE table SET col = … WHERE … modifie ; DELETE FROM table WHERE … supprime.
+note: Attention : UPDATE ou DELETE sans WHERE agit sur TOUTES les lignes de la table.
+note: Ordre d'écriture : SELECT … FROM … WHERE … ORDER BY … LIMIT.
+== questions
+Quelle instruction SQL lit des données ? || SELECT || INSERT || DELETE || UPDATE || SELECT interroge la base sans la modifier.
+Que fait SELECT * FROM Etudiant ? || Lit toutes les colonnes de toutes les lignes || Supprime la table || Ajoute un étudiant || Trie la table || L'étoile désigne toutes les colonnes.
+Quelle clause filtre les lignes ? || WHERE || ORDER BY || FROM || LIMIT || WHERE garde les lignes qui respectent la condition.
+Quelle requête donne les étudiants de plus de 18 ans ? || SELECT * FROM Etudiant WHERE age > 18 || SELECT age > 18 FROM Etudiant || FROM Etudiant SELECT age > 18 || DELETE age > 18 || WHERE contient la condition.
+Quelle clause trie les résultats ? || ORDER BY || WHERE || GROUP || LIKE || ORDER BY nom trie selon la colonne nom.
+Que fait ORDER BY note DESC ? || Trie de la plus grande à la plus petite note || Trie de la plus petite à la plus grande || Supprime les notes || Garde une seule note || DESC signifie décroissant.
+Que fait LIMIT 3 ? || Garde les 3 premières lignes du résultat || Supprime 3 lignes || Ajoute 3 lignes || Trie en 3 groupes || Utile pour un classement des meilleurs.
+Comment écrit-on un texte dans une condition SQL ? || Entre apostrophes : 'Lomé' || Sans rien : Lomé || Entre crochets : [Lomé] || Entre dièses : #Lomé# || Les chaînes sont entre apostrophes.
+Que cherche WHERE nom LIKE 'A%' ? || Les noms qui commencent par A || Les noms qui finissent par A || Les noms égaux à A% || Les noms de 2 lettres || Le signe % remplace n'importe quelle suite de caractères.
+Quelle instruction ajoute une ligne ? || INSERT INTO || SELECT || UPDATE || DROP || INSERT INTO table VALUES (…).
+Quelle instruction modifie des lignes existantes ? || UPDATE || INSERT || SELECT || CREATE || UPDATE table SET colonne = valeur WHERE condition.
+Que fait DELETE FROM Etudiant sans WHERE ? || Supprime toutes les lignes de la table || Ne supprime rien || Supprime une ligne au hasard || Supprime la dernière ligne || Sans condition, toutes les lignes sont concernées.
+Quelle requête donne les 2 meilleures notes ? || SELECT * FROM Note ORDER BY valeur DESC LIMIT 2 || SELECT * FROM Note LIMIT 2 ORDER BY valeur DESC || SELECT 2 FROM Note || SELECT * FROM Note WHERE 2 || L'ordre des clauses compte : ORDER BY avant LIMIT.
+Quel est l'ordre correct des clauses ? || SELECT, FROM, WHERE, ORDER BY || FROM, SELECT, ORDER BY, WHERE || WHERE, SELECT, FROM, ORDER BY || ORDER BY, SELECT, FROM, WHERE || On choisit, on indique la table, on filtre, puis on trie.
+Quelle requête met la ville à 'Kara' pour l'étudiant dont id vaut 5 ? || UPDATE Etudiant SET ville = 'Kara' WHERE id = 5 || UPDATE Etudiant SET ville = 'Kara' || INSERT Etudiant ville = 'Kara' || SELECT ville = 'Kara' FROM Etudiant || Le WHERE limite la modification à une seule ligne.

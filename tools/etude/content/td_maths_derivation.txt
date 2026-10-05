@@ -1,0 +1,27 @@
+titre: Dérivation et étude de fonctions
+== fiche
+p: La dérivée f′(x) mesure la pente de la courbe en x. Elle sert à étudier les variations d'une fonction.
+li: Dérivées usuelles : (xⁿ)′ = n·xⁿ⁻¹ ; (constante)′ = 0 ; (√x)′ = 1/(2√x) ; (1/x)′ = −1/x².
+li: Opérations : (u + v)′ = u′ + v′ ; (k·u)′ = k·u′ ; (u·v)′ = u′v + uv′ ; (u/v)′ = (u′v − uv′)/v².
+li: Signe de f′ : si f′(x) > 0 sur un intervalle, f est croissante ; si f′(x) < 0, f est décroissante.
+li: Un extremum local apparaît quand f′ s'annule en changeant de signe.
+li: Tangente en a : y = f′(a)(x − a) + f(a).
+li: Étude complète : domaine, limites, dérivée, tableau de variations, tangentes, courbe.
+note: Exemple : f(x) = x² − 4x. f′(x) = 2x − 4, qui s'annule en x = 2. f est décroissante avant 2 puis croissante : minimum f(2) = −4.
+note: Ne pas confondre : (u·v)′ n'est pas u′·v′.
+== questions
+Que vaut la dérivée de f(x) = x² ? || 2x || x || x² || 2 || (xⁿ)′ = n·xⁿ⁻¹.
+Que vaut la dérivée d'une constante ? || 0 || 1 || La constante || Elle n'existe pas || Une constante ne varie pas.
+Que vaut la dérivée de f(x) = 3x + 5 ? || 3 || 5 || 3x || 8 || La dérivée de 3x est 3 et celle de 5 est 0.
+Que vaut la dérivée de f(x) = x³ ? || 3x² || x² || 3x || x⁴ || (x³)′ = 3x².
+Si f′(x) > 0 sur un intervalle, que peut-on dire de f ? || Elle est croissante || Elle est décroissante || Elle est constante || Elle est nulle || Une dérivée positive signifie que la fonction monte.
+Si f′(x) < 0 sur un intervalle, que peut-on dire de f ? || Elle est décroissante || Elle est croissante || Elle est constante || Elle est positive || Une dérivée négative signifie que la fonction descend.
+Que vaut la dérivée de f(x) = 5x² − 3x + 1 ? || 10x − 3 || 5x − 3 || 10x + 1 || 10x² − 3 || On dérive chaque terme.
+Quelle est l'équation de la tangente à f en a ? || y = f′(a)(x − a) + f(a) || y = f(a)(x − a) || y = f′(x) || y = f(a) + a || La pente de la tangente est f′(a).
+Quelle est la dérivée de u·v ? || u′v + uv′ || u′v′ || u′v − uv′ || (u + v)′ || C'est la formule du produit.
+Que vaut la dérivée de f(x) = 1/x ? || −1/x² || 1/x² || ln x || −1/x || (1/x)′ = −1/x² pour x ≠ 0.
+Pour f(x) = x² − 4x, en quelle valeur f′ s'annule-t-elle ? || x = 2 || x = 4 || x = −2 || x = 0 || f′(x) = 2x − 4 = 0 donne x = 2.
+Quel est le minimum de f(x) = x² − 4x ? || −4 || 0 || 2 || 4 || f(2) = 4 − 8 = −4.
+Quelle est la pente de la tangente à f(x) = x² en x = 3 ? || 6 || 3 || 9 || 2 || f′(3) = 2 × 3 = 6.
+Que vaut la dérivée de f(x) = x·(x + 1) ? || 2x + 1 || x + 1 || 2x || x² + 1 || f(x) = x² + x, donc f′(x) = 2x + 1.
+Que vaut la dérivée de f(x) = (x + 1)/x pour x ≠ 0 ? || −1/x² || 1/x² || 1 || −1/x || f(x) = 1 + 1/x, donc f′(x) = −1/x².

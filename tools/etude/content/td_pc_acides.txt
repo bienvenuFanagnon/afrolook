@@ -1,0 +1,27 @@
+titre: Acides, bases et pH
+== fiche
+p: Le pH mesure l'acidité d'une solution aqueuse. Il est lié à la concentration en ions oxonium H₃O⁺.
+li: pH = −log[H₃O⁺] (concentration en mol/L). À 25 °C : pH < 7 acide, pH = 7 neutre, pH > 7 basique.
+li: Un acide libère des ions H⁺ (ou H₃O⁺) ; une base capte des ions H⁺ (selon Brønsted).
+li: Produit ionique de l'eau à 25 °C : [H₃O⁺]·[HO⁻] = 10⁻¹⁴, donc pH + pOH = 14.
+li: Acide fort : réagit totalement avec l'eau (pH = −log C). Exemples : HCl, HNO₃, H₂SO₄ (1re acidité).
+li: Acide faible : réaction partielle (ex. acide éthanoïque CH₃COOH). Un couple acide/base a une constante Ka et un pKa.
+li: Dosage acido-basique : à l'équivalence, nₐ = n_b ; on utilise un indicateur coloré ou un pH-mètre.
+note: Exemple : [H₃O⁺] = 10⁻³ mol/L donne pH = 3 (acide). Chaque unité de pH correspond à un facteur 10.
+note: Équation du dosage d'un acide fort par une base forte : H₃O⁺ + HO⁻ → 2 H₂O.
+== questions
+Que signifie un pH égal à 7 à 25 °C ? || La solution est neutre || La solution est acide || La solution est basique || Elle n'existe pas || L'eau pure a un pH de 7.
+Une solution de pH 3 est : || Acide || Basique || Neutre || Impossible || Un pH inférieur à 7 est acide.
+Une solution de pH 11 est : || Basique || Acide || Neutre || Salée || Un pH supérieur à 7 est basique.
+Quelle est la formule du pH ? || pH = −log[H₃O⁺] || pH = log[HO⁻] || pH = [H₃O⁺] || pH = 14 + log[H₃O⁺] || Le pH est l'opposé du logarithme décimal de la concentration en H₃O⁺.
+Quel est le pH d'une solution de concentration [H₃O⁺] = 10⁻³ mol/L ? || 3 || 7 || −3 || 11 || pH = −log(10⁻³) = 3.
+Selon Brønsted, qu'est-ce qu'un acide ? || Une espèce capable de céder un ion H⁺ || Une espèce qui capte un ion H⁺ || Une espèce qui capte un électron || Une espèce neutre || Une base est au contraire une espèce capable de capter H⁺.
+Que vaut pH + pOH à 25 °C ? || 14 || 7 || 1 || 10 || Produit ionique de l'eau : [H₃O⁺][HO⁻] = 10⁻¹⁴.
+Quelle solution est la plus acide ? || pH 2 || pH 5 || pH 7 || pH 9 || Plus le pH est faible, plus la solution est acide.
+De combien la concentration en H₃O⁺ varie-t-elle lorsque le pH diminue d'une unité ? || Elle est multipliée par 10 || Elle est divisée par 10 || Elle est multipliée par 2 || Elle ne change pas || Le pH est une échelle logarithmique.
+Quel est le pH d'une solution d'acide chlorhydrique (acide fort) de concentration 0,01 mol/L ? || 2 || 0,01 || 12 || 7 || pH = −log(10⁻²) = 2.
+Quelle est la définition d'un acide fort ? || Il réagit totalement avec l'eau || Il réagit partiellement avec l'eau || Il ne réagit pas || Il est toujours concentré || Pour un acide fort, [H₃O⁺] = C.
+Lequel de ces acides est faible ? || L'acide éthanoïque CH₃COOH || L'acide chlorhydrique HCl || L'acide nitrique HNO₃ || L'acide sulfurique (1re acidité) || Il ne réagit que partiellement avec l'eau.
+Quelle équation traduit le dosage d'un acide fort par une base forte ? || H₃O⁺ + HO⁻ → 2 H₂O || H₂O → H⁺ + HO⁻ || HCl → H + Cl || H₃O⁺ + 2 HO⁻ → 3 H₂O || Les ions H₃O⁺ et HO⁻ forment de l'eau.
+Qu'est-ce que l'équivalence d'un dosage ? || Les quantités de réactifs sont dans les proportions stœchiométriques || La solution est toujours à pH 7 || Le dosage commence || Le réactif est en excès || À l'équivalence : nₐ = n_b pour une réaction 1 pour 1.
+Pour doser 20 mL d'acide chlorhydrique par de la soude à 0,1 mol/L, l'équivalence est obtenue à 10 mL. Quelle est la concentration de l'acide ? || 0,05 mol/L || 0,1 mol/L || 0,2 mol/L || 0,01 mol/L || Ca·20 = 0,1 × 10 donne Ca = 0,05 mol/L.

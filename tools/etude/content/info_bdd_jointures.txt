@@ -1,0 +1,27 @@
+titre: SQL : jointures et agrégats
+== fiche
+p: Pour croiser des tables et calculer des statistiques, on utilise les jointures et les fonctions d'agrégation.
+li: JOIN relie deux tables : FROM Etudiant JOIN Note ON Etudiant.id = Note.id_etudiant.
+li: INNER JOIN ne garde que les lignes qui ont une correspondance des deux côtés ; LEFT JOIN garde toutes les lignes de la table de gauche.
+li: Fonctions d'agrégation : COUNT (nombre de lignes), SUM, AVG (moyenne), MIN, MAX.
+li: GROUP BY regroupe les lignes par valeur : SELECT filiere, COUNT(*) FROM Etudiant GROUP BY filiere.
+li: HAVING filtre les groupes (après GROUP BY), alors que WHERE filtre les lignes (avant).
+li: DISTINCT supprime les doublons dans le résultat.
+note: Exemple : SELECT AVG(valeur) FROM Note WHERE matiere = 'Maths' donne la moyenne des notes de maths.
+note: Avec GROUP BY, chaque colonne du SELECT doit être soit dans le GROUP BY, soit une fonction d'agrégation.
+== questions
+Que fait JOIN en SQL ? || Relie deux tables selon une condition || Supprime une table || Trie une table || Compte les lignes || On relie par exemple une clé étrangère à une clé primaire.
+Quelle fonction compte le nombre de lignes ? || COUNT || SUM || AVG || MAX || COUNT(*) donne le nombre de lignes.
+Quelle fonction calcule une moyenne ? || AVG || SUM || MIN || COUNT || AVG vient de average.
+Quelle fonction additionne des valeurs ? || SUM || COUNT || AVG || ORDER || SUM(colonne) donne la somme.
+Quelle fonction donne la plus grande valeur ? || MAX || MIN || AVG || TOP || MAX(note) donne la meilleure note.
+Que fait GROUP BY ? || Regroupe les lignes ayant la même valeur || Trie les lignes || Supprime une colonne || Filtre une ligne || Utile avec COUNT, SUM, AVG.
+Que fait DISTINCT ? || Supprime les doublons du résultat || Trie le résultat || Joint deux tables || Compte les lignes || SELECT DISTINCT ville donne chaque ville une seule fois.
+Quelle requête donne le nombre d'étudiants par filière ? || SELECT filiere, COUNT(*) FROM Etudiant GROUP BY filiere || SELECT COUNT(filiere) FROM Etudiant ORDER BY filiere || SELECT filiere FROM Etudiant COUNT || SELECT filiere FROM Etudiant WHERE COUNT || GROUP BY crée un groupe par filière.
+Quelle est la différence entre WHERE et HAVING ? || WHERE filtre les lignes, HAVING filtre les groupes || WHERE filtre les groupes, HAVING filtre les lignes || Aucune || HAVING s'utilise sans GROUP BY || HAVING vient après GROUP BY.
+Que garde un INNER JOIN ? || Les lignes avec correspondance dans les deux tables || Toutes les lignes de gauche || Toutes les lignes de droite || Aucune ligne || Les lignes sans correspondance sont écartées.
+Que garde un LEFT JOIN ? || Toutes les lignes de la table de gauche, même sans correspondance || Seulement les correspondances || Toutes les lignes de droite || Rien || Les colonnes de droite sont NULL s'il n'y a pas de correspondance.
+Quelle requête donne la moyenne des notes de la matière Maths ? || SELECT AVG(valeur) FROM Note WHERE matiere = 'Maths' || SELECT AVG(matiere) FROM Note || SELECT valeur FROM Note AVG || SELECT AVG FROM Maths || On filtre puis on calcule la moyenne.
+Quelle condition de jointure relie Etudiant et Note ? || ON Etudiant.id = Note.id_etudiant || ON Etudiant.nom = Note.valeur || ON 1 = 2 || WHERE JOIN || La clé primaire est comparée à la clé étrangère.
+Quelle requête affiche les filières ayant plus de 30 étudiants ? || SELECT filiere FROM Etudiant GROUP BY filiere HAVING COUNT(*) > 30 || SELECT filiere FROM Etudiant WHERE COUNT(*) > 30 || SELECT filiere FROM Etudiant HAVING 30 || SELECT COUNT(*) > 30 FROM filiere || Le filtre porte sur un résultat de groupe.
+Que renvoie SELECT COUNT(*) FROM Etudiant WHERE ville = 'Lomé' ? || Le nombre d'étudiants de Lomé || La liste des étudiants de Lomé || La somme des âges || La ville la plus peuplée || COUNT compte les lignes qui respectent la condition.

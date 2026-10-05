@@ -93,14 +93,14 @@ for (const track of structure.tracks) {
         ch.questions.forEach(checkQuestion);
         const levels = [];
         for (let l = 0; l < LEVELS; l++) {
-          levels.push(ch.questions.slice(l * PER_LEVEL, (l + 1) * PER_LEVEL).map((x, k) => {
+          levels.push({ questions: ch.questions.slice(l * PER_LEVEL, (l + 1) * PER_LEVEL).map((x, k) => {
             const rand = rng(hash(`${chap.id}${l}${k}`));
             const opts = [x.c, ...x.w];
             for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
             const a = opts.indexOf(x.c);
             positions[a]++;
             return { q: x.q, o: opts, a, e: x.e };
-          }));
+          }) });
         }
         contents.push({ id: chap.id, title: ch.title, lesson: ch.lesson, levels });
         s.chapters.push({ id: chap.id, title: ch.title, levels: LEVELS, ...(s.chapters.length === 0 ? { free: true } : {}) });

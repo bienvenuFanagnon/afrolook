@@ -1,0 +1,27 @@
+titre: Les lois de Newton
+== fiche
+p: Les lois de Newton relient les forces au mouvement d'un système.
+li: Première loi (inertie) : si la somme des forces est nulle, le centre d'inertie est au repos ou en mouvement rectiligne uniforme.
+li: Deuxième loi : ΣF = m·a. L'unité de force est le newton (N) : 1 N = 1 kg·m/s².
+li: Troisième loi (action-réaction) : si A exerce une force sur B, B exerce sur A une force de même valeur, de même direction et de sens opposé.
+li: Poids : P = m·g (en N, avec m en kg et g ≈ 9,8 N/kg). Il ne faut pas confondre masse (kg) et poids (N).
+li: Réaction d'un support : force perpendiculaire au support qui compense le poids pour un objet immobile sur un plan horizontal.
+li: Frottements : forces qui s'opposent au mouvement ; sur un plan incliné, on projette les forces sur les axes.
+note: Exemple : une masse de 2 kg soumise à une force résultante de 6 N a pour accélération a = 6 / 2 = 3 m/s².
+note: Sur la Lune, la masse d'un objet ne change pas mais son poids est environ six fois plus faible.
+== questions
+Quelle est l'unité de force dans le Système international ? || Le newton (N) || Le kilogramme (kg) || Le joule (J) || Le watt (W) || 1 N = 1 kg·m/s².
+Que dit le principe d'inertie ? || Sans force résultante, le mouvement est rectiligne uniforme ou nul || Un objet en mouvement s'arrête toujours || La force est proportionnelle à la vitesse || Les forces s'annulent toujours || Un objet isolé garde sa vitesse.
+Quelle est la formule de la deuxième loi de Newton ? || ΣF = m·a || F = m / a || F = m·v || ΣF = m + a || La force résultante est égale à la masse fois l'accélération.
+Quelle est la formule du poids ? || P = m·g || P = m / g || P = g / m || P = m + g || Le poids dépend de la masse et de la pesanteur.
+Quel est le poids d'une masse de 5 kg (g = 10 N/kg) ? || 50 N || 5 N || 0,5 N || 15 N || P = 5 × 10 = 50 N.
+Quelle est l'accélération d'une masse de 2 kg soumise à une force résultante de 6 N ? || 3 m/s² || 12 m/s² || 0,33 m/s² || 8 m/s² || a = F / m = 6 / 2.
+Que dit la troisième loi de Newton ? || Si A agit sur B, B agit sur A avec une force opposée de même valeur || Les forces sont toutes égales || L'action est plus forte que la réaction || Il n'y a pas de réaction || Ce sont deux forces appliquées à deux objets différents.
+Un livre est posé sur une table. Quelle force équilibre son poids ? || La réaction de la table || Le frottement || Rien || La vitesse || La réaction est perpendiculaire à la table et vers le haut.
+Quelle est la différence entre masse et poids ? || La masse est en kg et ne change pas, le poids est en N et dépend de g || Ce sont la même chose || Le poids est en kg || La masse dépend de la planète || Sur la Lune le poids diminue mais pas la masse.
+Un véhicule de 1000 kg accélère à 2 m/s². Quelle force résultante s'exerce ? || 2000 N || 500 N || 1002 N || 20 N || F = m·a = 1000 × 2.
+Un mobile a un mouvement rectiligne uniforme. Que vaut la somme des forces ? || Zéro || Une force constante non nulle || Elle augmente || Elle est infinie || Par le principe d'inertie.
+Quel est l'effet d'une force résultante non nulle sur un système ? || Elle modifie son vecteur vitesse || Elle ne change rien || Elle le fige || Elle double sa masse || L'accélération est non nulle.
+Un objet de 10 kg est tiré sur un sol horizontal avec une force de 30 N. Les frottements valent 10 N. Quelle est son accélération ? || 2 m/s² || 3 m/s² || 4 m/s² || 1 m/s² || ΣF = 30 − 10 = 20 N, donc a = 20 / 10 = 2 m/s².
+Sur un plan incliné sans frottement d'angle α, quelle est l'accélération d'un solide qui glisse ? || g·sin α || g·cos α || g || g·tan α || Seule la composante du poids le long de la pente accélère le solide.
+Un solide de masse m est suspendu à un fil immobile. Quelle est la tension du fil ? || T = m·g || T = 0 || T = m || T = g / m || À l'équilibre, la tension compense le poids.

@@ -1,0 +1,27 @@
+titre: Listes, dictionnaires et chaînes
+== fiche
+p: Python propose des structures pratiques pour regrouper des données.
+li: Liste : notes = [12, 15, 9]. Les indices commencent à 0 ; notes[-1] est le dernier élément.
+li: Méthodes utiles : append(x) ajoute, remove(x) retire, len(L) donne la taille, sorted(L) trie, sum(L) additionne.
+li: Découpage : L[1:3] prend les éléments d'indices 1 et 2 (3 exclu).
+li: Dictionnaire : d = {"nom": "Ama", "age": 20}. On lit d["nom"]. Les clés sont uniques.
+li: Chaînes : s.upper(), s.lower(), s.split(" "), len(s), s[0]. Une chaîne ne se modifie pas en place.
+li: Boucler : for note in notes: ; for cle, valeur in d.items():.
+note: Exemple : notes = [12, 15, 9] ; sum(notes) / len(notes) donne la moyenne = 12.0.
+note: Un tuple (1, 2) ressemble à une liste mais ne se modifie pas.
+== questions
+Comment crée-t-on une liste en Python ? || Avec des crochets : [1, 2, 3] || Avec des accolades seulement || Avec des guillemets || Avec le mot list() uniquement || Les crochets définissent une liste.
+Quel est l'indice du premier élément d'une liste ? || 0 || 1 || −1 || Cela dépend || Les indices commencent à zéro.
+Que vaut L[-1] pour L = [4, 8, 2] ? || 2 || 4 || 8 || Erreur || −1 désigne le dernier élément.
+Que fait L.append(5) ? || Ajoute 5 à la fin de la liste || Supprime 5 || Remplace le premier élément || Trie la liste || append signifie « ajouter ».
+Que renvoie len([4, 8, 2]) ? || 3 || 2 || 14 || 8 || len donne le nombre d'éléments.
+Que renvoie sum([4, 8, 2]) ? || 14 || 3 || 8 || 48 || 4 + 8 + 2 = 14.
+Que renvoie L[1:3] pour L = [10, 20, 30, 40] ? || [20, 30] || [10, 20, 30] || [20, 30, 40] || [10, 20] || L'indice 3 est exclu.
+Comment lit-on la valeur associée à la clé "nom" dans un dictionnaire d ? || d["nom"] || d.nom || d(nom) || d[nom] sans guillemets || Les clés textuelles s'écrivent entre guillemets.
+Un dictionnaire peut-il contenir deux fois la même clé ? || Non, la dernière valeur remplace l'ancienne || Oui, sans limite || Oui, mais en minuscules || Seulement pour les entiers || Les clés sont uniques.
+Que renvoie "bonjour".upper() ? || "BONJOUR" || "7" || None || Erreur || upper met tout en majuscules.
+Que renvoie "a b c".split(" ") ? || ["a", "b", "c"] || "abc" || ["a b c"] || 3 || split découpe selon le séparateur.
+Que renvoie "python"[0] ? || "p" || "y" || "python" || 0 || Le premier caractère a l'indice 0.
+Que vaut sorted([3, 1, 2]) ? || [1, 2, 3] || [3, 2, 1] || [1, 3, 2] || None || sorted renvoie une nouvelle liste triée.
+Que fait la boucle : for k, v in d.items(): ? || Parcourt les clés et les valeurs du dictionnaire || Parcourt seulement les valeurs || Trie le dictionnaire || Supprime les clés || items donne des paires clé / valeur.
+Quelle expression donne la moyenne de la liste notes ? || sum(notes) / len(notes) || len(notes) / sum(notes) || sum(notes) * len(notes) || max(notes) / 2 || La somme divisée par le nombre d'éléments.

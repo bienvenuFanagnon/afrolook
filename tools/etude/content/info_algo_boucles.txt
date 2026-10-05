@@ -1,0 +1,27 @@
+titre: Les boucles
+== fiche
+p: Une boucle répète des instructions. Il existe trois grandes formes.
+li: POUR i DE 1 À n : on connaît le nombre de répétitions à l'avance.
+li: TANT QUE condition FAIRE … : on répète tant que la condition est vraie, et on peut ne jamais entrer dans la boucle.
+li: RÉPÉTER … JUSQU'À condition : le corps s'exécute au moins une fois, la condition est testée à la fin.
+li: Danger : une boucle infinie arrive quand la condition ne devient jamais fausse (oubli de modifier la variable).
+li: Un compteur compte les passages ; un accumulateur additionne des valeurs (s ← s + i).
+li: Pour trouver le nombre de tours : regarde la valeur de départ, le pas et la valeur d'arrêt.
+note: Exemple : s ← 0 ; POUR i DE 1 À 4 : s ← s + i donne s = 1 + 2 + 3 + 4 = 10.
+note: Sans la ligne i ← i + 1, la boucle TANT QUE i < 5 ne s'arrête jamais.
+== questions
+À quoi sert une boucle ? || À répéter des instructions || À choisir entre deux cas || À déclarer un type || À afficher un titre || Elle évite de réécrire plusieurs fois les mêmes lignes.
+Quelle boucle est idéale quand on connaît le nombre de répétitions ? || POUR || SI || SELON || FONCTION || POUR i DE 1 À n répète n fois.
+Combien de fois s'exécute POUR i DE 1 À 5 ? || 5 fois || 4 fois || 6 fois || 1 fois || De 1 à 5 inclus, cela fait 5 valeurs.
+Combien de fois le corps d'un TANT QUE s'exécute-t-il si la condition est fausse au départ ? || Zéro fois || Une fois || Deux fois || À l'infini || La condition est testée avant chaque tour.
+Combien de fois au minimum s'exécute le corps de RÉPÉTER … JUSQU'À ? || Une fois || Zéro fois || Deux fois || Cela dépend || La condition est testée après le premier tour.
+Que vaut s à la fin : s ← 0 ; POUR i DE 1 À 4 : s ← s + i ? || 10 || 4 || 24 || 6 || 1 + 2 + 3 + 4 = 10.
+Que provoque cette boucle : i ← 0 ; TANT QUE i < 5 FAIRE écrire(i) ? || Une boucle infinie || Elle s'arrête à 5 || Elle affiche 5 nombres puis s'arrête || Une erreur de syntaxe || i n'est jamais modifié donc la condition reste vraie.
+Que fait ce programme : s ← 0 ; POUR i DE 1 À 5 : SI i MOD 2 = 0 ALORS s ← s + i ? || Additionne les nombres pairs de 1 à 5 : s = 6 || Additionne tous les nombres : s = 15 || Additionne les impairs : s = 9 || Donne s = 0 || Seuls 2 et 4 sont pairs : 2 + 4 = 6.
+Que vaut p à la fin : p ← 1 ; POUR i DE 1 À 4 : p ← p × i ? || 24 || 10 || 4 || 1 || 1 × 2 × 3 × 4 = 24 (factorielle de 4).
+Que représente un accumulateur ? || Une variable qui additionne ou cumule des valeurs || Un type de boucle || Un opérateur logique || Un commentaire || Par exemple s ← s + valeur.
+Combien de tours fait : i ← 10 ; TANT QUE i > 0 : i ← i − 3 ? || 4 tours || 3 tours || 10 tours || 5 tours || i prend les valeurs 10, 7, 4, 1 puis devient −2.
+Quelle valeur finale pour i après : i ← 10 ; TANT QUE i > 0 : i ← i − 3 ? || −2 || 0 || 1 || −3 || Après la valeur 1, on obtient −2 qui arrête la boucle.
+Quelle boucle faut-il privilégier pour demander un mot de passe jusqu'à ce qu'il soit correct ? || RÉPÉTER … JUSQU'À (au moins un essai) || POUR 1 À 3 || SI seulement || SELON || On demande au moins une fois puis on recommence.
+Quelle est la complexité en nombre d'opérations d'une boucle POUR i DE 1 À n contenant une instruction simple ? || Proportionnelle à n || Constante || Proportionnelle à n² || Proportionnelle à log n || Elle s'exécute n fois.
+Combien de fois s'exécute l'instruction interne de POUR i DE 1 À n : POUR j DE 1 À n ? || n × n fois || 2n fois || n fois || n + n fois || Pour chaque i, la boucle j fait n tours.

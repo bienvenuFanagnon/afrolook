@@ -1,0 +1,26 @@
+titre: Suites numériques
+== fiche
+p: Une suite numérique est une liste de nombres rangés dans un ordre : u₀, u₁, u₂… Le terme général uₙ dépend de l'indice n.
+li: Suite arithmétique de raison r : uₙ₊₁ = uₙ + r ; uₙ = u₀ + n·r ; somme des n+1 premiers termes : (n+1)(u₀ + uₙ)/2.
+li: Suite géométrique de raison q : uₙ₊₁ = q·uₙ ; uₙ = u₀·qⁿ ; somme : u₀(1 − qⁿ⁺¹)/(1 − q) si q ≠ 1.
+li: Une suite est croissante si uₙ₊₁ − uₙ ≥ 0 pour tout n ; décroissante si uₙ₊₁ − uₙ ≤ 0.
+li: Convergence : une suite géométrique de raison q converge vers 0 si −1 < q < 1, diverge si q > 1.
+li: Pour montrer qu'une suite est arithmétique, on calcule uₙ₊₁ − uₙ et on trouve une constante ; pour une géométrique, on calcule uₙ₊₁ / uₙ.
+note: Exemple : u₀ = 3 et r = 2 donne u₅ = 3 + 5 × 2 = 13.
+note: Exemple : u₀ = 2 et q = 3 donne u₃ = 2 × 3³ = 54.
+== questions
+Quelle est la raison de la suite arithmétique 3, 7, 11, 15 ? || 4 || 3 || 7 || 2 || Chaque terme augmente de 4.
+Quelle est la raison de la suite géométrique 2, 6, 18, 54 ? || 3 || 4 || 2 || 6 || On multiplie chaque terme par 3.
+Pour une suite arithmétique de premier terme u₀ = 3 et de raison 2, que vaut u₅ ? || 13 || 10 || 15 || 11 || u₅ = 3 + 5 × 2 = 13.
+Pour une suite géométrique de premier terme u₀ = 2 et de raison 3, que vaut u₃ ? || 54 || 18 || 27 || 24 || u₃ = 2 × 3³ = 54.
+Quelle est la formule du terme général d'une suite arithmétique ? || uₙ = u₀ + n·r || uₙ = u₀ × rⁿ || uₙ = u₀ + r || uₙ = n·u₀ || On ajoute n fois la raison.
+Quelle est la formule du terme général d'une suite géométrique ? || uₙ = u₀ × qⁿ || uₙ = u₀ + n·q || uₙ = q + n || uₙ = u₀ × n || On multiplie n fois par la raison q.
+Une suite arithmétique de raison −2 est-elle croissante ? || Non, elle est décroissante || Oui || Elle est constante || On ne peut pas savoir || Chaque terme diminue de 2.
+Quelle est la somme 1 + 2 + 3 + … + 10 ? || 55 || 50 || 45 || 100 || 10 × 11 / 2 = 55.
+Vers quoi tend la suite géométrique uₙ = (1/2)ⁿ ? || 0 || 1 || +∞ || −∞ || Une raison entre −1 et 1 donne une limite nulle.
+Que fait la suite géométrique de raison 2 quand n augmente ? || Elle tend vers +∞ (si u₀ > 0) || Elle tend vers 0 || Elle reste constante || Elle oscille || Les termes doublent à chaque étape.
+Pour u₀ = 5 et r = −3, que vaut u₂ ? || −1 || 1 || −4 || 11 || u₂ = 5 + 2 × (−3) = −1.
+Si uₙ₊₁ − uₙ = 5 pour tout n, la suite est ? || Arithmétique de raison 5 || Géométrique de raison 5 || Constante || Décroissante || La différence constante caractérise une suite arithmétique.
+Si uₙ₊₁ / uₙ = 2 pour tout n (uₙ non nul), la suite est ? || Géométrique de raison 2 || Arithmétique de raison 2 || Constante || Décroissante || Le quotient constant caractérise une suite géométrique.
+Quelle est la somme des 5 premiers termes (u₀ à u₄) de la suite géométrique de premier terme 1 et de raison 2 ? || 31 || 32 || 16 || 15 || 1 + 2 + 4 + 8 + 16 = 31.
+Une suite vérifie uₙ₊₁ = 0,5·uₙ + 1 avec u₀ = 2. Que vaut u₂ ? || 2 || 1,5 || 2,5 || 1 || u₁ = 0,5 × 2 + 1 = 2, puis u₂ = 0,5 × 2 + 1 = 2 : la suite est constante.

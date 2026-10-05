@@ -1,0 +1,26 @@
+titre: Variables, types et opérateurs
+== fiche
+p: Un algorithme est une suite d'instructions précises qui permet de résoudre un problème. Pour manipuler des données, on utilise des variables.
+li: Une variable a un nom, un type et une valeur. Elle se déclare puis reçoit une valeur par affectation (←).
+li: Types de base : entier (3), réel (3,14), booléen (vrai/faux), caractère ('a') et chaîne de caractères ("bonjour").
+li: Opérateurs arithmétiques : + − × / ; DIV donne le quotient entier et MOD le reste de la division entière.
+li: Opérateurs de comparaison : =, ≠, <, ≤, >, ≥. Le résultat est un booléen.
+li: Opérateurs logiques : ET, OU, NON. A ET B est vrai seulement si A et B sont vrais.
+note: Exemple : x ← 7 ; y ← x MOD 2 donne y = 1 (le reste de 7 divisé par 2).
+note: L'ordre compte : après x ← 5 puis x ← x + 1, la variable x vaut 6.
+== questions
+Qu'est-ce qu'une variable en algorithmique ? || Un espace mémoire nommé qui contient une valeur || Une instruction de boucle || Un type de commentaire || Un opérateur logique || Elle a un nom, un type et une valeur.
+Quel symbole représente souvent l'affectation dans un algorithme ? || ← || = = || ET || MOD || Il se lit « reçoit » : x ← 5.
+Quel est le type de la valeur 3,14 ? || Réel || Entier || Booléen || Caractère || Un nombre avec une partie décimale est un réel.
+Quel est le type de la valeur vrai ? || Booléen || Entier || Chaîne || Réel || Un booléen ne prend que deux valeurs : vrai ou faux.
+Quelle valeur donne 7 MOD 2 ? || 1 || 3 || 0 || 3,5 || MOD donne le reste de la division entière : 7 = 2 × 3 + 1.
+Quelle valeur donne 7 DIV 2 ? || 3 || 1 || 3,5 || 4 || DIV donne le quotient entier de la division.
+Après x ← 5 puis x ← x + 1, que vaut x ? || 6 || 5 || 1 || 51 || On calcule x + 1 avec l'ancienne valeur, puis on la range dans x.
+Quel est le résultat de (5 > 3) ET (2 > 4) ? || Faux || Vrai || 2 || Erreur || Un ET est vrai seulement si les deux conditions sont vraies.
+Quel est le résultat de (5 > 3) OU (2 > 4) ? || Vrai || Faux || 5 || Erreur || Un OU est vrai si au moins une condition est vraie.
+Que vaut NON(vrai) ? || Faux || Vrai || 1 || Indéfini || NON inverse la valeur booléenne.
+Quel est le type de la valeur "bonjour" ? || Chaîne de caractères || Caractère || Entier || Booléen || Des guillemets délimitent une chaîne.
+Après a ← 4 ; b ← a ; a ← 10, que vaut b ? || 4 || 10 || 14 || 0 || b a reçu une copie de la valeur de a avant sa modification.
+Quelle valeur donne 17 MOD 5 ? || 2 || 3 || 4 || 12 || 17 = 5 × 3 + 2.
+Quelle expression teste si un entier n est pair ? || n MOD 2 = 0 || n DIV 2 = 0 || n / 2 = 1 || n MOD 2 = 1 || Un nombre pair a un reste nul quand on le divise par 2.
+Après x ← 3 ; y ← 4 ; x ← x + y ; y ← x − y, que valent x et y ? || x = 7 et y = 3 || x = 3 et y = 4 || x = 7 et y = 4 || x = 4 et y = 7 || x devient 7, puis y = 7 − 4 = 3.

@@ -1,0 +1,27 @@
+titre: Fonction logarithme népérien
+== fiche
+p: La fonction ln est définie sur ]0 ; +∞[. C'est la réciproque de la fonction exponentielle : ln(eˣ) = x et e^(ln x) = x.
+li: Valeurs : ln 1 = 0 ; ln e = 1.
+li: Propriétés : ln(ab) = ln a + ln b ; ln(a/b) = ln a − ln b ; ln(aⁿ) = n·ln a ; ln(1/a) = −ln a.
+li: Dérivée : (ln x)′ = 1/x ; donc ln est strictement croissante sur ]0 ; +∞[.
+li: Limites : lim ln x = +∞ en +∞ ; lim ln x = −∞ en 0⁺ ; ln x / x tend vers 0 en +∞.
+li: Signe : ln x < 0 si 0 < x < 1 ; ln x > 0 si x > 1.
+li: Équations : ln a = ln b équivaut à a = b (avec a, b > 0). Toujours vérifier que l'argument est strictement positif.
+note: Exemple : ln 8 = ln(2³) = 3 ln 2.
+note: Exemple : ln x = 2 donne x = e².
+== questions
+Quel est le domaine de définition de ln ? || ]0 ; +∞[ || ℝ || [0 ; +∞[ || ]−∞ ; 0[ || On ne peut prendre le logarithme que d'un nombre strictement positif.
+Que vaut ln 1 ? || 0 || 1 || e || −1 || ln 1 = 0 car e⁰ = 1.
+Que vaut ln e ? || 1 || 0 || e || 2 || ln e = 1 car e¹ = e.
+Que vaut ln(a × b) pour a, b > 0 ? || ln a + ln b || ln a × ln b || ln a − ln b || a + b || Le logarithme transforme un produit en somme.
+Que vaut ln(a / b) pour a, b > 0 ? || ln a − ln b || ln a / ln b || ln a + ln b || b − a || Le logarithme transforme un quotient en différence.
+Que vaut ln(aⁿ) ? || n·ln a || (ln a)ⁿ || ln a + n || a·ln n || L'exposant sort devant le logarithme.
+Quelle est la dérivée de ln x ? || 1/x || x || ln x || −1/x || (ln x)′ = 1/x pour x > 0.
+La fonction ln est-elle croissante ? || Oui, strictement sur ]0 ; +∞[ || Non, décroissante || Constante || Croissante puis décroissante || Sa dérivée 1/x est positive.
+Quel est le signe de ln x pour 0 < x < 1 ? || Négatif || Positif || Nul || Indéfini || ln 1 = 0 et ln est croissante.
+Que vaut ln 8 en fonction de ln 2 ? || 3 ln 2 || 8 ln 2 || ln 2 + 8 || 2 ln 3 || 8 = 2³ donc ln 8 = 3 ln 2.
+Quelle est la solution de ln x = 2 ? || e² || 2 || 2e || ln 2 || x = e^(ln x) = e².
+Quelle est la limite de ln x quand x tend vers +∞ ? || +∞ || 0 || 1 || −∞ || ln croît sans limite, mais lentement.
+Quelle est la limite de ln x quand x tend vers 0 par valeurs positives ? || −∞ || 0 || +∞ || 1 || ln x devient très négatif près de 0.
+Quelle est la solution de ln(x − 1) = 0 ? || x = 2 || x = 1 || x = 0 || x = e || x − 1 = 1, et x − 1 > 0 est bien vérifié.
+Quelle est la dérivée de f(x) = x·ln x − x pour x > 0 ? || ln x || x ln x || 1/x || ln x − 1 || f′(x) = ln x + x·(1/x) − 1 = ln x.

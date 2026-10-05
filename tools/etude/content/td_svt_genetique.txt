@@ -1,0 +1,28 @@
+titre: Génétique et hérédité
+== fiche
+p: La génétique étudie la transmission des caractères héréditaires d'une génération à la suivante.
+li: Un gène est un fragment d'ADN qui code un caractère. Les différentes versions d'un gène sont les allèles.
+li: Génotype : les allèles portés (ex. Aa). Phénotype : le caractère visible. Un allèle dominant s'exprime même avec un allèle récessif.
+li: Première loi de Mendel : les hybrides de première génération (F1) issus de deux lignées pures sont tous identiques.
+li: Deuxième loi : en F2 (F1 × F1) les deux phénotypes réapparaissent dans la proportion 3/4 dominant et 1/4 récessif (rapport 3 : 1).
+li: Croisement-test : on croise un individu de phénotype dominant avec un homozygote récessif pour connaître son génotype.
+li: Dihybridisme (deux gènes indépendants) : en F2, rapport 9 : 3 : 3 : 1.
+li: L'espèce humaine a 46 chromosomes (23 paires) ; le sexe est déterminé par la paire XX (fille) ou XY (garçon). La trisomie 21 est due à un chromosome 21 en plus.
+note: Exemple : A (dominant) × a (récessif). Deux parents Aa donnent en moyenne 25 % AA, 50 % Aa et 25 % aa.
+note: Le caractère récessif ne s'exprime que chez les individus homozygotes aa.
+== questions
+Qu'est-ce qu'un gène ? || Un fragment d'ADN qui code un caractère || Une cellule || Un organe || Un chromosome entier || Il détermine un caractère héréditaire.
+Qu'appelle-t-on allèles ? || Les différentes versions d'un même gène || Les chromosomes sexuels || Les cellules reproductrices || Les protéines || Par exemple un allèle pour les yeux bleus et un pour les yeux marron.
+Quel est le nombre de chromosomes d'une cellule humaine non sexuelle ? || 46 || 23 || 48 || 44 || Il y a 23 paires de chromosomes.
+Quelle est la formule chromosomique d'un garçon ? || XY || XX || XXY || YY || La paire XY détermine le sexe masculin.
+Quelle est la formule chromosomique d'une fille ? || XX || XY || X || YY || Deux chromosomes X.
+Que signifie génotype ? || L'ensemble des allèles portés || Le caractère visible || Le sexe || La taille || Par exemple Aa.
+Que signifie phénotype ? || Le caractère observable || La suite des allèles || Le type de chromosome || La mutation || Par exemple la couleur des fleurs.
+Qu'est-ce qu'un allèle dominant ? || Il s'exprime même en présence d'un autre allèle || Il ne s'exprime jamais || Il est toujours rare || Il est porté par le sexe || Le récessif est masqué chez l'hétérozygote.
+Selon la première loi de Mendel, que sont les individus de F1 issus de deux lignées pures ? || Tous identiques || Tous différents || Moitié-moitié || Stériles || Ils sont tous hétérozygotes.
+Quelle proportion donne la deuxième loi de Mendel en F2 ? || 3/4 dominants, 1/4 récessifs || 1/2 et 1/2 || 9/16 et 7/16 || 100 % dominants || Le caractère récessif réapparaît.
+On croise deux individus Aa. Quelle est la probabilité d'avoir un descendant aa ? || 1/4 || 1/2 || 3/4 || 0 || Il faut recevoir a des deux parents : 1/2 × 1/2.
+On croise AA × aa. Que sont les descendants ? || Tous hétérozygotes (Aa) || Moitié AA, moitié aa || Tous homozygotes dominants || Tous homozygotes récessifs || Chaque parent donne un seul type de gamète.
+À quoi sert un croisement-test ? || À connaître le génotype d'un individu de phénotype dominant || À changer le sexe || À mesurer la taille || À fabriquer un clone || On le croise avec un homozygote récessif.
+Quel est le rapport phénotypique en F2 d'un dihybridisme avec gènes indépendants ? || 9 : 3 : 3 : 1 || 3 : 1 || 1 : 1 : 1 : 1 || 1 : 2 : 1 || Quatre phénotypes apparaissent.
+Quelle anomalie provoque la trisomie 21 ? || Un chromosome 21 supplémentaire || La perte d'un chromosome X || Une mutation d'un seul gène || Un virus || Le caryotype montre trois chromosomes 21.

@@ -1,0 +1,28 @@
+titre: Fonctions et fichiers
+== fiche
+p: Les fonctions rendent le code réutilisable. Les fichiers permettent de garder des données après la fin du programme.
+li: Définition : def carre(x): return x * x. Appel : carre(5) donne 25.
+li: Sans return, une fonction renvoie None.
+li: Paramètres par défaut : def saluer(nom="ami"):. Arguments nommés : saluer(nom="Ama").
+li: Variables locales (dans la fonction) et globales (hors des fonctions).
+li: Lire un fichier : with open("notes.txt", "r") as f: texte = f.read(). Écrire : mode "w" (écrase) ou "a" (ajoute).
+li: with ferme automatiquement le fichier.
+li: Les erreurs se gèrent avec try: … except ValueError: ….
+note: Exemple : int("abc") lève une ValueError ; try / except permet de l'attraper sans arrêter le programme.
+note: Une bonne fonction fait une seule chose et porte un nom clair.
+== questions
+Quel mot-clé définit une fonction en Python ? || def || function || fun || define || Exemple : def carre(x):.
+Que renvoie une fonction qui n'a pas de return ? || None || 0 || Une erreur || Une chaîne vide || None signifie « aucune valeur ».
+Que vaut carre(5) avec def carre(x): return x * x ? || 25 || 10 || 5 || 55 || 5 × 5 = 25.
+Que fait return dans une fonction ? || Renvoie une valeur et termine la fonction || Affiche une valeur || Crée une boucle || Ouvre un fichier || Le code après return n'est pas exécuté.
+Que s'affiche pour saluer() avec def saluer(nom="ami"): print("Bonjour", nom) ? || Bonjour ami || Bonjour nom || Rien || Une erreur || La valeur par défaut est utilisée.
+Quel mode ouvre un fichier en lecture ? || "r" || "w" || "a" || "x" || r pour read.
+Quel mode d'ouverture écrase le contenu existant d'un fichier ? || "w" || "r" || "a" || "rb" || w pour write : le fichier est vidé avant écriture.
+Quel mode ajoute à la fin sans effacer ? || "a" || "w" || "r" || "x" || a pour append.
+Pourquoi utilise-t-on with open(...) ? || Pour fermer automatiquement le fichier || Pour accélérer l'ordinateur || Pour chiffrer le fichier || Pour créer une boucle || Le fichier est fermé même en cas d'erreur.
+Quelle erreur produit int("abc") ? || ValueError || SyntaxError || NameError || IndexError || Le texte ne peut pas être converti en entier.
+Que permet try / except ? || Gérer une erreur sans arrêter le programme || Créer une fonction || Déclarer une variable || Trier une liste || Le code de except s'exécute si une erreur survient.
+Que vaut x à la fin ? x = 1 ; def f(): x = 5 ; f() ; print(x) || 1 || 5 || None || Erreur || Le x de la fonction est local, il ne modifie pas le x global.
+Quelle fonction renvoie le maximum de [3, 9, 4] ? || max([3, 9, 4]) || big([3, 9, 4]) || top([3, 9, 4]) || highest([3, 9, 4]) || max renvoie le plus grand élément.
+Que renvoie f(3) avec def f(n): return 1 if n <= 1 else n * f(n - 1) ? || 6 || 3 || 1 || 9 || 3 × 2 × 1 = 6 (récursion).
+Que fait f.readlines() sur un fichier ouvert en lecture ? || Renvoie la liste des lignes || Renvoie un entier || Supprime le fichier || Écrit une ligne || Chaque ligne devient un élément de la liste.
