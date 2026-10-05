@@ -1,0 +1,27 @@
+titre: Les questions classiques
+== fiche
+p: Certaines questions reviennent dans presque tous les entretiens. Les préparer à l'avance évite de bafouiller.
+li: « Pourquoi voulez-vous ce poste ? » : relie tes envies, tes compétences et les besoins de l'entreprise.
+li: « Quelles sont vos qualités ? » : choisis 2 ou 3 qualités utiles au poste, avec un exemple pour chacune.
+li: « Quels sont vos défauts ? » : cite un vrai défaut mineur, sans rapport avec le cœur du métier, et ce que tu fais pour le corriger.
+li: « Où vous voyez-vous dans 5 ans ? » : montre de l'ambition réaliste et l'envie de progresser dans l'entreprise.
+li: « Pourquoi avez-vous quitté votre dernier emploi ? » : reste positif, ne critique jamais un ancien employeur.
+li: « Pourquoi devrions-nous vous choisir ? » : résume ce que tu apportes de plus que les autres.
+note: À éviter : « Je n'ai pas de défaut », « Je suis perfectionniste » dit comme une astuce, ou « Je veux juste un salaire ».
+note: Une bonne réponse est courte (30 à 60 secondes), honnête, précise et tournée vers le poste.
+== questions
+Pourquoi le recruteur demande-t-il « Pourquoi voulez-vous ce poste ? » || Pour mesurer la motivation et l'intérêt réel || Pour connaître l'adresse || Pour parler de sa propre vie || Pour terminer l'entretien || La motivation compte autant que les diplômes.
+Quelle réponse est la meilleure à « Quelles sont vos qualités ? » || Deux ou trois qualités utiles au poste, avec un exemple || Une liste de dix qualités || « Je n'en ai pas » || « Demandez à mes amis » || Un exemple rend la qualité crédible.
+Que faut-il éviter de dire sur ses défauts ? || « Je n'ai aucun défaut » || Un défaut mineur et la façon de le corriger || Un défaut sans lien avec le cœur du métier || Une anecdote honnête || Dire qu'on n'a aucun défaut manque de sincérité.
+Quelle réponse est adaptée à « Où vous voyez-vous dans 5 ans ? » || J'espère avoir progressé et pris plus de responsabilités ici || Je serai à votre place || Je serai dans une autre entreprise || Je ne sais pas du tout || Elle montre de l'ambition et de la loyauté.
+Que doit-on faire en parlant d'un ancien employeur ? || En rester respectueux et positif || En dire du mal pour se justifier || Raconter tous les conflits || Se plaindre du salaire || Critiquer un ancien patron inquiète le recruteur.
+Pourquoi devrait-on vous choisir ? || Je résume ce que j'apporte et ce que je sais faire pour le poste || Parce que j'ai besoin d'argent || Parce que les autres sont moins bons || Parce que je suis gentil || On met en avant sa valeur, pas ses besoins.
+Quelle durée convient pour une réponse classique ? || 30 à 60 secondes || 10 secondes || 5 minutes || 15 minutes || Assez long pour être précis, assez court pour garder l'attention.
+Que veut savoir le recruteur avec « Que savez-vous de notre entreprise ? » || Si le candidat s'est renseigné || Le chiffre d'affaires exact || Le nom du patron seulement || Rien de particulier || C'est un test de préparation.
+Que répondre à « Avez-vous des questions ? » || Poser deux ou trois questions utiles sur le poste ou l'équipe || « Non, rien » || « Combien de jours de congé ? » en premier || « Quand est la pause ? » || Les bonnes questions montrent l'intérêt.
+Quel est le risque de répondre « Je suis perfectionniste » comme défaut ? || C'est une réponse trop attendue et peu sincère || C'est une réponse parfaite || Elle est impolie || Elle est interdite || Les recruteurs la connaissent par cœur.
+Quelle réponse est à éviter pour « Pourquoi quittez-vous votre emploi ? » || « Mon chef est nul » || « Je cherche de nouveaux défis » || « Je veux me rapprocher de chez moi » || « Mon contrat se terminait » || La critique d'un ancien patron est mal perçue.
+Le recruteur demande « Quelles sont vos prétentions salariales ? » trop tôt. Que faire ? || Se renseigner et donner une fourchette réaliste || Refuser de répondre || Donner un chiffre énorme || Dire « ce que vous voulez » || Une fourchette basée sur le marché montre du sérieux.
+Quelle qualité est utile pour presque tous les postes ? || Le sens des responsabilités et l'esprit d'équipe || Le goût du retard || La timidité extrême || L'indifférence || Ces qualités sont recherchées dans tous les métiers.
+Comment répondre à une question dont on ne connaît pas la réponse ? || Reconnaître honnêtement et expliquer comment on chercherait la solution || Inventer une réponse || Se fâcher || Rester silencieux || L'honnêteté associée à une méthode est valorisée.
+Quelle est la meilleure attitude générale pendant l'entretien ? || Écouter, rester poli, regarder son interlocuteur || Interrompre souvent || Regarder son téléphone || Parler à voix basse || L'écoute et le respect font bonne impression.

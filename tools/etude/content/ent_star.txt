@@ -1,0 +1,26 @@
+titre: Questions comportementales et méthode STAR
+== fiche
+p: Les questions comportementales commencent souvent par « Racontez-moi une situation où… ». Le recruteur veut savoir comment tu as agi dans la réalité.
+li: La méthode STAR structure ta réponse en quatre temps.
+li: S pour Situation : le contexte en une ou deux phrases (où, quand, quel projet).
+li: T pour Tâche : ton rôle, ce que l'on attendait de toi.
+li: A pour Action : ce que TU as fait précisément, étape par étape (dis « j'ai », pas seulement « nous »).
+li: R pour Résultat : ce qui s'est passé, avec un chiffre si possible, et ce que tu as appris.
+note: Exemple : « Dans mon stage (S), je devais classer 300 dossiers en une semaine (T). J'ai créé un tableau de suivi et réparti le travail par priorité (A). Tout a été fini un jour plus tôt, sans erreur (R). »
+note: Prépare 4 ou 5 histoires vraies (réussite, conflit, échec corrigé, travail en équipe, initiative) que tu peux adapter à plusieurs questions.
+== questions
+Que signifie la lettre S dans la méthode STAR ? || Situation || Salaire || Stage || Stress || Elle décrit le contexte.
+Que signifie la lettre T dans la méthode STAR ? || Tâche || Temps || Travail || Test || C'est ton rôle dans la situation.
+Que signifie la lettre A dans la méthode STAR ? || Action || Ambition || Attitude || Avenir || C'est ce que toi tu as fait.
+Que signifie la lettre R dans la méthode STAR ? || Résultat || Réponse || Réussite seulement || Retard || Il montre l'effet de ton action.
+À quel type de question répond-on avec la méthode STAR ? || « Racontez-moi une situation où… » || « Quel est votre âge ? » || « Où habitez-vous ? » || « Aimez-vous le sport ? » || Les questions comportementales demandent un exemple réel.
+Dans l'étape « Action », que doit-on dire ? || Ce que l'on a fait soi-même || Seulement ce que l'équipe a fait || Ce que le chef a décidé || Rien || Le recruteur évalue ton rôle personnel.
+Quel élément rend le résultat plus convaincant ? || Un chiffre ou un fait précis || Une promesse vague || Une plainte || Une blague || Les résultats mesurés prouvent l'efficacité.
+Combien d'histoires faut-il préparer à l'avance ? || Quatre ou cinq, adaptables || Une seule || Aucune || Cinquante || Elles peuvent répondre à plusieurs questions.
+Un candidat répond « Nous avons réussi, c'était super ». Que manque-t-il ? || Son action personnelle et un résultat précis || Rien || Un titre || Un sourire || La réponse est floue, on ne voit pas son rôle.
+Comment répondre à « Parlez-moi d'un échec » ? || Raconter un vrai échec, ce qu'on en a appris et comment on s'est amélioré || Dire qu'on n'a jamais échoué || Accuser un collègue || Refuser de répondre || L'apprentissage compte plus que l'échec.
+Comment répondre à « Parlez-moi d'un conflit avec un collègue » ? || Montrer qu'on a écouté et cherché une solution calmement || Dire qui avait tort || Dire qu'on n'a jamais eu de conflit || Raconter une dispute violente || Le recruteur observe votre maturité.
+Quelle compétence teste la question « Racontez une situation où vous avez dirigé une équipe » ? || Le leadership || La mémoire des chiffres || La vitesse de frappe || La taille || Elle teste la capacité à guider et motiver.
+Pourquoi les recruteurs aiment-ils la méthode STAR ? || Elle donne des réponses claires, concrètes et vérifiables || Elle est très longue || Elle remplace le CV || Elle évite de parler du poste || Elle structure la réponse et la rend crédible.
+Que faire si l'on n'a pas d'expérience professionnelle pour un exemple ? || Prendre un exemple d'étude, de stage, de projet ou de bénévolat || Inventer une expérience || Refuser de répondre || Dire « je ne sais pas » || Toute expérience réelle peut illustrer une compétence.
+Quelle durée vise-t-on pour une réponse STAR ? || Environ 1 à 2 minutes || 10 secondes || 10 minutes || 30 minutes || Assez détaillée sans devenir une longue histoire.

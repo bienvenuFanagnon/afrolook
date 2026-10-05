@@ -45,7 +45,7 @@ type CatChapter = { id: string; title: string; levels: number; free?: boolean; p
 type CatSubject = { id: string; title: string; icon?: string; chapters: CatChapter[] };
 type CatClass = { id: string; title: string; subjects: CatSubject[]; compo?: { price?: number; count?: number; passPct?: number; seconds?: number }; passPrice?: number };
 type CatTrack = {
-  id: string; kind: "cycle" | "cert"; title: string; country?: string; order: number; after?: string;
+  id: string; kind: "cycle" | "cert"; title: string; country?: string; order: number; after?: string[];
   classes: CatClass[];
   exam?: { id: string; title: string; diploma: string; price?: number; count?: number; passPct?: number; seconds?: number };
   cert?: { id: string; title: string; from: string[]; price?: number; count?: number; passPct?: number; seconds?: number };
@@ -298,10 +298,10 @@ export const etudeStartTrack = onCall({ timeoutSeconds: 15 }, async (request) =>
   const out = await db.runTransaction(async (tx) => {
     const snap = await tx.get(progRef(uid));
     const p = normalise(snap.exists ? (snap.data() as Prog) : freshProg());
-    const prev = t.after ? tracks.find((x) => x.id === t.after) : undefined;
-    if (prev?.exam && !p.diplomas[prev.exam.id]) {
+    const prevs = (t.after ?? []).map((id) => tracks.find((x) => x.id === id)).filter((x): x is CatTrack => !!x && !!x.exam);
+    if (prevs.length && !prevs.some((x) => p.diplomas[x.exam!.id])) {
       if (!declared) throw new HttpsError("failed-precondition", "NEED_PREVIOUS");
-      p.declared[prev.id] = true;
+      for (const x of prevs) p.declared[x.id] = true;
     }
     p.entries[t.id] = cls.id;
     tx.set(progRef(uid), p);

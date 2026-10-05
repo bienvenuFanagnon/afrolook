@@ -1,0 +1,27 @@
+titre: Préparer l'entretien
+== fiche
+p: Un bon entretien se gagne avant d'entrer dans la salle. Quelques heures de préparation font souvent la différence entre deux candidats de même niveau.
+li: Lis l'offre d'emploi ligne par ligne : missions, compétences demandées, qualités attendues.
+li: Renseigne-toi sur l'entreprise : activité, produits, clients, taille, valeurs, actualités (site web, réseaux sociaux, presse).
+li: Prépare tes réponses aux questions classiques et deux ou trois exemples concrets de tes réussites.
+li: Prépare 3 questions à poser au recruteur : elles montrent ton intérêt.
+li: Prépare tes documents : CV à jour, pièces d'identité, diplômes, lettre de motivation, carnet pour noter.
+li: Vérifie le lieu, l'heure et le trajet. Arrive 10 à 15 minutes en avance, jamais en retard.
+note: Règle d'or : on ne répond pas « je ne sais pas » à « que savez-vous de notre entreprise ? ». Une recherche de 20 minutes suffit.
+note: Tenue : soignée, propre et adaptée au métier. Mieux vaut être un peu trop habillé que négligé.
+== questions
+Quand faut-il arriver à un entretien d'embauche ? || 10 à 15 minutes en avance || 1 heure en avance || Exactement à l'heure || 15 minutes en retard || Cela laisse le temps de se calmer sans déranger.
+Que faut-il lire avant l'entretien pour savoir ce que veut l'entreprise ? || L'offre d'emploi || Le journal du jour || Un roman || Un annuaire || Elle indique missions, compétences et qualités attendues.
+Quel document apporte-t-on à l'entretien ? || Un CV à jour || Un devoir de classe || Des photos de vacances || Une facture d'électricité || On peut aussi apporter ses diplômes et une pièce d'identité.
+Quelle tenue est conseillée pour un entretien ? || Soignée et adaptée au métier || Une tenue de sport || Une tenue de fête || Une tenue très décontractée || L'image compte dès les premières secondes.
+Que faut-il faire de son téléphone pendant l'entretien ? || Le mettre en silence ou l'éteindre || Le poser sur la table et répondre || Filmer le recruteur || Écouter de la musique || Un téléphone qui sonne montre un manque d'attention.
+Pourquoi se renseigner sur l'entreprise avant l'entretien ? || Pour montrer son intérêt et adapter ses réponses || Pour critiquer ses produits || Pour demander un plus gros salaire || Pour éviter de parler || Les recruteurs apprécient les candidats préparés.
+Où peut-on trouver des informations sur une entreprise ? || Son site web, ses réseaux sociaux, la presse || Uniquement auprès de ses amis || Dans un dictionnaire || Nulle part || Plusieurs sources donnent une image plus complète.
+Que préparer pour montrer ses qualités ? || Deux ou trois exemples concrets de réussites || Une liste de ses défauts || Un long discours sur sa vie || Des promesses vagues || Un exemple précis est plus convaincant qu'une affirmation.
+Combien de questions peut-on préparer à poser au recruteur ? || Deux ou trois || Aucune || Cinquante || Une seule sur le salaire || Cela montre de l'intérêt sans fatiguer le recruteur.
+Que faire la veille de l'entretien ? || Relire ses notes et bien dormir || Sortir tard || Ne rien préparer || Changer son CV || Le repos aide à rester clair et calme.
+Comment vérifier que l'on ne sera pas en retard ? || Repérer le lieu et le trajet à l'avance || Partir au dernier moment || Compter sur la chance || Demander un taxi gratuit || On peut même faire le trajet la veille.
+Que faire si l'on arrive très en avance ? || Attendre calmement dehors et se présenter 10 minutes avant || Entrer dans les bureaux et déranger tout le monde || Rentrer chez soi || Appeler le recruteur pour se plaindre || Une arrivée trop tôt peut déranger l'équipe.
+Quel élément du CV doit être relu avant l'entretien ? || Toutes les informations, pour pouvoir les expliquer || Seulement le titre || Rien, puisque le CV est déjà envoyé || Seulement l'adresse || Le recruteur peut poser une question sur n'importe quelle ligne.
+Que faire de ses voyages et expériences qui ne concernent pas le poste ? || Choisir ce qui montre des qualités utiles au poste || Tout raconter dans le détail || Les cacher || Les inventer || Chaque expérience doit servir le message : « je suis le bon candidat ».
+Quelle est la meilleure façon de s'entraîner ? || Répondre à voix haute devant un ami ou un miroir || Lire ses réponses sans les dire || Apprendre un texte par cœur mot à mot || Ne pas s'entraîner || Parler à voix haute révèle les hésitations et le temps pris.

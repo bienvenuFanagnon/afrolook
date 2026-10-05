@@ -1,0 +1,26 @@
+titre: Se présenter : « Parlez-moi de vous »
+== fiche
+p: C'est presque toujours la première question. Elle n'est pas une invitation à raconter sa vie mais à présenter en 1 à 2 minutes pourquoi on est le bon candidat.
+li: Structure simple en trois temps : présent (qui je suis, ce que je fais), passé (mon parcours, mes réussites utiles au poste), futur (pourquoi ce poste m'intéresse).
+li: Parle de ta formation, de tes expériences et de tes compétences en lien avec le poste.
+li: Évite les détails personnels inutiles (situation familiale, religion, opinions politiques).
+li: Reste positif, clair et concret : un chiffre ou un résultat vaut mieux qu'un adjectif.
+li: Termine en faisant le lien avec l'entreprise et le poste.
+note: Exemple : « Je suis diplômé en comptabilité et j'ai fait un stage d'un an dans un cabinet, où j'ai tenu la comptabilité de 15 clients. Je cherche maintenant un poste où je pourrai progresser. Votre entreprise m'intéresse car… »
+note: Durée idéale : 1 à 2 minutes. Pas plus.
+== questions
+Quand pose-t-on souvent la question « Parlez-moi de vous » ? || Au début de l'entretien || À la toute fin || Jamais || Seulement au téléphone || C'est une question d'ouverture.
+Quelle est la durée idéale d'une présentation ? || 1 à 2 minutes || 30 secondes || 10 minutes || 20 minutes || Assez long pour convaincre, assez court pour garder l'attention.
+À quoi sert cette question ? || À savoir pourquoi on est le bon candidat || À vérifier l'adresse || À connaître la religion du candidat || À faire perdre du temps || Le recruteur veut un résumé utile pour le poste.
+Que doit-on raconter en priorité ? || Sa formation, ses expériences et compétences utiles au poste || Toute son enfance || Ses problèmes personnels || Ses disputes || On reste centré sur le poste visé.
+Quelle structure est conseillée ? || Présent, passé, futur || Futur, futur, futur || Seulement le passé || Seulement des défauts || Ce plan est simple et facile à suivre.
+Quelle information personnelle vaut mieux éviter ? || Opinions politiques et religion || Sa formation || Ses expériences || Ses compétences || Elles n'ont pas de lien avec le poste et peuvent être mal perçues.
+Comment termine-t-on sa présentation ? || En faisant le lien avec l'entreprise et le poste || En se taisant || En demandant le salaire || En s'excusant || Cela montre l'intérêt pour le poste précis.
+Quelle phrase est la plus convaincante ? || « J'ai géré 15 clients pendant un an » || « Je suis très sérieux » || « Je suis parfait » || « Je fais de mon mieux, normalement » || Un fait précis prouve mieux qu'un adjectif.
+Que faire si le recruteur a déjà lu le CV ? || Résumer l'essentiel et ajouter ce qui n'y figure pas || Lire le CV mot à mot || Refuser de répondre || Dire « c'est dans le CV » || On apporte de la valeur en complétant.
+Quelle erreur éviter dans la présentation ? || Réciter son CV du début à la fin sans lien avec le poste || Rester naturel || Donner un résultat chiffré || Sourire || Une liste monotone ennuie le recruteur.
+Un candidat dit « Je suis né à… puis j'ai grandi… ». Que dire de sa réponse ? || Trop d'informations inutiles sur sa vie || Parfaitement adaptée || Trop courte || Très professionnelle || On ne présente pas toute sa biographie.
+Pour un jeune diplômé sans expérience, que mettre en avant ? || Formation, stages, projets, bénévolat et qualités || Rien, il vaut mieux se taire || Des expériences inventées || Les défauts des autres || On valorise tout ce qui montre des compétences utiles.
+Comment parler d'un trou dans son parcours ? || Expliquer honnêtement ce que l'on a appris ou fait pendant cette période || Mentir sur les dates || Changer de sujet brutalement || Dire que ce n'est pas important || L'honnêteté et un message positif rassurent.
+Quel ton adopter pendant la présentation ? || Posé, positif et enthousiaste || Triste || Arrogant || Très hésitant || Le ton transmet autant que les mots.
+Pourquoi préparer sa présentation à voix haute ? || Pour être clair, fluide et respecter le temps || Pour impressionner par sa voix forte || Pour ne rien écouter || Pour réciter mot à mot || La répétition donne de l'aisance sans paraître robot.

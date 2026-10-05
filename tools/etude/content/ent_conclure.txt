@@ -1,0 +1,27 @@
+titre: Salaire, questions à poser et suite
+== fiche
+p: La fin de l'entretien laisse une dernière impression. Prépare-la autant que le début.
+li: Les questions à poser montrent ton intérêt : missions du quotidien, équipe, outils, évolution, critères de réussite à 6 mois, prochaines étapes du recrutement.
+li: Évite de commencer par les congés, les avantages ou le salaire si le recruteur n'en parle pas.
+li: Salaire : renseigne-toi sur les rémunérations du métier, donne une fourchette réaliste, justifie-la par ta valeur et reste ouvert à la discussion.
+li: Ne mens jamais sur ton salaire actuel ni sur tes diplômes.
+li: Remercie le recruteur, serre la main, répète ton intérêt pour le poste.
+li: Dans les 24 à 48 heures, envoie un court message de remerciement et rappelle une qualité utile au poste.
+note: Si on te propose un poste, tu peux demander un délai raisonnable pour répondre (1 à 3 jours).
+note: Sans nouvelles après le délai annoncé, une relance polie par courriel est normale.
+== questions
+Laquelle de ces questions est bonne à poser au recruteur ? || « Quelles seront mes missions au quotidien ? » || « Quand puis-je partir en congé ? » || « Puis-je arriver en retard ? » || « Combien gagne votre patron ? » || Elle montre l'intérêt pour le travail.
+Que faut-il éviter de demander en premier ? || Les congés et les avantages || Les missions || L'équipe || Les prochaines étapes || Cela donne l'impression que seul l'avantage compte.
+Que faire à la fin de l'entretien ? || Remercier et réaffirmer son intérêt || Partir sans un mot || Demander le salaire immédiatement || Critiquer l'entreprise || Une conclusion positive marque les esprits.
+Que faire dans les jours qui suivent l'entretien ? || Envoyer un court message de remerciement || Ne rien faire || Appeler dix fois par jour || Insulter le recruteur || Cela montre professionnalisme et motivation.
+Comment répondre à une question sur le salaire ? || Donner une fourchette réaliste après s'être renseigné || Dire un chiffre au hasard || Refuser toujours de répondre || Mentir sur son salaire actuel || On s'appuie sur le marché et sa valeur.
+Peut-on mentir sur ses diplômes ? || Non, c'est une faute grave qui peut mener au licenciement || Oui, c'est sans risque || Oui, si le recruteur ne vérifie pas || Seulement un peu || Les fausses informations sont souvent découvertes.
+Qu'est-ce qu'une fourchette salariale ? || Un minimum et un maximum de salaire souhaités || Un salaire unique et fixe || Un type de CV || Un contrat de stage || Elle laisse de la place à la discussion.
+Que faire si l'on reçoit une proposition mais qu'on veut réfléchir ? || Demander poliment un délai raisonnable || Dire oui tout de suite sans réfléchir || Disparaître || Négocier en criant || Un délai de quelques jours est généralement accepté.
+Après combien de temps relance-t-on poliment un recruteur sans nouvelles ? || Après le délai annoncé, sinon après environ une semaine || Après 5 minutes || Tous les jours || Jamais || Une relance mesurée est normale et appréciée.
+Que montre une question sur les « critères de réussite à 6 mois » ? || Que l'on veut réussir et progresser || Que l'on veut partir vite || Que l'on ne s'intéresse pas au poste || Que l'on est inquiet || Elle montre l'ambition et le sérieux.
+Quelle serait la bonne attitude si le recruteur annonce un salaire inférieur à vos attentes ? || En discuter calmement et valoriser son apport || Quitter la salle || Se fâcher || Accepter sans rien dire || La négociation est possible et normale.
+Quel message de remerciement est efficace ? || Court, poli, avec une qualité utile rappelée || Très long avec des excuses || Plein de fautes || Sans salutation || Un message simple et soigné laisse une bonne impression.
+Pourquoi se renseigner sur les salaires du métier ? || Pour demander un montant réaliste et crédible || Pour comparer avec ses amis || Pour parler uniquement d'argent || Pour éviter l'entretien || Un chiffre réaliste renforce la crédibilité.
+À quel moment aborde-t-on souvent le salaire ? || Quand le recruteur en parle ou en fin d'entretien || Dès la première minute || Jamais || Avant de dire bonjour || Le moment dépend du recruteur ; la patience est préférable.
+Quelle est la meilleure façon de quitter la salle ? || Avec un sourire, une poignée de main et un merci || En courant || Sans regarder personne || En critiquant || La dernière image compte.

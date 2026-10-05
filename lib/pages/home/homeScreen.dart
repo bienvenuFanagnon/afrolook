@@ -18,6 +18,7 @@ import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/quiz/quiz_home_page.dart';
+import 'package:afrotok/pages/etude/etude_home_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -581,13 +582,12 @@ class _MyHomePageState extends State<MyHomePage>
 
                   // ── Applications ───────────────────────────────────────────
                   _dSection(colors, 'Applications'),
-                  // Afro Love — masqué sur iOS (App Store)
-                  if (!kIsAppleStore)
-                    _dItem(context, colors,
-                        icon: Fontisto.tinder,
-                        iconColor: Colors.red,
-                        label: 'Afro Love',
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSwipePage()))),
+                  // Quiz : parcours de questions avec mascotte, classement, boutique de points (à la place d'Afro Love, qui passe en bas du menu)
+                  _dItem(context, colors,
+                      icon: Icons.quiz_rounded,
+                      iconColor: const Color(0xFF2ECC71),
+                      label: context.tr('Quiz'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizHomePage()))),
                   // AfroShop Market — mis en avant (masqué sur iPhone/iPad)
                   if (!kIsAppleStore) Container(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -651,13 +651,6 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.forum_rounded,
                       label: context.tr('Top commentateurs de la semaine'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WeeklyTopCommentatorsPage()))),
-
-                  // Quiz : parcours de questions avec mascotte, classement, boutique de points
-                  _dItem(context, colors,
-                      icon: Icons.quiz_rounded,
-                      iconColor: const Color(0xFF2ECC71),
-                      label: context.tr('Quiz'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizHomePage()))),
 
                   // Récompenses : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
                   if (RewardsService.available(authProvider.loginUserData))
@@ -1773,27 +1766,14 @@ class _MyHomePageState extends State<MyHomePage>
                             size: navIconSize,
                           ),
                         ),
-                        if (!kIsAppleStore) GestureDetector(
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()));
-                          },
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage())),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              badges.Badge(
-                                showBadge: _unreadDatingCount > 0,
-                                badgeStyle: badges.BadgeStyle(
-                                  badgeColor: colors.accent,
-                                  padding: const EdgeInsets.all(3),
-                                ),
-                                badgeContent: Text(
-                                  _unreadDatingCount > 9 ? '9+' : '$_unreadDatingCount',
-                                  style: TextStyle(fontSize: 8, color: colors.onAccent),
-                                ),
-                                child: Icon(Fontisto.tinder, color: Colors.red, size: navIconSize),
-                              ),
+                              Icon(Icons.school_rounded, color: colors.primary, size: navIconSize),
                               const SizedBox(height: 2),
-                              Text('Afrolove', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+                              Text(context.tr('Étude'), style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
@@ -2431,16 +2411,15 @@ class _MyHomePageState extends State<MyHomePage>
                     wide: wide,
                     colors: colors,
                   ),
-                  // Afrolove — masqué sur iOS (App Store)
-                  if (!kIsAppleStore) _sidebarItem(
+                  // Étude : parcours scolaire, diplômes et attestations
+                  _sidebarItem(
                     context: context,
-                    icon: Fontisto.tinder,
-                    label: 'Afrolove',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage())),
+                    icon: Icons.school_rounded,
+                    label: context.tr('Étude'),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage())),
                     wide: wide,
                     colors: colors,
-                    iconColor: Colors.red,
-                    badge: _unreadDatingCount,
+                    iconColor: colors.primary,
                   ),
                   // Lives
                   StreamBuilder<int>(
@@ -2804,6 +2783,15 @@ class _MyHomePageState extends State<MyHomePage>
                   await authProvider.getAppData();
                   Share.shareUri(Uri.parse('${authProvider.appDefaultData.app_link}'));
                 }),
+
+                // Afro Love — en bas du menu, masqué sur iOS (App Store)
+                if (!kIsAppleStore)
+                  _rpItem(context, colors,
+                    icon: Fontisto.tinder,
+                    iconColor: Colors.red,
+                    label: 'Afro Love',
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSwipePage())),
+                  ),
 
                 const SizedBox(height: 8),
                 Divider(color: colors.border),
