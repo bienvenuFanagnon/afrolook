@@ -31,13 +31,13 @@ class AdConfig {
     },
   };
 
-  /// Emplacements de production Android déjà créés dans AdMob (utilisés avant la période Appodeal).
+  /// Emplacements de production Android déjà créés dans AdMob (identifiants vérifiés dans la console AdMob).
   /// iPhone : à renseigner dans Firestore (`units.ios`) ; sans eux, aucune pub n'y est affichée.
   static const _defaultAndroidUnits = {
-    'banner': 'ca-app-pub-4937249920200692/8649891687',
-    'native': 'ca-app-pub-4937249920200692/3785411966',
-    'interstitial': 'ca-app-pub-4937249920200692/4672884589',
-    'rewarded': 'ca-app-pub-4937249920200692/8962511249',
+    'banner': 'ca-app-pub-4937249920200692/2196510427',
+    'native': 'ca-app-pub-4937249920200692/5006506592',
+    'interstitial': 'ca-app-pub-4937249920200692/3414223326',
+    'rewarded': 'ca-app-pub-4937249920200692/6810542850',
   };
 
   static bool get isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
