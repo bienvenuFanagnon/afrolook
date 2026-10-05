@@ -1,0 +1,167 @@
+[
+{
+"t": 2,
+"q": "Quelle Américaine, ancienne esclave, a guidé des centaines de personnes vers la liberté par le « chemin de fer clandestin » ?",
+"c": "Harriet Tubman",
+"w": [
+"Rosa Parks",
+"Sojourner Truth",
+"Frederick Douglass"
+],
+"e": "Elle a fait environ treize missions."
+},
+{
+"t": 2,
+"q": "Quel président américain a signé en 1863 la proclamation d'émancipation des esclaves ?",
+"c": "Abraham Lincoln",
+"w": [
+"George Washington",
+"Theodore Roosevelt",
+"Andrew Jackson"
+],
+"e": "Il a été assassiné en 1865."
+},
+{
+"t": 2,
+"q": "Quel chef sioux a vaincu l'armée américaine à Little Bighorn en 1876 ?",
+"c": "Sitting Bull",
+"w": [
+"Geronimo",
+"Cochise",
+"Crazy Horse"
+],
+"e": "Il a mené les Sioux avec Crazy Horse."
+},
+{
+"t": 2,
+"q": "Quel chef apache s'est battu contre les armées américaine et mexicaine jusqu'en 1886 ?",
+"c": "Geronimo",
+"w": [
+"Sitting Bull",
+"Cochise",
+"Red Cloud"
+],
+"e": "Il s'est rendu à l'armée américaine en 1886."
+},
+{
+"t": 3,
+"q": "Quel Mexicain a mené la révolution de 1910 dans le nord du pays ?",
+"c": "Pancho Villa",
+"w": [
+"Emiliano Zapata",
+"Porfirio Díaz",
+"Benito Juárez"
+],
+"e": "Il était surnommé « le Centaure du Nord »."
+},
+{
+"t": 3,
+"q": "Quel révolutionnaire mexicain réclamait « la terre et la liberté » dans le sud du pays ?",
+"c": "Emiliano Zapata",
+"w": [
+"Pancho Villa",
+"Francisco Madero",
+"Venustiano Carranza"
+],
+"e": "Il est mort assassiné en 1919."
+},
+{
+"t": 4,
+"q": "Quel prêtre mexicain a lancé le « cri de Dolores » en 1810 ?",
+"c": "Miguel Hidalgo",
+"w": [
+"José María Morelos",
+"Agustín de Iturbide",
+"Vicente Guerrero"
+],
+"e": "Il a déclenché la guerre d'indépendance du Mexique."
+},
+{
+"t": 4,
+"q": "Quel président mexicain d'origine indigène a défendu le pays contre l'intervention française ?",
+"c": "Benito Juárez",
+"w": [
+"Porfirio Díaz",
+"Lázaro Cárdenas",
+"Miguel Hidalgo"
+],
+"e": "Il a présidé de 1858 à 1872."
+},
+{
+"t": 4,
+"q": "Quelle astronaute américaine a été la première à commander la Station spatiale internationale ?",
+"c": "Peggy Whitson",
+"w": [
+"Sally Ride",
+"Eileen Collins",
+"Mae Jemison"
+],
+"e": "Elle a passé plus de 600 jours dans l'espace."
+},
+{
+"t": 4,
+"q": "Quelle militante américaine a refusé de se lever dans un bus en 1955 et déclenché le boycott de Montgomery ?",
+"c": "Rosa Parks",
+"w": [
+"Harriet Tubman",
+"Coretta Scott King",
+"Angela Davis"
+],
+"e": "Elle est surnommée « la mère du mouvement des droits civiques »."
+},
+{
+"t": 4,
+"q": "Quel jeune Noir de 14 ans a été assassiné en 1955 dans le Mississippi, devenant un symbole des droits civiques ?",
+"c": "Emmett Till",
+"w": [
+"Medgar Evers",
+"Trayvon Martin",
+"Michael Brown"
+],
+"e": "Sa mère a voulu un cercueil ouvert."
+},
+{
+"t": 5,
+"q": "Quel prêtre brésilien a défendu les pauvres et la théologie de la libération ?",
+"c": "Dom Hélder Câmara",
+"w": [
+"Paulo Freire",
+"Oscar Romero",
+"Gustavo Gutiérrez"
+],
+"e": "Il était archevêque de Recife et Olinda."
+},
+{
+"t": 5,
+"q": "Quel archevêque salvadorien a été assassiné en 1980 alors qu'il célébrait la messe ?",
+"c": "Óscar Romero",
+"w": [
+"Gustavo Gutiérrez",
+"Ernesto Cardenal",
+"Dom Hélder Câmara"
+],
+"e": "Il avait dénoncé les violences du régime."
+},
+{
+"t": 5,
+"q": "Quelle Guatémaltèque d'origine maya a reçu le prix Nobel de la paix en 1992 ?",
+"c": "Rigoberta Menchú",
+"w": [
+"Isabel Allende",
+"Frida Kahlo",
+"Gabriela Mistral"
+],
+"e": "Elle défend les droits des peuples autochtones."
+},
+{
+"t": 5,
+"q": "Quel dirigeant noir américain a fondé le Black Panther Party en 1966 avec Bobby Seale ?",
+"c": "Huey Newton",
+"w": [
+"Malcolm X",
+"Stokely Carmichael",
+"Marcus Garvey"
+],
+"e": "Le parti défendait les droits des Noirs."
+}
+]

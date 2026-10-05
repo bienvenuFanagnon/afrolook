@@ -1,0 +1,167 @@
+[
+{
+"t": 1,
+"q": "Quel désert nord-américain est célèbre pour ses cactus saguaro et les films de western ?",
+"c": "Le désert de Sonora",
+"w": [
+"Le Sahara",
+"Le Gobi",
+"Le Kalahari"
+],
+"e": "Il se trouve entre le Mexique et les États-Unis."
+},
+{
+"t": 1,
+"q": "Quel animal est l'emblème du Canada, avec un grand barrage de bois ?",
+"c": "Le castor",
+"w": [
+"L'ours",
+"Le lynx",
+"L'orignal"
+],
+"e": "Il est sur la pièce de cinq cents."
+},
+{
+"t": 2,
+"q": "Quel animal géant d'Amérique du Sud vit dans les rivières et se nourrit de poissons, surnommé « loup de rivière » ?",
+"c": "La loutre géante",
+"w": [
+"Le caïman",
+"Le capybara",
+"Le piranha"
+],
+"e": "Elle peut atteindre près de deux mètres."
+},
+{
+"t": 2,
+"q": "Quel est le plus grand rongeur du monde, vivant en Amérique du Sud ?",
+"c": "Le capybara",
+"w": [
+"Le castor",
+"La marmotte",
+"Le porc-épic"
+],
+"e": "Il vit près des cours d'eau."
+},
+{
+"t": 2,
+"q": "Quel poisson carnivore des rivières d'Amazonie est connu pour ses dents tranchantes ?",
+"c": "Le piranha",
+"w": [
+"L'espadon",
+"Le silure",
+"La murène"
+],
+"e": "Il vit en bancs."
+},
+{
+"t": 2,
+"q": "Quel oiseau de proie est le symbole des Andes avec une envergure de plus de trois mètres ?",
+"c": "Le condor des Andes",
+"w": [
+"L'aigle royal",
+"Le pygargue",
+"Le faucon"
+],
+"e": "C'est l'un des plus grands oiseaux volants."
+},
+{
+"t": 2,
+"q": "Quel animal marin colonise les récifs des Caraïbes et construit des « barrières » ?",
+"c": "Le corail",
+"w": [
+"L'éponge",
+"La méduse",
+"L'oursin"
+],
+"e": "La Grande Barrière du Belize en est un exemple."
+},
+{
+"t": 2,
+"q": "Quelle montagne des États-Unis est sculptée avec les visages de quatre présidents ?",
+"c": "Le mont Rushmore",
+"w": [
+"Le mont Whitney",
+"Le mont Rainier",
+"Le mont Washington"
+],
+"e": "Elle se trouve dans le Dakota du Sud."
+},
+{
+"t": 3,
+"q": "Quel scientifique américain a inventé le paratonnerre ?",
+"c": "Benjamin Franklin",
+"w": [
+"Thomas Edison",
+"Samuel Morse",
+"Alexander Bell"
+],
+"e": "Il a aussi signé la Déclaration d'indépendance."
+},
+{
+"t": 3,
+"q": "Quel Américain a inventé le télégraphe électrique et un code célèbre ?",
+"c": "Samuel Morse",
+"w": [
+"Thomas Edison",
+"Alexander Bell",
+"Nikola Tesla"
+],
+"e": "Le code utilise des points et des traits."
+},
+{
+"t": 3,
+"q": "Quelle Américaine a découvert les « gènes sauteurs » et reçu le Nobel de médecine en 1983 ?",
+"c": "Barbara McClintock",
+"w": [
+"Rosalind Franklin",
+"Marie Curie",
+"Jane Goodall"
+],
+"e": "Elle a étudié le maïs."
+},
+{
+"t": 3,
+"q": "Quel scientifique américain a découvert la structure de l'ADN avec Crick ?",
+"c": "James Watson",
+"w": [
+"Linus Pauling",
+"Craig Venter",
+"Francis Collins"
+],
+"e": "Ils ont publié leur modèle en 1953."
+},
+{
+"t": 3,
+"q": "Quel chimiste américain a reçu deux prix Nobel, de chimie puis de la paix ?",
+"c": "Linus Pauling",
+"w": [
+"Marie Curie",
+"Frederick Sanger",
+"Glenn Seaborg"
+],
+"e": "Il a étudié la nature des liaisons chimiques."
+},
+{
+"t": 3,
+"q": "Quelle navette spatiale américaine a explosé en vol en 2003 en rentrant dans l'atmosphère ?",
+"c": "Columbia",
+"w": [
+"Challenger",
+"Discovery",
+"Atlantis"
+],
+"e": "Sept astronautes ont perdu la vie."
+},
+{
+"t": 3,
+"q": "Quel inventeur américain d'origine serbe a mis au point le courant alternatif ?",
+"c": "Nikola Tesla",
+"w": [
+"Thomas Edison",
+"George Westinghouse",
+"Guglielmo Marconi"
+],
+"e": "Une unité du champ magnétique porte son nom."
+}
+]
