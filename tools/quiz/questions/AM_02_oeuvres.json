@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel créateur américain a donné naissance à Mickey Mouse en 1928 ?",
+"c": "Walt Disney",
+"w": [
+"Walter Lantz",
+"Chuck Jones",
+"Hayao Miyazaki"
+],
+"e": "Mickey est apparu pour la première fois dans « Steamboat Willie »."
+},
+{
+"q": "Dans quel quartier de Los Angeles est installée l'industrie du cinéma américain ?",
+"c": "Hollywood",
+"w": [
+"Beverly Hills",
+"Santa Monica",
+"Malibu"
+],
+"e": "Le célèbre panneau blanc domine les collines."
+},
+{
+"q": "Quel super-héros porte une cape rouge et un grand « S » sur la poitrine ?",
+"c": "Superman",
+"w": [
+"Batman",
+"Flash",
+"Green Lantern"
+],
+"e": "Il vient de la planète Krypton."
+},
+{
+"q": "Quel super-héros a été piqué par une araignée radioactive ?",
+"c": "Spider-Man",
+"w": [
+"Batman",
+"Daredevil",
+"Hulk"
+],
+"e": "Son identité secrète est Peter Parker."
+},
+{
+"q": "Quelle ville fictive est protégée par Batman ?",
+"c": "Gotham City",
+"w": [
+"Metropolis",
+"Star City",
+"Central City"
+],
+"e": "Elle est inspirée de New York."
+},
+{
+"q": "Quel film d'animation de Pixar met en scène un cow-boy et un astronaute en jouets ?",
+"c": "Toy Story",
+"w": [
+"Cars",
+"Monstres & Cie",
+"Là-haut"
+],
+"e": "C'est le premier long-métrage entièrement en images de synthèse, sorti en 1995."
+},
+{
+"q": "Quel film de 1939 raconte l'histoire de Dorothy et du chemin de briques jaunes ?",
+"c": "Le Magicien d'Oz",
+"w": [
+"Blanche-Neige",
+"Autant en emporte le vent",
+"Mary Poppins"
+],
+"e": "Dorothy rencontre l'Épouvantail, le Bûcheron en fer-blanc et le Lion."
+},
+{
+"q": "Quel film de Steven Spielberg, sorti en 1975, met en scène un requin tueur ?",
+"c": "Les Dents de la mer",
+"w": [
+"Jurassic Park",
+"E.T.",
+"Duel"
+],
+"e": "Il est considéré comme le premier grand film « blockbuster » d'été."
+},
+{
+"q": "Quel réalisateur américain a signé « E.T. l'extra-terrestre » et « Jurassic Park » ?",
+"c": "Steven Spielberg",
+"w": [
+"George Lucas",
+"James Cameron",
+"Ridley Scott"
+],
+"e": "E.T. est sorti en 1982."
+},
+{
+"q": "Quel chien de bande dessinée est le meilleur ami de Charlie Brown ?",
+"c": "Snoopy",
+"w": [
+"Pluto",
+"Milou",
+"Idéfix"
+],
+"e": "Il rêve d'être un as de l'aviation."
+},
+{
+"q": "Quelle série animée américaine met en scène la famille jaune qui habite Springfield ?",
+"c": "Les Simpson",
+"w": [
+"Les Griffin",
+"South Park",
+"Futurama"
+],
+"e": "Elle est diffusée depuis 1989."
+},
+{
+"q": "Quel peintre mexicain est célèbre pour ses immenses fresques murales ?",
+"c": "Diego Rivera",
+"w": [
+"Frida Kahlo",
+"David Alfaro Siqueiros",
+"Rufino Tamayo"
+],
+"e": "Il a peint des scènes de l'histoire du Mexique sur les murs des bâtiments publics."
+},
+{
+"q": "Quel écrivain américain est l'auteur du « Vieil Homme et la Mer » ?",
+"c": "Ernest Hemingway",
+"w": [
+"William Faulkner",
+"John Steinbeck",
+"Jack London"
+],
+"e": "Il a reçu le prix Nobel de littérature en 1954."
+},
+{
+"q": "Quel écrivain américain a écrit « Les Raisins de la colère » ?",
+"c": "John Steinbeck",
+"w": [
+"Ernest Hemingway",
+"F. Scott Fitzgerald",
+"Mark Twain"
+],
+"e": "Le roman raconte l'exode d'une famille pauvre vers la Californie."
+},
+{
+"q": "Quel écrivain colombien a écrit « Cent ans de solitude » ?",
+"c": "Gabriel García Márquez",
+"w": [
+"Mario Vargas Llosa",
+"Jorge Luis Borges",
+"Pablo Neruda"
+],
+"e": "Il a reçu le prix Nobel de littérature en 1982."
+},
+{
+"q": "Quel écrivain argentin a écrit « Fictions » et « L'Aleph » ?",
+"c": "Jorge Luis Borges",
+"w": [
+"Julio Cortázar",
+"Ernesto Sabato",
+"Roberto Bolaño"
+],
+"e": "Il était presque aveugle à la fin de sa vie."
+},
+{
+"q": "Quel poète chilien a reçu le prix Nobel de littérature en 1971 ?",
+"c": "Pablo Neruda",
+"w": [
+"Octavio Paz",
+"Gabriela Mistral",
+"Nicanor Parra"
+],
+"e": "Il est l'auteur des « Vingt poèmes d'amour et une chanson désespérée »."
+},
+{
+"q": "Quel écrivain péruvien a reçu le prix Nobel de littérature en 2010 ?",
+"c": "Mario Vargas Llosa",
+"w": [
+"Gabriel García Márquez",
+"Isabel Allende",
+"Octavio Paz"
+],
+"e": "Il est l'auteur de « La Ville et les Chiens »."
+},
+{
+"q": "Quel poète et essayiste mexicain a reçu le prix Nobel de littérature en 1990 ?",
+"c": "Octavio Paz",
+"w": [
+"Carlos Fuentes",
+"Juan Rulfo",
+"Pablo Neruda"
+],
+"e": "Il est aussi l'auteur du « Labyrinthe de la solitude »."
+},
+{
+"q": "Quelle poétesse chilienne a reçu le prix Nobel de littérature en 1945, première Latino-Américaine à l'obtenir ?",
+"c": "Gabriela Mistral",
+"w": [
+"Isabel Allende",
+"Violeta Parra",
+"Frida Kahlo"
+],
+"e": "Elle était aussi institutrice."
+},
+{
+"q": "Quel écrivain brésilien a écrit « L'Alchimiste » ?",
+"c": "Paulo Coelho",
+"w": [
+"Jorge Amado",
+"Machado de Assis",
+"Clarice Lispector"
+],
+"e": "Le roman a été traduit dans plus de 80 langues."
+},
+{
+"q": "Quelle écrivaine américaine a écrit « Autant en emporte le vent » ?",
+"c": "Margaret Mitchell",
+"w": [
+"Harper Lee",
+"Louisa May Alcott",
+"Toni Morrison"
+],
+"e": "Le roman se passe pendant la guerre de Sécession."
+},
+{
+"q": "Quelle écrivaine américaine a reçu le prix Nobel de littérature en 1993, auteure de « Beloved » ?",
+"c": "Toni Morrison",
+"w": [
+"Maya Angelou",
+"Alice Walker",
+"Zora Neale Hurston"
+],
+"e": "Elle est la première femme noire à avoir reçu ce prix."
+},
+{
+"q": "Quel écrivain américain a écrit « Moby Dick » en 1851 ?",
+"c": "Herman Melville",
+"w": [
+"Mark Twain",
+"Nathaniel Hawthorne",
+"Edgar Allan Poe"
+],
+"e": "Le roman raconte la chasse d'une immense baleine blanche."
+},
+{
+"q": "Quel écrivain américain, maître du fantastique, a écrit « Le Corbeau » et « Le Chat noir » ?",
+"c": "Edgar Allan Poe",
+"w": [
+"Stephen King",
+"H. P. Lovecraft",
+"Herman Melville"
+],
+"e": "On lui attribue l'invention du roman policier."
+},
+{
+"q": "Quel écrivain américain a écrit « Gatsby le Magnifique » ?",
+"c": "F. Scott Fitzgerald",
+"w": [
+"Ernest Hemingway",
+"John Steinbeck",
+"J. D. Salinger"
+],
+"e": "Le roman se passe dans les années 1920 à New York."
+},
+{
+"q": "Quel écrivain américain de la Beat Generation a écrit « Sur la route » ?",
+"c": "Jack Kerouac",
+"w": [
+"Allen Ginsberg",
+"William Burroughs",
+"Truman Capote"
+],
+"e": "Il a écrit le manuscrit sur un long rouleau de papier."
+},
+{
+"q": "Quel écrivain américain a écrit « L'Attrape-cœurs » ?",
+"c": "J. D. Salinger",
+"w": [
+"Jack Kerouac",
+"Kurt Vonnegut",
+"John Updike"
+],
+"e": "Le héros s'appelle Holden Caulfield."
+},
+{
+"q": "Quelle écrivaine américaine a écrit « Les Quatre Filles du docteur March » ?",
+"c": "Louisa May Alcott",
+"w": [
+"Harriet Beecher Stowe",
+"Emily Dickinson",
+"Margaret Mitchell"
+],
+"e": "Jo March en est l'héroïne la plus connue."
+},
+{
+"q": "Quelle écrivaine canadienne est l'auteure de « La Servante écarlate » ?",
+"c": "Margaret Atwood",
+"w": [
+"Alice Munro",
+"Louise Penny",
+"Anne Hébert"
+],
+"e": "Le roman est devenu une série télévisée à succès."
+},
+{
+"q": "Quel cinéaste américain a réalisé « Citizen Kane » en 1941 ?",
+"c": "Orson Welles",
+"w": [
+"Alfred Hitchcock",
+"Billy Wilder",
+"John Ford"
+],
+"e": "Il avait seulement 25 ans."
+},
+{
+"q": "Quel réalisateur américain a signé la trilogie du « Parrain » ?",
+"c": "Francis Ford Coppola",
+"w": [
+"Martin Scorsese",
+"Brian De Palma",
+"Sidney Lumet"
+],
+"e": "Le premier film est sorti en 1972."
+},
+{
+"q": "Quel réalisateur américain a signé « Pulp Fiction » en 1994 ?",
+"c": "Quentin Tarantino",
+"w": [
+"Martin Scorsese",
+"Steven Spielberg",
+"Stanley Kubrick"
+],
+"e": "Le film a reçu la Palme d'or à Cannes."
+},
+{
+"q": "Quel réalisateur américain a réalisé « Taxi Driver » et « Les Affranchis » ?",
+"c": "Martin Scorsese",
+"w": [
+"Francis Ford Coppola",
+"Clint Eastwood",
+"Oliver Stone"
+],
+"e": "Il a reçu l'Oscar du meilleur réalisateur en 2007 pour « Les Infiltrés »."
+},
+{
+"q": "Quelle réalisatrice américaine est la première femme à avoir reçu l'Oscar du meilleur réalisateur, en 2010 ?",
+"c": "Kathryn Bigelow",
+"w": [
+"Sofia Coppola",
+"Jane Campion",
+"Greta Gerwig"
+],
+"e": "Elle a été récompensée pour « Démineurs »."
+},
+{
+"q": "Quel réalisateur mexicain a signé « Le Labyrinthe de Pan » ?",
+"c": "Guillermo del Toro",
+"w": [
+"Alfonso Cuarón",
+"Alejandro González Iñárritu",
+"Pedro Almodóvar"
+],
+"e": "Il a reçu l'Oscar du meilleur réalisateur en 2018 pour « La Forme de l'eau »."
+},
+{
+"q": "Quel réalisateur mexicain est l'auteur de « Gravity » et de « Roma » ?",
+"c": "Alfonso Cuarón",
+"w": [
+"Guillermo del Toro",
+"Alejandro González Iñárritu",
+"Carlos Reygadas"
+],
+"e": "Il a reçu l'Oscar du meilleur réalisateur pour ces deux films."
+},
+{
+"q": "Quel réalisateur mexicain a réalisé « Birdman » et « The Revenant » ?",
+"c": "Alejandro González Iñárritu",
+"w": [
+"Alfonso Cuarón",
+"Guillermo del Toro",
+"Luis Buñuel"
+],
+"e": "Il a reçu deux fois de suite l'Oscar du meilleur réalisateur."
+},
+{
+"q": "Quel réalisateur brésilien a signé « La Cité de Dieu » en 2002 ?",
+"c": "Fernando Meirelles",
+"w": [
+"Walter Salles",
+"Héctor Babenco",
+"Bruno Barreto"
+],
+"e": "Le film se passe dans une favela de Rio de Janeiro."
+},
+{
+"q": "Quel film de Pixar de 2017 célèbre la fête des Morts mexicaine ?",
+"c": "Coco",
+"w": [
+"Vice-versa",
+"Soul",
+"Encanto"
+],
+"e": "Le héros est un garçon qui rêve de devenir musicien."
+},
+{
+"q": "Quel peintre américain a réalisé « American Gothic » en 1930 ?",
+"c": "Grant Wood",
+"w": [
+"Edward Hopper",
+"Norman Rockwell",
+"Andrew Wyeth"
+],
+"e": "Il montre un fermier et sa fille devant une maison de l'Iowa."
+},
+{
+"q": "Quel artiste pop américain a représenté les boîtes de soupe Campbell ?",
+"c": "Andy Warhol",
+"w": [
+"Roy Lichtenstein",
+"Jasper Johns",
+"Keith Haring"
+],
+"e": "Il avait son studio à New York, appelé « La Factory »."
+},
+{
+"q": "Quel peintre américain, pionnier de l'expressionnisme abstrait, est célèbre pour sa technique de projection de peinture ?",
+"c": "Jackson Pollock",
+"w": [
+"Mark Rothko",
+"Willem de Kooning",
+"Franz Kline"
+],
+"e": "On appelle cette technique le « dripping »."
+},
+{
+"q": "Quel peintre américain a réalisé « Nighthawks », un café éclairé la nuit ?",
+"c": "Edward Hopper",
+"w": [
+"Norman Rockwell",
+"Andy Warhol",
+"Andrew Wyeth"
+],
+"e": "Le tableau date de 1942 et est exposé à Chicago."
+},
+{
+"q": "Quel artiste new-yorkais d'origine haïtienne et portoricaine est devenu une star du street art dans les années 1980 ?",
+"c": "Jean-Michel Basquiat",
+"w": [
+"Keith Haring",
+"Banksy",
+"Shepard Fairey"
+],
+"e": "Il est mort en 1988, à 27 ans."
+},
+{
+"q": "Quel architecte américain a conçu la Maison de la Cascade, bâtie au-dessus d'une chute d'eau ?",
+"c": "Frank Lloyd Wright",
+"w": [
+"Frank Gehry",
+"Louis Sullivan",
+"Philip Johnson"
+],
+"e": "Il a aussi conçu le musée Guggenheim de New York."
+},
+{
+"q": "Quel architecte canado-américain a conçu le musée Guggenheim de Bilbao ?",
+"c": "Frank Gehry",
+"w": [
+"Frank Lloyd Wright",
+"Renzo Piano",
+"Zaha Hadid"
+],
+"e": "Ses bâtiments sont reconnaissables à leurs formes courbes en titane."
+},
+{
+"q": "Quel architecte brésilien a conçu les principaux bâtiments de Brasilia ?",
+"c": "Oscar Niemeyer",
+"w": [
+"Lúcio Costa",
+"Paulo Mendes da Rocha",
+"Le Corbusier"
+],
+"e": "Il a vécu jusqu'à l'âge de 104 ans."
+},
+{
+"q": "Quel sculpteur français a conçu la statue de la Liberté offerte aux États-Unis ?",
+"c": "Auguste Bartholdi",
+"w": [
+"Auguste Rodin",
+"Gustave Eiffel",
+"Camille Claudel"
+],
+"e": "Gustave Eiffel a conçu sa structure en fer."
+},
+{
+"q": "Quel acteur américain a joué dans « Forrest Gump » et « Philadelphia » ?",
+"c": "Tom Hanks",
+"w": [
+"Tom Cruise",
+"Brad Pitt",
+"Kevin Costner"
+],
+"e": "Il a reçu deux Oscars consécutifs pour ces films."
+},
+{
+"q": "Quel film de 1994 raconte la vie d'un homme simple qui traverse l'histoire américaine, assis sur un banc ?",
+"c": "Forrest Gump",
+"w": [
+"Pulp Fiction",
+"Le Roi lion",
+"Shawshank"
+],
+"e": "« La vie, c'est comme une boîte de chocolats » en est la réplique la plus connue."
+},
+{
+"q": "Quel acteur américain a incarné Jack dans « Titanic » ?",
+"c": "Leonardo DiCaprio",
+"w": [
+"Brad Pitt",
+"Johnny Depp",
+"Matt Damon"
+],
+"e": "Il a reçu l'Oscar du meilleur acteur en 2016 pour « The Revenant »."
+},
+{
+"q": "Quel film de James Cameron, sorti en 2009, se déroule sur la planète Pandora ?",
+"c": "Avatar",
+"w": [
+"Titanic",
+"Terminator",
+"Aliens"
+],
+"e": "Il a longtemps été le film le plus rentable de l'histoire."
+},
+{
+"q": "Quelle saga de science-fiction commence par « Il y a bien longtemps, dans une galaxie lointaine, très lointaine… » ?",
+"c": "Star Wars",
+"w": [
+"Star Trek",
+"Dune",
+"Matrix"
+],
+"e": "Le premier film est sorti en 1977."
+},
+{
+"q": "Quel acteur américain incarne Indiana Jones ?",
+"c": "Harrison Ford",
+"w": [
+"Tom Selleck",
+"Kevin Costner",
+"Mel Gibson"
+],
+"e": "Il a aussi joué Han Solo dans « Star Wars »."
+},
+{
+"q": "Quelle actrice américaine est célèbre pour sa robe blanche soulevée par la bouche de métro dans « Sept ans de réflexion » ?",
+"c": "Marilyn Monroe",
+"w": [
+"Audrey Hepburn",
+"Grace Kelly",
+"Elizabeth Taylor"
+],
+"e": "La scène date de 1955."
+},
+{
+"q": "Quel duo de dessin animé met en scène un chat et une souris qui se poursuivent sans fin ?",
+"c": "Tom et Jerry",
+"w": [
+"Titi et Grosminet",
+"Tom et Jerry et Spike",
+"Pat et Mat"
+],
+"e": "Le duo a remporté plusieurs Oscars du court-métrage."
+},
+{
+"q": "Quelle série animée met en scène une éponge jaune vivant au fond de l'océan, à Bikini Bottom ?",
+"c": "Bob l'éponge",
+"w": [
+"Les Simpson",
+"Rick et Morty",
+"Dora l'exploratrice"
+],
+"e": "Son meilleur ami est une étoile de mer nommée Patrick."
+},
+{
+"q": "Quel dessin animé de Disney, sorti en 1937, est le premier long-métrage d'animation américain ?",
+"c": "Blanche-Neige et les sept nains",
+"w": [
+"Cendrillon",
+"Pinocchio",
+"Bambi"
+],
+"e": "Il a été un énorme succès public."
+},
+{
+"q": "Quelle comédie musicale new-yorkaise raconte l'histoire d'Alexander Hamilton, avec du hip-hop ?",
+"c": "Hamilton",
+"w": [
+"Chicago",
+"Le Roi lion",
+"Wicked"
+],
+"e": "Elle a été écrite par Lin-Manuel Miranda."
+},
+{
+"q": "Comment s'appelle le village imaginaire de « Cent ans de solitude », où vit la famille Buendía ?",
+"c": "Macondo",
+"w": [
+"Comala",
+"Santa María",
+"Yoknapatawpha"
+],
+"e": "Le village ressemble au village natal de l'auteur."
+},
+{
+"q": "Quel écrivain argentin a écrit « Marelle », un roman qui peut se lire dans plusieurs ordres ?",
+"c": "Julio Cortázar",
+"w": [
+"Jorge Luis Borges",
+"Ernesto Sabato",
+"Adolfo Bioy Casares"
+],
+"e": "Il a longtemps vécu à Paris."
+},
+{
+"q": "Quelle écrivaine chilienne a écrit « La Maison aux esprits » ?",
+"c": "Isabel Allende",
+"w": [
+"Gabriela Mistral",
+"Elena Poniatowska",
+"Laura Esquivel"
+],
+"e": "Elle est la nièce du président Salvador Allende."
+},
+{
+"q": "Quel écrivain américain a écrit « Le Bruit et la Fureur » ?",
+"c": "William Faulkner",
+"w": [
+"Ernest Hemingway",
+"F. Scott Fitzgerald",
+"John Steinbeck"
+],
+"e": "Il a reçu le prix Nobel de littérature en 1949."
+},
+{
+"q": "Quel poète américain a publié « Feuilles d'herbe » en 1855 ?",
+"c": "Walt Whitman",
+"w": [
+"Emily Dickinson",
+"Robert Frost",
+"Ralph Waldo Emerson"
+],
+"e": "Il a révisé ce recueil tout au long de sa vie."
+},
+{
+"q": "Quel poète américain de la Beat Generation a écrit « Howl » ?",
+"c": "Allen Ginsberg",
+"w": [
+"Jack Kerouac",
+"William Burroughs",
+"Lawrence Ferlinghetti"
+],
+"e": "Le poème a fait l'objet d'un procès pour obscénité en 1957."
+},
+{
+"q": "Quel auteur de science-fiction américain a écrit « Fahrenheit 451 » ?",
+"c": "Ray Bradbury",
+"w": [
+"Isaac Asimov",
+"Philip K. Dick",
+"Arthur C. Clarke"
+],
+"e": "Le roman imagine une société où les livres sont brûlés."
+},
+{
+"q": "Quel écrivain américain est l'auteur du roman « Dune » ?",
+"c": "Frank Herbert",
+"w": [
+"Isaac Asimov",
+"Ray Bradbury",
+"Philip K. Dick"
+],
+"e": "Le roman se passe sur la planète désertique Arrakis."
+},
+{
+"q": "Quel écrivain américain a écrit « Shining » et « Misery » ?",
+"c": "Stephen King",
+"w": [
+"Dean Koontz",
+"Edgar Allan Poe",
+"H. P. Lovecraft"
+],
+"e": "Il est surnommé « le roi de l'horreur »."
+},
+{
+"q": "Quel roman de Mark Twain raconte la descente du Mississippi par un garçon et un esclave en fuite ?",
+"c": "Les Aventures de Huckleberry Finn",
+"w": [
+"Les Aventures de Tom Sawyer",
+"Le Prince et le Pauvre",
+"Un Yankee à la cour du roi Arthur"
+],
+"e": "Il a été publié en 1884."
+},
+{
+"q": "Quel dessinateur américain est le créateur de la bande dessinée « Peanuts », avec Snoopy ?",
+"c": "Charles Schulz",
+"w": [
+"Walt Disney",
+"Bill Watterson",
+"Jim Davis"
+],
+"e": "Il a dessiné la série pendant près de cinquante ans."
+},
+{
+"q": "Quel cinéaste américain a réalisé « Docteur Folamour » et « 2001, l'Odyssée de l'espace » ?",
+"c": "Stanley Kubrick",
+"w": [
+"Steven Spielberg",
+"Ridley Scott",
+"George Lucas"
+],
+"e": "Il a longtemps vécu en Angleterre."
+},
+{
+"q": "Quel peintre et sculpteur colombien est célèbre pour ses personnages aux formes rondes ?",
+"c": "Fernando Botero",
+"w": [
+"Diego Rivera",
+"Wifredo Lam",
+"Roberto Matta"
+],
+"e": "On reconnaît ses sculptures dans de nombreuses villes du monde."
+},
+{
+"q": "Quelle peintre américaine est célèbre pour ses grandes fleurs et ses paysages du Nouveau-Mexique ?",
+"c": "Georgia O'Keeffe",
+"w": [
+"Frida Kahlo",
+"Mary Cassatt",
+"Grandma Moses"
+],
+"e": "Elle a vécu une grande partie de sa vie dans le désert."
+},
+{
+"q": "Quel dramaturge américain a écrit « Mort d'un commis voyageur » ?",
+"c": "Arthur Miller",
+"w": [
+"Tennessee Williams",
+"Eugene O'Neill",
+"Edward Albee"
+],
+"e": "Il a été marié à l'actrice Marilyn Monroe."
+}
+]

@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel médecin argentin, devenu révolutionnaire à Cuba, est surnommé « le Che » ?",
+"c": "Ernesto « Che » Guevara",
+"w": [
+"Fidel Castro",
+"Simón Bolívar",
+"Salvador Allende"
+],
+"e": "Il a été tué en Bolivie en 1967."
+},
+{
+"q": "Quel libérateur vénézuélien a conduit l'indépendance de plusieurs pays d'Amérique du Sud ?",
+"c": "Simón Bolívar",
+"w": [
+"José de San Martín",
+"Francisco de Miranda",
+"Antonio José de Sucre"
+],
+"e": "On l'appelle « El Libertador »."
+},
+{
+"q": "Quel général argentin a participé à la libération de l'Argentine, du Chili et du Pérou ?",
+"c": "José de San Martín",
+"w": [
+"Simón Bolívar",
+"Bernardo O'Higgins",
+"Manuel Belgrano"
+],
+"e": "Il a traversé les Andes avec son armée en 1817."
+},
+{
+"q": "Quel dirigeant cubain a gouverné Cuba à partir de la révolution de 1959 ?",
+"c": "Fidel Castro",
+"w": [
+"Che Guevara",
+"Raúl Castro",
+"Fulgencio Batista"
+],
+"e": "Il a renversé le dictateur Batista."
+},
+{
+"q": "Quel président américain a dirigé son pays pendant la Grande Dépression et la plus grande partie de la Seconde Guerre mondiale ?",
+"c": "Franklin D. Roosevelt",
+"w": [
+"Harry Truman",
+"Herbert Hoover",
+"Dwight Eisenhower"
+],
+"e": "Il a été élu quatre fois."
+},
+{
+"q": "Quel astronaute américain est le deuxième homme à avoir marché sur la Lune ?",
+"c": "Buzz Aldrin",
+"w": [
+"Michael Collins",
+"Neil Armstrong",
+"Alan Shepard"
+],
+"e": "Il a marché sur la Lune quelques minutes après Neil Armstrong."
+},
+{
+"q": "Quelle peintre mexicaine est célèbre pour ses autoportraits, malgré un grave accident dans sa jeunesse ?",
+"c": "Frida Kahlo",
+"w": [
+"Tamara de Lempicka",
+"Georgia O'Keeffe",
+"Diego Rivera"
+],
+"e": "Sa maison de Mexico est aujourd'hui un musée."
+},
+{
+"q": "Quel chef sioux a participé à la victoire de Little Bighorn contre l'armée américaine en 1876 ?",
+"c": "Sitting Bull",
+"w": [
+"Geronimo",
+"Cochise",
+"Pontiac"
+],
+"e": "Il était aussi un chef spirituel respecté."
+},
+{
+"q": "Quel chef apache a résisté aux armées américaine et mexicaine jusqu'en 1886 ?",
+"c": "Geronimo",
+"w": [
+"Sitting Bull",
+"Cochise",
+"Tecumseh"
+],
+"e": "Il s'est rendu après plusieurs décennies de combats."
+},
+{
+"q": "Quelle jeune Amérindienne a guidé l'expédition de Lewis et Clark à travers l'Ouest américain ?",
+"c": "Sacagawea",
+"w": [
+"Pocahontas",
+"Squanto",
+"Maria Tallchief"
+],
+"e": "Elle portait son bébé sur le dos pendant le voyage."
+},
+{
+"q": "Quel empereur inca a été capturé par Pizarro en 1532 ?",
+"c": "Atahualpa",
+"w": [
+"Pachacutec",
+"Huayna Capac",
+"Túpac Amaru"
+],
+"e": "Il a offert une pièce pleine d'or contre sa liberté."
+},
+{
+"q": "Quel dernier empereur aztèque a résisté à Cortés avant d'être capturé en 1521 ?",
+"c": "Cuauhtémoc",
+"w": [
+"Moctezuma II",
+"Nezahualcoyotl",
+"Itzcoatl"
+],
+"e": "Tenochtitlan est tombée après un long siège."
+},
+{
+"q": "Quel Canadien a couru à travers le pays avec une jambe artificielle pour la recherche sur le cancer, en 1980 ?",
+"c": "Terry Fox",
+"w": [
+"Wayne Gretzky",
+"Rick Hansen",
+"Steve Nash"
+],
+"e": "Il a couru plus de 5 000 kilomètres, presque un marathon par jour."
+},
+{
+"q": "Quel pilote américain a réussi un amerrissage d'urgence dans l'Hudson avec son avion de ligne en 2009 ?",
+"c": "Chesley « Sully » Sullenberger",
+"w": [
+"Chuck Yeager",
+"Charles Lindbergh",
+"Neil Armstrong"
+],
+"e": "Les 155 personnes à bord ont survécu."
+},
+{
+"q": "Quel astronaute américain est le premier Américain dans l'espace, en 1961 ?",
+"c": "Alan Shepard",
+"w": [
+"John Glenn",
+"Neil Armstrong",
+"Buzz Aldrin"
+],
+"e": "Son vol a duré un peu plus de quinze minutes."
+},
+{
+"q": "Quel prêtre mexicain a lancé le « Cri de Dolores » en 1810, début de la guerre d'indépendance ?",
+"c": "Miguel Hidalgo",
+"w": [
+"José María Morelos",
+"Benito Juárez",
+"Pancho Villa"
+],
+"e": "Le Mexique célèbre ce cri chaque 16 septembre."
+},
+{
+"q": "Quel chef de la révolution mexicaine réclamait « Terre et Liberté » dans le sud du pays ?",
+"c": "Emiliano Zapata",
+"w": [
+"Pancho Villa",
+"Porfirio Díaz",
+"Francisco Madero"
+],
+"e": "Il a été assassiné en 1919."
+},
+{
+"q": "Quel président mexicain d'origine zapotèque a résisté à l'invasion française ?",
+"c": "Benito Juárez",
+"w": [
+"Porfirio Díaz",
+"Miguel Hidalgo",
+"Venustiano Carranza"
+],
+"e": "Il est l'un des plus grands héros du Mexique."
+},
+{
+"q": "Quelle bataille du 5 mai 1862 est célébrée au Mexique et aux États-Unis par le « Cinco de Mayo » ?",
+"c": "La bataille de Puebla",
+"w": [
+"La bataille de Veracruz",
+"La bataille de Mexico",
+"La bataille d'Alamo"
+],
+"e": "Les Mexicains y ont battu l'armée française."
+},
+{
+"q": "Quel chef indigène a mené en 1780 une grande révolte contre les Espagnols au Pérou ?",
+"c": "Túpac Amaru II",
+"w": [
+"Atahualpa",
+"Lautaro",
+"Pachacutec"
+],
+"e": "Il se disait descendant du dernier empereur inca."
+},
+{
+"q": "Qui a proclamé l'indépendance du Brésil en 1822 ?",
+"c": "Dom Pedro Ier",
+"w": [
+"Dom João VI",
+"Tiradentes",
+"Getúlio Vargas"
+],
+"e": "Il est devenu le premier empereur du Brésil indépendant."
+},
+{
+"q": "Quel héros brésilien, esclave rebelle, a dirigé le quilombo de Palmares au XVIIe siècle ?",
+"c": "Zumbi",
+"w": [
+"Tiradentes",
+"Dom Pedro Ier",
+"Lampião"
+],
+"e": "Le 20 novembre, jour de sa mort, est fêté au Brésil."
+},
+{
+"q": "Quel libérateur chilien, fils d'un Irlandais, a proclamé l'indépendance du Chili en 1818 ?",
+"c": "Bernardo O'Higgins",
+"w": [
+"José de San Martín",
+"Simón Bolívar",
+"Augusto Pinochet"
+],
+"e": "Il a été le premier dirigeant du Chili indépendant."
+},
+{
+"q": "Quelle militante guatémaltèque a reçu le prix Nobel de la paix en 1992 pour la défense des peuples autochtones ?",
+"c": "Rigoberta Menchú",
+"w": [
+"Isabel Allende",
+"Gabriela Mistral",
+"Evita Perón"
+],
+"e": "Elle a vécu en exil pendant la guerre civile."
+},
+{
+"q": "Quel archevêque salvadorien, défenseur des pauvres, a été assassiné en 1980 pendant la messe ?",
+"c": "Óscar Romero",
+"w": [
+"Hélder Câmara",
+"Jean-Paul II",
+"Camilo Torres"
+],
+"e": "Il a été déclaré saint en 2018."
+},
+{
+"q": "Quel mouvement de mères réclame depuis 1977 des nouvelles de leurs enfants disparus sous la dictature argentine ?",
+"c": "Les Mères de la place de Mai",
+"w": [
+"Les Femmes en noir",
+"Les Suffragettes",
+"Les Marcheuses du sel"
+],
+"e": "Elles se réunissent chaque jeudi à Buenos Aires."
+},
+{
+"q": "Quel président du Chili a été renversé par un coup d'État le 11 septembre 1973 ?",
+"c": "Salvador Allende",
+"w": [
+"Eduardo Frei",
+"Michelle Bachelet",
+"Patricio Aylwin"
+],
+"e": "Il est mort dans le palais présidentiel."
+},
+{
+"q": "Quel général a pris le pouvoir au Chili après le coup d'État de 1973 ?",
+"c": "Augusto Pinochet",
+"w": [
+"Jorge Videla",
+"Alfredo Stroessner",
+"Fulgencio Batista"
+],
+"e": "Sa dictature a duré jusqu'en 1990."
+},
+{
+"q": "Quel syndicaliste américain d'origine mexicaine a mené la grève du raisin dans les années 1960 ?",
+"c": "César Chávez",
+"w": [
+"Martin Luther King Jr.",
+"Malcolm X",
+"Jesse Jackson"
+],
+"e": "Il a fondé le syndicat des ouvriers agricoles."
+},
+{
+"q": "Quel militant afro-américain, ancien membre de la Nation of Islam, a été assassiné à New York en 1965 ?",
+"c": "Malcolm X",
+"w": [
+"Martin Luther King Jr.",
+"Marcus Garvey",
+"Huey Newton"
+],
+"e": "Son autobiographie a été écrite avec Alex Haley."
+},
+{
+"q": "Quel avocat est devenu en 1967 le premier juge noir de la Cour suprême des États-Unis ?",
+"c": "Thurgood Marshall",
+"w": [
+"Clarence Thomas",
+"Barack Obama",
+"Colin Powell"
+],
+"e": "Il avait plaidé l'affaire Brown contre le Conseil de l'éducation."
+},
+{
+"q": "Quel adolescent noir de 14 ans, assassiné en 1955 dans le Mississippi, est devenu un symbole du mouvement des droits civiques ?",
+"c": "Emmett Till",
+"w": [
+"Medgar Evers",
+"Trayvon Martin",
+"Fred Hampton"
+],
+"e": "Sa mère a exigé un cercueil ouvert pour montrer la violence subie."
+},
+{
+"q": "Comment appelle-t-on les neuf lycéens noirs qui ont intégré un lycée de l'Arkansas en 1957 sous protection militaire ?",
+"c": "Les « Little Rock Nine »",
+"w": [
+"Les « Freedom Riders »",
+"Les « Scottsboro Boys »",
+"Les « Tuskegee Airmen »"
+],
+"e": "Le président Eisenhower avait envoyé l'armée pour les protéger."
+},
+{
+"q": "Quelle manifestation de 1963 a réuni environ 250 000 personnes à Washington, où King a prononcé son discours ?",
+"c": "La Marche sur Washington",
+"w": [
+"La Marche de Selma",
+"La Marche du sel",
+"La Marche des mères"
+],
+"e": "Elle réclamait l'égalité des droits et des emplois."
+},
+{
+"q": "Quelle ville de l'Alabama a vu en 1965 des marches pour le droit de vote, dont le « Bloody Sunday » ?",
+"c": "Selma",
+"w": [
+"Montgomery",
+"Birmingham",
+"Atlanta"
+],
+"e": "Les marcheurs ont été frappés par la police sur un pont."
+},
+{
+"q": "Quel président américain a signé la loi sur le droit de vote en 1965 ?",
+"c": "Lyndon B. Johnson",
+"w": [
+"John F. Kennedy",
+"Richard Nixon",
+"Dwight Eisenhower"
+],
+"e": "Elle a interdit les obstacles discriminatoires au vote."
+},
+{
+"q": "Quel président américain a été assassiné à Dallas en novembre 1963 ?",
+"c": "John F. Kennedy",
+"w": [
+"Lyndon B. Johnson",
+"Abraham Lincoln",
+"Ronald Reagan"
+],
+"e": "Il avait 46 ans."
+},
+{
+"q": "Quel président américain a reçu le prix Nobel de la paix en 2009 ?",
+"c": "Barack Obama",
+"w": [
+"Jimmy Carter",
+"Bill Clinton",
+"George W. Bush"
+],
+"e": "Il était le premier président noir des États-Unis."
+},
+{
+"q": "Quelle femme est devenue en 2021 la première vice-présidente des États-Unis ?",
+"c": "Kamala Harris",
+"w": [
+"Hillary Clinton",
+"Nancy Pelosi",
+"Michelle Obama"
+],
+"e": "Elle est aussi la première personne d'origine afro-américaine et sud-asiatique à ce poste."
+},
+{
+"q": "Comment s'appelle le mouvement né en 2013 pour protester contre les violences policières visant les Noirs aux États-Unis ?",
+"c": "Black Lives Matter",
+"w": [
+"Occupy Wall Street",
+"Me Too",
+"Tea Party"
+],
+"e": "Il a pris une dimension mondiale en 2020."
+},
+{
+"q": "Quel quarterback américain s'est agenouillé pendant l'hymne national en 2016 pour protester contre les violences policières ?",
+"c": "Colin Kaepernick",
+"w": [
+"Tom Brady",
+"Patrick Mahomes",
+"Peyton Manning"
+],
+"e": "Son geste a divisé les États-Unis."
+},
+{
+"q": "Quels athlètes américains ont levé le poing sur le podium des Jeux olympiques de Mexico en 1968 ?",
+"c": "Tommie Smith et John Carlos",
+"w": [
+"Jesse Owens et Carl Lewis",
+"Michael Johnson et Maurice Greene",
+"Wilma Rudolph et Jackie Joyner-Kersee"
+],
+"e": "Ils portaient des gants noirs et étaient pieds nus."
+},
+{
+"q": "Quel joueur de baseball est le premier Noir à jouer en ligue majeure, en 1947 ?",
+"c": "Jackie Robinson",
+"w": [
+"Babe Ruth",
+"Willie Mays",
+"Hank Aaron"
+],
+"e": "Son numéro 42 a été retiré dans toutes les équipes."
+},
+{
+"q": "Quel boxeur américain est le premier champion du monde noir des poids lourds, en 1908 ?",
+"c": "Jack Johnson",
+"w": [
+"Muhammad Ali",
+"Joe Louis",
+"Mike Tyson"
+],
+"e": "Il a fait face à de nombreux préjugés racistes."
+},
+{
+"q": "Quel joueur est le premier Noir à avoir joué dans la Ligue nationale de hockey, en 1958 ?",
+"c": "Willie O'Ree",
+"w": [
+"Wayne Gretzky",
+"P. K. Subban",
+"Jarome Iginla"
+],
+"e": "Il avait perdu la vue d'un œil mais a quand même joué."
+},
+{
+"q": "Quelle astronaute américaine est la première Américaine dans l'espace, en 1983 ?",
+"c": "Sally Ride",
+"w": [
+"Mae Jemison",
+"Christa McAuliffe",
+"Peggy Whitson"
+],
+"e": "Elle avait 32 ans lors de sa mission."
+},
+{
+"q": "Quelle mission américaine de 1970 a failli se terminer en catastrophe après une explosion à bord ?",
+"c": "Apollo 13",
+"w": [
+"Apollo 11",
+"Apollo 1",
+"Challenger"
+],
+"e": "L'équipage est rentré sur Terre grâce à un module lunaire de secours."
+},
+{
+"q": "Quel astronaute américain est le premier Américain à avoir effectué un tour de la Terre en orbite, en 1962 ?",
+"c": "John Glenn",
+"w": [
+"Alan Shepard",
+"Neil Armstrong",
+"Buzz Aldrin"
+],
+"e": "Il est retourné dans l'espace à 77 ans."
+},
+{
+"q": "Quelle ville américaine a été en grande partie inondée par l'ouragan Katrina en 2005 ?",
+"c": "La Nouvelle-Orléans",
+"w": [
+"Miami",
+"Houston",
+"Charleston"
+],
+"e": "Plus de 1 800 personnes sont mortes."
+},
+{
+"q": "Quelle mine chilienne a vu en 2010 le sauvetage de 33 mineurs après 69 jours sous terre ?",
+"c": "La mine San José",
+"w": [
+"La mine Chuquicamata",
+"La mine Escondida",
+"La mine El Teniente"
+],
+"e": "Le sauvetage a été suivi dans le monde entier."
+},
+{
+"q": "Quel dirigeant bolivien d'origine indigène est devenu président en 2006 ?",
+"c": "Evo Morales",
+"w": [
+"Hugo Chávez",
+"Rafael Correa",
+"Lula"
+],
+"e": "Il a été le premier président indigène de son pays."
+},
+{
+"q": "Quel président uruguayen, surnommé « le plus pauvre du monde », donnait la majorité de son salaire ?",
+"c": "José Mujica",
+"w": [
+"Tabaré Vázquez",
+"Luis Lacalle",
+"Julio Sanguinetti"
+],
+"e": "Il vivait dans une petite ferme et conduisait une vieille voiture."
+},
+{
+"q": "Quelle présidente brésilienne a été destituée en 2016 ?",
+"c": "Dilma Rousseff",
+"w": [
+"Michelle Bachelet",
+"Cristina Kirchner",
+"Marina Silva"
+],
+"e": "Elle avait été élue en 2010, première femme présidente du Brésil."
+},
+{
+"q": "Quel ancien ouvrier syndicaliste est devenu président du Brésil en 2003 ?",
+"c": "Lula",
+"w": [
+"Fernando Henrique Cardoso",
+"Jair Bolsonaro",
+"Getúlio Vargas"
+],
+"e": "Il est redevenu président en 2023."
+},
+{
+"q": "Quel mouvement armé du Chiapas s'est soulevé au Mexique en janvier 1994 ?",
+"c": "Les zapatistes",
+"w": [
+"Les sandinistes",
+"Le Sentier lumineux",
+"Les Tupamaros"
+],
+"e": "Leur porte-parole, le sous-commandant Marcos, portait une cagoule."
+},
+{
+"q": "Quelle Franco-Colombienne a été retenue en otage pendant six ans, libérée en 2008 ?",
+"c": "Ingrid Betancourt",
+"w": [
+"Gabriela Mistral",
+"Sonia Gandhi",
+"Dilma Rousseff"
+],
+"e": "Elle avait été enlevée en pleine campagne présidentielle."
+},
+{
+"q": "Quel président américain a mis fin à la ségrégation dans l'armée en 1948 ?",
+"c": "Harry Truman",
+"w": [
+"Franklin D. Roosevelt",
+"Dwight Eisenhower",
+"Lyndon B. Johnson"
+],
+"e": "Il a signé le décret après la Seconde Guerre mondiale."
+},
+{
+"q": "Quel général, vainqueur de la bataille de La Nouvelle-Orléans en 1815, est devenu président américain ?",
+"c": "Andrew Jackson",
+"w": [
+"George Washington",
+"Ulysses Grant",
+"Zachary Taylor"
+],
+"e": "Son visage est sur le billet de vingt dollars."
+},
+{
+"q": "Quel général a commandé l'armée américaine pendant la guerre d'indépendance, avant de devenir le premier président ?",
+"c": "George Washington",
+"w": [
+"Thomas Jefferson",
+"Benjamin Franklin",
+"John Adams"
+],
+"e": "Il a présidé de 1789 à 1797."
+},
+{
+"q": "Quel dirigeant haïtien, ancien lieutenant de Toussaint Louverture, a proclamé l'indépendance d'Haïti en 1804 ?",
+"c": "Jean-Jacques Dessalines",
+"w": [
+"Alexandre Pétion",
+"Henri Christophe",
+"François Duvalier"
+],
+"e": "Il s'est proclamé empereur la même année."
+},
+{
+"q": "Quel poète et révolutionnaire cubain, mort en 1895, est le héros de l'indépendance de Cuba ?",
+"c": "José Martí",
+"w": [
+"Fidel Castro",
+"Che Guevara",
+"Antonio Maceo"
+],
+"e": "L'aéroport de La Havane porte son nom."
+},
+{
+"q": "Quelles sœurs dominicaines, surnommées « les Papillons », ont été assassinées en 1960 sous la dictature de Trujillo ?",
+"c": "Les sœurs Mirabal",
+"w": [
+"Les sœurs Brontë",
+"Les sœurs Kahlo",
+"Les sœurs Bolívar"
+],
+"e": "Le 25 novembre est devenu Journée internationale contre les violences faites aux femmes."
+},
+{
+"q": "Quelle religieuse et poétesse mexicaine du XVIIe siècle a défendu le droit des femmes à s'instruire ?",
+"c": "Sor Juana Inés de la Cruz",
+"w": [
+"Frida Kahlo",
+"Gabriela Mistral",
+"Rosario Castellanos"
+],
+"e": "Elle a écrit de nombreux poèmes et pièces de théâtre."
+},
+{
+"q": "Quel général mexicain a remporté la bataille de Puebla en 1862 ?",
+"c": "Ignacio Zaragoza",
+"w": [
+"Porfirio Díaz",
+"Miguel Hidalgo",
+"Benito Juárez"
+],
+"e": "Il est mort quelques mois plus tard, de la typhoïde."
+},
+{
+"q": "Quel patriote de Boston a prévenu les habitants en 1775 de l'arrivée des Britanniques ?",
+"c": "Paul Revere",
+"w": [
+"Samuel Adams",
+"Patrick Henry",
+"Benedict Arnold"
+],
+"e": "Son voyage à cheval est devenu célèbre dans un poème."
+},
+{
+"q": "Quel texte de 1776 proclame l'indépendance des treize colonies américaines ?",
+"c": "La Déclaration d'indépendance",
+"w": [
+"La Constitution",
+"La Déclaration des droits",
+"La Charte de l'Atlantique"
+],
+"e": "Thomas Jefferson en est le principal rédacteur."
+},
+{
+"q": "Quel esclave a mené une révolte en Virginie en août 1831 ?",
+"c": "Nat Turner",
+"w": [
+"Denmark Vesey",
+"Frederick Douglass",
+"Harriet Tubman"
+],
+"e": "Il a été capturé et exécuté quelques semaines plus tard."
+},
+{
+"q": "Quel ancien esclave est devenu un grand orateur abolitionniste et l'auteur d'une célèbre autobiographie ?",
+"c": "Frederick Douglass",
+"w": [
+"Booker T. Washington",
+"W. E. B. Du Bois",
+"Nat Turner"
+],
+"e": "Il a conseillé le président Lincoln."
+},
+{
+"q": "Quelle ancienne esclave a prononcé en 1851 le discours « Ne suis-je pas une femme ? » ?",
+"c": "Sojourner Truth",
+"w": [
+"Harriet Tubman",
+"Rosa Parks",
+"Maya Angelou"
+],
+"e": "Elle a milité pour l'abolition de l'esclavage et les droits des femmes."
+},
+{
+"q": "Quel abolitionniste blanc a attaqué en 1859 l'arsenal de Harpers Ferry, en Virginie ?",
+"c": "John Brown",
+"w": [
+"Abraham Lincoln",
+"William Lloyd Garrison",
+"Thomas Jefferson"
+],
+"e": "Il voulait armer des esclaves pour qu'ils se révoltent."
+},
+{
+"q": "Quelle écrivaine américaine a publié en 1852 « La Case de l'oncle Tom » ?",
+"c": "Harriet Beecher Stowe",
+"w": [
+"Louisa May Alcott",
+"Emily Dickinson",
+"Margaret Mitchell"
+],
+"e": "Le livre a contribué à nourrir l'opposition à l'esclavage."
+},
+{
+"q": "Quel pays d'Amérique du Sud a été le dernier du continent à abolir l'esclavage, en 1888 ?",
+"c": "Le Brésil",
+"w": [
+"L'Argentine",
+"Le Chili",
+"Le Pérou"
+],
+"e": "Il a été l'un des derniers pays du monde à le faire."
+},
+{
+"q": "Quelle loi brésilienne de 1888 a aboli l'esclavage dans le pays ?",
+"c": "La loi d'or",
+"w": [
+"La loi du ventre libre",
+"La loi de l'Aube",
+"La loi de Rio Branco"
+],
+"e": "La princesse Isabelle l'a signée."
+},
+{
+"q": "Quel chef des Métis canadiens a mené deux rébellions contre le gouvernement du Canada au XIXe siècle ?",
+"c": "Louis Riel",
+"w": [
+"Tecumseh",
+"Sitting Bull",
+"Joseph Brant"
+],
+"e": "Il a fondé la province du Manitoba, avant d'être exécuté en 1885."
+},
+{
+"q": "Quelle jeune poétesse américaine a lu un poème à l'investiture du président Joe Biden en 2021 ?",
+"c": "Amanda Gorman",
+"w": [
+"Maya Angelou",
+"Toni Morrison",
+"Oprah Winfrey"
+],
+"e": "Elle était la plus jeune poétesse à lire à une investiture présidentielle."
+}
+]

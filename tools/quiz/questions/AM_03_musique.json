@@ -1,0 +1,752 @@
+[
+{
+"q": "Quel pays est le berceau du jazz ?",
+"c": "Les États-Unis",
+"w": [
+"Le Brésil",
+"Cuba",
+"La France"
+],
+"e": "Ce style est né au début du XXe siècle dans les communautés noires du Sud."
+},
+{
+"q": "Dans quelle ville américaine le jazz est-il né ?",
+"c": "La Nouvelle-Orléans",
+"w": [
+"New York",
+"Chicago",
+"Memphis"
+],
+"e": "Elle est aussi connue pour son carnaval, le Mardi gras."
+},
+{
+"q": "Quelle danse est née dans les quartiers populaires de Buenos Aires et de Montevideo ?",
+"c": "Le tango",
+"w": [
+"La samba",
+"La salsa",
+"Le merengue"
+],
+"e": "Il est inscrit au patrimoine immatériel de l'UNESCO."
+},
+{
+"q": "Quelle danse brésilienne est célèbre au carnaval de Rio ?",
+"c": "La samba",
+"w": [
+"Le tango",
+"La rumba",
+"Le flamenco"
+],
+"e": "Les écoles de samba défilent au sambodrome."
+},
+{
+"q": "Comment appelle-t-on les musiciens mexicains en costumes brodés et grands chapeaux, qui jouent de la trompette et du violon ?",
+"c": "Les mariachis",
+"w": [
+"Les gauchos",
+"Les toreros",
+"Les vaqueros"
+],
+"e": "Ils chantent souvent lors de fêtes et de mariages."
+},
+{
+"q": "Quel genre musical cubain est l'ancêtre de la salsa ?",
+"c": "Le son cubain",
+"w": [
+"La bachata",
+"Le merengue",
+"La samba"
+],
+"e": "Il mêle guitare espagnole et rythmes africains."
+},
+{
+"q": "Quelle chanteuse américaine est l'auteure de « Shake It Off » ?",
+"c": "Taylor Swift",
+"w": [
+"Katy Perry",
+"Ariana Grande",
+"Selena Gomez"
+],
+"e": "Elle est l'une des artistes les plus écoutées du monde."
+},
+{
+"q": "Quel chanteur canadien s'est fait connaître avec « Baby » en 2010 ?",
+"c": "Justin Bieber",
+"w": [
+"Drake",
+"The Weeknd",
+"Shawn Mendes"
+],
+"e": "Il a été découvert sur YouTube."
+},
+{
+"q": "Quelle chanteuse canadienne a chanté « My Heart Will Go On », thème du film « Titanic » ?",
+"c": "Céline Dion",
+"w": [
+"Shania Twain",
+"Avril Lavigne",
+"Alanis Morissette"
+],
+"e": "Elle est née au Québec, dans une famille de quatorze enfants."
+},
+{
+"q": "Quel rappeur canadien a sorti « Hotline Bling » ?",
+"c": "Drake",
+"w": [
+"The Weeknd",
+"Justin Bieber",
+"Shawn Mendes"
+],
+"e": "Il est originaire de Toronto."
+},
+{
+"q": "Quelle chanteuse américaine a chanté « Poker Face » ?",
+"c": "Lady Gaga",
+"w": [
+"Katy Perry",
+"Madonna",
+"Pink"
+],
+"e": "Elle est née à New York."
+},
+{
+"q": "Quelle chanteuse américaine a chanté « Firework » ?",
+"c": "Katy Perry",
+"w": [
+"Lady Gaga",
+"Taylor Swift",
+"Britney Spears"
+],
+"e": "Le clip montre des feux d'artifice qui jaillissent du corps de la chanteuse."
+},
+{
+"q": "Quel groupe américain a chanté « Smells Like Teen Spirit » en 1991 ?",
+"c": "Nirvana",
+"w": [
+"Metallica",
+"Pearl Jam",
+"Green Day"
+],
+"e": "Son chanteur, Kurt Cobain, est mort en 1994."
+},
+{
+"q": "Quel groupe américain a chanté « Hotel California » ?",
+"c": "Les Eagles",
+"w": [
+"Fleetwood Mac",
+"Lynyrd Skynyrd",
+"The Doors"
+],
+"e": "La chanson est sortie en 1976."
+},
+{
+"q": "Quel chanteur américain de country est surnommé « the Man in Black » ?",
+"c": "Johnny Cash",
+"w": [
+"Elvis Presley",
+"Willie Nelson",
+"Hank Williams"
+],
+"e": "Il s'habillait toujours en noir sur scène."
+},
+{
+"q": "Quelle chanteuse américaine est surnommée « la reine de la soul » ?",
+"c": "Aretha Franklin",
+"w": [
+"Diana Ross",
+"Whitney Houston",
+"Tina Turner"
+],
+"e": "Sa chanson « Respect » est devenue un hymne."
+},
+{
+"q": "Quel chanteur américain a chanté « My Way » ?",
+"c": "Frank Sinatra",
+"w": [
+"Elvis Presley",
+"Dean Martin",
+"Tony Bennett"
+],
+"e": "Il est surnommé « The Voice »."
+},
+{
+"q": "Quelle chanteuse de jazz américaine est surnommée « Lady Day » ?",
+"c": "Billie Holiday",
+"w": [
+"Ella Fitzgerald",
+"Nina Simone",
+"Sarah Vaughan"
+],
+"e": "Elle a chanté « Strange Fruit », contre le racisme."
+},
+{
+"q": "Quelle chanteuse de jazz américaine est surnommée « la Première Dame de la chanson » ?",
+"c": "Ella Fitzgerald",
+"w": [
+"Billie Holiday",
+"Nina Simone",
+"Sarah Vaughan"
+],
+"e": "Elle était célèbre pour son « scat », un chant d'improvisation sans paroles."
+},
+{
+"q": "Quel trompettiste de jazz a enregistré l'album « Kind of Blue » en 1959 ?",
+"c": "Miles Davis",
+"w": [
+"Louis Armstrong",
+"Dizzy Gillespie",
+"Chet Baker"
+],
+"e": "C'est l'un des albums de jazz les plus vendus de l'histoire."
+},
+{
+"q": "Quel saxophoniste de jazz a enregistré « A Love Supreme » ?",
+"c": "John Coltrane",
+"w": [
+"Charlie Parker",
+"Sonny Rollins",
+"Dexter Gordon"
+],
+"e": "L'album date de 1965."
+},
+{
+"q": "Quel guitariste de blues est surnommé « le roi du blues » ?",
+"c": "B. B. King",
+"w": [
+"Muddy Waters",
+"Eric Clapton",
+"Chuck Berry"
+],
+"e": "Il appelait sa guitare « Lucille »."
+},
+{
+"q": "Quel guitariste américain a brûlé sa guitare au festival de Monterey en 1967 ?",
+"c": "Jimi Hendrix",
+"w": [
+"Carlos Santana",
+"Eric Clapton",
+"Jimmy Page"
+],
+"e": "Il jouait de la guitare en gaucher."
+},
+{
+"q": "Quel chanteur américain, surnommé « le Boss », a sorti « Born in the USA » ?",
+"c": "Bruce Springsteen",
+"w": [
+"Bob Dylan",
+"Billy Joel",
+"Tom Petty"
+],
+"e": "Il vient du New Jersey."
+},
+{
+"q": "Quel chanteur américain a chanté « Like a Rolling Stone » et reçu le prix Nobel de littérature en 2016 ?",
+"c": "Bob Dylan",
+"w": [
+"Leonard Cohen",
+"Neil Young",
+"Paul Simon"
+],
+"e": "Il a été récompensé pour avoir créé de nouvelles expressions poétiques."
+},
+{
+"q": "Quel label de Detroit a lancé les Supremes, Marvin Gaye et Stevie Wonder ?",
+"c": "Motown",
+"w": [
+"Atlantic",
+"Stax",
+"Def Jam"
+],
+"e": "Son nom vient de « Motor Town », surnom de Detroit."
+},
+{
+"q": "Quel chanteur américain aveugle est l'auteur de « I Just Called to Say I Love You » ?",
+"c": "Stevie Wonder",
+"w": [
+"Ray Charles",
+"Marvin Gaye",
+"Lionel Richie"
+],
+"e": "Il joue du piano, de l'harmonica et de la batterie."
+},
+{
+"q": "Quel chanteur et pianiste américain aveugle a chanté « Georgia on My Mind » ?",
+"c": "Ray Charles",
+"w": [
+"Stevie Wonder",
+"Louis Armstrong",
+"Nat King Cole"
+],
+"e": "Il a mêlé gospel, blues et jazz."
+},
+{
+"q": "Quel chanteur de Minneapolis est l'auteur de « Purple Rain » ?",
+"c": "Prince",
+"w": [
+"Michael Jackson",
+"Stevie Wonder",
+"Lenny Kravitz"
+],
+"e": "Il est mort en 2016."
+},
+{
+"q": "Quel rappeur californien est l'auteur de « California Love » ?",
+"c": "Tupac Shakur",
+"w": [
+"Snoop Dogg",
+"Dr. Dre",
+"Ice Cube"
+],
+"e": "Il a été assassiné en 1996."
+},
+{
+"q": "Quel est le vrai nom du rappeur de Brooklyn connu sous le nom de « The Notorious B.I.G. » ?",
+"c": "Christopher Wallace",
+"w": [
+"Shawn Carter",
+"Marshall Mathers",
+"Curtis Jackson"
+],
+"e": "Il est mort en 1997, six mois après Tupac."
+},
+{
+"q": "Quel rappeur de Detroit a joué dans le film « 8 Mile » ?",
+"c": "Eminem",
+"w": [
+"50 Cent",
+"Jay-Z",
+"Kanye West"
+],
+"e": "Son vrai nom est Marshall Mathers."
+},
+{
+"q": "Quel rappeur de Compton a reçu un prix Pulitzer de musique en 2018 ?",
+"c": "Kendrick Lamar",
+"w": [
+"Snoop Dogg",
+"Dr. Dre",
+"Ice Cube"
+],
+"e": "C'était la première fois que ce prix récompensait un artiste de hip-hop."
+},
+{
+"q": "Quel rappeur américain est marié à la chanteuse Beyoncé ?",
+"c": "Jay-Z",
+"w": [
+"Kanye West",
+"Drake",
+"Snoop Dogg"
+],
+"e": "Il a fondé le label Roc-A-Fella."
+},
+{
+"q": "Quel chanteur portoricain a chanté « Despacito » en 2017 ?",
+"c": "Luis Fonsi",
+"w": [
+"Ricky Martin",
+"Marc Anthony",
+"Enrique Iglesias"
+],
+"e": "La chanson a été l'une des plus regardées de l'histoire de YouTube."
+},
+{
+"q": "Quel chanteur portoricain est surnommé « le roi du reggaeton » avec « Gasolina » ?",
+"c": "Daddy Yankee",
+"w": [
+"Bad Bunny",
+"J Balvin",
+"Don Omar"
+],
+"e": "Le titre date de 2004."
+},
+{
+"q": "Quel artiste portoricain a chanté « Tití Me Preguntó » et « Me Porto Bonito » ?",
+"c": "Bad Bunny",
+"w": [
+"Daddy Yankee",
+"Ozuna",
+"Anuel AA"
+],
+"e": "Il est l'un des artistes les plus écoutés du monde."
+},
+{
+"q": "Quel chanteur colombien a chanté « La Bicicleta » avec Shakira ?",
+"c": "Carlos Vives",
+"w": [
+"J Balvin",
+"Maluma",
+"Juanes"
+],
+"e": "Le titre mêle vallenato et pop."
+},
+{
+"q": "Quel chanteur colombien est l'auteur de « Mi Gente », un grand succès du reggaeton ?",
+"c": "J Balvin",
+"w": [
+"Maluma",
+"Carlos Vives",
+"Juanes"
+],
+"e": "Il est originaire de Medellín."
+},
+{
+"q": "Quelle chanteuse cubaine est surnommée « la reine de la salsa » ?",
+"c": "Celia Cruz",
+"w": [
+"Gloria Estefan",
+"Shakira",
+"La Lupe"
+],
+"e": "Son cri « Azúcar ! » est devenu célèbre."
+},
+{
+"q": "Quel album de 1997 réunit de vieux musiciens cubains et a remporté un Grammy ?",
+"c": "Buena Vista Social Club",
+"w": [
+"Havana Nights",
+"Salsa Caliente",
+"Cuba Libre"
+],
+"e": "Un film de Wim Wenders a prolongé son succès."
+},
+{
+"q": "Quel compositeur argentin est le maître du « nuevo tango » ?",
+"c": "Astor Piazzolla",
+"w": [
+"Carlos Gardel",
+"Alberto Ginastera",
+"Daniel Barenboim"
+],
+"e": "Il jouait du bandonéon."
+},
+{
+"q": "Quel chanteur de tango a chanté « Por una cabeza » et « Volver » ?",
+"c": "Carlos Gardel",
+"w": [
+"Astor Piazzolla",
+"Julio Iglesias",
+"Alberto Castillo"
+],
+"e": "Il est mort dans un accident d'avion en 1935."
+},
+{
+"q": "Quel compositeur brésilien est l'auteur de « La Fille d'Ipanema » ?",
+"c": "Antônio Carlos Jobim",
+"w": [
+"João Gilberto",
+"Caetano Veloso",
+"Gilberto Gil"
+],
+"e": "Elle est devenue l'une des chansons les plus reprises du monde."
+},
+{
+"q": "Quel genre musical brésilien, né à la fin des années 1950, mêle samba et jazz ?",
+"c": "La bossa nova",
+"w": [
+"La samba",
+"Le forró",
+"Le baião"
+],
+"e": "Son nom veut dire « nouvelle vague » en portugais."
+},
+{
+"q": "Quel guitariste d'origine mexicaine est l'auteur de « Black Magic Woman » et « Oye Como Va » ?",
+"c": "Carlos Santana",
+"w": [
+"Eric Clapton",
+"Jimi Hendrix",
+"Slash"
+],
+"e": "Il a remporté plusieurs Grammy Awards."
+},
+{
+"q": "Quelle chanteuse américano-mexicaine, « reine de la Tex-Mex », a été assassinée en 1995 ?",
+"c": "Selena",
+"w": [
+"Gloria Estefan",
+"Jennifer Lopez",
+"Shakira"
+],
+"e": "Elle avait seulement 23 ans."
+},
+{
+"q": "Quel chanteur mexicain est surnommé « El Sol de México » ?",
+"c": "Luis Miguel",
+"w": [
+"Vicente Fernández",
+"Juan Gabriel",
+"Alejandro Fernández"
+],
+"e": "Il a débuté sa carrière à douze ans."
+},
+{
+"q": "Quel chanteur portoricain a chanté « Livin' la Vida Loca » en 1999 ?",
+"c": "Ricky Martin",
+"w": [
+"Marc Anthony",
+"Enrique Iglesias",
+"Luis Fonsi"
+],
+"e": "Le titre a fait connaître la musique latine au grand public américain."
+},
+{
+"q": "Quelle chanteuse cubano-américaine a fondé le groupe Miami Sound Machine ?",
+"c": "Gloria Estefan",
+"w": [
+"Celia Cruz",
+"Jennifer Lopez",
+"Shakira"
+],
+"e": "Elle est connue pour « Conga » et « Rhythm Is Gonna Get You »."
+},
+{
+"q": "Quel chanteur canadien est l'auteur de « Hallelujah » ?",
+"c": "Leonard Cohen",
+"w": [
+"Neil Young",
+"Bryan Adams",
+"Gordon Lightfoot"
+],
+"e": "Le titre a été repris par des centaines d'artistes."
+},
+{
+"q": "Quelle chanteuse canadienne est l'auteure de « Both Sides Now » ?",
+"c": "Joni Mitchell",
+"w": [
+"Céline Dion",
+"Alanis Morissette",
+"Shania Twain"
+],
+"e": "Elle est aussi peintre."
+},
+{
+"q": "Quel chanteur canadien est l'auteur de « Heart of Gold » ?",
+"c": "Neil Young",
+"w": [
+"Leonard Cohen",
+"Bryan Adams",
+"Gordon Lightfoot"
+],
+"e": "Il est considéré comme l'un des parrains du grunge."
+},
+{
+"q": "Quel groupe canadien de rock progressif a chanté « Tom Sawyer » ?",
+"c": "Rush",
+"w": [
+"Arcade Fire",
+"The Tragically Hip",
+"Nickelback"
+],
+"e": "Il est composé de trois musiciens."
+},
+{
+"q": "Quelle chanteuse canadienne est l'auteure de « Complicated » en 2002 ?",
+"c": "Avril Lavigne",
+"w": [
+"Alanis Morissette",
+"Céline Dion",
+"Shania Twain"
+],
+"e": "Elle est surnommée « la princesse du punk »."
+},
+{
+"q": "Quel chanteur canadien a chanté « Blinding Lights » ?",
+"c": "The Weeknd",
+"w": [
+"Drake",
+"Justin Bieber",
+"Shawn Mendes"
+],
+"e": "Le titre est resté très longtemps dans le haut des classements."
+},
+{
+"q": "Quel groupe américain de hard rock a chanté « Sweet Child o' Mine » ?",
+"c": "Guns N' Roses",
+"w": [
+"Aerosmith",
+"Bon Jovi",
+"Mötley Crüe"
+],
+"e": "Son guitariste Slash porte un chapeau haut de forme."
+},
+{
+"q": "Quel groupe américain de heavy metal a chanté « Enter Sandman » ?",
+"c": "Metallica",
+"w": [
+"Megadeth",
+"Slayer",
+"Anthrax"
+],
+"e": "L'album « Black Album » est sorti en 1991."
+},
+{
+"q": "Quel groupe californien a chanté « Californication » ?",
+"c": "Red Hot Chili Peppers",
+"w": [
+"Green Day",
+"Linkin Park",
+"Foo Fighters"
+],
+"e": "Les membres montent souvent sur scène presque nus."
+},
+{
+"q": "Quel duo de Detroit a chanté « Seven Nation Army » ?",
+"c": "The White Stripes",
+"w": [
+"The Black Keys",
+"The Strokes",
+"The Killers"
+],
+"e": "Le riff de basse est devenu un chant de stades."
+},
+{
+"q": "Quel festival américain de musique se tient chaque printemps dans le désert californien ?",
+"c": "Coachella",
+"w": [
+"Lollapalooza",
+"Glastonbury",
+"Tomorrowland"
+],
+"e": "Des centaines de milliers de personnes y assistent chaque année."
+},
+{
+"q": "Quel festival de 1969, dans l'État de New York, a réuni plus de 400 000 personnes ?",
+"c": "Woodstock",
+"w": [
+"Monterey",
+"Altamont",
+"Glastonbury"
+],
+"e": "Jimi Hendrix y a joué l'hymne américain."
+},
+{
+"q": "Quelle ville américaine est surnommée « Music City », capitale de la musique country ?",
+"c": "Nashville",
+"w": [
+"Memphis",
+"Austin",
+"Dallas"
+],
+"e": "Le Grand Ole Opry s'y trouve."
+},
+{
+"q": "Quelle ville du Tennessee est le berceau du rock and roll d'Elvis Presley ?",
+"c": "Memphis",
+"w": [
+"Nashville",
+"Atlanta",
+"Chicago"
+],
+"e": "Le studio Sun Records y a enregistré ses premiers titres."
+},
+{
+"q": "Dans quelle région des États-Unis est né le blues, dans les champs de coton ?",
+"c": "Le delta du Mississippi",
+"w": [
+"La Californie",
+"La Nouvelle-Angleterre",
+"Le Texas"
+],
+"e": "Des chanteurs comme Robert Johnson en sont issus."
+},
+{
+"q": "Quelle célèbre salle de concert new-yorkaise est ouverte depuis 1891 ?",
+"c": "Carnegie Hall",
+"w": [
+"Madison Square Garden",
+"Radio City Music Hall",
+"Le Met"
+],
+"e": "Les plus grands musiciens du monde s'y sont produits."
+},
+{
+"q": "Quel instrument à percussion, fabriqué avec des bidons d'huile, est typique de Trinité-et-Tobago ?",
+"c": "Le steel drum",
+"w": [
+"Le djembé",
+"Les congas",
+"Le bongo"
+],
+"e": "On l'appelle aussi « steelpan »."
+},
+{
+"q": "Quel genre musical de Trinité-et-Tobago est lié au carnaval et aux chansons satiriques ?",
+"c": "Le calypso",
+"w": [
+"Le reggae",
+"La salsa",
+"Le mento"
+],
+"e": "Il est joué depuis le XIXe siècle."
+},
+{
+"q": "Quel genre musical jamaïcain au rythme rapide a précédé le reggae ?",
+"c": "Le ska",
+"w": [
+"Le dancehall",
+"Le dub",
+"Le mento"
+],
+"e": "Il est né à Kingston dans les années 1950."
+},
+{
+"q": "Quel genre musical haïtien, né dans les années 1950, mêle rythmes africains, jazz et influences latines ?",
+"c": "Le compas",
+"w": [
+"Le zouk",
+"La salsa",
+"Le calypso"
+],
+"e": "Il est aussi appelé « kompa »."
+},
+{
+"q": "Quelle danse dominicaine, jouée à l'accordéon, au tambour et au güira, est très rapide ?",
+"c": "Le merengue",
+"w": [
+"La bachata",
+"La salsa",
+"La rumba"
+],
+"e": "Elle est inscrite au patrimoine immatériel de l'UNESCO."
+},
+{
+"q": "Quel genre musical colombien, joué à l'accordéon, est célèbre dans la région des Caraïbes ?",
+"c": "Le vallenato",
+"w": [
+"La cumbia",
+"Le tango",
+"La bossa nova"
+],
+"e": "Il est inscrit au patrimoine immatériel de l'UNESCO."
+},
+{
+"q": "Quel petit instrument à cordes des Andes est souvent fabriqué avec une carapace de tatou ?",
+"c": "Le charango",
+"w": [
+"La guitare",
+"La mandoline",
+"Le banjo"
+],
+"e": "Il a généralement dix cordes réparties en cinq paires."
+},
+{
+"q": "Quel instrument à vent des Andes est composé de tuyaux de roseau de longueurs différentes ?",
+"c": "La flûte de pan",
+"w": [
+"La quena",
+"La flûte traversière",
+"L'ocarina"
+],
+"e": "On l'appelle aussi « siku » ou « zampoña »."
+},
+{
+"q": "Quelle danse folklorique mexicaine, appelée « danse du chapeau », est exécutée en robe à volants et en costume de charro ?",
+"c": "Le jarabe tapatío",
+"w": [
+"Le flamenco",
+"La salsa",
+"La capoeira"
+],
+"e": "Elle est considérée comme la danse nationale du Mexique."
+}
+]
