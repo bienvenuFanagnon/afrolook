@@ -18,6 +18,7 @@ import 'quiz_level_page.dart';
 import 'quiz_shop_page.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_consent.dart';
+import 'widgets/quiz_ads.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
@@ -225,6 +226,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
                 SliverToBoxAdapter(child: _dailyCard(c, s)),
                 SliverToBoxAdapter(child: _challengeCard(c, s)),
                 SliverToBoxAdapter(child: _etudeCard(c)),
+                if (QuizService.instance.config.adsEnabled) const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: QuizAdInline())),
                 SliverToBoxAdapter(child: _links(c)),
                 SliverToBoxAdapter(child: SizedBox(key: _mapKey, height: 6)),
                 SliverFixedExtentList(

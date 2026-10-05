@@ -1,798 +1,903 @@
 {
-  "tracks": [
+ "tracks": [
+  {
+   "id": "college",
+   "kind": "cycle",
+   "order": 10,
+   "title": "Collège",
+   "country": "UEMOA",
+   "exam": {
+    "id": "bepc",
+    "title": "Examen du BEPC",
+    "diploma": "BEPC — Brevet d'Études du Premier Cycle",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
     {
-      "id": "college",
-      "kind": "cycle",
-      "order": 10,
-      "title": "Collège",
-      "country": "UEMOA",
-      "exam": {
-        "id": "bepc",
-        "title": "Examen du BEPC",
-        "diploma": "BEPC — Brevet d'Études du Premier Cycle",
-        "count": 40,
-        "passPct": 0.5,
-        "seconds": 3600
+     "id": "col_6e",
+     "title": "Classe de 6e",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "col6_maths_decimaux",
+         "title": "Nombres décimaux et fractions"
+        },
+        {
+         "id": "col6_maths_geometrie",
+         "title": "Droites, angles et cercles"
+        }
+       ]
       },
-      "classes": [
+      {
+       "id": "francais",
+       "title": "Français",
+       "icon": "menu_book",
+       "chapters": [
         {
-          "id": "col_6e",
-          "title": "Classe de 6e",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "col6_maths_decimaux",
-                  "title": "Nombres décimaux et fractions"
-                },
-                {
-                  "id": "col6_maths_geometrie",
-                  "title": "Droites, angles et cercles"
-                }
-              ]
-            },
-            {
-              "id": "francais",
-              "title": "Français",
-              "icon": "menu_book",
-              "chapters": [
-                {
-                  "id": "col6_fr_grammaire",
-                  "title": "La phrase et la nature des mots"
-                },
-                {
-                  "id": "col6_fr_conjugaison",
-                  "title": "Conjugaison : présent, imparfait, futur"
-                }
-              ]
-            },
-            {
-              "id": "anglais",
-              "title": "Anglais",
-              "icon": "translate",
-              "chapters": [
-                {
-                  "id": "col6_en_bases",
-                  "title": "Greetings, to be and to have"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "col6_svt_vivants",
-                  "title": "Les êtres vivants et leur milieu"
-                }
-              ]
-            },
-            {
-              "id": "hg",
-              "title": "Histoire-Géographie",
-              "icon": "public",
-              "chapters": [
-                {
-                  "id": "col6_hg_prehistoire",
-                  "title": "De la préhistoire aux premières civilisations"
-                },
-                {
-                  "id": "col6_hg_terre",
-                  "title": "La Terre : continents et océans"
-                }
-              ]
-            }
-          ]
+         "id": "col6_fr_grammaire",
+         "title": "La phrase et la nature des mots"
         },
         {
-          "id": "col_5e",
-          "title": "Classe de 5e",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "col5_maths_relatifs",
-                  "title": "Nombres relatifs"
-                },
-                {
-                  "id": "col5_maths_triangles",
-                  "title": "Triangles et angles"
-                }
-              ]
-            },
-            {
-              "id": "francais",
-              "title": "Français",
-              "icon": "menu_book",
-              "chapters": [
-                {
-                  "id": "col5_fr_passe",
-                  "title": "Les temps du passé"
-                },
-                {
-                  "id": "col5_fr_phrases",
-                  "title": "Types de phrases et compléments"
-                }
-              ]
-            },
-            {
-              "id": "anglais",
-              "title": "Anglais",
-              "icon": "translate",
-              "chapters": [
-                {
-                  "id": "col5_en_past",
-                  "title": "Le prétérit (past simple)"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "col5_svt_respiration",
-                  "title": "La respiration chez l'homme et les animaux"
-                }
-              ]
-            },
-            {
-              "id": "pc",
-              "title": "Physique-Chimie",
-              "icon": "science",
-              "chapters": [
-                {
-                  "id": "col5_pc_matiere",
-                  "title": "États de la matière et mélanges"
-                }
-              ]
-            },
-            {
-              "id": "hg",
-              "title": "Histoire-Géographie",
-              "icon": "public",
-              "chapters": [
-                {
-                  "id": "col5_hg_empires",
-                  "title": "Les grands empires africains : Ghana, Mali, Songhaï"
-                },
-                {
-                  "id": "col5_hg_population",
-                  "title": "La population mondiale"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "col_4e",
-          "title": "Classe de 4e",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "col4_maths_puissances",
-                  "title": "Puissances et calcul littéral"
-                },
-                {
-                  "id": "col4_maths_pythagore",
-                  "title": "Théorème de Pythagore"
-                }
-              ]
-            },
-            {
-              "id": "francais",
-              "title": "Français",
-              "icon": "menu_book",
-              "chapters": [
-                {
-                  "id": "col4_fr_discours",
-                  "title": "Discours direct et indirect"
-                },
-                {
-                  "id": "col4_fr_figures",
-                  "title": "Le récit et les figures de style"
-                }
-              ]
-            },
-            {
-              "id": "anglais",
-              "title": "Anglais",
-              "icon": "translate",
-              "chapters": [
-                {
-                  "id": "col4_en_present",
-                  "title": "Present simple et present continuous"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "col4_svt_digestion",
-                  "title": "La digestion et l'absorption"
-                }
-              ]
-            },
-            {
-              "id": "pc",
-              "title": "Physique-Chimie",
-              "icon": "science",
-              "chapters": [
-                {
-                  "id": "col4_pc_electricite",
-                  "title": "Électricité : circuits et tension"
-                }
-              ]
-            },
-            {
-              "id": "hg",
-              "title": "Histoire-Géographie",
-              "icon": "public",
-              "chapters": [
-                {
-                  "id": "col4_hg_traite",
-                  "title": "La traite négrière et l'esclavage"
-                },
-                {
-                  "id": "col4_hg_climats",
-                  "title": "Climats et milieux naturels"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "col_3e",
-          "title": "Classe de 3e",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "col3_maths_thales",
-                  "title": "Théorème de Thalès"
-                },
-                {
-                  "id": "col3_maths_equations",
-                  "title": "Équations, inéquations et systèmes"
-                },
-                {
-                  "id": "col3_maths_trigo",
-                  "title": "Trigonométrie dans le triangle rectangle"
-                }
-              ]
-            },
-            {
-              "id": "francais",
-              "title": "Français",
-              "icon": "menu_book",
-              "chapters": [
-                {
-                  "id": "col3_fr_argument",
-                  "title": "Texte argumentatif et expression écrite"
-                },
-                {
-                  "id": "col3_fr_subjonctif",
-                  "title": "Le subjonctif et les propositions"
-                }
-              ]
-            },
-            {
-              "id": "anglais",
-              "title": "Anglais",
-              "icon": "translate",
-              "chapters": [
-                {
-                  "id": "col3_en_futur",
-                  "title": "Futur et conditionnel : will, would, if"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "col3_svt_repro",
-                  "title": "Reproduction humaine et VIH/SIDA"
-                }
-              ]
-            },
-            {
-              "id": "pc",
-              "title": "Physique-Chimie",
-              "icon": "science",
-              "chapters": [
-                {
-                  "id": "col3_pc_ohm",
-                  "title": "Loi d'Ohm et puissance électrique"
-                }
-              ]
-            },
-            {
-              "id": "hg",
-              "title": "Histoire-Géographie",
-              "icon": "public",
-              "chapters": [
-                {
-                  "id": "col3_hg_indep",
-                  "title": "Les indépendances africaines"
-                },
-                {
-                  "id": "col3_hg_onu",
-                  "title": "Le monde après 1945 : l'ONU"
-                }
-              ]
-            }
-          ]
+         "id": "col6_fr_conjugaison",
+         "title": "Conjugaison : présent, imparfait, futur"
         }
-      ]
-    },
-    {
-      "id": "lycee_d",
-      "kind": "cycle",
-      "order": 20,
-      "title": "Lycée — série D",
-      "country": "UEMOA",
-      "after": [
-        "college"
-      ],
-      "exam": {
-        "id": "bac_d",
-        "title": "Examen du BAC D",
-        "diploma": "BAC D — Baccalauréat, série D",
-        "count": 40,
-        "passPct": 0.5,
-        "seconds": 5400
+       ]
       },
-      "classes": [
+      {
+       "id": "anglais",
+       "title": "Anglais",
+       "icon": "translate",
+       "chapters": [
         {
-          "id": "lyc_2nde",
-          "title": "Seconde",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "sec_maths_second_degre",
-                  "title": "Équations du second degré"
-                },
-                {
-                  "id": "sec_maths_fonctions",
-                  "title": "Généralités sur les fonctions"
-                }
-              ]
-            },
-            {
-              "id": "pc",
-              "title": "Physique-Chimie",
-              "icon": "science",
-              "chapters": [
-                {
-                  "id": "sec_pc_atome",
-                  "title": "L'atome et la classification périodique"
-                },
-                {
-                  "id": "sec_pc_mole",
-                  "title": "La quantité de matière (la mole)"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "sec_svt_cellule",
-                  "title": "La cellule et l'ADN"
-                },
-                {
-                  "id": "sec_svt_ecosystemes",
-                  "title": "Écosystèmes et biodiversité"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "lyc_1d",
-          "title": "Première D",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "prem_maths_limites",
-                  "title": "Limites et continuité"
-                },
-                {
-                  "id": "prem_maths_trigo",
-                  "title": "Trigonométrie et cercle trigonométrique"
-                }
-              ]
-            },
-            {
-              "id": "pc",
-              "title": "Physique-Chimie",
-              "icon": "science",
-              "chapters": [
-                {
-                  "id": "prem_pc_energie",
-                  "title": "Travail et énergie"
-                },
-                {
-                  "id": "prem_pc_organique",
-                  "title": "Chimie organique : alcanes et alcools"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "prem_svt_nerveux",
-                  "title": "Le système nerveux et le réflexe"
-                },
-                {
-                  "id": "prem_svt_muscle",
-                  "title": "La contraction musculaire"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "lyc_td",
-          "title": "Terminale D",
-          "subjects": [
-            {
-              "id": "maths",
-              "title": "Mathématiques",
-              "icon": "calculate",
-              "chapters": [
-                {
-                  "id": "td_maths_suites",
-                  "title": "Suites numériques"
-                },
-                {
-                  "id": "td_maths_derivation",
-                  "title": "Dérivation et étude de fonctions"
-                },
-                {
-                  "id": "td_maths_ln",
-                  "title": "Fonction logarithme népérien"
-                }
-              ]
-            },
-            {
-              "id": "pc",
-              "title": "Physique-Chimie",
-              "icon": "science",
-              "chapters": [
-                {
-                  "id": "td_pc_cinematique",
-                  "title": "Cinématique du point"
-                },
-                {
-                  "id": "td_pc_newton",
-                  "title": "Les lois de Newton"
-                },
-                {
-                  "id": "td_pc_acides",
-                  "title": "Acides, bases et pH"
-                }
-              ]
-            },
-            {
-              "id": "svt",
-              "title": "SVT",
-              "icon": "eco",
-              "chapters": [
-                {
-                  "id": "td_svt_genetique",
-                  "title": "Génétique et hérédité"
-                },
-                {
-                  "id": "td_svt_immunite",
-                  "title": "Immunité et défense de l'organisme"
-                },
-                {
-                  "id": "td_svt_respiration",
-                  "title": "Respiration et fermentation"
-                }
-              ]
-            }
-          ]
+         "id": "col6_en_bases",
+         "title": "Greetings, to be and to have"
         }
-      ]
-    },
-    {
-      "id": "univ_info",
-      "kind": "cycle",
-      "order": 30,
-      "title": "Licence d'Informatique",
-      "country": "UEMOA",
-      "after": [
-        "lycee_d"
-      ],
-      "exam": {
-        "id": "licence_info",
-        "title": "Examen de licence",
-        "diploma": "Licence d'Informatique",
-        "count": 50,
-        "passPct": 0.5,
-        "seconds": 5400
+       ]
       },
-      "classes": [
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
         {
-          "id": "info_l1",
-          "title": "Licence 1",
-          "subjects": [
-            {
-              "id": "algo",
-              "title": "Algorithmique",
-              "icon": "account_tree",
-              "chapters": [
-                {
-                  "id": "info_algo_variables",
-                  "title": "Variables, types et opérateurs"
-                },
-                {
-                  "id": "info_algo_conditions",
-                  "title": "Les conditions"
-                },
-                {
-                  "id": "info_algo_boucles",
-                  "title": "Les boucles"
-                },
-                {
-                  "id": "info_algo_tableaux",
-                  "title": "Tableaux et fonctions"
-                }
-              ]
-            },
-            {
-              "id": "python",
-              "title": "Programmation Python",
-              "icon": "code",
-              "chapters": [
-                {
-                  "id": "info_py_bases",
-                  "title": "Python : les bases"
-                },
-                {
-                  "id": "info_py_listes",
-                  "title": "Listes, dictionnaires et chaînes"
-                },
-                {
-                  "id": "info_py_fonctions",
-                  "title": "Fonctions et fichiers"
-                }
-              ]
-            },
-            {
-              "id": "bdd",
-              "title": "Bases de données",
-              "icon": "storage",
-              "chapters": [
-                {
-                  "id": "info_bdd_modele",
-                  "title": "Le modèle relationnel"
-                },
-                {
-                  "id": "info_bdd_select",
-                  "title": "SQL : interroger une table"
-                },
-                {
-                  "id": "info_bdd_jointures",
-                  "title": "SQL : jointures et agrégats"
-                }
-              ]
-            }
-          ]
+         "id": "col6_svt_vivants",
+         "title": "Les êtres vivants et leur milieu"
+        }
+       ]
+      },
+      {
+       "id": "hg",
+       "title": "Histoire-Géographie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "col6_hg_prehistoire",
+         "title": "De la préhistoire aux premières civilisations"
         },
         {
-          "id": "info_l2",
-          "title": "Licence 2",
-          "subjects": [
-            {
-              "id": "sd",
-              "title": "Structures de données",
-              "icon": "account_tree",
-              "chapters": [
-                {
-                  "id": "info2_sd_listes",
-                  "title": "Listes, piles et files"
-                },
-                {
-                  "id": "info2_sd_arbres",
-                  "title": "Arbres et algorithmes de tri"
-                }
-              ]
-            },
-            {
-              "id": "poo",
-              "title": "Programmation orientée objet",
-              "icon": "code",
-              "chapters": [
-                {
-                  "id": "info2_poo_classes",
-                  "title": "Classes et objets"
-                },
-                {
-                  "id": "info2_poo_heritage",
-                  "title": "Héritage et polymorphisme"
-                }
-              ]
-            },
-            {
-              "id": "reseaux",
-              "title": "Réseaux",
-              "icon": "storage",
-              "chapters": [
-                {
-                  "id": "info2_res_modeles",
-                  "title": "Modèles OSI et TCP/IP"
-                },
-                {
-                  "id": "info2_res_ip",
-                  "title": "Adressage IP et services"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "info_l3",
-          "title": "Licence 3",
-          "subjects": [
-            {
-              "id": "gl",
-              "title": "Génie logiciel",
-              "icon": "account_tree",
-              "chapters": [
-                {
-                  "id": "info3_gl_cycle",
-                  "title": "Cycles de développement et tests"
-                },
-                {
-                  "id": "info3_gl_uml",
-                  "title": "Modélisation UML"
-                }
-              ]
-            },
-            {
-              "id": "sys",
-              "title": "Systèmes d'exploitation",
-              "icon": "storage",
-              "chapters": [
-                {
-                  "id": "info3_sys_processus",
-                  "title": "Processus et mémoire"
-                },
-                {
-                  "id": "info3_sys_fichiers",
-                  "title": "Fichiers et commandes"
-                }
-              ]
-            },
-            {
-              "id": "ia",
-              "title": "Intelligence artificielle et sécurité",
-              "icon": "code",
-              "chapters": [
-                {
-                  "id": "info3_ia_bases",
-                  "title": "Intelligence artificielle : bases"
-                },
-                {
-                  "id": "info3_secu_bases",
-                  "title": "Sécurité informatique"
-                }
-              ]
-            }
-          ]
+         "id": "col6_hg_terre",
+         "title": "La Terre : continents et océans"
         }
-      ]
-    },
-    {
-      "id": "cert_entretien",
-      "kind": "cert",
-      "order": 100,
-      "title": "Entretien d'embauche",
-      "classes": [
-        {
-          "id": "ent_module",
-          "title": "Entretien d'embauche",
-          "subjects": [
-            {
-              "id": "entretien",
-              "title": "Réussir son entretien",
-              "icon": "work",
-              "chapters": [
-                {
-                  "id": "ent_preparer",
-                  "title": "Préparer l'entretien"
-                },
-                {
-                  "id": "ent_presenter",
-                  "title": "Se présenter : « Parlez-moi de vous »"
-                },
-                {
-                  "id": "ent_classiques",
-                  "title": "Les questions classiques"
-                },
-                {
-                  "id": "ent_star",
-                  "title": "Questions comportementales et méthode STAR"
-                },
-                {
-                  "id": "ent_conclure",
-                  "title": "Salaire, questions à poser et suite"
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "cert": {
-        "id": "att_entretien",
-        "title": "Attestation : prêt pour l'entretien d'embauche",
-        "from": [
-          "ent_preparer",
-          "ent_presenter",
-          "ent_classiques",
-          "ent_star",
-          "ent_conclure"
-        ],
-        "count": 30,
-        "passPct": 0.7,
-        "seconds": 1500
+       ]
       }
+     ]
     },
     {
-      "id": "cert_python",
-      "kind": "cert",
-      "order": 110,
-      "title": "Python — bases",
-      "classes": [],
-      "cert": {
-        "id": "att_python",
-        "title": "Attestation : Python — bases",
-        "from": [
-          "info_py_bases",
-          "info_py_listes",
-          "info_py_fonctions"
-        ],
-        "count": 30,
-        "passPct": 0.7,
-        "seconds": 1500
+     "id": "col_5e",
+     "title": "Classe de 5e",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "col5_maths_relatifs",
+         "title": "Nombres relatifs"
+        },
+        {
+         "id": "col5_maths_triangles",
+         "title": "Triangles et angles"
+        }
+       ]
+      },
+      {
+       "id": "francais",
+       "title": "Français",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "col5_fr_passe",
+         "title": "Les temps du passé"
+        },
+        {
+         "id": "col5_fr_phrases",
+         "title": "Types de phrases et compléments"
+        }
+       ]
+      },
+      {
+       "id": "anglais",
+       "title": "Anglais",
+       "icon": "translate",
+       "chapters": [
+        {
+         "id": "col5_en_past",
+         "title": "Le prétérit (past simple)"
+        }
+       ]
+      },
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "col5_svt_respiration",
+         "title": "La respiration chez l'homme et les animaux"
+        }
+       ]
+      },
+      {
+       "id": "pc",
+       "title": "Physique-Chimie",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "col5_pc_matiere",
+         "title": "États de la matière et mélanges"
+        }
+       ]
+      },
+      {
+       "id": "hg",
+       "title": "Histoire-Géographie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "col5_hg_empires",
+         "title": "Les grands empires africains : Ghana, Mali, Songhaï"
+        },
+        {
+         "id": "col5_hg_population",
+         "title": "La population mondiale"
+        }
+       ]
       }
+     ]
+    },
+    {
+     "id": "col_4e",
+     "title": "Classe de 4e",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "col4_maths_puissances",
+         "title": "Puissances et calcul littéral"
+        },
+        {
+         "id": "col4_maths_pythagore",
+         "title": "Théorème de Pythagore"
+        }
+       ]
+      },
+      {
+       "id": "francais",
+       "title": "Français",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "col4_fr_discours",
+         "title": "Discours direct et indirect"
+        },
+        {
+         "id": "col4_fr_figures",
+         "title": "Le récit et les figures de style"
+        }
+       ]
+      },
+      {
+       "id": "anglais",
+       "title": "Anglais",
+       "icon": "translate",
+       "chapters": [
+        {
+         "id": "col4_en_present",
+         "title": "Present simple et present continuous"
+        }
+       ]
+      },
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "col4_svt_digestion",
+         "title": "La digestion et l'absorption"
+        }
+       ]
+      },
+      {
+       "id": "pc",
+       "title": "Physique-Chimie",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "col4_pc_electricite",
+         "title": "Électricité : circuits et tension"
+        }
+       ]
+      },
+      {
+       "id": "hg",
+       "title": "Histoire-Géographie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "col4_hg_traite",
+         "title": "La traite négrière et l'esclavage"
+        },
+        {
+         "id": "col4_hg_climats",
+         "title": "Climats et milieux naturels"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "col_3e",
+     "title": "Classe de 3e",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "col3_maths_thales",
+         "title": "Théorème de Thalès"
+        },
+        {
+         "id": "col3_maths_equations",
+         "title": "Équations, inéquations et systèmes"
+        },
+        {
+         "id": "col3_maths_trigo",
+         "title": "Trigonométrie dans le triangle rectangle"
+        }
+       ]
+      },
+      {
+       "id": "francais",
+       "title": "Français",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "col3_fr_argument",
+         "title": "Texte argumentatif et expression écrite"
+        },
+        {
+         "id": "col3_fr_subjonctif",
+         "title": "Le subjonctif et les propositions"
+        }
+       ]
+      },
+      {
+       "id": "anglais",
+       "title": "Anglais",
+       "icon": "translate",
+       "chapters": [
+        {
+         "id": "col3_en_futur",
+         "title": "Futur et conditionnel : will, would, if"
+        }
+       ]
+      },
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "col3_svt_repro",
+         "title": "Reproduction humaine et VIH/SIDA"
+        }
+       ]
+      },
+      {
+       "id": "pc",
+       "title": "Physique-Chimie",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "col3_pc_ohm",
+         "title": "Loi d'Ohm et puissance électrique"
+        }
+       ]
+      },
+      {
+       "id": "hg",
+       "title": "Histoire-Géographie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "col3_hg_indep",
+         "title": "Les indépendances africaines"
+        },
+        {
+         "id": "col3_hg_onu",
+         "title": "Le monde après 1945 : l'ONU"
+        }
+       ]
+      }
+     ]
     }
-  ]
+   ]
+  },
+  {
+   "id": "lycee_d",
+   "kind": "cycle",
+   "order": 20,
+   "title": "Lycée — série D",
+   "country": "UEMOA",
+   "after": [
+    "college"
+   ],
+   "exam": {
+    "id": "bac_d",
+    "title": "Examen du BAC D",
+    "diploma": "BAC D — Baccalauréat, série D",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 5400
+   },
+   "classes": [
+    {
+     "id": "lyc_2nde",
+     "title": "Seconde",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "sec_maths_second_degre",
+         "title": "Équations du second degré"
+        },
+        {
+         "id": "sec_maths_fonctions",
+         "title": "Généralités sur les fonctions"
+        }
+       ]
+      },
+      {
+       "id": "pc",
+       "title": "Physique-Chimie",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "sec_pc_atome",
+         "title": "L'atome et la classification périodique"
+        },
+        {
+         "id": "sec_pc_mole",
+         "title": "La quantité de matière (la mole)"
+        }
+       ]
+      },
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "sec_svt_cellule",
+         "title": "La cellule et l'ADN"
+        },
+        {
+         "id": "sec_svt_ecosystemes",
+         "title": "Écosystèmes et biodiversité"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "lyc_1d",
+     "title": "Première D",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "prem_maths_limites",
+         "title": "Limites et continuité"
+        },
+        {
+         "id": "prem_maths_trigo",
+         "title": "Trigonométrie et cercle trigonométrique"
+        }
+       ]
+      },
+      {
+       "id": "pc",
+       "title": "Physique-Chimie",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "prem_pc_energie",
+         "title": "Travail et énergie"
+        },
+        {
+         "id": "prem_pc_organique",
+         "title": "Chimie organique : alcanes et alcools"
+        }
+       ]
+      },
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "prem_svt_nerveux",
+         "title": "Le système nerveux et le réflexe"
+        },
+        {
+         "id": "prem_svt_muscle",
+         "title": "La contraction musculaire"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "lyc_td",
+     "title": "Terminale D",
+     "subjects": [
+      {
+       "id": "maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "td_maths_suites",
+         "title": "Suites numériques"
+        },
+        {
+         "id": "td_maths_derivation",
+         "title": "Dérivation et étude de fonctions"
+        },
+        {
+         "id": "td_maths_ln",
+         "title": "Fonction logarithme népérien"
+        }
+       ]
+      },
+      {
+       "id": "pc",
+       "title": "Physique-Chimie",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "td_pc_cinematique",
+         "title": "Cinématique du point"
+        },
+        {
+         "id": "td_pc_newton",
+         "title": "Les lois de Newton"
+        },
+        {
+         "id": "td_pc_acides",
+         "title": "Acides, bases et pH"
+        }
+       ]
+      },
+      {
+       "id": "svt",
+       "title": "SVT",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "td_svt_genetique",
+         "title": "Génétique et hérédité"
+        },
+        {
+         "id": "td_svt_immunite",
+         "title": "Immunité et défense de l'organisme"
+        },
+        {
+         "id": "td_svt_respiration",
+         "title": "Respiration et fermentation"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "univ_info",
+   "kind": "cycle",
+   "order": 30,
+   "title": "Licence d'Informatique",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_info",
+    "title": "Examen de licence",
+    "diploma": "Licence d'Informatique",
+    "count": 50,
+    "passPct": 0.5,
+    "seconds": 5400
+   },
+   "classes": [
+    {
+     "id": "info_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "algo",
+       "title": "Algorithmique",
+       "icon": "account_tree",
+       "chapters": [
+        {
+         "id": "info_algo_variables",
+         "title": "Variables, types et opérateurs"
+        },
+        {
+         "id": "info_algo_conditions",
+         "title": "Les conditions"
+        },
+        {
+         "id": "info_algo_boucles",
+         "title": "Les boucles"
+        },
+        {
+         "id": "info_algo_tableaux",
+         "title": "Tableaux et fonctions"
+        }
+       ]
+      },
+      {
+       "id": "python",
+       "title": "Programmation Python",
+       "icon": "code",
+       "chapters": [
+        {
+         "id": "info_py_bases",
+         "title": "Python : les bases"
+        },
+        {
+         "id": "info_py_listes",
+         "title": "Listes, dictionnaires et chaînes"
+        },
+        {
+         "id": "info_py_fonctions",
+         "title": "Fonctions et fichiers"
+        }
+       ]
+      },
+      {
+       "id": "bdd",
+       "title": "Bases de données",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "info_bdd_modele",
+         "title": "Le modèle relationnel"
+        },
+        {
+         "id": "info_bdd_select",
+         "title": "SQL : interroger une table"
+        },
+        {
+         "id": "info_bdd_jointures",
+         "title": "SQL : jointures et agrégats"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "info_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "sd",
+       "title": "Structures de données",
+       "icon": "account_tree",
+       "chapters": [
+        {
+         "id": "info2_sd_listes",
+         "title": "Listes, piles et files"
+        },
+        {
+         "id": "info2_sd_arbres",
+         "title": "Arbres et algorithmes de tri"
+        }
+       ]
+      },
+      {
+       "id": "poo",
+       "title": "Programmation orientée objet",
+       "icon": "code",
+       "chapters": [
+        {
+         "id": "info2_poo_classes",
+         "title": "Classes et objets"
+        },
+        {
+         "id": "info2_poo_heritage",
+         "title": "Héritage et polymorphisme"
+        }
+       ]
+      },
+      {
+       "id": "reseaux",
+       "title": "Réseaux",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "info2_res_modeles",
+         "title": "Modèles OSI et TCP/IP"
+        },
+        {
+         "id": "info2_res_ip",
+         "title": "Adressage IP et services"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "info_l3",
+     "title": "Licence 3",
+     "subjects": [
+      {
+       "id": "gl",
+       "title": "Génie logiciel",
+       "icon": "account_tree",
+       "chapters": [
+        {
+         "id": "info3_gl_cycle",
+         "title": "Cycles de développement et tests"
+        },
+        {
+         "id": "info3_gl_uml",
+         "title": "Modélisation UML"
+        }
+       ]
+      },
+      {
+       "id": "sys",
+       "title": "Systèmes d'exploitation",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "info3_sys_processus",
+         "title": "Processus et mémoire"
+        },
+        {
+         "id": "info3_sys_fichiers",
+         "title": "Fichiers et commandes"
+        }
+       ]
+      },
+      {
+       "id": "ia",
+       "title": "Intelligence artificielle et sécurité",
+       "icon": "code",
+       "chapters": [
+        {
+         "id": "info3_ia_bases",
+         "title": "Intelligence artificielle : bases"
+        },
+        {
+         "id": "info3_secu_bases",
+         "title": "Sécurité informatique"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cert_entretien",
+   "kind": "cert",
+   "order": 100,
+   "title": "Entretien d'embauche",
+   "classes": [
+    {
+     "id": "ent_module",
+     "title": "Entretien d'embauche",
+     "subjects": [
+      {
+       "id": "entretien",
+       "title": "Réussir son entretien",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "ent_preparer",
+         "title": "Préparer l'entretien"
+        },
+        {
+         "id": "ent_presenter",
+         "title": "Se présenter : « Parlez-moi de vous »"
+        },
+        {
+         "id": "ent_classiques",
+         "title": "Les questions classiques"
+        },
+        {
+         "id": "ent_star",
+         "title": "Questions comportementales et méthode STAR"
+        },
+        {
+         "id": "ent_conclure",
+         "title": "Salaire, questions à poser et suite"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "cert": {
+    "id": "att_entretien",
+    "title": "Attestation : prêt pour l'entretien d'embauche",
+    "from": [
+     "ent_preparer",
+     "ent_presenter",
+     "ent_classiques",
+     "ent_star",
+     "ent_conclure"
+    ],
+    "count": 30,
+    "passPct": 0.7,
+    "seconds": 1500
+   }
+  },
+  {
+   "id": "cert_python",
+   "kind": "cert",
+   "order": 110,
+   "title": "Python — bases",
+   "classes": [],
+   "cert": {
+    "id": "att_python",
+    "title": "Attestation : Python — bases",
+    "from": [
+     "info_py_bases",
+     "info_py_listes",
+     "info_py_fonctions"
+    ],
+    "count": 30,
+    "passPct": 0.7,
+    "seconds": 1500
+   }
+  },
+  {
+   "id": "cert_ia",
+   "kind": "cert",
+   "order": 120,
+   "title": "Intelligence artificielle — bases",
+   "classes": [
+    {
+     "id": "ia_module",
+     "title": "Intelligence artificielle — bases",
+     "subjects": [
+      {
+       "id": "ia_comprendre",
+       "title": "Comprendre et bien utiliser l'IA",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "ia_quoi",
+         "title": "C'est quoi l'intelligence artificielle ?"
+        },
+        {
+         "id": "ia_prompt",
+         "title": "Écrire un bon prompt"
+        },
+        {
+         "id": "ia_verif",
+         "title": "Vérifier, éthique et données personnelles"
+        },
+        {
+         "id": "ia_outils",
+         "title": "Les familles d'outils d'IA"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "cert": {
+    "id": "att_ia_bases",
+    "title": "Attestation : bases de l'intelligence artificielle",
+    "from": [
+     "ia_quoi",
+     "ia_prompt",
+     "ia_verif",
+     "ia_outils"
+    ],
+    "count": 30,
+    "passPct": 0.7,
+    "seconds": 1500
+   }
+  },
+  {
+   "id": "cert_ia_pro",
+   "kind": "cert",
+   "order": 130,
+   "title": "IA pour vendre, créer et programmer",
+   "classes": [
+    {
+     "id": "ia_pro_module",
+     "title": "IA pour vendre, créer et programmer",
+     "subjects": [
+      {
+       "id": "ia_metiers",
+       "title": "L'IA au service de ton activité",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "ia_vente",
+         "title": "Vendre ses produits avec l'IA"
+        },
+        {
+         "id": "ia_affiche",
+         "title": "Affiches et images avec l'IA"
+        },
+        {
+         "id": "ia_motscles",
+         "title": "Mots-clés, SEO et hashtags"
+        },
+        {
+         "id": "ia_code",
+         "title": "IA et informatique : code, Excel, SQL"
+        },
+        {
+         "id": "ia_social",
+         "title": "Contenu et réseaux sociaux avec l'IA"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "cert": {
+    "id": "att_ia_pro",
+    "title": "Attestation : IA pour vendre, créer et programmer",
+    "from": [
+     "ia_vente",
+     "ia_affiche",
+     "ia_motscles",
+     "ia_code",
+     "ia_social"
+    ],
+    "count": 30,
+    "passPct": 0.7,
+    "seconds": 1500
+   }
+  }
+ ]
 }

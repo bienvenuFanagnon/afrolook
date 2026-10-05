@@ -1,0 +1,26 @@
+titre: Affiches et images avec l'IA
+== fiche
+p: Une IA d'images transforme un prompt en visuel. Pour une affiche, décris le sujet, le style, la lumière, le cadrage et l'ambiance ; le texte exact se met souvent ensuite dans un outil de design.
+li: Sujet : ce qui doit apparaître (un sac en cuir sur une table en bois).
+li: Style : photo réaliste, illustration, flat design, couleurs africaines vives.
+li: Lumière et cadrage : lumière douce du matin, gros plan, vue de face, fond uni.
+li: Format : carré pour un post, vertical 9:16 pour un statut ou une story, A4 pour l'impression.
+li: Texte : les IA d'images écrivent parfois mal ; ajoute les mots toi-même avec Canva ou un éditeur.
+note: Prompt image modèle : « Photo réaliste d'un sac en cuir marron sur une table en bois, lumière douce du matin, fond beige uni, vue de face, grand espace libre en haut pour le titre, format carré. »
+note: Pour l'affiche, garde un message principal, une information importante (prix, date, contact) et une couleur dominante : trop d'éléments tuent l'impact.
+== questions
+Que contient un bon prompt d'image ? || Sujet, style, lumière, cadrage et format || Seulement « belle image » || Seulement un prix || Un numéro de téléphone || Plus le prompt est précis, plus l'image est proche de l'idée.
+Pourquoi laisser de l'espace libre sur l'image pour une affiche ? || Pour placer le titre et les informations || Pour économiser l'encre || Pour cacher le produit || Pour rendre l'image floue || Un espace vide permet d'ajouter le texte lisiblement.
+Quel format convient pour une story ou un statut ? || Vertical 9:16 || Carré 1:1 seulement || Panoramique 3:1 || Format timbre || Les stories sont verticales.
+Pourquoi ajouter le texte soi-même avec un éditeur ? || Les IA d'images écrivent parfois des mots déformés || Parce que c'est interdit || Parce que l'image devient plus lourde || Pour la rendre noire || Le texte généré est souvent mal orthographié.
+Quel élément décrit la lumière ? || Lumière douce du matin || Fond d'écran || Prix de vente || Numéro de série || La lumière influence l'ambiance de l'image.
+Quel élément décrit le style ? || Illustration flat design aux couleurs vives || Livraison gratuite || Ouvert le lundi || Adresse du magasin || Le style définit l'apparence visuelle.
+Que faire si l'image ne convient pas ? || Modifier le prompt : couleurs, cadrage, détails || Abandonner tout de suite || Éteindre le téléphone || Tout imprimer || On itère comme pour un texte.
+Quel est un bon message principal pour une affiche de promotion ? || -20 % ce week-end sur tous les sacs || Voici notre long historique de vingt ans || Beaucoup de choses à voir || Merci || Un message court et fort attire l'œil.
+Quelle information pratique doit toujours figurer sur l'affiche d'un commerce ? || Contact ou adresse pour commander || Une devinette || Une photo floue || Le nom du logiciel || Le client doit savoir comment vous joindre.
+Quel danger y a-t-il à surcharger une affiche ? || Le message principal devient illisible || Elle devient trop légère || Elle devient invisible || Aucun danger || Trop d'éléments disperse l'attention.
+Peut-on utiliser le logo ou la photo d'une autre marque sans accord ? || Non, c'est risqué et peut être interdit || Oui toujours || Oui si c'est joli || Oui si on change la couleur || Le droit d'auteur et les marques protègent leurs propriétaires.
+Que signifie « vue de face » dans un prompt ? || Le cadrage montre le sujet de face || Le sujet est caché || Le sujet est en panne || L'image est en noir et blanc || C'est une indication de point de vue.
+Pourquoi vérifier le produit sur l'image générée ? || Elle ne doit pas tromper sur l'apparence réelle || Elle est toujours exacte || Elle remplace la photo du client || Elle est protégée || Un visuel trompeur nuit à la confiance.
+Quelle combinaison de couleurs rend un texte lisible ? || Texte clair sur fond foncé ou l'inverse || Texte jaune clair sur fond blanc || Texte gris sur fond gris || Texte transparent || Le contraste facilite la lecture.
+Quelle étape finale fais-tu avant de publier ton affiche ? || Je relis le texte, le prix et le contact || Je publie sans regarder || Je supprime le prix || Je change de nom || Une faute ou un faux prix coûte cher.

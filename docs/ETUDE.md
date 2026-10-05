@@ -184,3 +184,14 @@ On met en ligne ce qui existe, on regarde l'utilisation dans l'admin (module « 
 ## 13. Prochaine étape : universités et domaines
 
 Le plan détaillé (liste des domaines, priorités, volumes, évolutions de l'application, marche à suivre) est dans `docs/ETUDE_UNIVERSITES.md`. Le travail se concentre désormais sur l'université et les attestations.
+
+## 13. Attestations « Intelligence artificielle »
+
+Deux attestations (non officielles) : **IA — bases** (c'est quoi l'IA, écrire un prompt, vérifier/éthique, familles d'outils) et **IA pour vendre, créer et programmer** (vente de produits, affiches et images, mots-clés/SEO/hashtags, code-Excel-SQL, réseaux sociaux), avec des prompts modèles dans chaque fiche. Contenu : `tools/etude/content/ia_*.txt`, parcours `cert_ia` et `cert_ia_pro` dans `structure.json`.
+
+## 14. Publicité dans Quiz & Étude
+
+- Bannière sous les questions (écrans ≥ 700 px de haut seulement), pub dans les listes (accueil Quiz, accueil Étude, classe, chapitre), bannière sur l'écran de résultat.
+- Pub plein écran à la fin d'un niveau réussi : Quiz tous les 3 niveaux (max 6/jour, réglable `AppConfig/quiz`), Étude tous les 3 niveaux (max 6/jour).
+- Jamais pendant une question, jamais pour les comptes Gold (`AdGate`).
+- iPhone : pubs de test Google tant que `AppConfig/ads.units.ios` est vide (voir docs iOS ci-dessous).

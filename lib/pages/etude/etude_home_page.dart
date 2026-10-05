@@ -4,6 +4,7 @@ import '../../l10n/tr.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
 import '../quiz/widgets/hawk_mascot.dart';
+import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import '../quiz/widgets/quiz_widgets.dart';
 import 'etude_class_page.dart';
@@ -134,6 +135,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> {
         const SizedBox(height: 18),
         _sectionTitle(c, context.tr('Mon parcours'), context.tr('De l\'école au diplôme')),
         for (final t in cycles) _trackCard(c, st, t),
+        const QuizAdInline(),
         const SizedBox(height: 10),
         _sectionTitle(c, context.tr('Attestations'), context.tr('Un domaine, une attestation')),
         for (final t in certs) _certCard(c, st, t),

@@ -1,0 +1,25 @@
+titre: Vendre ses produits avec l'IA
+== fiche
+p: L'IA aide un commerçant à gagner du temps : fiches produits, annonces, réponses aux clients, idées de promotions. Tu gardes le contrôle du prix, du stock et de la vérité.
+li: Fiche produit : nom, bénéfices pour le client, caractéristiques réelles, prix, comment commander.
+li: Messages WhatsApp : courts, polis, avec un appel à l'action clair (« Commande ici »).
+li: Réponses aux clients : prépare des modèles pour les questions fréquentes (prix, livraison, taille, retour).
+li: Promotions : demande plusieurs idées, puis garde celles qui respectent ta marge.
+note: Prompt modèle : « Tu es vendeuse de pagnes à Cotonou. Voici mon produit : pagne wax 6 yards, coton, 12 000 francs, livraison en ville. Écris une annonce de 4 lignes qui donne envie, sans exagérer, avec un appel à commander sur WhatsApp. »
+note: Ne laisse jamais l'IA inventer une caractéristique, un prix ou une garantie : un client trompé ne revient pas.
+== questions
+Que contient une bonne fiche produit ? || Nom, bénéfices, caractéristiques réelles, prix et contact || Seulement un emoji || Une histoire sans rapport || Le prix du concurrent seulement || Elle doit informer et donner envie sans mentir.
+Que doit-on fournir à l'IA pour une annonce utile ? || Les vraies informations du produit || Rien || Des informations inventées || Le mot de passe du compte || L'IA a besoin de données réelles pour ne pas inventer.
+Pourquoi relire l'annonce générée ? || Pour corriger prix, détails et ton || Pour effacer le produit || Pour perdre du temps || Pour ne rien changer || L'IA peut se tromper ou exagérer.
+Quel appel à l'action convient à un message de vente ? || Commande maintenant sur WhatsApp || Peut-être un jour || Lis la météo || Ne réponds pas || Un appel à l'action clair aide le client à agir.
+À quoi servent des modèles de réponse aux clients ? || À répondre vite et poliment aux questions fréquentes || À fâcher les clients || À supprimer les commandes || À bloquer les messages || Ils font gagner du temps tout en restant polis.
+L'IA écrit « garantie 5 ans » alors que tu n'en offres aucune. Que fais-tu ? || Je supprime cette promesse fausse || Je la laisse pour vendre plus || Je la double || Je la mets en gras || Il ne faut jamais promettre ce qu'on ne tient pas.
+Quel prompt donne le meilleur résultat ? || Écris une annonce de 4 lignes pour mon pagne wax à 12 000 francs, ton chaleureux || Écris || Vends || Fais de la pub || Il indique produit, prix, format et ton.
+Comment utiliser l'IA pour répondre à « Livrez-vous à domicile ? » ? || Lui donner mes vraies conditions de livraison et lui demander un message poli || Lui laisser inventer || Ignorer le client || Répondre par un seul emoji || Elle reformule ta politique réelle.
+Quel est un avantage de demander plusieurs versions d'une annonce ? || Choisir la plus claire et la plus adaptée || Remplir la mémoire || Perdre le client || Éviter de décider || La comparaison aide à garder la meilleure.
+Que veut dire « bénéfice » dans une fiche produit ? || Ce que le produit apporte de bon au client || Le gain secret du vendeur || Le poids du produit || Le numéro du lot || On vend un résultat pour le client, pas seulement un objet.
+Pourquoi écrire pour une cible précise ? || Le message touche mieux ceux qui sont concernés || Pour exclure tout le monde || Pour réduire les ventes || Pour compliquer || Un message adapté à une cible est plus efficace.
+Quelle limite faut-il fixer à une promotion proposée par l'IA ? || Qu'elle respecte ta marge et ton stock || Aucune limite || Qu'elle fasse perdre de l'argent || Qu'elle soit secrète || Une promotion doit rester rentable.
+Comment utiliser l'IA pour analyser les questions fréquentes de clients ? || En lui donnant les messages et en demandant les thèmes principaux || En lui donnant les mots de passe || En supprimant les messages || En attendant || Elle peut classer les questions et repérer les thèmes.
+Que faire des données personnelles des clients ? || Ne pas les envoyer à un outil sans nécessité ni accord || Les publier || Les vendre || Les offrir à l'IA || Les données clients doivent être protégées.
+Pourquoi garder une touche personnelle dans tes messages ? || Les clients te reconnaissent et te font confiance || Pour ralentir || Pour copier les autres || Pour cacher le prix || La confiance vient de ta voix et de ta sincérité.

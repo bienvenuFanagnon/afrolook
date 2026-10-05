@@ -1,0 +1,25 @@
+titre: Contenu et réseaux sociaux avec l'IA
+== fiche
+p: L'IA aide à trouver des idées, planifier des publications et écrire des scripts de vidéos courtes. L'authenticité reste ta force : montre ton vrai produit, ta vraie voix.
+li: Calendrier : demande un plan de 7 publications variées (produit, coulisses, avis clients, astuce, promotion).
+li: Script vidéo court : accroche en 3 secondes, valeur, appel à l'action ; 15 à 30 secondes suffisent.
+li: Légendes : courtes, avec une question pour provoquer des commentaires.
+li: Réponses aux commentaires : modèles polis, mais personnalise-les.
+note: Prompt modèle : « Je vends des jus naturels à Lomé. Propose un calendrier de 7 publications pour la semaine, avec pour chacune une idée, une légende de 2 lignes et un appel à l'action. »
+note: Mesure ce qui marche (vues, partages, messages reçus) et demande ensuite à l'IA de proposer des variantes des meilleures publications.
+== questions
+Que peut proposer l'IA pour les réseaux sociaux ? || Des idées, un calendrier et des légendes || Des abonnés achetés automatiquement || Des clients garantis || Rien de tout cela || Elle aide à préparer le contenu, pas à garantir des résultats.
+Quelle est la bonne durée pour un script de vidéo courte ? || 15 à 30 secondes || 3 heures || 10 secondes sans contenu || 1 minute de silence || Les vidéos courtes captent mieux l'attention.
+Que faut-il faire dans les 3 premières secondes d'une vidéo ? || Capter l'attention avec une accroche || Dire au revoir || Montrer un écran noir || Lire les conditions || Sans accroche, on quitte la vidéo.
+Pourquoi finir une publication par une question ? || Pour inviter les gens à commenter || Pour cacher le produit || Pour supprimer la légende || Pour fâcher || Une question provoque des réponses.
+Que garder dans un contenu fait avec l'IA ? || Ta vraie voix et ton vrai produit || Des photos d'un autre commerçant || Des promesses fausses || Un faux témoignage || L'authenticité inspire confiance.
+Peut-on inventer de faux avis clients avec l'IA ? || Non, c'est de la tromperie || Oui, tout le monde le fait || Oui si on les aime || Oui avec des noms célèbres || Les faux avis trompent les clients et sont interdits.
+Combien de types de contenus faut-il varier dans un calendrier ? || Plusieurs : produit, coulisses, avis, astuce, promotion || Un seul tous les jours || Aucun || Seulement la promotion || La variété évite la lassitude.
+Que demander à l'IA pour une semaine de publications ? || Un plan de 7 idées avec légende et appel à l'action || Un seul mot || Un virus || Un mot de passe || Un plan précis donne un résultat utile.
+Comment savoir si une publication fonctionne ? || Regarder vues, partages et messages reçus || Deviner || Supprimer les statistiques || Attendre la fin de l'année || Les chiffres montrent ce qui plaît.
+Que faire d'une publication qui a très bien marché ? || En demander des variantes à l'IA et refaire le même type de contenu || L'oublier || La supprimer || La cacher || Reprendre ce qui marche est efficace.
+Pourquoi personnaliser les réponses aux commentaires ? || Les gens sentent une vraie personne et pas un robot || Pour être impoli || Pour gagner du temps seulement || Pour cacher le produit || La personnalisation crée de la relation.
+Quelle légende est la plus efficace ? || Nouveau jus gingembre-citron ! Tu le préfères glacé ou tiède ? || Produit || Voir lien || Cliquez || Elle est précise et invite à répondre.
+Quel droit faut-il respecter pour la musique d'une vidéo ? || Le droit d'auteur || Aucun droit || Le droit de la couleur || Le droit du téléphone || Utilise des musiques autorisées.
+Que faire avant de publier le texte généré ? || Relire, corriger et adapter à ta marque || Publier sans lire || Supprimer ta marque || Ajouter des fausses infos || La relecture évite les erreurs et garde ton style.
+Combien de temps l'IA fait-elle gagner dans la préparation ? || Elle accélère les idées, mais la publication et la relation restent à toi || Elle supprime tout travail || Elle publie à ta place sans contrôle || Elle remplace le client || Elle aide à préparer, tu animes la communauté.

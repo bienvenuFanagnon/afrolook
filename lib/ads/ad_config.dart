@@ -32,7 +32,7 @@ class AdConfig {
   };
 
   /// Emplacements de production Android déjà créés dans AdMob (identifiants vérifiés dans la console AdMob).
-  /// iPhone : à renseigner dans Firestore (`units.ios`) ; sans eux, aucune pub n'y est affichée.
+  /// iPhone : à renseigner dans Firestore (`units.ios`) ; sans eux, ce sont les pubs de test de Google qui s'affichent.
   static const _defaultAndroidUnits = {
     'banner': 'ca-app-pub-4937249920200692/2196510427',
     'native': 'ca-app-pub-4937249920200692/5006506592',
@@ -103,6 +103,9 @@ class AdConfig {
       final v = (units[platform] as Map)[type];
       if (v is String && v.isNotEmpty) return v;
     }
-    return platform == 'android' ? (_defaultAndroidUnits[type] ?? '') : '';
+    if (platform == 'android') return _defaultAndroidUnits[type] ?? '';
+    // iPhone : tant que l'application iOS n'est pas vérifiée dans AdMob (et que ses emplacements ne sont pas saisis
+    // dans Firestore), on diffuse les pubs de TEST de Google : aucune vraie pub, aucun revenu, mais tout est testable.
+    return _testIds['ios']![type] ?? '';
   }
 }

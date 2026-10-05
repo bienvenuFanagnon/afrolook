@@ -4,6 +4,7 @@ import '../../l10n/tr.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
 import '../quiz/widgets/hawk_mascot.dart';
+import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import 'etude_flow.dart';
 
@@ -84,7 +85,8 @@ class _EtudeChapterPageState extends State<EtudeChapterPage> {
               ? const QuizLoading(kind: QuizLoadingKind.lesson)
               : QuizBusyOverlay(busy: _busy, kind: QuizLoadingKind.lesson, child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
                   _lessonCard(c, l),
-                  const SizedBox(height: 18),
+                  const QuizAdInline(),
+                  const SizedBox(height: 10),
                   Text(context.tr('Exercices'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 18)),
                   const SizedBox(height: 8),
                   for (var k = 1; k <= l.levels; k++) _levelTile(c, l, k),

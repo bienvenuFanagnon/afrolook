@@ -1,0 +1,25 @@
+titre: IA et informatique : code, Excel, SQL
+== fiche
+p: Une IA peut expliquer un code, proposer une fonction, corriger une erreur, écrire une formule Excel ou une requête SQL. Elle accélère le travail, mais tu dois comprendre ce que tu utilises.
+li: Explique-moi : colle un morceau de code et demande « explique ligne par ligne ».
+li: Débogage : donne le code, le message d'erreur exact et ce que tu voulais obtenir.
+li: Excel et SQL : décris les colonnes et le résultat voulu ; teste sur un petit exemple.
+li: Sécurité : ne colle jamais de mots de passe, clés d'API ou données clients réelles dans un outil public.
+note: Prompt modèle : « Voici ma table clients(id, nom, ville, total_achats). Écris une requête SQL qui donne les 5 villes avec le plus d'achats, puis explique-la simplement. »
+note: Toujours tester le code généré : il peut sembler juste et contenir une faille ou une erreur de logique.
+== questions
+Que peut faire une IA avec du code ? || L'expliquer, le corriger et en proposer || Seulement l'imprimer || Seulement le supprimer || Réparer le matériel || Elle assiste l'écriture et la compréhension du code.
+Pour corriger un bug, que faut-il donner à l'IA ? || Le code, le message d'erreur et le résultat attendu || Seulement « ça ne marche pas » || Le mot de passe du serveur || Rien || Plus de contexte donne une meilleure correction.
+Que faire du code proposé par l'IA ? || Le tester avant de l'utiliser || L'utiliser sans lire || Le supprimer || Le publier tel quel || Il peut contenir des erreurs.
+Que ne faut-il jamais coller dans un outil d'IA public ? || Une clé d'API ou un mot de passe || Une question de cours || Un exemple de boucle || Un nom de variable || Les secrets doivent rester privés.
+Quelle requête SQL sert à lire des données ? || SELECT || INSERT seulement || DROP seulement || CREATE seulement || SELECT lit les données d'une table.
+Comment demander une formule Excel à l'IA ? || En décrivant les colonnes et le résultat voulu || En disant seulement « Excel » || En envoyant le fichier sans explication || En demandant un virus || Une description claire donne une formule adaptée.
+Pourquoi demander « explique ligne par ligne » ? || Pour comprendre le code et pas seulement le copier || Pour le rendre plus long || Pour ralentir le programme || Pour le supprimer || Comprendre permet de corriger et de progresser.
+Que faire si le code de l'IA marche mais que tu ne le comprends pas ? || Demander une explication avant de l'utiliser || L'utiliser en production sans test || Le cacher || L'ignorer à jamais || Il faut maîtriser ce que l'on met en service.
+Une IA te propose une commande qui supprime toute une base de données. Que fais-tu ? || Je vérifie, je sauvegarde et je teste sur une copie || Je l'exécute tout de suite sur la vraie base || Je l'envoie à un ami || Je la publie || Les commandes destructrices demandent une grande prudence.
+Quel est un bon usage de l'IA pour apprendre à programmer ? || Lui demander des exercices et des corrections expliquées || Lui faire tous les devoirs sans les lire || Copier sans comprendre || Éviter de pratiquer || L'IA est un tuteur quand on garde l'effort personnel.
+Qu'est-ce qu'une clé d'API ? || Un code secret qui donne accès à un service || Une touche du clavier || Un modèle de téléphone || Un type d'image || Elle doit rester confidentielle.
+Pourquoi tester sur un petit exemple ? || Pour vérifier le résultat avant de traiter beaucoup de données || Pour perdre du temps || Pour supprimer le fichier || Pour changer de langage || Un petit test révèle vite les erreurs.
+Que veut dire « décris la table avec ses colonnes » dans un prompt SQL ? || Donner la structure pour obtenir une requête exacte || Dessiner un tableau en bois || Choisir une couleur || Éteindre la base || L'IA a besoin des noms de colonnes.
+L'IA répond avec une bibliothèque qui n'existe pas. Que se passe-t-il ? || C'est une hallucination, il faut vérifier la documentation || C'est normal et toujours vrai || Le code est prêt || Il faut payer || Elle peut inventer des noms de fonctions ou de paquets.
+Quelle qualité reste indispensable à un développeur qui utilise l'IA ? || Comprendre, tester et être responsable du code || Aucune || Copier plus vite || Ne jamais relire || L'IA aide, mais la responsabilité reste humaine.

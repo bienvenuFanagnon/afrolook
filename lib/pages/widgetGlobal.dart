@@ -22,7 +22,7 @@ final Color _audioColor = Color(0xFF2196F3);
 final String appId = 'XgkSxKc10vWsJJ2uBraT';
 
 const _kPlayStoreUrl   = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
-const _kTestFlightUrl  = 'https://testflight.apple.com/join/sSeJ22X5';
+const _kAppStoreUrl    = 'https://apps.apple.com/app/id6811423047';
 const _kPrefNeverShow = 'install_modal_never_show';
 
 Future<void> showInstallModal(BuildContext context) async {
@@ -77,8 +77,8 @@ class _InstallAppModalState extends State<_InstallAppModal>
     if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  Future<void> _openTestFlight() async {
-    final uri = Uri.parse(_kTestFlightUrl);
+  Future<void> _openAppStore() async {
+    final uri = Uri.parse(_kAppStoreUrl);
     if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -235,9 +235,9 @@ class _InstallAppModalState extends State<_InstallAppModal>
                       ),
                       const SizedBox(height: 10),
 
-                      // Apple — TestFlight
+                      // Apple — App Store
                       GestureDetector(
-                        onTap: _openTestFlight,
+                        onTap: _openAppStore,
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
@@ -262,11 +262,11 @@ class _InstallAppModalState extends State<_InstallAppModal>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Tester sur',
+                                    'Télécharger sur',
                                     style: TextStyle(fontSize: 10, color: Colors.white60),
                                   ),
                                   Text(
-                                    'TestFlight (iOS)',
+                                    'App Store (iOS)',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
@@ -285,7 +285,7 @@ class _InstallAppModalState extends State<_InstallAppModal>
                                   border: Border.all(color: const Color(0xFF0A84FF).withOpacity(0.4)),
                                 ),
                                 child: const Text(
-                                  'Bêta',
+                                  'iOS',
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,

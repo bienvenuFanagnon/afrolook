@@ -1,0 +1,25 @@
+titre: Mots-clés, SEO et hashtags
+== fiche
+p: Un mot-clé est un mot ou une expression que les gens tapent dans un moteur de recherche ou un réseau social. Bien les choisir aide à être trouvé.
+li: Pense comme ton client : « robe de mariage Dakar » plutôt que seulement « vêtement ».
+li: Mot-clé de longue traîne : une expression précise et peu concurrentielle (« sac en cuir fait main Abidjan »).
+li: SEO : ensemble de pratiques pour apparaître plus haut dans les résultats ; mots-clés dans le titre, la description et les textes.
+li: Hashtags : peu nombreux, ciblés, mélange de très connus et de précis ; évite d'en mettre trente.
+note: Prompt modèle : « Donne-moi 20 mots-clés de longue traîne pour une boutique de sacs en cuir faits main à Abidjan, classés par intention : acheter, comparer, s'informer. »
+note: L'IA propose, tu testes : regarde ce qui est réellement recherché avec un outil de recherche ou les suggestions du moteur.
+== questions
+Qu'est-ce qu'un mot-clé ? || Un mot ou une expression que les gens recherchent || Une clé de voiture || Un mot de passe || Un type de logiciel || Les moteurs de recherche répondent à ces mots.
+Que veut dire SEO ? || Optimisation pour les moteurs de recherche || Service électrique obligatoire || Stockage externe ouvert || Système d'écriture officiel || Le but est d'être mieux placé dans les résultats.
+Quel mot-clé est le plus précis ? || sac en cuir fait main Abidjan || sac || produit || vente || Une expression précise attire des clients plus ciblés.
+Qu'est-ce qu'un mot-clé de longue traîne ? || Une expression longue et précise, souvent moins concurrentielle || Un mot très court || Un mot interdit || Un hashtag sans mot || Il vise une demande précise.
+Où placer les mots-clés importants ? || Dans le titre, la description et le texte || Seulement dans les couleurs || Seulement dans un fichier caché || Nulle part || Les moteurs lisent ces emplacements.
+Combien de hashtags faut-il viser en général ? || Quelques-uns, bien ciblés || Trente inutiles || Aucun jamais || Un seul sans lien || Peu de hashtags pertinents valent mieux qu'une liste générale.
+Pourquoi penser comme son client pour choisir ses mots-clés ? || Il tape les mots qu'il utilise lui-même || Pour imiter les concurrents || Pour supprimer les doublons || Pour cacher son offre || Le vocabulaire du client compte plus que le tien.
+Comment l'IA aide-t-elle à trouver des mots-clés ? || Elle propose des listes d'idées à tester || Elle garantit le premier rang || Elle achète les clients || Elle écrit le code du téléphone || Elle suggère des idées, mais il faut vérifier leur utilité.
+Peut-on garantir la première place sur un moteur de recherche avec l'IA ? || Non, personne ne peut le garantir || Oui toujours || Oui en payant l'IA seulement || Oui si on répète le mot cent fois || Les moteurs décident de l'ordre selon plusieurs critères.
+Quel défaut y a-t-il à répéter le même mot-clé partout ? || Le texte devient lourd et peut être pénalisé || Il devient invisible || Il devient plus court || Il disparaît || Le bourrage de mots-clés nuit à la qualité.
+Quelle intention exprime « acheter robe wax pas cher » ? || Une intention d'achat || Une simple blague || Une intention d'apprendre la couture || Une plainte || L'intention est de trouver un produit à acheter.
+Quel intérêt de classer les mots-clés par intention ? || Adapter le contenu à ce que cherche la personne || Embrouiller les clients || Multiplier les erreurs || Remplir un tableau inutile || Chaque intention demande un type de contenu.
+Que faire des suggestions de recherche du moteur ? || Les observer, ce sont des demandes réelles || Les ignorer || Les supprimer || Les copier sans réfléchir à la ville || Elles montrent ce que les gens cherchent vraiment.
+Quel est un bon hashtag pour une boutique à Dakar ? || #ModeDakar || #tout || #12345678 || #hashtag || Un hashtag local et lié au sujet cible mieux.
+Pourquoi suivre les résultats après avoir choisi des mots-clés ? || Pour garder ceux qui amènent des visites et des ventes || Pour tout effacer || Pour attendre sans agir || Pour changer de nom || On mesure et on améliore.

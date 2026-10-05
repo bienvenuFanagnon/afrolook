@@ -1,0 +1,26 @@
+titre: Écrire un bon prompt
+== fiche
+p: Un prompt est la consigne que tu donnes à l'IA. Plus il est clair et précis, meilleur est le résultat.
+li: Rôle : « Tu es un expert en marketing pour petits commerces. »
+li: Contexte : qui tu es, pour qui, dans quel pays, quel objectif.
+li: Tâche : ce que tu veux exactement (écrire, résumer, comparer, traduire).
+li: Format : liste, tableau, 5 lignes, ton amical, langue du texte.
+li: Contraintes et exemple : ce qu'il faut éviter, un modèle à imiter.
+note: Exemple de prompt : « Tu es vendeur de vêtements à Abidjan. Écris 3 messages WhatsApp courts et chaleureux pour annoncer une promotion de -20 % ce week-end. Ton : amical. Ajoute un appel à l'action. »
+note: Si le résultat n'est pas bon, ne recommence pas de zéro : précise, corrige, demande une autre version. C'est le principe de l'itération.
+== questions
+Qu'est-ce qu'un prompt ? || La consigne donnée à l'IA || Un mot de passe || Un type de téléphone || Une publicité || C'est le texte que tu écris pour demander quelque chose à l'IA.
+Quel prompt est le plus efficace ? || Écris une annonce de 3 lignes pour vendre mes sacs en cuir, ton chaleureux || Annonce || Fais quelque chose || Sac || Un prompt précis donne un meilleur résultat.
+À quoi sert de donner un rôle à l'IA ? || À orienter le style et le niveau de ses réponses || À la fâcher || À éteindre l'appareil || À changer de langue du téléphone || Le rôle cadre la manière de répondre.
+Que peut-on préciser dans le format ? || Liste, tableau, longueur et ton || Le prix du forfait || La couleur du clavier || L'heure du réveil || Le format indique à quoi doit ressembler la réponse.
+Pourquoi donner du contexte à l'IA ? || Pour obtenir une réponse adaptée à ta situation || Pour la ralentir || Pour payer moins || Pour changer le Wi-Fi || Sans contexte, la réponse reste générale.
+Tu veux un texte pour des clients au Sénégal. Que faut-il ajouter ? || Le pays, le public et le ton souhaités || Rien du tout || Le nom du fabricant de la puce || La météo || L'IA adapte mieux si elle connaît le public.
+Le résultat de l'IA est trop long. Que faire ? || Demander une version plus courte, par exemple en 5 lignes || Abandonner || Éteindre le téléphone || Écrire en majuscules || On corrige en précisant la contrainte de longueur.
+Que veut dire itérer avec l'IA ? || Améliorer le résultat en précisant la demande étape par étape || Répéter exactement la même phrase || Copier sans lire || Changer d'outil sans raison || On affine par échanges successifs.
+Quel élément donne un exemple concret à imiter ? || Un modèle de texte joint au prompt || Le mot « svp » || Un point d'exclamation || Un emoji seul || Un exemple guide le style attendu.
+Quelle consigne est une contrainte ? || N'utilise pas de mots techniques et reste sous 80 mots || Sois gentil || Bonjour || Merci beaucoup || Une contrainte fixe des limites claires.
+Pourquoi demander à l'IA de poser des questions avant de répondre ? || Pour qu'elle recueille les informations qui lui manquent || Pour perdre du temps || Pour qu'elle se vexe || Pour éviter de lire || Cela évite les réponses à côté.
+Quel prompt vise le mieux un tableau comparatif ? || Compare ces 3 téléphones dans un tableau : prix, batterie, appareil photo || Parle de téléphones || Téléphone || Dis-moi tout || Il précise l'objet, les critères et le format.
+Que faire quand l'IA répond à côté de la question ? || Reformuler avec plus de précisions || Se fâcher || Éteindre l'ordinateur pour toujours || Croire que c'est vrai || Une demande plus claire améliore souvent le résultat.
+Vaut-il mieux un seul prompt très long et confus ou plusieurs demandes claires étape par étape ? || Plusieurs demandes claires, étape par étape || Un prompt confus || Aucun prompt || Un prompt écrit sans ponctuation || Découper une tâche complexe donne de meilleurs résultats.
+Tu demandes un texte, puis tu écris « garde le ton mais ajoute un prix en francs ». C'est : || Une demande de modification qui itère sur le texte || Une panne || Un virus || Une erreur de l'IA || Tu améliores le résultat existant.

@@ -8,6 +8,7 @@ import '../../services/etude/etude_service.dart';
 import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
 import '../quiz/widgets/hawk_mascot.dart';
+import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import '../quiz/widgets/quiz_widgets.dart';
 import 'etude_diploma_page.dart';
@@ -258,6 +259,7 @@ class _EtudePlayPageState extends State<EtudePlayPage> {
             onPressed: _next,
           ),
         ),
+      const QuizAdBanner(),
     ]);
   }
 
@@ -321,8 +323,17 @@ class _EtudePlayPageState extends State<EtudePlayPage> {
           label: context.tr('Continuer'),
           color: c.primary,
           textColor: c.onPrimary,
-          onPressed: () => Navigator.pop(context, true),
+          onPressed: () {
+            if (f.pass && widget.start.kind == 'level') {
+              levelEndInterstitial(context, prefix: 'etude', every: 3, maxPerDay: 6, then: () {
+                if (mounted) Navigator.pop(context, true);
+              });
+            } else {
+              Navigator.pop(context, true);
+            }
+          },
         ),
+        const QuizAdBanner(minHeight: 640),
       ]),
     );
   }

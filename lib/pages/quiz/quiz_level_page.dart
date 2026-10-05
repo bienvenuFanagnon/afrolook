@@ -16,6 +16,7 @@ import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_consent.dart';
+import 'widgets/quiz_ads.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_pace.dart';
 import 'widgets/quiz_dialogs.dart';
@@ -447,6 +448,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
         ),
         child: answered ? _feedback(c, _result!, s) : const SizedBox(key: ValueKey('nofeedback'), width: double.infinity),
       ),
+      if (QuizService.instance.config.adsEnabled) const QuizAdBanner(),
     ]);
   }
 

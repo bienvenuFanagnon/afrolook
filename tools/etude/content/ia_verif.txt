@@ -1,0 +1,24 @@
+titre: Vérifier, éthique et données personnelles
+== fiche
+p: Utiliser l'IA demande de la prudence : elle peut se tromper, révéler des informations ou copier des contenus protégés.
+li: Vérifie toujours les chiffres, noms, lois, dates et conseils de santé ou d'argent dans une source fiable.
+li: Ne donne jamais de mot de passe, code de carte, pièce d'identité ou secrets d'entreprise à une IA.
+li: Les images et textes générés peuvent ressembler à des œuvres existantes : respecte le droit d'auteur.
+li: Dis quand un contenu est fait avec l'IA si c'est important (photo retouchée, voix imitée) et ne trompe jamais les gens avec de faux contenus.
+note: Règle d'or : ne mets dans un prompt que ce que tu accepterais de voir publié. Garde la décision finale et relis tout avant de partager.
+== questions
+Que ne faut-il jamais donner à une IA en ligne ? || Un mot de passe ou un code de carte || Le nom d'un plat || Une idée de titre || Une question de cours || Ces informations sensibles peuvent être exposées.
+Avant de publier un texte écrit avec l'IA, que fais-tu ? || Je le relis et je vérifie les faits || Je le copie sans lire || Je le supprime || Je le traduis sans comprendre || La relecture est indispensable.
+Pourquoi vérifier une information de santé donnée par l'IA ? || Elle peut être fausse ou dangereuse || Elle est toujours parfaite || Cela prend plus de batterie || C'est interdit de la lire || Pour la santé, on consulte un professionnel.
+Qu'est-ce qu'un deepfake ? || Une fausse vidéo ou voix créée par l'IA qui imite quelqu'un || Un logiciel de comptabilité || Un antivirus || Un type de câble || Il sert souvent à tromper les gens.
+Est-il correct de créer un faux message vocal imitant une personnalité pour tromper ? || Non, c'est de la tromperie et parfois illégal || Oui, c'est drôle sans conséquence || Oui, si personne ne le sait || Oui, si c'est gratuit || Tromper avec une fausse voix est un abus.
+Quelle précaution prendre avec les photos de clients ? || Ne pas les envoyer à un outil sans leur accord || Les publier partout || Les vendre || Les modifier en secret || Les données personnelles demandent le consentement.
+Pourquoi l'IA peut-elle être injuste dans ses réponses ? || Ses données d'entraînement contiennent des biais || Elle déteste certaines personnes || Elle manque de papier || Elle est trop rapide || Les biais viennent des données.
+L'IA donne un article de loi. Que fais-tu ? || Je vérifie sur un site officiel || Je le cite tel quel dans un contrat || Je l'invente à mon tour || Je l'ignore toujours || Les textes juridiques se vérifient à la source.
+Que veut dire respecter le droit d'auteur avec une image générée ? || Ne pas copier volontairement le style ou les œuvres protégées d'autrui || Prendre n'importe quelle image sur Internet || Ajouter son nom sur l'œuvre d'un autre || Vendre les images d'autrui || Il faut éviter de reproduire une œuvre protégée.
+Quel est le meilleur réflexe si l'IA affirme quelque chose d'étonnant ? || Chercher une deuxième source fiable || Croire sans vérifier || Partager tout de suite || Corriger l'orthographe seulement || Plusieurs sources augmentent la fiabilité.
+Un collègue veut mettre la liste des salaires dans un outil d'IA public. Que lui dis-tu ? || Non, ce sont des données confidentielles || Oui, c'est pratique || Oui, après l'avoir imprimée || Oui, pour gagner du temps || Les données internes ne se partagent pas à n'importe quel outil.
+Quand est-il honnête de préciser qu'un visuel a été fait avec l'IA ? || Quand cela peut tromper sur la réalité || Jamais || Seulement le dimanche || Seulement en anglais || La transparence évite d'induire en erreur.
+Pourquoi l'IA ne remplace-t-elle pas ton jugement ? || Elle peut se tromper et c'est toi qui es responsable || Elle ne sait rien || Elle est interdite || Elle coûte toujours cher || Le jugement final reste humain.
+Quel comportement est le plus responsable ? || Utiliser l'IA pour t'aider, puis vérifier et assumer le résultat || Lui confier tous tes secrets || Publier sans lire || Faire croire qu'elle n'existe pas || L'IA est une aide, pas un remplaçant de ta responsabilité.
+Une IA propose un conseil financier pour investir toutes tes économies. Que fais-tu ? || Je demande l'avis d'un professionnel et je compare || Je suis le conseil à la lettre || Je donne mon code bancaire || Je le publie || Les décisions financières importantes demandent un avis fiable.

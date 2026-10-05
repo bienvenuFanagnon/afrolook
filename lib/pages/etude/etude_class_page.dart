@@ -4,6 +4,7 @@ import '../../l10n/tr.dart';
 import '../../services/coin_checkout.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
+import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_widgets.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import 'etude_chapter_page.dart';
@@ -109,7 +110,10 @@ class _EtudeClassPageState extends State<EtudeClassPage> {
           final locked = chapters.any((ch) => !_accessible(st, ch));
           return ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
             if (locked && widget.track.isCycle) _passCard(c, st),
-            for (final sub in widget.cls.subjects) _subject(c, st, sub),
+            for (var i = 0; i < widget.cls.subjects.length; i++) ...[
+              _subject(c, st, widget.cls.subjects[i]),
+              if (i == 1) const QuizAdInline(),
+            ],
             if (widget.track.isCycle) _compoCard(c, st, allDone, validated),
           ]);
         },

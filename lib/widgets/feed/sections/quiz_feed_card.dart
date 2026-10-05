@@ -170,7 +170,14 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
     } else if (!s.playedToday && s.streak > 0) {
       msg = context.tr('Ne perds pas ta série de {n} jours !', {'n': s.streak});
     } else if (s.completed == 0) {
-      msg = context.tr("Salut, je suis ton guide ! Commençons l'aventure.");
+      const firsts = [
+        'Un quiz, des points, un classement… prêt à montrer ce que tu sais ?',
+        'Réponds juste, gagne des points et grimpe au classement !',
+        'Chaque bonne réponse compte : montre ce que tu as dans la tête !',
+        '3, 2, 1… à toi de jouer, ta première question t\'attend !',
+      ];
+      final d = DateTime.now();
+      msg = context.tr(firsts[(d.year * 372 + d.month * 31 + d.day) % firsts.length]);
     } else {
       msg = context.tr('Le niveau {n} t’attend !', {'n': s.level});
     }
