@@ -1,0 +1,28 @@
+titre: Nutrition de performance et composition corporelle
+== fiche
+p: Une alimentation adaptée améliore l'énergie, la récupération et la santé du sportif.
+li: Besoins énergétiques : métabolisme de base + activité du jour ; un sportif d'endurance peut avoir besoin de beaucoup plus de calories qu'une personne sédentaire.
+li: Répartition conseillée : 50 à 60 % de glucides, 12 à 20 % de protéines, 25 à 30 % de lipides ; les besoins en protéines augmentent avec l'effort de force (environ 1,2 à 1,6 g par kg de poids).
+li: Repas de compétition : riche en glucides, pauvre en graisses, 3 à 4 heures avant ; essayer à l'entraînement, jamais de nouveauté le jour J.
+li: Hydratation : boire avant, pendant et après ; urines claires = bonne hydratation.
+li: IMC (indice de masse corporelle) = poids (kg) / taille² (m²) ; un IMC de 18,5 à 25 correspond à une corpulence normale, mais il ne dit rien de la masse musculaire.
+li: Composition corporelle : masse grasse et masse maigre (muscles, os, eau).
+li: Compléments alimentaires : rarement nécessaires avec une alimentation variée ; demander l'avis d'un professionnel ; certains peuvent contenir des substances interdites (dopage).
+note: Exemple : IMC = 70 / (1,75 × 1,75) ≈ 22,9.
+note: Petit-déjeuner, collations et repas de récupération complètent les trois repas principaux.
+== questions
+Qu'est-ce que le métabolisme de base ? || L'énergie dépensée au repos pour faire fonctionner l'organisme || L'énergie d'un match || L'énergie d'un repas || L'énergie du sommeil seulement || Il représente la plus grande part de la dépense d'un sédentaire.
+Quelle part de glucides recommande-t-on environ pour un sportif ? || 50 à 60 % || 10 % || 90 % || 5 % || Les glucides sont le carburant principal.
+Quelle part de lipides recommande-t-on environ ? || 25 à 30 % || 90 % || 5 % || 60 % || Les lipides ne doivent pas dépasser le tiers.
+Combien de protéines par kg de poids pour un sportif de force, environ ? || 1,2 à 1,6 g || 10 g || 0,1 g || 5 g || C'est plus que pour un sédentaire.
+Comment doit être le repas avant une compétition ? || Riche en glucides, pauvre en graisses, 3 à 4 heures avant || Très gras, juste avant || Absent || Nouveau et épicé || La digestion ne doit pas gêner.
+Pourquoi ne faut-il pas essayer un aliment nouveau le jour d'une compétition ? || Il peut mal passer et gêner la performance || Il coûte cher || Il est interdit || Il donne trop d'énergie || Il vaut mieux tester à l'entraînement.
+À quoi voit-on une bonne hydratation ? || Des urines claires || Des urines très foncées || Une peau sèche || Une soif intense || Une urine foncée signale un manque d'eau.
+Comment calcule-t-on l'IMC ? || Poids en kg divisé par la taille au carré en mètres || Taille divisée par poids || Poids multiplié par taille || Poids moins taille || C'est une formule standard.
+Une personne pèse 70 kg et mesure 1,75 m. Quel est son IMC, environ ? || 22,9 || 40 || 12 || 70 || 70 / 3,06.
+Quelle plage d'IMC est considérée comme normale ? || 18,5 à 25 || 10 à 15 || 30 à 40 || 50 à 60 || Au-delà de 25, on parle de surpoids.
+Pourquoi l'IMC est-il limité chez un sportif musclé ? || Il ne distingue pas la masse musculaire de la masse grasse || Il est toujours faux || Il mesure le cœur || Il est interdit || Un sportif musclé peut avoir un IMC élevé en bonne santé.
+Que comprend la masse maigre ? || Muscles, os et eau || La graisse seulement || Le sang seulement || L'air || Elle s'oppose à la masse grasse.
+Les compléments alimentaires sont-ils toujours nécessaires ? || Non, une alimentation variée suffit en général || Oui, toujours || Oui, avant chaque match || Non, ils sont interdits || Mieux vaut un avis professionnel.
+Quel risque présentent certains compléments ? || Contenir des substances interdites (dopage) || Rendre invisible || Réduire la taille || Remplacer l'eau || Le sportif reste responsable de ce qu'il consomme.
+Pourquoi prévoir un repas ou une collation après l'effort ? || Pour reconstituer les réserves et favoriser la récupération || Pour grossir || Pour remplacer le sommeil || Pour perdre du poids || Glucides et protéines aident à récupérer.

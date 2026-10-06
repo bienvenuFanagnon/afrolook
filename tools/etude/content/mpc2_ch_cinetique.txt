@@ -1,0 +1,28 @@
+titre: Cinétique chimique
+== fiche
+p: La cinétique chimique étudie la vitesse des réactions et les facteurs qui la modifient.
+li: Vitesse de réaction : variation de la concentration d'un produit (ou d'un réactif) par unité de temps, en mol·L⁻¹·s⁻¹.
+li: Facteurs cinétiques : la concentration des réactifs, la température, la surface de contact d'un solide et la présence d'un catalyseur.
+li: Une augmentation de la température accélère presque toujours la réaction (loi d'Arrhenius : k = A e^(−Ea/RT)).
+li: Catalyseur : substance qui accélère la réaction en diminuant l'énergie d'activation, sans être consommée ; il ne change pas l'état d'équilibre.
+li: Réaction d'ordre 1 : [A] = [A]₀ e^(−k t) ; temps de demi-réaction t½ = ln 2 / k, constant.
+li: Réaction d'ordre 0 : la concentration diminue linéairement avec le temps.
+li: Énergie d'activation Ea : énergie minimale que doivent avoir les molécules pour réagir.
+note: Exemple : un morceau de sucre se dissout plus vite en poudre et dans l'eau chaude.
+note: Les enzymes sont des catalyseurs biologiques très spécifiques.
+== questions
+Que mesure la vitesse d'une réaction chimique ? || La variation de concentration par unité de temps || La masse du produit || La couleur du mélange || La température seulement || Elle s'exprime en mol·L⁻¹·s⁻¹.
+Quel facteur accélère presque toujours une réaction ? || Une augmentation de la température || Une diminution de la température || L'absence de contact entre les réactifs || Une dilution || Les molécules se heurtent plus souvent et plus fort.
+Pourquoi le sucre en poudre se dissout-il plus vite qu'un morceau ? || La surface de contact est plus grande || Il est plus lourd || Il est plus cher || Il est plus froid || Plus de surface permet plus de chocs.
+Quel est le rôle d'un catalyseur ? || Accélérer la réaction sans être consommé || Ralentir la réaction || Être consommé complètement || Changer l'équilibre || Il abaisse l'énergie d'activation.
+Un catalyseur modifie-t-il l'état d'équilibre d'une réaction ? || Non, il accélère seulement la vitesse pour l'atteindre || Oui, il déplace toujours l'équilibre || Oui, il détruit les produits || Oui, il crée des réactifs || Il agit sur la vitesse, pas sur l'équilibre.
+Qu'est-ce que l'énergie d'activation ? || L'énergie minimale à franchir pour que la réaction ait lieu || L'énergie finale du système || L'énergie libérée || La chaleur de la pièce || Elle fait une « barrière » à franchir.
+Que décrit la loi d'Arrhenius ? || La dépendance de la vitesse à la température || La loi des gaz parfaits || La conservation de la masse || La neutralisation || k = A e^(−Ea/RT).
+Qu'est-ce qu'une enzyme ? || Un catalyseur biologique || Un sel minéral || Un acide fort || Un gaz || Les enzymes accélèrent les réactions du vivant.
+Comment varie la concentration dans une réaction d'ordre 1 ? || Exponentiellement avec le temps || Linéairement avec le temps || Elle est constante || Elle double || [A] = [A]₀ e^(−k t).
+Quelle est l'expression du temps de demi-réaction pour une réaction d'ordre 1 ? || t½ = ln 2 / k || t½ = k / ln 2 || t½ = 1 / k² || t½ = 2 k || Il ne dépend pas de la concentration initiale.
+Une réaction d'ordre 1 a une constante k = 0,693 s⁻¹. Quel est son temps de demi-réaction ? || 1 s || 0,693 s || 2 s || 10 s || ln 2 / 0,693 = 1.
+Après deux temps de demi-réaction, quelle fraction du réactif reste-t-il (ordre 1) ? || 1/4 || 1/2 || 1/8 || 0 || On divise par 2 à chaque demi-réaction.
+Que fait la dilution d'un réactif sur la vitesse ? || Elle la diminue || Elle l'augmente || Elle ne la change pas || Elle l'arrête toujours || Moins de chocs entre molécules.
+Dans une réaction d'ordre 0, comment évolue la concentration ? || Linéairement avec le temps || Exponentiellement || Elle ne change pas || Elle oscille || Elle décroît à vitesse constante.
+Pourquoi conserve-t-on les aliments au réfrigérateur ? || Le froid ralentit les réactions de dégradation || Le froid accélère la maturation || Le froid crée des conservateurs || C'est pour la couleur || Une température plus basse diminue la vitesse.

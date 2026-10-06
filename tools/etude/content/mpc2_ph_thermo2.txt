@@ -1,0 +1,28 @@
+titre: Second principe et machines thermiques
+== fiche
+p: Le second principe de la thermodynamique impose un sens aux transformations naturelles et limite le rendement des machines.
+li: Enoncé de Clausius : la chaleur ne passe pas spontanément d'un corps froid vers un corps chaud.
+li: Entropie S : mesure du désordre ; pour un système isolé, elle ne peut pas diminuer. Les transformations réelles sont irréversibles.
+li: Machine thermique (moteur) : elle prend de la chaleur Qc à une source chaude, fournit un travail W et rejette Qf à une source froide ; W = Qc − |Qf|.
+li: Rendement : η = W / Qc. Rendement maximal (Carnot) : η = 1 − Tf / Tc, avec les températures en kelvins.
+li: Machine frigorifique : elle prélève de la chaleur au froid avec un apport de travail ; efficacité (COP) = Qf / W.
+li: Pompe à chaleur : elle transfère de la chaleur d'un milieu froid vers un milieu chaud (chauffage) avec un apport de travail.
+li: Aucun moteur thermique ne peut avoir un rendement de 1 : une partie de la chaleur est toujours rejetée.
+note: Exemple : Tc = 600 K, Tf = 300 K donnent un rendement de Carnot de 1 − 300/600 = 0,5.
+note: Les températures doivent être en kelvins dans la formule de Carnot, jamais en degrés Celsius.
+== questions
+Que dit l'énoncé de Clausius ? || La chaleur ne passe pas spontanément du froid vers le chaud || La chaleur passe toujours du froid vers le chaud || L'énergie disparaît || Le travail est nul || C'est une forme du second principe.
+Que mesure l'entropie ? || Le désordre d'un système || La température || La masse || La vitesse || Elle augmente dans les transformations spontanées d'un système isolé.
+Que devient l'entropie d'un système isolé ? || Elle ne peut pas diminuer || Elle diminue toujours || Elle est toujours nulle || Elle double || C'est l'énoncé général du second principe.
+Qu'est-ce qu'une transformation irréversible ? || Une transformation qui ne se déroule pas en sens inverse spontanément || Une transformation très lente || Une transformation sans énergie || Une transformation parfaite || Les phénomènes naturels le sont.
+Comment s'écrit le rendement d'un moteur thermique ? || η = W / Qc || η = Qc / W || η = Qf / Qc || η = W + Qc || Il compare le travail utile à la chaleur reçue.
+Quelle est l'expression du rendement de Carnot ? || η = 1 − Tf/Tc || η = Tf/Tc || η = Tc − Tf || η = 1 + Tf/Tc || Les températures sont en kelvins.
+Tc = 600 K et Tf = 300 K. Quel est le rendement de Carnot ? || 0,5 || 0,3 || 2 || 0,25 || 1 − 300/600.
+Pourquoi faut-il des kelvins dans la formule de Carnot ? || Pour que le rapport des températures soit correct || Par habitude || Pour que le résultat soit plus grand || C'est facultatif || Le zéro de l'échelle Celsius n'est pas le zéro absolu.
+Un moteur reçoit 1 000 J de chaleur et fournit 300 J de travail. Quel est son rendement ? || 0,3 || 3 || 0,7 || 1,3 || η = 300/1 000.
+Combien de chaleur ce moteur (Qc = 1 000 J, W = 300 J) rejette-t-il à la source froide ? || 700 J || 300 J || 1 300 J || 0 J || Qf = Qc − W.
+Un moteur thermique peut-il avoir un rendement de 100 % ? || Non, une partie de la chaleur est toujours rejetée || Oui, avec un bon moteur || Oui, à haute température || Oui, en l'absence de frottement || Le second principe l'interdit.
+Quel est le rôle d'une machine frigorifique ? || Prélever de la chaleur à un milieu froid avec un apport de travail || Produire du travail avec de la chaleur || Créer du froid sans énergie || Chauffer l'eau seulement || Un réfrigérateur en est une.
+Comment définit-on l'efficacité d'une machine frigorifique ? || Chaleur prélevée au froid divisée par le travail fourni || Travail divisé par chaleur prélevée || Chaleur rejetée divisée par chaleur prélevée || Température froide divisée par température chaude || COP = Qf / W.
+Que fait une pompe à chaleur ? || Elle prend de la chaleur au froid pour la donner au chaud, avec du travail || Elle produit de l'énergie gratuite || Elle chauffe sans électricité || Elle refroidit seulement || Elle peut fournir plus de chaleur que d'énergie électrique consommée.
+Si on augmente l'écart de température entre source chaude et source froide, le rendement de Carnot : || augmente || diminue || ne change pas || devient nul || η = 1 − Tf/Tc augmente quand Tf/Tc diminue.

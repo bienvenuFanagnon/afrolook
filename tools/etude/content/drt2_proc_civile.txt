@@ -1,0 +1,28 @@
+titre: Procédure civile : agir en justice
+== fiche
+p: La procédure civile fixe les règles pour saisir le juge, faire valoir ses droits et obtenir une décision dans les litiges entre particuliers.
+li: Pour agir en justice il faut avoir la qualité (être titulaire du droit), l'intérêt (avoir un avantage à obtenir) et la capacité d'agir.
+li: Le demandeur assigne le défendeur : l'huissier délivre un acte appelé assignation, qui indique le tribunal et la date de l'audience.
+li: Compétence : matérielle (selon la nature de l'affaire) et territoriale (en général le tribunal du domicile du défendeur).
+li: La preuve : celui qui réclame doit prouver ce qu'il avance ; modes de preuve : l'écrit, le témoignage, l'aveu, le serment, les présomptions.
+li: Principe du contradictoire : chaque partie doit pouvoir connaître et discuter les arguments et les pièces de l'autre.
+li: Jugement : il tranche le litige ; on peut le contester par l'opposition (si une partie était absente), l'appel, le pourvoi en cassation, dans des délais stricts.
+li: Exécution : un jugement définitif peut être exécuté de force par un huissier.
+note: Passé le délai de recours, le jugement devient définitif et acquiert l'autorité de la chose jugée.
+note: Beaucoup de litiges se règlent par la conciliation ou la médiation avant le procès.
+== questions
+Quelles conditions faut-il pour agir en justice ? || La qualité, l'intérêt et la capacité || Seulement de l'argent || Un avocat célèbre || Un témoin || Ce sont les conditions de recevabilité de l'action.
+Qu'est-ce que le demandeur ? || Celui qui engage le procès || Celui qui est poursuivi || Le juge || Le greffier || Il saisit le tribunal.
+Qu'est-ce que le défendeur ? || Celui contre qui l'action est intentée || Celui qui juge || Celui qui plaide || Le témoin || Il se défend devant le tribunal.
+Qu'est-ce qu'une assignation ? || Un acte d'huissier qui convoque le défendeur devant le tribunal || Un jugement || Un contrat || Une sentence || Elle fixe le lieu et la date de l'audience.
+Quel tribunal est en principe territorialement compétent ? || Celui du domicile du défendeur || Celui du demandeur || Celui de la capitale || Celui de son choix || C'est la règle de principe.
+Qui doit prouver un fait en procédure civile ? || Celui qui l'invoque || Le juge || L'huissier || Le défendeur toujours || « La preuve incombe à celui qui réclame. »
+Citez un mode de preuve : || L'écrit || La rumeur || L'humeur du juge || Le hasard || Le témoignage, l'aveu et le serment en sont d'autres.
+Qu'est-ce que l'aveu ? || La reconnaissance par une partie d'un fait qui lui est défavorable || Une demande d'excuses || Un contrat || Un témoignage d'un tiers || Il constitue une preuve forte.
+Que veut dire le principe du contradictoire ? || Chaque partie peut discuter les arguments et pièces de l'autre || Le juge ne regarde qu'une partie || Les parties ne se parlent pas || Le procès est secret || Il garantit les droits de la défense.
+Qu'est-ce que l'appel ? || Un recours qui demande à une juridiction supérieure de rejuger l'affaire || Une demande de crédit || Un appel téléphonique || Une conciliation || Il porte sur les faits et le droit.
+Qu'est-ce que l'opposition ? || Un recours d'une partie qui n'a pas comparu || Un appel || Un pourvoi || Un contrat || Elle permet d'être rejugé devant la même juridiction.
+Quand un jugement devient-il définitif ? || Quand les délais de recours sont expirés ou épuisés || Dès l'audience || Après une semaine || Jamais || Il a alors l'autorité de la chose jugée.
+Qui exécute de force un jugement définitif ? || L'huissier de justice || Le greffier || Le notaire || L'avocat || Il peut procéder à des saisies.
+Qu'est-ce que la conciliation ? || Une tentative de règlement amiable du litige || Un procès || Un jugement || Une assignation || Elle peut éviter ou clore un procès.
+Pourquoi les délais de recours sont-ils importants ? || Passé le délai, on perd le droit d'exercer le recours || Ils sont facultatifs || Ils sont infinis || Ils n'existent pas || Les délais sont stricts.

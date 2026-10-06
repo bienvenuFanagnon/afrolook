@@ -1,0 +1,28 @@
+titre: Chimie organique : fonctions et nomenclature
+== fiche
+p: La chimie organique étudie les composés du carbone. On les classe par groupes caractéristiques (fonctions).
+li: Alcanes CₙH₂ₙ₊₂ : méthane (1 C), éthane (2), propane (3), butane (4), pentane (5), hexane (6).
+li: Alcènes : double liaison C=C (éthène, propène). Alcynes : triple liaison.
+li: Alcools : groupe −OH (méthanol, éthanol). Aldéhydes : −CHO en bout de chaîne. Cétones : C=O au milieu de la chaîne.
+li: Acides carboxyliques : −COOH (acide éthanoïque). Esters : −COO− (acétate d'éthyle). Amines : −NH₂.
+li: Isomères : mêmes formule brute, formules développées différentes (butane et méthylpropane, C₄H₁₀).
+li: Estérification : acide + alcool ⇌ ester + eau ; réaction lente et limitée par l'hydrolyse inverse.
+li: Saponification : ester + base → savon (sel d'acide gras) + glycérol.
+note: Combustion complète d'un hydrocarbure : CₓHᵧ + O₂ → CO₂ + H₂O.
+note: Le suffixe indique la fonction : −ol (alcool), −al (aldéhyde), −one (cétone), −oïque (acide).
+== questions
+Quelle formule générale décrit les hydrocarbures saturés non cycliques (alcanes) ? || CₙH₂ₙ₊₂ || CₙH₂ₙ || CₙHₙ || CₙH₂ₙ₋₂ || Les alcanes sont des hydrocarbures saturés.
+Quel est l'alcane à 3 atomes de carbone ? || Le propane || L'éthane || Le butane || Le méthane || C₃H₈.
+Quelle est la formule brute du gaz naturel principal, le méthane ? || CH₄ || C₂H₆ || C₃H₈ || CO₂ || C'est le plus simple des alcanes.
+Quel groupe caractérise un alcool ? || −OH || −COOH || −NH₂ || C=O || L'éthanol contient un groupe hydroxyle.
+Quel groupe caractérise un acide carboxylique ? || −COOH || −OH || −CHO || −NH₂ || L'acide éthanoïque est celui du vinaigre.
+Quel groupe caractérise une amine ? || −NH₂ || −OH || −COOH || C=O || L'azote est lié au carbone.
+Quelle est la particularité d'un alcène ? || Il contient une double liaison C=C || Il contient une triple liaison || Il ne contient que des liaisons simples || Il contient de l'oxygène || L'éthène est le plus simple.
+Qu'appelle-t-on isomères ? || Des composés de même formule brute et de structures différentes || Des composés identiques || Des atomes de même numéro || Des composés de masses différentes || Butane et méthylpropane en sont.
+Que donne l'estérification d'un acide et d'un alcool ? || Un ester et de l'eau || Un sel et un gaz || Un alcane et du CO₂ || Un savon seulement || C'est une réaction lente et limitée.
+Qu'est-ce que la saponification ? || L'action d'une base sur un ester qui donne un savon || La combustion || L'estérification || Une distillation || On produit un sel d'acide gras et du glycérol.
+Quel suffixe désigne un alcool ? || −ol || −al || −one || −ane || L'éthanol est un alcool.
+Quel suffixe désigne une cétone ? || −one || −ol || −al || −oïque || La propanone est la cétone la plus simple.
+Quelle formule semi-développée correspond à l'éthanol ? || C₂H₅OH || CH₃COOH || C₂H₆ || CH₃CHO || C'est l'alcool des boissons alcoolisées.
+Quels produits donne la combustion complète d'un hydrocarbure ? || Du dioxyde de carbone et de l'eau || Du carbone et de l'hydrogène || Du monoxyde de carbone seulement || De l'oxygène || CₓHᵧ + O₂ → CO₂ + H₂O.
+Combien d'atomes d'hydrogène a le butane (C₄H₁₀) ? || 10 || 8 || 4 || 12 || Formule des alcanes : 2 × 4 + 2.

@@ -1,0 +1,28 @@
+titre: Les biens et la propriété
+== fiche
+p: Le droit des biens étudie ce que l'on peut posséder et les droits que l'on a sur les choses.
+li: Biens meubles : ce qui peut se déplacer (voiture, téléphone, créance). Biens immeubles : terrains et ce qui y est attaché (maison, arbres).
+li: Droit de propriété : le droit le plus complet sur une chose. Il comprend l'usus (se servir de la chose), le fructus (en percevoir les fruits) et l'abusus (en disposer : la vendre, la détruire).
+li: Possession : exercer de fait un pouvoir sur une chose comme si l'on en était propriétaire ; elle peut mener à la propriété par prescription (usucapion) après un long délai.
+li: Démembrements de la propriété : usufruit (usus + fructus) et nue-propriété (abusus) ; servitude (charge sur un terrain au profit d'un autre).
+li: Preuve de la propriété immobilière : titre foncier obtenu par immatriculation ; il est en principe définitif et inattaquable.
+li: Droits réels accessoires (sûretés réelles) : hypothèque, gage, nantissement.
+li: Expropriation pour cause d'utilité publique : l'État peut prendre un bien contre une juste et préalable indemnité.
+note: Exemple : un père laisse l'usufruit de sa maison à son épouse et la nue-propriété à ses enfants.
+note: La publicité foncière rend les droits sur les immeubles opposables aux tiers.
+== questions
+Qu'est-ce qu'un bien immeuble ? || Un terrain ou ce qui y est attaché || Un téléphone || Une voiture || Une somme d'argent || Il ne peut pas être déplacé.
+Qu'est-ce qu'un bien meuble ? || Un bien qui peut se déplacer || Une maison || Un terrain || Un champ || Une voiture ou un téléphone en sont.
+Quels sont les trois attributs du droit de propriété ? || Usus, fructus, abusus || Contrat, vente, bail || Faute, dommage, lien || Capital, intérêt, prix || Ils donnent un pouvoir complet sur la chose.
+Que signifie l'usus ? || Le droit de se servir de la chose || Le droit d'en percevoir les fruits || Le droit de la vendre || Le droit de la détruire || Habiter sa maison relève de l'usus.
+Que signifie le fructus ? || Le droit de percevoir les fruits de la chose || Le droit de la vendre || Le droit de s'en servir || Le droit de la léguer seulement || Louer un champ procure des fruits.
+Que signifie l'abusus ? || Le droit de disposer de la chose, par exemple la vendre || Le droit de s'en servir || Le droit d'en percevoir les fruits || Un abus de droit || Il comprend aussi le droit de la détruire.
+Qu'est-ce que la possession ? || L'exercice de fait d'un pouvoir sur une chose || Un titre de propriété || Un contrat de vente || Une dette || Elle peut devenir propriété avec le temps.
+Qu'est-ce que l'usucapion (prescription acquisitive) ? || L'acquisition de la propriété par une possession prolongée || La perte d'un droit par oubli || Une vente forcée || Un prêt || Elle sécurise les situations anciennes.
+Qu'est-ce que l'usufruit ? || Le droit d'user d'un bien et d'en percevoir les fruits sans en être propriétaire || Le droit de vendre le bien || Un loyer || Une dette || Il prend fin en général au décès de l'usufruitier.
+Qu'est-ce que la nue-propriété ? || La propriété sans l'usage ni les fruits, qui reviennent à l'usufruitier || La propriété complète || Un droit de passage || Un contrat de bail || Le nu-propriétaire retrouve la pleine propriété à l'extinction de l'usufruit.
+Qu'est-ce qu'une servitude ? || Une charge imposée à un terrain au profit d'un autre || Un contrat de travail || Un impôt || Une amende || Le droit de passage en est un exemple.
+Quelle est la preuve de la propriété d'un immeuble ? || Le titre foncier || Une facture d'électricité || Un témoignage seul || Une photo || Il est délivré après immatriculation.
+Qu'est-ce que l'expropriation pour cause d'utilité publique ? || La prise d'un bien par l'État moyennant une juste indemnité || Un vol || Un héritage || Une vente libre || Elle exige une indemnité préalable.
+Pourquoi la publicité foncière est-elle utile ? || Elle rend les droits sur les immeubles opposables aux tiers || Elle fixe les prix || Elle remplace le titre || Elle supprime les impôts || Les tiers peuvent connaître les droits sur un terrain.
+Une hypothèque grève quel type de bien ? || Un immeuble || Un meuble || Une somme d'argent || Un animal || Elle garantit le paiement d'une dette sur un bien immobilier.

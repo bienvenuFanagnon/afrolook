@@ -1,0 +1,28 @@
+titre: Intégrales et primitives
+== fiche
+p: Une primitive F de f est une fonction dont la dérivée est f. L'intégrale de f entre a et b mesure l'aire algébrique entre la courbe et l'axe des abscisses.
+li: Primitives usuelles : xⁿ → xⁿ⁺¹/(n+1) (n ≠ −1) ; 1/x → ln|x| ; eˣ → eˣ ; cos x → sin x ; sin x → −cos x. On ajoute toujours une constante C.
+li: Théorème fondamental : ∫ de a à b de f(x) dx = F(b) − F(a).
+li: Linéarité : ∫(f + g) = ∫f + ∫g et ∫k f = k ∫f. Relation de Chasles : ∫ de a à c = ∫ de a à b + ∫ de b à c.
+li: Intégration par parties : ∫ u v′ = u v − ∫ u′ v.
+li: Changement de variable : si l'on pose t = φ(x), alors dt = φ′(x) dx.
+li: Valeur moyenne de f sur [a ; b] : (1/(b − a)) × ∫ de a à b de f.
+li: Si f ≥ 0 sur [a ; b], l'intégrale est l'aire sous la courbe, en unités d'aire.
+note: Exemple : ∫ de 0 à 2 de x² dx = [x³/3] de 0 à 2 = 8/3.
+note: Pour ∫ x eˣ dx, on pose u = x et v′ = eˣ : le résultat est (x − 1)eˣ + C.
+== questions
+Qu'est-ce qu'une primitive de f ? || Une fonction F telle que F′ = f || Une fonction égale à f || La dérivée de f || Une valeur de f || On dérive F pour retrouver f.
+Quelle est une primitive de x² ? || x³/3 || 2x || x³ || x²/2 || On ajoute 1 à l'exposant et on divise par le nouvel exposant.
+Quelle est une primitive de 1/x sur ]0 ; +∞[ ? || ln x || 1/x² || x || e^x || (ln x)′ = 1/x.
+Quelle est une primitive de cos x ? || sin x || −sin x || cos x || −cos x || (sin x)′ = cos x.
+Que vaut l'intégrale de 0 à 1 de x dx ? || 1/2 || 1 || 2 || 0 || [x²/2] de 0 à 1.
+Que vaut l'intégrale de 0 à 2 de x² dx ? || 8/3 || 4 || 2/3 || 8 || [x³/3] de 0 à 2 = 8/3.
+Que vaut l'intégrale de 0 à π de sin x dx ? || 2 || 0 || 1 || π || [−cos x] de 0 à π = 1 + 1.
+Que vaut l'intégrale de 1 à e de 1/x dx ? || 1 || e || 0 || e − 1 || [ln x] de 1 à e = 1 − 0.
+Que dit le théorème fondamental de l'analyse ? || L'intégrale de a à b de f vaut F(b) − F(a) || L'intégrale vaut toujours f(a) || La dérivée est une aire || Toute fonction est positive || Il relie intégrale et primitive.
+Que dit la relation de Chasles pour les intégrales ? || ∫ de a à c = ∫ de a à b + ∫ de b à c || ∫ de a à b = ∫ de b à a || ∫ de a à b = 0 || ∫ f g = ∫ f × ∫ g || On découpe l'intervalle d'intégration.
+Quelle est la formule d'intégration par parties ? || ∫ u v′ = u v − ∫ u′ v || ∫ u v = ∫ u × ∫ v || ∫ u v′ = u′ v || ∫ u v′ = u v + ∫ u v′ || Elle sert pour les produits de fonctions.
+Quelle est une primitive de x eˣ ? || (x − 1)eˣ || x eˣ || (x + 1)eˣ || eˣ || En dérivant (x − 1)eˣ on obtient x eˣ.
+Que représente la valeur moyenne de f sur [a ; b] ? || L'intégrale divisée par (b − a) || L'intégrale multipliée par (b − a) || f(a) + f(b) || La dérivée moyenne || C'est la hauteur d'un rectangle de même aire.
+Que vaut l'intégrale de −1 à 1 de x³ dx ? || 0 || 1/2 || 2 || −1 || La fonction est impaire : les aires se compensent.
+Si f est positive sur [a ; b], que représente l'intégrale de f ? || L'aire sous la courbe || La pente || La valeur maximale || La dérivée || Elle est exprimée en unités d'aire.

@@ -1,0 +1,28 @@
+titre: Droit international public
+== fiche
+p: Le droit international public règle les relations entre les États et les organisations internationales.
+li: Sujets du droit international : les États (souverains et égaux), les organisations internationales (ONU, Union africaine, CEDEAO) et, de façon limitée, les individus.
+li: Sources : les traités (accords écrits entre États), la coutume internationale, les principes généraux du droit.
+li: ONU (Organisation des Nations unies) : créée en 1945, siège à New York ; ses organes : Assemblée générale, Conseil de sécurité (15 membres dont 5 permanents), Secrétariat, Cour internationale de justice.
+li: Cour internationale de justice (CIJ) : siège à La Haye ; elle juge les différends entre États.
+li: Cour pénale internationale (CPI) : créée par le Statut de Rome ; elle juge des individus pour génocide, crimes contre l'humanité, crimes de guerre.
+li: Union africaine (UA) : créée en 2002, siège à Addis-Abeba ; elle a succédé à l'OUA (1963). CEDEAO : créée en 1975 à Lagos, siège à Abuja.
+li: Principes : souveraineté, non-ingérence, interdiction du recours à la force, règlement pacifique des différends.
+note: Un traité ratifié et publié a en général une valeur supérieure à la loi nationale, selon les constitutions.
+note: Les droits de l'homme sont protégés par des traités internationaux et régionaux.
+== questions
+Quels sont les principaux sujets du droit international public ? || Les États et les organisations internationales || Les entreprises seulement || Les familles || Les syndicats || Ils créent et appliquent les règles.
+Qu'est-ce qu'un traité ? || Un accord écrit entre États ou organisations soumis au droit international || Un contrat de vente || Une loi nationale || Un jugement || Il engage les parties.
+Quelle est une source du droit international ? || La coutume internationale || Un arrêté municipal || Un contrat de travail || Un règlement intérieur || Les traités et la coutume sont les sources principales.
+En quelle année l'ONU a-t-elle été créée ? || 1945 || 1919 || 1960 || 1990 || Après la Seconde Guerre mondiale.
+Dans quelle ville se situe le siège principal de l'Organisation des Nations unies ? || À New York || À Genève || À Paris || À Addis-Abeba || Il se trouve aux États-Unis.
+Combien de membres compte le Conseil de sécurité de l'ONU ? || 15 || 5 || 10 || 54 || Cinq permanents et dix non permanents.
+Combien de membres permanents le Conseil de sécurité compte-t-il ? || 5 || 15 || 10 || 2 || États-Unis, Russie, Chine, France, Royaume-Uni.
+Quelle juridiction juge les différends entre États ? || La Cour internationale de justice || La Cour pénale internationale || La CCJA || La cour d'appel || Elle siège à La Haye.
+Quelle juridiction juge les individus pour génocide et crimes de guerre ? || La Cour pénale internationale || La Cour internationale de justice || Le tribunal de commerce || La Cour suprême || Elle siège aussi à La Haye.
+En quelle année l'Union africaine a-t-elle été créée ? || 2002 || 1963 || 1975 || 2010 || Elle a succédé à l'OUA.
+Où siège l'Union africaine ? || À Addis-Abeba || À Dakar || À Abuja || À Nairobi || Elle est en Éthiopie.
+En quelle année la CEDEAO a-t-elle été créée ? || 1975 || 1960 || 1991 || 2002 || Par le traité de Lagos.
+Quel principe interdit à un État d'intervenir dans les affaires intérieures d'un autre ? || La non-ingérence || La souveraineté de l'ONU || La neutralité || La réciprocité || Il protège l'égalité souveraine.
+Que signifie la souveraineté d'un État ? || Son pouvoir suprême sur son territoire et sa population || Sa richesse || Sa taille || Sa langue || Il n'est soumis à aucun pouvoir supérieur sur son territoire.
+Quel principe impose de régler les différends sans recourir à la guerre ? || Le règlement pacifique des différends || La légitime défense || La non-ingérence || Le protectionnisme || Il est inscrit dans la Charte de l'ONU.

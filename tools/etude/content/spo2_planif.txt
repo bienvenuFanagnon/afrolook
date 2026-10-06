@@ -1,0 +1,28 @@
+titre: Planification et périodisation de l'entraînement
+== fiche
+p: Planifier, c'est organiser l'entraînement dans le temps pour atteindre un objectif à une date précise.
+li: Macrocycle : la saison (plusieurs mois) ; mésocycle : un bloc de 3 à 6 semaines avec un objectif ; microcycle : la semaine ; séance : l'unité de base.
+li: Phases d'une saison : période de préparation (générale puis spécifique), période de compétition, période de transition (récupération active).
+li: Surcompensation : après un effort, le corps récupère puis dépasse son niveau initial ; il faut placer la séance suivante au bon moment.
+li: Alternance charge et récupération : un microcycle alterne jours durs, jours faciles et jours de repos ; une semaine allégée toutes les 3 ou 4 semaines.
+li: Affûtage : réduction de la charge avant une compétition majeure pour arriver en pleine forme.
+li: Individualisation : le plan s'adapte à l'âge, au niveau, aux contraintes de chacun.
+li: Suivi : carnet d'entraînement, tests réguliers, fréquence cardiaque, sensations (échelle de perception de l'effort).
+note: La charge augmente d'environ 10 % par semaine au maximum pour limiter le risque de blessure (règle empirique).
+note: Un bon plan comprend aussi du sommeil, de la nutrition et du temps pour la vie personnelle.
+== questions
+Qu'est-ce qu'un macrocycle ? || Une saison d'entraînement || Une séance || Une semaine || Une minute || Il dure plusieurs mois.
+Qu'est-ce qu'un microcycle ? || Une semaine d'entraînement || Une saison || Une année || Une séance || On y organise charge et récupération.
+Qu'est-ce qu'un mésocycle ? || Un bloc de quelques semaines avec un objectif || Une séance || Une saison complète || Un repas || Il dure en général de 3 à 6 semaines.
+Quelles sont les trois grandes périodes d'une saison ? || Préparation, compétition, transition || Départ, milieu, arrivée || Échauffement, effort, retour au calme || Hiver, été, automne || Elles se succèdent dans l'année.
+Que vise la période de préparation ? || Développer les qualités physiques et techniques || Gagner des médailles || Se reposer seulement || Vendre du matériel || Elle prépare la compétition.
+Que fait-on pendant la période de transition ? || Une récupération active après la saison || Un entraînement maximal || Une compétition || Un test || Le corps et l'esprit se reposent.
+Qu'est-ce que la surcompensation ? || Le corps récupère puis dépasse son niveau initial || Le corps s'épuise || La force diminue || Le poids augmente || C'est la base du progrès.
+Que se passe-t-il si on enchaîne les séances sans récupération ? || La performance baisse et le risque de blessure augmente || Le progrès est maximal || Le corps s'adapte parfaitement || Rien || Le surentraînement menace.
+Qu'est-ce que l'affûtage ? || La réduction de la charge avant une compétition majeure || L'augmentation de la charge || Un régime sans eau || Un échauffement || Il permet d'arriver en pleine forme.
+Pourquoi alléger une semaine toutes les 3 ou 4 semaines ? || Pour favoriser la récupération et assimiler les progrès || Pour se détendre seulement || Pour éviter le sommeil || C'est inutile || Le corps assimile la charge au repos.
+Que signifie individualiser un plan d'entraînement ? || L'adapter à l'âge, au niveau et aux contraintes de la personne || Le garder secret || Le copier d'un champion || L'appliquer à tous pareil || Chacun répond différemment.
+Quel outil sert à suivre l'entraînement ? || Un carnet d'entraînement || Un thermomètre || Une boussole || Un chronomètre de cuisine seulement || Il garde la trace des charges et des sensations.
+De quel pourcentage la charge peut-elle augmenter par semaine en règle empirique ? || Environ 10 % || 100 % || 50 % || 0 % || Une hausse progressive limite le risque de blessure.
+Qu'est-ce que la perception de l'effort ? || Une évaluation de la difficulté ressentie || Un test de force || Un examen médical || Un salaire || On utilise une échelle de 1 à 10.
+Pourquoi inclure le sommeil et la nutrition dans le plan ? || Ils conditionnent la récupération et les progrès || Ils font perdre du temps || Ils sont inutiles || Ils remplacent l'entraînement || Sans eux, l'entraînement perd son efficacité.

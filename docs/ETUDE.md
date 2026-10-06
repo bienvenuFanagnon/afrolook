@@ -212,3 +212,12 @@ Pour le moment, l'abonnement Gold ne retire pas les pubs dans Afrolook Étude (l
 - **Droit (avec le droit OHADA) — Licence 1** (`univ_droit`, 12 chapitres) : introduction au droit civil (règle de droit, personnes, contrat), droit constitutionnel (État et pouvoirs, libertés fondamentales), droit OHADA (traité et organes, commerçant et RCCM, sociétés commerciales, sûretés et recouvrement), pénal, procédure et travail.
 - **Sport (STAPS) — Licence 1** (`univ_sport`, 12 chapitres) : anatomie et physiologie, entraînement (qualités physiques, principes, échauffement et prévention), nutrition et premiers secours, règles du football, athlétisme, basket-ball, olympisme et organisation du sport.
 - Ils s'ajoutent aux parcours existants sans mise à jour de l'application : le catalogue est lu sur le serveur.
+
+## 18. Licences 2 (MPC, Économie-Finance-Comptabilité, Droit, Sport)
+
+Quatre parcours passent de « Licence 1 » à « Licences 1 et 2 » : `univ_mpc`, `univ_efc`, `univ_droit`, `univ_sport` (+ 8 chapitres chacun, soit 32 chapitres et 480 questions).
+- MPC L2 : intégrales, équations différentielles, espaces vectoriels et déterminants, ondes et optique, magnétisme et induction, second principe, cinétique, chimie organique.
+- Économie-Finance-Comptabilité L2 : croissance et développement, commerce international, amortissements, stocks, TVA et paie, coûts et seuil de rentabilité, marketing, marchés financiers et BRVM.
+- Droit L2 : biens, responsabilité civile, famille, procédure civile, droit administratif, procédures collectives et arbitrage OHADA, droit international.
+- Sport L2 : filières énergétiques, biomécanique, psychologie, planification, nutrition de performance, organisation des clubs, pédagogie, volley-ball et handball.
+- L'examen de ces parcours porte désormais sur les deux années (50 questions, 50 %) et délivre un certificat « Licences 1 et 2 ».

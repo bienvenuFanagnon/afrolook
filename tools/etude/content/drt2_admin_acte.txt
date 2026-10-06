@@ -1,0 +1,28 @@
+titre: Administration, acte administratif et service public
+== fiche
+p: Le droit administratif régit l'organisation de l'administration et ses rapports avec les citoyens.
+li: Administration centrale (ministères) et administrations locales : décentralisation (communes, régions avec des organes élus) et déconcentration (agents de l'État dans les territoires).
+li: Acte administratif unilatéral : décision d'une autorité administrative qui s'impose sans l'accord de l'intéressé (décret, arrêté, décision individuelle).
+li: Principe de légalité : l'administration doit respecter la loi ; un acte illégal peut être annulé.
+li: Recours pour excès de pouvoir : recours devant le juge administratif pour demander l'annulation d'un acte administratif illégal.
+li: Service public : activité d'intérêt général assurée par l'administration ou sous son contrôle (éducation, santé, eau, transport).
+li: Principes du service public : continuité, égalité, adaptabilité (mutabilité), gratuité ou accessibilité.
+li: Marchés publics : contrats par lesquels l'administration achète des travaux, fournitures ou services, avec mise en concurrence et transparence.
+note: Le fonctionnaire est un agent public dont le statut est fixé par la loi.
+note: La responsabilité de l'administration peut être engagée devant le juge administratif pour un dommage qu'elle a causé.
+== questions
+Qu'est-ce que la décentralisation ? || Le transfert de compétences à des collectivités locales aux organes élus || Le rapprochement des agents de l'État || La suppression de l'État || La privatisation || Communes et régions en bénéficient.
+Qu'est-ce que la déconcentration ? || La délégation de pouvoirs à des agents de l'État dans les territoires || L'élection des maires || L'autonomie d'une région || La privatisation d'un service || Le préfet en est un exemple.
+Qu'est-ce qu'un acte administratif unilatéral ? || Une décision de l'administration qui s'impose sans accord de l'intéressé || Un contrat entre deux entreprises || Une loi du Parlement || Un jugement || Décret et arrêté en sont.
+Citez un acte administratif : || Un arrêté du maire || Une loi || Un jugement de tribunal || Un contrat de vente || Il émane d'une autorité administrative.
+Que signifie le principe de légalité pour l'administration ? || Elle doit respecter la loi || Elle peut ignorer la loi || Elle crée la loi || Elle juge les litiges || Un acte illégal peut être annulé.
+Qu'est-ce que le recours pour excès de pouvoir ? || Un recours devant le juge administratif pour faire annuler un acte illégal || Une plainte pénale || Une demande de crédit || Un appel d'un jugement civil || Il vise l'annulation de l'acte.
+Qui juge les litiges entre un citoyen et l'administration ? || Le juge administratif || Le juge civil seulement || Le juge militaire || Le maire || Il applique le droit administratif.
+Qu'est-ce qu'un service public ? || Une activité d'intérêt général assurée par l'administration ou sous son contrôle || Une entreprise privée quelconque || Un magasin || Un impôt || L'éducation et la santé en sont des exemples.
+Que signifie la continuité du service public ? || Il doit fonctionner de manière régulière et sans interruption || Il est fermé le week-end || Il est facultatif || Il est temporaire || Les usagers en ont besoin au quotidien.
+Que signifie l'égalité devant le service public ? || Chaque usager est traité de la même manière dans les mêmes conditions || Les riches passent d'abord || Les agents choisissent leurs usagers || Les services sont gratuits || Elle interdit la discrimination.
+Que signifie l'adaptabilité du service public ? || Il évolue selon les besoins et l'intérêt général || Il ne change jamais || Il disparaît || Il devient privé || On parle aussi de mutabilité.
+Qu'est-ce qu'un marché public ? || Un contrat d'achat de l'administration, avec mise en concurrence || Un marché de rue || Un contrat de travail || Un prêt || Il vise transparence et bon usage des fonds publics.
+Qu'est-ce qu'un fonctionnaire ? || Un agent public soumis à un statut fixé par la loi || Un employé d'une entreprise privée || Un élu || Un juge || Il entre en général par concours.
+L'administration peut-elle être tenue de réparer un dommage qu'elle a causé ? || Oui, devant le juge administratif || Non, jamais || Oui, devant le maire || Non, c'est interdit || Sa responsabilité peut être engagée.
+Qui est le chef de l'exécutif au niveau d'une commune ? || Le maire || Le préfet || Le juge || Le ministre || Il est souvent élu par le conseil municipal ou par les citoyens.

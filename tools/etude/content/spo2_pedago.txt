@@ -1,0 +1,29 @@
+titre: Enseigner et animer une séance sportive
+== fiche
+p: Animer une séance, c'est organiser des situations pour que chacun progresse en sécurité et avec plaisir.
+li: Préparer : fixer un objectif clair, choisir des exercices adaptés au niveau du groupe, prévoir le matériel et la sécurité.
+li: Structure : accueil, échauffement, corps de séance (apprentissage puis application), retour au calme, bilan.
+li: Consignes : courtes, précises, accompagnées d'une démonstration ; vérifier que tout le monde a compris.
+li: Sécurité : vérifier le terrain, le matériel, l'état de forme ; connaître les gestes de premiers secours ; avoir un moyen d'alerter.
+li: Différenciation : adapter la difficulté aux niveaux (exercices plus faciles ou plus difficiles).
+li: Apprentissage moteur : la répétition de gestes corrects, avec des retours (feedback) précis et positifs, fait progresser ; l'essai-erreur est normal.
+li: Évaluation : observer, mesurer (temps, nombre de réussites), féliciter les progrès personnels.
+li: Inclusion : accueillir filles et garçons, personnes en situation de handicap, débutants et confirmés.
+note: Un bon animateur parle peu, montre beaucoup et fait pratiquer le plus possible.
+note: La fin de séance est un moment pour faire le point : ce qui a été réussi, ce qui reste à travailler.
+== questions
+Quel est le point de départ de la préparation d'une séance ? || Un objectif clair || Le matériel le plus cher || Un chronomètre || Une musique || Tout le reste en découle.
+Quelle est la structure d'une séance ? || Accueil, échauffement, corps de séance, retour au calme, bilan || Seulement un match || Seulement des étirements || Départ, arrivée || Elle suit une progression.
+Que doit contenir une bonne consigne ? || Être courte, précise et accompagnée d'une démonstration || Être longue et complexe || Être secrète || Être criée || On vérifie ensuite la compréhension.
+Qu'est-ce que la différenciation pédagogique ? || Adapter la difficulté aux niveaux des élèves || Séparer filles et garçons || Donner la même tâche à tous || Classer les élèves || Chacun progresse à son rythme.
+Que doit-on vérifier avant la séance pour la sécurité ? || Le terrain et le matériel || La météo à Paris || Le prix du ballon || La couleur des maillots || Un terrain glissant est un danger.
+Que faut-il connaître pour réagir en cas d'accident ? || Les gestes de premiers secours et le moyen d'alerter || Le nom du fabricant du ballon || Le classement du club || Un chant || La sécurité des pratiquants est prioritaire.
+Qu'est-ce que le feedback ? || Un retour précis donné à l'élève sur son geste || Un bruit de micro || Un score || Une sanction || Il aide à corriger et à progresser.
+Quel feedback est le plus efficace ? || Précis et encourageant || Vague et critique || Absent || Moqueur || Il indique ce qui est bien et ce qu'il faut améliorer.
+Faire une erreur à l'entraînement est : || normal et utile pour apprendre || une faute grave || toujours à punir || interdit || L'essai-erreur est une étape de l'apprentissage.
+À quoi sert le bilan de fin de séance ? || Faire le point sur les réussites et ce qu'il reste à travailler || Perdre du temps || Annoncer les punitions || Comparer les élèves || Il prépare la séance suivante.
+Comment évaluer les progrès d'un élève ? || En observant et en mesurant des indicateurs simples || En le comparant aux plus forts uniquement || En ne faisant rien || En regardant son poids || Temps, réussites, qualité du geste sont des indicateurs.
+Que signifie l'inclusion en sport ? || Accueillir tous les publics dans la pratique || Séparer les niveaux || Réserver le sport aux plus forts || Interdire les débutants || Filles, garçons et personnes en situation de handicap y participent.
+Quelle proportion de la séance doit être consacrée à la pratique ? || La plus grande possible || Très peu || Aucune || Seulement la fin || Un bon animateur parle peu et fait pratiquer.
+Pourquoi la démonstration est-elle utile ? || Elle montre le geste attendu plus clairement que les mots || Elle remplace la séance || Elle fatigue || Elle supprime la consigne || Les élèves voient avant d'essayer.
+Comment motiver un groupe de débutants ? || Fixer de petits objectifs atteignables et féliciter les progrès || Les comparer aux champions || Les punir || Les ignorer || Les réussites donnent envie de continuer.

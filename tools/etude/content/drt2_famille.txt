@@ -1,0 +1,28 @@
+titre: Famille : mariage, filiation et succession
+== fiche
+p: Le droit de la famille règle les liens entre époux, entre parents et enfants et la transmission du patrimoine. Il est fixé par chaque pays dans son code de la famille ou des personnes.
+li: Mariage : union de deux personnes, célébrée devant l'officier d'état civil ; conditions : consentement libre des époux, âge minimal fixé par la loi, absence de lien de parenté proche, un seul mariage à la fois dans les régimes monogames.
+li: Effets du mariage : devoirs de fidélité, de secours et d'assistance, contribution aux charges du ménage.
+li: Régime matrimonial : règles sur les biens des époux (communauté, séparation de biens), choisi par contrat de mariage.
+li: Divorce : rupture du mariage prononcée par le juge ; ses effets touchent la garde des enfants, la pension alimentaire et le partage des biens.
+li: Filiation : lien entre un enfant et ses parents ; établie par la naissance, la reconnaissance ou l'adoption.
+li: Autorité parentale : droits et devoirs des parents pour protéger, éduquer et représenter l'enfant jusqu'à sa majorité.
+li: Succession : transmission des biens d'une personne décédée à ses héritiers, selon la loi ou par testament ; elle s'ouvre au décès.
+note: Un testament est un acte par lequel une personne décide du sort de ses biens à son décès, dans la limite de la part réservée aux héritiers.
+note: Le droit de la famille varie d'un pays à l'autre ; on étudie le code national (par exemple le Code des personnes et de la famille).
+== questions
+Devant qui un mariage civil est-il célébré ? || L'officier d'état civil || Le juge pénal || Le notaire seulement || L'huissier || Il est consigné dans un acte de mariage.
+Quelle condition est essentielle au mariage ? || Le consentement libre des époux || Un revenu minimal || Un diplôme || Un permis de conduire || Un consentement vicié peut entraîner la nullité.
+Citez un devoir entre époux : || La fidélité || Le secret des revenus || L'indifférence || La séparation obligatoire || Fidélité, secours et assistance sont des devoirs du mariage.
+Qu'est-ce qu'un régime matrimonial ? || Les règles sur les biens des époux || Le menu de la noce || La liste des invités || Le nombre d'enfants || Communauté ou séparation de biens en sont.
+Qu'est-ce qu'un contrat de mariage ? || Un acte qui fixe le régime matrimonial des époux || Un contrat de travail || Un acte de naissance || Un bail || Il est conclu avant le mariage.
+Qui prononce le divorce ? || Le juge || Le maire || Le chef de famille || L'huissier || Le divorce passe par un jugement.
+Citez un effet du divorce : || La pension alimentaire et la garde des enfants || La naissance d'un enfant || La majorité || L'héritage de l'ex-conjoint || Le juge règle ces questions.
+Qu'est-ce que la filiation ? || Le lien juridique entre un enfant et ses parents || Le lien entre amis || Le lien entre voisins || Le lien de travail || Elle se fonde sur la naissance, la reconnaissance ou l'adoption.
+Qu'est-ce que l'autorité parentale ? || L'ensemble des droits et devoirs des parents envers l'enfant || Le pouvoir du maire || Le pouvoir du juge || Le pouvoir du directeur d'école || Elle dure jusqu'à la majorité de l'enfant.
+Qu'est-ce que l'adoption ? || La création d'un lien de filiation par décision de justice || Un mariage || Un divorce || Un testament || L'adopté devient l'enfant de l'adoptant.
+Quand une succession s'ouvre-t-elle ? || Au décès || À la naissance || Au mariage || À la retraite || Les biens passent aux héritiers.
+Qui hérite en principe en l'absence de testament ? || Les héritiers désignés par la loi || Le voisin || L'État toujours || Le plus ancien || La loi fixe l'ordre des héritiers.
+Qu'est-ce qu'un testament ? || Un acte par lequel on décide du sort de ses biens après sa mort || Un contrat de bail || Un acte de naissance || Une facture || Il respecte la part réservée aux héritiers.
+Qu'est-ce qu'une pension alimentaire ? || Une somme versée pour l'entretien d'un enfant ou d'un ex-époux || Un repas gratuit || Une retraite || Un impôt || Elle est fixée par le juge ou par accord.
+Où trouve-t-on les règles de famille d'un pays ? || Dans son code de la famille ou des personnes || Dans le droit OHADA || Dans la Charte de l'ONU || Dans le droit pénal international || Chaque pays a ses règles.

@@ -724,18 +724,18 @@
    "id": "univ_mpc",
    "kind": "cycle",
    "order": 31,
-   "title": "Sciences exactes (MPC) — Licence 1",
+   "title": "Sciences exactes (MPC) — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_mpc_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Sciences exactes, Licence 1",
-    "count": 40,
+    "id": "licence_mpc",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Sciences exactes (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -812,6 +812,65 @@
        ]
       }
      ]
+    },
+    {
+     "id": "mpc_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "mpc2_maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "mpc2_an_integrales",
+         "title": "Intégrales et primitives"
+        },
+        {
+         "id": "mpc2_an_eqdiff",
+         "title": "Équations différentielles linéaires"
+        },
+        {
+         "id": "mpc2_al_vectoriels",
+         "title": "Espaces vectoriels, applications linéaires et déterminants"
+        }
+       ]
+      },
+      {
+       "id": "mpc2_phys",
+       "title": "Physique",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "mpc2_ph_ondes",
+         "title": "Ondes et optique géométrique"
+        },
+        {
+         "id": "mpc2_ph_magnetisme",
+         "title": "Champ magnétique et induction"
+        },
+        {
+         "id": "mpc2_ph_thermo2",
+         "title": "Second principe et machines thermiques"
+        }
+       ]
+      },
+      {
+       "id": "mpc2_chim",
+       "title": "Chimie",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "mpc2_ch_cinetique",
+         "title": "Cinétique chimique"
+        },
+        {
+         "id": "mpc2_ch_orga",
+         "title": "Chimie organique : fonctions et nomenclature"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -819,18 +878,18 @@
    "id": "univ_efc",
    "kind": "cycle",
    "order": 32,
-   "title": "Économie, Finance et Comptabilité — Licence 1",
+   "title": "Économie, Finance et Comptabilité — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_efc_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Économie, Finance et Comptabilité, Licence 1",
-    "count": 40,
+    "id": "licence_efc",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Économie, Finance et Comptabilité (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -914,6 +973,72 @@
        ]
       }
      ]
+    },
+    {
+     "id": "efc_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "efc2_eco",
+       "title": "Économie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "efc2_eco_croissance",
+         "title": "Croissance, développement et secteurs d'activité"
+        },
+        {
+         "id": "efc2_eco_commerce",
+         "title": "Commerce international, change et intégration régionale"
+        }
+       ]
+      },
+      {
+       "id": "efc2_cpt",
+       "title": "Comptabilité",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "efc2_cpt_amort",
+         "title": "Amortissements et dépréciations"
+        },
+        {
+         "id": "efc2_cpt_stocks",
+         "title": "Stocks et inventaire"
+        },
+        {
+         "id": "efc2_cpt_tva_paie",
+         "title": "TVA et paie"
+        }
+       ]
+      },
+      {
+       "id": "efc2_ges",
+       "title": "Gestion et marketing",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "efc2_ges_couts",
+         "title": "Coûts et seuil de rentabilité"
+        },
+        {
+         "id": "efc2_mkt_base",
+         "title": "Marketing : étude de marché et marketing-mix"
+        }
+       ]
+      },
+      {
+       "id": "efc2_fin",
+       "title": "Finance",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "efc2_fin_marches",
+         "title": "Marchés financiers et BRVM"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -921,18 +1046,18 @@
    "id": "univ_droit",
    "kind": "cycle",
    "order": 33,
-   "title": "Droit (avec le droit OHADA) — Licence 1",
+   "title": "Droit (avec le droit OHADA) — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_droit_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Droit, Licence 1",
-    "count": 40,
+    "id": "licence_droit",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Droit (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -1016,6 +1141,72 @@
        ]
       }
      ]
+    },
+    {
+     "id": "drt_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "drt2_civil",
+       "title": "Droit civil",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "drt2_biens",
+         "title": "Les biens et la propriété"
+        },
+        {
+         "id": "drt2_responsabilite",
+         "title": "La responsabilité civile"
+        },
+        {
+         "id": "drt2_famille",
+         "title": "Famille : mariage, filiation et succession"
+        },
+        {
+         "id": "drt2_proc_civile",
+         "title": "Procédure civile : agir en justice"
+        }
+       ]
+      },
+      {
+       "id": "drt2_admin",
+       "title": "Droit administratif",
+       "icon": "account_tree",
+       "chapters": [
+        {
+         "id": "drt2_admin_acte",
+         "title": "Administration, acte administratif et service public"
+        }
+       ]
+      },
+      {
+       "id": "drt2_ohada",
+       "title": "Droit OHADA",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "drt2_ohada_collectives",
+         "title": "Les procédures collectives (OHADA)"
+        },
+        {
+         "id": "drt2_ohada_arbitrage",
+         "title": "Arbitrage et médiation (OHADA)"
+        }
+       ]
+      },
+      {
+       "id": "drt2_dip",
+       "title": "Droit international",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "drt2_dip",
+         "title": "Droit international public"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -1023,18 +1214,18 @@
    "id": "univ_sport",
    "kind": "cycle",
    "order": 34,
-   "title": "Sport (STAPS) — Licence 1",
+   "title": "Sport (STAPS) — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_sport_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Sport (STAPS), Licence 1",
-    "count": 40,
+    "id": "licence_sport",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Sport (STAPS) (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -1114,6 +1305,72 @@
         {
          "id": "spo_hist_olymp",
          "title": "Jeux olympiques et organisation du sport"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "spo_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "spo2_sci",
+       "title": "Sciences du sport",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "spo2_filieres",
+         "title": "Les filières énergétiques"
+        },
+        {
+         "id": "spo2_biomeca",
+         "title": "Biomécanique : forces, leviers et mouvement"
+        },
+        {
+         "id": "spo2_psy",
+         "title": "Psychologie du sport"
+        }
+       ]
+      },
+      {
+       "id": "spo2_ent",
+       "title": "Entraînement et nutrition",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "spo2_planif",
+         "title": "Planification et périodisation de l'entraînement"
+        },
+        {
+         "id": "spo2_nutri_perf",
+         "title": "Nutrition de performance et composition corporelle"
+        }
+       ]
+      },
+      {
+       "id": "spo2_pro",
+       "title": "Métiers et organisation du sport",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "spo2_management",
+         "title": "Organisation du sport : clubs, associations et fédérations"
+        },
+        {
+         "id": "spo2_pedago",
+         "title": "Enseigner et animer une séance sportive"
+        }
+       ]
+      },
+      {
+       "id": "spo2_reg",
+       "title": "Sports collectifs",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "spo2_volley_hand",
+         "title": "Volley-ball et handball : règles essentielles"
         }
        ]
       }

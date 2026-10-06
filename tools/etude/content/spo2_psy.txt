@@ -1,0 +1,28 @@
+titre: Psychologie du sport
+== fiche
+p: Les facteurs mentaux influencent fortement la performance, l'apprentissage et le plaisir de pratiquer.
+li: Motivation intrinsèque : on agit par plaisir ou intérêt personnel ; motivation extrinsèque : on agit pour une récompense ou pour éviter une sanction.
+li: Stress et anxiété : une activation modérée aide la performance ; trop ou trop peu la dégrade (loi du U inversé de Yerkes-Dodson).
+li: Techniques mentales : respiration, relaxation, visualisation (imaginer le geste réussi), dialogue interne positif, routines avant l'action.
+li: Concentration : savoir orienter son attention sur ce qui compte (la cible, le ballon, la consigne) et ignorer les distractions.
+li: Confiance en soi : croyance en sa capacité de réussir une tâche ; elle se construit par les réussites, l'entraînement et les encouragements.
+li: Fixation d'objectifs : objectifs SMART (spécifiques, mesurables, atteignables, réalistes, temporels) ; objectifs de performance plutôt que seulement de résultat.
+li: Cohésion d'équipe : l'attachement du groupe à ses membres et à son objectif ; elle améliore la performance collective.
+note: Un échec est une occasion d'apprendre, pas un jugement sur la valeur personnelle.
+note: Le sommeil, la gestion de la pression et le soutien de l'entourage protègent la santé mentale des sportifs.
+== questions
+Qu'est-ce que la motivation intrinsèque ? || Agir par plaisir ou intérêt personnel || Agir pour une récompense || Agir par peur || Agir sous la contrainte || Elle soutient la pratique à long terme.
+Qu'est-ce que la motivation extrinsèque ? || Agir pour une récompense ou éviter une sanction || Agir pour le plaisir seul || Ne pas agir || Agir au hasard || Prime, trophée ou félicitations en sont.
+Que dit la loi du U inversé (Yerkes-Dodson) ? || Un niveau d'activation modéré donne la meilleure performance || Plus de stress donne toujours plus de performance || Le stress n'a aucun effet || Moins de stress est toujours mieux || Trop ou trop peu d'activation nuit.
+Qu'est-ce que la visualisation mentale ? || Imaginer le geste ou la situation réussie || Regarder la télévision || Compter les spectateurs || Dormir || Elle prépare le geste.
+À quoi sert une routine avant un tir ou un service ? || Se concentrer et se mettre dans un état stable || Perdre du temps || Impressionner l'adversaire seulement || Se fatiguer || Elle réduit le stress.
+Citez une technique pour gérer le stress : || La respiration profonde || Le jeûne complet || L'isolement total || La compétition permanente || Elle calme l'activation.
+Qu'est-ce que la concentration en sport ? || Orienter son attention sur ce qui compte || Ignorer le jeu || Penser à tout en même temps || Ne penser à rien || Elle aide à ignorer les distractions.
+Qu'est-ce que la confiance en soi ? || La croyance en sa capacité de réussir || La certitude de gagner toujours || L'arrogance || L'absence de peur || Elle se construit par l'expérience.
+Que signifie le S de SMART pour un objectif ? || Spécifique || Simple || Secret || Sportif || L'objectif est clairement défini.
+Que signifie le M de SMART ? || Mesurable || Magique || Mental || Mythique || On peut vérifier s'il est atteint.
+Quel objectif est le plus utile pour un jeune coureur ? || Améliorer son temps de 5 secondes d'ici deux mois || Devenir célèbre || Gagner toujours || Ne jamais perdre || Il est précis, mesurable et daté.
+Pourquoi vaut-il mieux fixer des objectifs de performance et pas seulement de résultat ? || Ils dépendent plus de soi que de l'adversaire || Ils sont toujours plus faciles || Ils sont secrets || Ils n'ont aucune importance || On maîtrise mieux sa performance que le résultat.
+Qu'est-ce que la cohésion d'équipe ? || L'attachement des membres entre eux et à l'objectif commun || La taille de l'équipe || Le nombre de victoires || Le salaire || Elle améliore la performance collective.
+Comment un sportif peut-il réagir à un échec ? || L'analyser pour apprendre et progresser || L'ignorer toujours || Abandonner || Accuser les autres || L'échec est une source d'apprentissage.
+Pourquoi le sommeil est-il important pour la santé mentale du sportif ? || Il favorise la récupération et l'équilibre émotionnel || Il fait gagner du temps || Il diminue la force || Il remplace l'entraînement || Il protège contre la fatigue et le stress.

@@ -1,0 +1,28 @@
+titre: La responsabilité civile
+== fiche
+p: La responsabilité civile oblige celui qui cause un dommage à autrui à le réparer.
+li: Trois conditions : un fait générateur (faute, fait d'une chose, fait d'autrui), un dommage, un lien de causalité entre les deux.
+li: Responsabilité pour faute : toute personne doit réparer le dommage causé par sa faute (négligence, imprudence, intention).
+li: Responsabilité du fait des choses : le gardien de la chose répond du dommage qu'elle cause (animal, véhicule, bâtiment).
+li: Responsabilité du fait d'autrui : les parents pour leurs enfants mineurs, l'employeur (commettant) pour ses employés dans leurs fonctions, l'instituteur pour ses élèves.
+li: Réparation : dommages-intérêts, qui doivent couvrir le préjudice (matériel, corporel, moral) ; principe de la réparation intégrale.
+li: Responsabilité contractuelle : inexécution d'un contrat ; responsabilité délictuelle : dommage hors contrat.
+li: Causes d'exonération : force majeure, faute de la victime, fait d'un tiers.
+note: Exemple : un automobiliste imprudent renverse un piéton : il doit réparer les frais médicaux et le préjudice moral.
+note: L'assurance de responsabilité civile paie la réparation à la place de l'assuré, dans les limites du contrat.
+== questions
+Qu'est-ce que la responsabilité civile ? || L'obligation de réparer le dommage causé à autrui || La peine de prison || Un impôt || Une amende || Elle indemnise la victime.
+Quelles sont les trois conditions de la responsabilité civile ? || Fait générateur, dommage, lien de causalité || Contrat, vente, prix || Capital, associés, statuts || Âge, nationalité, domicile || Il faut les trois.
+Qu'est-ce qu'un fait générateur de responsabilité ? || La faute, le fait d'une chose ou le fait d'autrui || Le paiement d'une dette || La naissance || Un testament || C'est l'événement à l'origine du dommage.
+Qu'est-ce que le lien de causalité ? || Le lien direct entre le fait et le dommage || Le lien entre deux contrats || Le lien de parenté || Le lien entre deux victimes || Sans lien, pas de responsabilité.
+Qui répond du dommage causé par un animal ? || Son gardien || Le voisin || L'État || La victime || Le gardien de la chose répond de son fait.
+Qui répond des dommages causés par un enfant mineur ? || Ses parents || Le maire || Le voisin || L'enfant seul || Les parents exercent l'autorité parentale.
+Qui répond des fautes d'un employé commises dans l'exercice de ses fonctions ? || L'employeur || Le client || L'État || Le syndicat || C'est la responsabilité du commettant.
+Quelle est la sanction principale de la responsabilité civile ? || Des dommages-intérêts || La prison || La perte des droits civiques || Une amende pénale || L'objectif est de réparer.
+Que signifie la réparation intégrale ? || Réparer tout le préjudice, sans perte ni profit pour la victime || Réparer la moitié || Réparer au choix || Punir plus || L'indemnité couvre le dommage subi.
+Citez un préjudice moral : || La souffrance morale causée par la perte d'un proche || Le prix d'une voiture cassée || La perte de salaire || Les frais médicaux || Il touche les sentiments, pas le patrimoine.
+Quelle est la différence entre responsabilité contractuelle et délictuelle ? || Inexécution d'un contrat pour la première, dommage hors contrat pour la seconde || Aucune || La seconde naît d'un contrat || La première est pénale || Elles ont des régimes différents.
+Qu'est-ce que la force majeure ? || Un événement imprévisible et irrésistible qui exonère de responsabilité || Une panne ordinaire || Un oubli || Une faute grave || Une inondation exceptionnelle peut en être une.
+Quel effet a la faute de la victime sur la responsabilité ? || Elle peut réduire ou supprimer la responsabilité de l'auteur || Elle l'augmente toujours || Elle n'a aucun effet || Elle la transfère à l'État || Le juge tient compte du comportement de la victime.
+À quoi sert l'assurance de responsabilité civile ? || À payer la réparation à la place de l'assuré || À protéger la maison || À payer les impôts || À garantir un salaire || Elle couvre les dommages causés à autrui.
+Un automobiliste imprudent renverse un piéton. Quelle responsabilité est engagée ? || Une responsabilité civile pour faute || Aucune || Une responsabilité contractuelle || Une responsabilité fiscale || Il y a faute, dommage et lien causal.

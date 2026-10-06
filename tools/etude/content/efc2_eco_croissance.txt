@@ -1,0 +1,28 @@
+titre: Croissance, développement et secteurs d'activité
+== fiche
+p: La croissance est l'augmentation durable de la production ; le développement associe croissance et amélioration des conditions de vie.
+li: Facteurs de la croissance : le travail (quantité et qualité), le capital (machines, infrastructures), le progrès technique et l'innovation, les institutions.
+li: Indicateurs de développement : PIB par habitant, IDH (indice de développement humain : revenu, santé, éducation), espérance de vie, taux d'alphabétisation.
+li: Secteurs : primaire (agriculture, pêche, mines), secondaire (industrie, construction), tertiaire (commerce, services).
+li: Dans de nombreux pays africains, le secteur informel occupe une grande partie de la population active.
+li: Investissement : dépense qui augmente la capacité de production ; il est financé par l'épargne.
+li: Cercle vicieux de la pauvreté : un faible revenu limite l'épargne et l'investissement, qui limitent à leur tour la croissance.
+li: Développement durable : répondre aux besoins du présent sans compromettre ceux des générations futures.
+note: Un PIB qui croît plus vite que la population fait augmenter le PIB par habitant.
+note: Les infrastructures (routes, électricité, eau, internet) soutiennent la croissance.
+== questions
+Qu'est-ce que la croissance économique ? || L'augmentation durable de la production || La hausse des prix || La baisse du chômage seulement || La croissance de la population || On la mesure par le taux de croissance du PIB.
+Quelle différence y a-t-il entre croissance et développement ? || Le développement ajoute l'amélioration des conditions de vie || Aucune || La croissance est qualitative || Le développement est uniquement industriel || Le développement tient compte de la santé et de l'éducation.
+Que mesure l'IDH ? || Le revenu, la santé et l'éducation || Le nombre d'habitants || La dette de l'État || Le taux de change || C'est un indice composite de développement humain.
+Citez un facteur de la croissance : || Le progrès technique || La météo seulement || Les loisirs || La superficie || Avec le capital et le travail, il explique la croissance.
+Quel secteur regroupe l'agriculture et la pêche ? || Le secteur primaire || Le secteur secondaire || Le secteur tertiaire || Le secteur quaternaire || Il produit des matières premières.
+Quel secteur regroupe l'industrie et la construction ? || Le secteur secondaire || Le secteur primaire || Le secteur tertiaire || Le secteur informel || Il transforme les matières premières.
+Quel secteur regroupe le commerce et les services ? || Le secteur tertiaire || Le secteur primaire || Le secteur secondaire || Aucun || Banque, transport, santé et éducation en font partie.
+Qu'est-ce que le secteur informel ? || Les activités non déclarées ou non enregistrées || Les activités de l'État || Les activités agricoles seulement || Les activités des banques || Il est important dans beaucoup d'économies africaines.
+Qu'est-ce qu'un investissement en économie ? || Une dépense qui augmente la capacité de production || Une dépense de consommation || Un impôt || Un salaire || L'achat d'une machine en est un.
+Comment l'investissement est-il financé ? || Par l'épargne et l'emprunt || Uniquement par l'impôt || Par la consommation || Par la chance || L'épargne peut venir des ménages, des entreprises ou de l'étranger.
+Quel est le cercle vicieux de la pauvreté ? || Faible revenu, faible épargne, faible investissement, faible croissance || Revenu élevé, épargne élevée || Chômage, grève, salaires || Inflation, déflation || Chaque étape limite la suivante.
+Qu'est-ce que le développement durable ? || Répondre aux besoins du présent sans compromettre ceux des générations futures || Produire le plus possible || Détruire les forêts || Arrêter la croissance || Il concilie économie, social et environnement.
+Que faut-il pour que le PIB par habitant augmente ? || Que le PIB croisse plus vite que la population || Que la population croisse plus vite que le PIB || Que le chômage monte || Que les prix baissent || C'est un rapport.
+Pourquoi les infrastructures soutiennent-elles la croissance ? || Elles réduisent les coûts et facilitent les échanges || Elles coûtent peu || Elles évitent le travail || Elles remplacent le capital || Routes, électricité et internet servent les entreprises.
+Quel indicateur n'est pas un indicateur de développement humain ? || Le taux de change || L'espérance de vie || Le niveau d'éducation || Le revenu par habitant || Les trois autres composent l'IDH.

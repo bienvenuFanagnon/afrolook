@@ -1,0 +1,28 @@
+titre: Amortissements et dépréciations
+== fiche
+p: Une immobilisation (machine, véhicule, bâtiment) perd de la valeur avec le temps et l'usage. L'amortissement constate cette perte de valeur, de façon certaine et irréversible, comme une charge répartie sur sa durée d'utilisation.
+li: Amortissement linéaire : annuité = (valeur d'origine − valeur résiduelle) / durée d'utilisation ; taux = 100 / durée.
+li: Valeur nette comptable (VNC) = valeur d'origine − total des amortissements cumulés.
+li: Le terrain n'est pas amorti, car il ne perd pas de valeur par l'usage.
+li: Amortissement dégressif : annuités plus fortes les premières années (coefficient appliqué au taux linéaire).
+li: Dépréciation : perte de valeur probable, mais pas irréversible (un stock invendable, une créance douteuse) ; on peut la reprendre si la valeur remonte.
+li: Provision : charge ou risque probable, d'échéance ou de montant incertain (litige en cours).
+li: Écriture : dotation aux amortissements (charge) au débit ; amortissements cumulés (poste du bilan en moins de l'actif) au crédit.
+note: Exemple : machine de 1 200 000, valeur résiduelle nulle, durée 5 ans : annuité de 240 000, taux de 20 %.
+note: À la fin de la durée, la VNC égale la valeur résiduelle ; le bien peut continuer à être utilisé.
+== questions
+Qu'est-ce que l'amortissement ? || La constatation de la perte de valeur d'une immobilisation || Le remboursement d'un emprunt || Une dépense de consommation || Un impôt || Il répartit le coût du bien sur sa durée d'utilisation.
+Comment calcule-t-on l'annuité linéaire d'un bien sans valeur résiduelle ? || Valeur d'origine divisée par la durée || Valeur d'origine multipliée par la durée || Durée divisée par la valeur || Valeur d'origine moins la durée || C'est la méthode de base.
+Une machine de 1 200 000 est amortie sur 5 ans, sans valeur résiduelle. Quelle est l'annuité linéaire ? || 240 000 || 600 000 || 120 000 || 1 000 000 || 1 200 000 / 5.
+Quel est le taux d'amortissement linéaire d'un bien amorti sur 5 ans ? || 20 % || 5 % || 50 % || 10 % || 100 / 5.
+Qu'est-ce que la valeur nette comptable ? || Valeur d'origine moins amortissements cumulés || Valeur d'origine plus amortissements || Valeur de revente || Prix d'achat seulement || Elle figure à l'actif du bilan.
+Une machine de 1 200 000 a 480 000 d'amortissements cumulés. Quelle est sa VNC ? || 720 000 || 1 680 000 || 480 000 || 1 200 000 || 1 200 000 − 480 000.
+Pourquoi n'amortit-on pas un terrain ? || Il ne perd pas de valeur par l'usage || Il est trop cher || Il est loué || Il est un stock || En général, sa valeur se maintient.
+Quelle est la particularité de l'amortissement dégressif ? || Des annuités plus élevées au début || Des annuités constantes || Des annuités nulles || Des annuités croissantes || Il tient compte d'une perte de valeur plus rapide au début.
+Quelle différence existe entre amortissement et dépréciation ? || Amortissement certain et définitif, dépréciation probable et réversible || Aucune || La dépréciation est certaine || L'amortissement est facultatif || Le premier suit l'usage, la seconde la valeur actuelle.
+Qu'est-ce qu'une provision ? || Une charge ou un risque probable dont le montant ou l'échéance est incertain || Un bénéfice certain || Un emprunt || Un impôt payé || Par exemple, un litige en cours.
+Comment une dotation aux amortissements est-elle classée ? || En charge || En produit || En dette || En capital || Elle diminue le résultat.
+Que devient la VNC à la fin de la durée d'amortissement ? || Elle égale la valeur résiduelle || Elle double || Elle devient négative || Elle égale la valeur d'origine || Le bien est entièrement amorti.
+Un stock de marchandises invendables est-il à amortir ? || Non, on le déprécie || Oui, linéairement || Oui, dégressivement || On l'ignore || L'amortissement concerne les immobilisations.
+Quel effet l'amortissement a-t-il sur le résultat de l'exercice ? || Il le diminue || Il l'augmente || Il ne le change pas || Il l'annule toujours || C'est une charge calculée, sans sortie d'argent.
+Une machine de 1 000 000, résiduelle 100 000, sur 9 ans. Quelle est l'annuité linéaire ? || 100 000 || 111 111 || 90 000 || 900 000 || (1 000 000 − 100 000)/9.

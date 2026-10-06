@@ -1,0 +1,28 @@
+titre: Biomécanique : forces, leviers et mouvement
+== fiche
+p: La biomécanique applique les lois de la physique au corps en mouvement pour comprendre et améliorer les gestes sportifs.
+li: Centre de gravité : point où s'applique le poids du corps ; il change selon la posture. En saut en hauteur (technique du fosbury), le centre de gravité passe sous la barre.
+li: Les os agissent comme des leviers, les articulations comme des pivots, les muscles fournissent la force.
+li: Moment d'une force : force × distance au pivot (bras de levier). Plus le bras de levier est grand, moins il faut de force.
+li: Types de leviers : de 1er genre (pivot au milieu), de 2e genre (résistance au milieu), de 3e genre (force au milieu) ; la plupart des leviers du corps sont du 3e genre (biceps).
+li: Impulsion : force × durée ; elle modifie la quantité de mouvement (frappe, lancer, saut).
+li: Frottement : permet la propulsion (adhérence des chaussures) mais ralentit (résistance de l'air et de l'eau).
+li: Trajectoire d'un projectile (ballon, javelot) : parabole ; la portée maximale est obtenue vers 45° dans le vide.
+note: Une bonne technique réduit l'effort inutile et le risque de blessure.
+note: La vitesse de lancer dépend de la vitesse de rotation de chaque segment, de l'épaule à la main.
+== questions
+Qu'est-ce que la biomécanique ? || L'application des lois de la physique au mouvement du corps || L'étude des maladies || L'étude des aliments || La science des mots || Elle analyse les gestes sportifs.
+Qu'est-ce que le centre de gravité ? || Le point d'application du poids du corps || Le centre du cœur || Le milieu du terrain || Le point le plus lourd d'un os || Il varie avec la posture.
+Que joue l'os dans un mouvement ? || Le rôle de levier || Le rôle de moteur || Le rôle de carburant || Le rôle de pile || Les muscles tirent sur les os.
+Que représente l'articulation dans un levier ? || Le pivot || La force || La résistance || Le poids || Elle permet la rotation.
+Comment calcule-t-on le moment d'une force ? || Force × distance au pivot || Force + distance || Force / distance || Force − distance || La distance est appelée bras de levier.
+Que se passe-t-il quand on augmente le bras de levier ? || Il faut moins de force pour le même effet || Il faut plus de force || Rien || Le muscle disparaît || Le moment augmente pour la même force.
+Quelle est l'unité d'un moment de force ? || Le newton-mètre || Le newton || Le joule seulement || Le watt || N·m.
+Le biceps qui fléchit l'avant-bras agit comme un levier de : || 3e genre || 1er genre || 2e genre || aucun genre || La force s'applique entre le pivot et la résistance.
+Qu'est-ce que l'impulsion ? || Force multipliée par durée || Force divisée par masse || Masse × vitesse seulement || Distance × temps || Elle change la quantité de mouvement.
+Pourquoi la durée de contact compte-t-elle dans une frappe ? || Elle augmente l'impulsion transmise au ballon || Elle ne change rien || Elle freine le ballon || Elle supprime la force || Impulsion = force × durée.
+Quelle est la trajectoire d'un ballon lancé en ignorant l'air ? || Une parabole || Une droite || Un cercle || Un zigzag || Seul le poids agit après le lancer.
+Quel angle de lancer donne la portée maximale dans le vide ? || 45° || 90° || 0° || 10° || À cet angle, vitesse horizontale et verticale s'équilibrent.
+Pourquoi les chaussures à crampons sont-elles utiles ? || Elles augmentent l'adhérence pour mieux propulser || Elles réduisent la vitesse || Elles rendent le sol glissant || Elles remplacent le muscle || Le frottement est nécessaire à la propulsion.
+Pourquoi un coureur cherche-t-il à réduire la résistance de l'air ? || Elle le freine || Elle l'accélère || Elle supprime le poids || Elle refroidit seulement || Il adopte une posture profilée.
+Que fait une bonne technique au niveau mécanique ? || Elle réduit l'effort inutile et le risque de blessure || Elle augmente l'effort || Elle supprime la force || Elle fait grossir || Elle améliore le rendement du geste.

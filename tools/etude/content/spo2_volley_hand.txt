@@ -1,0 +1,28 @@
+titre: Volley-ball et handball : règles essentielles
+== fiche
+p: Le volley-ball et le handball sont deux grands sports collectifs, très pratiqués en Afrique.
+li: Volley-ball : 6 joueurs par équipe, un filet de 2,43 m (hommes) ou 2,24 m (femmes). Chaque équipe a au plus 3 touches de balle avant de renvoyer ; un joueur ne touche pas deux fois de suite.
+li: Un set se joue en 25 points avec 2 points d'écart ; le match se gagne en 3 sets gagnants (au meilleur de 5). Le 5e set se joue en 15 points.
+li: Au volley, chaque échange rapporte un point (système rally point) ; la rotation des joueurs s'effectue quand on récupère le service. Le libéro est un défenseur spécialisé en maillot différent.
+li: Handball : 7 joueurs par équipe (6 joueurs de champ et un gardien) ; deux mi-temps de 30 minutes ; un but compte 1 point.
+li: Règles du handball : on ne peut garder le ballon plus de 3 secondes ni faire plus de 3 pas sans dribbler ; la zone de 6 mètres est réservée au gardien ; jet de 7 mètres = penalty.
+li: Sanctions : avertissement (carton jaune), exclusion de 2 minutes, disqualification (carton rouge).
+li: Fédérations : FIVB (volley) et IHF (handball) au niveau mondial.
+note: Le volley est un sport sans contact avec l'adversaire (le filet sépare les équipes) ; le handball est un sport de contact encadré.
+note: Au volley, le service peut être direct (ace) ; au handball, le gardien est le dernier rempart.
+== questions
+Combien de joueurs compte une équipe de volley-ball sur le terrain ? || 6 || 5 || 7 || 11 || Trois à l'avant, trois à l'arrière.
+Combien de touches de balle maximum une équipe peut-elle jouer avant de renvoyer ? || 3 || 1 || 2 || 5 || Un joueur ne peut pas toucher deux fois de suite.
+Combien de points faut-il pour gagner un set de volley-ball (hors set décisif) ? || 25 avec 2 points d'écart || 15 || 11 || 30 sans écart || Le jeu continue jusqu'à deux points d'écart.
+Combien de sets faut-il gagner pour remporter un match de volley-ball au meilleur de 5 ? || 3 || 2 || 5 || 4 || La première équipe à 3 sets gagne.
+Quelle est la hauteur du filet de volley-ball pour les hommes ? || 2,43 m || 2,24 m || 3,05 m || 1,80 m || Pour les femmes, elle est de 2,24 m.
+Qu'est-ce que le libéro au volley ? || Un défenseur spécialisé en maillot différent || Un entraîneur || Un arbitre || Le capitaine || Il ne peut pas attaquer ni servir.
+Qu'est-ce qu'un ace ? || Un service direct qui marque un point || Une faute de pied || Un échange très long || Un temps mort || Le receveur ne touche pas la balle.
+Combien de joueurs compte une équipe de handball sur le terrain ? || 7 || 5 || 6 || 11 || Six joueurs de champ et un gardien.
+Quelle est la durée d'un match de handball ? || Deux mi-temps de 30 minutes || Quatre quarts de 10 minutes || Deux mi-temps de 45 minutes || Trois périodes de 20 minutes || La pause est de 10 minutes.
+Combien de pas peut-on faire avec le ballon au handball sans dribbler ? || 3 || 1 || 5 || 10 || Au-delà, c'est une faute de marcher.
+Combien de secondes peut-on garder le ballon sans jouer au handball ? || 3 || 1 || 10 || 30 || Au-delà, la balle passe à l'adversaire.
+Qui seul peut entrer dans la zone de 6 mètres au handball ? || Le gardien || Tous les joueurs || Les attaquants || L'arbitre || Les joueurs de champ ne peuvent pas y pénétrer sauf en saut.
+À quelle distance du but se tire un jet de 7 mètres au handball ? || 7 mètres || 6 mètres || 9 mètres || 11 mètres || Il sanctionne une occasion de but irrégulièrement empêchée.
+Quelle durée dure une exclusion temporaire au handball ? || 2 minutes || 10 minutes || 30 secondes || Jusqu'à la fin du match || Le joueur quitte le terrain pendant deux minutes.
+Quel est le contact principal du volley-ball ? || Aucun contact avec l'adversaire || Contact de poitrine || Plaquage || Mêlée || Le filet sépare les équipes.

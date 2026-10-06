@@ -1,0 +1,28 @@
+titre: Arbitrage et médiation (OHADA)
+== fiche
+p: L'arbitrage est un mode privé de règlement des litiges : les parties confient la décision à un ou plusieurs arbitres plutôt qu'à un juge d'État.
+li: Convention d'arbitrage : accord écrit des parties ; clause compromissoire (insérée dans un contrat avant le litige) ou compromis d'arbitrage (conclu après la naissance du litige).
+li: Les arbitres sont choisis par les parties (souvent un ou trois, en nombre impair) ; ils doivent être indépendants et impartiaux.
+li: La sentence arbitrale tranche le litige ; elle est obligatoire pour les parties et a, dès son prononcé, l'autorité de la chose jugée.
+li: Exequatur : décision du juge d'État qui rend la sentence exécutoire pour qu'on puisse la faire exécuter de force.
+li: Acte uniforme relatif au droit de l'arbitrage (AUA) : règles communes de l'OHADA ; la CCJA peut aussi organiser des arbitrages (arbitrage CCJA).
+li: Médiation : un tiers neutre (le médiateur) aide les parties à trouver elles-mêmes un accord ; l'Acte uniforme relatif à la médiation date de 2017.
+li: Avantages de l'arbitrage et de la médiation : rapidité, confidentialité, souplesse, choix des spécialistes.
+note: La sentence arbitrale peut être contestée dans des cas limités (recours en annulation) devant la juridiction compétente, mais pas sur le fond.
+note: La médiation débouche sur un accord de médiation, que le juge peut rendre exécutoire.
+== questions
+Qu'est-ce que l'arbitrage ? || Un mode privé de règlement des litiges par des arbitres || Un procès devant le tribunal pénal || Une médiation || Une expertise || Les parties confient la décision à des arbitres.
+Qu'est-ce qu'une clause compromissoire ? || Une clause de contrat prévoyant l'arbitrage pour de futurs litiges || Un accord conclu après le litige || Un jugement || Une assurance || Elle est insérée avant tout litige.
+Qu'est-ce qu'un compromis d'arbitrage ? || Un accord pour soumettre à l'arbitrage un litige déjà né || Une clause de contrat || Une sentence || Une médiation || Il est conclu après la naissance du litige.
+Quelle forme doit avoir la convention d'arbitrage ? || Elle doit être écrite || Elle peut être orale || Elle doit être notariée || Elle peut être tacite || L'écrit est exigé.
+Quelles qualités doivent avoir les arbitres ? || Indépendance et impartialité || Fortune || Notoriété || Appartenance à une partie || Elles garantissent un procès équitable.
+Quel nombre d'arbitres est habituel ? || Un nombre impair, comme un ou trois || Deux || Quatre || Dix || Pour éviter le partage des voix.
+Qu'est-ce que la sentence arbitrale ? || La décision de l'arbitre qui tranche le litige || Un jugement d'un juge d'État || Un contrat || Une médiation || Elle oblige les parties.
+Qu'est-ce que l'exequatur ? || La décision qui rend la sentence exécutoire || Un jugement de divorce || Un acte d'huissier || Un contrat || Sans exequatur, on ne peut pas exécuter de force.
+Quelle institution de l'OHADA peut organiser des arbitrages ? || La CCJA || L'ERSUMA || Le Conseil des ministres || Le Secrétariat permanent || Elle administre les arbitrages CCJA.
+Qu'est-ce que la médiation ? || Un tiers neutre aide les parties à trouver elles-mêmes un accord || Un arbitre tranche || Un juge tranche || Un huissier saisit || Les parties restent maîtresses de la solution.
+En quelle année l'Acte uniforme sur la médiation a-t-il été adopté ? || 2017 || 1993 || 2005 || 2024 || Il date du 23 novembre 2017.
+Quel avantage a l'arbitrage sur un procès ? || Rapidité et confidentialité || Gratuité totale || Publicité des débats || Absence d'écrit || Les parties choisissent des spécialistes.
+La sentence arbitrale peut-elle être contestée sur le fond comme un jugement ? || Non, seulement par des recours limités comme l'annulation || Oui, par un appel complet || Oui, par un pourvoi || Oui, devant le maire || Le juge ne réexamine pas le fond.
+Qui rend un accord de médiation exécutoire ? || Le juge compétent || Le médiateur || Les parties seules || Le notaire seulement || Il lui donne force exécutoire.
+Pourquoi les entreprises insèrent-elles souvent une clause d'arbitrage ? || Pour régler les litiges vite et en confidentialité || Pour éviter tout contrat || Pour échapper à la loi || Pour payer moins || Les litiges commerciaux demandent de la rapidité.

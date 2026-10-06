@@ -1,0 +1,28 @@
+titre: Marketing : étude de marché et marketing-mix
+== fiche
+p: Le marketing cherche à comprendre les besoins des clients pour leur proposer le bon produit, au bon prix, au bon endroit, avec le bon message.
+li: Étude de marché : collecte et analyse d'informations sur les clients, les concurrents et l'environnement (questionnaires, entretiens, observation, données en ligne).
+li: Segmentation : découpage du marché en groupes de clients homogènes. Ciblage : choix du segment visé. Positionnement : place du produit dans l'esprit du client.
+li: Marketing-mix : les 4 P : Produit, Prix, Place (distribution), Promotion (communication).
+li: Cycle de vie d'un produit : lancement, croissance, maturité, déclin.
+li: Marketing digital : réseaux sociaux, site, e-mail, référencement, publicité en ligne ; il mesure précisément les résultats.
+li: Fidélisation : garder ses clients (qualité, service, offres, programme de fidélité) coûte moins cher que d'en conquérir de nouveaux.
+li: Marque : nom, logo et promesse qui distinguent un produit de ses concurrents.
+note: Exemple : une marque de jus naturels cible les jeunes urbains (segment), se positionne comme « 100 % naturel », se distribue dans les supérettes et communique sur les réseaux sociaux.
+note: Une enquête doit poser des questions claires, neutres et poser à un échantillon représentatif.
+== questions
+À quoi sert une étude de marché ? || À connaître clients, concurrents et environnement || À fixer les salaires || À calculer l'impôt || À recruter || Elle réduit le risque de lancer un mauvais produit.
+Citez un outil d'étude de marché : || Le questionnaire || Le bilan || Le journal comptable || La balance || Les entretiens et l'observation en sont aussi.
+Qu'est-ce que la segmentation ? || Le découpage du marché en groupes homogènes de clients || La fabrication || Le stockage || La comptabilité || Chaque segment a des besoins proches.
+Qu'est-ce que le ciblage ? || Le choix du ou des segments visés || La couleur du produit || Le choix du local || Un impôt || L'entreprise ne vise pas tout le monde.
+Qu'est-ce que le positionnement ? || La place du produit dans l'esprit du client par rapport aux concurrents || Le rang dans l'entrepôt || La hauteur d'un rayon || Le lieu de vente || Il définit l'image voulue.
+Que signifient les 4 P du marketing-mix ? || Produit, Prix, Place, Promotion || Personnel, Prêt, Profit, Production || Plan, Projet, Prévision, Profit || Public, Privé, Premier, Prime || Ce sont les quatre leviers de l'offre.
+Que désigne le P de Place ? || La distribution du produit || Le prix || La publicité || Le personnel || Elle règle où et comment le produit est disponible.
+Que désigne le P de Promotion ? || La communication et les actions pour faire connaître le produit || Le prix || Le produit || La place || Publicité, réseaux sociaux et événements en font partie.
+Quelles sont les étapes du cycle de vie d'un produit ? || Lancement, croissance, maturité, déclin || Achat, vente, stock, paiement || Idée, rêve, projet, échec || Conception, usage, retour || Les ventes évoluent selon ces phases.
+Qu'est-ce que la fidélisation ? || Garder ses clients dans le temps || Attirer de nouveaux clients seulement || Baisser les prix || Fermer la boutique || Elle coûte en général moins cher que la conquête.
+Pourquoi une marque est-elle utile ? || Elle distingue le produit et suscite la confiance || Elle remplace le produit || Elle supprime la concurrence || Elle fixe le prix || Nom, logo et promesse forment l'identité.
+Quel avantage a le marketing digital ? || Il mesure précisément les résultats des actions || Il est toujours gratuit || Il remplace le produit || Il supprime les clients || Vues, clics et ventes sont mesurables.
+Quelle qualité doit avoir un échantillon d'enquête ? || Être représentatif de la population visée || Être le plus petit possible || Ne contenir que des amis || Être choisi au hasard dans un autre pays || Sinon les résultats sont faussés.
+Qu'est-ce qu'une question d'enquête à éviter ? || Une question qui oriente la réponse || Une question claire || Une question courte || Une question neutre || Elle fausse les résultats.
+Un produit dont les ventes stagnent depuis longtemps est en phase de : || maturité ou de déclin || lancement || création || fabrication || Les ventes ne progressent plus.

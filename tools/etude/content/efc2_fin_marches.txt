@@ -1,0 +1,28 @@
+titre: Marchés financiers et BRVM
+== fiche
+p: Un marché financier permet aux entreprises et aux États de se financer en émettant des titres que les épargnants achètent.
+li: Action : part du capital d'une société ; elle donne droit à un dividende et à un vote. Obligation : prêt à une entreprise ou à un État, rémunéré par un intérêt (coupon) et remboursé à l'échéance.
+li: Marché primaire : émission de titres neufs. Marché secondaire : revente de titres existants (la Bourse).
+li: BRVM : Bourse régionale des valeurs mobilières, basée à Abidjan et commune aux huit pays de l'UEMOA ; elle a commencé ses activités en 1998.
+li: L'Autorité des marchés financiers de l'UMOA (AMF-UMOA) régule le marché ; le Dépositaire central / banque de règlement (DC/BR) conserve les titres.
+li: Indices : BRVM Composite et BRVM 10 suivent l'évolution des cours.
+li: Risque et rendement : un rendement plus élevé s'accompagne d'un risque plus élevé ; la diversification réduit le risque.
+li: Titres publics : les États de l'UEMOA émettent des bons du Trésor et des obligations (UMOA-Titres).
+note: Cours d'une action = prix auquel elle s'échange ; le rendement du dividende = dividende / cours.
+note: Un investisseur prudent répartit son épargne entre plusieurs titres et secteurs.
+== questions
+Qu'est-ce qu'une action ? || Une part du capital d'une société || Un prêt || Un impôt || Une assurance || Elle donne droit à un dividende.
+Qu'est-ce qu'une obligation ? || Un titre de prêt à une entreprise ou à un État || Une part du capital || Un dividende || Un chèque || L'émetteur verse un intérêt et rembourse à l'échéance.
+Qu'est-ce qu'un dividende ? || La part du bénéfice versée aux actionnaires || Un intérêt d'obligation || Un impôt || Un salaire || L'assemblée décide de son montant.
+Qu'est-ce que le marché primaire ? || Celui où l'on émet des titres neufs || Celui où l'on revend des titres existants || Un marché agricole || Un marché noir || L'entreprise ou l'État reçoit les fonds.
+Qu'est-ce que le marché secondaire ? || Celui où l'on revend des titres déjà émis || Celui où l'on émet des titres neufs || Un marché de biens d'occasion || Un marché de quartier || La Bourse en est un exemple.
+Que signifie BRVM ? || Bourse régionale des valeurs mobilières || Banque régionale de la valeur monétaire || Bureau de régulation des valeurs marchandes || Banque rurale de validation monétaire || Elle est basée à Abidjan.
+Où est basée la BRVM ? || À Abidjan || À Dakar || À Lomé || À Cotonou || Elle sert les huit pays de l'UEMOA.
+Quel organisme régule le marché financier de l'UMOA ? || L'AMF-UMOA || La FIFA || La CAF || L'ONU || Elle protège les épargnants.
+Quel est le rôle du DC/BR ? || Conserver les titres et régler les opérations || Fixer les prix des actions || Émettre les billets || Juger les litiges || C'est le dépositaire central.
+Que mesure un indice boursier, comme le BRVM Composite ? || L'évolution d'un ensemble de cours || Le chômage || L'inflation || Le PIB || Il résume la tendance du marché.
+Que signifie le rapport entre risque et rendement ? || Un rendement plus élevé s'accompagne en général d'un risque plus élevé || Un rendement élevé est sans risque || Le risque ne dépend de rien || Le risque baisse toujours || C'est une loi de la finance.
+Qu'est-ce que la diversification ? || Répartir son épargne entre plusieurs titres pour réduire le risque || Tout placer sur une action || Acheter une seule obligation || Ne rien acheter || Elle évite de perdre tout si un titre baisse.
+Un dividende de 600 pour un cours de 10 000. Quel est le rendement du dividende ? || 6 % || 0,6 % || 60 % || 16,7 % || 600/10 000.
+Que sont les bons du Trésor ? || Des titres de dette émis par l'État à court terme || Des actions || Des chèques || Des billets || L'État emprunte auprès des épargnants.
+Quel est le risque principal d'une action ? || La baisse de son cours || L'impossibilité de la vendre || La disparition de la Bourse || L'obligation de la garder || Le prix varie selon l'offre et la demande.

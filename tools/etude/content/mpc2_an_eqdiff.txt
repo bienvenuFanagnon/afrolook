@@ -1,0 +1,28 @@
+titre: Équations différentielles linéaires
+== fiche
+p: Une équation différentielle relie une fonction inconnue y à ses dérivées. Les résoudre, c'est trouver toutes les fonctions qui la vérifient.
+li: Équation y′ = a y : les solutions sont y = C e^(a x), où C est une constante réelle.
+li: Équation y′ + a y = b (a ≠ 0) : solutions y = C e^(−a x) + b/a.
+li: Condition initiale : une valeur y(x₀) = y₀ fixe la constante C et donne une solution unique.
+li: Équation du second ordre y″ + ω² y = 0 : y = A cos(ω x) + B sin(ω x) (oscillations).
+li: Équation y″ − k² y = 0 : y = A e^(k x) + B e^(−k x).
+li: Physique : décharge d'un condensateur (y′ = −y/RC), désintégration radioactive (N′ = −λ N), refroidissement d'un corps.
+li: Pour vérifier une solution, on la dérive et on remplace dans l'équation.
+note: Exemple : y′ = 2y avec y(0) = 3 donne y = 3 e^(2x).
+note: Le temps caractéristique de y = e^(−t/τ) est τ ; après 5 τ la valeur est presque nulle.
+== questions
+Quelles sont les solutions de y′ = a y ? || y = C e^(a x) || y = a x + C || y = C x^a || y = C ln x || Cette équation est la plus simple des équations différentielles.
+Quelle fonction est solution de y′ = y ? || e^x || x² || ln x || 1/x || L'exponentielle est égale à sa dérivée.
+Quelle est la solution de y′ = 2y avec y(0) = 3 ? || 3 e^(2x) || 2 e^(3x) || 3 e^x || e^(6x) || y = C e^(2x) avec C = 3.
+Que fixe une condition initiale ? || La constante d'intégration || Le signe de y || La dérivée seulement || L'équation || Elle donne une solution unique.
+Quelle est la forme générale des solutions de y′ + 2y = 4 ? || y = C e^(−2x) + 2 || y = C e^(2x) + 2 || y = C e^(−2x) + 4 || y = 4 e^(2x) || La solution constante 2 vérifie 0 + 2 × 2 = 4.
+Quelle fonction constante est solution de y′ + 3y = 6 ? || y = 2 || y = 3 || y = 6 || y = 0 || 0 + 3 × 2 = 6.
+Quelle est la solution générale de y″ + y = 0 ? || A cos x + B sin x || A e^x + B e^(−x) || A x + B || A ln x + B || Ce sont des oscillations harmoniques.
+Quelle est la solution générale de y″ − y = 0 ? || A e^x + B e^(−x) || A cos x + B sin x || A x + B || A ln x || Les solutions sont exponentielles.
+Comment une condition initiale détermine-t-elle la solution de y′ = a y ? || Elle fixe la valeur de C || Elle change a || Elle supprime la solution || Elle ne sert à rien || Avec y(x₀) = y₀, C = y₀ / e^(a x₀).
+Comment vérifier qu'une fonction est solution d'une équation différentielle ? || On la dérive et on remplace dans l'équation || On la trace seulement || On l'intègre || On la multiplie par x || Les deux membres doivent être égaux.
+Quelle équation modélise la désintégration radioactive ? || N′ = −λ N || N′ = λ N² || N = λ t || N″ = N || Le nombre de noyaux diminue proportionnellement à N.
+Quelle équation décrit la décharge d'un condensateur dans une résistance ? || u′ = −u/(R C) || u′ = u R C || u = R C || u″ = u || La tension décroît exponentiellement.
+Quel est le temps caractéristique de y = e^(−t/τ) ? || τ || 1/τ || τ² || e τ || Au bout de τ, la valeur est divisée par e.
+Que devient y = e^(−t/τ) après 5 τ ? || Environ 0,7 % de sa valeur initiale || La moitié || 50 % || 90 % || e^(−5) ≈ 0,0067.
+Quelle est la nature de la solution de y′ = −y quand x tend vers +∞ ? || Elle tend vers 0 || Elle tend vers +∞ || Elle oscille || Elle est constante || y = C e^(−x), qui décroît vers 0.

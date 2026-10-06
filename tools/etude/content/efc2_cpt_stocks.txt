@@ -1,0 +1,28 @@
+titre: Stocks et inventaire
+== fiche
+p: Un stock est l'ensemble des biens détenus pour être vendus ou transformés : marchandises, matières premières, produits finis.
+li: Coût d'entrée des stocks : prix d'achat + frais d'achat (transport, droits de douane), sans la TVA récupérable.
+li: Inventaire : comptage et évaluation des stocks à la clôture de l'exercice. Inventaire permanent : le stock est suivi en continu ; inventaire intermittent : on compte à la clôture.
+li: Sortie des stocks : méthode du coût moyen unitaire pondéré (CMUP) ou du premier entré, premier sorti (PEPS/FIFO).
+li: Variation des stocks = stock final − stock initial ; elle ajuste les achats pour obtenir le coût de ce qui a été vendu.
+li: Dépréciation des stocks : si la valeur actuelle est inférieure au coût d'entrée (produit abîmé, démodé).
+li: Rotation des stocks : combien de fois le stock est renouvelé ; une faible rotation immobilise de l'argent.
+li: Stock de sécurité : quantité en réserve pour éviter les ruptures.
+note: Exemple CMUP : 100 unités à 10 puis 100 unités à 14 donnent un coût moyen de 12.
+note: En PEPS, on sort d'abord les unités les plus anciennes ; le stock final est valorisé au prix des achats les plus récents.
+== questions
+Qu'est-ce qu'un stock ? || L'ensemble des biens détenus pour être vendus ou transformés || Les machines || L'argent en caisse || Les dettes || Marchandises, matières et produits finis.
+Que contient le coût d'entrée d'une marchandise ? || Prix d'achat et frais d'achat || Prix de vente || Marge seulement || TVA collectée || Transport et douane en font partie.
+Qu'est-ce qu'un inventaire ? || Le comptage et l'évaluation des biens à la clôture || Une facture || Un contrat || Un journal || Il sert à fixer le stock final.
+Quelle est la formule de la variation des stocks ? || Stock final − stock initial || Stock initial − stock final || Stock final + stock initial || Achats − ventes || Elle ajuste les achats.
+Le stock initial est de 100 et le stock final de 160. Quelle est la variation des stocks ? || + 60 || − 60 || 260 || 160 || 160 − 100.
+Que signifie CMUP ? || Coût moyen unitaire pondéré || Coût maximal unitaire par produit || Compte mensuel unique permanent || Contrôle des marchandises unitaires || On calcule une moyenne pondérée des entrées.
+On achète 100 unités à 10 puis 100 unités à 14. Quel est le CMUP ? || 12 || 10 || 14 || 24 || (100 × 10 + 100 × 14)/200.
+Que signifie PEPS (ou FIFO) ? || Premier entré, premier sorti || Prix estimé par stock || Premier évalué, premier sorti || Plus élevé, plus sorti || On sort d'abord les plus anciens.
+Quelle est la conséquence du PEPS sur la valorisation du stock final ? || Il est valorisé aux prix des achats les plus récents || Il est valorisé aux prix les plus anciens || Il est nul || Il est valorisé au prix de vente || Les unités les plus récentes restent en stock.
+Qu'est-ce que l'inventaire permanent ? || Le suivi continu des entrées et sorties || Un comptage à la clôture seulement || Un comptage tous les 10 ans || Un contrat || Le stock est connu à tout moment.
+Quand déprécie-t-on un stock ? || Quand sa valeur actuelle est inférieure à son coût || Quand il augmente || Quand il est vendu || Quand il est en caisse || Produit abîmé ou démodé.
+Quelle est une conséquence d'une faible rotation des stocks ? || De l'argent immobilisé en stock || Une trésorerie abondante || Plus de ventes || Moins de charges || Les produits restent longtemps sur les étagères.
+À quoi sert un stock de sécurité ? || À éviter les ruptures || À augmenter les coûts || À remplacer les achats || À fixer les prix || Il couvre les aléas de livraison.
+Pourquoi fait-on un inventaire à la clôture de l'exercice ? || Pour déterminer la valeur réelle des stocks et le résultat || Pour payer les impôts || Pour fermer la boutique || Pour fixer les salaires || Le stock final entre dans le calcul du résultat.
+Pourquoi un coût d'entrée ne comprend-il pas la TVA récupérable ? || Parce qu'elle est récupérée auprès de l'État || Parce qu'elle est un salaire || Parce qu'elle est illégale || Parce qu'elle est un bénéfice || Elle n'est pas un coût définitif pour l'entreprise.

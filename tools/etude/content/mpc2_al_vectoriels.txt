@@ -1,0 +1,28 @@
+titre: Espaces vectoriels, applications linéaires et déterminants
+== fiche
+p: Un espace vectoriel est un ensemble dont les éléments (vecteurs) peuvent s'additionner et se multiplier par un réel, en respectant des règles simples.
+li: Exemples : ℝ², ℝ³, l'ensemble des polynômes, l'ensemble des matrices de même taille.
+li: Famille libre : aucun vecteur n'est combinaison des autres. Famille génératrice : tout vecteur de l'espace est combinaison de la famille. Base : famille libre et génératrice.
+li: Dimension : nombre de vecteurs d'une base ; dim ℝⁿ = n.
+li: Application linéaire f : f(u + v) = f(u) + f(v) et f(k u) = k f(u). Noyau : vecteurs envoyés sur 0. Image : ensemble des valeurs de f.
+li: Théorème du rang : dim de l'espace de départ = dim du noyau + dim de l'image.
+li: Déterminant : det(A B) = det A × det B ; det d'une matrice triangulaire = produit des termes de la diagonale ; A inversible ⇔ det A ≠ 0.
+li: Pour une matrice n × n, det(k A) = kⁿ det A.
+note: Exemple : (1, 0, 0), (0, 1, 0), (0, 0, 1) forment la base canonique de ℝ³, qui est de dimension 3.
+note: Deux vecteurs du plan sont colinéaires si leur déterminant est nul.
+== questions
+Quelle est la dimension de ℝ³ ? || 3 || 2 || 1 || 9 || La base canonique compte trois vecteurs.
+Qu'est-ce qu'une base d'un espace vectoriel ? || Une famille libre et génératrice || Une famille quelconque || Un seul vecteur || Une famille liée || Tout vecteur s'écrit de façon unique comme combinaison des vecteurs de base.
+Qu'est-ce qu'une famille libre ? || Aucun vecteur n'est combinaison linéaire des autres || Tous les vecteurs sont nuls || Tous les vecteurs sont égaux || Il y a un vecteur de trop || Elle ne contient aucune redondance.
+Les vecteurs (1, 2) et (2, 4) sont-ils libres ? || Non, ils sont colinéaires || Oui || Oui, car ils sont différents || On ne peut pas savoir || (2, 4) = 2 × (1, 2).
+Quelle condition caractérise une application linéaire ? || f(u + v) = f(u) + f(v) et f(k u) = k f(u) || f(u) = u² || f(u + v) = f(u) f(v) || f(0) = 1 || Elle respecte addition et multiplication par un réel.
+Qu'est-ce que le noyau d'une application linéaire ? || L'ensemble des vecteurs d'image nulle || L'ensemble des images || L'espace d'arrivée || La base || Il contient toujours le vecteur nul.
+Que dit le théorème du rang ? || dim départ = dim noyau + dim image || dim départ = dim image − dim noyau || dim noyau = dim image || dim image = 0 || Il relie les trois dimensions.
+Quelle est la dimension du noyau d'une application linéaire de ℝ³ dans ℝ² de rang 2 ? || 1 || 0 || 2 || 3 || 3 = dim noyau + 2.
+Que vaut le déterminant d'une matrice triangulaire ? || Le produit des termes de la diagonale || La somme des termes || Toujours 0 || Toujours 1 || C'est une propriété à retenir.
+Quel est le déterminant de [[2 1][0 3]] ? || 6 || 5 || 3 || 2 || Matrice triangulaire : 2 × 3.
+Que signifie un déterminant non nul pour une matrice carrée ? || Elle est inversible || Elle est nulle || Elle est symétrique || Elle est diagonale || Un déterminant nul signifie non inversible.
+Que vaut det(A B) ? || det A × det B || det A + det B || det A − det B || det A / det B || Le déterminant est multiplicatif.
+Une matrice 2 × 2 a un déterminant de 5. Que vaut le déterminant de 2A ? || 20 || 10 || 5 || 25 || det(kA) = k² det A pour une matrice 2 × 2.
+Quelle est la base canonique de ℝ² ? || (1, 0) et (0, 1) || (1, 1) et (2, 2) || (0, 0) et (1, 1) || (1, 2) et (2, 4) || Elle est formée des vecteurs unitaires des axes.
+Quelle est la dimension de l'espace des polynômes de degré au plus 2 ? || 3 || 2 || 4 || 1 || Base : 1, x, x².

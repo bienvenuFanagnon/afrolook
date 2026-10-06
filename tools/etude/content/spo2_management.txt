@@ -1,0 +1,28 @@
+titre: Organisation du sport : clubs, associations et fédérations
+== fiche
+p: Le sport s'organise en clubs, ligues et fédérations ; savoir gérer une association sportive est une compétence utile.
+li: Association sportive : groupement de personnes pour pratiquer un sport ; elle est à but non lucratif et doit être déclarée selon la loi du pays.
+li: Statuts : règles de fonctionnement (nom, objet, siège, membres, organes). Règlement intérieur : détails pratiques.
+li: Organes : assemblée générale (tous les membres, elle vote le budget et élit les dirigeants), bureau ou comité directeur (président, secrétaire, trésorier).
+li: Financement : cotisations des membres, subventions publiques, sponsoring et mécénat, recettes de billetterie et d'événements, ventes de produits.
+li: Budget : prévision des recettes et des dépenses de la saison ; le trésorier tient les comptes et rend compte à l'assemblée générale.
+li: Licence : autorisation de pratiquer en compétition délivrée par la fédération ; assurance obligatoire pour les membres.
+li: Structures : club, ligue régionale, fédération nationale, confédération continentale, fédération internationale ; ministère des sports et comité national olympique.
+note: Un projet sportif précise les objectifs du club : formation des jeunes, compétition, loisir, sport santé.
+note: Les dirigeants doivent respecter les règles de bonne gouvernance : transparence, intégrité, protection des mineurs.
+== questions
+Qu'est-ce qu'une association sportive ? || Un groupement de personnes qui pratique un sport sans but lucratif || Une entreprise commerciale || Un syndicat || Un parti || Elle doit être déclarée selon la loi.
+Qu'est-ce que les statuts d'une association ? || Les règles de fonctionnement de l'association || Le prix de l'adhésion seulement || Les résultats du club || Le calendrier || Ils fixent nom, objet, siège et organes.
+Qui élit les dirigeants d'une association ? || L'assemblée générale || Le maire || Le sponsor || Le juge || Elle réunit les membres.
+Citez un poste du bureau d'une association : || Le trésorier || Le médecin || Le sponsor || L'arbitre || Président, secrétaire et trésorier en font partie.
+Que fait le trésorier ? || Il tient les comptes et rend compte à l'assemblée générale || Il entraîne les joueurs || Il arbitre les matchs || Il vend les billets seulement || Il gère l'argent de l'association.
+Que fait le secrétaire ? || Il rédige les comptes rendus et gère les documents || Il paie les joueurs || Il choisit les maillots || Il entraîne || Il tient les registres de l'association.
+Citez une source de financement d'un club : || Les cotisations des membres || Les amendes de la police || Les impôts des clients || Les intérêts de la Bourse seulement || S'y ajoutent subventions et sponsoring.
+Qu'est-ce que le sponsoring ? || Un soutien financier d'une entreprise en échange de visibilité || Un impôt || Un don anonyme || Une subvention publique || Le sponsor affiche sa marque.
+Qu'est-ce qu'un budget ? || La prévision des recettes et des dépenses || Les résultats sportifs || Un règlement || Le calendrier || Il guide les décisions de la saison.
+Qu'est-ce qu'une licence sportive ? || Une autorisation de pratiquer en compétition délivrée par la fédération || Un diplôme || Un contrat de travail || Un permis de conduire || Elle s'accompagne en général d'une assurance.
+Quel est l'ordre des structures de la plus locale à la plus large ? || Club, ligue, fédération nationale, confédération, fédération internationale || Fédération internationale, club, ligue || Ligue, club, ministère || Confédération, club, ligue || Chaque niveau a ses compétitions.
+Quel organisme dirige le football africain ? || La CAF || La FIFA || Le CIO || L'ONU || Elle organise la CAN.
+Quel est le rôle d'un projet sportif de club ? || Préciser les objectifs et les moyens du club || Fixer les salaires seulement || Décider du résultat || Fermer le club || Il guide l'action sur plusieurs saisons.
+Pourquoi protéger les mineurs dans un club ? || C'est une obligation de bonne gouvernance et d'intégrité || C'est facultatif || Cela coûte cher || Cela ralentit le club || Les dirigeants doivent éviter tout abus.
+Que signifie être à but non lucratif ? || Les bénéfices ne sont pas partagés entre les membres || Il est interdit de gagner de l'argent || L'association ne paie personne || Elle ne fait aucun budget || L'argent sert l'objet de l'association.

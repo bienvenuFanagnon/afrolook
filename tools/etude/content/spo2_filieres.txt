@@ -1,0 +1,28 @@
+titre: Les filières énergétiques
+== fiche
+p: Le muscle a besoin d'énergie pour se contracter ; il la tire de l'ATP (adénosine triphosphate), qu'il doit sans cesse reconstituer par trois filières.
+li: Filière anaérobie alactique : très rapide et très puissante, sans oxygène ni production de lactate ; elle dure environ 7 à 10 secondes (sprint court, saut, lancer).
+li: Filière anaérobie lactique : sans oxygène, produit du lactate ; elle dure de 10 secondes à 2 minutes environ (400 m, 800 m).
+li: Filière aérobie : avec oxygène, elle dure longtemps mais fournit une puissance plus faible ; elle utilise glucides et lipides (course longue, marche).
+li: Les filières fonctionnent en même temps ; l'une domine selon l'intensité et la durée de l'effort.
+li: Lactate : produit du travail intense ; il peut être réutilisé comme source d'énergie ; ce n'est pas l'unique cause des courbatures.
+li: Seuil aérobie-anaérobie : intensité au-delà de laquelle le lactate s'accumule plus vite qu'il n'est éliminé.
+li: La dette d'oxygène (excès de consommation d'oxygène après l'effort) explique le souffle qui reste élevé après une course intense.
+note: Exemple : un 100 m sollicite surtout la filière alactique ; un marathon surtout la filière aérobie.
+note: L'entraînement fractionné améliore les filières anaérobies, l'entraînement continu la filière aérobie.
+== questions
+Quelle molécule fournit l'énergie directement à la contraction musculaire ? || L'ATP || Le calcium || Le lactate || Le fer || Il doit être reconstitué en permanence.
+Combien de filières énergétiques le muscle utilise-t-il ? || 3 || 1 || 2 || 5 || Alactique, lactique et aérobie.
+Quelle filière domine dans un sprint de 100 m ? || L'anaérobie alactique || L'aérobie || L'anaérobie lactique || Aucune || L'effort est très bref et maximal.
+Pendant combien de temps l'anaérobie alactique domine-t-elle ? || Environ 7 à 10 secondes || 1 heure || 3 minutes || 20 minutes || Les réserves d'ATP et de créatine phosphate sont limitées.
+Quelle filière est sollicitée surtout par un 400 m ? || L'anaérobie lactique || L'aérobie seulement || L'alactique seulement || Aucune || L'effort dure 45 secondes environ.
+Quelle filière domine dans un marathon ? || L'aérobie || L'anaérobie alactique || L'anaérobie lactique || Aucune || La puissance est faible mais l'effort long.
+La filière aérobie utilise-t-elle de l'oxygène ? || Oui || Non || Seulement la nuit || Seulement au repos || Elle brûle glucides et lipides avec de l'oxygène.
+Quelle filière a la puissance la plus élevée ? || L'anaérobie alactique || L'aérobie || Les trois sont égales || Aucune || Elle fournit de l'énergie de façon explosive.
+Que produit la filière anaérobie lactique ? || Du lactate || Seulement de l'eau || De l'oxygène || Des protéines || Il s'accumule lors d'un effort intense.
+Le lactate est-il le seul responsable des courbatures ? || Non, c'est un mythe || Oui || Oui, toujours || Il n'existe pas || Les courbatures viennent surtout de microlésions musculaires.
+Le lactate peut-il servir de carburant ? || Oui, après l'effort ou par d'autres muscles || Non, jamais || Seulement chez l'enfant || Seulement chez le sportif de haut niveau || Il est réutilisé par le cœur et les muscles.
+Les filières fonctionnent-elles chacune à leur tour ? || Non, elles fonctionnent en même temps avec une dominante || Oui, strictement || Elles s'excluent || Elles s'arrêtent après 1 minute || L'intensité et la durée déterminent la dominante.
+Que fait l'entraînement continu à intensité modérée ? || Il améliore la filière aérobie || Il détruit la filière aérobie || Il améliore seulement la force || Il supprime le lactate || C'est la base de l'endurance.
+Quel entraînement améliore surtout les filières anaérobies ? || Le fractionné || Le repos complet || La marche lente || L'étirement || Il alterne efforts intenses et récupérations.
+Pourquoi le souffle reste-t-il élevé après un effort intense ? || Pour rembourser une dette d'oxygène et reconstituer les réserves || Parce qu'on est fatigué || Parce que le cœur dort || Par habitude || L'organisme restaure ses réserves.

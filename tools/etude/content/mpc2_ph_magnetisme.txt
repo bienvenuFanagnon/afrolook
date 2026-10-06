@@ -1,0 +1,28 @@
+titre: Champ magnétique et induction
+== fiche
+p: Un champ magnétique est créé par des aimants ou par des courants électriques ; il agit sur les charges en mouvement.
+li: Unité du champ magnétique : le tesla (T). Le champ terrestre vaut environ 5 × 10⁻⁵ T.
+li: Force de Lorentz sur une charge q de vitesse v : F = q v B sin α ; elle est perpendiculaire à la vitesse et ne travaille pas.
+li: Force de Laplace sur un conducteur de longueur L parcouru par I : F = I L B sin α.
+li: Solénoïde long : champ à l'intérieur B = μ₀ n I, avec μ₀ = 4π × 10⁻⁷ T·m/A et n le nombre de spires par mètre.
+li: Flux magnétique : Φ = B S cos θ, en webers (Wb).
+li: Loi de Faraday : e = − dΦ/dt ; la loi de Lenz dit que le courant induit s'oppose à la cause qui lui donne naissance.
+li: Transformateur : U₂/U₁ = N₂/N₁ ; il n'agit qu'en courant variable. Alternateur : produit une tension alternative par induction.
+note: Un moteur électrique utilise la force de Laplace ; un alternateur utilise l'induction.
+note: Un aimant qui entre dans une bobine y fait naître un courant induit.
+== questions
+Quelle est l'unité du champ magnétique dans le Système international ? || Le tesla || Le weber || Le henry || Le farad || 1 T est un champ intense.
+Quelle est l'unité du flux magnétique ? || Le weber || Le tesla || L'ohm || Le joule || Φ = B S cos θ.
+Comment s'écrit la force de Lorentz ? || F = q v B sin α || F = q v / B || F = q B || F = B / v || Elle agit sur une charge en mouvement.
+La force de Lorentz travaille-t-elle ? || Non, elle est perpendiculaire à la vitesse || Oui, toujours || Oui, si la charge accélère || Seulement dans le vide || Elle ne change que la direction de la vitesse.
+Quelle est la force de Laplace sur un fil de longueur L parcouru par un courant I ? || F = I L B sin α || F = I L / B || F = I B || F = L B || Elle explique le fonctionnement des moteurs.
+Que vaut le champ à l'intérieur d'un solénoïde long ? || μ₀ n I || μ₀ n / I || n I / μ₀ || μ₀ I || n est le nombre de spires par mètre.
+Comment se calcule le flux magnétique à travers une surface plane ? || Φ = B S cos θ || Φ = B / S || Φ = B + S || Φ = B S² || θ est l'angle entre le champ et la normale à la surface.
+Que dit la loi de Faraday ? || e = − dΦ/dt || e = Φ t || e = Φ² || e = B S || La variation de flux crée une force électromotrice.
+Que dit la loi de Lenz ? || Le courant induit s'oppose à la cause qui lui a donné naissance || Le courant induit amplifie la cause || Le courant induit est nul || Le courant est toujours continu || Elle donne le sens du courant induit.
+Que se passe-t-il quand on approche un aimant d'une bobine fermée ? || Un courant induit apparaît || Rien || La bobine disparaît || L'aimant fond || La variation de flux crée un courant.
+Quelle est la relation d'un transformateur idéal ? || U₂/U₁ = N₂/N₁ || U₂ U₁ = N₂ N₁ || U₂ = U₁ + N || U₂/U₁ = N₁/N₂ || La tension est proportionnelle au nombre de spires.
+Un transformateur fonctionne-t-il en courant continu ? || Non, il lui faut un flux variable || Oui, mieux qu'en alternatif || Oui, sans différence || Non, jamais en alternatif || Sans variation de flux, il n'y a pas d'induction.
+Un transformateur a 100 spires au primaire et 500 au secondaire. Il est : || élévateur de tension || abaisseur de tension || neutre || impossible || U₂ = 5 U₁.
+Quel appareil produit une tension alternative par induction ? || L'alternateur || La pile || Le fusible || Le thermomètre || Il convertit une énergie mécanique en énergie électrique.
+Quel phénomène fait tourner un moteur électrique ? || La force de Laplace || La force de gravitation || La diffraction || La réfraction || Un conducteur parcouru par un courant est soumis à une force dans un champ magnétique.

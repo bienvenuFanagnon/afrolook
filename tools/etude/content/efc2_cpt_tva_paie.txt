@@ -1,0 +1,28 @@
+titre: TVA et paie
+== fiche
+p: La TVA et la paie sont deux opérations courantes de toute entreprise ; elles reposent sur des règles de calcul précises.
+li: TVA (taxe sur la valeur ajoutée) : impôt indirect payé par le consommateur final ; l'entreprise la collecte pour l'État. Chaque État de l'UEMOA fixe son taux dans une fourchette commune.
+li: TVA due à l'État = TVA collectée (sur les ventes) − TVA déductible (sur les achats). Si le solde est négatif, il y a un crédit de TVA.
+li: Prix TTC = prix HT × (1 + taux de TVA). Exemple à 18 % : 1 000 HT donnent 1 180 TTC.
+li: Salaire brut = rémunération avant retenues. Salaire net = brut − cotisations salariales (sécurité sociale, retraite) − impôt sur le salaire.
+li: Charges patronales : cotisations payées par l'employeur en plus du brut ; coût total pour l'employeur = brut + charges patronales.
+li: Le bulletin de paie détaille brut, cotisations, net à payer, congés et heures.
+li: Écriture de paie : charge de personnel (compte 66) au débit ; personnel et organismes sociaux au crédit.
+note: Les cotisations financent la retraite, la maladie, la famille et les accidents du travail.
+note: Un exportateur peut être exonéré de TVA sur ses ventes à l'étranger tout en récupérant celle de ses achats.
+== questions
+Qu'est-ce que la TVA ? || Un impôt indirect payé par le consommateur final || Un salaire || Un emprunt || Une subvention || L'entreprise la collecte pour l'État.
+Comment calcule-t-on la TVA due à l'État ? || TVA collectée − TVA déductible || TVA déductible − TVA collectée || TVA collectée + TVA déductible || HT × TTC || On ne paie que la différence.
+TVA collectée 180 et TVA déductible 120. Que paie-t-on à l'État ? || 60 || 300 || 180 || 120 || 180 − 120.
+TVA collectée 100 et TVA déductible 130. Que se passe-t-il ? || Un crédit de TVA de 30 || Un paiement de 30 || Un paiement de 230 || Rien || La TVA déductible dépasse la collectée.
+Comment passe-t-on du prix HT au prix TTC ? || HT × (1 + taux de TVA) || HT − TVA || HT / taux || HT × taux seulement || On ajoute la TVA.
+Quel est le prix TTC d'un article à 1 000 HT avec une TVA de 18 % ? || 1 180 || 1 018 || 1 800 || 820 || 1 000 × 1,18.
+Que signifie HT ? || Hors taxes || Hausse totale || Hors tarif || Heures totales || Le prix sans la TVA.
+Qui supporte finalement la TVA ? || Le consommateur final || L'entreprise vendeuse || L'État || Le banquier || L'entreprise ne fait que la collecter.
+Comment calcule-t-on le salaire net ? || Brut moins cotisations salariales et impôt || Brut plus cotisations || Brut seulement || Net plus charges patronales || Ce sont les retenues sur le brut.
+Un salaire brut est de 200 000 avec 30 000 de retenues. Quel est le net ? || 170 000 || 230 000 || 200 000 || 30 000 || 200 000 − 30 000.
+Que sont les charges patronales ? || Les cotisations payées par l'employeur en plus du brut || Les cotisations du salarié || Les impôts sur les ventes || Les intérêts d'un prêt || Elles s'ajoutent au coût du salarié.
+Un employeur paie 200 000 de brut et 40 000 de charges patronales. Quel est son coût total ? || 240 000 || 200 000 || 160 000 || 40 000 || 200 000 + 40 000.
+À quoi servent les cotisations sociales ? || À financer la retraite, la maladie et les accidents du travail || À payer l'électricité || À acheter des machines || À rémunérer l'actionnaire || Elles financent la protection sociale.
+Que contient un bulletin de paie ? || Brut, cotisations, net à payer || Seulement le net || Les ventes || Le bilan || Il détaille la rémunération du salarié.
+Quel compte du SYSCOHADA enregistre les charges de personnel ? || Le compte 66 || Le compte 70 || Le compte 21 || Le compte 41 || La classe 6 regroupe les charges.

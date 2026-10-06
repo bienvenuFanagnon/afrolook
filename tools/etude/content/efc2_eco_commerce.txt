@@ -1,0 +1,28 @@
+titre: Commerce international, change et intégration régionale
+== fiche
+p: Les pays échangent des biens et services ; le commerce international permet de se spécialiser et d'accéder à de plus grands marchés.
+li: Avantage comparatif (Ricardo) : chaque pays gagne à se spécialiser dans ce qu'il produit au coût relatif le plus faible, même s'il est moins efficace partout.
+li: Taux de change : prix d'une monnaie en une autre. Change fixe (parité), flottant (fixé par le marché).
+li: Le franc CFA de l'UEMOA a une parité fixe avec l'euro : 1 euro = 655,957 francs CFA.
+li: Protectionnisme : droits de douane, quotas, normes pour protéger les producteurs nationaux. Libre-échange : suppression de ces barrières.
+li: Intégration régionale : UEMOA (union économique et monétaire, tarif extérieur commun), CEDEAO (15 États d'Afrique de l'Ouest), ZLECAf (zone de libre-échange continentale africaine, en vigueur depuis 2021).
+li: Balance des paiements : enregistre toutes les opérations entre un pays et le reste du monde (commerce, services, capitaux).
+li: Exportations tirées par les matières premières : cacao, coton, phosphates, pétrole ; leur prix varie sur les marchés mondiaux.
+note: Une dévaluation baisse la valeur d'une monnaie : elle rend les exportations moins chères et les importations plus chères.
+note: Le tarif extérieur commun (TEC) de l'UEMOA applique les mêmes droits de douane à l'entrée de la zone.
+== questions
+Qu'est-ce que l'avantage comparatif ? || Se spécialiser dans la production au coût relatif le plus faible || Produire tout soi-même || Importer sans exporter || Fixer des quotas || C'est la base de la théorie de Ricardo.
+Qui a développé la théorie de l'avantage comparatif ? || David Ricardo || Karl Marx || Adam Smith seulement || John Keynes || Il l'a exposée au XIXe siècle.
+Qu'est-ce que le taux de change ? || Le prix d'une monnaie exprimé dans une autre || Le taux d'intérêt || L'inflation || Le salaire minimum || Par exemple euro contre franc CFA.
+Que veut dire change fixe ? || La parité entre deux monnaies est fixée à l'avance || Le taux varie chaque seconde || Il n'y a pas de monnaie || Le taux est toujours 1 || Le franc CFA est lié à l'euro.
+Qu'est-ce qu'un droit de douane ? || Une taxe sur les marchandises qui franchissent la frontière || Un salaire || Une assurance || Un prêt || Il protège les producteurs nationaux et rapporte de l'argent à l'État.
+Qu'est-ce que le protectionnisme ? || Les mesures qui protègent les producteurs nationaux de la concurrence étrangère || La suppression des frontières || Un traité de paix || La libre circulation || Droits de douane, quotas et normes en sont.
+Qu'est-ce que le libre-échange ? || Le commerce sans barrières comme les droits de douane et les quotas || L'interdiction d'importer || Le commerce gratuit || Un impôt || Il favorise la concurrence.
+Qu'est-ce que la CEDEAO ? || La Communauté économique des États de l'Afrique de l'Ouest || Le Conseil des États du Centre || La Commission de l'Union africaine || Une banque centrale || Elle compte 15 États membres, selon l'état de ses adhésions.
+Qu'est-ce que la ZLECAf ? || La zone de libre-échange continentale africaine || La zone libre de l'Afrique francophone || Une banque africaine || Un traité militaire || Elle vise un grand marché africain.
+Quel est l'objectif du tarif extérieur commun de l'UEMOA ? || Appliquer les mêmes droits de douane à l'entrée de la zone || Supprimer les douanes dans le monde || Fixer les salaires || Imposer les entreprises || Il évite les différences entre pays membres.
+Qu'est-ce qu'une dévaluation ? || Une baisse officielle de la valeur d'une monnaie || Une hausse des prix || Une hausse d'une monnaie || Un échange de monnaies || Elle encourage les exportations.
+Quel effet une dévaluation a-t-elle en général sur les importations ? || Elles deviennent plus chères || Elles deviennent moins chères || Elles disparaissent || Elles ne changent pas || La monnaie vaut moins qu'avant.
+Quel produit est une matière première exportée par plusieurs pays de l'UEMOA ? || Le cacao ou le coton || Les téléphones || Les voitures || Les ordinateurs || Leurs prix dépendent des marchés mondiaux.
+Que fait la balance des paiements ? || Enregistre les opérations d'un pays avec le reste du monde || Mesure le chômage || Fixe les prix || Calcule les salaires || Elle regroupe biens, services et capitaux.
+Pourquoi la forte dépendance aux matières premières est-elle risquée ? || Leurs prix varient fortement sur les marchés mondiaux || Elles sont rares || Elles sont interdites || Elles ne se vendent pas || Les recettes d'exportation peuvent chuter.
