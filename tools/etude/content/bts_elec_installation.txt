@@ -1,0 +1,32 @@
+titre: Installations électriques, machines et protection
+== fiche
+p: Une installation électrique doit être sûre, protégée et adaptée aux besoins. Le technicien connaît les machines et les protections de base.
+li: Tableau électrique : regroupe disjoncteurs, interrupteur différentiel, parafoudre ; chaque circuit a son disjoncteur.
+li: Disjoncteur : protège contre les surintensités (surcharge et court-circuit) ; fusible : coupe en fondant.
+li: Interrupteur différentiel (30 mA) : protège les personnes contre les fuites de courant (électrocution).
+li: Mise à la terre : relie les masses métalliques au sol pour évacuer un défaut ; piquet de terre.
+li: Schémas : unifilaire (vue d'ensemble), multifilaire (détaillé) ; couleurs : phase (rouge, noir, marron), neutre (bleu), terre (vert-jaune).
+li: Transformateur : change la tension en alternatif (élévateur ou abaisseur) ; il ne fonctionne pas en continu.
+li: Moteur asynchrone triphasé : machine la plus courante dans l'industrie ; sens de rotation inversé en permutant deux phases.
+li: Variateur de vitesse et démarreur : réduisent l'appel de courant au démarrage.
+li: Régimes de neutre et coupure d'urgence : arrêt d'urgence sur les machines.
+li: Dimensionnement : choisir câbles, protections et puissance selon la somme des besoins.
+li: Habilitation électrique : formation obligatoire pour intervenir.
+note: Consigner avant d'intervenir : couper, verrouiller, vérifier l'absence de tension, mettre à la terre si besoin.
+note: Le différentiel 30 mA sauve des vies : ne jamais le contourner.
+== questions
+Quel appareil protège contre les surintensités ? || Le disjoncteur || Le différentiel seul || Le transformateur || La prise || Il coupe en cas de surcharge ou de court-circuit.
+Que protège l'interrupteur différentiel 30 mA ? || Les personnes contre l'électrocution || Les lampes || Les compteurs || Les murs || Il détecte un courant de fuite.
+À quoi sert la mise à la terre ? || Évacuer un courant de défaut vers le sol || Augmenter la tension || Colorer les câbles || Réduire la fréquence || Elle protège les personnes.
+Quelle couleur désigne habituellement le fil de terre ? || Vert-jaune || Bleu || Rouge || Noir || Le neutre est bleu.
+Quelle couleur désigne habituellement le neutre ? || Bleu || Vert-jaune || Rouge || Marron seul || La phase peut être rouge, noire ou marron.
+Que fait un transformateur ? || Il change la tension en courant alternatif || Il fabrique du courant continu || Il stocke l'énergie || Il mesure le courant || Il ne fonctionne pas en continu.
+Quel moteur est le plus courant dans l'industrie ? || Le moteur asynchrone triphasé || Le moteur à vapeur || Le moteur à pédale || Le moteur thermique seulement || Il est robuste et économique.
+Comment inverser le sens d'un moteur triphasé ? || En permutant deux phases || En changeant la couleur du fil || En coupant le neutre || En ajoutant une résistance || Le champ tournant change de sens.
+À quoi sert un variateur de vitesse ? || Régler la vitesse et limiter l'appel de courant || Mesurer la tension || Chauffer || Stocker || Il améliore le démarrage et l'efficacité.
+Que signifie consigner une installation ? || Couper, verrouiller et vérifier l'absence de tension || La peindre || La réparer sans couper || La mesurer || C'est la procédure avant toute intervention.
+Pourquoi une habilitation électrique ? || Pour intervenir en sécurité sur les installations || Pour recevoir un salaire || Pour vendre du matériel || Pour dessiner || Elle atteste d'une formation.
+Quel schéma donne la vue d'ensemble d'une installation ? || Le schéma unifilaire || Le plan de coupe || Le métré || La facture || Il simplifie en un seul trait.
+Un court-circuit provoque : || Un courant très élevé || Une tension nulle seulement || Une baisse de bruit || Un refroidissement || Il peut causer un incendie sans protection.
+Que fait un fusible en cas de surintensité ? || Il fond et coupe le circuit || Il explose toujours || Il stocke du courant || Il augmente la tension || Il doit être remplacé.
+Pourquoi ne jamais contourner une protection ? || Pour éviter incendie et électrocution || Pour gagner du temps || Parce que c'est plus cher || Parce qu'elle est décorative || Les protections existent pour sauver des vies.

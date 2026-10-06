@@ -1,0 +1,32 @@
+titre: Maintenance, énergies renouvelables et solaire
+== fiche
+p: La maintenance garde les équipements en état. Le solaire se développe vite en Afrique, ce qui crée beaucoup d'emplois pour les techniciens.
+li: Maintenance préventive : entretien régulier pour éviter la panne ; corrective : réparation après panne ; prédictive : surveillance pour anticiper.
+li: Diagnostic d'une panne : observer, mesurer, formuler une hypothèse, vérifier, réparer, tester.
+li: Panneau solaire photovoltaïque : transforme la lumière en courant continu ; puissance en watts-crête (Wc).
+li: Installation solaire autonome : panneaux, régulateur de charge, batteries, onduleur (convertit le continu en alternatif).
+li: Batterie : stocke l'énergie ; capacité en ampères-heures (Ah) ; ne pas décharger complètement une batterie au plomb.
+li: Dimensionnement simplifié : énergie quotidienne (Wh) ÷ ensoleillement (heures équivalentes) donne la puissance crête approximative, avec marge.
+li: Orientation : panneaux vers le sud dans l'hémisphère nord, inclinaison proche de la latitude, sans ombre.
+li: Autres énergies : hydraulique, éolien, biomasse ; groupe électrogène en secours.
+li: Sécurité : courant continu dangereux, ne jamais toucher un câble de panneau en plein soleil ; protections spécifiques.
+li: Entretien du solaire : nettoyer les panneaux, vérifier connexions et batteries.
+li: Efficacité énergétique : lampes LED, appareils économes, extinction des veilles.
+note: Un panneau couvert d'ombre, même partielle, perd beaucoup de production.
+note: Note les interventions dans un carnet de maintenance : l'historique aide au diagnostic.
+== questions
+Pour le concours : qu'est-ce que la maintenance préventive ? || Un entretien régulier pour éviter la panne || Une réparation après la panne || Un remplacement complet || Une vente || Elle réduit les arrêts imprévus.
+Pour le concours : qu'est-ce que la maintenance corrective ? || La réparation après une panne || L'entretien régulier || La surveillance || La vente de pièces || Elle intervient après l'incident.
+Quelle est la première étape d'un diagnostic de panne ? || Observer et recueillir les symptômes || Démonter tout || Racheter l'appareil || Changer toutes les pièces || Elle oriente les mesures.
+Que produit un panneau photovoltaïque ? || Du courant continu || Du courant alternatif seulement || De la chaleur seulement || De l'eau || Il transforme la lumière en électricité.
+Que fait un onduleur dans une installation solaire autonome ? || Il convertit le courant continu en alternatif || Il stocke || Il capte la lumière || Il refroidit || Il alimente les appareils en 230 V.
+Que fait le régulateur de charge ? || Protège la batterie contre la surcharge et la décharge profonde || Convertit en alternatif || Capte la lumière || Mesure la température seulement || Il prolonge la durée de vie des batteries.
+Que signifie Wc ? || Watt-crête || Watt-charge || Volt-courant || Watt-circuit || C'est la puissance maximale d'un panneau.
+Comment s'exprime la capacité d'une batterie ? || En ampères-heures (Ah) || En volts || En watts seulement || En hertz || Elle indique la quantité de charge stockée.
+Dans l'hémisphère nord, vers où orienter un panneau solaire ? || Vers le sud || Vers le nord || Vers l'ouest seulement || Vers le sol || Au Togo, on oriente en général au sud.
+Pourquoi éviter l'ombre sur un panneau ? || L'ombre réduit fortement la production || L'ombre augmente la production || Elle n'a aucun effet || Elle protège la batterie || Même une ombre partielle compte.
+Pourquoi nettoyer les panneaux ? || La poussière réduit la production || Pour les colorer || Pour augmenter la tension || Pour les refroidir seulement || Le climat sec et poussiéreux accélère l'encrassement.
+Que faire d'une batterie au plomb ? || Éviter de la décharger complètement || La décharger toujours à zéro || La laisser vide || La chauffer || Une décharge profonde l'endommage.
+Citez une énergie renouvelable : || Le solaire || Le charbon || Le pétrole || Le gaz || L'éolien et l'hydraulique en sont d'autres.
+Quelle lampe consomme le moins pour le même éclairage ? || La LED || L'incandescence || La halogène || La lampe à pétrole || La LED est économe et durable.
+À quoi sert un carnet de maintenance ? || Garder l'historique des interventions || Dessiner des plans || Calculer les salaires || Enregistrer la météo || Il aide à diagnostiquer et à planifier.

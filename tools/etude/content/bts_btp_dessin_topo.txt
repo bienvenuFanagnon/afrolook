@@ -1,0 +1,32 @@
+titre: Lecture de plans, topographie et métré
+== fiche
+p: Un technicien du BTP lit des plans, mesure le terrain et calcule les quantités de matériaux.
+li: Plan : représentation à l'échelle ; échelle 1/100 : 1 cm sur le plan = 100 cm (1 m) sur le terrain.
+li: Types de plans : plan de masse (implantation), plan de coupe, plan de façade, plan d'étage.
+li: Cotation : nombres indiquant les dimensions réelles, en mètres ou centimètres.
+li: Topographie : mesure et représentation du terrain ; niveau optique, théodolite, station totale, GPS.
+li: Altitude et pente : pente (%) = dénivelée ÷ distance horizontale × 100.
+li: Implantation : reporter sur le terrain les points du plan (piquets, cordeaux).
+li: Équerre 3-4-5 : un triangle de côtés 3, 4 et 5 donne un angle droit exact.
+li: Métré : calcul des quantités ; volume d'un parallélépipède = L × l × h ; surface = L × l.
+li: Avant-métré et devis : liste des quantités et estimation des coûts de l'ouvrage.
+li: Béton d'une dalle : volume = longueur × largeur × épaisseur (en mètres).
+li: Logiciels : AutoCAD, Revit, ArchiCAD pour dessiner ; Excel pour les quantités.
+note: Vérifie toujours l'échelle avant de mesurer un plan.
+note: Prévoir une marge (5 à 10 %) pour les pertes de matériaux.
+== questions
+Sur un plan à l'échelle 1/100, 3 cm représentent combien sur le terrain ? || 3 m || 30 cm || 300 m || 0,3 m || 1 cm représente 1 m.
+Que représente un plan de masse ? || L'implantation de la construction sur le terrain || L'intérieur d'une pièce || Les câbles || Le plafond seulement || Il montre le bâtiment dans son environnement.
+Que montre un plan de coupe ? || L'intérieur d'un ouvrage coupé verticalement || Le terrain || Le toit seulement || Les couleurs || Il indique hauteurs et niveaux.
+Que signifie la cotation sur un plan ? || Les dimensions réelles de l'ouvrage || Les couleurs || Les prix || Les noms || Elle est exprimée en mètres ou en centimètres.
+Quel instrument mesure des angles et des distances sur le terrain ? || Le théodolite || Le marteau || La truelle || Le fil à plomb seulement || La station totale le remplace souvent.
+Comment calcule-t-on une pente en pourcentage ? || Dénivelée ÷ distance horizontale × 100 || Distance ÷ dénivelée || Dénivelée × distance || Distance × 10 || Une dénivelée de 2 m sur 100 m donne 2 %.
+Que signifie implanter ? || Reporter sur le terrain les points du plan || Détruire || Peindre || Calculer le prix || On utilise piquets et cordeaux.
+Que donne un triangle de côtés 3, 4 et 5 ? || Un angle droit || Un angle plat || Un angle aigu seulement || Un cercle || C'est la méthode de l'équerre 3-4-5.
+Quel est le volume de béton d'une dalle de 5 m par 4 m et 0,1 m d'épaisseur ? || 2 m³ || 20 m³ || 0,2 m³ || 9 m³ || 5 × 4 × 0,1.
+Quelle est la surface d'une pièce de 6 m sur 4 m ? || 24 m² || 10 m² || 20 m² || 48 m² || Surface = longueur × largeur.
+Que fait un métré ? || Calculer les quantités de matériaux et d'ouvrage || Chanter || Peindre || Dessiner un logo || Il sert au devis.
+Pourquoi prévoir une marge sur les quantités ? || Compenser les pertes et chutes || Gonfler le prix || Éviter les achats || Supprimer le devis || On prévoit souvent 5 à 10 %.
+Citez un logiciel de dessin de plans : || AutoCAD || Excel seulement || Paint || Word || Revit et ArchiCAD en sont d'autres.
+Qu'est-ce qu'un devis ? || Une estimation chiffrée des travaux || Un plan || Une facture payée || Un contrat de travail || Le client l'accepte avant les travaux.
+Que faut-il vérifier avant de mesurer un plan ? || L'échelle || La couleur du papier || L'heure || Le nom du dessinateur || Une erreur d'échelle fausse tous les calculs.

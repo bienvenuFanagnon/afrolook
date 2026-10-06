@@ -1,0 +1,32 @@
+titre: Réseaux informatiques et internet
+== fiche
+p: Un réseau relie des appareils pour échanger des données. Internet est le plus grand réseau du monde.
+li: Types de réseaux : LAN (local, maison ou entreprise), WAN (étendu), Internet ; Wi-Fi : sans fil ; Ethernet : filaire.
+li: Matériel : routeur (relie des réseaux, partage la connexion), switch (relie des appareils d'un réseau local), box ou modem (accès internet), point d'accès Wi-Fi.
+li: Adresse IP : identifiant d'un appareil sur un réseau ; IPv4 (4 nombres de 0 à 255, ex. 192.168.1.10) ; IPv6 : adresses plus longues.
+li: DNS : annuaire qui traduit un nom de site (www.exemple.com) en adresse IP.
+li: DHCP : attribue automatiquement les adresses IP aux appareils.
+li: Protocoles : HTTP et HTTPS (web, HTTPS est chiffré), FTP (transfert de fichiers), SMTP/IMAP/POP (courriel), TCP/IP (base d'internet).
+li: Modèle en couches : modèle OSI en 7 couches ; TCP/IP en 4 couches.
+li: Adresse MAC : identifiant matériel de la carte réseau.
+li: Serveur web et navigateur : le navigateur demande une page, le serveur la renvoie.
+li: Débit : en Mbit/s ; latence : délai de réponse en millisecondes ; bande passante : capacité maximale.
+li: Réseaux mobiles : 2G, 3G, 4G, 5G ; VPN : tunnel chiffré qui protège la connexion.
+note: Une adresse 192.168.x.x est privée : elle n'est visible que dans le réseau local.
+note: Le cadenas HTTPS indique une connexion chiffrée, pas un site forcément honnête.
+== questions
+Pour le concours : que signifie LAN ? || Réseau local || Réseau mondial || Réseau étendu || Réseau mobile || Il relie des appareils proches.
+Que fait un routeur ? || Il relie des réseaux et partage la connexion || Il imprime || Il stocke des fichiers || Il affiche des images || La box en joue souvent le rôle.
+Que fait un switch ? || Il relie les appareils d'un réseau local || Il relie à l'espace || Il fournit du courant || Il lit des CD || Il distribue les paquets sur le LAN.
+Qu'est-ce qu'une adresse IP ? || L'identifiant d'un appareil sur un réseau || Un mot de passe || Un virus || Un câble || Elle permet d'adresser les données.
+Comment est écrite une adresse IPv4 ? || Quatre nombres de 0 à 255 séparés par des points || Trois lettres || Un seul nombre || Deux mots || Exemple : 192.168.1.10.
+Que fait le DNS ? || Traduit un nom de site en adresse IP || Chiffre les fichiers || Distribue le courant || Supprime les virus || C'est l'annuaire d'internet.
+Que fait le protocole DHCP ? || Attribue automatiquement les adresses IP || Chiffre les mots de passe || Envoie les courriels || Sauvegarde les fichiers || Il évite la configuration manuelle.
+Que signifie le « S » de HTTPS ? || Sécurisé (chiffré) || Serveur || Simple || Satellite || Les données sont chiffrées entre navigateur et site.
+Pour le concours : quel protocole sert à envoyer des courriels ? || SMTP || FTP || DNS || DHCP || IMAP et POP servent à les recevoir.
+Pour le concours : combien de couches compte le modèle OSI ? || Sept || Quatre || Trois || Dix || Le modèle TCP/IP en compte quatre.
+Que mesure la latence ? || Le délai de réponse du réseau || La taille d'un fichier || Le nombre d'appareils || La puissance du Wi-Fi || Elle se mesure en millisecondes.
+Quelle est l'unité usuelle du débit ? || Mbit/s || Hertz || Volt || Watt || Elle mesure la quantité de données par seconde.
+Que fait un VPN ? || Il chiffre la connexion dans un tunnel || Il augmente la RAM || Il répare un écran || Il imprime || Il protège sur les réseaux publics.
+Quelle adresse est une adresse privée ? || 192.168.1.10 || 8.8.8.8 || 1.1.1.1 || 200.1.2.3 || Elle n'est utilisable que dans le réseau local.
+Quelle génération de réseau mobile est la plus récente parmi ces choix ? || 5G || 3G || 2G || 4G || Chaque génération augmente le débit.

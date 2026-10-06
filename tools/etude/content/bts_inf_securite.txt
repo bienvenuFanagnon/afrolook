@@ -1,0 +1,32 @@
+titre: Sécurité informatique et protection des données
+== fiche
+p: Protéger ses données, ses comptes et son ordinateur est une compétence de base pour tout professionnel de l'informatique.
+li: Virus : programme malveillant qui s'attache à un fichier ; ver : se propage seul par le réseau ; cheval de Troie : se cache dans un logiciel qui semble utile.
+li: Ransomware (rançongiciel) : chiffre les fichiers et demande une rançon ; seule vraie défense : sauvegardes hors ligne.
+li: Hameçonnage (phishing) : faux message qui imite une banque ou un service pour voler des identifiants ; ne jamais cliquer sur un lien suspect.
+li: Mot de passe fort : long (12 caractères ou plus), varié, unique pour chaque service ; gestionnaire de mots de passe.
+li: Authentification à deux facteurs (2FA) : mot de passe + code reçu par SMS ou application.
+li: Pare-feu (firewall) : filtre les connexions entrantes et sortantes ; antivirus : détecte et supprime les logiciels malveillants.
+li: Chiffrement : rend les données illisibles sans clé ; HTTPS, disques chiffrés, messagerie chiffrée.
+li: Sauvegarde et mises à jour : les deux meilleures protections ; règle 3-2-1.
+li: Confidentialité, intégrité, disponibilité : les trois piliers de la sécurité.
+li: Protection des données personnelles : consentement, droit d'accès et de suppression ; lois nationales.
+li: Bonnes pratiques : ne pas brancher de clé USB inconnue ; verrouiller sa session ; limiter les droits.
+note: La plupart des attaques réussissent parce qu'un utilisateur a cliqué : la vigilance compte.
+note: Ne donne jamais ton code reçu par SMS à quelqu'un qui te le demande.
+== questions
+Qu'est-ce qu'un virus informatique ? || Un programme malveillant qui s'attache à des fichiers || Un composant || Un câble || Un logiciel de bureautique || Il peut endommager ou voler des données.
+Quelle différence entre ver et virus ? || Le ver se propage seul par le réseau || Aucune || Le virus est toujours inoffensif || Le ver est un composant || Il n'a pas besoin d'un fichier hôte.
+Qu'est-ce qu'un ransomware ? || Un logiciel qui chiffre les fichiers et demande une rançon || Un antivirus || Un pare-feu || Un navigateur || Une sauvegarde hors ligne est la vraie défense.
+Pour le concours : qu'est-ce que le hameçonnage (phishing) ? || Un faux message qui vole des identifiants || Un jeu en ligne || Un câble réseau || Une mise à jour || Il imite une banque ou un service connu.
+Que faire d'un lien suspect dans un message ? || Ne pas cliquer et le signaler || Cliquer vite || Le transférer à tous || Saisir son mot de passe || Un lien peut mener à un faux site.
+Qu'est-ce qu'un mot de passe fort ? || Long, varié et unique pour chaque service || Le prénom || 123456 || La date de naissance || Un gestionnaire aide à en gérer plusieurs.
+Qu'est-ce que l'authentification à deux facteurs ? || Mot de passe plus un second justificatif || Deux mots de passe identiques || Un seul code pour tout || Deux comptes || Elle protège même si le mot de passe fuit.
+Que fait un pare-feu ? || Il filtre les connexions entrantes et sortantes || Il imprime || Il stocke les fichiers || Il accélère le Wi-Fi || Il bloque le trafic non autorisé.
+Que fait le chiffrement ? || Rend les données illisibles sans la clé || Efface les données || Augmente la taille des fichiers || Accélère le réseau || HTTPS en est un exemple.
+Quels sont les trois piliers de la sécurité de l'information ? || Confidentialité, intégrité, disponibilité || Vitesse, prix, taille || Couleur, forme, poids || Texte, image, son || Ils guident toute politique de sécurité.
+Quelle est la meilleure défense contre un ransomware ? || Des sauvegardes hors ligne || Un fond d'écran || Payer la rançon || Débrancher le clavier || Elles permettent de restaurer sans payer.
+Que faire d'un code reçu par SMS ? || Ne jamais le communiquer || Le donner au conseiller || Le publier || Le noter sur l'ordinateur || Les arnaques cherchent à l'obtenir.
+Que faire d'une clé USB trouvée dans la rue ? || Ne pas la brancher || La brancher tout de suite || La partager || La formater en réseau || Elle peut contenir un virus.
+Pourquoi limiter les droits des utilisateurs ? || Réduire les dégâts en cas d'erreur ou d'attaque || Ralentir le travail || Supprimer les comptes || Augmenter les virus || C'est le principe du moindre privilège.
+Pourquoi verrouiller sa session en quittant son poste ? || Empêcher un accès non autorisé || Économiser l'écran || Augmenter la mémoire || Accélérer le démarrage || Un poste ouvert est un accès pour les autres.

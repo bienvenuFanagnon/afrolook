@@ -1,0 +1,31 @@
+titre: Systèmes d'exploitation et bureautique
+== fiche
+p: Le système d'exploitation fait le lien entre le matériel et les programmes. La bureautique reste la compétence la plus demandée au quotidien.
+li: Système d'exploitation (OS) : logiciel principal qui gère le matériel et les programmes ; exemples : Windows, Linux, macOS, Android, iOS.
+li: Fichier et dossier : un fichier a un nom et une extension (.docx, .xlsx, .pdf, .jpg, .mp3) ; un dossier range des fichiers.
+li: Logiciel et application : programme qui accomplit une tâche ; open source : code ouvert et souvent gratuit (Linux, LibreOffice).
+li: Traitement de texte (Word) : mise en forme, styles, tableaux, table des matières, mailing.
+li: Tableur (Excel) : cellules, formules (=SOMME(A1:A5), =MOYENNE, =SI), références absolues $A$1, tableaux croisés dynamiques, graphiques.
+li: Présentation (PowerPoint) : diapositives, transitions, modèles ; règle : peu de texte par diapositive.
+li: Raccourcis : Ctrl+C (copier), Ctrl+V (coller), Ctrl+X (couper), Ctrl+Z (annuler), Ctrl+S (enregistrer).
+li: Sauvegarde : copie de ses fichiers sur un autre support ou dans le cloud ; règle 3-2-1 : trois copies, deux supports, une hors site.
+li: Cloud : stockage et services accessibles par internet (Google Drive, OneDrive).
+li: Mise à jour : corrige les failles et ajoute des fonctions ; ne jamais l'ignorer trop longtemps.
+note: Une formule Excel commence toujours par le signe égal.
+note: Teste ta sauvegarde : une copie jamais restaurée n'est pas fiable.
+== questions
+Qu'est-ce qu'un système d'exploitation ? || Le logiciel principal qui gère le matériel et les programmes || Un type de clavier || Une marque d'ordinateur || Un câble || Windows, Linux et Android en sont des exemples.
+Citez un système d'exploitation mobile : || Android || Excel || Word || Chrome || iOS en est un autre.
+Que signifie l'extension .pdf ? || Un document portable, lu partout || Une image || Un son || Un programme || Il garde la mise en page.
+Quelle extension désigne un classeur Excel ? || .xlsx || .docx || .pptx || .jpg || Elle correspond à un tableur.
+Que signifie « open source » ? || Le code source est ouvert à tous || Le logiciel est payant || Le logiciel est interdit || Le logiciel est caché || Linux en est un exemple.
+Quel raccourci permet de copier ? || Ctrl + C || Ctrl + V || Ctrl + X || Ctrl + Z || Ctrl + V colle.
+Quel raccourci annule la dernière action ? || Ctrl + Z || Ctrl + Y || Ctrl + S || Ctrl + A || Ctrl + Y la rétablit.
+Quel raccourci enregistre un document ? || Ctrl + S || Ctrl + P || Ctrl + F || Ctrl + N || Ctrl + P imprime.
+Par quoi commence toute formule Excel ? || Le signe = || Le signe + || Une lettre || Un guillemet || Sans = c'est du texte.
+Quelle formule additionne les cellules A1 à A5 ? || =SOMME(A1:A5) || =A1+A5 || SOMME(A1;A5) seulement || =TOTAL(A1) || Les deux-points désignent une plage.
+À quoi sert la fonction SI dans Excel ? || Faire un test et choisir un résultat || Additionner || Trier || Supprimer || Elle renvoie un résultat selon une condition.
+Que fait une référence absolue comme $A$1 ? || Elle reste fixe quand on recopie la formule || Elle change toujours || Elle efface la cellule || Elle colore la cellule || Le dollar verrouille la ligne et la colonne.
+Qu'est-ce que le cloud ? || Du stockage et des services accessibles par internet || Un câble || Un composant || Un virus || Google Drive en est un exemple.
+Que signifie la règle de sauvegarde 3-2-1 ? || Trois copies, deux supports, une hors site || Trois jours, deux mois, un an || Trois mots de passe || Trois disques || Elle protège contre la perte et le sinistre.
+Pourquoi installer les mises à jour ? || Elles corrigent des failles et améliorent le logiciel || Elles ralentissent toujours || Elles suppriment les fichiers || Elles sont inutiles || Les failles non corrigées sont exploitées.

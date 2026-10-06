@@ -1,0 +1,32 @@
+titre: Bases de l'électricité (BTS électrotechnique)
+== fiche
+p: L'électricité repose sur quelques grandeurs et lois simples que tout technicien doit maîtriser.
+li: Grandeurs : tension U en volts (V), courant I en ampères (A), résistance R en ohms (Ω), puissance P en watts (W), énergie en wattheures (Wh) ou kWh.
+li: Loi d'Ohm : U = R × I.
+li: Puissance : P = U × I ; en alternatif monophasé : P = U × I × cos φ ; énergie = puissance × temps.
+li: Circuit série : le courant est le même partout, les tensions s'additionnent, les résistances s'additionnent.
+li: Circuit parallèle : la tension est la même, les courants s'additionnent ; la résistance équivalente diminue.
+li: Courant continu (DC) : piles, batteries, panneaux solaires ; courant alternatif (AC) : réseau électrique, fréquence 50 Hz (ou 60 Hz).
+li: Tensions courantes : 230 V monophasé, 400 V triphasé en Afrique de l'Ouest et en Europe.
+li: Conducteurs et isolants : cuivre, aluminium conduisent ; plastique, caoutchouc, verre isolent.
+li: Section des câbles : plus le courant est fort, plus la section doit être grande, pour éviter l'échauffement.
+li: Appareils de mesure : multimètre (tension, courant, résistance), pince ampèremétrique, mégohmmètre (isolement).
+li: Symboles : lampe, interrupteur, prise, fusible, disjoncteur, terre.
+note: Ne mesure jamais un courant avec un multimètre branché en parallèle : tu le détruirais.
+note: Coupe toujours le courant avant d'intervenir sur un circuit.
+== questions
+Quelle unité mesure la tension électrique ? || Le volt || L'ampère || L'ohm || Le watt || Symbole : V.
+Quelle unité mesure l'intensité du courant ? || L'ampère || Le volt || L'ohm || Le joule || Symbole : A.
+Quelle unité mesure la résistance ? || L'ohm || Le watt || Le volt || L'ampère || Symbole : Ω.
+Que dit la loi d'Ohm ? || U = R × I || U = R + I || P = R × I || I = U × R || Elle relie tension, résistance et courant.
+Quelle tension aux bornes d'une résistance de 10 Ω traversée par 2 A ? || 20 V || 5 V || 12 V || 8 V || U = 10 × 2.
+Quel courant traverse une résistance de 20 Ω sous 100 V ? || 5 A || 0,2 A || 80 A || 120 A || I = U ÷ R.
+Comment calcule-t-on la puissance électrique ? || P = U × I || P = U + I || P = U ÷ I || P = R ÷ I || Elle s'exprime en watts.
+Une lampe de 100 W fonctionne 10 h. Quelle énergie consomme-t-elle ? || 1 kWh || 10 kWh || 100 kWh || 0,1 kWh || 100 W × 10 h = 1 000 Wh.
+Dans un circuit série, qu'est-ce qui est identique partout ? || Le courant || La tension || La puissance || La résistance || Les tensions s'additionnent.
+Dans un circuit parallèle, qu'est-ce qui est identique pour chaque branche ? || La tension || Le courant || La résistance || La puissance || Les courants s'additionnent.
+Quelle est la fréquence du réseau en Afrique de l'Ouest ? || 50 Hz || 60 Hz || 100 Hz || 10 Hz || Le réseau européen utilise aussi 50 Hz.
+Quelle est la tension usuelle d'une prise domestique ? || 230 V || 12 V || 5 V || 1 000 V || En triphasé, c'est 400 V.
+Citez un isolant électrique : || Le plastique || Le cuivre || L'aluminium || L'argent || Il empêche le passage du courant.
+Que mesure un multimètre ? || Tension, courant et résistance || Seulement la température || La vitesse || Le poids || Selon le réglage choisi.
+Pourquoi agrandir la section d'un câble pour un fort courant ? || Éviter l'échauffement || Le rendre plus joli || Augmenter la tension || Diminuer la fréquence || Un câble sous-dimensionné peut provoquer un incendie.

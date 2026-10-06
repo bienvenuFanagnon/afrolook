@@ -2368,6 +2368,320 @@
         "passPct": 0.7,
         "seconds": 1500
       }
+    },
+    {
+      "id": "bts_tronc",
+      "kind": "cert",
+      "order": 90,
+      "title": "Concours BTS — Tronc commun",
+      "cert": {
+        "id": "att_bts_tronc",
+        "title": "Attestation : prêt pour le concours d'entrée en BTS (tronc commun)",
+        "from": [
+          "bts_culture_gen",
+          "bts_francais",
+          "bts_anglais",
+          "bts_maths",
+          "bts_logique",
+          "bts_methode"
+        ],
+        "count": 45,
+        "passPct": 0.6,
+        "seconds": 3600
+      },
+      "classes": [
+        {
+          "id": "bts_tronc_m",
+          "title": "Concours BTS — Tronc commun",
+          "subjects": [
+            {
+              "id": "bts_t_gen",
+              "title": "Culture générale et expression",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "bts_culture_gen",
+                  "title": "Culture générale : Afrique, Togo et monde"
+                },
+                {
+                  "id": "bts_francais",
+                  "title": "Français : orthographe, grammaire et expression"
+                },
+                {
+                  "id": "bts_anglais",
+                  "title": "Anglais de base pour le concours"
+                }
+              ]
+            },
+            {
+              "id": "bts_t_raison",
+              "title": "Raisonnement et méthode",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "bts_maths",
+                  "title": "Mathématiques de base pour le concours"
+                },
+                {
+                  "id": "bts_logique",
+                  "title": "Raisonnement logique et tests psychotechniques"
+                },
+                {
+                  "id": "bts_methode",
+                  "title": "Méthode : réussir son concours d'entrée en BTS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bts_gestion",
+      "kind": "cert",
+      "order": 91,
+      "title": "Concours BTS — Gestion et commerce",
+      "cert": {
+        "id": "att_bts_gestion",
+        "title": "Attestation : prêt pour le concours BTS gestion et commerce",
+        "from": [
+          "bts_ges_compta",
+          "bts_ges_commerce",
+          "bts_ges_eco"
+        ],
+        "count": 30,
+        "passPct": 0.6,
+        "seconds": 2400
+      },
+      "classes": [
+        {
+          "id": "bts_gestion_m",
+          "title": "Concours BTS — Gestion et commerce",
+          "subjects": [
+            {
+              "id": "bts_g",
+              "title": "Gestion et commerce",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "bts_ges_compta",
+                  "title": "Comptabilité de base (BTS gestion et commerce)"
+                },
+                {
+                  "id": "bts_ges_commerce",
+                  "title": "Techniques de vente et commerce (BTS commerce)"
+                },
+                {
+                  "id": "bts_ges_eco",
+                  "title": "Économie et droit des affaires (BTS gestion)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bts_info",
+      "kind": "cert",
+      "order": 92,
+      "title": "Concours BTS — Informatique",
+      "cert": {
+        "id": "att_bts_info",
+        "title": "Attestation : prêt pour le concours BTS informatique",
+        "from": [
+          "bts_inf_materiel",
+          "bts_inf_systemes",
+          "bts_inf_reseaux",
+          "bts_inf_securite",
+          "bts_inf_bdd",
+          "bts_inf_algo"
+        ],
+        "count": 45,
+        "passPct": 0.6,
+        "seconds": 3600
+      },
+      "classes": [
+        {
+          "id": "bts_info_m",
+          "title": "Concours BTS — Informatique",
+          "subjects": [
+            {
+              "id": "bts_i_base",
+              "title": "Culture informatique générale",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "bts_inf_materiel",
+                  "title": "Matériel informatique et architecture d'un ordinateur"
+                },
+                {
+                  "id": "bts_inf_systemes",
+                  "title": "Systèmes d'exploitation et bureautique"
+                },
+                {
+                  "id": "bts_inf_reseaux",
+                  "title": "Réseaux informatiques et internet"
+                }
+              ]
+            },
+            {
+              "id": "bts_i_dev",
+              "title": "Sécurité, données et programmation",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "bts_inf_securite",
+                  "title": "Sécurité informatique et protection des données"
+                },
+                {
+                  "id": "bts_inf_bdd",
+                  "title": "Bases de données et notions de SQL"
+                },
+                {
+                  "id": "bts_inf_algo",
+                  "title": "Algorithmique et bases de la programmation"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bts_btp",
+      "kind": "cert",
+      "order": 93,
+      "title": "Concours BTS — Bâtiment et travaux publics",
+      "cert": {
+        "id": "att_bts_btp",
+        "title": "Attestation : prêt pour le concours BTS bâtiment et travaux publics",
+        "from": [
+          "bts_btp_materiaux",
+          "bts_btp_dessin_topo",
+          "bts_btp_chantier"
+        ],
+        "count": 30,
+        "passPct": 0.6,
+        "seconds": 2400
+      },
+      "classes": [
+        {
+          "id": "bts_btp_m",
+          "title": "Concours BTS — Bâtiment et travaux publics",
+          "subjects": [
+            {
+              "id": "bts_b",
+              "title": "Bâtiment et travaux publics",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "bts_btp_materiaux",
+                  "title": "Matériaux de construction et béton (BTS bâtiment et travaux publics)"
+                },
+                {
+                  "id": "bts_btp_dessin_topo",
+                  "title": "Lecture de plans, topographie et métré"
+                },
+                {
+                  "id": "bts_btp_chantier",
+                  "title": "Organisation et sécurité de chantier"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bts_elec",
+      "kind": "cert",
+      "order": 94,
+      "title": "Concours BTS — Électricité et maintenance",
+      "cert": {
+        "id": "att_bts_elec",
+        "title": "Attestation : prêt pour le concours BTS électricité et maintenance",
+        "from": [
+          "bts_elec_bases",
+          "bts_elec_installation",
+          "bts_elec_maintenance"
+        ],
+        "count": 30,
+        "passPct": 0.6,
+        "seconds": 2400
+      },
+      "classes": [
+        {
+          "id": "bts_elec_m",
+          "title": "Concours BTS — Électricité et maintenance",
+          "subjects": [
+            {
+              "id": "bts_e",
+              "title": "Électricité et maintenance",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "bts_elec_bases",
+                  "title": "Bases de l'électricité (BTS électrotechnique)"
+                },
+                {
+                  "id": "bts_elec_installation",
+                  "title": "Installations électriques, machines et protection"
+                },
+                {
+                  "id": "bts_elec_maintenance",
+                  "title": "Maintenance, énergies renouvelables et solaire"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bts_agro",
+      "kind": "cert",
+      "order": 95,
+      "title": "Concours BTS — Agriculture et agroalimentaire",
+      "cert": {
+        "id": "att_bts_agro",
+        "title": "Attestation : prêt pour le concours BTS agriculture et agroalimentaire",
+        "from": [
+          "bts_agro_cultures",
+          "bts_agro_elevage",
+          "bts_agro_transfo"
+        ],
+        "count": 30,
+        "passPct": 0.6,
+        "seconds": 2400
+      },
+      "classes": [
+        {
+          "id": "bts_agro_m",
+          "title": "Concours BTS — Agriculture et agroalimentaire",
+          "subjects": [
+            {
+              "id": "bts_a",
+              "title": "Agriculture et agroalimentaire",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "bts_agro_cultures",
+                  "title": "Sols, cultures et agronomie (BTS agriculture)"
+                },
+                {
+                  "id": "bts_agro_elevage",
+                  "title": "Élevage et santé animale"
+                },
+                {
+                  "id": "bts_agro_transfo",
+                  "title": "Transformation agroalimentaire, qualité et gestion d'exploitation"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

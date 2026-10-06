@@ -1,0 +1,32 @@
+titre: Bases de données et notions de SQL
+== fiche
+p: Une base de données stocke des informations organisées pour les retrouver et les modifier facilement. Elle est au cœur de presque toute application.
+li: Base de données relationnelle : données rangées dans des tables liées entre elles ; exemples : MySQL, PostgreSQL, SQLite, Oracle.
+li: Table : lignes (enregistrements) et colonnes (champs) ; une clé primaire identifie chaque ligne de façon unique.
+li: Clé étrangère : champ qui renvoie à la clé primaire d'une autre table ; elle crée la relation.
+li: SGBD : système de gestion de base de données (logiciel qui manipule la base).
+li: SQL : langage pour interroger la base ; SELECT (lire), INSERT (ajouter), UPDATE (modifier), DELETE (supprimer), CREATE TABLE (créer).
+li: Requête simple : SELECT nom FROM clients WHERE ville = 'Lomé' ORDER BY nom ;
+li: Jointure : combiner deux tables grâce à une clé commune.
+li: Fonctions d'agrégation : COUNT, SUM, AVG, MIN, MAX ; GROUP BY pour regrouper.
+li: Normalisation : organiser les tables pour éviter les doublons.
+li: Sauvegarde et sécurité : droits d'accès, sauvegardes régulières ; injection SQL : attaque par requête truquée.
+li: NoSQL : bases non relationnelles pour des données variées (MongoDB, Firestore).
+note: Sans clause WHERE, UPDATE et DELETE agissent sur toutes les lignes : attention.
+note: Une clé primaire ne doit jamais se répéter ni être vide.
+== questions
+Qu'est-ce qu'une base de données relationnelle ? || Des tables liées entre elles || Un seul fichier texte || Un réseau || Un virus || MySQL et PostgreSQL en sont des exemples.
+Que représente une ligne dans une table ? || Un enregistrement || Un champ || Une clé || Un index || Une colonne représente un champ.
+Que représente une colonne dans une table ? || Un champ || Un enregistrement || Une base || Un serveur || Elle décrit un type d'information.
+Qu'est-ce qu'une clé primaire ? || Un identifiant unique de chaque ligne || Un mot de passe || Une adresse IP || Un doublon || Elle ne se répète pas.
+Qu'est-ce qu'une clé étrangère ? || Un champ qui renvoie à la clé primaire d'une autre table || Une clé USB || Un virus || Un champ vide || Elle crée la relation entre deux tables.
+Pour le concours : que signifie SGBD ? || Système de gestion de base de données || Service général de bureautique || Système de graphiques || Serveur de gestion || MySQL est un SGBD.
+Quelle commande SQL lit des données ? || SELECT || INSERT || DELETE || CREATE || SELECT … FROM table.
+Quelle commande SQL ajoute une ligne ? || INSERT || SELECT || UPDATE || DROP || INSERT INTO table VALUES (…).
+Quelle commande SQL modifie des lignes existantes ? || UPDATE || SELECT || INSERT || ALTER seul || On l'utilise avec WHERE.
+Quelle commande SQL supprime des lignes ? || DELETE || SELECT || UPDATE || JOIN || Sans WHERE, elle supprime tout.
+À quoi sert la clause WHERE ? || Filtrer les lignes selon une condition || Trier || Joindre || Compter || WHERE ville = 'Lomé'.
+À quoi sert ORDER BY ? || Trier les résultats || Filtrer || Supprimer || Joindre || ORDER BY nom DESC trie du plus grand au plus petit.
+Que fait COUNT ? || Compte les lignes || Additionne || Calcule la moyenne || Trouve le maximum || SUM additionne.
+Que fait une jointure ? || Combine deux tables grâce à une clé commune || Supprime une table || Chiffre la base || Sauvegarde || Elle relie par exemple clients et commandes.
+Qu'est-ce qu'une injection SQL ? || Une attaque par requête truquée || Une sauvegarde || Un tri || Une jointure || Les requêtes préparées la préviennent.

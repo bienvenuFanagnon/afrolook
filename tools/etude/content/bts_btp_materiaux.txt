@@ -1,0 +1,31 @@
+titre: Matériaux de construction et béton (BTS bâtiment et travaux publics)
+== fiche
+p: Le BTP regroupe la construction de bâtiments et d'ouvrages (routes, ponts). Connaître les matériaux de base est indispensable.
+li: Ciment : liant qui durcit au contact de l'eau ; sable : granulats fins ; gravier : gros granulats ; eau : déclenche la prise.
+li: Béton : mélange de ciment, sable, gravier et eau ; il résiste bien à la compression mais mal à la traction.
+li: Béton armé : béton renforcé par des barres d'acier qui reprennent les efforts de traction.
+li: Dosage courant d'un béton : environ 350 kg de ciment par m³ ; trop d'eau diminue la résistance.
+li: Parpaing (bloc de béton) et brique : éléments de maçonnerie ; mortier : ciment, sable et eau pour les joindre.
+li: Acier : barres à haute adhérence (HA) pour armatures ; fers à béton de diamètres 6, 8, 10, 12 mm...
+li: Bois, tôle, pierre, terre stabilisée (briques de terre comprimée) : matériaux locaux et alternatifs.
+li: Fondations : semelles, puits, radier ; elles transmettent les charges au sol.
+li: Prise et durcissement : le béton prend en quelques heures et gagne sa résistance en 28 jours ; il faut l'arroser (cure).
+li: Résistance : exprimée en MPa (mégapascals) ; béton courant : 20 à 25 MPa.
+note: Mouiller le béton les premiers jours évite les fissures de retrait.
+note: Ne jamais ajouter d'eau en excès pour faciliter la mise en œuvre.
+== questions
+De quoi est composé le béton ? || Ciment, sable, gravier et eau || Sable et eau seulement || Ciment et acier || Bois et clous || Le dosage détermine la résistance.
+À quoi sert l'acier dans le béton armé ? || Résister aux efforts de traction || Colorer le béton || Ralentir la prise || Alléger le béton || Le béton seul résiste mal à la traction.
+Le béton résiste bien à : || La compression || La traction || La torsion || La flexion seule || Il faut l'armer pour la traction.
+Qu'est-ce que le mortier ? || Un mélange de ciment, sable et eau pour lier les éléments || Un outil || Un type de brique || Une peinture || On l'utilise pour monter les parpaings.
+Qu'est-ce qu'un parpaing ? || Un bloc de béton pour la maçonnerie || Une barre d'acier || Un type d'outil || Un sac de ciment || Il sert à monter des murs.
+Pourquoi arroser le béton les premiers jours ? || Éviter les fissures dues au séchage trop rapide || L'alourdir || Le colorer || Retarder la prise || C'est la cure du béton.
+En combien de jours un béton atteint-il sa résistance de référence ? || 28 jours || 2 jours || 90 jours || 1 an || C'est la valeur normalisée.
+Quel est l'effet d'un excès d'eau dans le béton ? || Une résistance plus faible || Une résistance plus forte || Aucun effet || Une prise plus rapide || Il augmente la porosité.
+Que signifie HA pour des barres d'acier ? || Haute adhérence || Haute altitude || Haute alimentation || Hors acier || Les nervures aident l'accrochage au béton.
+Quelle unité exprime la résistance du béton ? || Le mégapascal (MPa) || Le volt || Le litre || Le gramme || Un béton courant atteint 20 à 25 MPa.
+À quoi servent les fondations ? || Transmettre les charges du bâtiment au sol || Décorer || Isoler du bruit || Fixer les portes || Elles assurent la stabilité.
+Citez un type de fondation : || La semelle || Le plafond || La corniche || La fenêtre || Le radier et les puits en sont d'autres.
+Citez un matériau local de construction : || La brique de terre comprimée || Le verre trempé || Le titane || Le plastique expansé || Elle est économique et adaptée au climat.
+Quel est le rôle du ciment ? || Lier les granulats en durcissant avec l'eau || Colorer || Alléger || Isoler || C'est le liant du béton.
+Qu'est-ce que le sable dans le béton ? || Un granulat fin || Un liant || Un additif de couleur || Une armature || Le gravier est le gros granulat.

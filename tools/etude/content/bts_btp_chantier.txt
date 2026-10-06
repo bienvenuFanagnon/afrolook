@@ -1,0 +1,31 @@
+titre: Organisation et sécurité de chantier
+== fiche
+p: Un chantier réunit des corps de métier. L'organisation et la sécurité évitent les accidents et les retards.
+li: Acteurs : maître d'ouvrage (client), maître d'œuvre (architecte ou bureau d'études), entreprises, conducteur de travaux, chef de chantier, ouvriers.
+li: Corps d'état : terrassement, maçonnerie, charpente, plomberie, électricité, peinture, menuiserie.
+li: Planning : ordonne les tâches dans le temps ; diagramme de Gantt ; chemin critique = tâches qui ne peuvent pas être retardées.
+li: Équipements de protection individuelle (EPI) : casque, chaussures de sécurité, gants, lunettes, gilet, harnais en hauteur.
+li: Risques : chute de hauteur (le plus grave), ensevelissement dans les tranchées, électrocution, manutention, engins, bruit, poussières.
+li: Échafaudage : montage vérifié, garde-corps, planchers complets ; ne jamais le surcharger.
+li: Terrassement : tranchées étayées au-delà d'une certaine profondeur ; vérifier réseaux enterrés avant de creuser.
+li: Premiers secours : alerter, protéger, secourir ; trousse de secours sur le chantier.
+li: Qualité : contrôler les dosages, les dimensions, les niveaux ; réceptions et réserves en fin de travaux.
+li: Environnement : gestion des déchets, limitation du bruit et des poussières.
+note: Aucun travail ne vaut un accident : on s'arrête si la sécurité n'est pas assurée.
+note: Le casque se porte toujours sur un chantier, même pour une courte visite.
+== questions
+Qui est le maître d'ouvrage ? || Le client qui fait construire || L'ouvrier || Le fournisseur || Le voisin || Il finance le projet.
+Qui est le maître d'œuvre ? || Celui qui conçoit et dirige l'exécution (architecte ou bureau d'études) || Le client || L'ouvrier seulement || Le banquier || Il contrôle la conformité des travaux.
+Qu'est-ce qu'un corps d'état ? || Un métier du bâtiment, comme la maçonnerie ou l'électricité || Une armée || Un organisme public || Un outil || Chaque corps d'état a son intervention.
+Pour le concours, à quoi sert un diagramme de Gantt ? || Planifier les tâches dans le temps || Calculer un volume || Dessiner un plan || Peser un matériau || Il montre durées et enchaînements.
+Que désigne le chemin critique ? || Les tâches qui ne peuvent pas être retardées sans décaler la fin || Une route dangereuse || Le chemin des ouvriers || Une erreur || Tout retard sur ces tâches retarde le chantier.
+Que signifie EPI ? || Équipement de protection individuelle || Étude de projet interne || Entretien préventif industriel || Examen pour ingénieurs || Casque, gants et chaussures en font partie.
+Quel est le risque le plus grave sur un chantier ? || La chute de hauteur || Le froid || Le retard de livraison || Le prix || Il cause de nombreux accidents mortels.
+Que faut-il porter en hauteur sans protection collective ? || Un harnais de sécurité || Un chapeau || Des lunettes de soleil || Rien || Il s'attache à un point d'ancrage.
+Que doit avoir un échafaudage ? || Des garde-corps et des planchers complets || Une couleur vive || Une échelle seulement || Des roues libres || Le montage doit être vérifié.
+Que faire avant de creuser une tranchée ? || Vérifier les réseaux enterrés || Creuser vite || Commencer sans plan || Ignorer le sol || Câbles et canalisations peuvent être endommagés.
+Pourquoi étayer une tranchée profonde ? || Éviter l'éboulement et l'ensevelissement || La rendre plus belle || Gagner du temps || Éviter l'eau seulement || Les éboulements sont mortels.
+Que faire en cas d'accident ? || Alerter, protéger, secourir || Partir || Attendre || Déplacer le blessé toujours || Les premiers secours sauvent des vies.
+Qu'est-ce qu'une réserve en fin de chantier ? || Un défaut à corriger signalé à la réception || Un stock || Un prix || Un salarié || Elle est notée sur le procès-verbal de réception.
+Que fait le conducteur de travaux ? || Il organise et suit l'exécution du chantier || Il fabrique le ciment || Il paie les impôts || Il dessine les logos || Il coordonne délais, coûts et qualité.
+Comment limiter l'impact environnemental d'un chantier ? || Trier et évacuer correctement les déchets || Brûler les déchets || Jeter dans la rivière || Ignorer le bruit || La gestion des déchets est réglementée.

@@ -17,7 +17,7 @@ Quelle est la capitale du Togo ? || Lomé || Kara || Sokodé || Atakpamé || Lom
 Quand le Togo a-t-il obtenu son indépendance ? || Le 27 avril 1960 || Le 1er janvier 1958 || Le 6 mars 1957 || Le 4 juillet 1976 || Elle est fêtée chaque 27 avril.
 Quelle est la monnaie du Togo ? || Le franc CFA (XOF) || Le cedi || Le naira || Le dirham || Elle est commune aux huit pays de l'UEMOA.
 Que signifie UEMOA ? || Union économique et monétaire ouest-africaine || Union des États du Maghreb || Union économique du Mali || Union européenne et monétaire || Elle compte 8 pays.
-Où se trouve le siège de la BCEAO ? || Dakar || Abidjan || Lomé || Accra || La BCEAO émet la monnaie commune.
+Pour le concours, où se trouve le siège de la BCEAO ? || Dakar || Abidjan || Lomé || Accra || La BCEAO émet la monnaie commune.
 Que signifie CEDEAO ? || Communauté économique des États de l'Afrique de l'Ouest || Conseil des États d'Afrique occidentale || Confédération des États africains || Centre d'entraide des pays || Son siège est à Abuja.
 Où se trouve le siège de l'Union africaine ? || Addis-Abeba || Nairobi || Dakar || Kinshasa || La ville accueille aussi d'autres organisations africaines.
 Quelle organisation l'Union africaine a-t-elle remplacée en 2002 ? || L'OUA || La SDN || L'OTAN || Le FMI || L'OUA datait de 1963.
@@ -26,5 +26,5 @@ Quel organisme de l'ONU s'occupe de l'éducation et de la culture ? || L'UNESCO 
 Quel pays borde le Togo à l'ouest ? || Le Ghana || Le Bénin || Le Niger || Le Nigeria || Le Bénin borde le Togo à l'est.
 Quel golfe baigne la côte togolaise ? || Le golfe de Guinée || Le golfe d'Aden || Le golfe du Mexique || Le golfe Persique || La côte togolaise mesure environ 50 kilomètres.
 Combien y a-t-il de continents ? || Cinq || Trois || Sept || Neuf || Afrique, Amérique, Asie, Europe, Océanie.
-Quel est le continent le plus peuplé ? || L'Asie || L'Afrique || L'Europe || L'Amérique du Sud || L'Afrique vient en deuxième position.
-Que vise la ZLECAf ? || Un marché africain avec des droits de douane réduits || Une monnaie unique mondiale || Une armée commune || Un passeport mondial || Elle facilite le commerce entre pays africains.
+Pour le concours : quel est le continent le plus peuplé ? || L'Asie || L'Afrique || L'Europe || L'Amérique du Sud || L'Afrique vient en deuxième position.
+Pour le concours : que vise la ZLECAf ? || Un marché africain avec des droits de douane réduits || Une monnaie unique mondiale || Une armée commune || Un passeport mondial || Elle facilite le commerce entre pays africains.

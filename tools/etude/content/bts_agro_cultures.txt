@@ -1,0 +1,32 @@
+titre: Sols, cultures et agronomie (BTS agriculture)
+== fiche
+p: L'agronomie étudie comment produire des cultures en gérant le sol, l'eau et les plantes. L'agriculture occupe une grande partie de la population togolaise.
+li: Sol : sable, limon, argile en proportions variables ; un sol équilibré (limoneux) retient l'eau et laisse passer l'air.
+li: pH du sol : mesure l'acidité ; la plupart des cultures aiment un pH de 6 à 7 ; la chaux corrige un sol acide.
+li: Fertilité : matière organique, azote (N), phosphore (P), potassium (K) ; engrais NPK, fumier, compost.
+li: Cultures vivrières : maïs, manioc, igname, sorgho, mil, haricot (niébé), riz ; cultures de rente : coton, café, cacao, palmier à huile, anacarde.
+li: Calendrier cultural : préparation du sol, semis, entretien (sarclage), fertilisation, récolte, stockage.
+li: Rotation et association de cultures : alterner céréales et légumineuses (niébé) pour restaurer l'azote.
+li: Irrigation : goutte-à-goutte (économe), aspersion, gravitaire ; gestion de l'eau en saison sèche.
+li: Ravageurs et maladies : insectes, champignons, mauvaises herbes ; lutte intégrée : variétés résistantes, rotation, produits adaptés.
+li: Semences : sélectionnées et certifiées donnent de meilleurs rendements.
+li: Rendement : production par hectare (t/ha) ; 1 hectare = 10 000 m².
+li: Agriculture durable : agroécologie, compostage, couverture du sol, limitation des intrants chimiques.
+note: Analyse le sol avant de choisir ta culture et ton engrais.
+note: Les légumineuses comme le niébé fixent l'azote de l'air et enrichissent le sol.
+== questions
+Quels sont les trois constituants principaux du sol ? || Sable, limon et argile || Eau, air et feu || Pierre, bois et fer || Sucre, sel et farine || Leurs proportions donnent le type de sol.
+Que mesure le pH d'un sol ? || Son acidité || Sa température || Sa couleur || Son poids || La plupart des cultures préfèrent un pH de 6 à 7.
+Que corrige la chaux dans un sol ? || L'acidité || La sécheresse || Le sable || Le vent || Elle remonte le pH.
+Que signifie NPK ? || Azote, phosphore, potassium || Nitrate, pétrole, kérosène || Sodium, sel, calcium || Nature, plante, culture || Ce sont les trois éléments majeurs des engrais.
+Citez une culture vivrière : || Le maïs || Le coton || Le cacao || Le café || Elle sert d'abord à nourrir la population.
+Citez une culture de rente : || Le coton || Le manioc || L'igname || Le niébé || Elle est surtout vendue pour l'exportation.
+Qu'est-ce que la matière organique du sol ? || Des restes de plantes et d'animaux décomposés || Du sable || Un engrais chimique || De l'eau || Elle améliore la fertilité et la rétention d'eau.
+Pourquoi alterner céréales et légumineuses ? || Les légumineuses enrichissent le sol en azote || Les céréales épuisent l'eau || Pour changer les couleurs || Pour éviter la récolte || C'est la rotation des cultures.
+Quelle plante est une légumineuse ? || Le niébé (haricot) || Le maïs || Le mil || Le sorgho || Elle fixe l'azote de l'air.
+Quelle irrigation économise le mieux l'eau ? || Le goutte-à-goutte || L'inondation totale || L'arrosage à la main sans limite || Aucune || L'eau arrive directement au pied de la plante.
+À quoi sert le sarclage ? || Enlever les mauvaises herbes || Semer || Récolter || Stocker || Les herbes concurrencent les cultures pour l'eau et la lumière.
+Combien de m² dans un hectare ? || 10 000 || 1 000 || 100 || 100 000 || 1 hectare = 100 m × 100 m.
+Que mesure le rendement ? || La production par unité de surface || La taille du champ || Le prix || Le nombre de paysans || Souvent en tonnes par hectare.
+Pourquoi utiliser des semences certifiées ? || Elles donnent de meilleurs rendements et sont de qualité || Elles sont plus lourdes || Elles ne poussent pas || Elles coûtent toujours moins || Elles sont sélectionnées et contrôlées.
+Que fait la lutte intégrée ? || Combine plusieurs méthodes pour limiter les ravageurs || Utilise un seul produit || Ne fait rien || Supprime tous les insectes || Elle réduit la dépendance aux produits chimiques.

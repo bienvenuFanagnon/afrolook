@@ -1,0 +1,32 @@
+titre: Transformation agroalimentaire, qualité et gestion d'exploitation
+== fiche
+p: Transformer, conserver et vendre les produits agricoles crée de la valeur. La qualité et la gestion font la réussite d'une exploitation.
+li: Transformation : manioc en gari ou tapioca, maïs en farine ou pâte, soja en lait ou fromage, noix de cajou en amandes, fruits en jus ou confitures.
+li: Conservation : séchage, fumage, salage, pasteurisation, réfrigération, mise en boîte ; l'eau libre favorise la moisissure.
+li: Chaîne du froid : maintenir la température basse du producteur au consommateur.
+li: Hygiène : lavage des mains, locaux propres, eau potable, séparation du cru et du cuit, emballage propre.
+li: HACCP : méthode d'analyse des dangers et de maîtrise des points critiques pour la sécurité des aliments.
+li: Normes et étiquetage : nom du produit, ingrédients, poids, date limite de consommation (DLC), date de durabilité minimale (DDM), producteur.
+li: Pertes après récolte : mauvaise conservation, insectes, humidité ; stockage dans des greniers ou sacs hermétiques.
+li: Gestion d'exploitation : coûts (semences, main-d'œuvre, engrais) et recettes ; marge brute = produit − charges variables.
+li: Commercialisation : marchés locaux, coopératives, contrats avec transformateurs, vente groupée.
+li: Financement agricole : crédit rural, microfinance, subventions, assurance agricole.
+li: Valeur ajoutée : différence entre la valeur du produit transformé et celle des matières premières.
+note: Une bonne conservation réduit les pertes et améliore le prix de vente.
+note: S'organiser en coopérative renforce le pouvoir de négociation des producteurs.
+== questions
+Citez un produit issu de la transformation du manioc : || Le gari || Le lait || Le sucre || Le café || Il est très consommé en Afrique de l'Ouest.
+Que devient un fruit transformé ? || Jus ou confiture || Engrais || Fumier || Ciment || La transformation allonge sa durée de conservation.
+Pourquoi sécher un produit pour le conserver ? || Réduire l'eau qui favorise les moisissures || L'alourdir || Le colorer || L'allonger || Moins d'eau, moins de microbes.
+Qu'est-ce que la pasteurisation ? || Un chauffage modéré qui détruit des microbes || La congélation || Le salage || Le fumage || Elle est utilisée pour le lait et les jus.
+Qu'est-ce que la chaîne du froid ? || Le maintien d'une température basse jusqu'au consommateur || Une rivière || Un type d'emballage || Une machine || Elle protège les produits frais.
+Citez une règle d'hygiène en transformation : || Se laver les mains || Mélanger cru et cuit || Utiliser une eau sale || Travailler sans protection || Elle évite la contamination.
+Que signifie HACCP ? || Analyse des dangers et maîtrise des points critiques || Un type de ciment || Un logiciel || Un engrais || Elle concerne la sécurité des aliments.
+Que signifie DLC sur un étiquetage ? || Date limite de consommation || Dose légale de calcium || Date de livraison complète || Débit de lait constant || Passé cette date, le produit est dangereux.
+Que contient une étiquette alimentaire ? || Nom, ingrédients, poids et dates || Seulement une image || Le prix du transport || Un slogan || Ces mentions protègent le consommateur.
+Qu'est-ce que les pertes après récolte ? || Les pertes dues à la mauvaise conservation, insectes ou humidité || La récolte elle-même || Un bénéfice || Une taxe || Elles peuvent atteindre une part importante de la production.
+Comment réduire les pertes de stockage ? || Utiliser des sacs hermétiques et des greniers adaptés || Mouiller le grain || Laisser à l'air libre humide || Mélanger avec de la terre || Cela limite insectes et humidité.
+Que signifie marge brute ? || Produit moins charges variables || Prix de vente seulement || Total des dettes || Salaire du patron || Elle sert à juger la rentabilité d'une culture.
+Quel avantage a une coopérative agricole ? || Un meilleur pouvoir de négociation || Aucun avantage || Une interdiction de vendre || Une augmentation des impôts || Elle permet d'acheter et de vendre en groupe.
+Qu'est-ce que la valeur ajoutée ? || L'écart entre la valeur du produit transformé et celle des matières premières || Une taxe || Un engrais || Une dette || Transformer augmente la valeur.
+Citez une source de financement agricole : || La microfinance || L'héritage seulement || Le loto || La loterie || Le crédit rural en est une autre.

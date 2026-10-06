@@ -14,14 +14,14 @@ li: Chômage, croissance, commerce extérieur : indicateurs de la santé de l'é
 note: Connais les sigles : OHADA, RCCM, PIB, BCEAO, TVA.
 note: Une société commerciale a une personnalité juridique distincte de ses associés.
 == questions
-Que signifie OHADA ? || Organisation pour l'harmonisation en Afrique du droit des affaires || Organisation hôtelière d'Afrique || Office africain du droit administratif || Ordre honoraire des affaires || Elle unifie le droit des affaires de ses États membres.
-Que signifie SARL ? || Société à responsabilité limitée || Société anonyme à revenu local || Société d'achat et de revente || Syndicat des associés || Les associés répondent à hauteur de leurs apports.
-Que signifie RCCM ? || Registre du commerce et du crédit mobilier || Régime commun du commerce || Recensement commercial central || Revenu du commerce moyen || Un commerçant doit s'y immatriculer.
+Pour le concours : que signifie OHADA ? || Organisation pour l'harmonisation en Afrique du droit des affaires || Organisation hôtelière d'Afrique || Office africain du droit administratif || Ordre honoraire des affaires || Elle unifie le droit des affaires de ses États membres.
+Pour le concours : que signifie SARL ? || Société à responsabilité limitée || Société anonyme à revenu local || Société d'achat et de revente || Syndicat des associés || Les associés répondent à hauteur de leurs apports.
+Pour le concours : que signifie RCCM ? || Registre du commerce et du crédit mobilier || Régime commun du commerce || Recensement commercial central || Revenu du commerce moyen || Un commerçant doit s'y immatriculer.
 Qu'est-ce qu'un commerçant selon le droit OHADA ? || Une personne qui fait des actes de commerce à titre habituel || Toute personne qui achète || Un salarié || Un fonctionnaire || La profession habituelle est le critère.
 Que fait la demande qui augmente si l'offre reste stable ? || Le prix tend à augmenter || Le prix baisse || Le prix disparaît || Rien ne change || C'est la loi de l'offre et de la demande.
-Qu'est-ce que l'inflation ? || Une hausse générale et durable des prix || Une baisse des prix || Une baisse des salaires || Un taux de change || Elle réduit le pouvoir d'achat.
-Que mesure le PIB ? || La richesse produite par un pays sur une période || La population || La superficie || Le nombre de banques || PIB : produit intérieur brut.
-Quel est le rôle d'une banque commerciale ? || Recevoir des dépôts et accorder des crédits || Fabriquer les billets || Fixer les lois || Collecter les impôts || La banque centrale émet la monnaie.
+Pour le concours : qu'est-ce que l'inflation ? || Une hausse générale et durable des prix || Une baisse des prix || Une baisse des salaires || Un taux de change || Elle réduit le pouvoir d'achat.
+Pour le concours : que mesure le PIB ? || La richesse produite par un pays sur une période || La population || La superficie || Le nombre de banques || PIB : produit intérieur brut.
+Pour le concours : quel est le rôle d'une banque commerciale ? || Recevoir des dépôts et accorder des crédits || Fabriquer les billets || Fixer les lois || Collecter les impôts || La banque centrale émet la monnaie.
 Quel est le rôle de la BCEAO ? || Émettre la monnaie et mener la politique monétaire || Gérer un magasin || Collecter la TVA || Juger les litiges || Elle sert les pays de l'UEMOA.
 Qu'est-ce qu'un taux d'intérêt ? || Le prix d'un crédit || Un impôt || Un salaire || Une assurance || Il rémunère le prêteur.
 Citez une garantie de crédit : || L'hypothèque || Le dividende || Le bilan || La facture || La caution et le gage en sont d'autres.

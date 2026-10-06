@@ -1,0 +1,31 @@
+titre: Matériel informatique et architecture d'un ordinateur
+== fiche
+p: Connaître les composants d'un ordinateur et leur rôle est la base de toute filière informatique.
+li: Processeur (CPU) : cerveau de l'ordinateur ; exécute les instructions ; vitesse en gigahertz (GHz), nombre de cœurs.
+li: Mémoire vive (RAM) : mémoire de travail rapide, effacée à l'extinction ; plus elle est grande, plus on ouvre de programmes à la fois.
+li: Stockage : disque dur (HDD), disque SSD (plus rapide), clé USB, carte mémoire ; capacité en Go ou To.
+li: Carte mère : relie tous les composants ; carte graphique (GPU) : traite l'image ; alimentation : fournit le courant.
+li: Périphériques d'entrée : clavier, souris, scanner, microphone, webcam ; de sortie : écran, imprimante, haut-parleurs.
+li: Unités : 1 octet = 8 bits ; 1 Ko = 1 024 octets ; 1 Mo = 1 024 Ko ; 1 Go = 1 024 Mo ; 1 To = 1 024 Go.
+li: Système binaire : l'ordinateur ne comprend que 0 et 1 ; un bit est un chiffre binaire.
+li: Types d'ordinateurs : de bureau, portable, serveur, tablette, smartphone, ordinateur monocarte (Raspberry Pi).
+li: Entretien : dépoussiérer, mettre à jour, sauvegarder, protéger contre la surchauffe et les coupures de courant (onduleur).
+li: Ports : USB, HDMI, Ethernet, jack audio ; Bluetooth et Wi-Fi pour le sans-fil.
+note: Un SSD rend un vieil ordinateur nettement plus rapide au démarrage.
+note: La RAM est volatile : sauvegarde ton travail régulièrement.
+== questions
+Quel composant est appelé « le cerveau » de l'ordinateur ? || Le processeur || La RAM || Le disque dur || L'écran || Il exécute les instructions des programmes.
+Que stocke la RAM ? || Les données en cours d'utilisation, temporairement || Les fichiers pour toujours || Les photos seulement || Le système seulement || Elle est effacée à l'extinction.
+Quel stockage est le plus rapide ? || Le SSD || Le disque dur mécanique || La disquette || Le CD || Le SSD n'a pas de pièces mobiles.
+Que fait la carte mère ? || Elle relie tous les composants || Elle affiche l'image || Elle imprime || Elle stocke les fichiers || Tous les composants s'y branchent.
+Que traite la carte graphique ? || L'affichage et l'image || Le son seulement || Le clavier || La batterie || Elle est importante pour les jeux et la vidéo.
+Citez un périphérique d'entrée : || Le clavier || L'écran || L'imprimante || Le haut-parleur || Il envoie des informations à l'ordinateur.
+Citez un périphérique de sortie : || L'imprimante || La souris || Le scanner || Le microphone || Il restitue une information à l'utilisateur.
+Combien de bits dans un octet ? || 8 || 4 || 10 || 16 || Un octet permet 256 valeurs différentes.
+Combien de Mo dans 1 Go (convention informatique) ? || 1 024 || 1 000 000 || 100 || 10 || On compte en puissances de 2.
+Quels chiffres utilise le système binaire ? || 0 et 1 || De 0 à 9 || De 0 à 7 || De 1 à 2 || Les circuits ont deux états : courant ou pas de courant.
+Que fait un onduleur ? || Il alimente quelques minutes en cas de coupure de courant || Il augmente la vitesse || Il stocke les fichiers || Il connecte au réseau || Il protège contre les coupures.
+Quel port sert à relier un ordinateur à un réseau filaire ? || Ethernet || HDMI || Jack || VGA || Le câble RJ45 s'y branche.
+Quel port transmet image et son numériques vers un écran ? || HDMI || USB seulement || Ethernet || Jack || Il est utilisé pour les écrans et les téléviseurs.
+Pourquoi dépoussiérer un ordinateur ? || Éviter la surchauffe || Augmenter la RAM || Changer le système || Chiffrer les fichiers || La poussière bloque la ventilation.
+Qu'est-ce qu'un serveur ? || Un ordinateur qui fournit des services à d'autres || Un clavier || Un câble || Un virus || Il héberge sites, fichiers ou applications.

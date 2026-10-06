@@ -15,11 +15,11 @@ note: Le client achète un bénéfice, pas une caractéristique technique.
 note: Un client satisfait revient et recommande : la fidélisation coûte moins cher que la prospection.
 == questions
 Que représentent les 4P du marketing mix ? || Produit, prix, place, promotion || Personne, plan, poste, paye || Prix, pub, poste, public || Produit, profit, personnel, plan || Ils décrivent l'offre commerciale.
-Quelle est la première étape d'une vente ? || L'accueil du client || La conclusion || Le paiement || Le service après-vente || Elle crée la confiance.
+Pour le concours : quelle est la première étape d'une vente ? || L'accueil du client || La conclusion || Le paiement || Le service après-vente || Elle crée la confiance.
 Que signifie la découverte des besoins ? || Poser des questions pour comprendre ce que veut le client || Parler de soi || Donner le prix directement || Fermer le magasin || Elle guide l'argumentaire.
 Que signifie CAB dans un argumentaire ? || Caractéristique, Avantage, Bénéfice || Client, Achat, Bilan || Coût, Accord, Bon || Contrat, Avis, Budget || Il relie le produit au bénéfice pour le client.
 Que faire face à une objection de prix ? || Écouter, reformuler et justifier avec des preuves || Baisser tout de suite le prix || Ignorer le client || Fermer la vente || Une objection est souvent une demande d'information.
-Comment calcule-t-on la marge commerciale ? || Prix de vente HT − coût d'achat HT || Coût d'achat − prix de vente || Prix de vente × TVA || Coût × quantité || Elle rémunère le commerçant.
+Pour le concours : comment calcule-t-on la marge commerciale ? || Prix de vente HT − coût d'achat HT || Coût d'achat − prix de vente || Prix de vente × TVA || Coût × quantité || Elle rémunère le commerçant.
 Un article acheté 600 est vendu 900. Quelle est la marge ? || 300 || 150 || 1 500 || 600 || 900 − 600.
 Pour cet article (achat 600, vente 900), quel est le taux de marge ? || 50 % || 33 % || 300 % || 25 % || 300 ÷ 600.
 Pour cet article (achat 600, vente 900), quel est le taux de marque ? || 33 % || 50 % || 66 % || 25 % || 300 ÷ 900.

@@ -18,8 +18,8 @@ Comment appelle-t-on le plan comptable commun à l'espace OHADA ? || SYSCOHADA |
 Que décrit le bilan ? || Le patrimoine à une date donnée || Les recettes d'un jour seulement || Le nombre d'employés || Le plan commercial || Il présente l'actif et le passif.
 Que contient l'actif d'un bilan ? || Ce que l'entreprise possède || Ce que l'entreprise doit || Les salaires futurs || Les impôts payés || Les biens, créances et trésorerie en font partie.
 Que contient le passif d'un bilan ? || Capitaux propres et dettes || Stocks et caisse || Seulement les clients || Seulement le matériel || Il montre l'origine des financements.
-Comment calcule-t-on le résultat ? || Produits − charges || Charges − produits || Actif + passif || Stock × prix || Si produits > charges : bénéfice.
-Que signifie la partie double ? || Chaque opération est inscrite au débit et au crédit || Chaque opération est faite deux fois par erreur || On enregistre deux factures || On double le prix || Les montants débités et crédités sont égaux.
+Pour le concours : comment calcule-t-on le résultat ? || Produits − charges || Charges − produits || Actif + passif || Stock × prix || Si produits > charges : bénéfice.
+Pour le concours : que signifie la partie double ? || Chaque opération est inscrite au débit et au crédit || Chaque opération est faite deux fois par erreur || On enregistre deux factures || On double le prix || Les montants débités et crédités sont égaux.
 Que fait le journal comptable ? || Il enregistre les opérations dans l'ordre chronologique || Il classe par compte || Il calcule la TVA seule || Il remplace la facture || Le grand livre regroupe ensuite par compte.
 Que montre la balance ? || Les soldes des comptes || Les salaires || Le catalogue || La liste des clients || Total débit et total crédit doivent être égaux.
 Comment calcule-t-on la TVA à payer ? || TVA collectée − TVA déductible || TVA déductible − TVA collectée || TVA × 2 || Prix HT × 100 || Elle est reversée à l'administration fiscale.

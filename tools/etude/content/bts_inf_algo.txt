@@ -1,0 +1,32 @@
+titre: Algorithmique et bases de la programmation
+== fiche
+p: Un algorithme est une suite d'instructions pour résoudre un problème. Les langages de programmation l'expriment pour l'ordinateur.
+li: Variable : case mémoire avec un nom et un type (entier, réel, texte, booléen).
+li: Structures de base : séquence, condition (si... alors... sinon), boucle (pour, tant que).
+li: Opérateurs : + − × ÷ ; modulo % (reste de la division) ; comparaison : ==, !=, <, >, <=, >= ; logique : ET, OU, NON.
+li: Boucle « pour » : nombre de répétitions connu ; boucle « tant que » : tant qu'une condition reste vraie.
+li: Tableau : liste de valeurs indexées (souvent à partir de 0) ; fonction : bloc de code réutilisable avec paramètres et valeur de retour.
+li: Langages : Python (simple, polyvalent), JavaScript (web), Java, C, PHP, SQL (bases de données) ; HTML/CSS décrivent des pages web.
+li: Compilation et interprétation : un compilateur traduit tout le programme ; un interpréteur l'exécute ligne par ligne.
+li: Bug : erreur dans un programme ; débogage : trouver et corriger ; tests : vérifier que le programme fait ce qu'on attend.
+li: Algorithmes classiques : recherche d'un élément, tri (à bulles, par sélection), calcul de moyenne, maximum d'une liste.
+li: Programmation orientée objet : classes, objets, attributs, méthodes.
+li: Bonne pratique : noms clairs, commentaires, petites fonctions, versionner avec Git.
+note: Écris l'algorithme en français avant de coder : le raisonnement d'abord.
+note: Teste toujours avec des cas limites : liste vide, zéro, valeur négative.
+== questions
+Qu'est-ce qu'un algorithme ? || Une suite d'instructions pour résoudre un problème || Un virus || Un composant || Un écran || Il se décrit avant d'être programmé.
+Qu'est-ce qu'une variable ? || Une case mémoire avec un nom et un type || Un câble || Un virus || Un écran || Sa valeur peut changer.
+Quelles sont les trois structures de base d'un programme ? || Séquence, condition, boucle || Texte, image, son || Entrée, sortie, câble || Bit, octet, mot || Elles suffisent à écrire la plupart des algorithmes.
+Que fait l'opérateur modulo (%) ? || Donne le reste de la division || Multiplie || Calcule la racine || Compare || 7 % 3 donne 1.
+Combien donne 10 % 3 ? || 1 || 3 || 0 || 10 || 10 = 3 × 3 + 1.
+Quelle boucle utilise-t-on quand le nombre de répétitions est connu ? || La boucle pour || La boucle tant que || Aucune || La condition seule || Elle répète un nombre précis de fois.
+Quelle boucle répète tant qu'une condition est vraie ? || La boucle tant que || La boucle pour seulement || Le tableau || La variable || Attention aux boucles infinies.
+Pour le concours : qu'est-ce qu'un tableau ? || Une liste de valeurs indexées || Une table SQL seulement || Un écran || Un fichier PDF || L'index commence souvent à 0.
+Qu'est-ce qu'une fonction ? || Un bloc de code réutilisable || Un virus || Une variable || Une adresse || Elle peut recevoir des paramètres et renvoyer un résultat.
+Quel langage est très utilisé pour débuter ? || Python || Assembleur seulement || Binaire || Cobol seulement || Sa syntaxe est simple et lisible.
+Quel langage s'exécute dans le navigateur ? || JavaScript || SQL || Python seulement || C seulement || Il rend les pages web interactives.
+Que décrit HTML ? || La structure d'une page web || Une base de données || Un système d'exploitation || Un virus || CSS en décrit l'apparence.
+Qu'est-ce qu'un bug ? || Une erreur dans un programme || Un composant || Un câble || Une mise à jour || Le débogage sert à le corriger.
+Quelle est la différence entre compilateur et interpréteur ? || Le compilateur traduit tout, l'interpréteur exécute ligne par ligne || Aucune || Le compilateur est un virus || L'interpréteur est un composant || Les deux produisent un résultat exécutable.
+À quoi sert Git ? || Suivre les versions du code || Dessiner || Chiffrer || Stocker des mails || Il permet de travailler à plusieurs.
