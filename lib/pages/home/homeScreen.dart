@@ -93,7 +93,6 @@ import '../contenuPayant/content_detail_page.dart';
 import '../contenuPayant/profileScreenContent.dart';
 import '../dating/dating_entry_page.dart';
 import '../dating/dating_notifications_page.dart';
-import '../dating/widgets/dating_top_modal.dart';
 import '../mes_notifications.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
@@ -1404,7 +1403,6 @@ class _MyHomePageState extends State<MyHomePage>
         ? ['affiliation_marketing', 'remuneration', 'invite_amis']
         : [
             'remuneration',
-            if (!kIsAppleStore) 'top_dating', // Afrolove est masqué sur iPhone/iPad (App Store)
             'invite_amis',
             'affiliation_marketing',
           ];
@@ -1417,8 +1415,6 @@ class _MyHomePageState extends State<MyHomePage>
       await showInviteFriendsModal(context, authProvider.loginUserData);
     } else if (modalToShow == 'remuneration') {
       await showRemunerationAnnounceModal(context, authProvider.loginUserData.id!);
-    } else if (modalToShow == 'top_dating') {
-      await showTopDatingAnnounceModal(context);
     }
   }
 
