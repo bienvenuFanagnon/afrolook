@@ -1,0 +1,28 @@
+titre: Séries numériques et développements en série
+== fiche
+p: Une série est la somme d'une infinité de termes. Elle converge si la suite de ses sommes partielles tend vers une limite finie, sinon elle diverge.
+li: Série géométrique Σ qⁿ : elle converge si |q| < 1 et sa somme (à partir de n = 0) vaut 1/(1 − q).
+li: Série harmonique Σ 1/n : elle diverge, bien que son terme général tende vers 0. Série de Riemann Σ 1/nᵅ : elle converge si α > 1.
+li: Condition nécessaire : si la série converge, son terme général tend vers 0 (la réciproque est fausse).
+li: Critère de d'Alembert : si uₙ₊₁/uₙ tend vers L < 1, la série converge ; si L > 1, elle diverge.
+li: Série alternée : si les termes décroissent en valeur absolue vers 0, la série converge (critère de Leibniz).
+li: Série entière Σ aₙ xⁿ : elle converge pour |x| < R (rayon de convergence R).
+li: Développements usuels : eˣ = Σ xⁿ/n! ; 1/(1 − x) = Σ xⁿ pour |x| < 1.
+note: Exemple : 1 + 1/2 + 1/4 + 1/8 + … = 1/(1 − 1/2) = 2.
+note: Le développement de Taylor approche une fonction par un polynôme autour d'un point.
+== questions
+Quand une série converge-t-elle ? || Quand la suite de ses sommes partielles a une limite finie || Quand ses termes sont positifs || Quand elle a un nombre fini de termes || Quand son premier terme est 1 || C'est la définition de la convergence.
+Pour quelles valeurs de q la série géométrique Σ qⁿ converge-t-elle ? || |q| < 1 || q > 1 || q = 1 || toutes les valeurs || Le terme général doit tendre vers 0.
+Quelle est la somme de 1 + 1/2 + 1/4 + 1/8 + … ? || 2 || 1 || 1,5 || Elle diverge || 1/(1 − 1/2) = 2.
+Que dit la série harmonique Σ 1/n ? || Elle diverge || Elle converge vers 1 || Elle converge vers 2 || Elle vaut 0 || Son terme tend vers 0 mais la somme est infinie.
+La série Σ 1/n² converge-t-elle ? || Oui, car 2 > 1 || Non || On ne peut pas savoir || Seulement si n est pair || C'est une série de Riemann avec α = 2.
+Si le terme général d'une série ne tend pas vers 0, que peut-on dire ? || La série diverge || La série converge || La série est géométrique || La série est alternée || La condition nécessaire n'est pas remplie.
+Si le terme général tend vers 0, la série converge-t-elle toujours ? || Non, la série harmonique en est un contre-exemple || Oui, toujours || Oui, si elle est positive || Non, jamais || La condition n'est pas suffisante.
+Que dit le critère de d'Alembert si uₙ₊₁/uₙ tend vers 1/2 ? || La série converge || La série diverge || On ne peut rien dire || La série vaut 1/2 || La limite est inférieure à 1.
+Que dit le critère de d'Alembert si le rapport tend vers 3 ? || La série diverge || La série converge || La série vaut 3 || On ne peut rien dire || Une limite supérieure à 1 entraîne la divergence.
+Que dit le critère de Leibniz ? || Une série alternée dont les termes décroissent vers 0 converge || Toute série alternée diverge || Toute série positive converge || Une série alternée vaut 0 || Il s'applique aux séries de signes alternés.
+Qu'est-ce qu'une série entière ? || Une série de la forme Σ aₙ xⁿ || Une série d'entiers || Une série de nombres complexes seulement || Une série finie || Elle dépend de la variable x.
+Que représente le rayon de convergence ? || Le nombre R tel que la série converge pour |x| < R || Le premier terme || La somme || Le nombre de termes || Au-delà de R, la série diverge.
+Quel est le développement de eˣ en série entière ? || Σ xⁿ/n! || Σ xⁿ || Σ n xⁿ || Σ (−1)ⁿ xⁿ || Il converge pour tout réel x.
+Quelle est la somme de Σ xⁿ pour |x| < 1 ? || 1/(1 − x) || 1 − x || x/(1 − x²) || eˣ || C'est la série géométrique.
+À quoi sert un développement de Taylor ? || À approcher une fonction par un polynôme || À dériver une série || À résoudre un système || À calculer un déterminant || Il donne une approximation locale.

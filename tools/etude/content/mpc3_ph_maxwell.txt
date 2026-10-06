@@ -1,0 +1,28 @@
+titre: Ondes électromagnétiques
+== fiche
+p: La lumière, les ondes radio et les rayons X sont des ondes électromagnétiques : un champ électrique et un champ magnétique oscillent ensemble.
+li: Les équations de Maxwell résument l'électromagnétisme : théorème de Gauss (le champ électrique naît des charges), absence de monopôle magnétique, loi de Faraday (un champ magnétique variable crée un champ électrique), loi d'Ampère-Maxwell (un courant et un champ électrique variable créent un champ magnétique).
+li: Dans le vide, une onde électromagnétique se propage à c = 3 × 10⁸ m/s ; c = 1/√(ε₀ μ₀).
+li: Elle est transversale : E, B et la direction de propagation sont perpendiculaires entre elles.
+li: Relation fondamentale : c = λ f ; l'énergie du photon est E = h f.
+li: Spectre (fréquence croissante) : ondes radio, micro-ondes, infrarouge, lumière visible (environ 400 à 700 nm), ultraviolet, rayons X, rayons gamma.
+li: Polarisation : direction d'oscillation du champ électrique ; un polariseur ne laisse passer qu'une direction.
+li: Propagation dans un milieu : la vitesse est v = c/n ; la fréquence ne change pas, la longueur d'onde diminue.
+note: Les micro-ondes servent aux fours et aux télécommunications, l'infrarouge à la télécommande et à la thermographie, les rayons X à la radiographie.
+note: Les rayons UV et gamma sont ionisants : leur excès est dangereux.
+== questions
+De quoi une onde électromagnétique est-elle faite ? || D'un champ électrique et d'un champ magnétique couplés || D'une onde sonore || D'un flux de matière || D'un courant seulement || Les deux champs oscillent ensemble.
+Quelle est la vitesse d'une onde électromagnétique dans le vide ? || 3 × 10⁸ m/s || 340 m/s || 3 × 10⁵ m/s || 3 m/s || Elle est notée c.
+Une onde électromagnétique est-elle transversale ou longitudinale ? || Transversale || Longitudinale || Les deux selon la fréquence || Ni l'une ni l'autre || E, B et la propagation sont perpendiculaires.
+Quelle relation lie la longueur d'onde et la fréquence ? || c = λ f || c = λ / f || c = f / λ || c = λ + f || Pour une onde dans le vide.
+Quelle est la longueur d'onde d'une onde de 100 MHz dans le vide ? || 3 m || 30 m || 0,3 m || 300 m || λ = c/f = 3 × 10⁸ / 10⁸.
+Quelle catégorie d'onde a la fréquence la plus élevée ? || Les rayons gamma || Les ondes radio || Les micro-ondes || L'infrarouge || Dans le spectre, ils ont la plus grande fréquence et la plus grande énergie.
+Quelle catégorie d'onde a la longueur d'onde la plus grande ? || Les ondes radio || Les rayons X || L'ultraviolet || Les rayons gamma || Elles sont à l'autre extrémité du spectre.
+Dans quel ordre de fréquence croissante sont classées ces ondes ? || Radio, infrarouge, visible, ultraviolet, X || X, visible, radio || Visible, radio, X || Ultraviolet, radio, infrarouge || Plus la fréquence monte, plus l'énergie augmente.
+Quelle plage de longueurs d'onde correspond à la lumière visible, environ ? || 400 à 700 nm || 1 à 10 m || 1 à 10 mm || 1 à 10 km || Du violet au rouge.
+À quoi servent les rayons X ? || À la radiographie || À la télécommande || À la cuisson || À la radio || Ils traversent les tissus mous.
+Que dit la loi de Faraday dans les équations de Maxwell ? || Un champ magnétique variable crée un champ électrique || Un champ électrique constant crée un champ magnétique || Les charges n'ont aucun effet || Il n'y a pas de champ || C'est l'induction.
+Quelle équation exprime l'absence de monopôle magnétique ? || div B = 0 || div E = ρ/ε₀ || rot E = −∂B/∂t || F = m a || Les lignes de champ magnétique se referment.
+Que fait un polariseur ? || Il ne laisse passer qu'une direction de polarisation || Il amplifie l'onde || Il change la fréquence || Il supprime le champ magnétique || Il filtre la direction du champ électrique.
+Que devient la fréquence d'une onde qui passe de l'air au verre ? || Elle ne change pas || Elle double || Elle diminue || Elle devient nulle || Seule la vitesse et la longueur d'onde changent.
+Pourquoi les rayons UV et gamma sont-ils dangereux en excès ? || Ils sont ionisants || Ils sont trop lents || Ils sont trop faibles || Ils sont mécaniques || Leur énergie peut abîmer les cellules.

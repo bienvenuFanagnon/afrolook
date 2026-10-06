@@ -1,0 +1,29 @@
+titre: Dopage et éthique du sport
+== fiche
+p: Le dopage est l'usage de substances ou de méthodes interdites pour améliorer artificiellement les performances. Il est contraire à l'éthique et dangereux pour la santé.
+li: L'AMA (Agence mondiale antidopage) publie chaque année la liste des substances et méthodes interdites et édicte le Code mondial antidopage.
+li: Substances : stéroïdes anabolisants, EPO, hormone de croissance, stimulants, diurétiques (qui masquent d'autres produits), bêta-bloquants dans certains sports.
+li: Méthodes interdites : transfusion sanguine (dopage sanguin), manipulation d'échantillons, dopage génétique.
+li: Contrôles antidopage : prélèvements d'urine ou de sang, en compétition et hors compétition, sans préavis possible ; l'analyse se fait dans un laboratoire accrédité.
+li: Responsabilité stricte : le sportif répond de tout ce qu'il a dans son organisme, même sans intention de se doper.
+li: Autorisation d'usage à des fins thérapeutiques (AUT) : permet d'utiliser un traitement médical nécessaire sous conditions.
+li: Sanctions : disqualification, annulation de résultats, suspension de plusieurs années, sanctions aussi pour l'entourage qui aide.
+li: Risques pour la santé : troubles cardiaques, hormonaux, hépatiques, psychologiques, dépendance.
+note: Valeurs : fair-play, équité, respect de soi et de l'adversaire.
+note: Un sportif doit vérifier tout médicament ou complément avec son médecin.
+== questions
+Comment qualifie-t-on le recours à des produits ou méthodes interdits pour gagner ? || Le dopage || Un entraînement intense || Un régime équilibré || Une blessure || Il est interdit et dangereux.
+Quel organisme publie la liste des substances interdites ? || L'AMA || La FIFA || Le CIO seulement || L'OMS || L'Agence mondiale antidopage.
+Citez une substance interdite : || Les stéroïdes anabolisants || L'eau || Les vitamines usuelles || Le riz || Ils augmentent la masse musculaire de façon artificielle.
+Qu'est-ce que l'EPO ? || Une hormone qui augmente la production de globules rouges || Un sucre || Un sel || Une vitamine || Elle améliore le transport d'oxygène de façon interdite.
+Pourquoi les diurétiques sont-ils interdits ? || Ils peuvent masquer d'autres produits || Ils fournissent de l'énergie || Ils augmentent la force || Ils guérissent || Ils diluent l'urine.
+Qu'est-ce que le dopage sanguin ? || Une transfusion ou manipulation du sang pour améliorer l'oxygénation || Un don de sang || Un test || Un massage || Il est interdit.
+Comment se déroule un contrôle antidopage ? || Prélèvement d'urine ou de sang analysé en laboratoire accrédité || Un simple questionnaire || Un test sportif || Un examen visuel || Il peut avoir lieu hors compétition.
+Que signifie la responsabilité stricte du sportif ? || Il répond de ce qu'il a dans son organisme, même sans intention || Il n'est jamais responsable || Seul le médecin est responsable || Seul l'entraîneur est responsable || Il doit tout vérifier.
+Qu'est-ce qu'une AUT ? || Une autorisation d'usage à des fins thérapeutiques || Un test antidopage || Un contrat sportif || Une licence || Elle permet de se soigner sans être sanctionné, sous conditions.
+Quelle sanction peut frapper un sportif dopé ? || Une suspension et l'annulation de ses résultats || Un trophée || Une prime || Une promotion || Les sanctions sont lourdes.
+Les médecins ou entraîneurs qui aident au dopage sont-ils sanctionnés ? || Oui, l'entourage peut l'être || Non || Seulement les sportifs || Seulement les clubs || Les règles visent aussi l'encadrement.
+Citez un risque du dopage pour la santé : || Des troubles cardiaques || Une meilleure santé || Une taille plus grande || Une meilleure vue || Il peut aussi causer des troubles hormonaux et psychologiques.
+Quelle valeur le dopage trahit-il ? || Le fair-play || La performance || La santé || La vitesse || Il rompt l'égalité des chances.
+Que doit faire un sportif avant de prendre un médicament ou un complément ? || Le vérifier avec son médecin et la liste de l'AMA || Le prendre sans vérifier || Demander à un ami || L'acheter sur Internet || Il en est responsable.
+Pourquoi un complément alimentaire peut-il poser problème ? || Il peut contenir une substance interdite non indiquée || Il est toujours sans risque || Il est inutile || Il est trop cher || L'étiquette n'est pas toujours exacte.

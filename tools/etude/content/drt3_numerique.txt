@@ -1,0 +1,29 @@
+titre: Droit du numérique et protection des données personnelles
+== fiche
+p: Le droit du numérique encadre les activités en ligne : commerce, contrats, preuve, données personnelles, cybercriminalité.
+li: Données personnelles : toute information qui identifie une personne (nom, téléphone, photo, adresse IP, localisation).
+li: Principes de protection : licéité et loyauté, finalité (un but précis et légitime), minimisation (seulement ce qui est nécessaire), exactitude, durée limitée, sécurité, consentement.
+li: Droits de la personne : être informée, accéder à ses données, les rectifier, s'opposer, demander leur effacement.
+li: Autorité de protection des données : organisme national qui contrôle et sanctionne ; l'Union africaine a adopté la Convention de Malabo (2014) sur la cybersécurité et la protection des données.
+li: Commerce électronique : contrat conclu en ligne ; l'information du consommateur, la possibilité de rétractation, la sécurité des paiements sont essentielles.
+li: Signature électronique : elle a, sous conditions, la même valeur qu'une signature manuscrite ; l'écrit électronique peut servir de preuve.
+li: Cybercriminalité : piratage, hameçonnage, rançongiciel, usurpation d'identité, diffusion de contenus illicites ; des lois nationales les punissent.
+li: Responsabilité des plateformes et des hébergeurs : ils retirent promptement les contenus manifestement illicites signalés.
+note: Avant de publier une photo d'une personne, on demande son accord, surtout pour un mineur.
+note: Un mot de passe solide, la double authentification et les mises à jour réduisent beaucoup les risques.
+== questions
+Qu'est-ce qu'une donnée personnelle ? || Une information qui permet d'identifier une personne || Une donnée sur un animal || Un chiffre d'affaires || Un prix || Nom, téléphone, photo et adresse IP en sont.
+Que signifie le principe de finalité ? || Les données sont collectées pour un but précis et légitime || Elles sont collectées sans but || Elles sont conservées toujours || Elles sont vendues || On ne peut pas les utiliser pour autre chose.
+Que signifie le principe de minimisation ? || Ne collecter que les données nécessaires || Collecter le plus possible || Les cacher || Les supprimer immédiatement || Moins de données, moins de risques.
+Quel est le rôle du consentement ? || L'accord libre et éclairé de la personne au traitement de ses données || Une formalité inutile || Une signature de l'État || Un paiement || Il doit pouvoir être retiré.
+Citez un droit de la personne sur ses données : || Le droit d'accès || Le droit de vote || Le droit de grève || Le droit de propriété || Elle peut aussi rectifier et faire effacer.
+Que fait une autorité de protection des données ? || Elle contrôle et sanctionne le respect des règles || Elle vend les données || Elle crée des applications || Elle juge les crimes || Elle reçoit les plaintes.
+Qu'est-ce que la Convention de Malabo ? || Un texte de l'Union africaine sur la cybersécurité et la protection des données || Un traité commercial || Un traité de paix || Une convention du travail || Adoptée en 2014.
+Qu'est-ce que le commerce électronique ? || La conclusion de contrats de vente en ligne || La vente en boutique seulement || Une taxe || Une bourse || Il demande information et sécurité du consommateur.
+Quel droit a souvent le consommateur qui achète en ligne ? || Un droit de rétractation dans un délai || Le droit de ne pas payer || Le droit de garder le produit sans payer || Aucun droit || Le délai varie selon les lois.
+Une signature électronique peut-elle avoir une valeur juridique ? || Oui, sous conditions || Non, jamais || Oui, toujours sans condition || Seulement pour l'État || Elle peut valoir signature manuscrite.
+Qu'est-ce que l'hameçonnage ? || Une tromperie pour obtenir des données confidentielles || Un jeu en ligne || Une sauvegarde || Un virus || Souvent par faux message ou faux site.
+Comment appelle-t-on le logiciel qui chiffre vos données et exige un paiement pour les rendre ? || Un rançongiciel || Un antivirus || Un jeu || Une application bancaire || C'est une attaque courante contre les entreprises.
+Que doit faire un hébergeur face à un contenu manifestement illicite signalé ? || Le retirer promptement || L'ignorer || Le promouvoir || Le facturer || Sa responsabilité peut être engagée sinon.
+Avant de publier la photo d'un enfant, que faut-il ? || L'accord de ses représentants légaux || Rien || L'accord du voisin || Un impôt || Le droit à l'image protège les mineurs.
+Citez une bonne pratique de sécurité : || Utiliser un mot de passe solide et la double authentification || Utiliser le même mot de passe partout || Partager son mot de passe || Ne jamais mettre à jour || Elle réduit le risque de piratage.

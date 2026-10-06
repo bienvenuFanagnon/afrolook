@@ -1,0 +1,29 @@
+titre: Traumatologie du sport et rééducation
+== fiche
+p: Les blessures sont fréquentes en sport ; les connaître permet de mieux les prévenir, les soigner et reprendre sans risque.
+li: Entorse : atteinte d'un ligament (cheville, genou) ; bénigne (étirement) ou grave (rupture) ; douleur, gonflement, instabilité.
+li: Claquage ou déchirure musculaire : lésion du muscle lors d'un effort brusque ; douleur vive, impossibilité de contracter ; repos de plusieurs semaines selon la gravité.
+li: Tendinite : inflammation d'un tendon, due à la répétition du geste ; repos, ajustement du geste, rééducation.
+li: Fracture : os cassé ; fracture de fatigue : microfissure due à la répétition des chocs (course).
+li: Luxation : os sorti de son articulation ; urgence médicale.
+li: Commotion cérébrale : choc à la tête avec confusion, maux de tête, vertiges ; arrêt immédiat, avis médical, reprise très progressive.
+li: Rééducation : phases de repos et de protection, récupération de la mobilité, renforcement, travail d'équilibre (proprioception), reprise du geste sportif.
+li: Retour au jeu : indolence, mobilité complète, force retrouvée, confiance ; la précipitation expose à la rechute.
+note: Protocole PRICE : protection, repos, glace, compression, élévation (dans les premières heures).
+note: La prévention repose sur l'échauffement, la préparation physique, l'équipement adapté, la récupération et le respect de la douleur.
+== questions
+Quelle structure est lésée dans une entorse de la cheville ? || Un ligament || Un os cassé || Un muscle déchiré || Un tendon enflammé || La cheville est l'articulation la plus touchée.
+Qu'est-ce qu'un claquage musculaire ? || Une lésion du muscle lors d'un effort brusque || Un os cassé || Un ligament étiré || Une tendinite || Il provoque une douleur vive.
+Qu'est-ce qu'une tendinite ? || L'inflammation d'un tendon || La rupture d'un ligament || Une crampe || Une fracture || Elle vient souvent de la répétition du geste.
+Qu'est-ce qu'une fracture de fatigue ? || Une microfissure de l'os due à la répétition des chocs || Une fracture violente || Une entorse || Une luxation || Elle touche surtout les coureurs.
+Quelle blessure déplace un os hors de son articulation ? || Une luxation || Un ligament étiré || Un muscle contracté || Un os cassé || Elle demande une prise en charge médicale urgente.
+Quels signes évoquent une commotion cérébrale ? || Confusion, maux de tête, vertiges après un choc à la tête || Une simple fatigue || Une toux || Un mal de dos || Il faut arrêter l'activité et demander un avis médical.
+Que faire après un choc à la tête avec confusion ? || Arrêter l'activité et consulter || Reprendre le jeu || Courir plus vite || Boire du café || Une reprise trop rapide est dangereuse.
+Que signifie le protocole PRICE ? || Protection, repos, glace, compression, élévation || Plan, repos, intensité, charge, entraînement || Prévenir, rééduquer, inspecter, contrôler, évaluer || Poids, résistance, intensité, cardio, énergie || Il s'applique aux premières heures d'une blessure.
+Quel est l'objectif de la rééducation ? || Retrouver mobilité, force et confiance pour reprendre le sport || Se reposer toujours || Supprimer le sport || Attendre sans rien faire || Elle suit des phases progressives.
+Qu'est-ce que la proprioception ? || La perception de la position de son corps, travaillée avec l'équilibre || La force musculaire || La respiration || La digestion || Elle protège contre les entorses.
+Que faut-il avant de reprendre la compétition ? || Absence de douleur, mobilité complète et force retrouvée || Une envie de jouer || Un nouveau maillot || Un régime || Une reprise précipitée expose à la rechute.
+Quelle est la bonne attitude face à une douleur vive ? || Arrêter l'effort et consulter si elle persiste || La supporter jusqu'au bout || L'ignorer || Augmenter l'intensité || La douleur est un signal d'alarme.
+Citez une mesure de prévention des blessures : || Un échauffement sérieux || Courir sans chaussures sur terrain dur || Ne jamais récupérer || Augmenter la charge brutalement || L'équipement et la récupération comptent aussi.
+Pourquoi une blessure mal soignée peut-elle récidiver ? || Les tissus n'ont pas retrouvé leur solidité || Elle disparaît toute seule || C'est la chance || C'est la fatigue du médecin || Il faut une rééducation complète.
+Que faire pour une entorse de la cheville dans les premières heures ? || Repos, glace, compression et élévation || Courir pour la dégourdir || Appliquer une chaleur forte || Masser fort || C'est le protocole recommandé.

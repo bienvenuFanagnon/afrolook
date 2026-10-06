@@ -1,0 +1,28 @@
+titre: Propriété intellectuelle et OAPI
+== fiche
+p: La propriété intellectuelle protège les créations de l'esprit : œuvres, inventions, signes distinctifs.
+li: Deux grandes branches : la propriété littéraire et artistique (droit d'auteur : œuvres, musique, logiciels, photos) et la propriété industrielle (brevets, marques, dessins et modèles, noms commerciaux).
+li: Droit d'auteur : naît de la création, sans formalité ; droit moral (nom, intégrité de l'œuvre) et droits patrimoniaux (reproduire, diffuser et être rémunéré) ; il dure toute la vie de l'auteur et de longues années après sa mort.
+li: Brevet : protège une invention nouvelle, inventive et industrielle ; durée de 20 ans.
+li: Marque : signe qui distingue des produits ou services (nom, logo) ; protection de 10 ans renouvelable indéfiniment.
+li: OAPI : Organisation africaine de la propriété intellectuelle, créée par l'accord de Bangui (1977, révisé en 1999), qui regroupe 17 États ; un dépôt unique protège dans tous les États membres. Son siège est à Yaoundé (Cameroun).
+li: Contrefaçon : copier ou utiliser sans autorisation une œuvre ou un titre protégé ; sanctions civiles et pénales.
+li: Exceptions : copie privée, courte citation avec mention de la source, parodie.
+note: Un nom de marque doit être disponible : on vérifie qu'il n'existe pas déjà.
+note: Une licence est une autorisation d'exploiter une création, souvent contre redevance.
+== questions
+Que protège la propriété intellectuelle ? || Les créations de l'esprit || Les terrains || Les voitures || Les salaires || Œuvres, inventions et signes distinctifs.
+Quelles sont les deux grandes branches de la propriété intellectuelle ? || Propriété littéraire et artistique, propriété industrielle || Propriété publique, privée || Propriété civile, pénale || Propriété foncière, mobilière || Droit d'auteur d'un côté, brevets et marques de l'autre.
+Comment naît le droit d'auteur ? || De la création de l'œuvre, sans formalité || D'un dépôt obligatoire || D'une décision de justice || D'une vente || La protection est immédiate.
+Que protège le droit moral de l'auteur ? || Son nom et l'intégrité de son œuvre || Ses revenus || Son domicile || Sa nationalité || Il est perpétuel et incessible.
+Que permettent les droits patrimoniaux ? || Exploiter l'œuvre et en tirer une rémunération || Changer de nom || Interdire toute copie privée || Voter || Reproduire, diffuser, adapter.
+Que protège un brevet ? || Une invention nouvelle, inventive et industrielle || Un nom de produit || Un logo || Un roman || Il donne un monopole de 20 ans.
+Quelle est la durée de protection d'un brevet ? || 20 ans || 5 ans || 50 ans || 100 ans || Elle est non renouvelable.
+Que protège une marque ? || Un signe distinctif comme un nom ou un logo || Une invention || Un roman || Un terrain || Elle distingue les produits d'une entreprise.
+Quelle est la durée de protection initiale d'une marque ? || 10 ans, renouvelable || 1 an || 100 ans || Illimitée sans formalité || On peut la renouveler indéfiniment.
+Que signifie OAPI ? || Organisation africaine de la propriété intellectuelle || Office africain des produits industriels || Organisation des activités professionnelles || Organe africain du patrimoine || Elle protège la propriété industrielle dans ses États membres.
+Quel accord a créé l'OAPI ? || L'accord de Bangui || Le traité de Rome || La convention de Genève || L'accord de Paris || Signé en 1977, révisé en 1999.
+Où siège l'OAPI ? || À Yaoundé || À Genève || À Dakar || À Abidjan || Le siège est au Cameroun.
+Quel avantage a un dépôt auprès de l'OAPI ? || Il protège dans tous les États membres || Il ne vaut que dans un pays || Il est gratuit || Il est facultatif || Un seul dépôt suffit.
+Qu'est-ce que la contrefaçon ? || Copier ou utiliser sans autorisation un bien protégé || Créer une œuvre originale || Payer une licence || Acheter un produit || Elle est sanctionnée civilement et pénalement.
+Qu'est-ce qu'une licence ? || Une autorisation d'exploiter une création, souvent contre redevance || Un diplôme || Un impôt || Un permis de conduire || Le titulaire garde ses droits.

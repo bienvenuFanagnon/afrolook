@@ -1,0 +1,29 @@
+titre: Musculation et développement de la force
+== fiche
+p: La musculation est un entraînement avec des résistances pour développer force, volume musculaire ou endurance de force.
+li: 1RM : charge maximale que l'on peut soulever une seule fois. On exprime la charge de travail en pourcentage du 1RM.
+li: Force maximale : charges lourdes (85 à 100 % du 1RM), 1 à 5 répétitions, récupération de 3 à 5 minutes.
+li: Hypertrophie : charges modérées (65 à 80 % du 1RM), 6 à 12 répétitions, récupération d'environ 1 à 2 minutes.
+li: Endurance de force : charges plus légères, nombreuses répétitions.
+li: Séries et répétitions : une série est un enchaînement de répétitions ; on fait plusieurs séries par exercice.
+li: Exercices polyarticulaires (squat, développé couché, soulevé de terre, tractions) mobilisent plusieurs articulations ; exercices isolés ciblent un muscle.
+li: Technique et sécurité : échauffement, dos gainé, amplitude contrôlée, pareur pour les charges lourdes, respiration régulière, progression graduelle.
+li: Pliométrie : sauts et réceptions pour développer la puissance (explosivité).
+note: Les muscles se développent pendant la récupération : 48 heures de repos pour un même groupe musculaire entre deux séances intenses.
+note: Un apport suffisant en protéines et en calories soutient la prise de masse.
+== questions
+Que signifie 1RM ? || La charge maximale soulevée une seule fois || Une répétition par minute || Un rythme moyen || Un record mondial || On l'utilise pour doser la charge.
+Quelle charge vise la force maximale, environ ? || 85 à 100 % du 1RM || 30 % du 1RM || 50 % du 1RM || 0 % du 1RM || Avec peu de répétitions.
+Combien de répétitions pour développer la force maximale ? || 1 à 5 || 20 à 30 || 50 || 100 || Les charges sont très lourdes.
+Quelle zone de répétitions vise l'hypertrophie ? || 6 à 12 || 1 à 2 || 30 à 40 || 100 || Avec des charges modérées.
+Que vise l'endurance de force ? || Répéter longtemps des efforts avec des charges légères || Soulever une très lourde charge une fois || Sauter plus haut || Courir vite || Beaucoup de répétitions.
+Qu'est-ce qu'une série ? || Un enchaînement de répétitions || Une séance || Un exercice isolé || Un jour de repos || On en fait plusieurs par exercice.
+Citez un exercice polyarticulaire : || Le squat || La flexion du poignet || L'extension du doigt || La rotation du cou || Il sollicite hanches, genoux et chevilles.
+Citez un exercice qui isole un muscle : || La flexion du biceps (curl) || Le squat || Le soulevé de terre || Le développé couché || Il cible un muscle principal.
+Pourquoi un pareur est-il utile en musculation ? || Il assure la sécurité avec les charges lourdes || Il décompte le temps || Il fournit la charge || Il fait l'échauffement || Il aide en cas d'échec.
+Pourquoi s'échauffer avant de soulever lourd ? || Pour préparer muscles et articulations et limiter les blessures || Pour perdre du temps || Pour se fatiguer || Pour gagner du poids || Il augmente progressivement la charge.
+Que dire d'une technique de levée correcte ? || Elle protège les articulations et améliore l'efficacité || Elle est inutile || Elle réduit toujours la force || Elle supprime la fatigue || Mieux vaut une charge plus légère bien exécutée.
+Qu'est-ce que la pliométrie ? || Un entraînement de sauts et de réceptions pour développer la puissance || Un étirement || Un régime || Une course lente || Elle sollicite le cycle étirement-détente.
+Combien de temps de repos faut-il environ entre deux séances intenses du même muscle ? || Environ 48 heures || 5 minutes || 1 mois || Aucun || Le muscle récupère et progresse.
+Quel nutriment soutient la prise de masse musculaire ? || Les protéines || Le sel seulement || L'eau seulement || Les fibres || Avec un apport suffisant en calories.
+Une personne soulève 100 kg au maximum une fois. Quelle charge correspond à 80 % de son 1RM ? || 80 kg || 20 kg || 180 kg || 100 kg || 0,8 × 100.

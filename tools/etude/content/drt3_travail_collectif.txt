@@ -1,0 +1,28 @@
+titre: Droit du travail collectif : syndicats, conventions et grève
+== fiche
+p: Le droit du travail collectif règle les relations entre les employeurs et les travailleurs réunis en groupes : syndicats, négociations, conflits.
+li: Liberté syndicale : tout travailleur peut créer un syndicat, y adhérer ou ne pas y adhérer ; le syndicat défend les intérêts professionnels collectifs.
+li: Représentants du personnel : délégués du personnel (réclamations individuelles et collectives), comité d'entreprise ou comité d'hygiène et de sécurité selon la taille.
+li: Convention collective : accord écrit entre employeurs (ou organisations) et syndicats sur les conditions de travail et les salaires d'une branche ou d'une entreprise ; elle s'applique à tous les salariés concernés.
+li: Négociation collective : discussion pour conclure un accord ; le dialogue social évite les conflits.
+li: Grève : cessation collective et concertée du travail pour appuyer des revendications professionnelles ; le droit de grève est reconnu mais encadré (préavis, service minimum dans les services essentiels).
+li: Conflits collectifs : on tente d'abord la conciliation, puis la médiation, puis l'arbitrage.
+li: Lock-out : fermeture de l'entreprise par l'employeur pendant un conflit ; il est souvent interdit ou strictement encadré.
+note: Pendant une grève régulière, le contrat de travail est suspendu, pas rompu ; le salaire n'est pas dû pour les jours de grève.
+note: Un licenciement motivé par l'activité syndicale est illégal.
+== questions
+Que garantit la liberté syndicale ? || Le droit de créer un syndicat ou d'y adhérer || L'obligation d'adhérer || L'interdiction de se réunir || Un salaire minimum || Chacun est libre d'adhérer ou non.
+À quoi sert un syndicat ? || À défendre les intérêts professionnels collectifs des travailleurs || À recruter à la place de l'employeur || À fixer les prix || À juger les salariés || Il négocie avec les employeurs.
+Qu'est-ce qu'une convention collective ? || Un accord écrit entre employeurs et syndicats sur les conditions de travail || Un contrat de travail individuel || Une loi || Une décision de justice || Elle complète la loi.
+Qui représente les salariés auprès de l'employeur pour les réclamations ? || Les délégués du personnel || Les clients || Le maire || Le notaire || Ils présentent les réclamations individuelles et collectives.
+Qu'est-ce que la négociation collective ? || La discussion entre employeurs et syndicats pour aboutir à un accord || Un conflit || Une grève || Un procès || Elle vise la paix sociale.
+Qu'est-ce que la grève ? || L'arrêt collectif et concerté du travail pour appuyer des revendications || Un arrêt maladie || Un congé || Un licenciement || Le droit de grève est reconnu.
+Que doit-on respecter avant une grève ? || Un préavis || Rien || Le consentement du client || Une autorisation du maire || Il évite les arrêts brutaux.
+Dans quels services un service minimum peut-il être exigé ? || Les services essentiels comme la santé || Les boutiques de mode || Les cafés || Les cinémas || La continuité du service essentiel est protégée.
+Que devient le contrat de travail pendant une grève régulière ? || Il est suspendu || Il est rompu || Il est doublé || Il est annulé || L'employeur ne paie pas le salaire des jours de grève.
+Quel est l'ordre des modes de règlement d'un conflit collectif ? || Conciliation, médiation, arbitrage || Arbitrage, grève, lock-out || Grève, licenciement, procès || Procès, médiation, conciliation || On privilégie les solutions amiables.
+Dans un conflit collectif, que vise la conciliation ? || Une tentative de rapprocher les parties pour trouver un accord || Un jugement || Une sanction || Une grève || Un tiers aide à trouver un compromis.
+Qu'est-ce que l'arbitrage dans un conflit collectif ? || Un tiers rend une décision qui s'impose aux parties || Un vote || Une grève || Un licenciement || La sentence est obligatoire si les parties l'ont accepté.
+Qu'est-ce qu'un lock-out ? || La fermeture de l'entreprise par l'employeur pendant un conflit || Une grève || Une promotion || Un congé || Il est strictement encadré.
+Un salarié peut-il être licencié pour son activité syndicale ? || Non, ce licenciement est illégal || Oui, toujours || Oui, avec préavis || Oui, s'il est délégué || Les représentants sont protégés.
+Pourquoi le dialogue social est-il important ? || Il prévient les conflits et améliore le climat de travail || Il supprime les syndicats || Il fixe les prix || Il supprime les salaires || Il favorise des accords durables.

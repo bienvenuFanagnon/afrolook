@@ -1,0 +1,28 @@
+titre: Budgets, écarts et tableaux de bord
+== fiche
+p: Le contrôle de gestion aide les dirigeants à fixer des objectifs chiffrés (budgets), à mesurer les résultats réels et à corriger.
+li: Budget : prévision chiffrée des recettes et des dépenses sur une période. Budget des ventes (point de départ), de production, d'approvisionnement, de personnel, d'investissement, de trésorerie.
+li: Budget de trésorerie : encaissements et décaissements mois par mois ; il évite les ruptures de liquidités.
+li: Écart = résultat réel − prévision. Pour un produit, un écart favorable augmente le résultat ; pour une charge, un écart positif (dépense plus élevée) est défavorable.
+li: Analyse d'écart : écart sur quantité (volume) et écart sur prix ; on cherche les causes avant d'agir.
+li: Tableau de bord : quelques indicateurs clés suivis régulièrement (chiffre d'affaires, marge, délai de paiement des clients, rotation des stocks, taux de satisfaction).
+li: Indicateur : mesure d'un résultat ; un bon indicateur est simple, fiable et lié à un objectif.
+li: Cycle du contrôle de gestion : fixer des objectifs, planifier, mesurer, analyser les écarts, corriger.
+note: Exemple : budget de ventes 1 000 000, réalisé 900 000 : écart de −100 000, défavorable.
+note: Le budget n'est pas figé : on peut le réviser quand la situation change fortement.
+== questions
+Qu'est-ce qu'un budget ? || Une prévision chiffrée de recettes et de dépenses || Un résultat passé || Un contrat || Une dette || Il fixe des objectifs pour la période.
+Quel budget sert en général de point de départ ? || Le budget des ventes || Le budget d'investissement || Le budget de personnel || Le budget de trésorerie || Les ventes déterminent la production et les achats.
+À quoi sert le budget de trésorerie ? || Prévoir encaissements et décaissements pour éviter les ruptures de liquidités || Fixer le prix des produits || Calculer l'impôt || Mesurer la qualité || Il suit la trésorerie mois par mois.
+Comment calcule-t-on un écart ? || Réel moins prévu || Prévu moins réel toujours || Réel plus prévu || Prévu divisé par réel || Le signe dépend de la nature (produit ou charge).
+Les ventes réelles sont de 900 000 pour un budget de 1 000 000. Quel est l'écart ? || −100 000, défavorable || +100 000, favorable || −10 000 || 0 || Les ventes sont plus faibles que prévu.
+Une charge réelle de 550 pour un budget de 500 : l'écart est : || défavorable de 50 || favorable de 50 || nul || favorable de 550 || On a dépensé plus que prévu.
+Que fait l'analyse d'écart ? || Cherche les causes (prix, quantité) pour corriger || Efface les écarts || Les ignore || Fixe un nouveau prix || Elle précède l'action corrective.
+Qu'est-ce qu'un écart sur prix ? || La différence due à un prix réel différent du prix prévu || La différence de quantité || Un écart de TVA || Un écart de stock || Il se calcule avec la quantité réelle.
+Qu'est-ce qu'un tableau de bord ? || Un ensemble d'indicateurs clés suivis régulièrement || Un meuble || Un bilan annuel || Une facture || Il aide à piloter.
+Citez un indicateur de tableau de bord : || Le délai moyen de paiement des clients || Le nom du directeur || La couleur du logo || La taille du local || Il suit la gestion de la trésorerie.
+Qu'est-ce qu'un bon indicateur ? || Simple, fiable et lié à un objectif || Compliqué et rare || Secret || Inventé chaque mois || Il guide l'action.
+Quel est l'ordre du cycle du contrôle de gestion ? || Objectifs, mesure, analyse des écarts, action corrective || Action, objectifs, mesure || Mesure, oubli, répétition || Analyse, vente, achat || C'est une boucle d'amélioration.
+Un budget peut-il être révisé ? || Oui, quand la situation change fortement || Non, jamais || Oui, chaque jour || Non, c'est interdit || Il reste un outil et non un dogme.
+Pourquoi comparer le réel au budget ? || Pour savoir si les objectifs sont atteints et agir || Pour punir les salariés || Pour remplir un formulaire || Pour changer de local || C'est la base du contrôle de gestion.
+Que se passe-t-il si les ventes budgétées ne sont pas atteintes alors que les charges restent fixes ? || Le résultat baisse || Le résultat augmente || Rien ne change || Les charges disparaissent || La marge ne couvre plus les charges.

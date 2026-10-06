@@ -1,0 +1,28 @@
+titre: Sport et société
+== fiche
+p: Le sport est un fait social : il éduque, rassemble, divise parfois, génère de l'économie et reflète les valeurs d'une société.
+li: Fonctions : santé, éducation (respect des règles, esprit d'équipe), intégration, loisir, représentation nationale, spectacle.
+li: Histoire en Afrique : Jeux africains (Brazzaville, 1965), Coupe d'Afrique des nations de football (1957), Abebe Bikila (Éthiopie), premier Africain champion olympique du marathon en 1960, Coupe du monde 2010 en Afrique du Sud.
+li: Sport et genre : développer la pratique féminine, lutter contre les stéréotypes, assurer l'égalité d'accès aux installations et aux postes de responsabilité.
+li: Sport et économie : droits de retransmission télévisée, sponsoring, billetterie, produits dérivés, emplois ; les clubs deviennent des entreprises.
+li: Violences et dérives : violence dans les stades, discrimination, racisme, harcèlement, corruption, paris truqués.
+li: Éducation physique et sportive (EPS) : discipline scolaire qui forme le corps, la santé et la citoyenneté.
+li: Sport et développement : programmes de sport pour la paix, la santé et l'éducation (ONU, ONG).
+note: Le fair-play et le respect de l'adversaire sont des valeurs centrales.
+note: Les infrastructures sportives (stades, terrains de quartier) favorisent l'accès de tous.
+== questions
+Citez une fonction sociale du sport : || L'éducation par le respect des règles et l'esprit d'équipe || La destruction du lien social || L'isolement || L'oisiveté || Il aide aussi à l'intégration.
+En quelle année la première Coupe d'Afrique des nations de football a-t-elle eu lieu ? || 1957 || 1930 || 1990 || 2010 || Elle a été disputée à Khartoum.
+Où se sont tenus les premiers Jeux africains en 1965 ? || À Brazzaville || À Paris || À Dakar || À Abidjan || Jeux régionaux de l'Afrique.
+Quel Africain a gagné le marathon olympique de 1960 ? || Abebe Bikila || Eliud Kipchoge || Haile Gebrselassie || Roger Milla || Il a couru pieds nus à Rome.
+Quel pays africain a accueilli la Coupe du monde de football en 2010 ? || L'Afrique du Sud || Le Maroc || Le Nigeria || Le Cameroun || C'était la première fois en Afrique.
+Que signifie lutter contre les stéréotypes de genre dans le sport ? || Permettre aux filles et aux garçons de pratiquer tous les sports à égalité || Séparer les sports || Interdire des disciplines aux filles || Réserver les postes aux hommes || Il s'agit d'égalité d'accès.
+Citez une source de revenus du sport professionnel : || Les droits de retransmission télévisée || Les impôts des joueurs || Les amendes || Les dons des spectateurs seulement || S'ajoutent sponsoring et billetterie.
+Comment nomme-t-on le soutien financier d'une entreprise à un club en échange de visibilité ? || Le sponsoring || Un impôt || Un salaire || Un don anonyme || Les sponsors affichent leur marque.
+Citez une dérive du sport : || Les paris truqués || Le fair-play || Le respect de l'adversaire || L'esprit d'équipe || Elle abîme l'intégrité des compétitions.
+Quelle valeur est centrale dans le sport ? || Le fair-play || La triche || L'exclusion || La violence || Respect de l'adversaire et des règles.
+À quoi sert l'EPS à l'école ? || À former le corps, la santé et la citoyenneté || À remplacer les cours || À punir || À gagner des médailles || C'est une discipline éducative.
+Comment le sport peut-il contribuer à la paix ? || En rapprochant des personnes de milieux différents autour de règles communes || En divisant les groupes || En supprimant les règles || En encourageant la violence || Des programmes l'utilisent pour le dialogue.
+Pourquoi les installations de quartier comptent-elles ? || Elles facilitent l'accès de tous à la pratique || Elles coûtent cher || Elles sont inutiles || Elles réservent le sport aux riches || Elles favorisent la santé et la cohésion.
+Qu'est-ce que la discrimination dans le sport ? || Un traitement défavorable fondé sur l'origine ou le sexe || Un règlement || Une victoire || Un entraînement || Elle est contraire aux valeurs du sport.
+Pourquoi les clubs professionnels sont-ils aussi des entreprises ? || Ils gèrent des recettes, des salaires et des investissements || Ils ne gèrent rien || Ils sont des associations sans budget || Ils sont gratuits || Ils emploient des joueurs et du personnel.

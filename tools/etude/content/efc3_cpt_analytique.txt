@@ -1,0 +1,28 @@
+titre: Comptabilité analytique et calcul des coûts
+== fiche
+p: La comptabilité analytique (ou de gestion) calcule les coûts des produits pour aider à fixer les prix et piloter l'entreprise, au contraire de la comptabilité générale qui sert les tiers.
+li: Charges directes : affectables sans ambiguïté à un produit (matières, main-d'œuvre directe). Charges indirectes : communes à plusieurs produits (loyer, électricité, direction).
+li: Centres d'analyse : on regroupe les charges indirectes (atelier, administration, distribution) et on les répartit grâce à des clés de répartition ou unités d'œuvre.
+li: Coût d'achat = prix d'achat + charges d'approvisionnement. Coût de production = coût des matières + main-d'œuvre + charges indirectes de production.
+li: Coût de revient = coût de production + charges de distribution et d'administration. Résultat analytique = prix de vente − coût de revient.
+li: Méthode des coûts complets : toutes les charges sont réparties. Méthode des coûts partiels (direct costing) : on ne retient que les charges variables, pour calculer la marge sur coût variable.
+li: Méthode ABC (activity-based costing) : on répartit les charges d'après les activités qui les causent.
+li: Coût standard : coût prévu ; l'écart = coût réel − coût standard.
+note: Exemple : matières 400, main-d'œuvre 200, charges indirectes de production 100 : coût de production 700.
+note: La comptabilité analytique est facultative légalement, mais indispensable pour décider.
+== questions
+À quoi sert la comptabilité analytique ? || À calculer les coûts pour décider et fixer les prix || À déclarer les impôts seulement || À payer les salaires || À fermer les comptes || C'est un outil de pilotage interne.
+Qu'est-ce qu'une charge directe ? || Une charge affectable directement à un produit || Une charge commune à tous les produits || Un impôt || Une dette || La matière première d'un produit en est une.
+Qu'est-ce qu'une charge indirecte ? || Une charge commune à plusieurs produits || Une charge propre à un produit || Une dette || Un produit || Le loyer de l'atelier en est une.
+Qu'est-ce qu'un centre d'analyse ? || Un regroupement de charges indirectes à répartir || Un bureau de comptabilité || Un client || Un produit fini || Atelier, administration, distribution.
+À quoi sert une clé de répartition ? || Partager les charges indirectes entre produits ou centres || Ouvrir un coffre || Fixer un salaire || Calculer la TVA || Par exemple selon les heures de travail.
+Comment calcule-t-on le coût d'achat ? || Prix d'achat plus charges d'approvisionnement || Prix de vente moins marge || Coût de production plus distribution || Charges fixes seulement || Il inclut transport et droits.
+Matières 400, main-d'œuvre 200, charges indirectes de production 100. Quel est le coût de production ? || 700 || 600 || 500 || 300 || 400 + 200 + 100.
+Comment calcule-t-on le coût de revient ? || Coût de production plus charges de distribution et d'administration || Prix de vente moins coût d'achat || Coût d'achat seulement || Marge × coût || C'est le coût complet du produit.
+Coût de revient 900 et prix de vente 1 100. Quel est le résultat analytique ? || 200 || 1 100 || 900 || 2 000 || 1 100 − 900.
+Que sont les coûts complets ? || Toutes les charges sont réparties sur les produits || Seulement les charges variables || Seulement les charges fixes || Aucune charge || Ils donnent un coût de revient total.
+Que sont les coûts partiels ? || Un calcul avec une partie seulement des charges, par exemple les variables || Un calcul avec toutes les charges || Un calcul incomplet fautif || Un calcul de TVA || Le direct costing en est un exemple.
+Qu'est-ce que la méthode ABC ? || Répartir les charges selon les activités qui les causent || Classer les clients par ordre alphabétique || Compter les produits || Calculer les impôts || Elle suit les « inducteurs de coût ».
+Qu'est-ce qu'un coût standard ? || Un coût prévu servant de référence || Un coût de revente || Un coût négatif || Un coût réel || Il sert à calculer des écarts.
+Coût réel 1 050, coût standard 1 000. Quel est l'écart ? || 50 défavorable || 50 favorable || 1 050 || 0 || Le coût réel dépasse le standard.
+La comptabilité analytique est-elle obligatoire par la loi ? || En général non, mais elle est très utile || Oui, toujours || Oui, pour les associations || Non, elle est interdite || Elle sert à la décision interne.

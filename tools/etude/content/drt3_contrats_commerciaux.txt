@@ -1,0 +1,28 @@
+titre: Vente commerciale, bail commercial et transport
+== fiche
+p: L'Acte uniforme de l'OHADA sur le droit commercial général règle la vente commerciale ; d'autres règles encadrent le bail et le transport.
+li: Vente commerciale : contrat par lequel un commerçant vend des marchandises à un autre professionnel. Obligations du vendeur : livrer la marchandise conforme et garantir l'acheteur. Obligations de l'acheteur : payer le prix et prendre livraison.
+li: Conformité : la marchandise doit correspondre à ce qui a été convenu (quantité, qualité, description) ; l'acheteur doit l'examiner rapidement et dénoncer tout défaut dans un délai raisonnable.
+li: Transfert des risques : en principe à la livraison ; les incoterms précisent les responsabilités dans les ventes internationales (EXW, FOB, CIF).
+li: Inexécution : le créancier peut demander l'exécution, la réduction du prix, la résolution du contrat et des dommages-intérêts.
+li: Bail à usage professionnel : le locataire commerçant a droit au renouvellement ; le loyer, la durée et les charges sont fixés par le contrat ; il faut un écrit.
+li: Transport de marchandises par route : régi par un Acte uniforme ; la lettre de voiture est le contrat de transport ; le transporteur répond de la perte, de l'avarie et du retard.
+li: Intermédiaires de commerce : commissionnaire, courtier, agent commercial.
+note: Une facture est un document qui constate la vente et doit comporter les mentions légales.
+note: Dans un contrat commercial, on prévoit souvent une clause de règlement des litiges (juge ou arbitrage).
+== questions
+Qu'est-ce qu'une vente commerciale ? || La vente de marchandises entre professionnels || Un don || Un prêt || Un bail || Elle est réglée par l'Acte uniforme sur le droit commercial général.
+Quelle est une obligation du vendeur ? || Livrer une marchandise conforme || Payer le prix || Louer un local || Exporter || Il doit aussi garantir l'acheteur.
+Quelle est une obligation de l'acheteur ? || Payer le prix et prendre livraison || Livrer la marchandise || Fabriquer la marchandise || Garder le silence || Il doit aussi examiner la marchandise.
+Que signifie la conformité de la marchandise ? || Elle correspond à ce qui a été convenu || Elle est la moins chère || Elle est de la couleur préférée || Elle est ancienne || Quantité et qualité doivent concorder.
+Que doit faire l'acheteur qui constate un défaut ? || Le dénoncer au vendeur dans un délai raisonnable || Rien, il garde le silence || Jeter la marchandise || Payer deux fois || Un retard peut faire perdre ses droits.
+À qui passent en principe les risques lors de la livraison ? || À l'acheteur || Au vendeur toujours || Au transporteur seulement || À l'État || Ils passent à l'acheteur au moment de la livraison.
+À quoi servent les incoterms ? || À préciser les responsabilités dans les ventes internationales || À calculer l'impôt || À fixer les salaires || À définir le droit du travail || EXW, FOB et CIF en sont des exemples.
+Que peut demander le créancier en cas d'inexécution ? || L'exécution, la réduction du prix, la résolution ou des dommages-intérêts || Seulement des excuses || Une amende pénale || Rien || Plusieurs sanctions sont possibles.
+Quel droit a le locataire commerçant dans un bail professionnel ? || Un droit au renouvellement sous conditions || Un droit de propriété sur le local || Un droit de ne pas payer || Un droit de sous-louer sans limite || Ce droit protège sa clientèle.
+Qu'est-ce que la lettre de voiture ? || Le contrat de transport de marchandises par route || Un permis de conduire || Une facture || Une assurance || Elle accompagne la marchandise.
+De quoi le transporteur répond-il ? || De la perte, de l'avarie et du retard || Du prix de vente || Du choix du client || De la qualité du produit fabriqué || Il doit livrer la marchandise intacte et à temps.
+Qui est un intermédiaire de commerce ? || Le courtier || Le juge || Le notaire || Le percepteur || Commissionnaire et agent commercial en sont aussi.
+Que doit comporter une facture ? || Les mentions légales, dont les parties, le prix et la date || Seulement un logo || Seulement un montant || Seulement une signature || Elle prouve la vente.
+Pourquoi prévoir une clause de règlement des litiges dans un contrat ? || Pour savoir à l'avance comment régler un désaccord || Pour éviter le contrat || Pour augmenter le prix || Pour retarder || Juge ou arbitrage peuvent être prévus.
+Dans une vente FOB, le vendeur livre : || la marchandise à bord du navire au port d'embarquement || la marchandise à l'usine || la marchandise chez le client || la marchandise à l'aéroport seulement || Le transfert des risques a lieu à bord.

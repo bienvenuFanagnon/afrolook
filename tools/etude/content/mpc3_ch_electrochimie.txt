@@ -1,0 +1,28 @@
+titre: Électrochimie : piles, électrolyse et corrosion
+== fiche
+p: L'électrochimie relie réactions d'oxydoréduction et courant électrique.
+li: Pile : transforme de l'énergie chimique en énergie électrique grâce à une réaction spontanée. Anode : pôle négatif, oxydation ; cathode : pôle positif, réduction.
+li: Pile Daniell : Zn | Zn²⁺ ‖ Cu²⁺ | Cu ; le zinc s'oxyde (Zn → Zn²⁺ + 2 e⁻), le cuivre se dépose (Cu²⁺ + 2 e⁻ → Cu) ; le pont salin ferme le circuit.
+li: Potentiels standard : E°(Cu²⁺/Cu) = +0,34 V ; E°(Zn²⁺/Zn) = −0,76 V ; force électromotrice = E(pôle +) − E(pôle −) = 1,10 V.
+li: Électrolyse : on impose un courant pour provoquer une réaction non spontanée (production de métaux, d'hydrogène, dorure).
+li: Loi de Faraday : la quantité de matière transformée vaut n = I t / (z F), avec F = 96 500 C/mol.
+li: Équation de Nernst : le potentiel d'un couple dépend des concentrations ; E = E° + (0,06/z) log([Ox]/[Red]) à 25 °C.
+li: Corrosion : oxydation d'un métal (rouille du fer) ; protection par peinture, galvanisation (zinc), anode sacrificielle.
+note: Un accumulateur (batterie rechargeable) fonctionne comme pile à la décharge et comme électrolyseur à la recharge.
+note: La pile à combustible produit de l'électricité à partir d'hydrogène et d'oxygène, en rejetant de l'eau.
+== questions
+Qu'est-ce qu'une pile ? || Un dispositif qui transforme de l'énergie chimique en énergie électrique || Un dispositif qui consomme de l'électricité || Un condensateur || Un transformateur || Une réaction spontanée y fournit le courant.
+Où se produit l'oxydation dans une pile ? || À l'anode || À la cathode || Au pont salin || Dans le fil || L'anode est le pôle négatif de la pile.
+Où se produit la réduction dans une pile ? || À la cathode || À l'anode || Au pont salin || Dans le fil || La cathode est le pôle positif de la pile.
+Quel est le rôle du pont salin ? || Fermer le circuit en assurant le passage des ions || Produire du courant || Chauffer la pile || Éviter toute réaction || Il équilibre les charges des solutions.
+Dans la pile Daniell, quel métal s'oxyde ? || Le zinc || Le cuivre || Les deux || Aucun || Zn → Zn²⁺ + 2 e⁻.
+Dans la pile Daniell, que se passe-t-il à l'électrode de cuivre ? || Du cuivre se dépose || Le cuivre se dissout || L'eau se forme || Rien || Cu²⁺ + 2 e⁻ → Cu.
+Quelle est la force électromotrice de la pile Daniell, environ ? || 1,10 V || 0,34 V || 0,76 V || 5 V || 0,34 − (−0,76) = 1,10 V.
+Comment calcule-t-on la f.é.m. d'une pile ? || E du pôle positif moins E du pôle négatif || E du pôle négatif moins E du pôle positif || La somme des potentiels || Leur produit || Elle est toujours positive.
+Qu'est-ce qu'une électrolyse ? || Une réaction non spontanée provoquée par un courant imposé || Une pile || Une combustion || Une dilution || Elle consomme de l'énergie électrique.
+Citez une application de l'électrolyse : || La production d'aluminium ou la dorure || La combustion du bois || La respiration || L'évaporation || L'électrolyse sert à produire des métaux.
+Quelle est la valeur de la constante de Faraday ? || 96 500 C/mol || 6,02 × 10²³ || 8,31 J/(mol·K) || 9,8 m/s² || C'est la charge d'une mole d'électrons.
+Combien de moles de cuivre dépose-t-on avec 193 000 C (z = 2) ? || 1 mol || 2 mol || 0,5 mol || 4 mol || n = Q/(zF) = 193 000/(2 × 96 500).
+Que décrit l'équation de Nernst ? || La dépendance du potentiel aux concentrations || La vitesse de réaction || Le pH seulement || La masse molaire || Elle donne le potentiel hors conditions standard.
+Qu'est-ce que la corrosion ? || L'oxydation d'un métal par son milieu || La réduction d'un oxyde || Une combustion || Un dépôt de sel || La rouille du fer en est un exemple.
+Comment protège-t-on le fer de la corrosion ? || Par peinture ou galvanisation || En le mouillant || En le chauffant || En l'exposant au sel || Une couche de zinc le protège.

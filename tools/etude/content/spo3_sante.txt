@@ -1,0 +1,29 @@
+titre: Sport santé et publics particuliers
+== fiche
+p: L'activité physique est l'un des meilleurs moyens de préserver sa santé ; il faut l'adapter à chaque public.
+li: Recommandations de l'OMS : adultes, au moins 150 minutes d'activité d'intensité modérée par semaine (ou 75 minutes d'intensité soutenue) ; enfants et adolescents, 60 minutes par jour en moyenne.
+li: Sédentarité : temps passé assis ; un excès nuit à la santé même chez les personnes actives.
+li: Bénéfices : moins de maladies cardiovasculaires, de diabète de type 2, d'obésité, d'hypertension, de dépression, de certains cancers ; meilleurs sommeil et humeur.
+li: Enfants : jeux variés, coordination, plaisir ; éviter la spécialisation trop précoce et les charges lourdes.
+li: Seniors : marche, renforcement doux, équilibre pour prévenir les chutes, souplesse.
+li: Femmes enceintes : activité douce adaptée après avis médical.
+li: Personnes en situation de handicap : sport adapté, para-sport, accessibilité et encadrement formé.
+li: Maladies chroniques : activité adaptée, progressive, sous avis médical (diabète, hypertension, asthme, surpoids).
+note: Un certificat ou avis médical est conseillé avant une reprise intense, surtout après 40 ans ou en cas d'antécédents.
+note: Marcher 30 minutes par jour est déjà un excellent point de départ.
+== questions
+Combien de minutes d'activité modérée par semaine l'OMS recommande-t-elle aux adultes ? || Au moins 150 || 20 || 600 || 1 || Soit environ 30 minutes, 5 jours par semaine.
+Combien de temps d'activité par jour pour les enfants, selon l'OMS ? || En moyenne 60 minutes || 5 minutes || 3 heures || Aucune || Ils ont besoin de bouger beaucoup.
+Qu'est-ce que la sédentarité ? || Le temps passé assis ou inactif || Un sport intense || Une maladie || Un régime || Elle est un facteur de risque en soi.
+Citez un bénéfice de l'activité physique régulière : || Moins de risques de maladies cardiovasculaires || Plus de stress || Moins de sommeil || Moins de force || Elle protège aussi du diabète de type 2.
+L'activité physique aide-t-elle à prévenir le diabète de type 2 ? || Oui || Non || Seulement chez l'enfant || Seulement chez les sportifs de haut niveau || Elle améliore l'usage du sucre par les muscles.
+Quel type d'exercice est particulièrement utile aux seniors pour prévenir les chutes ? || L'équilibre et le renforcement doux || La course intense || Le sprint || La compétition || Il protège l'autonomie.
+Que faut-il privilégier chez les jeunes enfants ? || Des jeux variés et le plaisir de bouger || Une spécialisation précoce || Des charges lourdes || Des compétitions intensives || La variété développe la coordination.
+Pourquoi éviter la spécialisation trop précoce ? || Elle augmente blessures et lassitude || Elle rend plus fort || Elle est obligatoire || Elle améliore la santé || Les enfants ont besoin de diversité.
+Qu'est-ce que le sport adapté ? || Une pratique adaptée aux personnes à besoins spécifiques || Un sport de haut niveau || Un régime || Un matériel cher || Il inclut le para-sport.
+Que conseiller à une personne qui reprend le sport après 40 ans ? || Demander un avis médical et commencer progressivement || Commencer par un effort maximal || Éviter tout avis || Courir un marathon || La prudence évite les accidents.
+Qu'est-ce que l'inclusion en sport ? || Permettre à tous de pratiquer dans de bonnes conditions || Réserver le sport aux meilleurs || Séparer les groupes || Interdire certains publics || Accessibilité et encadrement formé la favorisent.
+À quoi sert l'activité physique chez une personne hypertendue ? || À aider à baisser la pression artérielle || À l'augmenter || À remplacer les soins || À l'interdire || Elle est utile sous avis médical.
+Quel est un bon point de départ pour un adulte sédentaire ? || Marcher 30 minutes par jour || Un entraînement maximal tous les jours || Un marathon || Éviter le mouvement || C'est simple et efficace.
+Pourquoi un sportif actif peut-il avoir encore besoin de limiter sa sédentarité ? || Rester assis longtemps reste un risque en soi || L'activité compense tout || Il n'y a aucun risque || Le repos est dangereux || Il faut aussi bouger dans la journée.
+Quelle intensité la femme enceinte doit-elle choisir ? || Une activité douce adaptée, avec avis médical || Un effort maximal || Aucune activité || Un sport de contact || Marche et natation conviennent souvent.

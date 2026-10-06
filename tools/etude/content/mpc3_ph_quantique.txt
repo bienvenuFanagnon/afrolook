@@ -1,0 +1,28 @@
+titre: Introduction à la physique quantique
+== fiche
+p: À l'échelle de l'atome, la matière et la lumière ne se comportent pas comme les objets du quotidien : elles sont à la fois ondes et particules.
+li: Photon : grain de lumière d'énergie E = h f, avec h = 6,63 × 10⁻³⁴ J·s (constante de Planck).
+li: Effet photoélectrique (Einstein, 1905) : la lumière arrache des électrons à un métal si la fréquence dépasse un seuil ; l'énergie dépend de la fréquence, pas de l'intensité.
+li: Dualité onde-corpuscule de de Broglie : une particule de quantité de mouvement p a une longueur d'onde λ = h / p.
+li: Principe d'incertitude de Heisenberg : on ne peut pas connaître en même temps avec une précision infinie la position et la quantité de mouvement : Δx · Δp ≥ ħ/2.
+li: Fonction d'onde ψ : |ψ|² donne la densité de probabilité de présence de la particule ; l'équation de Schrödinger gouverne son évolution.
+li: Quantification : l'énergie d'un électron lié dans un atome ne prend que certaines valeurs. Pour l'hydrogène, Eₙ = −13,6 eV / n².
+li: Les photons émis ou absorbés correspondent à des transitions entre niveaux : E = h f = Eₙ − Eₘ.
+note: 1 eV = 1,6 × 10⁻¹⁹ J. L'électron-volt est l'unité d'énergie à l'échelle atomique.
+note: Applications : lasers, diodes, cellules solaires, transistors, imagerie médicale (IRM).
+== questions
+Quelle est l'énergie d'un photon de fréquence f ? || E = h f || E = h / f || E = f² || E = h + f || h est la constante de Planck.
+Quelle est la valeur de la constante de Planck, environ ? || 6,63 × 10⁻³⁴ J·s || 3 × 10⁸ m/s || 9,8 m/s² || 1,6 × 10⁻¹⁹ C || Elle fixe l'échelle des phénomènes quantiques.
+Qu'est-ce que l'effet photoélectrique ? || L'émission d'électrons par un métal éclairé || La réflexion de la lumière || La diffraction || L'effet de serre || Einstein l'a expliqué par des photons.
+Dans l'effet photoélectrique, de quoi dépend l'énergie des électrons émis ? || De la fréquence de la lumière || De l'intensité seulement || De la couleur du métal seulement || De la durée d'éclairement || L'intensité règle leur nombre, pas leur énergie.
+Que dit la dualité onde-corpuscule ? || La lumière et la matière ont un aspect ondulatoire et un aspect corpusculaire || Seule la lumière est une onde || Seule la matière est une particule || Il n'y a aucun lien || C'est un principe central de la physique quantique.
+Quelle est la longueur d'onde de de Broglie ? || λ = h / p || λ = h p || λ = p / h || λ = h f || Elle relie une particule à une onde.
+Que dit le principe d'incertitude de Heisenberg ? || Position et quantité de mouvement ne sont pas connues exactement ensemble || On ne peut rien mesurer || La mesure est toujours exacte || La vitesse est constante || Δx Δp ≥ ħ/2.
+Que représente |ψ|² ? || La densité de probabilité de présence || L'énergie || La masse || La charge || La particule est décrite par une probabilité.
+Quelle équation décrit l'évolution de la fonction d'onde ? || L'équation de Schrödinger || L'équation de Newton || L'équation de Maxwell || L'équation de Bernoulli || Elle est au cœur de la mécanique quantique.
+Qu'est-ce que la quantification de l'énergie ? || Un électron lié ne peut avoir que certaines valeurs d'énergie || L'énergie varie de façon continue || L'énergie est nulle || L'énergie disparaît || Ce sont les niveaux d'énergie de l'atome.
+Quelle est l'énergie du niveau fondamental de l'hydrogène ? || −13,6 eV || 0 eV || +13,6 eV || −1 eV || Eₙ = −13,6 eV / n² avec n = 1.
+Quelle est l'énergie du niveau n = 2 de l'hydrogène ? || −3,4 eV || −6,8 eV || −13,6 eV || −27,2 eV || −13,6 / 4.
+Que se passe-t-il quand un électron passe d'un niveau à un niveau inférieur ? || Il émet un photon || Il absorbe un photon || Il disparaît || Il devient un neutron || L'énergie du photon vaut la différence des niveaux.
+À combien de joules correspond 1 eV ? || 1,6 × 10⁻¹⁹ J || 1 J || 10³ J || 6,63 × 10⁻³⁴ J || C'est la charge de l'électron en coulombs.
+Citez une application de la physique quantique : || Le laser || La roue || Le levier || La poulie || Diodes, transistors et IRM en sont d'autres.

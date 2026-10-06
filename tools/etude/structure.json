@@ -724,7 +724,7 @@
    "id": "univ_mpc",
    "kind": "cycle",
    "order": 31,
-   "title": "Sciences exactes (MPC) — Licences 1 et 2",
+   "title": "Sciences exactes (MPC) — Licence complète",
    "country": "UEMOA",
    "after": [
     "lycee_d"
@@ -732,10 +732,10 @@
    "exam": {
     "id": "licence_mpc",
     "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Sciences exactes (Licences 1 et 2)",
-    "count": 50,
+    "diploma": "Licence Afrolook Étude — Sciences exactes (MPC)",
+    "count": 60,
     "passPct": 0.5,
-    "seconds": 4500
+    "seconds": 5400
    },
    "classes": [
     {
@@ -871,6 +871,57 @@
        ]
       }
      ]
+    },
+    {
+     "id": "mpc_l3",
+     "title": "Licence 3",
+     "subjects": [
+      {
+       "id": "mpc3_maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "mpc3_an_series",
+         "title": "Séries numériques et développements en série"
+        },
+        {
+         "id": "mpc3_an_multivar",
+         "title": "Fonctions de plusieurs variables"
+        }
+       ]
+      },
+      {
+       "id": "mpc3_phys",
+       "title": "Physique",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "mpc3_ph_quantique",
+         "title": "Introduction à la physique quantique"
+        },
+        {
+         "id": "mpc3_ph_maxwell",
+         "title": "Ondes électromagnétiques"
+        }
+       ]
+      },
+      {
+       "id": "mpc3_chim",
+       "title": "Chimie",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "mpc3_ch_thermochimie",
+         "title": "Thermochimie et équilibres chimiques"
+        },
+        {
+         "id": "mpc3_ch_electrochimie",
+         "title": "Électrochimie : piles, électrolyse et corrosion"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -878,7 +929,7 @@
    "id": "univ_efc",
    "kind": "cycle",
    "order": 32,
-   "title": "Économie, Finance et Comptabilité — Licences 1 et 2",
+   "title": "Économie, Finance et Comptabilité — Licence complète",
    "country": "UEMOA",
    "after": [
     "lycee_d"
@@ -886,10 +937,10 @@
    "exam": {
     "id": "licence_efc",
     "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Économie, Finance et Comptabilité (Licences 1 et 2)",
-    "count": 50,
+    "diploma": "Licence Afrolook Étude — Économie, Finance et Comptabilité",
+    "count": 60,
     "passPct": 0.5,
-    "seconds": 4500
+    "seconds": 5400
    },
    "classes": [
     {
@@ -1039,6 +1090,57 @@
        ]
       }
      ]
+    },
+    {
+     "id": "efc_l3",
+     "title": "Licence 3",
+     "subjects": [
+      {
+       "id": "efc3_cpt",
+       "title": "Comptabilité et analyse financière",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "efc3_cpt_analytique",
+         "title": "Comptabilité analytique et calcul des coûts"
+        },
+        {
+         "id": "efc3_fin_sig",
+         "title": "Analyse financière : soldes intermédiaires de gestion et CAF"
+        }
+       ]
+      },
+      {
+       "id": "efc3_ges",
+       "title": "Gestion et management",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "efc3_ges_budgets",
+         "title": "Budgets, écarts et tableaux de bord"
+        },
+        {
+         "id": "efc3_ges_management",
+         "title": "Management et gestion des ressources humaines"
+        },
+        {
+         "id": "efc3_ent_projet",
+         "title": "Entrepreneuriat et plan d'affaires"
+        }
+       ]
+      },
+      {
+       "id": "efc3_eco",
+       "title": "Économie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "efc3_eco_politiques",
+         "title": "Politiques économiques et convergence dans l'UEMOA"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -1046,7 +1148,7 @@
    "id": "univ_droit",
    "kind": "cycle",
    "order": 33,
-   "title": "Droit (avec le droit OHADA) — Licences 1 et 2",
+   "title": "Droit (avec le droit OHADA) — Licence complète",
    "country": "UEMOA",
    "after": [
     "lycee_d"
@@ -1054,10 +1156,10 @@
    "exam": {
     "id": "licence_droit",
     "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Droit (Licences 1 et 2)",
-    "count": 50,
+    "diploma": "Licence Afrolook Étude — Droit",
+    "count": 60,
     "passPct": 0.5,
-    "seconds": 4500
+    "seconds": 5400
    },
    "classes": [
     {
@@ -1207,6 +1309,57 @@
        ]
       }
      ]
+    },
+    {
+     "id": "drt_l3",
+     "title": "Licence 3",
+     "subjects": [
+      {
+       "id": "drt3_prive",
+       "title": "Droit des affaires et fiscal",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "drt3_contrats_commerciaux",
+         "title": "Vente commerciale, bail commercial et transport"
+        },
+        {
+         "id": "drt3_fiscal",
+         "title": "Droit fiscal"
+        },
+        {
+         "id": "drt3_prop_intel",
+         "title": "Propriété intellectuelle et OAPI"
+        }
+       ]
+      },
+      {
+       "id": "drt3_penal",
+       "title": "Droit pénal et travail",
+       "icon": "account_tree",
+       "chapters": [
+        {
+         "id": "drt3_penal_special",
+         "title": "Droit pénal spécial : principales infractions"
+        },
+        {
+         "id": "drt3_travail_collectif",
+         "title": "Droit du travail collectif : syndicats, conventions et grève"
+        }
+       ]
+      },
+      {
+       "id": "drt3_num",
+       "title": "Droit du numérique",
+       "icon": "code",
+       "chapters": [
+        {
+         "id": "drt3_numerique",
+         "title": "Droit du numérique et protection des données personnelles"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -1214,7 +1367,7 @@
    "id": "univ_sport",
    "kind": "cycle",
    "order": 34,
-   "title": "Sport (STAPS) — Licences 1 et 2",
+   "title": "Sport (STAPS) — Licence complète",
    "country": "UEMOA",
    "after": [
     "lycee_d"
@@ -1222,10 +1375,10 @@
    "exam": {
     "id": "licence_sport",
     "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Sport (STAPS) (Licences 1 et 2)",
-    "count": 50,
+    "diploma": "Licence Afrolook Étude — Sport (STAPS)",
+    "count": 60,
     "passPct": 0.5,
-    "seconds": 4500
+    "seconds": 5400
    },
    "classes": [
     {
@@ -1371,6 +1524,57 @@
         {
          "id": "spo2_volley_hand",
          "title": "Volley-ball et handball : règles essentielles"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "spo_l3",
+     "title": "Licence 3",
+     "subjects": [
+      {
+       "id": "spo3_sci",
+       "title": "Physiologie et entraînement",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "spo3_adaptations",
+         "title": "Adaptations de l'organisme à l'entraînement"
+        },
+        {
+         "id": "spo3_force",
+         "title": "Musculation et développement de la force"
+        },
+        {
+         "id": "spo3_traumato",
+         "title": "Traumatologie du sport et rééducation"
+        }
+       ]
+      },
+      {
+       "id": "spo3_sante",
+       "title": "Santé et éthique",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "spo3_sante",
+         "title": "Sport santé et publics particuliers"
+        },
+        {
+         "id": "spo3_dopage",
+         "title": "Dopage et éthique du sport"
+        }
+       ]
+      },
+      {
+       "id": "spo3_soc",
+       "title": "Sport et société",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "spo3_societe",
+         "title": "Sport et société"
         }
        ]
       }

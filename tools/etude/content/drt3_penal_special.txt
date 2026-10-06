@@ -1,0 +1,28 @@
+titre: Droit pénal spécial : principales infractions
+== fiche
+p: Le droit pénal spécial étudie chaque infraction : sa définition, ses éléments et sa peine. Les peines précises varient selon le code pénal de chaque pays.
+li: Infractions contre les personnes : meurtre (homicide volontaire), assassinat (meurtre avec préméditation), homicide involontaire, coups et blessures, viol et agressions sexuelles, menaces, traite des personnes.
+li: Infractions contre les biens : vol (soustraction frauduleuse de la chose d'autrui), abus de confiance (détourner un bien remis), escroquerie (obtenir un bien par tromperie), recel, destruction.
+li: Faux et usage de faux : altérer la vérité dans un document pour tromper.
+li: Infractions contre la probité : corruption (offrir ou recevoir un avantage pour un acte), détournement de deniers publics, concussion, trafic d'influence.
+li: Infractions économiques et financières : blanchiment de capitaux, fraude, contrefaçon.
+li: Cybercriminalité : piratage, hameçonnage, atteinte aux données.
+li: Circonstances aggravantes (arme, bande organisée, victime mineure) et atténuantes.
+note: Ne pas confondre vol (soustraction) et abus de confiance (le bien a été confié) ni escroquerie (tromperie).
+note: Le recel consiste à détenir un bien en sachant qu'il provient d'une infraction.
+== questions
+Qu'est-ce qu'un meurtre ? || Un homicide volontaire || Un homicide involontaire || Un vol || Un coup || Il est puni très sévèrement.
+Qu'est-ce qu'un assassinat ? || Un meurtre commis avec préméditation || Un homicide par accident || Un vol aggravé || Une légitime défense || La préméditation est une circonstance aggravante.
+Qu'est-ce que le vol ? || La soustraction frauduleuse de la chose d'autrui || Un bien remis en dépôt qu'on garde || Une tromperie || Un jeu || C'est la prise d'un bien sans droit.
+Qu'est-ce que l'abus de confiance ? || Détourner un bien qui nous a été remis || Prendre un bien dans un magasin || Tromper pour obtenir un bien || Casser un bien || Le bien a été confié librement.
+Qu'est-ce que l'escroquerie ? || Obtenir un bien ou un avantage par tromperie || Prendre sans qu'on le voie || Brûler un bien || Détenir un objet volé || La victime remet elle-même le bien, trompée.
+Qu'est-ce que le recel ? || Détenir un bien en sachant qu'il provient d'une infraction || Voler un bien || Casser un bien || Prêter un bien || Le receleur aide à écouler les biens volés.
+Qu'est-ce que le faux ? || Altérer la vérité dans un document pour tromper || Écrire une lettre || Signer un contrat || Copier un livre || Le faux et l'usage de faux sont punis.
+Qu'est-ce que la corruption ? || Offrir ou recevoir un avantage pour obtenir un acte de sa fonction || Faire un cadeau d'anniversaire || Voler une caisse || Falsifier un acte || Elle atteint la probité des agents publics.
+Qu'est-ce que le détournement de deniers publics ? || Un agent public qui s'approprie de l'argent public || Un impôt || Un vol privé || Une aide || C'est une infraction contre la probité.
+Qu'est-ce que le blanchiment de capitaux ? || Donner une apparence légale à de l'argent d'origine criminelle || Laver des billets || Payer ses impôts || Changer des devises || Il masque l'origine illicite des fonds.
+Citez une infraction de cybercriminalité : || Le piratage informatique || Le vol à l'étalage || L'excès de vitesse || L'homicide || Hameçonnage et atteinte aux données en sont d'autres.
+Qu'est-ce que l'hameçonnage (phishing) ? || Tromper quelqu'un pour obtenir ses données confidentielles || Pêcher en eau trouble || Voler un sac || Casser une serrure || Souvent par faux messages ou faux sites.
+Citez une circonstance aggravante : || Le vol commis avec une arme || L'âge || Le jour de la semaine || Le métier || L'arme ou la bande organisée augmentent la peine.
+Quelle différence y a-t-il entre homicide volontaire et involontaire ? || L'intention de donner la mort || Le lieu || L'heure || L'arme seulement || Dans l'homicide involontaire, la mort résulte d'une imprudence.
+Une personne détient un téléphone volé en sachant qu'il l'est. De quelle infraction s'agit-il ? || Du recel || De l'escroquerie || De l'abus de confiance || Du faux || Elle bénéficie sciemment du produit d'une infraction.

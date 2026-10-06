@@ -1,0 +1,28 @@
+titre: Droit fiscal
+== fiche
+p: Le droit fiscal organise le prélèvement des impôts par l'État et protège les droits des contribuables.
+li: Impôt : prélèvement obligatoire, sans contrepartie directe, au profit de l'État ou des collectivités. Taxe : paiement lié à un service (taxe de marché). Redevance : somme payée pour un service rendu.
+li: Principe de légalité de l'impôt : nul impôt sans loi ; la loi fixe l'assiette (base), le taux et les règles de recouvrement.
+li: Principe d'égalité devant l'impôt : mêmes règles pour les personnes dans la même situation ; capacité contributive.
+li: Impôts directs : payés directement par la personne qui supporte la charge (impôt sur le revenu, impôt sur les sociétés). Impôts indirects : intégrés au prix (TVA, droits d'accises).
+li: Impôt sur les sociétés (IS) : sur les bénéfices des sociétés. Impôt sur le revenu : sur les revenus des personnes physiques.
+li: Fraude fiscale : tromper le fisc volontairement (dissimulation, fausses factures) ; sanctions lourdes. Évasion fiscale : utiliser la loi pour payer moins d'impôt.
+li: Contentieux : réclamation auprès de l'administration fiscale, puis recours devant le juge ; contrôle fiscal, avertissement, redressement.
+note: La déclaration fiscale doit être déposée dans les délais ; un retard entraîne pénalités et intérêts.
+note: Les impôts financent les services publics : écoles, hôpitaux, routes, sécurité.
+== questions
+Qu'est-ce qu'un impôt ? || Un prélèvement obligatoire sans contrepartie directe || Un prêt à l'État || Une aide || Un salaire || Il finance les dépenses publiques.
+Qu'est-ce qu'une taxe ? || Un paiement lié à un service ou à une activité précise || Un impôt sur le revenu || Un don || Un salaire || La taxe de marché en est un exemple.
+Que dit le principe de légalité de l'impôt ? || Nul impôt sans loi || L'impôt est fixé par le maire seul || L'impôt est facultatif || L'impôt dépend du juge || La loi fixe assiette et taux.
+Qu'est-ce que l'assiette de l'impôt ? || La base sur laquelle il est calculé || Le taux || La date || Le recours || Revenu, bénéfice ou prix en sont des exemples.
+Que veut dire égalité devant l'impôt ? || Les mêmes règles pour ceux qui sont dans la même situation || Tous paient la même somme || Les riches ne paient pas || Seuls les salariés paient || Elle tient compte de la capacité contributive.
+Citez un impôt direct : || L'impôt sur le revenu || La TVA || Les droits d'accises || La taxe sur l'essence || Il est payé directement par le contribuable.
+Citez un impôt indirect : || La TVA || L'impôt sur les sociétés || L'impôt sur le revenu || La taxe d'habitation || Il est inclus dans le prix.
+Sur quoi porte l'impôt sur les sociétés ? || Sur les bénéfices des sociétés || Sur les salaires || Sur les ventes de particuliers || Sur les terrains || Il frappe les résultats des entreprises.
+Qu'est-ce que la fraude fiscale ? || Tromper volontairement l'administration pour payer moins || Payer ses impôts || Déclarer ses revenus || Contester un impôt || Elle est sanctionnée.
+Quelle différence y a-t-il entre fraude et évasion fiscale ? || La fraude viole la loi, l'évasion en exploite les failles || Aucune || L'évasion est un crime || La fraude est légale || Les deux réduisent l'impôt payé.
+Que peut faire un contribuable qui conteste un impôt ? || Réclamer auprès de l'administration puis saisir le juge || Ne rien payer || Détruire les documents || Quitter le pays || La procédure est encadrée.
+Qu'est-ce qu'un redressement fiscal ? || Une rectification d'impôt après un contrôle || Un nouvel impôt || Un remboursement || Une exonération || L'administration réclame un complément.
+Que risque-t-on en déposant sa déclaration en retard ? || Des pénalités et des intérêts || Rien || Une prime || Une exonération || Les délais doivent être respectés.
+À quoi servent les impôts ? || À financer les services publics || À payer les entreprises privées || À enrichir les ministres || À rien || Écoles, hôpitaux et routes en dépendent.
+Qu'est-ce qu'une redevance ? || Une somme payée pour un service rendu || Un impôt sur le revenu || Un salaire || Une taxe sur les ventes || La redevance audiovisuelle ou d'eau en sont des exemples.

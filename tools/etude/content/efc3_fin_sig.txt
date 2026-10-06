@@ -1,0 +1,29 @@
+titre: Analyse financière : soldes intermédiaires de gestion et CAF
+== fiche
+p: L'analyse financière lit le compte de résultat et le bilan pour juger la rentabilité et la solidité d'une entreprise. Les soldes intermédiaires de gestion (SIG) découpent le résultat étape par étape.
+li: Marge commerciale = ventes de marchandises − coût d'achat des marchandises vendues.
+li: Production de l'exercice = ventes de produits + production stockée + production immobilisée.
+li: Valeur ajoutée (VA) = marge commerciale + production − consommations en provenance des tiers (matières, services extérieurs).
+li: Excédent brut d'exploitation (EBE) = VA + subventions d'exploitation − impôts et taxes − charges de personnel ; il mesure la performance de l'exploitation avant amortissements et frais financiers.
+li: Résultat d'exploitation = EBE + reprises − dotations aux amortissements et provisions ± autres produits et charges.
+li: Résultat net = résultat d'exploitation + résultat financier + résultat exceptionnel (HAO) − impôt sur les bénéfices.
+li: Capacité d'autofinancement (CAF) = résultat net + dotations aux amortissements et provisions − reprises ; elle mesure les ressources générées par l'activité pour investir ou rembourser.
+li: Ratios : rentabilité économique = résultat d'exploitation / actif ; endettement = dettes financières / capitaux propres.
+note: Exemple : EBE 300, dotations 100 : le résultat d'exploitation est 200.
+note: Une CAF positive et stable permet de financer des investissements sans trop emprunter.
+== questions
+À quoi servent les soldes intermédiaires de gestion ? || À analyser la formation du résultat étape par étape || À calculer la TVA || À fixer les salaires || À préparer la paie || Ils éclairent chaque niveau de performance.
+Comment calcule-t-on la marge commerciale ? || Ventes de marchandises − coût d'achat des marchandises vendues || Ventes − charges || Achats − ventes || Production − consommation || Elle mesure le gain sur la revente.
+Que mesure la valeur ajoutée ? || La richesse créée par l'entreprise || Le bénéfice net || Les dettes || La trésorerie || Elle est égale à la production moins les consommations de tiers.
+Comment calcule-t-on la valeur ajoutée ? || Marge commerciale + production − consommations des tiers || Produits − charges || Actif − dettes || Ventes − impôts || C'est la richesse créée.
+Que mesure l'EBE ? || La performance d'exploitation avant amortissements et frais financiers || Le résultat net || La trésorerie || Les dettes || Excédent brut d'exploitation.
+Comment passe-t-on de l'EBE au résultat d'exploitation ? || On retire les dotations aux amortissements et provisions || On ajoute les impôts || On retire le capital || On ajoute les dettes || Les dotations sont des charges calculées.
+EBE de 300 et dotations de 100. Quel est le résultat d'exploitation ? || 200 || 400 || 300 || 100 || 300 − 100.
+Que contient le résultat net ? || Résultat d'exploitation, financier, exceptionnel, moins impôt || Seulement les ventes || Seulement les dotations || Seulement le financier || Il est le bénéfice final.
+Que signifie CAF ? || Capacité d'autofinancement || Compte annuel final || Charge d'achat fixe || Crédit à faible intérêt || Elle mesure les ressources générées par l'activité.
+Comment calcule-t-on la CAF ? || Résultat net + dotations − reprises || Résultat net − dotations || Ventes − achats || Actif − passif || On réintègre les charges calculées sans sortie d'argent.
+Résultat net 150, dotations 100, reprises 20. Quelle est la CAF ? || 230 || 270 || 170 || 250 || 150 + 100 − 20.
+À quoi sert la CAF ? || À financer investissements et remboursements || À payer l'impôt seulement || À acheter des actions || À calculer la TVA || C'est la ressource interne d'autofinancement.
+Que mesure le ratio d'endettement ? || Dettes financières divisées par capitaux propres || Résultat divisé par ventes || Stocks divisés par ventes || Actif divisé par passif || Il indique la dépendance aux créanciers.
+Un ratio d'endettement très élevé indique : || Un risque financier important || Une grande sécurité || Une forte trésorerie || Un bénéfice sûr || L'entreprise dépend beaucoup de ses prêteurs.
+Que mesure la rentabilité économique ? || Le résultat d'exploitation par rapport à l'actif || Le résultat net par rapport aux dettes || Les ventes par salarié || La TVA || Elle compare ce qu'on gagne à ce qu'on a investi.

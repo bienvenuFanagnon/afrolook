@@ -1,0 +1,28 @@
+titre: Politiques économiques et convergence dans l'UEMOA
+== fiche
+p: Les pouvoirs publics agissent sur l'économie par des politiques pour assurer croissance, stabilité des prix et emploi.
+li: Politique budgétaire : l'État agit par ses dépenses et ses impôts. Relance : plus de dépenses ou moins d'impôts. Rigueur : moins de dépenses ou plus d'impôts.
+li: Politique monétaire : la banque centrale agit sur le taux directeur et la quantité de monnaie ; pour freiner l'inflation, elle relève ses taux.
+li: Multiplicateur keynésien : une dépense publique supplémentaire fait augmenter le revenu national davantage que son montant.
+li: Déficit public : dépenses de l'État supérieures à ses recettes ; il est financé par la dette. Dette publique : total de ce que doit l'État.
+li: Pacte de convergence de l'UEMOA : critères de discipline budgétaire, notamment un déficit budgétaire inférieur ou égal à 3 % du PIB, une inflation inférieure ou égale à 3 % et un taux d'endettement inférieur ou égal à 70 % du PIB.
+li: Union monétaire : une seule monnaie et une banque centrale ; les États perdent la politique monétaire nationale mais gardent la politique budgétaire.
+li: Courbe de Phillips : lien observé entre inflation et chômage à court terme.
+note: Une dette qui augmente plus vite que le PIB devient difficile à rembourser.
+note: Les politiques structurelles améliorent l'offre : éducation, infrastructures, climat des affaires.
+== questions
+Qu'est-ce qu'une politique budgétaire ? || L'action de l'État par ses dépenses et ses impôts || L'action de la banque centrale || L'action des syndicats || L'action des banques || Elle influence la demande et la croissance.
+Qu'est-ce qu'une politique de relance budgétaire ? || Augmenter les dépenses publiques ou baisser les impôts || Réduire les dépenses || Augmenter les impôts || Fermer des services || Elle soutient l'activité.
+Qu'est-ce qu'une politique de rigueur ? || Réduire le déficit en baissant les dépenses ou en augmentant les impôts || Augmenter les dépenses || Baisser les impôts || Imprimer de la monnaie || Elle vise l'équilibre des finances publiques.
+Qui conduit la politique monétaire dans l'UEMOA ? || La BCEAO || Chaque ministère des finances || Le FMI seulement || La Banque mondiale || Elle gère la monnaie commune.
+Que fait une banque centrale pour freiner l'inflation ? || Elle relève son taux directeur || Elle baisse son taux directeur || Elle imprime de la monnaie || Elle supprime les banques || Le crédit devient plus cher.
+Qu'est-ce que le déficit public ? || Les dépenses de l'État dépassent ses recettes || Les recettes dépassent les dépenses || La dette totale || Le PIB || Il est financé par l'emprunt.
+Qu'est-ce que la dette publique ? || L'ensemble des sommes que l'État doit || Le déficit d'une année || Le PIB || L'épargne des ménages || Elle s'accumule avec les déficits.
+Que signifie le multiplicateur keynésien ? || Une dépense publique supplémentaire augmente le revenu davantage que son montant || La dépense baisse le revenu || L'impôt augmente le revenu || Le PIB double || La dépense circule dans l'économie.
+Quel plafond de déficit budgétaire le pacte de convergence de l'UEMOA prévoit-il ? || 3 % du PIB || 10 % du PIB || 30 % du PIB || 70 % du PIB || C'est l'un des critères de discipline budgétaire.
+Quel plafond d'endettement le pacte prévoit-il ? || 70 % du PIB || 3 % du PIB || 10 % du PIB || 100 % du PIB || Au-delà, la dette devient risquée.
+Quel plafond d'inflation le pacte prévoit-il ? || 3 % || 10 % || 0 % || 30 % || Il s'agit d'une moyenne annuelle.
+Que perdent les États d'une union monétaire ? || La politique monétaire nationale || La politique budgétaire || Leurs impôts || Leur drapeau || Ils gardent leur politique budgétaire.
+Que décrit la courbe de Phillips ? || Un lien entre inflation et chômage à court terme || Un lien entre dette et déficit || Un lien entre prix et salaire || Un lien entre change et taux || Quand le chômage baisse, l'inflation tend à augmenter.
+Citez une politique structurelle : || Investir dans l'éducation et les infrastructures || Baisser le taux directeur || Fixer le taux de change || Imprimer des billets || Elle améliore durablement la capacité de production.
+Pourquoi une dette qui croît plus vite que le PIB est-elle préoccupante ? || Elle devient plus difficile à rembourser || Elle disparaît || Elle devient une épargne || Elle fait baisser les prix || Le poids de la dette s'alourdit.

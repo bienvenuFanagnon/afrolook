@@ -1,0 +1,28 @@
+titre: Thermochimie et équilibres chimiques
+== fiche
+p: La thermochimie étudie les échanges de chaleur des réactions ; les équilibres décrivent les réactions qui ne sont pas totales.
+li: Enthalpie de réaction ΔH : chaleur échangée à pression constante. ΔH < 0 : réaction exothermique (elle libère de la chaleur) ; ΔH > 0 : endothermique (elle absorbe).
+li: Loi de Hess : ΔH ne dépend que de l'état initial et de l'état final, pas du chemin suivi.
+li: Entropie S : mesure du désordre. Enthalpie libre : ΔG = ΔH − T ΔS ; une réaction est spontanée si ΔG < 0.
+li: Constante d'équilibre K : rapport des activités des produits sur celles des réactifs à l'équilibre. K grand : produits favorisés ; K petit : réactifs favorisés.
+li: Quotient de réaction Q : même expression qu'en K à un instant donné ; si Q < K, la réaction évolue vers la droite (produits) ; si Q > K, vers la gauche.
+li: Principe de Le Chatelier : un système à l'équilibre réagit à une perturbation en s'opposant à elle (ajout de réactif, hausse de température, hausse de pression).
+li: Un catalyseur accélère l'équilibre sans changer K.
+note: Synthèse de l'ammoniac N₂ + 3 H₂ ⇌ 2 NH₃ : exothermique, favorisée par la pression élevée et une température modérée.
+note: K ne dépend que de la température.
+== questions
+Qu'est-ce qu'une réaction exothermique ? || Une réaction qui libère de la chaleur || Une réaction qui absorbe de la chaleur || Une réaction sans échange || Une réaction explosive seulement || ΔH est négatif.
+Qu'est-ce qu'une réaction endothermique ? || Une réaction qui absorbe de la chaleur || Une réaction qui libère de la chaleur || Une réaction sans produit || Une réaction rapide || ΔH est positif.
+Quel est le signe de ΔH pour une combustion ? || Négatif || Positif || Nul || Variable || La combustion libère de la chaleur.
+Que dit la loi de Hess ? || ΔH ne dépend que de l'état initial et de l'état final || ΔH dépend du chemin suivi || ΔH est toujours nul || ΔH est toujours négatif || Elle permet de combiner des réactions.
+Comment s'écrit l'enthalpie libre ? || ΔG = ΔH − T ΔS || ΔG = ΔH + T ΔS || ΔG = ΔS − ΔH || ΔG = T ΔH || Elle décide de la spontanéité d'une réaction.
+Quand une réaction est-elle spontanée ? || Quand ΔG est négatif || Quand ΔG est positif || Quand ΔH est nul || Quand ΔS est nulle || C'est le critère de spontanéité.
+Quelle grandeur thermodynamique quantifie le désordre moléculaire ? || Le désordre d'un système || La température || La vitesse || La pression || Elle augmente généralement quand un solide se dissout.
+Que signifie une constante d'équilibre K très grande ? || Les produits sont fortement favorisés || Les réactifs sont fortement favorisés || La réaction est lente || La réaction est impossible || L'équilibre est très déplacé vers la droite.
+De quoi la constante d'équilibre K dépend-elle ? || De la température seulement || De la concentration initiale || Du volume || Du catalyseur || Elle est fixée à une température donnée.
+Quel est le rôle du quotient de réaction Q ? || Indiquer le sens d'évolution du système en le comparant à K || Mesurer la chaleur || Donner la vitesse || Définir le pH || Si Q < K, la réaction avance vers les produits.
+Si Q < K, vers quel côté la réaction évolue-t-elle ? || Vers les produits || Vers les réactifs || Elle s'arrête || Elle explose || Il y a trop de réactifs par rapport à l'équilibre.
+Que dit le principe de Le Chatelier ? || Un système à l'équilibre s'oppose à la perturbation qu'on lui impose || Un système n'évolue jamais || L'équilibre est toujours atteint || Une perturbation est sans effet || C'est un principe qualitatif.
+On ajoute un réactif dans un système à l'équilibre. Que se passe-t-il ? || L'équilibre se déplace vers les produits || L'équilibre se déplace vers les réactifs || Rien || K change || Le système consomme l'excès de réactif.
+Un catalyseur modifie-t-il K ? || Non || Oui, il l'augmente || Oui, il le diminue || Seulement à haute température || Il accélère seulement l'obtention de l'équilibre.
+Pour une réaction exothermique, que fait une hausse de température ? || Elle déplace l'équilibre vers les réactifs || Elle déplace l'équilibre vers les produits || Elle ne change rien || Elle supprime K || Le système s'oppose en absorbant de la chaleur.

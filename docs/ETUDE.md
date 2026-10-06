@@ -221,3 +221,13 @@ Quatre parcours passent de « Licence 1 » à « Licences 1 et 2 » : `univ_mpc`
 - Droit L2 : biens, responsabilité civile, famille, procédure civile, droit administratif, procédures collectives et arbitrage OHADA, droit international.
 - Sport L2 : filières énergétiques, biomécanique, psychologie, planification, nutrition de performance, organisation des clubs, pédagogie, volley-ball et handball.
 - L'examen de ces parcours porte désormais sur les deux années (50 questions, 50 %) et délivre un certificat « Licences 1 et 2 ».
+
+## 19. Licences 3 (parcours complets)
+
+MPC, Économie-Finance-Comptabilité, Droit et Sport ont maintenant leurs trois années (Licence 1, 2 et 3). Chaque Licence 3 ajoute 6 chapitres (90 questions) :
+- MPC L3 : séries, fonctions de plusieurs variables, physique quantique, ondes électromagnétiques, thermochimie et équilibres, électrochimie.
+- Économie-Finance-Comptabilité L3 : comptabilité analytique, SIG et CAF, budgets et tableaux de bord, management et GRH, entrepreneuriat et plan d'affaires, politiques économiques et convergence UEMOA.
+- Droit L3 : contrats commerciaux (vente, bail, transport), droit fiscal, propriété intellectuelle et OAPI, droit pénal spécial, droit du travail collectif, droit du numérique.
+- Sport L3 : adaptations à l'entraînement, musculation, traumatologie et rééducation, sport santé, dopage et éthique, sport et société.
+- L'examen de licence porte sur les trois années : 60 questions, 50 % pour réussir, avec un certificat « Licence » non officiel.
+- Total Étude : 11 parcours, 197 chapitres, 2 955 questions.

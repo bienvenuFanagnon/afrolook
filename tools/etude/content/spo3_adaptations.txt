@@ -1,0 +1,28 @@
+titre: Adaptations de l'organisme à l'entraînement
+== fiche
+p: L'entraînement répété provoque des changements durables dans le corps : ce sont les adaptations.
+li: Adaptations cardio-respiratoires : le cœur éjecte plus de sang à chaque battement (volume d'éjection systolique), la fréquence cardiaque de repos diminue (bradycardie d'entraînement), la VO₂ max augmente, les capillaires se multiplient.
+li: Adaptations musculaires : hypertrophie (les fibres grossissent), plus de mitochondries pour l'endurance, meilleure utilisation des graisses.
+li: Adaptations nerveuses : au début d'un entraînement de force, les gains viennent surtout du système nerveux (meilleur recrutement des fibres) avant la prise de masse.
+li: Adaptations osseuses et tendineuses : plus de densité et de résistance, mais plus lentes que les muscles.
+li: Temps : les premiers effets apparaissent en quelques semaines ; les adaptations structurelles demandent plusieurs mois.
+li: Désentraînement : à l'arrêt, les gains diminuent en quelques semaines.
+li: Altitude : l'organisme produit plus de globules rouges (EPO naturelle), ce qui améliore le transport de l'oxygène.
+note: Un cœur d'athlète est un cœur plus gros et plus efficace, sans maladie.
+note: L'adaptation exige des charges progressives, de la récupération et une bonne nutrition.
+== questions
+Qu'est-ce qu'une adaptation à l'entraînement ? || Un changement durable de l'organisme sous l'effet de l'entraînement || Une fatigue passagère || Une blessure || Un régime || L'organisme s'ajuste aux charges répétées.
+Que devient la fréquence cardiaque de repos avec l'entraînement d'endurance ? || Elle diminue || Elle augmente || Elle reste nulle || Elle devient irrégulière || C'est la bradycardie d'entraînement.
+Qu'est-ce que le volume d'éjection systolique ? || Le volume de sang éjecté à chaque battement || La fréquence cardiaque || La pression artérielle || Le volume des poumons || Il augmente avec l'entraînement.
+Que fait l'entraînement d'endurance à la VO₂ max ? || Il l'augmente || Il la diminue || Il ne la change pas || Il la rend nulle || Le corps utilise plus d'oxygène.
+Qu'est-ce que l'hypertrophie musculaire ? || Une augmentation du volume des fibres musculaires || Une diminution de la force || Une blessure || Un manque d'oxygène || Elle suit l'entraînement de force.
+À quoi servent les mitochondries du muscle ? || À produire de l'énergie avec de l'oxygène || À transporter le sang || À fabriquer les os || À digérer || L'endurance augmente leur nombre.
+D'où viennent surtout les gains de force des premières semaines ? || Des adaptations nerveuses || Des os || Du cœur || De la graisse || Le recrutement des fibres s'améliore avant la prise de masse.
+Les tendons et les os s'adaptent-ils plus vite ou plus lentement que les muscles ? || Plus lentement || Plus vite || Au même rythme || Jamais || D'où la nécessité de progresser prudemment.
+Que se passe-t-il à l'arrêt prolongé de l'entraînement ? || Les gains diminuent || Les gains augmentent || Rien ne change || Le corps grandit || C'est le désentraînement.
+Quelle adaptation provoque un séjour en altitude ? || Une augmentation des globules rouges || Une baisse du poids || Une hausse de la taille || Une perte de force || Le corps compense le manque d'oxygène.
+Qu'est-ce qu'un cœur d'athlète ? || Un cœur plus volumineux et plus efficace sans maladie || Un cœur malade || Un cœur plus petit || Un cœur sans battement || Il résulte de l'entraînement intensif.
+Pourquoi faut-il augmenter la charge progressivement ? || Pour permettre aux tissus de s'adapter sans se blesser || Pour fatiguer || Pour économiser || Pour éviter la récupération || Les adaptations ont un rythme propre.
+Que facilite la multiplication des capillaires ? || L'apport d'oxygène aux muscles || La digestion || La vue || Le sommeil || Plus de vaisseaux, plus d'oxygène.
+Quel entraînement développe surtout les adaptations d'endurance ? || Un effort prolongé d'intensité modérée || Des sauts maximaux || Des charges lourdes || Du repos || Il stimule cœur, poumons et mitochondries.
+De quoi les adaptations ont-elles besoin pour se produire ? || De charge progressive, de récupération et de nutrition || D'un équipement cher || D'un maillot || D'un écran || Le corps progresse quand il récupère.

@@ -1,0 +1,28 @@
+titre: Entrepreneuriat et plan d'affaires
+== fiche
+p: Entreprendre, c'est transformer une idée en activité qui répond à un besoin et crée de la valeur.
+li: Étapes : idée, vérification du besoin (étude de marché), modèle économique, plan d'affaires, financement, immatriculation, lancement, suivi.
+li: Business Model Canvas : 9 blocs (segments de clientèle, proposition de valeur, canaux, relation client, sources de revenus, ressources clés, activités clés, partenaires clés, structure de coûts).
+li: Plan d'affaires : résumé, présentation du projet et de l'équipe, étude de marché, stratégie commerciale, organisation, plan financier (investissements, compte de résultat prévisionnel, plan de trésorerie, seuil de rentabilité).
+li: Financement : apport personnel, prêts de proches, prêts bancaires, microfinance, subventions et fonds de soutien aux jeunes entrepreneurs, financement participatif, business angels.
+li: Choix du statut : entreprise individuelle, entreprenant (simple déclaration), SARL, SA ; il détermine la responsabilité et la fiscalité.
+li: Besoin en fonds de roulement : l'argent nécessaire pour financer le cycle d'exploitation avant d'encaisser les clients.
+li: Compétences de l'entrepreneur : goût du risque mesuré, persévérance, sens du client, gestion, apprentissage de ses erreurs.
+note: Erreur fréquente : sous-estimer les besoins de trésorerie du démarrage.
+note: Le test d'une idée (version simple du produit, vente à quelques clients) coûte peu et évite de grosses erreurs.
+== questions
+Quelle est la première étape pour entreprendre ? || Une idée qui répond à un besoin || Un prêt bancaire || Un local || Un employé || Tout part du besoin à satisfaire.
+À quoi sert une étude de marché avant de lancer un projet ? || Vérifier qu'il existe des clients et une demande || Choisir la couleur du logo || Fixer les impôts || Recruter || Elle réduit le risque d'échec.
+Que désigne le Business Model Canvas ? || Un outil pour décrire un modèle économique en neuf blocs || Un registre de commerce || Un contrat || Un bilan || Il tient sur une page.
+Citez un bloc du Business Model Canvas : || La proposition de valeur || Le bilan || Le journal || La balance || Elle décrit ce que l'on apporte aux clients.
+Que contient un plan d'affaires ? || Projet, marché, stratégie, organisation et plan financier || Seulement le logo || Seulement les photos || Seulement le CV || Il sert à convaincre et à piloter.
+Que comprend le plan financier ? || Investissements, compte de résultat prévisionnel, plan de trésorerie || Seulement un prix || Seulement le capital || Seulement des idées || Il chiffre le projet.
+Citez une source de financement d'un petit projet : || L'apport personnel || Les amendes || Le loyer || L'inflation || Prêts de proches et microfinance en sont d'autres.
+Quel financement vise les petits entrepreneurs peu servis par les banques classiques ? || La microfinance || Un impôt || Une loterie || Une assurance maladie || Elle finance beaucoup de petites activités.
+Qu'est-ce qu'un business angel ? || Un investisseur individuel qui finance de jeunes entreprises || Un client fidèle || Un comptable || Un banquier || Il apporte argent et conseils.
+Que détermine le choix du statut juridique ? || La responsabilité de l'entrepreneur et la fiscalité || La couleur des murs || Le nom du produit || Le nombre de clients || Il a des conséquences importantes.
+Qu'est-ce que l'entreprise individuelle ? || Une activité exercée en son nom propre, sans personne morale distincte || Une société anonyme || Une association || Un groupement || L'entrepreneur répond sur ses biens.
+Qu'est-ce que le besoin en fonds de roulement ? || L'argent nécessaire pour financer l'exploitation avant d'encaisser les clients || Le capital initial || Le bénéfice || L'impôt || Il peut être important au démarrage.
+Quelle erreur est fréquente chez les nouveaux entrepreneurs ? || Sous-estimer les besoins de trésorerie || Trop écouter leurs clients || Trop planifier || Ne pas avoir d'idée || Beaucoup d'entreprises manquent de liquidités.
+Pourquoi tester une idée avec une version simple du produit ? || Pour apprendre à peu de frais avant d'investir beaucoup || Pour retarder le lancement || Pour cacher le produit || Pour éviter les clients || Les retours des premiers clients guident la suite.
+Citez une qualité de l'entrepreneur : || La persévérance || L'indifférence || La peur de tout risque || L'absence de projet || Elle aide à surmonter les difficultés.

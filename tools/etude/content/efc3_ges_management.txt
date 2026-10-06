@@ -1,0 +1,29 @@
+titre: Management et gestion des ressources humaines
+== fiche
+p: Manager, c'est atteindre des objectifs avec et par les autres ; la gestion des ressources humaines (GRH) s'occupe des personnes dans l'entreprise.
+li: Fonctions du management : planifier, organiser, diriger, contrôler.
+li: Organigramme : schéma de la structure (qui dépend de qui). Types : hiérarchique, fonctionnel, par divisions.
+li: Styles de direction : autoritaire, démocratique, participatif, délégatif ; le bon style dépend de la situation et de l'équipe.
+li: Théories de la motivation : pyramide de Maslow (besoins physiologiques, sécurité, appartenance, estime, accomplissement) ; Herzberg (facteurs d'hygiène et facteurs de motivation).
+li: GRH : recrutement, intégration, formation, évaluation, rémunération, gestion des carrières, relations sociales.
+li: Recrutement : analyse du besoin, offre d'emploi, tri des candidatures, entretien, décision, contrat.
+li: Gestion prévisionnelle des emplois et des compétences (GPEC) : anticiper les besoins futurs.
+li: Gestion de conflit : écouter, comprendre, chercher une solution gagnant-gagnant.
+note: Un bon manager donne un cadre clair, écoute, reconnaît le travail bien fait et forme son équipe.
+note: La communication interne (réunions, notes, outils numériques) est essentielle.
+== questions
+Quelles sont les quatre fonctions classiques du management ? || Planifier, organiser, diriger, contrôler || Acheter, vendre, stocker, payer || Recruter, former, payer, licencier || Écrire, lire, parler, écouter || Elles forment le processus de gestion.
+Qu'est-ce qu'un organigramme ? || Un schéma de la structure de l'entreprise || Un plan comptable || Un bilan || Un contrat || Il montre qui dépend de qui.
+Qu'est-ce qu'un style de direction démocratique ? || Le dirigeant consulte l'équipe avant de décider || Il décide seul sans écouter || Il laisse tout faire || Il refuse de décider || L'équipe participe à la décision.
+Qu'est-ce qu'un style de direction autoritaire ? || Le dirigeant décide seul et donne des ordres || Il consulte tout le monde || Il délègue tout || Il évite les décisions || Il peut convenir en situation d'urgence.
+Que décrit la pyramide de Maslow ? || La hiérarchie des besoins humains || La hiérarchie des salaires || L'organigramme || Les styles de direction || Du plus basique au plus élevé : accomplissement.
+Quel besoin se trouve à la base de la pyramide de Maslow ? || Les besoins physiologiques || L'estime || L'accomplissement || L'appartenance || Manger, boire, dormir.
+Quel besoin se trouve au sommet de la pyramide de Maslow ? || L'accomplissement de soi || La sécurité || Les besoins physiologiques || L'appartenance || Réaliser son potentiel.
+Selon Herzberg, quels facteurs motivent vraiment ? || La reconnaissance, la responsabilité et l'intérêt du travail || Seulement le salaire || Seulement les conditions || Seulement la sécurité || Ce sont les facteurs de motivation.
+Qu'est-ce que la GRH ? || La gestion des personnes dans l'entreprise || La gestion des stocks || La gestion de la trésorerie || La gestion du marketing || Recrutement, formation, rémunération, carrières.
+Quelle est la première étape d'un recrutement ? || Analyser le besoin || Signer le contrat || Fixer le salaire || Licencier || Il faut d'abord définir le poste.
+À quoi sert la formation du personnel ? || Développer les compétences || Remplacer le recrutement || Réduire les salaires || Éviter les contrats || Elle améliore la performance.
+Qu'est-ce que la GPEC ? || Gestion prévisionnelle des emplois et des compétences || Gestion des paiements et des contrats || Gestion de la production et des coûts || Gestion des plaintes || Elle anticipe les besoins futurs.
+Comment gérer un conflit en équipe ? || Écouter, comprendre et chercher une solution acceptable pour tous || Ignorer || Punir immédiatement || Prendre parti seul || On cherche un accord gagnant-gagnant.
+Pourquoi la communication interne est-elle importante ? || Elle aligne l'équipe et évite les malentendus || Elle remplace le travail || Elle supprime les réunions || Elle coûte toujours cher || Une équipe informée travaille mieux.
+Que doit faire un bon manager ? || Donner un cadre clair, écouter et reconnaître le travail bien fait || Contrôler en permanence || Éviter de parler || Changer d'avis chaque jour || Il motive et aide à progresser.
