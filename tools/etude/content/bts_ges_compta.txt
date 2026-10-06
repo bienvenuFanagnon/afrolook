@@ -1,0 +1,31 @@
+titre: Comptabilité de base (BTS gestion et commerce)
+== fiche
+p: La comptabilité enregistre les opérations d'une entreprise. Elle est au cœur des BTS de gestion, comptabilité et finance.
+li: Plan comptable OHADA (SYSCOHADA) : cadre commun aux pays membres ; classes de comptes 1 à 9.
+li: Bilan : photo du patrimoine à une date ; actif (ce que l'entreprise possède) = passif (capitaux propres + dettes).
+li: Compte de résultat : charges (dépenses) et produits (recettes) ; résultat = produits − charges.
+li: Partie double : chaque opération est inscrite au débit d'un compte et au crédit d'un autre, pour un même montant.
+li: Journal et grand livre : le journal enregistre dans l'ordre chronologique ; le grand livre regroupe par compte.
+li: Balance : liste des soldes des comptes ; total débit = total crédit.
+li: TVA : taxe sur la valeur ajoutée ; TVA à payer = TVA collectée − TVA déductible.
+li: Amortissement : constatation de la perte de valeur d'un bien durable sur sa durée d'utilisation.
+li: Facture : mentions : vendeur, client, date, désignation, quantité, prix, TVA, total.
+li: Stocks, créances clients, dettes fournisseurs et trésorerie font partie du fonctionnement courant.
+note: La comptabilité sert aussi à calculer l'impôt et à rassurer les banques.
+note: Une écriture comptable doit toujours reposer sur une pièce justificative.
+== questions
+Comment appelle-t-on le plan comptable commun à l'espace OHADA ? || SYSCOHADA || SYSCO || PCG || IFRS || Il s'applique dans les États membres de l'OHADA.
+Que décrit le bilan ? || Le patrimoine à une date donnée || Les recettes d'un jour seulement || Le nombre d'employés || Le plan commercial || Il présente l'actif et le passif.
+Que contient l'actif d'un bilan ? || Ce que l'entreprise possède || Ce que l'entreprise doit || Les salaires futurs || Les impôts payés || Les biens, créances et trésorerie en font partie.
+Que contient le passif d'un bilan ? || Capitaux propres et dettes || Stocks et caisse || Seulement les clients || Seulement le matériel || Il montre l'origine des financements.
+Comment calcule-t-on le résultat ? || Produits − charges || Charges − produits || Actif + passif || Stock × prix || Si produits > charges : bénéfice.
+Que signifie la partie double ? || Chaque opération est inscrite au débit et au crédit || Chaque opération est faite deux fois par erreur || On enregistre deux factures || On double le prix || Les montants débités et crédités sont égaux.
+Que fait le journal comptable ? || Il enregistre les opérations dans l'ordre chronologique || Il classe par compte || Il calcule la TVA seule || Il remplace la facture || Le grand livre regroupe ensuite par compte.
+Que montre la balance ? || Les soldes des comptes || Les salaires || Le catalogue || La liste des clients || Total débit et total crédit doivent être égaux.
+Comment calcule-t-on la TVA à payer ? || TVA collectée − TVA déductible || TVA déductible − TVA collectée || TVA × 2 || Prix HT × 100 || Elle est reversée à l'administration fiscale.
+Que signifie HT sur une facture ? || Hors taxe || Haute tension || Hors travail || Hors temps || TTC signifie toutes taxes comprises.
+Que constate l'amortissement ? || La perte de valeur d'un bien durable || L'achat d'un bien || Un prêt || Un impôt || On étale la perte sur la durée d'utilisation.
+Quelle charge est une dépense courante ? || L'achat de fournitures || La création de capital || L'émission d'actions || Une subvention || Les fournitures sont consommées dans l'activité.
+Pourquoi conserver les pièces justificatives ? || Elles prouvent la réalité des opérations || Elles remplacent le bilan || Elles servent de décoration || Elles réduisent l'impôt automatiquement || Le contrôle fiscal peut les demander.
+Une dette envers un fournisseur est : || Au passif || À l'actif || Un produit || Un capital || C'est une dette à court terme.
+Une créance sur un client est : || À l'actif || Au passif || Un produit financier || Une charge || Le client doit encore payer.

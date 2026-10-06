@@ -1,0 +1,31 @@
+titre: Anglais de base pour le concours
+== fiche
+p: Les épreuves d'anglais testent le vocabulaire courant, les temps simples et la compréhension de textes courts.
+li: Verbe « to be » : I am, you are, he/she/it is, we are, they are ; « to have » : I have, he has.
+li: Present simple : habitudes et vérités générales (He works every day) ; troisième personne du singulier avec -s.
+li: Present continuous : action en cours (She is reading) ; be + verbe en -ing.
+li: Past simple : actions terminées (I went to school) ; verbes irréguliers : go-went, see-saw, eat-ate, buy-bought, write-wrote.
+li: Futur : will + verbe (I will call you) ; be going to pour une intention (I am going to travel).
+li: Prépositions : in (mois, années, villes), on (jours, dates), at (heures, lieux précis).
+li: Comparatifs : taller than, more expensive than ; superlatifs : the tallest, the most expensive.
+li: Questions : do/does + sujet + verbe ; mots interrogatifs : what, where, when, who, why, how.
+li: Vocabulaire du travail : job, salary, meeting, company, employee, manager, interview, skills.
+li: Modaux : can (pouvoir), must (devoir), should (conseil), may (permission).
+note: Lis chaque jour un petit texte en anglais, même court.
+note: Apprends les verbes irréguliers par listes de cinq.
+== questions
+Comment dit-on « Je suis étudiant » en anglais ? || I am a student || I is a student || I are student || I have student || « Am » accompagne « I ».
+Complète : « She ___ to school every day. » || goes || go || going || gone || À la 3e personne, on ajoute -s ou -es.
+Complète : « They ___ football now. » || are playing || plays || played || is play || C'est une action en cours : be + -ing.
+Quel est le passé simple de « go » ? || went || goed || gone || going || « Go » est un verbe irrégulier.
+Quel est le passé simple de « buy » ? || bought || buyed || boughted || buys || « Buy » est irrégulier.
+Quel est le passé simple de « see » ? || saw || seen || seed || sees || « Seen » est le participe passé.
+Complète : « I ___ call you tomorrow. » || will || did || am || has || « Will » exprime le futur.
+Complète : « The meeting is ___ Monday. » || on || in || at || by || On emploie « on » avec les jours.
+Complète : « He was born ___ 2002. » || in || on || at || to || On emploie « in » avec les années.
+Quelle est la forme comparative de « tall » ? || taller || more tall || tallest || tallier || Pour les adjectifs courts, on ajoute -er.
+Quelle est la forme superlative de « big » ? || the biggest || the most big || the bigger || the bigest || On double le g puis -est.
+Que signifie « salary » ? || Salaire || Vendeur || Conférence || Entreprise || C'est le montant payé pour un travail.
+Que signifie « employee » ? || Employé || Employeur || Entretien || Client || L'employeur, lui, se dit employer.
+Quel mot interrogatif demande le lieu ? || Where || When || Who || Why || « Where » signifie où.
+Complète : « You ___ wear a helmet. » (conseil) || should || is || have || did || « Should » exprime un conseil.

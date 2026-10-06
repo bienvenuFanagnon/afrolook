@@ -1,0 +1,30 @@
+titre: Raisonnement logique et tests psychotechniques
+== fiche
+p: Les tests de logique mesurent la rapidité et la rigueur du raisonnement, sans demander de connaissances de cours.
+li: Suites numériques : repère la règle (ajout constant, multiplication, carrés, alternance de deux règles).
+li: Suites de lettres : numérote les lettres (A=1, B=2...) pour trouver la règle.
+li: Analogies : « A est à B ce que C est à ? » ; trouve la relation (contraire, fonction, partie-tout).
+li: Intrus : trouve l'élément qui n'appartient pas à la catégorie.
+li: Syllogisme : si tous les A sont B et que X est un A, alors X est un B.
+li: Négation et contraposée : « Si P alors Q » équivaut à « Si non Q alors non P » ; elle n'équivaut pas à « Si Q alors P ».
+li: Problèmes de logique : âges, ordres (classement), vérité et mensonge ; fais un tableau.
+li: Dominos et séries de figures : observe la rotation, la symétrie ou l'ajout d'un élément à chaque étape.
+li: Gestion du temps : environ une minute par question ; passe vite à la suivante si tu bloques.
+note: Élimine d'abord les réponses impossibles : cela augmente tes chances.
+note: Entraîne-toi chronomètre en main : la vitesse compte autant que la justesse.
+== questions
+Complète la suite : 2, 4, 6, 8, ? || 10 || 12 || 9 || 16 || On ajoute 2 à chaque fois.
+Complète la suite : 3, 6, 12, 24, ? || 48 || 36 || 30 || 27 || On multiplie par 2 à chaque fois.
+Complète la suite : 1, 4, 9, 16, ? || 25 || 20 || 24 || 32 || Ce sont les carrés des entiers.
+Complète la suite : 5, 10, 8, 16, 14, ? || 28 || 26 || 24 || 30 || On alterne ×2 puis −2.
+Complète : A, C, E, G, ? || I || H || J || K || On saute une lettre à chaque fois.
+« Chaud est à froid ce que grand est à ... » || petit || haut || large || gros || C'est une relation de contraires.
+« Médecin est à hôpital ce que professeur est à ... » || école || livre || classe seulement || bureau || La relation est personne et lieu de travail.
+Quel est l'intrus : lundi, mardi, janvier, jeudi ? || janvier || mardi || jeudi || lundi || Janvier n'est pas un jour de la semaine.
+Tous les chats sont des animaux. Minou est un chat. Que peut-on en conclure ? || Minou est un animal || Minou n'est pas un animal || Tous les animaux sont des chats || On ne peut rien conclure || C'est un syllogisme valide.
+Si « S'il pleut, la route est mouillée » est vrai et que la route est sèche, alors : || Il n'a pas plu || Il a plu || La route est glissante || On ne peut rien dire || C'est la contraposée.
+Marie est plus grande que Paul. Paul est plus grand que Luc. Qui est le plus petit ? || Luc || Paul || Marie || On ne sait pas || Le classement est Marie, Paul, Luc.
+Awa a 4 ans de plus que Kossi. Kossi a 10 ans. Quel âge a Awa ? || 14 ans || 6 ans || 40 ans || 12 ans || 10 + 4.
+Il est 14 h 45. Quelle heure sera-t-il dans 50 minutes ? || 15 h 35 || 15 h 05 || 14 h 95 || 16 h 35 || 45 + 50 = 95 minutes, soit 1 h 35.
+Un test dure 60 minutes pour 60 questions. Combien de temps par question ? || 1 minute || 2 minutes || 30 secondes || 5 minutes || Il faut gérer son rythme.
+Que faire devant une question trop difficile ? || La laisser et y revenir si le temps le permet || Y passer 10 minutes || Abandonner le test || Répondre au hasard sans lire || Le temps est limité.

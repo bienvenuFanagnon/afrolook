@@ -1,0 +1,31 @@
+titre: Techniques de vente et commerce (BTS commerce)
+== fiche
+p: Le commerce met en relation une offre et une demande. Le BTS commerce forme à la vente, à la relation client et à la gestion d'un point de vente.
+li: Marketing mix (4P) : produit, prix, place (distribution), promotion.
+li: Étapes de la vente : accueil, découverte des besoins, argumentaire, traitement des objections, conclusion, fidélisation.
+li: Argumentaire CAB : Caractéristique, Avantage, Bénéfice pour le client.
+li: Objection : frein exprimé par le client (prix, doute) ; on écoute, on reformule, on répond avec des preuves.
+li: Prix de vente = coût d'achat + marge ; marge commerciale = prix de vente HT − coût d'achat HT.
+li: Taux de marge = marge ÷ coût d'achat ; taux de marque = marge ÷ prix de vente.
+li: Merchandising : mise en valeur des produits en rayon (emplacement, facing, éclairage).
+li: Canaux de distribution : direct, court (un intermédiaire), long (grossiste puis détaillant) ; commerce en ligne.
+li: Gestion des stocks : stock minimum, stock de sécurité, rotation ; éviter la rupture et le sur-stock.
+li: Fidélisation : carte de fidélité, offres personnalisées, service après-vente de qualité.
+note: Le client achète un bénéfice, pas une caractéristique technique.
+note: Un client satisfait revient et recommande : la fidélisation coûte moins cher que la prospection.
+== questions
+Que représentent les 4P du marketing mix ? || Produit, prix, place, promotion || Personne, plan, poste, paye || Prix, pub, poste, public || Produit, profit, personnel, plan || Ils décrivent l'offre commerciale.
+Quelle est la première étape d'une vente ? || L'accueil du client || La conclusion || Le paiement || Le service après-vente || Elle crée la confiance.
+Que signifie la découverte des besoins ? || Poser des questions pour comprendre ce que veut le client || Parler de soi || Donner le prix directement || Fermer le magasin || Elle guide l'argumentaire.
+Que signifie CAB dans un argumentaire ? || Caractéristique, Avantage, Bénéfice || Client, Achat, Bilan || Coût, Accord, Bon || Contrat, Avis, Budget || Il relie le produit au bénéfice pour le client.
+Que faire face à une objection de prix ? || Écouter, reformuler et justifier avec des preuves || Baisser tout de suite le prix || Ignorer le client || Fermer la vente || Une objection est souvent une demande d'information.
+Comment calcule-t-on la marge commerciale ? || Prix de vente HT − coût d'achat HT || Coût d'achat − prix de vente || Prix de vente × TVA || Coût × quantité || Elle rémunère le commerçant.
+Un article acheté 600 est vendu 900. Quelle est la marge ? || 300 || 150 || 1 500 || 600 || 900 − 600.
+Pour cet article (achat 600, vente 900), quel est le taux de marge ? || 50 % || 33 % || 300 % || 25 % || 300 ÷ 600.
+Pour cet article (achat 600, vente 900), quel est le taux de marque ? || 33 % || 50 % || 66 % || 25 % || 300 ÷ 900.
+Que fait le merchandising ? || Mettre en valeur les produits dans le point de vente || Transporter les marchandises || Payer les salaires || Réparer les produits || Il influence l'achat sur place.
+Qu'est-ce qu'un circuit de distribution court ? || Avec au plus un intermédiaire || Sans produit || Avec trois grossistes || Seulement en ligne || Le circuit direct n'en a aucun.
+Qu'est-ce qu'une rupture de stock ? || Il n'y a plus de produit disponible || Il y a trop de produits || Le stock est volé || Le prix baisse || Elle fait perdre des ventes.
+Pourquoi un stock de sécurité ? || Éviter la rupture en cas de retard ou de hausse de demande || Remplir l'entrepôt sans raison || Augmenter les impôts || Éviter les clients || Il protège contre les imprévus.
+Pourquoi fidéliser un client ? || Il revient et recommande || Il paie moins || Il ne parle à personne || Il remplace le stock || Fidéliser coûte moins que prospecter.
+À quoi sert le service après-vente ? || Résoudre les problèmes après l'achat et fidéliser || Fabriquer le produit || Fixer les prix || Payer les salaires || Il renforce la confiance.

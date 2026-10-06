@@ -1,0 +1,31 @@
+titre: Économie et droit des affaires (BTS gestion)
+== fiche
+p: Les BTS de gestion demandent des notions d'économie, de droit commercial OHADA et de fonctionnement des banques.
+li: Entreprise : unité qui produit des biens ou services ; formes : entreprise individuelle, SARL, SA, SAS, GIE, coopérative.
+li: SARL : société à responsabilité limitée ; associés responsables dans la limite de leurs apports.
+li: OHADA : Organisation pour l'harmonisation en Afrique du droit des affaires ; Actes uniformes (société commerciale, sûretés, procédures collectives, comptabilité...).
+li: Commerçant : personne qui exerce des actes de commerce à titre de profession habituelle ; immatriculation au registre du commerce et du crédit mobilier (RCCM).
+li: Offre et demande : si la demande augmente et l'offre reste stable, le prix tend à augmenter.
+li: Inflation : hausse générale et durable des prix ; elle réduit le pouvoir d'achat.
+li: PIB : valeur de la production de richesses d'un pays sur une période.
+li: Banque : reçoit des dépôts, accorde des crédits ; la banque centrale (BCEAO) émet la monnaie et fixe les taux directeurs.
+li: Crédit : prêt remboursé avec intérêts ; garanties : hypothèque, caution, gage.
+li: Chômage, croissance, commerce extérieur : indicateurs de la santé de l'économie.
+note: Connais les sigles : OHADA, RCCM, PIB, BCEAO, TVA.
+note: Une société commerciale a une personnalité juridique distincte de ses associés.
+== questions
+Que signifie OHADA ? || Organisation pour l'harmonisation en Afrique du droit des affaires || Organisation hôtelière d'Afrique || Office africain du droit administratif || Ordre honoraire des affaires || Elle unifie le droit des affaires de ses États membres.
+Que signifie SARL ? || Société à responsabilité limitée || Société anonyme à revenu local || Société d'achat et de revente || Syndicat des associés || Les associés répondent à hauteur de leurs apports.
+Que signifie RCCM ? || Registre du commerce et du crédit mobilier || Régime commun du commerce || Recensement commercial central || Revenu du commerce moyen || Un commerçant doit s'y immatriculer.
+Qu'est-ce qu'un commerçant selon le droit OHADA ? || Une personne qui fait des actes de commerce à titre habituel || Toute personne qui achète || Un salarié || Un fonctionnaire || La profession habituelle est le critère.
+Que fait la demande qui augmente si l'offre reste stable ? || Le prix tend à augmenter || Le prix baisse || Le prix disparaît || Rien ne change || C'est la loi de l'offre et de la demande.
+Qu'est-ce que l'inflation ? || Une hausse générale et durable des prix || Une baisse des prix || Une baisse des salaires || Un taux de change || Elle réduit le pouvoir d'achat.
+Que mesure le PIB ? || La richesse produite par un pays sur une période || La population || La superficie || Le nombre de banques || PIB : produit intérieur brut.
+Quel est le rôle d'une banque commerciale ? || Recevoir des dépôts et accorder des crédits || Fabriquer les billets || Fixer les lois || Collecter les impôts || La banque centrale émet la monnaie.
+Quel est le rôle de la BCEAO ? || Émettre la monnaie et mener la politique monétaire || Gérer un magasin || Collecter la TVA || Juger les litiges || Elle sert les pays de l'UEMOA.
+Qu'est-ce qu'un taux d'intérêt ? || Le prix d'un crédit || Un impôt || Un salaire || Une assurance || Il rémunère le prêteur.
+Citez une garantie de crédit : || L'hypothèque || Le dividende || Le bilan || La facture || La caution et le gage en sont d'autres.
+Que veut dire « personnalité juridique » d'une société ? || Elle peut avoir ses propres droits et obligations || Elle n'a pas de nom || Elle est un salarié || Elle est une personne physique || Elle est distincte de ses associés.
+Quel est un indicateur de la santé d'une économie ? || La croissance || La couleur du drapeau || L'altitude || Le nombre de rivières || Le chômage et l'inflation en sont d'autres.
+Qu'est-ce que le pouvoir d'achat ? || La quantité de biens qu'un revenu permet d'acheter || Le nombre de magasins || Le prix d'un produit || Le crédit bancaire || Il baisse quand les prix montent plus vite que les revenus.
+Qu'est-ce qu'un acte uniforme OHADA ? || Un texte de droit commun applicable aux États membres || Une loi nationale seulement || Un contrat de travail || Un impôt || Il traite par exemple des sociétés ou des sûretés.

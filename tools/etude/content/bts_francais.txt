@@ -1,0 +1,30 @@
+titre: Français : orthographe, grammaire et expression
+== fiche
+p: Les épreuves de français évaluent l'orthographe, la grammaire, le vocabulaire et la capacité à résumer ou argumenter.
+li: Accord du participe passé : avec être, il s'accorde avec le sujet ; avec avoir, il s'accorde avec le COD placé avant le verbe.
+li: Homophones : a / à, et / est, son / sont, ces / ses, ce / se, ou / où, on / ont, leur / leurs, mes / mais.
+li: Pluriel des noms : en général +s ; les noms en -al font -aux ; les noms en -eau, -eu, -au prennent -x (sauf exceptions comme landau).
+li: Conjugaison : au futur, les verbes en -er gardent le e (je chanterai) ; au conditionnel, les terminaisons sont -ais, -ais, -ait, -ions, -iez, -aient.
+li: Subjonctif présent : après « il faut que », « bien que », « pour que » (qu'il vienne, que nous finissions).
+li: Figures de style : comparaison (comme), métaphore (sans outil de comparaison), hyperbole (exagération), litote (dire peu pour suggérer beaucoup).
+li: Synonymes et antonymes : un synonyme a un sens proche ; un antonyme un sens contraire.
+li: Résumé de texte : garder les idées essentielles, reformuler avec ses mots, respecter le nombre de mots demandé (souvent un quart du texte).
+li: Dissertation et expression écrite : introduction (amener, poser le problème, annoncer le plan), développement en parties, conclusion.
+note: Relis-toi toujours : la moitié des fautes se corrigent à la relecture.
+note: Pour un résumé, ne copie pas des phrases entières du texte.
+== questions
+Complète : « Je vais ___ Kara demain. » || à || a || as || ah || « à » est une préposition ; « a » est le verbe avoir.
+Comment écrit-on : « Ils ___ partis tôt » ? || sont || son || sons || sonts || « sont » est le verbe être au pluriel.
+Que choisir : « ___ enfants jouent » ? || Ces || Ses || C'est || S'est || « ces » désigne, « ses » indique la possession.
+Quel est le pluriel de « cheval » ? || chevaux || chevals || chevaus || chevalx || Les noms en -al font souvent -aux.
+Quel est le pluriel de « bureau » ? || bureaux || bureaus || bureaux's || bureauxs || Les noms en -eau prennent -x.
+Comment s'accorde le participe passé avec « être » ? || Avec le sujet || Avec le COD || Il ne s'accorde jamais || Avec l'adverbe || Elle est partie : accord avec « elle ».
+Avec « avoir », le participe passé s'accorde avec : || Le COD placé avant le verbe || Le sujet toujours || Le complément circonstanciel || Aucun mot || « Les fleurs que j'ai cueillies ».
+Quelle phrase est correcte ? || Il faut que tu viennes || Il faut que tu viens || Il faut que tu vient || Il faut que tu venais || « Il faut que » est suivi du subjonctif.
+Quel est le futur de « je chanter » ? || Je chanterai || Je chanterais || Je chanterez || Je chantera || Le futur de « je » se termine par -ai.
+Quelle figure de style compare sans outil de comparaison ? || La métaphore || La comparaison || L'hyperbole || La litote || « Cet homme est un lion ».
+Quelle figure de style exagère ? || L'hyperbole || La litote || La métaphore || L'antithèse || « Je meurs de faim ».
+Quel est un synonyme de « rapide » ? || Vif || Lent || Mou || Tardif || Un synonyme a un sens proche.
+Quel est le contraire (antonyme) de « grand » ? || Petit || Haut || Large || Géant || Un antonyme a un sens opposé.
+Quelle est la taille habituelle d'un résumé de texte ? || Environ le quart du texte || Le texte entier || La moitié exacte || Une seule phrase || Il faut respecter la consigne de mots.
+Que contient l'introduction d'une dissertation ? || Amener le sujet, poser la problématique, annoncer le plan || Seulement la conclusion || Des exemples sans lien || Une citation sans commentaire || Elle prépare le développement.

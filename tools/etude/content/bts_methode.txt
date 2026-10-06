@@ -1,0 +1,30 @@
+titre: Méthode : réussir son concours d'entrée en BTS
+== fiche
+p: Réussir un concours, c'est savoir ce qui est demandé, s'organiser et gérer le jour J. Les formats varient selon les écoles et les pays.
+li: BTS : Brevet de technicien supérieur, diplôme professionnel de niveau bac + 2 ; on y entre après le baccalauréat ou un diplôme équivalent.
+li: Concours d'entrée : épreuves écrites (culture générale, français, mathématiques, anglais, tests de logique et épreuves du domaine), parfois entretien de motivation.
+li: Dossier : acte de naissance, relevés de notes, diplôme du bac, photos, pièce d'identité, frais d'inscription ; vérifie la liste et les dates limites.
+li: Planning de révision : commence au moins 8 à 12 semaines avant ; alterne matières ; fais des annales (anciens sujets).
+li: Le jour J : arriver en avance, avec convocation, pièce d'identité, stylos, calculatrice si autorisée ; lire toutes les consignes.
+li: QCM : lire la question en entier, éliminer les réponses fausses, ne pas laisser de blanc si aucun point n'est retiré pour une mauvaise réponse.
+li: Entretien de motivation : expliquer pourquoi cette filière, ce que tu sais du métier, tes qualités, ton projet après le BTS.
+li: Choisir sa filière : métier visé, débouchés, matières préférées, durée, coût et reconnaissance du diplôme par l'État.
+li: Après le BTS : emploi, création d'entreprise ou poursuite en licence professionnelle.
+note: Renseigne-toi auprès de l'école : le programme et les épreuves peuvent changer chaque année.
+note: Évite les écoles non reconnues : demande si le diplôme est agréé par l'État.
+== questions
+Que signifie BTS ? || Brevet de technicien supérieur || Brevet technique spécialisé || Bac technique scolaire || Brevet de technologie simple || C'est un diplôme de niveau bac + 2.
+Après quel diplôme entre-t-on généralement en BTS ? || Le baccalauréat || Le BEPC || Le CEPD seulement || La licence || Le BTS dure environ deux ans.
+Quelle est la durée usuelle d'un BTS ? || Deux ans || Un an || Quatre ans || Six mois || C'est un cursus court professionnalisant.
+Quel est le niveau du BTS ? || Bac + 2 || Bac + 5 || Bac + 3 || Bac || Il peut mener à une licence professionnelle.
+Quel document est utile pour s'inscrire à un concours ? || L'acte de naissance || Un menu de restaurant || Un ticket de transport || Un plan de ville || Le dossier demande aussi relevés de notes et pièce d'identité.
+Que sont les annales ? || Les anciens sujets d'examen ou de concours || Les journaux locaux || Les bulletins météo || Les contrats de travail || Elles aident à se préparer.
+Quand commencer à réviser ? || Au moins 8 à 12 semaines avant || La veille || Le matin du concours || Après les résultats || Un planning régulier est plus efficace.
+Que faut-il apporter le jour du concours ? || Convocation, pièce d'identité et stylos || Seulement un téléphone || Un ami || Des livres de cours || Vérifie aussi si la calculatrice est autorisée.
+Comment aborder un QCM ? || Lire toute la question et éliminer les mauvaises réponses || Répondre sans lire || Choisir toujours la première || Ne jamais répondre || L'élimination augmente les chances.
+Que doit-on expliquer à l'entretien de motivation ? || Pourquoi cette filière et quel projet || Sa recette préférée || Son film préféré seulement || Rien du tout || Le jury évalue la motivation et la cohérence.
+Pourquoi vérifier qu'une école est agréée ? || Pour que le diplôme soit reconnu par l'État || Pour payer plus cher || Pour éviter les cours || Pour changer de nom || Un diplôme non reconnu limite les débouchés.
+Que peut-on faire après un BTS ? || Travailler, créer son entreprise ou faire une licence professionnelle || Rien || Seulement arrêter || Seulement repasser le bac || Il ouvre plusieurs voies.
+Que faire en arrivant à l'épreuve ? || Lire toutes les consignes avant de commencer || Commencer sans lire || Parler au voisin || Dormir || Une consigne oubliée coûte des points.
+Pourquoi s'informer auprès de l'école sur les épreuves ? || Le programme et le format changent selon les écoles et les années || Parce que tout est identique partout || Pour éviter l'inscription || Pour retarder le dossier || Les informations officielles sont les plus fiables.
+Comment choisir sa filière de BTS ? || Selon le métier visé, les débouchés et ses matières fortes || Au hasard || Selon la couleur du bâtiment || Selon l'avis du voisin seulement || Un bon choix est réfléchi.
