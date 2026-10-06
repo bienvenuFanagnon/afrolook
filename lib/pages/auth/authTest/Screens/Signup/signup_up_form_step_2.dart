@@ -563,7 +563,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
     batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
       'nbr_abonnes': FieldValue.increment(1),
-      'users_id': FieldValue.arrayUnion([id]),
     });
 
     await batch.commit();
@@ -607,7 +606,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
     batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
       'nbr_abonnes': FieldValue.increment(1),
-      'users_id': FieldValue.arrayUnion([id]),
     });
 
     await batch.commit();
