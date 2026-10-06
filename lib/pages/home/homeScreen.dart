@@ -130,6 +130,7 @@ import '../LiveAgora/live_list_page.dart';
 import '../LiveAgora/livePage.dart';
 import '../user/conversation/listUserConv.dart';
 import '../../l10n/tr.dart';
+import '../../widgets/share_app_sheet.dart';
 import '../../services/currency_service.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -684,17 +685,7 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.ios_share_rounded,
                       label: l10n.menuShareApp,
                       closeDrawer: false,
-                      onTap: () async {
-                        final box = context.findRenderObject() as RenderBox?;
-                        await authProvider.getAppData().then(
-                          (value) async {
-                            await Share.shareUri(
-                              Uri.parse('${authProvider.appDefaultData.app_link}'),
-                              sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
-                            );
-                          },
-                        );
-                      }),
+                      onTap: () => showShareAppSheet(context)),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -2712,10 +2703,7 @@ class _MyHomePageState extends State<MyHomePage>
                 ),
                 _rpItem(context, colors, icon: Icons.info_outline,                         label: l10n.menuNewsInfo,        onTap: () => Navigator.pushNamed(context, '/app_info')),
                 _rpItem(context, colors, icon: Icons.contact_mail,                         label: l10n.menuContacts,        onTap: () => Navigator.pushNamed(context, '/contact')),
-                _rpItem(context, colors, icon: Icons.smartphone,                           label: l10n.menuShareApp,        onTap: () async {
-                  await authProvider.getAppData();
-                  Share.shareUri(Uri.parse('${authProvider.appDefaultData.app_link}'));
-                }),
+                _rpItem(context, colors, icon: Icons.smartphone,                           label: l10n.menuShareApp,        onTap: () => showShareAppSheet(context)),
 
                 // Afro Love — en bas du menu, masqué sur iOS (App Store)
                 if (!kIsAppleStore)
