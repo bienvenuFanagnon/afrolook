@@ -25,6 +25,81 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
   List<EtudeTrack>? _tracks;
   String? _error;
   bool _busy = false; // rechargement : la mascotte s'anime
+  final TextEditingController _search = TextEditingController();
+  String _query = '';
+  String _fac = 'all'; // faculté choisie : all, school, sci, eco, law, health, sport
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  /// Faculté (domaine) d'un parcours, déduite de son identifiant.
+  String _facultyOf(EtudeTrack t) {
+    final id = t.id;
+    if (id == 'college' || id.startsWith('lycee')) return 'school';
+    if (id == 'univ_info' || id == 'univ_mpc') return 'sci';
+    if (id == 'univ_efc' || id == 'univ_gestion' || id == 'univ_marketing') return 'eco';
+    if (id == 'univ_droit') return 'law';
+    if (id == 'univ_sante') return 'health';
+    if (id == 'univ_sport') return 'sport';
+    return 'other';
+  }
+
+  String _facultyLabel(String f) {
+    switch (f) {
+      case 'school':
+        return context.tr('École');
+      case 'sci':
+        return context.tr('Sciences et technologies');
+      case 'eco':
+        return context.tr('Économie et gestion');
+      case 'law':
+        return context.tr('Droit');
+      case 'health':
+        return context.tr('Santé');
+      case 'sport':
+        return context.tr('Sport');
+      default:
+        return context.tr('Autres');
+    }
+  }
+
+  IconData _facultyIcon(String f) {
+    switch (f) {
+      case 'school':
+        return Icons.school_rounded;
+      case 'sci':
+        return Icons.science_rounded;
+      case 'eco':
+        return Icons.trending_up_rounded;
+      case 'law':
+        return Icons.gavel_rounded;
+      case 'health':
+        return Icons.health_and_safety_rounded;
+      case 'sport':
+        return Icons.sports_soccer_rounded;
+      default:
+        return Icons.account_balance_rounded;
+    }
+  }
+
+  bool _matches(EtudeTrack t) {
+    if (_fac != 'all' && _facultyOf(t) != _fac) return false;
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    if (t.title.toLowerCase().contains(q) || _facultyLabel(_facultyOf(t)).toLowerCase().contains(q)) return true;
+    for (final cls in t.classes) {
+      for (final sub in cls.subjects) {
+        if (sub.title.toLowerCase().contains(q)) return true;
+        for (final ch in sub.chapters) {
+          if (ch.title.toLowerCase().contains(q)) return true;
+        }
+      }
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -134,8 +209,11 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 32), children: [
         _header(c, st),
         const SizedBox(height: 18),
-        _sectionTitle(c, context.tr('Mon parcours'), context.tr('De l\'école au diplôme')),
-        for (final t in cycles) _trackCard(c, st, t),
+        _searchBar(c),
+        const SizedBox(height: 10),
+        _facultyChips(c, cycles),
+        const SizedBox(height: 14),
+        ..._cycleSections(c, st, cycles),
         const QuizAdInline(),
         const SizedBox(height: 10),
         _sectionTitle(c, context.tr('Attestations'), context.tr('Un domaine, une attestation')),
@@ -153,6 +231,87 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
         ),
       ]),
     );
+  }
+
+  Widget _searchBar(AppColors c) {
+    return TextField(
+      controller: _search,
+      onChanged: (v) => setState(() => _query = v),
+      style: TextStyle(color: c.textPrimary),
+      decoration: InputDecoration(
+        hintText: context.tr('Rechercher un parcours, une matière ou un chapitre'),
+        hintStyle: TextStyle(color: c.textSecondary, fontSize: 14),
+        prefixIcon: Icon(Icons.search_rounded, color: c.textSecondary),
+        suffixIcon: _query.isEmpty
+            ? null
+            : IconButton(
+                tooltip: context.tr('Effacer'),
+                icon: Icon(Icons.close_rounded, color: c.textSecondary),
+                onPressed: () {
+                  _search.clear();
+                  setState(() => _query = '');
+                },
+              ),
+        filled: true,
+        fillColor: c.surface,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: c.border)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: c.border)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: c.primary, width: 1.6)),
+      ),
+    );
+  }
+
+  Widget _facultyChips(AppColors c, List<EtudeTrack> cycles) {
+    final present = <String>{for (final t in cycles) _facultyOf(t)};
+    const order = ['school', 'sci', 'eco', 'law', 'health', 'sport', 'other'];
+    final keys = ['all', ...order.where(present.contains)];
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: keys.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final k = keys[i];
+          final selected = _fac == k;
+          return ChoiceChip(
+            label: Text(k == 'all' ? context.tr('Toutes') : _facultyLabel(k)),
+            selected: selected,
+            onSelected: (_) => setState(() => _fac = k),
+            selectedColor: c.primary.withOpacity(0.2),
+            backgroundColor: c.surface,
+            labelStyle: TextStyle(color: selected ? c.primary : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
+            side: BorderSide(color: selected ? c.primary : c.border),
+          );
+        },
+      ),
+    );
+  }
+
+  /// « Mes parcours » (déjà commencés) puis « Découvrir d'autres parcours », filtrés par faculté et recherche.
+  List<Widget> _cycleSections(AppColors c, EtudeState st, List<EtudeTrack> cycles) {
+    final shown = cycles.where(_matches).toList();
+    final mine = shown.where((t) => st.tracks.containsKey(t.id)).toList();
+    final others = shown.where((t) => !st.tracks.containsKey(t.id)).toList();
+    if (shown.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: Text(context.tr('Aucun parcours ne correspond à ta recherche.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary))),
+        ),
+      ];
+    }
+    return [
+      if (mine.isNotEmpty) ...[
+        _sectionTitle(c, context.tr('Mes parcours'), context.tr('Ceux que tu as déjà commencés')),
+        for (final t in mine) _trackCard(c, st, t),
+      ],
+      if (others.isNotEmpty) ...[
+        _sectionTitle(c, mine.isEmpty ? context.tr('Choisis ton parcours') : context.tr('Découvrir d\'autres parcours'), context.tr('De l\'école au diplôme, par domaine')),
+        for (final t in others) _trackCard(c, st, t),
+      ],
+    ];
   }
 
   Widget _sectionTitle(AppColors c, String title, String? sub) => Padding(
@@ -222,10 +381,15 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
             width: 42,
             height: 42,
             decoration: BoxDecoration(color: c.primary.withOpacity(0.14), borderRadius: BorderRadius.circular(13)),
-            child: Icon(t.id.startsWith('univ') ? Icons.account_balance_rounded : (t.id.startsWith('lycee') ? Icons.school_rounded : Icons.backpack_rounded), color: c.primary),
+            child: Icon(_facultyIcon(_facultyOf(t)), color: c.primary),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text(t.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 17))),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(t.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 17)),
+              Text(_facultyLabel(_facultyOf(t)), style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+            ]),
+          ),
           if (diploma != null) const Icon(Icons.workspace_premium_rounded, color: Color(0xFFD4A017)),
         ]),
         const SizedBox(height: 12),

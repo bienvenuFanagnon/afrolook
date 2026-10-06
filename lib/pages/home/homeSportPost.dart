@@ -73,6 +73,7 @@ import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
 import '../../widgets/feed/sections/ad_free_day_card.dart';
 import '../../widgets/feed/sections/quiz_feed_card.dart';
+import '../../widgets/feed/sections/etude_feed_card.dart';
 
 
 // Constantes de couleur
@@ -2964,6 +2965,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
       if (i == 16) {
         contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_sport_2'), slot: 2));
+      }
+
+      // Cours universitaire du jour : de temps en temps dans le fil, deux cours différents
+      if (i == 9) {
+        contentWidgets.add(const EtudeFeedCard(key: ValueKey('etude_card_sport_1'), slot: 1));
+      }
+      if (i == 26) {
+        contentWidgets.add(const EtudeFeedCard(key: ValueKey('etude_card_sport_2'), slot: 2));
       }
 
       // T2 fill counter (plus de section découverte en plein feed)

@@ -239,3 +239,9 @@ Trois nouveaux parcours de Licence 1 (12 chapitres, 180 questions chacun) : `uni
 ## 21. Licences 2 de Santé, Gestion et Marketing
 
 Santé L2 (8 chapitres : pharmacologie, microbiologie, immunité, hormones et diabète, grossesse et accouchement, maladies de l'enfant et PCIME, techniques de soins, santé communautaire), Gestion L2 (8 : lean et qualité, douane et commerce extérieur, financement, prévision des ventes, gestion d'une PME, leadership et changement, contrôle interne, gouvernance OHADA), Marketing L2 (8 : études quantitatives, stratégie et plan, services, B2B, marché africain, analytique digitale, vidéo et influence, droit et éthique). L'examen de licence de chaque parcours porte sur les deux années (50 questions). Total Étude : 14 parcours, 257 chapitres, 3 855 questions.
+
+## 22. Page par facultés et cours dans les fils
+
+- Accueil Étude : barre de recherche (parcours, matière, chapitre), pastilles de faculté (École, Sciences et technologies, Économie et gestion, Droit, Santé, Sport), « Mes parcours » (commencés) puis « Découvrir d'autres parcours ». La faculté est déduite de l'identifiant du parcours (`_facultyOf` dans `etude_home_page.dart`) ; un nouveau parcours inconnu va dans « Autres ».
+- Fil d'actualité, fil sport et fil vidéo : carte « Cours du jour » (`lib/widgets/feed/sections/etude_feed_card.dart`) après le 10ᵉ et le 27ᵉ post. Elle présente un chapitre gratuit d'un parcours universitaire (change chaque jour), avec un résumé et un bouton « Lire le cours ». La croix la masque jusqu'à demain. Le fil vidéo utilise la même page que le fil d'accueil (`HomeConstPostPage`).
+- Ces deux évolutions demandent une nouvelle version de l'application (les contenus, eux, restent côté serveur).
