@@ -1,0 +1,32 @@
+titre: Ingénierie sociale et arnaques en ligne
+== fiche
+p: La plupart des pirates préfèrent tromper la personne plutôt que casser la technique. Reconnaître les ruses protège mieux qu'un antivirus.
+li: Ingénierie sociale : manipulation psychologique pour obtenir une information ou une action ; ressorts : urgence, peur, curiosité, avidité, autorité, confiance.
+li: Hameçonnage (phishing) : message ou site imitant une banque, un opérateur, un réseau social ; variantes : smishing (SMS), vishing (appel vocal), spear phishing (ciblé).
+li: Faux gains et loteries : « vous avez gagné » ; on demande des frais ou des informations pour recevoir un prix qui n'existe pas.
+li: Arnaque mobile money : faux agent qui prétend s'être trompé de transfert et réclame un retour d'argent, faux appels de l'opérateur demandant un code.
+li: Arnaque sentimentale (romance scam) : faux profil qui crée un lien puis demande de l'argent.
+li: Sextorsion : chantage avec des images intimes ; ne pas payer, couper la communication, signaler.
+li: Faux emploi et faux visa : offres trop belles qui demandent des frais ; ne jamais payer avant un contrat vérifiable.
+li: Faux support technique : « votre compte est piraté, donnez votre code » ; aucun service ne demande vos codes.
+li: Usurpation d'un proche ou d'un dirigeant : message urgent demandant de l'argent ; vérifier par un autre canal.
+li: Deepfake : voix ou vidéo truquées par l'intelligence artificielle ; se méfier d'une demande d'argent même avec la voix d'un proche.
+li: Règle des quatre questions : qui m'écrit ? pourquoi maintenant ? que demande-t-on ? puis-je vérifier autrement ?
+note: Une offre trop belle ou trop urgente est presque toujours une arnaque.
+note: Signaler une arnaque protège les autres : opérateur, plateforme, police.
+== questions
+Côté cybersécurité, qu'est-ce que l'ingénierie sociale ? || La manipulation psychologique pour obtenir une information ou une action || Un cours de maths || Un logiciel || Un câble || Elle exploite urgence, peur ou confiance.
+Que signifie smishing ? || L'hameçonnage par SMS || Un virus d'image || Un jeu || Un câble || Le vishing utilise l'appel vocal.
+Que fait un faux gain (« vous avez gagné ») ? || Il pousse à payer des frais ou donner des informations || Il verse de l'argent || Il aide || Il est officiel || Le prix n'existe pas.
+Que faire face à une demande de retour d'argent « envoyé par erreur » ? || Vérifier avec l'opérateur avant de rendre || Rendre aussitôt || Donner son code || Répondre sans vérifier || C'est une arnaque classique.
+Qu'est-ce qu'une arnaque sentimentale ? || Un faux profil qui crée un lien puis demande de l'argent || Un vrai mariage || Une amitié || Un jeu || Elle exploite les émotions.
+Que faire face à une sextorsion ? || Ne pas payer, couper le contact et signaler || Payer vite || Envoyer d'autres images || Répondre en colère || Payer encourage de nouvelles demandes.
+Pourquoi se méfier d'un emploi qui demande des frais avant le contrat ? || C'est un signe classique d'arnaque || C'est normal || C'est obligatoire || C'est un cadeau || Un recruteur sérieux ne demande pas de paiement.
+Que dit un faux support technique ? || « Votre compte est piraté, donnez-moi votre code » || « Bonne journée » || « Au revoir » || « Merci » || Aucun support légitime ne demande vos codes.
+Comment vérifier un message urgent d'un proche demandant de l'argent ? || L'appeler sur son numéro habituel || Envoyer sans réfléchir || Répondre par texto seulement || Ignorer || Son compte peut être piraté.
+Côté cybersécurité, qu'est-ce qu'un deepfake ? || Une voix ou une vidéo truquée par l'IA || Un virus || Un câble || Une application bancaire || Il peut imiter un proche ou un dirigeant.
+Quels ressorts les arnaqueurs utilisent-ils ? || Urgence, peur, curiosité et avidité || Calme, doute, patience || Prudence || Honnêteté || Ils veulent éviter que tu réfléchisses.
+Quelle question se poser devant un message suspect ? || Qui m'écrit et puis-je vérifier autrement ? || Combien d'amis a-t-il ? || Quelle est sa couleur ? || Est-ce amusant ? || La vérification coupe l'arnaque.
+Que faire après avoir été arnaqué ? || Signaler à l'opérateur, à la plateforme et aux autorités || Cacher || Rendre l'argent aux arnaqueurs || Se taire || Le signalement protège aussi les autres.
+Qu'est-ce que le spear phishing ? || Un hameçonnage ciblé sur une personne précise || Un jeu || Une pêche || Un antivirus || Le message est personnalisé pour paraître crédible.
+Pourquoi une offre « trop belle » est-elle suspecte ? || Elle sert souvent d'appât || Elle est toujours vraie || Elle est officielle || Elle est gratuite || Si c'est trop beau pour être vrai, vérifie.

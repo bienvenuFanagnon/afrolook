@@ -1,0 +1,32 @@
+titre: Hacking éthique, métiers et formation en cybersécurité
+== fiche
+p: La cybersécurité est un domaine qui recrute beaucoup. Le hacking éthique est légal quand il se fait avec autorisation, dans un cadre précis.
+li: Hacking éthique : test de sécurité autorisé pour trouver les failles avant les criminels ; test d'intrusion (pentest) = simulation d'attaque encadrée par contrat.
+li: Équipe rouge : attaque simulée ; équipe bleue : défense ; équipe violette : coopération entre les deux.
+li: Métiers : analyste SOC (surveillance), pentester, administrateur sécurité, responsable de la sécurité des systèmes d'information (RSSI), expert en réponse à incident, analyste de la menace, consultant, auditeur.
+li: CTF (Capture The Flag) : compétitions pour s'entraîner légalement dans des environnements prévus pour cela.
+li: Bug bounty : programmes où des entreprises paient pour des failles signalées de façon responsable.
+li: Laboratoire d'entraînement : ordinateurs virtuels sur sa propre machine ou plateformes d'apprentissage ; jamais sur des systèmes réels sans accord.
+li: Bases à apprendre : réseaux, systèmes (Linux, Windows), programmation (Python), bases de données, web, cryptographie.
+li: Certifications connues : Security+, CEH, CISSP, OSCP (selon le niveau) ; elles prouvent des compétences.
+li: Éthique : confidentialité, intégrité, respect de la loi, divulgation responsable, jamais de dommage.
+li: Politique de sécurité : règles de l'entreprise (mots de passe, sauvegardes, accès, formation du personnel).
+li: Culture de la sécurité : sensibiliser tous les employés, car l'humain reste le maillon faible.
+note: Apprendre à attaquer sans accord, même « pour s'amuser », peut te valoir de la prison.
+note: Commence par les bases réseaux et systèmes : sans elles, les outils ne servent à rien.
+== questions
+Qu'est-ce que le hacking éthique ? || Un test de sécurité autorisé pour trouver les failles || Un vol || Un jeu sans règles || Une escroquerie || Il se fait dans un cadre légal.
+Qu'est-ce qu'un test d'intrusion ? || Une simulation d'attaque encadrée par un contrat || Une attaque réelle || Un vol || Un cambriolage || Il vise à corriger les failles.
+Que fait l'équipe bleue ? || Elle défend le système || Elle attaque || Elle vend || Elle fabrique || L'équipe rouge simule les attaques.
+Que fait l'équipe rouge ? || Elle simule des attaques || Elle protège seulement || Elle vend || Elle forme || Elle teste la défense.
+Que signifie CTF ? || Capture The Flag, une compétition d'entraînement || Contrat de transfert financier || Code technique fixe || Centre de test fiscal || On s'y entraîne légalement.
+Que sont les programmes de bug bounty ? || Des entreprises rémunèrent les failles signalées de façon responsable || Des jeux d'argent || Des amendes || Des concours de beauté || Ils encouragent la divulgation responsable.
+Où s'entraîner légalement ? || Sur des laboratoires et plateformes prévus pour cela || Sur le réseau d'un voisin || Sur la banque || Sur un site inconnu || Jamais sur un système réel sans accord.
+Citez un métier de la cybersécurité : || Analyste SOC || Cuisinier || Chauffeur || Peintre || Pentester, RSSI en sont d'autres.
+Que signifie RSSI ? || Responsable de la sécurité des systèmes d'information || Réseau social sécurisé || Registre sanitaire || Rapport de santé || Il dirige la politique de sécurité.
+Quelles bases apprendre en premier ? || Réseaux et systèmes || Seulement les outils || Seulement le dessin || Rien || Sans bases, les outils ne servent à rien.
+Citez une certification en sécurité : || Security+ || Permis de conduire || BEPC || Brevet sportif || CEH et CISSP en sont d'autres.
+Quelle valeur guide un hacker éthique ? || La divulgation responsable et le respect de la loi || Le profit à tout prix || La vengeance || La curiosité sans limite || Il ne cause aucun dommage.
+Que contient une politique de sécurité ? || Règles sur mots de passe, sauvegardes et accès || Un menu || Des blagues || Une liste de courses || Elle est connue de tous les employés.
+Pourquoi sensibiliser les employés ? || L'humain reste le maillon faible || Pour les ennuyer || Pour remplacer les antivirus || Pour retarder le travail || La formation réduit les erreurs.
+Que risque-t-on en testant un système sans autorisation ? || Des poursuites et de la prison || Un prix || Un diplôme || Un salaire || C'est illégal, même par curiosité.

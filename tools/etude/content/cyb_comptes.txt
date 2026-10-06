@@ -1,0 +1,32 @@
+titre: Protéger ses comptes Facebook, WhatsApp et e-mail
+== fiche
+p: Un compte piraté sert souvent à arnaquer ses contacts. Comprendre comment on les perd aide à les garder.
+li: Piratage de compte Facebook : le plus souvent par hameçonnage (fausse page de connexion), mot de passe volé ou réutilisé, application suspecte ayant reçu des droits, ou arnaque au « support ».
+li: Piratage de WhatsApp : le pirate demande le code à six chiffres reçu par SMS en se faisant passer pour un proche ou un support ; ce code ne doit jamais être partagé.
+li: Signes d'un compte piraté : messages que tu n'as pas écrits, déconnexion inattendue, alertes de nouvel appareil, e-mail de changement de mot de passe, publications étranges.
+li: Mot de passe : long, unique, jamais réutilisé ; gestionnaire de mots de passe ; phrase de passe.
+li: Double authentification : sur Facebook, e-mail et réseaux, active une application d'authentification plutôt que le seul SMS.
+li: WhatsApp : active « Vérification en deux étapes » (code PIN à six chiffres) ; vérifie « Appareils connectés » ; ne partage jamais son code.
+li: Appareils connectés : consulte régulièrement la liste des sessions et déconnecte celles que tu ne connais pas.
+li: Adresse e-mail de récupération : sécurise-la en premier, car elle donne accès à tous les autres comptes.
+li: Applications tierces : retire celles que tu n'utilises plus ou ne connais pas.
+li: Vigilance : un ami qui demande de l'argent ou un code par message doit être appelé pour vérifier.
+li: Confidentialité : réglages de visibilité du profil, numéro de téléphone, photos.
+note: Aucun support officiel ne te demandera jamais un code reçu par SMS.
+note: Active la vérification en deux étapes aujourd'hui : cela prend deux minutes.
+== questions
+Comment un compte Facebook est-il le plus souvent piraté ? || Par hameçonnage ou mot de passe volé || Par la météo || Par un câble || Par magie || La tromperie et la réutilisation de mots de passe dominent.
+Que peut demander un pirate pour prendre WhatsApp ? || Le code à six chiffres reçu par SMS || Ton adresse postale || Ton âge || Ton plat préféré || Ce code ne doit jamais être partagé.
+Qui peut légitimement demander ton code de vérification WhatsApp ? || Personne || Un ami || Le support || Un voisin || Aucun service officiel ne le demande.
+Citez un signe de compte piraté : || Des messages que tu n'as pas écrits || Un bon réseau || Un écran propre || Un son fort || Une alerte de nouvel appareil en est un autre.
+Quel mot de passe est le plus sûr ? || Long, unique et difficile à deviner || 123456 || Ton prénom || La date de naissance || Un gestionnaire de mots de passe aide.
+Que fait la double authentification ? || Ajoute une étape en plus du mot de passe || Supprime le mot de passe || Double la vitesse || Efface le compte || Même si le mot de passe fuit, le compte reste protégé.
+Quelle double authentification est plus sûre que le SMS seul ? || Une application d'authentification || Un message public || Un appel || Un courriel non chiffré || Elle résiste mieux au vol de SIM.
+Que protège la « vérification en deux étapes » de WhatsApp ? || Elle demande un code PIN pour réactiver le compte || Elle supprime les messages || Elle bloque les appels || Elle change le numéro || Un pirate sans le PIN ne peut pas reprendre le compte.
+Où voir les appareils connectés à WhatsApp ? || Dans « Appareils connectés » || Dans la galerie || Dans les contacts || Dans l'horloge || On peut déconnecter les sessions inconnues.
+Pourquoi sécuriser d'abord l'e-mail de récupération ? || Il permet de réinitialiser tous les autres comptes || Il est joli || Il est lent || Il est payant || Celui qui le contrôle peut tout reprendre.
+Un ami demande de l'argent par message. Que faire ? || L'appeler pour vérifier || Envoyer tout de suite || Ignorer || Donner ton code || Son compte est peut-être piraté.
+Que faire d'applications tierces inconnues connectées à ton compte ? || Les retirer || Les garder || Leur donner plus de droits || Les partager || Elles peuvent espionner ou publier à ta place.
+Pourquoi ne pas cliquer sur une fausse page de connexion ? || Elle vole identifiant et mot de passe || Elle améliore la sécurité || Elle est officielle || Elle accélère || Vérifie toujours l'adresse du site.
+Que faire si le mot de passe a fuité ? || Le changer partout où il est utilisé || Rien || Le garder || L'envoyer || Les pirates l'essaient sur d'autres services.
+Que régler dans la confidentialité d'un profil ? || Qui voit ses photos, son numéro et ses publications || Rien || Le volume || La couleur || Limiter la visibilité réduit les risques d'arnaque ciblée.

@@ -1,0 +1,33 @@
+titre: Réagir après un piratage et connaître la loi
+== fiche
+p: Même bien protégé, on peut être piraté. Agir vite limite les dégâts. Il faut aussi connaître ses droits et les risques légaux.
+li: Premier réflexe : changer le mot de passe depuis un appareil sain, déconnecter les autres sessions, activer la double authentification.
+li: Récupérer un compte Facebook ou Instagram : utiliser la page officielle de récupération, l'e-mail ou le numéro associé, les contacts de confiance, la vérification d'identité.
+li: Récupérer WhatsApp : réinstaller et demander le code de vérification pour son numéro ; la vérification en deux étapes empêche une reprise sans le code PIN ; prévenir ses contacts.
+li: Prévenir les contacts : un message court pour dire de ne pas répondre aux demandes d'argent venant du compte.
+li: Argent mobile ou banque : appeler immédiatement l'opérateur ou la banque pour bloquer le compte ou le portefeuille.
+li: Preuves : captures d'écran, numéros, liens, dates ; elles aident l'opérateur et la police.
+li: Signalement : plateforme (Facebook, WhatsApp), opérateur, police ou service de lutte contre la cybercriminalité, plateformes nationales de signalement.
+li: Loi : l'accès frauduleux à un système informatique, le vol de données, l'usurpation d'identité et l'atteinte à la vie privée sont des infractions ; elles sont punies de prison ou d'amende selon les pays.
+li: Protection des données personnelles : droit d'accès et de suppression ; autorité nationale (au Togo : IPDP) ; consentement.
+li: Enfants et réseaux : parents et enseignants doivent surveiller avec bienveillance, expliquer les risques, régler la confidentialité.
+li: Sauvegarde : copies régulières des photos et documents ; permet de restaurer après un incident.
+li: Hygiène numérique : mettre à jour, ne pas cliquer, vérifier avant de partager, protéger ses données.
+note: Plus tu agis vite, plus tu as de chances de reprendre ton compte.
+note: Ne dis jamais ton code ou ton mot de passe au « support » qui te contacte.
+== questions
+Quel est le premier réflexe après un piratage de compte ? || Changer le mot de passe depuis un appareil sain || Ignorer || Supprimer le téléphone || Écrire au pirate || Il faut couper l'accès du pirate.
+Comment récupérer un compte Facebook piraté ? || Utiliser la page officielle de récupération || Payer un inconnu || Créer un faux compte || Envoyer son mot de passe || Les procédures officielles sont gratuites.
+Que faire pour reprendre WhatsApp ? || Réinstaller et demander le code de vérification pour son numéro || Supprimer la SIM || Envoyer son code à quelqu'un || Attendre || La vérification en deux étapes aide à bloquer une reprise.
+Pourquoi prévenir ses contacts d'un piratage ? || Pour qu'ils ne répondent pas aux demandes d'argent || Pour faire peur || Pour les insulter || Pour les remercier || Les arnaqueurs écrivent à tes contacts.
+Que faire si de l'argent mobile est visé ? || Appeler immédiatement l'opérateur pour bloquer || Attendre le lendemain || Publier le code || Retirer l'argent à un inconnu || La rapidité limite les pertes.
+Pourquoi conserver des captures d'écran ? || Elles servent de preuves || Elles remplissent la mémoire || Elles sont décoratives || Elles ralentissent || L'opérateur ou la police peuvent s'en servir.
+À qui signaler un piratage ? || À la plateforme, à l'opérateur et aux autorités || À personne || Au pirate || À un inconnu || Les signalements permettent d'agir.
+Citez une infraction informatique : || L'accès frauduleux à un système || Lire un livre || Écrire un message poli || Allumer son téléphone || Le vol de données en est une autre.
+Que protège le droit de suppression des données personnelles ? || Ta vie privée || Les publicités || Les virus || Les mots de passe || Tu peux demander l'effacement de tes données.
+Quel est le rôle des parents face aux réseaux sociaux de l'enfant ? || Expliquer les risques et régler la confidentialité || Tout interdire sans expliquer || Ignorer || Partager les mots de passe publiquement || L'accompagnement protège l'enfant.
+Côté cybersécurité, pourquoi faire des sauvegardes régulières ? || Restaurer ses données après un incident || Remplir le cloud || Ralentir le téléphone || Perdre du temps || Elles limitent les pertes.
+Que faire des appels de faux « support » après un piratage ? || Ne rien donner et raccrocher || Donner son code || Donner son mot de passe || Rappeler le numéro inconnu || Des arnaqueurs profitent du piratage.
+Pourquoi agir vite après un piratage ? || Pour limiter les dégâts et reprendre le contrôle || Pour rien || Pour attendre || Pour compliquer || Chaque minute compte.
+Citez un réflexe d'hygiène numérique : || Mettre à jour ses appareils || Ignorer les alertes || Partager ses codes || Réutiliser ses mots de passe || Vérifier avant de cliquer et partager.
+Que signifie l'usurpation d'identité ? || Se faire passer pour quelqu'un d'autre pour tromper || Une carte || Un courrier || Un salaire || Elle est punie par la loi.

@@ -345,7 +345,7 @@
           ]
         }
       ],
-      "featured": 8,
+      "featured": 9,
       "badge": "BEPC",
       "pitch": "Le BEPC pas à pas : chaque chapitre, chaque matière."
     },
@@ -533,7 +533,7 @@
           ]
         }
       ],
-      "featured": 6,
+      "featured": 7,
       "badge": "BAC",
       "pitch": "Révise le BAC série D matière par matière, avec examen blanc."
     },
@@ -2374,7 +2374,7 @@
         "passPct": 0.7,
         "seconds": 1500
       },
-      "featured": 9,
+      "featured": 10,
       "badge": "Nouveau",
       "pitch": "Comprends l'intelligence artificielle et utilise-la intelligemment."
     },
@@ -2811,7 +2811,7 @@
           ]
         }
       ],
-      "featured": 3,
+      "featured": 4,
       "badge": "Concours",
       "pitch": "Fonction publique : institutions, droit administratif, éthique et rédaction."
     },
@@ -2859,7 +2859,7 @@
           ]
         }
       ],
-      "featured": 4,
+      "featured": 6,
       "badge": "Concours",
       "pitch": "Police, gendarmerie, douane : droit, secourisme, discipline et forme physique."
     },
@@ -2907,7 +2907,7 @@
           ]
         }
       ],
-      "featured": 7,
+      "featured": 8,
       "badge": "Concours",
       "pitch": "Deviens enseignant : pédagogie, déontologie et didactique des disciplines."
     },
@@ -2958,6 +2958,88 @@
       "featured": 5,
       "badge": "Populaire",
       "pitch": "Réussis le code de la route : panneaux, priorités, sécurité et mécanique de base."
+    },
+    {
+      "id": "cert_cyber",
+      "kind": "cert",
+      "order": 115,
+      "title": "Cybersécurité : se protéger du piratage",
+      "featured": 3,
+      "badge": "Nouveau",
+      "pitch": "Comment on pirate Facebook, WhatsApp et les téléphones, et comment t'en protéger.",
+      "cert": {
+        "id": "att_cyber",
+        "title": "Attestation : je sais me protéger du piratage",
+        "from": [
+          "cyb_menaces",
+          "cyb_arnaques",
+          "cyb_comptes",
+          "cyb_telephone",
+          "cyb_reseaux",
+          "cyb_reaction",
+          "cyb_metiers"
+        ],
+        "count": 45,
+        "passPct": 0.7,
+        "seconds": 2700
+      },
+      "classes": [
+        {
+          "id": "cyber_m",
+          "title": "Cybersécurité",
+          "subjects": [
+            {
+              "id": "cyb_comprendre",
+              "title": "Comprendre les menaces",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "cyb_menaces",
+                  "title": "Piratage et cybersécurité : comprendre les menaces"
+                },
+                {
+                  "id": "cyb_arnaques",
+                  "title": "Ingénierie sociale et arnaques en ligne"
+                }
+              ]
+            },
+            {
+              "id": "cyb_proteger",
+              "title": "Se protéger",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "cyb_comptes",
+                  "title": "Protéger ses comptes Facebook, WhatsApp et e-mail"
+                },
+                {
+                  "id": "cyb_telephone",
+                  "title": "Sécuriser son téléphone contre les attaques à distance"
+                },
+                {
+                  "id": "cyb_reseaux",
+                  "title": "Réseaux Wi-Fi, navigation sûre et protection en ligne"
+                }
+              ]
+            },
+            {
+              "id": "cyb_agir",
+              "title": "Agir et progresser",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "cyb_reaction",
+                  "title": "Réagir après un piratage et connaître la loi"
+                },
+                {
+                  "id": "cyb_metiers",
+                  "title": "Hacking éthique, métiers et formation en cybersécurité"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

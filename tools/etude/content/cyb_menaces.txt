@@ -1,0 +1,32 @@
+titre: Piratage et cybersécurité : comprendre les menaces
+== fiche
+p: Comprendre comment pensent les attaquants aide à mieux se défendre. Cette formation explique les principes pour se protéger, pas pour attaquer.
+li: Hacker : personne qui maîtrise l'informatique ; chapeau blanc (hacker éthique, travaille avec autorisation), chapeau noir (criminel), chapeau gris (entre les deux, sans autorisation mais sans but criminel).
+li: Motivations des pirates : argent, vol de données, vengeance, activisme, espionnage, simple défi.
+li: Cible : les particuliers (comptes, argent mobile), les entreprises (données, rançon), les États (espionnage).
+li: Maillon faible : le plus souvent l'humain (clic imprudent, mot de passe faible), plus que la technique.
+li: Menaces courantes : hameçonnage, logiciels malveillants (virus, rançongiciels, logiciels espions), vol de mot de passe, arnaques, piratage de comptes, usurpation d'identité.
+li: Surface d'attaque : tout ce qui peut être visé (téléphone, ordinateur, comptes, Wi-Fi, objets connectés).
+li: Trois piliers : confidentialité, intégrité, disponibilité.
+li: Fuite de données : mots de passe ou informations publiés après le piratage d'un service ; ils sont réutilisés par les pirates.
+li: Cybercriminalité : infraction commise avec un outil informatique ; punie par la loi (accès frauduleux, vol de données, usurpation d'identité).
+li: Règle d'or : ne jamais tester la sécurité d'un système sans autorisation écrite.
+li: Défense en profondeur : plusieurs couches de protection plutôt qu'une seule.
+note: Plus un compte contient de choses importantes, plus il doit être protégé.
+note: Si tu ne maîtrises pas un outil, ne le lance pas sur un système qui ne t'appartient pas.
+== questions
+Qu'est-ce qu'un hacker éthique (chapeau blanc) ? || Un spécialiste qui teste la sécurité avec autorisation || Un voleur de comptes || Un journaliste || Un vendeur de téléphones || Il aide à corriger les failles.
+Qu'est-ce qu'un pirate « chapeau noir » ? || Un criminel qui attaque pour nuire ou voler || Un expert autorisé || Un technicien de maintenance || Un enseignant || Il agit sans autorisation et dans un but illégal.
+Quelle est souvent la première faiblesse exploitée par les pirates ? || L'humain : clic imprudent, mot de passe faible || Le câble électrique || Le papier || Le bureau || Beaucoup d'attaques reposent sur la tromperie.
+Citez une motivation de pirate : || L'argent || L'amour du travail bien fait || La charité || La politesse || Le vol de données et la vengeance en sont d'autres.
+Qu'est-ce que la surface d'attaque ? || Tout ce qui peut être visé : appareils, comptes, réseaux || Un panneau solaire || Le bureau seulement || Un bilan || Plus elle est grande, plus il faut protéger.
+Côté cybersécurité, quels sont les trois piliers de la sécurité de l'information ? || Confidentialité, intégrité, disponibilité || Vitesse, prix, taille || Texte, image, son || Mot de passe, code, puce || Ils guident la défense.
+Qu'est-ce qu'une fuite de données ? || La publication d'informations volées après le piratage d'un service || Une panne de courant || Un virus de grippe || Un câble coupé || Les mots de passe volés sont réutilisés.
+Pourquoi ne pas réutiliser le même mot de passe partout ? || Une fuite sur un site expose tous les autres comptes || Pour économiser || Pour compliquer || Parce que c'est interdit || Les pirates essaient les mots de passe volés ailleurs.
+Qu'est-ce que la cybercriminalité ? || Une infraction commise avec un outil informatique || Un jeu en ligne || Un cours || Un câble || Elle est punie par la loi.
+Peut-on tester la sécurité d'un système sans autorisation ? || Non, c'est illégal || Oui, par curiosité || Oui, si c'est un petit système || Oui, la nuit || Seule une autorisation écrite rend le test légal.
+Que signifie défense en profondeur ? || Plusieurs couches de protection || Une seule serrure || Aucune protection || Un mot de passe unique || Si une couche cède, les autres protègent encore.
+Qu'est-ce qu'un logiciel espion ? || Un programme qui surveille à l'insu de l'utilisateur || Un antivirus || Un navigateur || Un tableur || Il peut voler messages et mots de passe.
+Qu'est-ce que l'usurpation d'identité ? || Se faire passer pour quelqu'un d'autre || Changer de nom légalement || Se présenter honnêtement || Un jeu de rôle autorisé || Elle sert à tromper ou à voler.
+Pourquoi protéger davantage un compte important ? || Il donne accès à beaucoup de données et d'argent || Il est plus joli || Il est plus rapide || Il est plus ancien || Il attire les pirates.
+Que faire si on découvre une faille sur un site ? || La signaler au propriétaire de façon responsable || L'exploiter || La vendre || La publier avec les données || La divulgation responsable protège tout le monde.

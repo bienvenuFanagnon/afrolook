@@ -1,0 +1,32 @@
+titre: Sécuriser son téléphone contre les attaques à distance
+== fiche
+p: Un téléphone contient photos, messages, argent mobile. Voici comment il peut être compromis à distance, et surtout comment l'éviter.
+li: Applications malveillantes : installées depuis des fichiers APK hors boutique officielle, des liens reçus ou de fausses versions d'une application ; elles demandent des droits excessifs.
+li: Liens piégés : SMS, WhatsApp ou e-mails avec « vous avez gagné », « votre colis », « votre compte est bloqué » ; le clic ouvre un faux site ou télécharge un fichier.
+li: Logiciel espion (stalkerware) : surveille la position, les messages, le micro ; souvent installé par une personne proche ayant accès physique au téléphone.
+li: Vol de SIM (SIM swap) : un criminel convainc l'opérateur de transférer ton numéro sur sa carte pour recevoir tes codes SMS.
+li: Failles non corrigées : un téléphone sans mises à jour peut être attaqué ; les mises à jour corrigent ces failles.
+li: Permissions : une application de lampe de poche n'a pas besoin de ton micro ni de tes contacts ; refuse les droits inutiles.
+li: Signes d'infection : batterie qui se vide vite, téléphone chaud, données consommées sans raison, applications inconnues, publicités intempestives.
+li: Protection : installer seulement depuis les boutiques officielles, garder le système à jour, verrouiller par code ou biométrie, antivirus fiable, ne pas cliquer sur des liens suspects.
+li: Code PIN de SIM et code de l'opérateur : active-les ; avertis ton opérateur en cas de perte.
+li: Sauvegarde : photos et contacts sauvegardés, pour restaurer après un problème.
+li: Si infecté : sauvegarder l'essentiel, désinstaller les applications suspectes, changer les mots de passe depuis un appareil sain, réinitialiser le téléphone si besoin.
+note: Aucune banque ni opérateur ne demande un code secret par SMS ou par appel.
+note: Un « mod APK » gratuit d'une application payante est un classique du piège.
+== questions
+Comment une application malveillante arrive-t-elle souvent sur un téléphone ? || Par un fichier APK installé hors boutique officielle || Par la batterie || Par l'écran || Par la sonnerie || Les boutiques officielles filtrent davantage.
+Pourquoi se méfier des « mods » ou APK gratuits d'applications payantes ? || Ils contiennent souvent des logiciels malveillants || Ils sont officiels || Ils sont plus rapides || Ils protègent || Ils volent souvent données et comptes.
+Citez un message-piège classique : || « Vous avez gagné, cliquez ici » || « Bonjour, comment vas-tu ? » || « À demain » || « Merci » || Il pousse à cliquer sans réfléchir.
+Qu'est-ce qu'un stalkerware ? || Un logiciel espion installé pour surveiller une personne || Un jeu || Un antivirus || Un navigateur || Il peut suivre la position et lire les messages.
+Qu'est-ce que le SIM swap ? || Le transfert frauduleux de ton numéro vers la carte d'un criminel || Un échange de téléphones || Un forfait || Une panne || Il sert à recevoir tes codes SMS.
+Comment limiter le risque de SIM swap ? || Utiliser une application d'authentification et un code sur la SIM || Partager son numéro || Donner son code || Ne rien faire || Prévenir l'opérateur en cas de perte.
+Pourquoi installer les mises à jour du téléphone ? || Elles corrigent des failles de sécurité || Elles ralentissent toujours || Elles suppriment des applications || Elles sont inutiles || Les attaques visent les failles connues.
+Que faire des permissions d'une application ? || Refuser celles qui ne sont pas nécessaires || Tout accepter || Les ignorer || Les partager || Une lampe n'a pas besoin du micro.
+Citez un signe possible d'infection : || Une batterie qui se vide très vite || Un écran propre || Un bon réseau || Un son net || Les données consommées sans raison en sont un autre.
+Où installer des applications ? || Depuis les boutiques officielles || Depuis n'importe quel lien || Depuis un message inconnu || Depuis une clé USB || Elles vérifient mieux les applications.
+Comment verrouiller son téléphone ? || Par code, schéma ou biométrie || Sans verrouillage || Avec « 0000 » || En le laissant ouvert || Le verrouillage protège en cas de vol.
+Que faire si le téléphone semble infecté ? || Sauvegarder, désinstaller les applis suspectes, changer les mots de passe || Continuer à l'utiliser || Cliquer sur d'autres liens || Prêter le téléphone || Si besoin, réinitialiser.
+Qui demande un code secret par SMS ? || Personne de légitime || La banque || L'opérateur || Le support || C'est un signe d'arnaque.
+Pourquoi sauvegarder photos et contacts ? || Pouvoir les récupérer après une panne ou une réinitialisation || Pour remplir la mémoire || Pour ralentir || Pour les partager || La sauvegarde limite les pertes.
+Que faire en cas de perte ou de vol du téléphone ? || Prévenir l'opérateur et sécuriser ses comptes || Rien || Attendre || Publier le numéro || Bloquer la SIM et changer les mots de passe.

@@ -1,0 +1,32 @@
+titre: Réseaux Wi-Fi, navigation sûre et protection en ligne
+== fiche
+p: Wi-Fi public, hotspots et sites inconnus peuvent exposer tes données. Quelques réflexes réduisent beaucoup le risque.
+li: Wi-Fi public (café, aéroport, hôtel) : n'importe qui peut s'y connecter et parfois faire de l'écoute ou créer un faux point d'accès au même nom.
+li: Attaque de l'homme du milieu : l'attaquant s'intercale entre toi et le site pour lire ou modifier les échanges ; HTTPS et VPN limitent le risque.
+li: HTTPS : connexion chiffrée ; vérifie le cadenas et l'adresse exacte du site avant de saisir un mot de passe.
+li: Faux sites : adresses presque identiques (fausse lettre, extension différente) ; copie jamais un lien reçu sans vérifier.
+li: VPN : tunnel chiffré entre ton appareil et un serveur ; protège sur un Wi-Fi public ; choisis un service sérieux, jamais un VPN gratuit douteux.
+li: Wi-Fi à domicile : changer le mot de passe par défaut du routeur et du Wi-Fi, utiliser le chiffrement WPA2 ou WPA3, mettre à jour le routeur.
+li: Réseau d'invités : donne aux visiteurs un réseau séparé.
+li: Partage de connexion : mot de passe fort sur le hotspot du téléphone, désactive-le quand tu ne l'utilises pas.
+li: Bluetooth : désactiver quand on ne l'utilise pas, refuser les appairages inconnus.
+li: Navigation : navigateur à jour, extensions de confiance, ne pas enregistrer ses mots de passe sur un ordinateur public.
+li: Opérations sensibles : banque et argent mobile de préférence sur ton réseau mobile ou domestique, pas en Wi-Fi public.
+note: Un Wi-Fi gratuit avec un nom très attractif peut être un piège.
+note: Un cadenas ne prouve pas que le site est honnête, seulement que la connexion est chiffrée.
+== questions
+Quel est le risque d'un Wi-Fi public ? || D'autres personnes peuvent espionner ou créer un faux point d'accès || Il est trop rapide || Il consomme trop d'électricité || Il est trop cher || Il faut éviter les opérations sensibles.
+Qu'est-ce qu'une attaque de l'homme du milieu ? || Un attaquant s'intercale entre toi et le site || Une panne de réseau || Un virus de l'écran || Un câble coupé || HTTPS et VPN limitent le risque.
+Que signifie le cadenas dans le navigateur ? || La connexion est chiffrée || Le site est forcément honnête || Le site est gratuit || Le site est officiel || Il ne garantit pas l'honnêteté du site.
+Pourquoi vérifier l'adresse exacte d'un site ? || Éviter les faux sites aux adresses presque identiques || Pour la décoration || Pour accélérer || Pour économiser || Une lettre changée peut suffire à tromper.
+À quoi sert un VPN ? || À chiffrer la connexion dans un tunnel || À augmenter la RAM || À réparer l'écran || À imprimer || Il protège notamment sur un Wi-Fi public.
+Quel VPN choisir ? || Un service sérieux et de confiance || Un VPN gratuit inconnu || Aucun || Le premier venu || Un mauvais VPN peut lui-même espionner.
+Que faire du mot de passe par défaut d'un routeur ? || Le changer || Le garder || Le publier || L'écrire sur le routeur || Les mots de passe par défaut sont connus.
+Quel chiffrement Wi-Fi est recommandé ? || WPA2 ou WPA3 || Aucun || WEP seulement || Un câble || WEP est dépassé et peu sûr.
+À quoi sert un réseau d'invités ? || Séparer les visiteurs de ton réseau principal || Augmenter le débit || Éteindre le Wi-Fi || Cacher le nom || Il protège tes appareils.
+Que faire du hotspot de son téléphone ? || Mettre un mot de passe fort et l'éteindre après usage || Le laisser ouvert || Partager le mot de passe || Le renommer « Gratuit » || Un hotspot ouvert attire les intrus.
+Pourquoi désactiver le Bluetooth quand on ne s'en sert pas ? || Réduire les risques d'appairage ou d'attaque || Pour faire de la place || Pour accélérer le réseau || Pour économiser le forfait || Il peut être une porte d'entrée.
+Que faire sur un ordinateur public ? || Ne pas enregistrer ses mots de passe et se déconnecter || Tout enregistrer || Rester connecté || Laisser la session ouverte || Les données peuvent rester accessibles.
+Où faire de préférence une opération bancaire ? || Sur son réseau mobile ou domestique || Sur un Wi-Fi public || Sur un ordinateur de cybercafé || Sur un hotspot inconnu || Elle est plus sûre sur un réseau de confiance.
+Pourquoi se méfier d'un Wi-Fi gratuit au nom très attractif ? || Il peut être un faux point d'accès || Il est toujours officiel || Il est plus rapide || Il est plus sûr || Les pirates imitent des noms connus.
+Pourquoi mettre à jour le routeur ? || Corriger des failles de sécurité || Changer la couleur || Augmenter la facture || Éteindre le réseau || Les routeurs anciens sont des cibles.
