@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../l10n/tr.dart';
 import '../../../pages/etude/etude_chapter_page.dart';
 import '../../../pages/etude/etude_home_page.dart';
+import '../../../pages/quiz/quiz_defi_lines.dart';
+import '../../../pages/quiz/widgets/hawk_mascot.dart';
 import '../../../pages/quiz/widgets/quiz_widgets.dart';
 import '../../../services/etude/etude_service.dart';
 import '../../../theme/app_colors.dart';
@@ -122,7 +124,20 @@ class _EtudeFeedCardState extends State<EtudeFeedCard> {
             child: Padding(padding: const EdgeInsets.all(4), child: Icon(Icons.close_rounded, size: 18, color: c.textSecondary)),
           ),
         ]),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          const HawkMascot(mood: HawkMood.wave, size: 54, accessory: 'acc_glasses'),
+          const SizedBox(width: 8),
+          Expanded(
+            child: QuizBubble(
+              child: Text(
+                context.tr(pickDefiLine([...kEtudeDefiLines, ...kQuizDefiLines], p.chapter.title.length)),
+                style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13, height: 1.3),
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 8),
         Text(p.chapter.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 17, height: 1.25)),
         const SizedBox(height: 2),
         Text(p.track.title, style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),

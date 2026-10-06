@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../l10n/tr.dart';
 import '../../../pages/quiz/quiz_daily.dart';
+import '../../../pages/quiz/quiz_defi_lines.dart';
 import '../../../pages/quiz/quiz_home_page.dart';
 import '../../../pages/quiz/widgets/hawk_mascot.dart';
 import '../../../pages/quiz/widgets/quiz_widgets.dart';
@@ -177,9 +178,14 @@ class _QuizFeedCardState extends State<QuizFeedCard> {
         '3, 2, 1… à toi de jouer, ta première question t\'attend !',
       ];
       final d = DateTime.now();
-      msg = context.tr(firsts[(d.year * 372 + d.month * 31 + d.day) % firsts.length]);
+      final all = [...firsts, ...kQuizDefiLines];
+      msg = context.tr(all[(d.year * 372 + d.month * 31 + d.day) % all.length]);
     } else {
-      msg = context.tr('Le niveau {n} t’attend !', {'n': s.level});
+      final d = DateTime.now();
+      // Un jour sur deux, la mascotte lance un défi de culture ; sinon elle rappelle le niveau en cours.
+      msg = (d.day + s.completed) % 2 == 0
+          ? context.tr(pickDefiLine(kQuizDefiLines, s.completed))
+          : context.tr('Le niveau {n} t’attend !', {'n': s.level});
     }
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

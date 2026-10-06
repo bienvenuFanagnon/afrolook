@@ -22,6 +22,7 @@ import 'widgets/quiz_ads.dart';
 import 'widgets/quiz_loading.dart';
 import 'widgets/quiz_dialogs.dart';
 import 'widgets/quiz_widgets.dart';
+import 'quiz_defi_lines.dart';
 
 /// Accueil du quiz : le parcours (200 niveaux en 40 unités), le quiz du jour, la série, les cœurs.
 class QuizHomePage extends StatefulWidget {
@@ -156,11 +157,12 @@ class _QuizHomePageState extends State<QuizHomePage> {
     if (s.finishedAll) return context.tr("Tu as terminé toute l'aventure, bravo ! De nouveaux niveaux arrivent bientôt.");
     if (s.hearts <= 0) return context.tr('Plus de cœurs… Reviens dans un moment ou regarde une pub !');
     if (s.completed == 0) {
-      return _pick(const [
+      return _pick([
         'Un quiz, des points, un classement… prêt à montrer ce que tu sais ?',
         'Réponds juste, gagne des points et grimpe au classement !',
         'Chaque bonne réponse compte : montre ce que tu as dans la tête !',
         '3, 2, 1… à toi de jouer, ta première question t\'attend !',
+        ...kQuizDefiLines,
       ], s);
     }
     if (!s.playedToday && s.streak > 0) {
@@ -176,11 +178,12 @@ class _QuizHomePageState extends State<QuizHomePage> {
         '{n} jours de suite : le classement te regarde !',
       ], s, {'n': s.streak});
     }
-    return _pick(const [
+    return _pick([
       'Prêt pour le niveau {n} ?',
       'Niveau {n} : réponds vite et bien pour les bonus !',
       'Un nouveau défi t\'attend au niveau {n} !',
       'Fais mieux qu\'hier : niveau {n}, c\'est parti !',
+      ...kQuizDefiLines,
     ], s, {'n': s.level});
   }
 

@@ -4,6 +4,7 @@ import '../../ads/ad_gate.dart';
 import '../../l10n/tr.dart';
 import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
+import '../quiz/quiz_defi_lines.dart';
 import '../quiz/widgets/hawk_mascot.dart';
 import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
@@ -324,11 +325,13 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
 
   /// Phrase d'accroche de l'en-tête (change chaque jour).
   String _hook(EtudeState st) {
-    const lines = [
+    final lines = [
       'Chapitre après chapitre, ton diplôme se construit ici.',
       'Réponds, valide ta classe, décroche ton diplôme !',
       'Chaque bonne réponse te rapproche de ton examen.',
       'Révise malin : un chapitre par jour fait la différence.',
+      ...kEtudeDefiLines,
+      ...kQuizDefiLines,
     ];
     final d = DateTime.now();
     return context.tr(lines[(d.year * 372 + d.month * 31 + d.day + st.xp ~/ 50) % lines.length]);

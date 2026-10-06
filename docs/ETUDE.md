@@ -249,3 +249,7 @@ Santé L2 (8 chapitres : pharmacologie, microbiologie, immunité, hormones et di
 ## 23. Licences 3 de Santé, Gestion et Marketing
 
 Santé L3 (6 chapitres : maladies cardiovasculaires, infectieuses tropicales et IST, nutrition clinique, santé mentale, gestion des services de santé, méthodes en épidémiologie), Gestion L3 (6 : stratégies de croissance, tableau de bord prospectif, gestion des risques, innovation et numérique, contrats et litiges, évaluation d'entreprise), Marketing L3 (6 : management de marque, marketing international, données clients et RFM, e-réputation et crise, marketing responsable, campagne). Les trois parcours deviennent « Licence complète » : examen de 60 questions (50 %, 90 min) et diplôme « Licence Afrolook Étude ». Total Étude : 14 parcours, 275 chapitres, 4 125 questions. Serveur inchangé (contenus importés dans Firestore).
+
+## 24. Mascotte : phrases de défi
+
+La mascotte lance des défis de culture et de connaissance (« On ne peut pas célébrer notre culture sans la connaître », « Tu te crois capable de répondre à 3 questions sans faute ? », « Gagne des points avec ta connaissance »…). Les phrases sont dans `lib/pages/quiz/quiz_defi_lines.dart` (une par jour, rotation par date) et leurs traductions dans `lib/l10n/tr_defi.dart`. Elles apparaissent dans la carte Quiz du fil, la carte « Cours du jour » (qui a maintenant sa mascotte), la page d'accueil Quiz et l'en-tête de l'accueil Étude. Aucune mention d'argent. Nécessite une nouvelle version de l'application.
