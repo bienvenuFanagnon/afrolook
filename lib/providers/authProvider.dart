@@ -1215,6 +1215,8 @@ class UserAuthProvider extends ChangeNotifier {
         // 'popularite': _calculatePopularity(loginUserData!),
         // 'compteTarif': loginUserData!.popularite! * 80,
         'last_time_active': DateTime.now().millisecondsSinceEpoch,
+        // Plateforme de l'appareil (statistiques admin : connexions iOS / Android)
+        'platform': kIsWeb ? 'web' : (Platform.isIOS ? 'ios' : 'android'),
       };
 
       // 3. Update ciblé pour ne pas écraser les stories

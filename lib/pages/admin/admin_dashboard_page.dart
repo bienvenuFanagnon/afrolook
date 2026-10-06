@@ -67,6 +67,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _retraitsPending = 0;
   int _retraitsValides = 0;
   int _retraitsAnnules = 0;
+  // Connexions par plateforme : [total, aujourd'hui, 7 jours, 30 jours, 3 mois]
+  Map<String, List<int>> _platformStats = {};
+  String? _platformError;
   AppDefaultData? _appData;
   List<_RecentEvent> _recentEvents = [];
 
@@ -74,6 +77,37 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   void initState() {
     super.initState();
     _loadStats(showBoostAlert: true);
+    _loadPlatformStats();
+  }
+
+  /// Utilisateurs et connexions par plateforme (champ `platform` : ios / android). Séparé du reste pour qu'un index
+  /// manquant n'empêche pas l'affichage du tableau de bord.
+  Future<void> _loadPlatformStats() async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+      int since(int days) => now.subtract(Duration(days: days)).millisecondsSinceEpoch;
+      final out = <String, List<int>>{};
+      for (final p in ['ios', 'android']) {
+        final q = _db.collection('Users').where('platform', isEqualTo: p);
+        final r = await Future.wait([
+          q.count().get(),
+          q.where('last_time_active', isGreaterThanOrEqualTo: startOfDay).count().get(),
+          q.where('last_time_active', isGreaterThanOrEqualTo: since(7)).count().get(),
+          q.where('last_time_active', isGreaterThanOrEqualTo: since(30)).count().get(),
+          q.where('last_time_active', isGreaterThanOrEqualTo: since(90)).count().get(),
+        ]);
+        out[p] = [for (final x in r) x.count ?? 0];
+      }
+      if (!mounted) return;
+      setState(() {
+        _platformStats = out;
+        _platformError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _platformError = e.toString().contains('index') ? 'Index en cours de création : réessaie dans quelques minutes.' : 'Statistiques par plateforme indisponibles.');
+    }
   }
 
   Future<void> _loadStats({bool showBoostAlert = false}) async {
@@ -187,7 +221,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: colors.textPrimary, size: 22),
-            onPressed: _loading ? null : () => _loadStats(),
+            onPressed: _loading ? null : () { _loadStats(); _loadPlatformStats(); },
             tooltip: 'Actualiser',
           ),
         ],
@@ -488,6 +522,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Expanded(child: _counter(c, '30 jours', _active30d, const Color(0xFF8E3CC4))),
           Expanded(child: _counter(c, '3 mois', _active90d, c.warning)),
         ]),
+        Divider(height: 24, color: c.border),
+        Text('Par plateforme', style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        if (_platformError != null)
+          Text(_platformError!, style: TextStyle(color: c.textSecondary, fontSize: 12))
+        else if (_platformStats.isEmpty)
+          const SizedBox(height: 18, child: Align(alignment: Alignment.centerLeft, child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))))
+        else ...[
+          _platformRow(c, 'iPhone / iPad', Icons.apple_rounded, _platformStats['ios']!),
+          const SizedBox(height: 10),
+          _platformRow(c, 'Android', Icons.android_rounded, _platformStats['android']!),
+          const SizedBox(height: 6),
+          Text(
+            'Plateforme inconnue : ${_int((_totalUsers - (_platformStats['ios']![0] + _platformStats['android']![0])).clamp(0, 1 << 31))} (compte sans notification activée ou ancien profil ; renseignée à la prochaine connexion avec la nouvelle version).',
+            style: TextStyle(color: c.textSecondary, fontSize: 10.5, height: 1.3),
+          ),
+        ],
       ]),
     );
   }
@@ -645,6 +696,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               fontFeatures: const [FontFeature.tabularFigures()],
             )),
         Text(label, style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
+      ]);
+
+  Widget _platformRow(AppColors c, String label, IconData icon, List<int> v) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, size: 18, color: c.textPrimary),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13.5)),
+          const Spacer(),
+          Text('${_int(v[0])} inscrits', style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 6),
+        Row(children: [
+          Expanded(child: _counter(c, "Aujourd'hui", v[1], c.primary)),
+          Expanded(child: _counter(c, '7 jours', v[2], c.info)),
+          Expanded(child: _counter(c, '30 jours', v[3], const Color(0xFF8E3CC4))),
+          Expanded(child: _counter(c, '3 mois', v[4], c.warning)),
+        ]),
       ]);
 
   static final NumberFormat _intFmt = NumberFormat.decimalPattern('fr');
