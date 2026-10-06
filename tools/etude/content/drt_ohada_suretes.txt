@@ -1,0 +1,28 @@
+titre: Sûretés et recouvrement des créances
+== fiche
+p: Une sûreté est une garantie donnée au créancier pour être payé même si le débiteur ne paie pas.
+li: Sûretés personnelles : le cautionnement (une personne s'engage à payer si le débiteur ne paie pas), la garantie autonome, la lettre d'intention.
+li: Sûretés réelles : elles portent sur un bien. Gage (bien mobilier), nantissement (créances, fonds de commerce, comptes), hypothèque (immeubles), privilèges.
+li: Le cautionnement doit être écrit et la caution doit mentionner la somme garantie en toutes lettres et en chiffres.
+li: Le RCCM publie les sûretés mobilières ; l'hypothèque est publiée à la conservation foncière.
+li: Recouvrement : l'Acte uniforme sur les procédures simplifiées de recouvrement permet d'obtenir rapidement un titre pour une créance certaine, liquide et exigible : injonction de payer, injonction de délivrer ou de restituer.
+li: Voies d'exécution : saisie-vente, saisie des rémunérations, saisie-attribution (sur comptes bancaires), saisie immobilière. Elles se font par huissier, avec un titre exécutoire.
+li: Une créance est certaine, liquide et exigible quand son existence est sûre, son montant précis et son échéance arrivée.
+note: Un jugement ou un acte notarié revêtu de la formule exécutoire est un titre exécutoire.
+note: Les procédures collectives (redressement judiciaire, liquidation des biens) s'appliquent aux entreprises en cessation de paiements.
+== questions
+Qu'est-ce qu'une sûreté ? || Une garantie de paiement donnée au créancier || Un impôt || Un contrat de travail || Une assurance maladie || Elle protège le créancier contre l'insolvabilité du débiteur.
+Qu'est-ce que le cautionnement ? || L'engagement d'une personne à payer la dette si le débiteur ne paie pas || La vente d'un bien || Un prêt gratuit || Une donation || C'est une sûreté personnelle.
+Quelle forme le cautionnement doit-il avoir ? || Un écrit avec mention manuscrite de la somme garantie || Une promesse orale || Un geste || Un accord tacite || L'écrit protège la caution.
+Qu'est-ce qu'une hypothèque ? || Une sûreté réelle sur un immeuble || Une sûreté personnelle || Un impôt foncier || Un contrat de bail || Elle est publiée à la conservation foncière.
+Qu'est-ce que le gage ? || Une sûreté réelle portant sur un bien mobilier || Une sûreté sur un immeuble || Une caution || Une amende || Il porte sur un bien meuble.
+Qu'est-ce que le nantissement ? || Une sûreté sur des biens incorporels (fonds de commerce, créance) || Une sûreté sur un terrain || Une promesse orale || Un prêt gratuit || Il peut porter sur un compte ou un fonds de commerce.
+Où sont publiées les sûretés mobilières ? || Au RCCM || À la mairie || Au ministère de l'éducation || À la banque centrale || La publicité informe les tiers.
+Que doit être une créance pour recourir à l'injonction de payer ? || Certaine, liquide et exigible || Seulement ancienne || Seulement élevée || Seulement écrite || Ces trois conditions sont cumulatives.
+Qu'est-ce qu'une créance liquide ? || Dont le montant est déterminé || Payée en espèces || Réglée par chèque || Très ancienne || Le montant est précisément connu.
+Qu'est-ce qu'une créance exigible ? || Dont l'échéance est arrivée || Dont le montant est inconnu || Réglée || Contestée par le juge || On peut en réclamer le paiement maintenant.
+Qui procède aux saisies ? || L'huissier de justice || Le notaire || Le greffier || Le maire || Il agit sur la base d'un titre exécutoire.
+Qu'est-ce qu'un titre exécutoire ? || Un document qui permet d'exiger l'exécution forcée, comme un jugement || Un contrat de travail || Un acte de naissance || Une quittance || Il autorise la saisie des biens.
+Que permet la saisie-attribution ? || Saisir les sommes détenues sur un compte bancaire || Saisir un immeuble || Saisir les meubles de la maison || Annuler une dette || Elle porte sur les créances du débiteur.
+À quelle situation s'appliquent les procédures collectives ? || À l'entreprise en cessation de paiements || À toute personne || À l'État || Au salarié || Redressement judiciaire ou liquidation des biens.
+La caution d'un prêt de 1 000 000 de francs doit-elle écrire elle-même la somme garantie ? || Oui, en toutes lettres et en chiffres || Non, une signature suffit || Non, un tampon suffit || Non, elle ne signe pas || La mention manuscrite attire son attention sur l'engagement.

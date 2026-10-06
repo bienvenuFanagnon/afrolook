@@ -1,0 +1,28 @@
+titre: Juridictions et déroulement du procès
+== fiche
+p: Le procès est la procédure par laquelle un juge tranche un litige ou juge une infraction.
+li: Ordre judiciaire : tribunal de première instance (ou de grande instance), cour d'appel, Cour suprême ou Cour de cassation.
+li: Ordre administratif : tribunaux administratifs, Conseil d'État, pour les litiges avec l'administration.
+li: Procédure pénale : enquête de police ou de gendarmerie, poursuite par le ministère public (procureur), instruction par le juge d'instruction pour les affaires graves, jugement.
+li: Le ministère public (parquet) représente la société et exerce l'action publique ; la victime peut exercer l'action civile pour obtenir réparation.
+li: Garde à vue : mesure de police limitée dans le temps, avec le droit de prévenir un proche, d'être assisté d'un avocat et d'être examiné par un médecin.
+li: Voies de recours : l'appel (réexamen des faits et du droit), le pourvoi en cassation (contrôle du droit seulement).
+li: Principes : publicité des débats, droits de la défense, jugement contradictoire, motivation des décisions.
+note: Un jugement devient définitif quand les voies de recours sont épuisées ou que les délais sont passés.
+note: L'avocat conseille et défend ; l'huissier signifie les actes et exécute les décisions ; le greffier tient les écrits du tribunal.
+== questions
+Quel juge rend la décision en première instance ? || Le tribunal de première instance || La Cour suprême seulement || Le ministre || Le préfet || C'est la juridiction à laquelle on s'adresse d'abord.
+Quelle juridiction réexamine l'affaire en appel ? || La cour d'appel || Le tribunal de commerce uniquement || La mairie || La police || L'appel permet un second examen des faits et du droit.
+Que contrôle la Cour de cassation ? || L'application du droit, pas les faits || Les faits uniquement || Les élections || Les impôts || Elle juge les décisions, pas les procès.
+Qui représente la société dans le procès pénal ? || Le ministère public (procureur) || L'avocat de la défense || Le greffier || L'huissier || Il exerce l'action publique.
+Que peut faire la victime d'une infraction pour obtenir réparation ? || Exercer l'action civile || Condamner elle-même le coupable || Fermer le tribunal || Rien || Elle peut demander des dommages-intérêts.
+Qu'est-ce que la garde à vue ? || Une mesure de police qui retient une personne pour les besoins de l'enquête || Une peine de prison || Une peine d'amende || Un jugement || Sa durée est strictement limitée.
+Quel droit a la personne en garde à vue ? || Être assistée d'un avocat et prévenir un proche || Ne rien dire jamais || Choisir son juge || Être libérée aussitôt || Ces droits garantissent un traitement équitable.
+Qui tient les registres et écrits du tribunal ? || Le greffier || Le procureur || L'huissier || Le juge de paix || Il authentifie les actes de la juridiction.
+Qui est chargé de l'exécution forcée des décisions de justice ? || L'huissier de justice || L'avocat || Le notaire || Le député || Il signifie les actes et procède aux saisies.
+Qui défend une personne devant le tribunal ? || L'avocat || Le greffier || L'huissier || Le procureur || Il assiste et plaide pour son client.
+Que signifie la publicité des débats ? || Le public peut assister aux audiences, sauf exceptions || Les débats sont secrets || Le juge fait de la publicité || Les parties sont filmées || Elle garantit la transparence de la justice.
+Que signifie le principe du contradictoire ? || Chaque partie peut discuter les arguments et preuves de l'autre || Le juge ne regarde qu'une seule partie || Le procès est secret || Les parties ne parlent pas || Les droits de la défense l'exigent.
+Quel recours vise à faire rejuger l'affaire sur les faits et le droit ? || L'appel || Le pourvoi en cassation || La grâce || La saisine du maire || Il s'exerce devant la cour d'appel.
+Quel tribunal juge les litiges entre un citoyen et l'administration ? || Le tribunal administratif || Le tribunal de commerce || Le tribunal pour enfants || La cour martiale || Il applique le droit administratif.
+Quand un jugement est-il définitif ? || Quand plus aucun recours n'est possible || Dès qu'il est lu || Après un an || Après le vote d'une loi || Il a alors l'autorité de la chose jugée.

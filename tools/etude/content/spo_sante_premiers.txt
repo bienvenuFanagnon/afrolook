@@ -1,0 +1,28 @@
+titre: Premiers secours en sport
+== fiche
+p: Les premiers secours sont les gestes simples qui protègent une victime en attendant les secours organisés.
+li: Protéger, alerter, secourir : on sécurise le lieu, on appelle les secours (numéro d'urgence local), puis on agit.
+li: Victime consciente qui saigne : appuyer fortement avec un linge propre sur la plaie, sans enlever le linge, et l'allonger.
+li: Victime inconsciente qui respire : la mettre en position latérale de sécurité (PLS) et surveiller sa respiration.
+li: Arrêt cardiaque (inconscient, ne respire pas) : appeler les secours, commencer les compressions thoraciques au milieu de la poitrine, environ 100 à 120 par minute ; utiliser un défibrillateur s'il y en a un.
+li: Entorse : GREC (glace, repos, élévation, compression). Fracture suspectée : ne pas bouger le membre et attendre les secours.
+li: Coup de chaleur : mettre à l'ombre, rafraîchir le corps, faire boire si la personne est consciente, appeler les secours.
+li: Traumatisme du crâne ou du cou : ne pas bouger la victime sans nécessité, appeler les secours.
+note: Le massage cardiaque sans formation vaut toujours mieux que de ne rien faire.
+note: Une trousse de secours doit contenir compresses, bandes, désinfectant, gants, couverture de survie, poche de glace.
+== questions
+Quelle est la première étape devant un accident ? || Protéger le lieu et se protéger soi-même || Déplacer la victime vite || Filmer la scène || Partir || Il faut éviter un second accident.
+Que veut dire « protéger, alerter, secourir » ? || Sécuriser, appeler les secours, puis aider || Courir, crier, partir || Attendre, regarder, filmer || Appeler, partir, oublier || Ce sont les trois étapes de l'intervention.
+Que faire face à une plaie qui saigne beaucoup ? || Appuyer fortement avec un linge propre || Laver à grande eau puis attendre || Retirer le linge souvent || Mettre de la farine || La compression arrête le saignement.
+Dans quelle position met-on une victime inconsciente qui respire ? || En position latérale de sécurité (PLS) || Assise || Debout || Sur le dos, tête relevée || Elle évite l'étouffement.
+Que fait-on si une victime est inconsciente et ne respire pas ? || On appelle les secours et on fait des compressions thoraciques || On la laisse dormir || On lui donne à boire || On la secoue longtemps || Il faut relancer la circulation du sang.
+Où appuie-t-on lors d'un massage cardiaque ? || Au milieu de la poitrine || Sur le ventre || Sur le cou || Sur le dos || On comprime le sternum.
+À quel rythme fait-on les compressions thoraciques ? || Environ 100 à 120 par minute || 10 par minute || 40 par minute || 200 par minute || C'est le rythme recommandé.
+À quoi sert un défibrillateur ? || À relancer un rythme cardiaque normal après un arrêt cardiaque || À mesurer la température || À arrêter un saignement || À réduire une fracture || Il délivre un choc électrique contrôlé.
+Que signifie GREC ? || Glace, Repos, Élévation, Compression || Gymnastique, Repos, Eau, Chaleur || Glace, Rouleau, Étirement, Chaleur || Garrot, Repos, Eau, Calme || C'est le protocole pour une entorse.
+Que faire d'une fracture suspectée ? || Immobiliser le membre et attendre les secours || Bouger le membre pour tester || Masser || Remettre l'os en place soi-même || Il ne faut pas aggraver la lésion.
+Que faire en cas de coup de chaleur ? || Mettre à l'ombre, rafraîchir et appeler les secours || Faire courir la victime || La couvrir de couvertures || Lui donner du café chaud || Le corps doit refroidir vite.
+Que faire d'un sportif qui a reçu un coup violent à la tête et semble confus ? || L'arrêter, le surveiller et appeler les secours || Le remettre en jeu || L'envoyer courir || Lui donner à boire seulement || Un traumatisme crânien peut être grave.
+Pourquoi ne pas déplacer une victime avec un traumatisme du cou ? || Pour éviter d'aggraver une lésion de la colonne || Pour gagner du temps || Parce qu'elle est lourde || Parce que c'est interdit || Le cou ou la colonne peut être atteint.
+Quel objet doit figurer dans une trousse de secours ? || Compresses, bandes et désinfectant || Une bouteille de sucre || Un ballon || Un sifflet seulement || Ce sont les éléments de base.
+Pourquoi faut-il appeler les secours rapidement ? || Plus l'aide arrive tôt, plus les chances de la victime augmentent || Pour avertir les voisins || Pour faire du bruit || Pour éviter de remplir un formulaire || Le temps est un facteur essentiel.

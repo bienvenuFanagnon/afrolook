@@ -1,0 +1,27 @@
+titre: L'État, la Constitution et la séparation des pouvoirs
+== fiche
+p: L'État est une organisation politique qui exerce son autorité sur un territoire et une population. La Constitution est la loi fondamentale qui en fixe l'organisation.
+li: Les trois éléments de l'État : un territoire, une population, un pouvoir politique souverain.
+li: La Constitution organise les pouvoirs publics, garantit les droits fondamentaux et se place au sommet de l'ordre juridique.
+li: Séparation des pouvoirs (Montesquieu) : pouvoir législatif (fait les lois : Parlement), exécutif (les applique : Président, Gouvernement), judiciaire (juge : tribunaux).
+li: Formes d'État : État unitaire (un seul pouvoir central) ou État fédéral (plusieurs États fédérés).
+li: Régimes : présidentiel, parlementaire ou semi-présidentiel, selon les rapports entre exécutif et législatif.
+li: Le référendum est un vote direct des citoyens sur un texte ; les élections désignent les gouvernants.
+note: Une Cour constitutionnelle contrôle la conformité des lois à la Constitution et veille à la régularité des élections dans de nombreux pays africains.
+note: Le principe de légalité signifie que l'administration doit respecter la loi.
+== questions
+Quels sont les trois éléments constitutifs de l'État ? || Un territoire, une population et un pouvoir politique || Une armée, une monnaie et un drapeau || Un roi, un parlement et un tribunal || Une capitale, un port et une route || Sans l'un d'eux il n'y a pas d'État.
+Qu'est-ce que la Constitution ? || La loi fondamentale qui organise l'État et garantit les droits || Un contrat commercial || Un règlement de police || Une coutume || Elle est au sommet de l'ordre juridique.
+Quel pouvoir fait les lois ? || Le pouvoir législatif || Le pouvoir exécutif || Le pouvoir judiciaire || Le pouvoir médiatique || Le Parlement vote les lois.
+Quel pouvoir applique les lois ? || Le pouvoir exécutif || Le pouvoir législatif || Le pouvoir judiciaire || Aucun || Le Président et le Gouvernement les exécutent.
+Quel pouvoir juge les litiges ? || Le pouvoir judiciaire || Le pouvoir exécutif || Le pouvoir législatif || Le pouvoir fiscal || Les juges rendent la justice.
+Qui a développé la théorie de la séparation des pouvoirs ? || Montesquieu || Napoléon || Gandhi || Marx || Il l'a exposée dans « De l'esprit des lois ».
+Pourquoi sépare-t-on les pouvoirs ? || Pour éviter l'abus de pouvoir par un seul organe || Pour compliquer la politique || Pour augmenter les impôts || Pour supprimer les élections || Le pouvoir arrête le pouvoir.
+Qu'est-ce qu'un État unitaire ? || Un État à un seul pouvoir central || Un État de plusieurs États fédérés || Un État sans territoire || Un État sans constitution || La France ou le Togo en sont des exemples.
+Qu'est-ce qu'un État fédéral ? || Un État composé de plusieurs États fédérés || Un État à parti unique || Un État sans président || Un État sans Constitution || Le Nigeria est une fédération.
+Qu'est-ce qu'un référendum ? || Un vote direct des citoyens sur un texte || Une élection du maire || Une session du Parlement || Une réunion du Gouvernement || Le peuple répond oui ou non.
+Que fait en général une Cour constitutionnelle ? || Elle contrôle la conformité des lois à la Constitution || Elle vote les lois || Elle nomme le Président || Elle juge les vols || C'est le juge de la loi fondamentale.
+Que signifie la souveraineté de l'État ? || Son pouvoir suprême sur son territoire || Sa richesse || Sa taille || Sa langue || Il n'est soumis à aucun pouvoir supérieur sur son territoire.
+Que signifie le principe de légalité ? || L'administration doit respecter la loi || Le citoyen ne doit rien payer || Le juge fait la loi || La loi est facultative || L'État aussi est soumis au droit.
+Quelle institution vote les lois dans un régime démocratique ? || Le Parlement (ou l'Assemblée nationale) || Le tribunal || L'armée || La banque centrale || Il représente le peuple.
+Dans un régime parlementaire, devant qui le Gouvernement est-il responsable ? || Devant le Parlement || Devant le tribunal || Devant l'armée || Devant la banque centrale || Il peut être renversé par une motion de censure.

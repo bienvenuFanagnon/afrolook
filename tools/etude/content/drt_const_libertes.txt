@@ -1,0 +1,27 @@
+titre: Droits et libertés fondamentaux
+== fiche
+p: Les droits de l'homme sont des droits que toute personne possède du seul fait qu'elle est un être humain ; l'État doit les respecter et les protéger.
+li: Déclaration universelle des droits de l'homme (ONU, 1948) : droit à la vie, à la liberté, à la sûreté, égalité, liberté d'expression, de conscience, droit à un procès équitable.
+li: Charte africaine des droits de l'homme et des peuples (Nairobi, 1981, entrée en vigueur en 1986) : elle reconnaît aussi des droits des peuples et des devoirs de l'individu.
+li: Libertés publiques : liberté d'aller et venir, d'expression, de réunion, d'association, de la presse, de religion.
+li: Droits économiques et sociaux : droit au travail, à l'éducation, à la santé, à la protection sociale.
+li: Présomption d'innocence : toute personne est considérée innocente tant que sa culpabilité n'est pas prouvée par un jugement.
+li: Les libertés peuvent être limitées par la loi pour protéger l'ordre public ou les droits d'autrui, sans jamais être supprimées.
+note: Le droit à un procès équitable comprend le droit à un avocat, d'être jugé publiquement et dans un délai raisonnable.
+note: Organes de protection : juridictions nationales, Commission africaine des droits de l'homme et des peuples, Cour africaine des droits de l'homme et des peuples.
+== questions
+Qu'est-ce qu'un droit de l'homme ? || Un droit que l'on possède du seul fait d'être un être humain || Un droit réservé aux citoyens riches || Un droit accordé par un contrat || Un droit qui disparaît à la majorité || Ces droits sont universels.
+En quelle année la Déclaration universelle des droits de l'homme a-t-elle été adoptée ? || 1948 || 1789 || 1960 || 1990 || L'Assemblée générale de l'ONU l'a adoptée en 1948.
+Quel texte régional africain protège les droits de l'homme ? || La Charte africaine des droits de l'homme et des peuples || Le Traité de Rome || La Convention de Genève || Le Code civil || Elle a été adoptée à Nairobi en 1981.
+Quelle liberté permet de s'exprimer publiquement ? || La liberté d'expression || La liberté d'aller et venir || Le droit de vote || Le droit de propriété || Elle comprend la liberté de la presse.
+Que protège la liberté d'association ? || Le droit de former des groupements, comme un syndicat ou un parti || Le droit de voyager || Le droit de posséder une maison || Le droit de ne pas payer d'impôt || Elle permet de se regrouper librement.
+Que protège la liberté d'aller et venir ? || Le droit de se déplacer librement || Le droit de vote || Le droit d'enseigner || Le droit de grève || Elle peut être limitée par la loi, par exemple pendant un couvre-feu.
+Que signifie la présomption d'innocence ? || On est innocent tant qu'un jugement n'a pas établi la culpabilité || On est coupable jusqu'à preuve du contraire || Seul le juge est présumé innocent || L'innocence est automatique || Elle protège l'accusé.
+Quel droit comprend l'assistance d'un avocat, un jugement public et rendu dans un délai raisonnable ? || Le droit à un procès équitable || Le droit à la santé || Le droit de grève || Le droit d'auteur || Il est garanti aux personnes poursuivies.
+Citez un droit économique et social : || Le droit à l'éducation || La liberté d'expression || Le droit à un procès équitable || La présomption d'innocence || Il concerne les conditions de vie.
+Une liberté peut-elle être limitée ? || Oui, par la loi, pour protéger l'ordre public ou les droits d'autrui || Non, jamais || Oui, par n'importe qui || Oui, par le voisin || La limite doit être légale et proportionnée.
+Quelle institution africaine reçoit des plaintes pour violation des droits de l'homme ? || La Commission africaine des droits de l'homme et des peuples || La CCJA || La BCEAO || La CAF || Elle veille à l'application de la Charte africaine.
+Que garantit le droit à la vie ? || Que nul ne peut être privé arbitrairement de sa vie || La gratuité des soins || Un emploi à tous || Un logement à tous || C'est le premier des droits fondamentaux.
+Quelle particularité a la Charte africaine par rapport à d'autres textes ? || Elle reconnaît aussi des droits des peuples et des devoirs || Elle ne parle que des États || Elle interdit toute liberté || Elle ne concerne que le commerce || Les droits des peuples y figurent, comme le droit au développement.
+Que peut faire une personne dont les droits fondamentaux sont violés ? || Saisir un juge || Rien || Se faire justice elle-même || Attendre dix ans || Les juridictions garantissent la protection de ces droits.
+Quel principe interdit la torture et les traitements dégradants ? || Le respect de la dignité humaine || La liberté d'expression || La liberté de commerce || Le droit de propriété || La dignité est protégée de façon absolue.

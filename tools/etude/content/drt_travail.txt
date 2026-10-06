@@ -1,0 +1,27 @@
+titre: Le contrat de travail
+== fiche
+p: Le contrat de travail est un accord par lequel une personne (le travailleur) s'engage à travailler pour une autre (l'employeur), sous sa direction, contre une rémunération.
+li: Trois éléments : une prestation de travail, une rémunération, un lien de subordination (l'employeur donne des ordres et contrôle).
+li: Types : CDI (contrat à durée indéterminée, la règle), CDD (à durée déterminée, pour un travail précis ou temporaire), contrat d'apprentissage, stage.
+li: Période d'essai : phase pendant laquelle chaque partie peut rompre plus facilement le contrat.
+li: Obligations du travailleur : exécuter le travail, obéir aux instructions légitimes, loyauté. Obligations de l'employeur : payer le salaire, donner du travail, assurer la sécurité et inscrire le salarié à la sécurité sociale.
+li: Fin du contrat : démission, licenciement (pour motif légitime et dans les formes), fin du CDD, retraite, accord des parties.
+li: Le salaire minimum est fixé par la loi ou par convention collective ; les congés payés, le repos hebdomadaire et la durée du travail sont réglementés.
+note: Le licenciement abusif peut donner droit à des dommages-intérêts devant le tribunal du travail.
+note: Les délégués du personnel et les syndicats défendent les intérêts collectifs des travailleurs.
+== questions
+Quels sont les trois éléments du contrat de travail ? || Prestation de travail, rémunération, lien de subordination || Local, matériel, clientèle || Capital, associés, statuts || Prix, objet, délai || La subordination le distingue des autres contrats.
+Que signifie le lien de subordination ? || L'employeur donne des ordres et contrôle le travail || Le salarié donne des ordres || Les deux sont égaux || Le salarié choisit ses horaires seul || C'est le critère du contrat de travail.
+Que signifie CDI ? || Contrat à durée indéterminée || Contrat de durée interne || Contrat de droit international || Certificat de droit individuel || C'est la forme normale du contrat de travail.
+Que signifie CDD ? || Contrat à durée déterminée || Contrat de dette directe || Certificat de droit divisé || Conseil de discipline || Il est conclu pour une durée ou une tâche déterminée.
+Quelle est la durée d'un contrat à durée indéterminée ? || Elle n'est pas fixée à l'avance || Un an exactement || Six mois || Trois mois || Il dure jusqu'à une rupture ou la retraite.
+Quelle est la fonction de la période d'essai ? || Permettre aux deux parties de tester la collaboration || Supprimer le salaire || Remplacer le contrat || Retarder la retraite || La rupture y est plus facile.
+Quelle est une obligation de l'employeur ? || Payer le salaire || Fournir ses propres outils au salarié sans limite || Désobéir à la loi || Payer des impôts à la place du salarié || Le salaire est l'obligation principale.
+Quelle est une obligation du salarié ? || Exécuter le travail convenu et respecter les consignes légitimes || Choisir ses tâches seul || Dormir au travail || Garder le salaire sans travailler || Il doit loyauté et diligence.
+Quel organisme couvre le salarié en cas d'accident du travail ? || La sécurité sociale (caisse de prévoyance) || La mairie || La police || L'armée || L'employeur doit déclarer le salarié.
+Qu'est-ce qu'une démission ? || La rupture du contrat à l'initiative du salarié || Un licenciement || Un congé payé || Une promotion || Le salarié choisit de partir.
+Qu'est-ce qu'un licenciement ? || La rupture du contrat à l'initiative de l'employeur || La rupture à l'initiative du salarié || Un changement de poste || Une grève || Il doit reposer sur un motif légitime.
+Que peut obtenir un salarié licencié abusivement ? || Des dommages-intérêts devant le tribunal du travail || Rien || Le poste de son patron || Une amende contre le juge || Le juge sanctionne l'abus.
+Quel juge règle les litiges individuels entre employeur et salarié ? || Le tribunal du travail || Le tribunal de commerce || La cour constitutionnelle || Le tribunal militaire || Il est compétent pour les conflits de travail.
+Qu'est-ce que le salaire minimum ? || Le salaire le plus bas autorisé par la loi ou une convention || Le salaire du directeur || Le salaire moyen || Une prime || L'employeur ne peut pas payer en dessous.
+Quel est le rôle d'un syndicat ? || Défendre les intérêts collectifs des travailleurs || Juger les salariés || Recruter à la place de l'employeur || Fixer les prix || Il négocie avec les employeurs.

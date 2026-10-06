@@ -1,0 +1,27 @@
+titre: Squelette et articulations
+== fiche
+p: Le squelette soutient le corps, protège les organes et permet le mouvement avec les muscles.
+li: Le squelette adulte compte 206 os ; un nouveau-né en a plus, car certains fusionnent en grandissant.
+li: Os principaux : crâne, colonne vertébrale (33 vertèbres), côtes, humérus, radius et cubitus (avant-bras), fémur (le plus long), tibia et péroné (jambe).
+li: Articulation : jonction entre deux os ; les articulations mobiles (genou, coude, épaule, hanche) sont protégées par du cartilage et un liquide synovial.
+li: Types : charnière (coude, genou : un seul axe), rotule ou sphéroïde (épaule, hanche : tous les axes).
+li: Fonctions des os : soutien, protection (cage thoracique, crâne), mouvement, réserve de calcium, fabrication des cellules du sang dans la moelle.
+li: Blessures fréquentes : entorse (ligament étiré ou déchiré), luxation (os déplacé), fracture (os cassé), claquage (muscle), tendinite (tendon).
+note: Calcium et vitamine D renforcent les os ; l'activité physique régulière aussi.
+note: La croissance se poursuit jusqu'à environ 18-20 ans ; les cartilages de croissance sont fragiles chez l'enfant.
+== questions
+Combien d'os compte le squelette d'un adulte ? || 206 || 106 || 306 || 600 || C'est le nombre classique pour l'adulte.
+Quel est l'os le plus long du corps humain ? || Le fémur || Le tibia || L'humérus || Le radius || Il se trouve dans la cuisse.
+Quels sont les deux os de l'avant-bras ? || Le radius et le cubitus || Le tibia et le péroné || Le fémur et l'humérus || Les côtes et le sternum || Ils relient le coude au poignet.
+Quels sont les deux os de la jambe ? || Le tibia et le péroné || Le radius et le cubitus || Le fémur et la rotule || L'humérus et l'omoplate || Ils relient le genou à la cheville.
+Qu'est-ce qu'une articulation ? || La jonction entre deux os || Un muscle || Un tendon seul || Un vaisseau || Elle permet le mouvement.
+Que protège la cage thoracique ? || Le cœur et les poumons || L'estomac seulement || Le cerveau || La moelle épinière || Les côtes forment une cage rigide.
+Quel organe fragile la boîte crânienne enferme-t-elle ? || Le cerveau || Le cœur || Les poumons || L'estomac || Il enferme et protège l'encéphale.
+Quel type d'articulation est le genou ? || Une articulation en charnière || Une articulation fixe || Une articulation en rotule complète || Une soudure || Il plie et se tend surtout selon un axe.
+Quelle articulation permet le plus de mouvements, dans tous les sens ? || L'épaule || Le genou || Le coude || Les doigts || C'est une articulation en rotule.
+Qu'est-ce qu'une entorse ? || Un ligament étiré ou déchiré || Un os cassé || Un muscle déchiré || Un tendon enflammé || Elle survient souvent à la cheville.
+Qu'est-ce qu'une fracture ? || Un os cassé || Un ligament étiré || Un muscle contracté || Une crampe || Elle exige des soins médicaux.
+Qu'est-ce qu'une luxation ? || Un os sorti de son articulation || Un muscle déchiré || Une fracture || Une inflammation || Le déplacement est visible et douloureux.
+Quel minéral renforce les os ? || Le calcium || Le sodium || Le fer seulement || Le plomb || Avec la vitamine D, il fixe le calcium.
+Que contient la moelle osseuse ? || Des cellules qui fabriquent le sang || De l'air || Du cartilage || Du muscle || Elle produit globules rouges, globules blancs et plaquettes.
+Combien de vertèbres compte la colonne vertébrale, environ ? || 33 || 12 || 100 || 206 || Cervicales, dorsales, lombaires, sacrées et coccygiennes.

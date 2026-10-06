@@ -1,0 +1,28 @@
+titre: Les règles du football
+== fiche
+p: Le football est un sport collectif qui oppose deux équipes de onze joueurs. Les lois du jeu sont fixées par l'IFAB et appliquées par la FIFA.
+li: Un match se joue en deux mi-temps de 45 minutes, avec une pause de 15 minutes au maximum.
+li: Une équipe compte 11 joueurs, dont un gardien de but qui peut seul toucher le ballon à la main dans sa surface de réparation.
+li: Un but est marqué quand le ballon franchit entièrement la ligne de but entre les poteaux et sous la barre.
+li: Hors-jeu : un attaquant est hors-jeu si, au moment de la passe, il est plus proche de la ligne de but adverse que le ballon et l'avant-dernier adversaire.
+li: Fautes : coup franc direct ou penalty (faute dans la surface) ; sanctions : carton jaune (avertissement), carton rouge (exclusion).
+li: Penalty : tir à 11 mètres du but. Corner : coup de pied depuis le coin quand le ballon sort derrière sa ligne de but après avoir touché un défenseur.
+li: Remise en jeu : touche (à la main) quand le ballon sort sur la ligne latérale ; coup de pied de but quand l'attaquant le fait sortir derrière la ligne de but.
+note: Un arbitre central dirige le match, aidé de deux arbitres assistants ; l'arbitrage vidéo (VAR) aide aux décisions importantes.
+note: Le ballon doit être sphérique ; la taille officielle est la taille 5.
+== questions
+Combien de joueurs compte une équipe de football sur le terrain ? || 11 || 9 || 10 || 12 || Dont le gardien de but.
+Quelle est la durée normale d'un match de football ? || Deux mi-temps de 45 minutes || Trois périodes de 30 minutes || Quatre quarts de 20 minutes || Une mi-temps de 60 minutes || Avec un arrêt de jeu éventuel en plus.
+Qui est le seul joueur autorisé à toucher le ballon à la main dans le jeu ? || Le gardien de but, dans sa surface || N'importe quel joueur || L'arbitre || Le capitaine || Les autres joueurs commettent une faute de main.
+Quand un but est-il valable ? || Quand le ballon franchit entièrement la ligne entre les poteaux et sous la barre || Quand le ballon touche le poteau || Quand le ballon touche la barre || Quand le gardien le lâche || Il doit être entièrement entré.
+À quelle distance du but se tire un penalty ? || 11 mètres || 5 mètres || 20 mètres || 30 mètres || La distance est de 11 mètres (12 yards).
+Quand un penalty est-il accordé ? || Pour une faute passible d'un coup franc direct dans la surface || Pour un hors-jeu || Pour une touche mal faite || Pour un corner || Il sanctionne la faute dans la surface.
+Que signifie un carton jaune ? || Un avertissement || Une exclusion || Un but || Une faute du gardien seulement || Deux cartons jaunes donnent un rouge.
+Que signifie un carton rouge ? || L'exclusion du joueur || Un avertissement || Une remise en jeu || Un penalty || Le joueur doit quitter le terrain sans être remplacé.
+Que se passe-t-il quand un joueur reçoit deux cartons jaunes dans le même match ? || Il est exclu || Il continue || Il est remplacé automatiquement || Le match s'arrête || Le second jaune devient un rouge.
+Quand un attaquant est-il hors-jeu ? || S'il est plus près du but que le ballon et l'avant-dernier adversaire || S'il touche le ballon de la tête || S'il est dans sa moitié de terrain || S'il est dans le rond central || La position se juge au moment de la passe.
+Peut-on être hors-jeu sur une touche ? || Non || Oui || Oui, si le ballon est haut || Oui, seulement en finale || Il n'y a pas de hors-jeu sur une remise en touche.
+Comment reprend-on le jeu quand le ballon sort sur la ligne latérale ? || Par une touche (remise à la main) || Par un corner || Par un penalty || Par un coup franc || On lance le ballon avec les deux mains au-dessus de la tête.
+Quand sert-on un corner ? || Quand le défenseur fait sortir le ballon derrière sa propre ligne de but || Quand l'attaquant le fait sortir derrière la ligne || Quand le gardien sort || Quand le ballon touche la barre || L'équipe attaquante tire depuis le coin.
+Que se passe-t-il quand l'attaquant fait sortir le ballon derrière la ligne de but ? || Coup de pied de but pour la défense || Corner || Penalty || Touche || Le gardien reprend le jeu.
+Quel est le rôle de l'arbitre ? || Faire respecter les lois du jeu || Défendre une équipe || Choisir le gagnant || Marquer des buts || Il est neutre et sa décision est finale.

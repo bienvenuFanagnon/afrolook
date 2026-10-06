@@ -1,0 +1,28 @@
+titre: Échauffement, retour au calme et prévention des blessures
+== fiche
+p: Bien préparer son corps avant l'effort et bien le récupérer après réduit nettement les risques de blessure.
+li: Échauffement : 10 à 20 minutes. Il augmente la température des muscles, accélère le cœur et prépare les articulations.
+li: Contenu : course légère, mobilité articulaire, exercices progressifs spécifiques à l'activité, quelques accélérations.
+li: Étirements : ils se font surtout après l'effort ; avant l'effort, on préfère des mouvements dynamiques.
+li: Retour au calme : marche lente, respiration, quelques étirements doux, hydratation ; il aide la récupération.
+li: Prévention : bonnes chaussures, matériel adapté, terrain sûr, hydratation, sommeil, respect de la douleur.
+li: Douleur : une gêne légère après l'effort est normale ; une douleur vive, qui augmente ou persiste, impose l'arrêt et un avis médical.
+li: Protocole GREC après un choc : Glace, Repos, Élévation, Compression, puis avis médical si besoin.
+note: Ne jamais s'étirer jusqu'à la douleur ; les étirements sont lents, sans à-coups.
+note: Chez l'enfant, éviter les charges trop lourdes pendant la croissance.
+== questions
+À quoi sert l'échauffement ? || À préparer le corps à l'effort et réduire le risque de blessure || À se fatiguer avant l'effort || À remplacer l'entraînement || À perdre du poids seulement || Il chauffe muscles et articulations.
+Quelle durée convient en général à un échauffement ? || 10 à 20 minutes || 30 secondes || 1 heure || 2 heures || Il doit être progressif.
+Que comprend un échauffement ? || Course légère, mobilité articulaire, exercices progressifs || Un repas copieux || Un sprint maximal immédiat || Une sieste || On monte peu à peu en intensité.
+Quand fait-on surtout les étirements longs et statiques ? || Après l'effort || Juste avant un sprint || Jamais || Pendant le match || Avant l'effort on préfère des mouvements dynamiques.
+À quoi sert le retour au calme ? || À aider la récupération et faire baisser le rythme cardiaque || À s'arrêter brutalement || À recommencer l'effort || À augmenter la fatigue || On ralentit progressivement.
+Que signifie GREC dans le protocole après un choc ? || Glace, Repos, Élévation, Compression || Gymnastique, Repos, Eau, Chaleur || Glace, Récupération, Étirement, Chaleur || Gel, Rouleau, Étirement, Cure || Il soulage douleur et gonflement.
+Quel geste le protocole GREC recommande-t-il pour le gonflement ? || Appliquer de la glace || Appliquer de la chaleur forte || Masser fort || Courir || Le froid limite le gonflement.
+Quel matériel prévient les blessures ? || Des chaussures adaptées à l'activité || Des chaussures trop grandes || Un terrain glissant || Aucun matériel || Un bon amorti et un bon maintien protègent.
+Que faire en cas de douleur vive pendant l'effort ? || Arrêter et demander un avis médical si elle persiste || Continuer plus fort || Ignorer la douleur || Boire du café || La douleur est un signal d'alarme.
+Comment doit-on faire un étirement ? || Lentement, sans à-coups, sans douleur || Brutalement || Jusqu'à la douleur || En rebondissant || La tension doit rester supportable.
+Pourquoi s'hydrater avant, pendant et après l'effort ? || Pour compenser les pertes d'eau par la sueur || Pour grossir || Pour remplacer le repas || Pour dormir || La déshydratation baisse la performance.
+Quel risque court un sportif qui ne s'échauffe pas ? || Claquage, entorse ou déchirure || Une meilleure performance || Un gain de souplesse immédiat || Aucun risque || Les muscles froids se blessent plus facilement.
+Quel signe impose d'arrêter l'effort aussitôt ? || Un malaise, une douleur à la poitrine ou un vertige || Une légère transpiration || Une envie de boire || Un petit essoufflement || Ces signes demandent une prise en charge.
+Pourquoi les enfants évitent-ils les charges trop lourdes ? || Leurs cartilages de croissance sont fragiles || Ils sont trop forts || Ils n'ont pas de muscles || C'est interdit par la mode || Les risques pour la croissance sont réels.
+Quel est un bon complément à la prévention ? || Un sommeil suffisant || Veiller tard || Ne pas manger || Courir sans eau || Le sommeil favorise la récupération.

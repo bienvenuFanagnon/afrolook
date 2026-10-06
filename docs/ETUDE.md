@@ -206,3 +206,9 @@ Pour le moment, l'abonnement Gold ne retire pas les pubs dans Afrolook Étude (l
 - **Économie, Finance et Comptabilité — Licence 1** (`univ_efc`, 12 chapitres, 180 questions) : économie (marché, macro, monnaie et BCEAO), comptabilité SYSCOHADA (bilan, comptes, charges et produits, plan comptable), finance (intérêts, actualisation, ratios), statistiques et probabilités.
 - Chaque parcours a son examen de Licence 1 (40 questions, 50 %) et un certificat non officiel. Contenu : `tools/etude/content/mpc_*.txt` et `efc_*.txt`, parcours dans `structure.json`.
 - Reste à faire : L2 et L3, relecture par des enseignants, page « facultés » et tronc commun (voir `docs/ETUDE_UNIVERSITES.md`).
+
+## 17. Droit (OHADA) et Sport (STAPS)
+
+- **Droit (avec le droit OHADA) — Licence 1** (`univ_droit`, 12 chapitres) : introduction au droit civil (règle de droit, personnes, contrat), droit constitutionnel (État et pouvoirs, libertés fondamentales), droit OHADA (traité et organes, commerçant et RCCM, sociétés commerciales, sûretés et recouvrement), pénal, procédure et travail.
+- **Sport (STAPS) — Licence 1** (`univ_sport`, 12 chapitres) : anatomie et physiologie, entraînement (qualités physiques, principes, échauffement et prévention), nutrition et premiers secours, règles du football, athlétisme, basket-ball, olympisme et organisation du sport.
+- Ils s'ajoutent aux parcours existants sans mise à jour de l'application : le catalogue est lu sur le serveur.

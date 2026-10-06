@@ -918,6 +918,210 @@
    ]
   },
   {
+   "id": "univ_droit",
+   "kind": "cycle",
+   "order": 33,
+   "title": "Droit (avec le droit OHADA) — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_droit_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Droit, Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "drt_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "drt_civil",
+       "title": "Introduction au droit civil",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "drt_intro_regle",
+         "title": "La règle de droit et ses sources"
+        },
+        {
+         "id": "drt_pers",
+         "title": "Personnes physiques, personnes morales et capacité"
+        },
+        {
+         "id": "drt_contrat",
+         "title": "Le contrat : formation et validité"
+        }
+       ]
+      },
+      {
+       "id": "drt_const",
+       "title": "Droit constitutionnel",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "drt_const_etat",
+         "title": "L'État, la Constitution et la séparation des pouvoirs"
+        },
+        {
+         "id": "drt_const_libertes",
+         "title": "Droits et libertés fondamentaux"
+        }
+       ]
+      },
+      {
+       "id": "drt_ohada",
+       "title": "Droit OHADA",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "drt_ohada_orga",
+         "title": "L'OHADA : traité, organes et Actes uniformes"
+        },
+        {
+         "id": "drt_ohada_comm",
+         "title": "Commerçant, entreprenant et registre du commerce"
+        },
+        {
+         "id": "drt_ohada_soc",
+         "title": "Les sociétés commerciales"
+        },
+        {
+         "id": "drt_ohada_suretes",
+         "title": "Sûretés et recouvrement des créances"
+        }
+       ]
+      },
+      {
+       "id": "drt_penal",
+       "title": "Droit pénal, procédure et travail",
+       "icon": "account_tree",
+       "chapters": [
+        {
+         "id": "drt_penal_infraction",
+         "title": "L'infraction pénale"
+        },
+        {
+         "id": "drt_penal_proc",
+         "title": "Juridictions et déroulement du procès"
+        },
+        {
+         "id": "drt_travail",
+         "title": "Le contrat de travail"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "univ_sport",
+   "kind": "cycle",
+   "order": 34,
+   "title": "Sport (STAPS) — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_sport_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Sport (STAPS), Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "spo_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "spo_anat",
+       "title": "Anatomie et physiologie",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "spo_anat_muscles",
+         "title": "Le système musculaire"
+        },
+        {
+         "id": "spo_anat_os",
+         "title": "Squelette et articulations"
+        },
+        {
+         "id": "spo_phys_cardio",
+         "title": "Cœur, respiration et effort"
+        }
+       ]
+      },
+      {
+       "id": "spo_ent",
+       "title": "Entraînement",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "spo_ent_qualites",
+         "title": "Les qualités physiques"
+        },
+        {
+         "id": "spo_ent_principes",
+         "title": "Les principes de l'entraînement"
+        },
+        {
+         "id": "spo_ent_echauff",
+         "title": "Échauffement, retour au calme et prévention des blessures"
+        }
+       ]
+      },
+      {
+       "id": "spo_nut",
+       "title": "Nutrition et santé",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "spo_nut_base",
+         "title": "Nutriments et hydratation du sportif"
+        },
+        {
+         "id": "spo_sante_premiers",
+         "title": "Premiers secours en sport"
+        }
+       ]
+      },
+      {
+       "id": "spo_reg",
+       "title": "Règles et culture sportive",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "spo_reg_foot",
+         "title": "Les règles du football"
+        },
+        {
+         "id": "spo_reg_athle",
+         "title": "L'athlétisme : épreuves et règles"
+        },
+        {
+         "id": "spo_reg_basket",
+         "title": "Le basket-ball : règles essentielles"
+        },
+        {
+         "id": "spo_hist_olymp",
+         "title": "Jeux olympiques et organisation du sport"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "cert_entretien",
    "kind": "cert",
    "order": 100,

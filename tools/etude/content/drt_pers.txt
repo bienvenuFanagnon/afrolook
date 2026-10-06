@@ -1,0 +1,27 @@
+titre: Personnes physiques, personnes morales et capacité
+== fiche
+p: En droit, une personne est un sujet de droits et d'obligations. Il existe deux sortes de personnes.
+li: Personne physique : l'être humain. Sa personnalité juridique commence à la naissance (vivant et viable) et s'achève à la mort.
+li: Personne morale : un groupement doté de la personnalité juridique (société, association, État, commune). Elle a un nom, un siège, un patrimoine.
+li: Attributs de la personnalité : le nom, le domicile, l'état civil (naissance, mariage, décès), la nationalité, le patrimoine.
+li: Capacité de jouissance : être titulaire de droits ; elle est reconnue à tous. Capacité d'exercice : exercer soi-même ses droits.
+li: Incapables : les mineurs et les majeurs protégés ; ils agissent par un représentant (parents, tuteur).
+li: Les actes d'état civil (naissance, mariage, décès) sont constatés par des actes établis par l'officier d'état civil.
+note: Exemple : une société est une personne morale ; elle peut posséder des biens et être poursuivie en justice sans que ses associés le soient personnellement.
+note: La majorité civile est fixée par la loi de chaque pays (souvent 18 ans).
+== questions
+Qu'est-ce qu'une personne physique ? || Un être humain || Une société || Une association || Un État || Elle est sujet de droit dès la naissance.
+Qu'est-ce qu'une personne morale ? || Un groupement doté de la personnalité juridique || Un être humain adulte || Un animal || Un contrat || Société, association, commune en sont des exemples.
+Quand commence la personnalité juridique d'une personne physique ? || À la naissance, si elle naît vivante et viable || À la majorité || À l'âge de 10 ans || Au mariage || L'enfant peut hériter dès la naissance.
+Quand s'achève la personnalité juridique d'une personne physique ? || À sa mort || À 60 ans || À sa retraite || Au divorce || Après la mort, la succession s'ouvre.
+Citez un attribut de la personnalité : || Le nom || Le salaire || Le diplôme || Le véhicule || Le nom, le domicile, l'état civil et le patrimoine en sont.
+Qu'est-ce que le domicile ? || Le lieu du principal établissement d'une personne || Le lieu de naissance seulement || Le lieu de travail uniquement || Le lieu de vacances || Il sert à fixer le tribunal compétent.
+Qui établit les actes de naissance, de mariage et de décès ? || L'officier d'état civil || Le notaire seulement || Le juge pénal || L'huissier || Il tient les registres d'état civil.
+Qu'est-ce que la capacité de jouissance ? || L'aptitude à être titulaire de droits || L'aptitude à exercer seul ses droits || L'aptitude à signer un contrat commercial || Le droit de vote || Elle est reconnue à toute personne.
+Qu'est-ce que la capacité d'exercice ? || L'aptitude à exercer soi-même ses droits || L'aptitude à naître || Le droit d'avoir un nom || La capacité d'un sac || Les mineurs en sont privés.
+Qui agit pour un mineur dans les actes de la vie civile ? || Ses représentants légaux, comme ses parents || Le maire || Le voisin || Le directeur de l'école || Le mineur est protégé par un représentant.
+Une société peut-elle posséder des biens ? || Oui, elle a un patrimoine distinct de celui de ses associés || Non, jamais || Oui, mais seulement des animaux || Non, seuls ses associés en possèdent || La personnalité morale lui donne un patrimoine propre.
+Une association régulièrement déclarée possède la personnalité : || morale || physique || pénale uniquement || fiscale uniquement || Elle devient un sujet de droit.
+Que signifie être majeur ? || Avoir atteint l'âge fixé par la loi pour exercer pleinement ses droits || Avoir un emploi || Être marié || Avoir un diplôme || L'âge de la majorité est fixé par la loi de chaque pays.
+Quel est l'intérêt de la personnalité morale pour une entreprise ? || Elle agit en son nom, a un patrimoine et peut aller en justice || Elle supprime les impôts || Elle donne des vacances || Elle remplace le contrat || Le groupement est distinct de ses membres.
+Qu'est-ce que la nationalité ? || Le lien juridique d'une personne avec un État || Le nom de famille || Le lieu de travail || La langue parlée || C'est un attribut de la personnalité.

@@ -1,0 +1,28 @@
+titre: Les sociétés commerciales
+== fiche
+p: Une société est créée par un contrat entre associés qui mettent des biens en commun pour partager les bénéfices. Elle devient une personne morale à l'immatriculation.
+li: Formes de sociétés commerciales : SNC (société en nom collectif), SCS (en commandite simple), SARL (à responsabilité limitée), SA (société anonyme), SAS (société par actions simplifiée).
+li: SNC : associés commerçants, responsables indéfiniment et solidairement des dettes.
+li: SARL : responsabilité limitée aux apports ; on peut la créer à une seule personne (SARL unipersonnelle).
+li: SA : capital divisé en actions ; elle peut être créée par un seul actionnaire ; organes : assemblée générale, conseil d'administration ou administrateur général, commissaires aux comptes.
+li: SAS : liberté d'organisation dans les statuts ; introduite par l'Acte uniforme révisé de 2014.
+li: Le GIE (groupement d'intérêt économique) facilite l'activité de ses membres sans chercher à faire de bénéfices pour lui-même.
+li: Apports : en numéraire (argent), en nature (biens), en industrie (travail).
+note: Dans une société, les statuts fixent le nom, l'objet, le siège, la durée, le capital et le fonctionnement.
+note: Le gérant dirige la SARL ; le dirigeant de la SA est le président du conseil ou le directeur général.
+== questions
+Qu'est-ce qu'une société ? || Un contrat d'associés pour mettre des biens en commun et partager les gains || Un impôt || Une association à but non lucratif || Un syndicat || Elle naît d'un accord entre associés.
+Quand une société acquiert-elle la personnalité morale ? || À son immatriculation || À la signature du bail || À la première vente || Au premier salaire || C'est l'immatriculation au RCCM qui la lui donne.
+Que signifie SARL ? || Société à responsabilité limitée || Société anonyme à responsabilité limitée || Syndicat des associés réunis || Société associative régionale || Les associés ne répondent des dettes qu'à hauteur de leurs apports.
+Que signifie SA ? || Société anonyme || Société associative || Syndicat d'associés || Service administratif || Son capital est divisé en actions.
+Que signifie SNC ? || Société en nom collectif || Société nationale du commerce || Syndicat national des commerçants || Société non commerciale || Les associés y sont commerçants et indéfiniment responsables.
+Quelle est la responsabilité d'un associé de SARL ? || Limitée à ses apports || Illimitée || Nulle || Solidaire pour toutes les dettes de l'État || C'est l'intérêt principal de cette forme.
+Quelle est la responsabilité des associés d'une SNC ? || Indéfinie et solidaire || Limitée aux apports || Nulle || Limitée à 100 || Ils répondent des dettes sur tous leurs biens.
+Une SARL peut-elle être créée par une seule personne ? || Oui, c'est une SARL unipersonnelle || Non, il faut au moins deux associés || Oui, mais seulement pour un commerçant || Non, jamais || L'Acte uniforme le permet.
+Comment le capital d'une SA est-il divisé ? || En actions || En parts de pain || En lots de terrain || En ouvrages || Les actionnaires détiennent des actions.
+Que fixent les statuts d'une société ? || Le nom, l'objet, le siège, la durée, le capital et le fonctionnement || Les prix des produits || Le salaire du juge || Les impôts de l'État || Ils sont la loi interne de la société.
+Qu'est-ce qu'un apport en numéraire ? || Un apport d'argent || Un apport de travail || Un apport d'un immeuble || Un apport de clientèle || Le numéraire est de l'argent liquide ou un virement.
+Qu'est-ce qu'un apport en industrie ? || L'apport de son travail ou de ses compétences || L'apport d'une usine || L'apport d'argent || L'apport d'un brevet seulement || L'associé met sa force de travail à la disposition de la société.
+Que signifie SAS ? || Société par actions simplifiée || Société anonyme sociale || Syndicat d'actionnaires et de salariés || Société d'assurance simple || Elle offre une grande liberté d'organisation aux associés.
+Quel est le but d'un GIE ? || Faciliter l'activité économique de ses membres || Réaliser des bénéfices pour lui-même || Remplacer une société anonyme || Collecter les impôts || Il met des moyens en commun.
+Qui dirige généralement une SARL ? || Un gérant || Un évêque || Un préfet || Le juge || Le gérant représente la société vis-à-vis des tiers.

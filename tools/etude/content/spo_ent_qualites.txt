@@ -1,0 +1,27 @@
+titre: Les qualités physiques
+== fiche
+p: Les qualités physiques sont les capacités du corps que l'entraînement permet de développer.
+li: Endurance : capacité à prolonger un effort. Vitesse : capacité à agir ou se déplacer rapidement. Force : capacité à produire une tension musculaire contre une résistance.
+li: Souplesse : amplitude des mouvements des articulations. Coordination : bon enchaînement des gestes. Équilibre : maintien d'une posture stable.
+li: Puissance : force associée à la vitesse (saut, lancer).
+li: Une même discipline mobilise plusieurs qualités : le footballeur demande de l'endurance, de la vitesse, de la coordination ; le sprinter demande vitesse et puissance.
+li: Tests simples : course de 12 minutes (test de Cooper) pour l'endurance, saut en longueur sans élan pour la puissance des jambes, flexion avant pour la souplesse.
+li: Plus on est jeune, plus les qualités de coordination et de souplesse se développent facilement.
+note: Un test de Cooper consiste à courir la plus grande distance possible en 12 minutes.
+note: Des qualités se complètent : une bonne force protège les articulations ; une bonne souplesse limite les blessures.
+== questions
+Qu'est-ce que l'endurance ? || La capacité à prolonger un effort || La capacité à bouger vite || La capacité à soulever lourd || La capacité à sauter haut || Un marathonien est très endurant.
+Qu'est-ce que la vitesse ? || La capacité à agir ou se déplacer rapidement || Le temps de repos || La capacité à tenir longtemps || La force maximale || Un sprinter en dépend.
+Qu'est-ce que la force ? || La capacité à produire une tension musculaire contre une résistance || La capacité à courir longtemps || L'amplitude des articulations || La rapidité de réaction || Un haltérophile développe la force.
+Qu'est-ce que la souplesse ? || L'amplitude des mouvements des articulations || La force des bras || La vitesse de course || La résistance à la fatigue || Elle se travaille par des étirements.
+Qu'est-ce que la coordination ? || Le bon enchaînement des gestes || La force maximale || La taille || La respiration || Un gymnaste a besoin d'une grande coordination.
+Qu'est-ce que la puissance en sport ? || La force associée à la vitesse || L'endurance || La souplesse || L'équilibre || Un saut ou un lancer demande de la puissance.
+Quelle qualité est la plus sollicitée par un marathon ? || L'endurance || La puissance maximale || La souplesse || La force pure || L'effort dure plus de deux heures.
+Quelle qualité est la plus sollicitée par un sprint de 100 m ? || La vitesse || L'endurance || La souplesse || L'équilibre seulement || L'effort est bref et maximal.
+Que mesure le test de Cooper ? || L'endurance, par la distance courue en 12 minutes || La force des bras || La souplesse || La vitesse maximale || Plus on court loin, meilleure est l'endurance.
+Quel test évalue la souplesse du dos et des jambes ? || La flexion avant du tronc || Le test de Cooper || Le saut en longueur || Le sprint || On mesure jusqu'où on atteint les pieds.
+Quel exercice développe la puissance des jambes ? || Les sauts || La marche lente || Les étirements seulement || Le repos || Les sauts allient force et vitesse.
+Quelle qualité aide à rester stable sur un pied ? || L'équilibre || L'endurance || La force maximale || La vitesse || Elle est indispensable en gymnastique.
+Pourquoi un footballeur travaille-t-il plusieurs qualités ? || Son sport demande endurance, vitesse et coordination || Il ne travaille que la force || Il n'a besoin d'aucune qualité || Seul le gardien s'entraîne || Chaque discipline combine plusieurs qualités.
+Quel est un effet d'une bonne souplesse ? || Elle limite certaines blessures || Elle supprime la fatigue || Elle remplace l'échauffement || Elle augmente la taille || Des articulations mobiles encaissent mieux les mouvements.
+À quel âge les qualités de coordination se développent-elles le plus facilement ? || Pendant l'enfance et l'adolescence || Après 60 ans || Uniquement à l'âge adulte || Jamais || Le système nerveux est très plastique chez les jeunes.

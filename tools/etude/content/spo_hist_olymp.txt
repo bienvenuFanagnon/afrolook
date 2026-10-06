@@ -1,0 +1,28 @@
+titre: Jeux olympiques et organisation du sport
+== fiche
+p: Le sport est organisé du niveau local au niveau mondial par des clubs, des fédérations et des comités.
+li: Les Jeux olympiques de l'Antiquité se tenaient à Olympie, en Grèce. Pierre de Coubertin a rénové les Jeux modernes : le CIO est créé en 1894 et les premiers Jeux modernes ont lieu à Athènes en 1896.
+li: Les Jeux olympiques d'été ont lieu tous les 4 ans (Paris 2024, Los Angeles 2028) ; les Jeux d'hiver aussi, en alternance à deux ans d'écart.
+li: Symbole : cinq anneaux entrelacés (Europe, Asie, Afrique, Amériques, Océanie) ; devise : « Plus vite, plus haut, plus fort — ensemble ».
+li: CIO : Comité international olympique (siège à Lausanne). Comité national olympique : un par pays. Fédération internationale : une par sport (FIFA, FIBA, World Athletics).
+li: Football : la FIFA organise la Coupe du monde tous les 4 ans ; en Afrique, la CAF organise la Coupe d'Afrique des nations (CAN), créée en 1957.
+li: Valeurs : fair-play, respect, amitié, excellence. Le dopage (usage de substances interdites) est sanctionné par l'AMA (Agence mondiale antidopage) et les fédérations.
+li: Jeux paralympiques : compétitions pour les athlètes en situation de handicap, après les Jeux olympiques.
+note: Les premiers Jeux d'Afrique de l'Ouest ou des îles de l'océan Indien montrent l'importance des jeux régionaux.
+note: Une première coupe du monde sur le sol africain a eu lieu en 2010 en Afrique du Sud.
+== questions
+Où se tenaient les Jeux olympiques de l'Antiquité ? || À Olympie || À Rome || À Paris || À Dakar || Olympie était un sanctuaire en Grèce.
+Qui a rénové les Jeux olympiques modernes ? || Pierre de Coubertin || Napoléon || Nelson Mandela || Albert Einstein || Il a fondé le CIO en 1894.
+Où ont eu lieu les premiers Jeux olympiques modernes en 1896 ? || À Athènes || À Paris || À Londres || À Los Angeles || En hommage aux Jeux antiques grecs.
+Tous les combien d'années ont lieu les Jeux olympiques d'été ? || 4 ans || 2 ans || 1 an || 10 ans || Le cycle olympique dure quatre ans.
+Que représentent les cinq anneaux olympiques ? || Les cinq continents || Les cinq sports principaux || Les cinq premiers pays || Les cinq jours de Jeux || Ils symbolisent l'union des continents.
+Que signifie CIO ? || Comité international olympique || Centre international d'organisation || Comité interne des organisations || Conseil des îles olympiques || Il organise et dirige le mouvement olympique.
+Où se trouve le siège du CIO ? || À Lausanne || À Paris || À Athènes || À New York || Il est en Suisse.
+Quelle instance organise la Coupe du monde de football ? || La FIFA || Le CIO || La CAF || La FIBA || Elle est organisée tous les quatre ans.
+Quelle instance organise la Coupe d'Afrique des nations de football ? || La CAF || La FIFA || Le CIO || L'ONU || La Confédération africaine de football.
+En quelle année la CAN a-t-elle été créée ? || 1957 || 1930 || 1990 || 1896 || La première édition a eu lieu à Khartoum en 1957.
+Dans quel pays africain a eu lieu la première Coupe du monde sur le continent ? || L'Afrique du Sud || Le Nigeria || Le Maroc || Le Sénégal || Elle a eu lieu en 2010.
+Qu'est-ce que le dopage ? || L'usage de substances interdites pour améliorer ses performances || Un entraînement intensif || Une blessure || Un régime alimentaire || Il est sanctionné.
+Quelle agence lutte contre le dopage dans le monde ? || L'AMA (Agence mondiale antidopage) || La FIFA || L'ONU || L'OMS seulement || Elle édicte la liste des substances interdites.
+Que sont les Jeux paralympiques ? || Les Jeux des athlètes en situation de handicap || Les Jeux des jeunes || Les Jeux d'hiver || Les Jeux militaires || Ils ont lieu après les Jeux olympiques.
+Citez une valeur du sport : || Le fair-play || La tricherie || Le dopage || L'exclusion || Respect de l'adversaire et des règles.

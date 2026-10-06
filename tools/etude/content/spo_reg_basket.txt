@@ -1,0 +1,28 @@
+titre: Le basket-ball : règles essentielles
+== fiche
+p: Le basket-ball oppose deux équipes de cinq joueurs qui cherchent à envoyer le ballon dans le panier adverse.
+li: Le panier est à 3,05 mètres du sol. Un match comprend quatre quart-temps de 10 minutes (règles FIBA).
+li: Points : 1 point pour un lancer franc, 2 points pour un tir à l'intérieur de l'arc, 3 points pour un tir derrière la ligne à trois points.
+li: Le joueur qui a le ballon doit dribbler (faire rebondir le ballon) pour se déplacer ; marcher avec le ballon est une faute de marcher.
+li: Reprise de dribble : après avoir arrêté son dribble, un joueur ne peut pas redribbler (double dribble).
+li: Règle des 24 secondes : l'équipe doit tenter un tir dans les 24 secondes après avoir pris le ballon.
+li: Fautes personnelles : un joueur exclu après cinq fautes. Lancers francs accordés pour une faute sur un tireur ou après un nombre de fautes d'équipe.
+li: Passes, dribbles, tirs, rebonds et interceptions sont les gestes de base ; le jeu de passes collectif est essentiel.
+note: Le basket a été inventé en 1891 par James Naismith, aux États-Unis.
+note: La Fédération internationale est la FIBA ; la ligue américaine est la NBA.
+== questions
+Combien de joueurs compte une équipe de basket sur le terrain ? || 5 || 7 || 11 || 6 || Cinq joueurs par équipe.
+À quelle hauteur est situé le panier ? || 3,05 mètres || 2 mètres || 4 mètres || 1,5 mètre || Cette hauteur est commune à tous les niveaux.
+Combien de points rapporte un lancer franc ? || 1 || 2 || 3 || 0 || Il est accordé après certaines fautes.
+Combien de points rapporte un tir derrière la ligne à trois points ? || 3 || 2 || 1 || 4 || Il est tiré en dehors de l'arc.
+Combien de points rapporte un tir réussi à l'intérieur de l'arc ? || 2 || 1 || 3 || 5 || Un panier normal rapporte deux points.
+Combien de quart-temps comporte un match FIBA ? || 4 || 2 || 3 || 6 || Chaque quart-temps dure 10 minutes.
+Quelle est la durée d'un quart-temps FIBA ? || 10 minutes || 5 minutes || 15 minutes || 20 minutes || Quatre fois 10 minutes.
+Qu'est-ce qu'un dribble ? || Faire rebondir le ballon au sol en se déplaçant || Lancer le ballon en l'air || Faire une passe || Tirer au panier || Il permet de progresser avec le ballon.
+Qu'est-ce que la faute de marcher ? || Se déplacer avec le ballon sans dribbler || Dribbler trop longtemps || Passer le ballon || Tirer au panier || C'est une violation des règles.
+Qu'est-ce qu'un double dribble ? || Reprendre son dribble après l'avoir arrêté || Dribbler avec les deux mains || Dribbler pendant 10 secondes || Dribbler dans la raquette || Le ballon est alors rendu à l'adversaire.
+Que stipule la règle des 24 secondes ? || L'équipe doit tenter un tir dans les 24 secondes || Le match dure 24 minutes || Chaque joueur a 24 secondes pour dribbler || Il faut 24 passes || Elle accélère le jeu.
+Après combien de fautes personnelles un joueur est-il exclu ? || 5 || 3 || 7 || 10 || Il ne peut plus jouer le match.
+Qui a inventé le basket-ball ? || James Naismith || Pierre de Coubertin || Michael Jordan || Roger Federer || Il l'a inventé en 1891.
+Quelle instance dirige le basket au niveau mondial ? || La FIBA || La FIFA || Le CIO || La CAF || La Fédération internationale de basket-ball.
+Quel geste consiste à récupérer le ballon après un tir manqué ? || Le rebond || Le dribble || La passe || Le smash || Il est fondamental dans le jeu collectif.

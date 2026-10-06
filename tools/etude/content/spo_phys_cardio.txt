@@ -1,0 +1,28 @@
+titre: Cœur, respiration et effort
+== fiche
+p: Pendant l'effort, le cœur et les poumons apportent plus d'oxygène aux muscles.
+li: Le cœur est un muscle creux à quatre cavités (deux oreillettes, deux ventricules) ; il envoie le sang dans tout le corps.
+li: La fréquence cardiaque (FC) est le nombre de battements par minute ; au repos, un adulte a environ 60 à 80 battements par minute.
+li: Estimation de la FC maximale : 220 moins l'âge. Un athlète d'endurance a souvent une FC de repos plus basse.
+li: Respiration : l'air entre par le nez ou la bouche, passe par la trachée et les bronches, puis atteint les alvéoles où l'oxygène passe dans le sang.
+li: VO₂ max : quantité maximale d'oxygène que le corps peut utiliser par minute ; c'est un indicateur de la forme cardio-respiratoire.
+li: Effort aérobie : avec oxygène (course lente, marche) ; effort anaérobie : intense et bref (sprint), sans assez d'oxygène.
+li: Récupération : après l'effort, la FC redescend ; plus elle redescend vite, meilleure est la condition physique.
+note: Exemple : pour une personne de 20 ans, FC max estimée = 220 − 20 = 200 battements par minute.
+note: Le pouls se prend au poignet ou au cou en comptant les battements pendant 15 secondes puis en multipliant par 4.
+== questions
+Combien de cavités le cœur compte-t-il ? || 4 || 2 || 3 || 6 || Deux oreillettes et deux ventricules.
+Quel est le rôle du cœur ? || Envoyer le sang dans tout le corps || Digérer les aliments || Filtrer l'urine || Produire de la bile || Il fonctionne comme une pompe.
+Quelle est la FC de repos d'un adulte, environ ? || 60 à 80 battements par minute || 20 à 30 || 120 à 140 || 200 || C'est la plage habituelle de repos.
+Quelle formule estime la FC maximale ? || 220 − âge || 100 + âge || 180 − âge || 300 − âge || C'est une estimation courante.
+Quelle est la FC maximale estimée d'un jeune de 20 ans ? || 200 battements par minute || 220 || 180 || 240 || 220 − 20.
+Comment mesure-t-on la fréquence cardiaque ? || En comptant les battements du pouls || En mesurant la taille || En pesant la personne || En mesurant la température || On compte les battements pendant une durée donnée.
+Quel chemin suit l'air inspiré ? || Nez ou bouche, trachée, bronches, alvéoles || Estomac, intestin, foie || Cœur, artères, veines || Oreille, cerveau, gorge || L'oxygène passe ensuite dans le sang.
+Où l'oxygène passe-t-il dans le sang ? || Dans les alvéoles pulmonaires || Dans l'estomac || Dans le foie || Dans les reins || Les alvéoles sont entourées de capillaires.
+Que mesure la VO₂ max ? || La quantité maximale d'oxygène utilisable par minute || La force du bras || La taille du cœur || La vitesse de course || C'est un indicateur de condition cardio-respiratoire.
+Qu'est-ce qu'un effort aérobie ? || Un effort avec assez d'oxygène, de durée longue || Un effort très bref sans oxygène || Un effort sans mouvement || Un effort de force maximale || La course d'endurance en est un exemple.
+Qu'est-ce qu'un effort anaérobie ? || Un effort intense et bref, au-delà de l'apport d'oxygène || Une marche lente || Un effort de longue durée || Un repos || Le sprint en est un exemple.
+Que devient la fréquence cardiaque pendant un effort intense ? || Elle augmente || Elle baisse || Elle reste nulle || Elle devient irrégulière toujours || Le cœur envoie plus de sang aux muscles.
+Quel signe indique une bonne condition physique ? || Une FC de repos basse et une récupération rapide || Une FC de repos très haute || Un souffle très court au repos || Une fatigue permanente || Le cœur est plus efficace.
+Pendant 15 secondes, on compte 20 battements. Quelle est la FC par minute ? || 80 || 20 || 35 || 120 || 20 × 4.
+Pourquoi respire-t-on plus vite pendant l'effort ? || Les muscles ont besoin de plus d'oxygène || Pour se rafraîchir seulement || Parce que le cœur s'arrête || Par ennui || Il faut aussi évacuer plus de dioxyde de carbone.

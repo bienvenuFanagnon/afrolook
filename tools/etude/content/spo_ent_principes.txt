@@ -1,0 +1,28 @@
+titre: Les principes de l'entraînement
+== fiche
+p: S'entraîner, c'est répéter des efforts organisés pour améliorer ses performances ou sa santé.
+li: Surcharge : pour progresser, il faut un effort un peu supérieur à celui auquel le corps est habitué.
+li: Progressivité : on augmente la charge peu à peu pour éviter les blessures.
+li: Spécificité : l'entraînement doit correspondre à l'objectif (un coureur de fond travaille l'endurance).
+li: Régularité : plusieurs séances par semaine valent mieux qu'une séance exceptionnelle.
+li: Récupération : le corps progresse pendant le repos qui suit l'effort (sommeil, alimentation, jours de repos) ; sans elle on risque le surentraînement.
+li: Réversibilité : à l'arrêt de l'entraînement, les gains se perdent progressivement.
+li: Une séance comprend l'échauffement, le corps de séance et le retour au calme. Une saison se planifie en cycles : préparation, compétition, récupération.
+note: Surentraînement : fatigue durable, baisse des performances, troubles du sommeil, irritabilité ; il demande du repos.
+note: Une charge se règle avec l'intensité (vitesse, poids), le volume (durée, répétitions) et la fréquence (nombre de séances).
+== questions
+Que signifie le principe de surcharge ? || Faire un effort un peu supérieur à l'habitude || S'entraîner sans effort || Porter toujours le même poids || Éviter l'effort || Sans stimulation nouvelle, le corps ne progresse pas.
+Que signifie la progressivité ? || Augmenter la charge peu à peu || Augmenter la charge brutalement || Ne jamais changer la charge || Réduire la charge chaque semaine || Elle limite les risques de blessure.
+Que signifie la spécificité de l'entraînement ? || L'entraînement correspond à l'objectif visé || Tous les sportifs s'entraînent pareil || On change d'objectif à chaque séance || L'entraînement est secret || Un nageur et un haltérophile ne s'entraînent pas de la même façon.
+Pourquoi la régularité est-elle importante ? || Les progrès viennent de la répétition || Une seule séance suffit || Elle fatigue inutilement || Elle supprime le repos || Plusieurs séances par semaine valent mieux qu'une seule.
+Quand le corps progresse-t-il vraiment ? || Pendant la récupération qui suit l'effort || Pendant l'effort seulement || Jamais || Pendant le surentraînement || Les muscles se reconstruisent au repos.
+Quels éléments favorisent la récupération ? || Sommeil, alimentation et jours de repos || Aucun repos || Jeûne || Veilles tardives || Ils permettent de reconstruire les tissus.
+Quel est le risque d'un manque de récupération ? || Le surentraînement || Un excès de souplesse || Un gain de taille || Un gain de poids toujours || Il se manifeste par une fatigue durable.
+Quel signe peut révéler un surentraînement ? || Une fatigue durable et une baisse des performances || Une forme exceptionnelle || Une faim excessive seulement || Une envie de dormir moins || Le corps ne se remet plus des efforts.
+Que signifie la réversibilité ? || Les gains se perdent si l'on arrête de s'entraîner || Le corps revient à l'état d'avant chaque séance || L'entraînement est réversible à volonté || Les gains sont définitifs || Il faut entretenir sa condition.
+Quelles sont les trois parties d'une séance ? || Échauffement, corps de séance, retour au calme || Repas, sieste, réveil || Départ, arrivée, podium || Étirement, saut, sprint || Elles se suivent dans cet ordre.
+Que règle l'intensité d'un effort ? || La difficulté de l'exercice (vitesse, charge) || La durée seulement || Le nombre de séances || La météo || Courir plus vite augmente l'intensité.
+Que règle le volume d'entraînement ? || La quantité de travail (durée, répétitions) || La couleur du maillot || La vitesse seulement || Le nombre de spectateurs || Il se mesure en minutes ou en répétitions.
+Comment appelle-t-on le nombre de séances par semaine ? || La fréquence || Le volume || L'intensité || La charge || C'est la fréquence d'entraînement.
+Un coureur de 10 km s'entraîne uniquement à soulever des poids. Quel principe est négligé ? || La spécificité || La réversibilité || La surcharge || La gravité || L'entraînement ne correspond pas à son objectif.
+Pourquoi planifier une saison en cycles ? || Alterner préparation, compétition et récupération || Éviter le repos || S'entraîner pareil toute l'année || Supprimer les compétitions || La performance se prépare dans le temps.

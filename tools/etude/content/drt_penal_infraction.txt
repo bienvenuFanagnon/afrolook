@@ -1,0 +1,27 @@
+titre: L'infraction pénale
+== fiche
+p: Une infraction est un comportement interdit par la loi et sanctionné par une peine.
+li: Classement selon la gravité : la contravention (la moins grave), le délit, le crime (le plus grave).
+li: Principe de légalité : pas d'infraction ni de peine sans texte (« nullum crimen, nulla poena sine lege »).
+li: Éléments de l'infraction : élément légal (un texte), élément matériel (l'acte), élément moral (l'intention ou la faute).
+li: Auteur : celui qui commet l'infraction. Complice : celui qui aide ou provoque. Tentative : commencement d'exécution interrompu par une cause indépendante de la volonté de l'auteur.
+li: Causes d'irresponsabilité : la légitime défense, l'état de nécessité, la contrainte, l'ordre de la loi, la démence.
+li: Peines : emprisonnement, amende, peines accessoires ; pour les crimes, la loi prévoit parfois la réclusion.
+note: Exemple : le vol est un délit ; le meurtre est un crime ; le stationnement interdit est une contravention.
+note: La responsabilité pénale est personnelle : nul n'est puni pour le fait d'autrui.
+== questions
+Qu'est-ce qu'une infraction ? || Un comportement interdit par la loi et sanctionné || Une faute de morale seulement || Un contrat nul || Une décision de justice || Elle est punie d'une peine.
+Quelle est l'infraction la moins grave ? || La contravention || Le délit || Le crime || Le meurtre || Elle est punie de peines légères, souvent d'une amende.
+Quelle est l'infraction la plus grave ? || Le crime || Le délit || La contravention || La faute civile || Il est jugé par la juridiction la plus solennelle.
+Le vol est en général : || un délit || une contravention || un crime d'État || une faute civile || Il est puni d'emprisonnement et d'amende.
+Que signifie le principe de légalité des délits et des peines ? || Pas d'infraction ni de peine sans texte de loi || Tout est permis || Le juge crée les infractions || La peine est secrète || Il protège contre l'arbitraire.
+Quels sont les trois éléments de l'infraction ? || Légal, matériel et moral || Pénal, civil et fiscal || Public, privé et mixte || Direct, indirect et partiel || Il faut un texte, un acte et une intention ou une faute.
+Qu'est-ce que l'élément moral de l'infraction ? || L'intention ou la faute de l'auteur || Le texte de loi || L'acte accompli || La victime || Il montre la volonté ou la négligence.
+Qu'est-ce qu'un complice ? || Celui qui aide ou provoque l'auteur de l'infraction || La victime || Le juge || Le témoin || Il peut être puni comme l'auteur.
+Qu'est-ce que la tentative ? || Un commencement d'exécution interrompu indépendamment de la volonté de l'auteur || Un simple projet || Un accident || Une simple pensée || Elle peut être punie comme l'infraction elle-même.
+Qu'est-ce que la légitime défense ? || Répondre à une attaque injuste de manière nécessaire et proportionnée || Se venger plus tard || Attaquer le premier || Détruire les preuves || C'est une cause d'irresponsabilité.
+Une personne agit sous la contrainte irrésistible. Sa responsabilité pénale est : || exclue || aggravée || doublée || maintenue || Elle n'a pas agi librement.
+Qui est responsable pénalement d'une infraction ? || L'auteur de l'infraction || Toute sa famille || Son voisin || Son employeur seulement || La responsabilité pénale est personnelle.
+Le stationnement interdit est : || une contravention || un crime || un délit grave || un meurtre || C'est l'infraction la moins grave.
+Quelle peine peut punir un délit ? || L'emprisonnement et l'amende || Seulement un avertissement || Seulement une réprimande || Aucune peine || Elle est fixée par la loi pour chaque délit.
+Un fou furieux sans discernement commet un acte interdit. Que peut décider le juge ? || Il n'est pas pénalement responsable, mais peut être soigné || Il est condamné comme les autres || Il est puni deux fois || Il est libre sans suite || Le défaut de discernement exclut la responsabilité.

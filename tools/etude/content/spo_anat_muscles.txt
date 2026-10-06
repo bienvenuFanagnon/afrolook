@@ -1,0 +1,27 @@
+titre: Le système musculaire
+== fiche
+p: Les muscles produisent le mouvement en se contractant. Le corps humain compte plus de 600 muscles, qui représentent environ 40 % du poids du corps.
+li: Muscles squelettiques : sous contrôle volontaire, attachés aux os par les tendons ; muscle lisse : organes internes ; muscle cardiaque : le cœur.
+li: Muscles principaux : biceps et triceps (bras), deltoïde (épaule), pectoraux (poitrine), abdominaux, quadriceps et ischio-jambiers (cuisse), mollets, fessiers.
+li: Muscles antagonistes : ils travaillent par paire en sens opposés (biceps fléchit le bras, triceps l'étend).
+li: Types de contraction : concentrique (le muscle se raccourcit), excentrique (il s'allonge en freinant), isométrique (il se contracte sans bouger).
+li: Fibres lentes (endurance) et fibres rapides (force, vitesse) : leur proportion varie selon les personnes.
+li: Tendon : relie le muscle à l'os. Ligament : relie un os à un autre os.
+note: Les courbatures apparaissent surtout après un effort inhabituel, notamment excentrique ; elles disparaissent en quelques jours.
+note: Une crampe est une contraction involontaire et douloureuse ; hydratation et étirements en douceur aident.
+== questions
+Quelle est la principale fonction des muscles squelettiques ? || Produire le mouvement || Fabriquer du sang || Digérer les aliments || Penser || Ils se contractent pour mobiliser les os.
+Qu'est-ce qui relie un muscle à un os ? || Le tendon || Le ligament || Le cartilage || La peau || Le tendon transmet la force du muscle à l'os.
+Qu'est-ce qui relie deux os entre eux ? || Le ligament || Le tendon || Le muscle || Le nerf || Il stabilise les articulations.
+Quel muscle fléchit le bras ? || Le biceps || Le triceps || Le deltoïde || Le quadriceps || Il se contracte pour plier le coude.
+Quel muscle étend le bras ? || Le triceps || Le biceps || Le mollet || Le pectoral || C'est l'antagoniste du biceps.
+Où se trouve le quadriceps ? || À l'avant de la cuisse || Au mollet || Au bras || À l'épaule || Il étend le genou.
+Que sont les muscles antagonistes ? || Des muscles qui agissent en sens opposés || Des muscles identiques || Des muscles du cœur || Des muscles lisses || Ils fonctionnent par paire.
+Dans une contraction isométrique, le muscle : || se contracte sans changer de longueur || se raccourcit || s'allonge en freinant || se relâche || On pousse un mur sans le déplacer, par exemple.
+Dans une contraction concentrique, le muscle : || se raccourcit || s'allonge || reste de même longueur || se déchire || Le biceps le fait quand on monte la charge.
+Quelle contraction a lieu en descendant lentement une charge ? || Excentrique || Concentrique || Isométrique || Aucune || Le muscle freine en s'allongeant.
+Quel type de fibres convient aux efforts d'endurance ? || Les fibres lentes || Les fibres rapides || Les fibres lisses || Les fibres osseuses || Elles résistent longtemps à la fatigue.
+Quel type de muscle forme le cœur ? || Le muscle cardiaque || Le muscle squelettique || Le muscle lisse || Le biceps || Il se contracte sans que l'on décide.
+Quel type de muscle contrôle les mouvements volontaires ? || Le muscle squelettique || Le muscle lisse || Le muscle cardiaque || Aucun || On décide de le contracter.
+Que sont les courbatures ? || Des douleurs musculaires après un effort inhabituel || Des fractures || Des maladies du cœur || Des crampes permanentes || Elles disparaissent en quelques jours.
+Que faire face à une crampe ? || Étirer doucement le muscle et s'hydrater || Courir plus vite || Couper la jambe || Ne rien boire || L'étirement doux calme la contraction.

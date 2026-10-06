@@ -1,0 +1,28 @@
+titre: L'athlétisme : épreuves et règles
+== fiche
+p: L'athlétisme regroupe les courses, les sauts, les lancers et les épreuves combinées ; c'est le sport roi des Jeux olympiques.
+li: Courses de vitesse : 100 m, 200 m, 400 m. Demi-fond : 800 m, 1 500 m. Fond : 5 000 m, 10 000 m. Marathon : 42,195 km. Haies et relais (4 × 100 m, 4 × 400 m).
+li: Sauts : saut en longueur, triple saut, saut en hauteur, saut à la perche.
+li: Lancers : poids, disque, javelot, marteau.
+li: Épreuves combinées : décathlon (10 épreuves, hommes), heptathlon (7 épreuves, femmes).
+li: Piste standard : 400 m par tour ; huit couloirs ; les épreuves se courent dans le sens inverse des aiguilles d'une montre.
+li: Faux départ : un coureur qui part avant le coup de feu est disqualifié (règle actuelle).
+li: Le témoin du relais doit être passé dans une zone de transmission ; sa chute ou une sortie de zone entraîne la disqualification de l'équipe.
+note: Un tour de piste fait 400 mètres ; le 1 500 m fait trois tours trois quarts.
+note: Au saut en longueur, la mesure se prend de la planche d'appel à l'empreinte la plus proche de celle-ci.
+== questions
+Quelle est la distance du marathon ? || 42,195 km || 21 km || 10 km || 100 km || C'est la distance officielle de l'épreuve.
+Quelle est la longueur d'un tour de piste standard ? || 400 m || 100 m || 200 m || 800 m || Huit couloirs entourent la piste.
+Quelle épreuve est la plus courte parmi ces courses ? || Le 100 m || Le 400 m || Le 800 m || Le 1 500 m || Le 100 m est la course de vitesse pure.
+Combien de tours de piste comporte le 800 m ? || 2 || 1 || 4 || 8 || Deux tours de 400 m.
+Combien d'épreuves composent le décathlon ? || 10 || 5 || 7 || 12 || Il est réservé aux hommes.
+Combien d'épreuves composent l'heptathlon ? || 7 || 5 || 10 || 3 || Il est réservé aux femmes.
+Citez un lancer en athlétisme : || Le javelot || Le triple saut || Le 400 m haies || Le relais || Poids, disque, javelot et marteau sont les lancers.
+Citez un saut en athlétisme : || La perche || Le disque || Le poids || Le relais || Longueur, triple saut, hauteur et perche sont les sauts.
+Que se passe-t-il pour un faux départ en athlétisme ? || Le coureur est disqualifié || On recommence avec un avertissement à tous || Il gagne du temps || Rien || La règle actuelle n'accorde pas de second faux départ.
+Que doit-on respecter au relais ? || La zone de transmission du témoin || Aucune règle || Le départ en groupe || Le sens inverse du parcours || Sortir de la zone entraîne la disqualification.
+Que se passe-t-il si le témoin tombe pendant un relais ? || Le coureur qui l'a fait tomber doit le ramasser || L'équipe est disqualifiée aussitôt || On recommence || L'adversaire le ramasse || Il faut le récupérer et continuer.
+Dans quel sens court-on sur la piste ? || Sens inverse des aiguilles d'une montre || Sens des aiguilles d'une montre || Au choix || Au hasard || C'est la règle internationale.
+Comment mesure-t-on un saut en longueur ? || De la planche d'appel à l'empreinte la plus proche || Du départ du coureur || Du milieu de la fosse || De la ligne de départ || La mesure se fait à partir de la planche.
+Quelle épreuve combine course, saut et lancer ? || Le décathlon || Le marathon || Le 100 m || Le relais || Il réunit dix épreuves variées.
+Quelle épreuve utilise une perche pour franchir une barre ? || Le saut à la perche || Le triple saut || Le javelot || Le marteau || L'athlète s'aide de la perche pour passer la barre.
