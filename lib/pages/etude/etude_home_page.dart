@@ -28,7 +28,8 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
   bool _busy = false; // rechargement : la mascotte s'anime
   final TextEditingController _search = TextEditingController();
   String _query = '';
-  String _fac = 'all'; // faculté choisie : all, school, sci, eco, law, health, sport
+  String _rub = 'all'; // rubrique : all, school, univ, concours, skills
+  String _fac = 'all'; // faculté (rubrique Université) : all, sci, eco, law, health, sport
 
   @override
   void dispose() {
@@ -86,11 +87,64 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
     }
   }
 
+  /// Rubrique d'un parcours : école, université, concours (BTS…) ou compétences (attestations).
+  String _rubricOf(EtudeTrack t) {
+    final id = t.id;
+    if (id == 'college' || id.startsWith('lycee')) return 'school';
+    if (id.startsWith('univ_')) return 'univ';
+    if (id.startsWith('bts_') || id.startsWith('concours_')) return 'concours';
+    return 'skills';
+  }
+
+  String _rubricLabel(String r) {
+    switch (r) {
+      case 'school':
+        return context.tr('École');
+      case 'univ':
+        return context.tr('Université');
+      case 'concours':
+        return context.tr('Concours et BTS');
+      case 'skills':
+        return context.tr('Compétences');
+      default:
+        return context.tr('Tout');
+    }
+  }
+
+  String _rubricHint(String r) {
+    switch (r) {
+      case 'school':
+        return context.tr('Collège et lycée : BEPC et BAC');
+      case 'univ':
+        return context.tr('Licences par faculté');
+      case 'concours':
+        return context.tr("Préparer un concours d'entrée");
+      default:
+        return context.tr('Entretien, Python, IA…');
+    }
+  }
+
+  IconData _rubricIcon(String r) {
+    switch (r) {
+      case 'school':
+        return Icons.school_rounded;
+      case 'univ':
+        return Icons.account_balance_rounded;
+      case 'concours':
+        return Icons.emoji_events_rounded;
+      case 'skills':
+        return Icons.workspace_premium_rounded;
+      default:
+        return Icons.apps_rounded;
+    }
+  }
+
   bool _matches(EtudeTrack t) {
-    if (_fac != 'all' && _facultyOf(t) != _fac) return false;
+    if (_rub != 'all' && _rubricOf(t) != _rub) return false;
+    if (_rub == 'univ' && _fac != 'all' && _facultyOf(t) != _fac) return false;
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return true;
-    if (t.title.toLowerCase().contains(q) || _facultyLabel(_facultyOf(t)).toLowerCase().contains(q)) return true;
+    if (t.title.toLowerCase().contains(q) || _rubricLabel(_rubricOf(t)).toLowerCase().contains(q) || _facultyLabel(_facultyOf(t)).toLowerCase().contains(q)) return true;
     for (final cls in t.classes) {
       for (final sub in cls.subjects) {
         if (sub.title.toLowerCase().contains(q)) return true;
@@ -199,30 +253,63 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
     );
   }
 
+  bool _inProgress(EtudeState st, EtudeTrack t) {
+    if (t.isCycle) return st.tracks.containsKey(t.id);
+    final info = st.certs[t.cert?['id']] as Map? ?? const {};
+    return ((info['done'] as num?)?.toInt() ?? 0) > 0;
+  }
+
+  Widget _card(AppColors c, EtudeState st, EtudeTrack t) => t.isCycle ? _trackCard(c, st, t) : _certCard(c, st, t);
+
   Widget _content(AppColors c, EtudeState st) {
-    final tracks = _tracks!;
-    final cycles = tracks.where((t) => t.isCycle).toList();
-    final certs = etudeCerts(tracks);
+    final all = _tracks!.where((t) => t.isCycle || t.cert != null).toList();
+    final browsing = _rub != 'all' || _query.trim().isNotEmpty;
+    final shown = all.where(_matches).toList();
+    final mine = shown.where((t) => _inProgress(st, t)).toList();
+    final others = shown.where((t) => !_inProgress(st, t)).toList();
     return RefreshIndicator(
       onRefresh: () async {
         _load();
       },
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 32), children: [
         _header(c, st),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         _searchBar(c),
         const SizedBox(height: 10),
-        _facultyChips(c, cycles),
+        _rubricChips(c, all),
+        if (_rub == 'univ') ...[
+          const SizedBox(height: 8),
+          _facultyChips(c, all.where((t) => _rubricOf(t) == 'univ').toList()),
+        ],
         const SizedBox(height: 14),
-        ..._cycleSections(c, st, cycles),
-        const QuizAdInline(),
-        const SizedBox(height: 10),
-        _sectionTitle(c, context.tr('Attestations'), context.tr('Un domaine, une attestation')),
-        for (final t in certs) _certCard(c, st, t),
-        if (st.diplomas.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          _sectionTitle(c, context.tr('Mes diplômes'), null),
-          for (final d in st.diplomas) Padding(padding: const EdgeInsets.only(bottom: 8), child: EtudeDiplomaTile(diploma: d)),
+        if (!browsing) ...[
+          if (mine.isNotEmpty) ...[
+            _sectionTitle(c, context.tr('En cours'), context.tr('Reprends là où tu t\'es arrêté')),
+            for (final t in mine) _card(c, st, t),
+          ],
+          _sectionTitle(c, context.tr('Que veux-tu apprendre ?'), context.tr('Choisis une rubrique')),
+          _rubricTiles(c, all),
+          const QuizAdInline(),
+          if (st.diplomas.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _sectionTitle(c, context.tr('Mes diplômes'), null),
+            for (final d in st.diplomas) Padding(padding: const EdgeInsets.only(bottom: 8), child: EtudeDiplomaTile(diploma: d)),
+          ],
+        ] else if (shown.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: Text(context.tr('Aucun parcours ne correspond à ta recherche.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary))),
+          )
+        else ...[
+          if (mine.isNotEmpty) ...[
+            _sectionTitle(c, context.tr('En cours'), null),
+            for (final t in mine) _card(c, st, t),
+          ],
+          if (others.isNotEmpty) ...[
+            _sectionTitle(c, mine.isEmpty ? (_rub == 'all' ? context.tr('Résultats') : _rubricLabel(_rub)) : context.tr('À découvrir'), _rub == 'all' ? null : _rubricHint(_rub)),
+            for (final t in others) _card(c, st, t),
+          ],
+          const QuizAdInline(),
         ],
         const SizedBox(height: 14),
         Text(
@@ -232,6 +319,76 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
         ),
       ]),
     );
+  }
+
+  /// Rubriques : une ligne de pastilles défilantes avec le nombre de parcours.
+  Widget _rubricChips(AppColors c, List<EtudeTrack> all) {
+    const keys = ['all', 'school', 'univ', 'concours', 'skills'];
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: keys.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final k = keys[i];
+          final selected = _rub == k;
+          return ChoiceChip(
+            avatar: Icon(_rubricIcon(k), size: 16, color: selected ? c.primary : c.textSecondary),
+            label: Text(_rubricLabel(k)),
+            selected: selected,
+            onSelected: (_) => setState(() {
+              _rub = k;
+              _fac = 'all';
+            }),
+            selectedColor: c.primary.withOpacity(0.2),
+            backgroundColor: c.surface,
+            labelStyle: TextStyle(color: selected ? c.primary : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
+            side: BorderSide(color: selected ? c.primary : c.border),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Écran d'accueil : quatre grandes tuiles plutôt qu'une longue liste.
+  Widget _rubricTiles(AppColors c, List<EtudeTrack> all) {
+    const keys = ['school', 'univ', 'concours', 'skills'];
+    return Column(children: [
+      for (final k in keys)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => setState(() {
+              _rub = k;
+              _fac = 'all';
+            }),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: c.border, width: 1.4)),
+              child: Row(children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(color: c.primary.withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(_rubricIcon(k), color: c.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(_rubricLabel(k), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 16)),
+                    Text(_rubricHint(k), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+                  ]),
+                ),
+                QuizPill(icon: Icons.menu_book_rounded, label: context.tr('{n} parcours', {'n': '${all.where((t) => _rubricOf(t) == k).length}'}), color: c.info),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+              ]),
+            ),
+          ),
+        ),
+    ]);
   }
 
   Widget _searchBar(AppColors c) {
@@ -265,7 +422,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
 
   Widget _facultyChips(AppColors c, List<EtudeTrack> cycles) {
     final present = <String>{for (final t in cycles) _facultyOf(t)};
-    const order = ['school', 'sci', 'eco', 'law', 'health', 'sport', 'other'];
+    const order = ['sci', 'eco', 'law', 'health', 'sport'];
     final keys = ['all', ...order.where(present.contains)];
     return SizedBox(
       height: 40,
@@ -288,31 +445,6 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
         },
       ),
     );
-  }
-
-  /// « Mes parcours » (déjà commencés) puis « Découvrir d'autres parcours », filtrés par faculté et recherche.
-  List<Widget> _cycleSections(AppColors c, EtudeState st, List<EtudeTrack> cycles) {
-    final shown = cycles.where(_matches).toList();
-    final mine = shown.where((t) => st.tracks.containsKey(t.id)).toList();
-    final others = shown.where((t) => !st.tracks.containsKey(t.id)).toList();
-    if (shown.isEmpty) {
-      return [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Center(child: Text(context.tr('Aucun parcours ne correspond à ta recherche.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary))),
-        ),
-      ];
-    }
-    return [
-      if (mine.isNotEmpty) ...[
-        _sectionTitle(c, context.tr('Mes parcours'), context.tr('Ceux que tu as déjà commencés')),
-        for (final t in mine) _trackCard(c, st, t),
-      ],
-      if (others.isNotEmpty) ...[
-        _sectionTitle(c, mine.isEmpty ? context.tr('Choisis ton parcours') : context.tr('Découvrir d\'autres parcours'), context.tr('De l\'école au diplôme, par domaine')),
-        for (final t in others) _trackCard(c, st, t),
-      ],
-    ];
   }
 
   Widget _sectionTitle(AppColors c, String title, String? sub) => Padding(
@@ -495,7 +627,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: got != null ? const Color(0xFFD4A017) : c.border, width: got != null ? 2 : 1.4)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(t.id.contains('python') ? Icons.code_rounded : Icons.work_rounded, color: c.info),
+          Icon(t.id.contains('python') || t.id == 'bts_info' ? Icons.code_rounded : (_rubricOf(t) == 'concours' ? Icons.emoji_events_rounded : Icons.work_rounded), color: c.info),
           const SizedBox(width: 10),
           Expanded(child: Text(t.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 16))),
           if (got != null) const Icon(Icons.workspace_premium_rounded, color: Color(0xFFD4A017)),
