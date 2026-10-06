@@ -1,0 +1,29 @@
+titre: Innovation et transformation numérique
+== fiche
+p: Pour durer, une entreprise doit innover : proposer de nouveaux produits, de nouvelles façons de produire ou de vendre.
+li: Innovation : mise en œuvre d'une nouveauté utile (produit, procédé, organisation, commercialisation) qui crée de la valeur.
+li: Innovation incrémentale : amélioration progressive ; innovation de rupture : changement radical qui bouleverse un marché.
+li: Invention : idée ou découverte nouvelle ; innovation : invention appliquée et adoptée par le marché.
+li: Propriété intellectuelle : brevet (invention), marque (signe distinctif), droit d'auteur, dessins et modèles ; protège l'innovateur.
+li: Transformation numérique : intégrer les outils digitaux dans toute l'entreprise (paiement mobile, commerce en ligne, données, automatisation).
+li: Start-up : jeune entreprise innovante à forte croissance potentielle ; incubateur : structure qui l'accompagne.
+li: Financement de l'innovation : capital-risque, subventions, concours, financement participatif (crowdfunding).
+li: Obstacles : coût, résistance au changement, manque de compétences, connectivité inégale.
+note: En Afrique, le mobile money a montré qu'une innovation peut répondre à un besoin local fort.
+note: Innover, c'est aussi accepter l'échec : tester vite, apprendre, ajuster.
+== questions
+Qu'est-ce qu'une innovation ? || Une nouveauté utile mise en œuvre qui crée de la valeur || Une simple idée jamais testée || Une copie illégale || Un impôt || Elle doit être adoptée par le marché.
+Quelle différence entre invention et innovation ? || L'innovation est une invention adoptée par le marché || Aucune || L'invention est toujours payante || L'innovation est une loi || Une idée seule ne suffit pas.
+Comment appelle-t-on une amélioration progressive d'un produit ? || Innovation incrémentale || Innovation de rupture || Liquidation || Fusion || Elle fait évoluer sans tout bouleverser.
+Comment appelle-t-on un changement radical qui bouleverse un marché ? || Innovation de rupture || Innovation incrémentale || Routine || Entretien || Le mobile money en est un exemple.
+Qu'est-ce qu'un brevet ? || Un titre protégeant une invention || Un diplôme || Une carte de visite || Un prêt || Il donne un droit exclusif pour une durée limitée.
+Qu'est-ce qu'une start-up ? || Une jeune entreprise innovante à fort potentiel de croissance || Une entreprise en faillite || Un service public || Une banque || Elle cherche souvent des financements spécifiques.
+Qu'est-ce qu'un incubateur ? || Une structure qui accompagne les jeunes entreprises || Une machine || Un impôt || Un type de contrat || Il offre conseils, réseau et parfois des locaux.
+Qu'est-ce que le financement participatif ? || Collecter de petites sommes auprès de nombreux contributeurs || Un prêt unique || Un impôt || Une subvention obligatoire || On l'appelle aussi crowdfunding.
+Que désigne la transformation numérique ? || L'intégration des outils digitaux dans toute l'entreprise || L'achat d'un seul ordinateur || La fermeture des bureaux || Une loi || Elle touche production, vente et gestion.
+Citez un obstacle à la transformation numérique : || La résistance au changement || Un surplus de clients || Des bénéfices trop élevés || Un logo trop beau || Le manque de compétences et de connexion en sont d'autres.
+Pourquoi le mobile money est-il un bon exemple d'innovation africaine ? || Il répond à un besoin local d'accès aux services financiers || Il est interdit || Il remplace l'électricité || Il est inutile || Il s'est diffusé massivement.
+Que protège le droit des marques ? || Un signe distinctif de l'entreprise || Un procédé de fabrication seulement || Les salaires || Les terrains || Il évite la confusion avec les concurrents.
+Que signifie le capital-risque ? || Des investisseurs financent des jeunes entreprises à fort potentiel || Un prêt sans risque || Un impôt || Une assurance || Ils acceptent le risque contre une part du capital.
+Pourquoi accepter l'échec dans l'innovation ? || Tester, apprendre et ajuster fait progresser || Pour perdre de l'argent || Parce que c'est obligatoire || Pour éviter les clients || Les erreurs rapides coûtent moins cher.
+Citez un exemple d'innovation de procédé : || Une nouvelle méthode de production plus rapide || Un nouveau logo || Un changement de nom || Un salaire || Elle améliore la façon de fabriquer ou livrer.

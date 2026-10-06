@@ -1,0 +1,30 @@
+titre: Marketing responsable et durable
+== fiche
+p: Les consommateurs attendent des marques qu'elles soient honnêtes sur leur impact social et environnemental.
+li: Marketing responsable : promouvoir des produits et pratiques qui tiennent compte de la société et de l'environnement, sans tromper.
+li: Greenwashing (écoblanchiment) : se présenter comme écologique sans preuve ; il détruit la confiance et peut être sanctionné.
+li: Preuves : labels reconnus, certifications, données chiffrées, rapports vérifiables.
+li: Économie circulaire : réduire, réutiliser, recycler plutôt que produire-jeter ; emballages réduits, réparabilité.
+li: Commerce équitable : prix juste payé aux producteurs, conditions de travail correctes.
+li: Consommation locale : valoriser les producteurs et savoir-faire du pays ; circuits courts, moins de transport.
+li: Publicité éthique : ne pas tromper, ne pas cibler les enfants de façon abusive, respecter les personnes et les cultures.
+li: Inclusion : représenter la diversité réelle (âges, genres, handicaps, régions) sans clichés.
+li: Marketing de cause : associer la marque à une cause soutenue de façon réelle et durable.
+note: Un engagement doit être vécu en interne avant d'être affiché.
+note: Mieux vaut annoncer un petit progrès réel qu'une grande promesse non tenue.
+== questions
+Qu'est-ce que le marketing responsable ? || Promouvoir en tenant compte de la société et de l'environnement, sans tromper || Vendre à tout prix || Cacher l'origine des produits || Supprimer la publicité || L'honnêteté en est la base.
+Comment appelle-t-on le fait de se dire écologique sans preuve ? || Le greenwashing || Planter des arbres réellement || Recycler || Réduire les emballages || Il détruit la confiance et peut être sanctionné.
+Comment prouver un engagement écologique ? || Par des labels, certifications et données vérifiables || Par un slogan seulement || Par une photo de forêt || Par la couleur verte || Les preuves rendent le message crédible.
+Que veut dire économie circulaire ? || Réduire, réutiliser et recycler || Produire puis jeter || Vendre en cercle || Fermer les usines || Elle limite le gaspillage des ressources.
+Que garantit le commerce équitable ? || Un prix juste et de bonnes conditions pour les producteurs || Un prix toujours bas || La vente au plus offrant || La suppression des producteurs || Il rééquilibre les relations commerciales.
+Quel avantage a la consommation locale ? || Elle soutient les producteurs et réduit les transports || Elle augmente la pollution || Elle supprime les emplois || Elle interdit l'export || Elle valorise le savoir-faire du pays.
+Citez une règle de publicité éthique : || Ne pas tromper le consommateur || Exagérer les bénéfices || Cibler les enfants sans limite || Cacher les risques || Elle respecte aussi les cultures.
+Que signifie l'inclusion en communication ? || Représenter la diversité réelle sans clichés || Exclure certains groupes || N'utiliser qu'un seul visage || Éviter les images || Elle reflète la société telle qu'elle est.
+Qu'est-ce que le marketing de cause ? || Associer la marque à une cause soutenue réellement || Faire un coup de pub unique || Cacher les dons || Vendre plus cher || L'engagement doit être sincère et durable.
+Pourquoi vivre l'engagement en interne d'abord ? || Pour que l'affichage soit crédible || Pour éviter les clients || Pour supprimer la communication || Pour réduire les salaires || Un décalage serait vite révélé.
+Mieux vaut annoncer : || Un petit progrès réel || Une grande promesse non tenue || Un engagement inventé || Un chiffre sans source || La crédibilité repose sur des actes prouvés.
+Pourquoi réduire les emballages ? || Pour limiter les déchets et les coûts || Pour tromper le client || Pour cacher le produit || Pour augmenter le transport || C'est un geste concret et mesurable.
+Que risque une marque qui fait du greenwashing ? || Perdre la confiance et subir des sanctions || Gagner des labels || Doubler ses clients durablement || Rien || Les consommateurs et la loi réagissent.
+Qu'est-ce qu'un label ? || Une certification attestant le respect de critères || Un logo décoratif sans contrôle || Un impôt || Un brevet || Il doit être délivré par un organisme sérieux.
+Pourquoi les consommateurs attendent-ils des marques responsables ? || Ils veulent des produits cohérents avec leurs valeurs || Ils n'aiment pas acheter || Ils détestent les prix || Ils ignorent les marques || La confiance influence l'achat.

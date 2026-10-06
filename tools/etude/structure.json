@@ -1,2241 +1,2373 @@
 {
- "tracks": [
-  {
-   "id": "college",
-   "kind": "cycle",
-   "order": 10,
-   "title": "Collège",
-   "country": "UEMOA",
-   "exam": {
-    "id": "bepc",
-    "title": "Examen du BEPC",
-    "diploma": "BEPC — Brevet d'Études du Premier Cycle",
-    "count": 40,
-    "passPct": 0.5,
-    "seconds": 3600
-   },
-   "classes": [
+  "tracks": [
     {
-     "id": "col_6e",
-     "title": "Classe de 6e",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
+      "id": "college",
+      "kind": "cycle",
+      "order": 10,
+      "title": "Collège",
+      "country": "UEMOA",
+      "exam": {
+        "id": "bepc",
+        "title": "Examen du BEPC",
+        "diploma": "BEPC — Brevet d'Études du Premier Cycle",
+        "count": 40,
+        "passPct": 0.5,
+        "seconds": 3600
+      },
+      "classes": [
         {
-         "id": "col6_maths_decimaux",
-         "title": "Nombres décimaux et fractions"
+          "id": "col_6e",
+          "title": "Classe de 6e",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "col6_maths_decimaux",
+                  "title": "Nombres décimaux et fractions"
+                },
+                {
+                  "id": "col6_maths_geometrie",
+                  "title": "Droites, angles et cercles"
+                }
+              ]
+            },
+            {
+              "id": "francais",
+              "title": "Français",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "col6_fr_grammaire",
+                  "title": "La phrase et la nature des mots"
+                },
+                {
+                  "id": "col6_fr_conjugaison",
+                  "title": "Conjugaison : présent, imparfait, futur"
+                }
+              ]
+            },
+            {
+              "id": "anglais",
+              "title": "Anglais",
+              "icon": "translate",
+              "chapters": [
+                {
+                  "id": "col6_en_bases",
+                  "title": "Greetings, to be and to have"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "col6_svt_vivants",
+                  "title": "Les êtres vivants et leur milieu"
+                }
+              ]
+            },
+            {
+              "id": "hg",
+              "title": "Histoire-Géographie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "col6_hg_prehistoire",
+                  "title": "De la préhistoire aux premières civilisations"
+                },
+                {
+                  "id": "col6_hg_terre",
+                  "title": "La Terre : continents et océans"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col6_maths_geometrie",
-         "title": "Droites, angles et cercles"
-        }
-       ]
-      },
-      {
-       "id": "francais",
-       "title": "Français",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "col6_fr_grammaire",
-         "title": "La phrase et la nature des mots"
+          "id": "col_5e",
+          "title": "Classe de 5e",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "col5_maths_relatifs",
+                  "title": "Nombres relatifs"
+                },
+                {
+                  "id": "col5_maths_triangles",
+                  "title": "Triangles et angles"
+                }
+              ]
+            },
+            {
+              "id": "francais",
+              "title": "Français",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "col5_fr_passe",
+                  "title": "Les temps du passé"
+                },
+                {
+                  "id": "col5_fr_phrases",
+                  "title": "Types de phrases et compléments"
+                }
+              ]
+            },
+            {
+              "id": "anglais",
+              "title": "Anglais",
+              "icon": "translate",
+              "chapters": [
+                {
+                  "id": "col5_en_past",
+                  "title": "Le prétérit (past simple)"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "col5_svt_respiration",
+                  "title": "La respiration chez l'homme et les animaux"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "col5_pc_matiere",
+                  "title": "États de la matière et mélanges"
+                }
+              ]
+            },
+            {
+              "id": "hg",
+              "title": "Histoire-Géographie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "col5_hg_empires",
+                  "title": "Les grands empires africains : Ghana, Mali, Songhaï"
+                },
+                {
+                  "id": "col5_hg_population",
+                  "title": "La population mondiale"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col6_fr_conjugaison",
-         "title": "Conjugaison : présent, imparfait, futur"
-        }
-       ]
-      },
-      {
-       "id": "anglais",
-       "title": "Anglais",
-       "icon": "translate",
-       "chapters": [
-        {
-         "id": "col6_en_bases",
-         "title": "Greetings, to be and to have"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "col6_svt_vivants",
-         "title": "Les êtres vivants et leur milieu"
-        }
-       ]
-      },
-      {
-       "id": "hg",
-       "title": "Histoire-Géographie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "col6_hg_prehistoire",
-         "title": "De la préhistoire aux premières civilisations"
+          "id": "col_4e",
+          "title": "Classe de 4e",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "col4_maths_puissances",
+                  "title": "Puissances et calcul littéral"
+                },
+                {
+                  "id": "col4_maths_pythagore",
+                  "title": "Théorème de Pythagore"
+                }
+              ]
+            },
+            {
+              "id": "francais",
+              "title": "Français",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "col4_fr_discours",
+                  "title": "Discours direct et indirect"
+                },
+                {
+                  "id": "col4_fr_figures",
+                  "title": "Le récit et les figures de style"
+                }
+              ]
+            },
+            {
+              "id": "anglais",
+              "title": "Anglais",
+              "icon": "translate",
+              "chapters": [
+                {
+                  "id": "col4_en_present",
+                  "title": "Present simple et present continuous"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "col4_svt_digestion",
+                  "title": "La digestion et l'absorption"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "col4_pc_electricite",
+                  "title": "Électricité : circuits et tension"
+                }
+              ]
+            },
+            {
+              "id": "hg",
+              "title": "Histoire-Géographie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "col4_hg_traite",
+                  "title": "La traite négrière et l'esclavage"
+                },
+                {
+                  "id": "col4_hg_climats",
+                  "title": "Climats et milieux naturels"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col6_hg_terre",
-         "title": "La Terre : continents et océans"
+          "id": "col_3e",
+          "title": "Classe de 3e",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "col3_maths_thales",
+                  "title": "Théorème de Thalès"
+                },
+                {
+                  "id": "col3_maths_equations",
+                  "title": "Équations, inéquations et systèmes"
+                },
+                {
+                  "id": "col3_maths_trigo",
+                  "title": "Trigonométrie dans le triangle rectangle"
+                }
+              ]
+            },
+            {
+              "id": "francais",
+              "title": "Français",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "col3_fr_argument",
+                  "title": "Texte argumentatif et expression écrite"
+                },
+                {
+                  "id": "col3_fr_subjonctif",
+                  "title": "Le subjonctif et les propositions"
+                }
+              ]
+            },
+            {
+              "id": "anglais",
+              "title": "Anglais",
+              "icon": "translate",
+              "chapters": [
+                {
+                  "id": "col3_en_futur",
+                  "title": "Futur et conditionnel : will, would, if"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "col3_svt_repro",
+                  "title": "Reproduction humaine et VIH/SIDA"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "col3_pc_ohm",
+                  "title": "Loi d'Ohm et puissance électrique"
+                }
+              ]
+            },
+            {
+              "id": "hg",
+              "title": "Histoire-Géographie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "col3_hg_indep",
+                  "title": "Les indépendances africaines"
+                },
+                {
+                  "id": "col3_hg_onu",
+                  "title": "Le monde après 1945 : l'ONU"
+                }
+              ]
+            }
+          ]
         }
-       ]
-      }
-     ]
+      ]
     },
     {
-     "id": "col_5e",
-     "title": "Classe de 5e",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
+      "id": "lycee_d",
+      "kind": "cycle",
+      "order": 20,
+      "title": "Lycée — série D",
+      "country": "UEMOA",
+      "after": [
+        "college"
+      ],
+      "exam": {
+        "id": "bac_d",
+        "title": "Examen du BAC D",
+        "diploma": "BAC D — Baccalauréat, série D",
+        "count": 40,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
         {
-         "id": "col5_maths_relatifs",
-         "title": "Nombres relatifs"
+          "id": "lyc_2nde",
+          "title": "Seconde",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "sec_maths_second_degre",
+                  "title": "Équations du second degré"
+                },
+                {
+                  "id": "sec_maths_fonctions",
+                  "title": "Généralités sur les fonctions"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "sec_pc_atome",
+                  "title": "L'atome et la classification périodique"
+                },
+                {
+                  "id": "sec_pc_mole",
+                  "title": "La quantité de matière (la mole)"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "sec_svt_cellule",
+                  "title": "La cellule et l'ADN"
+                },
+                {
+                  "id": "sec_svt_ecosystemes",
+                  "title": "Écosystèmes et biodiversité"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col5_maths_triangles",
-         "title": "Triangles et angles"
-        }
-       ]
-      },
-      {
-       "id": "francais",
-       "title": "Français",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "col5_fr_passe",
-         "title": "Les temps du passé"
+          "id": "lyc_1d",
+          "title": "Première D",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "prem_maths_limites",
+                  "title": "Limites et continuité"
+                },
+                {
+                  "id": "prem_maths_trigo",
+                  "title": "Trigonométrie et cercle trigonométrique"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "prem_pc_energie",
+                  "title": "Travail et énergie"
+                },
+                {
+                  "id": "prem_pc_organique",
+                  "title": "Chimie organique : alcanes et alcools"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "prem_svt_nerveux",
+                  "title": "Le système nerveux et le réflexe"
+                },
+                {
+                  "id": "prem_svt_muscle",
+                  "title": "La contraction musculaire"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col5_fr_phrases",
-         "title": "Types de phrases et compléments"
+          "id": "lyc_td",
+          "title": "Terminale D",
+          "subjects": [
+            {
+              "id": "maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "td_maths_suites",
+                  "title": "Suites numériques"
+                },
+                {
+                  "id": "td_maths_derivation",
+                  "title": "Dérivation et étude de fonctions"
+                },
+                {
+                  "id": "td_maths_ln",
+                  "title": "Fonction logarithme népérien"
+                }
+              ]
+            },
+            {
+              "id": "pc",
+              "title": "Physique-Chimie",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "td_pc_cinematique",
+                  "title": "Cinématique du point"
+                },
+                {
+                  "id": "td_pc_newton",
+                  "title": "Les lois de Newton"
+                },
+                {
+                  "id": "td_pc_acides",
+                  "title": "Acides, bases et pH"
+                }
+              ]
+            },
+            {
+              "id": "svt",
+              "title": "SVT",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "td_svt_genetique",
+                  "title": "Génétique et hérédité"
+                },
+                {
+                  "id": "td_svt_immunite",
+                  "title": "Immunité et défense de l'organisme"
+                },
+                {
+                  "id": "td_svt_respiration",
+                  "title": "Respiration et fermentation"
+                }
+              ]
+            }
+          ]
         }
-       ]
-      },
-      {
-       "id": "anglais",
-       "title": "Anglais",
-       "icon": "translate",
-       "chapters": [
-        {
-         "id": "col5_en_past",
-         "title": "Le prétérit (past simple)"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "col5_svt_respiration",
-         "title": "La respiration chez l'homme et les animaux"
-        }
-       ]
-      },
-      {
-       "id": "pc",
-       "title": "Physique-Chimie",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "col5_pc_matiere",
-         "title": "États de la matière et mélanges"
-        }
-       ]
-      },
-      {
-       "id": "hg",
-       "title": "Histoire-Géographie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "col5_hg_empires",
-         "title": "Les grands empires africains : Ghana, Mali, Songhaï"
-        },
-        {
-         "id": "col5_hg_population",
-         "title": "La population mondiale"
-        }
-       ]
-      }
-     ]
+      ]
     },
     {
-     "id": "col_4e",
-     "title": "Classe de 4e",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
+      "id": "univ_info",
+      "kind": "cycle",
+      "order": 30,
+      "title": "Licence d'Informatique",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_info",
+        "title": "Examen de licence",
+        "diploma": "Licence d'Informatique",
+        "count": 50,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
         {
-         "id": "col4_maths_puissances",
-         "title": "Puissances et calcul littéral"
+          "id": "info_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "algo",
+              "title": "Algorithmique",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "info_algo_variables",
+                  "title": "Variables, types et opérateurs"
+                },
+                {
+                  "id": "info_algo_conditions",
+                  "title": "Les conditions"
+                },
+                {
+                  "id": "info_algo_boucles",
+                  "title": "Les boucles"
+                },
+                {
+                  "id": "info_algo_tableaux",
+                  "title": "Tableaux et fonctions"
+                }
+              ]
+            },
+            {
+              "id": "python",
+              "title": "Programmation Python",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "info_py_bases",
+                  "title": "Python : les bases"
+                },
+                {
+                  "id": "info_py_listes",
+                  "title": "Listes, dictionnaires et chaînes"
+                },
+                {
+                  "id": "info_py_fonctions",
+                  "title": "Fonctions et fichiers"
+                }
+              ]
+            },
+            {
+              "id": "bdd",
+              "title": "Bases de données",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "info_bdd_modele",
+                  "title": "Le modèle relationnel"
+                },
+                {
+                  "id": "info_bdd_select",
+                  "title": "SQL : interroger une table"
+                },
+                {
+                  "id": "info_bdd_jointures",
+                  "title": "SQL : jointures et agrégats"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col4_maths_pythagore",
-         "title": "Théorème de Pythagore"
-        }
-       ]
-      },
-      {
-       "id": "francais",
-       "title": "Français",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "col4_fr_discours",
-         "title": "Discours direct et indirect"
+          "id": "info_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "sd",
+              "title": "Structures de données",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "info2_sd_listes",
+                  "title": "Listes, piles et files"
+                },
+                {
+                  "id": "info2_sd_arbres",
+                  "title": "Arbres et algorithmes de tri"
+                }
+              ]
+            },
+            {
+              "id": "poo",
+              "title": "Programmation orientée objet",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "info2_poo_classes",
+                  "title": "Classes et objets"
+                },
+                {
+                  "id": "info2_poo_heritage",
+                  "title": "Héritage et polymorphisme"
+                }
+              ]
+            },
+            {
+              "id": "reseaux",
+              "title": "Réseaux",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "info2_res_modeles",
+                  "title": "Modèles OSI et TCP/IP"
+                },
+                {
+                  "id": "info2_res_ip",
+                  "title": "Adressage IP et services"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col4_fr_figures",
-         "title": "Le récit et les figures de style"
+          "id": "info_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "gl",
+              "title": "Génie logiciel",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "info3_gl_cycle",
+                  "title": "Cycles de développement et tests"
+                },
+                {
+                  "id": "info3_gl_uml",
+                  "title": "Modélisation UML"
+                }
+              ]
+            },
+            {
+              "id": "sys",
+              "title": "Systèmes d'exploitation",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "info3_sys_processus",
+                  "title": "Processus et mémoire"
+                },
+                {
+                  "id": "info3_sys_fichiers",
+                  "title": "Fichiers et commandes"
+                }
+              ]
+            },
+            {
+              "id": "ia",
+              "title": "Intelligence artificielle et sécurité",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "info3_ia_bases",
+                  "title": "Intelligence artificielle : bases"
+                },
+                {
+                  "id": "info3_secu_bases",
+                  "title": "Sécurité informatique"
+                }
+              ]
+            }
+          ]
         }
-       ]
-      },
-      {
-       "id": "anglais",
-       "title": "Anglais",
-       "icon": "translate",
-       "chapters": [
-        {
-         "id": "col4_en_present",
-         "title": "Present simple et present continuous"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "col4_svt_digestion",
-         "title": "La digestion et l'absorption"
-        }
-       ]
-      },
-      {
-       "id": "pc",
-       "title": "Physique-Chimie",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "col4_pc_electricite",
-         "title": "Électricité : circuits et tension"
-        }
-       ]
-      },
-      {
-       "id": "hg",
-       "title": "Histoire-Géographie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "col4_hg_traite",
-         "title": "La traite négrière et l'esclavage"
-        },
-        {
-         "id": "col4_hg_climats",
-         "title": "Climats et milieux naturels"
-        }
-       ]
-      }
-     ]
+      ]
     },
     {
-     "id": "col_3e",
-     "title": "Classe de 3e",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
+      "id": "univ_mpc",
+      "kind": "cycle",
+      "order": 31,
+      "title": "Sciences exactes (MPC) — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_mpc",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Sciences exactes (MPC)",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
         {
-         "id": "col3_maths_thales",
-         "title": "Théorème de Thalès"
+          "id": "mpc_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "mpc_maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "mpc_an_limites",
+                  "title": "Limites et continuité"
+                },
+                {
+                  "id": "mpc_an_derivees",
+                  "title": "Dérivation et étude de fonctions"
+                },
+                {
+                  "id": "mpc_al_matrices",
+                  "title": "Matrices et systèmes linéaires"
+                },
+                {
+                  "id": "mpc_al_complexes",
+                  "title": "Nombres complexes"
+                }
+              ]
+            },
+            {
+              "id": "mpc_phys",
+              "title": "Physique",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "mpc_ph_cinematique",
+                  "title": "Cinématique du point"
+                },
+                {
+                  "id": "mpc_ph_dynamique",
+                  "title": "Dynamique : lois de Newton et énergie"
+                },
+                {
+                  "id": "mpc_ph_electricite",
+                  "title": "Circuits électriques en régime continu"
+                },
+                {
+                  "id": "mpc_ph_thermo",
+                  "title": "Thermodynamique : température, chaleur et premier principe"
+                }
+              ]
+            },
+            {
+              "id": "mpc_chim",
+              "title": "Chimie",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "mpc_ch_atome",
+                  "title": "Structure de l'atome et classification périodique"
+                },
+                {
+                  "id": "mpc_ch_liaisons",
+                  "title": "Liaisons chimiques et molécules"
+                },
+                {
+                  "id": "mpc_ch_solutions",
+                  "title": "Solutions, concentrations et acides-bases"
+                },
+                {
+                  "id": "mpc_ch_reactions",
+                  "title": "Réactions, bilan de matière et oxydoréduction"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col3_maths_equations",
-         "title": "Équations, inéquations et systèmes"
+          "id": "mpc_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "mpc2_maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "mpc2_an_integrales",
+                  "title": "Intégrales et primitives"
+                },
+                {
+                  "id": "mpc2_an_eqdiff",
+                  "title": "Équations différentielles linéaires"
+                },
+                {
+                  "id": "mpc2_al_vectoriels",
+                  "title": "Espaces vectoriels, applications linéaires et déterminants"
+                }
+              ]
+            },
+            {
+              "id": "mpc2_phys",
+              "title": "Physique",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "mpc2_ph_ondes",
+                  "title": "Ondes et optique géométrique"
+                },
+                {
+                  "id": "mpc2_ph_magnetisme",
+                  "title": "Champ magnétique et induction"
+                },
+                {
+                  "id": "mpc2_ph_thermo2",
+                  "title": "Second principe et machines thermiques"
+                }
+              ]
+            },
+            {
+              "id": "mpc2_chim",
+              "title": "Chimie",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "mpc2_ch_cinetique",
+                  "title": "Cinétique chimique"
+                },
+                {
+                  "id": "mpc2_ch_orga",
+                  "title": "Chimie organique : fonctions et nomenclature"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col3_maths_trigo",
-         "title": "Trigonométrie dans le triangle rectangle"
+          "id": "mpc_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "mpc3_maths",
+              "title": "Mathématiques",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "mpc3_an_series",
+                  "title": "Séries numériques et développements en série"
+                },
+                {
+                  "id": "mpc3_an_multivar",
+                  "title": "Fonctions de plusieurs variables"
+                }
+              ]
+            },
+            {
+              "id": "mpc3_phys",
+              "title": "Physique",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "mpc3_ph_quantique",
+                  "title": "Introduction à la physique quantique"
+                },
+                {
+                  "id": "mpc3_ph_maxwell",
+                  "title": "Ondes électromagnétiques"
+                }
+              ]
+            },
+            {
+              "id": "mpc3_chim",
+              "title": "Chimie",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "mpc3_ch_thermochimie",
+                  "title": "Thermochimie et équilibres chimiques"
+                },
+                {
+                  "id": "mpc3_ch_electrochimie",
+                  "title": "Électrochimie : piles, électrolyse et corrosion"
+                }
+              ]
+            }
+          ]
         }
-       ]
+      ]
+    },
+    {
+      "id": "univ_efc",
+      "kind": "cycle",
+      "order": 32,
+      "title": "Économie, Finance et Comptabilité — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_efc",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Économie, Finance et Comptabilité",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
       },
-      {
-       "id": "francais",
-       "title": "Français",
-       "icon": "menu_book",
-       "chapters": [
+      "classes": [
         {
-         "id": "col3_fr_argument",
-         "title": "Texte argumentatif et expression écrite"
+          "id": "efc_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "efc_eco",
+              "title": "Économie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "efc_eco_offre",
+                  "title": "Offre, demande et prix d'équilibre"
+                },
+                {
+                  "id": "efc_eco_macro",
+                  "title": "PIB, inflation et chômage"
+                },
+                {
+                  "id": "efc_eco_monnaie",
+                  "title": "Monnaie, banques et BCEAO"
+                }
+              ]
+            },
+            {
+              "id": "efc_cpt",
+              "title": "Comptabilité (SYSCOHADA)",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "efc_cpt_bilan",
+                  "title": "Patrimoine et bilan"
+                },
+                {
+                  "id": "efc_cpt_compte",
+                  "title": "Comptes, débit-crédit et écritures"
+                },
+                {
+                  "id": "efc_cpt_charges",
+                  "title": "Charges, produits et résultat"
+                },
+                {
+                  "id": "efc_cpt_syscohada",
+                  "title": "Le SYSCOHADA : plan comptable et états financiers"
+                }
+              ]
+            },
+            {
+              "id": "efc_fin",
+              "title": "Finance",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "efc_fin_interets",
+                  "title": "Intérêts simples et composés"
+                },
+                {
+                  "id": "efc_fin_actualisation",
+                  "title": "Actualisation et choix d'investissement"
+                },
+                {
+                  "id": "efc_fin_ratios",
+                  "title": "Ratios et lecture de la situation financière"
+                }
+              ]
+            },
+            {
+              "id": "efc_sta",
+              "title": "Statistiques et probabilités",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "efc_sta_descriptive",
+                  "title": "Moyenne, médiane et écart-type"
+                },
+                {
+                  "id": "efc_sta_proba",
+                  "title": "Probabilités de base"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col3_fr_subjonctif",
-         "title": "Le subjonctif et les propositions"
-        }
-       ]
-      },
-      {
-       "id": "anglais",
-       "title": "Anglais",
-       "icon": "translate",
-       "chapters": [
-        {
-         "id": "col3_en_futur",
-         "title": "Futur et conditionnel : will, would, if"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "col3_svt_repro",
-         "title": "Reproduction humaine et VIH/SIDA"
-        }
-       ]
-      },
-      {
-       "id": "pc",
-       "title": "Physique-Chimie",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "col3_pc_ohm",
-         "title": "Loi d'Ohm et puissance électrique"
-        }
-       ]
-      },
-      {
-       "id": "hg",
-       "title": "Histoire-Géographie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "col3_hg_indep",
-         "title": "Les indépendances africaines"
+          "id": "efc_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "efc2_eco",
+              "title": "Économie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "efc2_eco_croissance",
+                  "title": "Croissance, développement et secteurs d'activité"
+                },
+                {
+                  "id": "efc2_eco_commerce",
+                  "title": "Commerce international, change et intégration régionale"
+                }
+              ]
+            },
+            {
+              "id": "efc2_cpt",
+              "title": "Comptabilité",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "efc2_cpt_amort",
+                  "title": "Amortissements et dépréciations"
+                },
+                {
+                  "id": "efc2_cpt_stocks",
+                  "title": "Stocks et inventaire"
+                },
+                {
+                  "id": "efc2_cpt_tva_paie",
+                  "title": "TVA et paie"
+                }
+              ]
+            },
+            {
+              "id": "efc2_ges",
+              "title": "Gestion et marketing",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "efc2_ges_couts",
+                  "title": "Coûts et seuil de rentabilité"
+                },
+                {
+                  "id": "efc2_mkt_base",
+                  "title": "Marketing : étude de marché et marketing-mix"
+                }
+              ]
+            },
+            {
+              "id": "efc2_fin",
+              "title": "Finance",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "efc2_fin_marches",
+                  "title": "Marchés financiers et BRVM"
+                }
+              ]
+            }
+          ]
         },
         {
-         "id": "col3_hg_onu",
-         "title": "Le monde après 1945 : l'ONU"
+          "id": "efc_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "efc3_cpt",
+              "title": "Comptabilité et analyse financière",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "efc3_cpt_analytique",
+                  "title": "Comptabilité analytique et calcul des coûts"
+                },
+                {
+                  "id": "efc3_fin_sig",
+                  "title": "Analyse financière : soldes intermédiaires de gestion et CAF"
+                }
+              ]
+            },
+            {
+              "id": "efc3_ges",
+              "title": "Gestion et management",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "efc3_ges_budgets",
+                  "title": "Budgets, écarts et tableaux de bord"
+                },
+                {
+                  "id": "efc3_ges_management",
+                  "title": "Management et gestion des ressources humaines"
+                },
+                {
+                  "id": "efc3_ent_projet",
+                  "title": "Entrepreneuriat et plan d'affaires"
+                }
+              ]
+            },
+            {
+              "id": "efc3_eco",
+              "title": "Économie",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "efc3_eco_politiques",
+                  "title": "Politiques économiques et convergence dans l'UEMOA"
+                }
+              ]
+            }
+          ]
         }
-       ]
+      ]
+    },
+    {
+      "id": "univ_droit",
+      "kind": "cycle",
+      "order": 33,
+      "title": "Droit (avec le droit OHADA) — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_droit",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Droit",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "drt_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "drt_civil",
+              "title": "Introduction au droit civil",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "drt_intro_regle",
+                  "title": "La règle de droit et ses sources"
+                },
+                {
+                  "id": "drt_pers",
+                  "title": "Personnes physiques, personnes morales et capacité"
+                },
+                {
+                  "id": "drt_contrat",
+                  "title": "Le contrat : formation et validité"
+                }
+              ]
+            },
+            {
+              "id": "drt_const",
+              "title": "Droit constitutionnel",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "drt_const_etat",
+                  "title": "L'État, la Constitution et la séparation des pouvoirs"
+                },
+                {
+                  "id": "drt_const_libertes",
+                  "title": "Droits et libertés fondamentaux"
+                }
+              ]
+            },
+            {
+              "id": "drt_ohada",
+              "title": "Droit OHADA",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "drt_ohada_orga",
+                  "title": "L'OHADA : traité, organes et Actes uniformes"
+                },
+                {
+                  "id": "drt_ohada_comm",
+                  "title": "Commerçant, entreprenant et registre du commerce"
+                },
+                {
+                  "id": "drt_ohada_soc",
+                  "title": "Les sociétés commerciales"
+                },
+                {
+                  "id": "drt_ohada_suretes",
+                  "title": "Sûretés et recouvrement des créances"
+                }
+              ]
+            },
+            {
+              "id": "drt_penal",
+              "title": "Droit pénal, procédure et travail",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "drt_penal_infraction",
+                  "title": "L'infraction pénale"
+                },
+                {
+                  "id": "drt_penal_proc",
+                  "title": "Juridictions et déroulement du procès"
+                },
+                {
+                  "id": "drt_travail",
+                  "title": "Le contrat de travail"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "drt_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "drt2_civil",
+              "title": "Droit civil",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "drt2_biens",
+                  "title": "Les biens et la propriété"
+                },
+                {
+                  "id": "drt2_responsabilite",
+                  "title": "La responsabilité civile"
+                },
+                {
+                  "id": "drt2_famille",
+                  "title": "Famille : mariage, filiation et succession"
+                },
+                {
+                  "id": "drt2_proc_civile",
+                  "title": "Procédure civile : agir en justice"
+                }
+              ]
+            },
+            {
+              "id": "drt2_admin",
+              "title": "Droit administratif",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "drt2_admin_acte",
+                  "title": "Administration, acte administratif et service public"
+                }
+              ]
+            },
+            {
+              "id": "drt2_ohada",
+              "title": "Droit OHADA",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "drt2_ohada_collectives",
+                  "title": "Les procédures collectives (OHADA)"
+                },
+                {
+                  "id": "drt2_ohada_arbitrage",
+                  "title": "Arbitrage et médiation (OHADA)"
+                }
+              ]
+            },
+            {
+              "id": "drt2_dip",
+              "title": "Droit international",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "drt2_dip",
+                  "title": "Droit international public"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "drt_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "drt3_prive",
+              "title": "Droit des affaires et fiscal",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "drt3_contrats_commerciaux",
+                  "title": "Vente commerciale, bail commercial et transport"
+                },
+                {
+                  "id": "drt3_fiscal",
+                  "title": "Droit fiscal"
+                },
+                {
+                  "id": "drt3_prop_intel",
+                  "title": "Propriété intellectuelle et OAPI"
+                }
+              ]
+            },
+            {
+              "id": "drt3_penal",
+              "title": "Droit pénal et travail",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "drt3_penal_special",
+                  "title": "Droit pénal spécial : principales infractions"
+                },
+                {
+                  "id": "drt3_travail_collectif",
+                  "title": "Droit du travail collectif : syndicats, conventions et grève"
+                }
+              ]
+            },
+            {
+              "id": "drt3_num",
+              "title": "Droit du numérique",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "drt3_numerique",
+                  "title": "Droit du numérique et protection des données personnelles"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "univ_sport",
+      "kind": "cycle",
+      "order": 34,
+      "title": "Sport (STAPS) — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_sport",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Sport (STAPS)",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "spo_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "spo_anat",
+              "title": "Anatomie et physiologie",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "spo_anat_muscles",
+                  "title": "Le système musculaire"
+                },
+                {
+                  "id": "spo_anat_os",
+                  "title": "Squelette et articulations"
+                },
+                {
+                  "id": "spo_phys_cardio",
+                  "title": "Cœur, respiration et effort"
+                }
+              ]
+            },
+            {
+              "id": "spo_ent",
+              "title": "Entraînement",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "spo_ent_qualites",
+                  "title": "Les qualités physiques"
+                },
+                {
+                  "id": "spo_ent_principes",
+                  "title": "Les principes de l'entraînement"
+                },
+                {
+                  "id": "spo_ent_echauff",
+                  "title": "Échauffement, retour au calme et prévention des blessures"
+                }
+              ]
+            },
+            {
+              "id": "spo_nut",
+              "title": "Nutrition et santé",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "spo_nut_base",
+                  "title": "Nutriments et hydratation du sportif"
+                },
+                {
+                  "id": "spo_sante_premiers",
+                  "title": "Premiers secours en sport"
+                }
+              ]
+            },
+            {
+              "id": "spo_reg",
+              "title": "Règles et culture sportive",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "spo_reg_foot",
+                  "title": "Les règles du football"
+                },
+                {
+                  "id": "spo_reg_athle",
+                  "title": "L'athlétisme : épreuves et règles"
+                },
+                {
+                  "id": "spo_reg_basket",
+                  "title": "Le basket-ball : règles essentielles"
+                },
+                {
+                  "id": "spo_hist_olymp",
+                  "title": "Jeux olympiques et organisation du sport"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "spo_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "spo2_sci",
+              "title": "Sciences du sport",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "spo2_filieres",
+                  "title": "Les filières énergétiques"
+                },
+                {
+                  "id": "spo2_biomeca",
+                  "title": "Biomécanique : forces, leviers et mouvement"
+                },
+                {
+                  "id": "spo2_psy",
+                  "title": "Psychologie du sport"
+                }
+              ]
+            },
+            {
+              "id": "spo2_ent",
+              "title": "Entraînement et nutrition",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "spo2_planif",
+                  "title": "Planification et périodisation de l'entraînement"
+                },
+                {
+                  "id": "spo2_nutri_perf",
+                  "title": "Nutrition de performance et composition corporelle"
+                }
+              ]
+            },
+            {
+              "id": "spo2_pro",
+              "title": "Métiers et organisation du sport",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "spo2_management",
+                  "title": "Organisation du sport : clubs, associations et fédérations"
+                },
+                {
+                  "id": "spo2_pedago",
+                  "title": "Enseigner et animer une séance sportive"
+                }
+              ]
+            },
+            {
+              "id": "spo2_reg",
+              "title": "Sports collectifs",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "spo2_volley_hand",
+                  "title": "Volley-ball et handball : règles essentielles"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "spo_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "spo3_sci",
+              "title": "Physiologie et entraînement",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "spo3_adaptations",
+                  "title": "Adaptations de l'organisme à l'entraînement"
+                },
+                {
+                  "id": "spo3_force",
+                  "title": "Musculation et développement de la force"
+                },
+                {
+                  "id": "spo3_traumato",
+                  "title": "Traumatologie du sport et rééducation"
+                }
+              ]
+            },
+            {
+              "id": "spo3_sante",
+              "title": "Santé et éthique",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "spo3_sante",
+                  "title": "Sport santé et publics particuliers"
+                },
+                {
+                  "id": "spo3_dopage",
+                  "title": "Dopage et éthique du sport"
+                }
+              ]
+            },
+            {
+              "id": "spo3_soc",
+              "title": "Sport et société",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "spo3_societe",
+                  "title": "Sport et société"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "univ_sante",
+      "kind": "cycle",
+      "order": 35,
+      "title": "Santé et sciences infirmières — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_sante",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Santé et sciences infirmières",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "san_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "san_anat",
+              "title": "Anatomie et physiologie",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "san_anat_corps",
+                  "title": "Organisation du corps humain"
+                },
+                {
+                  "id": "san_cardio",
+                  "title": "Cœur, circulation et sang"
+                },
+                {
+                  "id": "san_resp_dig",
+                  "title": "Respiration et digestion"
+                },
+                {
+                  "id": "san_nerveux",
+                  "title": "Système nerveux et organes des sens"
+                }
+              ]
+            },
+            {
+              "id": "san_pub",
+              "title": "Santé publique",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "san_hygiene",
+                  "title": "Hygiène et prévention des infections"
+                },
+                {
+                  "id": "san_epidemio",
+                  "title": "Épidémiologie et grandes maladies en Afrique"
+                },
+                {
+                  "id": "san_vaccin_smi",
+                  "title": "Vaccination, santé de la mère et de l'enfant"
+                }
+              ]
+            },
+            {
+              "id": "san_soins",
+              "title": "Soins de base",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "san_constantes",
+                  "title": "Constantes vitales et surveillance du patient"
+                },
+                {
+                  "id": "san_medicaments",
+                  "title": "Médicaments : voies d'administration et sécurité"
+                },
+                {
+                  "id": "san_urgences",
+                  "title": "Urgences et premiers soins"
+                }
+              ]
+            },
+            {
+              "id": "san_nut",
+              "title": "Nutrition et éthique",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "san_nutri_enfant",
+                  "title": "Nutrition, malnutrition et croissance de l'enfant"
+                },
+                {
+                  "id": "san_ethique",
+                  "title": "Éthique et relation soignant-patient"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "san_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "san2_bio",
+              "title": "Sciences biomédicales",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "san2_pharmaco",
+                  "title": "Pharmacologie générale"
+                },
+                {
+                  "id": "san2_microbio",
+                  "title": "Microbiologie : bactéries, virus, parasites, champignons"
+                },
+                {
+                  "id": "san2_immuno",
+                  "title": "Immunité, allergies et VIH"
+                },
+                {
+                  "id": "san2_endocrino",
+                  "title": "Hormones et diabète"
+                }
+              ]
+            },
+            {
+              "id": "san2_clin",
+              "title": "Pratique clinique",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "san2_obstetrique",
+                  "title": "Grossesse, accouchement et suites de couches"
+                },
+                {
+                  "id": "san2_pediatrie",
+                  "title": "Maladies de l'enfant et PCIME"
+                },
+                {
+                  "id": "san2_soins",
+                  "title": "Techniques de soins et asepsie"
+                }
+              ]
+            },
+            {
+              "id": "san2_pub",
+              "title": "Santé publique",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "san2_communautaire",
+                  "title": "Santé communautaire et soins de santé primaires"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "san_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "san3_med",
+              "title": "Médecine et soins",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "san3_cardio",
+                  "title": "Maladies cardiovasculaires et prévention"
+                },
+                {
+                  "id": "san3_infectieux",
+                  "title": "Maladies infectieuses tropicales et IST"
+                },
+                {
+                  "id": "san3_nutrition_clin",
+                  "title": "Nutrition clinique et diététique"
+                },
+                {
+                  "id": "san3_sante_mentale",
+                  "title": "Santé mentale"
+                }
+              ]
+            },
+            {
+              "id": "san3_pub",
+              "title": "Santé publique",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "san3_gestion_sanitaire",
+                  "title": "Gestion et organisation des services de santé"
+                },
+                {
+                  "id": "san3_epidemio_methodes",
+                  "title": "Méthodes en épidémiologie et dépistage"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "univ_gestion",
+      "kind": "cycle",
+      "order": 36,
+      "title": "Gestion des entreprises — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_gestion",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Gestion des entreprises",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "ges_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "ges_man",
+              "title": "Management",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "ges_entreprise",
+                  "title": "L'entreprise : types, objectifs et parties prenantes"
+                },
+                {
+                  "id": "ges_organisation",
+                  "title": "Organisation et structures de l'entreprise"
+                },
+                {
+                  "id": "ges_strategie",
+                  "title": "Stratégie et diagnostic de l'entreprise"
+                },
+                {
+                  "id": "ges_rse",
+                  "title": "Responsabilité sociétale et éthique des affaires"
+                }
+              ]
+            },
+            {
+              "id": "ges_ope",
+              "title": "Opérations et projets",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "ges_production",
+                  "title": "Production et qualité"
+                },
+                {
+                  "id": "ges_approvisionnement",
+                  "title": "Approvisionnement et logistique"
+                },
+                {
+                  "id": "ges_projet",
+                  "title": "Gestion de projet"
+                }
+              ]
+            },
+            {
+              "id": "ges_fin",
+              "title": "Finance et prix",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "ges_tresorerie",
+                  "title": "Gestion de la trésorerie et financement à court terme"
+                },
+                {
+                  "id": "ges_prix",
+                  "title": "Fixation des prix et marges"
+                },
+                {
+                  "id": "ges_obligations",
+                  "title": "Obligations administratives, fiscales et sociales"
+                }
+              ]
+            },
+            {
+              "id": "ges_com",
+              "title": "Communication et outils",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "ges_comm_pro",
+                  "title": "Communication professionnelle et négociation"
+                },
+                {
+                  "id": "ges_numerique",
+                  "title": "Outils numériques de gestion"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ges_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "ges2_ope",
+              "title": "Qualité et commerce extérieur",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "ges2_lean",
+                  "title": "Amélioration continue : lean, 5S et outils qualité"
+                },
+                {
+                  "id": "ges2_douane",
+                  "title": "Commerce extérieur, douane et transit"
+                }
+              ]
+            },
+            {
+              "id": "ges2_fin",
+              "title": "Finance et prévision",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "ges2_financement",
+                  "title": "Financement des investissements"
+                },
+                {
+                  "id": "ges2_previsions",
+                  "title": "Prévision des ventes"
+                }
+              ]
+            },
+            {
+              "id": "ges2_man",
+              "title": "Management et gouvernance",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "ges2_pme",
+                  "title": "Bien gérer une petite entreprise"
+                },
+                {
+                  "id": "ges2_leadership",
+                  "title": "Leadership, conduite du changement et gestion du temps"
+                },
+                {
+                  "id": "ges2_controle_interne",
+                  "title": "Contrôle interne, audit et prévention de la fraude"
+                },
+                {
+                  "id": "ges2_gouvernance",
+                  "title": "Gouvernance d'entreprise et OHADA"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ges_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "ges3_pilotage",
+              "title": "Stratégie et pilotage",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "ges3_strategie_croissance",
+                  "title": "Stratégies de croissance"
+                },
+                {
+                  "id": "ges3_balanced_scorecard",
+                  "title": "Tableau de bord prospectif et pilotage"
+                },
+                {
+                  "id": "ges3_creation_valeur",
+                  "title": "Évaluation d'une entreprise et création de valeur"
+                }
+              ]
+            },
+            {
+              "id": "ges3_env",
+              "title": "Risques, innovation et contrats",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "ges3_risques",
+                  "title": "Gestion des risques et assurance"
+                },
+                {
+                  "id": "ges3_innovation",
+                  "title": "Innovation et transformation numérique"
+                },
+                {
+                  "id": "ges3_contrats",
+                  "title": "Négociation des contrats et règlement des litiges"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "univ_marketing",
+      "kind": "cycle",
+      "order": 37,
+      "title": "Marketing et communication digitale — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_marketing",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Marketing et communication digitale",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "mkt_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "mkt_fond",
+              "title": "Fondamentaux du marketing",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "mkt_comportement",
+                  "title": "Le comportement du consommateur"
+                },
+                {
+                  "id": "mkt_marque",
+                  "title": "Produit, gamme et marque"
+                },
+                {
+                  "id": "mkt_prix",
+                  "title": "Stratégies de prix en marketing"
+                },
+                {
+                  "id": "mkt_distribution",
+                  "title": "Distribution, vente et merchandising"
+                }
+              ]
+            },
+            {
+              "id": "mkt_comm",
+              "title": "Communication",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "mkt_communication",
+                  "title": "La communication marketing"
+                },
+                {
+                  "id": "mkt_contenu",
+                  "title": "Marketing de contenu et storytelling"
+                }
+              ]
+            },
+            {
+              "id": "mkt_dig",
+              "title": "Marketing digital",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "mkt_digital",
+                  "title": "Marketing digital : site, référencement et publicité en ligne"
+                },
+                {
+                  "id": "mkt_reseaux",
+                  "title": "Réseaux sociaux et community management"
+                },
+                {
+                  "id": "mkt_ecommerce",
+                  "title": "Commerce électronique et paiement mobile"
+                }
+              ]
+            },
+            {
+              "id": "mkt_rel",
+              "title": "Vente, relation client et mesure",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "mkt_crm",
+                  "title": "E-mail marketing, CRM et fidélisation"
+                },
+                {
+                  "id": "mkt_vente",
+                  "title": "Techniques de vente"
+                },
+                {
+                  "id": "mkt_analyse",
+                  "title": "Mesurer et améliorer ses actions marketing"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mkt_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "mkt2_strat",
+              "title": "Études et stratégie",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "mkt2_quanti",
+                  "title": "Études quantitatives et sondages"
+                },
+                {
+                  "id": "mkt2_strategie",
+                  "title": "Stratégie et plan marketing"
+                },
+                {
+                  "id": "mkt2_services",
+                  "title": "Marketing des services"
+                },
+                {
+                  "id": "mkt2_b2b",
+                  "title": "Marketing entre entreprises (B2B)"
+                }
+              ]
+            },
+            {
+              "id": "mkt2_dig",
+              "title": "Marché africain et digital",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "mkt2_afrique",
+                  "title": "Marketing en contexte africain"
+                },
+                {
+                  "id": "mkt2_analytics",
+                  "title": "Analytique digitale et parcours client"
+                },
+                {
+                  "id": "mkt2_video",
+                  "title": "Vidéo, influence et contenu viral"
+                },
+                {
+                  "id": "mkt2_ethique",
+                  "title": "Droit et éthique du marketing"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mkt_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "mkt3_strat",
+              "title": "Marque et marchés",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "mkt3_marque",
+                  "title": "Management de marque et identité"
+                },
+                {
+                  "id": "mkt3_international",
+                  "title": "Marketing international et export"
+                },
+                {
+                  "id": "mkt3_campagne",
+                  "title": "Concevoir et piloter une campagne marketing"
+                }
+              ]
+            },
+            {
+              "id": "mkt3_data",
+              "title": "Données et responsabilité",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "mkt3_crm_data",
+                  "title": "Données clients, segmentation RFM et automatisation"
+                },
+                {
+                  "id": "mkt3_ereputation",
+                  "title": "E-réputation et gestion de crise"
+                },
+                {
+                  "id": "mkt3_responsable",
+                  "title": "Marketing responsable et durable"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cert_entretien",
+      "kind": "cert",
+      "order": 100,
+      "title": "Entretien d'embauche",
+      "classes": [
+        {
+          "id": "ent_module",
+          "title": "Entretien d'embauche",
+          "subjects": [
+            {
+              "id": "entretien",
+              "title": "Réussir son entretien",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "ent_preparer",
+                  "title": "Préparer l'entretien"
+                },
+                {
+                  "id": "ent_presenter",
+                  "title": "Se présenter : « Parlez-moi de vous »"
+                },
+                {
+                  "id": "ent_classiques",
+                  "title": "Les questions classiques"
+                },
+                {
+                  "id": "ent_star",
+                  "title": "Questions comportementales et méthode STAR"
+                },
+                {
+                  "id": "ent_conclure",
+                  "title": "Salaire, questions à poser et suite"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cert": {
+        "id": "att_entretien",
+        "title": "Attestation : prêt pour l'entretien d'embauche",
+        "from": [
+          "ent_preparer",
+          "ent_presenter",
+          "ent_classiques",
+          "ent_star",
+          "ent_conclure"
+        ],
+        "count": 30,
+        "passPct": 0.7,
+        "seconds": 1500
       }
-     ]
+    },
+    {
+      "id": "cert_python",
+      "kind": "cert",
+      "order": 110,
+      "title": "Python — bases",
+      "classes": [],
+      "cert": {
+        "id": "att_python",
+        "title": "Attestation : Python — bases",
+        "from": [
+          "info_py_bases",
+          "info_py_listes",
+          "info_py_fonctions"
+        ],
+        "count": 30,
+        "passPct": 0.7,
+        "seconds": 1500
+      }
+    },
+    {
+      "id": "cert_ia",
+      "kind": "cert",
+      "order": 120,
+      "title": "Intelligence artificielle — bases",
+      "classes": [
+        {
+          "id": "ia_module",
+          "title": "Intelligence artificielle — bases",
+          "subjects": [
+            {
+              "id": "ia_comprendre",
+              "title": "Comprendre et bien utiliser l'IA",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "ia_quoi",
+                  "title": "C'est quoi l'intelligence artificielle ?"
+                },
+                {
+                  "id": "ia_prompt",
+                  "title": "Écrire un bon prompt"
+                },
+                {
+                  "id": "ia_verif",
+                  "title": "Vérifier, éthique et données personnelles"
+                },
+                {
+                  "id": "ia_outils",
+                  "title": "Les familles d'outils d'IA"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cert": {
+        "id": "att_ia_bases",
+        "title": "Attestation : bases de l'intelligence artificielle",
+        "from": [
+          "ia_quoi",
+          "ia_prompt",
+          "ia_verif",
+          "ia_outils"
+        ],
+        "count": 30,
+        "passPct": 0.7,
+        "seconds": 1500
+      }
+    },
+    {
+      "id": "cert_ia_pro",
+      "kind": "cert",
+      "order": 130,
+      "title": "IA pour vendre, créer et programmer",
+      "classes": [
+        {
+          "id": "ia_pro_module",
+          "title": "IA pour vendre, créer et programmer",
+          "subjects": [
+            {
+              "id": "ia_metiers",
+              "title": "L'IA au service de ton activité",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "ia_vente",
+                  "title": "Vendre ses produits avec l'IA"
+                },
+                {
+                  "id": "ia_affiche",
+                  "title": "Affiches et images avec l'IA"
+                },
+                {
+                  "id": "ia_motscles",
+                  "title": "Mots-clés, SEO et hashtags"
+                },
+                {
+                  "id": "ia_code",
+                  "title": "IA et informatique : code, Excel, SQL"
+                },
+                {
+                  "id": "ia_social",
+                  "title": "Contenu et réseaux sociaux avec l'IA"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "cert": {
+        "id": "att_ia_pro",
+        "title": "Attestation : IA pour vendre, créer et programmer",
+        "from": [
+          "ia_vente",
+          "ia_affiche",
+          "ia_motscles",
+          "ia_code",
+          "ia_social"
+        ],
+        "count": 30,
+        "passPct": 0.7,
+        "seconds": 1500
+      }
     }
-   ]
-  },
-  {
-   "id": "lycee_d",
-   "kind": "cycle",
-   "order": 20,
-   "title": "Lycée — série D",
-   "country": "UEMOA",
-   "after": [
-    "college"
-   ],
-   "exam": {
-    "id": "bac_d",
-    "title": "Examen du BAC D",
-    "diploma": "BAC D — Baccalauréat, série D",
-    "count": 40,
-    "passPct": 0.5,
-    "seconds": 5400
-   },
-   "classes": [
-    {
-     "id": "lyc_2nde",
-     "title": "Seconde",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "sec_maths_second_degre",
-         "title": "Équations du second degré"
-        },
-        {
-         "id": "sec_maths_fonctions",
-         "title": "Généralités sur les fonctions"
-        }
-       ]
-      },
-      {
-       "id": "pc",
-       "title": "Physique-Chimie",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "sec_pc_atome",
-         "title": "L'atome et la classification périodique"
-        },
-        {
-         "id": "sec_pc_mole",
-         "title": "La quantité de matière (la mole)"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "sec_svt_cellule",
-         "title": "La cellule et l'ADN"
-        },
-        {
-         "id": "sec_svt_ecosystemes",
-         "title": "Écosystèmes et biodiversité"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "lyc_1d",
-     "title": "Première D",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "prem_maths_limites",
-         "title": "Limites et continuité"
-        },
-        {
-         "id": "prem_maths_trigo",
-         "title": "Trigonométrie et cercle trigonométrique"
-        }
-       ]
-      },
-      {
-       "id": "pc",
-       "title": "Physique-Chimie",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "prem_pc_energie",
-         "title": "Travail et énergie"
-        },
-        {
-         "id": "prem_pc_organique",
-         "title": "Chimie organique : alcanes et alcools"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "prem_svt_nerveux",
-         "title": "Le système nerveux et le réflexe"
-        },
-        {
-         "id": "prem_svt_muscle",
-         "title": "La contraction musculaire"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "lyc_td",
-     "title": "Terminale D",
-     "subjects": [
-      {
-       "id": "maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "td_maths_suites",
-         "title": "Suites numériques"
-        },
-        {
-         "id": "td_maths_derivation",
-         "title": "Dérivation et étude de fonctions"
-        },
-        {
-         "id": "td_maths_ln",
-         "title": "Fonction logarithme népérien"
-        }
-       ]
-      },
-      {
-       "id": "pc",
-       "title": "Physique-Chimie",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "td_pc_cinematique",
-         "title": "Cinématique du point"
-        },
-        {
-         "id": "td_pc_newton",
-         "title": "Les lois de Newton"
-        },
-        {
-         "id": "td_pc_acides",
-         "title": "Acides, bases et pH"
-        }
-       ]
-      },
-      {
-       "id": "svt",
-       "title": "SVT",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "td_svt_genetique",
-         "title": "Génétique et hérédité"
-        },
-        {
-         "id": "td_svt_immunite",
-         "title": "Immunité et défense de l'organisme"
-        },
-        {
-         "id": "td_svt_respiration",
-         "title": "Respiration et fermentation"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_info",
-   "kind": "cycle",
-   "order": 30,
-   "title": "Licence d'Informatique",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_info",
-    "title": "Examen de licence",
-    "diploma": "Licence d'Informatique",
-    "count": 50,
-    "passPct": 0.5,
-    "seconds": 5400
-   },
-   "classes": [
-    {
-     "id": "info_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "algo",
-       "title": "Algorithmique",
-       "icon": "account_tree",
-       "chapters": [
-        {
-         "id": "info_algo_variables",
-         "title": "Variables, types et opérateurs"
-        },
-        {
-         "id": "info_algo_conditions",
-         "title": "Les conditions"
-        },
-        {
-         "id": "info_algo_boucles",
-         "title": "Les boucles"
-        },
-        {
-         "id": "info_algo_tableaux",
-         "title": "Tableaux et fonctions"
-        }
-       ]
-      },
-      {
-       "id": "python",
-       "title": "Programmation Python",
-       "icon": "code",
-       "chapters": [
-        {
-         "id": "info_py_bases",
-         "title": "Python : les bases"
-        },
-        {
-         "id": "info_py_listes",
-         "title": "Listes, dictionnaires et chaînes"
-        },
-        {
-         "id": "info_py_fonctions",
-         "title": "Fonctions et fichiers"
-        }
-       ]
-      },
-      {
-       "id": "bdd",
-       "title": "Bases de données",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "info_bdd_modele",
-         "title": "Le modèle relationnel"
-        },
-        {
-         "id": "info_bdd_select",
-         "title": "SQL : interroger une table"
-        },
-        {
-         "id": "info_bdd_jointures",
-         "title": "SQL : jointures et agrégats"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "info_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "sd",
-       "title": "Structures de données",
-       "icon": "account_tree",
-       "chapters": [
-        {
-         "id": "info2_sd_listes",
-         "title": "Listes, piles et files"
-        },
-        {
-         "id": "info2_sd_arbres",
-         "title": "Arbres et algorithmes de tri"
-        }
-       ]
-      },
-      {
-       "id": "poo",
-       "title": "Programmation orientée objet",
-       "icon": "code",
-       "chapters": [
-        {
-         "id": "info2_poo_classes",
-         "title": "Classes et objets"
-        },
-        {
-         "id": "info2_poo_heritage",
-         "title": "Héritage et polymorphisme"
-        }
-       ]
-      },
-      {
-       "id": "reseaux",
-       "title": "Réseaux",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "info2_res_modeles",
-         "title": "Modèles OSI et TCP/IP"
-        },
-        {
-         "id": "info2_res_ip",
-         "title": "Adressage IP et services"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "info_l3",
-     "title": "Licence 3",
-     "subjects": [
-      {
-       "id": "gl",
-       "title": "Génie logiciel",
-       "icon": "account_tree",
-       "chapters": [
-        {
-         "id": "info3_gl_cycle",
-         "title": "Cycles de développement et tests"
-        },
-        {
-         "id": "info3_gl_uml",
-         "title": "Modélisation UML"
-        }
-       ]
-      },
-      {
-       "id": "sys",
-       "title": "Systèmes d'exploitation",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "info3_sys_processus",
-         "title": "Processus et mémoire"
-        },
-        {
-         "id": "info3_sys_fichiers",
-         "title": "Fichiers et commandes"
-        }
-       ]
-      },
-      {
-       "id": "ia",
-       "title": "Intelligence artificielle et sécurité",
-       "icon": "code",
-       "chapters": [
-        {
-         "id": "info3_ia_bases",
-         "title": "Intelligence artificielle : bases"
-        },
-        {
-         "id": "info3_secu_bases",
-         "title": "Sécurité informatique"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_mpc",
-   "kind": "cycle",
-   "order": 31,
-   "title": "Sciences exactes (MPC) — Licence complète",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_mpc",
-    "title": "Examen de licence",
-    "diploma": "Licence Afrolook Étude — Sciences exactes (MPC)",
-    "count": 60,
-    "passPct": 0.5,
-    "seconds": 5400
-   },
-   "classes": [
-    {
-     "id": "mpc_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "mpc_maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "mpc_an_limites",
-         "title": "Limites et continuité"
-        },
-        {
-         "id": "mpc_an_derivees",
-         "title": "Dérivation et étude de fonctions"
-        },
-        {
-         "id": "mpc_al_matrices",
-         "title": "Matrices et systèmes linéaires"
-        },
-        {
-         "id": "mpc_al_complexes",
-         "title": "Nombres complexes"
-        }
-       ]
-      },
-      {
-       "id": "mpc_phys",
-       "title": "Physique",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "mpc_ph_cinematique",
-         "title": "Cinématique du point"
-        },
-        {
-         "id": "mpc_ph_dynamique",
-         "title": "Dynamique : lois de Newton et énergie"
-        },
-        {
-         "id": "mpc_ph_electricite",
-         "title": "Circuits électriques en régime continu"
-        },
-        {
-         "id": "mpc_ph_thermo",
-         "title": "Thermodynamique : température, chaleur et premier principe"
-        }
-       ]
-      },
-      {
-       "id": "mpc_chim",
-       "title": "Chimie",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "mpc_ch_atome",
-         "title": "Structure de l'atome et classification périodique"
-        },
-        {
-         "id": "mpc_ch_liaisons",
-         "title": "Liaisons chimiques et molécules"
-        },
-        {
-         "id": "mpc_ch_solutions",
-         "title": "Solutions, concentrations et acides-bases"
-        },
-        {
-         "id": "mpc_ch_reactions",
-         "title": "Réactions, bilan de matière et oxydoréduction"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "mpc_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "mpc2_maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "mpc2_an_integrales",
-         "title": "Intégrales et primitives"
-        },
-        {
-         "id": "mpc2_an_eqdiff",
-         "title": "Équations différentielles linéaires"
-        },
-        {
-         "id": "mpc2_al_vectoriels",
-         "title": "Espaces vectoriels, applications linéaires et déterminants"
-        }
-       ]
-      },
-      {
-       "id": "mpc2_phys",
-       "title": "Physique",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "mpc2_ph_ondes",
-         "title": "Ondes et optique géométrique"
-        },
-        {
-         "id": "mpc2_ph_magnetisme",
-         "title": "Champ magnétique et induction"
-        },
-        {
-         "id": "mpc2_ph_thermo2",
-         "title": "Second principe et machines thermiques"
-        }
-       ]
-      },
-      {
-       "id": "mpc2_chim",
-       "title": "Chimie",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "mpc2_ch_cinetique",
-         "title": "Cinétique chimique"
-        },
-        {
-         "id": "mpc2_ch_orga",
-         "title": "Chimie organique : fonctions et nomenclature"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "mpc_l3",
-     "title": "Licence 3",
-     "subjects": [
-      {
-       "id": "mpc3_maths",
-       "title": "Mathématiques",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "mpc3_an_series",
-         "title": "Séries numériques et développements en série"
-        },
-        {
-         "id": "mpc3_an_multivar",
-         "title": "Fonctions de plusieurs variables"
-        }
-       ]
-      },
-      {
-       "id": "mpc3_phys",
-       "title": "Physique",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "mpc3_ph_quantique",
-         "title": "Introduction à la physique quantique"
-        },
-        {
-         "id": "mpc3_ph_maxwell",
-         "title": "Ondes électromagnétiques"
-        }
-       ]
-      },
-      {
-       "id": "mpc3_chim",
-       "title": "Chimie",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "mpc3_ch_thermochimie",
-         "title": "Thermochimie et équilibres chimiques"
-        },
-        {
-         "id": "mpc3_ch_electrochimie",
-         "title": "Électrochimie : piles, électrolyse et corrosion"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_efc",
-   "kind": "cycle",
-   "order": 32,
-   "title": "Économie, Finance et Comptabilité — Licence complète",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_efc",
-    "title": "Examen de licence",
-    "diploma": "Licence Afrolook Étude — Économie, Finance et Comptabilité",
-    "count": 60,
-    "passPct": 0.5,
-    "seconds": 5400
-   },
-   "classes": [
-    {
-     "id": "efc_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "efc_eco",
-       "title": "Économie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "efc_eco_offre",
-         "title": "Offre, demande et prix d'équilibre"
-        },
-        {
-         "id": "efc_eco_macro",
-         "title": "PIB, inflation et chômage"
-        },
-        {
-         "id": "efc_eco_monnaie",
-         "title": "Monnaie, banques et BCEAO"
-        }
-       ]
-      },
-      {
-       "id": "efc_cpt",
-       "title": "Comptabilité (SYSCOHADA)",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "efc_cpt_bilan",
-         "title": "Patrimoine et bilan"
-        },
-        {
-         "id": "efc_cpt_compte",
-         "title": "Comptes, débit-crédit et écritures"
-        },
-        {
-         "id": "efc_cpt_charges",
-         "title": "Charges, produits et résultat"
-        },
-        {
-         "id": "efc_cpt_syscohada",
-         "title": "Le SYSCOHADA : plan comptable et états financiers"
-        }
-       ]
-      },
-      {
-       "id": "efc_fin",
-       "title": "Finance",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "efc_fin_interets",
-         "title": "Intérêts simples et composés"
-        },
-        {
-         "id": "efc_fin_actualisation",
-         "title": "Actualisation et choix d'investissement"
-        },
-        {
-         "id": "efc_fin_ratios",
-         "title": "Ratios et lecture de la situation financière"
-        }
-       ]
-      },
-      {
-       "id": "efc_sta",
-       "title": "Statistiques et probabilités",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "efc_sta_descriptive",
-         "title": "Moyenne, médiane et écart-type"
-        },
-        {
-         "id": "efc_sta_proba",
-         "title": "Probabilités de base"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "efc_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "efc2_eco",
-       "title": "Économie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "efc2_eco_croissance",
-         "title": "Croissance, développement et secteurs d'activité"
-        },
-        {
-         "id": "efc2_eco_commerce",
-         "title": "Commerce international, change et intégration régionale"
-        }
-       ]
-      },
-      {
-       "id": "efc2_cpt",
-       "title": "Comptabilité",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "efc2_cpt_amort",
-         "title": "Amortissements et dépréciations"
-        },
-        {
-         "id": "efc2_cpt_stocks",
-         "title": "Stocks et inventaire"
-        },
-        {
-         "id": "efc2_cpt_tva_paie",
-         "title": "TVA et paie"
-        }
-       ]
-      },
-      {
-       "id": "efc2_ges",
-       "title": "Gestion et marketing",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "efc2_ges_couts",
-         "title": "Coûts et seuil de rentabilité"
-        },
-        {
-         "id": "efc2_mkt_base",
-         "title": "Marketing : étude de marché et marketing-mix"
-        }
-       ]
-      },
-      {
-       "id": "efc2_fin",
-       "title": "Finance",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "efc2_fin_marches",
-         "title": "Marchés financiers et BRVM"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "efc_l3",
-     "title": "Licence 3",
-     "subjects": [
-      {
-       "id": "efc3_cpt",
-       "title": "Comptabilité et analyse financière",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "efc3_cpt_analytique",
-         "title": "Comptabilité analytique et calcul des coûts"
-        },
-        {
-         "id": "efc3_fin_sig",
-         "title": "Analyse financière : soldes intermédiaires de gestion et CAF"
-        }
-       ]
-      },
-      {
-       "id": "efc3_ges",
-       "title": "Gestion et management",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "efc3_ges_budgets",
-         "title": "Budgets, écarts et tableaux de bord"
-        },
-        {
-         "id": "efc3_ges_management",
-         "title": "Management et gestion des ressources humaines"
-        },
-        {
-         "id": "efc3_ent_projet",
-         "title": "Entrepreneuriat et plan d'affaires"
-        }
-       ]
-      },
-      {
-       "id": "efc3_eco",
-       "title": "Économie",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "efc3_eco_politiques",
-         "title": "Politiques économiques et convergence dans l'UEMOA"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_droit",
-   "kind": "cycle",
-   "order": 33,
-   "title": "Droit (avec le droit OHADA) — Licence complète",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_droit",
-    "title": "Examen de licence",
-    "diploma": "Licence Afrolook Étude — Droit",
-    "count": 60,
-    "passPct": 0.5,
-    "seconds": 5400
-   },
-   "classes": [
-    {
-     "id": "drt_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "drt_civil",
-       "title": "Introduction au droit civil",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "drt_intro_regle",
-         "title": "La règle de droit et ses sources"
-        },
-        {
-         "id": "drt_pers",
-         "title": "Personnes physiques, personnes morales et capacité"
-        },
-        {
-         "id": "drt_contrat",
-         "title": "Le contrat : formation et validité"
-        }
-       ]
-      },
-      {
-       "id": "drt_const",
-       "title": "Droit constitutionnel",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "drt_const_etat",
-         "title": "L'État, la Constitution et la séparation des pouvoirs"
-        },
-        {
-         "id": "drt_const_libertes",
-         "title": "Droits et libertés fondamentaux"
-        }
-       ]
-      },
-      {
-       "id": "drt_ohada",
-       "title": "Droit OHADA",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "drt_ohada_orga",
-         "title": "L'OHADA : traité, organes et Actes uniformes"
-        },
-        {
-         "id": "drt_ohada_comm",
-         "title": "Commerçant, entreprenant et registre du commerce"
-        },
-        {
-         "id": "drt_ohada_soc",
-         "title": "Les sociétés commerciales"
-        },
-        {
-         "id": "drt_ohada_suretes",
-         "title": "Sûretés et recouvrement des créances"
-        }
-       ]
-      },
-      {
-       "id": "drt_penal",
-       "title": "Droit pénal, procédure et travail",
-       "icon": "account_tree",
-       "chapters": [
-        {
-         "id": "drt_penal_infraction",
-         "title": "L'infraction pénale"
-        },
-        {
-         "id": "drt_penal_proc",
-         "title": "Juridictions et déroulement du procès"
-        },
-        {
-         "id": "drt_travail",
-         "title": "Le contrat de travail"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "drt_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "drt2_civil",
-       "title": "Droit civil",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "drt2_biens",
-         "title": "Les biens et la propriété"
-        },
-        {
-         "id": "drt2_responsabilite",
-         "title": "La responsabilité civile"
-        },
-        {
-         "id": "drt2_famille",
-         "title": "Famille : mariage, filiation et succession"
-        },
-        {
-         "id": "drt2_proc_civile",
-         "title": "Procédure civile : agir en justice"
-        }
-       ]
-      },
-      {
-       "id": "drt2_admin",
-       "title": "Droit administratif",
-       "icon": "account_tree",
-       "chapters": [
-        {
-         "id": "drt2_admin_acte",
-         "title": "Administration, acte administratif et service public"
-        }
-       ]
-      },
-      {
-       "id": "drt2_ohada",
-       "title": "Droit OHADA",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "drt2_ohada_collectives",
-         "title": "Les procédures collectives (OHADA)"
-        },
-        {
-         "id": "drt2_ohada_arbitrage",
-         "title": "Arbitrage et médiation (OHADA)"
-        }
-       ]
-      },
-      {
-       "id": "drt2_dip",
-       "title": "Droit international",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "drt2_dip",
-         "title": "Droit international public"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "drt_l3",
-     "title": "Licence 3",
-     "subjects": [
-      {
-       "id": "drt3_prive",
-       "title": "Droit des affaires et fiscal",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "drt3_contrats_commerciaux",
-         "title": "Vente commerciale, bail commercial et transport"
-        },
-        {
-         "id": "drt3_fiscal",
-         "title": "Droit fiscal"
-        },
-        {
-         "id": "drt3_prop_intel",
-         "title": "Propriété intellectuelle et OAPI"
-        }
-       ]
-      },
-      {
-       "id": "drt3_penal",
-       "title": "Droit pénal et travail",
-       "icon": "account_tree",
-       "chapters": [
-        {
-         "id": "drt3_penal_special",
-         "title": "Droit pénal spécial : principales infractions"
-        },
-        {
-         "id": "drt3_travail_collectif",
-         "title": "Droit du travail collectif : syndicats, conventions et grève"
-        }
-       ]
-      },
-      {
-       "id": "drt3_num",
-       "title": "Droit du numérique",
-       "icon": "code",
-       "chapters": [
-        {
-         "id": "drt3_numerique",
-         "title": "Droit du numérique et protection des données personnelles"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_sport",
-   "kind": "cycle",
-   "order": 34,
-   "title": "Sport (STAPS) — Licence complète",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_sport",
-    "title": "Examen de licence",
-    "diploma": "Licence Afrolook Étude — Sport (STAPS)",
-    "count": 60,
-    "passPct": 0.5,
-    "seconds": 5400
-   },
-   "classes": [
-    {
-     "id": "spo_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "spo_anat",
-       "title": "Anatomie et physiologie",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "spo_anat_muscles",
-         "title": "Le système musculaire"
-        },
-        {
-         "id": "spo_anat_os",
-         "title": "Squelette et articulations"
-        },
-        {
-         "id": "spo_phys_cardio",
-         "title": "Cœur, respiration et effort"
-        }
-       ]
-      },
-      {
-       "id": "spo_ent",
-       "title": "Entraînement",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "spo_ent_qualites",
-         "title": "Les qualités physiques"
-        },
-        {
-         "id": "spo_ent_principes",
-         "title": "Les principes de l'entraînement"
-        },
-        {
-         "id": "spo_ent_echauff",
-         "title": "Échauffement, retour au calme et prévention des blessures"
-        }
-       ]
-      },
-      {
-       "id": "spo_nut",
-       "title": "Nutrition et santé",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "spo_nut_base",
-         "title": "Nutriments et hydratation du sportif"
-        },
-        {
-         "id": "spo_sante_premiers",
-         "title": "Premiers secours en sport"
-        }
-       ]
-      },
-      {
-       "id": "spo_reg",
-       "title": "Règles et culture sportive",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "spo_reg_foot",
-         "title": "Les règles du football"
-        },
-        {
-         "id": "spo_reg_athle",
-         "title": "L'athlétisme : épreuves et règles"
-        },
-        {
-         "id": "spo_reg_basket",
-         "title": "Le basket-ball : règles essentielles"
-        },
-        {
-         "id": "spo_hist_olymp",
-         "title": "Jeux olympiques et organisation du sport"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "spo_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "spo2_sci",
-       "title": "Sciences du sport",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "spo2_filieres",
-         "title": "Les filières énergétiques"
-        },
-        {
-         "id": "spo2_biomeca",
-         "title": "Biomécanique : forces, leviers et mouvement"
-        },
-        {
-         "id": "spo2_psy",
-         "title": "Psychologie du sport"
-        }
-       ]
-      },
-      {
-       "id": "spo2_ent",
-       "title": "Entraînement et nutrition",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "spo2_planif",
-         "title": "Planification et périodisation de l'entraînement"
-        },
-        {
-         "id": "spo2_nutri_perf",
-         "title": "Nutrition de performance et composition corporelle"
-        }
-       ]
-      },
-      {
-       "id": "spo2_pro",
-       "title": "Métiers et organisation du sport",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "spo2_management",
-         "title": "Organisation du sport : clubs, associations et fédérations"
-        },
-        {
-         "id": "spo2_pedago",
-         "title": "Enseigner et animer une séance sportive"
-        }
-       ]
-      },
-      {
-       "id": "spo2_reg",
-       "title": "Sports collectifs",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "spo2_volley_hand",
-         "title": "Volley-ball et handball : règles essentielles"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "spo_l3",
-     "title": "Licence 3",
-     "subjects": [
-      {
-       "id": "spo3_sci",
-       "title": "Physiologie et entraînement",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "spo3_adaptations",
-         "title": "Adaptations de l'organisme à l'entraînement"
-        },
-        {
-         "id": "spo3_force",
-         "title": "Musculation et développement de la force"
-        },
-        {
-         "id": "spo3_traumato",
-         "title": "Traumatologie du sport et rééducation"
-        }
-       ]
-      },
-      {
-       "id": "spo3_sante",
-       "title": "Santé et éthique",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "spo3_sante",
-         "title": "Sport santé et publics particuliers"
-        },
-        {
-         "id": "spo3_dopage",
-         "title": "Dopage et éthique du sport"
-        }
-       ]
-      },
-      {
-       "id": "spo3_soc",
-       "title": "Sport et société",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "spo3_societe",
-         "title": "Sport et société"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_sante",
-   "kind": "cycle",
-   "order": 35,
-   "title": "Santé et sciences infirmières — Licences 1 et 2",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_sante",
-    "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Santé et sciences infirmières (Licences 1 et 2)",
-    "count": 50,
-    "passPct": 0.5,
-    "seconds": 4500
-   },
-   "classes": [
-    {
-     "id": "san_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "san_anat",
-       "title": "Anatomie et physiologie",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "san_anat_corps",
-         "title": "Organisation du corps humain"
-        },
-        {
-         "id": "san_cardio",
-         "title": "Cœur, circulation et sang"
-        },
-        {
-         "id": "san_resp_dig",
-         "title": "Respiration et digestion"
-        },
-        {
-         "id": "san_nerveux",
-         "title": "Système nerveux et organes des sens"
-        }
-       ]
-      },
-      {
-       "id": "san_pub",
-       "title": "Santé publique",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "san_hygiene",
-         "title": "Hygiène et prévention des infections"
-        },
-        {
-         "id": "san_epidemio",
-         "title": "Épidémiologie et grandes maladies en Afrique"
-        },
-        {
-         "id": "san_vaccin_smi",
-         "title": "Vaccination, santé de la mère et de l'enfant"
-        }
-       ]
-      },
-      {
-       "id": "san_soins",
-       "title": "Soins de base",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "san_constantes",
-         "title": "Constantes vitales et surveillance du patient"
-        },
-        {
-         "id": "san_medicaments",
-         "title": "Médicaments : voies d'administration et sécurité"
-        },
-        {
-         "id": "san_urgences",
-         "title": "Urgences et premiers soins"
-        }
-       ]
-      },
-      {
-       "id": "san_nut",
-       "title": "Nutrition et éthique",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "san_nutri_enfant",
-         "title": "Nutrition, malnutrition et croissance de l'enfant"
-        },
-        {
-         "id": "san_ethique",
-         "title": "Éthique et relation soignant-patient"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "san_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "san2_bio",
-       "title": "Sciences biomédicales",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "san2_pharmaco",
-         "title": "Pharmacologie générale"
-        },
-        {
-         "id": "san2_microbio",
-         "title": "Microbiologie : bactéries, virus, parasites, champignons"
-        },
-        {
-         "id": "san2_immuno",
-         "title": "Immunité, allergies et VIH"
-        },
-        {
-         "id": "san2_endocrino",
-         "title": "Hormones et diabète"
-        }
-       ]
-      },
-      {
-       "id": "san2_clin",
-       "title": "Pratique clinique",
-       "icon": "eco",
-       "chapters": [
-        {
-         "id": "san2_obstetrique",
-         "title": "Grossesse, accouchement et suites de couches"
-        },
-        {
-         "id": "san2_pediatrie",
-         "title": "Maladies de l'enfant et PCIME"
-        },
-        {
-         "id": "san2_soins",
-         "title": "Techniques de soins et asepsie"
-        }
-       ]
-      },
-      {
-       "id": "san2_pub",
-       "title": "Santé publique",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "san2_communautaire",
-         "title": "Santé communautaire et soins de santé primaires"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_gestion",
-   "kind": "cycle",
-   "order": 36,
-   "title": "Gestion des entreprises — Licences 1 et 2",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_gestion",
-    "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Gestion des entreprises (Licences 1 et 2)",
-    "count": 50,
-    "passPct": 0.5,
-    "seconds": 4500
-   },
-   "classes": [
-    {
-     "id": "ges_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "ges_man",
-       "title": "Management",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "ges_entreprise",
-         "title": "L'entreprise : types, objectifs et parties prenantes"
-        },
-        {
-         "id": "ges_organisation",
-         "title": "Organisation et structures de l'entreprise"
-        },
-        {
-         "id": "ges_strategie",
-         "title": "Stratégie et diagnostic de l'entreprise"
-        },
-        {
-         "id": "ges_rse",
-         "title": "Responsabilité sociétale et éthique des affaires"
-        }
-       ]
-      },
-      {
-       "id": "ges_ope",
-       "title": "Opérations et projets",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "ges_production",
-         "title": "Production et qualité"
-        },
-        {
-         "id": "ges_approvisionnement",
-         "title": "Approvisionnement et logistique"
-        },
-        {
-         "id": "ges_projet",
-         "title": "Gestion de projet"
-        }
-       ]
-      },
-      {
-       "id": "ges_fin",
-       "title": "Finance et prix",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "ges_tresorerie",
-         "title": "Gestion de la trésorerie et financement à court terme"
-        },
-        {
-         "id": "ges_prix",
-         "title": "Fixation des prix et marges"
-        },
-        {
-         "id": "ges_obligations",
-         "title": "Obligations administratives, fiscales et sociales"
-        }
-       ]
-      },
-      {
-       "id": "ges_com",
-       "title": "Communication et outils",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "ges_comm_pro",
-         "title": "Communication professionnelle et négociation"
-        },
-        {
-         "id": "ges_numerique",
-         "title": "Outils numériques de gestion"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "ges_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "ges2_ope",
-       "title": "Qualité et commerce extérieur",
-       "icon": "storage",
-       "chapters": [
-        {
-         "id": "ges2_lean",
-         "title": "Amélioration continue : lean, 5S et outils qualité"
-        },
-        {
-         "id": "ges2_douane",
-         "title": "Commerce extérieur, douane et transit"
-        }
-       ]
-      },
-      {
-       "id": "ges2_fin",
-       "title": "Finance et prévision",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "ges2_financement",
-         "title": "Financement des investissements"
-        },
-        {
-         "id": "ges2_previsions",
-         "title": "Prévision des ventes"
-        }
-       ]
-      },
-      {
-       "id": "ges2_man",
-       "title": "Management et gouvernance",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "ges2_pme",
-         "title": "Bien gérer une petite entreprise"
-        },
-        {
-         "id": "ges2_leadership",
-         "title": "Leadership, conduite du changement et gestion du temps"
-        },
-        {
-         "id": "ges2_controle_interne",
-         "title": "Contrôle interne, audit et prévention de la fraude"
-        },
-        {
-         "id": "ges2_gouvernance",
-         "title": "Gouvernance d'entreprise et OHADA"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "univ_marketing",
-   "kind": "cycle",
-   "order": 37,
-   "title": "Marketing et communication digitale — Licences 1 et 2",
-   "country": "UEMOA",
-   "after": [
-    "lycee_d"
-   ],
-   "exam": {
-    "id": "licence_marketing",
-    "title": "Examen de licence",
-    "diploma": "Certificat Afrolook Étude — Marketing et communication digitale (Licences 1 et 2)",
-    "count": 50,
-    "passPct": 0.5,
-    "seconds": 4500
-   },
-   "classes": [
-    {
-     "id": "mkt_l1",
-     "title": "Licence 1",
-     "subjects": [
-      {
-       "id": "mkt_fond",
-       "title": "Fondamentaux du marketing",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "mkt_comportement",
-         "title": "Le comportement du consommateur"
-        },
-        {
-         "id": "mkt_marque",
-         "title": "Produit, gamme et marque"
-        },
-        {
-         "id": "mkt_prix",
-         "title": "Stratégies de prix en marketing"
-        },
-        {
-         "id": "mkt_distribution",
-         "title": "Distribution, vente et merchandising"
-        }
-       ]
-      },
-      {
-       "id": "mkt_comm",
-       "title": "Communication",
-       "icon": "menu_book",
-       "chapters": [
-        {
-         "id": "mkt_communication",
-         "title": "La communication marketing"
-        },
-        {
-         "id": "mkt_contenu",
-         "title": "Marketing de contenu et storytelling"
-        }
-       ]
-      },
-      {
-       "id": "mkt_dig",
-       "title": "Marketing digital",
-       "icon": "code",
-       "chapters": [
-        {
-         "id": "mkt_digital",
-         "title": "Marketing digital : site, référencement et publicité en ligne"
-        },
-        {
-         "id": "mkt_reseaux",
-         "title": "Réseaux sociaux et community management"
-        },
-        {
-         "id": "mkt_ecommerce",
-         "title": "Commerce électronique et paiement mobile"
-        }
-       ]
-      },
-      {
-       "id": "mkt_rel",
-       "title": "Vente, relation client et mesure",
-       "icon": "calculate",
-       "chapters": [
-        {
-         "id": "mkt_crm",
-         "title": "E-mail marketing, CRM et fidélisation"
-        },
-        {
-         "id": "mkt_vente",
-         "title": "Techniques de vente"
-        },
-        {
-         "id": "mkt_analyse",
-         "title": "Mesurer et améliorer ses actions marketing"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "id": "mkt_l2",
-     "title": "Licence 2",
-     "subjects": [
-      {
-       "id": "mkt2_strat",
-       "title": "Études et stratégie",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "mkt2_quanti",
-         "title": "Études quantitatives et sondages"
-        },
-        {
-         "id": "mkt2_strategie",
-         "title": "Stratégie et plan marketing"
-        },
-        {
-         "id": "mkt2_services",
-         "title": "Marketing des services"
-        },
-        {
-         "id": "mkt2_b2b",
-         "title": "Marketing entre entreprises (B2B)"
-        }
-       ]
-      },
-      {
-       "id": "mkt2_dig",
-       "title": "Marché africain et digital",
-       "icon": "public",
-       "chapters": [
-        {
-         "id": "mkt2_afrique",
-         "title": "Marketing en contexte africain"
-        },
-        {
-         "id": "mkt2_analytics",
-         "title": "Analytique digitale et parcours client"
-        },
-        {
-         "id": "mkt2_video",
-         "title": "Vidéo, influence et contenu viral"
-        },
-        {
-         "id": "mkt2_ethique",
-         "title": "Droit et éthique du marketing"
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "id": "cert_entretien",
-   "kind": "cert",
-   "order": 100,
-   "title": "Entretien d'embauche",
-   "classes": [
-    {
-     "id": "ent_module",
-     "title": "Entretien d'embauche",
-     "subjects": [
-      {
-       "id": "entretien",
-       "title": "Réussir son entretien",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "ent_preparer",
-         "title": "Préparer l'entretien"
-        },
-        {
-         "id": "ent_presenter",
-         "title": "Se présenter : « Parlez-moi de vous »"
-        },
-        {
-         "id": "ent_classiques",
-         "title": "Les questions classiques"
-        },
-        {
-         "id": "ent_star",
-         "title": "Questions comportementales et méthode STAR"
-        },
-        {
-         "id": "ent_conclure",
-         "title": "Salaire, questions à poser et suite"
-        }
-       ]
-      }
-     ]
-    }
-   ],
-   "cert": {
-    "id": "att_entretien",
-    "title": "Attestation : prêt pour l'entretien d'embauche",
-    "from": [
-     "ent_preparer",
-     "ent_presenter",
-     "ent_classiques",
-     "ent_star",
-     "ent_conclure"
-    ],
-    "count": 30,
-    "passPct": 0.7,
-    "seconds": 1500
-   }
-  },
-  {
-   "id": "cert_python",
-   "kind": "cert",
-   "order": 110,
-   "title": "Python — bases",
-   "classes": [],
-   "cert": {
-    "id": "att_python",
-    "title": "Attestation : Python — bases",
-    "from": [
-     "info_py_bases",
-     "info_py_listes",
-     "info_py_fonctions"
-    ],
-    "count": 30,
-    "passPct": 0.7,
-    "seconds": 1500
-   }
-  },
-  {
-   "id": "cert_ia",
-   "kind": "cert",
-   "order": 120,
-   "title": "Intelligence artificielle — bases",
-   "classes": [
-    {
-     "id": "ia_module",
-     "title": "Intelligence artificielle — bases",
-     "subjects": [
-      {
-       "id": "ia_comprendre",
-       "title": "Comprendre et bien utiliser l'IA",
-       "icon": "science",
-       "chapters": [
-        {
-         "id": "ia_quoi",
-         "title": "C'est quoi l'intelligence artificielle ?"
-        },
-        {
-         "id": "ia_prompt",
-         "title": "Écrire un bon prompt"
-        },
-        {
-         "id": "ia_verif",
-         "title": "Vérifier, éthique et données personnelles"
-        },
-        {
-         "id": "ia_outils",
-         "title": "Les familles d'outils d'IA"
-        }
-       ]
-      }
-     ]
-    }
-   ],
-   "cert": {
-    "id": "att_ia_bases",
-    "title": "Attestation : bases de l'intelligence artificielle",
-    "from": [
-     "ia_quoi",
-     "ia_prompt",
-     "ia_verif",
-     "ia_outils"
-    ],
-    "count": 30,
-    "passPct": 0.7,
-    "seconds": 1500
-   }
-  },
-  {
-   "id": "cert_ia_pro",
-   "kind": "cert",
-   "order": 130,
-   "title": "IA pour vendre, créer et programmer",
-   "classes": [
-    {
-     "id": "ia_pro_module",
-     "title": "IA pour vendre, créer et programmer",
-     "subjects": [
-      {
-       "id": "ia_metiers",
-       "title": "L'IA au service de ton activité",
-       "icon": "work",
-       "chapters": [
-        {
-         "id": "ia_vente",
-         "title": "Vendre ses produits avec l'IA"
-        },
-        {
-         "id": "ia_affiche",
-         "title": "Affiches et images avec l'IA"
-        },
-        {
-         "id": "ia_motscles",
-         "title": "Mots-clés, SEO et hashtags"
-        },
-        {
-         "id": "ia_code",
-         "title": "IA et informatique : code, Excel, SQL"
-        },
-        {
-         "id": "ia_social",
-         "title": "Contenu et réseaux sociaux avec l'IA"
-        }
-       ]
-      }
-     ]
-    }
-   ],
-   "cert": {
-    "id": "att_ia_pro",
-    "title": "Attestation : IA pour vendre, créer et programmer",
-    "from": [
-     "ia_vente",
-     "ia_affiche",
-     "ia_motscles",
-     "ia_code",
-     "ia_social"
-    ],
-    "count": 30,
-    "passPct": 0.7,
-    "seconds": 1500
-   }
-  }
- ]
+  ]
 }

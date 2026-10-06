@@ -1,0 +1,29 @@
+titre: Méthodes en épidémiologie et dépistage
+== fiche
+p: L'épidémiologie utilise des méthodes statistiques pour décrire les maladies, chercher leurs causes et évaluer les actions de santé.
+li: Mesures : taux de mortalité (décès / population), létalité (décès / malades), prévalence (cas existants), incidence (nouveaux cas), ratio et proportion.
+li: Risque relatif (RR) : risque chez les exposés divisé par le risque chez les non-exposés ; RR supérieur à 1 : l'exposition augmente le risque.
+li: Types d'études : transversale (photographie à un moment), cas-témoins (on compare des malades et des non-malades), cohorte (on suit des groupes dans le temps), essai randomisé (comparaison de traitements avec tirage au sort).
+li: Biais : erreurs systématiques (sélection, mémoire, mesure) ; facteur de confusion : un autre facteur lié à l'exposition et à la maladie.
+li: Dépistage : repérer une maladie chez des personnes sans symptôme. Test : sensibilité (capacité à détecter les malades) et spécificité (capacité à écarter les non-malades).
+li: Valeur prédictive : probabilité d'être malade si le test est positif ; elle dépend de la prévalence.
+li: Courbe épidémique : nombre de cas par jour ou semaine, utile pour suivre une flambée ; période d'incubation, mode de transmission.
+li: Investigation d'une épidémie : confirmer le diagnostic, définir un cas, rechercher des cas, décrire (temps, lieu, personnes), formuler des hypothèses, agir, communiquer.
+note: Causalité et corrélation sont différentes : deux événements liés ne sont pas forcément cause l'un de l'autre.
+note: Un test très sensible convient au dépistage de masse ; un test très spécifique confirme le diagnostic.
+== questions
+Que mesure la létalité ? || La proportion de décès parmi les malades || La proportion de décès dans la population totale || Le nombre de nouveaux cas || Le nombre de cas existants || Elle exprime la gravité de la maladie.
+Quelle différence existe entre mortalité et létalité ? || La mortalité se rapporte à la population, la létalité aux malades || Aucune || La létalité se rapporte à la population || La mortalité se rapporte aux guéris || Les dénominateurs diffèrent.
+Que signifie un risque relatif supérieur à 1 ? || L'exposition augmente le risque || L'exposition protège || L'exposition n'a aucun effet || Le test est faux || Il compare exposés et non-exposés.
+Que fait une étude transversale ? || Elle décrit une situation à un moment donné || Elle suit des personnes pendant des années || Elle compare des traitements || Elle crée des vaccins || Elle est comme une photographie.
+Que fait une étude cas-témoins ? || Elle compare malades et non-malades pour trouver les expositions || Elle suit un groupe vaccinés || Elle fait un sondage d'opinion || Elle teste un médicament || Elle est utile pour les maladies rares.
+Que fait une étude de cohorte ? || Elle suit des groupes exposés et non exposés dans le temps || Elle compare des malades seulement || Elle décrit un moment || Elle mesure la tension || Elle calcule des risques relatifs.
+Qu'est-ce qu'un essai randomisé ? || Une comparaison de traitements avec répartition au hasard des participants || Une enquête sans méthode || Une étude de cas || Un sondage || Le tirage au sort limite les biais.
+Qu'est-ce qu'un biais en épidémiologie ? || Une erreur systématique qui fausse les résultats || Une erreur de calcul isolée || Une moyenne || Une probabilité || Elle réduit la validité d'une étude.
+Qu'est-ce qu'un facteur de confusion ? || Un facteur lié à la fois à l'exposition et à la maladie qui fausse l'association || Un facteur sans importance || Un traitement || Un test || Il peut créer une fausse association.
+Que mesure la sensibilité d'un test ? || La capacité à détecter les personnes malades || La capacité à exclure les non-malades || Le prix || La rapidité || Un test sensible rate peu de malades.
+Que mesure la spécificité d'un test ? || La capacité à écarter les personnes non malades || La capacité à détecter les malades || Le prix || La rapidité || Un test spécifique donne peu de faux positifs.
+Quel test convient au dépistage de masse ? || Un test très sensible || Un test très spécifique seulement || Un test coûteux || Un test imprécis || Il évite de manquer des malades.
+À quoi sert une courbe épidémique ? || À suivre le nombre de cas dans le temps pendant une flambée || À mesurer la température || À calculer la tension || À fixer le prix || Elle aide à comprendre la dynamique.
+Quelle est la première étape de l'investigation d'une épidémie ? || Confirmer le diagnostic et vérifier l'existence de l'épidémie || Chercher un coupable || Fermer les écoles || Vacciner tout le monde || Il faut d'abord vérifier les faits.
+Que signifie « corrélation n'est pas causalité » ? || Deux phénomènes liés ne sont pas forcément cause l'un de l'autre || Les corrélations prouvent toujours une cause || Les causes n'existent pas || La causalité est un chiffre || Il faut contrôler d'autres facteurs.

@@ -1,0 +1,30 @@
+titre: Gestion et organisation des services de santé
+== fiche
+p: Gérer un service de santé, c'est organiser les ressources (personnel, médicaments, argent, information) pour offrir des soins de qualité à tous.
+li: Planification : diagnostic de la situation, priorités, objectifs mesurables, activités, ressources, calendrier, suivi et évaluation.
+li: Gestion des médicaments : sélection (liste de médicaments essentiels), quantification, approvisionnement, stockage, distribution, bon usage.
+li: Stockage : à l'abri de la chaleur, de l'humidité et de la lumière ; règle FEFO (premier expiré, premier sorti) ; fiches de stock et inventaires réguliers ; lutte contre les ruptures et les péremptions.
+li: Système d'information sanitaire : collecte de données (registres, fiches), rapports mensuels, indicateurs, outils numériques ; les données servent à décider.
+li: Dossier du patient : complet, confidentiel, conservé de façon sécurisée.
+li: Qualité des soins : sécurité du patient, hygiène, accueil, délais d'attente, satisfaction ; audits cliniques ; amélioration continue.
+li: Ressources humaines : effectifs, compétences, formation continue, supervision, motivation, répartition équitable.
+li: Financement : budget de l'État, partenaires, participation des usagers, assurance maladie et mutuelles ; objectif : protection financière et couverture sanitaire universelle.
+li: Supervision et réunions : revue des résultats, partage des difficultés, plan d'action.
+note: Une rupture de médicament essentiel peut coûter des vies : suivi des stocks et commandes anticipées.
+note: Associer la communauté à la gestion renforce la confiance et l'utilisation des services.
+== questions
+Que comprend la planification d'un service de santé ? || Diagnostic, priorités, objectifs, activités, ressources et suivi || Seulement un budget || Seulement un organigramme || Seulement un règlement || Elle guide l'action.
+Que signifie FEFO ? || Premier expiré, premier sorti || Premier entré, premier sorti || Dernier entré, premier sorti || Aucun ordre || Elle évite les péremptions.
+Pourquoi tient-on des fiches de stock de médicaments ? || Pour suivre les entrées et sorties et éviter les ruptures || Pour décorer || Pour fixer le prix || Pour recruter || Elles aident à commander à temps.
+Comment stocker les médicaments ? || À l'abri de la chaleur, de l'humidité et de la lumière || Au soleil || Dans un endroit humide || Sans étiquette || Une mauvaise conservation altère les médicaments.
+Qu'est-ce qu'une liste de médicaments essentiels ? || Les médicaments indispensables aux besoins prioritaires || Tous les médicaments du monde || Les médicaments les plus chers || Les médicaments de luxe || Elle guide l'approvisionnement.
+À quoi sert un système d'information sanitaire ? || À collecter et analyser des données pour décider || À fixer les prix || À fabriquer des médicaments || À recruter || Les rapports mensuels alimentent les décisions.
+Pourquoi le dossier du patient doit-il être confidentiel ? || Pour protéger la vie privée || Pour cacher des erreurs || Pour économiser || Pour le vendre || Le secret professionnel s'applique.
+Citez un critère de qualité des soins : || La sécurité du patient || Le prix du bâtiment || La couleur des murs || Le nombre de lits seulement || Hygiène, accueil et délais comptent aussi.
+À quoi servent les audits cliniques ? || À évaluer les pratiques pour les améliorer || À punir || À fixer les salaires || À calculer les impôts || Ils comparent aux bonnes pratiques.
+Citez une source de financement de la santé : || Le budget de l'État || Une loterie || Les amendes || Les cadeaux || Assurance maladie et partenaires en sont d'autres.
+Qu'est-ce qu'une mutuelle de santé ? || Une association où des membres cotisent pour couvrir leurs frais de santé || Un hôpital privé || Un syndicat || Une banque || Elle protège contre les dépenses de santé.
+Que vise la couverture sanitaire universelle ? || Que tous accèdent à des soins de qualité sans difficulté financière || Un seul hôpital || Des soins réservés aux riches || La gratuité de tout || C'est un objectif de l'OMS.
+Pourquoi superviser régulièrement les équipes ? || Pour soutenir, former et améliorer la qualité || Pour punir || Pour réduire les effectifs || Pour supprimer les réunions || La supervision est formative.
+Que faire pour éviter une rupture de médicament essentiel ? || Suivre les stocks et commander à l'avance || Attendre la rupture || Commander au hasard || Acheter en urgence seulement || La prévoyance sauve des vies.
+Quel bénéfice apporte la participation de la communauté à un centre de santé ? || Elle renforce la confiance et l'utilisation des services || Elle augmente les coûts || Elle supprime les soignants || Elle nuit à la qualité || Les habitants connaissent leurs besoins.

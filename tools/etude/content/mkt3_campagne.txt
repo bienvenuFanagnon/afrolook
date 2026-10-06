@@ -1,0 +1,30 @@
+titre: Concevoir et piloter une campagne marketing
+== fiche
+p: Une campagne réussie suit une méthode : objectif clair, cible précise, message fort, canaux adaptés, mesure des résultats.
+li: Brief : document qui résume le contexte, l'objectif, la cible, le budget, le calendrier et les contraintes.
+li: Objectifs SMART : spécifiques, mesurables, atteignables, réalistes, définis dans le temps.
+li: Cible : segment précis de clients visés ; persona : portrait type de client.
+li: Message : idée centrale simple, mémorable, adaptée à la cible (concept créatif, slogan, ton).
+li: Mix médias : télévision, radio, affichage, presse, internet, réseaux, influenceurs, événements, SMS ; choisis selon la cible et le budget.
+li: Calendrier : lancement, temps forts, relances ; tenir compte des fêtes et saisons.
+li: Budget : répartition entre création, médias, production, mesure ; garder une réserve.
+li: Indicateurs : portée, clics, coût par clic, taux de conversion, coût d'acquisition client, retour sur investissement (ROI).
+li: Bilan : comparer résultats et objectifs, comprendre les écarts, capitaliser pour la prochaine campagne.
+note: Un test sur petit échantillon évite de gaspiller tout le budget.
+note: Une campagne sans mesure ne permet pas d'apprendre.
+== questions
+Qu'est-ce qu'un brief de campagne ? || Un document résumant contexte, objectif, cible et budget || Un bilan comptable || Un contrat de travail || Un impôt || Il guide toute l'équipe.
+Que signifie SMART pour un objectif ? || Spécifique, mesurable, atteignable, réaliste, temporel || Simple, moderne, actif, rapide, technique || Solide, mobile, adapté, rond, total || Sans mesure ni temps || C'est une méthode de formulation.
+Qu'est-ce qu'une cible marketing ? || Le segment précis de clients visés || Le directeur || Le concurrent || Le fournisseur || Elle oriente le message et les canaux.
+Qu'est-ce qu'un persona ? || Le portrait type d'un client visé || Un logiciel || Un contrat || Un produit || Il aide à imaginer ses besoins et habitudes.
+Que doit être le message d'une campagne ? || Simple, mémorable et adapté à la cible || Très long et confus || Contradictoire || Identique pour tous sans réflexion || Une idée centrale claire est plus efficace.
+Qu'est-ce que le mix médias ? || L'ensemble des canaux choisis pour diffuser la campagne || Un mélange de produits || Un type d'impôt || Un contrat || Le choix dépend de la cible et du budget.
+Pourquoi tenir compte du calendrier ? || Fêtes et saisons influencent les achats || Pour éviter les clients || Pour supprimer le budget || Par hasard || Un bon timing augmente l'impact.
+Pourquoi garder une réserve de budget ? || Pour ajuster ou renforcer en cours de campagne || Pour ne rien dépenser || Pour payer les impôts || Pour supprimer les médias || Les imprévus sont fréquents.
+Que mesure le taux de conversion ? || La part des visiteurs qui réalisent l'action voulue || Le nombre d'employés || Le stock || La marge || Par exemple un achat ou une inscription.
+Que signifie ROI ? || Retour sur investissement || Règle d'offre internationale || Rente d'objectif initial || Risque d'orientation || Il compare le gain au montant dépensé.
+Que mesure le coût d'acquisition client ? || Le coût pour obtenir un nouveau client || Le salaire du vendeur || Le prix du produit || La remise || Il se compare à la valeur du client.
+Pourquoi faire un bilan de campagne ? || Comprendre les écarts et progresser || Archiver sans lire || Supprimer les indicateurs || Fermer l'entreprise || Il alimente la prochaine campagne.
+Pourquoi tester sur un petit échantillon ? || Éviter de gaspiller tout le budget || Augmenter les risques || Allonger la campagne || Supprimer la cible || On corrige avant le lancement complet.
+Citez un indicateur d'audience : || La portée || Le salaire moyen || Le stock || La TVA || Il compte le nombre de personnes touchées.
+Pourquoi une campagne sans mesure est-elle problématique ? || On ne peut pas apprendre ni corriger || Elle coûte moins || Elle est interdite || Elle est meilleure || Les résultats guident les prochaines décisions.

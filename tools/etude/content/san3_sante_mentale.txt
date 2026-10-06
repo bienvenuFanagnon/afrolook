@@ -1,0 +1,30 @@
+titre: Santé mentale
+== fiche
+p: La santé mentale est un état de bien-être qui permet de faire face au stress, de travailler, d'apprendre et de contribuer à la communauté. Les troubles mentaux se soignent.
+li: Dépression : tristesse persistante pendant au moins deux semaines, perte d'intérêt, fatigue, troubles du sommeil et de l'appétit, idées sombres ; traitement : écoute, psychothérapie, parfois médicaments.
+li: Troubles anxieux : peur excessive, inquiétude permanente, crises de panique, évitement ; la thérapie et la relaxation aident.
+li: Psychoses (schizophrénie) : hallucinations, délires, désorganisation ; traitement médicamenteux et accompagnement ; suivi à long terme.
+li: Trouble bipolaire : alternance de phases d'excitation et de dépression.
+li: Addictions : alcool, tabac, drogues, jeux ; dépendance et perte de contrôle ; prise en charge globale, sans jugement.
+li: Prévention du suicide : prendre au sérieux toute parole suicidaire, écouter sans juger, ne pas laisser la personne seule, orienter vers un professionnel.
+li: Stigmatisation : croyances erronées (« maladie des esprits », « faiblesse ») ; l'information, l'écoute et le respect aident à demander des soins.
+li: Rôle de la famille et de la communauté : soutien, observance du traitement, accès aux soins ; alliance avec la médecine et, si besoin, les guérisseurs bienveillants.
+li: Santé mentale des jeunes : pression scolaire, harcèlement, réseaux sociaux, violences ; repérage précoce.
+note: Une personne sur huit dans le monde vit avec un trouble mental, selon l'OMS.
+note: Dire « secoue-toi » à une personne dépressive ne l'aide pas ; l'écoute et l'accompagnement sont plus efficaces.
+== questions
+Qu'est-ce que la santé mentale ? || Un état de bien-être permettant de faire face au stress et de vivre en société || L'absence de pensée || Un défaut de caractère || Une maladie rare || Elle est une dimension de la santé générale.
+Pendant combien de temps les signes persistent-ils pour évoquer une dépression ? || Au moins deux semaines || Quelques minutes || Une heure || Un jour || La tristesse est durable.
+Citez un signe de dépression : || Une perte d'intérêt pour les activités habituelles || Une grande énergie || Un appétit joyeux || Une envie de voyager || Fatigue et troubles du sommeil aussi.
+Que sont les troubles anxieux ? || Une peur excessive ou des inquiétudes permanentes || Une joie excessive || Une fracture || Une grippe || Les crises de panique en font partie.
+Citez un signe de psychose : || Les hallucinations || Une toux || Un mal de tête simple || Une fièvre || Les délires aussi.
+Qu'est-ce que le trouble bipolaire ? || L'alternance de phases d'excitation et de dépression || Une phobie || Une allergie || Une infection || Il se soigne par médicaments et suivi.
+Qu'est-ce qu'une addiction ? || Une dépendance avec perte de contrôle d'un produit ou d'une pratique || Une habitude sans conséquence || Une qualité || Un vaccin || Alcool, tabac, drogues et jeux en font partie.
+Comment réagir à une parole suicidaire ? || La prendre au sérieux, écouter sans juger et orienter vers un professionnel || L'ignorer || Se moquer || Dire « secoue-toi » || Ne pas laisser la personne seule.
+Pourquoi la stigmatisation est-elle nocive ? || Elle empêche de demander des soins || Elle aide les patients || Elle guérit || Elle supprime les maladies || La honte retarde le traitement.
+Quelle croyance erronée existe sur les troubles mentaux ? || Ce serait une simple faiblesse || Ils se soignent || Ils concernent beaucoup de personnes || Le soutien aide || La maladie mentale n'est pas un manque de volonté.
+Quel est le rôle de la famille pour une personne souffrant d'un trouble mental ? || Soutenir, accompagner et aider à suivre le traitement || Cacher la maladie || Abandonner || Punir || Le soutien améliore le pronostic.
+Quelle proportion de la population mondiale vit avec un trouble mental, selon l'OMS ? || Environ une personne sur huit || Une sur mille || Une sur dix mille || Aucune || C'est très fréquent.
+Citez une cause de souffrance chez les jeunes : || Le harcèlement || Un sommeil suffisant || Une bonne alimentation || Les loisirs || La pression scolaire et les réseaux sociaux aussi.
+Que faut-il privilégier face à une personne dépressive ? || L'écoute et l'accompagnement || La moquerie || L'isolement || Les reproches || Un suivi professionnel peut être nécessaire.
+Que peuvent faire les professionnels pour les troubles anxieux ? || Proposer une thérapie et des techniques de relaxation || Ignorer || Isoler || Interdire le sommeil || Les approches se complètent.

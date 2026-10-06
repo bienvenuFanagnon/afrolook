@@ -1,0 +1,29 @@
+titre: Maladies cardiovasculaires et prévention
+== fiche
+p: Les maladies cardiovasculaires (infarctus, AVC, insuffisance cardiaque, hypertension) sont parmi les premières causes de décès dans le monde, y compris en Afrique.
+li: Hypertension artérielle (HTA) : pression durablement supérieure ou égale à 140/90 mmHg ; souvent sans symptôme ; complications : AVC, infarctus, insuffisance rénale.
+li: Infarctus du myocarde : obstruction d'une artère du cœur ; douleur thoracique serrée, qui irradie vers le bras gauche ou la mâchoire, sueurs, essoufflement ; urgence : appeler les secours.
+li: AVC : obstruction ou rupture d'une artère du cerveau ; visage qui tombe, faiblesse d'un bras, trouble de la parole ; chaque minute compte.
+li: Insuffisance cardiaque : le cœur ne pompe plus assez ; essoufflement, œdèmes des jambes, fatigue ; diurétiques et traitements de fond.
+li: Examens : prise de tension, électrocardiogramme (ECG), échographie du cœur, bilan lipidique (cholestérol), glycémie.
+li: Facteurs de risque : tabac, sédentarité, excès de sel, alcool, obésité, diabète, cholestérol élevé, stress, hérédité, âge.
+li: Prévention : arrêt du tabac, activité physique régulière (au moins 150 minutes par semaine), alimentation riche en fruits, légumes, poisson, peu de sel (moins de 5 g par jour), poids normal, dépistage régulier.
+li: Traitements : médicaments contre l'hypertension, antiagrégants, statines ; hygiène de vie ; suivi régulier ; l'arrêt du traitement sans avis est dangereux.
+note: Le sel caché dans les cubes bouillon et les conserves est une source fréquente d'excès.
+note: Chez la femme, un infarctus peut se présenter avec des signes moins typiques (fatigue, nausées).
+== questions
+À partir de quelle tension parle-t-on d'hypertension durable ? || 140/90 mmHg ou plus || 100/60 mmHg || 90/50 mmHg || 120/80 mmHg || Au-delà, le risque cardiovasculaire augmente.
+Pourquoi l'hypertension est-elle dite « silencieuse » ? || Elle ne donne souvent aucun symptôme || Elle donne toujours des douleurs || Elle disparaît seule || Elle n'a pas de complications || Seule la mesure de la tension la révèle.
+Citez une complication de l'hypertension : || L'AVC || La rougeole || L'angine || L'otite || L'insuffisance rénale et l'infarctus en sont d'autres.
+Que provoque un infarctus du myocarde ? || L'obstruction d'une artère du cœur || Une infection du cœur || Un excès de sucre || Une fracture || Une partie du muscle cardiaque manque d'oxygène.
+Citez un signe d'infarctus : || Une douleur thoracique serrée irradiant vers le bras || Une toux sèche || Une éruption cutanée || Un mal de dents seulement || Sueurs et essoufflement l'accompagnent.
+Que faire devant une suspicion d'infarctus ? || Appeler immédiatement les secours || Attendre que la douleur passe || Faire courir la personne || Lui donner à manger || C'est une urgence vitale.
+Qu'est-ce qu'un AVC ? || Un accident vasculaire cérébral || Une atteinte veineuse du cœur || Un accès de vomissements chronique || Une anomalie visuelle chronique || Il résulte d'un caillot ou d'une hémorragie dans le cerveau.
+Quel signe évoque une insuffisance cardiaque ? || Des œdèmes des jambes et un essoufflement || Une toux grasse seulement || Une éruption || Une fièvre élevée || Le cœur pompe mal.
+À quoi sert un électrocardiogramme (ECG) ? || À enregistrer l'activité électrique du cœur || À mesurer la glycémie || À mesurer la taille || À peser le cœur || C'est un examen simple et indolore.
+Quel comportement augmente le risque cardiovasculaire ? || Le tabac || Le sommeil suffisant || L'eau || La marche || Sédentarité, sel et diabète en sont d'autres.
+Quelle quantité de sel maximale recommande-t-on par jour ? || Moins de 5 g || Plus de 20 g || 50 g || 100 g || L'OMS recommande de réduire le sel.
+Quelle activité physique minimale hebdomadaire est recommandée aux adultes ? || Environ 150 minutes d'intensité modérée || 10 minutes || 20 minutes || Aucune || Elle protège le cœur.
+Pourquoi les cubes bouillon posent-ils problème pour la tension ? || Ils contiennent beaucoup de sel || Ils manquent de sel || Ils contiennent trop d'eau || Ils sont trop chers || Le sel caché élève la tension.
+Que risque-t-on en arrêtant seul un traitement antihypertenseur ? || Une remontée dangereuse de la tension || Une guérison définitive || Une baisse de tension durable || Rien || Il faut un avis médical.
+Quel mode de vie protège les artères ? || Arrêt du tabac, activité physique et alimentation équilibrée || Sédentarité et sucre || Tabac et alcool || Stress permanent || Il réduit tous les facteurs de risque.

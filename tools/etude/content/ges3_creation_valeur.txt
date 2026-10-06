@@ -1,0 +1,30 @@
+titre: Évaluation d'une entreprise et création de valeur
+== fiche
+p: Pour vendre, acheter ou lever des fonds, il faut savoir combien vaut une entreprise. Plusieurs méthodes existent.
+li: Valeur d'une entreprise : estimation de ce qu'elle vaut pour un acheteur ou un investisseur ; ce n'est pas un prix unique.
+li: Méthode patrimoniale : actif net corrigé = ce que possède l'entreprise moins ce qu'elle doit, réévalué à sa valeur réelle.
+li: Méthode des multiples : appliquer à un indicateur (chiffre d'affaires, résultat) un coefficient observé dans des entreprises comparables.
+li: Méthode des flux de trésorerie actualisés (DCF) : valeur des flux futurs ramenés à aujourd'hui par un taux d'actualisation.
+li: Actualiser : un franc futur vaut moins qu'un franc d'aujourd'hui, à cause du risque et du temps.
+li: Goodwill (survaleur) : écart entre le prix payé et la valeur comptable ; il reflète clientèle, marque, savoir-faire.
+li: Capitalisation boursière : cours de l'action multiplié par le nombre d'actions (entreprises cotées).
+li: Création de valeur : la rentabilité dépasse le coût du capital investi (coût des dettes et exigence des actionnaires).
+li: Levée de fonds : vendre une part du capital pour financer la croissance ; elle dilue les actionnaires existants.
+note: Le prix réel dépend de la négociation, pas seulement des calculs.
+note: Une entreprise très rentable mais sans trésorerie peut quand même tomber en difficulté.
+== questions
+Pourquoi évaluer une entreprise ? || Pour la vendre, l'acheter ou lever des fonds || Pour payer moins de salaires || Pour supprimer les clients || Pour éviter le bilan || L'évaluation éclaire la négociation.
+Que mesure la méthode patrimoniale ? || L'actif net corrigé de l'entreprise || Le cours de bourse seulement || La satisfaction client || Le nombre de salariés || Elle réévalue les biens à leur valeur réelle.
+Comment fonctionne la méthode des multiples ? || Elle applique un coefficient observé chez des entreprises comparables || Elle additionne les salaires || Elle compte les clients || Elle ignore les résultats || Par exemple un multiple du résultat.
+Que signifie actualiser des flux futurs ? || Les ramener à leur valeur d'aujourd'hui || Les doubler || Les supprimer || Les cacher || Un franc futur vaut moins qu'un franc actuel.
+Pourquoi un franc futur vaut-il moins qu'un franc d'aujourd'hui ? || À cause du temps et du risque || Parce que les billets rétrécissent || Par la loi || Par hasard || On pourrait investir la somme dès maintenant.
+Que veut dire DCF ? || Flux de trésorerie actualisés || Dépôt de capital fixe || Dette contre franchise || Droit de commerce fiscal || C'est une méthode d'évaluation fondée sur le futur.
+Comment appelle-t-on l'écart entre le prix payé et la valeur comptable ? || Le goodwill (survaleur) || Le dividende || L'amortissement || La prime d'assurance || Il traduit clientèle, marque et savoir-faire.
+Comment calcule-t-on la capitalisation boursière ? || Cours de l'action × nombre d'actions || Chiffre d'affaires × 2 || Bénéfice − dettes || Salaires × 12 || Elle ne concerne que les sociétés cotées.
+Quand une entreprise crée-t-elle de la valeur ? || Quand sa rentabilité dépasse le coût du capital || Quand elle embauche beaucoup || Quand elle déménage || Quand elle baisse ses prix || Elle rémunère alors les financeurs et dégage un surplus.
+Que signifie diluer les actionnaires existants ? || Leur part du capital diminue quand de nouveaux entrent || Ils reçoivent plus de dividendes || Ils perdent leurs actions || L'entreprise ferme || Une levée de fonds augmente le nombre d'actions.
+Qu'est-ce qu'une levée de fonds ? || Vendre des parts du capital pour financer la croissance || Rembourser un emprunt || Payer des impôts || Fermer un compte || Elle apporte des moyens contre une partie du capital.
+Une valeur d'entreprise est-elle unique ? || Non, elle dépend de la méthode et des hypothèses || Oui, toujours || Elle est fixée par la loi || Elle est secrète || Plusieurs méthodes sont généralement croisées.
+Qu'est-ce que l'actif net ? || Ce que possède l'entreprise moins ce qu'elle doit || Le chiffre d'affaires || Le salaire moyen || Le total des dettes || C'est une base de la méthode patrimoniale.
+Que montre une entreprise rentable mais sans trésorerie ? || Qu'elle peut être en difficulté de paiement || Qu'elle est sans risque || Qu'elle va fusionner || Qu'elle est cotée || Le bénéfice comptable n'est pas de l'argent disponible.
+Qu'est-ce que le coût du capital ? || Ce qu'exigent les financeurs (dettes et actionnaires) || Le prix d'un bureau || Le salaire du dirigeant || L'impôt || L'entreprise doit au moins le couvrir.

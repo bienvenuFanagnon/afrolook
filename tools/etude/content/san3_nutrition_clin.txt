@@ -1,0 +1,30 @@
+titre: Nutrition clinique et diététique
+== fiche
+p: La nutrition clinique adapte l'alimentation à une maladie ou à un état de santé, pour soigner, prévenir ou rétablir.
+li: IMC : maigreur sous 18,5 ; poids normal de 18,5 à 24,9 ; surpoids de 25 à 29,9 ; obésité à partir de 30.
+li: Obésité : excès de graisse ; risques : diabète de type 2, hypertension, maladies du cœur, arthrose ; prise en charge : alimentation équilibrée, activité physique, suivi.
+li: Diabète : privilégier les glucides à absorption lente (céréales complètes, légumineuses, tubercules en portions), les fibres, réduire sucres rapides et boissons sucrées, fractionner les repas.
+li: Hypertension : réduire le sel, augmenter fruits, légumes et potassium, limiter l'alcool.
+li: Dénutrition : perte de poids involontaire, fonte musculaire, faiblesse ; renforcer l'énergie et les protéines ; aliments enrichis, collations ; suppléments si besoin.
+li: Anémie par manque de fer : aliments riches en fer (viande, poisson, légumineuses, légumes verts) avec de la vitamine C pour mieux l'absorber.
+li: Alimentation entérale (par sonde) ou parentérale (par perfusion) : quand l'alimentation par la bouche est impossible.
+li: Allergies et intolérances : repérer l'aliment responsable et l'éviter ; lire les étiquettes.
+li: Éducation : expliquer simplement, tenir compte des habitudes, du budget et de la culture alimentaire locale.
+note: Un bon plan alimentaire utilise des aliments locaux disponibles et abordables.
+note: Les régimes extrêmes ou les compléments non encadrés sont dangereux.
+== questions
+À partir de quel IMC parle-t-on d'obésité ? || 30 || 25 || 18,5 || 40 seulement || Entre 25 et 29,9 on parle de surpoids.
+Quel est l'intervalle de l'IMC normal ? || De 18,5 à 24,9 || De 10 à 15 || De 30 à 40 || De 25 à 30 seulement || Au-dessous de 18,5, on parle de maigreur.
+Citez un risque associé à l'obésité : || Le diabète de type 2 || La rougeole || L'angine || La coqueluche || Hypertension et arthrose en sont d'autres.
+Quel type de glucides privilégie-t-on dans le diabète ? || Les glucides à absorption lente || Les sucres rapides || Les boissons sucrées || Les bonbons || Ils limitent les pics de glycémie.
+Quelle boisson limiter chez une personne diabétique ? || Les boissons sucrées || L'eau || Le thé non sucré || L'eau citronnée non sucrée || Elles font monter rapidement la glycémie.
+Quel conseil alimentaire s'applique à l'hypertension ? || Réduire le sel || Augmenter le sel || Boire de l'alcool || Supprimer les légumes || Il aide à baisser la tension.
+Qu'est-ce que la dénutrition ? || Un état de carence en énergie et en protéines avec perte de poids || Un excès de poids || Un excès de sucre || Une allergie || Elle fragilise l'organisme.
+Citez un signe de dénutrition : || Une perte de poids involontaire || Une prise de poids rapide || Un excès d'énergie || Une peau rouge || La fonte musculaire aussi.
+Quels aliments sont riches en fer ? || Viande, poisson et légumineuses || Sucre et huile || Eau minérale || Bonbons || Ils aident à prévenir l'anémie.
+Quelle vitamine améliore l'absorption du fer d'origine végétale ? || La vitamine C || La vitamine D || La vitamine K || La vitamine E || Citron, orange, goyave en contiennent.
+Qu'est-ce que l'alimentation entérale ? || Une alimentation par sonde dans le tube digestif || Une alimentation par perfusion || Une alimentation par la bouche seulement || Un régime || Elle est utilisée si l'on ne peut plus avaler normalement.
+Qu'est-ce que l'alimentation parentérale ? || Une alimentation par perfusion dans une veine || Une alimentation par sonde || Un régime sans sel || Une alimentation lactée || Elle est réservée à certaines situations médicales.
+Que faut-il lire pour repérer un allergène ? || L'étiquette des aliments || Le calendrier || Le journal || Le carnet de santé || Elle liste les ingrédients.
+Pourquoi un plan alimentaire doit-il respecter la culture locale ? || Pour qu'il soit suivi durablement || Pour compliquer || Pour augmenter les coûts || Pour supprimer les repas || Les habitudes et le budget comptent.
+Pourquoi se méfier des régimes extrêmes ? || Ils peuvent provoquer des carences et des risques pour la santé || Ils sont toujours efficaces || Ils sont gratuits || Ils sont sans danger || Il faut un avis professionnel.

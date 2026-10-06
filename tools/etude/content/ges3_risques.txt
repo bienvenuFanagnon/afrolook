@@ -1,0 +1,29 @@
+titre: Gestion des risques et assurance
+== fiche
+p: Toute entreprise est exposée à des risques : incendie, vol, impayés, panne informatique, crise économique. Les gérer évite des pertes graves.
+li: Risque : événement incertain pouvant causer une perte ; il se mesure par sa probabilité et sa gravité.
+li: Types de risques : financiers (impayés, change), opérationnels (pannes, erreurs), juridiques, humains, naturels, informatiques, de réputation.
+li: Gestion des risques : identifier, évaluer, traiter, surveiller.
+li: Traitement : éviter (renoncer), réduire (prévention, protection), transférer (assurance), accepter (provisionner).
+li: Cartographie des risques : tableau classant les risques selon leur probabilité et leur impact.
+li: Prévention : réduire la probabilité (formation, entretien) ; protection : réduire la gravité (extincteurs, sauvegardes).
+li: Assurance : contre une prime, l'assureur indemnise en cas de sinistre prévu au contrat.
+li: Plan de continuité d'activité (PCA) : organisation prévue pour poursuivre l'activité après un sinistre.
+note: Une assurance n'élimine pas le risque : elle en transfère le coût financier.
+note: Lire les exclusions du contrat évite les mauvaises surprises au moment du sinistre.
+== questions
+Qu'est-ce qu'un risque en entreprise ? || Un événement incertain pouvant causer une perte || Un bénéfice garanti || Une facture payée || Une loi || Il se mesure par sa probabilité et sa gravité.
+Citez un risque financier : || L'impayé client || L'incendie seulement || La grève de la faim || La neige || Le risque de change en est un autre.
+Quelles sont les étapes de la gestion des risques ? || Identifier, évaluer, traiter, surveiller || Ignorer, attendre, oublier, payer || Acheter, vendre, stocker, jeter || Prévoir, copier, coller, fermer || Le cycle recommence en continu.
+Que signifie transférer un risque ? || En faire supporter le coût à un tiers, comme un assureur || L'ignorer || Le doubler || Le cacher || L'assurance est le moyen le plus courant.
+Qu'est-ce qu'une cartographie des risques ? || Un classement des risques par probabilité et impact || Une carte routière || Un plan de ville || Un bilan comptable || Elle aide à fixer les priorités.
+Quelle différence entre prévention et protection ? || La prévention réduit la probabilité, la protection réduit la gravité || Aucune || La prévention est une assurance || La protection est une taxe || Entretien contre extincteur, par exemple.
+Comment appelle-t-on la somme versée à l'assureur ? || La prime || L'indemnité || La franchise || Le dividende || Elle rémunère la garantie offerte.
+Comment appelle-t-on la somme versée par l'assureur après un sinistre ? || L'indemnité || La prime || Le salaire || Le capital social || Elle répare tout ou partie du dommage.
+Que fait un plan de continuité d'activité ? || Il permet de poursuivre l'activité après un sinistre || Il supprime les risques || Il remplace l'assurance || Il ferme l'entreprise || Il prévoit sauvegardes et solutions de secours.
+Que signifie accepter un risque ? || Le supporter en connaissance de cause, avec provisions || Le nier || L'amplifier || L'assurer deux fois || Utile pour les risques faibles et peu coûteux.
+Citez un exemple de mesure de prévention : || La formation du personnel à la sécurité || Un contrat d'assurance || Le remboursement après sinistre || La liquidation || Elle réduit la probabilité d'accident.
+Pourquoi lire les exclusions d'un contrat d'assurance ? || Elles listent ce qui n'est pas couvert || Elles augmentent l'indemnité || Elles suppriment la prime || Elles sont facultatives || Un sinistre exclu n'est pas remboursé.
+Citez un risque informatique : || La cyberattaque || L'inondation de la route || La grève des taxis || L'inflation || Les sauvegardes aident à s'en protéger.
+Que veut dire éviter un risque ? || Renoncer à l'activité qui le génère || L'assurer || L'ignorer || L'accepter || C'est la solution radicale.
+Que reste-t-il après avoir souscrit une assurance ? || Le risque existe encore, mais son coût est transféré || Plus aucun risque || Une dette || Une obligation de fermer || L'assurance couvre le financier, pas l'événement.

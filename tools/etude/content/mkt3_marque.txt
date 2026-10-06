@@ -1,0 +1,30 @@
+titre: Management de marque et identité
+== fiche
+p: Une marque est un capital : elle rassure, différencie et permet de vendre plus cher. La construire demande de la cohérence.
+li: Marque : nom, signe ou symbole qui distingue les produits d'une entreprise ; elle porte une promesse.
+li: Identité de marque : ce que l'entreprise veut montrer (nom, logo, couleurs, valeurs, ton) ; image de marque : ce que le public en perçoit.
+li: Positionnement : place que la marque occupe dans l'esprit du client par rapport aux concurrents.
+li: Plateforme de marque : mission, vision, valeurs, promesse, personnalité ; elle guide toutes les décisions.
+li: Capital marque (brand equity) : valeur ajoutée par la notoriété, l'image et la fidélité.
+li: Architecture de marques : marque unique (ombrelle), marques multiples, marques endossées.
+li: Extension de marque : utiliser une marque connue pour un nouveau produit ; risque de dilution si trop éloigné.
+li: Marque employeur : image de l'entreprise auprès des candidats et salariés.
+li: Cohérence : même message sur tous les points de contact (produit, packaging, réseaux, service client).
+note: Une marque se construit sur des années et peut se détruire en quelques jours.
+note: Le nom de marque idéal est court, facile à prononcer et à retenir dans plusieurs langues.
+== questions
+Comment appelle-t-on le signe qui distingue vos produits et porte une promesse ? || Une marque || Un simple prix || Un impôt || Un contrat de travail || Elle rassure et différencie.
+Quelle différence entre identité et image de marque ? || L'identité est voulue, l'image est perçue || Aucune || L'identité est perçue, l'image est voulue || Les deux sont des impôts || L'écart entre les deux est à surveiller.
+Qu'est-ce que le positionnement d'une marque ? || Sa place dans l'esprit du client face aux concurrents || Son adresse postale || Son prix de revient || Son capital || Il doit être clair et différenciant.
+Qu'est-ce que le capital marque ? || La valeur ajoutée par notoriété, image et fidélité || Le capital en banque || Le salaire des équipes || Le stock || Il se traduit par un prix et une fidélité plus élevés.
+Citez un élément de la plateforme de marque : || La mission || Le bilan fiscal || Le stock de papier || La facture d'eau || Elle comprend aussi vision, valeurs et promesse.
+Qu'est-ce qu'une marque ombrelle ? || Une marque unique pour tous les produits || Une marque par produit || Une marque abandonnée || Une marque d'assurance || Elle fait profiter tous les produits de sa notoriété.
+Quel risque présente l'extension de marque trop éloignée ? || La dilution de l'image || Un excès de clients || Une baisse d'impôt || Une meilleure image || La marque perd son sens.
+Qu'est-ce que la marque employeur ? || L'image de l'entreprise auprès des candidats et salariés || Le nom du patron || Un produit || Une taxe || Elle aide à recruter.
+Pourquoi la cohérence est-elle clé ? || Le message doit être identique sur tous les points de contact || Pour économiser le papier || Pour éviter la publicité || Parce que c'est obligatoire || Une marque incohérente perd en crédibilité.
+Citez une qualité d'un bon nom de marque : || Court et facile à retenir || Très long et technique || Difficile à prononcer || Identique à un concurrent || Il doit aussi bien voyager à l'international.
+Qu'est-ce qu'une promesse de marque ? || L'engagement que la marque prend envers ses clients || Une remise || Un prêt || Un impôt || Elle doit être tenue pour durer.
+Que désignent les points de contact ? || Tous les moments où le client rencontre la marque || Les adresses des bureaux || Les contacts du comptable || Les téléphones des fournisseurs || Produit, boutique, réseaux, service client.
+Pourquoi une marque forte permet-elle des prix plus élevés ? || Elle rassure et crée de la préférence || Elle supprime les coûts || Elle est gratuite || Elle évite la concurrence légale || Les clients paient pour la confiance.
+Comment appelle-t-on le fait d'être connu du grand public ? || La notoriété || Le bénéfice || Le stock || Le brevet || Elle précède souvent la préférence.
+Qu'est-ce qu'une marque endossée ? || Une marque portant la caution d'une marque mère || Une marque sans nom || Une marque interdite || Un impôt || Elle bénéficie de la crédibilité de la mère.

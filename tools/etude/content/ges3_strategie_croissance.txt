@@ -1,0 +1,29 @@
+titre: Stratégies de croissance
+== fiche
+p: Une entreprise peut grandir de plusieurs façons : en se développant seule, en rachetant, en s'associant ou en s'ouvrant à de nouveaux marchés.
+li: Croissance interne : l'entreprise investit ses propres moyens (nouveaux produits, usines, clients) ; progression lente mais maîtrisée.
+li: Croissance externe : acquisition ou fusion avec une autre entreprise ; rapide mais coûteuse et risquée à intégrer.
+li: Fusion : deux entreprises se regroupent en une seule ; acquisition : une entreprise en rachète une autre.
+li: Alliance et partenariat : coopération sans fusion (accord commercial, coentreprise) pour partager risques et ressources.
+li: Franchise : le franchiseur cède sa marque et son savoir-faire ; le franchisé exploite avec ses propres capitaux et verse une redevance.
+li: Diversification : entrer dans de nouvelles activités ; intégration verticale : contrôler l'amont (fournisseurs) ou l'aval (distribution).
+li: Internationalisation : exporter, s'implanter par une filiale, une licence ou un partenaire local ; il faut adapter l'offre.
+li: Le choix dépend des moyens financiers, du risque accepté, de la rapidité voulue et du marché visé.
+note: Beaucoup de fusions échouent à cause de l'intégration des équipes et des cultures d'entreprise.
+note: La franchise permet de grandir vite avec peu de capital, mais demande un contrôle strict de la qualité.
+== questions
+Comment appelle-t-on la croissance qui s'appuie sur les propres moyens de l'entreprise ? || Croissance interne || Croissance externe || Fusion || Franchise || Elle investit sans racheter d'autres sociétés.
+Comment appelle-t-on la croissance par rachat ou fusion ? || Croissance externe || Croissance interne || Diversification || Épargne || Elle est rapide mais coûteuse.
+Quelle différence existe entre fusion et acquisition ? || La fusion regroupe deux entreprises en une, l'acquisition est un rachat || Aucune || La fusion est un prêt || L'acquisition est une alliance || Dans l'acquisition, une société en rachète une autre.
+Quel est un risque majeur de la croissance externe ? || Une mauvaise intégration des équipes et cultures || Un excès de trésorerie || L'absence de concurrents || Des impôts nuls || Beaucoup de fusions échouent pour cette raison.
+Qu'est-ce qu'une coentreprise ? || Une société créée à plusieurs partenaires pour un projet commun || Une faillite || Un prêt bancaire || Un impôt || Les partenaires partagent risques et ressources.
+Qu'est-ce que la franchise ? || La cession d'une marque et d'un savoir-faire contre redevance || Un don || Une assurance || Un impôt || Le franchisé exploite sous l'enseigne du franchiseur.
+Quel est un avantage de la franchise pour le franchiseur ? || Grandir vite avec peu de capital || Ne plus avoir de marque || Éviter tout contrôle || Supprimer la concurrence || Le réseau est financé par les franchisés.
+Quel est le but de se lancer dans de nouvelles activités (diversification) ? || Répartir les risques entre plusieurs métiers || Fermer l'entreprise || Baisser les prix || Réduire le personnel || La diversification évite de dépendre d'un seul marché.
+Qu'est-ce que l'intégration verticale ? || Contrôler l'amont ou l'aval de sa filière || Fusionner avec un concurrent direct || Vendre à l'étranger || Recruter || Par exemple racheter un fournisseur.
+Citez un mode d'entrée sur un marché étranger : || L'exportation || La liquidation || Le dépôt de bilan || La retraite || La filiale, la licence ou le partenaire local en sont d'autres.
+Pourquoi adapter son offre à l'international ? || Les goûts, lois et usages diffèrent selon les pays || Pour payer plus d'impôts || Parce que c'est interdit autrement || Pour éviter les clients || L'adaptation augmente les chances de succès.
+De quoi dépend le choix d'une stratégie de croissance ? || Des moyens, du risque accepté, de la rapidité et du marché || Du hasard || De la couleur du logo || De la météo || Il faut arbitrer entre ces critères.
+Quel est l'inconvénient principal de la croissance interne ? || Elle est plus lente || Elle coûte toujours plus cher || Elle est illégale || Elle exige un rachat || Mais elle est plus facile à maîtriser.
+Que verse un franchisé au franchiseur ? || Une redevance || Une amende || Un salaire || Une subvention || Souvent un droit d'entrée puis un pourcentage du chiffre d'affaires.
+Quel est l'intérêt d'une alliance sans fusion ? || Partager risques et ressources en restant indépendant || Disparaître || Éviter tout accord || Payer plus d'impôts || Chaque partenaire garde son autonomie.

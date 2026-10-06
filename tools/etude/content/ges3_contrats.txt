@@ -1,0 +1,30 @@
+titre: Négociation des contrats et règlement des litiges
+== fiche
+p: Une entreprise vit de contrats : avec ses clients, fournisseurs, salariés, banques. Savoir négocier et régler les conflits évite des pertes.
+li: Contrat : accord de volontés créant des obligations ; il suppose consentement, capacité, objet licite et cause licite.
+li: Négociation : discussion pour trouver un accord ; préparer ses objectifs, son prix limite et une solution de repli.
+li: Négociation gagnant-gagnant : chercher un accord durable qui satisfait les deux parties plutôt que gagner contre l'autre.
+li: Clauses importantes : prix, délais, qualité, paiement, pénalités de retard, durée, résiliation, juridiction compétente.
+li: Clause de confidentialité : interdit de révéler des informations sensibles ; clause pénale : montant fixé à l'avance en cas de manquement.
+li: Écrit : fortement recommandé pour prouver l'accord ; garder aussi les échanges (courriels, messages).
+li: Règlement amiable : négociation directe, conciliation (un tiers aide à trouver un accord), médiation.
+li: Arbitrage : un arbitre privé rend une décision obligatoire ; très utilisé en droit des affaires (OHADA : CCJA).
+li: Procès : devant le tribunal compétent (commerce) ; plus long et plus coûteux que l'amiable.
+note: Un bon accord préparé coûte moins cher qu'un procès gagné.
+note: Ne jamais signer un contrat sans l'avoir lu en entier, y compris les petites lignes.
+== questions
+Comment définit-on un contrat entre deux entreprises ? || Un accord de volontés créant des obligations || Une simple discussion || Un impôt || Un salaire || Il engage les parties qui l'ont signé.
+Citez une condition de validité d'un contrat : || Le consentement des parties || Le hasard || Un cadeau obligatoire || Un témoin masqué || La capacité, un objet et une cause licites sont aussi requis.
+Qu'est-ce qu'une négociation gagnant-gagnant ? || Un accord qui satisfait les deux parties || Un accord où une seule partie gagne || Un refus de discuter || Un procès || Elle favorise des relations durables.
+Que faut-il préparer avant de négocier ? || Ses objectifs, son prix limite et une solution de repli || Rien || Uniquement un sourire || Le logo || La préparation renforce la position.
+Que fixe une clause pénale ? || Une somme prévue d'avance en cas de manquement || Le salaire du dirigeant || La date du bilan || Le nom de l'entreprise || Elle évite de discuter du montant après coup.
+À quoi sert une clause de confidentialité ? || À interdire la divulgation d'informations sensibles || À fixer le prix || À allonger les délais || À supprimer le contrat || Elle protège les secrets d'affaires.
+Pourquoi écrire un contrat ? || Pour prouver l'accord et éviter les malentendus || Pour payer plus d'impôts || Pour retarder la vente || Parce que l'oral est interdit partout || L'écrit sert de preuve.
+Comment appelle-t-on le mode amiable où un tiers aide à trouver un accord ? || La conciliation || Un jugement || Une amende || Une fermeture || Le conciliateur propose mais ne tranche pas.
+Comment appelle-t-on la procédure où un arbitre privé rend une décision obligatoire ? || L'arbitrage || Le jeu || Un contrat de travail || Un contrôle fiscal || Les parties en acceptent le principe dans le contrat.
+Quelle institution arbitrale existe dans l'espace OHADA ? || La Cour commune de justice et d'arbitrage (CCJA) || La FIFA || L'ONU || Le FMI || Elle statue aussi sur l'application du droit OHADA.
+Quel est l'avantage d'un règlement amiable ? || Il est plus rapide et moins coûteux qu'un procès || Il est toujours obligatoire || Il supprime le contrat || Il augmente les amendes || Il préserve souvent la relation commerciale.
+Qu'est-ce qu'une clause de résiliation ? || Elle précise comment et quand mettre fin au contrat || Elle crée le contrat || Elle fixe le prix || Elle désigne le directeur || Elle encadre la sortie des parties.
+Que désigne la juridiction compétente ? || Le tribunal chargé de trancher un litige || Le directeur || Le comptable || Le fournisseur || Elle est souvent fixée dans le contrat.
+Pourquoi lire les petites lignes d'un contrat ? || Elles contiennent des obligations et exclusions importantes || Elles sont sans valeur || Elles sont facultatives || Elles servent à décorer || Elles engagent autant que le reste.
+Quel comportement aide la négociation ? || Écouter et comprendre les besoins de l'autre || Interrompre sans cesse || Mentir || Menacer || L'écoute permet de trouver des compromis.

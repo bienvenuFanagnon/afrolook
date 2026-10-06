@@ -1,0 +1,30 @@
+titre: Données clients, segmentation RFM et automatisation
+== fiche
+p: Les données clients permettent de mieux connaître chaque client, de lui proposer l'offre adaptée et de le fidéliser, dans le respect de sa vie privée.
+li: Données collectées : identité, achats, navigation, préférences, interactions avec le service client.
+li: Base de données clients : outil central du CRM ; elle doit être propre, à jour et sécurisée.
+li: Segmentation RFM : Récence (dernier achat), Fréquence (nombre d'achats), Montant (dépense totale) ; classe les clients selon leur valeur.
+li: Valeur vie client (CLV) : total des revenus attendus d'un client sur toute la durée de la relation.
+li: Taux d'attrition (churn) : pourcentage de clients perdus sur une période.
+li: Marketing automation : envoi automatique de messages selon le comportement (bienvenue, panier abandonné, relance).
+li: Personnalisation : adapter le message au client (prénom, produits vus, historique d'achat).
+li: Protection des données : consentement, droit d'accès et de suppression, sécurité ; lois nationales et africaines sur les données personnelles.
+li: Tests A/B : comparer deux versions d'un message pour garder la plus performante.
+note: Collecter peu mais utile vaut mieux que collecter beaucoup sans usage.
+note: Un client qui n'a pas acheté depuis longtemps (récence faible) mérite une relance ciblée.
+== questions
+À quoi sert une base de données clients ? || À connaître les clients et adapter l'offre || À stocker des outils || À payer les salaires || À remplacer la comptabilité || Elle est le cœur du CRM.
+Que signifie RFM ? || Récence, Fréquence, Montant || Rapidité, Force, Marge || Rente, Fonds, Mission || Remise, Fidélité, Marque || C'est une méthode de segmentation.
+Que mesure la récence ? || Le temps depuis le dernier achat || Le montant dépensé || Le nombre d'achats || Le prix moyen || Plus il est court, plus le client est actif.
+Que mesure la fréquence ? || Le nombre d'achats sur une période || Le prix d'un produit || L'âge du client || La distance || Les clients fréquents sont souvent fidèles.
+Que mesure le montant dans le RFM ? || Le total dépensé par le client || Le nombre de visites || La date d'achat || Le stock || Il identifie les meilleurs clients.
+Qu'est-ce que la valeur vie client ? || Les revenus attendus d'un client sur toute la relation || Le prix d'un seul produit || Le salaire du vendeur || Le bénéfice du mois || Elle guide l'effort de fidélisation.
+Qu'est-ce que le taux d'attrition ? || Le pourcentage de clients perdus sur une période || Le taux d'intérêt || Le taux de TVA || La marge || On l'appelle aussi churn.
+Qu'est-ce que le marketing automation ? || L'envoi automatique de messages selon le comportement || Un robot de fabrication || Une machine à emballer || Un impôt || Il permet par exemple les relances de panier abandonné.
+Citez un scénario d'automatisation : || Le message de bienvenue || Le dépôt de bilan || La clôture || La paie || La relance de panier abandonné en est un autre.
+Pourquoi respecter le consentement du client ? || La loi protège ses données personnelles || Pour réduire la clientèle || Pour supprimer la base || Par hasard || Il peut aussi demander l'accès ou la suppression.
+Comment appelle-t-on la comparaison de deux versions d'un message pour garder la meilleure ? || Un test A/B || Un test médical || Un examen scolaire || Une enquête fiscale || Il s'appuie sur des résultats mesurés.
+Quel type de client mérite une relance ciblée ? || Celui qui n'a pas acheté depuis longtemps || Celui qui vient d'acheter || Un concurrent || Un fournisseur || Une récence faible signale un risque de perte.
+Pourquoi la personnalisation est-elle utile ? || Le message pertinent obtient plus d'attention || Elle supprime les clients || Elle coûte toujours moins || Elle est interdite || Le client se sent reconnu.
+Qu'est-ce qu'une base de données de qualité ? || Propre, à jour et sécurisée || Remplie de doublons || Sans protection || Jamais mise à jour || Des données erronées faussent les décisions.
+Pourquoi collecter peu mais utile ? || Éviter le superflu et respecter la vie privée || Pour économiser le papier || Pour supprimer le CRM || Parce que c'est plus cher || Chaque donnée doit servir un objectif précis.

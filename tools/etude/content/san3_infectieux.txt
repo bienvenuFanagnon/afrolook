@@ -1,0 +1,30 @@
+titre: Maladies infectieuses tropicales et IST
+== fiche
+p: Dans de nombreux pays africains, les maladies infectieuses restent fréquentes ; reconnaître les formes graves et orienter vite sauve des vies.
+li: Paludisme grave : troubles de la conscience, convulsions, anémie sévère, détresse respiratoire, urines foncées ; urgence : artésunate par voie intraveineuse.
+li: Fièvre typhoïde : bactérie Salmonella Typhi, transmise par l'eau ou les aliments souillés ; fièvre prolongée, maux de tête, douleurs abdominales ; antibiotiques adaptés ; prévention : eau potable, hygiène des mains, vaccin.
+li: Hépatite B : virus transmis par le sang, les rapports sexuels et de la mère à l'enfant ; vaccin efficace ; dépistage ; peut devenir chronique (cirrhose, cancer du foie).
+li: Hépatite A : transmise par l'eau et les aliments souillés ; guérit en général seule.
+li: IST (infections sexuellement transmissibles) : syphilis (Treponema pallidum), gonococcie, chlamydiose, herpès, VIH ; signes : écoulements, plaies, douleurs ; certaines sont silencieuses ; le préservatif réduit fortement le risque.
+li: Méningite à méningocoque : fièvre, raideur de la nuque, vomissements ; fréquente dans la « ceinture de la méningite » en saison sèche ; urgence ; vaccination.
+li: Fièvre jaune : virus transmis par des moustiques ; vaccin à vie ; certificat de vaccination exigé pour voyager.
+li: Fièvre hémorragique (Ebola, Lassa) : précautions strictes, isolement, signalement immédiat.
+li: Prise en charge : dépister tôt, traiter les partenaires des IST, ne pas se soigner seul, terminer le traitement.
+note: Le dépistage régulier du VIH et des IST est un acte de santé, sans honte.
+note: Le paludisme de la femme enceinte est dangereux pour la mère et l'enfant : prévention et traitement adaptés.
+== questions
+Citez un signe de paludisme grave : || Une convulsion ou une altération de la conscience || Un simple mal de gorge || Un rhume || Une éruption || Il impose une prise en charge hospitalière.
+Quel traitement vise le paludisme grave ? || L'artésunate par voie intraveineuse || Un comprimé de paracétamol seul || Une pommade || Un sirop contre la toux || C'est le traitement d'urgence recommandé.
+Quelle bactérie cause la fièvre typhoïde ? || Salmonella Typhi || Plasmodium || Le bacille de Koch || Le virus de l'hépatite || Elle se transmet par l'eau et les aliments souillés.
+Quelle mesure prévient surtout la typhoïde ? || L'eau potable et l'hygiène des mains || Le sel || Le sucre || Le chauffage || Elle limite la transmission orale.
+Comment le virus de l'hépatite B se transmet-il ? || Par le sang, les rapports sexuels et de la mère à l'enfant || Par la toux seulement || Par l'eau seulement || Par les moustiques || Le vaccin protège.
+Quelle protection efficace existe contre l'hépatite B ? || Le vaccin || Un antibiotique || Une pommade || Un régime || Il est inclus dans le vaccin pentavalent des nourrissons.
+Que peut devenir une hépatite B chronique ? || Une cirrhose ou un cancer du foie || Un rhume || Une allergie || Une fracture || Il faut un suivi régulier.
+Comment se transmet l'hépatite A ? || Par l'eau et les aliments souillés || Par le sang seulement || Par les rapports sexuels seulement || Par les moustiques || Elle guérit généralement sans traitement spécifique.
+Citez une IST : || La syphilis || Le paludisme || La typhoïde || La rougeole || Gonococcie et chlamydiose en sont d'autres.
+Pourquoi certaines IST passent-elles inaperçues ? || Elles peuvent être silencieuses sans symptôme || Elles sont toujours douloureuses || Elles sont toujours visibles || Elles guérissent seules || Le dépistage est important.
+Quel moyen réduit fortement le risque d'IST ? || Le préservatif || Le sel || Le sucre || Le repos || Il protège aussi contre le VIH.
+Quel signe évoque une méningite ? || Une fièvre avec raideur de la nuque || Un nez bouché || Une toux grasse || Une douleur au pied || C'est une urgence.
+Dans quelle saison la méningite à méningocoque est-elle plus fréquente dans la ceinture africaine ? || La saison sèche || La saison des pluies || L'hiver européen || Le printemps || L'air sec et poussiéreux favorise la maladie.
+Quelle protection a la fièvre jaune ? || Un vaccin valable à vie || Un antibiotique || Un sirop || Un régime || Un certificat est exigé pour voyager.
+Que faire devant un cas suspect de fièvre hémorragique ? || Isoler, se protéger et signaler immédiatement || Rien || Soigner à domicile sans précaution || Voyager || Les précautions strictes évitent la propagation.

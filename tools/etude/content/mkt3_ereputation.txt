@@ -1,0 +1,31 @@
+titre: E-réputation et gestion de crise
+== fiche
+p: Sur internet, l'opinion se forme vite. Une entreprise doit surveiller ce qui se dit d'elle et savoir réagir en cas de crise.
+li: E-réputation : image d'une marque ou d'une personne telle qu'elle apparaît en ligne (avis, commentaires, articles, réseaux sociaux).
+li: Veille : surveiller les mentions de la marque (alertes, outils d'écoute des réseaux, avis clients).
+li: Avis clients : très influents ; répondre à tous, poliment, même aux avis négatifs.
+li: Bad buzz : vague de critiques en ligne qui se propage rapidement.
+li: Crise : situation qui menace gravement l'image ou l'activité (scandale, produit défectueux, rumeur, cyberattaque).
+li: Gestion de crise : reconnaître le problème, informer vite, rester honnête, s'excuser si nécessaire, corriger, suivre l'opinion.
+li: Cellule de crise : équipe désignée pour décider et communiquer ; un porte-parole unique évite les contradictions.
+li: Erreurs à éviter : nier l'évidence, supprimer les critiques, répondre sur un ton agressif, tarder à réagir.
+li: Fausses informations (fake news) : démentir avec des faits, rapidement, sur les canaux où la rumeur circule.
+li: Après la crise : tirer les leçons, améliorer les procédures, rassurer le public.
+note: Une réponse calme et transparente peut même renforcer la confiance.
+note: Les premières heures sont décisives : le silence nourrit la rumeur.
+== questions
+Qu'est-ce que l'e-réputation ? || L'image d'une marque telle qu'elle apparaît en ligne || Le salaire d'un community manager || Une taxe || Un logiciel || Elle repose sur avis, commentaires et publications.
+À quoi sert la veille ? || À surveiller ce qui se dit de la marque || À fermer les réseaux || À payer la publicité || À supprimer les avis || Alertes et outils d'écoute y aident.
+Comment répondre à un avis négatif ? || Poliment et avec une solution || En l'ignorant || En insultant le client || En le supprimant en secret || La réponse est vue par tous.
+Comment appelle-t-on une vague de critiques en ligne qui se propage vite ? || Un bad buzz || Une promotion || Un nouveau logo || Un bilan || Il peut nuire rapidement à l'image.
+Qu'est-ce qu'une crise de communication ? || Une situation qui menace gravement l'image ou l'activité || Une simple réunion || Une baisse de prix || Un congé || Scandale, rumeur ou produit défectueux en sont des exemples.
+Citez une bonne pratique en gestion de crise : || Reconnaître le problème et informer vite || Nier l'évidence || Se taire || Attaquer les critiques || L'honnêteté préserve la confiance.
+Quel rôle a un porte-parole unique ? || Éviter les messages contradictoires || Augmenter les rumeurs || Remplacer le patron || Fermer la page || Une seule voix est plus cohérente.
+Qu'est-ce qu'une cellule de crise ? || Une équipe qui décide et communique pendant la crise || Une prison || Un service comptable || Une salle de stock || Elle rassemble direction, communication et experts.
+Citez une erreur à éviter en crise : || Supprimer les critiques || Présenter des excuses sincères || Corriger le problème || Informer || Supprimer les commentaires aggrave souvent la colère.
+Que faire face à une fausse information ? || La démentir avec des faits, rapidement || L'ignorer toujours || La partager || Fermer l'entreprise || Il faut agir sur les canaux de la rumeur.
+Pourquoi les premières heures sont-elles décisives ? || Le silence nourrit la rumeur || Le public dort || La loi l'impose || Les ventes s'arrêtent || Une réaction rapide limite la propagation.
+Que faire après la crise ? || Tirer les leçons et améliorer les procédures || L'oublier || Changer de nom || Licencier tout le monde || Cela prévient de nouvelles crises.
+Quelle attitude rassure le public ? || La transparence || Le secret || La menace || Le mensonge || Une réponse calme renforce la confiance.
+Pourquoi les avis clients sont-ils influents ? || Les futurs acheteurs s'y fient || Ils sont payés || Ils remplacent les lois || Ils sont secrets || Beaucoup consultent les avis avant d'acheter.
+Qu'est-ce qu'un faux avis ? || Un avis rédigé sans expérience réelle pour tromper || Un avis authentique || Une facture || Un contrat || C'est trompeur et sanctionné par la loi.

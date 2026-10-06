@@ -1,0 +1,30 @@
+titre: Marketing international et export
+== fiche
+p: Vendre à l'étranger ouvre de nouveaux marchés mais demande de comprendre les différences culturelles, réglementaires et logistiques.
+li: Export direct : l'entreprise vend elle-même à l'étranger ; export indirect : elle passe par un intermédiaire (agent, distributeur, négociant).
+li: Zone de libre-échange : ZLECAf (Zone de libre-échange continentale africaine) vise à réduire les droits de douane entre pays africains.
+li: Études de marché : taille, concurrence, réglementation, pouvoir d'achat, habitudes de consommation.
+li: Adaptation ou standardisation : adapter le produit, le prix, la communication à chaque pays, ou garder une offre commune ; compromis selon les coûts.
+li: Incoterms : règles internationales fixant qui paie transport, assurance et douane (par exemple FOB, CIF).
+li: Documents d'export : facture commerciale, liste de colisage, certificat d'origine, connaissement ou lettre de transport.
+li: Paiements internationaux : crédit documentaire, remise documentaire, virement ; le crédit documentaire est le plus sûr pour le vendeur.
+li: Risque de change : le taux entre monnaies varie et peut réduire la marge ; on peut se couvrir.
+li: Normes et barrières : normes sanitaires, certifications, quotas, droits de douane.
+note: Les erreurs de traduction ou de symbole culturel peuvent ruiner une campagne.
+note: Tester un marché avec un partenaire local réduit le risque au départ.
+== questions
+Quelle différence entre export direct et indirect ? || Direct : elle vend elle-même ; indirect : via un intermédiaire || Aucune || L'indirect est gratuit || Le direct est interdit || Le choix dépend des moyens et du contrôle voulu.
+Que vise la ZLECAf ? || Réduire les droits de douane entre pays africains || Fermer les frontières || Créer une monnaie unique mondiale || Supprimer l'export || C'est la zone de libre-échange continentale africaine.
+Que contient une étude de marché export ? || Taille, concurrence, réglementation et habitudes de consommation || Seulement le logo || La liste des employés || Le plan de retraite || Elle éclaire l'entrée sur un pays.
+Que signifie adapter son offre à un pays ? || Modifier produit, prix ou message selon le marché local || Copier un concurrent || Baisser la qualité || Annuler la vente || L'adaptation répond aux goûts locaux.
+Que fixent les Incoterms ? || Qui paie transport, assurance et douane || Le prix de l'entreprise || Le salaire des douaniers || La monnaie || Ce sont des règles internationales de vente.
+Citez un document d'exportation : || La facture commerciale || Le bulletin météo || La carte de visite || Le menu || Le certificat d'origine en est un autre.
+À quoi sert le certificat d'origine ? || Prouver le pays de fabrication des marchandises || Prouver le salaire || Fixer le prix || Réserver un vol || Il peut ouvrir droit à des avantages douaniers.
+Quel mode de paiement est le plus sûr pour l'exportateur ? || Le crédit documentaire || Le paiement oral || Le chèque sans provision || Le troc || La banque garantit le paiement sur présentation des documents.
+Qu'est-ce que le risque de change ? || La variation du taux entre monnaies pouvant réduire la marge || Un vol de marchandises || Un retard postal || Une panne || Il touche les ventes en devises.
+Citez une barrière à l'export : || Les normes sanitaires || Un excès de clients || Une publicité gratuite || Un bureau vide || Les quotas et droits de douane en sont d'autres.
+Pourquoi s'appuyer sur un partenaire local ? || Il connaît le marché et réduit le risque || Pour payer plus de taxes || Pour éviter les contrats || Pour cacher la marque || Il aide pour la langue, la culture et la logistique.
+Pourquoi les symboles culturels demandent-ils de l'attention ? || Une couleur ou un geste peut avoir un sens différent selon les pays || Ils n'ont aucun sens || Ils sont interdits || Ils coûtent cher || Un contresens peut nuire à la marque.
+Que signifie standardiser une offre ? || Garder la même offre dans tous les pays || La changer chaque jour || La supprimer || La brader || Cela réduit les coûts mais peut ignorer les différences locales.
+Qu'est-ce que le FOB ? || Un Incoterm où le vendeur charge la marchandise à bord du navire || Une taxe || Un type de monnaie || Un contrat de travail || L'acheteur supporte ensuite le transport principal.
+Pourquoi tester un marché avant de s'engager ? || Pour limiter les pertes en cas d'échec || Pour gagner moins || Pour éviter de vendre || Pour supprimer la concurrence || Un petit essai permet d'apprendre à moindre coût.

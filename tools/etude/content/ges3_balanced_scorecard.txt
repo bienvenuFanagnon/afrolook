@@ -1,0 +1,30 @@
+titre: Tableau de bord prospectif et pilotage
+== fiche
+p: Piloter une entreprise ne se limite pas aux chiffres financiers : il faut suivre plusieurs dimensions de la performance.
+li: Tableau de bord prospectif (Balanced Scorecard) : outil de pilotage qui suit quatre axes : financier, clients, processus internes, apprentissage et innovation.
+li: Axe financier : rentabilité, croissance du chiffre d'affaires, maîtrise des coûts.
+li: Axe clients : satisfaction, fidélité, part de marché, taux de réclamations.
+li: Axe processus internes : qualité, délais, productivité, taux de défauts.
+li: Axe apprentissage : formation du personnel, innovation, climat social.
+li: Indicateur (KPI) : mesure chiffrée d'un objectif ; il doit être clair, mesurable, comparable dans le temps.
+li: Benchmarking : se comparer aux meilleures pratiques d'autres entreprises pour s'améliorer.
+li: Méthode ABC (coûts par activité) : répartit les charges indirectes selon les activités qui les consomment réellement.
+li: Un bon tableau de bord est court, régulier et sert à décider, pas seulement à constater.
+note: Un indicateur de résultat montre le passé ; un indicateur de moyen aide à prévoir l'avenir.
+note: Trop d'indicateurs tuent le pilotage : mieux vaut peu de chiffres bien choisis.
+== questions
+Comment appelle-t-on l'outil de pilotage à quatre axes (financier, clients, processus, apprentissage) ? || Tableau de bord prospectif || Bilan comptable || Compte de résultat || Plan de trésorerie || On l'appelle aussi Balanced Scorecard.
+Combien d'axes comporte le tableau de bord prospectif classique ? || Quatre || Deux || Sept || Douze || Financier, clients, processus internes, apprentissage.
+Que mesure l'axe clients ? || La satisfaction et la fidélité || Les salaires || Les amortissements || Les stocks de matières || Il suit aussi la part de marché.
+Que suit l'axe apprentissage et innovation ? || La formation et l'innovation || Les impôts || Les dividendes || Les emprunts || Il prépare la performance future.
+Comment appelle-t-on une mesure chiffrée d'un objectif ? || Un indicateur de performance (KPI) || Un bilan || Un brevet || Un contrat || Il doit être mesurable et comparable.
+Quelle qualité doit avoir un bon indicateur ? || Être clair et mesurable || Être secret || Être très complexe || Changer chaque jour de définition || Sans mesure fiable, pas de pilotage.
+Qu'est-ce que le benchmarking ? || Se comparer aux meilleures pratiques d'autres entreprises || Copier un brevet || Fermer un service || Augmenter les prix || Il sert à repérer les écarts et à progresser.
+Que répartit la méthode ABC ? || Les charges indirectes selon les activités || Les bénéfices entre associés || Les salaires || Les impôts || Elle améliore la connaissance des coûts réels.
+Quel est le défaut d'un tableau de bord surchargé ? || On ne sait plus quoi décider || Il est trop précis || Il coûte moins cher || Il remplace la comptabilité || Il vaut mieux peu d'indicateurs bien choisis.
+Un indicateur de résultat renseigne surtout sur : || Le passé || Le futur uniquement || Rien || La météo || Un indicateur de moyen aide à anticiper.
+Citez un indicateur de l'axe processus internes : || Le taux de défauts || La satisfaction client || Le salaire du dirigeant || Le cours de bourse || Il mesure la qualité et les délais.
+Citez un indicateur de l'axe financier : || La rentabilité || Le taux de réclamations || Le nombre d'heures de formation || Le délai de livraison || Il suit aussi la croissance du chiffre d'affaires.
+À quoi sert un tableau de bord ? || À décider et corriger la trajectoire || Uniquement à archiver || À remplacer les employés || À payer les taxes || Il doit être régulier et court.
+Pourquoi suivre plusieurs axes plutôt que le seul financier ? || La performance durable dépend aussi des clients et des équipes || Pour compliquer || Parce que la finance est inutile || Pour éviter le contrôle || Le financier seul reflète surtout le passé.
+Quel est le rôle d'un objectif chiffré avec échéance ? || Permettre de mesurer l'écart avec la réalité || Décorer le rapport || Empêcher toute évolution || Supprimer les indicateurs || Sans cible, on ne peut pas évaluer les résultats.
