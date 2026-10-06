@@ -1,0 +1,31 @@
+titre: CV et lettre de motivation
+== fiche
+p: Le CV et la lettre de motivation ouvrent la porte de l'entretien. Un dossier clair et personnalisé est lu en quelques secondes.
+li: CV : une page pour un début de carrière, deux au maximum ; identité, titre du poste visé, expériences, formations, compétences, langues, centres d'intérêt.
+li: Ordre : expériences et formations de la plus récente à la plus ancienne (CV antéchronologique).
+li: Contacts : nom, téléphone, adresse e-mail sérieuse (prénom.nom), ville ; lien professionnel si utile ; la photo est facultative selon les usages.
+li: Expériences : verbe d'action + résultat chiffré (« j'ai vendu 40 contrats par mois »), stages et bénévolat inclus pour un débutant.
+li: Mise en page : police lisible, titres clairs, marges, un format PDF, nom de fichier simple (cv_prenom_nom.pdf).
+li: Lettre de motivation : trois parties : pourquoi cette entreprise, pourquoi vous, ce que vous apportez ; une page maximum.
+li: Personnaliser : citer le poste, l'entreprise et une raison précise ; ne jamais envoyer une lettre copiée-collée.
+li: Orthographe : relire plusieurs fois, faire relire par un proche ; une faute peut éliminer un dossier.
+li: Honnêteté : ne jamais mentir sur un diplôme ou une expérience ; la vérification est fréquente.
+li: Envoi : objet de l'e-mail clair, pièces jointes nommées, signature, réponse aux consignes de l'offre.
+note: Adapte ton CV à chaque offre : mets en avant les compétences demandées.
+note: Une adresse e-mail fantaisiste donne une mauvaise image.
+== questions
+Combien de pages pour le CV d'un débutant ? || Une page || Cinq pages || Dix pages || Aucune || Il doit être lu en quelques secondes.
+Comment ordonne-t-on les expériences sur un CV ? || De la plus récente à la plus ancienne || Au hasard || De la plus ancienne à la plus récente seulement || Par ordre alphabétique || C'est le CV antéchronologique.
+Quelle adresse e-mail est la plus adaptée ? || prenom.nom@... || superstar2000@... || coolboy_loulou@... || bebe_chou@... || Elle doit être sérieuse.
+Quel format de fichier est conseillé pour envoyer son CV ? || PDF || Un fichier non lisible || Un format exotique || Une photo floue || Le PDF garde la mise en page.
+Que doit contenir une expérience bien décrite ? || Un verbe d'action et un résultat || Une liste d'excuses || Seulement le nom de l'entreprise || Des phrases très longues || Un résultat chiffré est convaincant.
+Que peut inclure le CV d'un débutant sans emploi ? || Stages, bénévolat et projets || Rien || Un faux poste || Des diplômes inventés || Ils montrent compétences et sérieux.
+Quelles sont les trois idées de la lettre de motivation ? || Pourquoi l'entreprise, pourquoi moi, ce que j'apporte || Mon salaire, mes congés, mes horaires || Mes défauts seulement || L'histoire de ma vie || Elle tient sur une page.
+Pourquoi personnaliser la lettre de motivation ? || Montrer qu'elle a été écrite pour ce poste || Pour l'allonger || Pour copier une autre || Pour éviter de relire || Une lettre générique se repère vite.
+Que faire avant d'envoyer son dossier ? || Relire et faire relire l'orthographe || Envoyer sans relire || Ajouter des fautes || Supprimer le nom || Les fautes sont une cause fréquente de rejet.
+Peut-on inventer un diplôme sur son CV ? || Non, c'est malhonnête et vérifiable || Oui, personne ne vérifie || Oui, si c'est un petit diplôme || Seulement à l'étranger || Une fausse information peut mener à un licenciement.
+Que mettre dans l'objet d'un e-mail de candidature ? || Le poste visé et ton nom || Rien || « Coucou » || Une blague || L'objet aide à classer les candidatures.
+Pourquoi adapter son CV à chaque offre ? || Mettre en avant les compétences demandées || Pour changer de nom || Pour cacher le diplôme || Pour supprimer les expériences || Le recruteur cherche des mots-clés.
+Comment nommer le fichier de son CV ? || cv_prenom_nom.pdf || document1.pdf || nouveau fichier final final.pdf || photo.pdf || Un nom clair facilite le tri.
+Comment doit être la police d'un CV ? || Lisible et sobre || Très décorée || Minuscule || Colorée sur toute la page || La lisibilité compte plus que la décoration.
+Que faire des consignes d'une offre d'emploi ? || Les respecter à la lettre || Les ignorer || Les modifier || Les copier telles quelles || Ne pas les suivre peut éliminer le dossier.

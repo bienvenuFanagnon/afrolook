@@ -1,0 +1,32 @@
+titre: Entretiens selon le secteur d'activité
+== fiche
+p: Chaque secteur attend des qualités précises. Adapter ses réponses au métier visé augmente nettement les chances.
+li: Vente et commerce : sens du contact, objectifs chiffrés, gestion des objections ; question type : « Vendez-moi ce stylo. »
+li: Banque et finance : rigueur, honnêteté, discrétion, sens du chiffre ; tests de calcul et d'éthique.
+li: Santé : empathie, gestion du stress, respect de l'hygiène, secret médical, travail en équipe et de nuit.
+li: Enseignement : pédagogie, patience, autorité bienveillante, maîtrise de la matière, gestion de classe.
+li: Restauration et hôtellerie : service client, rapidité, hygiène, travail en horaires décalés, gestion des plaintes.
+li: Informatique : compétences techniques, résolution de problèmes, veille, travail en équipe ; tests pratiques ou exercices de code.
+li: BTP et industrie : sécurité, lecture de plans, travail physique, respect des délais.
+li: Service client et centre d'appels : écoute, patience, expression claire, gestion des clients mécontents.
+li: Administration : sens du service public, rigueur, respect des procédures, neutralité.
+li: Agriculture et agroalimentaire : connaissance du terrain, hygiène, saisonnalité, endurance.
+li: Dans tous les secteurs : montrer des exemples concrets de réussite et de gestion de situations difficiles.
+note: Lis l'offre et repère les trois qualités qui reviennent le plus.
+note: Prépare une anecdote vraie qui montre chaque qualité attendue.
+== questions
+Que teste la question « Vendez-moi ce stylo » ? || Le sens de la vente et de l'argumentation || La culture générale || La comptabilité || La rapidité à écrire || On décrit les bénéfices pour le client.
+Quelle qualité est essentielle en banque ? || La rigueur et l'honnêteté || Le goût du risque excessif || L'improvisation || La discrétion nulle || Les erreurs coûtent cher.
+Quelle qualité est essentielle dans la santé ? || L'empathie et le respect du secret médical || L'impatience || L'indifférence || La vitesse seule || Le patient est au centre.
+Quelle qualité est essentielle pour enseigner ? || La pédagogie et la patience || Le bruit || L'autoritarisme brutal || L'absence de préparation || Il faut faire comprendre.
+Que doit montrer un candidat en restauration ? || Service, rapidité et hygiène || Lenteur || Désordre || Impolitesse || Les horaires sont souvent décalés.
+Que peut demander un entretien informatique ? || Un exercice pratique ou un test de code || Seulement un dessin || Une chanson || Un régime || Les compétences se vérifient en pratique.
+Quelle priorité en BTP ? || La sécurité || Le retard || L'économie sur les protections || L'improvisation || Chaque année, des accidents graves arrivent.
+Quelle qualité est importante en centre d'appels ? || L'écoute et la patience || L'agressivité || Le silence || La précipitation || Gérer un client mécontent est courant.
+Quelle valeur est centrale dans l'administration ? || Le sens du service public || Le profit personnel || La partialité || La rapidité à tout prix || La neutralité est essentielle.
+Que faire pour préparer un entretien sectoriel ? || Repérer les qualités citées dans l'offre || Ignorer l'offre || Copier un voisin || Improviser || Chaque offre révèle ses priorités.
+Pourquoi donner des exemples concrets ? || Ils prouvent ses qualités mieux que des mots || Ils allongent l'entretien || Ils remplacent le CV || Ils sont obligatoires || Un exemple vécu est convaincant.
+Qu'est-ce qui est important en agriculture et agroalimentaire ? || Hygiène, endurance et connaissance du terrain || Aucune notion || Un bureau climatisé seulement || L'absence de saison || Le travail suit les saisons.
+Que faire à la question « Comment gérez-vous un client mécontent ? » ? || Écouter, reformuler, proposer une solution || Ignorer || Hausser le ton || Raccrocher || C'est la méthode de base du service client.
+Quelle compétence est attendue en commerce ? || Atteindre des objectifs chiffrés || Éviter les clients || Refuser de négocier || Ignorer les prix || Les résultats sont mesurés.
+Pourquoi adapter ses réponses au secteur ? || Montrer qu'on comprend le métier || Pour éviter de parler || Pour changer de métier || Pour rallonger || Les qualités attendues diffèrent.

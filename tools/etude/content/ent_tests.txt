@@ -1,0 +1,31 @@
+titre: Tests de recrutement et mises en situation
+== fiche
+p: Beaucoup d'entreprises ajoutent des tests à l'entretien : logique, langue, personnalité, compétences techniques, mises en situation.
+li: Tests d'aptitudes : raisonnement logique, calcul mental, compréhension de consignes, attention ; temps limité.
+li: Tests de personnalité : questionnaires sur la façon de réagir ; réponds avec sincérité et cohérence, sans chercher la réponse « parfaite ».
+li: Tests techniques : exercices propres au métier (code, comptabilité, rédaction, dessin technique).
+li: Test de langue : compréhension et expression en français ou anglais ; parfois audio.
+li: Étude de cas : situation professionnelle à analyser, avec un temps et des documents ; structure ta réponse (constat, options, recommandation).
+li: Jeu de rôle : simulation d'une vente, d'un conflit ou d'un client difficile ; montre l'écoute et la solution.
+li: Exercice de groupe : plusieurs candidats résolvent un problème ; écoute, propose, aide les autres, ne domine pas.
+li: Entretien de groupe : même principe ; le jury observe leadership, esprit d'équipe et respect.
+li: Préparation : s'entraîner chronomètre en main, dormir assez, se nourrir, arriver tôt.
+li: Gestion de l'échec : un test raté est un apprentissage ; demande un retour si possible.
+note: Dans un exercice de groupe, être utile compte plus que parler le plus fort.
+note: Lis les consignes jusqu'au bout avant de commencer un test.
+== questions
+Que mesure un test d'aptitudes ? || Le raisonnement, le calcul et l'attention || La couleur préférée || La taille du candidat || La météo || Il se fait souvent avec un temps limité.
+Comment répondre à un test de personnalité ? || Avec sincérité et cohérence || En mentant || En cherchant la réponse parfaite || Au hasard || Les incohérences sont repérées.
+Qu'est-ce qu'un test technique ? || Un exercice propre au métier visé || Un jeu vidéo || Un quiz de cinéma || Une loterie || Par exemple coder ou faire une écriture comptable.
+Que contient une étude de cas ? || Une situation professionnelle à analyser || Une recette || Un poème || Un voyage || Il faut proposer une recommandation.
+Comment structurer une réponse à une étude de cas ? || Constat, options, recommandation || Au hasard || Seulement une blague || Uniquement des chiffres || Une structure claire convainc.
+Qu'est-ce qu'un jeu de rôle ? || Une simulation d'une situation professionnelle || Un jeu de société || Un test médical || Une enquête || Par exemple traiter un client difficile.
+Que faire dans un exercice de groupe ? || Écouter, proposer et aider les autres || Dominer la parole || S'isoler || Critiquer sans proposer || Le jury observe le comportement.
+Que cherche le jury dans un entretien de groupe ? || Leadership, esprit d'équipe et respect || La voix la plus forte || Le candidat le plus silencieux || Le plus âgé || Les qualités humaines comptent.
+Comment se préparer aux tests ? || S'entraîner chronomètre en main || Ne rien faire || Veiller toute la nuit || Éviter de manger || L'entraînement réduit le stress.
+Que faire avant de commencer un test ? || Lire les consignes jusqu'au bout || Commencer sans lire || Copier le voisin || Éteindre la lumière || Les consignes évitent les erreurs.
+Que faire après un test raté ? || En tirer des leçons et demander un retour || Abandonner || Accuser || Mentir || Chaque échec peut devenir un apprentissage.
+Pourquoi dormir assez la veille d'un test ? || La concentration en dépend || Pour rêver || Pour éviter la lecture || Pour arriver en retard || Le sommeil améliore la performance.
+Quel test évalue la langue ? || Un test de compréhension et d'expression || Un test de force || Un test de vue || Un test de vitesse de course || Il peut inclure de l'audio.
+Dans un exercice de calcul mental, que faire si on bloque ? || Passer à la question suivante || S'arrêter définitivement || Quitter la salle || Tricher || Le temps est limité.
+Qu'est-ce qu'un test sans bonne réponse « parfaite » ? || Un test de personnalité || Un test de maths || Un test de calcul || Un test de code || Il décrit un style, pas un niveau.

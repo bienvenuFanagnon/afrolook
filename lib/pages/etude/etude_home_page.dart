@@ -253,6 +253,91 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
     );
   }
 
+  /// « À la une » : les parcours mis en avant par l'équipe (champ `featured` du catalogue), en défilement horizontal.
+  List<Widget> _featuredSection(AppColors c, EtudeState st, List<EtudeTrack> all) {
+    final list = all.where((t) => t.featured > 0).toList()..sort((a, b) => a.featured.compareTo(b.featured));
+    if (list.isEmpty) return const [];
+    return [
+      _sectionTitle(c, context.tr('À la une'), context.tr('Nos parcours à ne pas manquer')),
+      SizedBox(
+        height: 168,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (_, i) => _featuredCard(c, st, list[i], i),
+        ),
+      ),
+      const SizedBox(height: 18),
+    ];
+  }
+
+  Widget _featuredCard(AppColors c, EtudeState st, EtudeTrack t, int i) {
+    final tint = [c.primary, c.info, c.accent, c.warning][i % 4];
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => _openFeatured(t),
+      child: Container(
+        width: 250,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [tint.withOpacity(0.32), c.surface], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: tint.withOpacity(0.7), width: 1.5),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: tint.withOpacity(0.25), shape: BoxShape.circle),
+              child: Icon(_rubricIcon(_rubricOf(t)), color: tint, size: 20),
+            ),
+            const Spacer(),
+            if (t.badge.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                decoration: BoxDecoration(color: tint, borderRadius: BorderRadius.circular(20)),
+                child: Text(context.tr(t.badge), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+              ),
+          ]),
+          const SizedBox(height: 10),
+          Text(t.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 16, height: 1.2)),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Text(context.tr(t.pitch), maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.3)),
+          ),
+          Row(children: [
+            Text(context.tr('Découvrir'), style: TextStyle(color: tint, fontWeight: FontWeight.w900, fontSize: 13)),
+            Icon(Icons.arrow_forward_rounded, color: tint, size: 16),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  /// Ouvre la carte complète du parcours dans une feuille, sans quitter l'accueil.
+  void _openFeatured(EtudeTrack t) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.of(context).background,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        builder: (_, scroll) => ValueListenableBuilder<EtudeState?>(
+          valueListenable: EtudeService.instance.state,
+          builder: (_, s, __) => ListView(
+            controller: scroll,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            children: [_card(AppColors.of(ctx), s ?? const EtudeState(), t)],
+          ),
+        ),
+      ),
+    );
+  }
+
   bool _inProgress(EtudeState st, EtudeTrack t) {
     if (t.isCycle) return st.tracks.containsKey(t.id);
     final info = st.certs[t.cert?['id']] as Map? ?? const {};
@@ -283,6 +368,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
         ],
         const SizedBox(height: 14),
         if (!browsing) ...[
+          ..._featuredSection(c, st, all),
           if (mine.isNotEmpty) ...[
             _sectionTitle(c, context.tr('En cours'), context.tr('Reprends là où tu t\'es arrêté')),
             for (final t in mine) _card(c, st, t),

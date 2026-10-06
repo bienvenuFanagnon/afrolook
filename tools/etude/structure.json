@@ -344,7 +344,10 @@
             }
           ]
         }
-      ]
+      ],
+      "featured": 4,
+      "badge": "BEPC",
+      "pitch": "Le BEPC pas à pas : chaque chapitre, chaque matière."
     },
     {
       "id": "lycee_d",
@@ -529,7 +532,10 @@
             }
           ]
         }
-      ]
+      ],
+      "featured": 3,
+      "badge": "BAC",
+      "pitch": "Révise le BAC série D matière par matière, avec examen blanc."
     },
     {
       "id": "univ_info",
@@ -2226,6 +2232,49 @@
                   "title": "Salaire, questions à poser et suite"
                 }
               ]
+            },
+            {
+              "id": "entretien_plus",
+              "title": "Aller plus loin",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "ent_cv",
+                  "title": "CV et lettre de motivation"
+                },
+                {
+                  "id": "ent_visio",
+                  "title": "Entretien par téléphone et en visioconférence"
+                },
+                {
+                  "id": "ent_anglais",
+                  "title": "Entretien d'embauche en anglais"
+                },
+                {
+                  "id": "ent_jury",
+                  "title": "Concours oral et passage devant un jury"
+                },
+                {
+                  "id": "ent_secteurs",
+                  "title": "Entretiens selon le secteur d'activité"
+                },
+                {
+                  "id": "ent_salaire_essai",
+                  "title": "Salaire, contrat et période d'essai"
+                },
+                {
+                  "id": "ent_bourse_visa",
+                  "title": "Entretien de bourse, d'admission et de visa"
+                },
+                {
+                  "id": "ent_tests",
+                  "title": "Tests de recrutement et mises en situation"
+                },
+                {
+                  "id": "ent_integration",
+                  "title": "Réussir ses premiers jours et son intégration"
+                }
+              ]
             }
           ]
         }
@@ -2238,12 +2287,24 @@
           "ent_presenter",
           "ent_classiques",
           "ent_star",
-          "ent_conclure"
+          "ent_conclure",
+          "ent_cv",
+          "ent_visio",
+          "ent_anglais",
+          "ent_jury",
+          "ent_secteurs",
+          "ent_salaire_essai",
+          "ent_bourse_visa",
+          "ent_tests",
+          "ent_integration"
         ],
-        "count": 30,
+        "count": 40,
         "passPct": 0.7,
-        "seconds": 1500
-      }
+        "seconds": 2400
+      },
+      "featured": 1,
+      "badge": "Populaire",
+      "pitch": "Décroche ton emploi : CV, entretien, salaire et tests de recrutement."
     },
     {
       "id": "cert_python",
@@ -2262,7 +2323,10 @@
         "count": 30,
         "passPct": 0.7,
         "seconds": 1500
-      }
+      },
+      "featured": 6,
+      "badge": "Compétence",
+      "pitch": "Apprends Python et décroche ton attestation."
     },
     {
       "id": "cert_ia",
@@ -2312,7 +2376,10 @@
         "count": 30,
         "passPct": 0.7,
         "seconds": 1500
-      }
+      },
+      "featured": 5,
+      "badge": "Nouveau",
+      "pitch": "Comprends l'intelligence artificielle et utilise-la intelligemment."
     },
     {
       "id": "cert_ia_pro",
@@ -2434,7 +2501,10 @@
             }
           ]
         }
-      ]
+      ],
+      "featured": 2,
+      "badge": "Concours",
+      "pitch": "Prépare ton entrée en BTS : culture générale, maths, logique et méthode."
     },
     {
       "id": "bts_gestion",

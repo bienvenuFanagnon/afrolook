@@ -1,0 +1,32 @@
+titre: Réussir ses premiers jours et son intégration
+== fiche
+p: L'entretien est réussi : il reste à réussir l'arrivée dans l'équipe. Les premières semaines construisent la réputation.
+li: Avant le premier jour : confirmer horaire, lieu, tenue, documents à apporter (pièce d'identité, diplômes, RIB) et la personne à contacter.
+li: Premier jour : arriver en avance, sourire, se présenter, écouter, noter les noms et les consignes.
+li: Comprendre le poste : missions, objectifs, qui fait quoi, outils, règles de sécurité, horaires, pauses.
+li: Relation avec le manager : demander un point régulier, poser des questions, demander un retour sur son travail.
+li: Équipe : respect, politesse, curiosité, aider quand on peut, éviter les commérages.
+li: Apprendre vite : prendre des notes, répéter, demander quand on ne sait pas plutôt que d'improviser.
+li: Ponctualité et fiabilité : tenir ses délais, prévenir en cas de retard ou d'absence.
+li: Communication : messages clairs, courts, respectueux ; ton professionnel même sur les groupes de discussion.
+li: Gestion des erreurs : reconnaître, corriger, informer, apprendre ; ne jamais cacher une erreur.
+li: Premiers résultats : choisir une réussite simple et visible pendant le premier mois.
+li: Équilibre de vie : sommeil, repas, transports ; limites claires.
+note: Les trois premiers mois comptent beaucoup pour la confiance de l'équipe.
+note: Mieux vaut poser dix questions que commettre une grosse erreur.
+== questions
+Que faut-il confirmer avant le premier jour de travail ? || L'horaire, le lieu et les documents à apporter || Le menu du midi || La couleur du bureau || Le nom du voisin || Cela évite un faux départ.
+Comment aborder son premier jour ? || Arriver en avance, se présenter et écouter || Arriver en retard || Rester silencieux sans noter || Critiquer l'équipe || Une bonne première impression compte.
+Que faut-il comprendre au début d'un poste ? || Missions, objectifs, outils et règles || Seulement la pause || Les rumeurs || Les salaires des autres || Cela évite les erreurs.
+Pourquoi demander un point régulier à son manager ? || Recevoir un retour et ajuster son travail || Pour être inutile || Pour éviter de travailler || Pour critiquer || Les retours aident à progresser.
+Comment traiter ses collègues ? || Avec respect et politesse || Avec mépris || En évitant de parler || En critiquant leur travail || Une bonne ambiance aide l'efficacité.
+Que faire quand on ne sait pas ? || Demander plutôt qu'improviser || Cacher son ignorance || Faire semblant de savoir || Éviter la tâche || Poser une question coûte moins qu'une erreur.
+Pourquoi prendre des notes les premiers jours ? || Retenir consignes, noms et procédures || Pour occuper les mains || Pour impressionner || Pour retarder le travail || La mémoire est vite saturée.
+Que faire en cas de retard ou d'absence ? || Prévenir à l'avance || Disparaître || Mentir || Ne rien dire || La fiabilité se construit sur la transparence.
+Quel ton adopter dans un groupe de discussion professionnel ? || Poli et professionnel || Insultant || Moqueur || Familier à l'excès || Ces messages peuvent être lus par la hiérarchie.
+Que faire après une erreur ? || La reconnaître, la corriger et en tirer des leçons || La cacher || Accuser un collègue || Démissionner || La transparence préserve la confiance.
+Pourquoi viser une première réussite visible ? || Gagner la confiance de l'équipe || Obtenir une amende || Éviter l'équipe || Perdre du temps || Un petit succès rassure sur ses compétences.
+Quelle période est décisive pour la confiance ? || Les premiers mois || Les dernières années || La retraite || Les vacances || Les premières impressions durent.
+Pourquoi éviter les commérages ? || Ils nuisent à l'ambiance et à la réputation || Ils augmentent le salaire || Ils sont obligatoires || Ils sont officiels || Rester neutre protège ta crédibilité.
+Pourquoi garder un équilibre de vie ? || Sommeil et repos soutiennent la performance || Pour éviter de travailler || Pour payer moins d'impôts || Pour changer d'emploi || La fatigue provoque des erreurs.
+Que faire avec les consignes de sécurité ? || Les lire et les respecter || Les ignorer || Les critiquer || Les modifier || Elles protègent tout le monde.

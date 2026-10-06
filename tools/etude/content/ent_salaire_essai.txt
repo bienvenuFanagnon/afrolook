@@ -1,0 +1,32 @@
+titre: Salaire, contrat et période d'essai
+== fiche
+p: Négocier avec calme, comprendre son contrat et bien vivre la période d'essai sont des étapes décisives après l'entretien.
+li: Salaire brut : avant cotisations ; salaire net : ce qu'on reçoit après cotisations sociales et impôts éventuels.
+li: Fourchette : renseigne-toi sur le salaire moyen du poste (sites d'emploi, collègues, associations professionnelles) avant de négocier.
+li: Négocier : parler après avoir montré sa valeur ; donner une fourchette, justifier par ses compétences ; rester poli.
+li: Avantages : primes, transport, logement, santé, formation, congés ; ils comptent autant que le salaire.
+li: Contrat : CDI (durée indéterminée), CDD (durée déterminée), stage, intérim, freelance ; lire les clauses (poste, durée, rémunération, lieu, horaires).
+li: Période d'essai : temps pendant lequel employeur et salarié peuvent rompre plus facilement ; durée variable selon le contrat et la loi.
+li: Bulletin de paie : salaire, cotisations, net à payer ; le conserver.
+li: Droits : congés payés, jours fériés, sécurité sociale, assurance, respect du Code du travail.
+li: Pendant l'essai : ponctualité, curiosité, questions, respect des règles, résultats visibles.
+li: Refuser une offre : poliment, en remerciant, sans brûler les ponts.
+li: Avant de signer : relire le contrat, demander ce qui manque, garder une copie signée.
+note: Ne jamais commencer à travailler sans contrat signé.
+note: Ne donne pas un chiffre trop bas par peur : fonde-toi sur des repères.
+== questions
+Quelle différence entre salaire brut et net ? || Le net est ce qu'on reçoit après cotisations || Aucune || Le brut est après impôts || Le net est avant cotisations || Le brut est le salaire total avant retenues.
+Comment préparer une négociation salariale ? || Se renseigner sur le salaire moyen du poste || Choisir un chiffre au hasard || Demander le maximum possible || Ne rien demander || Les repères justifient la demande.
+Quand parler du salaire ? || Après avoir montré sa valeur || Dès la première phrase || Jamais || Avant de dire bonjour || Le moment dépend de l'échange.
+Comment présenter sa demande de salaire ? || Donner une fourchette justifiée || Imposer un seul chiffre || Menacer || Se plaindre || Une fourchette laisse de la marge.
+Citez un avantage en plus du salaire : || Une prime de transport || Un retard || Un impôt || Une amende || Santé et formation en sont d'autres.
+Que signifie le sigle CDI pour un candidat ? || Contrat à durée indéterminée || Contrat de dix ans || Contrat d'intérim || Contrat sans durée précise || Il n'a pas de date de fin fixée.
+Que signifie le sigle CDD pour un candidat ? || Contrat à durée déterminée || Contrat de dettes || Contrat de départ || Contrat de direction || Il a une date de fin.
+Qu'est-ce que la période d'essai ? || Un temps où la rupture est plus facile pour les deux parties || Un jeu || Une formation payante || Un congé || Elle permet d'évaluer le poste et le salarié.
+Que faire avant de signer un contrat ? || Le lire entièrement et garder une copie signée || Signer sans lire || Signer au nom d'un autre || Refuser les copies || Les clauses engagent les deux parties.
+Peut-on commencer à travailler sans contrat ? || Il vaut mieux ne jamais le faire || Oui, toujours || Oui, si c'est pour une semaine || Oui, si l'ami le dit || Sans contrat, les droits sont fragiles.
+Que montre le bulletin de paie ? || Salaire, cotisations et net à payer || L'adresse du patron || Le menu || Les photos || Il faut le conserver.
+Comment refuser une offre ? || Poliment, en remerciant || En ne répondant pas || Avec colère || En insultant || On peut recroiser ce recruteur plus tard.
+Quel comportement aide pendant l'essai ? || Ponctualité et curiosité || Retards fréquents || Désintérêt || Conflits || Les résultats visibles comptent.
+Pourquoi ne pas donner un salaire trop bas par peur ? || On risque de se sous-évaluer durablement || Cela augmente toujours le salaire || C'est obligatoire || Cela fâche le recruteur || Appuie-toi sur des repères du marché.
+Que peut contenir une clause de contrat ? || Poste, durée, rémunération, lieu et horaires || Seulement le nom || Une recette || Rien || Ces clauses précisent les obligations.

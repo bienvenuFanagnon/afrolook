@@ -1,0 +1,31 @@
+titre: Entretien d'embauche en anglais
+== fiche
+p: Beaucoup d'entreprises internationales recrutent en anglais. Quelques phrases clés et une bonne structure suffisent pour réussir.
+li: Se présenter : « My name is… », « I graduated in… », « I have two years of experience in… », « I am currently looking for… ».
+li: Parler de soi : « I am hardworking, reliable and a team player. » (travailleur, fiable, esprit d'équipe).
+li: Forces et faiblesses : « My strength is… », « I am working on improving… » (je travaille à améliorer…).
+li: Pourquoi ce poste : « I am interested in this position because… », « I would like to develop my skills in… ».
+li: Expérience : « In my previous job, I was responsible for… », « I managed… », « I achieved… ».
+li: Questions courantes : « Tell me about yourself. », « Why should we hire you? », « Where do you see yourself in five years? ».
+li: Disponibilité et salaire : « I am available from… », « My salary expectations are around… ».
+li: Poser des questions : « What does a typical day look like? », « What are the next steps in the process? ».
+li: Si tu ne comprends pas : « Could you repeat that, please? », « Could you rephrase the question? ».
+li: Politesse : « Thank you for your time », « It was a pleasure to meet you », « I look forward to hearing from you ».
+note: Prépare à l'avance trois histoires de réussite en anglais.
+note: Mieux vaut une phrase simple et correcte qu'une phrase compliquée avec des erreurs.
+== questions
+Comment dit-on « Parlez-moi de vous » en anglais ? || Tell me about yourself || Where are you from || Why are you late || What is your name || C'est la question d'ouverture classique.
+Que signifie « team player » ? || Quelqu'un qui travaille bien en équipe || Un joueur de foot || Un chef seul || Un employé absent || Les recruteurs apprécient cette qualité.
+Comment dit-on « Je suis responsable de… » ? || I am responsible for… || I am afraid of… || I am late for… || I am proud to… || On l'emploie pour décrire ses missions.
+Comment dit-on « Ma force est… » ? || My strength is… || My weakness is the best || My salary is || My team is || Strength signifie force.
+Comment parler d'une faiblesse en anglais ? || I am working on improving… || I have no weakness || I do not care || I hate work || On montre qu'on progresse.
+Que signifie « Why should we hire you? » ? || Pourquoi devrions-nous vous embaucher ? || Où habitez-vous ? || Combien gagnez-vous ? || Quand partez-vous ? || Il faut mettre en avant sa valeur ajoutée.
+Que signifie « Where do you see yourself in five years? » ? || Où vous voyez-vous dans cinq ans ? || Où étiez-vous il y a cinq ans ? || Où dormez-vous ? || Combien de temps avez-vous travaillé ? || Elle teste le projet professionnel.
+Comment demander de répéter une question poliment ? || Could you repeat that, please? || What? || Say again now! || I don't care || Cette formule est polie et simple.
+Comment dit-on « disponibilité » dans « I am ___ from Monday » ? || available || avaible || ability || avalaible || « Available » signifie disponible.
+Que signifie « salary expectations » ? || Prétentions salariales || Salaire minimum légal || Prime de fin d'année || Congés payés || On précise une fourchette réaliste.
+Comment remercier à la fin d'un entretien ? || Thank you for your time || See you never || Good night only || Whatever || C'est une formule polie et standard.
+Que signifie « I look forward to hearing from you » ? || J'attends votre réponse avec impatience || Je regarde devant moi || Je suis en retard || Je refuse l'offre || Elle clôt poliment un entretien ou un mail.
+Que signifie « previous job » ? || Emploi précédent || Emploi futur || Emploi actuel seulement || Emploi d'été || Previous = précédent.
+Quelle phrase pose une bonne question sur la suite ? || What are the next steps in the process? || Who is the boss? || Can I leave early? || Do you like me? || Elle montre de l'intérêt.
+Comment dit-on « J'ai géré une équipe » ? || I managed a team || I managing team yesterday || I am manage team || I manager team || Managed est le passé de manage.

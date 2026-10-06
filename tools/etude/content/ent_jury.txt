@@ -1,0 +1,32 @@
+titre: Concours oral et passage devant un jury
+== fiche
+p: L'oral d'un concours ou d'un recrutement public se passe souvent devant plusieurs examinateurs. La préparation et le calme font la différence.
+li: Jury : plusieurs personnes (2 à 5) ; président, membres ; chacun note selon une grille de critères.
+li: Épreuves orales : présentation de soi, exposé, question-réponses, mise en situation, parfois épreuve de langue.
+li: Présentation : 2 à 3 minutes : qui je suis, mon parcours, ma motivation, mon projet ; s'entraîner à voix haute.
+li: Entrée : saluer, sourire, attendre qu'on invite à s'asseoir ; regarder tout le jury, pas seulement celui qui parle.
+li: Posture : dos droit, mains visibles, voix posée, pas de bavardage nerveux.
+li: Questions pièges : désaccords, mise en difficulté, silence ; garder son calme, réfléchir, répondre honnêtement.
+li: Si on ne sait pas : le dire simplement, puis proposer une piste de raisonnement ; ne jamais inventer.
+li: Actualité et culture générale : préparer les grands sujets nationaux et internationaux.
+li: Connaître l'institution : mission, valeurs, organigramme, réformes récentes.
+li: Tenue : sobre, propre, adaptée à l'institution (costume ou tenue officielle selon l'usage).
+li: Après l'épreuve : remercier, sortir calmement, ne pas commenter à voix haute.
+note: Chronomètre-toi : un exposé trop long ou trop court est pénalisé.
+note: Entraîne-toi devant un miroir ou avec des amis qui jouent le jury.
+== questions
+Combien de personnes compte souvent un jury ? || Entre deux et cinq || Mille || Aucune || Une seule toujours || Chaque membre note selon des critères.
+Quelle durée vise une présentation orale de soi ? || Deux à trois minutes || Trente minutes || Dix secondes || Une heure || Il faut être concis.
+Que faire en entrant devant le jury ? || Saluer et attendre d'être invité à s'asseoir || S'asseoir sans parler || Parler sans saluer || Demander le résultat || La politesse compte dès l'entrée.
+Qui regarder pendant la réponse ? || Tous les membres du jury || Le plafond || Seulement ses notes || Un seul juré || Cela montre de l'aisance.
+Comment réagir à une question piège ? || Garder son calme et réfléchir avant de répondre || S'énerver || Quitter la salle || Mentir || Le jury teste le sang-froid.
+Que faire si on ne connaît pas une réponse ? || Le dire simplement et proposer une piste de raisonnement || Inventer || Rester muet longtemps || Changer de sujet || L'honnêteté est mieux perçue.
+Pourquoi connaître l'institution visée ? || Montrer sa motivation et sa culture du poste || Pour critiquer || Pour éviter les questions || Pour retarder l'épreuve || Mission et valeurs sont souvent demandées.
+Quelle tenue adopter ? || Sobre, propre et adaptée à l'institution || Très décontractée || Très voyante || Sale || La tenue reflète le sérieux.
+Que faire après l'épreuve ? || Remercier et sortir calmement || Commenter à voix haute || Discuter les notes || Rentrer en courant || Les commentaires peuvent être entendus.
+Pourquoi préparer l'actualité ? || Le jury peut poser des questions de culture générale || Pour remplir du temps || Pour éviter l'oral || Pour changer le programme || Les grands sujets d'actualité sont fréquents.
+Que signifie une grille de notation ? || Les critères communs utilisés pour évaluer les candidats || Un tableau de salaires || Un planning || Un menu || Elle rend l'évaluation plus équitable.
+Comment s'entraîner à l'oral ? || À voix haute, devant un miroir ou des amis || En silence uniquement || Sans se chronométrer || Jamais || Le chronomètre évite l'exposé trop long.
+Quelle posture favorise une bonne image ? || Dos droit et voix posée || Dos voûté || Mains dans les poches || Bras croisés fermés || La posture inspire confiance.
+Que faire face à un silence du jury ? || Attendre calmement et reprendre si nécessaire || Parler sans arrêt || Quitter la salle || Se moquer || Le silence peut être un test.
+Une épreuve de mise en situation consiste à : || Jouer un cas professionnel concret || Réciter un poème || Passer un test médical || Faire un dessin || Le jury évalue le comportement et le raisonnement.

@@ -1,0 +1,32 @@
+titre: Entretien de bourse, d'admission et de visa
+== fiche
+p: Beaucoup de jeunes passent un entretien pour une bourse, une admission à l'étranger ou un visa d'études. Il faut être clair, cohérent et honnête.
+li: Objectif : convaincre que ton projet est sérieux, réaliste et cohérent avec ton parcours.
+li: Questions fréquentes : pourquoi ce pays, cette école, cette formation ? Qui finance tes études ? Que feras-tu après ? Reviendras-tu dans ton pays ?
+li: Cohérence : parcours précédent, diplôme visé et projet professionnel doivent s'enchaîner logiquement.
+li: Financement : montrer des preuves claires (compte bancaire, garant, bourse) ; connaître le coût des études et de la vie.
+li: Connaissance du pays et de l'école : programme, durée, ville, conditions de logement et d'assurance.
+li: Dossier : passeport, diplômes traduits, lettre de motivation, lettre d'admission, justificatifs financiers ; garder des copies.
+li: Entretien de bourse : mettre en avant résultats, engagement associatif, leadership et projet qui sert ta communauté.
+li: Honnêteté : les agents vérifient ; une contradiction entre dossier et réponses peut mener au refus.
+li: Langue : se préparer à répondre dans la langue du pays (français, anglais, allemand…).
+li: Attitude : calme, politesse, réponses courtes et précises, pas de discours appris par cœur.
+li: Refus : demander les motifs si possible, corriger le dossier, retenter.
+note: Évite les intermédiaires qui promettent un visa garanti : c'est souvent une arnaque.
+note: Apporte seulement des documents authentiques, jamais de faux.
+== questions
+Que veut prouver un candidat à un visa d'études ? || Un projet sérieux, cohérent et réaliste || Qu'il veut partir seulement || Qu'il ne reviendra pas || Qu'il a beaucoup d'amis || La cohérence du dossier est examinée.
+Citez une question fréquente en entretien de visa : || Qui finance vos études ? || Quel est votre plat préféré ? || Aimez-vous le football ? || Quelle heure est-il ? || Le financement est vérifié.
+Pourquoi le parcours doit-il être cohérent ? || Le diplôme visé doit suivre logiquement les études passées et le projet || Pour faire joli || Pour changer de nom || Pour éviter de répondre || Les incohérences éveillent des doutes.
+Quelles preuves de financement sont utiles ? || Relevés bancaires, garant ou bourse || Une promesse orale || Un dessin || Un souvenir || Les justificatifs sont examinés.
+Que faut-il connaître sur l'école visée ? || Programme, durée et conditions || Seulement le nom || Rien || Le nom du portier || Les agents posent souvent ces questions.
+Comment répondre à « Reviendrez-vous dans votre pays ? » ? || Honnêtement, avec un projet précis || Par un mensonge || Par un refus de répondre || En changeant de sujet || Le projet de retour peut rassurer.
+Que mettre en avant pour une bourse ? || Résultats, engagement et projet utile à la communauté || Ses vacances || Ses jeux || Ses dettes || Les comités cherchent impact et mérite.
+Que risque une contradiction entre le dossier et les réponses ? || Un refus || Une prime || Une bourse || Un diplôme || Les agents vérifient la cohérence.
+Pourquoi se préparer dans la langue du pays ? || L'entretien peut s'y dérouler || Pour impressionner seulement || Pour éviter de réviser || Pour changer de visa || Une langue maîtrisée rassure.
+Comment parler à un agent ? || Calmement, poliment et brièvement || En criant || Avec un discours récité || En évitant le regard || Les réponses courtes et claires sont préférées.
+Que faire après un refus ? || Comprendre les motifs, corriger et retenter || Insulter || Abandonner à jamais || Falsifier le dossier || On peut déposer une nouvelle demande.
+Pourquoi se méfier d'un intermédiaire qui promet un visa garanti ? || Personne ne peut garantir un visa || Il est toujours honnête || Il est gratuit || Il est officiel || C'est souvent une arnaque.
+Peut-on présenter un faux document ? || Non, c'est grave et puni || Oui, une seule fois || Oui, si personne ne vérifie || Oui, en cas de retard || Cela peut mener à une interdiction de territoire.
+Que doit contenir un dossier d'admission ? || Passeport, diplômes, lettre de motivation et justificatifs || Une photo de vacances || Un menu || Une carte de visite || Garde des copies de tout.
+Quel est un bon état d'esprit pour cet entretien ? || Sincère, préparé et sérieux || Arrogant || Indifférent || Agressif || La préparation aide à rester serein.

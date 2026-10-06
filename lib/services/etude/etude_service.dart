@@ -36,13 +36,15 @@ class EtudeClass {
 }
 
 class EtudeTrack {
-  const EtudeTrack({required this.id, required this.kind, required this.title, required this.order, required this.after, required this.classes, this.exam, this.cert});
+  const EtudeTrack({required this.id, required this.kind, required this.title, required this.order, required this.after, required this.classes, this.exam, this.cert, this.featured = 0, this.badge = '', this.pitch = ''});
   final String id, kind, title;
   final int order;
   final List<String> after;
   final List<EtudeClass> classes;
   final Map<String, dynamic>? exam; // id, title, diploma, count, passPct, seconds
   final Map<String, dynamic>? cert; // id, title, from, count, passPct
+  final int featured; // rang « à la une » (1 = en premier ; 0 = non mis en avant)
+  final String badge, pitch; // pastille et accroche de la une
 
   bool get isCycle => kind == 'cycle';
 
@@ -73,6 +75,9 @@ class EtudeTrack {
         }).toList(),
         exam: d['exam'] is Map ? _m(d['exam']) : null,
         cert: d['cert'] is Map ? _m(d['cert']) : null,
+        featured: _i(d['featured']),
+        badge: '${d['badge'] ?? ''}',
+        pitch: '${d['pitch'] ?? ''}',
       );
 }
 

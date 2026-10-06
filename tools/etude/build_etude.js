@@ -79,6 +79,7 @@ for (const track of structure.tracks) {
   if (track.after) cat.after = track.after;
   if (track.exam) cat.exam = track.exam;
   if (track.cert) cat.cert = track.cert;
+  if (track.featured) { cat.featured = track.featured; cat.badge = track.badge || ''; cat.pitch = track.pitch || ''; }
   for (const cls of track.classes) {
     const c = { id: cls.id, title: cls.title, subjects: [] };
     for (const sub of cls.subjects) {

@@ -1,0 +1,31 @@
+titre: Entretien par téléphone et en visioconférence
+== fiche
+p: Beaucoup de premiers entretiens se font à distance. Le cadre, le son et l'attitude comptent autant qu'en face à face.
+li: Entretien téléphonique : souvent un court premier tri (15 à 30 minutes) ; prépare ton CV sous les yeux et un stylo.
+li: Lieu : endroit calme, bonne connexion, bonne couverture réseau ; préviens ton entourage.
+li: Visio (Zoom, Teams, Google Meet) : teste la caméra, le micro, l'application et le lien à l'avance.
+li: Cadre : arrière-plan simple et rangé, lumière de face, caméra à hauteur des yeux.
+li: Tenue : comme pour un entretien en présentiel ; au moins le haut du corps habillé correctement.
+li: Regard : regarde la caméra pour donner l'impression de regarder l'interlocuteur.
+li: Voix : parle clairement, un peu plus lentement ; évite de couper la parole (le décalage rend les coupures fréquentes).
+li: Problème technique : garde un numéro de secours, préviens vite, propose de rappeler.
+li: Notes : un aide-mémoire est possible, mais ne lis pas tes réponses.
+li: Fin : remercie, répète ton intérêt, demande la suite du processus.
+note: Rejoins la salle 5 minutes avant l'heure.
+note: Coupe les notifications et ferme les applications inutiles pour éviter les bruits.
+== questions
+Combien dure souvent un premier entretien téléphonique ? || 15 à 30 minutes || 4 heures || 1 minute || 2 jours || Il sert de premier tri.
+Que faut-il avoir sous la main pour un entretien téléphonique ? || Son CV et un stylo || Un journal || De la musique || Un jeu || Les notes aident à répondre avec précision.
+Où passer un entretien à distance ? || Dans un endroit calme avec une bonne connexion || Dans un marché bruyant || En voiture dans les embouteillages || Dans un café très animé || Le calme est essentiel.
+Que faire avant une visio ? || Tester caméra, micro et lien || Rien || Changer d'ordinateur le jour même || Éteindre le téléphone de secours || Les tests évitent les surprises.
+Où placer la lumière en visio ? || Face à soi || Derrière soi || Au plafond seulement || Éteinte || Une lumière de dos rend le visage sombre.
+À quelle hauteur placer la caméra ? || À hauteur des yeux || Au sol || Au plafond || Sous le menton || Elle donne un cadrage naturel.
+Comment s'habiller pour une visio ? || Comme pour un entretien en présentiel || En pyjama || Torse nu || Comme on veut || L'image compte autant.
+Où regarder pendant une visio ? || Vers la caméra || Ailleurs || Le plafond || Ses notes uniquement || Cela donne l'impression de regarder l'interlocuteur.
+Que faire si la connexion coupe ? || Prévenir vite et proposer de rappeler || Disparaître || Attendre sans rien dire || Se fâcher || Un numéro de secours aide.
+Peut-on utiliser des notes en visio ? || Oui, comme aide-mémoire, sans lire les réponses || Oui, lire toutes les réponses || Non, jamais || Seulement en secret || Lire fait mauvaise impression.
+Pourquoi parler un peu plus lentement à distance ? || Le décalage et le son peuvent gêner la compréhension || Pour dormir || Pour gagner du temps || Pour cacher des erreurs || Cela évite aussi les coupures de parole.
+Quand rejoindre la salle de visio ? || Quelques minutes avant l'heure || Dix minutes après || À l'heure exacte seulement || Le lendemain || Cela permet de régler les derniers détails.
+Que faire des notifications pendant l'entretien ? || Les couper || Les laisser sonner || Les augmenter || Répondre aux messages || Elles distraient et coupent la concentration.
+Que dire à la fin d'un entretien à distance ? || Remercier et demander la suite du processus || Raccrocher sans un mot || Poser des questions personnelles || Demander à rester en ligne || Les remerciements laissent une bonne impression.
+Pourquoi préparer un arrière-plan simple ? || Ne pas distraire le recruteur || Cacher son visage || Faire joli seulement || Payer moins cher || Un décor chargé détourne l'attention.
