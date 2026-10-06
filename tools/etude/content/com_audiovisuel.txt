@@ -1,0 +1,33 @@
+titre: Radio, télévision et vidéo
+== fiche
+p: Le son et l'image ont leurs propres règles d'écriture. Savoir parler au micro et raconter en images est un atout majeur.
+li: Radio : média du son ; rédiger pour l'oreille : phrases courtes, mots simples, un chiffre à la fois.
+li: Formats radio : flash info, journal, magazine, interview, reportage, chronique, débat, jingle (courte identité sonore).
+li: Voix : respiration, articulation, rythme, ton ; poser sa voix, sourire en parlant, éviter de lire monotone.
+li: Télévision : image + son ; le commentaire complète l'image sans la décrire.
+li: Plans : plan d'ensemble, plan moyen, plan américain, gros plan ; angle : plongée, contre-plongée.
+li: Règle de base : un plan = une idée ; la règle des tiers pour composer l'image.
+li: Reportage télé : image, interviews, commentaire off ; montage = choix et enchaînement des plans.
+li: Prise de son : micro cravate, micro main ; éviter le vent et les bruits parasites.
+li: Lumière : lumière naturelle ou artificielle ; éviter le contre-jour trop fort.
+li: Vidéo mobile et réseaux : format vertical, sous-titres, début accrocheur, durée courte.
+li: Droit à l'image : demander l'autorisation de filmer et de diffuser une personne.
+li: Matériel de base : smartphone stabilisé, micro externe, trépied, logiciel de montage.
+note: À la radio, tout se joue dans les dix premières secondes.
+note: Sous-titre ses vidéos : beaucoup les regardent sans le son.
+== questions
+Pour quel sens écrit-on à la radio ? || L'ouïe || La vue || Le toucher || L'odorat || On écrit pour l'oreille.
+Qu'est-ce qu'un jingle ? || Une courte identité sonore || Un reportage || Un débat || Un journal || Il identifie une radio ou une émission.
+Citez un format radio : || Le flash info || Le roman || La peinture || Le tableau || Le magazine et le reportage en sont d'autres.
+Pourquoi parler lentement et clairement au micro ? || Pour être compris à l'écoute seule || Pour dormir || Pour se cacher || Pour gagner du temps || L'auditeur ne peut pas revenir en arrière.
+Que fait le commentaire d'un reportage télé ? || Compléter l'image sans la décrire || Répéter l'image mot à mot || Remplacer l'image || Cacher l'image || Texte et image se complètent.
+En licence de communication, qu'est-ce qu'un gros plan ? || Un plan serré sur un visage ou un détail || Un plan éloigné || Un plan de ville || Un plan sans personnage || Il montre l'émotion.
+Qu'est-ce qu'une plongée ? || Une prise de vue d'en haut vers le bas || Une prise de vue d'en bas || Un gros plan || Un son || Elle peut rendre le sujet petit.
+Qu'est-ce qu'une contre-plongée ? || Une prise de vue d'en bas vers le haut || Une prise de vue d'en haut || Un plan fixe || Un film noir || Elle peut grandir le sujet.
+Que signifie « un plan, une idée » ? || Chaque plan doit transmettre une seule idée claire || Un plan par jour || Une idée par film || Un film d'un plan || Cela clarifie le montage.
+Qu'est-ce que le montage ? || Le choix et l'enchaînement des plans || Le tournage || L'éclairage || L'enregistrement du son seulement || Il donne le rythme au récit.
+Quel micro est discret et fixé sur le vêtement ? || Le micro cravate || Le micro main || Le haut-parleur || Le casque || Il convient aux interviews.
+Pourquoi éviter le contre-jour fort ? || Le visage devient trop sombre || Il économise la lumière || Il améliore l'image || Il supprime le bruit || Placer la lumière face au sujet.
+Pourquoi sous-titrer une vidéo ? || Beaucoup la regardent sans le son || Pour allonger la vidéo || Pour la cacher || Pour supprimer l'image || Les réseaux sociaux la lisent souvent en muet.
+Que faut-il obtenir avant de diffuser l'image d'une personne ? || Son autorisation (droit à l'image) || Rien || Un cadeau || Un brevet || Le droit à l'image protège la vie privée.
+Quel format est adapté aux vidéos sur mobile ? || Le format vertical || Le format panoramique uniquement || Aucun || Le format carré obligatoire || Il occupe l'écran du téléphone.

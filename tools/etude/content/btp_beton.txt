@@ -1,0 +1,33 @@
+titre: Béton armé : principes et dispositions
+== fiche
+p: Le béton armé associe béton et acier. Le béton résiste à la compression, l'acier à la traction. Les règles de calcul garantissent sécurité et durabilité.
+li: Principe : béton comprimé, acier tendu ; adhérence entre les deux ; coefficients de dilatation voisins.
+li: Résistance du béton : fc28 (à 28 jours) ; exemples : 20, 25, 30 MPa ; résistance de calcul réduite par un coefficient de sécurité.
+li: Acier : barres HA, fe400 ou fe500 (limite d'élasticité en MPa) ; treillis soudés pour dalles.
+li: Éléments : fondations (semelles), poteaux, poutres, dalles, voiles.
+li: Poteaux : armatures longitudinales (barres verticales) et transversales (cadres, étriers) ; section minimale, élancement, enrobage.
+li: Poutres : armatures longitudinales en bas (zones tendues) et chapeaux en haut aux appuis ; étriers contre l'effort tranchant.
+li: Dalles : portent dans une ou deux directions ; armatures dans les deux sens ; épaisseur selon la portée.
+li: Enrobage : épaisseur de béton protégeant l'acier (2 à 5 cm selon l'exposition) ; protège de la corrosion et du feu.
+li: Coffrage : moule provisoire en bois ou en métal ; étaiement ; décoffrage après durcissement suffisant.
+li: Mise en œuvre : mise en place, vibration, cure ; bétonnage par temps chaud : arrosage, protection.
+li: Fissuration : normale en traction ; maîtrisée par les armatures ; fissures larges signalent un défaut.
+li: Contrôle : vérification des armatures avant bétonnage ; essais sur éprouvettes.
+note: Le béton mal vibré contient des vides qui affaiblissent l'ouvrage.
+note: Ne jamais oublier les cales d'enrobage sous les armatures.
+== questions
+Quelle est la fonction du béton dans le béton armé ? || Résister à la compression || Résister à la traction seule || Décorer || Isoler || Il enrobe aussi l'acier.
+Quelle est la fonction de l'acier dans le béton armé ? || Reprendre les efforts de traction || Résister à la compression seule || Colorer || Isoler || Il compense la faible résistance du béton à la traction.
+Que représente fc28 ? || La résistance du béton à 28 jours || Le poids || Le prix || La durée || Elle sert au calcul.
+Que désigne fe500 ? || Un acier de limite d'élasticité 500 MPa || Un ciment || Un coffrage || Une peinture || Le chiffre indique la limite d'élasticité.
+À quoi servent les étriers dans une poutre ? || Reprendre l'effort tranchant || Colorer || Remplacer le béton || Isoler || Ils maintiennent aussi les barres longitudinales.
+Où place-t-on les armatures principales d'une poutre simple sur deux appuis ? || En bas, dans la zone tendue || En haut seulement || Au milieu seulement || Dehors || La traction apparaît en partie basse.
+Qu'est-ce que l'enrobage ? || L'épaisseur de béton qui protège l'acier || Le poids du béton || Le prix || La couleur || Il évite corrosion et feu.
+Pourquoi des cales d'enrobage ? || Maintenir les armatures à bonne distance du coffrage || Décorer || Colorer || Chauffer || Sans elles, l'acier peut toucher le coffrage.
+Qu'est-ce que le coffrage ? || Un moule provisoire qui donne la forme au béton || Un plan || Un outil de mesure || Un type de ciment || Il est retiré après durcissement.
+Pourquoi vibrer le béton ? || Chasser les vides d'air et compacter || Le colorer || L'alléger || Le refroidir || Il améliore la compacité et la résistance.
+Que faut-il faire du béton pendant les premiers jours ? || Le protéger du séchage trop rapide (cure) || Le laisser sécher au soleil sans arrosage || Le bétonner à nouveau || L'enlever || L'arrosage évite les fissures.
+Que signifie un treillis soudé ? || Un panneau d'acier à mailles soudées pour dalles || Un grillage décoratif || Une peinture || Un tuyau || Il facilite la mise en place des armatures.
+Qu'est-ce qu'un voile en béton armé ? || Un mur porteur en béton armé || Un rideau || Une toiture || Une fenêtre || Il reprend les charges verticales et horizontales.
+Pourquoi les fissures très larges sont-elles inquiétantes ? || Elles peuvent signaler un défaut de structure || Elles sont décoratives || Elles sont normales toujours || Elles améliorent la résistance || Il faut les faire analyser.
+Pourquoi vérifier les armatures avant le bétonnage ? || S'assurer qu'elles sont conformes au plan || Pour perdre du temps || Pour les peindre || Pour supprimer l'acier || Après le coulage, on ne peut plus corriger.

@@ -1,0 +1,33 @@
+titre: Genres journalistiques et enquête
+== fiche
+p: Le journalisme se décline en genres : informer (brève, reportage), expliquer (enquête), commenter (éditorial). Chacun a ses règles.
+li: Brève : très courte information (3 à 5 lignes) ; dépêche : information de l'agence de presse ; filet : brève imprimée.
+li: Reportage : récit de ce que le journaliste a vu sur le terrain ; descriptif, vivant, avec des témoignages.
+li: Interview : entretien questions-réponses ; choisir des questions ouvertes, préparer, relancer, citer fidèlement.
+li: Portrait : présenter une personne par son parcours, son caractère, ses actions.
+li: Enquête : recherche approfondie pour révéler des faits cachés ; plusieurs sources, documents, vérifications.
+li: Éditorial : opinion de la rédaction ; chronique : opinion d'un auteur régulier ; tribune : point de vue extérieur.
+li: Critique : évaluation d'une œuvre (film, livre, musique).
+li: Sources : officielles, témoins, experts, documents ; protection des sources (secret professionnel).
+li: Off the record : information donnée à condition qu'elle ne soit pas publiée ni attribuée.
+li: Droit de réponse : une personne mise en cause peut demander à répondre dans le média.
+li: Fact-checking : vérification des affirmations ; outils : recherche inversée d'image, sites officiels, bases de données.
+li: Étapes d'une enquête : idée, hypothèses, collecte, vérification, rédaction, relecture juridique.
+note: Un fait non vérifié n'est pas une information.
+note: Les questions ouvertes (comment, pourquoi) donnent de meilleures réponses.
+== questions
+Qu'est-ce qu'une brève ? || Une très courte information || Un long reportage || Un éditorial || Une critique || Elle répond aux 5 W en quelques lignes.
+Qu'est-ce qu'un reportage ? || Le récit de ce que le journaliste a vu sur le terrain || Un résumé || Un communiqué || Un tract || Il utilise souvent des témoignages.
+Qu'est-ce qu'une interview ? || Un entretien en questions-réponses || Un article d'opinion || Une brève || Un reportage photo || Il demande préparation et écoute.
+Quel type de question privilégier en interview ? || Les questions ouvertes (comment, pourquoi) || Les questions fermées uniquement || Les questions personnelles || Aucune question || Elles donnent des réponses développées.
+Qu'est-ce qu'un portrait journalistique ? || La présentation d'une personne || Une enquête policière || Un éditorial || Une brève || Il montre parcours et caractère.
+Qu'est-ce qu'une enquête journalistique ? || Une recherche approfondie qui révèle des faits cachés || Une rumeur || Une publicité || Un sondage || Elle repose sur plusieurs sources.
+Qu'exprime un éditorial ? || L'opinion de la rédaction || Un fait brut || Une publicité || Une dépêche || Il engage le média.
+Quelle différence entre éditorial et chronique ? || L'éditorial engage la rédaction, la chronique un auteur || Aucune || La chronique est une brève || L'éditorial est une critique || La chronique est régulière.
+Que protège le secret des sources ? || L'identité des personnes qui informent le journaliste || Le journal || Le directeur || Le gouvernement || Il favorise les révélations d'intérêt public.
+Que signifie « off the record » ? || Une information non publiable ni attribuable || Une information publique || Une photo || Un titre || Elle sert de contexte au journaliste.
+Que permet le droit de réponse ? || À une personne mise en cause de s'exprimer dans le média || De censurer || De supprimer l'article || De se venger || C'est une garantie d'équité.
+Qu'est-ce que le fact-checking ? || La vérification des affirmations || La rédaction de titres || Une interview || Un reportage || Il lutte contre la désinformation.
+Quel outil aide à vérifier une image ? || La recherche inversée d'image || Un filtre de couleur || Une police || Un logo || Elle montre l'origine de l'image.
+Quelle étape suit la collecte d'informations dans une enquête ? || La vérification || La publication sans relire || L'oubli || La suppression || Chaque fait doit être confirmé.
+Qu'est-ce qu'une dépêche ? || Une information rédigée par une agence de presse || Un éditorial || Un roman || Une tribune || Les médias la reprennent.

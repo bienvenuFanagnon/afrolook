@@ -1,0 +1,32 @@
+titre: Sémiologie, image et langage
+== fiche
+p: La sémiologie étudie les signes et la façon dont ils produisent du sens : mots, images, couleurs, symboles.
+li: Signe : association d'un signifiant (forme, mot, image) et d'un signifié (idée, concept) ; selon Saussure.
+li: Arbitraire du signe : le lien entre le mot et la chose n'est pas naturel (« arbre » ne ressemble pas à un arbre).
+li: Peirce : icône (ressemble à l'objet : une photo), indice (lié à l'objet : la fumée indique le feu), symbole (convention : le drapeau).
+li: Dénotation : sens littéral, objectif ; connotation : sens associé, culturel et subjectif (le rouge : passion ou danger).
+li: Image : cadrage, plan, angle, lumière, couleur composent le message ; plan large, moyen, gros plan.
+li: Analyse d'une affiche : décrire, repérer les éléments, interpréter, comprendre l'intention.
+li: Logo : signe qui identifie une marque ; il doit être simple, mémorable et reconnaissable.
+li: Couleurs : leur sens varie selon les cultures (blanc : pureté ou deuil, vert : nature ou espoir).
+li: Rhétorique de l'image (Barthes) : message linguistique (texte), message iconique codé (connotations), message iconique non codé (dénotation).
+li: Manipulation : retouche, cadrage, légende trompeuse ; vérifier l'origine d'une image.
+li: Stéréotype : image figée d'un groupe ; à questionner.
+note: Une image ne dit jamais tout : la légende oriente son sens.
+note: Les symboles changent d'une culture à l'autre : attention à l'international.
+== questions
+Qu'est-ce qu'un signe selon Saussure ? || L'union d'un signifiant et d'un signifié || Un panneau || Un mot seulement || Une lettre || Il relie forme et sens.
+Que désigne le signifiant ? || La forme du signe (mot, image) || L'idée || Le sens || Le message || Le signifié est le concept.
+Que désigne le signifié ? || L'idée ou le concept évoqué || Le son || La forme écrite || Le support || Il est lié au signifiant.
+Que veut dire « arbitraire du signe » ? || Le lien mot-chose est une convention, pas une nature || Le signe est faux || Le signe est toujours illogique || Le signe est interdit || Il varie selon les langues.
+Que désigne une icône chez Peirce ? || Un signe qui ressemble à l'objet || Un signe naturel || Une convention || Un mot || Une photographie en est un exemple.
+Que désigne un indice chez Peirce ? || Un signe lié à l'objet par un lien réel || Une ressemblance || Un symbole || Un logo || La fumée indique le feu.
+Que désigne un symbole chez Peirce ? || Un signe fondé sur une convention || Un signe qui ressemble || Un signe naturel || Une photo || Le drapeau en est un exemple.
+Quelle différence entre dénotation et connotation ? || Sens littéral contre sens associé || Aucune || Sens associé contre sens littéral || Les deux sont objectifs || La connotation est culturelle.
+Citez un exemple de connotation : || Le rouge évoque la passion ou le danger || Le rouge est une couleur || Une rose est une fleur || Un cercle est rond || Elle dépend de la culture.
+Qu'est-ce qu'un gros plan ? || Un plan qui montre un détail ou un visage de près || Un plan sur un paysage || Une photo de groupe || Un plan éloigné || Il crée de l'émotion.
+À quoi sert un logo ? || Identifier une marque || Décorer || Cacher || Raconter une histoire longue || Il doit être simple et mémorable.
+Pourquoi la légende d'une image est-elle importante ? || Elle oriente son sens || Elle est décorative || Elle est inutile || Elle remplace l'image || Elle peut aussi tromper.
+Que peut-on retoucher dans une image ? || La couleur, le cadrage et le contenu || Rien || Seulement le cadre || Seulement la taille || La retouche peut manipuler.
+Qu'est-ce qu'un stéréotype ? || Une image figée d'un groupe || Une photo ancienne || Un code || Une erreur || Il faut le questionner.
+Pourquoi les couleurs varient-elles selon les cultures ? || Leur sens est une convention sociale || Elles ont toujours le même sens || Elles n'ont pas de sens || Elles sont naturelles || Le blanc peut symboliser le deuil ou la pureté.

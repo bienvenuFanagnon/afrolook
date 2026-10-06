@@ -1,0 +1,33 @@
+titre: Topographie et implantation
+== fiche
+p: La topographie mesure et représente le terrain : distances, angles, altitudes. Elle permet d'implanter fidèlement un ouvrage.
+li: Mesures de distance : ruban, chaîne, télémètre laser, distancemètre électronique ; correction de pente.
+li: Mesures d'angles : théodolite, station totale (angles et distances), tachéomètre.
+li: Nivellement : mesure des altitudes avec un niveau optique ou laser et une mire ; lecture avant, lecture arrière ; différence de niveau = lecture arrière − lecture avant.
+li: Altitude : hauteur par rapport au niveau de la mer (système de référence) ; cote : altitude d'un point.
+li: GPS et GNSS : positionnement par satellites ; précision centimétrique avec correction (RTK).
+li: Coordonnées : planimétriques (X, Y) et altimétrique (Z) ; systèmes (UTM, Lambert).
+li: Plan topographique : courbes de niveau (lignes d'égale altitude) ; courbes serrées : forte pente, espacées : pente douce.
+li: Profil en long : coupe suivant l'axe d'une route ; profil en travers : coupe perpendiculaire.
+li: Implantation : reporter sur le terrain les points d'un plan (axes, angles de bâtiment, piquets, chaises d'implantation).
+li: Cheminement : suite de stations reliées pour déterminer des points ; fermeture : vérification de l'erreur.
+li: Calcul des volumes : déblais (terre enlevée) et remblais (terre apportée) ; équilibrer les mouvements de terre.
+li: Précision : erreurs systématiques et accidentelles ; répéter les mesures.
+note: Vérifie toujours la fermeture d'un cheminement.
+note: Des courbes de niveau très rapprochées signalent une pente forte.
+== questions
+Quel instrument mesure à la fois angles et distances ? || La station totale || Le niveau seul || Le ruban seul || Le fil à plomb || Elle est très utilisée sur chantier.
+Qu'est-ce qu'un nivellement ? || La mesure des altitudes || La mesure des angles seulement || La mesure du poids || La mesure du temps || On utilise un niveau et une mire.
+Comment calcule-t-on une différence de niveau ? || Lecture arrière − lecture avant || Lecture avant + arrière || Lecture × 2 || Distance ÷ temps || C'est la base du nivellement.
+Que signifie GNSS ? || Positionnement par satellites || Mesure de pente || Réseau de bureaux || Mesure du sol || Le GPS en est un exemple.
+Que représente une courbe de niveau ? || Une ligne reliant des points de même altitude || Une route || Une rivière || Un mur || Elles montrent le relief.
+Que signifient des courbes de niveau très rapprochées ? || Une pente forte || Une pente douce || Un terrain plat || Une rivière || Plus elles sont serrées, plus la pente est forte.
+Qu'est-ce qu'un profil en long ? || Une coupe suivant l'axe d'un projet || Une coupe perpendiculaire || Un plan de masse || Une photo || Il sert à tracer les routes.
+Qu'est-ce qu'un profil en travers ? || Une coupe perpendiculaire à l'axe || Une coupe le long de l'axe || Une façade || Un plan d'étage || Il sert aux calculs de terrassement.
+Qu'est-ce qu'une implantation ? || Le report des points du plan sur le terrain || Le dessin d'un plan || La démolition || L'estimation du coût || Piquets et chaises d'implantation sont utilisés.
+Que sont les déblais ? || La terre enlevée || La terre apportée || Le béton || Le sable || Les remblais sont apportés.
+Que sont les remblais ? || La terre apportée pour surélever || La terre enlevée || Le béton || Les déchets || Ils compensent les déblais.
+Qu'est-ce que la fermeture d'un cheminement ? || La vérification de l'erreur de mesure || La clôture du terrain || La fin du chantier || Le départ des ouvriers || Elle valide la qualité des mesures.
+Qu'est-ce qu'une cote ? || L'altitude d'un point || Le prix || Une dimension à plat || Un plan || Elle est exprimée en mètres.
+Citez une cause d'erreur de mesure : || Un instrument mal réglé || Un bon étalonnage || Une mesure répétée || Une moyenne || Les erreurs accidentelles existent aussi.
+Pourquoi répéter les mesures ? || Réduire les erreurs accidentelles || Perdre du temps || Gagner du temps || Augmenter le coût seulement || La moyenne est plus fiable.

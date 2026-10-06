@@ -1,0 +1,33 @@
+titre: Protection des cultures
+== fiche
+p: Ravageurs, maladies et mauvaises herbes peuvent détruire une grande part d'une récolte. La protection intégrée limite les pertes et les risques.
+li: Ravageurs : insectes (chenilles légionnaires, criquets, pucerons, cochenilles), rongeurs, oiseaux, nématodes.
+li: Maladies : causées par champignons (rouille, mildiou), bactéries (flétrissement), virus (mosaïque du manioc) ; transmises par vecteurs.
+li: Mauvaises herbes (adventices) : concurrencent les cultures pour l'eau, la lumière et les nutriments ; sarclage, paillage, herbicides.
+li: Lutte culturale : rotation, associations, dates de semis, variétés résistantes, semences saines, hygiène du champ.
+li: Lutte biologique : insectes auxiliaires, champignons et bactéries utiles, pièges à phéromones.
+li: Lutte chimique : pesticides (insecticides, fongicides, herbicides) ; produits homologués, doses recommandées, délais avant récolte.
+li: Protection intégrée (lutte intégrée) : combiner plusieurs méthodes et n'utiliser la chimie qu'en dernier recours.
+li: Sécurité de l'applicateur : gants, masque, combinaison, ne pas manger ou boire pendant l'application, ne pas traiter par vent fort.
+li: Résistance : un usage répété du même produit sélectionne des organismes résistants ; alterner les molécules.
+li: Seuil d'intervention : niveau d'attaque au-delà duquel le traitement est rentable.
+li: Stockage : protection contre insectes et moisissures, séchage, sacs hermétiques, greniers améliorés.
+li: Déchets : emballages vides, ne jamais les réutiliser pour l'eau ou les aliments.
+note: Plus on traite, plus certains parasites deviennent résistants.
+note: Toujours lire l'étiquette : produit, dose, délai avant récolte.
+== questions
+Qu'est-ce qu'un ravageur ? || Un animal qui attaque les cultures || Un engrais || Une graine || Un outil || Insectes, rongeurs et oiseaux en sont des exemples.
+Qu'est-ce que les adventices ? || Les mauvaises herbes || Les engrais || Les vers de terre || Les semences || Elles concurrencent les cultures.
+Citez une maladie fongique des plantes : || Le mildiou || La grippe || Le paludisme || La rage || La rouille en est une autre.
+Que cause la mosaïque du manioc ? || Un virus || Un champignon || Un insecte seulement || Une bactérie || Elle est souvent transmise par des mouches blanches.
+Qu'est-ce que la lutte biologique ? || Utiliser des organismes utiles contre les ravageurs || Utiliser des herbicides || Brûler les champs || Couper les plantes || Les auxiliaires aident à réguler.
+Qu'est-ce que la lutte culturale ? || Utiliser rotation, variétés résistantes et pratiques adaptées || Épandre un pesticide || Détruire le champ || Arroser || Elle prévient les attaques.
+Qu'est-ce que la protection intégrée ? || Combiner plusieurs méthodes et limiter la chimie || Utiliser un seul produit || Ne rien faire || Brûler || La chimie reste le dernier recours.
+Que faut-il respecter lors d'un traitement ? || La dose et le délai avant récolte || Aucune règle || La couleur || La vitesse || L'étiquette précise ces informations.
+Quel équipement porter pour appliquer un pesticide ? || Gants, masque et combinaison || Aucun || Des sandales || Un chapeau seulement || Il protège la santé de l'applicateur.
+Pourquoi alterner les produits phytosanitaires ? || Éviter la résistance des ravageurs || Pour dépenser plus || Pour changer de couleur || Pour polluer || L'usage répété sélectionne des résistants.
+Qu'est-ce qu'un seuil d'intervention ? || Le niveau d'attaque à partir duquel traiter est rentable || Un salaire || Une date || Un prix || Il évite les traitements inutiles.
+Que faire des emballages vides de pesticides ? || Ne jamais les réutiliser pour l'eau ou les aliments || Les réutiliser || Les vendre || Les brûler dans le champ || Ils restent toxiques.
+Pourquoi ne pas traiter par vent fort ? || Le produit se disperse et contamine || Le produit est plus efficace || C'est plus rapide || Cela économise || Le vent expose l'applicateur et l'environnement.
+Quel est un risque de l'excès de pesticides ? || Pollution et risques pour la santé || Une meilleure santé || Aucun risque || Plus d'insectes utiles || Les résidus peuvent rester dans les aliments.
+Comment protéger les grains stockés ? || Bien les sécher et utiliser des sacs hermétiques || Les laisser humides || Les mélanger avec de la terre || Les exposer à la pluie || L'humidité favorise moisissures et insectes.

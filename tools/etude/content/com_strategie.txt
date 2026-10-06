@@ -1,0 +1,33 @@
+titre: Stratégie et plan de communication
+== fiche
+p: Un plan de communication relie les objectifs d'une organisation à des actions précises, avec un budget et des indicateurs.
+li: Diagnostic : analyse de la situation, des publics, de l'image, de la concurrence ; SWOT : forces, faiblesses, opportunités, menaces.
+li: Objectifs : de notoriété (faire connaître), d'image (faire aimer), de comportement (faire agir) ; formulés selon la méthode SMART.
+li: Cibles : cœur de cible, cible secondaire ; segmentation par âge, lieu, profession, centres d'intérêt.
+li: Positionnement et message : ce que l'on veut que le public retienne ; un axe de communication clair.
+li: Moyens et supports : médias (radio, TV, presse, affichage), hors médias (événements, relations presse, sponsoring), digital (réseaux sociaux, site, e-mail).
+li: Mix de communication : combinaison cohérente de plusieurs supports.
+li: Calendrier : planification dans le temps (lancement, relances, pic d'activité).
+li: Budget : coût par support, honoraires, imprévus ; coût pour mille (CPM) = prix pour toucher 1 000 personnes.
+li: Indicateurs : portée, notoriété spontanée et assistée, engagement, trafic, coût par contact, retour sur investissement.
+li: Évaluation : mesurer à la fin et comparer aux objectifs ; enquête, statistiques, retours.
+li: Brief et contre-brief : le client expose le besoin, l'agence reformule.
+li: Cohérence : même message sur tous les supports et auprès de tous les publics.
+note: Sans objectif chiffré, on ne peut pas évaluer une campagne.
+note: Mieux vaut peu de supports bien choisis que beaucoup mal utilisés.
+== questions
+En licence de communication, que signifie SWOT ? || Forces, faiblesses, opportunités, menaces || Stratégie, web, objectifs, temps || Support, web, outil, test || Service, vente, offre, travail || C'est un outil de diagnostic.
+Quels sont les trois grands types d'objectifs de communication ? || Notoriété, image, comportement || Prix, quantité, stock || Texte, son, image || Radio, télé, journal || Ils guident le plan.
+Qu'est-ce que la notoriété spontanée ? || Citer une marque sans aide || Reconnaître une marque avec aide || Oublier une marque || Détester une marque || La notoriété assistée demande une liste de marques.
+Qu'est-ce qu'un cœur de cible ? || Le public principal visé || Un public secondaire || Un concurrent || Un fournisseur || Il oriente message et supports.
+Qu'est-ce que l'axe de communication ? || L'idée centrale du message || Le logo seulement || Le budget || Le calendrier || Il guide créations et supports.
+Citez un support hors médias : || L'événement || La télévision || La radio || Le journal || Le sponsoring est un autre exemple.
+Qu'est-ce que le mix de communication ? || La combinaison cohérente de plusieurs supports || Un mélange de produits || Un type de budget || Une loi || Il vise l'efficacité.
+Que mesure le CPM ? || Le coût pour toucher mille personnes || Le salaire d'un publicitaire || La note d'une campagne || Le nombre de publications || Il compare les supports.
+Pourquoi planifier un calendrier de campagne ? || Organiser lancement, relances et temps forts || Remplir le planning || Éviter les médias || Supprimer le budget || Le timing influence l'impact.
+Qu'est-ce qu'un brief ? || Le document où le client expose son besoin || La facture || Le rapport final || La conclusion || L'agence le reformule en contre-brief.
+Que doit-on faire à la fin d'une campagne ? || Évaluer les résultats par rapport aux objectifs || L'oublier || Supprimer les données || Changer de nom || L'évaluation éclaire la suite.
+Pourquoi des objectifs SMART ? || Pour qu'ils soient mesurables et datés || Pour les compliquer || Pour les cacher || Pour augmenter le budget || Sans mesure, pas d'évaluation.
+Quel risque présente un message différent sur chaque support ? || La confusion du public || Aucun || Plus de clients || Moins de coûts || La cohérence est essentielle.
+Citez un indicateur de campagne digitale : || Le taux de clics || La température || La vitesse || Le poids || Le taux d'engagement en est un autre.
+Que fait la segmentation ? || Découper le public en groupes aux besoins proches || Mélanger les publics || Supprimer des publics || Augmenter les prix || Elle permet des messages adaptés.

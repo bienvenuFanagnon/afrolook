@@ -1,0 +1,33 @@
+titre: Qualité, hygiène, sécurité et environnement (QHSE)
+== fiche
+p: La QHSE protège les personnes, la qualité des ouvrages et l'environnement. Elle est obligatoire sur tout chantier sérieux.
+li: Qualité : respecter les exigences du client et des normes ; contrôle, essais, traçabilité, amélioration continue.
+li: Sécurité : prévenir accidents et maladies professionnelles ; analyse des risques, formation, équipements de protection.
+li: Hygiène : installations sanitaires, eau potable, propreté du chantier, gestion des déchets.
+li: Environnement : limiter bruit, poussières, pollutions, consommation d'eau ; gérer déchets et sols.
+li: Plan de prévention et plan particulier de sécurité (PPSPS) : document décrivant les risques du chantier et les mesures.
+li: Analyse des risques : identifier le danger, évaluer gravité et probabilité, choisir une mesure de prévention (suppression, protection collective, protection individuelle).
+li: Protections collectives : garde-corps, filets, balisage ; individuelles : casque, chaussures, gants, harnais, lunettes, bouchons d'oreilles.
+li: Accueil sécurité : briefing des nouveaux arrivants ; causerie sécurité quotidienne.
+li: Accident : secours, déclaration, enquête, analyse des causes (arbre des causes) et actions correctives.
+li: Normes : ISO 9001 (qualité), ISO 14001 (environnement), ISO 45001 (santé et sécurité au travail).
+li: Déchets de chantier : tri, réemploi, recyclage ; déchets dangereux isolés.
+li: Indicateurs : taux de fréquence et taux de gravité des accidents.
+note: Un chantier sûr est un chantier mieux organisé.
+note: Un presque-accident est un signal à analyser avant qu'un vrai accident survienne.
+== questions
+Que signifie QHSE ? || Qualité, hygiène, sécurité, environnement || Quantité, hauteur, surface, étude || Qualité, habitat, société, économie || Qualité, humain, service, entreprise || Elle protège hommes et ouvrages.
+Citez une protection collective : || Un garde-corps || Un casque || Des gants || Un harnais || Elle protège tout le monde.
+Citez une protection individuelle : || Le casque || Un garde-corps || Un filet || Un balisage || Elle protège une seule personne.
+Quelle mesure est préférable en prévention ? || Supprimer le danger || Donner un casque seulement || Ignorer || Avertir seulement || La suppression est la plus efficace.
+Que décrit un PPSPS ? || Les risques d'un chantier et les mesures de prévention || Le prix || Le planning || Le plan de ferraillage || Il est établi par l'entreprise.
+Qu'est-ce qu'une causerie sécurité ? || Un court échange quotidien sur la sécurité || Une fête || Une réunion de budget || Un cours de maths || Elle rappelle les consignes du jour.
+Que signifie ISO 14001 ? || Une norme de management environnemental || Une norme de qualité || Une norme de sécurité || Une norme de comptabilité || ISO 9001 concerne la qualité.
+Que signifie ISO 45001 ? || Une norme de santé et sécurité au travail || Une norme de qualité || Une norme d'environnement || Une norme d'énergie || Elle remplace d'anciennes normes.
+Qu'est-ce qu'un presque-accident ? || Un incident qui aurait pu causer un accident || Un accident grave || Un jeu || Un contrôle || Il doit être signalé et analysé.
+En génie civil, que faire après un accident ? || Secourir, déclarer, analyser les causes et corriger || L'oublier || Cacher || Accuser l'ouvrier || L'analyse évite la répétition.
+Que mesure le taux de fréquence des accidents ? || Le nombre d'accidents par heures travaillées || Le prix || La durée du chantier || La météo || Il suit l'efficacité de la prévention.
+Comment gérer les déchets de chantier ? || Trier, réemployer et recycler || Jeter dans la nature || Brûler partout || Enterrer sans contrôle || Les déchets dangereux sont isolés.
+Pourquoi organiser un accueil sécurité ? || Informer les nouveaux des risques et des règles || Pour perdre du temps || Pour fêter || Pour réduire le salaire || Il réduit les accidents des débutants.
+Que fait un contrôle qualité ? || Vérifier la conformité aux exigences || Retarder le chantier || Réduire le prix || Dessiner le plan || Essais et contrôles rassurent le client.
+Pourquoi un chantier propre et organisé est-il plus sûr ? || Il réduit chutes, heurts et erreurs || Il coûte plus cher || Il ralentit toujours || Il est plus joli seulement || L'ordre prévient les accidents.

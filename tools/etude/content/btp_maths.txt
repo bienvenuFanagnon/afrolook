@@ -1,0 +1,33 @@
+titre: Mathématiques et physique appliquées au génie civil
+== fiche
+p: Un ingénieur ou technicien en génie civil calcule des longueurs, des surfaces, des volumes, des forces et des contraintes.
+li: Unités du système international : mètre (m), kilogramme (kg), seconde (s), newton (N), pascal (Pa), mégapascal (MPa = 1 N/mm²).
+li: Surfaces : rectangle L × l ; triangle (b × h) ÷ 2 ; cercle π × r² ; trapèze ((B + b) × h) ÷ 2.
+li: Volumes : parallélépipède L × l × h ; cylindre π × r² × h ; prisme : aire de la base × hauteur.
+li: Trigonométrie : dans un triangle rectangle : sinus = opposé ÷ hypoténuse, cosinus = adjacent ÷ hypoténuse, tangente = opposé ÷ adjacent.
+li: Pythagore : hypoténuse² = a² + b².
+li: Pente : p % = (dénivelée ÷ distance horizontale) × 100.
+li: Force et poids : poids P = m × g, avec g ≈ 9,81 m/s² ; 1 kg pèse environ 10 N.
+li: Contrainte : σ = F ÷ S (force sur surface) ; s'exprime en Pa ou MPa.
+li: Masse volumique : ρ = m ÷ V ; béton armé environ 2 500 kg/m³ ; acier 7 850 kg/m³ ; eau 1 000 kg/m³.
+li: Moment d'une force : M = F × d (force × bras de levier), en N·m.
+li: Équilibre : somme des forces nulle et somme des moments nulle.
+li: Conversions : 1 m³ = 1 000 L ; 1 ha = 10 000 m² ; 1 MPa = 10 bars environ.
+note: Vérifie toujours les unités avant de calculer.
+note: Un schéma propre réduit beaucoup les erreurs.
+== questions
+Quelle unité mesure une force ? || Le newton || Le pascal || Le joule || Le watt || Le newton se note N.
+Quelle est l'unité de la contrainte ? || Le pascal (Pa) || Le newton || Le mètre || Le kilogramme || 1 MPa = 1 N/mm².
+Quelle est l'aire d'un cercle de rayon r ? || πr² || 2πr || πr || 4πr || La circonférence est 2πr.
+Quelle est l'aire d'un trapèze ? || ((B + b) × h) ÷ 2 || B × b × h || (B − b) × h || B + b + h || Il a deux côtés parallèles.
+Quel est le volume d'un cylindre ? || π × r² × h || 2 × π × r × h || π × r × h || r × h || Aire de la base × hauteur.
+Dans un triangle rectangle, que vaut sinus ? || Opposé ÷ hypoténuse || Adjacent ÷ hypoténuse || Opposé ÷ adjacent || Hypoténuse ÷ opposé || Cosinus = adjacent ÷ hypoténuse.
+Que vaut la tangente d'un angle ? || Opposé ÷ adjacent || Opposé ÷ hypoténuse || Adjacent ÷ hypoténuse || Hypoténuse ÷ adjacent || Elle sert aux calculs de pente.
+Quelle est la pente en % d'une route montant de 3 m sur 100 m ? || 3 % || 30 % || 0,3 % || 97 % || Dénivelée ÷ distance × 100.
+Quel est le poids d'une masse de 100 kg (g ≈ 10 m/s²) ? || Environ 1 000 N || 100 N || 10 N || 10 000 N || P = m × g.
+Comment calcule-t-on la contrainte ? || σ = F ÷ S || σ = F × S || σ = S ÷ F || σ = F + S || Force divisée par surface.
+Quelle est la masse volumique approximative du béton armé ? || 2 500 kg/m³ || 1 000 kg/m³ || 7 850 kg/m³ || 500 kg/m³ || L'acier atteint 7 850 kg/m³.
+Quelle est la masse volumique de l'eau ? || 1 000 kg/m³ || 100 kg/m³ || 10 kg/m³ || 10 000 kg/m³ || 1 litre pèse 1 kg.
+Comment calcule-t-on un moment de force ? || Force × bras de levier || Force + distance || Force ÷ distance || Force × temps || Il s'exprime en N·m.
+Que vaut 1 m³ en litres ? || 1 000 || 100 || 10 || 10 000 || 1 m³ contient 1 000 L.
+Quelle condition caractérise un équilibre statique ? || Somme des forces nulle et somme des moments nulle || Forces toutes égales || Moments toujours positifs || Aucune condition || Rien ne bouge ni ne tourne.

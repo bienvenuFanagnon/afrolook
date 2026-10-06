@@ -1,0 +1,33 @@
+titre: Matériaux de construction : propriétés et essais
+== fiche
+p: Choisir le bon matériau suppose de connaître ses propriétés et de savoir le tester.
+li: Propriétés mécaniques : résistance à la compression, à la traction, à la flexion ; dureté, élasticité, ductilité, fragilité.
+li: Propriétés physiques : masse volumique, porosité, absorption d'eau, conductivité thermique, dilatation.
+li: Liants : ciment Portland (CPJ 35, 42,5...), chaux, plâtre, bitume ; ils durcissent et lient les granulats.
+li: Granulats : sable (0 à 4 mm), gravier (4 à 20 mm environ) ; propres et bien gradués ; analyse granulométrique par tamisage.
+li: Béton : ciment + granulats + eau (+ adjuvants) ; rapport E/C (eau sur ciment) ; plus E/C est bas, plus le béton est résistant, tant qu'il reste maniable.
+li: Essais du béton : affaissement au cône d'Abrams (slump) pour la maniabilité ; éprouvettes testées en compression à 28 jours.
+li: Acier : barres à haute adhérence HA ; limite d'élasticité 400 à 500 MPa ; ductile ; sensible à la corrosion.
+li: Briques et blocs : terre cuite, béton, terre comprimée stabilisée (BTC) ; mortier de pose.
+li: Bois : matériau renouvelable ; sensible à l'humidité et aux insectes ; traitements.
+li: Bitume et enrobés : revêtements de chaussée ; granulats + bitume.
+li: Essais de sol : limites d'Atterberg, Proctor (compactage), CBR (portance).
+li: Durabilité : résister aux agressions (eau, sel, chaleur, gel) ; enrobage des aciers.
+note: Un béton trop humide est plus facile à mettre en place mais moins résistant.
+note: Les éprouvettes doivent être conservées dans des conditions normalisées avant l'essai.
+== questions
+Quelle propriété décrit la capacité d'un matériau à se déformer sans rompre ? || La ductilité || La fragilité || La dureté seulement || La porosité || L'acier est ductile.
+Quelle est la taille approximative du sable en construction ? || 0 à 4 mm || 20 à 50 mm || 100 mm || 1 m || Le gravier est plus gros.
+Quel rôle joue le ciment ? || Lier les granulats || Colorer || Alléger || Isoler || Il durcit avec l'eau.
+Que signifie E/C ? || Rapport eau sur ciment || Énergie sur chaleur || Épaisseur sur coffrage || Erreur de calcul || Un faible E/C donne une meilleure résistance.
+Comment appelle-t-on l'essai de maniabilité du béton frais ? || L'affaissement au cône d'Abrams || L'essai de traction || L'essai de pesée || L'essai d'usure || Il mesure la consistance.
+À quel âge teste-t-on la résistance de référence du béton ? || 28 jours || 2 jours || 90 jours || 1 an || La résistance à 28 jours est la référence.
+Que signifie HA pour une barre d'acier ? || Haute adhérence || Haute altitude || Haute alimentation || Hors acier || Les nervures favorisent l'accrochage.
+Qu'est-ce que l'analyse granulométrique ? || La mesure de la distribution des tailles de grains || Un test de couleur || Un test de poids seulement || Un test de température || Elle se fait par tamisage.
+Qu'est-ce qu'une brique de terre comprimée stabilisée ? || Un bloc de terre comprimée avec un stabilisant || Une brique cuite || Un bloc de verre || Un bloc de plâtre || C'est un matériau local écologique.
+Citez un matériau de revêtement de chaussée : || L'enrobé bitumineux || Le plâtre || Le verre || Le bois || Il associe bitume et granulats.
+Que mesure l'essai Proctor ? || Le compactage optimal d'un sol || La traction du béton || La couleur du sol || La vitesse du vent || Il détermine densité et teneur en eau optimales.
+Que mesure l'essai CBR ? || La portance d'un sol || La chaleur || Le poids du ciment || La pluie || Il est utilisé pour dimensionner les routes.
+Pourquoi un béton trop humide pose-t-il problème ? || Sa résistance diminue || Il devient trop dur || Il ne prend plus || Il est trop lourd || L'excès d'eau crée des vides.
+Qu'est-ce que la porosité ? || La proportion de vides dans un matériau || La dureté || La couleur || Le poids || Elle influence l'absorption d'eau.
+Pourquoi enrober correctement les aciers ? || Les protéger de la corrosion || Les alourdir || Les colorer || Les dilater || Une épaisseur de béton suffisante les protège.

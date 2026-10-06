@@ -1,0 +1,33 @@
+titre: Filières agricoles et commercialisation
+== fiche
+p: Une filière relie tous les acteurs, de la production à la consommation. La maîtriser permet de mieux vendre et de mieux négocier.
+li: Filière : ensemble des étapes et des acteurs d'un produit : intrants, production, collecte, transformation, distribution, consommation.
+li: Acteurs : producteurs, collecteurs, transformateurs, grossistes, détaillants, exportateurs, transporteurs, consommateurs.
+li: Chaîne de valeur : chaque étape ajoute de la valeur ; la part du producteur dépend de son pouvoir de négociation.
+li: Filières togolaises importantes : coton, café, cacao, palmier à huile, maïs, manioc, soja, noix de cajou, fruits et légumes.
+li: Circuits de commercialisation : vente directe, marché local, collecteurs, coopératives, contrats, exportation.
+li: Prix : fixé par l'offre et la demande ; variations saisonnières ; prix garantis ou prix de référence pour certaines filières.
+li: Contractualisation : contrat entre producteur et acheteur, avec prix, qualité, quantité et délai.
+li: Coopératives et organisations paysannes : achats groupés d'intrants, vente groupée, services communs ; gouvernance démocratique.
+li: Qualité et normes : calibrage, humidité, absence de contaminants, traçabilité ; certifications (bio, commerce équitable).
+li: Marketing agricole : connaître la demande, bien présenter, choisir le bon marché, utiliser le téléphone et les plateformes.
+li: Export : exigences sanitaires et phytosanitaires, documents, emballages, transport, incoterms.
+li: Intégration régionale : ZLECAf, UEMOA, CEDEAO facilitent les échanges.
+note: Plus un produit est transformé près du producteur, plus la valeur reste dans le pays.
+note: Vendre en groupe permet d'obtenir un meilleur prix et de réduire les coûts de transport.
+== questions
+Qu'est-ce qu'une filière agricole ? || L'ensemble des étapes et acteurs de la production à la consommation || Un champ || Un outil || Un impôt || Elle inclut intrants, transformation et distribution.
+Citez un acteur d'une filière : || Le collecteur || Le seul producteur isolé || Le hasard || Le vent || Transformateurs et exportateurs en sont d'autres.
+Que désigne la chaîne de valeur ? || La suite d'étapes qui ajoutent de la valeur au produit || Un prix fixe || Un impôt || Un transport || Chaque étape y contribue.
+Citez une filière importante au Togo : || Le coton || Le pétrole || L'or || Le charbon || Le cacao, le café et le soja en sont d'autres.
+Qu'est-ce que la contractualisation ? || Un contrat entre producteur et acheteur sur prix, quantité et qualité || Une vente sans papier || Un impôt || Une subvention || Elle sécurise les ventes.
+Que fait une coopérative pour ses membres ? || Achats et ventes groupés || Rien || Fermer les marchés || Supprimer les prix || Elle augmente le pouvoir de négociation.
+Pourquoi vendre en groupe ? || Obtenir de meilleurs prix et réduire les coûts || Perdre du temps || Éviter les clients || Réduire la qualité || La quantité attire les acheteurs.
+En agronomie, qu'est-ce que la traçabilité ? || La capacité de retracer l'origine d'un produit || Un prix || Un emballage || Une maladie || Elle rassure les acheteurs.
+Qu'est-ce que le commerce équitable ? || Un commerce avec un prix juste pour les producteurs || Un commerce sans prix || Un commerce illégal || Un commerce de luxe || Il certifie de meilleures conditions.
+Quelle exigence pèse sur les produits exportés ? || Des normes sanitaires et phytosanitaires || Aucune règle || Un seul prix || Une couleur || Les pays importateurs contrôlent la qualité.
+Pourquoi transformer localement ? || Pour garder plus de valeur et créer des emplois || Pour perdre du temps || Pour exporter moins || Pour supprimer les prix || La valeur ajoutée reste au pays.
+Comment les prix varient-ils ? || Selon l'offre et la demande, avec des variations saisonnières || Ils sont toujours fixes || Ils ne changent jamais || Ils dépendent du hasard seulement || Ils sont plus bas à la récolte.
+En agronomie, qu'est-ce que la ZLECAf ? || La zone de libre-échange continentale africaine || Un impôt || Une banque || Une radio || Elle facilite le commerce entre pays africains.
+Citez un moyen de mieux vendre : || Connaître la demande et bien présenter le produit || Cacher le produit || Mentir sur la qualité || Vendre sans prix || La qualité attire les clients.
+Qu'est-ce qu'une organisation paysanne ? || Un groupe de producteurs organisés pour défendre leurs intérêts || Une banque || Un ministère || Une entreprise privée || Elle défend les membres et négocie.

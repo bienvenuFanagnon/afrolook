@@ -1,0 +1,33 @@
+titre: Résistance des matériaux
+== fiche
+p: La résistance des matériaux étudie comment les pièces (poutres, poteaux) résistent aux efforts sans se rompre ni se déformer trop.
+li: Sollicitations simples : traction, compression, cisaillement, flexion, torsion.
+li: Contrainte normale σ = N ÷ S (effort normal sur section) ; contrainte de cisaillement τ = T ÷ S.
+li: Loi de Hooke : σ = E × ε ; E module d'élasticité (acier environ 210 000 MPa, béton environ 30 000 MPa) ; ε déformation relative.
+li: Déformation : allongement ΔL = (N × L) ÷ (E × S) pour une barre sous traction.
+li: Poutre : élément horizontal qui travaille en flexion ; appuis : simple, encastrement, rouleau.
+li: Réactions d'appui : déterminées par l'équilibre (somme des forces = 0, somme des moments = 0).
+li: Poutre sur deux appuis sous charge répartie q : réactions R = q × L ÷ 2 ; moment maximal Mmax = q × L² ÷ 8 au milieu.
+li: Poutre sur deux appuis, charge ponctuelle P au milieu : Mmax = P × L ÷ 4.
+li: Contrainte de flexion : σ = M × v ÷ I (v : distance à la fibre neutre ; I : moment d'inertie de la section).
+li: Moment d'inertie d'un rectangle : I = b × h³ ÷ 12 ; plus la hauteur h est grande, plus la poutre est rigide.
+li: Flambement : instabilité d'un poteau élancé sous compression ; dépend de la longueur libre.
+li: Coefficient de sécurité : rapport entre la résistance du matériau et la contrainte admissible.
+note: Doubler la hauteur d'une poutre multiplie son inertie par huit.
+note: Un poteau long et mince peut flamber avant d'atteindre sa résistance.
+== questions
+Citez une sollicitation simple : || La traction || La peinture || L'isolation || Le dessin || Compression, cisaillement, flexion et torsion en sont d'autres.
+Comment calcule-t-on la contrainte normale ? || σ = N ÷ S || σ = N × S || σ = S ÷ N || σ = N + S || Effort normal divisé par la section.
+Que dit la loi de Hooke ? || σ = E × ε || σ = E + ε || σ = ε ÷ E || σ = E ÷ ε || La contrainte est proportionnelle à la déformation.
+Que représente E ? || Le module d'élasticité || L'effort || La section || Le poids || Plus E est grand, plus le matériau est rigide.
+Quel matériau a le module d'élasticité le plus élevé ? || L'acier || Le bois || Le plastique || Le béton || Environ 210 000 MPa.
+Comment calcule-t-on l'allongement d'une barre tendue ? || ΔL = (N × L) ÷ (E × S) || ΔL = N × L × S || ΔL = E ÷ N || ΔL = L ÷ S || Il augmente avec la longueur et l'effort.
+Quelle est la réaction d'appui d'une poutre simple de longueur L sous charge répartie q ? || q × L ÷ 2 || q × L || q ÷ L || q × L² ÷ 8 || La charge se répartit sur les deux appuis.
+Quel est le moment maximal d'une poutre simple de longueur L sous charge répartie q ? || q × L² ÷ 8 || q × L ÷ 2 || q × L || q × L² ÷ 2 || Il se situe à mi-portée.
+Quel est le moment maximal d'une poutre simple sous charge ponctuelle P au milieu ? || P × L ÷ 4 || P × L ÷ 2 || P × L || P ÷ L || Il se trouve sous la charge.
+Quel est le moment d'inertie d'une section rectangulaire ? || b × h³ ÷ 12 || b × h ÷ 2 || b × h² ÷ 6 || b² × h ÷ 12 || h est la hauteur de la section.
+Comment augmente l'inertie quand on double la hauteur d'une poutre ? || Elle est multipliée par huit || Elle double || Elle triple || Elle reste identique || Car h est au cube.
+Qu'est-ce que le flambement ? || L'instabilité d'un poteau élancé sous compression || Une fissure || Une corrosion || Une traction || Il dépend de l'élancement.
+Qu'est-ce que le cisaillement ? || Un effort tendant à faire glisser deux sections || Un effort de traction || Un effort de flexion || Un effort de torsion || Il agit parallèlement à la section.
+Qu'est-ce que le coefficient de sécurité ? || Le rapport entre résistance et contrainte admissible || Un prix || Un poids || Une dimension || Il garantit une marge d'incertitude.
+Quel est le rôle d'une poutre ? || Reprendre les charges en flexion || Décorer || Isoler || Éclairer || Elle transmet les charges aux appuis.

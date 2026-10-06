@@ -1,0 +1,33 @@
+titre: Communication digitale et réseaux sociaux
+== fiche
+p: Les réseaux sociaux sont devenus un canal central pour informer, vendre et influencer. Les professionnels doivent en maîtriser les codes.
+li: Réseaux : Facebook, Instagram, TikTok, X (Twitter), LinkedIn, YouTube, WhatsApp ; chacun a son public et ses formats.
+li: Community manager : anime et modère les communautés d'une marque ; publie, répond, mesure.
+li: Ligne éditoriale : ton, sujets et formats qui cohérent avec l'identité de la marque.
+li: Calendrier éditorial : planification des publications (jours, heures, types de contenu).
+li: Formats : texte, image, carrousel, vidéo courte (reel), live, story, newsletter.
+li: Engagement : mentions « J'aime », commentaires, partages, enregistrements ; taux d'engagement = interactions ÷ audience.
+li: Portée et impressions : portée = personnes uniques touchées ; impressions = nombre total d'affichages.
+li: Publicité sociale : cibler par âge, lieu, centres d'intérêt ; budget, durée, objectif (notoriété, trafic, conversion).
+li: Influence marketing : partenariats avec des créateurs de contenu ; transparence (mention « publicité » obligatoire).
+li: Modération : supprimer les contenus illégaux, répondre avec calme aux critiques.
+li: SEO et référencement : mots-clés, titres clairs, contenu utile pour apparaître dans les moteurs de recherche.
+li: E-mail marketing : listes d'abonnés, objet accrocheur, lien de désinscription.
+note: Publier régulièrement vaut mieux que publier beaucoup un jour puis rien.
+note: Réponds aux commentaires : l'écoute renforce la communauté.
+== questions
+Qu'est-ce qu'un community manager ? || La personne qui anime et modère la communauté d'une marque en ligne || Un technicien réseau || Un journaliste sportif || Un banquier || Il publie, répond et mesure.
+Qu'est-ce que la ligne éditoriale ? || Le ton, les sujets et les formats choisis par la marque || Un logiciel || Un câble || Une fonction || Elle garantit la cohérence.
+À quoi sert un calendrier éditorial ? || Planifier les publications dans le temps || Compter les amis || Calculer des salaires || Suivre la météo || Il assure la régularité.
+Qu'est-ce qu'un carrousel ? || Une publication à plusieurs images || Une vidéo live || Un message vocal || Un article de blog || On fait défiler les images.
+Comment calcule-t-on le taux d'engagement ? || Interactions ÷ audience || Audience ÷ interactions || Publications × jours || Budget × impressions || Il mesure la participation.
+Quelle différence entre portée et impressions ? || La portée compte les personnes uniques, les impressions les affichages totaux || Aucune || Les impressions comptent les personnes uniques || La portée compte les clics || Une personne peut voir plusieurs fois.
+Citez un objectif de publicité sociale : || La notoriété || La déconnexion || Le silence || La suppression || Le trafic et la conversion en sont d'autres.
+Que doit faire un influenceur en partenariat payé ? || Indiquer que c'est une publicité || Cacher le partenariat || Mentir sur le produit || Supprimer les commentaires || La transparence est obligatoire.
+Que faire face à une critique en ligne ? || Répondre calmement et chercher une solution || Supprimer tout || Insulter || Ignorer toujours || L'écoute renforce la confiance.
+À quoi sert le SEO ? || Améliorer la visibilité dans les moteurs de recherche || Réparer un téléphone || Créer un logo || Envoyer des SMS || Il repose sur mots-clés et contenu utile.
+Que doit contenir un e-mail marketing ? || Un objet clair et un lien de désinscription || Seulement une image || Aucun lien || Aucune signature || La désinscription est une obligation.
+Quel réseau est orienté professionnel ? || LinkedIn || TikTok || Snapchat || Pinterest || Il sert au réseau et au recrutement.
+Quel format de vidéo courte est populaire sur Instagram ? || Le reel || Le fax || Le courrier || Le CD || Les vidéos verticales sont très regardées.
+Pourquoi publier régulièrement ? || Entretenir l'attention et l'algorithme || Remplir le téléphone || Fatiguer l'audience || Éviter les clients || La régularité fidélise.
+Qu'est-ce que la modération ? || Retirer les contenus illégaux et gérer les échanges || Publier plus || Fermer le compte || Ignorer les commentaires || Elle protège la communauté.

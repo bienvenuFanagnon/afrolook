@@ -1,0 +1,33 @@
+titre: Gestion et planification de chantier
+== fiche
+p: Un chantier réussi respecte délais, coûts et qualité. La planification et le suivi sont les outils du conducteur de travaux.
+li: Phases d'un projet : étude, conception, consultation et attribution, exécution, réception, garantie.
+li: Acteurs : maître d'ouvrage, maître d'œuvre, bureau de contrôle, entreprises, sous-traitants, fournisseurs.
+li: Planning : WBS (découpage des tâches), durée et enchaînement des tâches ; diagramme de Gantt ; méthode PERT ; chemin critique.
+li: Chemin critique : suite de tâches dont tout retard retarde la fin du projet ; tâches non critiques ont une marge.
+li: Moyens : main-d'œuvre, matériel, matériaux ; approvisionnements au bon moment ; stockage.
+li: Budget et suivi des coûts : prévisionnel contre réel ; écarts ; avenants en cas de modification.
+li: Réunions de chantier : compte rendu, décisions, actions, responsables, échéances.
+li: Journal de chantier : consigne météo, effectifs, travaux, incidents ; document de preuve.
+li: Qualité : plan d'assurance qualité, contrôles internes et externes, essais, non-conformités.
+li: Réception : procès-verbal, réserves, levée des réserves, garantie de parfait achèvement, garantie décennale.
+li: Gestion des risques : météo, retards de livraison, accidents, conflits, hausse des prix.
+li: Outils numériques : MS Project, Primavera, Excel, applications de suivi de chantier.
+note: Un retard sur le chemin critique retarde tout le projet.
+note: Note tout ce qui se passe : le journal de chantier protège l'entreprise en cas de litige.
+== questions
+Quelles sont les grandes phases d'un projet de construction ? || Étude, conception, exécution, réception || Dessin, couleur, vente || Achat, location, vente || Pluie, soleil, vent || Chacune a ses responsables.
+Qu'est-ce que le chemin critique ? || La suite de tâches dont un retard retarde tout le projet || Un chemin d'accès || Un plan || Un budget || Il guide les priorités.
+Qu'est-ce qu'une marge sur une tâche non critique ? || Un retard possible sans décaler la fin || Un coût || Un risque || Un danger || Elle donne de la souplesse.
+En génie civil, à quoi sert un diagramme de Gantt ? || Visualiser le planning des tâches || Dessiner un pont || Calculer un moment || Mesurer un sol || Il montre durées et enchaînements.
+Que signifie PERT ? || Une méthode d'ordonnancement avec enchaînement des tâches || Un type de béton || Un outil de mesure || Une norme de sécurité || Elle sert à calculer le chemin critique.
+Qu'est-ce qu'un avenant ? || Une modification du marché initial || Un nouveau plan || Un bilan || Une réception || Il concerne délai, prix ou travaux.
+À quoi sert un journal de chantier ? || Consigner météo, effectifs, travaux et incidents || Décorer le chantier || Écrire un roman || Faire un plan || Il sert de preuve en cas de litige.
+Que contient un compte rendu de réunion de chantier ? || Décisions, actions, responsables et échéances || Des blagues || Des chiffres inutiles || Un menu || Il suit l'avancement.
+Qu'est-ce qu'une non-conformité ? || Un travail qui ne respecte pas les exigences || Un travail parfait || Un plan || Un paiement || Elle doit être corrigée.
+Qu'est-ce que la réception des travaux ? || L'acceptation officielle de l'ouvrage par le maître d'ouvrage || Le début des travaux || Le paiement des salaires || La démolition || Elle donne lieu à un procès-verbal.
+Que sont les réserves à la réception ? || Des défauts à corriger signalés par le maître d'ouvrage || Des stocks || Des prix || Des plans || Elles doivent être levées.
+Que couvre la garantie décennale ? || Les dommages graves qui compromettent la solidité de l'ouvrage pendant dix ans || Les petits défauts de peinture || Les dépenses de chauffage || Les impôts || Elle s'applique après la réception.
+Pourquoi planifier les approvisionnements ? || Les matériaux doivent être disponibles au bon moment || Pour gaspiller || Pour perdre du temps || Pour faire du stock inutile || Les retards de livraison bloquent le chantier.
+Citez un logiciel de planification : || MS Project || Paint || Word || Photoshop || Primavera en est un autre.
+Citez un risque de chantier : || Un retard de livraison || Un surplus de temps || Une météo parfaite || Un prix constant || Les accidents et la hausse des prix en sont d'autres.

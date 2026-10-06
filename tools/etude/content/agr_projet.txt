@@ -1,0 +1,33 @@
+titre: Montage et suivi de projets agricoles
+== fiche
+p: Un projet agricole bien monté attire les financements et réussit mieux. Il faut décrire le besoin, les moyens, les risques et les résultats attendus.
+li: Projet : ensemble d'activités avec un objectif, un début, une fin, un budget et des résultats attendus.
+li: Étude de faisabilité : marché, technique, financière, juridique, environnementale et sociale.
+li: Diagnostic participatif : écouter les producteurs, identifier problèmes et solutions.
+li: Cadre logique : objectif général, objectifs spécifiques, résultats, activités, indicateurs, hypothèses, moyens.
+li: Plan d'action : activités, responsables, calendrier, budget.
+li: Budget : investissements, fonctionnement, imprévus ; sources de financement : apports propres, subventions, prêts, partenaires.
+li: Indicateurs : mesures de réussite (tonnes produites, revenus, bénéficiaires, taux d'adoption).
+li: Rentabilité : valeur actuelle nette (VAN), taux de rentabilité interne (TRI), délai de récupération ; flux de trésorerie.
+li: Risques : climat, prix, maladies, retards, conflits ; mesures pour les réduire.
+li: Suivi et évaluation : suivre l'avancement en cours de projet, évaluer les résultats et l'impact à la fin.
+li: Partenaires : communautés, ONG, ministères, banques, bailleurs de fonds (BAD, FIDA, FAO, Banque mondiale).
+li: Genre et inclusion : intégrer femmes et jeunes dans la conception et les bénéfices.
+note: Un projet qui ne mesure pas ses résultats ne peut pas apprendre.
+note: Associer les bénéficiaires dès le début augmente les chances de succès.
+== questions
+En agronomie, qu'est-ce qu'un projet ? || Un ensemble d'activités avec objectif, durée et budget || Une routine || Une habitude || Un salaire || Il a un début et une fin.
+Que vérifie une étude de faisabilité ? || Marché, technique, finance, juridique et environnement || Seulement le prix || Seulement le climat || Seulement l'équipe || Elle décide si le projet est réalisable.
+Qu'est-ce qu'un cadre logique ? || Un tableau reliant objectifs, résultats, activités et indicateurs || Un jeu || Un dessin || Un contrat || Il structure et suit le projet.
+Qu'est-ce qu'un indicateur de projet ? || Une mesure de réussite || Un prix || Un outil || Un salarié || Par exemple tonnes produites ou revenus.
+Citez une source de financement : || Une subvention || Le hasard || Un cadeau anonyme || Une loterie || Prêt et apport propre en sont d'autres.
+Que mesure la VAN ? || La valeur actuelle des gains nets futurs || Le nombre de personnes || Le coût du carburant || La taille du champ || Une VAN positive est favorable.
+Que signifie TRI ? || Taux de rentabilité interne || Taux de revenu initial || Total des recettes immédiates || Taux de risque || Il compare à un seuil minimal.
+En agronomie, que mesure le délai de récupération ? || Le temps pour récupérer l'investissement || Le délai de livraison || Le temps de récolte || L'âge du projet || Plus il est court, moins le risque est grand.
+Qu'est-ce qu'un diagnostic participatif ? || Écouter les producteurs pour identifier problèmes et solutions || Un examen médical || Une enquête policière || Un reportage || Il associe les bénéficiaires.
+Citez un risque d'un projet agricole : || La sécheresse || L'abondance de pluie parfaite || La demande infinie || Un prix constant || Maladies et retards en sont d'autres.
+Que font le suivi et l'évaluation ? || Mesurer l'avancement et les résultats || Cacher les résultats || Supprimer le budget || Fermer le projet || Ils permettent d'apprendre et de corriger.
+Pourquoi associer les bénéficiaires dès le début ? || Augmenter l'adhésion et les chances de réussite || Perdre du temps || Réduire leur rôle || Éviter la formation || Un projet imposé échoue plus souvent.
+Citez un bailleur de fonds : || La BAD || Un voisin || Une loterie || Un commerçant seul || Le FIDA et la Banque mondiale en sont d'autres.
+Pourquoi intégrer femmes et jeunes ? || Pour un projet plus équitable et plus efficace || Pour compliquer || Pour augmenter les coûts || Par obligation sans intérêt || Ils sont des acteurs clés de l'agriculture.
+Que contient un plan d'action ? || Activités, responsables, calendrier et budget || Un menu || Une chanson || Un poème || Il organise la mise en œuvre.

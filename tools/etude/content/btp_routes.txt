@@ -1,0 +1,33 @@
+titre: Routes, ouvrages d'art et transports
+== fiche
+p: Les routes et les ponts relient les territoires. Leur conception demande de connaître le trafic, le sol, l'eau et les matériaux.
+li: Route : tracé en plan (courbes), profil en long (pentes), profil en travers (largeur de chaussée, accotements, fossés).
+li: Catégories : routes nationales, régionales, communales ; pistes rurales.
+li: Corps de chaussée : plate-forme (sol support), couche de fondation, couche de base, couche de roulement ; chaussée souple (enrobé) ou rigide (béton).
+li: Trafic : nombre de véhicules par jour, poids lourds, essieux équivalents ; il détermine l'épaisseur.
+li: Dimensionnement : portance du sol (CBR), trafic, matériaux disponibles.
+li: Terrassements routiers : déblais, remblais, compactage par couches, contrôle de densité.
+li: Drainage : fossés, buses, caniveaux ; pente transversale (2 à 3 %) pour évacuer l'eau.
+li: Signalisation et sécurité routière : panneaux, marquages, glissières, éclairage.
+li: Ouvrages d'art : ponts, dalots, ponceaux, murs de soutènement ; types de ponts : poutres, arc, haubans, suspendus.
+li: Entretien routier : curage des fossés, rebouchage des nids-de-poule, rechargement ; entretien courant et périodique.
+li: Dégradations : orniérage, fissuration, nids-de-poule, érosion ; causes : surcharge, eau, mauvais compactage.
+li: Mobilité et développement : désenclavement, corridors régionaux (CEDEAO), coûts de transport.
+note: L'eau est l'ennemi numéro un de la route.
+note: Un bon entretien coûte bien moins cher qu'une reconstruction.
+== questions
+Comment est organisée une chaussée ? || Plate-forme, fondation, base et couche de roulement || Une seule couche de sable || Deux couches de peinture || Une couche de plastique || Chaque couche a un rôle.
+Quelle est la couche supérieure d'une chaussée ? || La couche de roulement || La couche de fondation || La plate-forme || Le remblai || Elle supporte directement la circulation.
+Qu'est-ce qu'une chaussée souple ? || Une chaussée avec enrobé bitumineux || Une chaussée en béton || Une route de sable || Un pont || Une chaussée rigide est en béton.
+Qu'est-ce qu'une chaussée rigide ? || Une chaussée en béton || Une chaussée en enrobé || Un sentier || Une piste || Elle répartit les charges sur une dalle.
+De quoi dépend l'épaisseur d'une chaussée ? || Du trafic et de la portance du sol || De la couleur || Du nom de la route || De la météo du jour || Plus le trafic est lourd, plus elle est épaisse.
+Quelle pente transversale évacue l'eau d'une chaussée ? || Environ 2 à 3 % || 30 % || 0 % || 50 % || Elle évite la stagnation.
+Pourquoi compacter par couches ? || Obtenir une densité suffisante et éviter les tassements || Aller plus vite || Économiser le béton || Sécher le sol || Chaque couche est contrôlée.
+Citez un ouvrage d'art : || Un pont || Un panneau || Un trottoir || Un fossé || Dalots et murs de soutènement en sont d'autres.
+Citez un type de pont : || Le pont à poutres || Le pont de sable || Le pont en carton || Le pont de plastique || Les ponts en arc et suspendus en sont d'autres.
+Qu'est-ce qu'un nid-de-poule ? || Un trou dans la chaussée || Un panneau || Un radar || Un pont || Il se forme avec l'eau et le trafic.
+Que provoque souvent la dégradation des routes ? || L'eau, la surcharge et le mauvais compactage || Le bon entretien || Un bon drainage || Une faible circulation || Ces causes se combinent.
+À quoi sert l'entretien routier ? || Prolonger la vie de la route || Détruire la route || Supprimer le trafic || Augmenter l'eau || Il coûte moins cher qu'une reconstruction.
+Que signifie désenclaver une zone ? || La relier au reste du pays par des routes || L'isoler || La fermer || La déplacer || Cela facilite échanges et services.
+À quoi servent les glissières ? || Protéger les véhicules en sortie de route || Décorer || Éclairer || Faire du bruit || Elles améliorent la sécurité.
+Quelle est la première cause d'usure d'une route ? || L'eau || La couleur || Le vent seul || La lumière || Un bon drainage limite les dégâts.

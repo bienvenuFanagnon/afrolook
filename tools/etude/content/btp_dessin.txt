@@ -1,0 +1,33 @@
+titre: Dessin technique et DAO
+== fiche
+p: Le dessin technique est le langage commun du bâtiment : il décrit précisément ce qui doit être construit.
+li: Normes de dessin : formats de papier (A4, A3, A2, A1, A0), cartouche (titre, échelle, date, auteur), types de traits.
+li: Types de traits : continu fort (contours visibles), tirets (contours cachés), mixte (axes), fin (cotes et hachures).
+li: Échelles courantes : 1/50 (plan d'étage), 1/100 (plan d'ensemble), 1/20 (détails), 1/5 ; échelle = dimension dessinée ÷ dimension réelle.
+li: Projections orthogonales : vue de face, vue de dessus, vue de côté ; coupe : vue interne d'un ouvrage.
+li: Cotation : lignes de cote, flèches, valeur en mm ou en m ; cotes de niveau et d'axes ; ne pas répéter les cotes.
+li: Plans d'architecte : plan de situation, plan de masse, plan de niveau, coupes, façades.
+li: Plans de structure : fondations, plancher, poteaux, poutres, ferraillage.
+li: Plans d'exécution : détails de coffrage, armatures, assemblages ; nomenclature.
+li: Symboles : portes, fenêtres, escaliers, murs, hachures de matériaux (béton, brique, terre).
+li: DAO (dessin assisté par ordinateur) : AutoCAD, ArchiCAD, Revit, SketchUp ; calques, bibliothèques, impression à l'échelle.
+li: BIM : maquette numérique partagée du bâtiment (Building Information Modeling).
+li: Lecture d'un plan : repérer l'échelle, le nord, les cotes, la légende.
+note: Une erreur de cotation sur un plan peut coûter très cher en chantier.
+note: Nomme clairement chaque plan et chaque version.
+== questions
+Que contient le cartouche d'un plan ? || Titre, échelle, date et auteur || Seulement un dessin || Le prix || La météo || Il identifie le plan.
+Quel trait représente les contours visibles ? || Le trait continu fort || Le trait en tirets || Le trait mixte || Le trait fin || Les tirets sont pour les contours cachés.
+Quel trait représente un axe ? || Le trait mixte (point-tiret) || Le trait continu fort || Le trait gras || Le trait ondulé || Il sert à repérer les axes de symétrie.
+Que signifie l'échelle 1/50 ? || 1 cm sur le plan = 50 cm en réalité || 1 cm sur le plan = 5 cm || 50 cm sur le plan = 1 cm || 1 m = 1 cm || Elle réduit la taille réelle.
+Combien mesure 4 cm sur un plan à l'échelle 1/100 ? || 4 m || 40 cm || 400 m || 0,4 m || 1 cm représente 1 m.
+Qu'est-ce qu'une coupe ? || Une vue interne d'un ouvrage coupé || Une vue de dessus || Une perspective || Un dessin décoratif || Elle montre hauteurs et niveaux.
+Qu'est-ce que la cotation ? || L'inscription des dimensions sur le plan || La couleur du plan || Le titre || Le prix || Elle évite de mesurer sur le papier.
+Quel plan montre l'implantation de la construction sur le terrain ? || Le plan de masse || Le plan de coupe || Le plan de façade || Le plan d'étage || Il situe aussi l'orientation.
+Quel plan montre poteaux et poutres ? || Le plan de structure || Le plan de situation || La façade || Le plan de peinture || Il sert à la conception et au calcul.
+Qu'est-ce qu'une nomenclature ? || Une liste détaillée des éléments d'un plan || Un titre || Un logo || Un calendrier || Elle précise matériaux et quantités.
+Citez un logiciel de DAO : || AutoCAD || Excel || Word || PowerPoint || ArchiCAD, Revit et SketchUp en sont d'autres.
+Que signifie BIM ? || Modélisation des informations du bâtiment || Banque d'information minimale || Base industrielle de matériaux || Bureau d'ingénierie mondial || C'est une maquette numérique partagée.
+Que sont les calques en DAO ? || Des couches organisant les éléments du dessin || Des feuilles de papier || Des couleurs || Des polices || Ils facilitent la gestion du plan.
+Qu'est-ce qu'une projection orthogonale ? || Une vue plane (face, dessus, côté) d'un objet || Une photo || Une peinture || Une perspective libre || Elle conserve les dimensions.
+Pourquoi une erreur de cotation est-elle grave ? || Elle peut entraîner des erreurs de construction coûteuses || Elle n'a aucune conséquence || Elle améliore le plan || Elle réduit le prix || Le chantier suit les cotes.

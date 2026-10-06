@@ -1,0 +1,33 @@
+titre: Éthique, droit des médias et lutte contre la désinformation
+== fiche
+p: Le journaliste a des devoirs envers le public. Le droit encadre la liberté d'informer, et la désinformation oblige à de nouveaux réflexes.
+li: Déontologie : règles morales de la profession ; exactitude, indépendance, impartialité, respect de la dignité, protection des sources.
+li: Diffamation : allégation d'un fait précis qui porte atteinte à l'honneur d'une personne ; injure : expression outrageante sans fait précis.
+li: Vie privée et droit à l'image : on ne publie pas sans consentement ou sans intérêt public légitime.
+li: Présomption d'innocence : ne pas présenter comme coupable une personne non condamnée.
+li: Propriété intellectuelle : droit d'auteur ; citer ses sources ; plagiat interdit.
+li: Désinformation : fausse information diffusée volontairement ; mésinformation : fausse information diffusée sans intention de nuire ; malinformation : information vraie utilisée pour nuire.
+li: Deepfake : contenu truqué par l'IA ; vérifier par recherche inversée et sources officielles.
+li: Techniques de vérification : source d'origine, date, lieu, recoupement, outils de vérification de photos et vidéos.
+li: Rumeur : information non vérifiée qui circule ; une rumeur se propage plus vite qu'un démenti.
+li: Conflits d'intérêts : un journaliste doit déclarer ses liens avec les sujets traités.
+li: Autorégulation : conseil de presse, charte éthique, médiateur.
+li: Éducation aux médias : apprendre à lire, évaluer et produire l'information.
+note: Avant de partager, demande : qui l'a dit ? où est la preuve ? quand ?
+note: Une info choquante est souvent faite pour être partagée sans réfléchir.
+== questions
+Que désigne la déontologie du journalisme ? || Les règles morales de la profession || Un diplôme || Un salaire || Un impôt || Elle inclut exactitude et indépendance.
+Qu'est-ce que la diffamation ? || L'allégation d'un fait précis qui atteint l'honneur || Une opinion || Un compliment || Un reportage vérifié || Elle est punie par la loi.
+Quelle différence entre diffamation et injure ? || L'injure n'allègue pas de fait précis || Aucune || La diffamation est une injure || L'injure est un fait vérifié || Les deux sont sanctionnées.
+Que protège la présomption d'innocence ? || Toute personne non condamnée || Seulement les riches || Seulement les journalistes || Les condamnés || Il ne faut pas la présenter comme coupable.
+Qu'est-ce que le plagiat ? || Copier un texte sans citer l'auteur || Citer une source || Résumer || Interviewer || Il viole le droit d'auteur.
+Qu'est-ce que la désinformation ? || Une fausse information diffusée volontairement || Une erreur involontaire || Une information vraie || Une publicité || Elle vise à tromper.
+Qu'est-ce que la mésinformation ? || Une fausse information diffusée sans intention de nuire || Un mensonge volontaire || Une vérité || Une rumeur positive || L'auteur croit parfois qu'elle est vraie.
+Qu'est-ce que la malinformation ? || Une information vraie utilisée pour nuire || Un faux || Une blague || Une publicité || Elle peut violer la vie privée.
+Comment vérifier une photo suspecte ? || Par une recherche inversée et la source d'origine || En la partageant || En la retouchant || En l'ignorant || On vérifie date, lieu et auteur.
+Pourquoi les rumeurs circulent-elles vite ? || Elles jouent sur l'émotion et sont partagées sans vérification || Elles sont toujours vraies || Elles sont lentes || Elles sont interdites || Le démenti circule moins vite.
+Que faire avant de partager une information choquante ? || Vérifier la source et la preuve || Partager vite || Ajouter une rumeur || L'effacer || Qui, où, quand, quelle preuve ?
+En licence de communication, qu'est-ce qu'un conflit d'intérêts ? || Un lien personnel qui peut influencer l'information || Une dispute entre collègues || Un désaccord politique || Un reportage || Il doit être déclaré.
+Qu'est-ce qu'un conseil de presse ? || Un organe d'autorégulation de la profession || Un tribunal d'État || Un syndicat || Un journal || Il examine les plaintes sur la déontologie.
+Qu'est-ce que l'éducation aux médias ? || Apprendre à lire, évaluer et produire l'information || Apprendre à tout croire || Apprendre à écrire des rumeurs || Apprendre à filmer seulement || Elle développe l'esprit critique.
+Que faut-il obtenir avant de publier une photo d'une personne privée ? || Son consentement || Rien || Un cadeau || Un brevet || Le droit à l'image protège la vie privée.

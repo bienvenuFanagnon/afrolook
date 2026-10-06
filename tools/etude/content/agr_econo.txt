@@ -1,0 +1,34 @@
+titre: Économie rurale et gestion d'exploitation
+== fiche
+p: Une exploitation agricole est aussi une entreprise : il faut compter les coûts, les revenus et planifier.
+li: Exploitation agricole : unité de production avec terre, travail, capital et savoir-faire.
+li: Facteurs de production : terre, travail, capital (outils, intrants, bâtiments), gestion.
+li: Charges : fixes (amortissement du matériel, taxes), variables (semences, engrais, main-d'œuvre saisonnière) ; produits : ventes et autoconsommation.
+li: Marge brute = produit − charges variables ; marge nette = produit − toutes charges.
+li: Seuil de rentabilité : niveau de vente où les revenus couvrent les coûts.
+li: Compte d'exploitation : récapitule produits et charges d'une campagne.
+li: Calendrier de trésorerie : prévoit les entrées et sorties d'argent pour éviter les ruptures.
+li: Crédit agricole : microfinance, banques agricoles, tontines ; garanties, taux d'intérêt, remboursement après la récolte.
+li: Assurance agricole : protège contre sécheresse, inondation, maladies ; indemnisation selon indice ou perte.
+li: Prix et marchés : prix bas à la récolte, prix hauts en période de soudure ; stockage pour mieux vendre.
+li: Coopérative : groupe de producteurs qui achète, vend et négocie ensemble.
+li: Comptabilité simple : cahier d'achats, de ventes, de dettes ; calcul du résultat de la campagne.
+li: Diversification : plusieurs cultures et activités pour répartir les risques.
+note: Vendre juste après la récolte est souvent moins rentable qu'après stockage.
+note: Note toutes les dépenses : on ne gère bien que ce qu'on mesure.
+== questions
+Citez un facteur de production agricole : || La terre || Le hasard || La chance || La pluie seule || Travail et capital en sont d'autres.
+Citez une charge variable : || Les semences || L'amortissement du tracteur || La taxe foncière || Le loyer fixe || Elle varie selon la production.
+Comment calcule-t-on la marge brute ? || Produit − charges variables || Produit + charges || Charges − produit || Produit × prix || Elle mesure la rentabilité d'une culture.
+Qu'est-ce que la marge nette ? || Produit − toutes les charges || Produit seul || Charges seules || Produit − semences || Elle donne le résultat final.
+Qu'est-ce que le seuil de rentabilité ? || Le niveau de vente qui couvre tous les coûts || Le prix maximum || Le bénéfice final || Le salaire du paysan || Au-dessous, on perd de l'argent.
+Que fait un calendrier de trésorerie ? || Prévoit les entrées et sorties d'argent || Prévoit la pluie || Planifie les semis || Compte les animaux || Il évite les ruptures de liquidité.
+En agronomie, qu'est-ce que la microfinance ? || Des petits crédits aux personnes exclues des banques || Un grand investissement || Une loterie || Un impôt || Elle soutient l'agriculture familiale.
+À quoi sert l'assurance agricole ? || Protéger contre les pertes dues aux aléas || Augmenter les prix || Supprimer les risques || Remplacer la récolte || Sécheresse et inondations en font partie.
+Pourquoi stocker après la récolte ? || Vendre à de meilleurs prix plus tard || Pour perdre du temps || Pour gaspiller || Pour éviter la vente || Les prix montent en période de soudure.
+Qu'est-ce que la période de soudure ? || La période où les réserves manquent avant la récolte || Une période de fête || La période des pluies || Un impôt || Les prix des vivres y sont élevés.
+Qu'est-ce qu'une coopérative agricole ? || Un groupe de producteurs qui s'organisent ensemble || Une banque || Un ministère || Une entreprise unique || Elle renforce le pouvoir de négociation.
+Pourquoi diversifier les cultures et activités ? || Répartir les risques || Réduire les revenus || Compliquer || Éviter la récolte || Un échec sur une culture est compensé par une autre.
+Quelle comptabilité simple tenir ? || Un cahier d'achats, de ventes et de dettes || Aucune || Un roman || Un journal de bord || Il permet de calculer le résultat.
+Qu'est-ce que l'autoconsommation ? || La part de la production consommée par la famille || La vente totale || L'exportation || Le stockage || Elle compte dans le produit de l'exploitation.
+Pourquoi noter toutes les dépenses ? || Pour mesurer et mieux gérer l'exploitation || Pour perdre du temps || Pour impressionner || Pour éviter l'impôt || On gère mieux ce que l'on mesure.

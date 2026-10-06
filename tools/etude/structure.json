@@ -3040,6 +3040,390 @@
           ]
         }
       ]
+    },
+    {
+      "id": "univ_comm",
+      "kind": "cycle",
+      "order": 38,
+      "title": "Communication et journalisme — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_comm",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Communication et journalisme",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "com_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "com_l1_bases",
+              "title": "Fondements de la communication",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "com_theories",
+                  "title": "Théories et modèles de la communication"
+                },
+                {
+                  "id": "com_semiologie",
+                  "title": "Sémiologie, image et langage"
+                }
+              ]
+            },
+            {
+              "id": "com_l1_metier",
+              "title": "Écriture et médias",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "com_ecriture",
+                  "title": "Techniques d'écriture et rédaction journalistique"
+                },
+                {
+                  "id": "com_medias",
+                  "title": "Histoire et paysage des médias"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "com_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "com_l2_genres",
+              "title": "Journalisme et médias audiovisuels",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "com_journalisme",
+                  "title": "Genres journalistiques et enquête"
+                },
+                {
+                  "id": "com_audiovisuel",
+                  "title": "Radio, télévision et vidéo"
+                }
+              ]
+            },
+            {
+              "id": "com_l2_orga",
+              "title": "Communication digitale et d'entreprise",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "com_digital",
+                  "title": "Communication digitale et réseaux sociaux"
+                },
+                {
+                  "id": "com_relations",
+                  "title": "Relations publiques et communication d'entreprise"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "com_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "com_l3_ethique",
+              "title": "Éthique et crise",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "com_ethique",
+                  "title": "Éthique, droit des médias et lutte contre la désinformation"
+                },
+                {
+                  "id": "com_crise",
+                  "title": "Communication de crise et communication politique"
+                }
+              ]
+            },
+            {
+              "id": "com_l3_strat",
+              "title": "Stratégie et mesure",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "com_strategie",
+                  "title": "Stratégie et plan de communication"
+                },
+                {
+                  "id": "com_data",
+                  "title": "Mesure d'audience et analyse des données de communication"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "univ_agro",
+      "kind": "cycle",
+      "order": 39,
+      "title": "Agronomie et développement rural — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_agro",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Agronomie et développement rural",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "agr_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "agr_l1_plante",
+              "title": "Plante et sol",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "agr_botanique",
+                  "title": "Botanique et biologie végétale"
+                },
+                {
+                  "id": "agr_sol",
+                  "title": "Pédologie et fertilisation des sols"
+                }
+              ]
+            },
+            {
+              "id": "agr_l1_milieu",
+              "title": "Eau et élevage",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "agr_climat",
+                  "title": "Climat, eau et irrigation"
+                },
+                {
+                  "id": "agr_zootechnie",
+                  "title": "Bases de zootechnie et alimentation animale"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "agr_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "agr_l2_cult",
+              "title": "Production végétale",
+              "icon": "eco",
+              "chapters": [
+                {
+                  "id": "agr_phytotechnie",
+                  "title": "Phytotechnie : cultures tropicales"
+                },
+                {
+                  "id": "agr_protection",
+                  "title": "Protection des cultures"
+                }
+              ]
+            },
+            {
+              "id": "agr_l2_eco",
+              "title": "Économie et transformation",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "agr_econo",
+                  "title": "Économie rurale et gestion d'exploitation"
+                },
+                {
+                  "id": "agr_post_recolte",
+                  "title": "Technologies post-récolte et agroalimentaire"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "agr_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "agr_l3_dur",
+              "title": "Durabilité et filières",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "agr_durable",
+                  "title": "Agroécologie et agriculture durable"
+                },
+                {
+                  "id": "agr_filieres",
+                  "title": "Filières agricoles et commercialisation"
+                }
+              ]
+            },
+            {
+              "id": "agr_l3_dev",
+              "title": "Projets et développement",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "agr_projet",
+                  "title": "Montage et suivi de projets agricoles"
+                },
+                {
+                  "id": "agr_foncier",
+                  "title": "Foncier rural, politiques agricoles et développement"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "univ_btp",
+      "kind": "cycle",
+      "order": 40,
+      "title": "Génie civil et BTP — Licence complète",
+      "country": "UEMOA",
+      "after": [
+        "lycee_d"
+      ],
+      "exam": {
+        "id": "licence_btp",
+        "title": "Examen de licence",
+        "diploma": "Licence Afrolook Étude — Génie civil et BTP",
+        "count": 60,
+        "passPct": 0.5,
+        "seconds": 5400
+      },
+      "classes": [
+        {
+          "id": "btp_l1",
+          "title": "Licence 1",
+          "subjects": [
+            {
+              "id": "btp_l1_bases",
+              "title": "Sciences de base",
+              "icon": "calculate",
+              "chapters": [
+                {
+                  "id": "btp_maths",
+                  "title": "Mathématiques et physique appliquées au génie civil"
+                },
+                {
+                  "id": "btp_dessin",
+                  "title": "Dessin technique et DAO"
+                }
+              ]
+            },
+            {
+              "id": "btp_l1_terrain",
+              "title": "Matériaux et terrain",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "btp_materiaux",
+                  "title": "Matériaux de construction : propriétés et essais"
+                },
+                {
+                  "id": "btp_topo",
+                  "title": "Topographie et implantation"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "btp_l2",
+          "title": "Licence 2",
+          "subjects": [
+            {
+              "id": "btp_l2_struct",
+              "title": "Structures",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "btp_rdm",
+                  "title": "Résistance des matériaux"
+                },
+                {
+                  "id": "btp_beton",
+                  "title": "Béton armé : principes et dispositions"
+                }
+              ]
+            },
+            {
+              "id": "btp_l2_sol",
+              "title": "Sol et eau",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "btp_geotech",
+                  "title": "Géotechnique et fondations"
+                },
+                {
+                  "id": "btp_hydraulique",
+                  "title": "Hydraulique et assainissement"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "btp_l3",
+          "title": "Licence 3",
+          "subjects": [
+            {
+              "id": "btp_l3_ouv",
+              "title": "Ouvrages et chantier",
+              "icon": "work",
+              "chapters": [
+                {
+                  "id": "btp_routes",
+                  "title": "Routes, ouvrages d'art et transports"
+                },
+                {
+                  "id": "btp_gestion",
+                  "title": "Gestion et planification de chantier"
+                }
+              ]
+            },
+            {
+              "id": "btp_l3_gest",
+              "title": "Coûts et sécurité",
+              "icon": "storage",
+              "chapters": [
+                {
+                  "id": "btp_estimation",
+                  "title": "Métré, devis et marchés de travaux"
+                },
+                {
+                  "id": "btp_qhse",
+                  "title": "Qualité, hygiène, sécurité et environnement (QHSE)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

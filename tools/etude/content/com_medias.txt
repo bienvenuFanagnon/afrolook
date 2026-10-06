@@ -1,0 +1,33 @@
+titre: Histoire et paysage des médias
+== fiche
+p: Les médias ont évolué de l'écriture à Internet. Connaître cette histoire aide à comprendre le paysage actuel, en Afrique et dans le monde.
+li: Médias : supports de diffusion de l'information (presse, radio, télévision, Internet) ; on distingue médias traditionnels et médias numériques.
+li: Imprimerie (Gutenberg, XVe siècle) : permet la presse écrite ; premiers journaux imprimés au XVIIe siècle.
+li: Presse : quotidiens, hebdomadaires, magazines ; la presse papier décline face à Internet.
+li: Radio : invention au début du XXe siècle ; média de proximité très écouté en Afrique ; radios communautaires.
+li: Télévision : diffusion d'images animées ; chaînes publiques et privées ; satellite et TNT.
+li: Internet et réseaux sociaux : information immédiate, participation des internautes, mais risques de désinformation.
+li: Presse en Afrique : naissance au XIXe siècle ; rôle dans les indépendances ; pluralisme des années 1990.
+li: Média public (service public), privé (commercial), associatif ou communautaire.
+li: Régulation : en Afrique de l'Ouest, des organes comme la HAAC (Togo) encadrent l'audiovisuel et la presse.
+li: Liberté de la presse : droit d'informer sans censure ; garantie par la constitution ; limitée par la loi (diffamation, incitation à la haine).
+li: Modèle économique : publicité, abonnements, subventions, dons ; baisse de la publicité traditionnelle.
+li: Concentration des médias : peu de groupes possèdent beaucoup de médias.
+note: Compare toujours plusieurs médias avant de te forger une opinion.
+note: Pour la radio et la télé, les audiences se mesurent par sondages et panels.
+== questions
+Quelle invention a permis le développement de la presse écrite ? || L'imprimerie || La radio || La télévision || Le téléphone || Gutenberg l'a perfectionnée au XVe siècle.
+Quel média est très écouté en Afrique, y compris en zone rurale ? || La radio || Le journal papier || Le magazine de luxe || La bande dessinée || Elle est peu coûteuse et accessible.
+Qu'est-ce qu'une radio communautaire ? || Une radio locale gérée avec la communauté || Une radio d'État uniquement || Une radio étrangère || Une radio sans auditeur || Elle diffuse dans les langues locales.
+Qu'est-ce qu'un média public ? || Un média financé et contrôlé par l'État ou le service public || Un média privé || Un média sans public || Un journal gratuit || Il a une mission de service public.
+Citez un risque des réseaux sociaux : || La désinformation || Le manque d'information || La censure obligatoire || L'absence de public || Les rumeurs se propagent vite.
+Qu'est-ce que la liberté de la presse ? || Le droit d'informer sans censure dans le cadre de la loi || Le droit de tout publier sans limite || Le droit de mentir || Un impôt || Elle est limitée par la loi.
+Citez une limite légale à la liberté de la presse : || La diffamation || L'information || Le reportage || L'interview || L'incitation à la haine en est une autre.
+Quel organisme régule l'audiovisuel et la presse au Togo ? || La HAAC || La BCEAO || La CEDEAO || L'UNESCO || Elle veille à la déontologie.
+Qu'est-ce que la presse quotidienne ? || Des journaux publiés chaque jour || Des journaux annuels || Des livres || Des affiches || Les hebdomadaires paraissent chaque semaine.
+Qu'est-ce que la concentration des médias ? || Peu de groupes contrôlent de nombreux médias || Beaucoup de petits médias || L'absence de médias || La fusion de deux radios seulement || Elle menace le pluralisme.
+Quelle est une source de revenus d'un média ? || La publicité || Le paiement des citoyens aux journalistes || Le hasard || Les cadeaux || Les abonnements en sont une autre.
+Qu'est-ce que le pluralisme des médias ? || La diversité des opinions et des sources || L'absence de choix || Un seul journal || La censure || Il est essentiel à la démocratie.
+Qu'est-ce que la TNT ? || La télévision numérique terrestre || Un type de radio || Un journal || Un téléphone || Elle remplace progressivement l'analogique.
+Pourquoi comparer plusieurs médias ? || Pour recouper l'information et réduire les biais || Pour perdre du temps || Pour s'ennuyer || Pour éviter les nouvelles || Un seul média peut être partial.
+Quel est un avantage d'Internet pour l'information ? || La rapidité || L'absence d'erreurs || La gratuité garantie || La neutralité garantie || Il demande aussi de vérifier les sources.

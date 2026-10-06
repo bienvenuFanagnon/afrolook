@@ -1,0 +1,33 @@
+titre: Relations publiques et communication d'entreprise
+== fiche
+p: Les relations publiques construisent une image positive d'une organisation auprès de ses publics. La communication interne mobilise aussi les salariés.
+li: Relations publiques (RP) : gérer les relations avec les publics (presse, clients, élus, partenaires) pour obtenir leur confiance.
+li: Publics : salariés, clients, fournisseurs, actionnaires, journalistes, autorités, riverains.
+li: Communication interne : informer et impliquer le personnel (note, intranet, réunion, journal interne) ; renforce la culture d'entreprise.
+li: Communication externe : s'adresse au public extérieur (publicité, relations presse, événements, sponsoring).
+li: Relations presse : communiqué de presse (court, factuel, une page), dossier de presse, conférence de presse, interview.
+li: Communiqué de presse : titre, chapeau, corps (5 W), citation, contact ; envoyé aux journalistes ciblés.
+li: Événementiel : lancement, séminaire, salon, inauguration ; objectifs, budget, logistique, invitation, bilan.
+li: Mécénat et sponsoring : mécénat (don sans contrepartie directe), sponsoring (soutien avec contrepartie de visibilité).
+li: Identité visuelle : logo, couleurs, charte graphique ; cohérence sur tous les supports.
+li: RSE : responsabilité sociale des entreprises ; communication honnête sur les actions réelles.
+li: Image de marque : perception du public ; se construit sur le temps et se détruit vite.
+li: Porte-parole : personne désignée pour parler au nom de l'organisation.
+note: Un communiqué sans information nouvelle n'intéresse pas les journalistes.
+note: Les salariés sont les premiers ambassadeurs de l'entreprise.
+== questions
+Que visent les relations publiques ? || Construire la confiance des différents publics || Vendre un produit seulement || Cacher l'organisation || Réduire les salaires || Elles gèrent l'image d'une organisation.
+Citez un public d'une entreprise : || Les clients || Les inconnus seulement || Les concurrents seulement || Les robots || Salariés, fournisseurs et journalistes en sont d'autres.
+À quoi sert la communication interne ? || Informer et impliquer les salariés || Faire de la publicité || Vendre || Payer les impôts || Elle renforce la culture d'entreprise.
+Qu'est-ce qu'un communiqué de presse ? || Un texte court et factuel adressé aux journalistes || Une publicité || Une lettre privée || Un roman || Il tient souvent sur une page.
+Que contient un communiqué de presse ? || Titre, chapeau, corps, citation et contact || Seulement un logo || Un poème || Des blagues || Il répond aux 5 W.
+Qu'est-ce qu'une conférence de presse ? || Une rencontre avec les journalistes pour annoncer une information || Une réunion privée || Un jeu || Un concert || Elle comprend souvent un temps de questions.
+Quelle différence entre mécénat et sponsoring ? || Le sponsoring attend une contrepartie de visibilité || Aucune || Le mécénat attend un profit direct || Le sponsoring est un don anonyme || Le mécénat soutient une cause sans contrepartie directe.
+Qu'est-ce qu'une charte graphique ? || Un document fixant logo, couleurs et polices || Un contrat || Un plan comptable || Un jeu || Elle assure la cohérence visuelle.
+En licence de communication, que signifie RSE ? || Responsabilité sociale des entreprises || Réseau social électronique || Revenu spécial || Règlement sanitaire || Elle concerne l'impact social et environnemental.
+Qu'est-ce que l'image de marque ? || La perception qu'a le public de la marque || Le logo seulement || Le prix || Le stock || Elle se construit dans le temps.
+Qui parle au nom de l'organisation lors d'une crise ? || Le porte-parole désigné || N'importe qui || Un stagiaire || Un client || Une voix unique évite les contradictions.
+Citez un événement d'entreprise : || Un salon || Une panne || Un licenciement || Une fuite || Un séminaire ou une inauguration en sont d'autres.
+Pourquoi les salariés sont-ils des ambassadeurs ? || Ils parlent de l'entreprise autour d'eux || Ils ne parlent jamais || Ils sont payés pour taire || Ils n'ont aucun rôle || Leur discours influence l'image.
+Que doit contenir une invitation à un événement ? || Date, lieu, heure et objet || Une recette || Un poème || Un salaire || Les participants doivent s'organiser.
+Pourquoi cibler les journalistes pour un communiqué ? || Envoyer l'information aux médias concernés || Gaspiller du temps || Fermer les médias || Cacher l'information || Un envoi ciblé augmente l'impact.

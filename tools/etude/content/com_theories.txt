@@ -1,0 +1,33 @@
+titre: Théories et modèles de la communication
+== fiche
+p: La communication étudie comment un message circule entre des personnes. Les modèles aident à analyser pourquoi un message réussit ou échoue.
+li: Communiquer : échanger des informations, des idées ou des émotions avec un ou plusieurs récepteurs.
+li: Modèle de Shannon et Weaver : émetteur, message codé, canal, récepteur, décodage, bruit (perturbation).
+li: Modèle de Jakobson : six fonctions du langage : référentielle (informer), expressive (émotion), conative (agir sur l'autre), phatique (garder le contact), poétique (forme), métalinguistique (parler du code).
+li: Feedback (rétroaction) : réponse du récepteur qui boucle la communication ; sans feedback, la communication est à sens unique.
+li: Communication verbale (mots) et non verbale (gestes, regard, posture, ton) ; le non-verbal peut contredire ou renforcer les mots.
+li: École de Palo Alto : « on ne peut pas ne pas communiquer » ; tout comportement communique.
+li: Communication de masse : un émetteur vers de nombreux récepteurs (presse, radio, télévision) ; Internet permet aussi la communication interactive.
+li: Théorie de la seringue hypodermique : les médias influenceraient directement le public ; remise en cause par les « deux temps » (Lazarsfeld) : les leaders d'opinion relaient et filtrent.
+li: Agenda setting : les médias ne disent pas quoi penser mais à quoi penser (choix des sujets).
+li: McLuhan : « le médium, c'est le message » ; le support influence la manière de percevoir l'information.
+li: Barrières : bruit, différences de langue ou de culture, préjugés, surcharge d'information.
+li: Communication interpersonnelle, de groupe, organisationnelle, publique.
+note: Le sens d'un message se construit autant chez le récepteur que chez l'émetteur.
+note: Adapte toujours ton message à ton public.
+== questions
+Qu'est-ce que le « bruit » dans le modèle de Shannon et Weaver ? || Une perturbation qui altère le message || Un son agréable || Le canal || L'émetteur || Il peut être physique ou psychologique.
+Quels éléments composent le modèle de Shannon et Weaver ? || Émetteur, message, canal, récepteur et bruit || Titre, texte et image || Radio, télé et journal || Question et réponse || Il décrit la transmission du message.
+Combien de fonctions du langage distingue Jakobson ? || Six || Trois || Neuf || Douze || Référentielle, expressive, conative, phatique, poétique, métalinguistique.
+Quelle fonction de Jakobson vise à agir sur le récepteur ? || La fonction conative || La fonction poétique || La fonction référentielle || La fonction phatique || Elle s'exprime par des ordres ou des appels.
+Quelle fonction sert à garder le contact (« Allô, tu m'entends ? ») ? || La fonction phatique || La fonction poétique || La fonction expressive || La fonction conative || Elle vérifie que le canal fonctionne.
+Que désigne le feedback ? || La réponse du récepteur à l'émetteur || Le bruit || Le code || Le canal || Il rend la communication interactive.
+Que veut dire « on ne peut pas ne pas communiquer » ? || Tout comportement transmet un message || Il faut toujours parler || Le silence est interdit || Seuls les mots comptent || C'est l'axiome de Palo Alto.
+Citez un exemple de communication non verbale : || Le regard || Un article || Un discours écrit || Un livre || Gestes, posture et ton en sont d'autres.
+Que dit McLuhan ? || Le médium est le message || Le message est toujours neutre || Les médias ne comptent pas || Le public décide seul || Le support influence la perception.
+Que désigne l'agenda setting ? || Les médias influencent les sujets auxquels le public pense || Les médias choisissent les opinions || Un calendrier de réunions || Une loi || Ils hiérarchisent l'actualité.
+Qui relaie et filtre l'information selon Lazarsfeld ? || Les leaders d'opinion || Les robots || Les juges || Les banques || C'est le modèle des deux temps.
+Citez une barrière à la communication : || La différence de langue || Un bon canal || Un feedback clair || Un message simple || Les préjugés et la surcharge en sont d'autres.
+Qu'est-ce que la communication de masse ? || Un message adressé à un large public via un média || Une conversation à deux || Un cours particulier || Une lettre privée || Presse, radio et télévision en sont des exemples.
+Qu'est-ce que la communication organisationnelle ? || La communication dans et autour d'une organisation || Un jeu || Un sport || Un cours de maths || Elle peut être interne ou externe.
+Pourquoi adapter son message au public ? || Pour qu'il soit compris et efficace || Pour compliquer || Pour allonger || Pour éviter le feedback || Le sens se construit aussi chez le récepteur.

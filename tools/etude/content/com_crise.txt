@@ -1,0 +1,33 @@
+titre: Communication de crise et communication politique
+== fiche
+p: En situation de crise comme pendant une campagne, la communication doit être rapide, cohérente et crédible.
+li: Crise : événement imprévu qui menace gravement la réputation ou le fonctionnement d'une organisation ; accident, scandale, rumeur, cyberattaque.
+li: Cellule de crise : équipe de direction, communication, juridique, experts ; décisions rapides, porte-parole unique.
+li: Principes : reconnaître, informer vite, être transparent, montrer de l'empathie, annoncer des mesures, suivre l'évolution.
+li: Erreurs : nier, minimiser, accuser les victimes, se cacher, se contredire.
+li: Veille : surveiller médias et réseaux pour détecter tôt les signaux faibles.
+li: Plan de crise : scénarios, répartition des rôles, liste de contacts, messages types préparés.
+li: Communication politique : informer, convaincre et mobiliser les citoyens ; campagnes, discours, débats, programme.
+li: Marketing politique : segmentation des électeurs, messages ciblés, slogans, réseaux sociaux.
+li: Campagne électorale : règles légales de durée, de financement, d'égalité d'accès aux médias.
+li: Éthique : ne pas manipuler, ne pas diffuser de fausses informations, respecter l'adversaire.
+li: Sondage : photographie d'une opinion à un moment, avec une marge d'erreur ; ne prédit pas un résultat.
+li: Débat : écouter, répondre aux arguments, rester calme, citer des faits.
+note: Le silence en période de crise est souvent interprété comme un aveu.
+note: Une promesse politique doit être réaliste et vérifiable.
+== questions
+Qu'est-ce qu'une crise pour une organisation ? || Un événement imprévu qui menace gravement sa réputation ou son activité || Un congé || Un anniversaire || Un bilan positif || Elle exige une réaction rapide.
+Qui compose une cellule de crise ? || Direction, communication, juridique et experts || Les clients seuls || Les concurrents || Les fournisseurs || Elle décide et communique vite.
+Pourquoi un seul porte-parole en crise ? || Éviter les messages contradictoires || Réduire les coûts || Retarder l'information || Cacher des faits || Une voix unique est plus claire.
+Que faire dans les premières heures d'une crise ? || Informer vite et honnêtement || Se taire || Nier || Chercher un coupable || Le silence nourrit les rumeurs.
+Citez une erreur en gestion de crise : || Nier les faits évidents || Reconnaître le problème || Informer || Montrer de l'empathie || Se contredire aggrave la situation.
+Que fait la veille en crise ? || Détecter tôt les signaux faibles || Éteindre les réseaux || Supprimer les avis || Cacher l'information || Elle permet d'anticiper.
+Que contient un plan de crise ? || Scénarios, rôles, contacts et messages types || Seulement un logo || Un menu || Un salaire || Il se prépare à l'avance.
+Que vise la communication politique ? || Informer, convaincre et mobiliser les citoyens || Vendre un produit seulement || Éviter les électeurs || Supprimer les débats || Elle utilise discours, programmes et médias.
+Qu'est-ce que le marketing politique ? || L'usage des techniques marketing pour une campagne || La publicité d'un produit || Un cours de maths || Un sondage officiel || Il segmente les électeurs.
+Qu'est-ce qu'un sondage d'opinion ? || Une photographie de l'opinion à un moment donné || Un vote officiel || Une prévision certaine || Un jugement || Il comporte une marge d'erreur.
+Pourquoi un sondage ne prédit-il pas toujours le résultat ? || L'opinion change et la marge d'erreur existe || Il est toujours faux || Il est secret || Il est interdit || Il décrit un moment précis.
+Quelle règle encadre une campagne électorale ? || L'égalité d'accès aux médias || L'interdiction de parler || Le silence || La censure || Des règles fixent durée et financement.
+Que faire face à un adversaire lors d'un débat ? || Répondre à ses arguments avec des faits || L'insulter || Hurler || Quitter la salle || Le respect et les faits convainquent.
+Pourquoi les promesses électorales doivent-elles être réalistes ? || Pour garder la crédibilité || Pour impressionner || Pour tromper || Pour gagner du temps || Elles seront jugées sur les résultats.
+Pourquoi montrer de l'empathie lors d'une crise ? || Pour reconnaître la souffrance des personnes touchées || Pour retarder || Pour cacher || Pour éviter la presse || L'empathie renforce la confiance.

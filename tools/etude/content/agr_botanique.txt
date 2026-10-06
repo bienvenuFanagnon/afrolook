@@ -1,0 +1,33 @@
+titre: Botanique et biologie végétale
+== fiche
+p: Comprendre la plante, de la graine au fruit, est la base de l'agronomie.
+li: Cellule végétale : paroi, membrane, noyau, chloroplastes (photosynthèse), vacuole.
+li: Photosynthèse : la plante utilise la lumière, l'eau et le dioxyde de carbone pour fabriquer des sucres et libérer de l'oxygène ; elle a lieu dans les feuilles.
+li: Respiration : la plante consomme du sucre et de l'oxygène et rejette du dioxyde de carbone, jour et nuit.
+li: Organes : racine (absorbe l'eau et les sels minéraux), tige (soutient, transporte), feuille (photosynthèse), fleur (reproduction), fruit et graine.
+li: Sève brute : eau et sels minéraux montant des racines ; sève élaborée : sucres descendant des feuilles.
+li: Transpiration : perte d'eau par les stomates ; elle aide à refroidir la plante.
+li: Monocotylédones (maïs, riz, mil : une feuille embryonnaire) et dicotylédones (haricot, arachide : deux).
+li: Reproduction : sexuée (graine, pollinisation, fécondation) ou végétative (bouture, marcottage, greffe, tubercule).
+li: Germination : conditions : eau, chaleur, oxygène ; la graine absorbe de l'eau, la radicule sort.
+li: Cycle de développement : germination, croissance, floraison, fructification, maturité.
+li: Famille des légumineuses : fixent l'azote grâce à des bactéries des nodosités racinaires.
+li: Facteurs de croissance : lumière, eau, température, éléments nutritifs, air.
+note: Les stomates s'ouvrent le jour et se ferment en cas de sécheresse.
+note: Le manioc se multiplie par bouture de tige, pas par graine.
+== questions
+Où a lieu la photosynthèse ? || Dans les feuilles (chloroplastes) || Dans les racines || Dans les graines seulement || Dans le sol || Les chloroplastes contiennent de la chlorophylle.
+Que produit la photosynthèse ? || Des sucres et de l'oxygène || De l'eau et du sel || Du gaz carbonique seulement || De la chaleur seulement || Elle nécessite lumière, eau et dioxyde de carbone.
+Quel rôle ont les racines ? || Absorber l'eau et les sels minéraux || Faire la photosynthèse || Produire des graines || Rejeter l'oxygène || Elles ancrent aussi la plante.
+Qu'est-ce que la sève brute ? || Eau et sels minéraux montant des racines || Des sucres descendant || Un engrais || De la pluie || Elle monte par les vaisseaux.
+Qu'est-ce que la sève élaborée ? || Des sucres produits par les feuilles et distribués || De l'eau pure || Du sel || Un poison || Elle descend dans la plante.
+Par où la plante transpire-t-elle ? || Par les stomates || Par les racines || Par les graines || Par la tige || Cela refroidit la plante.
+Citez une monocotylédone : || Le maïs || Le haricot || L'arachide || Le niébé || Elle a une seule feuille embryonnaire.
+Citez une dicotylédone : || Le haricot || Le riz || Le maïs || Le mil || Elle a deux feuilles embryonnaires.
+Quelles conditions sont nécessaires à la germination ? || Eau, chaleur et oxygène || Lumière seulement || Sel et sucre || Froid et sec || La graine absorbe de l'eau.
+Comment se multiplie le manioc ? || Par bouture de tige || Par graine || Par spores || Par fleurs seulement || C'est une reproduction végétative.
+Que signifie reproduction végétative ? || Multiplication sans graine à partir d'une partie de la plante || Reproduction par graines || Pollinisation || Fécondation || Bouture, marcottage, greffe.
+Qu'est-ce que la pollinisation ? || Le transport du pollen vers le pistil || La germination || La récolte || La transpiration || Insectes, vent et eau y participent.
+Quel avantage ont les légumineuses ? || Elles fixent l'azote de l'air grâce aux nodosités || Elles dessèchent le sol || Elles consomment peu d'eau seulement || Elles remplacent l'eau || Elles enrichissent le sol.
+Que contient la paroi d'une cellule végétale ? || De la cellulose || Du sel seulement || Du plomb || Du verre || Elle donne de la rigidité.
+Citez un facteur de croissance d'une plante : || La lumière || Le plastique || Le bruit || Le feu || L'eau et la température en sont d'autres.

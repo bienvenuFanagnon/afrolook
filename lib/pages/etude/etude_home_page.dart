@@ -41,7 +41,9 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
   String _facultyOf(EtudeTrack t) {
     final id = t.id;
     if (id == 'college' || id.startsWith('lycee')) return 'school';
-    if (id == 'univ_info' || id == 'univ_mpc') return 'sci';
+    if (id == 'univ_info' || id == 'univ_mpc' || id == 'univ_btp') return 'sci';
+    if (id == 'univ_comm') return 'arts';
+    if (id == 'univ_agro') return 'agro';
     if (id == 'univ_efc' || id == 'univ_gestion' || id == 'univ_marketing') return 'eco';
     if (id == 'univ_droit') return 'law';
     if (id == 'univ_sante') return 'health';
@@ -61,6 +63,10 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
         return context.tr('Droit');
       case 'health':
         return context.tr('Santé');
+      case 'arts':
+        return context.tr('Lettres et communication');
+      case 'agro':
+        return context.tr('Agronomie');
       case 'sport':
         return context.tr('Sport');
       default:
@@ -80,6 +86,10 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
         return Icons.gavel_rounded;
       case 'health':
         return Icons.health_and_safety_rounded;
+      case 'arts':
+        return Icons.campaign_rounded;
+      case 'agro':
+        return Icons.grass_rounded;
       case 'sport':
         return Icons.sports_soccer_rounded;
       default:
@@ -338,6 +348,48 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
     );
   }
 
+  /// Sous-groupe d'un parcours dans une rubrique (pour ne pas tout empiler dans une seule liste).
+  String _groupOf(EtudeTrack t) {
+    final id = t.id;
+    switch (_rubricOf(t)) {
+      case 'concours':
+        return id.startsWith('bts_') ? context.tr('Concours BTS') : context.tr('Concours administratifs');
+      case 'skills':
+        if (id == 'cert_entretien') return context.tr('Emploi');
+        if (id == 'permis_conduire') return context.tr('Vie pratique');
+        return context.tr('Numérique');
+      case 'univ':
+        return _facultyLabel(_facultyOf(t));
+      default:
+        return '';
+    }
+  }
+
+  /// Cartes d'une liste, séparées par petits titres de sous-groupe quand il y en a plusieurs.
+  List<Widget> _grouped(AppColors c, EtudeState st, List<EtudeTrack> list) {
+    if (_rub == 'all' || _rub == 'school') return [for (final t in list) _card(c, st, t)];
+    final groups = <String, List<EtudeTrack>>{};
+    for (final t in list) {
+      groups.putIfAbsent(_groupOf(t), () => []).add(t);
+    }
+    if (groups.length < 2) return [for (final t in list) _card(c, st, t)];
+    return [
+      for (final e in groups.entries) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Row(children: [
+            Container(width: 4, height: 16, decoration: BoxDecoration(color: c.primary, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 8),
+            Text(e.key, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 14.5)),
+            const SizedBox(width: 6),
+            Text('${e.value.length}', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w800, fontSize: 12.5)),
+          ]),
+        ),
+        for (final t in e.value) _card(c, st, t),
+      ],
+    ];
+  }
+
   bool _inProgress(EtudeState st, EtudeTrack t) {
     if (t.isCycle) return st.tracks.containsKey(t.id);
     final info = st.certs[t.cert?['id']] as Map? ?? const {};
@@ -393,7 +445,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
           ],
           if (others.isNotEmpty) ...[
             _sectionTitle(c, mine.isEmpty ? (_rub == 'all' ? context.tr('Résultats') : _rubricLabel(_rub)) : context.tr('À découvrir'), _rub == 'all' ? null : _rubricHint(_rub)),
-            for (final t in others) _card(c, st, t),
+            ..._grouped(c, st, others),
           ],
           const QuizAdInline(),
         ],
@@ -508,7 +560,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
 
   Widget _facultyChips(AppColors c, List<EtudeTrack> cycles) {
     final present = <String>{for (final t in cycles) _facultyOf(t)};
-    const order = ['sci', 'eco', 'law', 'health', 'sport'];
+    const order = ['sci', 'eco', 'law', 'health', 'arts', 'agro', 'sport'];
     final keys = ['all', ...order.where(present.contains)];
     return SizedBox(
       height: 40,

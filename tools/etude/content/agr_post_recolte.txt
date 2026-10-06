@@ -1,0 +1,33 @@
+titre: Technologies post-récolte et agroalimentaire
+== fiche
+p: Après la récolte, une grande partie de la production peut se perdre. Séchage, stockage et transformation augmentent la valeur et réduisent les pertes.
+li: Pertes post-récolte : dues aux insectes, aux moisissures, à l'humidité, aux rongeurs, aux mauvaises manipulations et au transport.
+li: Séchage : réduire l'humidité des grains (autour de 13 % pour le maïs) ; séchoirs solaires, claies, bâches ; évite moisissures et mycotoxines (aflatoxines).
+li: Stockage : greniers, sacs hermétiques (type PICS), silos ; propre, sec, aéré, protégé des rongeurs ; contrôle régulier.
+li: Transformation primaire : décorticage, mouture, séparation, tri ; secondaire : fabrication d'aliments (huile, farine, jus, confiture, fromage).
+li: Conservation : séchage, fumage, salage, pasteurisation, appertisation (mise en conserve), congélation, fermentation.
+li: Chaîne du froid : maintenir une basse température pour viandes, poissons, laitages.
+li: Hygiène et qualité : bonnes pratiques d'hygiène, HACCP, traçabilité (savoir d'où vient le produit), étiquetage.
+li: Emballage : protège, informe, vend ; matériaux, étiquette (nom, poids, date, producteur).
+li: Valeur ajoutée : transformer augmente le prix de vente et crée de l'emploi.
+li: Produits locaux : gari, attiéké, farine de maïs, beurre de karité, huile de palme, jus de fruits.
+li: Normes : sécurité des aliments, limites de contaminants, règlements nationaux et internationaux.
+li: Marchés : locaux, nationaux, export ; labels et certifications.
+note: Un grain mal séché peut produire des toxines dangereuses.
+note: L'emballage est la première vitrine du produit.
+== questions
+Citez une cause de pertes après la récolte : || L'humidité et les moisissures || Un bon séchage || Un stockage hermétique || Une bonne hygiène || Les insectes et rongeurs en sont d'autres.
+Pourquoi sécher les grains ? || Éviter moisissures et toxines || Les alourdir || Les colorer || Les mouiller || Autour de 13 % d'humidité pour le maïs.
+Que sont les aflatoxines ? || Des toxines produites par certaines moisissures || Des engrais || Des vitamines || Des semences || Elles sont dangereuses pour la santé.
+Citez une méthode de stockage : || Les sacs hermétiques || Les sacs ouverts sous la pluie || Un sol humide || Un champ ouvert || Silos et greniers en sont d'autres.
+Qu'est-ce que la transformation primaire ? || Les opérations simples comme décorticage et mouture || La fabrication de plats || La vente || La culture || Elle prépare la matière première.
+Citez une méthode de conservation : || Le fumage || L'arrosage || La culture || La récolte || Le séchage et la pasteurisation en sont d'autres.
+En agronomie, qu'est-ce que la pasteurisation ? || Un chauffage modéré qui détruit des microbes || La congélation || Le séchage || Le fumage || Elle est utilisée pour le lait et les jus.
+Qu'est-ce que l'appertisation ? || La mise en conserve stérilisée || Le séchage || La salaison || La fermentation || Le produit est stérilisé en boîte fermée.
+En agronomie, qu'est-ce que la chaîne du froid ? || Le maintien d'une basse température du producteur au consommateur || Une rivière || Un type d'emballage || Une machine || Elle protège viandes, poissons et laitages.
+Qu'est-ce que la traçabilité ? || Savoir d'où vient un produit et par où il est passé || Un emballage || Un prix || Un impôt || Elle permet de retirer un produit dangereux.
+En agronomie, que contient une étiquette alimentaire ? || Nom, poids, date et producteur || Seulement une image || Un slogan || Le prix du transport || Elle informe et protège.
+En agronomie, qu'est-ce que la valeur ajoutée ? || L'augmentation de valeur apportée par la transformation || Une taxe || Un engrais || Une dette || Elle crée aussi de l'emploi.
+Citez un produit local transformé : || Le gari || Le plastique || L'essence || Le ciment || Le beurre de karité et l'huile de palme en sont d'autres.
+Pourquoi soigner l'emballage ? || Il protège, informe et attire le client || Pour augmenter le poids || Pour cacher le produit || Pour polluer || C'est la vitrine du produit.
+En agronomie, que signifie HACCP ? || Analyse des dangers et maîtrise des points critiques || Un engrais || Une graine || Un salaire || Il assure la sécurité des aliments.

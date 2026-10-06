@@ -1,0 +1,33 @@
+titre: Pédologie et fertilisation des sols
+== fiche
+p: Le sol est le support et le garde-manger des cultures. Savoir le lire permet de bien le fertiliser.
+li: Sol : couche superficielle de la terre issue de la roche altérée et de la matière organique ; horizons : A (humifère), B (accumulation), C (roche altérée).
+li: Texture : proportions de sable, limon et argile ; sol sableux (drainant, pauvre), argileux (retient l'eau, collant), limoneux (équilibré).
+li: Structure : agrégats qui permettent la circulation de l'eau et de l'air.
+li: Sols tropicaux : ferrallitiques (rouges, acides, pauvres en éléments), ferrugineux, vertisols (argileux noirs), sols hydromorphes (gorgés d'eau).
+li: pH : mesure l'acidité ; idéal pour la plupart des cultures : 6 à 7 ; chaulage pour corriger l'acidité.
+li: Matière organique : humus, compost, fumier ; améliore structure, rétention d'eau et fertilité.
+li: Éléments majeurs : azote (N), phosphore (P), potassium (K) ; secondaires : calcium, magnésium, soufre ; oligo-éléments : fer, zinc, bore.
+li: Engrais minéraux : NPK, urée, sulfate d'ammoniaque ; engrais organiques : fumier, compost, fientes.
+li: Érosion : perte de terre par l'eau ou le vent ; lutte : couverture du sol, cordons pierreux, haies, terrasses, agroforesterie.
+li: Jachère et rotation : repos du sol et alternance des cultures.
+li: Analyse de sol : prélèvement d'échantillons, mesure du pH et des éléments nutritifs.
+li: Dose d'engrais : apporter selon les besoins de la culture et l'état du sol, jamais trop.
+note: Un excès d'engrais pollue l'eau et peut brûler les plantes.
+note: Un sol couvert s'érode beaucoup moins qu'un sol nu.
+== questions
+Quels sont les trois constituants de la texture d'un sol ? || Sable, limon, argile || Eau, air, sel || Pierre, bois, fer || Sucre, sel, farine || Leurs proportions donnent la texture.
+Quel sol retient bien l'eau mais devient collant ? || Le sol argileux || Le sol sableux || Le sol caillouteux || Le sol désertique || L'argile retient l'eau.
+Quel sol est très drainant et pauvre ? || Le sol sableux || Le sol argileux || Le sol limoneux || Le sol humifère || L'eau le traverse vite.
+Que mesure le pH ? || L'acidité || La texture || La couleur || La densité || Idéal : 6 à 7.
+Comment corriger un sol acide ? || Par un chaulage || Par de l'eau salée || Par du sable seulement || Par du plastique || La chaux remonte le pH.
+En agronomie, que signifie NPK ? || Azote, phosphore, potassium || Nitrate, pétrole, kérosène || Sodium, sel, calcium || Nature, plante, culture || Ce sont les éléments majeurs.
+Qu'est-ce que l'humus ? || La matière organique stable du sol || Un engrais chimique || Du sable || De la roche || Il améliore la structure du sol.
+Citez un engrais organique : || Le fumier || L'urée || Le NPK || Le sulfate || Le compost est un autre.
+Qu'est-ce que l'érosion ? || La perte de terre par l'eau ou le vent || L'enrichissement || La fertilisation || La jachère || Elle appauvrit les sols.
+Citez une technique contre l'érosion : || Les cordons pierreux || Le labour sur toute la pente sans couverture || La coupe d'arbres || Le brûlis généralisé || Les haies et terrasses aident aussi.
+Qu'est-ce que la jachère ? || Le repos du sol sans culture pendant un temps || Un semis dense || Une récolte || Un engrais || Elle permet de reconstituer la fertilité.
+Qu'est-ce que la rotation des cultures ? || L'alternance des cultures sur une parcelle || La même culture chaque année || Le brûlis || L'irrigation || Elle limite maladies et épuisement.
+À quoi sert une analyse de sol ? || Connaître son pH et ses éléments nutritifs || Mesurer la pluie || Compter les vers || Colorer le sol || Elle guide la fertilisation.
+Que risque un excès d'engrais ? || Pollution de l'eau et brûlure des plantes || Une meilleure récolte toujours || Aucun effet || Une baisse du pH seulement || Il faut doser selon les besoins.
+Quel est le rôle de la couverture du sol ? || Limiter l'érosion et garder l'humidité || Fatiguer les plantes || Chauffer le sol || Supprimer l'eau || Paillage et plantes de couverture.

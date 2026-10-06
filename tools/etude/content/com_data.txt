@@ -1,0 +1,33 @@
+titre: Mesure d'audience et analyse des données de communication
+== fiche
+p: Une communication moderne se pilote avec des chiffres. Savoir lire des indicateurs aide à décider et à convaincre.
+li: Audience : nombre de personnes touchées par un média ; mesurée par sondages, panels, compteurs.
+li: Radio et télé : part d'audience, audience cumulée, durée d'écoute ; les mesures par panel ou sondages sont courantes en Afrique.
+li: Presse : tirage (exemplaires imprimés), diffusion (exemplaires distribués ou vendus), lectorat.
+li: Web : visiteurs uniques, pages vues, taux de rebond (visiteurs qui quittent après une page), durée de session, sources de trafic.
+li: Réseaux sociaux : abonnés, portée, impressions, engagement, partages, clics, taux de clic (CTR).
+li: Conversion : action voulue (achat, inscription, appel) ; taux de conversion = conversions ÷ visiteurs.
+li: Coûts : coût par clic (CPC), coût pour mille impressions (CPM), coût par acquisition (CPA).
+li: Retour sur investissement (ROI) : gain obtenu par rapport à l'argent dépensé.
+li: Tableau de bord : synthèse visuelle de quelques indicateurs clés ; mise à jour régulière.
+li: Test A/B : comparer deux versions pour garder la meilleure.
+li: Données personnelles : consentement, protection, durée de conservation ; respecter la loi.
+li: Biais : un chiffre seul peut tromper ; comparer dans le temps et à un objectif.
+note: Un indicateur est utile s'il permet de décider quelque chose.
+note: Mesure toujours le même indicateur de la même manière pour comparer.
+== questions
+Qu'est-ce que l'audience d'un média ? || Le nombre de personnes touchées || Le prix d'un spot || Le nombre de journalistes || Le budget || Elle se mesure par sondages ou panels.
+Qu'est-ce que le tirage d'un journal ? || Le nombre d'exemplaires imprimés || Le nombre de lecteurs || Les ventes || Les abonnés || La diffusion compte ceux qui sont distribués ou vendus.
+Qu'est-ce qu'un visiteur unique sur un site ? || Une personne comptée une seule fois sur une période || Une page vue || Un clic || Un abonné || Il mesure la portée réelle.
+Que signifie le taux de rebond ? || La part des visiteurs qui quittent après une seule page || Le nombre de pages || La durée || Les abonnés || Un taux élevé peut signaler un contenu peu pertinent.
+Que mesure le CTR ? || Le taux de clic || Le prix || La durée || Le nombre d'abonnés || Clics ÷ impressions.
+Comment calcule-t-on le taux de conversion ? || Conversions ÷ visiteurs || Visiteurs ÷ conversions || Clics × prix || Budget ÷ durée || Il mesure l'efficacité d'une page.
+En licence de communication, que signifie CPC ? || Coût par clic || Coût par client || Contrôle par canal || Capacité de production || Il dépend de la concurrence publicitaire.
+Que signifie CPA ? || Coût par acquisition || Coût par appel || Capital par action || Contrat par achat || Il mesure le coût pour obtenir un client.
+En licence de communication, que signifie ROI ? || Retour sur investissement || Règle d'organisation interne || Revenu officiel || Registre || Il compare gain et dépense.
+En licence de communication, qu'est-ce qu'un tableau de bord ? || Une synthèse visuelle des indicateurs clés || Un tableau de classe || Une table de maths || Un menu || Il aide à décider.
+Pourquoi faire un test A/B ? || Garder la version la plus performante || Compliquer || Perdre du temps || Éviter les mesures || Il compare deux versions.
+Pourquoi comparer un chiffre dans le temps ? || Un chiffre isolé peut tromper || Pour allonger le rapport || Pour supprimer les données || Pour éviter les décisions || La tendance est plus riche qu'un point.
+Que faut-il respecter pour collecter des données personnelles ? || Le consentement et la loi || Rien || Les modes || La publicité || Les personnes ont des droits.
+Qu'est-ce qu'un panel d'audience ? || Un échantillon représentatif suivi dans le temps || Une enquête unique || Un groupe de journalistes || Un jury || Il permet de mesurer l'audience.
+Quand un indicateur est-il utile ? || Quand il aide à prendre une décision || Quand il est joli || Quand il est long || Quand il est rare || Les chiffres sans usage ne servent pas.

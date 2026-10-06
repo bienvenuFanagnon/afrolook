@@ -1,0 +1,33 @@
+titre: Phytotechnie : cultures tropicales
+== fiche
+p: La phytotechnie étudie la conduite des cultures. Les cultures tropicales les plus importantes sont les céréales, les tubercules, les légumineuses et les cultures de rente.
+li: Maïs : cycle de 90 à 120 jours ; semis en lignes (80 cm × 40 cm), sarclages, engrais NPK puis urée ; récolte à maturité du grain.
+li: Riz : pluvial, de bas-fond ou irrigué ; repiquage ou semis direct ; besoin d'eau ; entretien et lutte contre les adventices.
+li: Mil, sorgho, fonio : céréales adaptées au sec ; semis dès les premières pluies utiles ; démariage des plants.
+li: Manioc : multiplication par boutures de tige ; cycle de 9 à 18 mois ; sensible à la mosaïque ; transformation en gari, tapioca, farine.
+li: Igname : multiplication par tubercules ou fragments ; tuteurage ; récolte après dessèchement des tiges.
+li: Légumineuses : niébé, arachide, soja ; fixent l'azote ; bon précédent cultural ; association avec les céréales.
+li: Coton : culture de rente ; semis en lignes, traitements insecticides, récolte manuelle des capsules.
+li: Cacao, café, palmier à huile : cultures pérennes ; plantation, taille, ombrage, récolte et fermentation (cacao).
+li: Cultures maraîchères : tomate, piment, oignon, chou, gombo, laitue ; pépinière, repiquage, arrosage, protection.
+li: Itinéraire technique : préparation du sol, semis, fertilisation, entretien, protection, récolte, stockage.
+li: Densité de semis : nombre de plants par hectare ; trop dense, les plants se concurrencent ; trop clair, perte de rendement.
+li: Rendement : production par hectare ; dépend de la variété, du climat, du sol et des pratiques.
+note: Semer en lignes facilite sarclage et traitements.
+note: Une bonne semence et un bon calendrier valent mieux qu'un engrais excessif.
+== questions
+Combien dure à peu près le cycle d'un maïs ? || 90 à 120 jours || 20 jours || 1 an || 5 ans || Il dépend de la variété.
+Comment multiplie-t-on le manioc ? || Par boutures de tige || Par graines || Par spores || Par pollen || C'est une multiplication végétative.
+Quelle céréale résiste bien à la sécheresse ? || Le mil || Le riz irrigué || Le blé d'hiver || La canne à sucre || Il pousse en zone sahélienne.
+Qu'est-ce que le démariage ? || Éliminer des plants en trop après la levée || Semer || Récolter || Arroser || Il règle la densité.
+Pourquoi cultiver des légumineuses dans une rotation ? || Elles enrichissent le sol en azote || Elles épuisent le sol || Elles remplacent l'eau || Elles tuent les céréales || Le niébé en est un exemple.
+En agronomie, citez une culture de rente : || Le coton || Le manioc || Le maïs seulement || Le niébé || Le cacao et le café en sont d'autres.
+Qu'est-ce qu'une culture pérenne ? || Une culture qui dure plusieurs années || Une culture annuelle || Une culture d'une saison || Une culture sans racines || Le palmier à huile en est un exemple.
+Qu'est-ce qu'une pépinière ? || Un lieu où l'on élève de jeunes plants avant repiquage || Un champ de récolte || Un magasin || Un abri pour animaux || Elle protège les jeunes plants.
+Citez une culture maraîchère : || La tomate || Le coton || Le cacao || Le palmier || L'oignon et le chou en sont d'autres.
+Qu'est-ce qu'un itinéraire technique ? || La suite des opérations de la culture || Un chemin vers le champ || Un contrat || Un calendrier de marché || Du sol à la récolte.
+Pourquoi semer en lignes ? || Faciliter sarclage et traitements || Perdre de la place || Compliquer l'entretien || Éviter les semences || Elle améliore la gestion.
+Pourquoi la densité de semis est-elle importante ? || Une densité inadaptée réduit le rendement || Elle n'a aucun effet || Elle remplace l'engrais || Elle augmente l'érosion || Trop dense, les plants se concurrencent.
+Qu'est-ce que le tuteurage de l'igname ? || Soutenir les tiges avec des supports || Arroser || Couper les feuilles || Récolter || Les tiges grimpent sur les tuteurs.
+Que fait-on du cacao après la récolte ? || La fermentation puis le séchage des fèves || La congélation || Le lavage seulement || La distillation || Elle développe les arômes.
+De quoi dépend le rendement ? || De la variété, du climat, du sol et des pratiques || Seulement de la chance || Seulement du prix || Seulement de la lune || Plusieurs facteurs agissent.

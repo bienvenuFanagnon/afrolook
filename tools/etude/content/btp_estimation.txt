@@ -1,0 +1,33 @@
+titre: Métré, devis et marchés de travaux
+== fiche
+p: Estimer le coût d'un ouvrage et passer des marchés demande de la méthode : quantités, prix unitaires, devis et règles de la commande publique.
+li: Avant-métré : calcul des quantités d'ouvrage à partir des plans, avant exécution ; métré : mesure des quantités réellement exécutées.
+li: Bordereau de prix unitaires (BPU) : liste des prix pour chaque nature d'ouvrage (par m³, m², ml, unité).
+li: Devis quantitatif estimatif (DQE) : quantités × prix unitaires = montant estimatif des travaux.
+li: Décomposition du prix : coût direct (matériaux, main-d'œuvre, matériel) + frais généraux + bénéfice ; débours.
+li: Frais généraux : charges de l'entreprise (bureaux, encadrement, assurances) ; souvent exprimés en pourcentage.
+li: Sous-détail de prix : analyse d'un prix unitaire (par exemple 1 m³ de béton armé) avec quantité de ciment, sable, gravier, acier, coffrage, main-d'œuvre.
+li: Marché public de travaux : appel d'offres ouvert ou restreint ; dossier d'appel d'offres (DAO) ; ouverture des plis ; évaluation ; attribution.
+li: Types de marchés : à prix unitaires, à prix global et forfaitaire.
+li: Garanties : cautionnement provisoire (offre), définitif (exécution), retenue de garantie.
+li: Décompte provisoire et définitif : état d'avancement et paiement des travaux ; avances et pénalités de retard.
+li: Révision de prix : ajuster les prix si les coûts varient fortement.
+li: Éthique : transparence, mise en concurrence, lutte contre la corruption et la surfacturation.
+note: Un devis sous-estimé met l'entreprise en difficulté ; un devis surestimé fait perdre le marché.
+note: Garde toujours le détail de tes calculs.
+== questions
+Qu'est-ce qu'un avant-métré ? || Un calcul de quantités avant l'exécution || Un paiement || Un dessin || Un contrat || Il se fait à partir des plans.
+Qu'est-ce qu'un bordereau de prix unitaires (BPU) ? || Une liste de prix par nature d'ouvrage || Un plan || Un planning || Une facture || Chaque ligne a une unité de mesure.
+Comment obtient-on un devis quantitatif estimatif (DQE) ? || Quantités × prix unitaires || Prix + prix || Quantités ÷ prix || Prix − quantités || C'est le montant estimatif des travaux.
+Que comprend le coût direct d'un ouvrage ? || Matériaux, main-d'œuvre et matériel || Seulement le bénéfice || Seulement les frais généraux || Seulement les impôts || C'est la base du prix.
+Que sont les frais généraux ? || Les charges générales de l'entreprise || Le prix du ciment || Le salaire de l'ouvrier || Le bénéfice || Bureaux, encadrement, assurances.
+Qu'est-ce qu'un sous-détail de prix ? || L'analyse d'un prix unitaire en composants || Un total || Un plan || Un contrat || Par exemple le prix d'un m³ de béton armé.
+En génie civil, qu'est-ce qu'un appel d'offres ? || Une procédure de mise en concurrence des entreprises || Une vente aux enchères || Un contrat privé || Un jugement || Il garantit transparence et égalité.
+Qu'est-ce qu'un marché à prix forfaitaire ? || Un marché avec un prix global fixé à l'avance || Un marché sans prix || Un marché au kilo || Un marché variable || L'entreprise supporte les aléas de quantité.
+À quoi sert un cautionnement définitif ? || Garantir la bonne exécution du marché || Payer les salaires || Acheter du matériel || Financer le chantier || Il est fourni par l'entreprise.
+Qu'est-ce qu'un décompte provisoire ? || L'état d'avancement servant au paiement partiel des travaux || Le bilan final || Un plan || Un avenant || Il est établi régulièrement.
+Qu'est-ce que la retenue de garantie ? || Une part des paiements conservée jusqu'à la fin de la garantie || Un impôt || Une prime || Une avance || Elle protège le maître d'ouvrage.
+Qu'est-ce qu'une pénalité de retard ? || Une somme retenue à l'entreprise en cas de retard || Une prime || Un impôt || Un acompte || Elle est prévue au marché.
+Qu'est-ce que la révision de prix ? || L'ajustement des prix si les coûts varient || Une baisse automatique || Un contrôle || Un plan || Elle protège contre l'inflation.
+Pourquoi la transparence est-elle essentielle dans les marchés publics ? || Pour éviter corruption et surfacturation || Pour cacher les prix || Pour choisir un ami || Pour retarder || L'argent public doit être bien dépensé.
+Que risque une entreprise qui sous-estime son devis ? || Des pertes pendant l'exécution || Des gains assurés || Un meilleur prix || Aucune conséquence || Elle peut ne pas couvrir ses coûts.

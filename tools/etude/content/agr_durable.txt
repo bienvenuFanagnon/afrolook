@@ -1,0 +1,33 @@
+titre: Agroécologie et agriculture durable
+== fiche
+p: Produire sans épuiser le sol, l'eau et la biodiversité : c'est le défi de l'agriculture durable.
+li: Agroécologie : appliquer les principes de l'écologie à l'agriculture ; diversité, recyclage, synergies, réduction des intrants chimiques.
+li: Agroforesterie : associer arbres et cultures ou élevage ; l'ombre, la matière organique et la fertilité augmentent.
+li: Association et rotation : maïs-niébé, mil-arachide ; limite maladies et améliore le sol.
+li: Compost et fumier : valoriser les déchets organiques ; fosse fumière, compostage en tas.
+li: Engrais verts et plantes de couverture : légumineuses (mucuna, niébé) enrichissent le sol et le protègent.
+li: Conservation des sols : zéro labour ou labour réduit, paillage, cordons pierreux, haies vives.
+li: Gestion de l'eau : captage, bassins, irrigation économe, zaï, demi-lunes.
+li: Biodiversité : variétés locales, auxiliaires, pollinisateurs, haies ; elle augmente la résilience.
+li: Agriculture biologique : sans pesticides ni engrais chimiques de synthèse ; cahier des charges et certification.
+li: Agriculture intelligente face au climat : variétés résistantes, calendrier adapté, assurance, information météo.
+li: Énergies : biogaz, solaire pour pompage et séchage.
+li: Aliments sains : réduire les résidus de pesticides ; sécurité alimentaire et nutrition.
+note: Un sol vivant produit mieux et plus longtemps.
+note: Passer à l'agroécologie demande du temps et de l'accompagnement.
+== questions
+Qu'est-ce que l'agroécologie ? || Appliquer les principes de l'écologie à l'agriculture || Utiliser seulement des pesticides || Détruire les forêts || Cultiver sans sol || Elle valorise diversité et recyclage.
+Qu'est-ce que l'agroforesterie ? || Associer arbres et cultures ou élevage || Couper tous les arbres || Planter un seul arbre || Arroser la forêt || Elle améliore le sol et fournit de l'ombre.
+Citez une association de cultures : || Maïs et niébé || Maïs et maïs || Riz seul || Palmier seul || Mil et arachide en sont une autre.
+Qu'est-ce qu'un engrais vert ? || Une plante cultivée pour enrichir et protéger le sol || Un engrais chimique || Une couleur || Un pesticide || Le mucuna en est un exemple.
+Comment fabriquer du compost ? || En décomposant des déchets organiques || En brûlant des plastiques || En mélangeant du sable || En arrosant seulement || Le compost enrichit le sol.
+Que fait le labour réduit ? || Limite la perturbation et l'érosion du sol || Augmente l'érosion || Détruit les vers || Retourne tout le sol || Il conserve l'humidité.
+Qu'est-ce que le paillage ? || Couvrir le sol avec des résidus végétaux || Brûler la paille || Labourer || Arroser || Il garde l'humidité et limite les mauvaises herbes.
+Citez un avantage de la biodiversité : || Elle augmente la résilience du système || Elle supprime les rendements || Elle attire seulement les ravageurs || Elle réduit l'eau || Variétés et auxiliaires aident.
+Qu'est-ce que l'agriculture biologique ? || Une agriculture sans pesticides ni engrais chimiques de synthèse || Une agriculture avec tous les produits || Une agriculture sans eau || Une agriculture sans sol || Elle suit un cahier des charges.
+Que veut dire agriculture intelligente face au climat ? || S'adapter au changement climatique par des pratiques adaptées || Ignorer le climat || Cultiver au hasard || Éviter l'eau || Variétés résistantes et assurance en font partie.
+Quelle énergie peut servir au pompage de l'eau ? || Le solaire || Le charbon seulement || Le bois seulement || Aucune || Elle réduit les coûts.
+Qu'est-ce que le biogaz ? || Un gaz produit par la décomposition de déchets organiques || Un engrais || Un pesticide || Un aliment || Il sert à cuisiner ou produire de l'électricité.
+Pourquoi limiter les résidus de pesticides ? || Protéger la santé et l'environnement || Réduire la taille || Augmenter le prix || Supprimer le goût || Les aliments doivent être sains.
+Qu'est-ce qu'un sol vivant ? || Un sol riche en organismes et en matière organique || Un sol sans eau || Un sol stérile || Un sol cimenté || Il produit mieux et plus longtemps.
+Pourquoi passer progressivement à l'agroécologie ? || Elle demande du temps et un accompagnement || Elle est immédiate || Elle ne demande rien || Elle supprime les rendements || Il faut apprendre de nouvelles pratiques.

@@ -1,0 +1,33 @@
+titre: Foncier rural, politiques agricoles et développement
+== fiche
+p: L'accès à la terre, les politiques publiques et la vulgarisation conditionnent le développement du monde rural.
+li: Foncier rural : droits sur la terre ; coutumier (hérité, transmis par la communauté), moderne (titre foncier, certificat) ; conflits fonciers fréquents.
+li: Sécurisation foncière : délimitation, enregistrement, certificats, médiation ; elle encourage l'investissement.
+li: Droits des femmes et des jeunes à la terre : souvent limités par la coutume ; des lois visent l'égalité d'accès.
+li: Politiques agricoles : stratégie nationale, subventions aux intrants, programmes d'appui aux filières, protection des prix, soutien à la recherche.
+li: Sécurité alimentaire : disponibilité, accès, utilisation et stabilité de la nourriture ; souveraineté alimentaire.
+li: Vulgarisation agricole : conseil et formation aux producteurs ; champs-écoles, démonstrations, radio rurale, applications mobiles.
+li: Recherche agronomique : variétés améliorées, techniques adaptées, instituts nationaux (ITRA au Togo) et internationaux (IITA, AfricaRice).
+li: Organisations régionales : CEDEAO, UEMOA, Union africaine, programme PDDAA (Maputo, Malabo) : développement de l'agriculture africaine.
+li: ODD (objectifs de développement durable) : faim zéro, eau propre, vie terrestre, égalité.
+li: Jeunes et agriculture : accès à la terre, financement, formation, numérique, entrepreneuriat agricole.
+li: Migration et exode rural : manque d'opportunités ; rendre l'agriculture attractive.
+li: Gouvernance : transparence, participation, lutte contre la corruption et l'accaparement des terres.
+note: Sans sécurité foncière, personne n'investit durablement dans la terre.
+note: Les jeunes restent à la campagne si l'agriculture rapporte et reste respectée.
+== questions
+Qu'est-ce que le foncier rural ? || L'ensemble des droits sur la terre en milieu rural || Un impôt || Un outil || Une culture || Il comprend droits coutumiers et modernes.
+Qu'est-ce que le droit coutumier sur la terre ? || Des règles héritées de la communauté || Une loi écrite uniquement || Un contrat bancaire || Une taxe || Il varie selon les régions.
+Qu'est-ce qu'un titre foncier ? || Un document officiel prouvant la propriété || Une facture || Un diplôme || Un prêt || Il sécurise le propriétaire.
+Pourquoi sécuriser le foncier ? || Encourager l'investissement et éviter les conflits || Augmenter les conflits || Réduire les récoltes || Supprimer les terres || Un paysan investit s'il est sûr de garder sa terre.
+Citez une difficulté d'accès à la terre : || Les inégalités pour les femmes et les jeunes || Un titre automatique || L'absence de conflits || Une réforme parfaite || La coutume peut limiter leurs droits.
+Qu'est-ce que la sécurité alimentaire ? || L'accès de tous à une nourriture suffisante et saine || La production de luxe || Le commerce || L'exportation || Disponibilité, accès, utilisation, stabilité.
+Qu'est-ce que la vulgarisation agricole ? || Le conseil et la formation aux producteurs || La publicité || Un impôt || Une loi || Champs-écoles et radios rurales en sont des outils.
+Citez un outil de vulgarisation : || La radio rurale || Un impôt || Une loterie || Un tribunal || Les champs-écoles et applications mobiles en sont d'autres.
+Qu'est-ce qu'un champ-école ? || Une parcelle de démonstration où les paysans apprennent || Une école primaire || Un marché || Une usine || Les producteurs testent et comparent les pratiques.
+Que fait la recherche agronomique ? || Créer des variétés et techniques adaptées || Imprimer || Taxer || Vendre || Des instituts nationaux et internationaux y participent.
+Qu'est-ce que l'ITRA ? || L'Institut togolais de recherche agronomique || Une banque || Un syndicat || Un ministère || Il développe des variétés et des techniques.
+Que signifie ODD ? || Objectifs de développement durable || Organisation des droits de douane || Office du développement || Obligation de dette || Il en existe 17.
+Quel ODD vise l'élimination de la faim ? || Faim zéro || Vie aquatique || Industrie || Énergie || Il porte le numéro 2.
+Pourquoi rendre l'agriculture attractive pour les jeunes ? || Pour freiner l'exode rural et assurer l'avenir || Pour les occuper || Pour réduire les récoltes || Pour fermer les villes || Accès à la terre et financement sont clés.
+Qu'est-ce que l'accaparement des terres ? || L'acquisition massive de terres au détriment des communautés || Un reboisement || Une vente normale || Une jachère || Il menace la sécurité alimentaire locale.

@@ -274,3 +274,9 @@ Quatre nouveaux parcours de type attestation : **Concours de la fonction publiqu
 **Cybersécurité : se protéger du piratage** (`cert_cyber`, 7 chapitres, 45 questions, 70 %) : menaces et vocabulaire, ingénierie sociale et arnaques, protection des comptes Facebook, WhatsApp et e-mail, sécurité du téléphone contre les attaques à distance (applications piégées, SIM swap, logiciels espions), Wi-Fi et navigation sûre, réaction après un piratage et loi, hacking éthique et métiers. Approche défensive : comprendre pour se protéger, sans mode d'emploi d'attaque.
 
 « À la une » (ordre) : entretien, BTS, cybersécurité, fonction publique, code de la route, forces de sécurité, BAC D, enseignement, BEPC, IA. Total Étude : 25 parcours, 329 chapitres, 4 935 questions.
+
+## 29. Trois nouvelles licences et sous-groupes dans les rubriques
+
+- **Communication et journalisme** (`univ_comm`), **Agronomie et développement rural** (`univ_agro`) et **Génie civil et BTP** (`univ_btp`) : chacune en Licence 1, 2 et 3 (12 chapitres, 180 questions), examen de licence de 60 questions (50 %, 90 min) et diplôme « Licence Afrolook Étude ». Faculté : Génie civil dans « Sciences et technologies », Communication dans « Lettres et communication », Agronomie dans « Agronomie » (`_facultyOf` dans `etude_home_page.dart`).
+- Dans les rubriques « Concours et BTS », « Compétences » et « Université », la liste est découpée en sous-groupes avec un petit titre (Concours BTS / Concours administratifs ; Emploi / Numérique / Vie pratique ; une faculté par groupe) : `_groupOf` et `_grouped`.
+- Total Étude : 28 parcours, 365 chapitres, 5 475 questions. Contenu à faire relire par des enseignants (génie civil : formules et ordres de grandeur ; agronomie : pratiques locales).

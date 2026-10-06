@@ -1,0 +1,33 @@
+titre: Bases de zootechnie et alimentation animale
+== fiche
+p: La zootechnie étudie l'élevage : alimentation, reproduction, logement, santé et gestion des troupeaux.
+li: Espèces : bovins, ovins, caprins, porcins, volailles, lapins, poissons d'élevage ; chacune a ses besoins.
+li: Ruminants : plusieurs estomacs (panse, bonnet, feuillet, caillette) ; digèrent les fourrages grâce aux microbes de la panse.
+li: Monogastriques : un seul estomac (porc, poule) ; besoin d'aliments concentrés.
+li: Aliments : fourrages (herbe, foin, ensilage), concentrés (céréales, tourteaux, son), compléments minéraux et vitaminés.
+li: Besoins : entretien, croissance, reproduction, production (lait, œufs, viande) ; eau toujours disponible.
+li: Ration équilibrée : énergie, protéines, minéraux, vitamines en bonnes proportions.
+li: Reproduction : cycle œstral, saillie ou insémination artificielle, gestation, mise bas ; durées : vache 9 mois, chèvre et brebis 5 mois, truie environ 114 jours (3 mois, 3 semaines, 3 jours), poule 21 jours d'incubation.
+li: Croissance : gain moyen quotidien ; indice de consommation = aliment consommé ÷ poids gagné.
+li: Logement : propre, sec, bien aéré, densité adaptée, protection contre les prédateurs.
+li: Sélection : choisir les meilleurs reproducteurs pour améliorer la production ; races locales (rustiques) et améliorées.
+li: Pastoralisme : élevage extensif mobile ; transhumance : déplacement saisonnier des troupeaux.
+li: Registres : identification, dates de naissance, pesées, traitements, ventes.
+note: Un animal mal nourri est plus sensible aux maladies.
+note: Les races locales sont rustiques mais moins productives que les races améliorées.
+== questions
+Combien d'estomacs un ruminant a-t-il en pratique ? || Quatre compartiments || Un seul || Deux seulement || Cinq || Panse, bonnet, feuillet, caillette.
+Citez un animal monogastrique : || Le porc || La vache || La chèvre || Le mouton || La poule en est un autre.
+Citez un fourrage : || L'herbe || Le sel || Le plastique || Le sable || Foin et ensilage en sont d'autres.
+Citez un aliment concentré : || Le tourteau || L'herbe fraîche || Le foin || La paille || Céréales et son en sont d'autres.
+Pourquoi donner de l'eau à volonté ? || L'eau est indispensable à la santé et à la production || Elle remplace l'aliment || Elle est inutile || Elle coûte trop cher || Un animal assoiffé produit moins.
+Que doit contenir une ration équilibrée ? || Énergie, protéines, minéraux et vitamines || Seulement du sucre || Seulement du sel || Seulement de l'eau || Les proportions comptent.
+Combien dure la gestation d'une vache ? || Environ neuf mois || Trois mois || Un an || Un mois || Comme chez l'humain.
+Combien dure la gestation d'une chèvre ? || Environ cinq mois || Neuf mois || Un mois || Un an || Elle donne souvent deux petits.
+Combien dure l'incubation d'un œuf de poule ? || Environ 21 jours || 3 jours || 60 jours || 10 jours || La température doit être constante.
+Que mesure l'indice de consommation ? || L'aliment nécessaire pour gagner un kilo || Le prix de l'animal || Le poids de la ration || La production de lait || Plus il est bas, plus l'élevage est efficace.
+Qu'est-ce que la transhumance ? || Le déplacement saisonnier des troupeaux || Le logement || Le repos || L'insémination || Elle suit les pâturages et l'eau.
+Qu'est-ce qu'une race locale ? || Une race adaptée au milieu, souvent rustique || Une race importée || Une race disparue || Une race inventée || Elle résiste bien aux maladies locales.
+Pourquoi sélectionner les reproducteurs ? || Améliorer la production du troupeau || Perdre du temps || Réduire le troupeau || Éviter les petits || On choisit les meilleurs animaux.
+En agronomie, pourquoi tenir un registre d'élevage ? || Suivre naissances, soins, pesées et ventes || Pour décorer || Pour éviter de vacciner || Pour chercher des clients || Il aide à gérer le troupeau.
+Qu'est-ce que l'insémination artificielle ? || L'apport de semence sans accouplement || Une vaccination || Une alimentation || Un abattage || Elle permet d'utiliser un reproducteur sélectionné.

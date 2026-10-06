@@ -1,0 +1,33 @@
+titre: Hydraulique et assainissement
+== fiche
+p: L'eau potable, les eaux de pluie et les eaux usées demandent des ouvrages bien conçus pour la santé publique et la protection des routes.
+li: Pression : p = ρ × g × h ; 10 mètres d'eau ≈ 1 bar ; unité : pascal ou bar.
+li: Débit : volume par unité de temps, Q = S × v (section × vitesse) ; en m³/s ou L/s.
+li: Équation de continuité : le débit est conservé ; si la section diminue, la vitesse augmente.
+li: Pertes de charge : frottement dans les conduites ; dépendent du diamètre, de la longueur, du débit et de la rugosité.
+li: Alimentation en eau potable : captage (forage, puits, source, rivière), traitement (filtration, désinfection au chlore), stockage (château d'eau), distribution (réseau).
+li: Consommation : besoin moyen de 20 à 100 litres par habitant et par jour selon le contexte.
+li: Pompes : centrifuges, immergées, solaires ; hauteur manométrique, débit, rendement.
+li: Assainissement : eaux usées (domestiques) et eaux pluviales ; réseau séparatif ou unitaire ; assainissement individuel (fosse septique, puisard) ou collectif (station d'épuration).
+li: Caniveaux et buses : évacuation des eaux de pluie ; dimensionnement selon l'intensité des pluies et la surface drainée.
+li: Formule rationnelle : Q = C × i × A (coefficient de ruissellement, intensité de pluie, surface).
+li: Ouvrages : dalots, buses, ponceaux, bassins de rétention, fossés.
+li: Qualité de l'eau : turbidité, pH, bactéries ; normes de l'OMS.
+note: Une eau claire n'est pas forcément potable : désinfecte-la.
+note: Mal drainée, une route se détruit rapidement.
+== questions
+Quelle est la formule du débit ? || Q = S × v || Q = S + v || Q = v ÷ S || Q = S − v || Section multipliée par vitesse.
+Que devient la vitesse de l'eau quand la section d'une conduite diminue ? || Elle augmente || Elle diminue || Elle reste identique || Elle s'annule || Le débit se conserve.
+Quelle pression correspond environ à 10 m d'eau ? || 1 bar || 10 bars || 0,1 bar || 100 bars || p = ρ × g × h.
+Qu'est-ce qu'une perte de charge ? || Une perte d'énergie due au frottement dans une conduite || Une fuite d'eau || Une pompe || Un robinet || Elle dépend du diamètre et de la longueur.
+Citez une source d'eau potable : || Un forage || Une eau stagnante || Une eau sale || Une eau usée || Puits, source et rivière en sont d'autres, avec traitement.
+Comment désinfecte-t-on couramment l'eau ? || Avec du chlore || Avec du sable seulement || Avec du sel || Avec du bois || La chloration détruit les microbes.
+À quoi sert un château d'eau ? || Stocker l'eau et assurer la pression || Produire de l'électricité || Éclairer || Filtrer l'air || Il régule la distribution.
+Qu'est-ce que l'assainissement ? || La collecte et le traitement des eaux usées et pluviales || La production d'eau potable || La construction de routes || Le chauffage || Il protège la santé publique.
+Qu'est-ce qu'un réseau séparatif ? || Un réseau qui sépare eaux usées et eaux pluviales || Un réseau unique || Un réseau électrique || Un réseau routier || Il facilite le traitement.
+Qu'est-ce qu'une fosse septique ? || Un ouvrage individuel de traitement des eaux usées || Un réservoir d'eau potable || Une pompe || Un puits || Elle est suivie d'un épandage.
+Que représente la formule Q = C × i × A ? || Le débit de ruissellement d'un bassin versant || Le prix || La pression || La vitesse || C : coefficient, i : intensité de pluie, A : surface.
+À quoi sert une buse ? || Évacuer les eaux sous une route || Chauffer || Éclairer || Porter la charge || Dalots et ponceaux ont un rôle proche.
+Pourquoi drainer correctement une route ? || Éviter sa dégradation par l'eau || La rendre plus belle || L'alléger || L'assécher seulement || L'eau détruit vite les chaussées.
+Que mesure la turbidité de l'eau ? || Son trouble || Sa température || Son goût || Son poids || Elle doit rester faible pour l'eau potable.
+Une eau claire est-elle forcément potable ? || Non, elle peut contenir des microbes || Oui toujours || Oui si elle est froide || Oui si elle est salée || Il faut la tester et la désinfecter.

@@ -1,0 +1,32 @@
+titre: Techniques d'écriture et rédaction journalistique
+== fiche
+p: Écrire pour être lu demande clarté, précision et structure. Le journaliste apprend à aller à l'essentiel.
+li: Les 5 W : Qui ? Quoi ? Où ? Quand ? Pourquoi ? (et Comment ?) ; ces éléments forment l'attaque d'un article.
+li: Pyramide inversée : les informations les plus importantes en premier, les détails ensuite ; le lecteur peut s'arrêter sans perdre l'essentiel.
+li: Titre : court, précis, informatif ; chapeau (ou chapô) : résumé de l'article en 2 à 3 lignes ; intertitres : repères dans un long texte.
+li: Style : phrases courtes, mots simples, verbes actifs, un fait par phrase, pas de jargon.
+li: Faits et opinion : distinguer le fait vérifiable de l'opinion ; citer ses sources.
+li: Citation : entre guillemets, avec le nom de la personne et sa fonction ; ne jamais déformer.
+li: Vérification : recouper les informations avec au moins deux sources fiables.
+li: Fautes à éviter : pléonasmes (monter en haut), répétitions, mots vagues, adjectifs inutiles.
+li: Orthographe et grammaire : accords, ponctuation, conjugaison ; relecture indispensable.
+li: Plans : chronologique, thématique, problème-solution.
+li: Écriture web : titres accrocheurs mais honnêtes, paragraphes courts, mots-clés, liens.
+note: Relis à voix haute : si tu bute, le lecteur butera aussi.
+note: Chaque mot doit avoir une fonction.
+== questions
+Que signifient les 5 W ? || Qui, quoi, où, quand, pourquoi || Who, what, wait, wish, win || Cinq mots de vocabulaire || Cinq titres || Ce sont les questions de base de l'info.
+Comment est construite la pyramide inversée ? || L'essentiel d'abord, les détails ensuite || Les détails d'abord || Au hasard || La conclusion d'abord seulement || Le lecteur peut s'arrêter sans perdre l'essentiel.
+Qu'est-ce que le chapeau (chapô) d'un article ? || Un court résumé en tête || Un titre publicitaire || Un dessin || Une signature || Il donne envie de lire.
+À quoi servent les intertitres ? || À guider le lecteur dans un long texte || À décorer || À remplacer le texte || À cacher les sources || Ils structurent la lecture.
+Quel style adopter en journalisme ? || Phrases courtes, mots simples, verbes actifs || Phrases très longues || Jargon technique || Mots rares || La clarté prime.
+Comment distinguer fait et opinion ? || Le fait est vérifiable, l'opinion est un jugement || Il n'y a aucune différence || L'opinion est un fait || Le fait est toujours faux || Un journaliste cite ses sources.
+Comment citer une personne ? || Entre guillemets, avec son nom et sa fonction || Sans guillemets || En changeant ses mots || Sans la nommer || Il faut respecter ses propos.
+Combien de sources faut-il pour recouper une information ? || Au moins deux sources fiables || Une seule suffit toujours || Aucune || Dix obligatoires || Le recoupement limite les erreurs.
+Qu'est-ce qu'un pléonasme ? || Une répétition inutile (« monter en haut ») || Un titre || Une citation || Un adjectif || Il alourdit le texte.
+Pourquoi relire à voix haute ? || Repérer les phrases lourdes et les fautes || Perdre du temps || Allonger le texte || Éviter la correction || L'oreille détecte ce que l'œil ne voit pas.
+Que privilégier pour un titre ? || Court, précis et informatif || Trompeur || Très long || Sans verbe || Le lecteur doit comprendre l'essentiel.
+Quel plan convient à un article qui explique un problème et une solution ? || Le plan problème-solution || Le plan alphabétique || Le plan musical || Le plan sans ordre || Il organise la réflexion.
+Pourquoi écrire des paragraphes courts sur le web ? || Faciliter la lecture sur écran || Remplir la page || Cacher des fautes || Éviter les liens || On lit plus vite sur mobile.
+Qu'est-ce qu'une attaque d'article ? || Les premières lignes qui donnent l'essentiel || La conclusion || Le titre seul || La signature || Elle répond aux 5 W.
+Pourquoi éviter les adjectifs inutiles ? || Ils alourdissent sans informer || Ils sont interdits || Ils rendent plus précis || Ils sont obligatoires || Chaque mot doit avoir une fonction.
