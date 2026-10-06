@@ -1,0 +1,32 @@
+titre: Mécanique de base, entretien et premiers secours routiers
+== fiche
+p: Un bon conducteur connaît son véhicule : voyants, pneus, niveaux. Il sait aussi quoi faire en cas de panne ou d'accident.
+li: Moteur : transforme le carburant en énergie ; huile moteur : lubrifie et refroidit ; liquide de refroidissement : évite la surchauffe.
+li: Freins : plaquettes et disques ; liquide de frein ; frein à main ; un freinage se prépare en anticipant.
+li: Pneus : pression adaptée, bande de roulement suffisante (profondeur minimale), absence de coupures ; ils assurent l'adhérence.
+li: Éclairage : feux de croisement, feux de route (à utiliser sans éblouir), feux de brouillard, feux de détresse.
+li: Voyants : rouge = danger, s'arrêter ; orange = anomalie à vérifier ; vert ou bleu = fonction active.
+li: Batterie : alimente démarrage et accessoires ; bornes propres.
+li: Entretien : vidange régulière, filtres, plaquettes, pneus, contrôle technique périodique.
+li: Panne : s'arrêter en sécurité, allumer les feux de détresse, mettre le gilet, placer le triangle, alerter.
+li: Économie : conduite souple, pneus bien gonflés, pas de charge inutile.
+li: Moto : casque homologué, gants, vêtements visibles, vitesse adaptée, distance de sécurité.
+li: Véhicule prioritaire : ambulance, pompiers, police en intervention (gyrophare et sirène) : leur laisser le passage.
+note: Un voyant rouge impose l'arrêt immédiat.
+note: Vérifie la pression des pneus avant les longs trajets.
+== questions
+À quoi sert l'huile moteur ? || Lubrifier et refroidir le moteur || Laver la voiture || Alimenter la batterie || Remplir les pneus || Sans huile, le moteur se détruit.
+À quoi sert le liquide de refroidissement ? || Éviter la surchauffe du moteur || Lubrifier les freins || Nettoyer les vitres || Gonfler les pneus || Il circule dans le moteur.
+Quel élément assure l'adhérence de la voiture à la route ? || Les pneus || Les rétroviseurs || Le klaxon || La radio || Leur état est essentiel.
+Que faut-il vérifier avant un long trajet ? || La pression des pneus || La couleur de la voiture || La radio || Le coffre || Une mauvaise pression augmente le risque.
+Que signifie un voyant rouge allumé ? || Un danger : s'arrêter dès que possible || Une fonction active || Une simple information || Rien || Il impose l'arrêt immédiat.
+Que signifie un voyant orange ? || Une anomalie à vérifier || Un danger immédiat || Un bonheur || Une publicité || Il demande une vérification rapide.
+Quand utiliser les feux de route ? || Sur route sombre sans croiser ni suivre quelqu'un || En ville tout le temps || Quand on croise || Toujours || Ils ne doivent pas éblouir.
+Que faire en cas de panne sur la route ? || S'arrêter en sécurité, feux de détresse et triangle || Rester au milieu || Dormir || Courir || La sécurité passe avant la réparation.
+À quoi sert le contrôle technique ? || Vérifier que le véhicule est en état de rouler en sécurité || Mesurer la vitesse || Payer la vignette || Choisir le carburant || Il est périodique.
+Pourquoi respecter la distance de sécurité à moto ? || Les freinages et les chutes peuvent être rapides || Pour économiser || Pour éviter la pluie || Pour la décoration || Les motards sont plus vulnérables.
+Que faire face à une ambulance avec sirène ? || Lui laisser le passage || L'ignorer || La suivre de près || Accélérer || Les véhicules prioritaires sauvent des vies.
+Que fait la batterie ? || Alimente le démarrage et les accessoires || Gonfle les pneus || Produit le carburant || Refroidit le moteur || Ses bornes doivent rester propres.
+Comment réduire sa consommation de carburant ? || Conduite souple et pneus bien gonflés || Accélérations brutales || Charge inutile || Pneus dégonflés || La régularité économise le carburant.
+Que fait un conducteur prudent avant de démarrer ? || Règle ses rétroviseurs et attache sa ceinture || Éteint les phares || Retire les freins || Ouvre les portes || Une position correcte améliore la sécurité.
+Quand allumer les feux de détresse ? || En cas de danger ou d'arrêt d'urgence || Pour tourner || Pour klaxonner || Pour aller vite || Ils signalent un danger aux autres.

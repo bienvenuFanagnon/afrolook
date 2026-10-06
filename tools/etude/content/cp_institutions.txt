@@ -1,0 +1,31 @@
+titre: Institutions et organisation de l'État
+== fiche
+p: Les concours de la fonction publique interrogent sur le fonctionnement de l'État. Les principes ci-dessous sont communs aux États de droit francophones ; vérifie les détails de ton pays.
+li: Constitution : loi fondamentale d'un pays ; elle fixe l'organisation des pouvoirs, les droits et devoirs des citoyens ; elle est au sommet de la hiérarchie des normes.
+li: Séparation des pouvoirs : législatif (fait les lois : parlement), exécutif (les applique : président, gouvernement), judiciaire (les juges, rend la justice).
+li: Hiérarchie des normes : constitution, traités internationaux, lois, décrets, arrêtés.
+li: Parlement : vote la loi, contrôle le gouvernement, vote le budget ; il peut compter une ou deux chambres.
+li: Gouvernement : dirigé par un chef de gouvernement ou le président selon le régime ; ministres chargés de ministères.
+li: Justice : tribunaux, cours d'appel, cour suprême ; juges indépendants ; Cour constitutionnelle : contrôle la conformité des lois à la constitution.
+li: Collectivités territoriales : communes, préfectures, régions ; décentralisation : transfert de compétences aux collectivités.
+li: Administration centrale et déconcentrée : ministères au centre, services régionaux et préfectoraux sur le territoire.
+li: Élections : suffrage universel direct ou indirect ; commission électorale ; mandat ; vote secret.
+li: Service public : activité d'intérêt général ; principes : égalité, continuité, adaptabilité, neutralité.
+note: Apprends l'organigramme de ton pays et le nom exact de chaque institution.
+note: Repère les différences entre régime présidentiel, parlementaire et semi-présidentiel.
+== questions
+Qu'est-ce qu'une constitution ? || La loi fondamentale d'un pays || Un contrat de travail || Un impôt || Un décret || Elle organise les pouvoirs et protège les droits.
+Quels sont les trois pouvoirs selon la séparation des pouvoirs ? || Législatif, exécutif, judiciaire || Civil, militaire, religieux || Fiscal, social, culturel || Local, régional, mondial || Elle limite les abus de pouvoir.
+Pour le concours : quel pouvoir fait les lois ? || Le pouvoir législatif || L'exécutif || Le judiciaire || Le pouvoir local || Il est exercé par le parlement.
+Pour le concours : quel pouvoir applique les lois ? || Le pouvoir exécutif || Le législatif || Le judiciaire || Le syndical || Il est exercé par le président et le gouvernement.
+Quel pouvoir rend la justice ? || Le pouvoir judiciaire || Le législatif || L'exécutif || Le municipal || Les juges doivent être indépendants.
+Quel texte est au sommet de la hiérarchie des normes ? || La constitution || Un arrêté || Un décret || Une circulaire || Tous les autres textes doivent lui être conformes.
+Que fait le parlement ? || Vote les lois et contrôle le gouvernement || Rend la justice || Dirige l'armée seule || Collecte l'impôt || Il vote aussi le budget.
+Que contrôle la cour constitutionnelle ? || La conformité des lois à la constitution || Les tarifs de transport || Les examens || Les salaires || Elle protège aussi les droits fondamentaux.
+Pour le concours : qu'est-ce que la décentralisation ? || Le transfert de compétences aux collectivités locales || La centralisation des pouvoirs || La fermeture de communes || Une réforme monétaire || Les communes gèrent certains services locaux.
+Qu'est-ce qu'une commune ? || Une collectivité territoriale de base || Un ministère || Un tribunal || Une banque || Elle est dirigée par un maire ou un conseil.
+Que veut dire suffrage universel ? || Tous les citoyens remplissant les conditions peuvent voter || Seuls les riches votent || Seuls les fonctionnaires votent || Seuls les hommes votent || Il garantit l'égalité des voix.
+Citez un principe du service public : || L'égalité || Le profit || La concurrence || Le hasard || La continuité et la neutralité en sont d'autres.
+Qu'est-ce qu'un décret ? || Un acte pris par le pouvoir exécutif || Une loi votée par le parlement || Un jugement || Un contrat privé || Il est inférieur à la loi.
+Qu'est-ce qu'un traité international ? || Un accord entre États || Un contrat de vente || Une loi locale || Un jugement || Il s'impose selon la constitution.
+Pourquoi le vote est-il secret ? || Protéger la liberté de choix de l'électeur || Cacher les résultats || Réduire la participation || Éviter l'élection || Il évite les pressions.

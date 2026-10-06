@@ -1,0 +1,32 @@
+titre: Didactique : enseigner le français, les maths et les sciences
+== fiche
+p: Un enseignant doit savoir comment faire apprendre chaque discipline. Les concours demandent souvent un exemple de séance.
+li: Lecture : méthode globale, syllabique ou mixte ; comprendre un texte (qui, quoi, où, quand, pourquoi) ; lecture à voix haute.
+li: Écriture et orthographe : copie, dictée préparée, dictée dialoguée, production d'écrits courts, relecture.
+li: Mathématiques : partir du concret (objets, dessins), puis passer à l'abstrait ; manipuler, schématiser, calculer.
+li: Calcul mental : tables, compléments, estimation ; résolution de problèmes : lire, comprendre, choisir l'opération, vérifier.
+li: Sciences : démarche d'investigation : question, hypothèse, expérience, observation, conclusion.
+li: Histoire et géographie : cartes, frises chronologiques, documents, récits.
+li: Langues : écouter, parler, lire, écrire ; apprendre par des dialogues et des jeux.
+li: Erreur de l'élève : source d'information pour comprendre et corriger.
+li: Différenciation : adapter les activités au niveau de chaque groupe.
+li: Supports : tableau, ardoises, affiches, objets, manuels, outils numériques si disponibles.
+li: Évaluation des acquis : exercices courts, observation, interrogations orales, devoirs.
+note: Un bon exemple concret vaut mieux qu'une longue explication.
+note: Fais écrire les élèves régulièrement, même un peu.
+== questions
+Que signifie « qui, quoi, où, quand, pourquoi » dans la lecture d'un texte ? || Les questions de compréhension || Les temps verbaux || Les rimes || Les pages || Elles aident à vérifier ce que l'élève a compris.
+Quelle méthode de lecture associe lettres et sons ? || La méthode syllabique || La méthode orale || La méthode manuelle || La méthode optique || Elle part du déchiffrage.
+Comment enseigner un nouveau concept de maths à de jeunes élèves ? || En partant du concret et en manipulant || En récitant seulement || En supprimant les exemples || En évitant les dessins || Du concret vers l'abstrait.
+Que signifie estimer un résultat ? || Donner un ordre de grandeur avant de calculer || Deviner sans réfléchir || Copier || Cacher le calcul || Cela aide à vérifier la réponse.
+Quelles sont les étapes d'une démarche d'investigation ? || Question, hypothèse, expérience, observation, conclusion || Récitation, copie, punition || Lecture, repos, jeu || Dessin, chant, danse || Elle développe l'esprit scientifique.
+À quoi sert une frise chronologique ? || Situer des événements dans le temps || Mesurer un angle || Faire des calculs || Compter les mots || C'est un outil d'histoire.
+Comment apprendre une langue vivante à un enfant ? || Écouter, parler, lire et écrire avec des jeux || Seulement recopier || Seulement mémoriser des listes || Éviter de parler || L'oral est essentiel.
+Que représente l'erreur d'un élève ? || Une information utile pour corriger et comprendre || Une faute grave || Une preuve de paresse || Un échec définitif || L'enseignant analyse la source de l'erreur.
+Que signifie différencier son enseignement ? || Adapter les activités au niveau de chaque groupe || Enseigner à un seul élève || Supprimer les devoirs || Changer de classe || Il favorise la réussite de tous.
+Citez un support d'enseignement : || Le tableau || Un ticket || Un téléphone cassé || Un menu || Les affiches et manuels en sont d'autres.
+Quelle activité développe l'écriture ? || La dictée et la production d'écrits courts || Seulement la lecture silencieuse || Le silence || Le repos || Écrire régulièrement améliore l'orthographe.
+Que fait-on lors d'un problème de maths ? || Lire, comprendre, choisir l'opération et vérifier || Deviner || Copier le voisin || Ignorer l'énoncé || La compréhension est la première étape.
+Pourquoi manipuler des objets en maths ? || Pour comprendre les nombres concrètement || Pour jouer seulement || Pour perdre du temps || Pour éviter le calcul || La manipulation précède l'abstraction.
+Pourquoi faire du calcul mental ? || Développer la rapidité et la compréhension des nombres || Éviter d'écrire || Remplacer les maths || Ralentir || Il sert au quotidien.
+Comment évaluer les acquis des élèves ? || Par exercices courts, observation et interrogations || Seulement par un examen final || Par le hasard || Sans critère || Plusieurs formes complètent le bilan.

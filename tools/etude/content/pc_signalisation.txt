@@ -1,0 +1,32 @@
+titre: Code de la route : signalisation et priorités
+== fiche
+p: Le permis de conduire demande de connaître le code de la route. Ces règles sont communes à la plupart des pays francophones ; vérifie les règles de ton pays.
+li: Panneaux de danger : triangle à bord rouge (virage, passage piéton, descente dangereuse).
+li: Panneaux d'interdiction ou d'obligation : cercle ; interdiction : bord rouge ; obligation : fond bleu.
+li: Panneaux d'indication : carrés ou rectangles bleus (parking, hôpital, direction).
+li: Panneau STOP : arrêt obligatoire, même si la route paraît libre ; « cédez le passage » : triangle pointe en bas, laisser passer.
+li: Feux tricolores : rouge = arrêt, orange = s'arrêter si possible, vert = passage ; clignotant orange = prudence.
+li: Priorités : priorité à droite en l'absence de signalisation ; sens giratoire : priorité à ceux qui sont déjà dans le rond-point (selon pays).
+li: Marquage au sol : ligne continue (ne pas franchir), discontinue (dépassement possible), passage piéton (zébra).
+li: Piétons : priorité sur le passage piéton ; vitesse réduite près des écoles.
+li: Dépassement : seulement si la visibilité est bonne, la ligne le permet et la voie est libre ; signaler avec le clignotant.
+li: Agent de la circulation : ses gestes l'emportent sur les feux et les panneaux.
+li: Stationnement : interdit sur passages piétons, trottoirs, virages, sorties de garage.
+note: Au doute, ralentis et cède le passage.
+note: Un panneau de danger demande toujours de réduire sa vitesse.
+== questions
+Quelle forme ont généralement les panneaux de danger ? || Un triangle à bord rouge || Un cercle bleu || Un carré vert || Un losange noir || Ils avertissent d'un risque.
+Que signifie un panneau rond à bord rouge ? || Une interdiction || Une obligation || Une indication || Un parking || Un panneau rond à fond bleu indique une obligation.
+Que signifie un panneau rond à fond bleu ? || Une obligation || Une interdiction || Un danger || Un hôpital || Il impose un comportement.
+Que doit faire un conducteur devant un STOP ? || S'arrêter complètement || Ralentir seulement || Klaxonner || Accélérer || L'arrêt est obligatoire même si la route est libre.
+Que signifie le triangle pointe en bas (cédez le passage) ? || Laisser passer les véhicules prioritaires || Arrêt obligatoire || Parking || Vitesse maximale || Il impose de céder la priorité.
+Que signifie le feu rouge ? || Arrêt obligatoire || Passage libre || Ralentir || Klaxonner || Il faut s'arrêter avant la ligne.
+Que signifie le feu orange ? || S'arrêter si possible en sécurité || Accélérer || Passer tout de suite || Klaxonner || Il avertit du passage au rouge.
+Que signifie une ligne continue au sol ? || Il est interdit de la franchir || Dépassement libre || Parking autorisé || Vitesse libre || Elle sépare des sens ou interdit certains mouvements.
+Que signifie une ligne discontinue ? || Le franchissement est possible si la voie est libre || Il est interdit || Arrêt obligatoire || Zone scolaire || On dépasse seulement en sécurité.
+Qui est prioritaire sur un passage piéton ? || Le piéton engagé || Le véhicule le plus rapide || Le camion || La moto || Le conducteur doit s'arrêter.
+Quand peut-on dépasser ? || Quand la visibilité est bonne et la voie libre || Dans un virage || Sur une ligne continue || Près d'un passage piéton || Il faut signaler son intention.
+Quels gestes l'emportent sur les feux ? || Ceux de l'agent de la circulation || Ceux d'un passant || Ceux d'un autre conducteur || Aucun || Ils s'imposent aux conducteurs.
+Où est-il interdit de stationner ? || Sur un passage piéton || Dans un parking autorisé || Sur une place prévue || Dans une zone bleue || Cela gêne la sécurité des piétons.
+Que faire devant un panneau de danger ? || Réduire sa vitesse et être attentif || Accélérer || Klaxonner sans cesse || Ignorer || Il annonce un risque proche.
+En l'absence de signalisation à une intersection, qui a priorité ? || Le véhicule venant de droite (règle courante) || Le plus rapide || Le plus gros || Le plus ancien || Cette règle varie selon les pays.

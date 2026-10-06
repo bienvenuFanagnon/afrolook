@@ -345,7 +345,7 @@
           ]
         }
       ],
-      "featured": 4,
+      "featured": 8,
       "badge": "BEPC",
       "pitch": "Le BEPC pas à pas : chaque chapitre, chaque matière."
     },
@@ -533,7 +533,7 @@
           ]
         }
       ],
-      "featured": 3,
+      "featured": 6,
       "badge": "BAC",
       "pitch": "Révise le BAC série D matière par matière, avec examen blanc."
     },
@@ -2323,10 +2323,7 @@
         "count": 30,
         "passPct": 0.7,
         "seconds": 1500
-      },
-      "featured": 6,
-      "badge": "Compétence",
-      "pitch": "Apprends Python et décroche ton attestation."
+      }
     },
     {
       "id": "cert_ia",
@@ -2377,7 +2374,7 @@
         "passPct": 0.7,
         "seconds": 1500
       },
-      "featured": 5,
+      "featured": 9,
       "badge": "Nouveau",
       "pitch": "Comprends l'intelligence artificielle et utilise-la intelligemment."
     },
@@ -2752,6 +2749,215 @@
           ]
         }
       ]
+    },
+    {
+      "id": "concours_fp",
+      "kind": "cert",
+      "order": 96,
+      "title": "Concours de la fonction publique",
+      "cert": {
+        "id": "att_concours_fp",
+        "title": "Attestation : prêt pour les concours de la fonction publique",
+        "from": [
+          "cp_institutions",
+          "cp_droit_admin",
+          "cp_statut",
+          "cp_redaction",
+          "cp_finances"
+        ],
+        "count": 40,
+        "passPct": 0.6,
+        "seconds": 3000
+      },
+      "classes": [
+        {
+          "id": "concours_fp_m",
+          "title": "Concours de la fonction publique",
+          "subjects": [
+            {
+              "id": "cfp_etat",
+              "title": "État et droit",
+              "icon": "public",
+              "chapters": [
+                {
+                  "id": "cp_institutions",
+                  "title": "Institutions et organisation de l'État"
+                },
+                {
+                  "id": "cp_droit_admin",
+                  "title": "Droit administratif et droits fondamentaux"
+                },
+                {
+                  "id": "cp_statut",
+                  "title": "Statut, carrière et éthique du fonctionnaire"
+                }
+              ]
+            },
+            {
+              "id": "cfp_pratique",
+              "title": "Rédaction et finances",
+              "icon": "account_tree",
+              "chapters": [
+                {
+                  "id": "cp_redaction",
+                  "title": "Rédaction administrative et notes de synthèse"
+                },
+                {
+                  "id": "cp_finances",
+                  "title": "Finances publiques et économie"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "featured": 3,
+      "badge": "Concours",
+      "pitch": "Fonction publique : institutions, droit administratif, éthique et rédaction."
+    },
+    {
+      "id": "concours_securite",
+      "kind": "cert",
+      "order": 97,
+      "title": "Concours des forces de sécurité",
+      "cert": {
+        "id": "att_concours_securite",
+        "title": "Attestation : prêt pour les concours de police, gendarmerie et douane",
+        "from": [
+          "cs_civisme",
+          "cs_droit_penal",
+          "cs_secours"
+        ],
+        "count": 30,
+        "passPct": 0.6,
+        "seconds": 2400
+      },
+      "classes": [
+        {
+          "id": "concours_securite_m",
+          "title": "Concours des forces de sécurité",
+          "subjects": [
+            {
+              "id": "csec",
+              "title": "Sécurité et secours",
+              "icon": "science",
+              "chapters": [
+                {
+                  "id": "cs_civisme",
+                  "title": "Civisme, discipline et rôle des forces de sécurité"
+                },
+                {
+                  "id": "cs_droit_penal",
+                  "title": "Notions de droit pénal et de procédure"
+                },
+                {
+                  "id": "cs_secours",
+                  "title": "Secourisme, hygiène de vie et aptitude physique"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "featured": 4,
+      "badge": "Concours",
+      "pitch": "Police, gendarmerie, douane : droit, secourisme, discipline et forme physique."
+    },
+    {
+      "id": "concours_enseignement",
+      "kind": "cert",
+      "order": 98,
+      "title": "Concours de l'enseignement",
+      "cert": {
+        "id": "att_concours_enseignement",
+        "title": "Attestation : prêt pour les concours de l'enseignement",
+        "from": [
+          "ce_pedagogie",
+          "ce_systeme",
+          "ce_didactique"
+        ],
+        "count": 30,
+        "passPct": 0.6,
+        "seconds": 2400
+      },
+      "classes": [
+        {
+          "id": "concours_enseignement_m",
+          "title": "Concours de l'enseignement",
+          "subjects": [
+            {
+              "id": "cens",
+              "title": "Enseigner",
+              "icon": "menu_book",
+              "chapters": [
+                {
+                  "id": "ce_pedagogie",
+                  "title": "Pédagogie et psychologie de l'enfant"
+                },
+                {
+                  "id": "ce_systeme",
+                  "title": "Système éducatif, déontologie et gestion de classe"
+                },
+                {
+                  "id": "ce_didactique",
+                  "title": "Didactique : enseigner le français, les maths et les sciences"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "featured": 7,
+      "badge": "Concours",
+      "pitch": "Deviens enseignant : pédagogie, déontologie et didactique des disciplines."
+    },
+    {
+      "id": "permis_conduire",
+      "kind": "cert",
+      "order": 99,
+      "title": "Permis de conduire : code de la route",
+      "cert": {
+        "id": "att_permis",
+        "title": "Attestation : prêt pour l'examen du code de la route",
+        "from": [
+          "pc_signalisation",
+          "pc_regles",
+          "pc_meca"
+        ],
+        "count": 40,
+        "passPct": 0.8,
+        "seconds": 1800
+      },
+      "classes": [
+        {
+          "id": "permis_m",
+          "title": "Permis de conduire : code de la route",
+          "subjects": [
+            {
+              "id": "pc",
+              "title": "Code de la route",
+              "icon": "code",
+              "chapters": [
+                {
+                  "id": "pc_signalisation",
+                  "title": "Code de la route : signalisation et priorités"
+                },
+                {
+                  "id": "pc_regles",
+                  "title": "Code de la route : vitesse, sécurité et comportement"
+                },
+                {
+                  "id": "pc_meca",
+                  "title": "Mécanique de base, entretien et premiers secours routiers"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "featured": 5,
+      "badge": "Populaire",
+      "pitch": "Réussis le code de la route : panneaux, priorités, sécurité et mécanique de base."
     }
   ]
 }

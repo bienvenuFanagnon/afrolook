@@ -1,0 +1,32 @@
+titre: Secourisme, hygiène de vie et aptitude physique
+== fiche
+p: Les corps de sécurité sont souvent les premiers sur place : ils doivent savoir porter secours et rester en forme.
+li: Chaîne de secours : protéger, alerter, secourir ; ne pas se mettre en danger.
+li: Alerte : donner le lieu exact, la nature de l'accident, le nombre de victimes, son nom, et ne pas raccrocher le premier.
+li: Hémorragie : comprimer fortement la plaie avec un tissu propre ; allonger la victime.
+li: Victime inconsciente qui respire : position latérale de sécurité (PLS).
+li: Arrêt cardiaque : alerter, masser le cœur (compressions au centre de la poitrine, environ 100 par minute), utiliser un défibrillateur si disponible.
+li: Brûlure : refroidir à l'eau courante tempérée pendant plusieurs minutes ; ne pas percer les cloques ; ne pas appliquer de corps gras.
+li: Fracture : immobiliser sans forcer ; ne pas remettre le membre en place.
+li: Étouffement : encourager à tousser ; si impossible, claques dans le dos puis compressions (manœuvre de Heimlich).
+li: Hygiène de vie : sommeil de 7 à 8 heures, alimentation variée, eau, absence de tabac et de drogues, limitation de l'alcool.
+li: Aptitude physique : course d'endurance, pompes, abdominaux, traction, natation selon le concours ; entraînement progressif.
+li: Échauffement et récupération : éviter les blessures, s'hydrater, s'étirer.
+note: Ne déplace jamais un blessé sans nécessité : tu pourrais aggraver une lésion.
+note: Prépare-toi physiquement des mois à l'avance : l'endurance se construit progressivement.
+== questions
+Quelles sont les trois étapes de la chaîne de secours ? || Protéger, alerter, secourir || Courir, crier, partir || Filmer, publier, partager || Attendre, regarder, partir || Elle structure toute intervention.
+Que faut-il donner en alertant les secours ? || Le lieu exact, la nature de l'accident et le nombre de victimes || Sa vie privée || Son salaire || Son âge seulement || Une alerte précise accélère l'intervention.
+Comment arrêter une hémorragie ? || Comprimer fortement la plaie avec un tissu propre || Attendre || Laver à l'alcool seulement || Faire un garrot toujours || La compression directe est la première réponse.
+Quelle position pour une victime inconsciente qui respire ? || La position latérale de sécurité || Debout || Assise || Sur le dos sans surveillance || Elle libère les voies aériennes.
+Comment pratique-t-on un massage cardiaque ? || Compressions au centre de la poitrine, environ 100 par minute || Gifles || Secousses || Pressions sur le ventre || Le rythme est rapide et régulier.
+Que faire en cas de brûlure ? || Refroidir à l'eau courante || Appliquer du beurre || Percer les cloques || Frotter || L'eau limite la profondeur de la brûlure.
+Pour le concours : que faut-il éviter sur une brûlure ? || Les corps gras || L'eau || Le refroidissement || L'appel aux secours || Ils retiennent la chaleur.
+Que faire en cas de fracture ? || Immobiliser sans forcer || Remettre en place || Faire marcher || Masser fort || Un mouvement peut aggraver la lésion.
+Que faire quand une personne s'étouffe et ne peut plus parler ? || Claques dans le dos puis manœuvre de Heimlich || Lui donner à boire || Attendre || La coucher à plat sans agir || Il faut dégager les voies aériennes.
+Pourquoi ne pas déplacer un blessé sans nécessité ? || Cela peut aggraver ses lésions || Il serait plus lourd || Il aurait froid || Il serait gêné || Surtout en cas de traumatisme du dos ou du cou.
+Combien d'heures de sommeil conseillées pour un adulte ? || Sept à huit || Deux || Quatre || Douze || Le sommeil améliore la performance.
+Pourquoi s'échauffer avant l'effort ? || Réduire le risque de blessure || Perdre du temps || Fatiguer || Éviter l'eau || Le corps est préparé à l'effort.
+Pourquoi s'hydrater pendant l'entraînement ? || Compenser la perte d'eau || Alourdir || Éviter la sueur || Éviter de courir || La déshydratation baisse la performance.
+Comment se préparer à une épreuve d'endurance ? || S'entraîner progressivement sur plusieurs mois || Courir une seule fois la veille || Éviter de manger || Ne rien faire || La régularité compte.
+Que ne faut-il pas faire en secourant ? || Se mettre soi-même en danger || Alerter || Protéger || Rassurer la victime || Un sauveteur blessé ne peut aider.

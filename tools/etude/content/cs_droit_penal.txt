@@ -1,0 +1,32 @@
+titre: Notions de droit pénal et de procédure
+== fiche
+p: Les concours de police, gendarmerie et douane demandent des notions de droit pénal. Elles sont communes à beaucoup d'États francophones ; vérifie ton pays.
+li: Infraction : comportement interdit par la loi et puni d'une peine ; trois catégories : contravention, délit, crime.
+li: Éléments d'une infraction : légal (texte), matériel (acte), moral (intention ou faute).
+li: Principe de légalité : pas d'infraction ni de peine sans texte ; non-rétroactivité de la loi pénale plus sévère.
+li: Présomption d'innocence : toute personne est considérée innocente tant que sa culpabilité n'est pas prouvée.
+li: Exemples : vol (soustraction frauduleuse de la chose d'autrui), escroquerie (tromperie pour obtenir un bien), abus de confiance, coups et blessures, meurtre, viol, corruption, faux et usage de faux.
+li: Légitime défense : réponse nécessaire et proportionnée à une atteinte injuste ; elle exclut la responsabilité.
+li: Tentative : commencement d'exécution interrompu par une cause indépendante de la volonté de l'auteur ; punie comme l'infraction pour les crimes.
+li: Complicité : aide ou instigation ; le complice est puni comme l'auteur dans beaucoup de systèmes.
+li: Procédure : enquête de police, garde à vue, instruction, jugement, appel ; le procureur représente la société.
+li: Flagrant délit : infraction en train de se commettre ou qui vient de se commettre.
+li: Peines : amende, emprisonnement, travail d'intérêt général selon la gravité.
+note: Une infraction suppose un texte, un acte et une intention ou faute.
+note: L'agent doit toujours rédiger un procès-verbal fidèle et daté.
+== questions
+Pour le concours : qu'est-ce qu'une infraction ? || Un comportement interdit par la loi et puni || Un congé || Un jeu || Une prime || Elle est contravention, délit ou crime.
+Quelles sont les trois catégories d'infractions ? || Contravention, délit, crime || Vol, fraude, arnaque || Faute, erreur, oubli || Amende, prison, sursis || La gravité détermine la catégorie.
+Pour le concours : que signifie la présomption d'innocence ? || On est innocent tant que la culpabilité n'est pas prouvée || On est coupable par défaut || L'accusé doit prouver sa culpabilité || Le juge décide sans preuve || C'est un principe fondamental.
+Quel principe dit « pas d'infraction sans texte » ? || Le principe de légalité || Le principe d'urgence || Le principe de hasard || Le principe de pitié || Il protège contre l'arbitraire.
+Pour le concours : qu'est-ce que le vol ? || La soustraction frauduleuse de la chose d'autrui || Un cadeau || Un prêt || Un échange || Il suppose l'intention de s'approprier.
+Qu'est-ce qu'une escroquerie ? || Tromper quelqu'un pour obtenir un bien || Aider un voisin || Offrir un cadeau || Vendre à un prix juste || Elle repose sur la tromperie.
+Pour le concours : qu'est-ce que la légitime défense ? || Une riposte nécessaire et proportionnée à une atteinte injuste || Une vengeance || Une attaque préventive || Un jeu || Elle exclut la responsabilité pénale.
+Qu'est-ce qu'une tentative ? || Un commencement d'exécution interrompu indépendamment de la volonté de l'auteur || Une infraction accomplie || Un simple projet || Un pardon || Elle est punie pour les crimes.
+Qu'est-ce que la complicité ? || L'aide ou l'instigation apportée à l'auteur || Un jeu || Une victime || Un juge || Le complice peut être puni comme l'auteur.
+Qui représente la société dans un procès pénal ? || Le procureur || L'accusé || Le témoin || L'avocat de la défense || Il engage l'action publique.
+Qu'est-ce que le flagrant délit ? || Une infraction en train de se commettre ou qui vient de l'être || Une infraction ancienne || Un projet || Un rêve || Il permet une procédure plus rapide.
+Citez une peine : || L'emprisonnement || Le bulletin de paie || Le diplôme || Le salaire || L'amende et le travail d'intérêt général en sont d'autres.
+Pourquoi rédiger un procès-verbal ? || Consigner fidèlement les faits || Embellir l'histoire || Cacher des éléments || Remplacer le juge || Il sert de preuve.
+Quel élément suppose l'intention ou la faute ? || L'élément moral || L'élément matériel || L'élément légal || L'élément fiscal || Il distingue acte volontaire et accident.
+Pour le concours : qu'est-ce que la garde à vue ? || Une mesure de rétention pour les nécessités de l'enquête || Un jugement || Une condamnation || Un congé || Sa durée est limitée par la loi.

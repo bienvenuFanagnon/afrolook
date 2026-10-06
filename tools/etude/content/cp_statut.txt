@@ -1,0 +1,32 @@
+titre: Statut, carrière et éthique du fonctionnaire
+== fiche
+p: Devenir agent public engage : droits, obligations et règles d'éthique encadrent la carrière.
+li: Fonctionnaire : agent recruté par concours ou nomination qui occupe un emploi permanent de l'administration.
+li: Catégories : A (conception, direction), B (application), C (exécution) ; chaque catégorie correspond à un niveau d'études.
+li: Recrutement : par concours ouvert à tous les candidats remplissant les conditions (nationalité, âge, diplôme, aptitude physique, casier judiciaire).
+li: Carrière : stage, titularisation, avancement d'échelon et de grade, mutation, promotion, formation.
+li: Droits : rémunération, congés, protection sociale, formation, droit syndical, droit de grève encadré.
+li: Obligations : obéissance hiérarchique (sauf ordre manifestement illégal), neutralité, secret professionnel, discrétion, service public.
+li: Probité : refus de la corruption ; conflit d'intérêts : situation où un intérêt personnel peut influencer la décision publique.
+li: Sanctions disciplinaires : avertissement, blâme, suspension, révocation selon la gravité.
+li: Agents contractuels : employés sous contrat, sans statut de fonctionnaire.
+li: Retraite : départ à un âge fixé, pension calculée selon les années de service.
+li: Éthique : intégrité, impartialité, exemplarité, redevabilité.
+note: Un ordre manifestement illégal ne doit pas être exécuté.
+note: Un cadeau ou une faveur peut créer un conflit d'intérêts : mieux vaut les refuser.
+== questions
+Pour le concours : qu'est-ce qu'un fonctionnaire ? || Un agent qui occupe un emploi permanent de l'administration || Un salarié du privé || Un commerçant || Un ouvrier saisonnier || Il est recruté par concours ou nomination.
+Comment recrute-t-on généralement un fonctionnaire ? || Par concours || Par tirage au sort || Par vote || Par parenté || Le concours garantit l'égalité des candidats.
+Que désigne la catégorie A ? || Les fonctions de conception et de direction || L'exécution simple || Le stage || La retraite || Elle correspond aux niveaux d'études les plus élevés.
+Qu'est-ce que la titularisation ? || L'intégration définitive après le stage || Un renvoi || Un congé || Une amende || Elle suit une période de stage.
+Citez un droit du fonctionnaire : || Les congés || Le droit de désobéir à tout || La liberté de voler || L'impunité || La protection sociale en est un autre.
+Quelle est l'obligation de neutralité ? || Traiter tous les usagers sans distinction || Défendre un parti || Refuser certains usagers || Faire de la publicité || Elle garantit l'égalité des usagers.
+Que dit le secret professionnel ? || Ne pas divulguer les informations confidentielles || Tout publier || Tout partager sur les réseaux || Vendre les informations || Il protège les usagers.
+Que faire devant un ordre manifestement illégal ? || Ne pas l'exécuter et le signaler || L'exécuter sans réfléchir || Le copier || Le cacher || L'obéissance a des limites.
+Pour le concours : qu'est-ce que la corruption ? || Abuser de sa fonction pour obtenir un avantage || Travailler honnêtement || Recevoir son salaire || Respecter les règles || Elle est sévèrement punie.
+Qu'est-ce qu'un conflit d'intérêts ? || Un intérêt personnel qui peut influencer la décision publique || Une dispute entre collègues || Un désaccord politique || Une grève || Il faut le déclarer ou s'abstenir.
+Citez une sanction disciplinaire : || Le blâme || Le salaire || Les congés || La formation || La révocation est la plus grave.
+Qu'est-ce qu'un agent contractuel ? || Un agent employé sous contrat sans statut de fonctionnaire || Un fonctionnaire titulaire || Un élu || Un juge || Son contrat fixe ses droits.
+Qu'est-ce que l'avancement d'échelon ? || Une progression dans la carrière avec augmentation de rémunération || Un renvoi || Une vente || Un stage || Elle récompense l'ancienneté et le mérite.
+Qu'est-ce que la redevabilité ? || L'obligation de rendre compte de ses actes || Le droit de se taire || Un impôt || Une prime || Un agent public répond de sa gestion.
+Pourquoi l'éthique est-elle essentielle dans la fonction publique ? || Elle assure la confiance des citoyens || Elle augmente les salaires || Elle supprime les règles || Elle est facultative || Elle garantit la probité.

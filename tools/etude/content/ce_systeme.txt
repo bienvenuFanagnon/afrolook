@@ -1,0 +1,32 @@
+titre: Système éducatif, déontologie et gestion de classe
+== fiche
+p: Un futur enseignant doit connaître l'organisation de l'école, les textes qui l'encadrent et les règles de déontologie.
+li: Niveaux : préscolaire, primaire (CEPD), collège (BEPC), lycée (BAC), enseignement supérieur ; formation technique et professionnelle.
+li: Acteurs : élèves, enseignants, directeur ou chef d'établissement, inspecteurs, parents, comités de gestion, ministère de l'éducation.
+li: Principes : droit à l'éducation, gratuité et obligation scolaire dans le primaire, égalité entre filles et garçons, laïcité de l'école publique.
+li: Programmes officiels : fixés par le ministère ; l'enseignant les applique et les adapte au niveau de ses élèves.
+li: Emploi du temps, cahier de textes, registre d'appel, carnet de notes : documents professionnels à tenir à jour.
+li: Déontologie : impartialité, respect de la dignité des élèves, secret professionnel, refus des châtiments corporels, interdiction de la violence et du harcèlement.
+li: Protection de l'enfant : signaler les abus, respecter l'intimité, créer un climat sûr ; la loi protège les mineurs.
+li: Éducation inclusive : accueillir les élèves en situation de handicap et adapter les méthodes.
+li: Relations avec les collègues : travail en équipe, conseils de classe, formation continue.
+li: Communication avec les parents : réunions, carnet, entretiens, honnêteté et respect.
+li: Éducation à la citoyenneté, à la santé, à l'environnement et à la paix : missions de l'école.
+note: Une sanction éducative explique, ne blesse pas.
+note: Tiens ton registre d'appel à jour : c'est un document officiel.
+== questions
+Quel examen clôture le primaire ? || Le CEPD || Le BAC || Le BEPC || La licence || Il ouvre l'accès au collège.
+Quel examen clôture le collège ? || Le BEPC || Le CEPD || Le BAC || Le DUT || Il ouvre l'accès au lycée.
+Quel diplôme clôture le lycée général ? || Le baccalauréat || Le BEPC || Le CEPD || Le BTS || Il ouvre l'enseignement supérieur.
+Qui fixe les programmes officiels ? || Le ministère de l'éducation || Chaque élève || Les commerçants || Le voisin || L'enseignant les applique et les adapte.
+Que signifie la gratuité et l'obligation scolaire dans le primaire ? || Tous les enfants doivent être scolarisés sans frais de scolarité || Seuls les riches étudient || L'école est interdite || Les parents choisissent librement || Le droit à l'éducation est un principe fondamental.
+Que dit l'égalité filles-garçons à l'école ? || Mêmes droits d'accès et de réussite || Les filles étudient moins || Les garçons choisissent seuls || Elle est facultative || L'école doit lutter contre les discriminations.
+Citez un document professionnel de l'enseignant : || Le cahier de textes || Un bulletin météo || Un ticket de bus || Un menu || Le registre d'appel et le carnet de notes en sont d'autres.
+Que dit la déontologie sur les châtiments corporels ? || Ils sont interdits || Ils sont autorisés || Ils sont encouragés || Ils sont obligatoires || Ils violent la dignité de l'enfant.
+Que faire en cas de suspicion d'abus sur un élève ? || Signaler aux responsables compétents || Ignorer || Punir l'élève || En parler aux voisins || La protection de l'enfant est une obligation.
+Qu'est-ce que l'éducation inclusive ? || Accueillir tous les élèves en adaptant les méthodes || Séparer les élèves || Exclure les plus lents || Supprimer les cours || Elle favorise la réussite de tous.
+À quoi sert le conseil de classe ? || Faire le point sur les résultats et décider des suites || Choisir les repas || Fixer le prix || Fêter l'anniversaire || Il réunit enseignants, délégués et direction.
+Pourquoi communiquer avec les parents ? || Soutenir l'élève et partager les informations || Éviter l'école || Remplacer les cours || Augmenter les frais || L'alliance éducative aide l'enfant.
+Quelle est la qualité d'une sanction éducative ? || Elle explique et fait progresser || Elle humilie || Elle punit sans raison || Elle blesse || Elle respecte la dignité de l'élève.
+Que doit faire un enseignant face au harcèlement entre élèves ? || Intervenir, protéger et signaler || Ignorer || Encourager || Se moquer || Le harcèlement est une violence.
+Qu'est-ce que la formation continue ? || La mise à jour des compétences tout au long de la carrière || Un congé || Une punition || Un impôt || Elle améliore la qualité de l'enseignement.

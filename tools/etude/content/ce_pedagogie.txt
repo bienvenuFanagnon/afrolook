@@ -1,0 +1,32 @@
+titre: Pédagogie et psychologie de l'enfant
+== fiche
+p: Les concours d'enseignement évaluent la connaissance de l'élève, des méthodes d'apprentissage et du rôle de l'enseignant.
+li: Pédagogie : art de transmettre des savoirs ; didactique : étude de l'enseignement d'une discipline précise.
+li: Approche par compétences (APC) : l'élève apprend à mobiliser des savoirs, savoir-faire et savoir-être pour résoudre des situations.
+li: Objectifs pédagogiques : ce que l'élève saura faire à la fin ; verbes d'action observables (identifier, calculer, rédiger).
+li: Planification : fiche de préparation avec titre, objectifs, durée, matériel, déroulement (introduction, développement, conclusion), évaluation.
+li: Étapes d'une séance : motivation, découverte, structuration, application, évaluation.
+li: Évaluation : diagnostique (début), formative (pendant, pour aider), sommative (à la fin, pour noter).
+li: Stades de Piaget : sensori-moteur (0-2 ans), préopératoire (2-7), opératoire concret (7-11), opératoire formel (dès 11-12).
+li: Besoins de l'élève : sécurité, reconnaissance, motivation, jeu, activités concrètes.
+li: Gestion de classe : règles claires, autorité bienveillante, valorisation, sanctions justes, attention à chaque élève.
+li: Difficultés d'apprentissage : remédiation, soutien, travail en petits groupes, collaboration avec les parents.
+li: Rôle de l'enseignant : éducateur, guide, évaluateur, modèle.
+note: Un élève motivé apprend mieux : commence par le rendre curieux.
+note: Évaluer pour aider l'élève à progresser, pas seulement pour le classer.
+== questions
+Qu'est-ce que la pédagogie ? || L'art de transmettre des savoirs || La science des étoiles || Un cours de maths seulement || Une loi || Elle étudie comment on enseigne et apprend.
+Que signifie l'approche par compétences ? || Mobiliser des savoirs pour résoudre des situations || Apprendre par cœur seulement || Supprimer les cours || Éviter l'évaluation || L'élève agit et applique ses acquis.
+Qu'est-ce qu'un objectif pédagogique ? || Ce que l'élève saura faire à la fin || La durée du cours || Le salaire || Le nom de l'école || Il s'exprime avec des verbes d'action.
+Citez un verbe d'action utile pour un objectif : || Calculer || Savoir || Comprendre vaguement || Apprécier || Il décrit un comportement observable.
+Que contient une fiche de préparation ? || Objectifs, durée, matériel, déroulement et évaluation || Seulement le titre || Les notes des élèves || Le salaire || Elle structure la séance.
+Quand a lieu une évaluation diagnostique ? || Au début, pour connaître le niveau || À la fin seulement || Jamais || Pendant la récréation || Elle guide la planification.
+À quoi sert l'évaluation formative ? || Aider l'élève à progresser pendant l'apprentissage || Donner une note finale seulement || Punir || Classer sans conseil || Elle donne un retour.
+À quoi sert l'évaluation sommative ? || Faire le bilan en fin d'apprentissage || Préparer la leçon || Jouer || Éviter les devoirs || Elle sert souvent à noter.
+Quel est le stade de Piaget de 7 à 11 ans ? || Opératoire concret || Sensori-moteur || Préopératoire || Opératoire formel || L'enfant raisonne sur du concret.
+Quel stade de Piaget concerne les bébés de 0 à 2 ans ? || Sensori-moteur || Opératoire formel || Opératoire concret || Préopératoire || Ils apprennent par les sens et les actions.
+Pourquoi établir des règles claires en classe ? || Créer un cadre sûr et favorable aux apprentissages || Pour punir || Pour décorer || Pour éviter les élèves || Les élèves savent ce qui est attendu.
+Que faire face à un élève en difficulté ? || Proposer soutien et remédiation || L'ignorer || Le punir seulement || L'exclure || L'écoute et l'aide permettent de progresser.
+Pourquoi valoriser les réussites des élèves ? || Elle renforce la motivation et la confiance || Elle crée la jalousie || Elle supprime le travail || Elle ralentit la classe || Un élève encouragé apprend mieux.
+Quel est le rôle de l'enseignant ? || Éduquer, guider et évaluer || Seulement surveiller || Seulement noter || Seulement parler || Il est aussi un modèle.
+Pourquoi collaborer avec les parents ? || Soutenir l'élève dans ses apprentissages || Éviter l'école || Augmenter les devoirs || Remplacer l'enseignant || La cohérence éducative aide l'enfant.

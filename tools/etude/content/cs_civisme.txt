@@ -1,0 +1,31 @@
+titre: Civisme, discipline et rôle des forces de sécurité
+== fiche
+p: Police, gendarmerie, armée, douane et protection civile servent la population. Les concours testent aussi les valeurs et la connaissance du métier.
+li: Forces de défense : armée de terre, de l'air, marine ; elles protègent le territoire contre les menaces extérieures.
+li: Forces de sécurité intérieure : police (villes) et gendarmerie (zones rurales et militaire) ; elles maintiennent l'ordre et protègent personnes et biens.
+li: Autres corps : douane (contrôle des frontières et des marchandises), eaux et forêts, sapeurs-pompiers (secours), protection civile.
+li: Valeurs : loyauté, discipline, courage, honneur, intégrité, esprit de service, respect de la hiérarchie.
+li: Discipline : obéir aux ordres légaux, respecter les horaires et l'uniforme, rendre compte.
+li: Droits humains : respect de la dignité, interdiction de la torture, usage de la force proportionné et nécessaire.
+li: Relations avec la population : politesse, écoute, impartialité ; les forces de l'ordre sont au service de tous.
+li: Procédure d'arrestation : respecter la loi, informer la personne des motifs, garde à vue limitée dans le temps, droit à un avocat.
+li: Citoyenneté : droits et devoirs ; payer ses impôts, respecter la loi, voter, protéger l'environnement, défendre la patrie.
+li: Terrorisme et criminalité : vigilance, signalement, coopération internationale (CEDEAO, Interpol).
+note: Un bon agent de sécurité protège d'abord la population, pas lui-même.
+note: L'usage de la force doit toujours être proportionné.
+== questions
+Quel est le rôle de l'armée ? || Défendre le territoire contre les menaces extérieures || Contrôler les prix || Enseigner || Collecter l'impôt || Elle intervient aussi en cas de catastrophe.
+Qui assure surtout la sécurité intérieure en ville ? || La police || La marine || Les eaux et forêts || Les pompiers || La gendarmerie couvre surtout les zones rurales.
+Quel corps contrôle les marchandises aux frontières ? || La douane || Les sapeurs-pompiers || L'armée de l'air || La gendarmerie seulement || Elle lutte aussi contre la contrebande.
+Quel corps porte secours lors des incendies ? || Les sapeurs-pompiers || La douane || La police || L'armée de terre || Ils interviennent aussi dans les accidents.
+Citez une valeur essentielle d'un agent de sécurité : || L'intégrité || La corruption || La paresse || L'arrogance || La loyauté et la discipline en sont d'autres.
+Que signifie la discipline ? || Obéir aux ordres légaux et respecter les règles || Désobéir || Choisir ses ordres || Ne pas se présenter || Elle est la base du fonctionnement d'un corps.
+Que doit respecter l'usage de la force ? || Les principes de proportion et de nécessité || Aucune règle || La colère || Le hasard || Le recours à la force est limité par la loi.
+Que doit faire un agent face à un citoyen ? || Respecter sa dignité || L'humilier || L'ignorer || Le menacer || Les droits humains protègent tout le monde.
+Que doit faire un agent qui arrête une personne ? || L'informer des motifs et respecter la loi || L'enfermer sans raison || Cacher le motif || Frapper || La garde à vue est limitée dans le temps.
+Quel droit a une personne gardée à vue ? || Le droit à un avocat || Le droit de s'évader || Le droit de frapper || Aucun droit || Les garanties protègent contre l'arbitraire.
+Citez un devoir du citoyen : || Respecter la loi || Ignorer les impôts || Détruire les biens publics || Frauder || Payer ses impôts et voter en font partie.
+À quoi sert la vigilance face au terrorisme ? || Prévenir et signaler les menaces || Créer la peur || Partager des rumeurs || Cacher des informations || La coopération est essentielle.
+Que signifie Interpol ? || Organisation internationale de police criminelle || Police du Togo || Organisme de santé || Banque || Elle facilite la coopération entre polices.
+Pourquoi respecter la hiérarchie ? || Assurer l'ordre et l'efficacité || Pour flatter || Pour éviter le travail || Pour refuser les lois || Dans le cadre de la légalité.
+Que doit privilégier un agent en intervention ? || La protection de la population || Son confort || Son intérêt personnel || Sa vitesse seule || Le service public prime.

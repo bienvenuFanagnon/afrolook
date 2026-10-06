@@ -1,0 +1,32 @@
+titre: Rédaction administrative et notes de synthèse
+== fiche
+p: Un agent public écrit beaucoup : lettres, notes, comptes rendus, rapports. Les concours testent cette aptitude.
+li: Lettre administrative : expéditeur, destinataire, lieu et date, objet, références, formule d'appel, texte, formule de politesse, signature.
+li: Objet : une phrase courte qui résume le sujet (« Demande de congé annuel »).
+li: Formules de politesse : adaptées au rang du destinataire ; « Veuillez agréer, Monsieur le Directeur, l'expression de ma haute considération ».
+li: Note de service : message écrit d'un chef à ses agents ; courte, claire, avec date, objet, signature.
+li: Compte rendu : récit fidèle et objectif d'une réunion ; participants, ordre du jour, décisions, actions, date.
+li: Procès-verbal : compte rendu officiel avec valeur juridique.
+li: Rapport : analyse d'une situation avec constat, causes, propositions.
+li: Note de synthèse : résume plusieurs documents en un texte structuré, neutre, sans avis personnel.
+li: Style : phrases courtes, vocabulaire précis, ton neutre, plan logique, orthographe soignée.
+li: Plan type : introduction, deux ou trois parties, conclusion ; titres clairs.
+li: Mots à éviter : abréviations non définies, familiarités, répétitions.
+note: Lis tout le sujet avant d'écrire et repère le destinataire et le but.
+note: Relis-toi toujours : une faute dans une lettre officielle nuit à la crédibilité.
+== questions
+Que contient l'objet d'une lettre administrative ? || Une phrase courte qui résume le sujet || Le texte entier || La signature seulement || La date seulement || Il permet de classer le courrier.
+Dans quel ordre figurent la date et le lieu ? || En haut de la lettre, avec le lieu || En bas uniquement || Dans l'objet || Nulle part || On écrit « Lomé, le … ».
+Qu'est-ce qu'une note de service ? || Un message écrit d'un chef à ses agents || Une lettre privée || Un jugement || Un bulletin de paie || Elle est courte et claire.
+Qu'est-ce qu'un compte rendu ? || Un récit fidèle d'une réunion || Une invention || Un poème || Un salaire || Il mentionne participants, décisions et actions.
+Qu'est-ce qu'un procès-verbal ? || Un compte rendu officiel à valeur juridique || Une lettre amicale || Un menu || Une invitation || Il est signé par les personnes concernées.
+Qu'est-ce qu'un rapport ? || Une analyse avec constat, causes et propositions || Un tableau de bord || Un poème || Une facture || Il aide à décider.
+Qu'est-ce qu'une note de synthèse ? || Un résumé structuré de plusieurs documents || Un avis personnel || Une critique || Un poème || Elle doit rester neutre.
+Quel style choisir en rédaction administrative ? || Clair, neutre et précis || Familier || Exagéré || Poétique || Les phrases doivent être courtes.
+Que contient une introduction ? || Le sujet, le contexte et le plan || Seulement la conclusion || Des anecdotes || Un salaire || Elle prépare la lecture.
+Comment structurer une note ? || Introduction, parties, conclusion || En un seul bloc || Au hasard || Seulement des listes sans texte || Une structure logique facilite la lecture.
+Quelle formule de politesse convient à un directeur ? || Veuillez agréer, Monsieur le Directeur, l'expression de ma haute considération || Salut mon pote || Bisous || À bientôt || La politesse dépend du rang.
+Pourquoi relire un texte administratif ? || Éviter fautes et erreurs qui nuisent à la crédibilité || Allonger le texte || Gagner de la place || Retarder l'envoi || La qualité du français compte.
+Que faut-il faire avant d'écrire ? || Lire le sujet, repérer le destinataire et le but || Écrire au hasard || Copier un modèle sans lire || Écrire sans plan || Cela guide le contenu.
+Que faut-il éviter dans un courrier officiel ? || Les familiarités et abréviations non définies || Les formules de politesse || La date || L'objet || Un style soutenu est attendu.
+À quoi sert la date dans une lettre ? || Situer l'écrit dans le temps || Décorer || Remplacer la signature || Éviter l'objet || Elle sert de repère juridique.

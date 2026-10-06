@@ -1,0 +1,32 @@
+titre: Droit administratif et droits fondamentaux
+== fiche
+p: Le droit administratif régit l'action de l'administration et ses rapports avec les citoyens.
+li: Administration : ensemble des services publics qui exécutent les décisions de l'État et des collectivités.
+li: Acte administratif : décision unilatérale de l'administration (décret, arrêté, circulaire) ; il peut être contesté.
+li: Recours : gracieux (auprès de l'auteur de l'acte), hiérarchique (auprès du supérieur), contentieux (devant le juge administratif).
+li: Délai de recours : un délai court après la notification (souvent deux mois) ; passé ce délai, l'acte devient difficile à contester.
+li: Responsabilité de l'administration : elle doit réparer les dommages causés par ses fautes ou par le fonctionnement du service.
+li: Marchés publics : contrats d'achat de l'administration, attribués par appel d'offres, transparence et mise en concurrence.
+li: Droits fondamentaux : droit à la vie, liberté, égalité, dignité, liberté d'expression, droit à l'éducation, droit à la santé.
+li: Déclaration universelle des droits de l'homme (1948) ; Charte africaine des droits de l'homme et des peuples (1981).
+li: Droits du citoyen : accès aux documents administratifs, motivation de certaines décisions, droit de défense.
+li: Légalité : l'administration doit respecter la loi ; sinon, l'acte peut être annulé.
+li: Domaine public : biens affectés à l'usage de tous ou au service public (routes, plages) ; inaliénable.
+note: Garde les mots clés : acte administratif, recours, légalité, responsabilité.
+note: Un recours gracieux ne bloque pas toujours le délai : agis vite.
+== questions
+Qu'est-ce qu'un acte administratif ? || Une décision unilatérale de l'administration || Un contrat entre particuliers || Un jugement || Un salaire || Décret, arrêté et circulaire en sont des exemples.
+Qu'est-ce qu'un recours gracieux ? || Une demande adressée à l'auteur de l'acte || Un procès || Une grève || Une amende || Il cherche un réexamen amiable.
+Qu'est-ce qu'un recours hiérarchique ? || Une demande adressée au supérieur de l'auteur de l'acte || Un jugement || Une élection || Un vote || Il est possible avant d'aller en justice.
+Qu'est-ce qu'un recours contentieux ? || Un recours devant le juge || Une lettre d'amitié || Une pétition || Une enquête || Il se fait devant le tribunal administratif.
+Pourquoi respecter le délai de recours ? || Passé ce délai, l'acte est difficile à contester || Pour être payé || Pour éviter l'impôt || Pour gagner du temps || Les délais sont strictement appliqués.
+Pour le concours : que signifie le principe de légalité ? || L'administration doit respecter la loi || L'administration fait ce qu'elle veut || La loi ne s'applique pas à l'administration || Le juge n'a aucun rôle || Un acte illégal peut être annulé.
+Quand l'administration peut-elle être tenue responsable ? || Quand elle cause un dommage par sa faute ou son fonctionnement || Jamais || Seulement en temps de guerre || Seulement pour les salaires || Elle doit réparer le dommage.
+Que sont les marchés publics ? || Les contrats d'achat de l'administration || Les marchés de légumes || Les foires || Les banques || Ils sont attribués par mise en concurrence.
+Pourquoi un appel d'offres ? || Garantir transparence et concurrence || Cacher les prix || Choisir un ami || Éviter l'achat || Il protège l'argent public.
+Pour le concours : que garantit le droit à la vie ? || La protection de la vie humaine || Le droit de voter || Le droit de voyager || Le droit au salaire || Il est le premier des droits fondamentaux.
+Quand a été adoptée la Déclaration universelle des droits de l'homme ? || 1948 || 1789 || 1960 || 2000 || Elle a été proclamée par l'ONU.
+Que protège la Charte africaine des droits de l'homme et des peuples ? || Les droits des personnes et des peuples en Afrique || Les banques || Les routes || Les monnaies || Elle date de 1981.
+Qu'est-ce que le domaine public ? || Les biens affectés à l'usage de tous ou au service public || Les biens privés || Les maisons || Les salaires || Il est inaliénable.
+Que permet l'accès aux documents administratifs ? || La transparence envers les citoyens || Le secret total || La suppression des lois || Le paiement d'impôts || Il facilite le contrôle citoyen.
+Qui peut annuler un acte administratif illégal ? || Le juge administratif || Un ami || Un voisin || Un client || Il vérifie sa conformité à la loi.

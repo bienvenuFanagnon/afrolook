@@ -1,0 +1,32 @@
+titre: Finances publiques et économie
+== fiche
+p: Les finances publiques expliquent comment l'État dépense et finance ses missions. Les concours demandent des notions claires.
+li: Budget de l'État : document qui prévoit les recettes et les dépenses pour une année ; voté par le parlement (loi de finances).
+li: Recettes : impôts (directs sur le revenu et les bénéfices, indirects comme la TVA), droits de douane, redevances, dons, emprunts.
+li: Dépenses : fonctionnement (salaires, matériel), investissement (routes, écoles, hôpitaux), service de la dette.
+li: Déficit : dépenses supérieures aux recettes ; excédent : recettes supérieures aux dépenses ; dette publique : somme des emprunts à rembourser.
+li: Impôt : prélèvement obligatoire sans contrepartie directe ; taxe : prélèvement en échange d'un service ; redevance : paiement d'un service précis.
+li: TVA : taxe sur la valeur ajoutée, payée par le consommateur final ; impôt sur les sociétés et sur le revenu.
+li: Cycle budgétaire : préparation, vote, exécution, contrôle (Cour des comptes).
+li: Cour des comptes : contrôle l'usage de l'argent public et publie ses observations.
+li: Commande publique : marchés publics transparents ; corruption et surfacturation coûtent cher à l'État.
+li: Indicateurs : PIB, croissance, inflation, chômage, balance commerciale, taux d'endettement.
+li: Aide publique au développement, FMI, Banque mondiale, BAD : institutions financières.
+note: Apprends les définitions de base : recettes, dépenses, déficit, dette.
+note: Un impôt juste respecte l'égalité devant la charge publique.
+== questions
+Qu'est-ce que le budget de l'État ? || Le document qui prévoit recettes et dépenses d'une année || Un salaire || Un jeu || Une loterie || Il est voté par le parlement.
+Quel texte autorise le budget annuel ? || La loi de finances || La loi du sport || Le Code pénal || Un arrêté local || Elle fixe aussi les plafonds de dépenses.
+Citez une recette de l'État : || Les impôts || Les salaires des agents || Le remboursement de dette || Les subventions versées || Les droits de douane en sont une autre.
+Citez une dépense d'investissement : || La construction d'une route || Le salaire d'un agent || L'achat de papier || Le chauffage || Elle augmente le patrimoine du pays.
+Qu'est-ce qu'un déficit budgétaire ? || Dépenses supérieures aux recettes || Recettes supérieures aux dépenses || Budget équilibré || Impôts nuls || Il est comblé par l'emprunt.
+Pour le concours : qu'est-ce que la dette publique ? || L'ensemble des emprunts de l'État à rembourser || Un salaire || Un don || Un impôt || Elle pèse sur l'avenir.
+Quelle différence entre impôt et taxe ? || L'impôt est sans contrepartie directe, la taxe finance un service précis || Aucune || La taxe est un cadeau || L'impôt est facultatif || Les deux sont obligatoires.
+Qui paie la TVA ? || Le consommateur final || Seulement les entreprises || L'État || Les banques || Les entreprises la collectent pour l'État.
+Pour le concours : citez un impôt direct : || L'impôt sur le revenu || La TVA || Les droits de douane || Une taxe d'accès || Il est payé directement par le contribuable.
+Que fait la Cour des comptes ? || Contrôle l'usage de l'argent public || Rend les jugements civils || Élabore le budget || Collecte l'impôt || Elle publie ses observations.
+Pourquoi des marchés publics transparents ? || Éviter la corruption et la surfacturation || Pour cacher les prix || Pour choisir un ami || Pour retarder les travaux || L'argent public doit être bien dépensé.
+Pour les finances publiques, que mesure le PIB ? || La richesse produite par un pays || Le nombre de ministres || La superficie || Les impôts seulement || Produit intérieur brut.
+Que mesure le chômage ? || La part des actifs sans emploi || Le nombre d'écoles || Le prix de l'essence || Le niveau des routes || Un indicateur social important.
+Citez une institution financière internationale : || Le FMI || L'OMS || L'UNESCO || La FIFA || La Banque mondiale en est une autre.
+Que signifie BAD ? || Banque africaine de développement || Banque d'aide directe || Bureau d'aide durable || Banque américaine || Elle finance des projets en Afrique.

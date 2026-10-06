@@ -1,0 +1,32 @@
+titre: Code de la route : vitesse, sécurité et comportement
+== fiche
+p: La majorité des accidents viennent d'un comportement : vitesse, alcool, fatigue, téléphone. Le code insiste sur la prévention.
+li: Vitesse : respecter les limites (ville souvent 50 km/h ; route et autoroute plus élevées) ; adapter sa vitesse à la pluie, la nuit, la circulation.
+li: Distance de sécurité : au moins deux secondes avec le véhicule qui précède ; plus longue sur route mouillée.
+li: Distance d'arrêt : distance de réaction + distance de freinage ; elle augmente avec la vitesse, la fatigue, la pluie et l'état des pneus.
+li: Ceinture : obligatoire à l'avant et à l'arrière ; elle réduit fortement la gravité des accidents.
+li: Casque : obligatoire pour les motocyclistes et passagers ; il sauve des vies.
+li: Alcool : il altère réflexes et jugement ; limite légale basse ; sanctions lourdes ; ne jamais conduire après avoir bu.
+li: Téléphone : son usage en conduisant est interdit ; il multiplie le risque d'accident.
+li: Fatigue : somnolence au volant ; faire une pause toutes les deux heures.
+li: Enfants : siège adapté, jamais sur les genoux ; transport à l'arrière.
+li: Documents du véhicule : permis de conduire, carte grise, assurance, visite technique, vignette.
+li: Accident : s'arrêter, protéger les lieux (triangle), porter secours, alerter, remplir un constat.
+note: La vitesse multiplie la gravité d'un choc, pas seulement le risque.
+note: Un conducteur responsable anticipe ce que font les autres usagers.
+== questions
+Quelle limite de vitesse en agglomération (règle courante) ? || 50 km/h || 150 km/h || 10 km/h || 200 km/h || Elle varie selon les pays et les panneaux.
+Pourquoi adapter sa vitesse à la pluie ? || La distance de freinage augmente || Les routes se rétrécissent || Les panneaux changent || Les freins s'améliorent || La route mouillée est glissante.
+Quelle distance de sécurité minimale garder ? || Deux secondes avec le véhicule devant || Aucune || Dix centimètres || Un cheveu || Elle laisse le temps de freiner.
+De quoi se compose la distance d'arrêt ? || Distance de réaction et distance de freinage || Distance de départ seulement || Nombre de passagers || Poids du conducteur || Elle augmente avec la vitesse.
+Quel équipement est obligatoire pour un motard ? || Le casque || Un chapeau || Des gants rouges || Un parapluie || Il protège la tête en cas de chute.
+Que fait la ceinture de sécurité ? || Elle réduit fortement la gravité des accidents || Elle ralentit la voiture || Elle augmente la vitesse || Elle remplace les freins || Elle doit être portée à l'avant et à l'arrière.
+Que fait l'alcool au volant ? || Il altère les réflexes et le jugement || Il améliore la conduite || Il réveille || Il aide à voir || Il est une cause majeure d'accidents.
+Peut-on téléphoner en conduisant ? || Non, c'est interdit || Oui, toujours || Oui, en ville || Oui, le soir || Il multiplie le risque d'accident.
+Que faire en cas de fatigue au volant ? || S'arrêter et se reposer || Accélérer || Monter le son || Boire de l'alcool || Faire une pause toutes les deux heures.
+Où faire voyager un enfant ? || À l'arrière, dans un siège adapté || Sur les genoux du conducteur || Debout || Sur le toit || Les enfants sont particulièrement vulnérables.
+Citez un document du véhicule : || La carte grise || Le passeport du conducteur seulement || Le ticket de caisse || Le journal || L'assurance et la visite technique en sont d'autres.
+Que faire après un accident ? || Protéger les lieux, porter secours et alerter || Partir || Insulter || Attendre sans rien faire || La sécurité des victimes passe en premier.
+À quoi sert le triangle de signalisation ? || Prévenir les autres conducteurs d'un danger || Décorer || Mesurer la vitesse || Chauffer || Il se place en arrière du véhicule immobilisé.
+Pourquoi la vitesse est-elle dangereuse ? || Elle augmente la distance d'arrêt et la gravité du choc || Elle économise l'essence || Elle réduit les accidents || Elle aide à voir || Le risque augmente vite avec la vitesse.
+Que signifie anticiper en conduisant ? || Prévoir le comportement des autres usagers || Rouler les yeux fermés || Ne pas regarder || Accélérer sans raison || Cela permet d'éviter les accidents.
