@@ -1,0 +1,29 @@
+titre: Pharmacologie générale
+== fiche
+p: La pharmacologie étudie le devenir des médicaments dans l'organisme et leurs effets.
+li: Pharmacocinétique (ce que l'organisme fait du médicament) : Absorption, Distribution, Métabolisme (surtout par le foie), Élimination (surtout par les reins) : ADME.
+li: Biodisponibilité : part du médicament qui atteint la circulation ; elle vaut 100 % pour une injection intraveineuse.
+li: Demi-vie : temps nécessaire pour que la concentration dans le sang diminue de moitié ; elle guide le rythme des prises.
+li: Pharmacodynamie (ce que le médicament fait à l'organisme) : action sur des récepteurs, effet thérapeutique, marge thérapeutique, effets indésirables.
+li: Insuffisance du foie ou du rein : les doses doivent être adaptées pour éviter l'accumulation.
+li: Antibiotiques : bêta-lactamines (pénicillines comme l'amoxicilline), macrolides, quinolones, aminosides, cyclines ; ils ne s'utilisent que contre des infections bactériennes.
+li: Antalgiques (paliers de l'OMS) : palier 1 (paracétamol), palier 2 (opioïdes faibles comme le tramadol), palier 3 (morphine).
+li: Antipaludiques : combinaisons à base d'artémisinine pour le paludisme simple ; traitement parentéral du paludisme grave.
+note: Les anti-inflammatoires non stéroïdiens (ibuprofène) peuvent irriter l'estomac et les reins.
+note: Ne pas donner d'aspirine aux enfants fébriles sans avis médical (risque de syndrome de Reye).
+== questions
+Que signifie ADME en pharmacocinétique ? || Absorption, distribution, métabolisme, élimination || Administration, dose, mesure, effet || Analyse, diagnostic, médication, examen || Aliment, digestion, métabolisme, énergie || Il décrit le devenir du médicament dans le corps.
+Quel organe métabolise la plupart des médicaments ? || Le foie || Le cœur || Le poumon || La peau || Il les transforme en composés éliminables.
+Quel organe élimine surtout les médicaments et leurs produits ? || Le rein || Le foie seulement || Le cerveau || L'estomac || Les urines évacuent beaucoup de médicaments.
+Que mesure la biodisponibilité ? || La part du médicament qui atteint la circulation sanguine || Le prix du médicament || La durée du traitement || Le goût || Elle est de 100 % par voie intraveineuse.
+Que représente la demi-vie d'un médicament ? || Le temps pour que sa concentration sanguine soit divisée par deux || La durée du traitement || Le délai de livraison || Le temps de digestion || Elle aide à fixer le rythme des doses.
+Qu'étudie la pharmacodynamie ? || L'action du médicament sur l'organisme || Le devenir du médicament dans le corps || Le prix du médicament || La fabrication || Elle décrit effets thérapeutiques et indésirables.
+Que faut-il faire des doses chez un patient avec une insuffisance rénale ? || Les adapter pour éviter l'accumulation || Les doubler || Les ignorer || Les supprimer toujours || Le rein élimine moins bien.
+Qu'est-ce que la marge thérapeutique ? || L'écart entre dose efficace et dose toxique || Le prix du médicament || La durée du traitement || Le nombre de comprimés || Une marge étroite impose une surveillance.
+Citez une famille d'antibiotiques : || Les bêta-lactamines, comme les pénicillines || Les antalgiques || Les antipaludiques || Les vitamines || L'amoxicilline en fait partie.
+Un antibiotique est-il utile contre une grippe ? || Non, la grippe est virale || Oui, toujours || Oui, avec de la fièvre || Oui, chez l'enfant || Les antibiotiques ciblent les bactéries.
+Quel antalgique appartient au palier 1 de l'OMS ? || Le paracétamol || La morphine || Le tramadol || La codéine forte || Il est utilisé contre les douleurs légères à modérées.
+Quel médicament appartient au palier 3 de l'OMS ? || La morphine || Le paracétamol || L'ibuprofène || Le tramadol || Il soulage les douleurs sévères.
+Quel traitement est recommandé pour un paludisme simple ? || Une combinaison à base d'artémisinine || Un antibiotique || Un antiviral || Un vaccin || Elle réduit le risque de résistance.
+Quel effet indésirable peut provoquer l'ibuprofène ? || Une irritation de l'estomac || Une baisse du pouls || Une prise de poids || Une toux || Il demande des précautions.
+Pourquoi éviter l'aspirine chez un enfant fébrile sans avis ? || Risque de syndrome de Reye || Elle est inefficace || Elle est interdite aux adultes || Elle colore la peau || Il peut être grave pour le foie et le cerveau.

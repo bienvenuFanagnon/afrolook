@@ -1,0 +1,29 @@
+titre: Financement des investissements
+== fiche
+p: Pour financer un investissement, l'entreprise choisit entre fonds propres et dettes, en comparant coût, durée, risque et perte de contrôle.
+li: Autofinancement : bénéfices non distribués, réserves, amortissements ; il ne coûte pas d'intérêts mais est limité.
+li: Capitaux propres externes : augmentation de capital (nouveaux associés), apports d'actionnaires, capital-risque.
+li: Dettes : emprunt bancaire (taux, durée, garanties), emprunt obligataire, crédit fournisseur, microcrédit.
+li: Crédit-bail (leasing) : l'entreprise loue un bien avec une option d'achat à la fin ; elle conserve sa trésorerie, mais paie des loyers.
+li: Tableau d'amortissement d'un emprunt : chaque annuité comprend les intérêts (calculés sur le capital restant dû) et le remboursement du capital.
+li: Capacité de remboursement : la CAF doit couvrir confortablement les annuités ; on suit le ratio d'endettement et le ratio de couverture.
+li: Effet de levier : l'emprunt augmente la rentabilité des capitaux propres si le rendement de l'investissement dépasse le coût de la dette ; il augmente aussi le risque.
+li: Garanties : hypothèque, nantissement, caution, fonds de garantie.
+note: Exemple : emprunt de 1 000 000 à 10 % par an : intérêts de la première année 100 000.
+note: Un projet doit être rentable (VAN positive) avant de choisir comment le financer.
+== questions
+Qu'est-ce que l'autofinancement ? || Le financement par les bénéfices conservés et les amortissements || Un emprunt bancaire || Une subvention || Une vente de stock || Il n'engendre pas d'intérêts.
+Quel est le principal avantage de l'autofinancement ? || Il évite de payer des intérêts et de dépendre d'un prêteur || Il est illimité || Il est gratuit toujours || Il supprime les impôts || Mais son montant est limité.
+Qu'est-ce qu'une augmentation de capital ? || L'apport de nouveaux fonds propres par les associés ou de nouveaux associés || Un prêt || Une vente || Un impôt || Elle peut diluer le contrôle.
+Citez une forme de dette : || L'emprunt bancaire || L'autofinancement || Les réserves || Le capital || Le crédit fournisseur en est une autre.
+Qu'est-ce que le crédit-bail ? || Une location d'un bien avec option d'achat || Un achat comptant || Un prêt personnel || Une donation || Il préserve la trésorerie.
+Quel avantage a le crédit-bail ? || Il évite un gros décaissement initial || Il supprime tout paiement || Il donne la propriété immédiate || Il est gratuit || Il facilite l'acquisition de matériel.
+Sur quoi calcule-t-on les intérêts d'un emprunt chaque année ? || Sur le capital restant dû || Sur le capital initial toujours || Sur les bénéfices || Sur la TVA || Ils diminuent au fil du temps.
+Emprunt de 1 000 000 à 10 %. Quels sont les intérêts de la première année ? || 100 000 || 10 000 || 1 100 000 || 900 000 || 1 000 000 × 10 %.
+Que comprend une annuité de remboursement ? || Des intérêts et une part du capital || Seulement les intérêts || Seulement le capital || Une taxe || C'est un versement périodique.
+Que mesure la capacité de remboursement ? || La capacité de l'entreprise à payer ses annuités avec sa CAF || Le prix du crédit || La durée de vie du projet || Le nombre de clients || Une CAF suffisante rassure la banque.
+Qu'est-ce que l'effet de levier ? || Il accroît la rentabilité des fonds propres si le rendement dépasse son coût || L'emprunt réduit toujours le risque || Le levier est un outil || L'emprunt supprime les fonds propres || Il augmente aussi le risque.
+Pourquoi une banque demande-t-elle des garanties ? || Pour se protéger en cas de défaut de remboursement || Pour augmenter les taux seulement || Pour retarder le crédit || Pour contrôler l'entreprise || Hypothèque ou caution en sont des exemples.
+Quel financement évite à l'entrepreneur de céder une part de son entreprise ? || L'emprunt bancaire || L'augmentation de capital avec de nouveaux associés || Le capital-risque || L'ouverture du capital || Il s'agit de dette et non de fonds propres.
+Que faut-il vérifier avant de choisir comment financer un projet ? || Que le projet est rentable, par exemple avec une VAN positive || Le logo || La couleur du bâtiment || Le nom du banquier || Le financement suit la décision d'investir.
+Qu'est-ce que le microcrédit ? || Un petit prêt destiné à de petites activités || Un grand prêt industriel || Un impôt || Un don || Il est accordé par des institutions de microfinance.

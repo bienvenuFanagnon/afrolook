@@ -1,0 +1,28 @@
+titre: Études quantitatives et sondages
+== fiche
+p: Une étude quantitative mesure des comportements ou opinions sur un échantillon et généralise les résultats à une population.
+li: Population : l'ensemble des personnes visées ; échantillon : sous-ensemble interrogé ; base de sondage : liste dont on tire l'échantillon.
+li: Méthodes probabilistes : tirage aléatoire simple, stratifié, par grappes ; méthodes empiriques : quotas, convenance, boule de neige.
+li: Taille et précision : marge d'erreur approximative = 1/√n (n = taille de l'échantillon) ; n = 100 donne environ ± 10 % ; n = 400 environ ± 5 % ; n = 1 000 environ ± 3 %.
+li: Questionnaire : questions fermées (réponses prévues), ouvertes (réponses libres), échelles (par exemple de 1 à 5), questions simples, neutres, une idée par question ; pré-test avant diffusion.
+li: Modes de collecte : face à face, téléphone, en ligne, via messagerie mobile ; chacun a ses coûts et biais.
+li: Biais : échantillon non représentatif, questions orientées, non-réponses, mensonge social, enquêteur.
+li: Analyse : tris à plat (pourcentages), tris croisés (selon l'âge, le sexe), moyennes, graphiques.
+note: Une étude qualitative (entretiens, groupes de discussion) explore les motivations ; une étude quantitative les mesure.
+note: Interroger uniquement ses amis donne un échantillon biaisé.
+== questions
+Que mesure une étude quantitative ? || Des comportements ou opinions chiffrés sur un échantillon || Les motivations profondes seulement || Les coûts || Les salaires || Elle généralise à une population.
+Qu'est-ce qu'un échantillon ? || Un sous-ensemble de la population que l'on interroge || La population entière || Un questionnaire || Un résultat || Il doit être représentatif.
+Qu'est-ce que la population d'une étude ? || L'ensemble des personnes visées par l'étude || L'échantillon || Un seul client || Les concurrents || L'échantillon en est un extrait.
+Citez une méthode probabiliste : || Le tirage aléatoire simple || La méthode des quotas || L'échantillon de convenance || La boule de neige || Chaque personne a une chance connue d'être choisie.
+Citez une méthode empirique : || La méthode des quotas || Le tirage aléatoire simple || Le tirage stratifié aléatoire || Le tirage par grappes || Elle imite la structure de la population.
+Quelle marge d'erreur approximative donne un échantillon de 400 personnes ? || Environ ± 5 % || ± 1 % || ± 20 % || ± 50 % || 1/√400 = 0,05.
+Quelle marge d'erreur approximative donne un échantillon de 100 personnes ? || Environ ± 10 % || ± 1 % || ± 5 % || ± 30 % || 1/√100 = 0,1.
+Que se passe-t-il en augmentant la taille de l'échantillon ? || La marge d'erreur diminue || La marge d'erreur augmente || Le biais disparaît toujours || Le coût baisse || La précision s'améliore.
+Qu'est-ce qu'une question fermée ? || Une question aux réponses prévues à l'avance || Une question sans réponse || Une question libre || Une question piège || Elle est facile à analyser.
+Qu'est-ce qu'une question ouverte ? || Une question à réponse libre || Une question à choix multiple || Une question oui/non || Une question chiffrée || Elle donne des informations riches mais plus difficiles à traiter.
+Pourquoi faire un pré-test du questionnaire ? || Pour vérifier la clarté et corriger les erreurs avant diffusion || Pour retarder l'étude || Pour augmenter le coût || Pour supprimer des questions utiles || Quelques personnes le testent.
+Qu'est-ce qu'une question orientée ? || Une question qui suggère la réponse || Une question neutre || Une question courte || Une question ouverte || Elle fausse les résultats.
+Qu'est-ce qu'un biais de sélection ? || Un échantillon qui ne représente pas la population || Une erreur de calcul || Une question trop longue || Une marge d'erreur || Interroger seulement ses amis en est un exemple.
+Que fait un tri croisé ? || Il compare les réponses selon des groupes comme l'âge ou le sexe || Il trie les questions || Il calcule la marge || Il supprime les biais || Il révèle des différences entre groupes.
+Quelle est la différence entre étude qualitative et quantitative ? || La première explore les motivations, la seconde mesure sur un échantillon || Il n'y en a pas || La première est chiffrée || La seconde utilise des entretiens seulement || Elles se complètent.

@@ -1,0 +1,29 @@
+titre: Immunité, allergies et VIH
+== fiche
+p: Le système immunitaire défend l'organisme contre les agents infectieux et les cellules anormales.
+li: Immunité innée (non spécifique) : barrières (peau, muqueuses), fièvre, inflammation, phagocytose. Immunité adaptative (spécifique) : lymphocytes B et T, mémoire immunitaire.
+li: Antigène : substance reconnue comme étrangère. Anticorps (immunoglobulines) : protéines fabriquées par les lymphocytes B pour neutraliser un antigène.
+li: Lymphocytes T : T4 (CD4, chefs d'orchestre) et T8 (CD8, tueurs de cellules infectées).
+li: Vaccin : immunité active, avec mémoire, durable. Sérum (anticorps tout faits) : immunité passive, immédiate mais de courte durée.
+li: Allergie : réaction exagérée à une substance inoffensive (pollen, aliment, médicament) ; signes : démangeaisons, éruption, gonflement ; choc anaphylactique : urgence vitale traitée par l'adrénaline.
+li: VIH : virus qui détruit les lymphocytes CD4 ; sans traitement, il conduit au sida ; les antirétroviraux réduisent la charge virale jusqu'à la rendre indétectable (indétectable = non transmissible).
+li: Maladies auto-immunes : le système immunitaire attaque l'organisme (certains diabètes de type 1, lupus).
+li: Greffe : risque de rejet ; traitement immunosuppresseur.
+note: L'allaitement transmet des anticorps de la mère à l'enfant.
+note: Le stress, la malnutrition et le manque de sommeil affaiblissent les défenses.
+== questions
+Citez une barrière de l'immunité innée : || La peau || Les anticorps || Les lymphocytes B || Le vaccin || Elle bloque l'entrée des microbes.
+Que fait la phagocytose ? || Des cellules englobent et détruisent des microbes || Elle fabrique des anticorps || Elle produit du sang || Elle digère les aliments || Les phagocytes sont des globules blancs.
+Comment nomme-t-on une substance étrangère capable de déclencher une réponse immunitaire ? || Un antigène || Un médicament || Un anticorps || Une hormone || Il déclenche une réponse immunitaire.
+Quelle molécule, produite par l'organisme, neutralise un antigène précis ? || Un anticorps || Un virus || Un globule rouge || Une hormone || Il est produit par des lymphocytes B.
+Quels globules blancs sont à l'origine de la production d'anticorps ? || Les lymphocytes B || Les globules rouges || Les plaquettes || Les neurones || Elles se transforment en plasmocytes.
+Quel est le rôle des lymphocytes T CD4 ? || Coordonner la réponse immunitaire || Transporter l'oxygène || Coaguler le sang || Digérer || Le VIH les détruit.
+Que contient la mémoire immunitaire ? || La capacité de répondre plus vite à un antigène déjà rencontré || Les souvenirs || Les anticorps du voisin || Les aliments || Elle explique l'efficacité des vaccins.
+Quelle immunité apporte un vaccin ? || Une immunité active durable || Une immunité passive immédiate || Aucune immunité || Une immunité de quelques heures || Le corps fabrique lui-même ses anticorps.
+Quelle immunité apporte un sérum d'anticorps ? || Une immunité passive immédiate mais de courte durée || Une immunité active durable || Une immunité à vie || Aucune immunité || Il est utilisé en urgence (tétanos, morsure de serpent).
+Qu'est-ce qu'une allergie ? || Une réaction exagérée à une substance inoffensive || Une infection || Une maladie héréditaire || Une carence || Pollen, aliments ou médicaments peuvent la provoquer.
+Quel médicament traite un choc anaphylactique ? || L'adrénaline || L'insuline || L'antibiotique || Le paracétamol || C'est le traitement d'urgence.
+Quelles cellules le VIH attaque-t-il principalement ? || Les lymphocytes CD4 || Les globules rouges || Les plaquettes || Les cellules musculaires || Il affaiblit progressivement les défenses.
+Que permet un traitement antirétroviral efficace ? || Une charge virale indétectable et une vie normale || La guérison définitive || L'arrêt de tout suivi || Le retrait du préservatif toujours || Indétectable égale non transmissible.
+Qu'est-ce qu'une maladie auto-immune ? || Le système immunitaire attaque l'organisme || Une infection virale || Une allergie || Un cancer || Le lupus en est un exemple.
+Pourquoi allaiter protège-t-il le nourrisson ? || Le lait transmet des anticorps de la mère || Il remplace le vaccin || Il supprime les microbes || Il remplace l'eau || Il renforce ses défenses.

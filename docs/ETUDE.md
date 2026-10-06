@@ -235,3 +235,7 @@ MPC, Économie-Finance-Comptabilité, Droit et Sport ont maintenant leurs trois 
 ## 20. Santé, Gestion et Marketing (Licence 1)
 
 Trois nouveaux parcours de Licence 1 (12 chapitres, 180 questions chacun) : `univ_sante` (anatomie et physiologie, santé publique, soins de base, nutrition et éthique), `univ_gestion` (management, opérations et projets, finance et prix, communication et outils numériques), `univ_marketing` (fondamentaux, communication, marketing digital, vente et mesure). Les Licences 2 et 3 restent à écrire. Total Étude : 14 parcours, 233 chapitres, 3 495 questions. À relire par des professionnels (santé : soignants ; gestion et marketing : enseignants).
+
+## 21. Licences 2 de Santé, Gestion et Marketing
+
+Santé L2 (8 chapitres : pharmacologie, microbiologie, immunité, hormones et diabète, grossesse et accouchement, maladies de l'enfant et PCIME, techniques de soins, santé communautaire), Gestion L2 (8 : lean et qualité, douane et commerce extérieur, financement, prévision des ventes, gestion d'une PME, leadership et changement, contrôle interne, gouvernance OHADA), Marketing L2 (8 : études quantitatives, stratégie et plan, services, B2B, marché africain, analytique digitale, vidéo et influence, droit et éthique). L'examen de licence de chaque parcours porte sur les deux années (50 questions). Total Étude : 14 parcours, 257 chapitres, 3 855 questions.

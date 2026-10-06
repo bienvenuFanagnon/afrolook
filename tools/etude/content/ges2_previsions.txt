@@ -1,0 +1,29 @@
+titre: Prévision des ventes
+== fiche
+p: Prévoir les ventes aide à planifier la production, les achats, les recrutements et la trésorerie.
+li: Méthodes qualitatives : avis d'experts, avis de vendeurs, enquêtes d'intention d'achat, tests de marché.
+li: Méthodes quantitatives : on utilise les données passées (séries chronologiques).
+li: Composantes d'une série : tendance (évolution à long terme), saisonnalité (variations qui se répètent chaque année), aléas (variations imprévues).
+li: Moyenne mobile : moyenne des n dernières périodes ; elle lisse les variations. Exemple : (10 + 12 + 14)/3 = 12.
+li: Ajustement linéaire (méthode des moindres carrés) : droite y = a x + b qui passe au plus près des points ; le coefficient a est la pente (variation moyenne par période).
+li: Coefficient saisonnier : ventes d'une période divisées par la moyenne ; prévision = tendance × coefficient saisonnier.
+li: Erreur de prévision : écart entre prévu et réel ; on l'analyse pour améliorer la méthode.
+li: Limites : un événement exceptionnel (crise, nouveau concurrent, pénurie) change la tendance ; actualiser régulièrement.
+note: Exemple : une boutique de fournitures scolaires vend beaucoup en septembre ; son coefficient saisonnier est élevé à cette période.
+note: Plusieurs scénarios (optimiste, réaliste, prudent) rendent la décision plus sûre.
+== questions
+À quoi servent les prévisions de ventes ? || À planifier production, achats et trésorerie || À fixer les salaires seulement || À payer les impôts || À choisir un logo || Elles guident toutes les décisions opérationnelles.
+Citez une méthode qualitative de prévision : || L'avis d'experts || La moyenne mobile || La droite des moindres carrés || Le coefficient saisonnier || Elle repose sur des jugements.
+Qu'est-ce qu'une série chronologique ? || Des données observées au fil du temps || Un tableau de prix || Une liste d'employés || Un bilan || Par exemple les ventes mensuelles.
+Qu'est-ce que la tendance d'une série ? || L'évolution à long terme || La variation de la saison || L'imprévu || La moyenne || Elle indique la croissance ou le déclin.
+Qu'est-ce que la saisonnalité ? || Des variations qui se répètent à chaque saison ou année || Une hausse continue || Un accident || Une crise || Elle peut être liée aux fêtes ou à la rentrée.
+Que représentent les aléas d'une série ? || Les variations imprévues || La tendance || La moyenne || La saison || Ils ne sont pas prévisibles.
+Que calcule une moyenne mobile ? || La moyenne des dernières périodes pour lisser les variations || La somme des ventes || Le maximum || Le minimum || Elle montre mieux la tendance.
+Quelle est la moyenne mobile sur 3 périodes de 10, 12 et 14 ? || 12 || 36 || 10 || 14 || (10 + 12 + 14)/3.
+Que représente le coefficient a de la droite y = a x + b ? || La pente : variation moyenne par période || Le point de départ || Le bruit || Le total || Une pente positive indique une hausse.
+Que représente b dans la droite y = a x + b ? || La valeur à l'origine || La pente || L'aléa || Le coefficient saisonnier || C'est la valeur théorique pour x = 0.
+Que représente un coefficient saisonnier de 1,3 pour un mois ? || Les ventes sont environ 30 % au-dessus de la moyenne || Les ventes sont 30 % en dessous || Les ventes sont nulles || Les ventes ont doublé || Il corrige la tendance.
+Comment obtient-on une prévision saisonnière ? || Tendance multipliée par le coefficient saisonnier || Tendance plus 1 || Moyenne divisée par 2 || Coefficient moins tendance || C'est le modèle multiplicatif.
+Pourquoi analyser l'erreur de prévision ? || Pour améliorer la méthode || Pour la cacher || Pour la supprimer || Pour punir || L'écart entre prévu et réel est instructif.
+Pourquoi actualiser régulièrement ses prévisions ? || Un événement exceptionnel peut changer la tendance || Les prévisions sont fixes || C'est inutile || Pour augmenter les coûts || Elles doivent suivre la réalité.
+Pourquoi construire plusieurs scénarios ? || Pour se préparer à différentes situations || Pour compliquer || Pour tromper || Pour éviter de décider || Optimiste, réaliste et prudent.

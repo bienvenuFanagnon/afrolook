@@ -1,0 +1,29 @@
+titre: Stratégie et plan marketing
+== fiche
+p: La stratégie marketing définit à qui l'entreprise s'adresse, avec quelle promesse et avec quels moyens ; le plan marketing la traduit en actions, budget et calendrier.
+li: Démarche : diagnostic (marché, concurrence, forces et faiblesses), objectifs, segmentation-ciblage-positionnement (STP), mix marketing, plan d'action, budget, contrôle.
+li: Stratégies de ciblage : indifférenciée (même offre pour tous), différenciée (une offre par segment), concentrée (un seul segment, une niche).
+li: Matrice d'Ansoff : pénétration du marché (produits actuels, marchés actuels), développement de marché (nouveaux marchés), développement de produit (nouveaux produits), diversification.
+li: Objectifs SMART : spécifiques, mesurables, atteignables, réalistes, temporels (par exemple +20 % de clients en 12 mois).
+li: Avantage concurrentiel : coûts, différenciation, spécialisation ; la proposition de valeur doit être claire.
+li: Plan d'action : actions par levier (produit, prix, distribution, communication), responsables, dates, budget.
+li: Budget : méthode des objectifs et tâches, pourcentage du chiffre d'affaires, alignement sur la concurrence.
+li: Contrôle : indicateurs, comparaison réalisé et prévu, actions correctives.
+note: Exemple : une marque de cosmétiques lance un produit à base de karité pour les femmes actives de 25 à 40 ans en ville (cible) avec un positionnement « naturel et accessible ».
+note: Sans budget et sans suivi, un plan marketing reste une liste d'intentions.
+== questions
+Quelles sont les grandes étapes d'une démarche marketing ? || Diagnostic, objectifs, STP, mix, plan d'action, budget, contrôle || Production, vente, stock || Achat, paiement, livraison || Recrutement, formation, paie || Elles se suivent logiquement.
+Que signifie STP en marketing ? || Segmentation, ciblage, positionnement || Stratégie, tarif, produit || Stock, transport, paiement || Service, test, prix || C'est le cœur de la stratégie.
+Qu'est-ce qu'une stratégie de ciblage concentrée ? || Se concentrer sur un seul segment ou une niche || Cibler tout le monde || Cibler plusieurs segments avec des offres différentes || Ne cibler personne || Elle convient aux ressources limitées.
+Qu'est-ce qu'une stratégie de ciblage différenciée ? || Proposer une offre adaptée à chaque segment || Proposer la même offre à tous || Cibler un seul segment || Ne pas segmenter || Elle demande plus de moyens.
+Que décrit la matrice d'Ansoff ? || Les stratégies de croissance selon produits et marchés || Les cycles de vie || Les coûts || Les concurrents || Quatre options de croissance.
+Que signifie la pénétration du marché dans la matrice d'Ansoff ? || Vendre plus de produits actuels sur les marchés actuels || Lancer de nouveaux produits sur de nouveaux marchés || Entrer sur un nouveau marché || Changer de produit || C'est la stratégie la moins risquée.
+Que signifie la diversification dans la matrice d'Ansoff ? || De nouveaux produits sur de nouveaux marchés || Les produits actuels sur les marchés actuels || De nouveaux produits sur les marchés actuels || Les produits actuels sur de nouveaux marchés || C'est la stratégie la plus risquée.
+Citez un exemple d'objectif SMART : || Augmenter de 20 % le nombre de clients en 12 mois || Devenir célèbre || Vendre beaucoup || Être le meilleur || Il est précis, mesurable et daté.
+Qu'est-ce qu'une proposition de valeur ? || La promesse de bénéfices faite au client || Le prix || Le logo || La publicité || Elle explique pourquoi le client choisit l'offre.
+Que contient un plan d'action marketing ? || Les actions, responsables, dates et budgets || Seulement les prix || Seulement la publicité || Seulement le logo || Il rend la stratégie concrète.
+Citez une méthode de fixation du budget marketing : || Un pourcentage du chiffre d'affaires || Un tirage au sort || Le prix de l'emballage || Le salaire du directeur || La méthode des objectifs et tâches en est une autre.
+Pourquoi contrôler un plan marketing ? || Comparer le réalisé au prévu et corriger || Remplir un document || Augmenter les coûts || Supprimer les clients || Les écarts guident les ajustements.
+Pourquoi une marque de cosmétiques cible-t-elle précisément un segment ? || Pour adapter son offre et sa communication || Pour vendre moins || Pour supprimer la concurrence || Pour éviter l'étude || Un message précis touche mieux.
+Que se passe-t-il sans budget ni suivi ? || Le plan reste une liste d'intentions || Le plan est parfait || Les clients arrivent seuls || Les coûts baissent || Le plan doit être mesuré.
+Qu'est-ce qu'un diagnostic marketing ? || L'analyse du marché, de la concurrence et de l'entreprise || Un traitement médical || Un bilan comptable || Un contrat || Il précède les objectifs.

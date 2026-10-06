@@ -1,0 +1,29 @@
+titre: Maladies de l'enfant et PCIME
+== fiche
+p: La PCIME (prise en charge intégrée des maladies de l'enfant) est une approche de l'OMS pour reconnaître et traiter les maladies courantes de l'enfant de moins de 5 ans.
+li: Signes généraux de danger : l'enfant ne peut pas boire ou téter, vomit tout ce qu'il prend, a eu des convulsions, est léthargique ou inconscient ; il faut référer d'urgence.
+li: Toux ou difficultés respiratoires : compter la fréquence respiratoire pendant une minute ; respiration rapide : 50 par minute ou plus (2 à 11 mois), 40 ou plus (1 à 5 ans) ; tirage sous-costal = pneumonie grave.
+li: Diarrhée : évaluer la déshydratation ; plan A (à domicile : liquides, SRO, zinc, continuer l'alimentation), plan B (déshydratation modérée : SRO au centre), plan C (grave : perfusion).
+li: Fièvre : rechercher le paludisme (test de diagnostic rapide), la rougeole, les infections de la gorge ou de l'oreille, la méningite (raideur de la nuque).
+li: Malnutrition et anémie : mesurer le périmètre brachial, chercher des œdèmes, la pâleur des paumes.
+li: Vaccination : vérifier le carnet ; vitamine A et déparasitage selon le calendrier.
+li: Conseils aux parents : continuer l'allaitement, donner plus à boire, quand revenir, signes d'alerte.
+li: Hygiène : eau potable, lavage des mains, latrines.
+note: La pneumonie, la diarrhée et le paludisme comptent parmi les principales causes de décès des enfants de moins de 5 ans.
+note: Chez le nourrisson de moins de 2 mois, toute fièvre ou signe de danger demande une référence urgente.
+== questions
+Que signifie PCIME ? || Prise en charge intégrée des maladies de l'enfant || Plan communautaire d'information médicale || Programme central d'infirmerie || Protocole des cas d'infection modérée || C'est une stratégie de l'OMS.
+Citez un signe général de danger chez l'enfant : || Il ne peut pas boire ni téter || Il joue || Il dort la nuit || Il a de l'appétit || Il faut référer d'urgence.
+À partir de quelle fréquence respiratoire parle-t-on de respiration rapide à 1 an ? || 40 par minute ou plus || 20 par minute || 30 par minute || 60 par minute seulement || C'est le seuil pour les enfants de 1 à 5 ans.
+Quel seuil de respiration rapide s'applique à un nourrisson de 6 mois ? || 50 par minute ou plus || 20 par minute || 30 par minute || 70 par minute || Seuil pour les enfants de 2 à 11 mois.
+Quel signe respiratoire évoque une pneumonie grave chez l'enfant ? || Le tirage sous-costal || Une toux sèche || Un bruit du cœur || Une douleur au ventre || Il impose une référence.
+Quel traitement vise une diarrhée sans déshydratation (plan A) ? || Liquides, SRO, zinc et alimentation continue || Antibiotique systématique || Jeûne || Perfusion || Il est appliqué à domicile.
+Quand utilise-t-on le plan C pour une diarrhée ? || En cas de déshydratation grave, avec perfusion || En cas de diarrhée légère || En cas de toux || En cas de fièvre || C'est une urgence.
+Quel test faut-il faire devant une fièvre en zone de paludisme ? || Un test de diagnostic rapide || Une radio || Une glycémie || Un électrocardiogramme || Il confirme le paludisme.
+Quel signe évoque une méningite chez l'enfant fébrile ? || Une raideur de la nuque || Un nez qui coule || Une toux || Un appétit augmenté || Il impose une référence urgente.
+Quel ruban sert à repérer la malnutrition en entourant le haut du bras ? || Le périmètre brachial || La taille || Le pouls || La température || Il se mesure avec un ruban.
+Que révèle une pâleur des paumes ? || Une possible anémie || Une infection de la gorge || Un excès de sucre || Une allergie || Elle est un signe clinique simple.
+Que conseille-t-on à la mère d'un enfant malade ? || Continuer l'allaitement et donner plus à boire || Arrêter l'allaitement || Réduire les liquides || Le laisser jeûner || Elle doit aussi connaître les signes d'alerte.
+Que faut-il faire d'un nourrisson de moins de 2 mois fébrile ? || Le référer d'urgence || L'observer à la maison || Lui donner du sirop || Le laisser dormir || Son état peut se dégrader vite.
+Citez une cause fréquente de décès des enfants de moins de 5 ans : || La pneumonie || Le rhume banal || Les caries || L'acné || Diarrhée et paludisme en font partie.
+Quelle mesure collective réduit les diarrhées ? || L'eau potable et le lavage des mains || Le sucre || Le sel || La chaleur || Elle coupe la transmission fécale-orale.

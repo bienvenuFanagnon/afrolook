@@ -1,0 +1,29 @@
+titre: Droit et éthique du marketing
+== fiche
+p: Le marketing doit respecter la loi et des principes éthiques : sincérité, respect du consommateur, loyauté envers les concurrents.
+li: Publicité trompeuse ou mensongère : affirmation fausse ou propre à induire en erreur sur le produit, le prix ou l'origine ; elle est interdite et sanctionnée.
+li: Publicité comparative : autorisée sous conditions (objective, vérifiable, sans dénigrer).
+li: Concurrence déloyale : dénigrement des concurrents, imitation créant une confusion, parasitisme, débauchage abusif.
+li: Protection du consommateur : information claire (prix, caractéristiques, garantie), clauses abusives interdites, droit de rétractation pour la vente à distance selon les lois, sécurité des produits.
+li: Données personnelles : consentement, finalité, droit d'accès et d'effacement ; démarchage non sollicité encadré.
+li: Publicité et enfants : règles strictes ; alcool, tabac, médicaments : publicité interdite ou limitée.
+li: Faux avis et avis achetés : interdits ; il faut distinguer contenu publicitaire et contenu éditorial.
+li: Responsabilité sociale : éviter les stéréotypes, respecter l'environnement (greenwashing interdit), pratiquer des prix honnêtes.
+note: Les jeux concours doivent avoir un règlement clair, déposé selon les lois locales.
+note: Le non-respect des règles expose à des amendes, retraits de publicité et atteinte à la réputation.
+== questions
+Qu'est-ce qu'une publicité trompeuse ? || Une publicité qui induit le consommateur en erreur || Une publicité drôle || Une publicité coûteuse || Une publicité en couleur || Elle est interdite.
+Que doit respecter une publicité comparative ? || Être objective et vérifiable sans dénigrer || Dénigrer le concurrent || Mentir sur les prix || Être secrète || Elle est autorisée sous conditions.
+Qu'est-ce que le dénigrement ? || Discréditer un concurrent par de fausses accusations || Comparer honnêtement || Féliciter un concurrent || Baisser ses prix || C'est un acte de concurrence déloyale.
+Qu'est-ce que le parasitisme commercial ? || Profiter indûment de la réputation d'un concurrent || Vendre à bas prix || Faire des promotions || Embaucher || C'est une forme de concurrence déloyale.
+Qu'est-ce qu'une clause abusive ? || Une clause qui crée un déséquilibre injustifié au détriment du consommateur || Une clause de prix || Une clause de délai || Une clause de garantie || Elle est réputée non écrite.
+Que doit contenir l'information donnée au consommateur ? || Prix, caractéristiques et garantie clairs || Un slogan seulement || Un logo seulement || Des promesses vagues || La clarté protège l'acheteur.
+Quel droit de la vente à distance protège le consommateur ? || Le droit de rétractation dans un délai || Le droit de ne pas payer || Le droit de revendre || Le droit de refuser toute facture || Il varie selon les lois.
+Que faut-il obtenir avant d'utiliser les données d'un client pour du marketing ? || Son consentement || Rien || Son passeport || Un paiement || La loi protège les données personnelles.
+Quelle précaution prendre pour la publicité visant les enfants ? || Respecter des règles strictes || Aucune || La rendre agressive || La faire à l'école || Les enfants sont particulièrement vulnérables.
+Que dire de la publicité pour le tabac ? || Elle est en général interdite ou très limitée || Elle est libre || Elle est obligatoire || Elle est recommandée || C'est une question de santé publique.
+Que dire des faux avis clients ? || Ils sont interdits et trompeurs || Ils sont recommandés || Ils sont gratuits || Ils sont légaux || Ils faussent la confiance.
+Pourquoi signaler un contenu sponsorisé ? || Pour que le public sache qu'il s'agit d'une publicité || Pour cacher la publicité || Pour payer moins || Pour éviter les clients || C'est une obligation de loyauté.
+Comment appelle-t-on le fait de se dire écologique sans l'être réellement ? || Le greenwashing || Une vraie démarche écologique || Une peinture verte || Un label || C'est une tromperie.
+Que doit comporter un jeu concours ? || Un règlement clair || Aucun règlement || Un tirage secret || Une obligation d'achat cachée || La transparence est exigée.
+Quel risque court une entreprise qui ne respecte pas ces règles ? || Amendes, retrait de publicités et atteinte à la réputation || Une prime || Une exonération || Aucun || Les sanctions peuvent être lourdes.

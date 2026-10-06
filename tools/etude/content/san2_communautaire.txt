@@ -1,0 +1,29 @@
+titre: Santé communautaire et soins de santé primaires
+== fiche
+p: La santé communautaire associe les habitants à l'amélioration de leur santé.
+li: Conférence d'Alma-Ata (1978) : déclaration « la santé pour tous » avec les soins de santé primaires (SSP) comme stratégie.
+li: SSP : éducation pour la santé, bonne nutrition, eau potable et assainissement, santé de la mère et de l'enfant et planification familiale, vaccination, lutte contre les maladies endémiques, traitement des maladies courantes, médicaments essentiels.
+li: Initiative de Bamako (1987) : participation des communautés au financement et à la gestion des centres de santé, avec disponibilité de médicaments essentiels.
+li: Pyramide sanitaire : agents de santé communautaires (village), centre de santé, hôpital de district, hôpital régional, hôpital universitaire ; référence (vers le haut) et contre-référence (retour).
+li: Participation communautaire : comités de santé, relais communautaires, éducation par les pairs, mobilisation sociale.
+li: Promotion de la santé : informer, changer les comportements (lavage des mains, moustiquaire, vaccination), créer des environnements sains.
+li: Indicateurs de santé : mortalité infantile et maternelle, espérance de vie, couverture vaccinale, accès aux soins.
+li: Couverture sanitaire universelle : tous peuvent accéder aux soins de qualité sans difficulté financière.
+note: Les agents de santé communautaires font le lien entre la population et le système de santé.
+note: Les déterminants sociaux de la santé : revenu, éducation, logement, eau, alimentation, genre.
+== questions
+En quelle année a eu lieu la conférence d'Alma-Ata ? || 1978 || 1945 || 1990 || 2000 || Elle a lancé « la santé pour tous ».
+Que signifie SSP ? || Soins de santé primaires || Service de santé publique || Soins spécialisés particuliers || Système de surveillance permanente || C'est la stratégie d'Alma-Ata.
+Citez un élément des soins de santé primaires : || La vaccination || La chirurgie de pointe || La greffe d'organe || L'imagerie lourde || Elle fait partie du paquet de base.
+Quelle initiative de 1987 associe les communautés au financement des centres de santé ? || L'Initiative de Bamako || Une loi sur le tabac || Un vaccin || Un traité de paix || Elle date de 1987.
+Quel est le premier niveau de la pyramide sanitaire ? || L'agent de santé communautaire et le centre de santé || Le CHU || L'hôpital régional || L'hôpital privé || Il est proche de la population.
+Que signifie la référence ? || Le transfert d'un patient vers un niveau supérieur de soins || Un retour au village || Un certificat || Une facture || Elle suit les complications.
+Que signifie la contre-référence ? || Le retour du patient avec les informations vers le niveau inférieur || Un transfert vers le CHU || Un refus de soins || Une facture || Elle assure la continuité des soins.
+Qui sont les relais communautaires ? || Des membres de la communauté formés pour des actions de santé de base || Des médecins spécialistes || Des pharmaciens || Des infirmiers hospitaliers || Ils font le lien avec les services de santé.
+Qu'est-ce que la promotion de la santé ? || Aider les gens à adopter des comportements sains dans des milieux favorables || Vendre des médicaments || Construire des hôpitaux seulement || Soigner les maladies || Elle agit sur les comportements et l'environnement.
+Citez un indicateur de santé d'une population : || La mortalité infantile || Le nombre de médecins par spécialité seulement || Le prix des médicaments || Le nombre d'hôpitaux privés || L'espérance de vie en est un autre.
+Que veut dire couverture sanitaire universelle ? || Tous accèdent à des soins de qualité sans difficulté financière || Un seul hôpital pour tous || Des soins gratuits aux seuls riches || Des soins réservés aux enfants || Elle est un objectif de l'OMS.
+Qu'est-ce qu'un déterminant social de la santé ? || Une condition de vie qui influence la santé, comme l'éducation ou l'eau potable || Une maladie héréditaire || Un médicament || Un examen || Revenu et logement en sont d'autres.
+Pourquoi les agents de santé communautaires sont-ils importants ? || Ils relient la population au système de santé || Ils remplacent les médecins || Ils produisent les médicaments || Ils fixent les prix || Ils sensibilisent et orientent.
+Quelle action communautaire réduit le paludisme ? || La distribution et l'usage de moustiquaires imprégnées || La fermeture des écoles || La vente de sucre || La restriction des déplacements || Elle protège pendant le sommeil.
+Pourquoi associer la communauté à la gestion d'un centre de santé ? || Pour mieux répondre aux besoins locaux et améliorer la durabilité || Pour réduire les soins || Pour supprimer les agents || Pour fermer le centre || La participation renforce l'appropriation.

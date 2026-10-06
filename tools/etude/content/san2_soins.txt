@@ -1,0 +1,29 @@
+titre: Techniques de soins et asepsie
+== fiche
+p: Les soins infirmiers courants demandent de la rigueur : vérifier, expliquer, respecter l'asepsie, surveiller, noter.
+li: Avant tout soin : se laver les mains, vérifier l'identité du patient, expliquer le geste, préparer le matériel, vérifier la prescription.
+li: Asepsie : ensemble de mesures pour empêcher l'entrée de microbes (gants stériles, matériel à usage unique, désinfection de la peau).
+li: Injection intramusculaire (IM) : quadrant supéro-externe de la fesse, deltoïde ou face externe de la cuisse ; aiguille à 90°.
+li: Injection sous-cutanée (SC) : abdomen, cuisse, bras ; angle de 45° ou 90° selon le pli ; ne pas masser pour les anticoagulants.
+li: Perfusion : débit en gouttes par minute = volume (mL) × nombre de gouttes par mL (souvent 20) / durée (min) ; surveiller le point d'injection et le débit.
+li: Pansement : se laver les mains, retirer l'ancien pansement, nettoyer de la zone la plus propre vers la plus sale, protéger, noter l'aspect de la plaie.
+li: Sondage urinaire : indications limitées, asepsie stricte, risque d'infection ; retirer dès que possible.
+li: Après le soin : éliminer les déchets selon le tri, désinfecter, se laver les mains, noter dans le dossier.
+note: Exemple : 500 mL en 4 h avec 20 gouttes par mL donnent 500 × 20 / 240 ≈ 42 gouttes par minute.
+note: En cas de piqûre accidentelle, laver, désinfecter et signaler immédiatement pour un suivi.
+== questions
+Que fait-on avant tout soin ? || Se laver les mains et vérifier l'identité du patient || Commencer sans parler || Sauter la prescription || Éviter d'expliquer || La sécurité commence par ces gestes.
+Qu'est-ce que l'asepsie ? || L'ensemble des mesures qui empêchent l'entrée de microbes || Un type d'antibiotique || Une maladie || Un traitement || Elle protège le patient.
+À quel angle fait-on une injection intramusculaire ? || 90° || 15° || 30° || 180° || L'aiguille entre perpendiculairement.
+Où fait-on une injection IM dans la fesse ? || Dans le quadrant supéro-externe || Dans le quadrant inférieur interne || Au bas du dos || Près de l'anus || On évite le nerf sciatique.
+Citez un site d'injection sous-cutanée : || L'abdomen || Le crâne || Le pied || Le thorax profond || La cuisse et le bras conviennent aussi.
+Quelle est la formule du débit d'une perfusion en gouttes par minute ? || Volume × gouttes par mL / durée en minutes || Volume / durée seulement || Durée × volume || Gouttes / volume || C'est une formule classique.
+Quel débit pour 500 mL en 4 h avec 20 gouttes par mL ? || Environ 42 gouttes par minute || 100 gouttes par minute || 10 gouttes par minute || 500 gouttes par minute || 500 × 20 / 240.
+Que surveille-t-on pendant une perfusion ? || Le débit et le point d'injection || La couleur des murs || La taille du flacon seulement || Rien || On cherche rougeur, gonflement, douleur.
+Dans quel sens nettoie-t-on une plaie ? || De la zone la plus propre vers la plus sale || De la plus sale vers la plus propre || Au hasard || En frottant fort || Cela évite de contaminer.
+Quel risque principal comporte un sondage urinaire ? || L'infection || La fracture || L'allergie || La brûlure || Il faut le retirer dès que possible.
+Que fait-on d'une aiguille usagée ? || Elle est jetée dans un collecteur sans la recapuchonner || Elle est jetée à la poubelle ordinaire || Elle est réutilisée || Elle est lavée || On évite les piqûres accidentelles.
+Que faire après une piqûre accidentelle ? || Laver, désinfecter et signaler immédiatement || L'ignorer || Attendre une semaine || Mettre du sucre || Un suivi médical peut être nécessaire.
+Pourquoi noter les soins dans le dossier ? || Pour assurer le suivi et la sécurité du patient || Pour remplir du papier || Pour gagner du temps || Pour faire de la publicité || La traçabilité est indispensable.
+Pourquoi expliquer le geste au patient avant le soin ? || Pour obtenir sa coopération et respecter sa dignité || Pour retarder le soin || Pour l'inquiéter || Pour lui demander de l'argent || L'information est un droit.
+Quel type de matériel privilégier pour limiter les infections ? || Le matériel à usage unique ou stérilisé || Le matériel partagé non nettoyé || Le matériel ancien || Le matériel sale || Il évite les contaminations.

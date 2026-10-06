@@ -1,0 +1,29 @@
+titre: Amélioration continue : lean, 5S et outils qualité
+== fiche
+p: Le lean management cherche à créer de la valeur pour le client en éliminant les gaspillages.
+li: Les 7 gaspillages (muda) : surproduction, attentes, transports inutiles, sur-traitement, stocks excessifs, mouvements inutiles, défauts.
+li: Méthode 5S : trier (Seiri), ranger (Seiton), nettoyer (Seiso), standardiser (Seiketsu), maintenir (Shitsuke).
+li: Kaizen : amélioration continue par de petits changements quotidiens impliquant tous les employés.
+li: Juste-à-temps et Kanban : produire ce qui est demandé, au moment voulu ; les cartes Kanban signalent le réapprovisionnement.
+li: Diagramme de Pareto (loi des 80/20) : classer les causes ; 20 % des causes expliquent 80 % des problèmes.
+li: Diagramme d'Ishikawa (arêtes de poisson) : chercher les causes selon les 5M : main-d'œuvre, matière, machine, méthode, milieu.
+li: Six Sigma : réduire la variabilité et les défauts par une méthode structurée (définir, mesurer, analyser, améliorer, contrôler).
+li: Standardisation et formation : documenter la meilleure pratique et la transmettre.
+note: Exemple : un atelier range ses outils avec un panneau d'ombres (5S) et gagne du temps de recherche.
+note: Impliquer les équipes de terrain est la clé : elles connaissent les vrais problèmes.
+== questions
+Quel est l'objectif du lean management ? || Créer de la valeur pour le client en réduisant les gaspillages || Réduire les salaires || Augmenter les stocks || Supprimer la qualité || Il cherche l'efficacité.
+Qu'appelle-t-on muda en lean ? || Un gaspillage || Une machine || Un client || Un produit || Les 7 muda sont des sources de perte.
+Citez un gaspillage du lean : || La surproduction || La vente || La qualité || La formation || Attentes, stocks excessifs et défauts en sont d'autres.
+Que signifie le premier S de la méthode 5S ? || Trier || Ranger || Nettoyer || Standardiser || Seiri consiste à éliminer l'inutile.
+Que signifie Seiton dans la méthode 5S ? || Ranger || Trier || Maintenir || Nettoyer || Chaque chose a sa place.
+Que signifie le dernier S de la méthode 5S ? || Maintenir la discipline || Trier || Ranger || Nettoyer || Shitsuke assure la durabilité.
+Que signifie Kaizen ? || Amélioration continue || Fabrication en série || Contrôle final || Gestion des stocks || Les petits progrès s'additionnent.
+Qu'est-ce que le juste-à-temps ? || Produire ou livrer au moment voulu en quantité voulue || Stocker beaucoup || Produire en avance || Livrer en retard || Il réduit les stocks.
+À quoi sert une carte Kanban ? || Signaler qu'il faut réapprovisionner ou produire || Calculer la paie || Fixer le prix || Embaucher || Elle pilote un flux tiré.
+Que dit la loi de Pareto (80/20) ? || Environ 20 % des causes expliquent 80 % des effets || 80 % des clients paient || Tout est égal || 50 % des causes suffisent || Elle aide à prioriser.
+À quoi sert un diagramme d'Ishikawa ? || À chercher les causes d'un problème || À calculer les coûts || À planifier || À recruter || On l'appelle aussi arêtes de poisson.
+Que signifient les 5M d'Ishikawa ? || Main-d'œuvre, matière, machine, méthode, milieu || Marque, marché, marge, monnaie, moyen || Machine, métal, mode, mesure, mouvement || Management, marketing, maintenance, matériel, message || Ce sont les familles de causes.
+Que cherche Six Sigma ? || Réduire la variabilité et les défauts || Augmenter les coûts || Supprimer les clients || Créer des stocks || Il suit une méthode structurée.
+Pourquoi impliquer les équipes de terrain ? || Elles connaissent les vrais problèmes et les solutions || Elles coûtent moins cher || Elles remplacent les chefs || Elles évitent l'amélioration || Leur expérience est précieuse.
+Quel est l'intérêt de standardiser une bonne pratique ? || La transmettre et la rendre reproductible || La garder secrète || La supprimer || L'oublier || Elle améliore la qualité de façon durable.

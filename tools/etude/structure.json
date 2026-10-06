@@ -1586,18 +1586,18 @@
    "id": "univ_sante",
    "kind": "cycle",
    "order": 35,
-   "title": "Santé et sciences infirmières — Licence 1",
+   "title": "Santé et sciences infirmières — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_sante_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Santé et sciences infirmières, Licence 1",
-    "count": 40,
+    "id": "licence_sante",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Santé et sciences infirmières (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -1681,6 +1681,65 @@
        ]
       }
      ]
+    },
+    {
+     "id": "san_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "san2_bio",
+       "title": "Sciences biomédicales",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "san2_pharmaco",
+         "title": "Pharmacologie générale"
+        },
+        {
+         "id": "san2_microbio",
+         "title": "Microbiologie : bactéries, virus, parasites, champignons"
+        },
+        {
+         "id": "san2_immuno",
+         "title": "Immunité, allergies et VIH"
+        },
+        {
+         "id": "san2_endocrino",
+         "title": "Hormones et diabète"
+        }
+       ]
+      },
+      {
+       "id": "san2_clin",
+       "title": "Pratique clinique",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "san2_obstetrique",
+         "title": "Grossesse, accouchement et suites de couches"
+        },
+        {
+         "id": "san2_pediatrie",
+         "title": "Maladies de l'enfant et PCIME"
+        },
+        {
+         "id": "san2_soins",
+         "title": "Techniques de soins et asepsie"
+        }
+       ]
+      },
+      {
+       "id": "san2_pub",
+       "title": "Santé publique",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "san2_communautaire",
+         "title": "Santé communautaire et soins de santé primaires"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -1688,18 +1747,18 @@
    "id": "univ_gestion",
    "kind": "cycle",
    "order": 36,
-   "title": "Gestion des entreprises — Licence 1",
+   "title": "Gestion des entreprises — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_gestion_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Gestion des entreprises, Licence 1",
-    "count": 40,
+    "id": "licence_gestion",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Gestion des entreprises (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -1783,6 +1842,65 @@
        ]
       }
      ]
+    },
+    {
+     "id": "ges_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "ges2_ope",
+       "title": "Qualité et commerce extérieur",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "ges2_lean",
+         "title": "Amélioration continue : lean, 5S et outils qualité"
+        },
+        {
+         "id": "ges2_douane",
+         "title": "Commerce extérieur, douane et transit"
+        }
+       ]
+      },
+      {
+       "id": "ges2_fin",
+       "title": "Finance et prévision",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "ges2_financement",
+         "title": "Financement des investissements"
+        },
+        {
+         "id": "ges2_previsions",
+         "title": "Prévision des ventes"
+        }
+       ]
+      },
+      {
+       "id": "ges2_man",
+       "title": "Management et gouvernance",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "ges2_pme",
+         "title": "Bien gérer une petite entreprise"
+        },
+        {
+         "id": "ges2_leadership",
+         "title": "Leadership, conduite du changement et gestion du temps"
+        },
+        {
+         "id": "ges2_controle_interne",
+         "title": "Contrôle interne, audit et prévention de la fraude"
+        },
+        {
+         "id": "ges2_gouvernance",
+         "title": "Gouvernance d'entreprise et OHADA"
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -1790,18 +1908,18 @@
    "id": "univ_marketing",
    "kind": "cycle",
    "order": 37,
-   "title": "Marketing et communication digitale — Licence 1",
+   "title": "Marketing et communication digitale — Licences 1 et 2",
    "country": "UEMOA",
    "after": [
     "lycee_d"
    ],
    "exam": {
-    "id": "licence_marketing_l1",
-    "title": "Examen de Licence 1",
-    "diploma": "Certificat Afrolook Étude — Marketing et communication digitale, Licence 1",
-    "count": 40,
+    "id": "licence_marketing",
+    "title": "Examen de licence",
+    "diploma": "Certificat Afrolook Étude — Marketing et communication digitale (Licences 1 et 2)",
+    "count": 50,
     "passPct": 0.5,
-    "seconds": 3600
+    "seconds": 4500
    },
    "classes": [
     {
@@ -1881,6 +1999,58 @@
         {
          "id": "mkt_analyse",
          "title": "Mesurer et améliorer ses actions marketing"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "mkt_l2",
+     "title": "Licence 2",
+     "subjects": [
+      {
+       "id": "mkt2_strat",
+       "title": "Études et stratégie",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "mkt2_quanti",
+         "title": "Études quantitatives et sondages"
+        },
+        {
+         "id": "mkt2_strategie",
+         "title": "Stratégie et plan marketing"
+        },
+        {
+         "id": "mkt2_services",
+         "title": "Marketing des services"
+        },
+        {
+         "id": "mkt2_b2b",
+         "title": "Marketing entre entreprises (B2B)"
+        }
+       ]
+      },
+      {
+       "id": "mkt2_dig",
+       "title": "Marché africain et digital",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "mkt2_afrique",
+         "title": "Marketing en contexte africain"
+        },
+        {
+         "id": "mkt2_analytics",
+         "title": "Analytique digitale et parcours client"
+        },
+        {
+         "id": "mkt2_video",
+         "title": "Vidéo, influence et contenu viral"
+        },
+        {
+         "id": "mkt2_ethique",
+         "title": "Droit et éthique du marketing"
         }
        ]
       }

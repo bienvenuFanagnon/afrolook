@@ -1,0 +1,29 @@
+titre: Leadership, conduite du changement et gestion du temps
+== fiche
+p: Un manager organise ; un leader inspire et entraîne. Les meilleurs dirigeants font les deux.
+li: Leadership : capacité d'influencer et d'entraîner les autres vers un objectif ; qualités : vision, intégrité, écoute, courage, exemplarité.
+li: Styles de leadership : directif, persuasif, participatif, délégatif ; on choisit selon la maturité et la compétence de l'équipe (modèle de Hersey et Blanchard).
+li: Motivation : reconnaissance, autonomie, sens du travail, objectifs clairs, équité, possibilités de progresser.
+li: Conduite du changement : Lewin (décongeler, changer, recongeler) ; communiquer le pourquoi, associer les équipes, former, célébrer les premiers résultats.
+li: Résistances au changement : peur de perdre, manque d'information, habitudes ; on y répond par l'écoute et l'explication.
+li: Gestion du temps : matrice d'Eisenhower (urgent/important), planification, priorités, éviter l'éparpillement, déléguer.
+li: Délégation : confier la tâche avec l'autorité nécessaire, expliquer les attentes, faire le point, accepter les erreurs comme apprentissage.
+li: Intelligence émotionnelle : conscience de soi, maîtrise de soi, empathie, compétences sociales.
+note: Un bon feedback est précis, rapide, factuel et équilibré (points forts, axes de progrès).
+note: Une réunion efficace a un objectif, un ordre du jour, une durée et un compte rendu.
+== questions
+Quelle différence existe entre un manager et un leader ? || Le manager organise, le leader inspire et entraîne || Aucune || Le leader organise seulement || Le manager inspire seulement || Les deux rôles se complètent.
+Citez une qualité d'un leader : || L'intégrité || L'indifférence || L'arrogance || Le secret || Écoute, vision et exemplarité en sont d'autres.
+Quels sont les styles de leadership selon Hersey et Blanchard ? || Directif, persuasif, participatif, délégatif || Autoritaire, libre, passif, fermé || Rapide, lent, moyen, absent || Familial, cruel, juste, amical || On choisit selon la maturité de l'équipe.
+Quel style convient à une équipe débutante qui a besoin de consignes claires ? || Le style directif || Le style délégatif || Le style absent || Le style distant || Elle manque d'expérience.
+Citez un facteur de motivation au travail : || La reconnaissance || La peur || L'isolement || Le désordre || Autonomie et sens du travail aussi.
+Quelles sont les étapes du changement selon Lewin ? || Décongeler, changer, recongeler || Planifier, vendre, payer || Recruter, former, licencier || Analyser, ignorer, oublier || C'est un modèle classique.
+Pourquoi communique-t-on le « pourquoi » d'un changement ? || Pour que les équipes comprennent et adhèrent || Pour retarder le changement || Pour cacher la décision || Pour supprimer la formation || L'adhésion réduit les résistances.
+Citez une cause de résistance au changement : || La peur de perdre ses acquis || L'excès d'information || L'adhésion || Le bon climat || Le manque d'explication aussi.
+Comment répondre aux résistances ? || Par l'écoute, l'explication et l'implication || Par la sanction systématique || Par le silence || Par la force || Il faut comprendre les craintes.
+Que classe la matrice d'Eisenhower ? || Les tâches selon l'urgence et l'importance || Les clients selon l'âge || Les produits selon le prix || Les employés selon l'ancienneté || Elle aide à prioriser.
+Quelles tâches la matrice d'Eisenhower recommande-t-elle de planifier ? || Importantes mais non urgentes || Urgentes mais non importantes || Ni urgentes ni importantes || Les tâches faciles || Ce sont celles qui construisent l'avenir.
+Que signifie déléguer ? || Confier une tâche avec l'autorité nécessaire || Se désintéresser || Abandonner || Refuser || Le délégant reste responsable du résultat.
+Que comprend l'intelligence émotionnelle ? || Conscience de soi, maîtrise de soi, empathie, compétences sociales || Seulement l'intelligence logique || La mémoire || La vitesse || Elle améliore le leadership.
+Quel est un bon feedback ? || Précis, rapide, factuel et équilibré || Vague et tardif || Agressif || Absent || Il aide à progresser.
+Que doit comporter une réunion efficace ? || Un objectif, un ordre du jour et une durée limitée || Aucun objectif || Un horaire libre || Pas de compte rendu || Elle respecte le temps de chacun.

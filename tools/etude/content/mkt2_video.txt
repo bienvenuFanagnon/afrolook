@@ -1,0 +1,29 @@
+titre: Vidéo, influence et contenu viral
+== fiche
+p: La vidéo est l'un des formats les plus regardés ; l'influence s'appuie sur la confiance de communautés.
+li: Formats : vidéos courtes (15 à 60 secondes), vidéos longues (tutoriels), lives (direct), stories ; sous-titres indispensables car beaucoup regardent sans le son.
+li: Règles d'une bonne vidéo : accroche dans les 3 premières secondes, un message unique, une histoire simple, un appel à l'action, bonne lumière et bon son.
+li: Influenceurs : nano (quelques milliers d'abonnés, très proches), micro, macro, célébrités ; critères : audience correspondant à la cible, taux d'engagement, authenticité, cohérence avec la marque.
+li: Collaboration : brief clair, contrat, droits d'utilisation, indication du partenariat, code promo pour mesurer.
+li: Viral : un contenu partagé massivement ; émotion, humour, utilité, surprise ; on ne peut pas garantir la viralité.
+li: Contenu généré par les utilisateurs : photos et avis de clients ; demander l'autorisation avant de les réutiliser.
+li: Live shopping : vente en direct avec démonstrations et réponses aux questions.
+li: Risques : bad buzz, faux abonnés, publicité non signalée, propos choquants, droits de musique.
+note: Un petit influenceur très proche de sa communauté peut convertir mieux qu'une grande célébrité.
+note: Mesurer : vues, taux de rétention de la vidéo, partages, clics, ventes via un code ou un lien.
+== questions
+Pourquoi les sous-titres sont-ils importants dans une vidéo ? || Beaucoup regardent sans le son || Ils font rire || Ils remplacent l'image || Ils sont obligatoires || Ils améliorent l'accessibilité.
+Quand doit apparaître l'accroche d'une vidéo courte ? || Dans les 3 premières secondes || À la fin || Après une minute || Jamais || Sinon le spectateur passe à autre chose.
+Citez une règle d'une bonne vidéo : || Un message unique et un appel à l'action || Plusieurs messages contradictoires || Un son mauvais || Aucune structure || Une bonne lumière aide aussi.
+Qu'est-ce qu'un nano-influenceur ? || Un créateur avec une petite communauté très proche || Une grande célébrité || Un journaliste || Un robot || Il a souvent un fort engagement.
+Citez un critère de choix d'un influenceur : || Le taux d'engagement de son audience || Le nombre de téléphones || La couleur de sa tenue || Son adresse || Authenticité et cohérence avec la marque aussi.
+Pourquoi faut-il signaler qu'une publication d'influenceur est sponsorisée ? || Par honnêteté envers le public et par obligation légale souvent || Pour cacher la pub || Pour réduire le prix || Pour éviter le contrat || La transparence protège la confiance.
+À quoi sert un code promo donné à un influenceur ? || Mesurer les ventes qu'il génère || Fixer son salaire || Supprimer les prix || Faire de la publicité || Il permet de suivre les résultats.
+Qu'est-ce qu'un contenu viral ? || Un contenu partagé massivement || Un contenu secret || Un virus informatique || Un contenu payant || Émotion, humour ou utilité aident.
+Peut-on garantir qu'un contenu devienne viral ? || Non || Oui, toujours || Oui, avec un gros budget || Oui, avec un influenceur || La viralité dépend du public.
+Qu'est-ce que le contenu généré par les utilisateurs ? || Les photos et avis créés par les clients || Les publicités payées || Les emballages || Les offres || Il est puissant mais demande une autorisation.
+Que faut-il demander avant de réutiliser la photo d'un client ? || Son autorisation || Rien || Un paiement || Un contrat de travail || Le droit à l'image doit être respecté.
+Qu'est-ce que le live shopping ? || La vente en direct avec démonstration et réponses aux questions || La vente par catalogue || La vente en gros || La vente en magasin || Il crée de l'interaction.
+Qu'est-ce qu'un bad buzz ? || Une vague de critiques négatives qui nuit à l'image || Un buzz positif || Une publicité || Une promotion || Il faut réagir vite et honnêtement.
+Pourquoi les faux abonnés sont-ils un risque ? || Ils faussent l'audience réelle et nuisent à la crédibilité || Ils augmentent les ventes || Ils sont gratuits || Ils améliorent l'engagement || L'engagement réel compte plus.
+Quel risque la musique non autorisée pose-t-elle dans une vidéo ? || Une violation du droit d'auteur || Une baisse de qualité || Un bon rythme || Aucun || La vidéo peut être retirée.

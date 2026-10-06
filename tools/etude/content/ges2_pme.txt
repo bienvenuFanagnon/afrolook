@@ -1,0 +1,30 @@
+titre: Bien gérer une petite entreprise
+== fiche
+p: Beaucoup de petites entreprises échouent à cause d'erreurs de gestion simples, que l'on évite avec de bonnes habitudes.
+li: Séparer l'argent de l'entreprise et l'argent personnel : compte distinct, salaire du dirigeant fixé.
+li: Cahier ou registre : enregistrer chaque jour ventes, achats, dépenses, crédits clients et dettes ; arrêté de caisse chaque soir.
+li: Connaître ses coûts : prix d'achat, frais (transport, emballage, loyer, électricité, salaires), temps de travail.
+li: Marge : calculer la marge sur chaque produit ; ne pas vendre à perte ni sans marge suffisante.
+li: Stock : suivre les entrées et sorties, éviter le sur-stockage, vendre d'abord les plus anciens.
+li: Crédits clients : limiter, noter, relancer ; un client qui ne paie pas est une perte.
+li: Épargne de précaution : constituer une réserve pour les imprévus et les périodes creuses.
+li: Formalisation : immatriculation, compte bancaire, factures, déclarations ; elle donne accès au crédit et aux marchés.
+li: Outils simples : tableur, applications de caisse, mobile money, tontines et groupes d'épargne selon les contextes.
+note: Erreurs fréquentes : mélanger les comptes, ne pas noter les petites dépenses, vendre à crédit sans limite, ne pas fixer ses prix selon les coûts.
+note: Un bon gérant sait chaque jour combien il a gagné et combien il doit.
+== questions
+Pourquoi séparer l'argent de l'entreprise et l'argent personnel ? || Pour connaître la vraie situation de l'entreprise || Pour payer plus d'impôts || Pour cacher les comptes || Pour compliquer la gestion || Sans séparation, on ne sait plus ce que gagne l'activité.
+Qu'est-ce qu'un arrêté de caisse ? || Le comptage de la caisse en fin de journée comparé aux écritures || Un impôt || Une facture || Un salaire || Il détecte les écarts.
+Pourquoi noter chaque jour ventes et dépenses ? || Pour savoir où en est l'entreprise || Pour perdre du temps || Pour impressionner || Pour payer des taxes || Un cahier évite les oublis.
+Que faut-il connaître pour fixer un prix ? || Ses coûts || Le prix du voisin seulement || La couleur de l'emballage || Le nom du client || Le prix doit couvrir les coûts et laisser une marge.
+Que se passe-t-il si l'on vend sans marge suffisante ? || L'entreprise perd de l'argent || L'entreprise gagne || Rien || Les coûts disparaissent || Il faut couvrir aussi les frais fixes.
+Quel est le risque d'un sur-stockage ? || Immobiliser de l'argent et risquer la perte || Manquer de produits || Gagner plus || Réduire les charges || Il faut équilibrer le stock.
+Que faire des produits les plus anciens ? || Les vendre en premier || Les garder || Les jeter || Les cacher || Cela évite la péremption.
+Pourquoi limiter les crédits aux clients ? || Pour éviter les impayés qui détruisent la trésorerie || Pour perdre des clients || Pour réduire les ventes || Pour augmenter les stocks || Chaque crédit est un risque.
+Pourquoi constituer une épargne de précaution ? || Pour faire face aux imprévus et aux périodes creuses || Pour payer des impôts || Pour acheter des produits de luxe || Pour supprimer les dettes || Elle protège l'activité.
+Quel avantage a la formalisation d'une petite entreprise ? || L'accès au crédit et aux marchés || Des charges en plus sans effet || L'isolement || La disparition des clients || Elle donne une existence légale.
+Citez une erreur fréquente : || Mélanger les comptes personnels et professionnels || Tenir un cahier || Fixer ses prix selon ses coûts || Épargner || Elle fausse la gestion.
+Citez un outil simple de gestion : || Un tableur || Un fusil || Un microscope || Un satellite || Un cahier de caisse aussi.
+Que doit savoir un bon gérant chaque jour ? || Combien il a gagné et combien il doit || Le prix du pétrole seulement || Le programme de télévision || Le cours de la Bourse || La connaissance de sa situation guide les décisions.
+Pourquoi fixer le salaire du dirigeant ? || Pour ne pas puiser dans la caisse sans limite || Pour payer plus d'impôts || Pour réduire les ventes || Pour éviter la comptabilité || L'entreprise doit pouvoir financer son fonctionnement.
+Que signifie une tontine ou un groupe d'épargne ? || Des membres cotisent et reçoivent à tour de rôle ou épargnent ensemble || Une banque d'État || Un impôt || Une assurance || Il est très répandu dans plusieurs pays africains.

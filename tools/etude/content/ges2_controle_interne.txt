@@ -1,0 +1,29 @@
+titre: Contrôle interne, audit et prévention de la fraude
+== fiche
+p: Le contrôle interne est l'ensemble des procédures qui protègent les biens de l'entreprise, fiabilisent l'information et assurent le respect des règles.
+li: Séparation des tâches : celui qui autorise, celui qui exécute et celui qui enregistre ne sont pas la même personne.
+li: Autorisations et signatures : double signature pour les paiements importants, limites de dépenses.
+li: Contrôles : rapprochement bancaire (comparer le relevé de la banque et la comptabilité), arrêté de caisse, inventaire physique, vérification des factures (commande, livraison, facture).
+li: Piste d'audit : conserver les pièces et les traces des opérations, des sauvegardes informatiques.
+li: Fraude : tromper pour obtenir un avantage illégitime (détournement, fausses factures, vol de stock) ; triangle de la fraude : pression, opportunité, rationalisation.
+li: Prévention : règles claires, formation, rotation des postes, congés obligatoires, alerte éthique, sanctions connues.
+li: Audit interne : service de l'entreprise qui évalue les procédures ; audit externe : commissaire aux comptes ou cabinet indépendant qui certifie les comptes.
+li: Rapport de contrôle : constats, recommandations, plan d'action, suivi.
+note: Exemple : le caissier ne tient pas la comptabilité des ventes ; une autre personne contrôle l'arrêté de caisse.
+note: Le contrôle interne protège aussi les salariés contre les soupçons injustifiés.
+== questions
+Qu'est-ce que le contrôle interne ? || L'ensemble des procédures qui protègent les biens et fiabilisent l'information || Un impôt || Un syndicat || Un audit externe seulement || Il prévient les erreurs et les fraudes.
+Que signifie la séparation des tâches ? || Autoriser, exécuter et enregistrer sont confiés à des personnes différentes || Une seule personne fait tout || Les tâches sont mélangées || On supprime des tâches || Elle réduit le risque de fraude.
+À quoi sert la double signature ? || Sécuriser les paiements importants || Accélérer les paiements || Supprimer les contrôles || Remplacer la comptabilité || Deux personnes valident.
+Qu'est-ce qu'un rapprochement bancaire ? || La comparaison du relevé de la banque avec la comptabilité || Un virement || Un crédit || Un impôt || Il explique les écarts.
+À quoi sert un arrêté de caisse ? || Comparer l'argent réel en caisse à la comptabilité || Fixer le prix || Calculer l'impôt || Payer le salaire || Il détecte les manques.
+Quelles pièces compare-t-on avant de payer une facture fournisseur ? || La commande, la livraison et la facture || Le bilan et le compte de résultat || Le contrat de travail || Le devis seulement || Cela évite de payer ce qui n'a pas été livré.
+Que contient le triangle de la fraude ? || Pression, opportunité, rationalisation || Prix, produit, place || Capital, travail, machine || Marge, coût, volume || Les trois facteurs favorisent la fraude.
+Citez une mesure de prévention de la fraude : || La rotation des postes || L'absence de contrôle || Le silence || La concentration des pouvoirs || Les congés obligatoires aussi.
+Qu'est-ce que l'audit interne ? || Une évaluation des procédures par un service de l'entreprise || Un contrôle de l'État || Un impôt || Un prêt || Il formule des recommandations.
+Qu'est-ce que l'audit externe ? || Un contrôle par un auditeur indépendant, comme un commissaire aux comptes || Un contrôle par le directeur || Un contrôle par les salariés || Un contrôle des clients || Il certifie les comptes.
+Que signifie la piste d'audit ? || La possibilité de retracer une opération grâce aux pièces et traces || Un chemin de l'entreprise || Un schéma d'organisation || Un plan de vente || Elle facilite le contrôle.
+Qu'est-ce qu'une fausse facture ? || Une facture qui ne correspond à aucune prestation réelle || Une facture correcte || Un devis || Un reçu || C'est un moyen de détourner des fonds.
+Qu'est-ce qu'un dispositif d'alerte éthique ? || Un moyen de signaler une suspicion de fraude de façon protégée || Un jeu || Une publicité || Un impôt || Il protège le lanceur d'alerte.
+Quel risque la concentration de tous les pouvoirs sur une personne crée-t-elle ? || Un risque élevé d'erreur ou de fraude || Aucun risque || Une meilleure sécurité || Une baisse des coûts || Elle supprime les contrôles.
+Pourquoi le contrôle interne protège-t-il aussi les salariés ? || Il évite les soupçons injustifiés || Il les licencie || Il les paie plus || Il supprime les tâches || Les procédures prouvent la régularité.

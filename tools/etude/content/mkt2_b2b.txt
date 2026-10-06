@@ -1,0 +1,29 @@
+titre: Marketing entre entreprises (B2B)
+== fiche
+p: Le marketing B2B s'adresse à des organisations (entreprises, administrations) et non à des particuliers.
+li: Particularités : peu de clients mais de grande valeur, achats rationnels et planifiés, décisions collectives, cycle d'achat plus long, relations durables.
+li: Demande dérivée : la demande de produits industriels dépend de la demande des produits finis que les clients vendent.
+li: Centre d'achat : acteurs de la décision : utilisateur, prescripteur, décideur, acheteur, influenceur, portier (qui filtre l'information).
+li: Étapes d'achat : besoin, cahier des charges, recherche de fournisseurs, appel d'offres, négociation, commande, évaluation.
+li: Moyens : force de vente, visites, salons professionnels, démonstrations, références clients, études de cas, site et contenus experts, courriel, réseaux professionnels.
+li: Vente consultative : écouter, comprendre l'activité du client, proposer une solution sur mesure et prouver le retour sur investissement.
+li: Prix : négociés, remises de volume, contrats cadres, conditions de paiement.
+li: Fidélisation : qualité constante, service après-vente, suivi régulier, personnes de contact, innovation.
+note: Exemple : un fournisseur d'emballages convainc une brasserie en montrant une réduction de ses pertes et de ses coûts.
+note: Dans un appel d'offres public, la transparence et le respect des règles sont essentiels.
+== questions
+À qui s'adresse le marketing B2B ? || À des organisations || Aux particuliers || Aux enfants || Aux touristes || B2B signifie business to business.
+Quelle est une particularité du B2B ? || Peu de clients de grande valeur et des décisions collectives || De nombreux petits clients anonymes || Des achats impulsifs || Une décision individuelle toujours || Le cycle d'achat est plus long.
+Que signifie la demande dérivée ? || La demande de produits industriels dépend de la demande des produits finis || La demande d'un produit voisin || Une demande fausse || Une demande illégale || Elle explique les effets en chaîne.
+Qu'est-ce qu'un centre d'achat ? || Les personnes qui participent à la décision d'achat d'une organisation || Un supermarché || Un entrepôt || Un service de vente || Utilisateur, décideur et prescripteur en font partie.
+Qui est le décideur dans un centre d'achat ? || Celui qui a le pouvoir de choisir le fournisseur || Celui qui utilise le produit || Celui qui livre le produit || Celui qui nettoie || Il valide la décision finale.
+Qu'est-ce qu'un prescripteur ? || Une personne qui recommande ou impose un produit || Un vendeur || Un client || Un livreur || Un architecte en est un exemple.
+Qu'est-ce qu'un appel d'offres ? || Une procédure où des fournisseurs répondent à un cahier des charges || Une vente aux enchères || Une publicité || Un sondage || Le client compare les offres.
+Qu'est-ce qu'un cahier des charges ? || Le document qui décrit précisément le besoin || Un contrat de travail || Une facture || Un bilan || Il guide les fournisseurs.
+Citez un moyen de promotion adapté au B2B : || Les salons professionnels || Les spots télévisés de grande diffusion || Les panneaux de rue seulement || Les jeux concours || La force de vente en est un autre.
+Qu'est-ce que la vente consultative ? || Une vente fondée sur l'écoute et une solution adaptée au client || Une vente par téléphone || Une vente brutale || Une vente de gros || Elle prouve la valeur apportée.
+Pourquoi montrer le retour sur investissement à un client B2B ? || Il achète pour un résultat économique || Il aime les chiffres seulement || Il refuse les prix || Il n'achète jamais || Les décisions sont rationnelles.
+Qu'est-ce qu'un contrat cadre ? || Un accord qui fixe les conditions de commandes futures || Un contrat unique || Un tableau || Un cadeau || Il fixe prix et délais.
+Pourquoi les références clients sont-elles importantes ? || Elles rassurent de nouveaux clients || Elles suppriment le prix || Elles remplacent la qualité || Elles sont inutiles || Elles montrent des résultats prouvés.
+Pourquoi les relations sont-elles durables en B2B ? || Changer de fournisseur coûte cher et prend du temps || Les clients sont fidèles par hasard || Les fournisseurs sont rares || Les prix sont fixes || La confiance se construit sur la durée.
+Comment fidéliser un client professionnel ? || Qualité constante, service après-vente et suivi régulier || Prix très bas toujours || Silence || Publicité de masse || La relation prime.

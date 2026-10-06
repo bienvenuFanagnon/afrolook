@@ -1,0 +1,29 @@
+titre: Marketing des services
+== fiche
+p: Un service est une prestation intangible (conseil, banque, transport, éducation, santé, télécommunications) : le client achète une expérience.
+li: Caractéristiques : intangibilité (on ne peut pas le toucher avant l'achat), inséparabilité (production et consommation simultanées), variabilité (qualité différente selon la personne et le moment), périssabilité (impossible de stocker).
+li: Mix des 7 P : produit, prix, place, promotion + personnel (les employés font l'expérience), processus (le déroulement du service), preuves physiques (locaux, uniformes, site).
+li: Qualité de service : comparaison entre attentes et expérience vécue ; critères : fiabilité, réactivité, assurance, empathie, éléments tangibles (modèle SERVQUAL).
+li: Moment de vérité : chaque contact entre le client et l'entreprise (accueil, appel, paiement).
+li: Gérer l'attente : informations, file organisée, rendez-vous, prise de numéro, application mobile.
+li: Garanties de service : remboursement ou reprise en cas de défaut, pour rassurer.
+li: Fidélisation : relation personnelle, suivi, offres adaptées, écoute des réclamations.
+li: Rendre le service tangible : documents, démonstration, témoignages, certificats, locaux soignés.
+note: Exemple : une banque rassure ses clients par un accueil soigné, des conseillers formés et des horaires clairs.
+note: Les employés sont l'image de l'entreprise : une équipe formée et motivée fait la différence.
+== questions
+Qu'est-ce qui caractérise un service par rapport à un bien ? || Son intangibilité || Sa solidité || Sa couleur || Son poids || On ne peut pas le toucher avant l'achat.
+Que signifie l'inséparabilité d'un service ? || Il est produit et consommé en même temps || Il est stocké || Il est fabriqué en usine || Il est toujours identique || Le client participe souvent à la production.
+Que signifie la périssabilité d'un service ? || Il ne peut pas être stocké || Il pourrit || Il se vend toujours || Il a une date de péremption || Une place de cinéma vide est perdue.
+Que signifie la variabilité d'un service ? || Sa qualité peut varier selon la personne et le moment || Son prix varie || Sa couleur varie || Son local varie || Elle rend la qualité difficile à standardiser.
+Combien de P compte le mix marketing des services ? || 7 || 4 || 5 || 10 || Il ajoute personnel, processus et preuves physiques.
+Citez un P ajouté pour les services : || Le personnel || Le prix || Le produit || La promotion || Les autres sont processus et preuves physiques.
+Que représentent les preuves physiques ? || Les éléments tangibles qui rassurent, comme les locaux ou le site || Les certificats médicaux || Les factures || Les reçus || Elles rendent le service plus concret.
+Comment définit-on la qualité de service ? || La comparaison entre les attentes du client et ce qu'il a vécu || Le prix || La durée || La couleur du logo || Un écart négatif crée de l'insatisfaction.
+Que veut dire « moment de vérité » ? || Un contact entre le client et l'entreprise qui forge son opinion || Une audience judiciaire || Un test || Un audit || L'accueil ou un paiement en sont.
+Citez un critère de qualité de service du modèle SERVQUAL : || La fiabilité || Le poids || Le prix || La taille || Réactivité, assurance et empathie en font partie.
+Comment rendre l'attente plus supportable ? || Informer et organiser la file || Supprimer les informations || Fermer plus tôt || Ignorer les clients || Un temps expliqué est mieux accepté.
+Pourquoi les employés sont-ils essentiels dans un service ? || Ils font l'expérience du client || Ils ne comptent pas || Ils fixent les prix || Ils font la comptabilité seulement || Ils sont le visage de l'entreprise.
+À quoi sert une garantie de service ? || À rassurer et à réparer en cas de défaut || À supprimer les clients || À augmenter le prix || À retarder le paiement || Elle réduit le risque perçu.
+Comment rendre un service plus tangible ? || Par des documents, démonstrations et témoignages || Par moins d'informations || Par des promesses vagues || Par le silence || Cela rassure le client.
+Pourquoi fidéliser est-il essentiel dans les services ? || La relation personnelle est au cœur de l'activité || Les services sont gratuits || Il n'y a pas de concurrence || Les clients ne changent jamais || Un client fidèle recommande le service.

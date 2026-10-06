@@ -1,0 +1,29 @@
+titre: Microbiologie : bactéries, virus, parasites, champignons
+== fiche
+p: La microbiologie étudie les micro-organismes, dont certains provoquent des maladies infectieuses.
+li: Bactéries : cellules sans noyau (procaryotes) ; coloration de Gram : Gram positif (violet) ou Gram négatif (rose) ; elles se divisent en deux ; antibiotiques actifs ; certaines forment des spores résistantes.
+li: Virus : particules sans cellule, qui ont besoin d'une cellule hôte pour se multiplier ; les antibiotiques sont inefficaces ; vaccins et antiviraux.
+li: Parasites : protozoaires (Plasmodium du paludisme, amibes) et helminthes (vers : ascaris, ténia, bilharzie).
+li: Champignons : levures (Candida) et moisissures ; mycoses de la peau, des muqueuses ou profondes.
+li: Diagnostic : examen direct (microscope), culture, antibiogramme (sensibilité aux antibiotiques), tests rapides, PCR.
+li: Résistance aux antibiotiques : due à leur mauvais usage ; elle rend les infections plus difficiles à traiter.
+li: Flore normale (commensale) : microbes utiles sur la peau et dans l'intestin ; elle protège contre les pathogènes.
+li: Stérilisation : autoclave (vapeur sous pression, environ 121 °C) ; désinfection chimique ; filtration.
+note: Exemple : le bacille de Koch (tuberculose) est une bactérie ; le VIH est un virus ; Plasmodium est un parasite.
+note: Prélever avant l'antibiotique, avec asepsie, améliore la qualité du diagnostic.
+== questions
+Quelles cellules n'ont pas de noyau ? || Les bactéries || Les cellules humaines || Les levures || Les globules blancs || Elles sont dites procaryotes.
+Que révèle la coloration de Gram ? || Si une bactérie est Gram positive ou négative || La taille d'un virus || La couleur de la peau || Le pH || Elle oriente le choix de l'antibiotique.
+De quelle couleur apparaissent les bactéries Gram positives ? || Violet || Rose || Vert || Jaune || Elles retiennent le colorant violet.
+Pourquoi les virus ne se traitent-ils pas par antibiotiques ? || Ils ne sont pas des bactéries et se multiplient dans nos cellules || Ils sont trop gros || Ils sont trop petits pour être traités || Ils sont inactifs || Les antibiotiques ciblent les bactéries.
+De quoi un virus a-t-il besoin pour se multiplier ? || D'une cellule hôte || D'eau seulement || D'air || De lumière || Il détourne les mécanismes de la cellule.
+Le Plasmodium est un : || Parasite protozoaire || Virus || Champignon || Ver || Il cause le paludisme.
+Citez un helminthe : || L'ascaris || Le Candida || Le bacille de Koch || Le virus de la rougeole || C'est un ver intestinal.
+Le Candida est un : || Champignon (levure) || Virus || Bactérie || Parasite protozoaire || Il cause des mycoses.
+À quoi sert un antibiogramme ? || À tester la sensibilité d'une bactérie aux antibiotiques || À mesurer la tension || À compter les globules || À doser le sucre || Il guide le traitement.
+Que signifie PCR ? || Une technique qui détecte le matériel génétique d'un microbe || Un type de vaccin || Une mesure de tension || Un médicament || Elle est très sensible.
+Qu'est-ce que la résistance aux antibiotiques ? || Des bactéries qui ne sont plus tuées par les antibiotiques || Une allergie || Une maladie du foie || Une vaccination || Elle est favorisée par leur mauvais usage.
+Qu'est-ce que la flore normale ? || Les microbes utiles qui vivent sur la peau et dans l'intestin || Les microbes de l'hôpital seulement || Les virus || Les parasites || Elle protège contre les pathogènes.
+Comment stérilise-t-on le matériel chirurgical ? || À l'autoclave, par vapeur sous pression || En l'essuyant || En le lavant à l'eau froide || En le séchant au soleil || Il élimine tous les microbes, y compris les spores.
+La tuberculose est causée par : || Une bactérie || Un virus || Un parasite || Un champignon || Le bacille de Koch.
+Pourquoi prélever avant l'antibiotique ? || Pour ne pas fausser le résultat de la culture || Pour gagner du temps || Pour réduire la dose || Pour éviter l'asepsie || L'antibiotique peut masquer la bactérie.

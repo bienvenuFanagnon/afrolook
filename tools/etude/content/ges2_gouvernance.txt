@@ -1,0 +1,29 @@
+titre: Gouvernance d'entreprise et OHADA
+== fiche
+p: La gouvernance désigne la façon dont l'entreprise est dirigée et contrôlée, dans l'intérêt des actionnaires et de ses autres parties prenantes.
+li: Assemblée générale ordinaire (AGO) : approuve les comptes, décide de l'affectation du résultat (dividendes, réserves), nomme les administrateurs ; assemblée générale extraordinaire (AGE) : modifie les statuts.
+li: Conseil d'administration : définit les orientations, nomme le dirigeant et contrôle sa gestion ; dans une SA, le président du conseil et le directeur général peuvent être une même personne ou deux.
+li: Commissaire aux comptes : auditeur indépendant qui certifie que les comptes annuels sont réguliers et sincères.
+li: Conventions réglementées : accords entre la société et un dirigeant ou un actionnaire important ; elles sont soumises à autorisation et à vérification pour éviter les conflits d'intérêts.
+li: Droits des actionnaires : droit de vote, dividende, information, participation aux assemblées ; protection des minoritaires.
+li: Procès-verbal : compte rendu signé des décisions de l'assemblée ou du conseil.
+li: Quorum : nombre minimal de participants ou de voix pour que l'assemblée délibère valablement.
+li: Responsabilité des dirigeants : civile (réparer le dommage causé), pénale (infractions) ; faute de gestion, abus de biens sociaux.
+note: Les règles de la société anonyme et de la SARL sont fixées par l'Acte uniforme de l'OHADA sur les sociétés commerciales.
+note: Une bonne gouvernance : transparence, intégrité, séparation des pouvoirs, respect des minoritaires.
+== questions
+Qu'est-ce que la gouvernance d'entreprise ? || La manière dont l'entreprise est dirigée et contrôlée || Le nom de l'entreprise || Le prix des produits || La publicité || Elle équilibre les intérêts des parties prenantes.
+Que fait l'assemblée générale ordinaire ? || Elle approuve les comptes et décide de l'affectation du résultat || Elle modifie les statuts || Elle fabrique les produits || Elle recrute les ouvriers || Elle se réunit au moins une fois par an.
+Que fait l'assemblée générale extraordinaire ? || Elle modifie les statuts || Elle approuve les comptes seulement || Elle recrute || Elle vend || Elle décide des changements majeurs.
+Que fait le conseil d'administration ? || Il définit les orientations et contrôle la direction || Il fabrique les produits || Il tient la caisse || Il livre les marchandises || Il nomme et révoque le dirigeant.
+Que fait le commissaire aux comptes ? || Il certifie que les comptes sont réguliers et sincères || Il tient la comptabilité || Il gère la société || Il vend les produits || C'est un auditeur indépendant.
+Qu'est-ce qu'une convention réglementée ? || Un accord société-dirigeant ou actionnaire important, soumis à contrôle || Un contrat de vente ordinaire || Un contrat de travail || Un accord entre clients || Elle évite les conflits d'intérêts.
+Citez un droit de l'actionnaire : || Le droit de vote en assemblée || Le droit de licencier || Le droit de fixer les prix || Le droit de signer à la place du dirigeant || Dividende et information en sont d'autres.
+Qu'est-ce que le quorum ? || Le nombre minimal de présents ou de voix pour délibérer || Le nombre maximal de présents || Un vote secret || Un dividende || Sans lui, l'assemblée ne peut pas décider valablement.
+Qu'est-ce qu'un procès-verbal d'assemblée ? || Le compte rendu signé des décisions prises || Un jugement || Une facture || Un budget || Il constitue une preuve des décisions.
+Qu'est-ce que l'abus de biens sociaux ? || L'usage des biens de la société par un dirigeant dans son intérêt personnel || Un dividende normal || Une dépense utile || Un cadeau aux clients || C'est une infraction.
+Que protège la gouvernance des actionnaires minoritaires ? || Leurs droits face aux décisions des majoritaires || Les dettes || Les dirigeants || L'administration fiscale || Elle évite les abus.
+Quel texte de l'OHADA fixe les règles des sociétés commerciales ? || L'Acte uniforme sur les sociétés commerciales et le GIE || L'Acte uniforme sur les sûretés || L'Acte uniforme sur l'arbitrage || L'Acte uniforme sur la comptabilité || Il régit SA, SARL, SNC et autres.
+Qui nomme les administrateurs ? || L'assemblée générale || Le commissaire aux comptes || Le client || L'État seulement || Elle les élit aussi, révoque et contrôle.
+Quel est un principe de bonne gouvernance ? || La transparence || Le secret des comptes || La concentration des pouvoirs || Le conflit d'intérêts || Elle inspire confiance aux investisseurs.
+Pourquoi la séparation des pouvoirs est-elle utile dans l'entreprise ? || Elle évite qu'une seule personne décide et contrôle seule || Elle ralentit tout || Elle supprime le contrôle || Elle augmente le risque || Elle équilibre direction et contrôle.

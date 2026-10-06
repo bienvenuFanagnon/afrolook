@@ -1,0 +1,29 @@
+titre: Analytique digitale et parcours client
+== fiche
+p: L'analytique digitale collecte et analyse les données de comportement des utilisateurs pour améliorer les actions marketing.
+li: Parcours client : étapes par lesquelles passe un client : découverte, considération, achat, fidélisation, recommandation ; points de contact (touchpoints) en ligne et hors ligne.
+li: Sources de trafic : direct, organique (moteurs de recherche), payant, réseaux sociaux, courriel, sites référents.
+li: Indicateurs : visiteurs uniques, pages vues, durée, taux de rebond, taux de conversion, panier moyen, coût d'acquisition, valeur vie client.
+li: Paramètres UTM : étiquettes ajoutées aux liens pour savoir quelle campagne a amené les visiteurs.
+li: Entonnoir de conversion : on mesure les pertes à chaque étape (visite, produit consulté, panier, paiement) pour corriger les points faibles.
+li: Cohortes : groupes de clients arrivés à la même période, comparés dans le temps (fidélité, réachat).
+li: Attribution : répartir le mérite d'une vente entre plusieurs contacts (dernier clic, premier clic, multi-touch).
+li: Respect de la vie privée : consentement aux cookies, anonymisation, durée de conservation limitée.
+note: Le tableau de bord montre peu de chiffres bien choisis, comparés dans le temps.
+note: Un chiffre sans contexte ne dit rien : comparer à l'objectif ou à la période précédente.
+== questions
+Qu'est-ce que le parcours client ? || Les étapes par lesquelles passe un client avant et après l'achat || Le trajet d'un livreur || Un plan de magasin || Une publicité || Il comprend de nombreux points de contact.
+Qu'est-ce qu'un point de contact (touchpoint) ? || Toute interaction entre le client et la marque || Un bouton || Un téléphone || Un produit || Un site, un appel ou un magasin en sont.
+Citez une source de trafic d'un site : || Les moteurs de recherche || Le papier || Le stock || La caisse || Réseaux sociaux et courriel en sont d'autres.
+Qu'est-ce que le trafic direct ? || Les visiteurs qui tapent l'adresse ou ont le site en favori || Les visiteurs venant d'un moteur de recherche || Les visiteurs venant d'une publicité || Les visiteurs d'un réseau social || Il montre la notoriété.
+À quoi servent les paramètres UTM ? || À identifier la campagne qui amène les visiteurs || À calculer la TVA || À crypter les données || À fixer les prix || Ils s'ajoutent aux liens.
+Qu'est-ce qu'un entonnoir de conversion ? || La suite d'étapes où l'on mesure les pertes jusqu'à l'achat || Un outil de cuisine || Un budget || Un contrat || Il révèle les points faibles.
+Que mesure le taux de rebond ? || La part des visiteurs qui quittent après une seule page || La part des acheteurs || Le nombre de pages vues || Le panier moyen || Un taux élevé peut signaler un problème.
+Qu'est-ce qu'une cohorte ? || Un groupe de clients arrivés à la même période, suivis dans le temps || Un groupe de produits || Un type de publicité || Un budget || Elle sert à mesurer la fidélité.
+Qu'est-ce que l'attribution marketing ? || La répartition du mérite d'une vente entre les points de contact || Un impôt || Un budget || Un contrat || Dernier clic et multi-touch en sont des modèles.
+Que signifie l'attribution au dernier clic ? || Le dernier contact reçoit tout le mérite || Le premier contact reçoit tout le mérite || Tous les contacts sont égaux || Aucun contact ne compte || Elle ignore les premiers contacts.
+Quel indicateur montre la valeur d'un client sur toute la relation ? || La valeur vie client || Le taux de rebond || Les pages vues || Le nombre de visiteurs || Elle aide à fixer le budget d'acquisition.
+Pourquoi demander le consentement aux cookies ? || Pour respecter la vie privée et la loi || Pour gagner du temps || Pour supprimer les données || Pour ralentir le site || Le visiteur doit pouvoir refuser.
+Pourquoi comparer un chiffre à la période précédente ? || Pour interpréter son évolution || Pour remplir un tableau || Pour l'oublier || Pour le cacher || Un chiffre isolé ne dit rien.
+Que fait-on lorsque l'entonnoir montre beaucoup d'abandons au paiement ? || On simplifie le paiement et on rassure || On supprime le site || On baisse le prix toujours || On ignore || Il faut corriger le point faible.
+Pourquoi limiter la durée de conservation des données personnelles ? || Pour protéger la vie privée || Pour accélérer les ventes || Pour supprimer les statistiques || Pour compliquer le travail || C'est un principe de protection.

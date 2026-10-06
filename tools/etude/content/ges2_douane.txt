@@ -1,0 +1,29 @@
+titre: Commerce extérieur, douane et transit
+== fiche
+p: Importer ou exporter suppose de remplir des formalités douanières, de choisir un transport et de se couvrir contre les risques de paiement.
+li: Douane : administration qui contrôle les marchandises aux frontières, perçoit droits et taxes, lutte contre la fraude et la contrefaçon.
+li: Déclaration en douane : document déclarant nature, origine, valeur et quantité des marchandises ; le dédouanement est la formalité qui autorise leur mise en circulation.
+li: Droits et taxes à l'importation : droits de douane (selon le tarif extérieur commun dans l'UEMOA et la CEDEAO), TVA, autres taxes.
+li: Nomenclature : le Système harmonisé (SH) classe les marchandises par code ; le code détermine le taux de droit.
+li: Régimes douaniers : mise à la consommation (importation définitive), admission temporaire, entrepôt sous douane, transit (circulation sous douane vers un autre pays), exportation.
+li: Documents : facture commerciale, liste de colisage, connaissement (transport maritime), lettre de transport aérien, certificat d'origine, certificat phytosanitaire, déclaration en douane.
+li: Transitaire : professionnel qui accomplit pour le compte de l'importateur les formalités de transport et de douane.
+li: Paiement : virement, remise documentaire, crédit documentaire (la banque s'engage à payer sur remise de documents conformes).
+note: Une erreur de code SH ou de valeur peut entraîner un redressement et des amendes.
+note: Les marchandises en transit vers les pays sans littoral passent par les ports de la côte.
+== questions
+Quel est le rôle de la douane ? || Contrôler les marchandises aux frontières et percevoir droits et taxes || Fabriquer les produits || Vendre les produits || Fixer les salaires || Elle lutte aussi contre la fraude.
+Qu'est-ce que le dédouanement ? || Les formalités qui autorisent la mise en circulation de la marchandise || Un paiement de salaire || Un type de transport || Une facture || Il suit la déclaration en douane.
+Que contient une déclaration en douane ? || La nature, l'origine, la valeur et la quantité des marchandises || Le nom des clients || Le prix de vente seulement || Le bilan || Elle sert de base aux droits.
+Citez un droit ou une taxe à l'importation : || Le droit de douane || L'impôt sur les salaires || La patente seulement || L'impôt foncier || La TVA à l'importation en est une autre.
+À quoi sert le Système harmonisé (SH) ? || À classer les marchandises par code || À calculer les salaires || À fixer les taux de change || À mesurer le poids || Le code détermine le taux de droit.
+Qu'est-ce que le régime de transit ? || La circulation de marchandises sous contrôle douanier vers une autre destination || Une vente locale || Un stockage || Une destruction || Il évite le paiement des droits en route.
+Qu'est-ce que l'admission temporaire ? || L'entrée de marchandises pour un usage limité puis réexportation || Une importation définitive || Un vol || Une exportation définitive || Elle est utilisée pour du matériel d'exposition ou de chantier.
+Qu'est-ce qu'un connaissement ? || Le document du transport maritime qui prouve le contrat de transport || Une facture || Un reçu || Un impôt || Il est aussi un titre de propriété.
+Qu'est-ce qu'un certificat d'origine ? || Un document qui atteste le pays de fabrication d'une marchandise || Un document de paiement || Un contrat de transport || Un visa || Il peut donner droit à des préférences tarifaires.
+Qu'est-ce qu'un transitaire ? || Un professionnel qui s'occupe des formalités de transport et de douane || Un banquier || Un producteur || Un client || Il agit pour le compte de l'importateur.
+Qu'est-ce qu'un crédit documentaire ? || Un engagement de la banque à payer sur remise de documents conformes || Un prêt à long terme || Un impôt || Un contrat de travail || Il sécurise l'exportateur et l'importateur.
+Que risque-t-on avec une fausse déclaration de valeur en douane ? || Un redressement et des amendes || Une prime || Une exonération || Rien || La fraude est sanctionnée.
+Pourquoi les marchandises vers un pays sans littoral passent-elles en transit ? || Elles traversent d'autres pays depuis les ports || Elles sont détruites || Elles sont gratuites || Elles sont volées || Elles restent sous contrôle douanier.
+Qu'est-ce qu'une liste de colisage ? || Un document qui détaille le contenu de chaque colis || Une facture || Un salaire || Un impôt || Elle sert au contrôle et au transport.
+À quoi sert la facture commerciale ? || À prouver la vente et à déterminer la valeur en douane || À payer le transport || À fixer le salaire || À calculer la TVA locale seulement || C'est un document de base du dédouanement.

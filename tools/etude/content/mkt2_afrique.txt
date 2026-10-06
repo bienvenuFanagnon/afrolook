@@ -1,0 +1,29 @@
+titre: Marketing en contexte africain
+== fiche
+p: Les marchés africains ont des particularités qu'une stratégie marketing doit comprendre.
+li: Démographie : population jeune et en croissance rapide, urbanisation, classe moyenne en développement.
+li: Pouvoir d'achat : revenus modestes pour une grande partie des consommateurs ; petits conditionnements (sachets, unités) et paiement en plusieurs fois ; rapport qualité-prix recherché.
+li: Informel : une grande part du commerce passe par des marchés, des boutiques de quartier et des vendeurs ambulants ; l'entreprise doit adapter sa distribution.
+li: Mobile : forte pénétration du téléphone portable ; mobile money, WhatsApp, réseaux sociaux ; connexion parfois faible ou coûteuse (messages légers, hors ligne).
+li: Diversité culturelle et linguistique : plusieurs langues par pays, traditions différentes ; adapter messages, visuels et noms.
+li: Confiance : recommandations de proches, leaders d'opinion, radio locale ; la preuve par l'exemple compte plus que le slogan.
+li: Défis : infrastructures (routes, électricité), contrefaçons, change et inflation, réglementations différentes ; intégration régionale (CEDEAO, UEMOA, ZLECAf).
+li: Diaspora : marché de transferts d'argent, de produits d'origine et d'investissements.
+note: Exemple : un fabricant de savon vend des petits formats à petit prix en boutiques de quartier et fait ses annonces à la radio locale.
+note: Écouter et adapter : un produit mondial réussit en Afrique lorsqu'il répond à des besoins locaux.
+== questions
+Citez une caractéristique démographique des marchés africains : || Une population jeune en forte croissance || Une population vieillissante || Une population en baisse || Une population uniforme || Elle représente un grand potentiel de consommateurs.
+Pourquoi vend-on souvent en petits conditionnements ? || Pour s'adapter au pouvoir d'achat || Pour économiser le carton || Pour compliquer || Pour augmenter le prix unitaire seulement || Les clients achètent à la journée ou par petites quantités.
+Comment appelle-t-on les activités commerciales peu enregistrées qui occupent beaucoup d'actifs ? || Le secteur informel || Les activités de l'État || Les banques || Les multinationales || Il est important dans beaucoup de pays.
+Pourquoi une entreprise doit-elle s'intéresser à la distribution informelle ? || Elle touche beaucoup de consommateurs || Elle est interdite || Elle est inutile || Elle supprime la marque || Les boutiques de quartier sont très fréquentées.
+Qu'est-ce que le mobile money ? || Un service de paiement et de transfert d'argent par téléphone || Une pièce de monnaie || Un chèque || Un prêt || Il est très répandu en Afrique.
+Quelle précaution prendre pour une communication en ligne en contexte de faible connexion ? || Utiliser des contenus légers || Utiliser des vidéos très lourdes || Ne pas communiquer || Utiliser seulement du texte long || Les données mobiles sont parfois coûteuses.
+Pourquoi adapter les messages aux langues locales ? || Pour mieux être compris et accepté || Pour réduire les coûts || Pour éviter la radio || Pour supprimer la publicité || La proximité culturelle crée la confiance.
+Quel média atteint bien de larges publics ruraux ? || La radio locale || Le cinéma 3D || Le journal de luxe || Le télex || Elle est accessible et peu coûteuse.
+Qu'est-ce qui pèse fortement dans la décision d'achat ? || Les recommandations de proches et de leaders d'opinion || Les graphiques || Les statistiques || Le seul slogan || La confiance personnelle est forte.
+Citez un défi du marketing en Afrique : || Les contrefaçons || L'excès d'infrastructures || L'absence de consommateurs || L'uniformité culturelle || Les infrastructures et le change en sont d'autres.
+Que veut dire ZLECAf ? || Zone de libre-échange continentale africaine || Zone locale d'échanges culturels || Zone de lutte contre l'évasion fiscale || Zone libre d'exportations || Elle vise un grand marché africain.
+Quelle opportunité offre la diaspora ? || Transferts d'argent, demande de produits d'origine et investissements || Aucune || Un risque seulement || Un marché fermé || Elle soutient l'économie locale.
+Pourquoi un produit mondial peut-il échouer localement ? || Il ne répond pas aux besoins ni aux usages locaux || Il est trop bon || Il est trop connu || Il est trop bien emballé || Il faut adapter.
+Quelle est l'utilité de la preuve par l'exemple ? || Elle rassure plus que le slogan || Elle coûte moins || Elle est interdite || Elle est ennuyeuse || Les démonstrations convainquent.
+Citez un canal de vente adapté aux zones urbaines denses : || Les boutiques de quartier || Les entrepôts fermés || Les ventes par courrier lent || Les hypermarchés partout || Elles sont proches des clients.

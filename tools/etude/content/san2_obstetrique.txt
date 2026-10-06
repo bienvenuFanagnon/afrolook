@@ -1,0 +1,29 @@
+titre: Grossesse, accouchement et suites de couches
+== fiche
+p: Une grossesse dure environ 40 semaines d'aménorrhée (9 mois). Le suivi permet de repérer tôt les risques pour la mère et l'enfant.
+li: Surveillance prénatale : tension artérielle, poids, hauteur utérine, urines (albumine, sucre), bruits du cœur du fœtus, mouvements, échographie, tests (VIH, syphilis, hépatite B), fer et acide folique, moustiquaire.
+li: Signes de danger : saignements, convulsions, fièvre, maux de tête intenses avec vision trouble, gonflement du visage et des mains, perte de liquide, absence de mouvements du fœtus, douleurs abdominales fortes.
+li: Pré-éclampsie : hypertension et protéines dans les urines après 20 semaines ; l'éclampsie correspond aux convulsions ; urgences vitales.
+li: Accouchement : travail (contractions et dilatation du col), expulsion, délivrance du placenta ; le partogramme suit sa progression ; une césarienne est décidée en cas de danger.
+li: Nouveau-né : score d'Apgar à 1 et à 5 minutes (couleur, pouls, réactivité, tonus, respiration) ; peau à peau, allaitement précoce, soins du cordon, vitamine K selon protocole.
+li: Hémorragie du post-partum : première cause de décès maternel ; prévention par la gestion active de la troisième phase du travail.
+li: Suites de couches : surveillance de 42 jours ; saignements, fièvre, douleurs, tristesse ; consultation postnatale.
+li: Planification familiale : espacer les naissances (pilule, implant, stérilet, préservatif, injectable, méthodes naturelles).
+note: Un accouchement assisté par du personnel qualifié et la référence rapide en cas de complications sauvent des vies.
+note: L'allaitement exclusif jusqu'à 6 mois protège l'enfant et espace naturellement les naissances si certaines conditions sont réunies.
+== questions
+Combien de semaines dure une grossesse normale, environ ? || 40 semaines d'aménorrhée || 20 semaines || 60 semaines || 12 semaines || C'est environ 9 mois.
+Citez un élément de la surveillance prénatale : || La mesure de la tension artérielle || La mesure de la taille des pieds || Le choix du prénom || La pesée du placenta || Elle dépiste l'hypertension.
+Citez un signe de danger pendant la grossesse : || Un saignement || Un appétit normal || Un sommeil normal || Une envie de marcher || Il impose une consultation urgente.
+Qu'est-ce que la pré-éclampsie ? || Une hypertension avec protéines dans les urines pendant la grossesse || Une infection || Un diabète || Un saignement || Elle peut conduire à l'éclampsie.
+Qu'est-ce que l'éclampsie ? || Des convulsions chez une femme enceinte souffrant de pré-éclampsie || Une hémorragie || Une fièvre || Un accouchement prématuré || C'est une urgence vitale.
+À quoi sert le partogramme ? || À suivre l'évolution du travail et détecter les anomalies || À peser le bébé || À mesurer la tension || À calculer les doses || Il aide à décider une intervention.
+Quelles sont les phases de l'accouchement ? || Travail, expulsion, délivrance || Consultation, examen, sortie || Naissance, allaitement, vaccination || Dilatation, injection, repos || La délivrance est l'expulsion du placenta.
+Que mesure le score d'Apgar ? || L'état du nouveau-né à 1 et 5 minutes de vie || La tension de la mère || Le poids du bébé || La taille || Il note cinq critères de 0 à 2.
+Quelle est la première cause de décès maternel ? || L'hémorragie du post-partum || Le paludisme || La grippe || Le diabète || Elle survient après l'accouchement.
+Combien de temps dure la période de suites de couches ? || Environ 42 jours || 3 jours || 6 mois || 2 ans || Le suivi dépiste hémorragies et infections.
+Citez une méthode de planification familiale : || L'implant contraceptif || La vaccination || Le dépistage || La transfusion || Pilule, stérilet et préservatif en sont d'autres.
+Quel est l'intérêt de l'allaitement précoce après la naissance ? || Il protège l'enfant et favorise la contraction de l'utérus || Il remplace le vaccin || Il supprime les soins || Il fait grossir la mère || L'ocytocine aide à réduire les saignements.
+Pourquoi donne-t-on du fer et de l'acide folique en grossesse ? || Pour prévenir l'anémie et certaines malformations || Pour fortifier les dents || Pour baisser la tension || Pour calmer la douleur || Ils sont essentiels au développement du fœtus.
+Que faire d'une femme qui saigne pendant la grossesse ? || La référer d'urgence à une structure équipée || La laisser se reposer || Lui donner un purgatif || Attendre le lendemain || Le saignement peut menacer la mère et l'enfant.
+Quel est l'avantage d'un accouchement assisté par du personnel qualifié ? || Les complications sont prises en charge rapidement || Il est toujours plus cher || Il est plus douloureux || Il est inutile || Il réduit la mortalité.
