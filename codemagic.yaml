@@ -37,9 +37,11 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Pas de soumission automatique à la revue bêta : elle échoue (422) quand un autre build de la même version est déjà en revue.
+        # Le build est ajouté au groupe interne (sans revue) ; l'envoi en production se fait depuis App Store Connect.
+        submit_to_testflight: false
         beta_groups:
-          - Testeurs
+          - Testeurs interne
       email:
         recipients:
           - techbienos@gmail.com
