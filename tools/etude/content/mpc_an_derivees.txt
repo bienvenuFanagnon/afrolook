@@ -1,0 +1,26 @@
+titre: Dérivation et étude de fonctions
+== fiche
+p: La dérivée f′(a) est le coefficient directeur de la tangente à la courbe de f au point d'abscisse a ; elle mesure la vitesse de variation de f.
+li: Dérivées usuelles : (xⁿ)′ = n xⁿ⁻¹ ; (eˣ)′ = eˣ ; (ln x)′ = 1/x ; (sin x)′ = cos x ; (cos x)′ = −sin x.
+li: Règles : (u + v)′ = u′ + v′ ; (u v)′ = u′ v + u v′ ; (u/v)′ = (u′ v − u v′)/v² ; (f∘g)′ = g′ × f′(g).
+li: Signe de f′ : si f′ > 0 sur un intervalle, f est croissante ; si f′ < 0, f est décroissante.
+li: Un extremum local apparaît quand f′ s'annule en changeant de signe.
+li: Équation de la tangente en a : y = f′(a)(x − a) + f(a).
+note: Exemple : f(x) = x³ − 3x donne f′(x) = 3x² − 3 = 3(x − 1)(x + 1) ; f est décroissante entre −1 et 1, croissante ailleurs.
+note: Méthode d'étude : domaine, dérivée, signe de la dérivée, tableau de variations, limites aux bornes, courbe.
+== questions
+Quelle est la dérivée de x² ? || 2x || x || 2 || x³ || On applique (xⁿ)′ = n xⁿ⁻¹ avec n = 2.
+Quelle est la dérivée de 5x + 3 ? || 5 || 3 || 5x || 8 || La dérivée d'une fonction affine est son coefficient directeur.
+Quelle est la dérivée de eˣ ? || eˣ || x eˣ⁻¹ || 1 || e || L'exponentielle est égale à sa propre dérivée.
+Quelle est la dérivée de ln(x) pour x > 0 ? || 1/x || x || ln(x)/x || e^x || C'est une dérivée usuelle à retenir.
+Quelle est la dérivée de sin(x) ? || cos(x) || −cos(x) || −sin(x) || tan(x) || (sin x)′ = cos x.
+Que représente f′(a) géométriquement ? || Le coefficient directeur de la tangente en a || L'aire sous la courbe || La valeur de f en a || L'ordonnée à l'origine || La dérivée est la pente de la tangente.
+Sur un intervalle où la dérivée f′ est strictement positive, comment varie f ? || f est croissante || f est décroissante || f est constante || f est négative || Le signe de la dérivée donne le sens de variation.
+Quelle est la dérivée de x³ − 3x ? || 3x² − 3 || x² − 3 || 3x − 3 || 3x² || On dérive terme à terme : 3x² − 3.
+Quelle est la dérivée de x·eˣ ? || (x + 1)eˣ || eˣ || x eˣ || x + eˣ || Produit : u′v + uv′ = eˣ + x eˣ = (x + 1)eˣ.
+Quelle est la dérivée de 1/x ? || −1/x² || 1/x² || ln x || −1/x || On écrit 1/x = x⁻¹ et on dérive : −x⁻² = −1/x².
+Quelle est l'équation de la tangente à y = x² au point d'abscisse 1 ? || y = 2x − 1 || y = 2x + 1 || y = x || y = x² || f(1) = 1 et f′(1) = 2, donc y = 2(x − 1) + 1 = 2x − 1.
+La fonction f(x) = x² − 4x admet un minimum en : || x = 2 || x = 4 || x = −2 || x = 0 || f′(x) = 2x − 4 s'annule en 2 en passant du négatif au positif.
+Quelle est la dérivée de (2x + 1)³ ? || 6(2x + 1)² || 3(2x + 1)² || (2x + 1)² || 2(2x + 1)³ || Composée : 3 × (2x + 1)² × 2.
+Quelle est la dérivée de ln(x²) pour x > 0 ? || 2/x || 1/x² || 2x || 1/(2x) || (ln u)′ = u′/u = 2x/x² = 2/x.
+Si f′ s'annule en changeant de signe de + à −, que se passe-t-il pour f ? || Elle atteint un maximum local || Elle atteint un minimum local || Elle est discontinue || Elle devient constante || La fonction passe de croissante à décroissante.

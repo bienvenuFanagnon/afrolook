@@ -1,0 +1,27 @@
+titre: Solutions, concentrations et acides-bases
+== fiche
+p: Une solution est un mélange homogène d'un soluté dissous dans un solvant (souvent l'eau).
+li: Concentration molaire : C = n / V, en mol/L. Quantité de matière : n = m / M (M masse molaire en g/mol).
+li: Dilution : C₁ V₁ = C₂ V₂ (la quantité de matière de soluté ne change pas).
+li: pH = −log [H₃O⁺]. pH < 7 : solution acide ; pH = 7 : neutre (à 25 °C) ; pH > 7 : basique.
+li: Acide : espèce qui cède un proton H⁺ ; base : espèce qui capte un proton.
+li: Un acide fort réagit totalement avec l'eau (HCl) ; un acide faible partiellement (acide éthanoïque).
+li: Dosage acido-basique : à l'équivalence, la quantité d'acide égale celle de base (n_A = n_B quand les coefficients sont 1).
+note: Exemple : 0,2 mol dissoute dans 0,5 L donne C = 0,4 mol/L.
+note: Masses molaires : H = 1, C = 12, O = 16, Na = 23, Cl = 35,5 g/mol ; l'eau H₂O vaut 18 g/mol.
+== questions
+Quelle formule donne la concentration molaire ? || C = n / V || C = n V || C = V / n || C = m V || C'est la quantité de matière par litre de solution.
+Quelle est la concentration de 0,2 mol dans 0,5 L ? || 0,4 mol/L || 0,1 mol/L || 0,7 mol/L || 2,5 mol/L || C = 0,2/0,5.
+Quelle est la masse molaire de l'eau H₂O (H = 1, O = 16) ? || 18 g/mol || 17 g/mol || 16 g/mol || 34 g/mol || 2 × 1 + 16 = 18.
+Quelle quantité de matière représente 36 g d'eau ? || 2 mol || 0,5 mol || 18 mol || 36 mol || n = m/M = 36/18.
+Quelle solution est acide ? || pH = 3 || pH = 7 || pH = 9 || pH = 12 || Un pH inférieur à 7 indique une solution acide.
+Que vaut le pH d'une solution neutre à 25 °C ? || 7 || 0 || 14 || 1 || L'eau pure a un pH de 7.
+Quelle est la définition du pH ? || −log [H₃O⁺] || log [OH⁻] || [H₃O⁺] × 7 || 14 − [H₃O⁺] || Le pH est l'opposé du logarithme décimal de la concentration en ions oxonium.
+Quel est le pH d'une solution avec [H₃O⁺] = 10⁻³ mol/L ? || 3 || −3 || 11 || 7 || pH = −log(10⁻³) = 3.
+Qu'est-ce qu'un acide selon Brønsted ? || Une espèce qui cède un proton H⁺ || Une espèce qui capte un proton || Une espèce neutre || Une espèce colorée || Une base capte un proton.
+Quel est un exemple d'acide fort ? || L'acide chlorhydrique HCl || L'acide éthanoïque || L'eau || L'ammoniac || HCl réagit totalement avec l'eau.
+On dilue 10 mL d'une solution à 1 mol/L jusqu'à 100 mL. Quelle est la nouvelle concentration ? || 0,1 mol/L || 10 mol/L || 0,01 mol/L || 1 mol/L || C₁V₁ = C₂V₂ donne C₂ = 1 × 10 / 100.
+Quelle masse de NaCl (M = 58,5 g/mol) faut-il pour préparer 1 L à 0,1 mol/L ? || 5,85 g || 58,5 g || 0,585 g || 585 g || m = C V M = 0,1 × 1 × 58,5.
+À l'équivalence d'un dosage acide-base (coefficients 1), que peut-on dire ? || La quantité d'acide égale celle de base || Le pH vaut toujours 7 || La solution est incolore || Le volume est nul || Les réactifs ont été introduits dans les proportions stœchiométriques.
+Quelle est la concentration en ions H₃O⁺ d'une solution de pH 2 ? || 10⁻² mol/L || 2 mol/L || 10² mol/L || 0,2 mol/L || [H₃O⁺] = 10^(−pH).
+Un acide faible dans l'eau : || réagit partiellement || réagit totalement || ne réagit pas || n'a aucun proton || Il s'établit un équilibre entre l'acide et sa base conjuguée.

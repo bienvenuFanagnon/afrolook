@@ -1,0 +1,27 @@
+titre: Comptes, débit-crédit et écritures
+== fiche
+p: La comptabilité utilise la partie double : chaque opération est enregistrée deux fois, au débit d'un compte et au crédit d'un autre, pour des montants égaux.
+li: Un compte a deux colonnes : le débit à gauche, le crédit à droite. Solde = débit − crédit (ou l'inverse).
+li: Règle : les comptes d'actif augmentent au débit ; les comptes de passif augmentent au crédit.
+li: Les charges augmentent au débit ; les produits augmentent au crédit.
+li: Écriture : date, comptes débités, comptes crédités, libellé. Le total des débits égale le total des crédits.
+li: Le journal enregistre les écritures dans l'ordre chronologique ; le grand livre les regroupe par compte ; la balance contrôle l'égalité des totaux.
+li: Pièces justificatives : facture, reçu, relevé bancaire ; elles prouvent l'opération.
+note: Exemple : achat de marchandises au comptant par chèque pour 100 000 : débit du compte Achats, crédit du compte Banque.
+note: Vente à crédit à un client : débit du compte Client, crédit du compte Ventes.
+== questions
+Que signifie la partie double ? || Chaque opération est enregistrée au débit d'un compte et au crédit d'un autre || Chaque opération est enregistrée deux jours || Le comptable doit être deux || Chaque facture est doublée || Le total des débits égale celui des crédits.
+Dans un compte, où se place le débit ? || À gauche || À droite || En haut || Au centre || Le débit est la colonne de gauche.
+Un compte d'actif augmente : || au débit || au crédit || toujours au crédit || ni débit ni crédit || Les emplois s'inscrivent au débit.
+Un compte de produit augmente : || au crédit || au débit || ni débit ni crédit || toujours à zéro || Les ventes sont créditées.
+Une charge est enregistrée : || au débit || au crédit || au bilan seulement || au capital || Les charges augmentent au débit.
+Que doit-on avoir pour chaque écriture ? || Total des débits = total des crédits || Plus de débits que de crédits || Plus de crédits que de débits || Un seul compte || C'est le principe d'équilibre de la partie double.
+Quel livre enregistre les écritures dans l'ordre chronologique ? || Le journal || Le grand livre || La balance || Le bilan || Le journal respecte l'ordre des dates.
+Que regroupe le grand livre ? || Les écritures classées par compte || Les factures || Les contrats || Les salaires || Il donne le détail de chaque compte.
+Achat de marchandises au comptant par chèque. Quel compte est crédité ? || Banque || Achats || Capital || Ventes || L'argent sort de la banque (crédit) et les achats augmentent (débit).
+Vente de marchandises à crédit à un client. Quel compte est débité ? || Client || Banque || Ventes || Capital || La créance sur le client augmente.
+Quel compte est crédité dans la vente à crédit ? || Ventes || Client || Banque || Stocks || Le produit des ventes augmente.
+Que contrôle la balance ? || L'égalité des totaux débits et crédits || Le prix des produits || Le stock physique || La paie || Une balance déséquilibrée signale une erreur.
+Qu'est-ce qu'une pièce justificative ? || Un document qui prouve une opération, comme une facture || Un compte du bilan || Un type de charge || Un taux d'intérêt || Chaque écriture doit s'appuyer sur une preuve.
+L'entreprise paie un loyer de 40 000 en espèces. Quelle écriture passe-t-on ? || Débit loyer, crédit caisse || Débit caisse, crédit loyer || Débit capital, crédit loyer || Débit banque, crédit capital || La charge augmente et la caisse diminue.
+Une entreprise reçoit un règlement de 60 000 d'un client par virement. Quelle écriture passe-t-on ? || Débit banque, crédit client || Débit client, crédit banque || Débit ventes, crédit client || Débit capital, crédit banque || La banque augmente et la créance sur le client diminue.

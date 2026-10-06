@@ -1,0 +1,26 @@
+titre: Nombres complexes
+== fiche
+p: Un nombre complexe s'écrit z = a + ib, avec a et b réels et i² = −1. a est la partie réelle, b la partie imaginaire.
+li: Addition : (a + ib) + (c + id) = (a + c) + i(b + d). Produit : on développe et on remplace i² par −1.
+li: Conjugué : z̄ = a − ib. Le produit z × z̄ = a² + b² est un réel positif.
+li: Module : |z| = √(a² + b²), c'est la distance de l'origine au point d'affixe z.
+li: Forme trigonométrique : z = r(cos θ + i sin θ), avec r = |z| et θ l'argument.
+li: Forme exponentielle : z = r e^(iθ) ; le produit de deux complexes multiplie les modules et additionne les arguments.
+note: Exemple : (1 + i)(1 − i) = 1 − i² = 2. Le module de 3 + 4i est 5.
+note: Formule de Moivre : (cos θ + i sin θ)ⁿ = cos(nθ) + i sin(nθ).
+== questions
+Que vaut i² ? || −1 || 1 || i || 0 || C'est la définition de l'unité imaginaire.
+Quelle est la partie réelle de 3 + 4i ? || 3 || 4 || 7 || 5 || Dans a + ib, la partie réelle est a.
+Que vaut (2 + i) + (1 + 3i) ? || 3 + 4i || 3 + 2i || 2 + 4i || 1 + 4i || On additionne parties réelles et parties imaginaires.
+Quel est le conjugué de 3 + 4i ? || 3 − 4i || −3 + 4i || −3 − 4i || 4 + 3i || Le conjugué change le signe de la partie imaginaire.
+Que vaut (1 + i)(1 − i) ? || 2 || 0 || 1 − 2i || 2i || 1 − i² = 1 + 1 = 2.
+Quel est le module de 3 + 4i ? || 5 || 7 || 25 || 1 || √(3² + 4²) = √25 = 5.
+Que vaut (1 + i)² ? || 2i || 2 || 1 + 2i || 0 || 1 + 2i + i² = 2i.
+Que vaut i³ ? || −i || i || 1 || −1 || i³ = i² × i = −i.
+Quelle est la forme algébrique de 1/i ? || −i || i || 1 || −1 || On multiplie par i/i : i/i² = −i.
+Quel est le module de 1 + i ? || √2 || 2 || 1 || 1/√2 || √(1 + 1) = √2.
+Quel est l'argument de i ? || π/2 || 0 || π || π/4 || Le point i est sur l'axe vertical, à 90°.
+Que vaut e^(iπ) ? || −1 || 1 || i || 0 || Formule d'Euler : cos π + i sin π = −1.
+Que fait le produit de deux complexes sur leurs modules et arguments ? || Il multiplie les modules et additionne les arguments || Il additionne les modules et multiplie les arguments || Il multiplie tout || Il additionne tout || Règle de la forme exponentielle : r e^(iθ) × r′ e^(iθ′).
+Que vaut (cos θ + i sin θ)³ ? || cos 3θ + i sin 3θ || 3 cos θ + 3i sin θ || cos θ³ + i sin θ³ || 3θ || Formule de Moivre.
+Quelles sont les solutions de z² + 1 = 0 ? || i et −i || 1 et −1 || Aucune || 0 seulement || z² = −1 donne z = i ou z = −i.

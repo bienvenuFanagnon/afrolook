@@ -1,0 +1,27 @@
+titre: Thermodynamique : température, chaleur et premier principe
+== fiche
+p: La thermodynamique étudie les échanges d'énergie sous forme de chaleur et de travail.
+li: La température mesure l'agitation des particules. Échelle Kelvin : T(K) = T(°C) + 273,15 ; le zéro absolu vaut 0 K.
+li: Chaleur échangée sans changement d'état : Q = m c ΔT (c : capacité thermique massique, 4180 J/(kg·K) pour l'eau).
+li: Changement d'état : Q = m L (chaleur latente), la température reste constante pendant le changement.
+li: Premier principe : la variation d'énergie interne vaut la somme du travail et de la chaleur reçus, ΔU = W + Q.
+li: Gaz parfait : P V = n R T avec R ≈ 8,31 J/(mol·K).
+li: Second principe : la chaleur passe spontanément du corps chaud vers le corps froid ; une machine thermique ne convertit pas toute la chaleur en travail.
+note: Modes de transfert de chaleur : conduction (contact), convection (mouvement de fluide), rayonnement (ondes).
+note: Rendement d'une machine : η = travail fourni / chaleur reçue, toujours inférieur à 1.
+== questions
+Combien de kelvins font 0 °C ? || 273,15 K || 0 K || 100 K || 373,15 K || T(K) = T(°C) + 273,15.
+Quelle est la valeur du zéro absolu en degrés Celsius ? || −273,15 °C || 0 °C || −100 °C || −373 °C || Le zéro absolu correspond à 0 K.
+Quelle formule donne la chaleur reçue sans changement d'état ? || Q = m c ΔT || Q = m L || Q = P V || Q = U I || Elle dépend de la masse, de la capacité thermique et de l'écart de température.
+Quelle chaleur faut-il pour chauffer 1 kg d'eau de 10 °C (c = 4180 J/(kg·K)) ? || 41 800 J || 4 180 J || 418 000 J || 4,18 J || Q = 1 × 4180 × 10.
+Pendant la fusion de la glace à 0 °C, la température : || reste constante || augmente || diminue || devient négative || L'énergie sert à changer d'état, pas à chauffer.
+Que dit le premier principe de la thermodynamique ? || ΔU = W + Q || La chaleur passe du froid au chaud || L'énergie se perd || Le travail est nul || C'est la conservation de l'énergie.
+Quelle est l'équation d'état du gaz parfait ? || P V = n R T || P = n R V T || V = P n R T || P T = n R V || Elle relie pression, volume, quantité de matière et température.
+Un gaz reçoit 100 J de chaleur et fournit 40 J de travail. Quelle est la variation d'énergie interne ? || 60 J || 140 J || −60 J || 40 J || ΔU = Q + W = 100 − 40.
+Dans quel sens la chaleur passe-t-elle spontanément ? || Du corps chaud vers le corps froid || Du corps froid vers le corps chaud || Dans les deux sens également || Elle ne passe pas || C'est le second principe.
+Quel est le mode de transfert de chaleur entre le Soleil et la Terre ? || Le rayonnement || La conduction || La convection || L'évaporation || Le vide ne permet ni conduction ni convection.
+Quel mode de transfert domine dans les courants d'air chaud et froid dans une pièce ? || La convection || La conduction || Le rayonnement uniquement || Aucun || Un fluide se déplace en transportant la chaleur.
+Que signifie un rendement de 0,3 pour un moteur ? || 30 % de la chaleur reçue est transformée en travail || Le moteur crée de l'énergie || 70 % du travail est gagné || Le moteur fonctionne à 3 W || η = travail / chaleur reçue.
+Quelle est la température de 300 K en degrés Celsius, environ ? || 27 °C || 573 °C || 0 °C || 300 °C || 300 − 273,15 ≈ 27 °C.
+Pourquoi un thermos garde-t-il le liquide chaud ? || Il limite conduction, convection et rayonnement || Il produit de la chaleur || Il supprime l'énergie || Il refroidit à l'extérieur || Le vide et les parois réfléchissantes réduisent les échanges.
+Un gaz parfait à volume constant voit sa température doubler (en kelvins). Sa pression : || double || est divisée par 2 || ne change pas || est multipliée par 4 || P V = n R T : à V et n constants, P est proportionnelle à T.

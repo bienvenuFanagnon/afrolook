@@ -1,0 +1,27 @@
+titre: Actualisation et choix d'investissement
+== fiche
+p: Un franc reçu aujourd'hui vaut plus qu'un franc reçu demain : on peut le placer et gagner des intérêts. Actualiser, c'est ramener une somme future à sa valeur d'aujourd'hui.
+li: Valeur actuelle : VA = Flux / (1 + t)ⁿ, avec t le taux d'actualisation et n le nombre d'années.
+li: Valeur actuelle nette : VAN = − investissement initial + somme des flux actualisés.
+li: Règle de décision : on accepte un projet si sa VAN est positive ; entre plusieurs projets, on prend la VAN la plus élevée.
+li: Taux de rentabilité interne (TRI) : le taux d'actualisation qui annule la VAN ; on le compare au coût du capital.
+li: Délai de récupération : durée nécessaire pour retrouver la mise de départ (sans actualisation) ; il ne tient pas compte des flux ultérieurs.
+li: Le taux d'actualisation reflète le coût de financement et le risque du projet.
+note: Exemple : investir 1 000 pour recevoir 1 210 dans 2 ans, au taux de 10 %. VA = 1 210 / 1,21 = 1 000 : VAN = 0.
+note: Plus le taux d'actualisation est élevé, plus la valeur actuelle des flux futurs est faible.
+== questions
+Pourquoi une somme reçue aujourd'hui vaut-elle plus qu'une même somme reçue plus tard ? || On peut la placer et gagner des intérêts || Parce qu'elle est plus lourde || Parce que les prix baissent toujours || Parce que les banques l'exigent || C'est la valeur du temps.
+Que veut dire actualiser une somme ? || La ramener à sa valeur d'aujourd'hui || La multiplier par le taux || L'envoyer à la banque || L'ajouter au capital || On divise par (1 + t)ⁿ.
+Quelle est la valeur actuelle de 1 100 reçus dans 1 an au taux de 10 % ? || 1 000 || 1 210 || 990 || 1 100 || 1 100 / 1,1 = 1 000.
+Quelle est la valeur actuelle de 1 210 reçus dans 2 ans au taux de 10 % ? || 1 000 || 1 100 || 1 210 || 968 || 1 210 / 1,21 = 1 000.
+Comment calcule-t-on la VAN d'un projet ? || Somme des flux actualisés moins l'investissement initial || Somme des flux sans actualisation || Investissement divisé par les flux || Flux moins taux || Elle mesure la richesse créée par le projet.
+Quand accepte-t-on un projet selon le critère de la VAN ? || Quand la VAN est positive || Quand la VAN est négative || Quand la VAN est nulle uniquement || Jamais || Une VAN positive crée de la valeur.
+Un projet coûte 1 000 et rapporte 1 100 dans 1 an. Au taux de 5 %, quelle est la VAN, environ ? || 48 || 100 || 0 || −48 || 1 100 / 1,05 ≈ 1 048, moins 1 000.
+Un projet coûte 1 000 et rapporte 1 100 dans 1 an. Au taux de 15 %, quelle est sa VAN, environ ? || −43 || 100 || 43 || 0 || 1 100 / 1,15 ≈ 957, moins 1 000.
+Que se passe-t-il pour la valeur actuelle quand le taux d'actualisation augmente ? || Elle diminue || Elle augmente || Elle reste identique || Elle devient nulle || On divise par un nombre plus grand.
+Que représente le TRI ? || Le taux qui rend la VAN égale à zéro || Le taux de l'inflation || Le taux de change || Le taux d'imposition || On le compare au coût du capital.
+Un projet a un TRI de 12 % et un coût du capital de 8 %. Que conclure ? || Le projet est rentable || Le projet est à refuser || On ne peut pas conclure || Le projet est neutre || Son rendement dépasse le coût de financement.
+Que mesure le délai de récupération ? || Le temps pour retrouver la mise de départ || Le taux de rentabilité || La valeur finale || Le coût du crédit || Il ne tient pas compte de la valeur du temps dans sa version simple.
+Quelle limite a le délai de récupération simple ? || Il ignore les flux après la récupération || Il est trop précis || Il tient compte du risque || Il utilise la VAN || Deux projets peuvent avoir le même délai et des gains très différents.
+Entre deux projets exclusifs de VAN 200 et 300, lequel retenir en principe ? || Celui de VAN 300 || Celui de VAN 200 || Aucun || Les deux || On retient la plus grande richesse créée.
+Que reflète le taux d'actualisation choisi ? || Le coût de financement et le risque du projet || La couleur de l'entreprise || Le nombre de salariés || Le prix du produit || Un projet plus risqué demande un taux plus élevé.

@@ -1,0 +1,27 @@
+titre: Charges, produits et résultat
+== fiche
+p: Le compte de résultat décrit l'activité d'une période : ce qu'elle a coûté (charges) et ce qu'elle a rapporté (produits).
+li: Charges : achats, services extérieurs (loyer, électricité), salaires, impôts et taxes, dotations aux amortissements.
+li: Produits : ventes de marchandises, de produits fabriqués, de services, produits financiers.
+li: Résultat = produits − charges : bénéfice si positif, perte si négatif.
+li: Marge commerciale = ventes de marchandises − coût d'achat des marchandises vendues.
+li: Coût d'achat des marchandises vendues = achats + stock initial − stock final.
+li: La TVA est collectée pour l'État : l'entreprise reverse la TVA collectée moins la TVA déductible sur ses achats.
+note: Exemple : ventes 800, achats de marchandises consommés 500, autres charges 150 : résultat = 800 − 650 = 150.
+note: Une dépense ne devient une charge de la période que si elle correspond à l'activité de cette période (principe de rattachement).
+== questions
+Que mesure le compte de résultat ? || L'activité d'une période : charges et produits || Le patrimoine à une date || La trésorerie seulement || Le capital || Il montre si l'entreprise a gagné ou perdu.
+Comment calcule-t-on le résultat ? || Produits − charges || Charges − produits || Actif − passif || Ventes + achats || Un résultat positif est un bénéfice.
+Un salaire versé est : || une charge || un produit || une dette seulement || un actif || Les salaires font partie des charges de personnel.
+Les ventes de marchandises sont : || des produits || des charges || des dettes || des immobilisations || Elles rapportent de l'argent à l'entreprise.
+Produits 800 et charges 650. Quel est le résultat ? || Bénéfice de 150 || Perte de 150 || Bénéfice de 1 450 || Résultat nul || 800 − 650 = 150.
+Produits 500 et charges 620. Quel est le résultat ? || Perte de 120 || Bénéfice de 120 || Perte de 1 120 || Résultat nul || 500 − 620 = −120.
+Qu'est-ce que la marge commerciale ? || Ventes de marchandises moins coût d'achat des marchandises vendues || Ventes plus achats || Bénéfice net || Capital moins dettes || Elle mesure le gain sur la revente.
+Comment calcule-t-on le coût d'achat des marchandises vendues ? || Achats + stock initial − stock final || Achats + stock final || Ventes − achats || Stock initial seulement || On ajoute le stock de départ et on retire ce qui reste.
+Ventes 1 000, achats 600, stock initial 100, stock final 200. Quelle est la marge commerciale ? || 500 || 400 || 300 || 600 || Coût d'achat = 600 + 100 − 200 = 500, marge = 1 000 − 500 = 500.
+Un loyer payé est : || une charge || un produit || un capital || un stock || C'est un service extérieur.
+Quelle est la nature de la TVA ? || Un impôt collecté par l'entreprise pour l'État || Un bénéfice de l'entreprise || Un salaire || Un emprunt || L'entreprise reverse la TVA collectée moins la TVA déductible.
+TVA collectée 180 et TVA déductible 120. Que doit-on payer à l'État ? || 60 || 300 || 180 || 120 || 180 − 120.
+Les dotations aux amortissements sont : || des charges calculées || des produits || des dettes || des stocks || Elles constatent la perte de valeur des immobilisations.
+Une dépense de matériel durable est-elle une charge immédiate ? || Non, c'est une immobilisation amortie sur plusieurs années || Oui, toujours || Oui, au bilan || Non, c'est un produit || Un bien durable est inscrit à l'actif puis amorti.
+Que dit le principe de rattachement des charges aux produits ? || Une charge se rattache à la période où l'activité correspondante a eu lieu || Une charge se compte à la date de paiement || Une charge ne se compte jamais || Une charge est toujours reportée || Les charges de l'exercice sont celles qui ont servi à produire ses produits.

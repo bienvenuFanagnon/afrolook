@@ -1,0 +1,27 @@
+titre: Monnaie, banques et BCEAO
+== fiche
+p: La monnaie sert d'intermédiaire des échanges, de mesure de la valeur et de réserve de valeur.
+li: Formes de la monnaie : pièces et billets (monnaie fiduciaire), dépôts bancaires (monnaie scripturale), paiements mobiles.
+li: Les banques collectent des dépôts et accordent des crédits ; elles créent de la monnaie scripturale en prêtant.
+li: Une banque centrale émet la monnaie, contrôle l'inflation et surveille les banques. Dans l'UEMOA c'est la BCEAO (Banque centrale des États de l'Afrique de l'Ouest), dont le siège est à Dakar.
+li: L'UEMOA compte huit pays : Bénin, Burkina Faso, Côte d'Ivoire, Guinée-Bissau, Mali, Niger, Sénégal et Togo. Leur monnaie commune est le franc CFA (XOF).
+li: Le franc CFA de l'UEMOA a une parité fixe avec l'euro : 1 euro = 655,957 francs CFA.
+li: Taux d'intérêt : prix du crédit ; le taux directeur de la BCEAO influence les taux des banques.
+note: La microfinance donne des services financiers aux personnes que les banques classiques servent peu.
+note: Instruments de paiement : espèces, chèque, virement, carte, monnaie électronique (mobile money).
+== questions
+Quelle est la fonction de la monnaie comme intermédiaire des échanges ? || Elle évite le troc || Elle fixe les impôts || Elle crée les emplois || Elle supprime les prix || Elle permet d'échanger sans chercher un partenaire qui veut notre bien.
+Quelles sont les trois fonctions de la monnaie ? || Intermédiaire des échanges, mesure de la valeur, réserve de valeur || Épargne, crédit, assurance || Production, vente, achat || Impôt, dette, change || Ce sont les fonctions classiques de la monnaie.
+Qu'est-ce que la monnaie scripturale ? || Les dépôts inscrits dans les comptes bancaires || Les pièces || Les billets || L'or || Elle circule par virements, chèques et cartes.
+Quel est le rôle d'une banque commerciale ? || Collecter des dépôts et accorder des crédits || Imprimer les billets || Fixer le taux directeur || Voter les lois || C'est le cœur du métier bancaire.
+Que signifie BCEAO ? || Banque centrale des États de l'Afrique de l'Ouest || Banque commerciale de l'Est africain || Bureau central de l'économie africaine || Banque coopérative des États africains || C'est la banque centrale de l'UEMOA.
+Où se trouve le siège de la BCEAO ? || À Dakar || À Abidjan || À Lomé || À Paris || Le siège est à Dakar, au Sénégal.
+Combien de pays comptent l'UEMOA ? || 8 || 5 || 15 || 17 || Bénin, Burkina Faso, Côte d'Ivoire, Guinée-Bissau, Mali, Niger, Sénégal, Togo.
+Lequel de ces pays fait partie de l'UEMOA ? || Le Togo || Le Ghana || Le Nigeria || La Guinée || Le Ghana et le Nigeria ont leur propre monnaie.
+Quelle est la parité du franc CFA de l'UEMOA avec l'euro ? || 1 euro = 655,957 francs CFA || 1 euro = 100 francs CFA || 1 euro = 1000 francs CFA || 1 euro = 500 francs CFA || Elle est fixe depuis 1999.
+Qui émet la monnaie dans l'UEMOA ? || La BCEAO || Chaque banque commerciale || Le ministère de l'économie de chaque pays || La Banque mondiale || Le privilège d'émission appartient à la banque centrale.
+Que fait la banque centrale quand elle relève son taux directeur ? || Elle rend le crédit plus cher || Elle rend le crédit gratuit || Elle imprime plus de billets || Elle supprime les banques || Les taux des banques ont tendance à suivre.
+Qu'est-ce que la microfinance ? || Des services financiers pour des personnes peu servies par les banques || Des banques très grandes || Des impôts locaux || Des prêts de l'État uniquement || Elle propose de petits crédits et de l'épargne.
+Que représente un taux d'intérêt ? || Le prix de l'argent emprunté || Le prix du pétrole || Le salaire minimum || Le taux de change || C'est le coût du crédit exprimé en pourcentage.
+Quel est un avantage du paiement mobile (mobile money) ? || Il permet de payer et d'envoyer de l'argent avec un téléphone || Il supprime toute commission || Il remplace la banque centrale || Il fixe les prix || Il facilite l'inclusion financière.
+Quel est le rôle de supervision de la banque centrale vis-à-vis des banques ? || Contrôler leur solidité et le respect des règles || Gérer leurs clients || Vendre leurs produits || Fixer leurs salaires || La stabilité du système bancaire est une mission essentielle.

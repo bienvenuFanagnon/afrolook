@@ -1,0 +1,27 @@
+titre: Liaisons chimiques et molécules
+== fiche
+p: Les atomes s'associent par des liaisons pour atteindre une couche externe stable.
+li: Liaison covalente : deux atomes mettent en commun une ou plusieurs paires d'électrons (H₂, O₂, H₂O, CO₂).
+li: Liaison ionique : un atome cède un électron à un autre ; les ions de charges opposées s'attirent (NaCl).
+li: Électronégativité : tendance d'un atome à attirer les électrons ; une liaison entre atomes d'électronégativités différentes est polarisée.
+li: Schéma de Lewis : on représente les paires liantes et non liantes autour des atomes.
+li: Géométrie (modèle VSEPR) : l'eau est coudée, le dioxyde de carbone linéaire, le méthane tétraédrique.
+li: Liaison hydrogène : attraction entre un H lié à O, N ou F et un doublet d'un autre atome ; elle explique la température d'ébullition élevée de l'eau.
+note: Valences usuelles : H forme 1 liaison, O forme 2, N forme 3, C forme 4.
+note: Un solide ionique conduit le courant fondu ou dissous, pas à l'état solide ; un composé moléculaire a souvent des températures de fusion basses.
+== questions
+Qu'est-ce qu'une liaison covalente ? || Une mise en commun de paires d'électrons || Un transfert complet d'électrons || Une attraction magnétique || Un contact entre noyaux || C'est la liaison des molécules comme H₂O.
+Combien de liaisons l'atome d'hydrogène forme-t-il ? || 1 || 2 || 3 || 4 || Il lui manque un électron pour compléter sa couche K.
+Combien de liaisons l'atome de carbone forme-t-il en général ? || 4 || 1 || 2 || 6 || Il a 4 électrons externes à partager.
+Quel type de liaison existe dans le chlorure de sodium NaCl ? || Ionique || Covalente || Métallique || Hydrogène || Le sodium cède un électron au chlore.
+Quelle est la formule de l'eau ? || H₂O || HO₂ || H₂O₂ || OH₃ || Une molécule d'eau compte deux atomes d'hydrogène et un d'oxygène.
+Combien de liaisons doubles contient la molécule de dioxyde de carbone CO₂ ? || 2 || 1 || 0 || 4 || O=C=O : le carbone est lié à chaque oxygène par une liaison double.
+Que signifie l'électronégativité ? || La tendance à attirer les électrons || La charge du noyau || La masse atomique || Le rayon de l'atome || Une grande différence rend la liaison polarisée.
+Quelle est la forme de la molécule d'eau ? || Coudée || Linéaire || Triangulaire plane || Tétraédrique || Les deux doublets non liants de l'oxygène courbent la molécule.
+Quelle est la forme de la molécule de méthane CH₄ ? || Tétraédrique || Plane || Linéaire || Coudée || Les 4 liaisons s'écartent au maximum dans l'espace.
+Pourquoi l'eau a-t-elle une température d'ébullition élevée ? || À cause des liaisons hydrogène entre molécules || Parce qu'elle est lourde || Parce qu'elle est ionique || À cause de sa couleur || Ces liaisons demandent de l'énergie pour être rompues.
+Combien de doublets liants y a-t-il dans la molécule H₂ ? || 1 || 2 || 0 || 4 || Les deux atomes partagent une paire d'électrons.
+Combien d'électrons externes l'atome d'azote (Z = 7) possède-t-il ? || 5 || 7 || 3 || 8 || Configuration 2-5 : il forme 3 liaisons pour atteindre l'octet.
+Quelle est la formule de l'ammoniac ? || NH₃ || N₃H || NH₂ || N₂H₃ || L'azote forme 3 liaisons avec 3 hydrogènes.
+Un solide ionique conduit-il le courant à l'état solide ? || Non, mais il le conduit fondu ou dissous || Oui, toujours || Oui, mieux que les métaux || Non, jamais || Les ions ne peuvent circuler que lorsqu'ils sont libres.
+Pourquoi la molécule CO₂, malgré des liaisons polarisées, est-elle apolaire ? || Sa forme linéaire annule les polarités || Elle n'a pas de liaison || Elle est ionique || Elle est trop petite || Les deux liaisons polarisées s'opposent et se compensent.

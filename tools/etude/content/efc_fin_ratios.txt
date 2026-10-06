@@ -1,0 +1,27 @@
+titre: Ratios et lecture de la situation financière
+== fiche
+p: Les ratios sont des rapports entre deux chiffres des états financiers ; ils servent à juger la santé d'une entreprise.
+li: Fonds de roulement = ressources durables − actifs immobilisés ; il finance une partie du cycle d'exploitation.
+li: Besoin en fonds de roulement (BFR) = stocks + créances clients − dettes fournisseurs (approche simple).
+li: Trésorerie nette = fonds de roulement − BFR.
+li: Liquidité générale = actif courant / dettes à court terme ; au-dessus de 1, l'entreprise peut payer ses dettes à court terme.
+li: Autonomie financière = capitaux propres / total du passif (ou des dettes).
+li: Marge nette = résultat net / chiffre d'affaires ; rentabilité financière = résultat net / capitaux propres.
+note: Exemple : résultat net 20 pour un chiffre d'affaires de 400 : marge nette de 5 %.
+note: Une entreprise peut être rentable mais manquer de trésorerie si son BFR est trop élevé.
+== questions
+À quoi servent les ratios financiers ? || À juger la santé et la performance d'une entreprise || À calculer l'impôt || À fixer les salaires || À choisir un logo || Ils comparent des chiffres des états financiers.
+Quelle est la formule de la marge nette ? || Résultat net / chiffre d'affaires || Chiffre d'affaires / résultat net || Résultat net / dettes || Actif / passif || Elle mesure le bénéfice sur 100 de ventes.
+Résultat net 20 et chiffre d'affaires 400. Quelle est la marge nette ? || 5 % || 20 % || 0,5 % || 50 % || 20 / 400 = 0,05.
+Quelle est la formule de la liquidité générale ? || Actif courant / dettes à court terme || Dettes / capitaux propres || Résultat / actif || Stocks / ventes || Elle mesure la capacité à payer à court terme.
+Une liquidité générale de 1,5 signifie : || l'actif courant couvre une fois et demie les dettes à court terme || l'entreprise est en faillite || les dettes sont nulles || le résultat est de 150 % || Un ratio supérieur à 1 est rassurant.
+Que mesure le fonds de roulement ? || L'excédent des ressources durables sur les actifs immobilisés || Le total des ventes || Les impôts || Le salaire moyen || Il finance le besoin d'exploitation.
+Comment calcule-t-on le BFR en version simple ? || Stocks + créances clients − dettes fournisseurs || Stocks − créances || Capital − dettes || Ventes − achats || Il représente le besoin de financement du cycle d'exploitation.
+Stocks 100, créances clients 80, dettes fournisseurs 60. Quel est le BFR ? || 120 || 240 || 140 || 20 || 100 + 80 − 60.
+Quelle est la formule de la trésorerie nette ? || Fonds de roulement − BFR || Fonds de roulement + BFR || BFR − résultat || Capital − dettes || Si le fonds de roulement couvre le BFR, la trésorerie est positive.
+Fonds de roulement 150 et BFR 120. Quelle est la trésorerie nette ? || 30 || 270 || −30 || 120 || 150 − 120.
+Que mesure l'autonomie financière ? || La part des capitaux propres dans le financement || Le taux de croissance || La marge commerciale || La liquidité || Elle indique la dépendance vis-à-vis des créanciers.
+Capitaux propres 200 et total du passif 500. Quelle est l'autonomie financière ? || 40 % || 250 % || 60 % || 2,5 % || 200 / 500.
+Résultat net 30 et capitaux propres 300. Quelle est la rentabilité financière ? || 10 % || 1 % || 90 % || 30 % || 30 / 300.
+Une entreprise rentable peut-elle manquer de trésorerie ? || Oui, si son BFR est trop élevé || Non, jamais || Oui, si elle n'a pas de bilan || Non, car elle gagne de l'argent || Les créances non encaissées et les stocks immobilisent de l'argent.
+Un ratio de liquidité générale de 0,6 est : || préoccupant pour les dettes à court terme || excellent || impossible || sans importance || L'actif courant ne couvre pas les dettes à court terme.

@@ -1,0 +1,27 @@
+titre: Patrimoine et bilan
+== fiche
+p: La comptabilité enregistre les opérations d'une entreprise ; le bilan donne une photographie de son patrimoine à une date donnée.
+li: L'actif regroupe ce que l'entreprise possède : immobilisations (terrains, bâtiments, matériel), stocks, créances clients, trésorerie.
+li: Le passif regroupe ce qu'elle doit : capitaux propres (capital, réserves, résultat) et dettes (emprunts, fournisseurs).
+li: Égalité fondamentale : total de l'actif = total du passif.
+li: Capitaux propres = actif − dettes ; c'est la part qui revient aux propriétaires.
+li: Un élément est classé selon sa durée : durable (plus d'un an) ou courant.
+li: Le résultat de l'exercice s'ajoute aux capitaux propres : un bénéfice les augmente, une perte les diminue.
+note: Exemple : actif 500 000 et dettes 200 000 donnent des capitaux propres de 300 000.
+note: Un exercice comptable dure en principe 12 mois ; en zone OHADA il coïncide généralement avec l'année civile.
+== questions
+Que montre le bilan ? || Le patrimoine de l'entreprise à une date donnée || Seulement les ventes de l'année || Les salaires || Le prix des produits || C'est une photographie de ce que l'entreprise possède et doit.
+Qu'est-ce que l'actif ? || Ce que l'entreprise possède || Ce que l'entreprise doit || Le bénéfice || Le capital seulement || Les biens et droits de l'entreprise.
+Qu'est-ce que le passif ? || Les ressources : capitaux propres et dettes || Les biens de l'entreprise || Les ventes || Les stocks || Le passif montre comment l'actif est financé.
+Quelle égalité doit toujours être vraie dans le bilan ? || Total actif = total passif || Actif = dettes || Passif = bénéfice || Actif = capital || La même somme est vue côté emplois et côté ressources.
+Un camion appartenant à l'entreprise est classé : || à l'actif, parmi les immobilisations || au passif, parmi les dettes || dans les charges || dans les produits || C'est un bien durable.
+Une dette envers un fournisseur est classée : || au passif || à l'actif || dans les produits || dans les stocks || C'est une somme que l'entreprise doit.
+Une somme due par un client est classée : || à l'actif, en créance || au passif || dans le capital || dans les dettes || Le client doit payer l'entreprise.
+Que sont les capitaux propres ? || L'actif moins les dettes || Les dettes moins l'actif || Les ventes || Les stocks || C'est la part des propriétaires.
+Actif de 500 000 et dettes de 200 000. Quels sont les capitaux propres ? || 300 000 || 700 000 || 200 000 || 500 000 || 500 000 − 200 000.
+Où trouve-t-on l'argent en caisse ou en banque ? || À l'actif, en trésorerie || Au passif || Dans les charges || Dans le capital || C'est une disponibilité.
+Un apport de 100 000 en capital par les associés augmente : || les capitaux propres || les dettes || les charges || les stocks || Le capital est une ressource propre.
+Quel effet un bénéfice a-t-il sur les capitaux propres ? || Il les augmente || Il les diminue || Il ne change rien || Il les annule || Le résultat s'ajoute aux capitaux propres.
+Une entreprise emprunte 50 000 en banque. Que se passe-t-il au bilan ? || La trésorerie (actif) et les dettes (passif) augmentent de 50 000 || Seul l'actif augmente || Seul le passif augmente || Rien || Les deux côtés augmentent, l'égalité reste vraie.
+Quelle est la durée normale d'un exercice comptable ? || 12 mois || 1 mois || 3 ans || 6 jours || L'exercice dure en général un an.
+Un stock de marchandises est classé : || à l'actif, parmi les éléments courants || au passif || dans les capitaux propres || dans les produits || Le stock est destiné à être vendu.

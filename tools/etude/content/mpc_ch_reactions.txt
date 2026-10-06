@@ -1,0 +1,27 @@
+titre: Réactions, bilan de matière et oxydoréduction
+== fiche
+p: Une réaction chimique transforme des réactifs en produits ; les atomes se conservent, la masse totale aussi.
+li: Équation équilibrée : même nombre d'atomes de chaque élément de chaque côté. Exemple : 2 H₂ + O₂ → 2 H₂O.
+li: Les coefficients stœchiométriques donnent les proportions en moles, pas en grammes.
+li: Réactif limitant : celui qui est entièrement consommé en premier ; il fixe la quantité de produit formée.
+li: Avancement x : on avance jusqu'à ce que le réactif limitant disparaisse (x max).
+li: Oxydation : perte d'électrons ; réduction : gain d'électrons. Un oxydant capte des électrons, un réducteur en cède.
+li: Rendement : quantité de produit obtenue / quantité maximale attendue.
+note: Exemple : 4 mol de H₂ avec 1 mol de O₂ dans 2 H₂ + O₂ → 2 H₂O : O₂ est limitant, on obtient 2 mol d'eau.
+note: Couple oxydant/réducteur : Cu²⁺/Cu, Zn²⁺/Zn. La pile Daniell utilise ces deux couples.
+== questions
+Que se conserve-t-il dans une réaction chimique ? || Les atomes et la masse totale || Les molécules || Le nombre de moles || Le volume || Les atomes se réarrangent, ils ne disparaissent pas.
+Quelle est l'équation équilibrée de la formation de l'eau ? || 2 H₂ + O₂ → 2 H₂O || H₂ + O₂ → H₂O || H₂ + O → H₂O || 2 H + O₂ → H₂O || Il y a 4 H et 2 O de chaque côté.
+Que donnent les coefficients stœchiométriques ? || Les proportions en moles || Les proportions en grammes || Les couleurs || Les températures || Ils lient les quantités de matière.
+Dans 2 H₂ + O₂ → 2 H₂O, combien de moles d'eau obtient-on avec 2 mol de H₂ en excès d'oxygène ? || 2 mol || 1 mol || 4 mol || 0,5 mol || 2 H₂ donnent 2 H₂O.
+Qu'est-ce qu'un réactif limitant ? || Le réactif entièrement consommé en premier || Le réactif le plus lourd || Le réactif en plus grande quantité || Le catalyseur || Il fixe la quantité maximale de produit.
+Avec 4 mol de H₂ et 1 mol de O₂ (2 H₂ + O₂ → 2 H₂O), quel est le réactif limitant ? || O₂ || H₂ || Aucun || L'eau || 1 mol de O₂ consomme 2 mol de H₂, il reste donc 2 mol de H₂.
+Combien de moles d'eau se forment avec 4 mol de H₂ et 1 mol de O₂ ? || 2 mol || 4 mol || 1 mol || 5 mol || L'oxygène limitant donne 2 mol de H₂O.
+Qu'est-ce qu'une oxydation ? || Une perte d'électrons || Un gain d'électrons || Un gain de protons || Une perte de neutrons || Le réducteur s'oxyde en cédant des électrons.
+Qu'est-ce qu'un oxydant ? || Une espèce qui capte des électrons || Une espèce qui cède des électrons || Une espèce qui capte des protons || Une espèce inerte || L'oxydant est réduit.
+Dans Zn → Zn²⁺ + 2 e⁻, le zinc est : || oxydé || réduit || neutralisé || dissous seulement || Il perd 2 électrons.
+Quelle masse d'eau (M = 18 g/mol) forme-t-on à partir de 2 mol de H₂ ? || 36 g || 18 g || 2 g || 72 g || Il se forme 2 mol d'eau, soit 2 × 18 = 36 g.
+Une réaction doit donner 10 g mais en fournit 8 g. Quel est le rendement ? || 80 % || 125 % || 20 % || 8 % || 8/10 = 0,8.
+Quelle est la formule du produit de la combustion complète du carbone dans le dioxygène ? || CO₂ || CO || C₂O || O₃ || C + O₂ → CO₂.
+Dans la pile Daniell, à quelle électrode le zinc est-il oxydé ? || À l'anode (pôle négatif) || À la cathode || Au pont salin || Dans le fil || L'oxydation a toujours lieu à l'anode.
+Équilibrer : Fe + O₂ → Fe₂O₃. Quels coefficients conviennent ? || 4 Fe + 3 O₂ → 2 Fe₂O₃ || 2 Fe + 3 O₂ → Fe₂O₃ || Fe + O₂ → Fe₂O₃ || 3 Fe + 2 O₂ → 2 Fe₂O₃ || Il y a 4 Fe et 6 O de chaque côté.

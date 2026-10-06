@@ -1,0 +1,27 @@
+titre: Probabilités de base
+== fiche
+p: La probabilité mesure la chance qu'un événement se produise ; elle est comprise entre 0 (impossible) et 1 (certain).
+li: Cas équiprobables : P(A) = nombre de cas favorables / nombre de cas possibles.
+li: Événement contraire : P(non A) = 1 − P(A). Somme des probabilités de tous les cas : 1.
+li: Réunion : P(A ou B) = P(A) + P(B) − P(A et B). Pour des événements incompatibles, on additionne.
+li: Événements indépendants : P(A et B) = P(A) × P(B).
+li: Probabilité conditionnelle : P(A sachant B) = P(A et B) / P(B).
+li: Espérance : moyenne pondérée des gains possibles, somme de (valeur × probabilité).
+note: Exemple : lancer un dé équilibré : probabilité d'obtenir un nombre pair = 3/6 = 1/2.
+note: Deux lancers de pièce : probabilité de deux « face » = 1/2 × 1/2 = 1/4.
+== questions
+Entre quelles valeurs une probabilité est-elle comprise ? || 0 et 1 || −1 et 1 || 0 et 100 || 1 et 10 || 0 est impossible, 1 est certain.
+Quelle est la probabilité d'obtenir un 6 avec un dé équilibré ? || 1/6 || 1/2 || 6 || 1/3 || Un cas favorable sur six possibles.
+Quelle est la probabilité d'obtenir un nombre pair avec un dé ? || 1/2 || 1/6 || 1/3 || 2/3 || 3 faces paires sur 6.
+Quelle est la probabilité de l'événement contraire de A ? || 1 − P(A) || P(A) || 1 + P(A) || 0 || P(non A) = 1 − P(A).
+P(A) = 0,3. Que vaut P(non A) ? || 0,7 || 0,3 || 0,03 || 1,3 || 1 − 0,3.
+Quelle est la probabilité d'obtenir deux « face » en deux lancers d'une pièce ? || 1/4 || 1/2 || 1/3 || 2 || Les lancers sont indépendants : 1/2 × 1/2.
+Quelle est la probabilité de tirer un as dans un jeu de 52 cartes ? || 4/52, soit 1/13 || 1/52 || 1/4 || 13/52 || Il y a 4 as parmi 52 cartes.
+Comment calcule-t-on P(A et B) pour des événements indépendants ? || P(A) × P(B) || P(A) + P(B) || P(A) − P(B) || P(A) / P(B) || L'indépendance permet de multiplier.
+Deux événements incompatibles ont P(A) = 0,2 et P(B) = 0,5. Que vaut P(A ou B) ? || 0,7 || 0,1 || 0,3 || 1 || On additionne car ils ne peuvent pas se produire ensemble.
+Quelle est la probabilité d'obtenir un nombre inférieur ou égal à 2 avec un dé ? || 1/3 || 1/6 || 1/2 || 2/3 || Deux cas favorables (1 et 2) sur six.
+Qu'est-ce qu'une probabilité conditionnelle ? || La probabilité de A sachant que B s'est réalisé || La probabilité de A et B ensemble || La probabilité du contraire || Une probabilité supérieure à 1 || P(A sachant B) = P(A et B)/P(B).
+Une urne contient 3 boules rouges et 2 bleues. Quelle est la probabilité de tirer une rouge ? || 3/5 || 2/5 || 1/5 || 1/2 || 3 cas favorables sur 5.
+On tire sans remise deux boules dans l'urne précédente (3 rouges, 2 bleues). Quelle est la probabilité que les deux soient rouges ? || 3/10 || 9/25 || 3/5 || 6/25 || (3/5) × (2/4) = 6/20 = 3/10.
+Un jeu rapporte 100 avec une probabilité de 0,1 et 0 sinon. Quelle est l'espérance du gain ? || 10 || 100 || 0,1 || 1 || 100 × 0,1 + 0 × 0,9.
+Un événement a une probabilité de 0,02. Que peut-on dire ? || Il est peu probable mais possible || Il est impossible || Il est certain || Il se produit toujours || Une probabilité faible n'est pas nulle.

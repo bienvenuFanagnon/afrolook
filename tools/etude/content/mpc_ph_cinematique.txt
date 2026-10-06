@@ -1,0 +1,27 @@
+titre: Cinématique du point
+== fiche
+p: La cinématique décrit le mouvement d'un point sans chercher ses causes : position, vitesse et accélération au cours du temps.
+li: Vitesse moyenne : v = d / t. Vitesse instantanée : dérivée de la position, v = dx/dt.
+li: Accélération : dérivée de la vitesse, a = dv/dt. Unités : m, m/s et m/s².
+li: Mouvement rectiligne uniforme (MRU) : vitesse constante, x = x₀ + v t.
+li: Mouvement rectiligne uniformément varié (MRUV) : accélération constante, v = v₀ + a t et x = x₀ + v₀ t + ½ a t².
+li: Chute libre sans frottement : a = g ≈ 9,8 m/s², vers le bas, quelle que soit la masse.
+li: Conversion : 36 km/h = 10 m/s (on divise par 3,6).
+note: Relation utile en MRUV : v² − v₀² = 2 a (x − x₀).
+note: Mouvement circulaire uniforme : la vitesse est constante en norme, mais l'accélération (v²/R) est dirigée vers le centre.
+== questions
+Dans le Système international, la vitesse s'exprime en : || Le mètre par seconde || Le kilomètre || Le mètre par seconde au carré || Le newton || La vitesse est une distance divisée par un temps.
+Un mobile parcourt 100 m en 20 s. Quelle est sa vitesse moyenne ? || 5 m/s || 20 m/s || 2000 m/s || 0,2 m/s || v = d/t = 100/20 = 5 m/s.
+Combien font 36 km/h en m/s ? || 10 m/s || 36 m/s || 3,6 m/s || 100 m/s || On divise par 3,6.
+Que mesure l'accélération ? || La variation de la vitesse par unité de temps || La distance parcourue || La force subie || La masse || a = dv/dt, en m/s².
+Quel est le type de mouvement à vitesse constante en ligne droite ? || Le mouvement rectiligne uniforme || Le mouvement circulaire || La chute libre || Le mouvement oscillant || Sa vitesse ne varie pas.
+Un mobile en MRU à 4 m/s part de x₀ = 2 m. Où est-il après 3 s ? || 14 m || 12 m || 10 m || 6 m || x = 2 + 4 × 3 = 14 m.
+Quelle est l'accélération de la pesanteur sur Terre, environ ? || 9,8 m/s² || 98 m/s² || 0,98 m/s² || 1 m/s || La valeur de g est proche de 9,8 m/s².
+Un scooter démarre du repos avec une accélération constante de 2 m/s². Quelle vitesse atteint-il en 5 s ? || 10 m/s || 7 m/s || 2,5 m/s || 25 m/s || v = a t = 2 × 5 = 10 m/s.
+Quelle distance parcourt-il pendant ces 5 s (départ du repos, a = 2 m/s²) ? || 25 m || 10 m || 50 m || 5 m || x = ½ a t² = ½ × 2 × 25 = 25 m.
+En chute libre sans frottement, quel objet tombe le plus vite ? || Tous tombent pareil || Le plus lourd || Le plus léger || Le plus gros || L'accélération g ne dépend pas de la masse.
+Qu'est-ce que la vitesse instantanée en mathématiques ? || La dérivée de la position par rapport au temps || L'intégrale de la vitesse || La moyenne de l'accélération || La position divisée par t || v = dx/dt.
+Un mobile passe de 10 m/s à 30 m/s en 4 s. Quelle est son accélération ? || 5 m/s² || 10 m/s² || 20 m/s² || 2,5 m/s² || a = (30 − 10)/4 = 5 m/s².
+Une pierre est lâchée sans vitesse. Quelle est sa vitesse après 2 s (g = 10 m/s²) ? || 20 m/s || 10 m/s || 5 m/s || 40 m/s || v = g t = 10 × 2 = 20 m/s.
+Dans un mouvement circulaire uniforme, que peut-on dire de l'accélération ? || Elle est non nulle et dirigée vers le centre || Elle est nulle || Elle est tangente à la trajectoire || Elle est constante en direction || La direction de la vitesse change, donc il y a une accélération centripète v²/R.
+Un véhicule freine de 20 m/s à l'arrêt avec a = −5 m/s². Quelle distance parcourt-il ? || 40 m || 20 m || 80 m || 100 m || v² − v₀² = 2 a d donne 0 − 400 = −10 d, soit d = 40 m.

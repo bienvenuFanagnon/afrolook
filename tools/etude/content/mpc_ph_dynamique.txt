@@ -1,0 +1,27 @@
+titre: Dynamique : lois de Newton et énergie
+== fiche
+p: La dynamique relie le mouvement aux forces qui s'exercent sur un objet.
+li: 1re loi (inertie) : sans force, ou si les forces se compensent, un objet garde un mouvement rectiligne uniforme (ou reste au repos).
+li: 2e loi : la somme des forces vaut la masse fois l'accélération, ΣF = m a (newtons = kg·m/s²).
+li: 3e loi (action-réaction) : si A exerce une force sur B, B exerce sur A une force opposée de même valeur.
+li: Poids : P = m g (en newtons). Il ne faut pas confondre masse (kg) et poids (N).
+li: Travail d'une force : W = F d cos α (en joules). Énergie cinétique : Ec = ½ m v². Énergie potentielle de pesanteur : Ep = m g h.
+li: Conservation de l'énergie mécanique sans frottement : Ec + Ep reste constante.
+note: Exemple : une force de 10 N sur une masse de 2 kg donne une accélération de 5 m/s².
+note: Puissance : P = W / t, en watts (1 W = 1 J/s).
+== questions
+Quelle unité mesure une force dans le Système international ? || Le newton || Le joule || Le watt || Le pascal || 1 N = 1 kg·m/s².
+Comment s'écrit la relation fondamentale de la dynamique de Newton ? || ΣF = m a || F = m v || F = m / a || ΣF = m g h || La force résultante est le produit de la masse par l'accélération.
+Une force de 10 N s'exerce sur une masse de 2 kg. Quelle est l'accélération ? || 5 m/s² || 20 m/s² || 12 m/s² || 0,2 m/s² || a = F/m = 10/2.
+Que prévoit le principe d'inertie pour un objet sans force résultante ? || Sans force résultante, la vitesse reste constante || Tout objet finit par s'arrêter || La force est proportionnelle à la vitesse || L'accélération est toujours nulle || Un objet persévère dans son mouvement en l'absence de force.
+Quel est le poids d'une masse de 5 kg (g = 10 m/s²) ? || 50 N || 5 N || 0,5 N || 15 N || P = m g = 5 × 10.
+Comment distingue-t-on la masse d'un objet de son poids ? || La masse se mesure en kg et le poids en newtons || Ce sont la même chose || La masse change sur la Lune, pas le poids || Le poids se mesure en kg || Le poids dépend de g, la masse non.
+Que décrit la troisième loi de Newton ? || Des forces opposées de même valeur entre deux corps en interaction || La force est proportionnelle à l'accélération || L'énergie se conserve toujours || Tout corps tombe pareil || C'est le principe d'action-réaction.
+Quelle est l'unité de l'énergie ? || Le joule || Le newton || Le watt || Le kilogramme || Le joule est l'unité d'énergie et de travail.
+Quelle est l'énergie cinétique d'une masse de 2 kg à 3 m/s ? || 9 J || 6 J || 18 J || 3 J || Ec = ½ m v² = ½ × 2 × 9 = 9 J.
+Quelle est l'énergie potentielle d'une masse de 2 kg à 5 m de hauteur (g = 10 m/s²) ? || 100 J || 10 J || 50 J || 20 J || Ep = m g h = 2 × 10 × 5.
+Une masse de 1 kg tombe de 5 m sans frottement (g = 10 m/s²). Quelle est sa vitesse à l'arrivée ? || 10 m/s || 5 m/s || 50 m/s || 25 m/s || m g h = ½ m v² donne v² = 100, soit v = 10 m/s.
+Quel est le travail d'une force de 20 N qui déplace un objet de 3 m dans sa direction ? || 60 J || 23 J || 6,7 J || 17 J || W = F d = 20 × 3.
+Quelle puissance développe-t-on en fournissant 600 J en 30 s ? || 20 W || 18 000 W || 570 W || 0,05 W || P = W/t = 600/30.
+Sur un plan horizontal sans frottement, une force constante appliquée à un objet produit : || un mouvement uniformément accéléré || un mouvement uniforme || un arrêt || un mouvement circulaire || Par la 2e loi, F constante donne a constante.
+La masse d'un objet passe de 2 kg à 4 kg avec la même force. L'accélération : || est divisée par 2 || est doublée || reste la même || est multipliée par 4 || a = F/m, donc doubler la masse divise l'accélération par 2.

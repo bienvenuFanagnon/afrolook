@@ -1,0 +1,27 @@
+titre: Le SYSCOHADA : plan comptable et états financiers
+== fiche
+p: Le SYSCOHADA est le système comptable commun aux pays membres de l'OHADA (Organisation pour l'harmonisation en Afrique du droit des affaires), qui regroupe 17 États.
+li: Le SYSCOHADA révisé est applicable depuis 2018 ; il s'inspire des normes internationales IFRS.
+li: Classes de comptes : 1 ressources durables ; 2 actif immobilisé ; 3 stocks ; 4 tiers ; 5 trésorerie ; 6 charges des activités ordinaires ; 7 produits des activités ordinaires ; 8 autres charges et produits ; 9 comptabilité analytique.
+li: Exemples : 101 capital social ; 24 matériel ; 31 marchandises ; 401 fournisseurs ; 411 clients ; 521 banques ; 571 caisse ; 601 achats de marchandises ; 701 ventes de marchandises.
+li: Les états financiers du système normal : bilan, compte de résultat, tableau des flux de trésorerie et notes annexes.
+li: Le système minimal de trésorerie (SMT) s'adresse aux très petites entreprises, avec une comptabilité simplifiée.
+li: Le droit OHADA unifie aussi le droit des sociétés, des sûretés, des procédures collectives et du commerce.
+note: Une écriture d'achat de marchandises au comptant par banque : débit 601, crédit 521.
+note: Les classes 6 et 7 forment le compte de résultat ; les classes 1 à 5 forment le bilan.
+== questions
+Que signifie SYSCOHADA ? || Système comptable de l'OHADA || Service de commerce de l'Afrique de l'Ouest || Syndicat des comptables de l'Afrique || Système de crédit de l'OHADA || C'est le plan comptable commun aux États de l'OHADA.
+Combien d'États membres compte l'OHADA ? || 17 || 8 || 54 || 30 || L'OHADA réunit 17 pays africains.
+Depuis quand le SYSCOHADA révisé est-il applicable ? || 2018 || 1990 || 2005 || 2024 || La révision de 2017 s'applique depuis le 1er janvier 2018.
+Dans quelle classe se trouvent les comptes de stocks ? || Classe 3 || Classe 1 || Classe 6 || Classe 7 || La classe 3 regroupe les stocks.
+Quelle classe regroupe les comptes de trésorerie ? || Classe 5 || Classe 2 || Classe 4 || Classe 8 || Banques et caisses sont dans la classe 5.
+Quelle classe regroupe les charges des activités ordinaires ? || Classe 6 || Classe 7 || Classe 5 || Classe 1 || Les achats, salaires et services extérieurs sont en classe 6.
+Quelle classe regroupe les produits des activités ordinaires ? || Classe 7 || Classe 6 || Classe 3 || Classe 9 || Les ventes sont en classe 7.
+Quel est le numéro du compte Clients ? || 411 || 401 || 521 || 601 || Les comptes de tiers sont dans la classe 4 ; 411 est celui des clients.
+Quel est le numéro du compte Fournisseurs ? || 401 || 411 || 571 || 701 || 401 : fournisseurs, dettes envers les fournisseurs.
+Quel compte enregistre les achats de marchandises ? || 601 || 701 || 411 || 101 || 601 : achats de marchandises.
+Quel compte enregistre les ventes de marchandises ? || 701 || 601 || 521 || 101 || 701 : ventes de marchandises.
+Achat de marchandises payé par banque. Quelle écriture passe-t-on ? || Débit 601, crédit 521 || Débit 521, crédit 601 || Débit 701, crédit 521 || Débit 411, crédit 701 || La charge d'achat augmente et la banque diminue.
+Quels documents forment les états financiers du système normal ? || Bilan, compte de résultat, tableau des flux de trésorerie, notes annexes || Seulement le bilan || Le journal et le grand livre || La balance seulement || Ils donnent une image complète de l'entreprise.
+À qui s'adresse le système minimal de trésorerie ? || Aux très petites entreprises || Aux banques || Aux grandes entreprises cotées || À l'État || Il propose une comptabilité simplifiée.
+Quelles classes de comptes composent le compte de résultat ? || Les classes 6 et 7 (et 8) || Les classes 1 et 2 || La classe 3 || Les classes 4 et 5 || Charges et produits y sont rassemblés.

@@ -721,6 +721,203 @@
    ]
   },
   {
+   "id": "univ_mpc",
+   "kind": "cycle",
+   "order": 31,
+   "title": "Sciences exactes (MPC) — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_mpc_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Sciences exactes, Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "mpc_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "mpc_maths",
+       "title": "Mathématiques",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "mpc_an_limites",
+         "title": "Limites et continuité"
+        },
+        {
+         "id": "mpc_an_derivees",
+         "title": "Dérivation et étude de fonctions"
+        },
+        {
+         "id": "mpc_al_matrices",
+         "title": "Matrices et systèmes linéaires"
+        },
+        {
+         "id": "mpc_al_complexes",
+         "title": "Nombres complexes"
+        }
+       ]
+      },
+      {
+       "id": "mpc_phys",
+       "title": "Physique",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "mpc_ph_cinematique",
+         "title": "Cinématique du point"
+        },
+        {
+         "id": "mpc_ph_dynamique",
+         "title": "Dynamique : lois de Newton et énergie"
+        },
+        {
+         "id": "mpc_ph_electricite",
+         "title": "Circuits électriques en régime continu"
+        },
+        {
+         "id": "mpc_ph_thermo",
+         "title": "Thermodynamique : température, chaleur et premier principe"
+        }
+       ]
+      },
+      {
+       "id": "mpc_chim",
+       "title": "Chimie",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "mpc_ch_atome",
+         "title": "Structure de l'atome et classification périodique"
+        },
+        {
+         "id": "mpc_ch_liaisons",
+         "title": "Liaisons chimiques et molécules"
+        },
+        {
+         "id": "mpc_ch_solutions",
+         "title": "Solutions, concentrations et acides-bases"
+        },
+        {
+         "id": "mpc_ch_reactions",
+         "title": "Réactions, bilan de matière et oxydoréduction"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "univ_efc",
+   "kind": "cycle",
+   "order": 32,
+   "title": "Économie, Finance et Comptabilité — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_efc_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Économie, Finance et Comptabilité, Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "efc_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "efc_eco",
+       "title": "Économie",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "efc_eco_offre",
+         "title": "Offre, demande et prix d'équilibre"
+        },
+        {
+         "id": "efc_eco_macro",
+         "title": "PIB, inflation et chômage"
+        },
+        {
+         "id": "efc_eco_monnaie",
+         "title": "Monnaie, banques et BCEAO"
+        }
+       ]
+      },
+      {
+       "id": "efc_cpt",
+       "title": "Comptabilité (SYSCOHADA)",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "efc_cpt_bilan",
+         "title": "Patrimoine et bilan"
+        },
+        {
+         "id": "efc_cpt_compte",
+         "title": "Comptes, débit-crédit et écritures"
+        },
+        {
+         "id": "efc_cpt_charges",
+         "title": "Charges, produits et résultat"
+        },
+        {
+         "id": "efc_cpt_syscohada",
+         "title": "Le SYSCOHADA : plan comptable et états financiers"
+        }
+       ]
+      },
+      {
+       "id": "efc_fin",
+       "title": "Finance",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "efc_fin_interets",
+         "title": "Intérêts simples et composés"
+        },
+        {
+         "id": "efc_fin_actualisation",
+         "title": "Actualisation et choix d'investissement"
+        },
+        {
+         "id": "efc_fin_ratios",
+         "title": "Ratios et lecture de la situation financière"
+        }
+       ]
+      },
+      {
+       "id": "efc_sta",
+       "title": "Statistiques et probabilités",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "efc_sta_descriptive",
+         "title": "Moyenne, médiane et écart-type"
+        },
+        {
+         "id": "efc_sta_proba",
+         "title": "Probabilités de base"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "cert_entretien",
    "kind": "cert",
    "order": 100,

@@ -1,0 +1,27 @@
+titre: Structure de l'atome et classification périodique
+== fiche
+p: L'atome est formé d'un noyau (protons et neutrons) autour duquel se trouvent des électrons.
+li: Numéro atomique Z : nombre de protons (et d'électrons dans l'atome neutre). Nombre de masse A = protons + neutrons.
+li: Isotopes : atomes du même élément (même Z) avec un nombre de neutrons différent.
+li: Les électrons occupent des couches : K (2 électrons au maximum), L (8), M (18).
+li: Règle de l'octet : un atome tend à avoir 8 électrons sur sa couche externe (2 pour l'hydrogène et l'hélium).
+li: Tableau périodique : les éléments sont rangés par Z croissant ; une colonne regroupe des éléments aux propriétés voisines (même nombre d'électrons externes).
+li: Un ion est un atome qui a gagné (anion, négatif) ou perdu (cation, positif) des électrons.
+note: Exemple : le sodium (Z = 11) a la configuration 2-8-1 ; il perd 1 électron pour donner l'ion Na⁺.
+note: Le chlore (Z = 17) a la configuration 2-8-7 ; il gagne 1 électron pour donner l'ion Cl⁻.
+== questions
+De quelles particules est constitué le noyau d'un atome ? || Les protons et les neutrons || Les protons et les électrons || Les neutrons et les électrons || Seulement les électrons || Les électrons tournent autour du noyau.
+Que compte le numéro atomique Z d'un élément ? || Le nombre de protons || Le nombre de neutrons || Le nombre de nucléons || La masse en grammes || Z définit l'élément.
+Combien un atome neutre de numéro atomique 6 a-t-il d'électrons ? || 6 || 12 || 3 || 0 || Un atome neutre a autant d'électrons que de protons.
+Que vaut le nombre de masse A ? || Le nombre de protons plus celui de neutrons || Le nombre d'électrons || Le nombre de neutrons || Z multiplié par 2 || A est le nombre de nucléons.
+Combien de neutrons a un atome de carbone 14 (Z = 6, A = 14) ? || 8 || 6 || 14 || 20 || N = A − Z = 14 − 6.
+Qu'appelle-t-on isotopes ? || Des atomes de même Z avec un nombre de neutrons différent || Des atomes de même masse || Des atomes de Z différents || Des ions de même charge || Ils ont les mêmes propriétés chimiques.
+Combien d'électrons la couche L peut-elle contenir au maximum ? || 8 || 2 || 18 || 32 || La couche K en contient 2, la couche L 8.
+Quelle est la configuration électronique du sodium (Z = 11) ? || 2-8-1 || 2-9 || 8-3 || 2-8-8 || 11 électrons : 2 sur K, 8 sur L, 1 sur M.
+Quel ion monoatomique le sodium (Z = 11) donne-t-il ? || Na⁺ || Na⁻ || Na²⁺ || Na²⁻ || Il perd son électron externe et devient un cation.
+Quel ion forme le chlore (Z = 17, configuration 2-8-7) ? || Cl⁻ || Cl⁺ || Cl²⁻ || Cl²⁺ || Il gagne un électron pour compléter sa couche externe à 8.
+Que dit la règle de l'octet ? || Les atomes tendent à avoir 8 électrons sur leur couche externe || Un atome a toujours 8 protons || Un noyau contient 8 neutrons || Une molécule a 8 atomes || Elle explique la stabilité des gaz nobles.
+Comment le tableau périodique classe-t-il les éléments ? || Par numéro atomique croissant || Par masse décroissante || Par ordre alphabétique || Par couleur || Les colonnes regroupent des propriétés voisines.
+Pourquoi les gaz nobles sont-ils peu réactifs ? || Leur couche externe est complète || Ils n'ont pas d'électrons || Ils sont toujours liquides || Ils n'ont pas de noyau || Une couche externe complète est très stable.
+Un atome a Z = 17 et A = 35. Combien a-t-il de neutrons ? || 18 || 17 || 35 || 52 || N = 35 − 17 = 18.
+Un ion possède 10 électrons et 12 protons. Quelle est sa charge ? || 2+ || 2− || 22+ || 0 || Charge = protons − électrons = +2.

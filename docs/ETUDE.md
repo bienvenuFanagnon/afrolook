@@ -199,3 +199,10 @@ Deux attestations (non officielles) : **IA — bases** (c'est quoi l'IA, écrire
 ## 15. Gold et pubs dans Étude
 
 Pour le moment, l'abonnement Gold ne retire pas les pubs dans Afrolook Étude (les pubs y financent les déblocages) : `AdGate.subscriptionBypass` est actif tant qu'une page Étude est ouverte (mixin `EtudeAdBypass`). Le reste de l'app, et le Quiz, gardent la règle Gold = aucune pub. Pour revenir en arrière : retirer `with EtudeAdBypass` des pages `lib/pages/etude/`.
+
+## 16. Premiers parcours universitaires ajoutés
+
+- **Sciences exactes (MPC) — Licence 1** (`univ_mpc`, 12 chapitres, 180 questions) : mathématiques (limites, dérivation, matrices, complexes), physique (cinématique, dynamique, électricité, thermodynamique), chimie (atome, liaisons, solutions, réactions).
+- **Économie, Finance et Comptabilité — Licence 1** (`univ_efc`, 12 chapitres, 180 questions) : économie (marché, macro, monnaie et BCEAO), comptabilité SYSCOHADA (bilan, comptes, charges et produits, plan comptable), finance (intérêts, actualisation, ratios), statistiques et probabilités.
+- Chaque parcours a son examen de Licence 1 (40 questions, 50 %) et un certificat non officiel. Contenu : `tools/etude/content/mpc_*.txt` et `efc_*.txt`, parcours dans `structure.json`.
+- Reste à faire : L2 et L3, relecture par des enseignants, page « facultés » et tronc commun (voir `docs/ETUDE_UNIVERSITES.md`).

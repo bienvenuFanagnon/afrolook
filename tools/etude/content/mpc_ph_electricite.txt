@@ -1,0 +1,27 @@
+titre: Circuits électriques en régime continu
+== fiche
+p: Un circuit électrique relie un générateur à des dipôles (résistances, lampes, moteurs) ; le courant circule du pôle positif vers le pôle négatif.
+li: Intensité I en ampères (A), tension U en volts (V), résistance R en ohms (Ω).
+li: Loi d'Ohm pour une résistance : U = R I.
+li: Puissance électrique : P = U I = R I² (watts). Énergie : E = P t (joules, ou kWh).
+li: En série : la même intensité traverse tous les dipôles, les résistances s'ajoutent : R = R₁ + R₂.
+li: En dérivation (parallèle) : la tension est la même aux bornes de chaque branche ; 1/R = 1/R₁ + 1/R₂.
+li: Loi des nœuds : la somme des courants qui arrivent à un nœud égale la somme de ceux qui repartent. Loi des mailles : la somme des tensions dans une maille fermée vaut 0.
+note: Exemple : deux résistances de 100 Ω en parallèle équivalent à 50 Ω.
+note: Un générateur réel a une résistance interne r : U = E − r I.
+== questions
+Dans quelle unité exprime-t-on la valeur d'une résistance ? || L'ohm || L'ampère || Le volt || Le watt || La résistance se mesure en ohms (Ω).
+Quelle formule exprime la loi d'Ohm ? || U = R I || U = R / I || P = U / I || I = U R || La tension est le produit de la résistance par l'intensité.
+Une résistance de 10 Ω est traversée par 2 A. Quelle est la tension ? || 20 V || 5 V || 12 V || 0,2 V || U = R I = 10 × 2.
+Que mesure un ampèremètre ? || L'intensité du courant || La tension || La résistance || La puissance || On le branche en série.
+Où place-t-on un voltmètre pour mesurer la tension d'un dipôle ? || En dérivation aux bornes du dipôle || En série dans le circuit || Après le générateur seulement || Il ne se branche pas || Il mesure une tension entre deux points.
+Quelle est la résistance équivalente de 100 Ω et 50 Ω en série ? || 150 Ω || 33 Ω || 50 Ω || 5000 Ω || En série, les résistances s'ajoutent.
+Quelle est la résistance équivalente de deux résistances de 100 Ω en parallèle ? || 50 Ω || 200 Ω || 100 Ω || 25 Ω || 1/R = 1/100 + 1/100 = 2/100, donc R = 50 Ω.
+Quelle est la puissance d'un appareil sous 220 V traversé par 5 A ? || 1100 W || 44 W || 225 W || 215 W || P = U I = 220 × 5.
+Que dit la loi des nœuds ? || La somme des courants entrants égale celle des courants sortants || La somme des tensions d'une maille est nulle || La puissance est constante || La résistance est la même partout || C'est la conservation de la charge.
+Que dit la loi des mailles ? || La somme algébrique des tensions dans une maille fermée est nulle || La somme des courants est nulle || La tension est toujours positive || L'intensité est constante || Elle s'applique à tout circuit fermé.
+Un appareil de 2 kW fonctionne 3 heures. Quelle énergie consomme-t-il ? || 6 kWh || 5 kWh || 0,67 kWh || 2 kWh || E = P t = 2 × 3.
+Un générateur de force électromotrice 12 V et de résistance interne 1 Ω débite 2 A. Quelle est sa tension aux bornes ? || 10 V || 12 V || 14 V || 11 V || U = E − r I = 12 − 1 × 2.
+Dans un circuit en série, que peut-on dire de l'intensité ? || Elle est la même en tout point || Elle se partage entre les dipôles || Elle double à chaque dipôle || Elle est nulle || Il n'y a qu'un chemin pour le courant.
+Dans un montage en parallèle, que peut-on dire de la tension ? || Elle est la même aux bornes de chaque branche || Elle se partage entre les branches || Elle est nulle || Elle dépend de la couleur des fils || Toutes les branches sont reliées aux deux mêmes points.
+Deux lampes identiques sont en parallèle. Si l'une grille, l'autre : || continue de briller || s'éteint aussi || brille plus fort et explose || change de couleur || Chaque branche est indépendante, le courant circule encore dans l'autre.

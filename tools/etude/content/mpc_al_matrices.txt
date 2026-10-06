@@ -1,0 +1,26 @@
+titre: Matrices et systèmes linéaires
+== fiche
+p: Une matrice est un tableau de nombres rangés en lignes et en colonnes ; elle sert à écrire et résoudre des systèmes d'équations linéaires.
+li: Une matrice m × n a m lignes et n colonnes.
+li: Somme : on additionne terme à terme (même taille). Produit par un réel : on multiplie chaque terme.
+li: Produit A × B : possible si le nombre de colonnes de A égale le nombre de lignes de B ; on combine ligne de A et colonne de B. En général A × B est différent de B × A.
+li: Déterminant d'une matrice 2 × 2 : ad − bc ; la matrice est inversible si ce nombre est non nul.
+li: Matrice identité I : A × I = I × A = A. Résolution : AX = B donne X = A⁻¹B si A est inversible.
+note: Exemple : le système x + y = 3 et x − y = 1 a pour solution x = 2, y = 1 (on additionne les deux équations).
+note: Méthode du pivot de Gauss : on combine les lignes pour obtenir un système triangulaire plus facile à résoudre.
+== questions
+Combien de lignes et de colonnes a une matrice 2 × 3 ? || 2 lignes et 3 colonnes || 3 lignes et 2 colonnes || 2 lignes et 2 colonnes || 6 lignes || La notation m × n donne d'abord les lignes, puis les colonnes.
+Que vaut la somme de [1 2] et [3 4] (matrices lignes) ? || [4 6] || [3 8] || [4 5] || [2 6] || On additionne terme à terme : 1 + 3 et 2 + 4.
+Que vaut 2 × [1 3] ? || [2 6] || [3 5] || [1 6] || [2 3] || On multiplie chaque coefficient par 2.
+Quel est le déterminant de la matrice [[1 2][3 4]] ? || −2 || 2 || 10 || 5 || ad − bc = 1 × 4 − 2 × 3 = −2.
+Une matrice 2 × 2 est inversible quand son déterminant est : || différent de 0 || égal à 0 || négatif || égal à 1 || Un déterminant nul signifie qu'il n'y a pas d'inverse.
+Que vaut A × I, avec I la matrice identité ? || A || I || 0 || A² || L'identité est l'élément neutre du produit.
+Le produit d'une matrice 2 × 3 par une matrice 3 × 4 existe-t-il ? || Oui, de taille 2 × 4 || Non || Oui, de taille 3 × 3 || Oui, de taille 4 × 2 || Les colonnes de la première (3) égalent les lignes de la seconde (3).
+Le produit A × B est-il toujours égal à B × A ? || Non, en général || Oui, toujours || Oui, si A est carrée || Oui, si B est inversible || La multiplication matricielle n'est pas commutative.
+Quelle est la solution de x + y = 3 et x − y = 1 ? || x = 2 et y = 1 || x = 1 et y = 2 || x = 3 et y = 0 || x = 0 et y = 3 || En additionnant on obtient 2x = 4, donc x = 2 puis y = 1.
+Quel est le déterminant de [[2 0][0 3]] ? || 6 || 5 || 0 || 1 || 2 × 3 − 0 × 0 = 6.
+Que vaut [[1 2][0 1]] × [[1 0][1 1]] ? || [[3 2][1 1]] || [[1 2][1 1]] || [[2 2][1 2]] || [[1 0][0 1]] || Ligne 1 : 1×1 + 2×1 = 3 et 2 ; ligne 2 : 1 et 1.
+Que signifie AX = B avec A inversible ? || X = A⁻¹B || X = BA || X = B − A || X = A + B || On multiplie à gauche par l'inverse de A.
+Que fait la méthode du pivot de Gauss ? || Elle transforme le système en un système triangulaire équivalent || Elle calcule une dérivée || Elle trace un graphique || Elle ordonne les valeurs || On combine des lignes pour éliminer des inconnues.
+Le système x + y = 2 et 2x + 2y = 5 a : || aucune solution || une solution unique || deux solutions || une infinité de solutions || La deuxième équation donne x + y = 2,5 : contradiction avec la première.
+Quelle est la transposée de [[1 2 3]] (matrice 1 × 3) ? || Une matrice 3 × 1 de coefficients 1, 2, 3 || La même matrice || Une matrice 3 × 3 || Une matrice nulle || La transposée échange lignes et colonnes.
