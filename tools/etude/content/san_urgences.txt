@@ -1,0 +1,29 @@
+titre: Urgences et premiers soins
+== fiche
+p: Devant une urgence, il faut agir calmement et dans l'ordre : sécuriser, évaluer, alerter, secourir.
+li: Évaluation ABC : A (Airway) voies aériennes libres ? B (Breathing) la personne respire-t-elle ? C (Circulation) pouls, saignement.
+li: Hémorragie : appuyer fortement sur la plaie avec un linge propre, allonger la victime, ne pas retirer le linge ; alerter.
+li: Brûlure : refroidir à l'eau tempérée pendant 10 à 20 minutes, ne pas percer les cloques, ne pas appliquer de corps gras ; consulter si la brûlure est étendue.
+li: Étouffement : encourager à tousser, puis 5 claques dans le dos et manœuvre de Heimlich (compressions abdominales).
+li: Convulsions : protéger la tête, éloigner les objets, ne rien mettre dans la bouche, mettre en position latérale de sécurité après la crise.
+li: AVC : méthode FAST (visage, bras, parole, temps) ; appeler les secours sans attendre.
+li: Morsure de serpent : calmer la victime, immobiliser le membre, aller vite vers un centre de santé ; ne pas inciser ni aspirer ni poser de garrot serré.
+li: Arrêt cardiaque : compressions thoraciques au centre de la poitrine, environ 100 à 120 par minute, défibrillateur si disponible.
+note: Le choc anaphylactique est une réaction allergique grave : urgence vitale (gonflement du visage, difficulté à respirer).
+note: En cas d'intoxication, appeler un centre antipoison ou les secours ; ne pas faire vomir sans avis.
+== questions
+Que signifie l'évaluation ABC ? || Voies aériennes, respiration, circulation || Anatomie, biologie, chimie || Alerte, brancard, calme || Abri, bandage, chaleur || Elle structure l'examen initial d'une victime.
+Que faire en cas d'hémorragie externe ? || Comprimer fortement la plaie avec un linge propre || Laver à grande eau seulement || Retirer le linge régulièrement || Faire marcher la victime || La compression arrête le saignement.
+Comment refroidit-on une brûlure légère ? || À l'eau tempérée pendant 10 à 20 minutes || Avec de la glace pure || Avec de l'huile || Avec du beurre || Le refroidissement limite l'étendue des lésions.
+Que faut-il éviter sur une brûlure ? || Percer les cloques et appliquer des corps gras || Refroidir || Couvrir proprement || Consulter || Cela favorise les infections.
+Que fait-on pour une personne qui s'étouffe et ne peut plus parler ni tousser ? || Claques dans le dos puis manœuvre de Heimlich || On lui donne à boire || On la laisse || On la fait s'allonger || Ce sont les gestes recommandés.
+Que faut-il éviter pendant une crise de convulsions ? || Mettre un objet dans la bouche || Protéger la tête || Éloigner les objets dangereux || Noter la durée || Cela peut blesser la personne.
+Que fait-on après une crise de convulsions ? || On met la personne en position latérale de sécurité || On la secoue || On la réveille de force || On la fait marcher || Elle évite l'étouffement.
+Que signifie FAST pour un AVC ? || Visage, bras, parole, temps || Fièvre, appétit, sueur, toux || Force, activité, sommeil, tension || Froid, angoisse, soif, toux || Il aide à repérer rapidement un AVC.
+Que faut-il faire en cas de morsure de serpent ? || Immobiliser le membre et rejoindre rapidement un centre de santé || Inciser la plaie || Aspirer le venin || Serrer fort un garrot || Les gestes anciens aggravent la situation.
+Que fait-on face à une personne inconsciente qui ne respire pas ? || Alerter et faire des compressions thoraciques || La laisser dormir || Lui donner à boire || La secouer longtemps || Il faut relancer la circulation.
+Quelle cadence adopte-t-on pour un massage cardiaque ? || Environ 100 à 120 par minute || 20 par minute || 60 par minute || 200 par minute || Rythme recommandé.
+Qu'est-ce qu'un choc anaphylactique ? || Une réaction allergique grave pouvant menacer la vie || Une fièvre || Une indigestion || Un rhume || Gonflement et difficulté à respirer sont des signes.
+Que faire en cas d'intoxication ? || Appeler un centre antipoison ou les secours || Faire vomir à tout prix || Donner du lait toujours || Attendre || Il faut un avis spécialisé.
+Que faire d'une brûlure étendue ou profonde ? || Refroidir et consulter rapidement || La percer || La couvrir de beurre || L'ignorer || Elle exige une prise en charge médicale.
+Quelle est la première étape devant une urgence ? || Sécuriser les lieux || Courir || Filmer || Partir || Il faut éviter un second accident.

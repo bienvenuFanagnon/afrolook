@@ -1,0 +1,30 @@
+titre: Mesurer et améliorer ses actions marketing
+== fiche
+p: Ce qui ne se mesure pas ne s'améliore pas : on suit des indicateurs pour décider où investir.
+li: KPI (indicateurs clés) : chiffre d'affaires, nombre de clients, panier moyen, taux de conversion, coût d'acquisition client (CAC), taux de fidélisation.
+li: Panier moyen = chiffre d'affaires / nombre de commandes.
+li: Taux de conversion = nombre d'acheteurs / nombre de visiteurs × 100.
+li: ROI marketing = (gain − coût) / coût × 100 ; ROAS = recette publicitaire / dépense publicitaire.
+li: CAC = dépenses d'acquisition / nombre de nouveaux clients.
+li: Test A/B : comparer deux versions (visuel, message, prix) auprès de groupes comparables pour garder la meilleure.
+li: Tableau de bord : peu d'indicateurs, mis à jour régulièrement ; comparer au mois précédent et aux objectifs.
+li: Enquêtes de satisfaction : note de satisfaction, NPS (probabilité de recommander).
+li: Attention aux fausses conclusions : corrélation n'est pas causalité ; échantillon trop petit ; chiffres de vanité (likes) sans lien avec les ventes.
+note: Exemple : 1 000 visiteurs et 30 acheteurs donnent un taux de conversion de 3 %.
+note: Une campagne qui coûte 100 et rapporte 300 de ventes a un ROAS de 3.
+== questions
+Que signifie KPI ? || Indicateur clé de performance || Contrat de prix commun || Capital par investissement || Suivi des produits || On suit quelques KPI importants.
+Comment calcule-t-on le panier moyen ? || Chiffre d'affaires divisé par le nombre de commandes || Chiffre d'affaires moins charges || Nombre de clients divisé par ventes || Prix de vente moins coût || Il mesure la valeur d'une commande.
+1 000 visiteurs et 30 acheteurs. Quel est le taux de conversion ? || 3 % || 30 % || 0,3 % || 33 % || 30/1 000.
+Que mesure le CAC ? || Le coût pour acquérir un nouveau client || Le coût d'un produit || Le chiffre d'affaires || Le salaire || Dépenses d'acquisition divisées par le nombre de nouveaux clients.
+Dépenses d'acquisition 100 000 pour 50 nouveaux clients. Quel est le CAC ? || 2 000 || 5 000 || 50 || 500 || 100 000 / 50.
+Que mesure le ROAS ? || La recette publicitaire par unité dépensée en publicité || Le taux d'intérêt || Le coût d'un clic || Le panier moyen || Recette divisée par dépense.
+Une campagne coûte 100 et rapporte 300 de ventes. Quel est le ROAS ? || 3 || 0,33 || 200 || 100 || 300/100.
+Qu'est-ce qu'un test A/B ? || Comparer deux versions auprès de groupes comparables || Un examen scolaire || Un calcul comptable || Une assurance || On garde la meilleure version.
+Pourquoi limiter le nombre d'indicateurs d'un tableau de bord ? || Pour se concentrer sur l'essentiel || Pour cacher des informations || Pour gagner du temps seulement || Pour supprimer les mesures || Trop d'indicateurs noient l'information.
+Que signifie NPS ? || La probabilité que le client recommande l'entreprise || Le nombre de produits en stock || Le niveau de prix standard || Le profit net || Il mesure la fidélité perçue.
+Pourquoi les « likes » seuls ne suffisent-ils pas ? || Ils peuvent ne pas se traduire en ventes || Ils sont faux || Ils sont interdits || Ils coûtent cher || Il faut relier les actions aux résultats commerciaux.
+Qu'est-ce qu'une conclusion trompeuse ? || Confondre corrélation et causalité || Calculer une moyenne || Utiliser un tableau || Faire un graphique || Deux phénomènes liés ne sont pas forcément cause l'un de l'autre.
+Pourquoi un petit échantillon pose-t-il problème ? || Les résultats peuvent ne pas représenter l'ensemble || Il est trop coûteux || Il est trop précis || Il est interdit || Il donne des conclusions fragiles.
+Pourquoi comparer les indicateurs au mois précédent ? || Pour voir l'évolution et détecter un problème || Pour compliquer || Pour fixer un prix || Pour supprimer des produits || Une valeur isolée est difficile à interpréter.
+Que faire d'une campagne au ROAS inférieur à 1 ? || La corriger ou l'arrêter car elle coûte plus qu'elle ne rapporte || La doubler || L'ignorer || La publier plus || Elle perd de l'argent.

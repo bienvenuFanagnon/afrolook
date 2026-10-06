@@ -1,0 +1,29 @@
+titre: Distribution, vente et merchandising
+== fiche
+p: La distribution met le produit à la disposition du client au bon endroit, au bon moment et en bonne quantité.
+li: Canaux : direct (le fabricant vend au client), court (un intermédiaire détaillant), long (grossiste puis détaillant).
+li: Intermédiaires : grossiste (vend en gros aux détaillants), détaillant (vend au consommateur), agent, franchisé.
+li: Formes de commerce : boutique, supermarché, marché, kiosque, vente ambulante, vente à domicile, vente en ligne.
+li: Distribution intensive (partout), sélective (certains points de vente), exclusive (un seul point par zone).
+li: Merchandising : présentation du produit en magasin (emplacement, linéaire, étiquetage, propreté, éclairage) pour faciliter l'achat.
+li: Logistique : transport, stockage, livraison ; la fraîcheur des produits périssables est cruciale.
+li: Distribution en Afrique : marchés, boutiques de proximité, grossistes, réseaux de vendeurs indépendants, livraison à moto, vente par réseaux sociaux.
+li: Choix du canal : coût, couverture, image, contrôle du prix et du service.
+note: Les produits les plus vendus se placent à hauteur des yeux ; les produits d'appel sont placés au fond du magasin.
+note: Un bon emplacement dépend du passage de clients et de la visibilité.
+== questions
+Quelle est la mission de la distribution ? || Mettre le produit à la disposition du client au bon endroit, moment et quantité || Fabriquer le produit || Fixer le prix || Faire la publicité seulement || C'est le P de Place.
+Qu'est-ce qu'un canal direct ? || Le producteur vend directement au consommateur || Le produit passe par un grossiste || Le produit passe par plusieurs intermédiaires || Le produit est donné || Il n'y a aucun intermédiaire.
+Qu'est-ce qu'un grossiste ? || Un intermédiaire qui achète en grande quantité et revend aux détaillants || Un client final || Un fabricant || Un banquier || Il stocke et distribue.
+Qu'est-ce qu'un détaillant ? || Un commerçant qui vend au consommateur final || Un fabricant || Un transporteur || Un comptable || Il est le dernier maillon de la chaîne.
+Citez une forme de commerce : || Le marché || L'impôt || La banque seulement || L'assurance seulement || Boutiques, supermarchés et vente en ligne en sont d'autres.
+Qu'est-ce que la distribution intensive ? || Vendre le produit dans un maximum de points de vente || Vendre dans un seul point || Vendre sans point de vente || Vendre au prix fort || Elle convient aux produits de grande consommation.
+Qu'est-ce que la distribution exclusive ? || Un seul point de vente par zone || Tous les points de vente || Aucun point de vente || Un point de vente en ligne seulement || Elle valorise l'image du produit.
+Qu'est-ce que le merchandising ? || La présentation des produits en magasin pour faciliter l'achat || La fabrication || La livraison || Le paiement || Il optimise le linéaire.
+Qu'est-ce que le linéaire ? || L'espace d'exposition des produits sur les rayons || Une ligne de production || Un tableau de bord || Un bilan || Il se mesure en mètres.
+Pourquoi place-t-on les produits les plus vendus à hauteur des yeux ? || Ils sont plus visibles et plus faciles à saisir || Ils sont moins chers || Ils sont plus lourds || Ils sont périmés || C'est une règle de merchandising.
+Citez un critère de choix d'un canal de distribution : || Le coût || La couleur || Le nom du fournisseur || Le slogan || La couverture et l'image comptent aussi.
+Qu'est-ce que la vente en ligne ? || La vente via un site, une application ou les réseaux sociaux || La vente en boutique seulement || La vente de rue seulement || La vente de gros seulement || Elle demande livraison et paiement.
+Quelle contrainte logistique est cruciale pour les produits périssables ? || La rapidité et la chaîne du froid || La couleur de l'emballage || Le prix de gros || La publicité || Ils doivent rester frais.
+Pourquoi les boutiques de proximité sont-elles importantes ? || Elles sont proches des clients et connaissent leurs besoins || Elles sont toujours moins chères || Elles sont plus grandes || Elles sont interdites || Elles couvrent une grande partie de la distribution.
+Qu'est-ce que la livraison du dernier kilomètre ? || La dernière étape qui amène le produit chez le client || La première étape du transport || Un type de transport maritime || Un impôt || Elle est coûteuse, surtout en ville.

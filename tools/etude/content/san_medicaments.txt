@@ -1,0 +1,29 @@
+titre: Médicaments : voies d'administration et sécurité
+== fiche
+p: Un médicament est une substance qui prévient, soigne ou diagnostique une maladie. Mal utilisé, il peut être dangereux.
+li: Voies d'administration : orale (comprimé, sirop), injectable (intraveineuse IV, intramusculaire IM, sous-cutanée SC), cutanée (pommade), rectale (suppositoire), inhalée, oculaire.
+li: Posologie : dose, rythme et durée ; elle dépend de l'âge, du poids, de la maladie et de la fonction du foie et du rein.
+li: Effets indésirables : effets non voulus ; allergie ; interactions entre médicaments ; contre-indications selon la maladie ou la grossesse.
+li: Règle des 5 B : bon patient, bon médicament, bonne dose, bonne voie, bon moment (on ajoute souvent la bonne documentation).
+li: Conservation : respecter la date de péremption et les conditions (à l'abri de la chaleur et de la lumière) ; médicaments hors de portée des enfants.
+li: Antibiotiques : actifs contre les bactéries, inefficaces contre les virus (rhume, grippe) ; un mauvais usage cause la résistance bactérienne.
+li: Médicaments génériques : même substance active que le médicament d'origine, souvent moins chers.
+li: Automédication : se soigner sans avis ; dangereuse pour les antibiotiques, les corticoïdes et en cas de grossesse.
+note: Toujours terminer une cure d'antibiotique prescrite, sans la partager.
+note: En cas de doute, demander l'avis d'un pharmacien ou d'un médecin ; les faux médicaments sont un danger réel.
+== questions
+Citez une voie d'administration d'un médicament : || La voie orale || La voie lactée || La voie routière || La voie ferrée || Comprimés et sirops sont avalés.
+Que signifie IM ? || Intramusculaire || Intraveineux || Inhalation moyenne || Intradermique || L'injection se fait dans un muscle.
+Que signifie IV ? || Intraveineux || Intramusculaire || Intradermique || Inhalé || L'injection se fait dans une veine.
+Qu'est-ce que la posologie ? || La dose, le rythme et la durée d'un traitement || Le prix || La couleur || La date de péremption || Elle est adaptée à chaque patient.
+Qu'est-ce qu'un effet indésirable ? || Un effet non voulu d'un médicament || L'effet attendu || Une guérison || Une maladie ancienne || Il peut être léger ou grave.
+Que signifie la règle des 5 B ? || Bon patient, bon médicament, bonne dose, bonne voie, bon moment || Boire, bouger, bien manger, bien dormir, bien rire || Bien laver, bien sécher, bien ranger, bien noter, bien jeter || Beaucoup de boissons || Elle sert à éviter les erreurs.
+Pourquoi vérifier la date de péremption ? || Un médicament périmé peut être inefficace ou dangereux || Pour fixer le prix || Pour la décoration || Pour changer de couleur || Elle indique la durée de garantie.
+Où range-t-on les médicaments ? || À l'abri de la chaleur, de la lumière et des enfants || Au soleil || Dans la cuisine près du feu || À la portée des enfants || Une bonne conservation maintient l'efficacité.
+Les antibiotiques sont-ils efficaces contre les virus ? || Non || Oui, toujours || Oui, contre le rhume || Oui, contre la grippe || Ils ciblent les bactéries.
+Quel risque l'abus d'antibiotiques entraîne-t-il ? || La résistance des bactéries || Une meilleure guérison || Une prise de poids || Une baisse de la fièvre toujours || Les traitements perdent leur efficacité.
+Que doit-on faire d'une cure d'antibiotiques prescrite ? || La terminer comme prévu || L'arrêter dès que l'on va mieux || La partager || La doubler || Une cure incomplète favorise la résistance.
+Qu'est-ce qu'un médicament générique ? || Un médicament avec la même substance active que l'original || Un médicament sans substance active || Un médicament interdit || Un complément alimentaire || Il est souvent moins cher.
+Qu'est-ce que l'automédication ? || Se soigner sans avis médical ou pharmaceutique || Prendre le traitement prescrit || Aller à l'hôpital || Se vacciner || Elle peut être dangereuse.
+Pourquoi les faux médicaments sont-ils dangereux ? || Ils peuvent être inefficaces ou toxiques || Ils guérissent plus vite || Ils sont plus chers || Ils sont sans danger || Il vaut mieux acheter en pharmacie agréée.
+Qui peut conseiller sur un médicament en cas de doute ? || Un pharmacien ou un médecin || Un voisin || Un vendeur de rue || Un inconnu en ligne || Ils connaissent les doses et les interactions.

@@ -1,0 +1,29 @@
+titre: Production et qualité
+== fiche
+p: La production transforme des ressources en produits ou en services ; la qualité garantit qu'ils répondent aux attentes des clients.
+li: Facteurs de production : travail, capital (machines, bâtiments), matières premières, technologie, savoir-faire.
+li: Productivité : quantité produite par rapport aux ressources utilisées (par exemple, nombre de pièces par heure de travail).
+li: Types de production : à l'unité (sur mesure), en série, en continu (raffinerie) ; à la commande ou sur stock.
+li: Qualité : conformité du produit aux spécifications et à la satisfaction du client ; contrôle qualité en cours et en fin de production.
+li: Démarche qualité : prévenir les défauts plutôt que de les corriger ; amélioration continue ; roue de Deming (planifier, faire, vérifier, agir).
+li: Normes : ISO 9001 pour le management de la qualité ; certifications.
+li: Maintenance : préventive (avant la panne) et corrective (après la panne) ; elle évite les arrêts.
+li: Sécurité et conditions de travail : équipements de protection, formation, prévention des accidents.
+note: Un défaut détecté tôt coûte beaucoup moins cher qu'un défaut découvert chez le client.
+note: Le gaspillage (matières, temps, énergie) est une cause fréquente de coûts inutiles.
+== questions
+Citez un facteur de production : || Le travail || Le logo || La publicité || La concurrence || Capital, matières et technologie en sont d'autres.
+Qu'est-ce que la productivité ? || La quantité produite par rapport aux ressources utilisées || Le total des ventes || Le profit || Le prix || Elle mesure l'efficacité.
+Qu'est-ce qu'une production en série ? || La fabrication de nombreux exemplaires identiques || La fabrication à l'unité || La fabrication sur mesure || L'absence de production || Elle réduit le coût unitaire.
+Qu'est-ce qu'une production à l'unité ? || La fabrication d'un produit sur mesure || La fabrication de masse || La fabrication continue || La revente || Elle convient à un produit unique.
+Qu'est-ce que la qualité d'un produit ? || Sa conformité aux attentes des clients et aux spécifications || Son prix élevé || Sa couleur || Son poids || Un produit de qualité satisfait le client.
+À quoi sert le contrôle qualité ? || Détecter les défauts avant qu'ils n'atteignent le client || Fixer le prix || Embaucher || Faire la publicité || Il peut avoir lieu à plusieurs étapes.
+Que signifie une démarche d'amélioration continue ? || Chercher sans cesse à faire mieux || Ne jamais changer || Arrêter la production || Éviter les contrôles || Elle repose sur de petits progrès réguliers.
+Que signifie PDCA (roue de Deming) ? || Planifier, faire, vérifier, agir || Produire, distribuer, calculer, analyser || Payer, dépenser, créditer, ajuster || Penser, décider, copier, annuler || C'est un cycle d'amélioration.
+Que désigne la norme ISO 9001 ? || Un référentiel pour le management de la qualité || Une norme de sécurité routière || Un diplôme || Une taxe || Une entreprise peut être certifiée.
+Qu'est-ce que la maintenance préventive ? || Entretenir les machines avant qu'elles ne tombent en panne || Réparer après la panne || Remplacer toutes les machines || Éteindre la production || Elle évite les arrêts imprévus.
+Qu'est-ce que la maintenance corrective ? || Réparer après la panne || Entretenir avant la panne || Acheter une machine || Former || Elle intervient en urgence.
+Pourquoi former le personnel à la sécurité ? || Pour prévenir les accidents du travail || Pour augmenter les coûts || Pour supprimer les machines || Pour réduire les salaires || Elle protège les salariés.
+Pourquoi détecter tôt un défaut est-il avantageux ? || Il coûte moins cher à corriger || Il coûte plus cher || Il n'a pas d'importance || Il supprime le client || Un défaut chez le client coûte très cher.
+Qu'est-ce qu'un gaspillage en production ? || Une perte de matières, de temps ou d'énergie || Un gain de matière || Un excès de qualité || Une vente || Le réduire baisse les coûts.
+Que mesure le taux de rebut ? || La part des produits défectueux jetés || La part des produits vendus || La part des produits stockés || La part du capital || Il traduit la qualité de la production.

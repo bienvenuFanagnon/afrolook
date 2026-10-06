@@ -1,0 +1,28 @@
+titre: L'entreprise : types, objectifs et parties prenantes
+== fiche
+p: Une entreprise est une organisation qui combine des ressources (travail, capital, savoir-faire) pour produire des biens ou des services et les vendre.
+li: Selon l'activité : secteur primaire (agriculture, mines), secondaire (industrie, construction), tertiaire (commerce, banque, transport, services).
+li: Selon la taille : micro-entreprise, petite, moyenne (PME) et grande entreprise ; elle se mesure par les effectifs et le chiffre d'affaires.
+li: Selon le statut : entreprise individuelle, société (SARL, SA), coopérative, entreprise publique, association (but non lucratif).
+li: Objectifs : économiques (rentabilité, croissance, part de marché), sociaux (emplois, bien-être des salariés), sociétaux et environnementaux.
+li: Parties prenantes : propriétaires et actionnaires, salariés, clients, fournisseurs, banques, État, concurrents, population locale.
+li: Fonctions de l'entreprise : production, commercial, financière, ressources humaines, administrative.
+li: Environnement : économique, juridique, technologique, social, écologique ; l'entreprise s'adapte aux changements.
+note: Une PME crée la majorité des emplois dans beaucoup de pays africains.
+note: Le chiffre d'affaires est le total des ventes ; le résultat est ce qu'il reste après les charges.
+== questions
+Qu'est-ce qu'une entreprise ? || Une organisation qui produit des biens ou des services pour les vendre || Une association sans activité || Un service de l'État seulement || Un syndicat || Elle combine travail, capital et savoir-faire.
+Dans quel secteur classe-t-on une banque ou un transporteur ? || Le secteur tertiaire || Le secteur primaire || Le secteur secondaire || Aucun || Banque, transport et commerce en font partie.
+Quelle entreprise relève du secteur primaire ? || Une exploitation agricole || Une usine || Une banque || Un cinéma || Elle produit des matières premières.
+Que signifie PME ? || Petite et moyenne entreprise || Production moyenne d'énergie || Petit marché européen || Projet de micro-économie || Elle emploie un nombre limité de salariés.
+Comment mesure-t-on la taille d'une entreprise ? || Par ses effectifs et son chiffre d'affaires || Par la couleur de son logo || Par son nom || Par son adresse || Ce sont des critères habituels.
+Citez un objectif économique d'une entreprise : || La rentabilité || Le repos || Le bénévolat || La publicité gratuite || La croissance et la part de marché en sont d'autres.
+Citez un objectif social d'une entreprise : || Créer des emplois et améliorer le bien-être des salariés || Réduire les ventes || Supprimer les clients || Cacher les comptes || Elle participe à la vie de la société.
+Qui sont les parties prenantes d'une entreprise ? || Les personnes et groupes concernés par son activité || Uniquement les actionnaires || Uniquement les clients || Uniquement l'État || Salariés, clients, fournisseurs, banques, État et population.
+Qui est un fournisseur ? || Celui qui vend à l'entreprise des biens ou services dont elle a besoin || Celui qui achète ses produits || Celui qui la finance || Celui qui la contrôle || L'entreprise lui doit de l'argent.
+Qu'est-ce que le chiffre d'affaires ? || Le total des ventes d'une période || Le bénéfice || Le capital || Les dettes || Il ne tient pas compte des charges.
+Que signifie une entreprise à but non lucratif ? || Elle ne partage pas ses bénéfices entre ses membres || Elle ne peut pas vendre || Elle n'a pas de budget || Elle est publique || C'est le cas d'une association.
+Quelle fonction de l'entreprise s'occupe des salariés ? || Les ressources humaines || La production || La fonction commerciale || La fonction financière || Recrutement, paie, formation.
+Quelle fonction s'occupe de fabriquer les biens ? || La production || La fonction commerciale || Les ressources humaines || La comptabilité || Elle transforme les ressources en produits.
+Qu'est-ce que l'environnement d'une entreprise ? || L'ensemble des éléments extérieurs qui influencent son activité || Son bâtiment || Ses employés || Ses machines || Économie, droit, technologie, société, écologie.
+Pourquoi les PME sont-elles importantes en Afrique ? || Elles créent beaucoup d'emplois || Elles sont toujours très grandes || Elles ne paient pas d'impôts || Elles n'ont pas de clients || Elles forment l'essentiel du tissu économique.

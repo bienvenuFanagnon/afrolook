@@ -1,0 +1,29 @@
+titre: Techniques de vente
+== fiche
+p: Vendre, c'est aider un client à trouver la solution qui répond à son besoin, avec honnêteté.
+li: Étapes de la vente : préparation, accueil, découverte des besoins, argumentation, réponse aux objections, conclusion, suivi.
+li: Découverte : poser des questions ouvertes, écouter, reformuler ; comprendre avant de proposer.
+li: Argumentation : méthode CAB (Caractéristique, Avantage, Bénéfice pour le client) ; parler du bénéfice plus que de la technique.
+li: Objections : prix, délai, confiance ; ne pas les craindre, écouter, reformuler, répondre avec des faits ; l'objection est souvent une demande d'information.
+li: Conclusion : repérer les signaux d'achat, proposer la prochaine étape, vérifier l'accord, remercier.
+li: Ventes additionnelles : proposer un produit complémentaire (vente croisée) ou une version supérieure (montée en gamme).
+li: Qualités du vendeur : écoute, honnêteté, connaissance du produit, politesse, persévérance, gestion du stress.
+li: Éthique : ne pas mentir, ne pas forcer, respecter le client ; une vente trompeuse détruit la réputation.
+note: Prospection : trouver de nouveaux clients par recommandation, démarchage, réseaux sociaux, salons.
+note: Suivi : appeler après la vente pour vérifier la satisfaction crée des clients fidèles.
+== questions
+Quelle est la première étape d'une vente ? || La préparation || La conclusion || La réponse aux objections || Le paiement || On connaît son produit et son client.
+Que fait-on à l'étape de découverte ? || On pose des questions et on écoute pour comprendre le besoin || On propose directement le prix || On parle du concurrent || On conclut || Comprendre avant de proposer.
+Que signifie la méthode CAB ? || Caractéristique, Avantage, Bénéfice || Calcul, Achat, Budget || Client, Acheteur, Besoin || Caisse, Argent, Banque || Elle structure l'argumentation.
+Pourquoi parler du bénéfice client plutôt que de la technique ? || Le client achète une solution à son besoin || Il ne comprend rien || La technique est secrète || Le bénéfice est faux || Le bénéfice répond à ses attentes.
+Que représente souvent une objection du client ? || Une demande d'information || Un refus définitif || Une insulte || Un abandon || Il faut l'écouter et y répondre.
+Comment répondre à une objection de prix ? || Écouter, reformuler et montrer la valeur apportée || Baisser le prix tout de suite || Ignorer le client || Se fâcher || On justifie le prix par les bénéfices.
+Qu'est-ce qu'un signal d'achat ? || Un comportement montrant que le client est prêt à acheter || Un défaut du produit || Un refus || Un doute || Il demande le prix ou les modalités de livraison.
+Qu'est-ce qu'une vente croisée ? || Proposer un produit complémentaire || Proposer une baisse de prix || Annuler la vente || Changer de client || Par exemple un étui avec un téléphone.
+Qu'est-ce que la montée en gamme ? || Proposer une version supérieure du produit || Baisser la qualité || Réduire le prix || Retirer des options || Elle augmente le panier moyen.
+Citez une qualité du vendeur : || L'écoute || L'impatience || Le mensonge || L'indifférence || Honnêteté et connaissance du produit comptent aussi.
+Pourquoi l'honnêteté est-elle essentielle en vente ? || Une vente trompeuse détruit la réputation || Elle réduit les ventes à court terme seulement || Elle est facultative || Elle augmente les coûts || La confiance fait revenir les clients.
+Qu'est-ce que la prospection ? || La recherche de nouveaux clients potentiels || La fabrication || La livraison || La comptabilité || Recommandation et réseaux en sont des moyens.
+Pourquoi faire un suivi après la vente ? || Vérifier la satisfaction et fidéliser || Relancer sans raison || Fermer le dossier || Augmenter le prix || Il peut déclencher de nouvelles ventes.
+Que faire quand le client dit « je vais réfléchir » ? || Chercher la vraie objection et proposer la prochaine étape || Le laisser partir sans rien || Le forcer à acheter || L'insulter || On clarifie ce qui le retient.
+Pourquoi poser des questions ouvertes pendant la découverte ? || Elles font parler le client de ses besoins || Elles font perdre du temps || Elles évitent l'écoute || Elles obligent à répondre par oui ou non || Elles donnent des informations riches.

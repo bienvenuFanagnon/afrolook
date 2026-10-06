@@ -1,0 +1,29 @@
+titre: Commerce électronique et paiement mobile
+== fiche
+p: Le commerce électronique consiste à vendre des biens ou des services en ligne : boutique en ligne, application, réseaux sociaux ou plateformes.
+li: Modèles : B2C (entreprise vers consommateur), B2B (entre entreprises), C2C (entre particuliers), marketplace (plateforme qui réunit vendeurs et acheteurs).
+li: Éléments clés : catalogue clair avec photos et descriptions fidèles, prix et frais de livraison visibles, panier simple, paiement sûr, livraison suivie, service client.
+li: Paiement : mobile money, carte bancaire, virement, paiement à la livraison ; sécurité et confiance.
+li: Livraison : coût, délai, zones, suivi ; emballage soigné ; gestion des retours.
+li: Droit : mentions légales, conditions générales de vente, politique de retour, protection des données ; respecter le droit de rétractation selon les lois.
+li: Confiance : avis clients, photos réelles, contact visible, politique claire, réponses rapides.
+li: Pièges : photos trompeuses, délais non tenus, produits non conformes, fraude ; vérifier la réputation du vendeur.
+li: Marketing : référencement, réseaux sociaux, offres de lancement, fidélisation, WhatsApp.
+note: Le paiement à la livraison rassure certains clients mais coûte plus cher au vendeur en cas de refus.
+note: La logistique (stock, emballage, livraison) fait souvent la réussite ou l'échec d'une boutique en ligne.
+== questions
+Comment nomme-t-on la vente de biens ou de services par internet ? || Le commerce électronique || La vente en boutique || Une taxe || Une banque || Site, application et réseaux en sont les supports.
+Que signifie B2C ? || Entreprise vers consommateur || Banque vers client || Business to company || Boutique vers client || Une boutique en ligne vend au grand public.
+Que signifie B2B ? || Vente entre entreprises || Vente aux particuliers || Vente entre voisins || Vente de gros uniquement || Un fabricant vend à un grossiste.
+Qu'est-ce qu'une marketplace ? || Une plateforme qui réunit plusieurs vendeurs et des acheteurs || Une boutique d'un seul vendeur || Un marché physique || Une banque || Elle prend souvent une commission.
+Citez un moyen de paiement en ligne : || Le mobile money || Les chèques papier || Les espèces seulement || Le troc || Carte et virement en sont d'autres.
+Pourquoi afficher les frais de livraison avant le paiement ? || Pour éviter les mauvaises surprises et les abandons de panier || Pour augmenter les coûts || Pour cacher le prix || Pour tromper || La transparence rassure.
+Que signifie un abandon de panier ? || Le client quitte avant de finaliser l'achat || Le client paie || Le client revient || Le client note le produit || Prix de livraison élevés ou paiement compliqué en sont des causes.
+Citez un document légal d'une boutique en ligne : || Les conditions générales de vente || Le bilan || La paie || Le devis interne || Elles précisent droits et obligations.
+Qu'est-ce que le droit de rétractation ? || Le droit de renoncer à un achat à distance dans un délai || Le droit de ne pas payer || Le droit de voler || Le droit d'avoir un remboursement toujours || Il varie selon les lois.
+Comment rassurer un client qui hésite à acheter en ligne ? || Avis clients, photos réelles, contact visible, politique claire || Cacher les informations || Éviter de répondre || Retirer les photos || La confiance fait vendre.
+Pourquoi des photos fidèles au produit sont-elles essentielles ? || Elles évitent les déceptions et les retours || Elles coûtent moins cher || Elles remplacent le texte || Elles sont inutiles || Une photo trompeuse nuit à la réputation.
+Quel est l'avantage du paiement à la livraison pour le client ? || Il paie une fois le produit reçu || Il paie à l'avance || Il ne paie jamais || Il choisit le prix || Il réduit la méfiance.
+Quel est l'inconvénient du paiement à la livraison pour le vendeur ? || Le risque de refus et les frais de transport perdus || Il encaisse trop tôt || Il paie des impôts || Il ne vend rien || Les retours coûtent cher.
+Pourquoi la logistique est-elle décisive pour une boutique en ligne ? || Un retard ou un produit abîmé fait perdre le client || Elle est secondaire || Elle supprime le stock || Elle remplace le marketing || Livraison et service client font la réputation.
+Qu'est-ce que le suivi de livraison ? || La possibilité de savoir où se trouve le colis || Un contrat || Un coût || Un impôt || Il améliore la confiance.

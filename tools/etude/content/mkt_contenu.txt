@@ -1,0 +1,29 @@
+titre: Marketing de contenu et storytelling
+== fiche
+p: Le marketing de contenu attire les clients en leur offrant des informations utiles ou agréables plutôt qu'en leur parlant seulement de ses produits.
+li: Types de contenus : articles de blog, vidéos, podcasts, infographies, guides, newsletters, études de cas, témoignages.
+li: Principe : répondre aux questions de la cible, apporter de la valeur, puis proposer l'offre.
+li: Storytelling : raconter une histoire (personnage, problème, solution, résultat) pour créer l'émotion et la mémorisation.
+li: Entonnoir de conversion : découverte, intérêt, considération, décision, fidélisation ; chaque étape demande un contenu adapté.
+li: Appel à l'action : inviter à s'abonner, appeler, acheter, partager.
+li: Réutilisation : un contenu peut devenir plusieurs formats (une vidéo en plusieurs extraits et un article).
+li: Mesure : vues, partages, abonnements, demandes, ventes générées.
+li: Qualité et authenticité : vrai, utile, bien écrit, sources fiables, droits d'auteur respectés.
+note: Exemple : une pâtissière publie des vidéos de recettes ; ses abonnés deviennent des clients.
+note: Un contenu régulier et utile construit la confiance sur la durée.
+== questions
+Qu'est-ce que le marketing de contenu ? || Attirer des clients par des contenus utiles ou agréables || Faire de la publicité agressive || Vendre sans parler || Baisser les prix || Il apporte de la valeur avant de vendre.
+Citez un type de contenu : || Un article de blog || Un contrat || Un chèque || Un bilan || Vidéos, podcasts et newsletters en sont d'autres.
+Qu'est-ce que le storytelling ? || Raconter une histoire pour créer l'émotion et être retenu || Dresser un inventaire || Calculer une marge || Écrire un contrat || Personnage, problème, solution, résultat.
+Quels éléments composent une histoire de marque ? || Un personnage, un problème, une solution, un résultat || Un prix, une marge, un coût || Un client, une facture, un reçu || Un budget, un plan, un contrat || Elle crée une connexion émotionnelle.
+Quelle est la première étape de l'entonnoir de conversion ? || La découverte || La décision || La fidélisation || L'achat || Le public découvre la marque.
+Que signifie un appel à l'action ? || Une invitation à faire un geste précis, comme s'abonner ou acheter || Un cri || Une loi || Un impôt || Il termine un message efficace.
+Pourquoi réutiliser un contenu sous plusieurs formats ? || Pour gagner du temps et toucher plus de personnes || Pour le supprimer || Pour tromper || Pour augmenter les coûts || Une vidéo peut devenir articles et extraits.
+Citez un indicateur de performance d'un contenu : || Le nombre de partages || Le capital || Le salaire || Le stock || Vues et abonnements aussi.
+Pourquoi la régularité compte-t-elle ? || Elle construit la confiance de l'audience || Elle fatigue l'audience || Elle supprime les abonnés || Elle augmente le prix || Un public attend ses rendez-vous.
+Qu'est-ce qu'un témoignage client ? || L'avis d'un client satisfait raconté à d'autres || Une facture || Un contrat || Un prix || Il rassure les prospects.
+Que doit respecter un créateur de contenu ? || Les droits d'auteur et l'honnêteté || Aucune règle || Seulement le prix || Seulement les likes || Copier sans autorisation est interdit.
+Pourquoi un contenu utile attire-t-il des clients ? || Il répond à leurs questions et crée la confiance || Il remplace le produit || Il supprime la concurrence || Il est gratuit toujours || La valeur apportée donne envie d'en savoir plus.
+Quel est l'avantage d'une newsletter ? || Garder le contact avec ses abonnés par courriel || Supprimer les réseaux sociaux || Fixer le prix || Fabriquer le produit || Elle crée un lien direct et durable.
+Quelle étape suit l'intérêt dans l'entonnoir ? || La considération || La fidélisation || La découverte || Le paiement || Le client compare les solutions.
+Pourquoi les vidéos courtes fonctionnent-elles bien ? || Elles captent l'attention rapidement et se partagent facilement || Elles coûtent toujours cher || Elles sont obligatoires || Elles remplacent les produits || Elles s'adaptent aux usages mobiles.

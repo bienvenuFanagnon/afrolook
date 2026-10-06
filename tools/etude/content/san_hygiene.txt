@@ -1,0 +1,29 @@
+titre: Hygiène et prévention des infections
+== fiche
+p: L'hygiène limite la transmission des microbes dans la vie courante et dans les soins.
+li: Chaîne de transmission : un agent infectieux, un réservoir, une porte de sortie, un mode de transmission, une porte d'entrée, un hôte sensible. Couper un maillon arrête l'infection.
+li: Modes de transmission : contact (mains, objets), gouttelettes (toux), air (tuberculose, rougeole), vecteur (moustique), eau et aliments.
+li: Lavage des mains : eau et savon pendant 40 à 60 secondes ; solution hydro-alcoolique pendant 20 à 30 secondes si les mains ne sont pas visiblement sales.
+li: Cinq moments d'hygiène des mains (OMS) : avant de toucher un patient, avant un geste aseptique, après un risque d'exposition à un liquide biologique, après avoir touché un patient, après avoir touché l'environnement du patient.
+li: Nettoyage (élimine la saleté), désinfection (tue la plupart des microbes), stérilisation (élimine tous les microbes, y compris les spores).
+li: Équipements de protection : gants, masque, blouse, lunettes ; précautions standard pour tous les patients.
+li: Déchets d'activités de soins : tri, boîte à objets tranchants, incinération ; ne jamais recapuchonner une aiguille.
+li: Infections associées aux soins (nosocomiales) : infections contractées lors d'une hospitalisation ou d'un soin.
+note: L'eau potable, les latrines et l'évacuation des déchets sont les bases de l'hygiène collective.
+note: La vaccination et le lavage des mains sont parmi les gestes les plus efficaces de prévention.
+== questions
+Qu'est-ce que la chaîne de transmission d'une infection ? || L'enchaînement des étapes qui mènent d'un microbe à un hôte || Un type d'antibiotique || Une technique de lavage || Un vaccin || Briser un maillon arrête la transmission.
+Citez un mode de transmission d'une infection : || Le contact des mains sales || Le sommeil || Le soleil seulement || La lecture || Gouttelettes, air et vecteur en sont d'autres.
+Combien de temps lave-t-on les mains à l'eau et au savon ? || 40 à 60 secondes || 5 secondes || 2 secondes || 10 minutes || Un temps suffisant est essentiel.
+Quand utilise-t-on la solution hydro-alcoolique ? || Quand les mains ne sont pas visiblement sales || Quand elles sont couvertes de boue || Jamais || Seulement à l'hôpital || Elle s'applique 20 à 30 secondes.
+Citez un des cinq moments d'hygiène des mains : || Avant de toucher un patient || Après avoir lu un livre || Avant de dormir || Après le repas || C'est un moment défini par l'OMS.
+Quelle différence y a-t-il entre désinfection et stérilisation ? || La stérilisation élimine tous les microbes, la désinfection la plupart || Elles sont identiques || La désinfection élimine tous les microbes || La stérilisation est un simple nettoyage || La stérilisation est plus poussée.
+À quoi servent les gants et le masque ? || À protéger le soignant et le patient || À décorer || À réchauffer || À garder l'eau || Ils font partie des précautions standard.
+Que signifie « précautions standard » ? || Mesures appliquées à tous les patients, quel que soit leur état || Mesures réservées aux malades contagieux || Mesures facultatives || Mesures pour les visiteurs || Elles protègent contre le sang et les liquides biologiques.
+Où jette-t-on une aiguille usagée ? || Dans un collecteur pour objets tranchants || Dans la poubelle ordinaire || Dans un caniveau || Dans le jardin || Il évite les piqûres accidentelles.
+Faut-il remettre le capuchon sur une aiguille usagée ? || Non, c'est une cause de piqûre accidentelle || Oui, toujours || Oui, si on est pressé || Oui, avec les deux mains || On la jette directement.
+Qu'est-ce qu'une infection nosocomiale ? || Une infection contractée lors d'un séjour ou d'un soin à l'hôpital || Une infection héréditaire || Une infection due au froid || Une allergie || On parle aussi d'infection associée aux soins.
+Quelle maladie se transmet par voie aérienne ? || La tuberculose || Le choléra || Le paludisme || La fièvre typhoïde || Des particules fines peuvent rester en suspension.
+Quelle maladie se transmet par un vecteur ? || Le paludisme || La rougeole || Le choléra || La galle || Le moustique anophèle en est le vecteur.
+Quelle mesure d'hygiène collective réduit beaucoup les maladies diarrhéiques ? || L'accès à l'eau potable et aux latrines || Le port de bijoux || Le sel || Le sucre || Elle coupe la transmission fécale-orale.
+Pourquoi trier les déchets de soins ? || Pour éviter les contaminations et les blessures || Pour économiser le papier || Pour la décoration || Pour diminuer le bruit || Une gestion sûre protège tous.

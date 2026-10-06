@@ -1,0 +1,29 @@
+titre: Responsabilité sociétale et éthique des affaires
+== fiche
+p: La responsabilité sociétale des entreprises (RSE) désigne leur contribution volontaire au développement durable : prendre en compte les effets de leur activité sur la société et l'environnement.
+li: Trois piliers : économique (rentabilité durable), social (conditions de travail, emploi, communautés), environnemental (déchets, énergie, eau, biodiversité).
+li: Parties prenantes : la RSE répond aux attentes des salariés, clients, fournisseurs, riverains, actionnaires, État.
+li: Éthique des affaires : honnêteté, transparence, respect de la loi, lutte contre la corruption, respect des clients et fournisseurs.
+li: Pratiques responsables : paiement équitable, sécurité au travail, lutte contre le travail des enfants, égalité hommes-femmes, achats locaux, réduction et tri des déchets, économies d'énergie.
+li: Rapport de développement durable : l'entreprise rend compte de ses résultats sociaux et environnementaux.
+li: Avantages : image, confiance des clients, motivation des salariés, réduction de certains coûts, accès à des financements.
+li: Greenwashing : prétendre être écologique sans l'être réellement.
+li: Économie circulaire : réduire, réutiliser, recycler.
+note: Les entreprises locales jouent un rôle d'exemple dans leur communauté.
+note: La corruption fausse la concurrence et détruit la confiance.
+== questions
+Que signifie RSE ? || Responsabilité sociétale des entreprises || Revenu social de l'entreprise || Registre des services économiques || Réseau de stockage électronique || Elle vise le développement durable.
+Quels sont les trois piliers de la RSE ? || Économique, social, environnemental || Production, vente, achat || Prix, qualité, délai || Produit, place, promotion || Ils forment le développement durable.
+Citez une pratique sociale responsable : || Assurer la sécurité et des conditions de travail dignes || Réduire la sécurité || Supprimer les congés || Ignorer les salariés || Elle respecte les travailleurs.
+Citez une pratique environnementale responsable : || Trier et réduire les déchets || Rejeter les déchets dans la rivière || Gaspiller l'énergie || Brûler les plastiques || Elle protège l'environnement.
+Qu'est-ce que l'éthique des affaires ? || L'application de valeurs d'honnêteté et de respect dans l'activité || Une règle de comptabilité || Une loi fiscale || Un style de publicité || Elle va au-delà de la loi.
+Que provoque la corruption ? || Elle fausse la concurrence et détruit la confiance || Elle améliore la concurrence || Elle réduit les coûts || Elle augmente la qualité || Elle est illégale.
+Qu'est-ce que le greenwashing ? || Se prétendre écologique sans l'être réellement || Une vraie démarche écologique || Un procédé de peinture || Une certification || C'est une tromperie.
+Que signifie l'économie circulaire ? || Réduire, réutiliser et recycler || Produire toujours plus || Jeter après usage || Importer plus || Elle limite le gaspillage.
+Qu'est-ce qu'un rapport de développement durable ? || Un document où l'entreprise rend compte de son impact social et écologique || Un bilan comptable || Une facture || Un contrat || Il informe les parties prenantes.
+Citez un avantage de la RSE pour l'entreprise : || Une meilleure image et la confiance des clients || Plus de dettes || Moins de clients || Plus de conflits || Elle peut aussi motiver les salariés.
+Pourquoi lutter contre le travail des enfants ? || Il viole les droits de l'enfant et nuit à son développement || Il réduit les coûts sans conséquence || Il est utile à l'éducation || Il est légal partout || C'est une exigence éthique et légale.
+Que signifie acheter localement ? || Privilégier les fournisseurs de sa région || Acheter à l'étranger toujours || Ne pas acheter || Acheter le moins cher || Cela soutient l'économie locale.
+Que signifie la transparence d'une entreprise ? || Elle communique honnêtement sur son activité et ses résultats || Elle cache ses comptes || Elle refuse de répondre || Elle ne publie rien || Elle est une valeur essentielle.
+Qui sont les riverains d'une entreprise ? || Les habitants proches de son site || Les clients lointains || Les actionnaires || Les salariés étrangers || Ils subissent bruit, pollution ou bénéficient d'emplois.
+Une entreprise peut-elle faire du profit et être responsable ? || Oui, la RSE vise une rentabilité durable || Non, c'est contradictoire || Non, jamais || Oui, mais sans éthique || Les deux se complètent à long terme.

@@ -1,0 +1,29 @@
+titre: Vaccination, santé de la mère et de l'enfant
+== fiche
+p: La vaccination et le suivi de la mère et de l'enfant sauvent chaque année des millions de vies.
+li: Un vaccin contient un antigène (microbe affaibli ou inactivé, fragment) qui apprend au système immunitaire à fabriquer des anticorps ; la protection est durable.
+li: Immunité collective : quand une grande partie de la population est vaccinée, les non-vaccinés sont aussi protégés.
+li: Programme élargi de vaccination (PEV) : BCG (tuberculose), polio, rougeole, pentavalent (diphtérie, tétanos, coqueluche, hépatite B, Hib), pneumocoque, rotavirus ; le calendrier fixe les âges.
+li: Contre-indications rares : forte fièvre, réaction grave à une dose précédente. Les effets secondaires légers (fièvre, douleur au point d'injection) sont fréquents et sans gravité.
+li: Consultations prénatales : l'OMS recommande au moins 8 contacts avec un professionnel pendant la grossesse ; elles dépistent anémie, hypertension, paludisme, VIH.
+li: Accouchement assisté par du personnel qualifié et consultation postnatale réduisent la mortalité maternelle et néonatale.
+li: Allaitement maternel exclusif pendant les 6 premiers mois, puis alimentation complémentaire jusqu'à 2 ans et au-delà.
+li: Planification familiale : espacer les naissances protège la santé de la mère et de l'enfant.
+note: Le fer et l'acide folique sont donnés pendant la grossesse ; la moustiquaire protège du paludisme.
+note: Le carnet de santé de l'enfant suit vaccins, poids, taille et maladies.
+== questions
+Que contient un vaccin ? || Un antigène qui apprend à l'organisme à se défendre || Un antibiotique || Un médicament contre la fièvre || De l'eau seulement || Il stimule la production d'anticorps.
+Qu'est-ce que l'immunité collective ? || La protection d'une population quand beaucoup de personnes sont vaccinées || La protection d'un seul individu || Un vaccin unique || Un traitement || Elle protège aussi les non-vaccinés.
+Que signifie PEV ? || Programme élargi de vaccination || Plan d'eau vive || Protocole d'examen vétérinaire || Programme d'éducation vaccinale || Il fixe le calendrier vaccinal.
+Quel vaccin protège contre la tuberculose ? || Le BCG || Le pentavalent || Le vaccin contre la rougeole || Le vaccin contre la polio || Il est donné à la naissance.
+Quelle maladie le vaccin pentavalent ne protège-t-il pas ? || La rougeole || La diphtérie || Le tétanos || La coqueluche || Il couvre aussi l'hépatite B et Hib.
+Citez un effet secondaire fréquent et léger d'un vaccin : || Une fièvre légère || Une paralysie || La maladie elle-même || La perte de la vue || Il passe en un ou deux jours.
+Combien de contacts prénatals l'OMS recommande-t-elle au moins ? || 8 || 1 || 2 || 20 || Ils permettent un suivi complet.
+Que dépiste-t-on pendant les consultations prénatales ? || Anémie, hypertension, infections || La couleur des yeux || Le sexe du bébé seulement || L'âge || Elles protègent la mère et l'enfant.
+Pourquoi un accouchement assisté par du personnel qualifié est-il important ? || Il réduit la mortalité de la mère et du nouveau-né || Il augmente les coûts || Il supprime les douleurs || Il évite l'allaitement || Il permet de gérer les complications.
+Combien de temps dure l'allaitement maternel exclusif recommandé ? || 6 mois || 1 mois || 2 ans || 1 an || Ensuite on ajoute des aliments complémentaires.
+À partir de quel âge introduit-on d'autres aliments en plus du lait ? || À partir de 6 mois || À la naissance || À 1 mois || À 3 ans || C'est la diversification alimentaire.
+À quoi sert le carnet de santé de l'enfant ? || Suivre vaccins, croissance et maladies || Fixer le prix des soins || Remplacer l'ordonnance || Décider de l'école || Il accompagne l'enfant.
+Quel supplément donne-t-on aux femmes enceintes ? || Fer et acide folique || Vitamine C seule || Sel || Sucre || Ils préviennent l'anémie et des malformations.
+Pourquoi espacer les naissances protège-t-il la santé ? || Le corps de la mère récupère entre deux grossesses || Cela augmente les risques || Cela supprime la fécondité || Cela est un dogme || La planification familiale améliore la survie des enfants.
+Que faire si un enfant a une forte fièvre le jour d'un vaccin ? || Demander l'avis du personnel de santé avant la vaccination || Vacciner quand même || Annuler tous les vaccins à vie || Donner un antibiotique || Une forte fièvre peut justifier de reporter.

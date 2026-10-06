@@ -1,0 +1,29 @@
+titre: Obligations administratives, fiscales et sociales de l'entreprise
+== fiche
+p: Une entreprise doit respecter des obligations légales dès sa création et tout au long de sa vie.
+li: Création : choix du statut, immatriculation (registre du commerce pour un commerçant), numéro d'identification fiscale, déclaration à la sécurité sociale, ouverture d'un compte bancaire professionnel.
+li: Obligations comptables : tenir une comptabilité régulière, conserver les pièces justificatives et les livres, établir les états financiers annuels.
+li: Obligations fiscales : déclarer et payer à temps les impôts (impôt sur les bénéfices ou régime d'imposition simplifié, TVA, patente ou contribution des patentes, retenues sur salaires) ; tenir des factures conformes.
+li: Obligations sociales : déclarer les salariés, verser les cotisations à la caisse de sécurité sociale, établir un contrat et des bulletins de paie, respecter le salaire minimum, les congés et la sécurité au travail.
+li: Autres obligations : licences et autorisations d'exercer, normes sanitaires ou environnementales, assurances.
+li: Contrôles : l'administration fiscale, l'inspection du travail et la sécurité sociale peuvent contrôler ; les documents doivent être disponibles.
+li: Sanctions : pénalités de retard, amendes, redressements, parfois fermeture.
+li: Conseil : un comptable ou un centre de gestion agréé aide les petites entreprises à respecter leurs obligations.
+note: Se formaliser donne accès au crédit, aux marchés publics et à la protection juridique.
+note: La date limite de déclaration est importante : un retard coûte des pénalités.
+== questions
+Citez une étape de création d'une entreprise : || L'immatriculation || La fermeture || La faillite || La liquidation || Elle donne une existence légale.
+À quoi sert un numéro d'identification fiscale ? || À identifier l'entreprise auprès de l'administration fiscale || À fixer les salaires || À choisir un logo || À payer les fournisseurs || Il est obligatoire pour déclarer ses impôts.
+Quelle obligation comptable pèse sur une entreprise ? || Tenir une comptabilité régulière || Aucune || Détruire ses factures || Cacher ses comptes || Elle conserve aussi ses pièces justificatives.
+Combien de temps doit-on conserver les pièces comptables, en général ? || Plusieurs années selon la loi || Un jour || Une semaine || Jamais || La durée est fixée par la loi, souvent dix ans.
+Citez une obligation fiscale : || Déclarer et payer ses impôts à temps || Éviter de facturer || Cacher ses ventes || Payer en retard || Les impôts dépendent du régime.
+Que doit contenir une facture conforme ? || Les mentions légales, comme les parties, la date et les montants || Seulement un montant || Un logo || Un dessin || Elle sert de preuve fiscale.
+Quelle obligation sociale concerne l'embauche d'un salarié ? || Le déclarer et verser les cotisations sociales || Le payer en espèces sans papier || L'ignorer || Ne pas faire de contrat || Elle protège le salarié.
+Quel document remet-on chaque mois au salarié ? || Un bulletin de paie || Un bilan || Une facture || Un devis || Il détaille salaire brut, cotisations et net.
+Qui peut contrôler une entreprise ? || L'administration fiscale, l'inspection du travail, la sécurité sociale || Les voisins || Les concurrents || Personne || Elles vérifient le respect des règles.
+Que risque une entreprise qui déclare en retard ? || Des pénalités de retard || Une prime || Une exonération || Une médaille || Les pénalités s'ajoutent à l'impôt.
+Pourquoi se formaliser est-il avantageux ? || Pour accéder au crédit, aux marchés publics et à la protection || Pour payer plus d'impôts sans raison || Pour devenir invisible || Pour éviter les clients || L'entreprise informelle est plus fragile.
+Qui peut aider une petite entreprise à respecter ses obligations ? || Un comptable ou un centre de gestion agréé || Un voisin || Un concurrent || Un inconnu || Il tient la comptabilité et conseille.
+Que signifie être en règle avec la sécurité sociale ? || Avoir déclaré ses salariés et payé les cotisations || Ne pas avoir de salariés || Payer en espèces || Ne rien déclarer || Elle finance retraite et santé.
+Citez une autre obligation de certaines activités : || Obtenir une licence ou autorisation d'exercer || Choisir un logo || Poster sur les réseaux || Baisser ses prix || Restaurants, pharmacies, transport en demandent.
+Pourquoi souscrire une assurance pour l'entreprise ? || Pour couvrir les risques de dommages et de responsabilité || Pour payer moins d'impôts || Pour attirer des clients || Pour supprimer les risques || Elle protège contre les sinistres.

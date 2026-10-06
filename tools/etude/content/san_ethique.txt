@@ -1,0 +1,29 @@
+titre: Éthique et relation soignant-patient
+== fiche
+p: Soigner demande des compétences techniques et des qualités humaines : respect, écoute, honnêteté.
+li: Principes de l'éthique médicale : autonomie (respect des choix du patient), bienfaisance (agir pour son bien), non-malfaisance (ne pas nuire), justice (soins équitables).
+li: Consentement éclairé : le patient reçoit une information claire (diagnostic, soins proposés, risques) et accepte librement ; il peut refuser un soin.
+li: Secret professionnel : le soignant ne révèle pas ce qu'il apprend sur son patient, sauf exceptions prévues par la loi.
+li: Dossier médical : confidentiel, tenu avec soin ; le patient y a accès.
+li: Dignité et respect : pudeur, intimité, langage respectueux, absence de discrimination (religion, origine, statut VIH).
+li: Communication : écouter sans interrompre, expliquer simplement, vérifier la compréhension, annoncer une mauvaise nouvelle avec tact.
+li: Mineurs et personnes vulnérables : le consentement se fait avec les représentants légaux, tout en écoutant l'avis de l'enfant.
+li: Soignant : formation continue, honnêteté, refus de tout abus et de toute corruption, respect des protocoles.
+note: La relation de confiance améliore l'adhésion au traitement.
+note: Le respect des croyances et de la culture du patient est un devoir, dans les limites de la sécurité et de la loi.
+== questions
+Quels sont les principes de l'éthique médicale ? || Autonomie, bienfaisance, non-malfaisance, justice || Vitesse, prix, confort, publicité || Pouvoir, argent, gloire, rapidité || Rigueur, silence, autorité, secret || Ils guident la décision de soin.
+Que signifie la non-malfaisance ? || Ne pas nuire au patient || Faire le plus de soins possible || Respecter l'autonomie || Soigner gratuitement || Primum non nocere.
+Que signifie l'autonomie du patient ? || Son droit de décider pour lui-même après information || Le droit du médecin de décider || L'obligation de suivre toute prescription || L'absence de soins || Il peut accepter ou refuser un traitement.
+Qu'est-ce que le consentement éclairé ? || L'accord libre donné après une information claire || Une signature sans lecture || L'accord d'un parent absent || Une obligation de payer || Il peut être retiré à tout moment.
+Un patient adulte refuse un soin non urgent. Que doit faire le soignant ? || Respecter son refus après l'avoir informé des risques || Lui imposer le soin || Le menacer || L'ignorer || C'est le droit du patient.
+Qu'est-ce que le secret professionnel ? || L'obligation de ne pas révéler ce qu'on apprend sur le patient || Un secret entre collègues || Un secret de fabrication || Une règle de politesse || Sauf exceptions légales.
+Qui peut avoir accès au dossier médical ? || Le patient et les soignants impliqués || Tout le monde || Les voisins || Les journalistes || Il est confidentiel.
+Que doit faire un soignant face à un patient séropositif ? || Le traiter avec respect et garder le secret || Le dire à ses voisins || Refuser de le soigner || Le séparer sans raison || La discrimination est interdite.
+Pourquoi respecter la pudeur du patient ? || C'est une marque de dignité || C'est facultatif || C'est une perte de temps || C'est inutile || Elle fait partie de la qualité des soins.
+Comment annoncer une mauvaise nouvelle à un patient ? || Avec tact, dans un lieu calme, en laissant le temps de réagir || Brutalement et en public || Par SMS || En évitant de répondre || L'annonce demande préparation et empathie.
+Comment obtient-on le consentement pour un enfant ? || Auprès de ses représentants légaux, en écoutant aussi l'enfant || Auprès de n'importe qui || Auprès du voisin || Sans consentement || L'intérêt de l'enfant prime.
+Que signifie la justice en éthique médicale ? || Des soins équitables pour tous || Les soins les plus chers || Les soins pour les riches || Les soins par ordre alphabétique || Elle interdit la discrimination.
+Qu'est-ce que la bienfaisance ? || Agir pour le bien du patient || Offrir de l'argent || Donner des cadeaux || Faire de la publicité || Elle guide les choix thérapeutiques.
+Pourquoi une bonne communication améliore-t-elle les soins ? || Le patient comprend et suit mieux son traitement || Elle rend les soins plus longs || Elle supprime les examens || Elle augmente les coûts || La confiance favorise l'adhésion.
+Un soignant reçoit un paiement illégal pour passer un patient avant les autres. De quoi s'agit-il ? || D'une corruption contraire à l'éthique || D'une bonne pratique || D'un cadeau || D'un salaire || Elle brise l'égalité d'accès aux soins.

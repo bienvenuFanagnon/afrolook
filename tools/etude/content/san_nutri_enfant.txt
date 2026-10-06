@@ -1,0 +1,29 @@
+titre: Nutrition, malnutrition et croissance de l'enfant
+== fiche
+p: Une bonne nutrition pendant les 1 000 premiers jours (de la conception aux 2 ans de l'enfant) conditionne la santé et le développement futurs.
+li: Allaitement maternel exclusif jusqu'à 6 mois, puis aliments complémentaires variés tout en poursuivant l'allaitement jusqu'à 2 ans ou plus.
+li: Malnutrition aiguë : maigreur (marasme) ou œdèmes (kwashiorkor) ; mesure du périmètre brachial (PB) : moins de 115 mm = malnutrition aiguë sévère, de 115 à 125 mm = modérée.
+li: Retard de croissance (malnutrition chronique) : taille trop petite pour l'âge ; irréversible si tardive.
+li: Carences : fer (anémie), vitamine A (cécité, infections), iode (goitre), zinc ; le sel iodé, les aliments enrichis et la supplémentation les préviennent.
+li: Diarrhée de l'enfant : donner des SRO et du zinc, continuer l'alimentation et l'allaitement.
+li: Courbe de croissance du carnet de santé : suivre poids et taille pour dépister tôt un problème.
+li: Aliments utiles : céréales et tubercules (énergie), légumineuses, œufs, poisson, viande (protéines), fruits et légumes (vitamines), huile (énergie).
+li: Hygiène alimentaire : laver les mains, eau potable, bien conserver les aliments.
+note: Aliments thérapeutiques prêts à l'emploi (ATPE) soignent les enfants gravement malnutris.
+note: La malnutrition affaiblit les défenses et aggrave toutes les infections.
+== questions
+Que désignent les « 1 000 premiers jours » ? || De la conception aux 2 ans de l'enfant || Les 3 premières années d'école || Les 1 000 premiers mots || La durée d'une grossesse || C'est une période décisive pour la croissance.
+Combien de temps dure l'allaitement exclusif recommandé ? || 6 mois || 1 mois || 12 mois || 2 ans || Sans eau ni autres aliments.
+Jusqu'à quel âge poursuit-on l'allaitement avec les aliments complémentaires ? || 2 ans ou plus || 6 mois || 1 an seulement || 5 ans || Il protège et nourrit encore.
+Qu'est-ce que le marasme ? || Une forme de malnutrition avec une extrême maigreur || Une maladie cardiaque || Une allergie || Une infection || Il y a perte de masse musculaire et graisseuse.
+Quel signe distingue le kwashiorkor ? || Des œdèmes || Une très grande taille || Une peau très rouge || Une soif intense || Une forme de malnutrition liée au manque de protéines.
+Que mesure le périmètre brachial ? || La circonférence du bras pour dépister la malnutrition || La température || La taille || Le pouls || Il se mesure avec un ruban.
+Quelle valeur du périmètre brachial indique une malnutrition aiguë sévère ? || Moins de 115 mm || Plus de 150 mm || 130 mm || 200 mm || Au-dessous de 115 mm, c'est une urgence.
+Qu'est-ce que le retard de croissance ? || Une taille trop petite pour l'âge due à une malnutrition chronique || Un excès de poids || Une maladie aiguë || Une allergie || Il est difficile à corriger s'il est tardif.
+Quelle carence provoque l'anémie ? || Le manque de fer || Le manque d'iode || Le manque de zinc || Le manque de vitamine D seulement || Il se prévient avec une alimentation riche en fer.
+Quel risque la carence en vitamine A entraîne-t-elle ? || Des troubles de la vue et des infections plus fréquentes || Une carie || Une anémie seulement || Une fracture || La supplémentation en vitamine A protège les enfants.
+Quel aliment prévient le goitre ? || Le sel iodé || Le sucre || L'huile || Le riz seulement || L'iode est indispensable à la thyroïde.
+Que donne-t-on à un enfant qui a la diarrhée ? || Des SRO et du zinc, en poursuivant l'alimentation || Un jeûne complet || Un antibiotique systématique || Du soda || Il faut éviter la déshydratation.
+À quoi sert la courbe de croissance du carnet de santé ? || Suivre poids et taille pour repérer un problème || Fixer le prix des soins || Choisir un prénom || Décider de l'école || Elle montre l'évolution de l'enfant.
+Que sont les ATPE ? || Des aliments thérapeutiques prêts à l'emploi pour les enfants malnutris || Des antibiotiques || Des vaccins || Des jouets || Ils soignent la malnutrition aiguë sévère.
+Pourquoi la malnutrition aggrave-t-elle les infections ? || Elle affaiblit les défenses de l'organisme || Elle fortifie les défenses || Elle supprime les microbes || Elle protège || Un enfant malnutri est plus vulnérable.

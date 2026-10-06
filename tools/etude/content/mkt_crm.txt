@@ -1,0 +1,29 @@
+titre: E-mail marketing, CRM et fidélisation
+== fiche
+p: La gestion de la relation client (CRM) consiste à connaître ses clients, à leur parler de façon personnalisée et à les fidéliser.
+li: Base de clients : nom, contact, achats, préférences ; respecter la loi sur les données personnelles et demander l'accord.
+li: Segmentation de la base : par achat, fréquence, montant, ville ; messages différents selon le segment.
+li: E-mail et SMS marketing : objet accrocheur, message court, une action claire, bouton visible ; désinscription possible.
+li: Messagerie instantanée (WhatsApp) : listes de diffusion avec accord, réponses rapides.
+li: Fidélisation : carte de fidélité, points, offres réservées, parrainage, service après-vente, cadeaux d'anniversaire.
+li: Valeur vie client : total des bénéfices attendus d'un client sur toute la relation ; un client fidèle coûte moins cher qu'un nouveau.
+li: Taux de rétention et taux d'attrition : part des clients qui restent ou qui partent.
+li: Gestion des réclamations : écouter, s'excuser si besoin, réparer vite ; un client bien traité devient souvent plus fidèle.
+note: Spammer (envoyer des messages non désirés) nuit à la marque et peut être illégal.
+note: Un simple « merci » après l'achat renforce la relation.
+== questions
+Que signifie CRM ? || Gestion de la relation client || Comptabilité des ressources et marges || Contrôle des ressources marchandes || Contrat de revente mensuel || Il organise la connaissance des clients.
+Qu'est-ce que la segmentation d'une base de clients ? || La répartition en groupes selon leurs achats ou caractéristiques || La suppression des clients || L'ajout de produits || Le changement de prix || Elle permet des messages adaptés.
+Que doit-on demander avant d'envoyer des messages promotionnels ? || L'accord du client || Rien || Un paiement || Sa pièce d'identité || La loi protège les données personnelles.
+Que doit contenir un bon courriel promotionnel ? || Un objet accrocheur, un message court et une action claire || Un long texte || Plusieurs actions confuses || Aucun contact || Un bouton visible aide.
+Pourquoi permettre la désinscription ? || Pour respecter le choix du destinataire || Pour perdre des clients || Pour supprimer la base || Pour éviter la loi || C'est une obligation de bonne pratique.
+Citez un outil de fidélisation : || La carte de fidélité || Le bilan || Le plan de trésorerie || Le devis || Les points, parrainages et offres réservées en sont d'autres.
+Qu'est-ce que le parrainage client ? || Un client recommande l'entreprise à un autre contre un avantage || Un impôt || Un contrat de travail || Un crédit || Il utilise le bouche-à-oreille.
+Que signifie la valeur vie client ? || Le total des bénéfices attendus d'un client sur toute sa relation || Le prix d'un produit || Le salaire d'un vendeur || Le coût d'un client || Elle guide les efforts de fidélisation.
+Pourquoi fidéliser coûte-t-il moins cher que conquérir ? || Le client connaît déjà la marque || Le client fidèle ne paie pas || Le client nouveau achète plus || Les nouveaux clients sont gratuits || Un client fidèle achète plus souvent.
+Qu'est-ce que le taux de rétention ? || La part des clients qui restent fidèles || La part des clients perdus || Le nombre de produits || Le prix moyen || Plus il est élevé, mieux c'est.
+Qu'est-ce que l'attrition ? || La perte de clients sur une période || Le gain de clients || L'augmentation des ventes || La fidélisation || On cherche à la réduire.
+Comment traiter une réclamation ? || Écouter, s'excuser si besoin et réparer vite || L'ignorer || Se justifier longuement || Accuser le client || Un client bien traité peut devenir plus fidèle.
+Qu'est-ce que le spam ? || Des messages non sollicités envoyés en masse || Un courriel important || Une facture || Un devis || Il nuit à la réputation.
+Pourquoi remercier un client après son achat ? || Cela renforce la relation || Cela coûte cher || Cela fait fuir || C'est interdit || Un geste simple compte.
+Citez une donnée utile dans une base clients : || Les achats et préférences || La couleur du maillot || La météo || Le prix du pétrole || Elle permet de personnaliser l'offre.

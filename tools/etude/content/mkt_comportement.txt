@@ -1,0 +1,29 @@
+titre: Le comportement du consommateur
+== fiche
+p: Comprendre pourquoi et comment les gens achètent permet de mieux répondre à leurs besoins.
+li: Besoin : manque ressenti (se nourrir, se loger, être reconnu). Désir : forme que prend le besoin. Demande : désir appuyé par un pouvoir d'achat.
+li: Processus d'achat : reconnaissance du besoin, recherche d'informations, comparaison des solutions, décision d'achat, évaluation après l'achat.
+li: Facteurs personnels : âge, revenu, métier, mode de vie, personnalité ; facteurs psychologiques : motivation, perception, apprentissage, attitudes.
+li: Facteurs sociaux : famille, amis, leaders d'opinion, groupes de référence ; facteurs culturels : valeurs, religion, traditions.
+li: Types d'achat : routinier (pain), réfléchi (téléphone), impulsif (bonbons à la caisse).
+li: Niveau d'implication : plus l'achat est cher ou risqué, plus la recherche d'informations est longue.
+li: Fidélité à la marque : habitude, confiance, satisfaction ; le bouche-à-oreille est très puissant.
+li: Dissonance cognitive : doute après un achat important ; la garantie, le service après-vente et les avis rassurent.
+note: En Afrique, les recommandations de proches et la confiance personnelle pèsent souvent plus que la publicité.
+note: Les avis en ligne influencent de plus en plus les décisions d'achat.
+== questions
+Qu'est-ce qu'un besoin en marketing ? || Un manque ressenti par une personne || Un produit || Un prix || Une publicité || Il peut être physiologique ou social.
+Qu'est-ce que la demande ? || Un désir appuyé par un pouvoir d'achat || Un simple besoin || Une envie sans argent || Une publicité || Elle est solvable.
+Quelle est la première étape du processus d'achat ? || La reconnaissance du besoin || La décision d'achat || L'évaluation après achat || Le paiement || Tout commence par la prise de conscience d'un manque.
+Que fait le consommateur avant de décider d'acheter ? || Il recherche des informations et compare || Il paie || Il oublie || Il revend || Il consulte aussi son entourage.
+Citez un facteur social d'influence sur l'achat : || La famille et les amis || Le nom du produit || La couleur de l'étiquette || Le poids || Les groupes de référence orientent les choix.
+Citez un facteur personnel : || Le revenu || Les publicités || Le prix du concurrent || La météo || L'âge et le mode de vie en font aussi partie.
+Qu'est-ce qu'un achat impulsif ? || Un achat non planifié fait sur un coup de tête || Un achat répété || Un achat réfléchi || Un achat en gros || Les produits placés à la caisse jouent sur l'impulsion.
+Qu'est-ce qu'un achat routinier ? || Un achat fréquent qui demande peu de réflexion || Un achat rare || Un achat cher || Un achat risqué || Le pain ou le savon en sont des exemples.
+Pourquoi la recherche d'informations est-elle plus longue pour un téléphone que pour du pain ? || L'achat est plus cher et plus risqué || Le téléphone est plus petit || Le pain est plus rare || La publicité est plus forte || Le niveau d'implication est plus élevé.
+Qu'est-ce que le bouche-à-oreille ? || La recommandation d'un produit entre personnes || Une publicité à la radio || Un panneau || Une enquête || C'est un moyen très puissant, surtout lorsque la confiance est personnelle.
+Qu'est-ce que la dissonance cognitive après achat ? || Le doute ressenti après un achat important || La joie de l'achat || Le prix || Un défaut du produit || La garantie et les avis rassurent.
+Qu'est-ce qui peut rassurer un client après son achat ? || Une garantie et un bon service après-vente || Un prix plus élevé || Moins d'informations || Une publicité agressive || Cela conforte sa décision.
+Qu'est-ce qu'un leader d'opinion ? || Une personne dont les avis influencent les autres || Un directeur || Un vendeur || Un client fâché || Un influenceur en est un exemple.
+Pourquoi les avis en ligne comptent-ils ? || Ils influencent les décisions des futurs acheteurs || Ils fixent les prix || Ils remplacent le produit || Ils sont toujours faux || Ils rassurent ou découragent.
+Qu'est-ce que la fidélité à une marque ? || L'habitude de racheter la même marque par confiance et satisfaction || Un achat unique || Un achat impulsif || Un achat forcé || Elle réduit le coût d'acquisition des clients.

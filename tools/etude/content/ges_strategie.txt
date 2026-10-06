@@ -1,0 +1,28 @@
+titre: Stratégie et diagnostic de l'entreprise
+== fiche
+p: La stratégie définit où l'entreprise veut aller et comment elle y arrivera, compte tenu de ses forces et de son environnement.
+li: Mission, vision, objectifs : mission (pourquoi l'entreprise existe), vision (ce qu'elle veut devenir), objectifs mesurables.
+li: Analyse SWOT (FFOM) : forces et faiblesses (internes), opportunités et menaces (externes).
+li: Cinq forces de Porter : concurrents existants, nouveaux entrants, produits de substitution, pouvoir des clients, pouvoir des fournisseurs.
+li: Avantage concurrentiel : domination par les coûts, différenciation (offre unique), ou spécialisation sur une niche.
+li: Stratégies de croissance : pénétration du marché, développement de produits, nouveaux marchés, diversification, alliances, fusions.
+li: Matrice BCG : classe les activités (vedettes, vaches à lait, dilemmes, poids morts) selon la croissance du marché et la part relative.
+li: Plan d'action : transformer la stratégie en actions, responsables, budgets et calendrier ; suivi par des indicateurs.
+note: Exemple : une pâtisserie de quartier mise sur la différenciation (recettes locales) plutôt que sur les prix bas.
+note: Une stratégie se révise quand l'environnement change.
+== questions
+Que définit la stratégie d'une entreprise ? || Où elle veut aller et comment y arriver || Le prix d'un produit || Le salaire des employés || La couleur du logo || Elle tient compte des forces et de l'environnement.
+Que représente la mission d'une entreprise ? || La raison pour laquelle elle existe || Son bilan || Ses dettes || Son capital || Elle exprime sa finalité.
+Que signifie SWOT ? || Forces, faiblesses, opportunités, menaces || Ventes, salaires, objectifs, taxes || Stocks, caisse, dettes, achats || Plan, résultat, budget, trésorerie || Il sert à faire un diagnostic.
+Les forces et faiblesses d'une entreprise sont : || internes || externes || toujours des menaces || des opportunités || Elles viennent de l'entreprise elle-même.
+Les opportunités et menaces sont : || externes || internes || des forces || des faiblesses || Elles viennent de l'environnement.
+Citez une force possible d'une entreprise : || Une équipe compétente || Un concurrent puissant || Une loi nouvelle || Une crise || Elle est interne et favorable.
+Citez une menace : || L'arrivée d'un concurrent puissant || Une équipe compétente || Un bon emplacement || Un client fidèle || Elle vient de l'extérieur et est défavorable.
+Que décrivent les cinq forces de Porter ? || L'intensité de la concurrence dans un secteur || Les cinq fonctions de l'entreprise || Les cinq produits d'une gamme || Les cinq étapes du recrutement || Elles aident à évaluer l'attractivité d'un secteur.
+Citez une des cinq forces de Porter : || Le pouvoir de négociation des clients || La force du maire || La taille du bureau || Le nombre de salariés || Les autres sont les concurrents, les nouveaux entrants, les substituts et les fournisseurs.
+Qu'est-ce qu'un avantage concurrentiel ? || Ce qui permet de faire mieux que ses concurrents || Un impôt || Une aide de l'État || Un prêt || Prix plus bas ou offre différente.
+Que signifie la stratégie de différenciation ? || Proposer une offre perçue comme unique || Vendre toujours moins cher || Copier les autres || Réduire la qualité || Elle justifie souvent un prix plus élevé.
+Que signifie la domination par les coûts ? || Produire moins cher que les concurrents || Vendre plus cher || Augmenter la qualité sans limite || Éviter de produire || Elle permet des prix bas.
+Que représente une « vache à lait » dans la matrice BCG ? || Une activité rentable dans un marché peu dynamique || Une activité en forte croissance sans profit || Une activité en perte || Une activité nouvelle || Elle finance les autres activités.
+Pourquoi un plan d'action est-il nécessaire ? || Pour transformer la stratégie en actions précises || Pour décorer la stratégie || Pour remplacer le budget || Pour supprimer les risques || Il précise qui fait quoi, quand et avec quel budget.
+Quand faut-il réviser sa stratégie ? || Quand l'environnement change fortement || Jamais || Chaque jour sans raison || Seulement à la faillite || Une stratégie s'adapte.

@@ -1,0 +1,30 @@
+titre: Réseaux sociaux et community management
+== fiche
+p: Les réseaux sociaux permettent de dialoguer avec les clients, de montrer ses produits et de construire une communauté.
+li: Choisir les réseaux selon la cible : Facebook, WhatsApp, Instagram, TikTok, YouTube, LinkedIn (professionnels).
+li: Community manager : anime la communauté, publie, répond aux commentaires et messages, surveille l'image de la marque.
+li: Ligne éditoriale : sujets, ton, fréquence, formats ; elle donne une identité cohérente.
+li: Types de contenus : photos, vidéos courtes, vidéos en direct, témoignages de clients, coulisses, conseils, jeux concours.
+li: Interaction : répondre vite et poliment, remercier, traiter les critiques calmement et en privé si besoin.
+li: Influenceurs : personnes qui ont une audience ; vérifier qu'ils correspondent à la marque ; indiquer les partenariats.
+li: Calendrier éditorial : planifier les publications ; régularité plutôt que quantité.
+li: Gestion de crise : répondre sans attendre, reconnaître l'erreur, expliquer, corriger.
+li: WhatsApp Business : catalogue, réponses rapides, listes de diffusion ; très utilisé pour la vente.
+note: Un compte actif et réactif inspire confiance ; un compte abandonné donne mauvaise impression.
+note: Les faux avis et les achats d'abonnés nuisent à la crédibilité.
+== questions
+Quel est le rôle d'un community manager ? || Animer la communauté et gérer l'image sur les réseaux || Fabriquer les produits || Tenir la comptabilité || Livrer les produits || Il publie, répond et surveille.
+Comment choisir ses réseaux sociaux ? || Selon l'endroit où se trouve sa cible || Au hasard || Tous sans réfléchir || Seulement le plus récent || La cible détermine les réseaux utiles.
+Qu'est-ce qu'une ligne éditoriale ? || Les sujets, le ton et la fréquence des publications || Le prix des produits || Un contrat || Une facture || Elle donne une identité cohérente.
+Citez un type de contenu efficace : || Un témoignage de client || Un contrat || Un bilan || Un devis || Photos, vidéos et coulisses sont d'autres exemples.
+Comment répondre à un commentaire négatif ? || Rapidement, poliment et en cherchant une solution || En l'ignorant || En supprimant tous les avis || En insultant || Une réponse correcte rassure les autres lecteurs.
+Qu'est-ce qu'un influenceur ? || Une personne avec une audience qui peut influencer les achats || Un employé || Un banquier || Un fournisseur || Il faut vérifier sa cohérence avec la marque.
+Pourquoi indiquer un partenariat avec un influenceur ? || Par honnêteté envers le public || Pour payer moins || Pour cacher la publicité || Pour éviter les clients || La transparence est une règle.
+Pourquoi planifier un calendrier éditorial ? || Pour publier régulièrement et de façon cohérente || Pour publier au hasard || Pour supprimer les contenus || Pour dépenser plus || La régularité compte plus que la quantité.
+Que faire en cas de crise de réputation ? || Répondre vite, reconnaître l'erreur et corriger || Se taire || Supprimer le compte || Accuser les clients || La transparence limite les dégâts.
+À quoi sert WhatsApp Business ? || À gérer un catalogue et des réponses rapides avec les clients || À faire de la comptabilité || À fabriquer des produits || À payer des impôts || Il est très utilisé pour vendre.
+Que penser de l'achat de faux abonnés ? || C'est trompeur et nuit à la crédibilité || C'est recommandé || C'est obligatoire || C'est gratuit || L'engagement réel compte plus que le nombre.
+Pourquoi répondre vite aux messages ? || Cela inspire confiance et favorise la vente || Cela fatigue || Cela supprime les clients || Cela coûte cher || Les clients attendent une réponse rapide.
+Qu'est-ce qu'un jeu concours sur les réseaux ? || Une action où des participants peuvent gagner un cadeau || Un impôt || Un contrat || Une publicité interdite || Il doit avoir un règlement clair.
+Pourquoi un compte abandonné est-il nuisible ? || Il donne une mauvaise impression à la clientèle || Il augmente les ventes || Il supprime les clients || Il est gratuit || Une marque active inspire confiance.
+Quel réseau est surtout destiné aux contacts professionnels ? || LinkedIn || TikTok || Snapchat || Instagram || Il sert à l'emploi et aux relations d'affaires.

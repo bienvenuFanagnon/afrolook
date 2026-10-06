@@ -1,0 +1,28 @@
+titre: Épidémiologie et grandes maladies en Afrique
+== fiche
+p: L'épidémiologie étudie la fréquence et les causes des maladies dans les populations pour mieux les prévenir.
+li: Incidence : nombre de nouveaux cas sur une période ; prévalence : nombre total de cas à un moment donné. Endémie : présence habituelle d'une maladie ; épidémie : hausse brutale ; pandémie : épidémie mondiale.
+li: Paludisme : parasite Plasmodium transmis par la piqûre de l'anophèle femelle ; fièvre, frissons, maux de tête ; prévention par moustiquaire imprégnée ; traitement par combinaisons à base d'artémisinine après test de diagnostic.
+li: VIH/sida : virus qui attaque les défenses immunitaires (CD4) ; transmission par rapports sexuels non protégés, sang et mère-enfant ; pas par moustique ni poignée de main ; antirétroviraux (ARV) contrôlent la maladie.
+li: Tuberculose : bacille de Koch ; toux de plus de deux semaines, fièvre, amaigrissement ; traitement de six mois ; vaccin BCG.
+li: Choléra : eau ou aliments contaminés ; diarrhée aqueuse intense ; réhydratation par SRO (sels de réhydratation orale) ; prévention par eau potable et hygiène.
+li: Maladies non transmissibles en hausse : hypertension, diabète, cancers, maladies cardiovasculaires.
+li: Surveillance épidémiologique : détecter vite, notifier, investiguer, riposter ; cas et contacts.
+note: Fièvre Ebola : transmission par contact avec les liquides biologiques ; mesures d'isolement et de protection.
+note: Le paludisme reste l'une des principales causes de mortalité des enfants de moins de cinq ans en Afrique.
+== questions
+Que mesure l'incidence d'une maladie ? || Le nombre de nouveaux cas sur une période || Le nombre total de cas à un moment donné || Le nombre de décès || Le nombre de guérisons || Elle suit la propagation.
+Que mesure la prévalence ? || Le nombre total de cas à un moment donné || Le nombre de nouveaux cas || Le nombre de vaccinés || Le nombre de guéris seulement || Elle décrit le poids de la maladie.
+Qu'est-ce qu'une épidémie ? || Une hausse brutale du nombre de cas d'une maladie || Une maladie toujours présente || Une maladie mondiale || Une maladie rare || Une pandémie est une épidémie mondiale.
+Qu'est-ce qu'une endémie ? || La présence habituelle d'une maladie dans une région || Une maladie qui disparaît || Une épidémie mondiale || Une maladie héréditaire || Le paludisme est endémique dans de nombreuses régions.
+Quel vecteur transmet le paludisme ? || L'anophèle femelle || La mouche tsé-tsé || Le rat || La tique || Le parasite est Plasmodium.
+Quelle prévention est la plus efficace contre le paludisme ? || La moustiquaire imprégnée || Le sel || Le chauffage || Le lavage du linge || Elle protège pendant le sommeil.
+Que doit-on faire devant une fièvre suspecte de paludisme ? || Faire un test de diagnostic avant de traiter || Prendre un antibiotique || Attendre sans rien faire || Appliquer de l'eau froide uniquement || Le test oriente le traitement.
+Comment le VIH se transmet-il ? || Par rapports sexuels non protégés, par le sang et de la mère à l'enfant || Par une poignée de main || Par un moustique || Par la toux || Les ARV réduisent la transmission.
+Que font les antirétroviraux (ARV) ? || Ils contrôlent la multiplication du virus || Ils guérissent définitivement || Ils servent de vaccin || Ils remplacent le préservatif || Ils permettent de vivre longtemps avec le VIH.
+Quel est le signe d'alerte d'une tuberculose pulmonaire ? || Une toux de plus de deux semaines || Un mal de tête passager || Un rhume || Une douleur à la cheville || Elle impose un examen de crachats.
+Quelle est la durée classique du traitement de la tuberculose ? || Six mois || Un jour || Deux jours || Un an et demi seulement || Il ne faut pas l'interrompre.
+Quelle est la cause du choléra ? || Une bactérie transmise par l'eau ou les aliments contaminés || Un parasite du moustique || Un virus de l'air || Un champignon || Elle provoque une diarrhée intense.
+Que sont les SRO ? || Des sels de réhydratation orale || Des antibiotiques || Des vaccins || Des vitamines || Ils corrigent la déshydratation.
+Citez une maladie non transmissible en hausse : || Le diabète || Le choléra || La rougeole || La tuberculose || Hypertension et cancers en font partie.
+Pourquoi la surveillance épidémiologique est-elle utile ? || Elle permet de détecter vite les épidémies et d'y répondre || Elle remplace les vaccins || Elle supprime les maladies || Elle sert aux impôts || Notifier, investiguer, riposter.

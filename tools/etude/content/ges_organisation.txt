@@ -1,0 +1,29 @@
+titre: Organisation et structures de l'entreprise
+== fiche
+p: Organiser, c'est répartir les tâches et les responsabilités pour atteindre les objectifs.
+li: Division du travail : chaque personne ou service se spécialise dans une tâche, ce qui augmente l'efficacité mais demande de la coordination.
+li: Hiérarchie : lien d'autorité du haut vers le bas ; l'étendue du contrôle est le nombre de personnes qu'un responsable peut encadrer efficacement.
+li: Structures : hiérarchique (une seule ligne d'autorité), fonctionnelle (services spécialisés), divisionnelle (par produit ou région), matricielle (double rattachement).
+li: Organigramme : schéma qui présente les services et les liens d'autorité.
+li: Centralisation : décisions prises au sommet ; décentralisation : décisions déléguées aux niveaux inférieurs.
+li: Délégation : confier une tâche et l'autorité nécessaire ; la responsabilité finale reste au délégant.
+li: Procédures et règles écrites : elles standardisent le travail et réduisent les erreurs.
+li: Culture d'entreprise : valeurs et habitudes partagées ; elle influence le comportement des équipes.
+note: Fayol : planifier, organiser, commander, coordonner, contrôler. Taylor : organisation scientifique du travail.
+note: Une structure trop rigide freine l'innovation ; une structure trop floue crée de la confusion.
+== questions
+Qu'est-ce que la division du travail ? || La répartition des tâches entre spécialistes || La suppression des tâches || L'embauche d'un seul employé || Le travail en solitaire || Elle améliore l'efficacité.
+Qu'est-ce que la hiérarchie dans une entreprise ? || Le lien d'autorité entre les niveaux || La liste des produits || La division des profits || Le planning || Elle précise qui commande qui.
+Quel schéma montre qui dépend de qui dans une entreprise ? || L'organigramme || Un tableau de ventes || Un bilan || Un contrat || Il montre la structure de l'entreprise.
+Qu'est-ce que la centralisation ? || Les décisions importantes sont prises au sommet || Les décisions sont prises par tous || Les décisions sont supprimées || Les décisions sont déléguées || L'autorité est concentrée.
+Qu'est-ce que la délégation ? || Confier une tâche et l'autorité nécessaire à un collaborateur || Se décharger de toute responsabilité || Licencier || Recruter || La responsabilité finale reste au délégant.
+Qu'est-ce qu'une structure fonctionnelle ? || Une organisation en services spécialisés || Une organisation par produit || Une organisation sans chef || Une organisation de famille || Production, finances, commercial, RH.
+Qu'est-ce qu'une structure divisionnelle ? || Une organisation par produit ou région || Une organisation par fonction || Une organisation sans services || Une organisation sans chef || Chaque division est assez autonome.
+Quelle structure double le rattachement de chaque salarié ? || La structure matricielle || La structure hiérarchique pure || La structure divisionnelle || La structure familiale || Un salarié a deux responsables.
+Qu'est-ce que l'étendue du contrôle ? || Le nombre de personnes qu'un responsable peut encadrer efficacement || La surface du bureau || Le nombre de produits || La taille du capital || Elle influence la forme de la hiérarchie.
+Quel est un avantage d'une procédure écrite ? || Elle standardise le travail et réduit les erreurs || Elle supprime la créativité || Elle augmente les coûts toujours || Elle remplace le chef || Chacun sait quoi faire.
+Qu'est-ce que la culture d'entreprise ? || Les valeurs et habitudes partagées dans l'entreprise || Le logo || Le budget || Le bilan || Elle influence les comportements.
+Qui a défini les fonctions « planifier, organiser, commander, coordonner, contrôler » ? || Henri Fayol || Frederick Taylor || Adam Smith || John Keynes || C'est la théorie classique du management.
+Qui est associé à l'organisation scientifique du travail ? || Frederick Taylor || Henri Fayol || Karl Marx || Max Weber || Il a étudié le travail au chronomètre.
+Quel est le risque d'une structure trop rigide ? || Elle freine l'innovation || Elle favorise toujours la créativité || Elle supprime les chefs || Elle réduit les coûts || Elle réagit lentement aux changements.
+Quel est le risque d'une structure trop floue ? || La confusion sur qui décide et fait quoi || Une trop grande clarté || Un excès de profits || Une baisse des charges || On ne sait plus qui est responsable.

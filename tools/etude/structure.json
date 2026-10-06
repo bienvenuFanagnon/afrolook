@@ -1583,6 +1583,312 @@
    ]
   },
   {
+   "id": "univ_sante",
+   "kind": "cycle",
+   "order": 35,
+   "title": "Santé et sciences infirmières — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_sante_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Santé et sciences infirmières, Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "san_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "san_anat",
+       "title": "Anatomie et physiologie",
+       "icon": "eco",
+       "chapters": [
+        {
+         "id": "san_anat_corps",
+         "title": "Organisation du corps humain"
+        },
+        {
+         "id": "san_cardio",
+         "title": "Cœur, circulation et sang"
+        },
+        {
+         "id": "san_resp_dig",
+         "title": "Respiration et digestion"
+        },
+        {
+         "id": "san_nerveux",
+         "title": "Système nerveux et organes des sens"
+        }
+       ]
+      },
+      {
+       "id": "san_pub",
+       "title": "Santé publique",
+       "icon": "public",
+       "chapters": [
+        {
+         "id": "san_hygiene",
+         "title": "Hygiène et prévention des infections"
+        },
+        {
+         "id": "san_epidemio",
+         "title": "Épidémiologie et grandes maladies en Afrique"
+        },
+        {
+         "id": "san_vaccin_smi",
+         "title": "Vaccination, santé de la mère et de l'enfant"
+        }
+       ]
+      },
+      {
+       "id": "san_soins",
+       "title": "Soins de base",
+       "icon": "science",
+       "chapters": [
+        {
+         "id": "san_constantes",
+         "title": "Constantes vitales et surveillance du patient"
+        },
+        {
+         "id": "san_medicaments",
+         "title": "Médicaments : voies d'administration et sécurité"
+        },
+        {
+         "id": "san_urgences",
+         "title": "Urgences et premiers soins"
+        }
+       ]
+      },
+      {
+       "id": "san_nut",
+       "title": "Nutrition et éthique",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "san_nutri_enfant",
+         "title": "Nutrition, malnutrition et croissance de l'enfant"
+        },
+        {
+         "id": "san_ethique",
+         "title": "Éthique et relation soignant-patient"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "univ_gestion",
+   "kind": "cycle",
+   "order": 36,
+   "title": "Gestion des entreprises — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_gestion_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Gestion des entreprises, Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "ges_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "ges_man",
+       "title": "Management",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "ges_entreprise",
+         "title": "L'entreprise : types, objectifs et parties prenantes"
+        },
+        {
+         "id": "ges_organisation",
+         "title": "Organisation et structures de l'entreprise"
+        },
+        {
+         "id": "ges_strategie",
+         "title": "Stratégie et diagnostic de l'entreprise"
+        },
+        {
+         "id": "ges_rse",
+         "title": "Responsabilité sociétale et éthique des affaires"
+        }
+       ]
+      },
+      {
+       "id": "ges_ope",
+       "title": "Opérations et projets",
+       "icon": "storage",
+       "chapters": [
+        {
+         "id": "ges_production",
+         "title": "Production et qualité"
+        },
+        {
+         "id": "ges_approvisionnement",
+         "title": "Approvisionnement et logistique"
+        },
+        {
+         "id": "ges_projet",
+         "title": "Gestion de projet"
+        }
+       ]
+      },
+      {
+       "id": "ges_fin",
+       "title": "Finance et prix",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "ges_tresorerie",
+         "title": "Gestion de la trésorerie et financement à court terme"
+        },
+        {
+         "id": "ges_prix",
+         "title": "Fixation des prix et marges"
+        },
+        {
+         "id": "ges_obligations",
+         "title": "Obligations administratives, fiscales et sociales"
+        }
+       ]
+      },
+      {
+       "id": "ges_com",
+       "title": "Communication et outils",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "ges_comm_pro",
+         "title": "Communication professionnelle et négociation"
+        },
+        {
+         "id": "ges_numerique",
+         "title": "Outils numériques de gestion"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "univ_marketing",
+   "kind": "cycle",
+   "order": 37,
+   "title": "Marketing et communication digitale — Licence 1",
+   "country": "UEMOA",
+   "after": [
+    "lycee_d"
+   ],
+   "exam": {
+    "id": "licence_marketing_l1",
+    "title": "Examen de Licence 1",
+    "diploma": "Certificat Afrolook Étude — Marketing et communication digitale, Licence 1",
+    "count": 40,
+    "passPct": 0.5,
+    "seconds": 3600
+   },
+   "classes": [
+    {
+     "id": "mkt_l1",
+     "title": "Licence 1",
+     "subjects": [
+      {
+       "id": "mkt_fond",
+       "title": "Fondamentaux du marketing",
+       "icon": "work",
+       "chapters": [
+        {
+         "id": "mkt_comportement",
+         "title": "Le comportement du consommateur"
+        },
+        {
+         "id": "mkt_marque",
+         "title": "Produit, gamme et marque"
+        },
+        {
+         "id": "mkt_prix",
+         "title": "Stratégies de prix en marketing"
+        },
+        {
+         "id": "mkt_distribution",
+         "title": "Distribution, vente et merchandising"
+        }
+       ]
+      },
+      {
+       "id": "mkt_comm",
+       "title": "Communication",
+       "icon": "menu_book",
+       "chapters": [
+        {
+         "id": "mkt_communication",
+         "title": "La communication marketing"
+        },
+        {
+         "id": "mkt_contenu",
+         "title": "Marketing de contenu et storytelling"
+        }
+       ]
+      },
+      {
+       "id": "mkt_dig",
+       "title": "Marketing digital",
+       "icon": "code",
+       "chapters": [
+        {
+         "id": "mkt_digital",
+         "title": "Marketing digital : site, référencement et publicité en ligne"
+        },
+        {
+         "id": "mkt_reseaux",
+         "title": "Réseaux sociaux et community management"
+        },
+        {
+         "id": "mkt_ecommerce",
+         "title": "Commerce électronique et paiement mobile"
+        }
+       ]
+      },
+      {
+       "id": "mkt_rel",
+       "title": "Vente, relation client et mesure",
+       "icon": "calculate",
+       "chapters": [
+        {
+         "id": "mkt_crm",
+         "title": "E-mail marketing, CRM et fidélisation"
+        },
+        {
+         "id": "mkt_vente",
+         "title": "Techniques de vente"
+        },
+        {
+         "id": "mkt_analyse",
+         "title": "Mesurer et améliorer ses actions marketing"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "cert_entretien",
    "kind": "cert",
    "order": 100,

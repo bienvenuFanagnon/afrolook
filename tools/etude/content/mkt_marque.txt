@@ -1,0 +1,29 @@
+titre: Produit, gamme et marque
+== fiche
+p: Le produit est l'ensemble des bénéfices proposés au client : l'objet, mais aussi le service, l'image et la garantie.
+li: Trois niveaux d'un produit : produit de base (le besoin satisfait), produit tangible (qualité, design, emballage, marque), produit augmenté (garantie, livraison, service après-vente).
+li: Gamme : ensemble de produits liés (largeur : nombre de lignes ; profondeur : nombre de variantes dans une ligne).
+li: Marque : nom, logo, slogan, univers visuel ; elle rassure, distingue et crée de la valeur.
+li: Positionnement de la marque : promesse claire, différente et crédible ; identité visuelle cohérente (couleurs, logo, ton).
+li: Capital de marque : notoriété (la marque est connue), image (ce qu'on pense d'elle), fidélité.
+li: Packaging : protège, informe, attire ; mentions obligatoires (composition, date, fabricant).
+li: Innovation : produit nouveau ou amélioré ; test avec des clients avant le lancement.
+li: Marque de distributeur (MDD) : marque d'un commerçant, souvent moins chère.
+note: Exemple : une marque de savon local mise sur « 100 % karité » et un emballage coloré pour se distinguer.
+note: Protéger sa marque : l'enregistrer auprès de l'organisme de propriété intellectuelle (OAPI, par exemple).
+== questions
+Que comprend un produit en marketing ? || L'objet et tous les bénéfices associés (garantie, service, image) || Seulement l'objet || Seulement le prix || Seulement l'emballage || Il répond à un besoin.
+Qu'est-ce que le produit de base ? || Le besoin fondamental satisfait || La marque || La garantie || La livraison || Une perceuse répond au besoin de faire un trou.
+Qu'est-ce que le produit augmenté ? || Le produit avec des services comme la garantie et la livraison || Le produit sans emballage || Le produit moins cher || Le produit sans marque || Il se différencie par ses services.
+Qu'est-ce qu'une gamme de produits ? || Un ensemble de produits liés entre eux || Un produit unique || Un seul client || Une publicité || Largeur et profondeur la décrivent.
+Qu'est-ce que la profondeur d'une gamme ? || Le nombre de variantes dans une même ligne || Le nombre de lignes || Le prix moyen || Le nombre de clients || Par exemple tailles et parfums.
+Qu'est-ce que la largeur d'une gamme ? || Le nombre de lignes de produits || Le nombre de variantes || Le chiffre d'affaires || Le nombre de magasins || Savons, crèmes, huiles : trois lignes.
+Qu'est-ce qu'une marque ? || Un nom, un logo et une promesse qui distinguent un produit || Un prix || Une facture || Un impôt || Elle crée de la valeur.
+Pourquoi une marque rassure-t-elle ? || Elle garantit une qualité attendue || Elle supprime les prix || Elle remplace la loi || Elle est inutile || Le client sait ce qu'il achète.
+Qu'est-ce que le capital de marque ? || La valeur d'une marque issue de sa notoriété, de son image et de sa fidélité || Le capital de l'entreprise || Le stock || Le brevet || Il est un actif immatériel.
+Qu'est-ce que la notoriété ? || Le fait d'être connu du public || La qualité du produit || Le prix || La taille || Elle se mesure par une enquête.
+À quoi sert le packaging ? || Protéger, informer et attirer || Fixer le prix || Rembourser || Mesurer || L'emballage est un support de communication.
+Citez une mention obligatoire sur un emballage alimentaire : || La date de péremption || Le slogan || La couleur || Le prix de gros || Il informe et protège le consommateur.
+Pourquoi tester un produit nouveau avant son lancement ? || Pour limiter le risque d'échec || Pour retarder le lancement || Pour augmenter le prix || Pour supprimer le test || Les retours des clients améliorent le produit.
+Qu'est-ce qu'une marque de distributeur ? || Une marque appartenant à un commerçant || Une marque d'un fabricant || Une marque d'État || Un logo || Elle est souvent moins chère.
+Où peut-on protéger une marque en Afrique de l'Ouest francophone ? || À l'OAPI || À la FIFA || À la BCEAO || À l'UEMOA || Un dépôt unique protège dans tous les États membres.

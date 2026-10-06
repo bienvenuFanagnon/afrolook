@@ -1,0 +1,29 @@
+titre: Gestion de la trésorerie et financement à court terme
+== fiche
+p: La trésorerie est l'argent disponible (caisse, banque) pour payer les dépenses courantes ; une entreprise rentable peut faire faillite si elle manque de liquidités.
+li: Plan de trésorerie : tableau mensuel des encaissements (ventes, avances) et décaissements (achats, salaires, loyers, impôts) ; solde = trésorerie début + encaissements − décaissements.
+li: Délais : plus on encaisse tard et plus on paie tôt, plus le besoin de trésorerie augmente ; on négocie des délais avec clients et fournisseurs.
+li: Financement à court terme : découvert bancaire, facilité de caisse, crédit de campagne, escompte, affacturage, avances clients, crédit fournisseur.
+li: Escompte commercial : vendre à la banque une créance avant son échéance contre une commission.
+li: Coût du crédit : taux d'intérêt, frais et commissions ; comparer le taux effectif global.
+li: Placements de trésorerie : excédents placés sur des comptes ou titres sûrs et accessibles.
+li: Relances clients : suivre les factures impayées, relancer à temps, éventuellement prévoir des pénalités.
+li: Indicateurs : délai moyen de paiement des clients, des fournisseurs, rotation des stocks.
+note: Cycle de conversion : temps entre le paiement des fournisseurs et l'encaissement des clients.
+note: Une entreprise en croissance a souvent besoin de plus de trésorerie, car elle finance d'abord ses stocks et ses créances.
+== questions
+Qu'est-ce que la trésorerie ? || L'argent disponible en caisse et en banque || Le bénéfice || Le capital || Les stocks || Elle sert à payer les dépenses courantes.
+Une société qui gagne de l'argent peut-elle se retrouver à court de liquidités ? || Oui, si elle encaisse tard et paie tôt || Non, jamais || Oui, si elle a trop de clients || Non, car elle gagne de l'argent || La rentabilité et la liquidité sont différentes.
+Comment calcule-t-on le solde d'un plan de trésorerie ? || Trésorerie début + encaissements − décaissements || Encaissements − ventes || Décaissements + stocks || Capital − dettes || C'est un calcul mensuel.
+Trésorerie début 100, encaissements 300, décaissements 250. Quel est le solde final ? || 150 || 450 || 50 || 650 || 100 + 300 − 250.
+Qu'est-ce qu'un découvert bancaire ? || Un crédit temporaire sur le compte courant || Un placement || Un impôt || Un salaire || Il coûte souvent cher.
+Qu'est-ce que l'escompte commercial ? || La cession d'une créance à la banque avant échéance contre commission || Un rabais d'un fournisseur || Un impôt || Un emprunt de 10 ans || La banque avance l'argent à l'entreprise.
+Citez un moyen de financement à court terme : || Le crédit fournisseur || L'émission d'actions || Un emprunt de 20 ans || L'augmentation de capital || Il permet de payer plus tard.
+Que fait une entreprise qui négocie un délai de paiement plus long avec ses fournisseurs ? || Elle améliore sa trésorerie || Elle la détériore || Elle supprime ses dettes || Elle augmente ses stocks || Elle paie plus tard.
+Que fait une entreprise qui accorde un long délai à ses clients ? || Elle augmente son besoin de trésorerie || Elle l'améliore || Elle supprime ses charges || Elle réduit ses ventes || Elle encaisse plus tard.
+Pourquoi relancer les clients qui ne paient pas ? || Pour encaisser plus tôt et éviter les impayés || Pour perdre des clients || Pour augmenter les stocks || Pour fixer les prix || Le suivi des factures est essentiel.
+Que mesure le délai moyen de paiement des clients ? || Le temps moyen avant d'être payé || Le temps de livraison || Le temps de travail || Le temps de fabrication || Un délai court améliore la trésorerie.
+Où placer un excédent de trésorerie ? || Sur un placement sûr et facilement accessible || Dans une entreprise inconnue || Dans une loterie || En espèces dans un tiroir sans limite || Il faut préserver la liquidité.
+Pourquoi une entreprise en forte croissance peut-elle manquer de trésorerie ? || Elle finance d'abord ses stocks et ses créances || Elle gagne trop || Elle vend trop peu || Elle n'a pas de clients || La croissance consomme des liquidités.
+Qu'est-ce que le cycle de conversion de trésorerie ? || Le temps entre le paiement des fournisseurs et l'encaissement des clients || Le temps de production || Le temps de repos || Le temps de transport || Plus il est long, plus l'entreprise a besoin de financement.
+Que faut-il comparer pour choisir un crédit ? || Le taux effectif global || La couleur du contrat || Le nom de la banque || L'adresse de la banque || Il inclut intérêts, frais et commissions.

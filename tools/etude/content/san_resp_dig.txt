@@ -1,0 +1,28 @@
+titre: Respiration et digestion
+== fiche
+p: Le système respiratoire apporte l'oxygène et rejette le gaz carbonique ; le système digestif transforme les aliments en nutriments absorbés par le sang.
+li: Voies respiratoires : nez, pharynx, larynx, trachée, bronches, poumons (alvéoles). Les échanges de gaz se font dans les alvéoles.
+li: Le diaphragme est le muscle principal de la respiration ; la fréquence respiratoire normale d'un adulte au repos est de 12 à 20 cycles par minute.
+li: Digestion : bouche (mastication, salive), œsophage, estomac (acide, brassage), intestin grêle (digestion et absorption des nutriments), gros intestin (absorption de l'eau, formation des selles), rectum, anus.
+li: Glandes annexes : foie (bile, métabolisme), vésicule biliaire (stocke la bile), pancréas (enzymes digestives et insuline).
+li: Les nutriments absorbés passent dans le sang ; l'eau est absorbée surtout dans le gros intestin.
+li: Maladies fréquentes : asthme, pneumonie, tuberculose pour les poumons ; diarrhées, ulcères, hépatites pour la digestion.
+li: Hygiène : eau potable, mains propres, aliments bien cuits et bien conservés.
+note: La salive commence la digestion de l'amidon dès la bouche.
+note: L'intestin grêle mesure plusieurs mètres et possède des villosités qui augmentent la surface d'absorption.
+== questions
+Où les échanges de gaz se font-ils dans le poumon ? || Dans les alvéoles || Dans la trachée || Dans les bronches seulement || Dans le larynx || Leur paroi est très fine.
+Quel muscle est le principal muscle respiratoire ? || Le diaphragme || Le biceps || Le cœur || Le deltoïde || Il se contracte à l'inspiration.
+Quelle est la fréquence respiratoire normale d'un adulte au repos ? || 12 à 20 par minute || 40 à 60 par minute || 2 à 5 par minute || 100 par minute || Elle augmente à l'effort.
+Quel gaz les poumons rejettent-ils ? || Le dioxyde de carbone || L'oxygène || L'azote seulement || L'hydrogène || Il est produit par les cellules.
+Quelle glande digestive fabrique la bile ? || Le foie || La vésicule biliaire || Le pancréas || L'estomac || La vésicule biliaire la stocke.
+Dans quelle partie du tube digestif les nutriments passent-ils surtout dans le sang ? || Dans l'intestin grêle || Dans l'estomac || Dans le gros intestin || Dans l'œsophage || Ses villosités augmentent la surface d'absorption.
+Quel est le rôle principal du gros intestin ? || Absorber l'eau et former les selles || Digérer les protéines || Produire la bile || Produire l'insuline || Il reçoit les résidus non digérés.
+Quel organe produit l'insuline ? || Le pancréas || Le foie || L'estomac || Le rein || Il produit aussi des enzymes digestives.
+Quelle est la fonction de l'estomac ? || Brasser les aliments avec de l'acide gastrique || Absorber l'eau || Produire la bile || Stocker la bile || Il commence la digestion des protéines.
+Que fait la salive ? || Elle commence la digestion de l'amidon || Elle digère les protéines || Elle produit la bile || Elle absorbe l'eau || Elle contient une enzyme, l'amylase.
+Quelle maladie touche les poumons et est causée par un bacille ? || La tuberculose || Le choléra || Le paludisme || La rougeole || Le bacille de Koch en est la cause.
+Quelle mesure d'hygiène protège contre les diarrhées ? || L'eau potable et le lavage des mains || Le sel || Le sucre || La chaleur || La contamination fécale-orale est fréquente.
+Dans quel ordre l'air traverse-t-il les voies respiratoires ? || Nez, pharynx, larynx, trachée, bronches, alvéoles || Bouche, œsophage, estomac || Nez, œsophage, poumons || Trachée, larynx, nez || L'air arrive aux alvéoles.
+Quel est le trajet des aliments ? || Bouche, œsophage, estomac, intestin grêle, gros intestin || Bouche, trachée, poumons || Estomac, bouche, œsophage || Intestin, estomac, bouche || Ils parcourent le tube digestif.
+Pourquoi cuire correctement les aliments ? || Pour détruire de nombreux microbes || Pour les rendre plus salés || Pour les rendre sucrés || Pour supprimer l'eau || Ils réduisent le risque d'intoxication.

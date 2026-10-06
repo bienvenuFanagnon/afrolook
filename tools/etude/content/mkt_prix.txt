@@ -1,0 +1,29 @@
+titre: Stratégies de prix en marketing
+== fiche
+p: Le prix est le seul élément du marketing-mix qui rapporte de l'argent ; les autres représentent des coûts.
+li: Facteurs : coûts, valeur perçue par le client, concurrence, objectifs de l'entreprise, contexte économique, réglementation.
+li: Valeur perçue : ce que le client croit recevoir par rapport à ce qu'il paie ; elle dépend de la marque, de la qualité, du service.
+li: Politiques : prix psychologique (9,90), prix d'appel (très bas pour attirer), prix premium (haut pour un positionnement de qualité), prix par paliers, prix dynamiques.
+li: Ajustements : remises de quantité, escompte de paiement, soldes, promotions, prix différenciés par segment.
+li: Prix d'un lot (pack) : le client perçoit une économie.
+li: Dans la vente en ligne : comparaison facile des prix, frais de livraison à intégrer au prix perçu.
+li: Éviter les erreurs : fixer un prix seulement d'après les coûts, ignorer la concurrence, baisser trop souvent les prix (la marque perd sa valeur).
+li: Test : essayer deux prix auprès de groupes comparables pour voir l'effet sur les ventes.
+note: Une promotion permanente cesse d'être une promotion et habitue le client à ne plus acheter plein tarif.
+note: Un prix trop bas peut faire douter de la qualité.
+== questions
+Pourquoi dit-on que le prix est un élément particulier du marketing-mix ? || Il est le seul à générer directement des recettes || Il est le plus bas || Il est le plus ancien || Il est fixé par l'État || Les autres éléments génèrent des coûts.
+Que signifie la valeur perçue ? || Ce que le client croit recevoir par rapport à ce qu'il paie || Le coût de production || Le prix du concurrent || La marge || Elle explique pourquoi une marque peut vendre plus cher.
+Citez un facteur de fixation du prix : || Le coût || La couleur || Le logo || Le nom || La concurrence et la demande en sont d'autres.
+Qu'est-ce qu'un prix d'appel ? || Un prix très bas sur un produit pour attirer le client || Un prix élevé || Un prix gratuit || Un prix fixé par l'État || Il vise à faire entrer en magasin.
+Qu'est-ce qu'un prix premium ? || Un prix élevé associé à une image de qualité || Un prix bas || Un prix variable || Un prix imposé || Il sert un positionnement haut de gamme.
+Comment appelle-t-on un prix comme 9,90 qui paraît plus bas que 10 ? || Un prix psychologique || Un prix gratuit || Un prix de gros || Un prix caché || Il joue sur la perception.
+Qu'est-ce qu'un escompte de paiement ? || Une réduction pour paiement rapide || Une hausse de prix || Un impôt || Un crédit || Elle encourage le règlement à temps.
+Qu'est-ce qu'une remise de quantité ? || Une baisse de prix pour un achat en grande quantité || Une hausse de prix || Un impôt || Un coût caché || Elle encourage les commandes plus grosses.
+Quel effet une promotion permanente a-t-elle ? || Elle habitue le client à ne plus acheter plein tarif || Elle augmente la valeur de la marque || Elle supprime la concurrence || Elle augmente la marge || Elle brouille la valeur du produit.
+Pourquoi un prix trop bas peut-il être risqué ? || Il peut faire douter de la qualité || Il augmente toujours la marge || Il supprime les coûts || Il attire peu de clients || Les clients associent souvent prix et qualité.
+Pourquoi intégrer les frais de livraison dans le prix perçu en ligne ? || Le client compare le coût total || Ils sont gratuits || Ils sont sans importance || Ils sont fixés par l'État || Un prix bas avec livraison chère décourage.
+Comment tester l'effet d'un prix ? || Essayer deux prix auprès de groupes comparables || Changer de produit || Demander à un seul client || Ne rien faire || Le résultat éclaire la décision.
+Quelle erreur éviter pour fixer un prix ? || Ignorer la concurrence et la valeur perçue || Calculer ses coûts || Connaître son marché || Tester || Seul le coût ne suffit pas.
+Qu'est-ce que le prix par paliers ? || Un prix qui baisse selon la quantité achetée || Un prix qui monte || Un prix fixe || Un prix gratuit || Il encourage le volume.
+Qu'est-ce qu'un pack de produits au prix groupé ? || Un lot vendu moins cher que l'achat séparé || Un produit unique || Un produit périmé || Un produit gratuit || Le client perçoit une économie.

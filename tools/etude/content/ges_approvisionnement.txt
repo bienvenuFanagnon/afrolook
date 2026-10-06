@@ -1,0 +1,29 @@
+titre: Approvisionnement et logistique
+== fiche
+p: La logistique organise la circulation des produits et de l'information, des fournisseurs jusqu'aux clients.
+li: Chaîne d'approvisionnement : fournisseurs, production, entrepôt, transport, distribution, client final.
+li: Achats : choisir un fournisseur selon le prix, la qualité, le délai, la fiabilité et les conditions de paiement ; demander plusieurs devis ; passer une commande.
+li: Documents : bon de commande, bon de livraison, facture ; le rapprochement de ces documents évite les erreurs.
+li: Gestion des stocks : stock minimum, stock de sécurité, point de commande (niveau de stock qui déclenche une commande), stock maximum.
+li: Modèle de Wilson (quantité économique de commande) : équilibre le coût de passation des commandes et le coût de possession du stock.
+li: Rotation du stock = coût d'achat des marchandises vendues / stock moyen ; plus elle est élevée, moins l'argent reste immobilisé.
+li: Transport et incoterms : choix du mode (route, rail, mer, air) selon coût, délai et nature du produit.
+li: Entreposage : rangement, étiquetage, méthode FIFO pour les produits périssables, inventaire régulier.
+note: Une rupture de stock fait perdre des ventes ; un excès de stock immobilise de l'argent.
+note: Méthode ABC : classer les articles selon leur importance financière pour mieux les suivre.
+== questions
+Qu'est-ce que la chaîne d'approvisionnement ? || L'ensemble des étapes du fournisseur au client final || Un fournisseur seulement || Un entrepôt seulement || Une chaîne de magasins || Elle couvre achats, production, stockage, transport et distribution.
+Quels critères choisit-on pour un fournisseur ? || Prix, qualité, délai et fiabilité || La couleur de son logo || Son nom || Sa taille seulement || Plusieurs devis aident à comparer.
+Que signifie un bon de commande ? || Un document par lequel l'acheteur commande des produits || Une facture || Un reçu || Un contrat de travail || Il engage l'acheteur.
+Que confirme un bon de livraison ? || La remise des produits à l'acheteur || Le paiement || La commande || Une réclamation || On le compare à la commande.
+Que signifie le stock de sécurité ? || Une réserve pour éviter les ruptures || Le stock maximum || Le stock invendable || Le stock détruit || Il couvre les aléas de livraison.
+Qu'est-ce que le point de commande ? || Le niveau de stock qui déclenche une nouvelle commande || Le prix d'un produit || Le jour de livraison || Le nom du fournisseur || Il tient compte du délai de livraison.
+À quoi sert le modèle de Wilson ? || À trouver la quantité de commande qui minimise les coûts || À calculer la TVA || À fixer le prix || À recruter || Il équilibre coût de commande et coût de stockage.
+Que mesure la rotation des stocks ? || Combien de fois le stock se renouvelle sur la période || Le nombre de fournisseurs || Le prix moyen || Le salaire || Une rotation élevée libère de la trésorerie.
+Quel est le risque d'un stock trop élevé ? || Immobiliser de l'argent et risquer la perte ou la péremption || Manquer de produits || Réduire les coûts || Augmenter les ventes toujours || Il génère des frais de stockage.
+Quel est le risque d'une rupture de stock ? || Perdre des ventes et des clients || Gagner de l'argent || Réduire les coûts || Supprimer les fournisseurs || Le client ne trouve pas le produit.
+Que signifie la méthode FIFO pour des produits périssables ? || Les plus anciens sont sortis en premier || Les plus récents sont sortis en premier || On sort au hasard || On ne sort rien || Elle évite la péremption.
+Quel mode de transport convient à une marchandise légère et urgente ? || Le transport aérien || Le transport maritime || Le transport ferroviaire || Le transport à dos d'âne || Il est rapide mais plus cher.
+À quoi sert un inventaire régulier ? || Comparer le stock réel au stock théorique || Fixer les prix || Payer les salaires || Éviter les commandes || Il détecte écarts, pertes et vols.
+À quoi sert la méthode ABC pour les stocks ? || Classer les articles selon leur importance financière || Classer par ordre alphabétique || Classer par couleur || Classer par poids || Les articles A méritent le suivi le plus attentif.
+Pourquoi rapprocher bon de commande, bon de livraison et facture ? || Pour vérifier que ce qui est payé a été commandé et livré || Pour gagner du temps || Pour supprimer la TVA || Pour décorer le dossier || Cela évite les erreurs et fraudes.

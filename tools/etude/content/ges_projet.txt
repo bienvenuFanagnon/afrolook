@@ -1,0 +1,29 @@
+titre: Gestion de projet
+== fiche
+p: Un projet est un ensemble d'activités temporaires, organisées pour atteindre un objectif précis dans un délai et avec un budget donnés.
+li: Triangle du projet : coût, délai, qualité (périmètre) ; modifier l'un influence les deux autres.
+li: Phases : initiation (idée, faisabilité), planification, exécution, suivi et contrôle, clôture.
+li: Découpage : structure de découpage du projet (WBS) en tâches ; chaque tâche a un responsable, une durée, des ressources.
+li: Planification : diagramme de Gantt (tâches sur un calendrier) ; chemin critique : suite de tâches qui détermine la durée minimale du projet.
+li: Parties prenantes : commanditaire, équipe, bénéficiaires ; communication régulière avec elles.
+li: Risques : identifier, évaluer (probabilité et impact), prévoir des réponses ; tenir un registre des risques.
+li: Budget et suivi : comparer le prévu au réalisé ; indicateurs d'avancement, réunions de suivi.
+li: Clôture : livraison, bilan, leçons apprises.
+note: Exemple : organiser un événement : lieu, invités, budget, communication, logistique, bilan.
+note: Un bon chef de projet clarifie les objectifs, répartit les rôles, anticipe les risques et communique.
+== questions
+Qu'est-ce qu'un projet ? || Un ensemble d'activités temporaires pour atteindre un objectif précis || Une activité permanente || Une routine quotidienne || Un contrat de travail || Il a un début et une fin.
+Quelles sont les trois contraintes du triangle d'un projet ? || Coût, délai, qualité || Prix, marge, profit || Temps, argent, chance || Production, vente, stock || Elles sont liées entre elles.
+Quelle est la première phase d'un projet ? || L'initiation (idée et faisabilité) || La clôture || L'exécution || Le suivi || On vérifie d'abord que le projet est réalisable.
+À quoi sert le découpage d'un projet en tâches ? || Répartir le travail, estimer les durées et les ressources || Allonger le projet || Cacher le coût || Supprimer les risques || Chaque tâche a un responsable.
+À quoi sert un diagramme de Gantt ? || Planifier les tâches dans le temps || Calculer la TVA || Mesurer la qualité || Fixer les salaires || Il présente un calendrier visuel.
+Que représente le chemin critique ? || La suite de tâches qui détermine la durée minimale du projet || La tâche la plus facile || Le chemin du bureau || Le budget total || Tout retard sur ce chemin retarde le projet.
+Qui sont les parties prenantes d'un projet ? || Ceux qui sont concernés ou influencés par le projet || Seulement le chef de projet || Seulement les clients || Seulement l'équipe || Commanditaire, équipe, bénéficiaires.
+Que fait-on lors de la gestion des risques ? || Identifier, évaluer et prévoir des réponses || Les ignorer || Les subir || Les cacher || On évalue probabilité et impact.
+Que contient un registre des risques ? || La liste des risques, leur probabilité, leur impact et les réponses prévues || Les salaires || Les factures || Les contrats || Il se met à jour régulièrement.
+Que signifie le suivi du budget ? || Comparer les dépenses prévues et réalisées || Fixer le budget une fois pour toutes || Supprimer les dépenses || Ignorer les écarts || Il permet de corriger à temps.
+Que fait-on à la clôture d'un projet ? || Livrer, faire un bilan et tirer des leçons || Recommencer sans bilan || Oublier le projet || Licencier tous les participants || Les leçons servent aux projets futurs.
+Que se passe-t-il si l'on augmente le périmètre d'un projet sans changer le délai ni le budget ? || La qualité ou les délais sont menacés || Rien || Le coût baisse || Le délai baisse || Les trois contraintes sont liées.
+Quelle qualité est essentielle chez un chef de projet ? || La communication || Le silence || L'isolement || La rigidité || Il coordonne l'équipe et informe les parties prenantes.
+Pourquoi organiser des réunions de suivi ? || Pour mesurer l'avancement et corriger tôt || Pour retarder le projet || Pour remplir un planning || Pour supprimer des tâches || Elles évitent les mauvaises surprises.
+Quelle est la différence entre un projet et une activité courante ? || Le projet est temporaire et unique || Ils sont identiques || Le projet est permanent || L'activité courante est unique || Le projet a un début et une fin.

@@ -1,0 +1,29 @@
+titre: La communication marketing
+== fiche
+p: La communication fait connaître le produit, donne envie de l'acheter et construit la relation avec le public.
+li: Objectifs : faire connaître (notoriété), informer, convaincre, fidéliser, améliorer l'image.
+li: Modèle AIDA : Attention, Intérêt, Désir, Action.
+li: Moyens média : télévision, radio, presse, affichage, cinéma, internet ; hors-média : promotion des ventes, relations publiques, parrainage, salons, marketing direct, force de vente.
+li: Publicité : message payé diffusé par un média ; elle peut informer, persuader ou rappeler.
+li: Promotion des ventes : réductions, échantillons gratuits, concours, offres spéciales ; effet à court terme.
+li: Relations publiques : relations avec la presse, événements, communiqués ; elles améliorent l'image.
+li: Message : clair, simple, crédible, adapté à la cible ; le slogan résume la promesse.
+li: Cible et plan média : choisir les médias que la cible utilise (radio locale, réseaux sociaux, affichage) et le budget.
+note: Un bon message se teste auprès d'un petit groupe avant diffusion.
+note: La radio reste très écoutée en milieu rural en Afrique.
+== questions
+Citez un objectif de la communication marketing : || Faire connaître le produit || Réduire les coûts || Recruter || Payer les impôts || Informer, convaincre et fidéliser en sont d'autres.
+Que signifie le modèle AIDA ? || Attention, Intérêt, Désir, Action || Achat, Intérêt, Demande, Argent || Annonce, Image, Distribution, Analyse || Alerte, Information, Données, Action || Il décrit les étapes d'un message efficace.
+Citez un média traditionnel : || La radio || Le tableur || Le bilan || Le prix || La télévision et la presse en sont d'autres.
+Qu'est-ce que la publicité ? || Un message payé diffusé par un média || Un cadeau || Une règle de droit || Un impôt || Elle peut informer ou persuader.
+Qu'est-ce que la promotion des ventes ? || Des actions à court terme comme réductions, échantillons ou concours || Une campagne d'image à long terme || Une vente en gros || Un changement de nom || Elle stimule l'achat immédiat.
+Qu'est-ce que les relations publiques ? || Les actions pour entretenir une bonne image avec la presse et le public || La vente directe || La fabrication || Le prix || Communiqués et événements en font partie.
+Qu'est-ce que le parrainage (sponsoring) ? || Soutenir un événement ou une équipe en échange de visibilité || Un impôt || Un salaire || Un don secret || Il associe la marque à une activité.
+Qu'est-ce qu'un slogan ? || Une phrase courte qui résume la promesse de la marque || Un logo || Un prix || Un contrat || Il doit être simple et facile à retenir.
+Quelles qualités doit avoir un bon message ? || Clair, simple, crédible et adapté à la cible || Long et compliqué || Contradictoire || Secret || Il doit se comprendre vite.
+Pourquoi choisir ses médias selon la cible ? || Pour toucher les personnes visées au meilleur coût || Pour utiliser tous les médias || Pour dépenser le budget || Pour éviter le public || La cible utilise des médias précis.
+Quel média atteint bien le milieu rural dans beaucoup de pays africains ? || La radio || Le cinéma 3D || La presse papier seulement || Les magazines de luxe || La radio est largement écoutée.
+Qu'est-ce que le marketing direct ? || Une communication personnalisée vers des clients ciblés || Une publicité de masse || Une vente en gros || Un impôt || SMS, courriels et appels en font partie.
+Pourquoi tester un message avant sa diffusion ? || Pour vérifier qu'il est compris et efficace || Pour retarder la campagne || Pour augmenter le budget || Pour supprimer le message || Un petit groupe donne son avis.
+Quel est l'inconvénient d'une promotion permanente ? || Elle abîme la valeur de la marque || Elle augmente le prix || Elle supprime les ventes || Elle fait baisser les coûts || Les clients attendent la promotion.
+Qu'est-ce que le plan média ? || Le choix des médias et du budget pour atteindre la cible || Le plan d'un bâtiment || Le plan comptable || Le plan de financement || Il fixe où et quand diffuser.

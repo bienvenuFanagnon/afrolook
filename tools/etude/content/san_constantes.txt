@@ -1,0 +1,29 @@
+titre: Constantes vitales et surveillance du patient
+== fiche
+p: Les constantes vitales sont des mesures simples qui renseignent sur l'état général d'un patient ; on les note dans le dossier.
+li: Température : normale entre 36,5 et 37,5 °C ; fièvre à partir de 38 °C ; hypothermie en dessous de 35 °C.
+li: Pouls (fréquence cardiaque) : 60 à 100 battements par minute chez l'adulte au repos ; plus élevé chez l'enfant.
+li: Pression artérielle : 120/80 mmHg environ chez l'adulte ; mesurée au brassard.
+li: Fréquence respiratoire : 12 à 20 cycles par minute chez l'adulte ; elle augmente en cas de fièvre ou de détresse.
+li: Saturation en oxygène (SpO₂) : mesurée avec un oxymètre de pouls ; normale à 95 % et plus.
+li: Autres mesures : poids, taille, indice de masse corporelle (poids en kg divisé par taille² en m²), diurèse (urines), glycémie (à jeun : environ 0,7 à 1,1 g/L), douleur (échelle de 0 à 10).
+li: Surveillance : on mesure à intervalles réguliers, on note l'heure, on alerte le médecin en cas de valeur anormale.
+li: Surveiller aussi l'état de conscience, la coloration de la peau et l'hydratation.
+note: Pour prendre le pouls, on compte les battements pendant 30 à 60 secondes.
+note: Une fièvre chez un nourrisson de moins de trois mois est une urgence.
+== questions
+Quelle est la température normale du corps ? || Entre 36,5 et 37,5 °C || Entre 30 et 33 °C || Entre 39 et 41 °C || Entre 20 et 25 °C || Elle varie légèrement dans la journée.
+À partir de quelle température parle-t-on de fièvre ? || 38 °C || 36 °C || 37 °C || 40 °C seulement || Au-dessus de 38 °C.
+Quel est le pouls normal d'un adulte au repos ? || 60 à 100 par minute || 20 à 30 par minute || 120 à 160 par minute || 200 par minute || Il augmente à l'effort.
+Quelle valeur de tension mesurée au brassard est jugée normale chez l'adulte ? || 120/80 mmHg || 200/100 mmHg || 60/20 mmHg || 90/200 mmHg || On la mesure avec un brassard.
+Combien de respirations par minute compte-t-on chez un adulte calme ? || 12 à 20 par minute || 40 à 50 par minute || 5 par minute || 60 par minute || On compte les mouvements du thorax.
+Que mesure l'oxymètre de pouls ? || La saturation en oxygène du sang || La tension || La température || La glycémie || Une valeur normale est d'au moins 95 %.
+Quelle saturation en oxygène est normale ? || 95 % ou plus || 70 % || 50 % || 20 % || Elle baisse en cas de détresse respiratoire.
+Quel calcul donne l'indice de masse corporelle ? || Poids divisé par la taille au carré || Taille divisée par poids || Poids multiplié par taille || Poids moins taille || Poids en kg et taille en mètres.
+Quelle est la glycémie normale à jeun, environ ? || 0,7 à 1,1 g/L || 3 à 4 g/L || 0,1 g/L || 10 g/L || Au-delà de 1,26 g/L à deux reprises, on évoque un diabète.
+À quoi sert l'échelle de la douleur de 0 à 10 ? || À évaluer l'intensité de la douleur ressentie || À mesurer la fièvre || À mesurer le pouls || À peser le patient || Le patient donne une note.
+Pourquoi note-t-on l'heure des mesures ? || Pour suivre l'évolution dans le temps || Pour décorer le dossier || Pour fixer la date de sortie || Pour calculer le prix || Une tendance est plus utile qu'une valeur isolée.
+Que faire face à une constante très anormale ? || Alerter le médecin ou le responsable || L'ignorer || Attendre le lendemain || Refaire le dossier || La sécurité du patient prime.
+Qu'est-ce que l'hypothermie ? || Une température du corps trop basse || Une fièvre || Un pouls lent || Une tension élevée || Elle est inférieure à 35 °C.
+Pourquoi la fièvre d'un nourrisson de moins de trois mois est-elle urgente ? || Elle peut signaler une infection grave || Elle est toujours bénigne || Elle disparaît seule || Elle est normale || Il faut consulter sans attendre.
+Comment compte-t-on le pouls ? || En comptant les battements sur 30 à 60 secondes || En mesurant le front || En comptant la respiration || En regardant la peau || On place les doigts sur l'artère du poignet.

@@ -1,0 +1,29 @@
+titre: Outils numériques de gestion
+== fiche
+p: Les outils numériques aident à gérer plus vite, avec moins d'erreurs et plus d'informations pour décider.
+li: Tableur (Excel, Google Sheets) : calculs, tableaux de suivi, graphiques ; formules SOMME, MOYENNE, SI, RECHERCHEV ; tableaux croisés dynamiques pour résumer.
+li: Traitement de texte et présentation : lettres, rapports, offres, diaporamas.
+li: Logiciels de gestion : comptabilité, facturation, gestion des stocks, paie ; ERP : un logiciel intégré qui relie les fonctions (achats, stocks, ventes, finance).
+li: Outils de collaboration : messagerie, visioconférence, stockage partagé, gestion de tâches ; sauvegarde régulière des données.
+li: Paiement mobile et facturation électronique : suivi plus rapide des encaissements, traces des transactions.
+li: Sécurité : mots de passe solides, double authentification, sauvegardes, antivirus, mises à jour ; attention à l'hameçonnage.
+li: Protection des données : ne collecter que les données nécessaires et les protéger ; respecter les lois sur les données personnelles.
+li: Intelligence artificielle : aide à rédiger, résumer, analyser ; toujours vérifier les résultats et ne pas donner de données confidentielles.
+note: Un bon fichier tableur sépare les données, les calculs et les résultats ; il est nommé et daté.
+note: Sans sauvegarde, une panne ou un vol peut détruire des années de données.
+== questions
+À quoi sert un tableur ? || À faire des calculs, des tableaux et des graphiques || À écrire un roman || À retoucher des photos seulement || À envoyer des courriels || Excel et Google Sheets en sont des exemples.
+Quelle fonction de tableur additionne des cellules ? || SOMME || MOYENNE || SI || RECHERCHEV || =SOMME(A1:A10).
+Quelle fonction calcule la moyenne ? || MOYENNE || SOMME || MAX || NB || Elle donne la valeur moyenne des cellules.
+À quoi sert la fonction SI ? || À faire un calcul conditionnel || À additionner || À trier || À imprimer || Si la condition est vraie elle donne une valeur, sinon une autre.
+À quoi sert un tableau croisé dynamique ? || À résumer et analyser de grandes quantités de données || À écrire une lettre || À envoyer un courriel || À scanner un document || Il regroupe les données par catégorie.
+Qu'est-ce qu'un ERP ? || Un logiciel de gestion intégrée de l'entreprise || Un virus || Un réseau social || Un jeu || Il relie achats, stocks, ventes et finance.
+Quel avantage a un logiciel de facturation ? || Il réduit les erreurs et accélère le suivi || Il remplace le comptable || Il supprime la TVA || Il augmente les ventes seul || Il garde un historique des factures.
+Pourquoi faire des sauvegardes régulières ? || Pour ne pas perdre les données en cas de panne ou de vol || Pour libérer l'écran || Pour accélérer l'ordinateur || Pour supprimer les virus || Les données de l'entreprise sont précieuses.
+Qu'est-ce que la double authentification ? || Une vérification en deux étapes à la connexion || Un double mot de passe écrit || Deux écrans || Deux ordinateurs || Elle protège les comptes.
+Comment nomme-t-on les faux messages qui volent mots de passe et données ? || L'hameçonnage || Un jeu de pêche || Un antivirus || Une sauvegarde || Il passe souvent par faux messages ou faux sites.
+Quel principe protège les données personnelles des clients ? || Ne collecter que les données nécessaires et les sécuriser || Tout garder sans limite || Les publier || Les vendre || Il faut respecter la loi.
+Quel avantage a le paiement mobile pour un commerçant ? || Une trace des transactions et un encaissement rapide || Il supprime les clients || Il supprime les frais toujours || Il évite de vendre || Il facilite la comptabilité.
+Que faut-il faire des résultats donnés par une IA ? || Les vérifier avant de les utiliser || Les copier sans lire || Les cacher || Les publier tout de suite || L'IA peut se tromper.
+Que ne faut-il pas donner à un outil d'IA public ? || Des données confidentielles de l'entreprise || Une question générale || Un exemple fictif || Un texte public || Il peut les conserver ou les exposer.
+Quelle bonne pratique s'applique à un fichier tableur ? || Nommer et dater le fichier et séparer données, calculs et résultats || Écrire tout au hasard || Ne jamais l'enregistrer || Mélanger les données || Cela évite les erreurs.

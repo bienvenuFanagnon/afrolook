@@ -1,0 +1,28 @@
+titre: Organisation du corps humain
+== fiche
+p: Le corps humain est organisé en niveaux emboîtés : cellules, tissus, organes, appareils et systèmes.
+li: La cellule est l'unité de base du vivant : membrane, cytoplasme et noyau qui contient l'ADN.
+li: Quatre grands tissus : épithélial (revêtement), conjonctif (soutien : os, sang, graisse), musculaire (mouvement), nerveux (transmission de l'influx).
+li: Un organe est formé de plusieurs tissus (cœur, foie, rein) ; un système regroupe des organes qui collaborent (système digestif, respiratoire, nerveux, circulatoire).
+li: La peau est le plus grand organe : protection, sensibilité, régulation de la température.
+li: Homéostasie : maintien de l'équilibre interne (température, eau, glycémie) malgré les changements extérieurs.
+li: Le corps adulte contient environ 60 % d'eau.
+li: Vocabulaire médical : antérieur (devant), postérieur (derrière), proximal (près du tronc), distal (loin du tronc), médian, latéral.
+note: Exemple : le pancréas est un organe du système digestif et du système endocrinien.
+note: Les cellules se renouvellent : certaines vivent quelques jours (peau), d'autres presque toute la vie (neurones).
+== questions
+Quelle est l'unité de base du vivant ? || La cellule || L'organe || Le tissu || Le système || Elle compose tous les êtres vivants.
+Où se trouve l'ADN d'une cellule ? || Dans le noyau || Dans la membrane || Dans le cytoplasme seulement || Hors de la cellule || Il porte les informations génétiques.
+Combien de grands types de tissus compte-t-on ? || 4 || 2 || 8 || 12 || Épithélial, conjonctif, musculaire, nerveux.
+Quel tissu permet le mouvement ? || Le tissu musculaire || Le tissu nerveux || Le tissu épithélial || Le tissu osseux seulement || Il se contracte.
+Qu'est-ce qu'un organe ? || Une structure formée de plusieurs tissus qui remplit une fonction || Une cellule || Un seul tissu || Un système || Le cœur et le foie en sont.
+Qu'est-ce qu'un système (ou appareil) ? || Un ensemble d'organes qui collaborent || Un seul organe || Une cellule || Un tissu || Par exemple le système digestif.
+Quel est le plus grand organe du corps ? || La peau || Le foie || Le cœur || Le cerveau || Elle protège et régule la température.
+Quel pourcentage d'eau contient environ le corps adulte ? || 60 % || 10 % || 30 % || 90 % || L'eau est le principal constituant du corps.
+Que signifie l'homéostasie ? || Le maintien de l'équilibre interne de l'organisme || La croissance || La digestion || La reproduction || Température, eau et glycémie sont régulées.
+Que signifie « distal » ? || Loin du tronc || Près du tronc || Devant || Derrière || Le doigt est distal par rapport à l'épaule.
+Que signifie « antérieur » ? || Situé devant || Situé derrière || Situé sur le côté || Situé en haut seulement || L'inverse est postérieur.
+Quelle fonction n'est pas assurée par la peau ? || La digestion des aliments || La protection || La sensibilité || La régulation de la température || La digestion se fait dans le tube digestif.
+Quel organe appartient à la fois au système digestif et au système endocrinien ? || Le pancréas || Le cœur || Le poumon || Le rein || Il sécrète des enzymes et l'insuline.
+Quelle partie de la cellule la protège et contrôle les échanges ? || La membrane || Le noyau || Le chromosome || Le ribosome seulement || Elle délimite la cellule.
+Pourquoi les cellules se renouvellent-elles ? || Pour remplacer les cellules usées ou mortes || Pour grossir seulement || Pour disparaître || Pour changer de couleur || C'est un processus continu.

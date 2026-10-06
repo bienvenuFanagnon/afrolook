@@ -1,0 +1,29 @@
+titre: Système nerveux et organes des sens
+== fiche
+p: Le système nerveux reçoit les informations, les analyse et commande les réponses du corps.
+li: Système nerveux central (SNC) : cerveau et moelle épinière. Système nerveux périphérique : nerfs reliant le SNC au reste du corps.
+li: Neurone : cellule nerveuse qui transmet l'influx nerveux ; la synapse est la zone de contact entre deux neurones.
+li: Cerveau : hémisphères droit et gauche (pensée, mouvement, sensibilité, langage) ; cervelet (équilibre, coordination) ; tronc cérébral (respiration, rythme cardiaque).
+li: Réflexe : réponse automatique et rapide, qui passe par la moelle épinière (retirer la main d'une flamme).
+li: Les cinq sens : vue (œil, rétine), ouïe (oreille, tympan), odorat, goût, toucher (peau).
+li: Maladies : AVC (accident vasculaire cérébral), épilepsie, méningite, paludisme cérébral, maladie de Parkinson.
+li: AVC : signes à reconnaître (méthode FAST) : visage qui tombe, bras sans force, difficulté à parler, temps : appeler les secours immédiatement.
+li: Méninges : trois membranes protègent le cerveau ; le crâne et la colonne vertébrale le protègent aussi.
+note: Le cerveau consomme environ 20 % de l'énergie du corps.
+note: Une bonne hygiène de vie (sommeil, activité, absence de tabac et d'alcool excessif) protège le cerveau.
+== questions
+De quoi le système nerveux central est-il formé ? || Du cerveau et de la moelle épinière || Du cœur et des poumons || Des nerfs seulement || De la peau || Les nerfs forment le système périphérique.
+Qu'est-ce qu'un neurone ? || Une cellule nerveuse qui transmet l'influx || Un muscle || Un os || Un vaisseau || Il porte l'information.
+Comment appelle-t-on la jonction où l'influx passe d'un neurone à l'autre ? || La synapse || Un type de neurone || Un muscle || Une hormone || L'information y passe par des neurotransmetteurs.
+Quel rôle principal a le cervelet ? || L'équilibre et la coordination des mouvements || La vue || L'odorat || La digestion || Il corrige les gestes.
+Quelles fonctions vitales le tronc cérébral contrôle-t-il ? || La respiration et le rythme cardiaque || La vue || La mémoire || Le goût || Sa lésion est très grave.
+Qu'est-ce qu'un réflexe ? || Une réponse automatique et rapide || Une décision réfléchie || Un souvenir || Un rêve || Il passe par la moelle épinière.
+Quel exemple illustre un réflexe ? || Retirer la main d'une surface brûlante || Écrire une lettre || Résoudre un problème || Chanter || La réponse précède la conscience de la douleur.
+Quelle partie de l'œil capte la lumière ? || La rétine || Le tympan || La cornée seulement || Le cristallin seulement || Elle envoie l'information au cerveau par le nerf optique.
+Quelle partie de l'oreille vibre sous l'effet des sons ? || Le tympan || La rétine || La cornée || La langue || Les osselets transmettent la vibration.
+Que signifie AVC ? || Accident vasculaire cérébral || Atteinte veineuse du cœur || Anomalie visuelle du cerveau || Accès de vertige chronique || Il résulte d'un caillot ou d'une hémorragie dans le cerveau.
+Que signifie la lettre F de la méthode FAST ? || Face (le visage qui tombe) || Fièvre || Froid || Force musculaire || Elle invite à observer le visage.
+Que faire en cas de signes d'AVC ? || Appeler immédiatement les secours || Attendre le lendemain || Donner à boire || Faire marcher la personne || Chaque minute compte.
+Quel organe est protégé par les méninges ? || Le cerveau || Le cœur || Le foie || Le rein || Trois membranes l'entourent.
+Quelle part de l'énergie du corps le cerveau consomme-t-il, environ ? || 20 % || 2 % || 50 % || 90 % || C'est un organe très gourmand.
+Quelle habitude protège le cerveau ? || Dormir suffisamment et bouger || Fumer || Boire beaucoup d'alcool || Manquer de sommeil || Une bonne hygiène de vie aide.

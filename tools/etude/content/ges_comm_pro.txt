@@ -1,0 +1,29 @@
+titre: Communication professionnelle et négociation
+== fiche
+p: Bien communiquer au travail, c'est transmettre un message clair, adapté au destinataire, et s'assurer qu'il est compris.
+li: Schéma de la communication : émetteur, message, canal, récepteur, retour (feedback), bruit (ce qui perturbe).
+li: Écrits professionnels : courriel, lettre, note, compte rendu, rapport ; structure : objet, introduction, développement, conclusion, formule de politesse.
+li: Courriel : objet précis, message court, ton poli, relire avant d'envoyer, mettre en copie seulement les personnes concernées.
+li: Communication orale : voix claire, écoute active, reformulation, questions ouvertes et fermées.
+li: Communication non verbale : regard, posture, gestes, ton, tenue.
+li: Réunion : ordre du jour, horaires, animateur, secrétaire, compte rendu avec décisions et responsables.
+li: Négociation : préparer ses objectifs, connaître sa marge de manœuvre, écouter, faire des concessions, chercher un accord gagnant-gagnant.
+li: Gestion de conflit : rester calme, écouter, reformuler, chercher une solution acceptable pour tous.
+note: Dans de nombreux contextes africains, le respect, les salutations et le contact personnel jouent un grand rôle dans la relation de travail.
+note: Écouter est aussi important que parler.
+== questions
+Quels sont les éléments d'un schéma de communication ? || Émetteur, message, canal, récepteur, feedback || Prix, produit, place, promotion || Entrée, sortie, stock || Capital, travail, machine || Le bruit peut le perturber.
+Qu'est-ce que le feedback en communication ? || La réaction ou le retour du récepteur || Le message initial || Le bruit || Le canal || Il permet de vérifier la compréhension.
+Qu'est-ce que le « bruit » en communication ? || Tout ce qui perturbe la transmission du message || Le volume de la voix seulement || Un message écrit || Un retour positif || Bruit sonore, mauvais réseau, distraction.
+Que doit contenir un courriel professionnel ? || Un objet précis, un message court et poli || Un message très long || Un message sans objet || Un ton familier || Il se relit avant l'envoi.
+Pourquoi relire un courriel avant de l'envoyer ? || Pour corriger erreurs et maladresses || Pour perdre du temps || Pour le rendre plus long || Pour supprimer l'objet || Un message envoyé ne se retire pas.
+À qui met-on en copie un courriel ? || Aux personnes concernées par le sujet || À tout le monde || À personne || Aux clients de l'entreprise || La copie inutile encombre les boîtes.
+Qu'est-ce que l'écoute active ? || Écouter avec attention et reformuler pour vérifier || Interrompre || Parler sans arrêt || Attendre son tour pour répondre || Elle montre le respect.
+Qu'est-ce que la reformulation ? || Redire avec ses mots ce que l'autre a dit || Répéter mot à mot || Ignorer || Contredire || Elle vérifie la compréhension.
+Citez un élément de la communication non verbale : || Le regard || Le texte du courriel || La facture || Le contrat || Posture, gestes et ton en font partie.
+Que contient l'ordre du jour d'une réunion ? || Les sujets à traiter || Les décisions prises || La liste des absents || Le budget || Il est envoyé avant la réunion.
+Que contient un compte rendu de réunion ? || Les décisions prises et les responsables des actions || Les blagues || La musique || Les repas || Il permet le suivi.
+Que signifie une négociation gagnant-gagnant ? || Chaque partie obtient une partie de ce qu'elle veut || Une partie gagne tout || Aucune partie ne gagne || On évite de négocier || L'accord est durable.
+Que faut-il préparer avant une négociation ? || Ses objectifs et sa marge de manœuvre || Seulement le prix || Une réponse unique || Un cadeau || On définit aussi ce qu'on peut concéder.
+Quelle attitude adopter face à un conflit ? || Rester calme, écouter et chercher une solution || Crier || Fuir || Accuser || On cherche un accord acceptable.
+Quelle est la différence entre question ouverte et question fermée ? || La question ouverte appelle une réponse développée, la fermée oui ou non || Aucune || La question fermée est plus longue || La question ouverte est interdite || Les questions ouvertes encouragent le dialogue.

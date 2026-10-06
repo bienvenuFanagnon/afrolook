@@ -1,0 +1,28 @@
+titre: Cœur, circulation et sang
+== fiche
+p: Le système circulatoire transporte le sang dans tout le corps pour apporter l'oxygène et les nutriments et évacuer les déchets.
+li: Le cœur a quatre cavités : deux oreillettes (réception) et deux ventricules (éjection). Le côté droit envoie le sang vers les poumons, le côté gauche vers le corps.
+li: Petite circulation : cœur droit, poumons, cœur gauche (le sang s'y charge en oxygène). Grande circulation : cœur gauche, organes, cœur droit.
+li: Artères : portent le sang loin du cœur (paroi épaisse) ; veines : le ramènent au cœur (valvules) ; capillaires : très fins vaisseaux où se font les échanges.
+li: Pression artérielle : valeur normale d'un adulte environ 120/80 mmHg (systolique/diastolique) ; hypertension quand elle dépasse durablement 140/90.
+li: Sang : plasma (eau, protéines), globules rouges (hémoglobine, transport de l'oxygène), globules blancs (défense), plaquettes (coagulation).
+li: Groupes sanguins : A, B, AB, O ; facteur Rhésus positif ou négatif ; le groupe O négatif est donneur universel.
+li: Anémie : manque d'hémoglobine ou de globules rouges (souvent par manque de fer).
+note: Le pouls correspond aux battements du cœur sentis sur une artère (poignet).
+note: Le tabac, la sédentarité, le sel et le diabète augmentent le risque cardiovasculaire.
+== questions
+Combien de cavités le cœur humain compte-t-il ? || 4 || 2 || 3 || 6 || Deux oreillettes et deux ventricules.
+Quel côté du cœur envoie le sang vers les poumons ? || Le côté droit || Le côté gauche || Les deux || Aucun || Le ventricule droit alimente la petite circulation.
+Quel côté du cœur envoie le sang oxygéné vers le corps ? || Le côté gauche || Le côté droit || Les deux || Aucun || Le ventricule gauche éjecte le sang dans l'aorte.
+Que transportent les artères ? || Le sang qui part du cœur || Le sang qui revient au cœur || L'air || La lymphe seulement || Leur paroi est épaisse.
+Que transportent les veines ? || Le sang qui retourne au cœur || Le sang qui part du cœur || L'air || Les aliments || Elles ont des valvules.
+Où se font les échanges entre le sang et les cellules ? || Dans les capillaires || Dans les artères || Dans les veines || Dans le cœur || Leur paroi est très fine.
+Quelle est la pression artérielle normale d'un adulte, environ ? || 120/80 mmHg || 200/120 mmHg || 60/30 mmHg || 80/20 mmHg || La première valeur est la systolique.
+Quelle est la valeur à partir de laquelle on parle d'hypertension durable ? || 140/90 mmHg || 120/80 mmHg || 100/60 mmHg || 90/50 mmHg || Elle impose un suivi médical.
+Quel est le rôle des globules rouges ? || Transporter l'oxygène || Défendre le corps || Coaguler le sang || Digérer || Ils contiennent l'hémoglobine.
+Quel est le rôle des plaquettes ? || Participer à la coagulation || Transporter l'oxygène || Produire des anticorps || Digérer || Elles bouchent les plaies.
+Quel est le rôle des globules blancs ? || Défendre l'organisme contre les infections || Transporter l'oxygène || Produire l'insuline || Fabriquer les os || Ils font partie de l'immunité.
+Quels sont les groupes sanguins du système ABO ? || A, B, AB, O || A, B, C, D || X, Y, Z || 1, 2, 3, 4 || Chaque personne en a un.
+Que signifie une anémie ? || Un manque d'hémoglobine ou de globules rouges || Un excès de sucre || Un excès de sel || Une infection || Elle donne fatigue et pâleur.
+Où prend-on le pouls habituellement ? || Au poignet || Au genou || Au pied || Au front || L'artère radiale est facile à palper.
+Citez un facteur de risque cardiovasculaire : || Le tabac || L'eau || Le sommeil suffisant || La marche || La sédentarité et le sel en excès sont d'autres facteurs.

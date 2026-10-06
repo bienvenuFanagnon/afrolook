@@ -1,0 +1,29 @@
+titre: Marketing digital : site, référencement et publicité en ligne
+== fiche
+p: Le marketing digital utilise internet et le mobile pour atteindre les clients et mesurer précisément les résultats.
+li: Présence en ligne : site web ou boutique en ligne, fiche d'établissement (carte), pages sur les réseaux sociaux ; adresse, horaires, photos, avis.
+li: Référencement naturel (SEO) : améliorer la visibilité dans les résultats d'un moteur de recherche sans payer ; contenu utile, mots-clés, vitesse, site adapté au mobile.
+li: Référencement payant (SEA) : publicités payantes dans les résultats ; coût au clic (CPC) ; ciblage par mots-clés, lieu, âge.
+li: Publicité sur les réseaux sociaux : ciblage précis, budget quotidien, durée ; tester plusieurs visuels.
+li: Ergonomie : site rapide, simple, adapté au téléphone ; bouton d'action clair (acheter, appeler, WhatsApp).
+li: Indicateurs : visiteurs, taux de rebond, durée de visite, taux de conversion, coût d'acquisition d'un client.
+li: Règles : respecter les données personnelles, ne pas tromper, indiquer clairement les publicités.
+li: Mobile d'abord : une grande partie des internautes africains se connectent par téléphone, parfois avec une connexion lente.
+note: Une fiche d'établissement à jour sur une carte en ligne attire des clients locaux gratuitement.
+note: Un site lent est quitté en quelques secondes.
+== questions
+Qu'est-ce que le marketing digital ? || L'utilisation d'internet et du mobile pour atteindre les clients || La vente en boutique seulement || La publicité à la radio seulement || Un système de caisse || Il permet de mesurer précisément les résultats.
+Que signifie SEO ? || Optimisation pour les moteurs de recherche || Service électronique officiel || Système d'enregistrement en ligne || Suivi des ventes || Il vise la visibilité gratuite.
+Que signifie SEA ? || Publicité payante sur les moteurs de recherche || Service d'écoute active || Stockage électronique automatique || Suivi des achats || On paie souvent au clic.
+Que signifie CPC ? || Coût par clic || Chiffre par client || Capital par compte || Contrat par client || Il mesure le coût d'un clic sur une publicité.
+Citez un facteur d'un bon référencement naturel : || Un contenu utile et un site rapide || Un site lent || Un contenu copié || Aucune adresse || Les mots-clés et l'adaptation au mobile comptent.
+Pourquoi un site doit-il être adapté au téléphone ? || Beaucoup d'internautes l'utilisent par mobile || Les téléphones n'accèdent pas à internet || Les ordinateurs sont interdits || C'est plus cher || En Afrique, le mobile domine.
+Qu'est-ce qu'un taux de conversion ? || La part des visiteurs qui accomplissent l'action voulue || Le nombre de visiteurs || Le temps passé || Le prix moyen || Par exemple un achat ou un appel.
+Qu'est-ce que le taux de rebond ? || La part des visiteurs qui quittent le site après une seule page || La part des acheteurs || Le nombre de pages || Le coût d'un clic || Un taux élevé peut signaler un problème.
+Pourquoi un bouton d'action clair est-il utile ? || Il guide le visiteur vers l'achat ou le contact || Il ralentit le site || Il coûte plus cher || Il cache l'offre || WhatsApp, appeler ou acheter.
+Pourquoi mettre à jour sa fiche d'établissement en ligne ? || Elle attire des clients locaux avec des informations justes || Elle supprime le site || Elle coûte cher || Elle est interdite || Adresse, horaires et photos sont essentiels.
+Que doit respecter une publicité en ligne ? || Les règles sur les données personnelles et la loyauté || Aucune règle || Seulement le prix || Seulement la couleur || Il faut indiquer qu'il s'agit d'une publicité.
+Pourquoi tester plusieurs visuels de publicité ? || Pour garder celui qui donne les meilleurs résultats || Pour augmenter les coûts || Pour retarder la campagne || Pour tromper || Le test améliore l'efficacité.
+Que se passe-t-il avec un site très lent ? || Les visiteurs le quittent en quelques secondes || Les visiteurs restent plus longtemps || Il est mieux classé || Il consomme moins || Il perd des clients.
+Qu'est-ce que le coût d'acquisition d'un client ? || Le coût moyen pour convaincre un nouveau client || Le prix d'un produit || Le salaire d'un vendeur || Le loyer || Il aide à juger la rentabilité d'une campagne.
+Citez un indicateur de fréquentation d'un site : || Le nombre de visiteurs || Le capital || Le résultat net || Le salaire || Durée de visite et pages vues aussi.

@@ -1,0 +1,29 @@
+titre: Fixation des prix et marges
+== fiche
+p: Le prix doit couvrir les coûts, laisser une marge et être accepté par les clients face à la concurrence.
+li: Trois approches : par les coûts (coût de revient + marge), par la demande (ce que le client est prêt à payer), par la concurrence (aligner ou se démarquer).
+li: Coefficient multiplicateur = prix de vente HT / prix d'achat HT ; il intègre la marge et les frais.
+li: Marge commerciale = prix de vente HT − prix d'achat HT. Taux de marge = marge / prix d'achat. Taux de marque = marge / prix de vente.
+li: Du HT au TTC : prix TTC = prix HT × (1 + taux de TVA).
+li: Seuil de rentabilité : ventes minimales pour couvrir les coûts (charges fixes / marge sur coût variable unitaire).
+li: Stratégies : écrémage (prix élevé au lancement), pénétration (prix bas pour conquérir), prix psychologiques (9,90), prix par paliers, promotions.
+li: Élasticité-prix : sensibilité de la demande au prix ; un produit de première nécessité est peu élastique.
+li: Remises et rabais : une remise accordée réduit la marge ; calculer l'effet avant de décider.
+note: Exemple : achat 800, vente 1 000 HT : marge 200, taux de marge 25 %, taux de marque 20 %.
+note: Une baisse de prix doit être compensée par plus de volume pour garder le même bénéfice.
+== questions
+Que doit couvrir le prix de vente ? || Les coûts et laisser une marge || Seulement le coût d'achat || Seulement les impôts || Seulement la publicité || Sinon l'entreprise perd de l'argent.
+Quelle est la formule de la marge commerciale ? || Prix de vente HT − prix d'achat HT || Prix de vente × prix d'achat || Prix d'achat − prix de vente || Prix de vente / 2 || C'est le gain brut sur un produit.
+Achat 800 et vente 1 000 HT. Quelle est la marge ? || 200 || 1 800 || 800 || 1 000 || 1 000 − 800.
+Quel est le taux de marge pour un achat de 800 et une vente de 1 000 ? || 25 % || 20 % || 80 % || 200 % || 200 / 800.
+Quel est le taux de marque pour un achat de 800 et une vente de 1 000 ? || 20 % || 25 % || 80 % || 125 % || 200 / 1 000.
+Quel est le coefficient multiplicateur pour un achat de 800 et une vente de 1 000 ? || 1,25 || 0,8 || 2 || 1,8 || 1 000 / 800.
+Comment passe-t-on du prix HT au prix TTC avec une TVA de 18 % ? || On multiplie par 1,18 || On multiplie par 0,18 || On ajoute 18 || On divise par 1,18 || Prix TTC = HT × (1 + taux).
+Qu'est-ce que la stratégie d'écrémage ? || Fixer un prix élevé au lancement || Fixer un prix très bas || Supprimer le prix || Copier la concurrence || Elle vise une clientèle prête à payer plus.
+Qu'est-ce que la stratégie de pénétration ? || Fixer un prix bas pour conquérir rapidement le marché || Fixer un prix élevé || Ne pas fixer de prix || Fixer un prix variable || Elle vise le volume.
+Qu'est-ce qu'un prix psychologique ? || Un prix comme 9,90 qui paraît plus bas || Un prix gratuit || Un prix de gros || Un prix du marché noir || Il joue sur la perception.
+Qu'est-ce que l'élasticité-prix ? || La sensibilité de la demande au prix || La couleur du prix || Le coût de production || La marge || Une demande peu élastique varie peu.
+Quel produit a généralement une demande peu élastique ? || Un produit de première nécessité || Un produit de luxe || Un produit de mode passagère || Un produit sans intérêt || Les clients l'achètent même si le prix monte.
+Quelle approche fixe le prix selon ce que le client est prêt à payer ? || L'approche par la demande || L'approche par les coûts || L'approche par la concurrence || L'approche par la TVA || Elle tient compte de la valeur perçue.
+Pourquoi calculer l'effet d'une remise avant de l'accorder ? || Elle réduit la marge || Elle augmente toujours la marge || Elle supprime les coûts || Elle ne change rien || Il faut vérifier la rentabilité.
+Que faut-il pour garder le même bénéfice après une baisse de prix ? || Vendre plus de volume || Réduire la qualité || Augmenter les coûts || Supprimer des clients || La marge unitaire baisse.

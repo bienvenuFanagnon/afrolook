@@ -231,3 +231,7 @@ MPC, Économie-Finance-Comptabilité, Droit et Sport ont maintenant leurs trois 
 - Sport L3 : adaptations à l'entraînement, musculation, traumatologie et rééducation, sport santé, dopage et éthique, sport et société.
 - L'examen de licence porte sur les trois années : 60 questions, 50 % pour réussir, avec un certificat « Licence » non officiel.
 - Total Étude : 11 parcours, 197 chapitres, 2 955 questions.
+
+## 20. Santé, Gestion et Marketing (Licence 1)
+
+Trois nouveaux parcours de Licence 1 (12 chapitres, 180 questions chacun) : `univ_sante` (anatomie et physiologie, santé publique, soins de base, nutrition et éthique), `univ_gestion` (management, opérations et projets, finance et prix, communication et outils numériques), `univ_marketing` (fondamentaux, communication, marketing digital, vente et mesure). Les Licences 2 et 3 restent à écrire. Total Étude : 14 parcours, 233 chapitres, 3 495 questions. À relire par des professionnels (santé : soignants ; gestion et marketing : enseignants).
