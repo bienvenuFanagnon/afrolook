@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
+import 'package:afrotok/pages/coins/play_coin_store_view.dart';
+import 'package:afrotok/utils/payment_region.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
@@ -858,6 +860,58 @@ class _DepositScreenState extends State<DepositScreen> {
                     elevation: 0,
                   ),
                   child: Text(context.tr('Acheter des pièces'), style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Android hors Afrique (ou pays inconnu) : pas de Mobile Money, seulement Google Play.
+    if (PaymentRegion.isAndroid && !PaymentRegion.canUseMobileMoney(Provider.of<UserAuthProvider>(context).loginUserData)) {
+      return Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          title: Text(t.depositTitle, style: TextStyle(fontWeight: FontWeight.bold, color: colors.onPrimary)),
+          centerTitle: true,
+          backgroundColor: colors.primary,
+          elevation: 0,
+          iconTheme: IconThemeData(color: colors.onPrimary),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('▶️', style: TextStyle(fontSize: 48)),
+                const SizedBox(height: 20),
+                Text(
+                  context.tr('Achète des pièces avec Google Play'),
+                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  context.tr('Les pièces s\'achètent directement dans l\'app, avec un paiement sécurisé par Google Play.'),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 14, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                ElevatedButton(
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PlayCoinStoreView()),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    elevation: 0,
+                  ),
+                  child: Text(context.tr('Acheter des pièces'), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

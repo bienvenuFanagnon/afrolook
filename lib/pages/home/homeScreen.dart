@@ -131,6 +131,7 @@ import '../LiveAgora/livePage.dart';
 import '../user/conversation/listUserConv.dart';
 import '../../l10n/tr.dart';
 import '../../widgets/share_app_sheet.dart';
+import '../../services/google_play_iap_service.dart';
 import '../../services/currency_service.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -994,6 +995,8 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     // Achats App Store interrompus (iOS) : Apple les redonne à l'écoute, ils sont vérifiés puis crédités.
     AppleIapService.instance.start();
+    // Achats Google Play (Android) interrompus : Google les redonne à l'écoute, ils sont vérifiés puis crédités.
+    GooglePlayIapService.instance.start();
     // Devise d'affichage : pays du profil (sinon celui du téléphone)
     CurrencyService.instance.setCountry(authProvider.loginUserData.countryData?['countryCode']);
     // Utilisateurs bloqués : leurs contenus sont masqués immédiatement dans le fil.

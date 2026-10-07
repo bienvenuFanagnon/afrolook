@@ -26,6 +26,7 @@ export * from "./payments/coinInteractions";
 export * from "./payments/coinPurchase";
 
 export * from "./payments/appleIap";
+export * from "./payments/googlePlayIap";
 export * from "./moderation/moderation";
 export * from "./users/accountDeletion";
 export * from "./follows/follows";

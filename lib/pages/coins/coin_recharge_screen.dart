@@ -1,5 +1,6 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
+import 'package:afrotok/pages/coins/play_coin_store_view.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/coin_balances_row.dart';
@@ -11,6 +12,7 @@ import '../../providers/coin_gift_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../paiement/newDepot.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/payment_region.dart';
 import '../../utils/platform_guard.dart';
 import '../../l10n/tr.dart';
 
@@ -31,6 +33,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   String? _targetUserAvatar;
   bool _isSearching = false;
   bool _userFound = false;
+  bool _useGooglePlay = false; // Android en pays africain : choix Google Play / Mobile Money
 
   final List<CoinPack> _rechargePacks = CoinPack.rechargePacks;
 
@@ -88,6 +91,12 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
 
     if (kIsAppleStore) return _buildAppleStoreScreen(context, colors);
 
+    // Android : Google Play pour tout le monde ; Mobile Money seulement dans un pays africain (pays inconnu = Google Play seul).
+    final loginUser = Provider.of<UserAuthProvider>(context).loginUserData;
+    final showMethodToggle = PaymentRegion.isAndroid && PaymentRegion.canUseMobileMoney(loginUser);
+    if (PaymentRegion.isAndroid && !showMethodToggle) return const PlayCoinStoreView();
+    if (showMethodToggle && _useGooglePlay) return _buildPlayWithToggle(context, colors);
+
     final coinProvider = Provider.of<CoinGiftUserProvider>(context);
     final user = coinProvider.currentUser;
     final soldeDepot = user?.votre_solde_depot ?? 0.0;
@@ -127,6 +136,10 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (showMethodToggle) ...[
+                _buildMethodToggle(colors),
+                const SizedBox(height: 14),
+              ],
               _buildBalanceHeader(colors, user, soldeDepot, soldePrincipal),
               const SizedBox(height: 14),
               _buildBalanceSelector(colors, soldeDepot, soldePrincipal),
@@ -188,6 +201,54 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   // ── Écran iOS (App Store) — achats In-App Purchase ─────────────────────────
 
   Widget _buildAppleStoreScreen(BuildContext context, AppColors colors) => const AppleCoinStoreView();
+
+  /// Choix du moyen de paiement (Android, pays africain) : Google Play ou Mobile Money.
+  Widget _buildMethodToggle(AppColors colors) {
+    Widget chip(String label, IconData icon, bool selected, VoidCallback onTap) => Expanded(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 11),
+              decoration: BoxDecoration(
+                color: selected ? colors.primary.withOpacity(0.15) : colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: selected ? colors.primary : colors.border, width: selected ? 1.6 : 1),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(icon, size: 18, color: selected ? colors.primary : colors.textSecondary),
+                const SizedBox(width: 6),
+                Text(label, style: TextStyle(color: selected ? colors.primary : colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 13.5)),
+              ]),
+            ),
+          ),
+        );
+    return Row(children: [
+      chip('Google Play', Icons.shop_rounded, _useGooglePlay, () => setState(() => _useGooglePlay = true)),
+      const SizedBox(width: 10),
+      chip('Mobile Money', Icons.phone_android_rounded, !_useGooglePlay, () => setState(() => _useGooglePlay = false)),
+    ]);
+  }
+
+  Widget _buildPlayWithToggle(BuildContext context, AppColors colors) {
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: AppBar(
+        title: Text(context.tr('Acheter des pièces'),
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: colors.surface,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Column(children: [
+        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 0), child: _buildMethodToggle(colors)),
+        const Expanded(child: PlayCoinStoreView(embedded: true)),
+      ]),
+    );
+  }
 
   // ── En-tête soldes ────────────────────────────────────────────────────────
 

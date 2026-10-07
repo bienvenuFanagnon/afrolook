@@ -31,6 +31,10 @@ class CoinPack {
   /// Doit correspondre à APPLE_COIN_PRODUCTS (functions/src/payments/appleIap.ts).
   String get appleProductId => appleId ?? 'com.afrotok.afrotok.coins$coins';
 
+  /// Identifiant du produit consommable Google Play Console (mêmes identifiants et mêmes packs que l'App Store).
+  /// Doit correspondre à PLAY_COIN_PRODUCTS (functions/src/payments/googlePlayIap.ts).
+  String get playProductId => appleProductId;
+
   /// Packs vendus via In-App Purchase sur iOS.
   /// Grille 2026-09-27 : prix Mobile Money + 30 % (part d'Apple, payée par l'utilisateur),
   /// soit au moins 0,40 F net par pièce pour l'app. Nouveaux produits App Store Connect :
@@ -41,6 +45,9 @@ class CoinPack {
         isPopular: true, popularLabel: 'POPULAIRE'),
     CoinPack(coins: 10000, priceFcfa: 6000, icon: '💎', label: 'Pack Gold'),
   ];
+
+  /// Packs vendus via Google Play Billing sur Android (mêmes produits que l'App Store).
+  static List<CoinPack> get playProducts => appleProducts;
 
   static List<CoinPack> get defaultPacks => [
     CoinPack(coins: 5, priceFcfa: 2, icon: '🌟', label: 'Mini'),
