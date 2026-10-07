@@ -820,11 +820,23 @@ class _MesNotificationState extends State<MesNotification> {
     }
   }
 
+  /// Nouvelle publication dans un canal : l'expéditeur affiché est le canal (nom et image), pas la personne qui a posté.
+  /// Les likes et commentaires sur un post de canal gardent, eux, l'avatar de l'acteur.
+  bool _isCanalPost(NotificationData n) => n.canal_id != null && n.canal_id!.isNotEmpty && n.type == 'POST';
+
+  String? _canalImageOf(NotificationData n) {
+    final fromCache = _canalCache[n.canal_id]?.urlImage;
+    if (fromCache != null && fromCache.isNotEmpty) return fromCache;
+    return (n.media_url != null && n.media_url!.isNotEmpty) ? n.media_url : null;
+  }
+
   Widget _buildProfileAvatar(NotificationData notification) {
     final isUnread = !notification.is_open!;
     final isCanalNotification = notification.canal_id != null && notification.canal_id!.isNotEmpty;
-    // Toujours afficher l'avatar de l'acteur (qui a aimé/commenté), pas le canal
+    final isCanalPost = _isCanalPost(notification);
+    // Like / commentaire : avatar de l'acteur. Nouveau post de canal : avatar du canal.
     final user = _userCache[notification.user_id];
+    final String? avatarUrl = isCanalPost ? _canalImageOf(notification) : user?.imageUrl;
 
     Color borderColor;
     if (isUnread) {
@@ -841,7 +853,9 @@ class _MesNotificationState extends State<MesNotification> {
 
     return GestureDetector(
       onTap: () {
-        if (user != null && notification.user_id != null) {
+        if (isCanalPost) {
+          _navigateToCanal(notification.canal_id!);
+        } else if (user != null && notification.user_id != null) {
           _showUserProfile(notification.user_id!);
         }
       },
@@ -854,16 +868,12 @@ class _MesNotificationState extends State<MesNotification> {
               shape: BoxShape.circle,
               border: Border.all(color: borderColor, width: isUnread ? 2 : 1),
             ),
-            child: CircleAvatar(onBackgroundImageError: (user?.imageUrl != null && user!.imageUrl!.isNotEmpty
-                  ? NetworkImage(user.imageUrl!)
-                  : null) != null ? (Object _, StackTrace? __) {} : null, 
+            child: CircleAvatar(onBackgroundImageError: (avatarUrl != null && avatarUrl.isNotEmpty) ? (Object _, StackTrace? __) {} : null,
               radius: 22,
               backgroundColor: _colors.surfaceVariant,
-              backgroundImage: user?.imageUrl != null && user!.imageUrl!.isNotEmpty
-                  ? NetworkImage(user.imageUrl!)
-                  : null,
-              child: user?.imageUrl == null || user!.imageUrl!.isEmpty
-                  ? Icon(Icons.person, color: _colors.textSecondary)
+              backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty) ? NetworkImage(avatarUrl) : null,
+              child: (avatarUrl == null || avatarUrl.isEmpty)
+                  ? Icon(isCanalPost ? Icons.group : Icons.person, color: _colors.textSecondary)
                   : null,
             ),
           ),
@@ -913,7 +923,13 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   String _getSenderName(NotificationData notification) {
-    // Toujours afficher le nom de l'acteur (qui a aimé/commenté)
+    // Nouveau post de canal : nom du canal. Sinon : nom de l'acteur (qui a aimé/commenté)
+    if (_isCanalPost(notification)) {
+      final titre = _canalCache[notification.canal_id]?.titre;
+      if (titre != null && titre.isNotEmpty) return '#$titre';
+      final fromNotif = (notification.titre ?? '').replaceAll(RegExp(r'\s+a posté\s*$'), '').trim();
+      if (fromNotif.isNotEmpty) return fromNotif;
+    }
     final user = _userCache[notification.user_id];
     return user?.pseudo ?? user?.prenom ?? _l10n.profileDefaultUser;
   }
