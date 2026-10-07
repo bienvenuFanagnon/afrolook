@@ -20,9 +20,9 @@ const BUNDLE_ID = "com.afrotok.afrotok";
 // le nombre de pièces ne vient jamais de l'app. Doit correspondre à CoinPack.appleProducts (Flutter).
 export const APPLE_COIN_PRODUCTS: Record<string, number> = {
   // Grille 2026-09-27 (prix Mobile Money + 30 % Apple) — nouveaux produits App Store Connect
-  "com.afrotok.afrotok.coins1000": 1000, // 0,99 $
-  "com.afrotok.afrotok.coins4000": 4000, // 3,99 $
-  "com.afrotok.afrotok.coins10000": 10000, // 9,99 $
+  "com.afrotok.afrotok.coins1000": 1000, // 1,49 $
+  "com.afrotok.afrotok.coins4000": 4000, // 5,99 $
+  "com.afrotok.afrotok.coins10000": 10000, // 14,99 $
   // Anciens produits (jamais approuvés) : conservés pour créditer d'éventuels achats de test en attente
   "com.afrotok.afrotok.coins1200": 1200,
   "com.afrotok.afrotok.coins5500": 5500,

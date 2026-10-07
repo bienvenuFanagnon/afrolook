@@ -18,15 +18,15 @@ import { recordCoinSale } from "./coinPurchase";
 const GOOGLE_PLAY_SERVICE_ACCOUNT = defineSecret("GOOGLE_PLAY_SERVICE_ACCOUNT");
 
 const PACKAGE_NAME = "com.afrotok.afrotok";
-/** Part conservée par Google (15 % sur la première tranche annuelle, 30 % au-delà : on prend 15 % pour l'estimation). */
-const GOOGLE_COMMISSION = 0.15;
+/** Commission de Google (30 % : estimation prudente ; 15 % sur la première tranche annuelle si le programme est activé). Payée par l'acheteur via le prix majoré. */
+const GOOGLE_COMMISSION = 0.3;
 
 // Produits consommables Play Console → pièces créditées. Source de vérité côté serveur :
 // le nombre de pièces ne vient jamais de l'app. Doit correspondre à CoinPack.appleProducts (Flutter).
 export const PLAY_COIN_PRODUCTS: Record<string, { coins: number; usd: number }> = {
-  "com.afrotok.afrotok.coins1000": { coins: 1000, usd: 0.99 },
-  "com.afrotok.afrotok.coins4000": { coins: 4000, usd: 3.99 },
-  "com.afrotok.afrotok.coins10000": { coins: 10000, usd: 9.99 },
+  "com.afrotok.afrotok.coins1000": { coins: 1000, usd: 1.49 },
+  "com.afrotok.afrotok.coins4000": { coins: 4000, usd: 5.99 },
+  "com.afrotok.afrotok.coins10000": { coins: 10000, usd: 14.99 },
 };
 
 type ServiceAccount = { client_email: string; private_key: string; token_uri?: string };

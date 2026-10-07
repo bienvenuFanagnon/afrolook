@@ -23,9 +23,9 @@ class CoinPack {
   String get displayPrice => '${priceFcfa.toInt()} FCFA';
   int get fcfaPerCoin => (priceFcfa / coins).ceil();
 
-  /// Prix affiché sur iOS : intègre les 15% de commission Apple (priceFcfa / 0.85).
+  /// Prix affiché sur iOS : intègre la commission des stores (priceFcfa / 0.7).
   /// Ainsi après déduction Apple, l'appli reçoit le même montant qu'en Mobile Money.
-  double get iosPriceFcfa => (priceFcfa / 0.85).ceilToDouble();
+  double get iosPriceFcfa => (priceFcfa / 0.7).ceilToDouble();
 
   /// Identifiant du produit consommable App Store Connect pour ce pack.
   /// Doit correspondre à APPLE_COIN_PRODUCTS (functions/src/payments/appleIap.ts).
@@ -38,7 +38,7 @@ class CoinPack {
   /// Packs vendus via In-App Purchase sur iOS.
   /// Grille 2026-09-27 : prix Mobile Money + 30 % (part d'Apple, payée par l'utilisateur),
   /// soit au moins 0,40 F net par pièce pour l'app. Nouveaux produits App Store Connect :
-  /// coins1000 (0,99 $), coins4000 (3,99 $), coins10000 (9,99 $).
+  /// coins1000 (1,49 $), coins4000 (5,99 $), coins10000 (14,99 $) — prix majorés pour couvrir la commission des stores, payée par l'acheteur.
   static List<CoinPack> get appleProducts => [
     CoinPack(coins: 1000, priceFcfa: 600, icon: '⭐', label: 'Pack Starter'),
     CoinPack(coins: 4000, priceFcfa: 2400, icon: '🔥', label: 'Pack Silver',
