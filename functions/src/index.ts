@@ -31,6 +31,7 @@ export * from "./moderation/moderation";
 export * from "./users/accountDeletion";
 export * from "./follows/follows";
 export * from "./posts/unreadCleanup";
+export * from "./users/presenceMirror";
 export { weeklyTopCreatorsRanking } from "./posts/weeklyRankings";
 export * from "./social/socialClicks";
 export * from "./ads/adFree";

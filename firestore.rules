@@ -106,6 +106,15 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // USER PRESENCE — miroir léger du profil (point vert « en ligne »)
+    // Écrit uniquement par la Cloud Function mirrorUserPresence
+    // ─────────────────────────────────────────────────────────────
+    match /UserPresence/{userId} {
+      allow read: if isAuth();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // USER KEYS — clé publique lisible par tous (nécessaire pour E2E)
     // Écriture uniquement de sa propre clé
     // ─────────────────────────────────────────────────────────────
