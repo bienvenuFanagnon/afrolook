@@ -226,7 +226,7 @@ class _ToastWidgetState extends State<_ToastWidget>
                           Text(
                             widget.count == 1
                                 ? '1 notification non lue'
-                                : '${widget.count} notifications non lues',
+                                : '${widget.count >= 100 ? '99+' : widget.count} notifications non lues',
                             style: TextStyle(
                               color: colors.textSecondary,
                               fontSize: 11.5,

@@ -13,7 +13,7 @@ import { db } from "../shared/firebase";
  */
 import { MAX_FOLLOWING, followDocId } from "./followersRead";
 
-export const followUser = onCall({ timeoutSeconds: 30 }, async (request) => {
+export const followUser = onCall({ timeoutSeconds: 30, cpu: 1, maxInstances: 10 }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Auth requise");
   const me = request.auth.uid;
   const target = String(request.data?.targetId ?? "");
@@ -84,7 +84,7 @@ export const unfollowUser = onCall({ timeoutSeconds: 30 }, async (request) => {
  * Compatibilité : les anciennes versions de l'app écrivent encore `userAbonnesIds` directement.
  * On recopie ces changements dans `Follows`. À supprimer quand elles auront disparu.
  */
-export const syncFollowsFromLegacy = onDocumentUpdated("Users/{userId}", async (event) => {
+export const syncFollowsFromLegacy = onDocumentUpdated({ document: "Users/{userId}", cpu: 1, maxInstances: 10 }, async (event) => {
   const before: string[] = event.data?.before.data()?.userAbonnesIds ?? [];
   const after: string[] = event.data?.after.data()?.userAbonnesIds ?? [];
   if (before.length === after.length && before.every((v, i) => v === after[i])) return;

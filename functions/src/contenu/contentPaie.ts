@@ -8,7 +8,7 @@ import { db } from "../shared/firebase";
 // Désactive les boosts dont boostEndDate < now.
 
 export const expireBoosts = onSchedule(
-  { schedule: "0 2 * * *", timeZone: "UTC", memory: "256MiB", cpu: 1 },
+  { schedule: "0 2 * * *", timeZone: "UTC", memory: "256MiB", cpu: "gcf_gen1" },
   async () => {
     const now = Date.now();
 

@@ -232,11 +232,20 @@ class EtudeService {
   String? get uid => FirebaseAuth.instance.currentUser?.uid;
 
   Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    try {
-      final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? {});
-      return Map<String, dynamic>.from(res.data as Map);
-    } on FirebaseFunctionsException catch (e) {
-      throw EtudeException((e.message ?? e.code).trim());
+    // Serveur momentanément saturé (quota CPU, aucune instance libre) : la requête est refusée AVANT d'être
+    // exécutée, on peut donc la rejouer sans risque de doublon (2 nouvelles tentatives : 1 s puis 2 s).
+    for (var attempt = 0;; attempt++) {
+      try {
+        final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? {});
+        return Map<String, dynamic>.from(res.data as Map);
+      } on FirebaseFunctionsException catch (e) {
+        final refused = e.code == 'resource-exhausted' || e.code == 'unavailable';
+        if (refused && attempt < 2) {
+          await Future.delayed(Duration(seconds: attempt + 1));
+          continue;
+        }
+        throw EtudeException((e.message ?? e.code).trim());
+      }
     }
   }
 

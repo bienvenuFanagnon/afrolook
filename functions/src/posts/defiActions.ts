@@ -25,7 +25,7 @@ function computeShares(prix: number): { appShare: number; creatorShare: number }
  *                   transaction (postId = id du nouveau post, post = post DÉFI sérialisé)
  */
 export const handleDefiAction = onCall(
-  { timeoutSeconds: 30, memory: "256MiB", cpu: 1 },
+  { timeoutSeconds: 30, memory: "256MiB", cpu: "gcf_gen1" },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentification requise.");

@@ -18,7 +18,7 @@ function presenceOf(data: FirebaseFirestore.DocumentData | undefined) {
 }
 
 export const mirrorUserPresence = onDocumentWritten(
-  { document: "Users/{userId}", memory: "256MiB", maxInstances: 20 },
+  { document: "Users/{userId}", memory: "256MiB", cpu: 1, maxInstances: 10 },
   async (event) => {
     const after = event.data?.after;
     if (!after?.exists) return; // profil supprimé : on laisse le miroir (purgé avec le compte)

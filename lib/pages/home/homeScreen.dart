@@ -365,6 +365,7 @@ class _MyHomePageState extends State<MyHomePage>
         .where('receiver_id', isEqualTo: currentUserId)
         .where('is_open', isEqualTo: false)
         .orderBy('createdAt', descending: true)
+        .limit(100) // pastille « 99+ » : inutile de relire des milliers de notifications à chaque ouverture (coût Firestore)
         .snapshots()
         .listen((snapshot) {
       if (!mounted) return;

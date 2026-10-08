@@ -14,7 +14,7 @@ const BOOST_PRICES: Record<number, number> = {
 // ── secureBoost ───────────────────────────────────────────────────────────────
 // Callable sécurisé : vérifie le solde, déduit, active le boost.
 export const secureBoost = onCall(
-  { timeoutSeconds: 30, memory: "256MiB", cpu: 1 },
+  { timeoutSeconds: 30, memory: "256MiB", cpu: "gcf_gen1" },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentification requise.");
@@ -102,7 +102,7 @@ export const secureBoost = onCall(
 // ── securePurchase ────────────────────────────────────────────────────────────
 // Callable sécurisé : vérifie le solde, déduit, crédite créateur + affilié.
 export const securePurchase = onCall(
-  { timeoutSeconds: 30, memory: "256MiB", cpu: 1 },
+  { timeoutSeconds: 30, memory: "256MiB", cpu: "gcf_gen1" },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentification requise.");

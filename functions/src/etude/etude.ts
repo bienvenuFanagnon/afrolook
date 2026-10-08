@@ -451,7 +451,7 @@ export const etudeStart = onCall({ timeoutSeconds: 25 }, async (request) => {
   };
 });
 
-export const etudeAnswer = onCall({ timeoutSeconds: 15 }, async (request) => {
+export const etudeAnswer = onCall({ timeoutSeconds: 15, cpu: 1, maxInstances: 10 }, async (request) => {
   const uid = uidOf(request);
   const cfg = await loadCfg();
   const sid = String(request.data?.sid ?? "");
