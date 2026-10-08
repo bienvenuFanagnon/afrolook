@@ -768,7 +768,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
       ),
       if (showAd) ...[
         const SizedBox(height: 14),
-        AdSlot(kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
+        AdSlot(kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
       ],
     ]);
   }

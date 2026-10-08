@@ -9,7 +9,8 @@ import 'admob_widgets.dart';
 
 /// Emplacement publicitaire : pub Afrolook ou pub AdMob, jamais les deux.
 ///
-/// - Pub Afrolook disponible ET AdMob possible : alternance (1 emplacement sur [AdConfig.admobEvery] à AdMob).
+/// - Pub Afrolook disponible ET AdMob possible : alternance (1 emplacement sur [AdConfig.admobEvery] à AdMob),
+///   sauf si [AdSlot.admobFirst] : AdMob est alors prioritaire (modules Quiz / Étude).
 /// - Une seule des deux disponible : celle-là.
 /// - AdMob ne charge pas : repli sur la pub Afrolook ; sinon rien (aucun trou dans la page).
 /// - Aucun utilisateur Gold (admin excepté) ne voit de pub (voir [AdGate.userSeesAds]).
@@ -27,8 +28,11 @@ enum AdSlotKind {
 }
 
 class AdSlot extends StatefulWidget {
-  const AdSlot({Key? key, required this.kind, required this.own}) : super(key: key);
+  const AdSlot({Key? key, required this.kind, required this.own, this.admobFirst = false}) : super(key: key);
   final AdSlotKind kind;
+
+  /// AdMob en priorité ; la pub Afrolook ne s'affiche que si AdMob n'est pas disponible ou ne charge pas.
+  final bool admobFirst;
 
   /// Construit la pub Afrolook de cet emplacement (ex. `() => const AfrolookInlineAd()`).
   final Widget Function() own;
@@ -67,7 +71,7 @@ class _AdSlotState extends State<AdSlot> {
     final ownAvailable = auth.advertisements.isNotEmpty;
     final admobOk = !_admobFailed && _kindEnabled() && AdGate.canShowType(user, _type);
     if (!admobOk) return ownAvailable ? _Mode.own : _Mode.none;
-    if (!ownAvailable) return _Mode.admob;
+    if (!ownAvailable || widget.admobFirst) return _Mode.admob;
     return AdGate.nextSlotIsAdmob() ? _Mode.admob : _Mode.own;
   }
 

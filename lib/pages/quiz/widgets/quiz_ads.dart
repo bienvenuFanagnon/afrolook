@@ -20,7 +20,7 @@ class QuizAdBanner extends StatelessWidget {
     if (MediaQuery.of(context).size.height < minHeight) return const SizedBox.shrink();
     final user = context.read<UserAuthProvider>().loginUserData;
     if (!AdGate.userSeesAds(user)) return const SizedBox.shrink();
-    return Padding(padding: padding, child: AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true)));
+    return Padding(padding: padding, child: AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true), admobFirst: true));
   }
 }
 
@@ -34,7 +34,7 @@ class QuizAdInline extends StatelessWidget {
     if (!AdGate.userSeesAds(user)) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: AdSlot(kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
+      child: AdSlot(kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
     );
   }
 }
