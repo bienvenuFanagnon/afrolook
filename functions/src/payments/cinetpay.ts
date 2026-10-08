@@ -194,7 +194,7 @@ export const initiateAfrolookDeposit = onCall(
 );
 
 export const afrolookDepositCallback = onRequest(
-  { timeoutSeconds: 30, cors: true, memory: "256MiB", cpu: 1 },
+  { timeoutSeconds: 30, cors: true, memory: "256MiB", cpu: 1, maxInstances: 3 },
   async (req, res) => {
     try {
       res.set("Access-Control-Allow-Origin", "*");

@@ -6,6 +6,7 @@ import '../../services/etude/etude_service.dart';
 import '../../theme/app_colors.dart';
 import '../quiz/quiz_defi_lines.dart';
 import '../quiz/widgets/hawk_mascot.dart';
+import '../../widgets/module_ad_free_card.dart';
 import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import '../quiz/widgets/quiz_widgets.dart';
@@ -449,6 +450,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
           ],
           const QuizAdInline(),
         ],
+        const ModuleAdFreeCard(margin: EdgeInsets.only(top: 10)),
         const SizedBox(height: 14),
         Text(
           context.tr('Les diplômes et attestations Afrolook Étude sont des documents de progression, sans valeur de diplôme officiel.'),

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/tr.dart';
+import '../../services/contes/contes_service.dart';
 import '../../services/etude/etude_service.dart';
+import '../../widgets/module_ad_free_card.dart';
+import '../contes/contes_home_page.dart';
+import '../contes/conte_style.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../theme/app_colors.dart';
 import '../etude/etude_home_page.dart';
@@ -35,6 +39,7 @@ class QuizEtudeHubPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
+        const ModuleAdFreeCard(margin: EdgeInsets.only(bottom: 14)),
         ValueListenableBuilder<QuizState?>(
           valueListenable: QuizService.instance.state,
           builder: (context, q, _) => _bigCard(
@@ -70,6 +75,20 @@ class QuizEtudeHubPage extends StatelessWidget {
                     if (e.diplomas.isNotEmpty) QuizPill(icon: Icons.workspace_premium_rounded, label: context.tr('{n} diplôme(s)', {'n': '${e.diplomas.length}'}), color: const Color(0xFFD4A017)),
                   ],
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtudeHomePage())),
+          ),
+        ),
+        const SizedBox(height: 14),
+        ValueListenableBuilder<ContesState?>(
+          valueListenable: ContesService.instance.state,
+          builder: (context, k, _) => _bigCard(
+            context,
+            c,
+            color: ConteStyle.gold,
+            icon: Icons.auto_stories_rounded,
+            title: context.tr('La Case aux Contes'),
+            text: context.tr('Contes et récits africains : légendes, ruses, mystères. Lis à la veillée, un conte à la fois.'),
+            pills: k == null || k.reads.isEmpty ? const [] : [QuizPill(icon: Icons.menu_book_rounded, label: context.tr('{n} lus', {'n': '${k.reads.length}'}), color: ConteStyle.gold)],
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContesHomePage())),
           ),
         ),
       ]),

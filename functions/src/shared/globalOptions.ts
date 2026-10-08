@@ -7,7 +7,8 @@ import { setGlobalOptions } from "firebase-functions/v2";
  *   valeur par défaut du SDK v6. Avec 125 fonctions à 1 processeur chacune, le quota régional Cloud Run
  *   (20 processeurs) était atteint aux heures de pointe → erreurs « quota cpu_allocation » côté utilisateurs.
  *   Conséquence : 1 requête à la fois par instance → plafond d'instances explicite (maxInstances).
- * - Les fonctions très sollicitées ou à rafales (abonnement, réponses Quiz/Étude, déclencheurs sur Users,
- *   diffusion des nouveaux posts) gardent `cpu: 1` (concurrence 80) avec maxInstances: 10.
+ * - Les instances inactives comptent aussi dans le quota : ne garder `cpu: 1` (concurrence 80) que pour ce qui
+ *   le justifie (webhooks de paiement). Au trafic actuel, une fraction de CPU suffit partout ailleurs ; quand le quota
+ *   aura été relevé et que le trafic aura grossi, repasser `cpu: 1` sur les fonctions les plus sollicitées.
  */
 setGlobalOptions({ cpu: "gcf_gen1", maxInstances: 30 });

@@ -1,0 +1,145 @@
+recueil: Avant les Hommes
+categorie: Mythes de la création
+description: Pourquoi la lune est loin, pourquoi le ciel est haut, pourquoi les hyènes rient. Les plus anciennes explications du monde.
+ordre: 6
+prix: 70
+
+=== conte: lune-descendre-village
+titre: Pourquoi la lune a cessé de descendre au village
+accroche: Elle venait danser chaque nuit. Un soir, un homme voulut la garder.
+etiquette: Mythe
+origine: Conte traditionnel d'inspiration luba (République démocratique du Congo)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: ancien, enfant, feu
+morale: Ce qu'on aime ne se garde pas : on le laisse revenir.
+---
+Au temps où le ciel était proche de la terre, la lune descendait chaque soir jusqu'au village pour danser avec les enfants. Elle se posait sur la place, ronde et blanche, légère comme une calebasse de lait. Les enfants riaient, les femmes chantaient, et les anciens racontaient des histoires jusqu'à l'aube. La lune repartait avant le soleil, en promettant de revenir. Personne ne s'étonnait, car c'était ainsi depuis toujours.
+---
+Mais un homme du village, nommé Kabila, était jaloux de cette beauté. Il pensait que la lune était trop belle pour être partagée, et qu'elle serait mieux dans sa propre case. Un soir, pendant que tout le monde dansait, il tendit une grande natte tressée devant la porte de sa maison, et attendit. Quand la lune, fatiguée de danser, passa tout près pour regagner le ciel, il referma le piège d'un coup sec.
+---
+La lune se débattit, lumineuse et terrifiée, prisonnière dans la natte. Les enfants poussèrent des cris. Les femmes se précipitèrent. Mais Kabila refusa d'ouvrir. « Elle est à moi, dit-il. Elle éclairera ma maison tous les soirs. » La nuit devint noire sur le village, car la lune n'éclairait plus personne d'autre. Les chiens se mirent à hurler, les bêtes à rôder, et les mères, inquiètes, ne dormaient plus.
+---
+Au bout de trois nuits, la lune s'affaiblit. Sa lumière pâlit, devint grise, puis presque éteinte. Kabila, désespéré, comprit qu'il avait tout gâché : la lune ne brillait plus ni pour lui ni pour les autres. Il courut chez le plus vieux des anciens, qui lui dit : « Rends-lui sa liberté, et elle reviendra peut-être. Sinon, elle s'éteindra pour toujours. » Kabila, la mort dans l'âme, ouvrit la natte au milieu de la nuit.
+---
+La lune s'envola d'un seul bond, si haut qu'on ne la vit plus de la nuit. Le lendemain, elle reparut dans le ciel, pâle et mince, comme une griffe d'argent. Elle ne descendit plus jamais au village, mais elle continua de veiller de loin. Chaque mois, elle regrossit, puis maigrit, comme une femme qui se souvient d'une peur ancienne. Et les enfants, quand elle est pleine, lui font un signe de la main : « Nous ne te garderons plus, belle lune. Nous te regarderons de loin. »
+
+=== conte: ciel-portee-main
+titre: Quand le ciel était à portée de main
+accroche: Une vieille femme pilait le mil. Un coup de pilon de trop, et le ciel s'enfuit.
+etiquette: Mythe
+origine: Conte traditionnel (yoruba, edo et akan, Afrique de l'Ouest)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: aube
+figures: reine, ancien, oiseau
+morale: Le ciel s'éloigne de ceux qui le prennent pour un mur.
+---
+Autrefois, le ciel était si bas qu'on pouvait le toucher du bout des doigts. Les enfants s'y cognaient la tête en jouant, et les hommes, en marchant, devaient parfois baisser le front. Le ciel était doux, tiède, et lorsqu'on y portait la main, on pouvait en détacher un morceau de nuage, comme un fruit mou. Les gens s'y servaient chaque jour, sans réfléchir, car la nourriture venait directement de là-haut.
+---
+Dans un petit village, une vieille femme nommée Ayo pilait le mil chaque matin, dans un grand mortier de bois, avec un pilon plus haut qu'elle. À force de lever le pilon, elle le cognait parfois contre le ciel, qui grondait doucement. « Pardon, grand-père », disait-elle chaque fois. Le ciel ne se fâchait pas, mais il lui faisait remarquer, d'un grondement, que ce bruit le dérangeait un peu. La vieille femme se faisait toute petite.
+---
+Un matin, un voyageur arriva au village et, voyant les gens se servir directement dans le ciel, resta stupéfait. « Vous ne devriez pas vous nourrir ainsi, dit-il. Le ciel n'est pas votre grenier. » On se moqua de lui. Les villageois continuèrent comme avant, prenant toujours plus de nuages, de pluie, de lumière, sans rien rendre. Les enfants dessinaient sur le ciel avec du charbon, jouaient à s'y accrocher, et le ciel, patient, supportait tout.
+---
+Mais un jour, Ayo, en lançant un grand coup de pilon pour pulvériser une grosse poignée de mil dur, frappa si fort que le ciel gémit. Une voix grave, venue d'en haut, dit : « Assez. Je suis fatigué d'être pris pour un mur. » Sous les yeux des villageois effarés, le ciel se mit à monter, lentement d'abord, puis de plus en plus vite. Les nuages se détachèrent, la lumière se fit plus lointaine, et en quelques instants, il disparut tout là-haut, hors de portée.
+---
+Depuis ce jour, il faut travailler pour manger : labourer, semer, attendre la pluie, car le ciel ne donne plus rien à qui ne le mérite pas. Les anciens racontent que la vieille Ayo, honteuse, pleura toute sa vie, et que ses larmes devinrent la première rosée du matin. Et les enfants, chaque fois qu'ils lèvent les yeux, murmurent : « Pardon, grand-père ciel. » Parfois, une goutte de pluie, très douce, leur répond.
+
+=== conte: premier-feu-tortue
+titre: Le premier feu et la tortue qui l'apporta
+accroche: Tous les animaux avaient échoué. La plus lente d'entre eux se porta volontaire.
+etiquette: Mythe
+origine: Conte traditionnel d'inspiration igbo (Nigeria)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: montagne
+lumiere: orage
+figures: tortue, lievre, feu
+morale: Ce que les rapides n'atteignent pas, les patients le portent jusqu'au bout.
+---
+Au commencement du monde, les hommes et les animaux vivaient dans le froid et l'obscurité. Seul le dieu du ciel possédait le feu, qu'il gardait jalousement au sommet de la plus haute montagne. Les nuits étaient longues, la nourriture crue, et les petits tremblaient de froid. Un jour, le conseil des animaux décida d'envoyer quelqu'un voler un tison au dieu, pour le rapporter sur terre. Le lièvre se proposa, rapide et fier.
+---
+Il partit à toute vitesse, gravit la montagne en quelques bonds, mais le dieu du ciel, prévenu, l'attendait. Le lièvre arriva essoufflé, tendit la patte vers le feu, et se brûla si fort qu'il s'enfuit en hurlant. On envoya l'antilope, qui n'alla pas plus loin que le premier rocher. Le léopard, le chacal, l'aigle essayèrent à leur tour, et chacun revint les plumes roussies ou les poils brûlés. Les animaux, désespérés, ne savaient plus quoi faire.
+---
+C'est alors qu'une petite voix s'éleva, dans l'ombre : « Je veux bien essayer. » Tous se retournèrent. C'était la tortue, qui n'avait jamais parlé en conseil. Les animaux éclatèrent de rire. « Toi ? Mais il te faudrait dix lunes pour grimper ! » La tortue répondit calmement : « Alors je partirai tout de suite. » Elle se mit en route le lendemain matin, portant sur son dos sa carapace, dure comme la roche, qui n'avait peur de rien.
+---
+Après des semaines de marche, elle atteignit le sommet. Le dieu du ciel, attentif, la regarda sans bouger. « Que veux-tu, petite ? » Elle répondit : « Du feu, pour mes frères qui ont froid. » Le dieu, amusé, lui dit : « Tu n'as pas de mains pour le porter. » La tortue fit alors quelque chose d'inattendu : elle posa sa carapace sur la braise, qui s'y déposa sans la brûler. Puis, doucement, elle fit demi-tour sans un mot, la carapace chauffée à blanc sur le dos.
+---
+Le dieu du ciel, ému par tant d'obstination, la laissa partir. La tortue redescendit pendant des semaines, et rapporta le feu sur terre. Quand elle arriva au village, tous les animaux l'acclamèrent. Depuis ce jour, le feu appartient à tous. Et si la carapace de la tortue est marquée de petites fissures, c'est, disent les anciens, parce qu'elle a gardé les cicatrices du premier feu : elle le porte encore, un peu, dans chacun de ses pas lents.
+
+=== conte: soleil-eau-ennemis
+titre: Comment le soleil et l'eau devinrent ennemis
+accroche: Ils étaient amis, il l'invita chez lui. Elle y vint avec tout son peuple.
+etiquette: Mythe
+origine: Conte traditionnel d'inspiration efik (Nigeria)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: midi
+figures: ancien, pirogue, enfant
+morale: Celui qui accueille doit mesurer sa maison avant d'ouvrir sa porte.
+---
+Au commencement, le soleil et l'eau étaient amis. Ils vivaient ensemble sur la terre, dans une grande maison commune, et partageaient tout : les repas, les rires, les histoires. L'eau n'avait pas encore de rivières ni d'océans, et le soleil n'avait pas encore de ciel. Un jour, le soleil dit à sa femme, la lune : « Allons rendre visite à l'eau. Elle ne vient jamais chez nous. Invitons-la, pour qu'elle voie comme notre maison est belle. »
+---
+Le lendemain, le soleil alla trouver l'eau, qui l'accueillit avec un grand sourire. « Viens dîner chez moi, dit le soleil. Mais viens avec ta famille : tes enfants, tes frères, tes cousins, tous les tiens. Il y a de la place pour tout le monde. » L'eau remercia, mais prévint : « Ma famille est nombreuse, et chaque membre prend beaucoup de place. Tu es sûr de ta maison ? » Le soleil, fier, répondit : « Elle est assez grande pour accueillir le monde. »
+---
+Le jour du dîner, l'eau vint avec sa famille, en une longue procession : d'abord les petits ruisseaux, puis les rivières, puis les fleuves, puis les lacs, puis les poissons, les crocodiles, les hippopotames. Elle remplit d'abord le seuil de la maison, puis la cour, puis la salle à manger. Le soleil et la lune, assis sur leur banc, se mirent à rire nerveusement. L'eau monta jusqu'aux genoux, puis aux hanches, puis à la poitrine.
+---
+Bientôt, l'eau déborda de partout. Le soleil et la lune furent chassés par le flot, et durent grimper tout en haut du ciel pour ne pas se noyer. Ils s'y installèrent, honteux et inquiets, et regardèrent la terre inondée. L'eau, elle, couvrit tout, formant les fleuves, les lacs et les mers. Elle n'avait pas voulu chasser ses amis, mais on lui avait dit que la maison était assez grande, et elle avait obéi à l'invitation.
+---
+Depuis ce jour, le soleil est en haut et l'eau en bas, et ils ne se retrouvent plus qu'à l'horizon, au lever et au coucher, quand l'un embrasse l'autre de loin. Parfois, pour se venger, le soleil tire l'eau vers le ciel sous forme de vapeur, mais elle redescend toujours en pluie. Les anciens disent que c'est leur façon de se parler : l'un envoie, l'autre rend. Et que cette dispute, qui fait vivre les plantes, n'est que la plus ancienne des amitiés.
+
+=== conte: hyenes-rient-nuit
+titre: Pourquoi les hyènes rient dans la nuit
+accroche: Elles n'ont pas toujours ri. Un jour, une blague a changé leur voix pour toujours.
+etiquette: Rire
+origine: Conte traditionnel d'inspiration bantoue (Afrique de l'Est et australe)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: savane
+lumiere: nuit
+figures: hyene, lion, oiseau
+morale: Qui rit de tout finit par ne plus pouvoir parler sérieusement.
+---
+Il fut un temps où les hyènes parlaient comme les autres animaux, d'une voix grave et posée. Elles étaient respectées, car elles savaient écouter, et on leur confiait souvent des secrets. Elles passaient pour les plus sages de la brousse. Mais une hyène, plus malicieuse que ses sœurs, avait une faiblesse : elle adorait les blagues. Elle en faisait à tout le monde, jour et nuit, sans se préoccuper de savoir si elles faisaient rire ou pleurer.
+---
+Un soir, elle vit passer le lion, endormi sous un acacia. Elle s'approcha en silence, noua sa crinière à une branche, puis cria « Au feu ! » de toutes ses forces. Le lion, réveillé en sursaut, bondit, et se retrouva à moitié scalpé. La hyène, pliée en deux, ne put s'empêcher de rire à gorge déployée, un rire strident et nerveux qui fit s'envoler les oiseaux. Le lion, furieux, la poursuivit toute la nuit, et la hyène n'échappa que de justesse.
+---
+Les autres animaux se réunirent en conseil : « Cette hyène nous ridiculise tous. Il faut lui donner une leçon. » Un vieil oiseau noir proposa une idée : « Rendons-lui sa voix si semblable à son rire qu'elle ne puisse plus parler d'autre chose. » Les animaux acceptèrent. Cette nuit-là, ils prononcèrent une malédiction, en cercle autour du feu, et la voix de la hyène s'altéra. Au réveil, quand elle ouvrit la bouche pour dire bonjour, il n'en sortit qu'un éclat de rire.
+---
+Elle essaya de parler, encore et encore, mais plus elle essayait, plus elle riait. Elle voulut s'excuser auprès du lion, mais son rire résonna comme une moquerie. Elle voulut raconter son malheur, mais on ne comprit qu'une série de gloussements. Honteuse, elle se retira dans la savane, et ses sœurs, qui n'avaient rien fait, partagèrent sa voix, par solidarité ou par contagion. Depuis, toutes les hyènes ont cette voix étrange, entre le rire et le cri.
+---
+La nuit, quand on entend leur ricanement au loin, les grands-mères disent aux enfants : « N'ayez pas peur. Ce sont les hyènes qui racontent leur histoire, la plus ancienne farce du monde. Elles essaient de dire pardon, mais le rire leur reste dans la gorge. » Et les enfants, serrés sous leur couverture, rient un peu à leur tour. C'est peut-être cela que cherchaient les animaux : que le plus malicieux de tous ne puisse plus faire peur, seulement rire.
+
+=== conte: oiseau-etoiles
+titre: L'oiseau qui apporta les étoiles
+accroche: Il volait sans jamais se poser. Il portait un sac que personne ne devait ouvrir.
+etiquette: Mythe
+origine: Conte traditionnel d'inspiration ashanti (Ghana)
+region: Afrique de l'Ouest
+type: long
+gratuites: 2
+decor: baobab
+lumiere: nuit
+figures: oiseau, ancien, enfant
+morale: Ce qu'on offre sans le savoir éclaire parfois toute une vie.
+---
+Au tout début, le ciel nocturne était noir, sans une seule lumière. Les hommes dormaient mal, car les ténèbres étaient lourdes et sans fin. Les voyageurs se perdaient, les enfants avaient peur, et les chasseurs rentraient avec la crainte au ventre. Un vieil oiseau, très grand, aux plumes sombres comme la nuit, voyait tout cela depuis des siècles. Il avait compris qu'il fallait faire quelque chose, mais il ne savait pas quoi.
+---
+Un jour, le dieu du ciel l'appela : « Voici un sac fermé. Il contient un trésor que j'ai longtemps gardé. Porte-le au-dessus de la terre, de village en village, mais surtout, ne l'ouvre jamais. » L'oiseau accepta, intrigué. Il prit le sac, le noua à son cou, et s'envola à travers les nuages, sans jamais se poser, vers l'ouest, puis le nord, puis le sud. Le sac était léger, mais il vibrait doucement, comme un cœur qui bat.
+---
+Pendant trois jours et trois nuits, l'oiseau vola sans s'arrêter. Au quatrième jour, épuisé, affamé, il se posa sur un baobab pour reprendre des forces. Le sac, sur son cou, se mit à frétiller, à bouger, à pousser. Il sentit une chaleur étrange contre sa poitrine. Il tint bon un moment, puis la curiosité l'emporta. « Un seul coup d'œil, se dit-il. Personne ne le saura. » Il dénoua doucement le lien, et entrouvrit le sac.
+---
+Alors, des milliers de petites lumières s'envolèrent, comme des graines d'argent soufflées par le vent. Elles montèrent dans le ciel noir, se dispersèrent dans tous les sens, et s'y accrochèrent une à une, scintillantes. L'oiseau, stupéfait, regarda ces éclats s'éparpiller, incapable de les rattraper. Quand le sac fut vide, il resta là, sur sa branche, atterré. Il avait désobéi. Il avait ouvert ce qu'il ne devait pas ouvrir. Il baissa la tête, attendant la colère du dieu.
+---
+Mais le dieu ne vint pas. Au lieu de cela, un enfant sortit d'une case voisine, leva les yeux, et poussa un cri d'émerveillement. « Regardez ! » Tout le village sortit. Les anciens, les mères, les chasseurs : tous restèrent la bouche ouverte. Les étoiles brillaient, chaque nuit, plus nombreuses. Jamais le ciel n'avait été si beau. Le dieu, resté invisible, dit seulement à l'oiseau : « Ce que je gardais pour les hommes, tu l'as donné sans le savoir. Merci. »
+---
+Depuis ce jour, quand un enfant a peur dans le noir, la mère lui dit : « Regarde en haut. L'oiseau a ouvert le sac pour toi. » Et l'enfant, rassuré, s'endort sous le ciel plein de lumières. Les anciens disent que l'oiseau, lui, ne s'est jamais pardonné son geste, et qu'il vole encore, très haut, la nuit, pour chercher d'autres sacs à ouvrir. Mais ceux qui lèvent la tête, parfois, voient une ombre traverser les étoiles, comme un salut discret.

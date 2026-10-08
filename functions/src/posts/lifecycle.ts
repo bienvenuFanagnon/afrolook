@@ -13,7 +13,7 @@ import { followerIdPages, collectFollowerIds } from "../follows/followersRead";
  *   sur chaque abonné du canal (usersSuiviId)
  */
 export const updateFollowersNewPostCount = onDocumentCreated(
-  { document: "Posts/{postId}", cpu: 1, maxInstances: 10, timeoutSeconds: 300 },
+  { document: "Posts/{postId}", maxInstances: 10, timeoutSeconds: 300 },
   async (event) => {
     const post = event.data?.data();
     if (!post) return;

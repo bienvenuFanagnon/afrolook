@@ -16,7 +16,7 @@ export const SPONSOR_SHARE = 0.025;
 export type CommissionSource =
   | "likes" | "commentaires" | "cadeaux" | "cadeaux_live" | "defi"
   | "groupes" | "canaux" | "lives_prives" | "participation_live"
-  | "premium" | "gold" | "compte_officiel" | "pubs_boosts" | "contenus" | "abonnement_entreprise" | "deblocages" | "stickers" | "quiz" | "etude";
+  | "premium" | "gold" | "compte_officiel" | "pubs_boosts" | "contenus" | "abonnement_entreprise" | "deblocages" | "stickers" | "quiz" | "etude" | "contes";
 
 function num(v: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;

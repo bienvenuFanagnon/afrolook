@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../ads/ad_gate.dart';
 import '../../../ads/ad_slot.dart';
 import '../../../ads/admob_service.dart';
+import '../../../ads/module_ads.dart';
 import '../../../providers/authProvider.dart';
 import '../../pub/afrolook_inline_ad.dart';
 
@@ -19,7 +20,7 @@ class QuizAdBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     if (MediaQuery.of(context).size.height < minHeight) return const SizedBox.shrink();
     final user = context.read<UserAuthProvider>().loginUserData;
-    if (!AdGate.userSeesAds(user)) return const SizedBox.shrink();
+    if (!ModuleAds.shows(user)) return const SizedBox.shrink();
     return Padding(padding: padding, child: AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true), admobFirst: true));
   }
 }
@@ -31,7 +32,7 @@ class QuizAdInline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.read<UserAuthProvider>().loginUserData;
-    if (!AdGate.userSeesAds(user)) return const SizedBox.shrink();
+    if (!ModuleAds.shows(user)) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: AdSlot(kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
@@ -44,7 +45,7 @@ class QuizAdInline extends StatelessWidget {
 Future<void> levelEndInterstitial(BuildContext context, {required String prefix, int every = 3, int maxPerDay = 6, required VoidCallback then}) async {
   try {
     final user = context.read<UserAuthProvider>().loginUserData;
-    if (AdGate.canShowType(user, 'interstitial')) {
+    if (!ModuleAds.adFree(user) && AdGate.canShowType(user, 'interstitial')) {
       final sp = await SharedPreferences.getInstance();
       final now = DateTime.now();
       final day = '${now.year}-${now.month}-${now.day}';

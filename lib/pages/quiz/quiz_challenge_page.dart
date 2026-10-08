@@ -2,17 +2,16 @@ import 'dart:async';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'widgets/quiz_ads.dart';
 import 'package:provider/provider.dart';
 
 import '../../ads/ad_gate.dart';
-import '../../ads/ad_slot.dart';
 import '../../ads/admob_service.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../services/quiz/quiz_sound.dart';
 import '../../theme/app_colors.dart';
-import '../pub/afrolook_inline_ad.dart';
 import 'quiz_leaderboard_page.dart';
 import 'widgets/hawk_mascot.dart';
 import 'widgets/quiz_consent.dart';
@@ -768,7 +767,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
       ),
       if (showAd) ...[
         const SizedBox(height: 14),
-        AdSlot(kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
+        const QuizAdInline(),
       ],
     ]);
   }

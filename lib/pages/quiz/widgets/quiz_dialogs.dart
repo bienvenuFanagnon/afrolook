@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../ads/ad_config.dart';
 import '../../../ads/ad_gate.dart';
 import '../../../ads/admob_service.dart';
+import '../../../ads/module_ads.dart';
 import '../../../l10n/tr.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/coin_checkout.dart';
@@ -198,7 +199,7 @@ Future<void> quizMaybeInterstitial(BuildContext context, VoidCallback done) asyn
   try {
     final cfg = QuizService.instance.config;
     final user = context.read<UserAuthProvider>().loginUserData;
-    if (cfg.adsEnabled && AdGate.canShowType(user, 'interstitial')) {
+    if (cfg.adsEnabled && !ModuleAds.adFree(user) && AdGate.canShowType(user, 'interstitial')) {
       final sp = await SharedPreferences.getInstance();
       final now = DateTime.now();
       final day = '${now.year}-${now.month}-${now.day}';

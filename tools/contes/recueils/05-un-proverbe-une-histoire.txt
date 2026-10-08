@@ -1,0 +1,143 @@
+recueil: Un Proverbe, une Histoire
+categorie: Sagesse et proverbes
+description: Un proverbe africain dit en dix mots ce qu'une histoire met dix minutes à faire comprendre. Voici les histoires.
+ordre: 5
+prix: 70
+
+=== conte: pirogue-un-seul-rameur
+titre: La pirogue qui ne voulait pas d'un seul rameur
+accroche: Il était fort, il ramait vite, et pourtant la pirogue tournait en rond.
+etiquette: Sagesse
+origine: Conte traditionnel d'inspiration wolof (Sénégal)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: aube
+figures: pirogue, guerrier, ancien
+morale: Seul on va vite, ensemble on va loin.
+---
+Sur la grande rivière du pays, un jeune pêcheur nommé Modou possédait la plus belle pirogue du village. Elle était longue, fine, peinte en bleu et en jaune, et ses flancs brillaient comme un poisson mouillé. Modou, fier d'elle, refusait d'embarquer d'autres rameurs. « Je suis le plus fort, disait-il. Je ramerai tout seul, et j'irai plus vite que tout le monde. » Les anciens hochaient la tête, sans rien dire.
+---
+Un matin, la pêche s'annonçait exceptionnelle. Les poissons sautaient hors de l'eau comme des pièces d'argent. Modou poussa sa pirogue à l'eau, s'assit à l'arrière, saisit sa pagaie et se mit à ramer avec une énergie de géant. Mais au lieu d'avancer, la pirogue se mit à tourner doucement sur elle-même, d'abord lentement, puis de plus en plus vite. Il changea de bras, rama à gauche, rama à droite, et la pirogue continuait son manège.
+---
+Épuisé, rouge de honte, il s'arrêta au milieu du fleuve. Un vieux pêcheur qui passait à proximité dans sa petite barque s'approcha en souriant. « Une pirogue à deux bouts, dit-il, a besoin de deux rameurs. Quand un seul force, elle tourne. » Il monta à l'avant, prit une pagaie, et les deux hommes ramèrent ensemble, le vieux à l'avant, Modou à l'arrière. Aussitôt, la pirogue fila droit comme une flèche, fendant l'eau sans effort, comme si elle l'avait attendu depuis le début.
+---
+Ils rapportèrent ce jour-là deux fois plus de poissons que les autres, avec deux fois moins de fatigue. Modou, enfin humble, invita le vieux pêcheur à partager son repas. « Ma pirogue ne voulait pas d'un seul rameur, avoua-t-il, et moi, je ne voulais pas d'un seul conseil. » Le vieil homme éclata de rire : « Apprendre est plus rapide que ramer à contre-courant. Retiens-le, mon garçon : un seul homme n'a jamais fait avancer un village. »
+---
+Dès le lendemain, Modou proposa à ses amis de former une équipe de pêche. Chacun rama à son tour, chacun apporta ses filets et ses ruses. En un an, ils devinrent les pêcheurs les plus respectés de la région. Modou reçut un jour un titre honorifique, qu'il refusa en disant que le titre appartenait à la pirogue, et que la pirogue appartenait à tous. Les enfants du village chantent encore la chanson de la pirogue bleue et jaune, qui n'aimait pas la solitude.
+
+=== conte: sept-filles-miroir
+titre: Les sept filles et le miroir d'eau
+accroche: Le roi avait posé une seule question. Une seule fille trouva la réponse.
+etiquette: Sagesse
+origine: Conte traditionnel d'inspiration peul (Guinée)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: reine, ancien, calebasse
+morale: Celui qui se regarde sans fausse modestie voit ce qu'il vaut, et ce qu'il lui reste à apprendre.
+---
+Un vieux roi du Fouta-Djalon avait sept filles, toutes belles, toutes vives. Un jour, voulant désigner celle qui régnerait après lui, il convoqua ses filles et leur dit : « Je vous poserai une seule question. Celle qui y répondra mieux que ses sœurs prendra ma place. » Les sept sœurs se regardèrent, intriguées. Elles s'assirent en cercle devant le trône, les mains sur les genoux, attendant la question royale.
+---
+« Dites-moi, demanda le roi, ce qui est le plus précieux au monde. » La première répondit : « L'or, car il achète tout. » La deuxième : « La santé, car sans elle, rien ne sert. » La troisième : « La beauté, car elle ouvre les portes. » La quatrième : « Le courage, car il fait tenir debout. » La cinquième : « L'amour, car il donne un sens au reste. » La sixième : « La sagesse, car elle guide toutes les autres. » Le roi hochait la tête à chaque réponse, sans rien dire.
+---
+La septième fille, la plus jeune, se leva sans un mot. Elle prit une calebasse pleine d'eau, la posa devant elle, et regarda longuement son reflet. Le roi attendit. Au bout d'un moment, elle dit : « Le plus précieux, c'est de savoir se regarder sans mentir. Car celui qui sait qui il est sait quoi chercher. » La salle devint silencieuse. Les six sœurs baissèrent les yeux, ayant compris que leurs réponses venaient d'un désir, tandis que celle-ci venait d'un chemin.
+---
+Le roi sourit enfin. « Toutes vos réponses sont justes, dit-il, mais la dernière est la seule qui contient les autres. Qui se connaît peut choisir l'or ou le courage, la sagesse ou l'amour, sans se tromper de route. » Il couronna sa plus jeune fille devant tout le peuple. Les six aînées, loin d'être jalouses, la félicitèrent. Elles savaient que sa réponse les avait toutes enrichies. Et pendant des années, elles vinrent la consulter avant de prendre une décision.
+---
+Depuis, au Fouta-Djalon, on dit aux enfants, avant de se coucher : « Regarde-toi dans l'eau avant de parler au monde. » Chaque famille garde dans sa cour une grande calebasse remplie d'eau claire, pour que les petits puissent s'y mirer avant d'aller dormir. On dit que la reine, devenue vieille, disait à ses petits-enfants : « J'ai gouverné cinquante ans, et chaque matin, j'ai demandé à mon reflet s'il me trouvait juste. Quand il disait non, je recommençais la journée. »
+
+=== conte: roi-question-reponse
+titre: Il n'avait qu'une question, le roi n'avait qu'une réponse
+accroche: Un paysan a traversé le royaume pour poser une question. Le roi lui a répondu avec une poignée de sable.
+etiquette: Sagesse
+origine: Conte traditionnel d'inspiration haoussa (Niger)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: desert
+lumiere: crepuscule
+figures: ancien, reine, calebasse
+morale: Certaines réponses se donnent avec les mains avant de se dire avec la bouche.
+---
+Au pays des Haoussas, un paysan nommé Bako vivait seul avec son vieux père, sur une terre aride qui ne donnait presque rien. Chaque année, la récolte était plus pauvre, et Bako se posait une question qui le rongeait : pourquoi le travail de ses mains ne nourrissait-il pas sa famille ? Un matin, il décida de marcher jusqu'à la capitale, à trois semaines de route, pour demander conseil au roi, réputé le plus sage du monde.
+---
+Après trois semaines de marche, les pieds gonflés et la gorge sèche, Bako arriva à la porte du palais. Les gardes se moquèrent de ses sandales usées. Mais Bako, obstiné, répéta qu'il avait une seule question à poser, et qu'il ne repartirait pas sans réponse. Après trois jours d'attente, il fut enfin introduit dans la grande salle, devant un homme vêtu simplement, assis sur une natte, qui l'écouta sans l'interrompre.
+---
+Quand Bako eut fini, le roi se leva sans un mot et sortit dans la cour, où l'on avait préparé un tas de sable fin. Il en prit une poignée, la lui tendit, et dit simplement : « Garde-la dans ta main. Ferme-la. Maintenant, ouvre-la. » Bako obéit. Il serra les doigts autant qu'il put, et le sable commença à s'échapper entre ses doigts, à gauche, à droite, par le bas. Il se retrouva presque avec une main vide. Le roi hocha la tête.
+---
+« Regarde, dit-il : plus tu serres, plus ça glisse. Maintenant, ouvre la main complètement. » Bako déplia ses doigts, et le peu de sable qui restait se posa dans sa paume, doux et stable. « Ta terre est comme ce sable, dit le roi. Tu la serres trop, tu la travailles sans la laisser respirer, et elle t'échappe. Laisse-lui un an de repos, plante des légumineuses, et reviens me dire ce qu'elle a fait. » Bako comprit, remercia, et rentra chez lui d'un pas plus léger.
+---
+L'année suivante, sur la même terre, avec les mêmes bras, la récolte fut trois fois plus belle. Bako retourna voir le roi, avec un sac de mil en cadeau. Mais le palais était vide : le roi était parti, un matin, sans jamais revenir. Un serviteur lui dit : « Il disait toujours que le plus beau des conseils est celui qui n'a plus besoin d'être redonné. » Bako s'inclina, et dans son village, il se mit à enseigner aux paysans à laisser leurs champs se reposer, comme on pose la main sur l'épaule d'un ami.
+
+=== conte: vieillard-arbres-jamais-vus
+titre: Le vieillard qui plantait des arbres qu'il ne verrait jamais grandir
+accroche: On le traitait de fou. Soixante ans plus tard, une forêt portait son nom.
+etiquette: Sagesse
+origine: Conte traditionnel d'inspiration yoruba (Nigeria)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: foret
+lumiere: aube
+figures: ancien, enfant, oiseau
+morale: Celui qui plante pour les autres fait de son passage une forêt.
+---
+Dans un village du pays yoruba, un vieillard nommé Adébayo se promenait chaque matin avec un sac de graines et une petite bêche. Il creusait un trou, déposait une graine, la recouvrait de terre, l'arrosait avec un peu d'eau, puis s'en allait. Les villageois se moquaient de lui. « Pourquoi planter des arbres à ton âge ? disaient-ils. Tu seras mort avant qu'ils aient fait des fruits. » Adébayo souriait toujours, sans répondre.
+---
+Un jour, un enfant curieux, nommé Tunde, le suivit dans sa promenade. « Grand-père, pourquoi tu plantes si tard ? » demanda-t-il. Le vieil homme s'agenouilla et répondit : « Quand j'étais petit, quelqu'un a planté l'arbre sous lequel je me suis assis tout l'été. Je ne l'ai jamais remercié, car il était mort bien avant ma naissance. Aujourd'hui, je rends ce service à quelqu'un que je ne connaîtrai jamais, et c'est ma façon de dire merci. » Tunde ne dit rien, mais il se mit à l'aider.
+---
+Le temps passa. Adébayo continua à planter, saison après saison, accompagné d'un garçon de plus en plus grand. Peu à peu, la colline devint verte. Des oiseaux commencèrent à y faire leurs nids. Des sources, qui avaient disparu, resurgirent entre les racines. Les villageois, d'abord moqueurs, commencèrent à y venir chercher l'ombre. Un jour, le vieil homme s'éteignit paisiblement sous un manguier, entouré de ceux qui avaient fini par comprendre son geste.
+---
+Tunde, devenu homme, continua l'œuvre. Chaque enfant du village reçut, à sa naissance, une graine à planter sur la colline, et son prénom fut gravé sur une petite plaque de bois. En soixante ans, la colline s'était couverte d'une forêt dense, où l'on trouvait de l'ombre, des fruits, du bois et des plantes médicinales. Au centre, un énorme iroko dominait les autres, planté par le vieux Adébayo lui-même, le premier jour.
+---
+Aujourd'hui, la forêt s'appelle « Igbo Adébayo », la forêt d'Adébayo. Les anciens y emmènent les enfants, au printemps, et leur disent : « Cherche un endroit où personne n'a rien planté, et plante. » Les petits repartent avec un sourire et des mains sales. Ils savent qu'ils ne verront peut-être pas leur arbre à maturité, mais ils savent aussi qu'un jour, quelqu'un s'assoira à son ombre, et pensera à eux sans même connaître leur nom.
+
+=== conte: mil-veuve-jarre-riche
+titre: Le mil de la veuve et la jarre du riche
+accroche: Le riche avait mille jarres pleines. La veuve, un seul bol. Qui avait le plus à donner ?
+etiquette: Fin surprenante
+origine: Conte traditionnel d'inspiration mossi (Burkina Faso)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: reine, ancien, calebasse
+morale: Le vrai don est celui qui coûte quelque chose à celui qui donne.
+---
+Un marchand très riche vivait à l'entrée du village, dans une grande maison blanche, entourée de greniers pleins de mil. Il se vantait d'être le plus généreux du pays, car, à chaque fête, il offrait au village un sac de grain. Dans une petite case voisine vivait une veuve, nommée Salimata, qui n'avait pour tout bien qu'une calebasse de mil, qu'elle faisait durer le plus possible, jour après jour, pour nourrir ses deux enfants.
+---
+Un jour de famine, un étranger affamé, sale et épuisé, frappa à la porte du marchand. « Je suis un voyageur, dit-il. Je n'ai rien mangé depuis trois jours. Pourriez-vous me donner à manger ? » Le marchand, qui aimait les compliments, lui fit servir un bol de mil, sans un mot de chaleur, et referma la porte. L'étranger remercia, mangea à moitié, car son estomac était trop faible, puis reprit sa route, au hasard, dans la poussière.
+---
+Au bout du chemin, il vit la petite case de Salimata, et frappa timidement. La veuve ouvrit. Elle vit cet homme maigre et son regard fatigué, et n'hésita pas une seconde. « Entre, dit-elle. Je n'ai pas grand-chose, mais ce que j'ai est à toi. » Elle ouvrit sa calebasse, y prit toute la poignée de mil qui lui restait, la fit cuire et la servit avec un peu de lait. Elle ne garda rien pour elle ni pour ses enfants. Elle sourit, et l'étranger comprit qu'il venait de recevoir le plus beau des repas.
+---
+Il mangea lentement, remercia, et se leva. Sur le seuil, il se retourna et dit : « Tu as donné tout ce que tu avais. Le marchand a donné ce dont il n'avait pas besoin. Dis-moi, qui a été le plus généreux ? » Salimata baissa les yeux, embarrassée : « Chacun donne selon ce qu'il peut. » L'étranger sourit, posa sa main sur la calebasse vide et murmura quelques mots. Puis il s'éloigna dans la lumière du couchant, et disparut derrière une colline.
+---
+Le lendemain matin, quand Salimata s'approcha de sa calebasse pour y chercher un peu de mil, elle la trouva pleine à ras bord. Elle en prit une poignée, puis une autre, puis une troisième. La calebasse ne se vidait pas. Elle nourrit ses enfants, ses voisins, tout le village affamé, pendant toute la saison sèche. On raconta que l'étranger n'était autre qu'un ancêtre venu éprouver les cœurs, et que, depuis ce jour, la calebasse de Salimata ne s'est jamais vidée tant qu'elle a donné.
+
+=== conte: sage-reponse-question
+titre: Le sage qui répondait toujours par une autre question
+accroche: Tout le village venait le consulter. Personne ne repartait avec une réponse. Tous repartaient avec la bonne.
+etiquette: Rire
+origine: Conte traditionnel d'inspiration swahili (Tanzanie et Kenya)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: savane
+lumiere: crepuscule
+figures: ancien, enfant, oiseau
+morale: Une bonne question vaut mieux qu'une mauvaise réponse.
+---
+Sur la côte swahilie, un vieux sage habitait sous un manguier. Tout le monde venait le consulter, pour un mariage, un différend, une récolte, un deuil. Mais le sage avait une habitude curieuse : il ne répondait jamais directement. À chaque question qu'on lui posait, il répondait par une autre question, et il fallait avoir de la patience pour comprendre où il voulait en venir. Les anciens du village en riaient, les jeunes s'en agaçaient.
+---
+Un matin, un jeune homme pressé vint le voir. « Sage, dit-il, quelle est la route la plus courte pour arriver à la ville ? » Le sage le regarda de ses petits yeux brillants et demanda : « Cherches-tu la route la plus courte ou la route qui te mènera vraiment à la ville ? » Le jeune homme, désarçonné, resta silencieux, puis avoua : « Je ne sais pas. » Le sage sourit : « Voilà déjà un bon début. Reviens me voir quand tu auras une réponse. »
+---
+Une femme vint ensuite, en larmes. « Mon fils ne m'écoute plus, dit-elle. Que dois-je faire ? » Le sage demanda : « Et toi, quand l'as-tu écouté pour la dernière fois ? » La femme baissa la tête, bouleversée, puis repartit en silence. Le même jour, un marchand demanda quel prix fixer pour sa marchandise. Le sage répondit : « Quel prix paierais-tu toi-même sans te sentir volé ? » Le marchand fronça les sourcils, réfléchit, puis fixa un prix équitable.
+---
+Au fil des jours, certains habitants se mirent à rire du sage : « Il ne répond jamais ! À quoi sert-il ? » Un jour, un enfant s'approcha de lui, très sérieux. « Sage, dit-il, pourquoi réponds-tu toujours par une question ? » Le vieil homme sourit largement, comme jamais auparavant. « Et toi, dit-il, pourquoi crois-tu qu'une réponse t'aiderait plus qu'une bonne question ? » L'enfant resta une minute à réfléchir, puis dit : « Parce que, si tu réponds à ma place, je ne pense plus. »
+---
+Le sage éclata de rire et le serra dans ses bras. « Tu viens de me donner la plus belle des réponses. Va, petit. Tu en sais déjà plus que ceux qui me consultent depuis trente ans. » On raconta cette histoire dans tout le pays, et depuis ce jour, dans bien des villages swahilis, quand un enfant pose une question à un adulte, ce dernier répond parfois : « Et toi, qu'en penses-tu ? » C'est la façon la plus ancienne d'apprendre à penser.

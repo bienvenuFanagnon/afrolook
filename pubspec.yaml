@@ -317,6 +317,7 @@ flutter:
 #    - assets/userEticket/
 #    - assets/frames/
     - assets/fonts/
+    - assets/fonts/contes/
     - assets/fonts/file.zip
     - shorebird.yaml
 
@@ -341,6 +342,19 @@ flutter:
     - family: NunitoBold
       fonts:
         - asset: assets/fonts/Nunito-ExtraBold.ttf
+
+    # La Case aux Contes (licence SIL OFL : voir assets/fonts/contes/OFL-*.txt)
+    - family: CinzelDecorative
+      fonts:
+        - asset: assets/fonts/contes/CinzelDecorative-Bold.ttf
+          weight: 700
+    - family: CrimsonText
+      fonts:
+        - asset: assets/fonts/contes/CrimsonText-Regular.ttf
+        - asset: assets/fonts/contes/CrimsonText-Italic.ttf
+          style: italic
+        - asset: assets/fonts/contes/CrimsonText-SemiBold.ttf
+          weight: 600
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

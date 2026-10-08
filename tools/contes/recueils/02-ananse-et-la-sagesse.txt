@@ -1,0 +1,145 @@
+recueil: Ananse et la Sagesse du Monde
+categorie: Ruses et malices
+description: L'araignée Ananse veut tout savoir, tout posséder, tout garder. Le monde, lui, a d'autres plans.
+ordre: 2
+prix: 70
+
+=== conte: ananse-histoires-monde
+titre: Comment Ananse acheta toutes les histoires du monde
+accroche: Le dieu du ciel les gardait dans une boîte. Le prix était impossible à payer.
+etiquette: Légende
+origine: Conte traditionnel (akan, Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: baobab
+lumiere: nuit
+figures: araignee, ancien, calebasse
+morale: Ce n'est pas celui qui garde les histoires qui est riche, c'est celui qui les raconte.
+---
+Au commencement, les hommes n'avaient pas d'histoires. Ils se réunissaient le soir autour du feu, et personne n'avait rien à dire. Toutes les histoires du monde appartenaient à Nyame, le dieu du ciel, qui les gardait dans une grande boîte d'or, tout en haut, derrière les nuages. Une araignée, Ananse, qui s'ennuyait à périr dans sa toile, décida un jour d'aller les lui acheter. Elle prépara son sac, huit pattes bien lacées, et grimpa le long d'un fil de lumière.
+---
+Nyame l'écouta sans sourire. « Les histoires ont un prix, dit-il. Je te les céderai toutes, mais seulement si tu me rapportes trois choses : le serpent python, la guêpe qui pique sans pitié, et le léopard aux dents de lune. » Il pensait que l'araignée renoncerait. Ananse, au contraire, hocha lentement ses huit pattes. « Ce sera fait, dit-elle. Garde-moi la boîte, que personne d'autre ne l'ouvre. » Et elle redescendit, la tête pleine d'idées.
+---
+Elle commença par le python. Au bord de la rivière, elle se mit à parler toute seule : « Il est plus court que ce bambou, disait-elle. Non, il est plus long ! Que dit-on là-bas ? » Le python, vexé, s'approcha : « Plus long que quoi ? » Ananse sourit : « Je tiens un pari avec ma femme. Allonge-toi sur ce bambou, que je te mesure. » Le python s'étira, flatté. Ananse attacha le bambou et le serpent ensemble, solidement, en chantant. Le premier prix était acquis.
+---
+Pour la guêpe, ce fut plus subtil. Ananse remplit une calebasse d'eau, la versa sur la ruche en disant : « Il pleut, il pleut, réfugiez-vous ! » Les guêpes entrèrent dans la calebasse vide qu'Ananse tenait ouverte, et elle referma le couvercle. Pour le léopard, elle creusa une fosse, la couvrit de feuilles, et se mit à crier : « Au secours, le terrible léopard va me manger ! » Le léopard accourut et tomba dans le piège. Ananse remonta là-haut, traînant ses trois captifs.
+---
+Nyame, stupéfait, les prit un par un. « Tu es plus malin que tout mon ciel », dit-il enfin. Il lui tendit la boîte d'or. Ananse l'ouvrit, et les histoires s'envolèrent sur la terre comme des oiseaux de toutes les couleurs. Elles se posèrent sur les toits, sur les feuillages, dans les oreilles des enfants et des vieillards. Le soir même, autour des feux, les gens commencèrent à raconter. Et depuis ce jour, quand un conteur ouvre la bouche, c'est un peu d'Ananse qui parle.
+
+=== conte: ananse-trois-grains
+titre: Les trois grains que l'araignée ne voulait pas partager
+accroche: Trois petits grains, une famille affamée, et une araignée qui compta mal.
+etiquette: Rire
+origine: Conte traditionnel (akan, Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: crepuscule
+figures: araignee, enfant, calebasse
+morale: Celui qui compte seul ses richesses finit par n'avoir plus personne pour les partager.
+---
+Une année de famine, Ananse n'avait plus qu'une poignée de grains au fond de sa jarre. Sa femme Aso, ses fils et sa belle-mère avaient le ventre creux. Elle sortit un matin pour chercher du travail, et un voisin généreux lui donna trois grains de maïs magiques. « Plante-les, dit-il, et dans trois jours, tu auras de quoi nourrir tout le village. » Ananse remercia, les glissa dans sa poche, et courut chez lui en rêvant de bouillie.
+---
+Mais en route, l'araignée se mit à réfléchir. Si elle plantait les trois grains, elle devrait partager la récolte avec ses frères, ses cousins et ses voisins, qui viendraient tous mendier. Si elle les mangeait en cachette, personne n'en saurait rien. Elle s'arrêta au bord du chemin, sortit les grains, les mit dans une petite marmite, et alluma un feu avec trois brindilles. L'eau frémissait déjà quand elle entendit des pas derrière elle.
+---
+C'était son voisin, le vieux Kwaku, qui rentrait des champs. « Que cuisines-tu là, Ananse ? » demanda-t-il. L'araignée, prise de panique, couvrit la marmite avec son pagne : « Rien, rien, du thé d'herbes ! » Kwaku s'assit, par politesse. L'odeur du maïs montait pourtant. Il attendit patiemment, en parlant du temps, des champs, de ses petits-enfants, pendant que l'eau bouillait, et bouillait, et qu'Ananse suait à grosses gouttes sous son pagne.
+---
+Enfin, n'y tenant plus, Ananse fit semblant de partir pour un besoin pressant et courut derrière un buisson. Quand elle revint, Kwaku avait disparu, et la marmite aussi. Il avait compris, et il l'avait emportée, prête à servir, chez sa femme affamée qui avait faim elle aussi. Ananse, restée les mains vides au bord du feu, s'assit par terre. Elle ne pleura pas, car l'araignée ne pleure jamais, mais elle se mit à rire, d'un rire mélancolique.
+---
+Elle rentra chez elle les mains vides. Sa femme Aso, voyant son air penaud, lui demanda ce qui s'était passé. Ananse raconta tout, la peur, la ruse, la marmite volée. Aso éclata de rire si fort que tous les enfants vinrent voir. Le lendemain, Kwaku, ému par la famine d'Ananse, apporta une marmite pleine de maïs. « Tu aurais dû partager, dit-il, et tu aurais mangé deux fois. » Ananse, cette fois, ne répondit rien, et on mangea tous ensemble.
+
+=== conte: ananse-calebasse-sagesse
+titre: La calebasse qui savait tout
+accroche: Elle avait rassemblé toute la sagesse du monde. Il lui manquait une seule chose : un arbre.
+etiquette: Sagesse
+origine: Conte traditionnel (akan, Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: baobab
+lumiere: aube
+figures: araignee, enfant, calebasse
+morale: La sagesse est comme un baobab : un seul homme ne peut pas l'entourer de ses bras.
+---
+Ananse, un jour, décida de devenir l'être le plus sage du monde. Elle se mit à parcourir les villages, à écouter les anciens, à noter les proverbes, à ramasser les conseils des mères et les paroles des chasseurs. Elle les enfermait un à un dans une grande calebasse, qu'elle gardait précieusement. Au bout d'un an, la calebasse débordait de sagesse, et Ananse se promenait en la serrant contre elle.
+---
+« Il faut que je la cache, dit-elle un soir. Si quelqu'un la trouve, il saura tout ce que je sais. » Elle la porta sur son dos et chercha l'endroit le plus haut de la région : le sommet du plus grand arbre. Elle attacha la calebasse devant elle, avec un fil de soie, et commença à grimper. Mais la calebasse était si grosse, si lourde, si encombrante, qu'à chaque pas, elle se coinçait entre les branches. Ananse tirait, poussait, et se fatiguait.
+---
+Son petit garçon, qui l'observait du pied de l'arbre, finit par rire. « Mère, pourquoi mets-tu la calebasse devant toi ? Si tu la mettais sur ton dos, tu pourrais grimper bien plus vite. » Ananse s'arrêta net. Un enfant venait de lui donner un conseil auquel elle n'avait pas pensé, elle qui avait recueilli toute la sagesse du monde. Furieuse de s'être laissé instruire par un petit, elle jeta la calebasse de toutes ses forces contre le sol.
+---
+La calebasse éclata en mille morceaux. De chaque débris s'échappa un fragment de sagesse, qui fila dans le vent. Les proverbes se posèrent sur les épaules des vieillards, les conseils dans les oreilles des mères, les ruses dans les mains des chasseurs, et les paroles douces dans la bouche des petits enfants. Ananse regarda tout cela voler, bouche bée, et comprit qu'elle venait de rendre au monde tout ce qu'elle lui avait volé.
+---
+Depuis ce jour, personne ne possède toute la sagesse. Chacun en détient un petit morceau, et c'est pour cela qu'il faut s'asseoir ensemble, écouter les vieux et les jeunes, partager ce qu'on sait. Ananse, elle, tisse sa toile tout en haut des arbres, et chaque matin, quand la rosée perle, on dit que ce sont les larmes des proverbes oubliés. Mais si tu écoutes bien, tu entends aussi, parfois, un petit rire d'enfant dans la rosée.
+
+=== conte: ananse-toile-plafond
+titre: Pourquoi Ananse tisse sa toile au plafond des cases
+accroche: Elle y est montée par honte. Elle n'en est jamais redescendue.
+etiquette: Mythe
+origine: Conte traditionnel (akan, Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: araignee, ancien, feu
+morale: Une honte cachée devient une habitude, et l'habitude devient une demeure.
+---
+Il fut un temps où Ananse vivait au milieu des hommes, dans une petite case au centre du village, comme tout le monde. Elle était curieuse de tout, toujours mêlée aux affaires des voisins, et on la voyait partout. Mais elle avait un défaut : elle ne tenait jamais ses promesses. Un matin, elle emprunta de la farine à une vieille femme en promettant de la rendre au coucher du soleil, et le soleil se coucha sans qu'elle revienne.
+---
+Le lendemain, la vieille femme vint réclamer. Ananse, honteuse de n'avoir rien à rendre, se cacha derrière sa porte. Le jour d'après, elle fit de même. Bientôt, tout le village savait qu'Ananse devait de la farine, de l'huile, du sel, et même une chèvre. Les gens frappaient à sa porte, d'abord poliment, puis avec colère. L'araignée, de plus en plus petite dans son coin, se disait qu'un jour, il faudrait bien qu'elle trouve un moyen de s'en sortir.
+---
+Une nuit, alors que le village dormait, elle monta sur les poutres du toit, tout en haut, juste sous le chaume, là où personne ne pensait à regarder. Elle s'installa dans l'ombre, sur un fil qu'elle tira d'elle-même, et regarda en bas les gens qui la cherchaient. « Ici, personne ne viendra me demander mes dettes », pensa-t-elle. Elle y resta jusqu'au matin, et tous les matins qui suivirent, jusqu'à ce que son fil devienne une toile.
+---
+Les années passèrent. Les créanciers vieillirent, leurs enfants oublièrent, et les dettes s'effacèrent d'elles-mêmes. Mais Ananse avait pris goût à sa hauteur. Elle trouvait l'endroit calme, abrité, bien placé pour observer les conversations. De là-haut, elle apprenait tout ce qui se disait dans la maison, sans qu'on la voie. Elle ne descendit plus jamais, sauf quand elle avait faim, et alors seulement pour attraper une mouche imprudente.
+---
+Voilà pourquoi, aujourd'hui encore, les araignées tissent leur toile dans le coin des plafonds, à l'abri des regards. Les anciens disent qu'il ne faut pas les chasser trop vite : elles gardent la mémoire de toutes les promesses non tenues du village. Et quand une femme balaie la case le soir et passe le balai sur un fil de soie, elle murmure toujours : « Pardonne-moi, Ananse. Je rendrai ce que je dois avant la fin de la lune. »
+
+=== conte: ananse-cuillere-longue
+titre: Le festin où personne ne pouvait porter la cuillère à sa bouche
+accroche: Des cuillères d'un mètre, un plat immense, et un seul moyen de manger.
+etiquette: Sagesse
+origine: Conte traditionnel d'inspiration akan (Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: araignee, ancien, calebasse
+morale: Celui qui nourrit les autres se nourrit lui-même.
+---
+Le roi de la forêt organisa un jour un grand festin, et tous les animaux furent conviés. Au milieu de la place, on installa une marmite géante, remplie de ragoût fumant. Autour d'elle, vingt cuillères d'une longueur extraordinaire : un mètre de manche, au moins. Le roi prit la parole : « Chacun mangera avec ces cuillères, et personne n'aura le droit de les raccourcir. » Les convives échangèrent des regards perplexes.
+---
+Les premiers qui s'approchèrent plongèrent leur cuillère dans la marmite et la remplirent. Mais quand ils voulurent la porter à la bouche, le manche trop long les en empêcha. Le sanglier la tordit, le singe sauta, la hyène hurla de frustration. Aucun ne parvenait à manger. Ils se mirent à se pousser, à se disputer, à renverser la sauce, et le grand repas commençait à ressembler à un champ de bataille. Ananse, accroupie sur un rocher, regardait la scène avec ses huit yeux.
+---
+Elle descendit enfin et se glissa entre les convives. Elle plongea sa cuillère dans la marmite, puis la tendit, d'un bras, vers la bouche de la gazelle, qui se trouvait en face d'elle. « Mange, dit-elle. » La gazelle, surprise, but la sauce avec délice. Ensuite, elle prit sa propre cuillère, la plongea, la tendit à son voisin le hérisson. Et le hérisson, comprenant, tendit la sienne à la tortue. En quelques instants, la ronde avait changé de forme.
+---
+Autour de la marmite, tous les animaux se nourrissaient les uns les autres, en riant, en se passant la sauce, en s'excusant pour les éclaboussures. Les cuillères longues, qui avaient semblé être une malédiction, devenaient un cadeau : on pouvait atteindre quelqu'un de très loin et lui donner à manger. Le roi regardait, ému. Il avait préparé cette épreuve pour savoir si son peuple saurait se partager un repas, et il avait trouvé sa réponse, grâce à une araignée.
+---
+À la fin du festin, tout le monde était repu. Le roi se leva et dit : « Aujourd'hui, j'ai vu la plus grande des sagesses, celle qui ne s'apprend pas dans les livres. Ananse, tu auras une place à ma table chaque jour de ta vie. » L'araignée, pour une fois, ne sut que répondre. On raconte que depuis ce jour, en Afrique, avant de manger, on tend toujours le premier morceau à celui qui est assis à côté, par tradition et par reconnaissance.
+
+=== conte: ananse-tambour-secret
+titre: Ananse et le tambour qui répétait tous les secrets
+accroche: Tout ce qu'on lui confiait, il le jouait le lendemain sur la place du village.
+etiquette: Fin surprenante
+origine: Conte traditionnel d'inspiration akan (Ghana)
+region: Afrique de l'Ouest
+type: long
+gratuites: 2
+decor: village
+lumiere: crepuscule
+figures: araignee, tambour, griot
+morale: Un secret confié à un tambour est un secret confié au vent.
+---
+Un sculpteur du village avait taillé un tambour dans le bois d'un arbre foudroyé. Quand on le frappait, il ne rendait pas seulement un son : il répétait, en rythmes, les dernières paroles qu'on avait prononcées près de lui. Les villageois s'amusèrent d'abord de cette curiosité. Mais Ananse, qui adorait les secrets, comprit vite quel pouvoir elle avait entre les mains, et elle acheta le tambour pour trois jours de service.
+---
+Le soir même, elle s'assit près du tambour et se mit à confier des choses. « Le chef du village a peur des serpents, dit-elle. La grande prêtresse perd ses dents. Le forgeron triche sur le poids du fer. » Elle riait toute seule, en pensant à l'effet de ces révélations. Le lendemain matin, à l'heure où le village se rassemblait sous l'arbre, elle posa le tambour sur la place et le frappa trois fois, de toutes ses pattes.
+---
+Le tambour ne répéta que des silences. Ananse, vexée, frappa plus fort. Rien. Elle l'examina en tous sens, le secoua, le tourna, et se rendit compte qu'il avait peut-être besoin de nuit pour parler. Elle attendit le soir, le posa de nouveau au milieu de la place, et recommença. Cette fois, une grande voix de bois résonna dans toute la clairière, et le village entier se tut. Le tambour disait : « Ananse a peur des chauves-souris. Ananse ne sait pas coudre. Ananse a menti au roi trois fois cette semaine. »
+---
+Ananse, pétrifiée, se jeta sur le tambour pour l'étouffer sous son pagne. Mais plus elle le serrait, plus il résonnait, comme s'il avait mémorisé toutes les paroles prononcées près de lui, y compris celles qu'elle avait murmurées sans s'en rendre compte. Tout le village riait, d'abord, puis le roi se leva, le regard sombre. « Ananse, dit-il, tu as essayé de te servir d'un tambour pour exposer nos faiblesses. Voyons ce qu'il dit de toi. » Et le tambour se mit à jouer encore.
+---
+Le tambour raconta toute la vie d'Ananse : ses tromperies, ses mensonges, ses promesses, ses dettes. Il ne cacha rien, il ne déforma rien. À la fin, un silence immense s'installa. Ananse, honteuse, baissa ses huit yeux. Le roi se leva à nouveau et dit : « Chacun de nous a des faiblesses. Ce tambour nous rappelle qu'elles ne sont pas des armes. Que celui qui veut les utiliser contre autrui les entende d'abord résonner contre lui-même. »
+---
+Ananse offrit le tambour au village, qui le plaça sur la grande place. On l'utilise encore, les soirs de fête, pour rappeler aux hommes que ce qu'on dit en secret finit toujours par résonner. Et quand un enfant promet de garder un secret, les anciens sourient : « Dis-le au tambour, alors. Ou garde-le dans ta poitrine : c'est le seul endroit où il restera. » Ananse, elle, est devenue la gardienne des secrets, car elle sait mieux que personne ce qu'il en coûte de les trahir.

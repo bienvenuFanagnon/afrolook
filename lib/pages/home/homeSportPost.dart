@@ -73,6 +73,7 @@ import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
 import '../../widgets/feed/sections/ad_free_day_card.dart';
 import '../../widgets/feed/sections/quiz_feed_card.dart';
+import '../../widgets/feed/sections/contes_feed_card.dart';
 import '../../widgets/feed/sections/etude_feed_card.dart';
 
 
@@ -2965,6 +2966,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
       if (i == 16) {
         contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_sport_2'), slot: 2));
+      }
+
+      // Conte du jour (La Case aux Contes) : après le 7e post, un second après le 22e seulement si le premier a été ouvert
+      if (i == 6) {
+        contentWidgets.add(const ContesFeedCard(key: ValueKey('contes_card_sport_1'), slot: 1));
+      }
+      if (i == 21) {
+        contentWidgets.add(const ContesFeedCard(key: ValueKey('contes_card_sport_2'), slot: 2));
       }
 
       // Cours universitaire du jour : de temps en temps dans le fil, deux cours différents

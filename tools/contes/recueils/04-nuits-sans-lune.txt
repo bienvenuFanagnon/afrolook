@@ -1,0 +1,145 @@
+recueil: Nuits sans Lune
+categorie: Mystères et frissons
+description: Des bruits dans la nuit, des voix dans les puits, des arbres qui comptent. Chaque frisson cache un secret.
+ordre: 4
+prix: 70
+
+=== conte: tambour-ne-se-taisait-pas
+titre: Le tambour qui refusait de se taire
+accroche: Chaque nuit, un tambour résonnait dans le village abandonné. Personne ne savait qui le frappait.
+etiquette: Frisson
+origine: Conte traditionnel d'inspiration mossi (Burkina Faso)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: tambour, ancien, enfant
+morale: Ce qui nous semble une menace est parfois un avertissement qui n'a pas été écouté.
+---
+Au bord de la grande rivière, un village avait été abandonné après une mauvaise récolte. Les cases s'étaient peu à peu effondrées, et les ronces avaient mangé les ruelles. Mais chaque nuit, à l'heure où les étoiles se lèvent, un tambour se mettait à résonner dans les ruines. Ce n'était pas un rythme de fête. C'était un grondement lent, obstiné, qui roulait sur la rivière et allait réveiller les villages voisins, de l'autre côté de la forêt.
+---
+Les habitants des alentours avaient peur. Les uns disaient que c'étaient les fantômes de ceux qui n'avaient pas voulu partir. D'autres affirmaient que c'était un sorcier qui rôdait. Les enfants, serrés contre leur mère, se bouchaient les oreilles. Les chasseurs, eux, refusaient de passer près du village abandonné, même en plein jour. Seul un jeune garçon nommé Issa, curieux comme une flamme, se demandait pourquoi un fantôme aurait besoin de jouer du tambour toutes les nuits.
+---
+Une nuit sans lune, Issa glissa hors de la case, un bâton à la main, et suivit le grondement sur les sentiers. Plus il approchait, plus le son devenait fort, puis net, presque humain. Quand il arriva aux premières ruines, une odeur d'eau et de boue lui monta au nez. Il écarta les ronces, avança entre les cases effondrées, et aperçut au centre de la place un immense tambour de bois noir, posé sur une pierre, que personne ne frappait.
+---
+Pourtant, le tambour résonnait. Issa s'approcha, le cœur battant, et posa la main sur la peau tendue. Elle vibrait. Il se pencha, regarda en dessous, et comprit : sous le tambour, un filet d'eau suintait d'une fissure dans la roche, tombait goutte à goutte sur la peau, puis coulait vers la rivière. Chaque goutte frappait le tambour, et ces frappes, amplifiées par la caisse de bois, résonnaient dans la nuit comme un rythme obstiné.
+---
+Mais pourquoi l'eau coulait-elle là, si haut au-dessus de la rivière ? Issa observa le sol. La terre était gorgée d'eau, la berge fragile, et il comprit enfin pourquoi le village avait été abandonné : le fleuve, chaque année, rongeait un peu plus la colline. Le tambour ne jouait pas pour faire peur. Il disait que le sol s'effondrait. Le lendemain, Issa raconta tout aux anciens. Ils vérifièrent, et découvrirent que les villages voisins, construits sur la même berge, étaient menacés par le même glissement. On déplaça les cases avant la saison des pluies, et le fleuve emporta, cette année-là, une colline entière. Le tambour, lui, se tut le jour où tout le monde fut en sécurité.
+
+=== conte: baobab-segou-racines
+titre: Ce que le baobab de Ségou gardait sous ses racines
+accroche: Un homme avide a creusé de nuit. Il n'a pas trouvé ce qu'il cherchait.
+etiquette: Fin surprenante
+origine: Conte traditionnel d'inspiration bambara (Mali)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: baobab
+lumiere: crepuscule
+figures: ancien, enfant, calebasse
+morale: Le vrai trésor d'un village est ce qui le fait vivre, pas ce qui brille.
+---
+À Ségou, au bord du Niger, un baobab immense dominait la place du village depuis des siècles. On disait que les ancêtres avaient enterré sous ses racines un trésor, pour les jours de malheur. Les anciens, eux, ne parlaient jamais du contenu. Ils se contentaient de dire : « Quand le moment viendra, l'arbre dira ce qu'il garde. » Les jeunes écoutaient cela en haussant les épaules. Un seul y croyait vraiment, et il y pensait nuit et jour : un marchand nommé Dramane.
+---
+Dramane rêvait d'or. Il imaginait des pièces, des bijoux, des statuettes enfouies sous les racines, et se voyait déjà riche comme un roi. Un soir, après avoir bien observé les habitudes du village, il attendit que tout le monde dorme, prit une pelle et se glissa jusqu'au baobab. La nuit était sans lune. Il se mit à creuser entre deux racines, sous l'écorce rugueuse. La terre, d'abord dure, devint peu à peu humide, puis boueuse. Il creusait avec rage, certain d'approcher du trésor.
+---
+Au bout de plusieurs heures, sa pelle heurta quelque chose. Un cercle de pierre, bien taillé, qui semblait fermer une ouverture. Dramane, le cœur battant, dégagea la terre autour, et souleva la dalle avec un levier de fortune. Une odeur fraîche s'échappa, un souffle froid qui lui fit frissonner l'échine. Il se pencha, alluma une torche, et vit, en dessous, un escalier de pierre qui descendait dans le noir, vers un bruit de goutte à goutte. Il hésita, puis posa un pied sur la première marche.
+---
+L'escalier menait à une grande salle voûtée, au plafond soutenu par des piliers taillés. Au centre, un bassin de pierre débordait d'eau claire. Le long des murs, des jarres alignées portaient des signes anciens. Dramane les ouvrit une à une, et n'y trouva que de l'eau, des graines et des morceaux de poterie. Pas un grain d'or. Il tomba à genoux, désespéré. Puis il comprit en lisant les inscriptions : c'était la réserve d'eau et de semences que ses ancêtres avaient cachée, pour que le village survive aux grandes sécheresses.
+---
+Dramane remonta à l'aube, couvert de boue et de honte. Il alla trouver le chef du village et lui raconta tout. Le vieil homme sourit : « Nous savions que quelqu'un finirait par y descendre. Les ancêtres savaient aussi qu'il ne trouverait que ce dont nous aurons besoin. » Cette année-là, la sécheresse frappa le pays. Le village de Ségou ouvrit le puits caché, et partagea ses graines avec tous les villages voisins. Dramane, devenu humble, fut le premier à porter l'eau. Quant au baobab, on dit qu'il pousse encore plus fort au-dessus du puits.
+
+=== conte: voix-du-puits
+titre: La voix qui appelait chaque nuit depuis le puits
+accroche: Elle prononçait un prénom. Pas le même chaque soir. Jusqu'à celui d'Awa.
+etiquette: Frisson
+origine: Conte traditionnel d'inspiration soninké (Mauritanie et Mali)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: enfant, ancien, calebasse
+morale: Une voix qu'on n'ose pas écouter est parfois un appel au secours.
+---
+Dans un village du Sahel, il y avait un vieux puits que plus personne n'utilisait depuis qu'on en avait creusé un nouveau, plus proche. Un soir, des enfants rapportèrent une chose étrange : au crépuscule, une voix montait du puits, douce et lointaine. Elle prononçait un prénom, lentement, puis un autre. Les mères, inquiètes, interdirent de s'en approcher. Mais le soir suivant, la voix était revenue, et elle appelait un autre nom, comme si elle cherchait quelqu'un.
+---
+Jour après jour, la voix égrenait les prénoms du village. Les enfants se cachaient. Les femmes fermaient les portes. Les hommes, plus braves, venaient parfois au bord du puits en brandissant des lances, mais ils n'entendaient rien : la voix ne se manifestait qu'à la tombée du jour, quand le soleil mettait le sable en feu. Un soir, elle dit « Awa », et la petite Awa, onze ans, qui ramassait du bois près de là, sentit son cœur s'arrêter. Elle laissa tomber ses fagots et resta immobile.
+---
+La voix répéta : « Awa. » C'était un murmure, mais il ne faisait pas peur, plutôt tristesse. Awa, qui avait toujours été plus courageuse que les autres, posa ses mains sur la margelle de pierre, et répondit, tout bas : « Je suis là. » Un silence tomba. Puis la voix dit, plus faiblement : « Aide-moi. » Awa se mit à courir vers le village, haletante, en criant que quelqu'un était en bas, qu'il fallait le sortir, vite, avant la nuit.
+---
+Les hommes, d'abord méfiants, finirent par la suivre. On rassembla des cordes, des torches et une grande calebasse. Le plus léger des jeunes descendit, attaché à une corde, dans les profondeurs du puits. À mi-chemin, il aperçut dans une niche de pierre, au-dessus de l'eau, un vieil homme recroquevillé, maigre comme un roseau, les yeux brillants de fièvre. C'était un voyageur tombé là des jours plus tôt, qui n'avait plus la force de crier. Il avait appelé les noms qu'il avait entendus au loin, jusqu'à celui qui avait répondu.
+---
+On remonta le vieil homme, qu'on soigna avec du lait et du mil. Il avait perdu la mémoire d'une partie de sa route, mais se souvenait de ce nom, Awa, qu'il avait entendu parmi tant d'autres. Il resta au village, et on l'appela « l'Homme du puits ». Les enfants vinrent l'écouter chaque soir raconter ses voyages. Et la vieille margelle, qu'on ne craignait plus, fut réparée, couverte d'une toile, et bordée de petites fleurs jaunes, que les mères allaient poser en passant, pour dire merci.
+
+=== conte: epouse-du-fleuve
+titre: Celle qui épousa le fleuve
+accroche: Il ne lui avait demandé qu'une chose : ne jamais dire d'où il venait.
+etiquette: Amour
+origine: Conte traditionnel d'inspiration songhaï (Niger)
+region: Afrique de l'Ouest
+type: long
+gratuites: 2
+decor: fleuve
+lumiere: crepuscule
+figures: reine, pirogue, enfant
+morale: Un secret promis vaut plus que l'amour, parce qu'il est le prix de l'amour.
+---
+Il y avait, dans un village de pêcheurs sur les rives du Niger, une jeune femme nommée Fati. Elle était belle, mais surtout silencieuse. Elle passait des heures assise au bord de l'eau à regarder passer les pirogues. Un soir, un étranger vêtu de bleu sombre apparut sur la rive, comme sorti de l'eau elle-même. Il lui parla doucement. Il avait la voix d'une rivière paisible et des yeux couleur de limon. Quand il lui demanda sa main, elle accepta presque sans réfléchir.
+---
+« Je t'épouse, dit-il, mais à une condition. Jamais tu ne diras à personne d'où je viens, ni ce que je fais quand tu dors. » Fati promit. On célébra le mariage au bord du fleuve, avec des tambours et des chants, et l'étranger, qui dit s'appeler Zarma, se révéla un époux attentionné. Il rapportait chaque jour des poissons en abondance, et le village prospérait. Mais chaque nuit, quand Fati s'endormait, elle sentait Zarma se lever et sortir en silence.
+---
+Au fil des mois, la curiosité de Fati grandit. Quand sa belle-mère lui demanda un jour d'où venait son mari, elle répondit simplement : « Il vient de loin. » Une voisine, moins patiente, insista : « Et quand tu dors, que fait-il ? » Fati se tut. Mais une nuit, saisie par le doute, elle fit semblant de dormir, suivit son mari sur la berge, et le vit marcher dans l'eau, les bras ouverts, comme quelqu'un qui retourne chez soi. Les vagues l'enveloppaient de tendresse, et sa peau, sous la lune, brillait comme des écailles.
+---
+Elle recula, étouffa un cri, et courut se réfugier dans sa case. Le lendemain, Zarma ne dit rien, mais ses yeux étaient tristes. Les jours suivants, Fati garda son secret, tendue, évitant les questions. Puis, un soir, alors que sa mère la pressait de dire la vérité, elle laissa échapper : « Il vient du fleuve. » À peine les mots prononcés, un grondement sourd retentit au bord de l'eau. Le ciel s'obscurcit, le vent se leva, et dans sa case, Fati sentit que quelque chose venait de se briser.
+---
+Zarma apparut sur le seuil, trempé, les yeux pleins d'eau. « Tu as dit le secret, murmura-t-il. Je ne peux plus rester. » Il prit sa main, la porta à ses lèvres, et ajouta : « Je ne te punis pas. Mais le fleuve ne pardonne pas ce que la parole a défait. Garde ce que je te laisse. » Il lui tendit une petite pierre lisse et bleue, puis marcha jusqu'à la berge, et s'enfonça dans l'eau sans se retourner. Les vagues se refermèrent, et plus jamais personne ne revit l'étranger.
+---
+Fati vécut le reste de sa vie au bord du fleuve. Chaque soir, elle posait la pierre bleue sur l'eau, qui la lui rendait toujours. Les villageois dirent que le fleuve lui avait pardonné, parce que jamais plus aucune pirogue ne chavira devant sa maison. Les mères racontent cette histoire aux jeunes filles pour qu'elles apprennent à garder un secret, mais aussi aux jeunes hommes, pour qu'ils sachent que la confiance est un fleuve : on peut y puiser toute sa vie, ou le perdre en un seul mot.
+
+=== conte: chasseur-foret-comptait
+titre: Le chasseur et la forêt qui comptait ses pas
+accroche: Chaque pas de trop lui était repris. Il n'avait pas compris que la forêt savait compter.
+etiquette: Sagesse
+origine: Conte traditionnel d'inspiration pygmée (Afrique centrale)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: aube
+figures: guerrier, ancien, oiseau
+morale: La forêt donne à qui prend ce qu'il lui faut, et reprend à qui prend ce qu'il veut.
+---
+Dans la grande forêt d'Afrique centrale, un jeune chasseur nommé Mbolo se vantait d'être le meilleur de son clan. Il rapportait chaque jour plus de gibier que les autres, mais ses prises ne se mangeaient jamais entièrement. Il tuait pour le plaisir, laissant parfois les bêtes pourrir au bord du sentier. Les anciens l'avertissaient : « La forêt n'est pas un garde-manger, Mbolo. Elle écoute, elle regarde et elle compte. » Le jeune homme riait, certain qu'on ne compte pas ce qu'on ne voit pas.
+---
+Un matin, il partit seul sur un sentier qu'il connaissait pourtant par cœur. Il tua un antilope, puis deux singes, puis un porc-épic, et il ne s'arrêta que lorsque son sac fut plein à craquer. Content de lui, il décida de rentrer. Mais, au premier tournant, il ne reconnut pas le sentier. Les arbres semblaient plus serrés, les lianes plus épaisses, et l'air avait changé d'odeur. Il fit quelques pas, se retourna, et vit que le chemin derrière lui avait disparu.
+---
+Il marcha longtemps, perdu, entouré de bruits qui lui semblaient familiers sans qu'il les reconnaisse. À chaque pas, il remarqua un détail étrange : un caillou posé au milieu du chemin, un petit tas de branches, un ruban d'écorce. Il comprit alors que quelqu'un le comptait. À chaque pas de trop, la forêt lui reprenait un mètre de route. Il jeta son sac, puis le deuxième, puis le troisième, et plus il se délestait, plus le sentier semblait se redessiner devant lui.
+---
+Épuisé, il s'assit au pied d'un arbre, la tête dans les mains. Un vieil oiseau noir vint se poser sur une branche, le regarda longuement, et dit, d'une voix qui n'avait rien d'un oiseau : « Que cherches-tu ici ? » Mbolo, d'abord stupéfait, répondit : « Mon chemin. » L'oiseau cligna des yeux : « Alors rends à la forêt ce qui ne t'appartient pas. » Le chasseur se leva, ramassa tout ce qu'il avait tué, et alla le déposer au pied du grand arbre, comme une offrande, en demandant pardon.
+---
+Au crépuscule, le sentier réapparut devant lui, pavé de lumière. Mbolo rentra au village les mains vides, et raconta tout aux anciens. Depuis ce jour, il ne chassa plus que ce qu'il pouvait manger, remercia la forêt avant chaque départ, et laissa toujours une part au pied d'un arbre. On dit que la forêt, en retour, lui offrit les plus belles pistes, et que jamais plus il ne se perdit. Les enfants du clan, aujourd'hui encore, apprennent à compter leurs pas pour que la forêt ne les compte pas à leur place.
+
+=== conte: nuit-mille-lucioles
+titre: La nuit des mille lucioles
+accroche: Perdus dans la savane sans lune, ils virent des étoiles descendre à leurs pieds.
+etiquette: Amour
+origine: Conte traditionnel d'inspiration zouloue (Afrique du Sud)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: savane
+lumiere: nuit
+figures: enfant, ancien, feu
+morale: Ceux qui nous aimaient s'éteignent rarement : ils changent de lumière.
+---
+Deux enfants, Thandi et son petit frère Sipho, gardaient les chèvres de leur grand-mère, dans la savane d'Afrique du Sud, un soir d'été. La journée avait été chaude, et le troupeau s'était éloigné plus qu'à l'ordinaire. Quand le soleil se coucha, ils réalisèrent qu'ils ne reconnaissaient plus le chemin. Sans lune, la nuit tombait comme une couverture épaisse. Sipho, la gorge nouée, saisit la main de sa sœur. « On est perdus ? » murmura-t-il.
+---
+Thandi serra sa main sans répondre. Elle n'osait pas dire qu'elle ne savait pas non plus. Ils marchèrent un moment, trébuchant sur les racines, entendant au loin les cris des hyènes. Puis, à l'orée d'un bosquet d'acacias, Sipho cria : « Regarde ! » Dans l'obscurité, une petite lumière verdâtre venait de s'allumer, puis une autre, puis dix, puis cent, comme des étoiles tombées du ciel. Des lucioles, par centaines, flottaient au-dessus de l'herbe.
+---
+Les lucioles se mirent à danser autour des deux enfants, formant un fil lumineux qui serpentait entre les arbres. Thandi se souvint d'une histoire de sa grand-mère : « Quand quelqu'un que tu aimais quitte ce monde, il se transforme parfois en petite lumière pour te guider. » Elle prit la main de Sipho et suivit le fil. Les lucioles s'écartaient, s'éclairaient, les accompagnaient sans les toucher. Les enfants marchaient, rassurés, hypnotisés par ce chemin d'or tremblant.
+---
+Après une heure de marche, le fil s'arrêta devant un point d'eau qu'ils reconnurent aussitôt : c'était celui où leur grand-père avait fait boire les vaches, avant de mourir. De l'autre côté, on apercevait une lueur orange : le feu de la case, où leur grand-mère les attendait, un bâton à la main, le visage creusé d'inquiétude. Quand elle les vit, elle poussa un cri, courut les serrer dans ses bras, et pleura de joie.
+---
+Ce soir-là, devant le feu, les enfants racontèrent tout : les lucioles, le fil lumineux, le point d'eau. La grand-mère sourit, tendre : « C'était votre grand-père. Il veille sur vous, tous les soirs, depuis son départ. » Thandi leva les yeux vers la nuit : une dernière luciole était posée sur le toit de chaume, et brillait doucement. Depuis, quand un orage éclate ou qu'un chagrin pèse, les enfants de cette famille vont s'asseoir sous un arbre, au crépuscule, et attendent les petites lumières. Elles viennent toujours.

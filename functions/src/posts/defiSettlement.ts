@@ -14,7 +14,7 @@ import { APP_DATA_DOC, defaultRewardSplit, defiLabel, sendDefiNotification } fro
  * pièces, le DÉFI reste en attente et est retenté au passage suivant.
  */
 export const settleEndedDefis = onSchedule(
-  { schedule: "every 15 minutes", timeZone: "UTC", memory: "512MiB", cpu: 1, timeoutSeconds: 300 },
+  { schedule: "every 15 minutes", timeZone: "UTC", memory: "512MiB", cpu: "gcf_gen1", timeoutSeconds: 300 },
   async () => {
     const snap = await db.collection("Posts")
       .where("type", "==", "DEFI")

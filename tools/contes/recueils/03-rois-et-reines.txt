@@ -1,0 +1,145 @@
+recueil: Rois et Reines d'Afrique
+categorie: Légendes et royaumes
+description: Des cavalières, des empereurs, des reines qui n'ont jamais baissé la tête. Légendes et histoire racontées comme à la veillée.
+ordre: 3
+prix: 70
+
+=== conte: soundiata-nuit-sans-sommeil
+titre: La nuit où Soundiata ne dormit pas
+accroche: Fils de la femme-buffle, il rampait encore à sept ans. Une nuit, tout changea.
+etiquette: Légende
+origine: Épopée mandingue (Mali), racontée par les griots
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: baobab
+lumiere: nuit
+figures: guerrier, griot, feu
+morale: Celui qu'on a le plus moqué devient parfois celui qui relève tout un peuple.
+---
+Dans le royaume du Manden, on racontait qu'un chasseur avait épousé une femme laide et bossue, si laide que les devins l'avaient appelée « la femme-buffle ». De cette union naquit un fils, Soundiata, que ses frères moquaient sans pitié : à sept ans, il ne marchait toujours pas. Il rampait dans la cour, les jambes inertes, sous les rires des autres enfants. Sa mère, Sogolou, pleurait en silence. Mais un devin avait promis : cet enfant serait un jour plus grand que tous les rois.
+---
+À la mort de son père, le trône revint à un demi-frère, et la deuxième épouse du roi, jalouse, humilia Sogolou en public. Le jour où la reine lui refusa quelques feuilles de baobab pour sa sauce, Soundiata releva la tête. Ce soir-là, il demanda à sa mère de lui faire apporter la barre de fer la plus lourde du forgeron. Les villageois se moquèrent encore : que voulait faire cet enfant qui ne pouvait même pas se tenir debout ? La forge s'illumina, et la barre arriva.
+---
+À la nuit tombée, le village entier s'était rassemblé autour de la barre. Soundiata, à genoux, appuya ses mains sur le métal rougi. Il serra les dents, ferma les yeux, et se mit à pousser, lentement, avec toute la douleur de sept années d'humiliation. La barre se courba d'abord, puis se tordit comme un arc. Dans le silence, on entendit un craquement : ses jambes se redressaient. Et à la stupeur générale, le garçon qui rampait la veille se tint debout, au milieu des cris et des larmes.
+---
+Dès cet instant, Soundiata ne fut plus un enfant moqué. Il alla cueillir lui-même un baobab entier, qu'il arracha de ses mains pour l'offrir à sa mère. Les villageois se prosternèrent. Mais la reine jalouse ne dormait plus, et ses complots menaçaient désormais la vie de l'enfant. Sogolou comprit qu'il fallait fuir. Elle réunit ses enfants, quelques fidèles et un griot, et ils quittèrent le Manden dans la nuit, avec pour seule arme l'espoir.
+---
+Pendant des années, Soundiata vécut en exil, de cour en cour, apprenant le maniement des armes et l'art de commander. Il se fit des amis, des alliés, une armée. Un jour, le terrible roi sorcier Soumaoro envahit le Manden et enchaîna ses habitants. Les anciens envoyèrent un message désespéré : « Reviens, Soundiata. Seul le fils de la femme-buffle peut nous délivrer. » Il se leva alors de son siège d'exil, regarda ses cavaliers, et dit une seule phrase que tout le Mali répète encore.
+---
+« Je reviens, dit-il, non pour me venger, mais pour rendre à chacun sa maison. » À la bataille de Kirina, Soundiata affronta Soumaoro. Il lui décocha une flèche portant l'éperon d'un coq blanc, le seul qui pouvait briser son pouvoir. Le sorcier blessé s'enfuit dans les montagnes, et l'armée du Manden l'emporta. Soundiata fonda alors l'empire du Mali, et il proclama une loi : « Chaque vie est précieuse, et l'on ne méprise jamais l'enfant qui rampe. » Les griots la chantent encore.
+
+=== conte: yennenga-cavaliere
+titre: Celle qui galopait plus vite que ses frères
+accroche: Son père l'enferma pour la garder. Elle s'enfuit sur son plus beau cheval.
+etiquette: Légende
+origine: Légende mossi (Burkina Faso)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: savane
+lumiere: aube
+figures: reine, guerrier, enfant
+morale: On peut enfermer une cavalière, mais pas son courage.
+---
+Au pays des Dagomba, il y a très longtemps, le roi Nedega avait une fille nommée Yennenga. Elle était belle, mais surtout, elle était cavalière. Dès l'enfance, elle montait mieux que ses frères, tirait à l'arc comme un chasseur, et menait les troupes du roi à la bataille avec un courage que tous admiraient. Le roi l'aimait et, pour cette raison même, refusait de la marier. « Elle est plus précieuse que n'importe quel guerrier », disait-il.
+---
+Les années passèrent. Les prétendants se succédaient devant la porte du palais, et Nedega les renvoyait un à un. Yennenga, elle, grandissait dans l'ennui. Un soir, assise sur le rempart, elle regarda l'horizon et sentit qu'une partie d'elle-même appartenait à un autre pays. Elle demanda à son père de la laisser choisir son époux. Mais le roi, furieux, la fit enfermer dans une case au milieu du palais, en attendant qu'elle change d'avis.
+---
+Elle n'en changea pas. Un matin, avec l'aide d'un cheval fidèle, elle fit semblant de se soumettre. Le soir, elle sella en cachette sa jument blanche, la plus rapide de toutes, et se glissa hors du palais, sous une lune sans nuages. Elle galopa toute la nuit, sans savoir où aller, guidée seulement par le vent. À l'aube, elle atteignit une forêt épaisse, et son cheval s'arrêta de lui-même devant une petite clairière.
+---
+Dans la clairière, un homme se tenait debout près d'un feu : un chasseur nommé Rialé, qui vivait seul dans la forêt. Il regarda cette cavalière couverte de poussière, aux yeux pleins de feu, et ne dit rien. Elle descendit de cheval, se présenta simplement, sans cacher qui elle était. Rialé fit chauffer de l'eau, lui offrit un repas, et lui proposa de rester, le temps qu'elle voudrait. Ils parlèrent toute la nuit, de chevaux, d'étoiles, de pays et de liberté.
+---
+Yennenga resta dans la forêt, et Rialé devint son mari. Ils eurent un fils, qu'ils appelèrent Ouedraogo, « l'étalon ». Quand il fut grand, il partit fonder un royaume avec une troupe de cavaliers, et de lui naquit le peuple mossi. Aujourd'hui encore, au Burkina Faso, on célèbre Yennenga comme la mère des Mossis. Sa statue, cavalière sur son cheval, domine la ville, et les jeunes filles viennent lui demander de ne jamais cesser de choisir leur chemin.
+
+=== conte: pokou-fleuve
+titre: Le fleuve qui exigea ce qu'elle avait de plus cher
+accroche: Poursuivie par ses ennemis, Abla Pokou fit face à un fleuve en crue.
+etiquette: Légende
+origine: Légende baoulé (Côte d'Ivoire)
+region: Afrique de l'Ouest
+type: long
+gratuites: 2
+decor: fleuve
+lumiere: crepuscule
+figures: reine, enfant, ancien
+morale: Un peuple naît parfois d'un sacrifice qu'on n'ose pas raconter.
+---
+Au royaume des Ashanti, à la mort du roi, une querelle de succession déchira la cour. La princesse Abla Pokou, nièce du défunt, vit son neveu menacé de mort par un rival. Elle prit la décision de partir, avec son fils et tous ceux qui voulurent la suivre : des guerriers, des paysans, des femmes, des enfants. Ils quittèrent le pays à la tombée de la nuit, emportant ce qu'ils pouvaient et laissant derrière eux leurs maisons, leurs tombes et leurs souvenirs.
+---
+Pendant des jours et des jours, ils marchèrent vers l'ouest, harcelés par les armées de l'ancien roi. Les vieux s'épuisaient, les enfants avaient faim, mais la reine ne s'arrêtait jamais. Elle disait que le peuple qui s'arrête perd son nom. Enfin, un soir, au sommet d'une colline, ils virent un grand fleuve, large, tumultueux, couleur de cuivre, gonflé par les pluies. Les cavaliers ennemis étaient à quelques heures de là. Il fallait traverser avant la nuit, ou tout perdre.
+---
+Les guerriers cherchèrent un gué. Il n'y en avait pas. Les jeunes tentèrent de nager, et le courant les emporta. La reine s'avança jusqu'au bord de l'eau, où elle trouva un vieux prêtre, assis sur un rocher, qui attendait. « Le fleuve a faim, dit-il d'une voix basse. Il accepte de s'ouvrir pour ceux qui lui rendent ce qu'ils ont de plus précieux. » La reine ne dit rien. Elle regarda longtemps l'eau rouge du soir, puis son fils, endormi dans ses bras.
+---
+Le silence dura toute la nuit. Au matin, quand les ennemis apparurent à l'horizon, Abla Pokou se leva, serra son enfant contre elle une dernière fois, et le déposa dans l'eau avec un chant que personne n'avait entendu jusque-là. Aussitôt, un bruit sourd monta des profondeurs : les racines d'un immense baobab émergèrent, formant un pont. Le peuple tout entier traversa en silence, sans oser regarder la reine. Quand le dernier fut passé, le pont s'effondra, et les ennemis restèrent de l'autre côté.
+---
+Sur la rive, la reine ne pleura pas. Elle se tint droite, face au fleuve, et prononça un mot qui devint le nom de son peuple : « Baouli », qui veut dire « l'enfant est mort ». Elle fonda un nouveau royaume, celui des Baoulé, qui prospéra sur ces terres. Les anciens racontent que chaque génération doit se souvenir que la liberté a un prix, et que ce prix fut payé, un jour, par une mère. Chaque enfant baoulé porte, dans son nom, un peu de ce chagrin transformé en courage.
+
+=== conte: mansa-musa-or
+titre: Le pèlerin qui fit chuter le prix de l'or
+accroche: Il a traversé le désert avec soixante mille hommes. Au Caire, l'or ne valait plus rien.
+etiquette: Histoire
+origine: Histoire du Mali (XIVe siècle), rapportée par des chroniqueurs arabes
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: desert
+lumiere: midi
+figures: guerrier, griot, ancien
+morale: La vraie richesse d'un roi se mesure à ce qu'il donne, pas à ce qu'il garde.
+---
+En l'an 1324, l'empereur du Mali, Mansa Moussa, décida d'accomplir le pèlerinage de La Mecque. Ce n'était pas un voyage ordinaire. Il rassembla une caravane immense : soixante mille hommes, des milliers d'esclaves portant chacun une barre d'or, cent chameaux chargés de poudre d'or, des chevaux, des musiciens, des cuisiniers et des tailleurs. Sur la route du désert, on aurait dit une ville qui marchait, avec ses rues, ses bruits et ses odeurs.
+---
+La caravane traversa les sables pendant des mois. À chaque étape, le Mansa distribuait de l'or aux habitants, aux imams et aux pauvres. Il offrait des cadeaux sans compter, en disant que l'or n'était qu'un moyen, non une fin. Quand il arriva au Caire, l'une des plus grandes villes du monde, le sultan lui-même sortit l'accueillir. Mais Moussa refusait de s'incliner devant lui, parce qu'il ne s'inclinait que devant Dieu. Le sultan, subjugué par tant de dignité, accepta le geste.
+---
+Pendant trois mois, l'empereur resta au Caire. Il fit des cadeaux à tous ceux qu'il croisait : aux savants, aux commerçants, aux serviteurs, aux mendiants. Il acheta des étoffes, des livres, des bijoux, des épices. Les marchands de la ville, d'abord ravis de cette manne, commencèrent à s'inquiéter. Car l'or affluait par cargaisons entières, et sa valeur chutait de jour en jour. Un chroniqueur raconta que le prix du métal baissa si fort qu'il mit plus de douze ans à retrouver son cours.
+---
+Au retour, la caravane était bien plus légère, et le trésor royal bien plus vide. Mansa Moussa avait dû emprunter de l'argent à des marchands pour finir son voyage. Mais il rapportait mieux que de l'or : des architectes, des savants, des livres, des poètes. À Tombouctou, il fit construire une grande mosquée et une université, qui attirèrent bientôt des étudiants du monde entier. Le Mali devint un lieu où l'on venait apprendre autant que commercer.
+---
+Quand on lui demanda, plus tard, s'il ne regrettait pas d'avoir dépensé tant d'or, Mansa Moussa sourit et répondit : « Ce que je garde, je le perdrai un jour. Ce que je donne, personne ne pourra jamais me le reprendre. » Sur une carte dessinée à Majorque en 1375, on voit encore le Mansa assis sur son trône, une pépite dans une main, un sceptre dans l'autre, et la légende : « Le plus riche et le plus noble de tous les rois de ce pays. »
+
+=== conte: nzinga-trone-dos
+titre: La reine qui refusa de rester debout
+accroche: On lui avait laissé le sol. Elle fit de son serviteur un trône.
+etiquette: Histoire
+origine: Histoire de l'Angola (1622), rapportée par des chroniqueurs européens
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: village
+lumiere: aube
+figures: reine, guerrier, ancien
+morale: On ne vous donne jamais la place qu'on vous refuse : on la prend avec calme.
+---
+En 1622, la princesse Nzinga Mbande, du royaume du Ndongo, fut envoyée comme ambassadrice auprès du gouverneur portugais de Luanda. Son frère, le roi, voulait négocier la paix. Les Portugais, qui capturaient des milliers d'Africains chaque année pour les vendre, n'avaient aucune intention de traiter d'égal à égal. Nzinga, elle, avait compris que cette rencontre déciderait de l'avenir de son peuple. Elle avait trente-neuf ans, une intelligence acérée et une dignité sans faille.
+---
+À son arrivée dans la grande salle du palais, elle découvrit une humiliation soigneusement préparée. Le gouverneur était assis sur un fauteuil richement orné, entouré de ses officiers, tandis que pour la princesse, on avait simplement étalé un tapis par terre. Les Portugais voulaient qu'elle s'assoie à leurs pieds, comme une suppliante. Nzinga les regarda un à un, sans un mot. Puis, d'un geste calme, elle fit un signe à l'une de ses suivantes.
+---
+La servante s'avança, se mit à quatre pattes sur le tapis, et resta immobile. Nzinga s'assit calmement sur son dos, comme sur un siège, croisa les mains sur ses genoux et leva les yeux vers le gouverneur. Un silence s'installa, lourd comme une pierre. Les officiers n'osaient plus bouger. Le gouverneur, pris au piège de sa propre mise en scène, comprit qu'il avait en face de lui non pas une suppliante, mais une souveraine. Les négociations commencèrent, d'égale à égal.
+---
+Elles aboutirent à un traité de paix, que Nzinga signa avec grâce. Elle accepta même de se faire baptiser, sous le nom d'Ana de Sousa, pour sceller l'alliance. Mais les Portugais ne respectèrent pas leurs promesses. Quand son frère mourut, Nzinga prit le pouvoir, et pendant plus de trente ans, elle dirigea la résistance contre les armées européennes. Elle changea de royaume, d'alliés et de stratégies, mais jamais d'objectif : empêcher son peuple d'être réduit en esclavage.
+---
+Elle mourut en 1663, à plus de quatre-vingts ans, entourée des siens, après avoir tenu tête aux plus grandes puissances de son temps. Aujourd'hui, la statue de la reine Nzinga se dresse sur la grande place de Luanda, et les écoliers angolais apprennent son nom. On raconte qu'avant de mourir, elle aurait murmuré à sa sœur : « On peut me demander de m'asseoir par terre. Mais jamais de baisser les yeux. »
+
+=== conte: chaka-lance-courte
+titre: Le jour où Chaka jeta les longues lances
+accroche: Il a changé la guerre en changeant d'arme. Mais pas son cœur.
+etiquette: Histoire
+origine: Histoire des Zoulous (Afrique du Sud), XIXe siècle
+region: Afrique australe
+type: court
+gratuites: 2
+decor: montagne
+lumiere: orage
+figures: guerrier, ancien, tambour
+morale: Celui qui change tout sauf lui-même finit seul au sommet de ce qu'il a bâti.
+---
+Au début du XIXe siècle, les peuples nguni vivaient entre les montagnes et les rivières du pays zoulou. Leurs guerres étaient presque des cérémonies : deux armées s'affrontaient à distance, jetant de longues lances en lançant des insultes, puis chacun rentrait chez soi. Un jeune guerrier nommé Chaka, fils d'un petit chef, observait ces batailles avec impatience. Il trouvait que cette façon de se battre ne servait à rien. Il imaginait autre chose.
+---
+Un soir, il s'assit au bord d'un feu avec un forgeron. « Les lances que nous lançons sont longues, dit-il, mais une fois lancées, elles ne reviennent plus. Et le guerrier sans lance n'est plus qu'un homme. » Le forgeron comprit et dessina une arme nouvelle : une lance courte, au fer large, qui servait à frapper de près. On l'appela « iklwa », à cause du bruit qu'elle faisait en entrant dans la chair. Chaka la prit en main et sut qu'il tenait l'avenir.
+---
+Il rassembla ses guerriers, les fit s'entraîner jour après jour, sans sandales, pour qu'ils aillent plus vite. Il leur apprit à se placer en formation, avec les plus forts au centre et deux cornes qui encerclaient l'ennemi, comme les cornes d'un buffle. Les anciens ricanaient, mais à la première bataille, les armées voisines furent débordées avant même d'avoir lancé leurs lances. Chaka devint chef, puis roi, et son armée grossit comme un orage.
+---
+Les peuples voisins, vaincus, rejoignirent le royaume zoulou ou s'enfuirent vers le nord, déclenchant des bouleversements dans tout le sud du continent. Mais Chaka, grisé par ses victoires, devint chaque jour plus dur. À la mort de sa mère, il imposa un deuil si cruel que beaucoup de ses sujets le crurent possédé. Ses proches commencèrent à le craindre. Il ne faisait plus confiance à personne, pas même à ses frères, qui complotaient dans l'ombre.
+---
+En 1828, deux de ses demi-frères le trahirent et le frappèrent dans la cour de son propre palais. Chaka mourut en regardant les montagnes qu'il avait unifiées. On dit qu'il prononça une dernière prophétie : « Vous croyez me tuer, mais bientôt l'homme blanc viendra, et vous serez comme des hirondelles devant le faucon. » Son royaume survécut pourtant, et son nom devint légendaire. Les Zoulous racontent encore l'histoire de leur plus grand roi : un génie militaire, mais un homme qui, à force de changer le monde, avait oublié de se changer lui-même.

@@ -121,3 +121,49 @@ suspendue quand l'application passe en arrière-plan.
 - Gold sans pub dans Contes, ou comme dans Étude.
 - Langue : français d'abord, anglais ensuite.
 - Relecture culturelle : qui valide les récits avant publication.
+
+---
+
+# État de l'implémentation (octobre 2026)
+
+## Construit et déployé
+- **Serveur** (`functions/src/contes/contes.ts`) : `conteGetState`, `conteOpen`, `conteUnlock`, `conteFinish`, `conteTrack`, `conteAdmin`, `conteAdminStory`.
+  Le texte verrouillé ne quitte jamais le serveur : `conteOpen` n'envoie que les pages gratuites tant que le conte n'est pas débloqué (morale comprise).
+- **Contenu** : 6 recueils, **36 contes** originaux (`tools/contes/recueils/*.txt`, ~425 mots par conte, 4 à 6 pages), validés et envoyés par
+  `node tools/contes/build_contes.js --upload`. Le premier conte de chaque recueil est gratuit, la fin de la partie gratuite tombe sur un moment fort.
+- **Application** : `lib/pages/contes/` (accueil, lecteur, déblocage, gravures, style), `lib/services/contes/` (service, ambiance sonore),
+  `lib/widgets/feed/sections/contes_feed_card.dart`, tuile dans le hub Quiz et Étude, `lib/pages/admin/contes_admin_page.dart`.
+- **Gravures** (`conte_scene.dart`) : 5 lumières × 7 décors × 20 silhouettes dessinés en code ; chaque page du livre a sa propre variante.
+- **Polices** : Cinzel Decorative et Crimson Text (licence SIL OFL, `assets/fonts/contes/`).
+- **Ambiance** : bourdon, kora, feu, grillons générés par le code (`conte_ambience.dart`), bouton pour couper (choix mémorisé), mise en pause en arrière-plan.
+- **Déblocage** : pubs avec récompense (jauge gardée), pub plein écran, pièces, recueil complet, Pass Veillée 24 h. **Quand aucune pub n'est disponible**
+  (ou qu'une pub vient d'échouer), le lecteur reçoit une **lecture offerte** (2 par jour, `freePerDay`), sinon il paie en pièces : il n'est jamais bloqué.
+- **Lecteur** : les contes non lus passent en premier (en alternant les recueils, « à la une » d'abord), les contes déjà ouverts vont dans « Mon historique ».
+- **Fil** : carte compacte après le 7ᵉ post (conte du jour, gratuit en entier, propre à chaque lecteur) et après le 22ᵉ post (autre conte non lu, seulement si le
+  premier a été ouvert) ; croix pour la masquer jusqu'à demain. Les positions sont fixes dans le code ; `AppConfig/contes.feedEnabled` l'active ou la coupe.
+
+## Pass « sans pub » 30 jours (Quiz, Étude, Contes)
+- `moduleAdFreeBuy` (`functions/src/modules/adFree.ts`) : le lecteur paie en pièces ; `Users.modulesAdFreeUntil` est écrit par le serveur (champ protégé dans les règles).
+  Les achats s'ajoutent (120 jours au maximum devant soi).
+- Il retire **les pubs passives** : bannières, pubs dans les listes, pubs plein écran de fin de niveau, de chapitre ou de conte (`ModuleAds`, `quiz_ads.dart`).
+  Il ne retire **pas** les pubs que le lecteur choisit pour débloquer un contenu ou gagner un cœur.
+- Réglages : `AppConfig/modules` (`adFreePrice`, `adFreeDays`, `adFreeEnabled`), relus toutes les 60 s.
+- Offre affichée : hub Quiz et Étude, accueil Quiz, accueil Étude, accueil Contes, et un lien discret sous la pub de la page de lecture d'un conte.
+
+### Calcul du prix (500 pièces)
+Hypothèses prudentes (eCPM non mesuré par format) : interstitiel ≈ 2 $, native ≈ 0,5 $, bannière ≈ 0,15 $ pour 1 000 affichages.
+Un lecteur très actif voit environ 60 interstitiels, 160 natives et 300 bannières par mois dans les trois modules :
+60 × 2/1000 + 160 × 0,5/1000 + 300 × 0,15/1000 ≈ 0,12 + 0,08 + 0,045 ≈ **0,25 $ (≈ 150 FCFA)**. Avec des eCPM doubles : ≈ 0,5 $ (≈ 300 FCFA).
+500 pièces = ≈ 300 FCFA si les pièces sont achetées (≈ 200 FCFA si elles ont été gagnées) : le pass couvre le lecteur le plus rentable.
+Un lecteur moyen rapporte 4 à 8 fois moins : ceux qui achètent sont les plus gros consommateurs de pubs, d'où le prix volontairement élevé.
+À recaler avec le revenu réel par utilisateur (AdMob) : modifier `adFreePrice` suffit.
+
+## Mesures
+`conteAdmin` : lecteurs, actifs, taux de fin, ouvertures par jour, déblocages (pubs, pièces, lectures offertes), pubs regardées, pièces dépensées,
+carte du fil (affichages, clics, croix), ambiance coupée, contes les plus ouverts et terminés, pages d'abandon, nombre de pass sans pub actifs, gestion des contes
+(masquer, à la une, prix).
+
+## À faire ensuite
+- Traduction anglaise : traduction automatique faite une seule fois à la construction (titres et accroches relus à la main), stockée à côté du français.
+- Nouvelles vagues de contes (100 par session) et recueils d'épopées en chapitres.
+- Mettre le texte déjà débloqué en cache sur le téléphone (aujourd'hui : mémoire de la session seulement).

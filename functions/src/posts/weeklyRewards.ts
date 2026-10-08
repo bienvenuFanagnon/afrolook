@@ -437,7 +437,7 @@ async function runCommentatorsReward(
  * semaine écoulée et leur envoie des pièces.
  */
 export const weeklyTopCommentatorsReward = onSchedule(
-  { schedule: "5 0 * * MON", timeZone: "UTC", memory: "512MiB", cpu: 1, timeoutSeconds: 300 },
+  { schedule: "5 0 * * MON", timeZone: "UTC", memory: "512MiB", cpu: "gcf_gen1", timeoutSeconds: 300 },
   async () => {
     const weekId = getLastWeekId();
     console.log(`[weeklyCommentators] Semaine récompensée : ${weekId}`);
@@ -451,7 +451,7 @@ export const weeklyTopCommentatorsReward = onSchedule(
  * - Si "confirm: true" → supprime le verrou et relance.
  */
 export const forceWeeklyCommentatorsReward = onCall(
-  { memory: "512MiB", cpu: 1, timeoutSeconds: 300, region: "us-central1" },
+  { memory: "512MiB", cpu: "gcf_gen1", timeoutSeconds: 300, region: "us-central1" },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Non authentifié");
 
@@ -504,7 +504,7 @@ export const forceWeeklyCommentatorsReward = onCall(
  * Le calcul est dans weeklyRankings.ts (mêmes champs que les posts réels).
  */
 export const weeklyTopPostsReward = onSchedule(
-  { schedule: "10 0 * * MON", timeZone: "UTC", memory: "512MiB", cpu: 1, timeoutSeconds: 540 },
+  { schedule: "10 0 * * MON", timeZone: "UTC", memory: "512MiB", cpu: "gcf_gen1", timeoutSeconds: 540 },
   async () => {
     const weekId = lastWeekId();
     const count = await computeTopPosts(weekId);

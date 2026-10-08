@@ -329,7 +329,7 @@ export const quizMyRank = onCall({ timeoutSeconds: 15 }, async (request) => {
 
 // ── Niveaux ─────────────────────────────────────────────────────────────────
 
-export const quizStartLevel = onCall({ timeoutSeconds: 20, cpu: 1, maxInstances: 10 }, async (request) => {
+export const quizStartLevel = onCall({ timeoutSeconds: 20, maxInstances: 10 }, async (request) => {
   const uid = uidOf(request);
   const cfg = await loadCfg();
   if (!cfg.enabled) throw new HttpsError("failed-precondition", "QUIZ_OFF");
@@ -361,7 +361,7 @@ export const quizStartLevel = onCall({ timeoutSeconds: 20, cpu: 1, maxInstances:
   };
 });
 
-export const quizAnswer = onCall({ timeoutSeconds: 15, cpu: 1, maxInstances: 10 }, async (request) => {
+export const quizAnswer = onCall({ timeoutSeconds: 15, maxInstances: 10 }, async (request) => {
   const uid = uidOf(request);
   const cfg = await loadCfg();
   const n = intArg(request.data?.n, 1, LEVELS, "n");

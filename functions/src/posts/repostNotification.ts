@@ -16,7 +16,7 @@ const PUSH_BATCH_SIZE = 2000;
  * Auth : A (le reposter)
  */
 export const repostFanOut = onCall(
-  { timeoutSeconds: 60, cpu: 1, maxInstances: 10 },
+  { timeoutSeconds: 60, maxInstances: 10 },
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Auth requise");
 

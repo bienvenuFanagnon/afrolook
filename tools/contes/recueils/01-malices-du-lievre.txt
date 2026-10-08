@@ -1,0 +1,153 @@
+recueil: Les Malices du Lièvre
+categorie: Ruses et malices
+description: Petit, rapide, jamais à court d'idées : le lièvre bat les géants sans lever la patte.
+ordre: 1
+prix: 70
+
+=== conte: lievre-corde-geants
+titre: Quand le lièvre fit tirer deux géants sur la même corde
+accroche: Chacun était sûr de tirer un lièvre. Aucun ne se doutait de qui tirait l'autre.
+etiquette: Ruse
+origine: Conte traditionnel (haoussa, Niger et Nigeria)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: savane
+lumiere: aube
+figures: lievre, elephant, ancien
+morale: Celui qui n'a pas la force a parfois l'esprit, et l'esprit tire plus loin que la corde.
+---
+Cette année-là, la saison sèche dura si longtemps que la poussière avait le goût du pain brûlé. Près du dernier point d'eau, l'éléphant et l'hippopotame se disputaient chaque matin la place la plus fraîche. « Je suis le plus fort de la brousse », barrissait l'un. « Le plus fort, c'est moi », grognait l'autre, la gueule pleine de boue. Les petits animaux attendaient à l'écart, la langue sèche, sans oser boire avant que les géants aient fini de se mesurer des yeux.
+---
+Le lièvre, lui, observait depuis un buisson. Il en avait assez d'attendre pour une gorgée d'eau. Il choisit une longue liane, solide comme un câble de pirogue, et la roula sur son épaule. Puis il alla trouver l'éléphant, en prenant l'air de celui qui apporte un secret. « Grand chef, dit-il, l'hippopotame prétend que tu ne pourrais même pas me déplacer, moi, un simple lièvre. Je te propose de lui montrer le contraire. Demain à l'aube, nous tirerons la corde. Si tu gagnes, tout le monde saura qui est le maître du point d'eau. »
+---
+L'éléphant éclata de rire, faisant trembler les feuilles d'un arbre entier. « Un lièvre ? Contre moi ? Je gagnerai en battant des oreilles ! » Il accepta aussitôt. Le lièvre courut jusqu'à la mare et tint le même discours à l'hippopotame, mot pour mot, en changeant seulement le nom du géant. L'hippopotame, vexé, accepta lui aussi. Le soir venu, le lièvre attacha un bout de la liane autour d'une patte de l'éléphant, de l'autre côté de la grande colline, puis l'autre bout autour de la patte de l'hippopotame, dans la mare. Au milieu, il se cacha derrière un rocher.
+---
+Au premier rayon du soleil, le lièvre sortit de sa cachette. Il pinça la corde, la secoua, et cria d'une voix qu'il fit sonner très fort : « Êtes-vous prêts, grands chefs ? Tirez ! » De chaque côté, la liane se tendit d'un coup. L'éléphant planta ses pieds dans la terre sèche et tira. L'hippopotame s'arc-bouta dans la boue et tira. Le lièvre, au milieu, avait déjà préparé la suite, et elle allait occuper toute la journée.
+---
+Toute la matinée, la corde grinça, vibra, s'allongea sans casser. Chaque géant se disait qu'il n'avait jamais vu un lièvre aussi fort, et il tirait plus fort encore, par orgueil. À midi, l'éléphant ruisselait de sueur. L'hippopotame soufflait comme un soufflet de forge. Le lièvre, assis à l'ombre du rocher, mâchait des herbes fraîches en criant de temps en temps : « Plus fort ! Je sens que tu faiblis ! » Les petits animaux, eux, burent à la mare vide de géants, la première fois depuis des semaines.
+---
+Au coucher du soleil, n'en pouvant plus, l'éléphant suivit sa corde pour demander grâce. L'hippopotame, épuisé, fit exactement la même chose de son côté. Au sommet de la colline, nez à nez, ils se retrouvèrent avec chacun un bout de liane autour de la patte. Ils comprirent d'un coup, et ils n'osèrent plus rien dire. Puis, de honte, ils se mirent à rire ensemble, longtemps, assis dans la poussière. Le lièvre, lui, se promenait déjà au loin, avec une liane de moins et une réputation de plus. Et depuis ce jour, au point d'eau, tout le monde boit en paix.
+
+=== conte: lievre-murmure-roi
+titre: Ce que le lièvre murmura à l'oreille du roi
+accroche: Une seule phrase, dite à voix basse, et le roi renonça à la guerre.
+etiquette: Sagesse
+origine: Conte traditionnel (wolof, Sénégal)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: crepuscule
+figures: lievre, ancien, griot
+morale: Une parole juste, dite au bon moment, vaut mieux qu'une armée.
+---
+Le roi du pays des sept collines avait un caractère de braise. Un matin, un chef voisin lui envoya un message grossier, et avant même d'avoir fini de l'entendre, le roi ordonna que les tambours de guerre résonnent. Les guerriers aiguisèrent leurs lances. Les femmes commencèrent à cacher le grain. Les anciens baissaient la tête, car personne n'osait contredire le roi quand sa colère était levée.
+---
+Le lièvre, qui servait de messager à la cour parce qu'il courait plus vite que les nouvelles, regarda tout ce remue-ménage. Il savait que cette guerre durerait des années, pour une phrase maladroite. Le soir, il demanda à voir le roi seul. Le garde se moqua de lui, mais le lièvre sourit : « Dis au roi que j'ai quelque chose à lui murmurer à l'oreille, quelque chose qui lui coûtera une armée, ou qui lui en épargnera une. » Intrigué, le roi le fit entrer.
+---
+Dans la case royale, la lampe à huile faisait danser des ombres sur les murs. Le lièvre s'approcha du trône, monta sur l'accoudoir et se pencha vers l'oreille du roi. Il parla si bas que les murs eux-mêmes n'entendirent pas. Le roi écouta d'abord avec colère, puis ses sourcils se défirent, puis il resta immobile, très longtemps, le regard perdu dans la flamme. Quand le lièvre s'écarta, le roi tenait toujours sa lance, mais ses doigts ne serraient plus.
+---
+Au matin, le roi fit taire les tambours. Aux guerriers étonnés, il dit seulement : « Aujourd'hui, nous n'irons pas combattre. Nous irons offrir un cadeau. » Sur le chemin, la longue file de porteurs transportait des sacs de mil, des étoffes teintes à l'indigo et un jeune taureau. À la frontière, le chef voisin les attendait avec ses archers, certain que l'attaque allait commencer. Le roi descendit de sa litière et leva les mains, ouvertes.
+---
+« Ton message m'a blessé, dit le roi, et pourtant je viens te remercier. Tu m'as rappelé que mes voisins m'écoutent plus que je ne le crois. » Le chef voisin, désarmé par ces paroles, baissa son arc. Ils s'assirent ensemble sous un arbre, et avant la nuit, le vieux différend était réglé, sans une goutte de sang. Au retour, un griot demanda au lièvre ce qu'il avait murmuré au roi. Le lièvre ne voulut pas le dire. Mais voici ce qu'il avait chuchoté : « Si tu gagnes cette guerre, tu auras un ennemi de plus : celui qui t'attend dans le miroir. » Le roi avait compris.
+
+=== conte: lievre-miel-calebasse
+titre: Le lièvre et la calebasse qui disparaissait
+accroche: Plus il en mangeait, plus la calebasse se remplissait. D'où venait le miel ?
+etiquette: Rire
+origine: Conte traditionnel (bambara, Mali)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: foret
+lumiere: midi
+figures: lievre, singe, calebasse
+morale: Celui qui triche pour manger finit par payer le festin.
+---
+Dans la forêt, une saison de pluies avait fait fleurir tous les arbres, et les abeilles travaillaient comme des tisserands. Le lièvre, qui avait une dent sucrée plus grande que sa tête, rôdait autour des ruches. Un matin, il découvrit un grand creux de baobab où le miel coulait comme une rivière d'or. Il goûta, ferma les yeux, et jura que personne d'autre ne goûterait jamais à ce trésor.
+---
+Chaque jour, à l'heure où les autres dormaient la sieste, le lièvre remplissait une grosse calebasse de miel et la cachait sous des feuilles. Mais il avait un problème : il mangeait plus vite qu'il ne récoltait. Un jour, le singe, qui n'aimait pas les secrets, le surprit en train de lécher la calebasse. « Où as-tu trouvé tant de miel ? demanda le singe. Dis-le-moi, ou j'irai raconter à tout le village que tu voles les abeilles. »
+---
+Le lièvre réfléchit vite, comme toujours. « Je vais te faire une proposition, dit-il. Je te prête cette calebasse enchantée. Elle ne se vide jamais. Mais tu dois promettre de ne la remplir qu'avec de l'eau de la rivière, et de ne jamais l'ouvrir devant quelqu'un. » Le singe, ébloui, promit tout. Il emporta la calebasse en dansant. Le lièvre, lui, se frotta les pattes. Car dans la calebasse, au fond, il avait caché un petit pot de miel, et ce qu'il venait d'inventer n'était que le début de sa farce.
+---
+Le soir même, le singe versa de l'eau dans la calebasse, secoua, ouvrit, et trouva du miel mêlé à l'eau, doux comme un rêve. Il fit un festin pendant trois jours. Mais le quatrième jour, le miel avait disparu. Fou de rage, il courut chez le lièvre : « Ta calebasse est cassée ! » Le lièvre prit un air désolé : « Elle ne marche que si l'on a le cœur pur. Quelqu'un doit avoir menti. » Le singe baissa la tête, car il avait raconté à tout le monde que le miel venait de sa propre ruche.
+---
+Pendant ce temps, les autres animaux, intrigués par ces histoires, suivirent le lièvre jusqu'au baobab creux. Ils trouvèrent les abeilles en colère devant une réserve de miel à moitié pillée. La reine des abeilles fit entendre un bourdonnement terrible. Le lièvre voulut s'enfuir, mais ses pattes collaient au miel renversé. Il glissa, tomba, roula dans le creux, et remonta tout couvert d'or collant, de la tête à la queue.
+---
+Les abeilles ne lui firent aucun mal. Elles se contentèrent de le poursuivre en riant, si l'on peut dire, jusqu'à la rivière, où le lièvre plongea la tête la première. Quand il sortit, le miel était parti, mais sa fourrure avait gardé un reflet doré qu'on lui voit encore au soleil. Depuis ce jour, le lièvre ne vole plus de miel, il l'achète en échange de petits services, et les abeilles lui disent bonjour sans rancune.
+
+=== conte: lievre-yeux-ouverts
+titre: Pourquoi le lièvre dort les yeux ouverts
+accroche: Une seule nuit de sommeil profond lui a coûté tout ce qu'il avait.
+etiquette: Mythe
+origine: Conte traditionnel (peul, Guinée)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: savane
+lumiere: nuit
+figures: lievre, lion, serpent
+morale: Celui qui veille garde ses biens, celui qui s'endort de confiance perd même sa place au soleil.
+---
+Il fut un temps où le lièvre dormait comme tout le monde, les yeux bien fermés et les oreilles repliées. Il habitait un terrier confortable, tapissé d'herbes sèches, au pied d'une termitière. Cette année-là, il avait fait une belle récolte de patates douces, qu'il gardait précieusement dans une niche creusée sous son lit. C'était le trésor de toute sa famille, et il en parlait à voix basse, comme d'un secret.
+---
+Mais le lion, le serpent et la hyène avaient entendu parler de ce trésor. Ils s'assirent un soir sous un arbre, et le lion dit : « Le lièvre a trop de patates pour un seul estomac. Allons les prendre pendant qu'il dort. » Le serpent, qui connaissait les terriers, proposa d'entrer le premier. La hyène, elle, accepta de faire le guet. Le trio choisit la nuit sans lune, quand le vent couvre tous les bruits.
+---
+Cette nuit-là, le lièvre dormait si profondément qu'il ne sentit pas le serpent glisser entre ses pattes. Il ne sentit pas la hyène ronger l'entrée du terrier. Il ne sentit pas non plus le lion arracher la niche et emporter, une à une, toutes les patates. Au matin, quand il ouvrit enfin les yeux, son lit tenait encore, mais le sol dessous était nu comme une paume. Il comprit, trop tard, que le sommeil est parfois le plus voleur des voleurs.
+---
+Le lièvre pleura de rage et de honte. Puis il se leva, secoua la poussière de ses oreilles et partit chercher son cousin, l'ancien du pays, qui savait tout sur les voleurs. « Si tu veux retrouver tes patates, lui dit le vieux, il faut te servir de ta tête avant de te servir de tes yeux. » Il lui expliqua un plan, simple et rusé, que le lièvre écouta avec de grands yeux, ces yeux qui ne devaient plus jamais se fermer vraiment.
+---
+La nuit suivante, le lièvre fit semblant de dormir, ronflant à pleins poumons. Quand le lion et ses complices revinrent pour chercher la dernière patate, il bondit, ouvrit son terrier d'un coup, et appela tout le village à grands cris. Les voleurs, pris sur le fait, ne purent que s'enfuir, laissant derrière eux tout leur butin. Les habitants rendirent à chacun son bien, et décidèrent qu'à l'avenir, le lièvre aurait droit à un honneur particulier : ne plus jamais avoir peur de la nuit.
+---
+Depuis ce jour, les lièvres dorment les yeux ouverts, une oreille toujours dressée, prêts à bondir au moindre bruit. Les anciens disent que ce n'est pas une punition, mais une récompense : à force de veiller, le lièvre est devenu le plus rapide des animaux. Et quand un enfant s'endort trop vite sans fermer sa porte, les grands-mères murmurent : « Dors bien, mais comme le lièvre : avec une oreille pour la sagesse. »
+
+=== conte: lievre-puits-lion
+titre: Le puits où le lièvre invita le lion
+accroche: Le lion voulait manger le lièvre. Le lièvre voulait lui montrer un rival.
+etiquette: Fin surprenante
+origine: Conte traditionnel (mandingue, Gambie)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: desert
+lumiere: midi
+figures: lievre, lion, calebasse
+morale: Le plus fort se perd souvent dans son propre reflet.
+---
+Un jour de grande chaleur, un lion devint le roi d'un pays où tout le monde le craignait. Il exigeait chaque matin un animal différent pour son repas, et les petites bêtes vivaient dans l'angoisse. Un conseil se réunit sous un acacia, et l'on décida de ruser : chaque jour, un animal irait de lui-même au lion, pour ne pas troubler la paix du village. Le premier jour, le sort tomba sur une gazelle. Le deuxième, sur une pintade. Le troisième, ce fut le tour du lièvre.
+---
+Le lièvre n'avait aucune envie de finir au menu. Il rentra chez lui, s'assit au bord de son terrier et réfléchit longtemps. Puis il se mit en route, mais pas tout de suite, et pas en ligne droite. Il traîna dans les herbes, marcha lentement, s'arrêta pour boire, et n'arriva chez le lion qu'à la fin de la matinée, quand l'estomac du roi grondait comme un orage. Le lion, furieux, rugit : « Pourquoi viens-tu si tard ? Et pourquoi un si petit repas ? »
+---
+Le lièvre s'inclina très bas. « Grand roi, dit-il, j'étais parti avec trois frères pour te rendre hommage. Mais en chemin, un autre lion nous a arrêtés. Il a dit qu'il était le véritable roi de cette savane, et que tu n'étais qu'un menteur. Il a gardé mes frères, et ne m'a laissé partir que pour te transmettre son défi. » Le lion rugit encore plus fort. Un autre roi ? Dans sa brousse ? Il demanda où se cachait cet impertinent, et le lièvre répondit : « Suis-moi. »
+---
+Le lièvre le conduisit jusqu'à un vieux puits profond, creusé au milieu de la plaine. « Il vit là-dedans, dit-il. Mais méfie-toi, il est très grand. » Le lion s'approcha du bord et se pencha. Dans l'eau noire, il aperçut une crinière, une gueule ouverte, des yeux dorés qui le fixaient. Il rugit. L'autre lion rugit aussi. Il montra les dents. L'autre lui montra les dents. Fou de colère, le lion recula pour mieux prendre son élan, et sauta.
+---
+On entendit un grand bruit d'eau, puis plus rien. Le lièvre attendit longtemps au bord du puits, les oreilles tendues. Quand il fut certain que le lion ne reviendrait pas, il rentra au village en courant. Les animaux l'accueillirent avec des cris de joie, et la nuit entière, on dansa autour du feu pour célébrer leur libération. On offrit au lièvre le meilleur morceau de patate douce et la plus belle place sous l'arbre à palabres.
+---
+Depuis, quand quelqu'un se prend pour le plus puissant, on lui raconte l'histoire du lion qui se battait avec son reflet. Le lièvre, lui, n'en parlait jamais. Il disait seulement qu'un jour viendrait où un autre puits attendrait un autre roi, et qu'il faudrait être prêt. Car la ruse, disait-il, n'est pas une arme contre les forts : c'est un miroir qu'on leur tend, au bon moment, au bon endroit.
+
+=== conte: lievre-tortue-course
+titre: La course où la tortue n'a pas couru
+accroche: Elle a gagné sans avancer d'un pas plus vite que les autres. Voici comment.
+etiquette: Ruse
+origine: Conte traditionnel (yoruba, Nigeria)
+region: Afrique de l'Ouest
+type: long
+gratuites: 2
+decor: savane
+lumiere: aube
+figures: tortue, lievre, ancien
+morale: Quand la force manque, la famille bien placée fait la différence.
+---
+Le lièvre se vantait d'être le plus rapide de la forêt. Chaque matin, il sautait devant le village en criant : « Qui peut me suivre ? Qui ose me défier ? » Personne ne répondait, car personne n'aimait perdre. Une tortue très âgée, qui prenait le frais devant sa case, finit par se lever lentement. « Moi, dit-elle. Je te défie à la course, demain à l'aube, de la grande colline jusqu'au baobab du fleuve. »
+---
+Le lièvre rit si fort qu'il en tomba sur le dos. Les animaux du village se rassemblèrent, certains pour se moquer de la tortue, d'autres par curiosité. « Tu veux courir contre moi, toi qui mets une heure à traverser la cour ? » La tortue répondit simplement : « Que celui qui gagne ait le droit de se reposer à l'ombre du baobab, et que celui qui perd serve à boire pendant une lune. » Le lièvre accepta, sûr d'avoir déjà gagné.
+---
+Mais la tortue n'était pas sotte. Le soir même, elle fit venir ses frères, ses cousins, ses neveux, ses tantes et même ses belles-sœurs. Toutes les tortues du pays, sans exception, se ressemblaient comme des cailloux. Elle expliqua son plan à voix basse, et chacune comprit sa mission. À la nuit tombante, elles partirent s'installer le long du chemin, une tous les cent pas, cachées dans l'herbe, sans un bruit. La tortue, elle, resta au point de départ.
+---
+À l'aube, tout le village se pressa sur la colline. Le griot donna le signal, et le lièvre partit comme une flèche. Il bondit, il courut, il vola presque. Au bout de quelques minutes, il s'arrêta pour reprendre son souffle, et regarda en arrière avec un sourire. Il ne vit rien que de l'herbe. Mais en se retournant, il aperçut devant lui, au milieu du chemin, une tortue qui avançait lentement. Il crut rêver, ou presque.
+---
+« Comment as-tu fait ? » cria le lièvre. La tortue, sans se retourner, répondit d'une voix calme : « Il faut croire que le chemin est plus court quand on sait où l'on va. » Furieux, le lièvre reprit sa course, plus vite encore. Il dépassa la tortue, puis une autre, puis une autre encore, qui toutes avaient l'air de la même vieille dame, lente et calme. À chaque virage, il croyait être en tête, et chaque fois, une tortue l'attendait devant lui.
+---
+Quand il arriva en vue du baobab, essoufflé et brisé, il vit la première tortue qui l'attendait au pied de l'arbre, installée à l'ombre, un bol de lait à la main. Il comprit enfin et s'effondra de rire, tant ce tour était bon. Les villageois, mis au courant, firent une fête mémorable. Le lièvre servit à boire pendant une lune, sans se plaindre, et chaque fois qu'il croisait une tortue, il la saluait bien bas. On dit qu'il n'a plus jamais défié personne sans d'abord compter ses cousins.
