@@ -1,6 +1,11 @@
 // Assemble « La Case aux Contes » : contrôle les récits, écrit tools/contes/out/ puis (avec --upload) les envoie dans Firestore.
 //   node build_contes.js
 //   GOOGLE_APPLICATION_CREDENTIALS=... node build_contes.js --upload
+//   node build_contes.js --report          état de chaque recueil (mots, pages, traductions) sans rien écrire
+//
+// Traductions : lues dans tools/i18n/cache/contes.<langue>.json (faites par tools/i18n/translate.js) puis corrigées par
+// tools/i18n/overrides/contes.<langue>.json  { "<id du conte>": { "t": titre, "h": accroche, "o": origine, "morale": …, "pages": [ … ] } }.
+// Un conte n'est publié dans une langue que si titre, accroche et toutes les pages sont traduits ; sinon il reste en français.
 //
 // Un fichier par recueil dans tools/contes/recueils/<id>.txt :
 //
@@ -30,6 +35,7 @@
 //   ...
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const dir = __dirname;
 const problems = [];
@@ -77,6 +83,7 @@ function parseRecueil(file) {
         return;
       }
       if (!inBody) {
+        if (line.trim().startsWith('#')) return; // commentaire (idée du plan, note de relecture)
         const m = /^(titre|accroche|etiquette|origine|region|type|gratuites|decor|lumiere|figures|morale):\s*(.*)$/.exec(line.trim());
         if (!m) { if (line.trim()) problems.push(`${sid} : ligne d'en-tête inconnue « ${line.slice(0, 40)} »`); return; }
         const v = m[2].trim();
@@ -146,15 +153,58 @@ recueils.forEach((r) => {
   });
 });
 
+// ── Traductions ──────────────────────────────────────────────────────────────
+const sha = (t) => crypto.createHash('sha1').update(t).digest('hex');
+const i18nDir = path.join(dir, '..', 'i18n');
+const readJson = (f) => (fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : {});
+const LANGS = fs.existsSync(path.join(i18nDir, 'cache'))
+  ? fs.readdirSync(path.join(i18nDir, 'cache')).map((f) => /^contes\.([a-z]{2})\.json$/.exec(f)).filter(Boolean).map((m) => m[1]) : [];
+const tr = {};
+LANGS.forEach((lang) => { tr[lang] = { cache: readJson(path.join(i18nDir, 'cache', `contes.${lang}.json`)), over: readJson(path.join(i18nDir, 'overrides', `contes.${lang}.json`)) }; });
+const rawOf = (lang, id, key, fr) => {
+  const o = tr[lang].over[id] && tr[lang].over[id][key];
+  if (typeof o === 'string' && o.trim()) return o.trim();
+  const c = tr[lang].cache[sha(fr)];
+  return c && c.t ? c.t.trim() : '';
+};
+const coverage = {};
+function translate(s) {
+  const out = {};
+  LANGS.forEach((lang) => {
+    const o = tr[lang].over[s.id] || {};
+    const pages = s.pages.map((p, k) => (Array.isArray(o.pages) && typeof o.pages[k] === 'string' && o.pages[k].trim() ? o.pages[k].trim() : (tr[lang].cache[sha(p)] || {}).t || ''));
+    const t = rawOf(lang, s.id, 't', s.title);
+    const h = rawOf(lang, s.id, 'h', s.hook);
+    const org = rawOf(lang, s.id, 'o', s.origin);
+    const morale = s.morale ? rawOf(lang, s.id, 'morale', s.morale) : '';
+    const complete = !!t && !!h && !!org && pages.every(Boolean) && (!s.morale || !!morale);
+    coverage[lang] = coverage[lang] || { done: 0, total: 0 };
+    coverage[lang].total++;
+    if (complete) {
+      coverage[lang].done++;
+      out[lang] = { t, h, o: org, pages: pages.map((x) => x.trim()), morale };
+      if (t.length > 70) warnings.push(`${s.id} [${lang}] : titre traduit long (${t.length})`);
+      if (h.length > 160) warnings.push(`${s.id} [${lang}] : accroche traduite longue (${h.length})`);
+      if (/<\/?span|&amp;|&quot;|&#39;/.test(pages.join(' ') + t + h)) warnings.push(`${s.id} [${lang}] : résidu HTML dans la traduction`);
+    }
+  });
+  return out;
+}
+
 // ── Sorties ─────────────────────────────────────────────────────────────────
 let seed = 0;
 const stories = [];
 recueils.forEach((r) => r.stories.forEach((s, i) => stories.push({ ...s, order: stories.length + 1, first: i === 0, seed: (seed += 7919) })));
-stories.forEach((s, i) => { s.chunk = Math.floor(i / CHUNK); });
+stories.forEach((s, i) => {
+  s.chunk = Math.floor(i / CHUNK);
+  s.rev = sha(s.pages.join('\n') + '|' + s.morale).slice(0, 10); // change dès que le texte français change : invalide la copie du téléphone
+  s.i18n = translate(s);
+});
 const card = (s) => ({
   id: s.id, t: s.title, h: s.hook, c: s.recueil, tag: s.tag, org: s.origin, rg: s.region, m: s.minutes, p: s.pages.length,
-  f: s.free, k: s.kind, o: s.order, feat: false, active: true,
+  f: s.free, k: s.kind, o: s.order, feat: false, active: true, rv: s.rev,
   sc: { d: s.decor, l: s.light, f: s.figures, s: s.seed },
+  ...(Object.keys(s.i18n || {}).length ? { tr: Object.fromEntries(Object.entries(s.i18n).map(([l, v]) => [l, { t: v.t, h: v.h, o: v.o }])) } : {}),
 });
 const meta = {
   collections: recueils.map((r) => ({
@@ -167,15 +217,28 @@ const meta = {
   updatedAt: Date.now(),
 };
 
+Object.entries(coverage).forEach(([l, c]) => console.log(`Traduction ${l} : ${c.done}/${c.total} contes complets`));
 console.log(`${recueils.length} recueils, ${stories.length} contes, ${totalWords} mots (~${Math.round(totalWords / Math.max(1, stories.length))} par conte)`);
 if (warnings.length) console.log(`${warnings.length} avertissement(s) :\n  ` + warnings.slice(0, 20).join('\n  '));
 if (problems.length) {
   console.error(`${problems.length} problème(s) :\n  ` + problems.slice(0, 80).join('\n  '));
   process.exit(1);
 }
+if (process.argv.includes('--report')) {
+  recueils.forEach((r) => {
+    const w = r.stories.reduce((a, x) => a + x.words, 0);
+    console.log(`\n${r.id} — ${r.title} (${r.category}) : ${r.stories.length} contes, ${w} mots`);
+    r.stories.forEach((x0) => { const x = stories.find((y) => y.id === x0.id); console.log(`  ${x.id.padEnd(34)} ${String(x.pages.length).padStart(2)} p. ${String(x.words).padStart(5)} mots  ${x.tag.padEnd(16)} ${x.region.padEnd(18)} ${x.decor}/${x.light} [${x.figures.join(',')}]${Object.keys(x.i18n).length ? ' ' + Object.keys(x.i18n).join(',') : ''}`); });
+  });
+  const count = (key, label) => { const m = {}; stories.forEach((x) => { m[x[key]] = (m[x[key]] || 0) + 1; }); console.log(`\n${label} : ` + Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ')); };
+  count('region', 'Régions'); count('tag', 'Étiquettes'); count('decor', 'Décors'); count('light', 'Lumières');
+  const fig = {}; stories.forEach((x) => x.figures.forEach((f) => { fig[f] = (fig[f] || 0) + 1; }));
+  console.log('Figures : ' + Object.entries(fig).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · '));
+  process.exit(0);
+}
 fs.mkdirSync(path.join(dir, 'out'), { recursive: true });
 fs.writeFileSync(path.join(dir, 'out', 'meta.json'), JSON.stringify(meta, null, 1));
-fs.writeFileSync(path.join(dir, 'out', 'stories.json'), JSON.stringify(stories.map((s) => ({ ...card(s), pages: s.pages, morale: s.morale })), null, 1));
+fs.writeFileSync(path.join(dir, 'out', 'stories.json'), JSON.stringify(stories.map((s) => ({ ...card(s), pages: s.pages, morale: s.morale, rev: s.rev })), null, 1));
 
 if (process.argv.includes('--upload')) {
   const admin = require(path.join(__dirname, '..', '..', 'functions', 'node_modules', 'firebase-admin'));
@@ -200,7 +263,9 @@ if (process.argv.includes('--upload')) {
         ...c, title: s.title, collectionId: s.recueil, kind: s.kind, free: s.free, pages: s.pages.length, chunk: s.chunk,
         featured: c.feat, ...(typeof old.price === 'number' ? { price: old.price } : {}), updatedAt: Date.now(),
       });
-      batch.set(db.collection('ContesText').doc(s.id), { pages: s.pages, morale: s.morale, updatedAt: Date.now() });
+      batch.set(db.collection('ContesText').doc(s.id), {
+        pages: s.pages, morale: s.morale, rev: s.rev, i18n: Object.fromEntries(Object.entries(s.i18n).map(([l, v]) => [l, { pages: v.pages, morale: v.morale }])), updatedAt: Date.now(),
+      });
       n += 2;
       if (n >= 400) await flush();
     }

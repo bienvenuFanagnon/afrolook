@@ -163,7 +163,31 @@ Un lecteur moyen rapporte 4 à 8 fois moins : ceux qui achètent sont les plus g
 carte du fil (affichages, clics, croix), ambiance coupée, contes les plus ouverts et terminés, pages d'abandon, nombre de pass sans pub actifs, gestion des contes
 (masquer, à la une, prix).
 
+## Copie sur le téléphone (`ContesCache`)
+- Un conte **débloqué** (gratuit, acheté, conte du jour, pass) est gardé dans le dossier de l'application (`contes_cache/<uid>_<id>.json`, ≈ 3 Ko, 80 contes au maximum, le plus ancien part d'abord).
+- À la réouverture, le téléphone relit le fichier et le serveur n'enregistre que la lecture (`conteTouch` : une écriture, aucun document de texte relu).
+  `conteOpen` renvoie `cacheUntil` : 0 = sans limite (gratuit, débloqué), sinon fin du conte du jour ou du pass.
+- La copie est refusée (et supprimée) quand : le texte français a été corrigé (`rev` de la fiche ≠ `rev` de la copie), la langue servie n'est plus la bonne
+  (une traduction est arrivée, ou l'utilisateur a changé de langue), la date de fin est passée, ou le nombre de pages ne correspond plus.
+- Un conte verrouillé n'est jamais écrit sur le disque. Toute erreur de disque est ignorée : on retombe sur le serveur.
+- Mesure : `cachedOpens` (« dont depuis le téléphone ») dans l'admin, à comparer aux ouvertures totales.
+
+## Traduction (préparée, non lancée)
+- Une seule fois, à la construction : `tools/i18n/translate.js --source contes --lang en` (Google Cloud Translation, 20 $ le million de caractères, 500 000 gratuits par mois).
+  Cache `tools/i18n/cache/contes.en.json` (clé = sha1 du texte français) : un texte déjà traduit n'est jamais repayé ; un conte modifié ne coûte que ses pages modifiées.
+  Les noms propres sont protégés par `tools/i18n/glossary.json`.
+- `build_contes.js` fusionne : fiche (`tr.en` = titre, accroche, origine, dans l'index) et texte (`ContesText.i18n.en` = pages, morale). Corrections à la main :
+  `tools/i18n/overrides/contes.en.json` (`{ "<id>": { "t", "h", "o", "morale", "pages": [] } }`), prioritaires sur la machine. Un conte n'est publié en anglais que s'il est **complet**.
+- Application : `conteOpen({lang})` sert l'anglais s'il existe, sinon le français ; les fiches prennent la langue de l'application (`trCurrentLanguage`).
+- Coût mesuré (estimation) : 36 contes ≈ 95 000 caractères ≈ 1,90 $ (0 $ avec le quota gratuit). Pour 136 contes : ≈ 7 $. Quiz ≈ 10 $, Étude ≈ 25 $.
+- À faire avant de lancer : relire à la main les 36 titres et accroches traduits (`--show`), compléter le glossaire pour les nouveaux noms.
+
+## Nouvelles vagues
+- `tools/contes/GUIDE_REDACTION.md` : format, voix, règles de vérité (étiquette `Histoire`), équilibre des régions.
+- `tools/contes/vagues/vague-02.txt` : plan de 100 contes en 10 recueils (Est 30, Ouest 20, centre 20, Sud 16, Nord 14), `scaffold.js` le contrôle et crée les brouillons.
+- `build_contes.js --report` : état et équilibre de la bibliothèque. La vague 1 est très « Ouest » (29/36) : la vague 2 corrige.
+
 ## À faire ensuite
-- Traduction anglaise : traduction automatique faite une seule fois à la construction (titres et accroches relus à la main), stockée à côté du français.
-- Nouvelles vagues de contes (100 par session) et recueils d'épopées en chapitres.
-- Mettre le texte déjà débloqué en cache sur le téléphone (aujourd'hui : mémoire de la session seulement).
+- Lancer la traduction anglaise des contes (puis quiz et étude) après relecture de l'échantillon.
+- Écrire la vague 2 (100 contes) puis la traduire ; recueils d'épopées en chapitres ensuite.
+- Servir `lang` dans les fonctions du Quiz et de l'Étude quand leurs traductions seront prêtes.

@@ -217,6 +217,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
       _card(c, 'Ouvertures par jour (7 jours)', _bars(c, d['perDay'] as List)),
       _card(c, 'Cette semaine', Column(children: [
         _row(c, 'Contes ouverts', _n(w['opens'])),
+        _row(c, '… dont depuis le téléphone (sans relire le texte)', _n(w['cachedOpens'])),
         _row(c, 'Contes terminés (premières fois)', _n(w['finishes'])),
         _row(c, 'Pass Veillée actifs', _n(d['passActive'])),
       ])),

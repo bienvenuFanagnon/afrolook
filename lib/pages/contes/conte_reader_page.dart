@@ -68,7 +68,7 @@ class _ConteReaderPageState extends State<ConteReaderPage> with EtudeAdBypass, W
     if (!keepPage) setState(() => _error = false);
     try {
       if (ContesService.instance.state.value == null) await ContesService.instance.loadState();
-      final o = await ContesService.instance.open(card.id);
+      final o = await ContesService.instance.open(card);
       if (!mounted) return;
       setState(() => _open = o);
     } catch (_) {

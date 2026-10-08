@@ -1,0 +1,9 @@
+{
+  "_note": "Noms propres à ne pas traduire (personnages, peuples, lieux). Ajouter ici tout nom qu'une traduction automatique risque de déformer.",
+  "names": [
+    "Ananse", "Aso", "Kwaku", "Nyame", "Soundiata", "Sogolou", "Soumaoro", "Kirina", "Manden", "Mali", "Yennenga", "Nedega", "Rialé", "Ouedraogo",
+    "Dagomba", "Mossi", "Abla Pokou", "Pokou", "Baoulé", "Baouli", "Ashanti", "Mansa Moussa", "Tombouctou", "Nzinga", "Ndongo", "Chaka", "Zoulou",
+    "Zoulous", "Nguni", "iklwa", "Ségou", "Niger", "Fouta-Djalon", "Haoussas", "Issa", "Modou", "Dramane", "Fati", "Zarma", "Mbolo", "Thandi",
+    "Sipho", "Kabila", "Ayo", "Adébayo", "Tunde", "Bako", "Salimata", "Igbo Adébayo", "Afrolook", "Afrique", "Sahel", "Luanda", "Kenya", "Tanzanie"
+  ]
+}

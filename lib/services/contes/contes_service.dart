@@ -5,6 +5,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../l10n/tr.dart';
+import 'contes_cache.dart';
+
 /// Erreur renvoyée par le serveur des Contes (le texte contient un code : NO_ADS, FREE_USED, insuffisant, limite…).
 class ConteException implements Exception {
   ConteException(this.code);
@@ -57,20 +60,39 @@ class ConteCard {
     required this.featured,
     required this.scene,
     this.priceOverride,
+    this.rev = '',
+    this.lang = 'fr',
   });
   final String id, title, hook, collectionId, tag, origin, region, kind;
+  /// Empreinte du texte français (change quand il est corrigé) et langue dans laquelle la fiche et le texte sont servis.
+  final String rev, lang;
   final int minutes, pages, freePages, order;
   final bool featured;
   final SceneSpec scene;
   final int? priceOverride;
 
-  factory ConteCard.fromMap(Map m) => ConteCard(
+  /// Langue dans laquelle ce conte est servi : la langue de l'application si une traduction complète existe, sinon le français.
+  static String servedLang(Map m) {
+    final want = trCurrentLanguage;
+    final trs = m['tr'];
+    return want != 'fr' && trs is Map && trs[want] is Map ? want : 'fr';
+  }
+
+  factory ConteCard.fromMap(Map m) {
+    final lang = servedLang(m);
+    final t = lang == 'fr' ? null : (m['tr'] as Map)[lang] as Map;
+    return ConteCard._build(m, lang, t);
+  }
+
+  factory ConteCard._build(Map m, String lang, Map? t) => ConteCard(
         id: (m['id'] ?? '').toString(),
-        title: (m['t'] ?? '').toString(),
-        hook: (m['h'] ?? '').toString(),
+        title: ((t?['t']) ?? m['t'] ?? '').toString(),
+        hook: ((t?['h']) ?? m['h'] ?? '').toString(),
+        rev: (m['rv'] ?? '').toString(),
+        lang: lang,
         collectionId: (m['c'] ?? '').toString(),
         tag: (m['tag'] ?? '').toString(),
-        origin: (m['org'] ?? '').toString(),
+        origin: ((t?['o']) ?? m['org'] ?? '').toString(),
         region: (m['rg'] ?? '').toString(),
         minutes: (m['m'] as num?)?.toInt() ?? 3,
         pages: (m['p'] as num?)?.toInt() ?? 5,
@@ -210,10 +232,12 @@ class ContesState {
 }
 
 class ConteOpen {
-  const ConteOpen({required this.id, required this.access, required this.locked, required this.price, required this.total, required this.free, required this.pages, required this.adsPaid, this.morale = ''});
-  final String id, access, morale;
+  const ConteOpen({required this.id, required this.access, required this.locked, required this.price, required this.total, required this.free, required this.pages, required this.adsPaid, this.morale = '', this.lang = 'fr', this.rev = '', this.cacheUntil = -1});
+  final String id, access, morale, lang, rev;
   final bool locked;
   final int price, total, free, adsPaid;
+  /// Validité de la copie sur le téléphone : -1 = ne pas garder, 0 = sans limite, sinon date de fin.
+  final int cacheUntil;
   final List<String> pages;
 
   factory ConteOpen.fromMap(Map m) => ConteOpen(
@@ -226,6 +250,9 @@ class ConteOpen {
         pages: ((m['pages'] as List?) ?? const []).map((e) => e.toString()).toList(),
         adsPaid: (m['adsPaid'] as num?)?.toInt() ?? 0,
         morale: (m['morale'] ?? '').toString(),
+        lang: (m['lang'] ?? 'fr').toString(),
+        rev: (m['rev'] ?? '').toString(),
+        cacheUntil: (m['cacheUntil'] as num?)?.toInt() ?? -1,
       );
 }
 
@@ -237,6 +264,7 @@ class ContesService {
   final ValueNotifier<ContesState?> state = ValueNotifier<ContesState?>(null);
   ContesCatalog _catalog = const ContesCatalog();
   DateTime? _catalogAt;
+  String _catalogLang = 'fr';
   Future<ContesCatalog>? _catalogFuture;
   final Map<String, ConteOpen> _fullCache = {};
 
@@ -266,6 +294,7 @@ class ContesService {
   /// Recueils et fiches : une lecture pour la liste des recueils, puis un document par bloc de 40 contes.
   Future<ContesCatalog> catalog({bool force = false}) {
     final at = _catalogAt;
+    if (_catalogLang != trCurrentLanguage) force = true; // la langue a changé : titres et accroches à relire
     if (!force && at != null && _catalog.cards.isNotEmpty && DateTime.now().difference(at).inMinutes < 15) return Future.value(_catalog);
     return _catalogFuture ??= _loadCatalog().whenComplete(() => _catalogFuture = null);
   }
@@ -301,6 +330,7 @@ class ContesService {
     cards.sort((a, b) => a.order.compareTo(b.order));
     _catalog = ContesCatalog(collections: collections, cards: cards);
     _catalogAt = DateTime.now();
+    _catalogLang = trCurrentLanguage;
     return _catalog;
   }
 
@@ -324,25 +354,53 @@ class ContesService {
   }
 
   /// Ouvre un conte. Les contes lus en entier restent en mémoire pour la session (pas de nouvelle lecture).
-  Future<ConteOpen> open(String id) async {
+  /// Ouvre un conte. Un conte déjà débloqué est relu depuis la mémoire, puis depuis le disque du téléphone : le serveur
+  /// n'enregistre alors que la lecture (`conteTouch`), sans relire le texte.
+  Future<ConteOpen> open(ConteCard card) async {
+    final id = card.id;
+    final u = uid;
     final cached = _fullCache[id];
-    if (cached != null && !cached.locked) {
-      // l'historique du lecteur est mis à jour en arrière-plan
-      unawaited(_call('conteOpen', {'id': id}).catchError((_) => <String, dynamic>{}));
+    if (cached != null && !cached.locked && cached.lang == card.lang && (cached.cacheUntil <= 0 || cached.cacheUntil > DateTime.now().millisecondsSinceEpoch)) {
+      unawaited(_call('conteTouch', {'id': id}).catchError((_) => <String, dynamic>{}));
+      _markRead(id);
       return cached;
     }
-    final m = await _call('conteOpen', {'id': id});
-    final o = ConteOpen.fromMap(m);
-    if (!o.locked) _fullCache[id] = o;
-    final s = state.value;
-    if (s != null) {
-      final reads = Map<String, int>.from(s.reads)..[id] = DateTime.now().millisecondsSinceEpoch;
-      state.value = ContesState(
-        reads: reads, done: s.done, unlockedStories: s.unlockedStories, unlockedCollections: s.unlockedCollections,
-        adsPaid: s.adsPaid, passUntil: s.passUntil, freeLeft: s.freeLeft, dailyId: s.dailyId, cfg: s.cfg,
-      );
+    if (u != null) {
+      final disk = await ContesCache.read(u, id);
+      if (disk != null && disk.validFor(rev: card.rev, lang: card.lang)) {
+        final o = ConteOpen(
+          id: id, access: disk.access, locked: false, price: disk.price, total: disk.total, free: disk.free,
+          pages: disk.pages, adsPaid: 0, morale: disk.morale, lang: disk.lang, rev: disk.rev, cacheUntil: disk.until,
+        );
+        _fullCache[id] = o;
+        unawaited(_call('conteTouch', {'id': id}).catchError((_) => <String, dynamic>{}));
+        _markRead(id);
+        return o;
+      }
+      if (disk != null) unawaited(ContesCache.remove(u, id));
     }
+    final m = await _call('conteOpen', {'id': id, 'lang': trCurrentLanguage});
+    final o = ConteOpen.fromMap(m);
+    if (!o.locked) {
+      _fullCache[id] = o;
+      if (u != null && o.cacheUntil >= 0) {
+        unawaited(ContesCache.write(u, ConteCached(
+          id: id, rev: o.rev, lang: o.lang, until: o.cacheUntil, access: o.access, total: o.total, free: o.free, price: o.price, pages: o.pages, morale: o.morale,
+        )));
+      }
+    }
+    _markRead(id);
     return o;
+  }
+
+  void _markRead(String id) {
+    final s = state.value;
+    if (s == null) return;
+    final reads = Map<String, int>.from(s.reads)..[id] = DateTime.now().millisecondsSinceEpoch;
+    state.value = ContesState(
+      reads: reads, done: s.done, unlockedStories: s.unlockedStories, unlockedCollections: s.unlockedCollections,
+      adsPaid: s.adsPaid, passUntil: s.passUntil, freeLeft: s.freeLeft, dailyId: s.dailyId, cfg: s.cfg,
+    );
   }
 
   /// Déblocage (item « st:<id> », « co:<recueil> » ou « pass »). Retourne true quand le contenu est débloqué.

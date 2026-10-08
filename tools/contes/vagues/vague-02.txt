@@ -1,0 +1,136 @@
+# VAGUE 2 — 100 contes (10 recueils de 10). Plan d'écriture, pas du texte publié.
+# Équilibre visé : l'Ouest ne dépasse pas 35 contes (il en a 29 sur 36 dans la vague 1) ; toutes les régions ont au moins 10 contes.
+# Chaque ligne : id | titre de travail | région | étiquette | type | décor/lumière | figures | idée en une phrase
+# Régions : O = Afrique de l'Ouest, C = Afrique centrale, E = Afrique de l'Est, S = Afrique australe, N = Afrique du Nord
+# Étiquettes et figures : voir GUIDE_REDACTION.md. « Histoire » = faits connus et recoupés seulement (voir la règle de vérité du guide).
+# Avant d'écrire : `node scaffold.js vagues/vague-02.txt` crée les brouillons dans brouillons/ ; on écrit les pages ; on contrôle avec build_contes.js ; on déplace dans recueils/.
+
+== recueil: 07-ruses-de-la-tortue | Les Ruses de la Tortue | Ruses et malices | 7
+description: Lente, patiente et plus rusée que tous les coureurs de la forêt : la tortue gagne en pensant pendant que les autres courent.
+tortue-porte-parole | Le jour où la tortue devint porte-parole des animaux | O | Rire | court | village/midi | tortue, ancien | Les animaux la choisissent parce qu'elle est lente : elle aura le temps de réfléchir avant de répondre.
+tortue-festin-ciel | La tortue invitée au festin du ciel | O | Fin surprenante | court | montagne/aube | tortue, oiseau | Elle emprunte les plumes des oiseaux pour monter, puis se choisit un nom qui change tout au repas.
+tortue-coquille-fendue | Pourquoi la carapace de la tortue est en morceaux | O | Mythe | court | foret/orage | tortue, oiseau | Une chute, une promesse trahie, et un guérisseur qui recolle sans jamais effacer les fissures.
+tortue-lion-balance | La tortue et la balance du lion | C | Ruse | court | savane/midi | tortue, lion | Le lion veut peser tout le monde ; la tortue lui fait peser sa propre parole.
+tortue-chef-riviere | La tortue qui voulut commander la rivière | C | Sagesse | long | fleuve/crepuscule | tortue, crocodile, pirogue | Le crocodile se croit maître de l'eau jusqu'à ce que la tortue lui montre ce qu'il doit au courant.
+tortue-herbes-mensonge | Les herbes qui ne savaient pas mentir | C | Fin surprenante | court | foret/aube | tortue, singe | Un singe menteur et une tortue qui ne le contredit jamais, jusqu'à la dernière phrase.
+tortue-tambour-roi | Le tambour du roi et la patience de la tortue | O | Ruse | court | village/nuit | tortue, tambour, ancien | On cherche qui a volé le tambour ; la tortue trouve le voleur en écoutant les pas.
+tortue-pluie-promise | La tortue qui promit la pluie | E | Sagesse | court | desert/midi | tortue, enfant | Elle ne peut pas faire pleuvoir, mais elle sait ce que le village doit faire pour la mériter.
+tortue-lievre-revanche | La revanche du lièvre et la deuxième course | O | Rire | court | savane/aube | tortue, lievre | Le lièvre demande une revanche et découvre que la course n'a jamais été celle qu'il croyait.
+tortue-maison-sur-le-dos | Celle qui portait sa maison | S | Sagesse | court | desert/crepuscule | tortue, ancien, feu | Un voyageur envie la carapace ; elle lui explique ce qu'elle laisse derrière elle à chaque pas.
+
+== recueil: 08-sahara-et-nil | Contes du Sahara et du Nil | Légendes et royaumes | 8
+description: Des dunes touarègues aux rives du Nil, des histoires de caravanes, d'étoiles et de reines que le sable n'a pas effacées.
+touareg-puits-tamasna | Le puits que personne n'osait creuser | N | Légende | court | desert/crepuscule | ancien, calebasse, enfant | Une caravane perdue, un puits à creuser à la main, et un enfant qui comprend que l'eau se partage avant de se trouver.
+touareg-etoile-guide | L'étoile qui guidait les caravanes | N | Mythe | court | desert/nuit | ancien, enfant, feu | Pourquoi les chameliers suivent une étoile et ce qu'elle a coûté à celui qui l'a nommée.
+berbere-tapis-tisseuse | La tisseuse qui cacha une carte dans son tapis | N | Fin surprenante | long | montagne/aube | reine, ancien, calebasse | Une femme berbère tisse en secret le chemin vers la source pour ceux qui reviendront.
+nubie-kandake-pont | La reine Amanirenas et le pays qui ne plia pas | N | Histoire | long | fleuve/midi | reine, guerrier | La reine de Koush, borgne, qui tint tête à Rome et obtint la paix, d'après les sources antiques.
+egypte-scribe-menteur | Le scribe qui ne put pas écrire un mensonge | N | Rire | court | fleuve/midi | ancien, griot | Un scribe de pharaon voit son roseau refuser d'écrire ce qui est faux.
+nil-crue-du-fleuve | Le soir où le Nil refusa de monter | N | Sagesse | court | fleuve/crepuscule | ancien, enfant, pirogue | Une année sans crue, un village qui s'accuse, et une petite fille qui remonte le fleuve pour comprendre.
+maghreb-conteuse-nuit | La conteuse qui sauva sa tête mille nuits | N | Légende | long | village/nuit | reine, griot, feu | Chaque nuit une histoire inachevée repousse la sentence : la ruse du récit, version veillée africaine.
+sahel-sable-chante | Les dunes qui chantaient le nom des morts | N | Frisson | court | desert/nuit | ancien, masque | Le vent fait chanter les dunes ; un jeune guide reconnaît une voix qu'il ne devait pas reconnaître.
+carthage-elephants-hannibal | L'homme qui fit traverser les Alpes aux éléphants | N | Histoire | long | montagne/aube | elephant, guerrier | Hannibal Barca, ses éléphants et ses soldats nord-africains : le trajet, les pertes, le pari fou (faits attestés).
+sahara-sel-et-or | Le sel et l'or du grand commerce | N | Sagesse | court | desert/midi | ancien, calebasse | Pourquoi le sel valait de l'or dans le Sahel, et ce que cela dit de la vraie richesse.
+
+== recueil: 09-savane-de-lest | Veillées de la Savane de l'Est | Mythes et sagesse | 9
+description: Maasai, Kikuyu, Swahili, Éthiopiens : l'Afrique de l'Est raconte le bétail, la pluie, la mer et les villes de pierre.
+maasai-premiere-vache | La première vache descendue du ciel | E | Mythe | court | savane/aube | ancien, lion | Comment le bétail est arrivé chez les Maasai, d'après la tradition : une corde de cuir, un don et ses devoirs.
+maasai-lion-et-berger | Le berger qui parla au lion | E | Sagesse | court | savane/crepuscule | lion, enfant | Un enfant garde le troupeau et négocie avec le plus grand danger de la plaine.
+kikuyu-figuier-sacre | Le figuier où les Kikuyu faisaient leurs prières | E | Légende | court | foret/aube | ancien, enfant | Mount Kenya, le grand figuier, et la promesse d'une famille qui n'aurait pas dû être brisée.
+swahili-dhow-tempete | Le capitaine qui rentra sans cargaison | E | Sagesse | long | fleuve/orage | pirogue, ancien | Un boutre sur l'océan Indien, une tempête, et ce que le capitaine décide de jeter à la mer.
+swahili-sultan-et-poete | Le poète qui répondit au sultan en trois vers | E | Rire | court | village/midi | griot, ancien | À Lamu, le sultan veut humilier un poète ; le poète lui renvoie le miroir.
+ethiopie-reine-de-saba | La reine qui traversa le désert pour une question | E | Légende | long | desert/crepuscule | reine, ancien | Makeda, ses énigmes et son voyage : la légende éthiopienne du Kebra Nagast, racontée comme telle.
+ethiopie-cafe-chevrier | Le chevrier dont les chèvres ne dormaient plus | E | Fin surprenante | court | montagne/aube | enfant, ancien | La légende de Kaldi : les baies rouges, les chèvres qui dansent, et le moine sceptique.
+ouganda-tambours-baganda | Les tambours qui annonçaient le roi | E | Histoire | court | village/midi | tambour, griot, guerrier | Le royaume du Buganda et le langage des tambours royaux, d'après les traditions orales.
+serengeti-gnous-chemin | Pourquoi les gnous marchent toujours vers la pluie | E | Mythe | court | savane/orage | ancien, enfant | Un vieux gnou, une promesse faite à la terre et le premier chemin.
+zanzibar-epices-lune | La femme qui vendait la lune en épices | E | Amour | court | village/nuit | reine, calebasse | Une marchande de girofle, un voyageur sans le sou, et le seul prix qu'elle accepte.
+
+== recueil: 10-esprits-de-la-foret | Les Esprits de la Forêt | Mystères et frissons | 10
+description: Sous la canopée du Congo et du Gabon, les arbres parlent, les rivières ont des noms et les masques ne dorment jamais.
+foret-pygmee-chant-miel | Le chant qui ouvre le miel | C | Mythe | court | foret/aube | enfant, oiseau | Le guide-miel, un oiseau, et la règle qu'il impose aux chasseurs de miel : on laisse sa part.
+foret-masque-qui-regarde | Le masque qui regardait de l'autre côté | C | Frisson | court | foret/nuit | masque, ancien | Un masque pendu au mur tourne chaque nuit d'un doigt vers la porte.
+foret-elephant-mort | L'éléphant qui revenait pleurer | C | Sagesse | court | foret/crepuscule | elephant, enfant | Une éléphante qui revient sur la tombe, et un chasseur qui doit décider de ce qu'il a vu.
+foret-gorille-roi | Le roi qui apprit à se taire chez le gorille | C | Sagesse | long | foret/midi | singe, ancien | Un roi bavard confié aux gorilles pour une saison : on y apprend le silence ou on y reste.
+foret-fleuve-congo-nom | Le fleuve qui avait trois noms | C | Légende | court | fleuve/aube | pirogue, ancien | Un nom pour les vivants, un pour les morts, un pour ceux qui ne sont pas nés.
+foret-feu-ne-brule-pas | Le feu qui ne brûlait que les menteurs | C | Fin surprenante | court | foret/nuit | feu, guerrier | Une épreuve du feu, un accusé innocent et un accusateur dont le récit prend feu le premier.
+foret-lucioles-deuil | Les lucioles de la veuve | C | Amour | court | foret/nuit | reine, enfant | Chaque soir une veuve allume une lueur ; la forêt lui en rend mille.
+foret-serpent-gardien | Le serpent qui gardait la source | C | Mythe | court | foret/orage | serpent, enfant | Pourquoi on ne puise jamais à la source sans la remercier, et ce qu'il advint de ceux qui l'oublièrent.
+foret-tambours-sans-main | Les tambours qui jouaient sans mains | C | Frisson | long | foret/nuit | tambour, masque, guerrier | Dans un village vide, des tambours résonnent encore ; un jeune guerrier découvre ce qui bat.
+foret-okapi-cache | L'okapi que personne n'avait vu | C | Légende | court | foret/aube | enfant, ancien | Un animal que seuls les enfants voient : la légende explique pourquoi les adultes cessent de le voir.
+
+== recueil: 11-ile-et-ocean | Contes de la Grande Île et de l'Océan | Mythes et sagesse | 11
+description: Madagascar, Comores, Maurice : des rizières, des lémuriens, des tombeaux de famille et la mer qui rapporte tout.
+mada-lemurien-lune | Le lémurien qui voulait toucher la lune | E | Mythe | court | foret/nuit | singe, enfant | Un maki, la pleine lune et le premier saut qui a donné leur queue rayée aux lémuriens.
+mada-riz-promesse | Le grain de riz qui nourrit un royaume | E | Sagesse | court | village/aube | enfant, calebasse | Un seul grain, bien planté, bien compté, bien partagé : l'arithmétique d'une rizière.
+mada-zebu-roi | Le zébu qui devint juge | E | Rire | court | savane/midi | ancien, griot | Deux voisins se disputent un champ ; le zébu du village rend un verdict que tous comprennent.
+mada-baobab-renverse | Pourquoi les baobabs poussent à l'envers | E | Mythe | court | baobab/crepuscule | ancien, oiseau | Un dieu fatigué plante les arbres la tête en bas ; l'avenue des baobabs s'en souvient.
+mada-tombeau-famille | La famille qui retournait chaque année voir ses morts | E | Amour | court | village/aube | ancien, enfant | La cérémonie du famadihana racontée par une petite-fille qui a peur de ce qu'elle va voir.
+comores-ylang-pirate | Le pirate qui échangea son navire contre une fleur | E | Fin surprenante | court | fleuve/aube | pirogue, ancien | Un équipage, une île et une fleur dont l'odeur change un capitaine.
+ocean-pecheur-sirene | Le pêcheur et la voix dans la houle | E | Frisson | court | fleuve/nuit | pirogue, ancien | Chaque marée une voix répète un nom ; le pêcheur finit par répondre.
+ocean-tortue-marine | La tortue qui retrouva la plage de sa naissance | E | Sagesse | court | fleuve/crepuscule | tortue, enfant | Vingt ans plus tard, une tortue marine revient pondre où elle est née ; une petite fille l'attend.
+maurice-sega-esclaves | Le sega qui parlait de liberté sans la nommer | E | Histoire | court | village/nuit | tambour, griot | Le sega de Maurice, né des chants des esclaves : un rythme qui disait ce qu'on ne pouvait pas dire (fait culturel attesté).
+mada-crocodile-sacre | Le lac où le crocodile gardait la parole | E | Légende | court | fleuve/midi | crocodile, ancien | Un serment fait devant le crocodile sacré, et celui qui crut pouvoir le tromper.
+
+== recueil: 12-gardiens-du-sud | Les Gardiens du Sud | Légendes et royaumes | 12
+description: Zoulous, Xhosas, Shonas, San : des chants de lance, des pierres qui parlent, des étoiles qui racontent.
+san-etoile-premiere | La fille qui jeta la braise dans le ciel | S | Mythe | court | desert/nuit | enfant, feu | Le mythe san de la Voie lactée : une braise lancée dans la nuit pour guider les chasseurs.
+san-antilope-chasseur | Le chasseur qui demanda pardon à l'antilope | S | Sagesse | court | desert/crepuscule | enfant, ancien | Chasser sans haine : ce que les chasseurs san disent à la bête avant et après.
+zoulou-chaka-mere | Nandi, la mère qu'on ne voulait pas dans le village | S | Histoire | long | village/crepuscule | reine, enfant, guerrier | La mère de Chaka, rejetée, et le fils qu'elle éleva : l'enfance du futur roi, d'après les sources orales et écrites.
+xhosa-nongqawuse-betail | Le sacrifice du bétail et la prophétie de 1856 | S | Histoire | long | savane/aube | enfant, ancien | La prophétesse Nongqawuse, un peuple qui tue ses vaches, et ce que l'histoire a conservé de la tragédie (faits attestés).
+shona-grand-zimbabwe | Les murs de pierre que personne ne mortaisait | S | Légende | court | montagne/midi | ancien, oiseau | Le Grand Zimbabwe, ses oiseaux de pierre et ceux qui l'ont construit, entre archéologie et récits.
+shona-mbira-esprit | La mbira qui parlait aux ancêtres | S | Mythe | court | village/nuit | tambour, ancien | Un jeune musicien reçoit un instrument dont les lames posent des questions.
+sotho-montagne-roi | Moshoeshoe et la montagne qui devint royaume | S | Histoire | long | montagne/aube | guerrier, ancien | Le roi qui rassembla des peuples dispersés sur un plateau fortifié, et la diplomatie qui le sauva (faits attestés).
+tswana-vache-pluie | Pourquoi on dit « Pula » pour dire merci | S | Mythe | court | savane/orage | ancien, calebasse | Au Botswana, le même mot dit la pluie, la chance et la gratitude : l'histoire d'une première pluie.
+ndebele-murs-peints | Les murs que les femmes peignaient en couleurs | S | Fin surprenante | court | village/midi | reine, enfant | Chez les Ndebele, les motifs peints disent une histoire de résistance ; une petite fille déchiffre un message.
+zambeze-victoria-fumee | La fumée qui tonne | S | Légende | court | fleuve/orage | ancien, pirogue | Mosi-oa-Tunya, la fumée qui gronde : ce que les riverains disaient de la chute avant les cartes.
+
+== recueil: 13-histoires-damour | Histoires d'Amour | Amour et destin | 13
+description: Le premier regard, la promesse tenue, le cadeau qui ne coûte rien : l'amour raconté comme à la veillée.
+amour-calebasse-eau | La calebasse d'eau offerte à l'inconnu | O | Amour | court | savane/midi | enfant, calebasse | Une jeune fille donne son eau à un voyageur épuisé : trois ans plus tard, il revient avec ce que l'eau a coûté.
+amour-griot-chant | Le griot qui chanta le nom de celle qu'il n'osait aimer | O | Amour | court | village/nuit | griot, reine | Il chante tous les noms sauf le sien, jusqu'à la nuit de la fête.
+amour-tisserand-fil | Le fil qu'il ne coupa jamais | O | Amour | court | village/aube | ancien, calebasse | Un tisserand laisse un fil dépasser de chaque pagne qu'il vend, pour retrouver celle qu'il a perdue.
+amour-pirogue-fleuve | Le cavalier, la pirogue et le fleuve entre eux | O | Amour | long | fleuve/crepuscule | guerrier, pirogue, reine | Deux rives en guerre, un fleuve qui sépare et une promesse qui traverse.
+amour-vieux-couple | Le vieux couple et la dernière récolte | C | Amour | court | savane/aube | ancien, calebasse | Quarante ans de désaccords et une dernière récolte qu'ils doivent porter ensemble.
+amour-mere-chanson | La berceuse que sa mère lui chantait | E | Amour | court | village/nuit | enfant, ancien | Un homme qui a tout oublié se souvient d'une seule berceuse.
+amour-lettre-sable | La lettre écrite dans le sable | N | Amour | court | desert/crepuscule | enfant, ancien | Une jeune Targuie écrit en tifinagh ; il lit et revient.
+amour-forgeron-masque | Le forgeron qui forgea un cœur | O | Amour | court | village/orage | guerrier, feu | Il lui offre un bracelet qui chante ; elle veut savoir pourquoi il ne chante qu'avec elle.
+amour-cadeau-rien | Le cadeau qui ne coûtait rien | S | Amour | court | savane/midi | enfant, calebasse | Un jeune pauvre offre le seul trésor qu'il ait : son temps ; le riche comprend trop tard.
+amour-tambour-mariage | Le tambour qui annonça deux mariages | C | Rire | court | village/midi | tambour, ancien | Un malentendu de messages tambourinés qui finit par marier deux couples qui ne se connaissaient pas.
+
+== recueil: 14-proverbes-bis | Un Proverbe, une Histoire — 2 | Sagesse et proverbes | 14
+description: Dix nouveaux proverbes et leurs histoires : on les dit en une phrase, on les comprend en entier au bout du conte.
+prov-main-lave-main | Une main lave l'autre | O | Sagesse | court | village/midi | ancien, enfant | Deux voisins qui s'entraident sans le dire ; le jour où l'un cesse, tout le village le sent.
+prov-doucement-loin | Qui va doucement va loin | E | Sagesse | court | savane/aube | tortue, lievre | Un messager trop pressé arrive avant la nouvelle.
+prov-toit-qui-fuit | On répare le toit quand le soleil brille | C | Sagesse | court | village/aube | ancien, enfant | Un père qui rafistole son toit en saison sèche ; les voisins se moquent jusqu'aux pluies.
+prov-eau-qui-dort | Ne réveille pas l'eau qui dort | N | Frisson | court | fleuve/nuit | ancien, crocodile | Un défi lancé à une mare tranquille ; ce qui en sort n'est pas ce qu'on attendait.
+prov-arbre-foret | Un seul arbre ne fait pas une forêt | S | Sagesse | court | foret/midi | ancien, oiseau | Un orgueilleux veut rester seul ; l'orage lui enseigne le contraire.
+prov-chien-os | Le chien qui garde l'os n'a plus d'amis | O | Rire | court | village/midi | ancien, griot | Un riche garde tout pour lui ; ses invités s'en vont, sa porte se tait.
+prov-pied-chemin | C'est en marchant qu'on fait le chemin | E | Sagesse | court | montagne/aube | enfant, ancien | Une carte sans route, un jeune guide qui avance et un vieux qui se tait.
+prov-parole-fleche | La parole est une flèche qu'on ne rappelle pas | C | Sagesse | court | savane/crepuscule | guerrier, ancien | Un mot lancé trop vite à un ami ; la nuit entière à essayer de le reprendre.
+prov-pluie-trop-tard | La pluie après la récolte | S | Fin surprenante | court | savane/orage | ancien, calebasse | Un cultivateur prie pour la pluie le jour où il n'en a plus besoin.
+prov-calebasse-felee | Calebasse fêlée garde mieux l'eau qu'on ne croit | O | Sagesse | court | village/aube | calebasse, enfant | Une calebasse abîmée arrose le sentier sans qu'on le sache : fleurs partout où elle passe.
+
+== recueil: 15-petits-malins | Les Petits Malins | Ruses et malices | 15
+description: Des enfants plus rusés que les grands, plus courageux que les lions, plus rapides que les mensonges.
+enfant-ruse-lion | La petite fille qui vendit son ombre au lion | O | Ruse | court | savane/midi | enfant, lion | Le lion veut l'ombre fraîche ; elle en tire un contrat qu'il ne pourra jamais honorer.
+enfant-tambour-cache | Le garçon qui cacha le tambour dans un grain de mil | C | Fin surprenante | court | village/nuit | enfant, tambour | Les gardes cherchent partout ce qui se cache dans le plus petit endroit.
+enfant-voix-riviere | Le gamin qui prêta sa voix à la rivière | E | Fin surprenante | court | fleuve/aube | enfant, ancien | Un enfant imite une voix d'homme pour sauver son village d'un chef injuste.
+enfant-mensonge-trois | Les trois mensonges de Kofi | O | Rire | court | village/midi | enfant, griot | Chaque mensonge est plus beau que le précédent ; le dernier est la vérité que personne ne croit.
+enfant-chevre-et-lionne | La chevrière et la lionne affamée | S | Ruse | court | savane/crepuscule | enfant, lion | Elle compte ses chèvres à haute voix pour que la lionne se méprenne.
+enfant-peur-de-rien | Le garçon qui n'avait peur de rien sauf d'une chose | N | Sagesse | court | desert/nuit | enfant, ancien | Il défie le désert, les serpents, les djinns ; il tremble devant une réponse à donner.
+enfant-puits-secret | Le puits que seul un enfant pouvait descendre | O | Sagesse | court | village/midi | enfant, ancien | Une bague tombée dans un puits étroit : les adultes proposent des solutions, l'enfant en trouve une.
+enfant-plus-vite | La course d'une petite fille contre l'antilope | E | Rire | court | savane/aube | enfant, oiseau | Elle ne court pas, elle réfléchit, et l'antilope se fatigue à poursuivre sa propre ombre.
+enfant-graine-secret | La graine que le garçon ne planta pas | C | Fin surprenante | court | savane/midi | enfant, ancien | Le chef donne une graine à chaque enfant et récompensera le plus beau plant ; l'honnête n'en a aucun.
+enfant-voyageur-peur | Le petit voyageur et les trois portes de la nuit | S | Frisson | long | savane/nuit | enfant, masque, ancien | Pour rentrer chez lui, un enfant traverse trois portes ; chacune lui demande de laisser quelque chose.
+
+== recueil: 16-griots-et-batailles | Griots, Batailles et Royaumes | Légendes et royaumes | 16
+description: Ghana, Songhaï, Kanem, Axoum : ce que les griots et les chroniqueurs ont retenu des grands empires africains.
+histoire-ghana-or-roi | Le roi du Ghana qui ne laissait pas l'or toucher terre | O | Histoire | court | desert/midi | ancien, calebasse | Le royaume de Wagadou et la règle de la pépite : pourquoi le roi gardait toutes les grosses pépites (sources arabes anciennes).
+histoire-askia-pelerin | Askia Mohamed, l'empereur qui marcha jusqu'à La Mecque | O | Histoire | long | desert/crepuscule | guerrier, ancien | Songhaï, pèlerinage, retour et réformes d'un empereur (faits attestés).
+histoire-axoum-obelisque | L'obélisque d'Axoum que l'on dressa sans machine | E | Histoire | court | montagne/aube | ancien, guerrier | Axoum, ses stèles monumentales et le mystère de leur construction.
+histoire-timbuktu-livres | Les manuscrits de Tombouctou sauvés à dos de pirogue | O | Histoire | long | fleuve/nuit | pirogue, ancien, enfant | Des bibliothécaires et des familles qui sauvent des centaines de milliers de manuscrits (événement récent, attesté).
+histoire-kanem-sao | Idris Alooma et les mousquets du Kanem-Bornou | C | Histoire | court | savane/midi | guerrier, ancien | Un souverain qui modernise son armée et réorganise l'empire (faits attestés).
+histoire-benin-bronzes | Les bronzes de Bénin racontaient plus que des rois | O | Histoire | court | village/midi | ancien, masque | Les plaques de bronze du palais d'Edo et ce qu'elles montraient (faits attestés).
+histoire-lalibela-eglises | Les églises que l'on sculpta vers le bas | E | Histoire | long | montagne/aube | ancien, enfant | Lalibela : des églises creusées dans le roc, et la légende de leur construction par des anges la nuit.
+histoire-kilwa-monnaie | Kilwa, la ville qui frappait sa propre monnaie | E | Histoire | court | fleuve/midi | pirogue, ancien | Du XIIe au XIVe siècle, Kilwa, sur la côte swahilie, frappe ses propres pièces de cuivre, au cœur du commerce de l'océan Indien (faits attestés).
+histoire-amanitore-meroe | Les pyramides de Méroé et les reines noires | N | Histoire | court | desert/crepuscule | reine, ancien | Plus de pyramides au Soudan qu'en Égypte : les reines koushites qui les firent bâtir.
+histoire-maji-maji | Maji Maji : l'eau qui devait arrêter les balles | E | Histoire | court | savane/aube | guerrier, ancien | Le soulèvement de 1905 contre la colonisation allemande, entre foi, espoir et répression (faits attestés).

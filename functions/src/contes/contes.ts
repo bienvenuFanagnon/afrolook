@@ -189,7 +189,13 @@ export const conteOpen = onCall({ timeoutSeconds: 15 }, async (request) => {
   const now = Date.now();
   const [story, textSnap, rawUser] = await Promise.all([loadStory(id), db.collection("ContesText").doc(id).get(), readUser(uid)]);
   const u = await ensureDaily(uid, rawUser, now);
-  const pages = ((textSnap.data()?.["pages"] ?? []) as string[]).map(String);
+  // langue demandée (« en »…) : texte traduit s'il existe, sinon le français
+  const lang = String(request.data?.lang ?? "").toLowerCase().slice(0, 5);
+  const tr = lang && lang !== "fr" ? ((textSnap.data()?.["i18n"] ?? {}) as Record<string, { pages?: string[]; morale?: string }>)[lang] : undefined;
+  const frPages = ((textSnap.data()?.["pages"] ?? []) as string[]).map(String);
+  const pages = tr?.pages && tr.pages.length === frPages.length ? tr.pages.map(String) : frPages;
+  const served = pages === frPages ? "fr" : lang;
+  const morale = served === "fr" ? String(textSnap.data()?.["morale"] ?? "") : String(tr?.morale ?? textSnap.data()?.["morale"] ?? "");
   if (pages.length === 0) throw new HttpsError("not-found", "Conte vide.");
   const access = accessKind(u, story, cfg, now);
   const open = access !== "locked";
@@ -211,8 +217,27 @@ export const conteOpen = onCall({ timeoutSeconds: 15 }, async (request) => {
     ok: true, id, access, locked: !open, price, total: pages.length, free: story.free,
     pages: open ? pages : pages.slice(0, Math.max(1, Math.min(story.free, pages.length))),
     adsPaid: u.adsPaid[`st:${id}`] ?? 0,
-    morale: open ? String(textSnap.data()?.["morale"] ?? "") : "",
+    morale: open ? morale : "",
+    lang: served,
+    rev: String(textSnap.data()?.["rev"] ?? ""),
+    // validité de la copie gardée sur le téléphone : 0 = sans limite (gratuit, débloqué), sinon date de fin (conte du jour, pass)
+    cacheUntil: !open ? -1 : access === "pass" ? u.passUntil : access === "daily" ? (Math.floor(now / DAY) + 1) * DAY : 0,
   };
+});
+
+/**
+ * Le lecteur rouvre un conte qu'il a déjà en cache sur son téléphone : on enregistre seulement la lecture
+ * (historique et mesures), sans relire le texte (une écriture, aucune lecture lourde).
+ */
+export const conteTouch = onCall({ timeoutSeconds: 10 }, async (request) => {
+  const uid = uidOf(request);
+  const id = String(request.data?.id ?? "");
+  if (!id) throw new HttpsError("invalid-argument", "Conte requis.");
+  const now = Date.now();
+  await userRef(uid).set({ reads: { [id]: now } }, { merge: true });
+  bump(dayKey(now), { opens: 1, cachedOpens: 1 }).catch(() => undefined);
+  db.collection("ContesStoryStats").doc(id).set({ id, opens: FieldValue.increment(1) }, { merge: true }).catch(() => undefined);
+  return { ok: true };
 });
 
 function itemPrice(item: string, story: Story | null, collections: Record<string, { price?: number }>, cfg: Cfg): number {
@@ -413,7 +438,7 @@ export const conteAdmin = onCall({ timeoutSeconds: 60, memory: "512MiB" }, async
     ok: true, readers, activeToday, active7, reads, done, passActive, adFreeActive,
     completionRate: reads ? Math.round((done * 100) / reads) : 0,
     week: {
-      opens: t["opens"] ?? 0, finishes: t["finishes"] ?? 0, unlockCoins: t["unlockCoins"] ?? 0, unlockAds: t["unlockAds"] ?? 0, unlockFree: t["unlockFree"] ?? 0,
+      opens: t["opens"] ?? 0, cachedOpens: t["cachedOpens"] ?? 0, finishes: t["finishes"] ?? 0, unlockCoins: t["unlockCoins"] ?? 0, unlockAds: t["unlockAds"] ?? 0, unlockFree: t["unlockFree"] ?? 0,
       adsRewarded: t["adsRewarded"] ?? 0, adsInterstitial: t["adsInterstitial"] ?? 0, coinsSpent: t["coinsSpent"] ?? 0,
       feedView: t["feed_view"] ?? 0, feedClick: t["feed_click"] ?? 0, feedDismiss: t["feed_dismiss"] ?? 0, soundOff: t["sound_off"] ?? 0, soundOn: t["sound_on"] ?? 0,
     },
