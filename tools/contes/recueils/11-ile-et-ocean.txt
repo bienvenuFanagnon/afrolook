@@ -1,0 +1,240 @@
+recueil: Contes de la Grande Île et de l'Océan
+categorie: Mythes et sagesse
+description: Madagascar, Comores, Maurice : des rizières, des lémuriens, des tombeaux de famille et la mer qui rapporte tout.
+ordre: 11
+prix: 70
+
+=== conte: mada-lemurien-lune
+titre: Le lémurien qui voulait toucher la lune
+accroche: Chaque nuit, il bondissait plus haut. Une nuit, il toucha quelque chose.
+etiquette: Mythe
+origine: Conte d'inspiration malgache
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: foret
+lumiere: nuit
+figures: singe, ancien
+morale: Ce qu'on ne peut pas atteindre peut parfois nous marquer pour toujours.
+---
+À Madagascar, il y a très longtemps, les makis avaient la queue toute grise, sans une rayure. Parmi eux, un jeune mâle nommé Tsiky passait ses nuits à regarder la lune. Elle était ronde, lumineuse, si proche en apparence qu'il lui semblait pouvoir la saisir. Tous les soirs, il grimpait un peu plus haut dans les arbres, et tous les soirs, il retombait un peu plus bas que la veille.
+---
+Les anciens riaient. « Petit, la lune est trop loin. On ne la touche pas. On la regarde. » Mais Tsiky ne les écoutait pas. Un soir de pleine lune, la plus grande que l'année ait donnée, il choisit le plus haut tamarinier de la forêt. Il monta jusqu'à la cime, les griffes en sang, le cœur battant, et regarda la lune qui flottait juste au-dessus. Il prit son élan.
+---
+Il sauta de toutes ses forces. Pendant un instant, il crut voler. Puis il chuta, longtemps, traversa les feuillages, et tomba dans un lac au pied de l'arbre. L'eau froide le saisit. Il remonta, toussant, étourdi, et leva les yeux. La lune était là, devant lui, ronde, argentée, tremblante, posée sur le lac. Il tendit la patte, avec une joie qui lui coupait le souffle.
+---
+Sa patte plongea dans l'eau, et la lune se brisa en mille morceaux d'argent. Tsiky voulut les rattraper, mais ils se dispersèrent en cercles. Il balaya l'eau avec sa queue, éclaboussa, s'agita. Il finit par sortir du lac, épuisé, la queue pleine de gouttes brillantes. En séchant au clair de lune, elle se couvrit peu à peu d'anneaux sombres et clairs, alternés, comme les cercles que son geste avait tracés sur l'eau.
+---
+Le lendemain, les makis vinrent l'admirer. Aucun n'avait jamais vu une queue pareille. « Tu n'as pas touché la lune, dit une vieille femelle. Mais elle t'a touché. » Depuis ce jour, tous les makis ont la queue rayée, et lorsqu'ils la lèvent en marchant, on dit qu'ils montrent à la nuit qu'ils n'ont pas oublié leur ancêtre, celui qui crut pouvoir saisir la lune, et qui en rapporta ses anneaux.
+
+=== conte: mada-riz-promesse
+titre: Le grain de riz qui nourrit un royaume
+accroche: Un seul grain, bien planté, bien compté, bien partagé : l'arithmétique d'une rizière.
+etiquette: Sagesse
+origine: Conte d'inspiration malgache
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: aube
+figures: enfant, calebasse
+morale: Un grain mangé nourrit un jour ; un grain planté et partagé nourrit un royaume.
+---
+Dans les hautes terres de Madagascar, la famine avait frappé le royaume. Les rizières étaient sèches, les greniers vides. Le roi fit proclamer que chaque famille devait rendre au palais le peu de riz qui lui restait, afin qu'il soit partagé équitablement. Soa, une fillette de dix ans, n'avait plus qu'un seul grain, trouvé dans un pli de son pagne.
+---
+Elle s'en alla le porter au palais. Mais en chemin, elle réfléchit. « Si je donne ce grain, il sera mangé et oublié. Si je le plante, peut-être qu'il fera mieux que nourrir un seul jour. » Elle hésita longtemps, puis traversa sa rizière asséchée, creusa un petit trou près d'une source cachée et y enterra le grain. Elle rentra au palais les mains vides, la tête haute.
+---
+« Où est ton riz ? demanda le roi. — Je l'ai planté, répondit-elle. — Un seul grain ? » Les courtisans éclatèrent de rire. Mais le roi, intrigué, la laissa partir. Trois mois plus tard, la plante avait donné cinquante grains. Soa en garda quarante-neuf pour les planter, et en partagea un avec une vieille voisine qui n'avait plus rien. Au cycle suivant, les quarante-neuf donnèrent plus de deux mille grains.
+---
+Elle les compta, les trie, les planta à nouveau, en laissant une poignée à chacun des voisins qui venaient lui demander conseil. Bientôt, la rizière de Soa devint la plus verte du pays. Les paysans voisins vinrent l'aider, et elle leur apprit à enterrer chaque grain à la bonne profondeur, à l'arroser par la source cachée, à n'en gaspiller aucun. En trois saisons, la vallée entière avait reverdi.
+---
+Le roi, informé, fit venir Soa. « Un grain, dit-il, et tu as sauvé un royaume. Comment ? — En le comptant, répondit-elle. En le plantant. Et en le partageant. Un grain mangé nourrit un jour. Un grain planté nourrit des années, mais un grain partagé nourrit tout le monde. » Le roi s'inclina. Depuis, dit-on, dans les rizières malgaches, on compte les grains comme on compte les promesses.
+
+=== conte: mada-zebu-roi
+titre: Le zébu qui devint juge
+accroche: Deux voisins se disputaient un champ. Le village s'en remit à un zébu.
+etiquette: Rire
+origine: Conte d'inspiration malgache
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: savane
+lumiere: midi
+figures: ancien, griot
+morale: Quand deux hommes veulent tout, un zébu partage mieux qu'eux.
+---
+Dans un village des Hautes Terres, deux voisins, Rakoto et Rabe, se disputaient depuis des années un petit champ de manioc. Chacun affirmait que la limite passait à gauche, ou à droite, selon son intérêt. Les anciens avaient tout essayé : mesures, témoignages, serments. Rien n'avait mis fin à la querelle, qui empoisonnait toute la vallée et divisait même les familles.
+---
+Un jour, un vieil homme proposa une idée étrange. « Confions le jugement à Ramanga, le zébu du village. Il est vieux, il est sage, il connaît chaque brin d'herbe de la vallée. » Tout le monde rit, mais personne n'avait de meilleure idée. On convint que Ramanga serait lâché au milieu du champ, et que l'on respecterait l'endroit où il s'arrêterait.
+---
+La veille du jugement, chacun des deux voisins eut la même pensée. Rakoto, à la nuit tombée, vint dans le champ avec une brassée d'herbe tendre et la déposa de son côté. Rabe fit exactement la même chose, de l'autre. Chacun s'en alla, content de lui, sans savoir que l'autre était venu. Les deux tas d'herbe, parfumés, appétissants, attendaient le zébu au petit matin.
+---
+Le lendemain, tout le village se pressa autour du champ. On lâcha Ramanga au centre. Le zébu huma l'air, tourna la tête vers la gauche, puis vers la droite, hésita longuement. Il alla manger l'herbe de Rakoto. Puis il traversa tranquillement le champ et mangea celle de Rabe. Rassasié, il se laissa tomber à terre, exactement entre les deux tas, pile sur la ligne médiane, et commença à ruminer.
+---
+Personne ne parla. Puis un éclat de rire monta, de plus en plus fort, et gagna le village entier. Rakoto et Rabe, rouges de honte, se regardèrent. « Il a jugé, dit l'ancien. Le champ est coupé en deux, comme il l'a dit. » Les deux voisins, vaincus par le rire, se serrèrent la main. Quant à Ramanga, il ne bougea pas de l'après-midi. On raconte même qu'il ronflait, et qu'on y vit un signe de sagesse.
+
+=== conte: mada-baobab-renverse
+titre: Pourquoi les baobabs poussent à l'envers
+accroche: Un dieu fatigué planta le baobab la tête en bas. C'était peut-être la meilleure idée du monde.
+etiquette: Mythe
+origine: Légende malgache, dans l'une de ses versions
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: baobab
+lumiere: crepuscule
+figures: ancien, oiseau
+morale: On voit parfois mieux le monde quand il se retourne.
+# relecture : la légende du baobab planté « à l'envers » existe sous plusieurs formes en Afrique ; Zanahary est le nom du créateur dans la tradition malgache.
+---
+Au commencement du monde, selon les anciens de Madagascar, Zanahary, le créateur, planta des arbres de toutes sortes sur la terre rouge de l'île. Il y eut des palmiers souples, des tamariniers touffus, des ébéniers noirs. Chacun fut posé avec soin, et chacun remercia. Sauf un, le plus grand de tous, qui se mit à se plaindre dès qu'il fut debout : le baobab.
+---
+« Je suis immense, disait-il, mais regardez comme je suis mal placé ! Le soleil me brûle, le vent me secoue. Mes feuilles sont trop petites, mes branches trop rares. Les autres arbres ont de belles ombres, moi, je n'ai que ma hauteur. » Il se plaignait à toute heure, au point que les oiseaux désertaient ses branches. Zanahary l'écouta longtemps avec patience.
+---
+Un matin, fatigué de ces plaintes, le créateur arracha le baobab de la terre. Il le tint un instant à bout de bras, le retourna comme un pot, et le replanta la tête en bas. Les racines se retrouvèrent à l'air libre, tordues comme des branches nues, et la cime s'enfonça dans la terre. « Maintenant, dit Zanahary, tu verras les choses d'un autre point de vue. »
+---
+Le baobab se tut. Pendant des siècles, il resta ainsi, un tronc énorme, une couronne de racines tendues vers le ciel. Mais le silence lui fit du bien. Il découvrit ce que l'on ne voit pas quand on se plaint : la pluie, qui tombe rare, devait être gardée ; le soleil, qui brûle fort, devait être supporté. Son tronc se gonfla, se remplit d'eau, de réserve, de patience.
+---
+Les saisons sèches vinrent, terribles. Les autres arbres se desséchaient. Le baobab, lui, donnait ses fruits, ses feuilles, son eau, à qui venait en demander. Les lémuriens y trouvaient du jus, les hommes de l'ombre et des fibres, les oiseaux un abri. Depuis ce jour, on dit que le baobab est le seul arbre qui a su transformer sa colère en réserve. Et les Malgaches sourient en le regardant : ils savent à quel point le renversement l'a rendu généreux.
+
+=== conte: mada-tombeau-famille
+titre: La famille qui allait donner des nouvelles à ses morts
+accroche: Pour la petite Volana, c'était une fête qui faisait un peu peur. Elle comprit pourquoi on danse.
+etiquette: Amour
+origine: Tradition malgache du famadihana, racontée librement
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: crepuscule
+figures: enfant, tambour
+morale: On ne danse pas avec la mort, on danse avec la mémoire.
+# relecture : le famadihana (« retournement des morts ») est une cérémonie réelle des Hautes Terres, célébrée à intervalles de plusieurs années ; la description reste volontairement sobre et respectueuse. Le personnage de Volana est inventé.
+---
+Sur les Hautes Terres de Madagascar, il est une fête que les étrangers ont du mal à comprendre, et que les Malgaches attendent pendant des années : le famadihana, que l'on traduit parfois par « le retournement des morts ». Toute la famille se rassemble, parfois plus de cent personnes, avec des musiciens, des fleurs et des linceuls de soie neuve. Volana, dix ans, allait y assister pour la première fois.
+---
+Elle avait peur. Elle avait entendu dire que l'on ouvrait le tombeau de la famille, que l'on en sortait les ancêtres, que l'on les enveloppait dans des étoffes neuves. Elle regardait sa grand-mère, qui préparait les provisions avec un grand sourire, et ne comprenait pas. « Mamie, murmura-t-elle, pourquoi vas-tu faire ça ? Ce sont des morts. Ils ne sont plus là. »
+---
+La grand-mère s'accroupit à sa hauteur. « Ils ne sont plus là comme toi et moi, dit-elle. Mais ils sont dans le sang qui bat sous ta peau. Chaque fois qu'on les oublie, ils meurent un peu plus. Chaque fois qu'on les honore, ils vivent encore. Aujourd'hui, on va leur donner des nouvelles. » Volana ne comprit pas bien, mais elle prit la main de sa grand-mère.
+---
+Le jour venu, le tombeau fut ouvert avec respect, au milieu des chants. Les anciens sortirent les défunts avec tendresse et les enveloppèrent dans de nouvelles étoffes de soie. La fanfare joua. Les cousins dansèrent en portant les ancêtres sur leurs épaules, les promenèrent autour du tombeau, comme pour leur montrer la maison, les champs, les enfants grandis. Volana, d'abord figée, vit les visages rayonner de joie. Personne ne pleurait.
+---
+Quand vint son tour, la grand-mère lui prit la main et lui dit : « Raconte-leur quelque chose. » Volana hésita, puis dit à voix basse : « Je m'appelle Volana, j'ai dix ans. Je sais compter jusqu'à mille. Et j'ai peur des araignées. » Les rires éclatèrent autour d'elle. Elle comprit alors : on ne dansait pas avec la mort, on dansait avec la mémoire. Et la mémoire, elle, avait besoin de rire pour rester vivante.
+
+=== conte: comores-ylang-pirate
+titre: Le pirate qui échangea son navire contre une fleur
+accroche: Il était venu piller l'île. Il repartit sans son navire, une fleur à la main.
+etiquette: Fin surprenante
+origine: Conte d'inspiration comorienne
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: foret
+lumiere: midi
+figures: pirogue, ancien
+morale: Certaines odeurs désarment mieux que les canons.
+---
+Le capitaine Lacroix était l'un des pirates les plus craints de l'océan Indien. Son navire, le Corbeau, ne se montrait jamais sans qu'une île tremble. Un matin, il aperçut au large une terre verte et montagneuse, aux plages blanches : une des îles Comores. « Voilà un repaire riche et facile, dit-il à son équipage. Nous mouillerons ce soir, nous pillerons demain. »
+---
+Mais le vent, ce soir-là, apporta à bord une odeur étrange. Épaisse, sucrée, enivrante, qui flottait sur l'eau comme une promesse. Les marins se turent. Même le capitaine, cuirassé de colère et de rhum, sentit quelque chose se détendre en lui. « Qu'est-ce que c'est que ça ? » grommela-t-il. Personne ne sut répondre. Il ordonna de jeter l'ancre à l'aube, pour trouver la source de cette odeur.
+---
+À terre, il découvrit des champs entiers d'arbres aux fleurs jaunes, tombantes, tordues comme des griffes : les ylangs. Une vieille femme, assise devant un alambic de cuivre, en faisait distiller les pétales. Lacroix tira son sabre, pour le principe. La vieille leva à peine les yeux. « Posez cela, capitaine. Vous allez effrayer les fleurs. » Il hésita, rengaina, et, sans qu'il sache pourquoi, s'assit.
+---
+Elle lui servit un thé parfumé. Il resta trois jours. Il aida à cueillir les fleurs à l'aube, quand elles sont les plus odorantes, à alimenter le feu de l'alambic, à remplir les flacons. Chaque soir, sa cruauté s'effritait un peu. Ses marins, lassés d'attendre, se dispersèrent dans les villages. Un à un, ils trouvèrent des femmes, des maisons, des jardins. À la fin de la semaine, il ne restait plus que lui et le navire vide.
+---
+Un matin, le capitaine échangea son navire contre une parcelle de terre et quelques plants d'ylang. Il devint parfumeur. Quelques années plus tard, une frégate de la marine vint le chercher pour piraterie ancienne. L'officier, ferme, descendit à terre. Lacroix lui offrit un flacon. L'officier le huma, resta muet, puis rengaina son mandat. « Je n'ai trouvé personne qui ressemble à ce que l'on m'a décrit, dit-il à son équipage. Seulement un homme qui sent bon. »
+
+=== conte: ocean-pecheur-sirene
+titre: Le pêcheur et la voix dans la houle
+accroche: Chaque marée, une voix répétait son nom. Il finit par répondre.
+etiquette: Frisson
+origine: Conte d'inspiration de l'océan Indien
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: orage
+figures: pirogue, ancien
+morale: Il faut parfois répondre à la mer pour apprendre à l'écouter.
+---
+Sur la côte d'une île de l'océan Indien, le pêcheur Amadi sortait chaque nuit à marée basse, dans sa pirogue à balancier, pour tendre ses filets sous les étoiles. La mer était son métier, son champ, sa maison. Il connaissait ses humeurs et ses silences. Jamais, en vingt ans, elle ne lui avait fait peur. Jusqu'à la nuit où elle l'appela par son nom.
+---
+Ce n'était pas le vent. Ce n'était pas une mouette. C'était une voix, claire, posée, dans le creux de la houle : « Amadi... » Il se retourna. Rien. La mer, plate et noire. Il crut à la fatigue. La nuit suivante, la voix revint, un peu plus près : « Amadi... » Il ne répondit pas. Les pêcheurs plus âgés, à qui il en parla, secouèrent la tête. « Ne réponds jamais, dirent-ils. La mer garde ceux qui répondent. »
+---
+Mais la voix était si familière. Ni menaçante, ni envoûtante, simplement familière, comme celle d'un frère. Au bout d'une semaine, il ne put plus tenir. Une nuit, à l'heure où la marée tourne, il murmura : « Qui es-tu ? » Un silence. Puis la voix, plus douce que jamais : « Tu ne me reconnais pas ? » Amadi sentit ses bras trembler. Il avait un frère jumeau, Idriss, noyé à quinze ans.
+---
+« Idriss ? — Rentre, Amadi, dit la voix. Rentre maintenant. Ne reste pas. » Il resta figé. « Je ne comprends pas. — Rentre. Demain, ne sors pas. Dis aux autres de ne pas sortir. » Puis la voix s'éteignit dans le clapotis des vagues. Amadi rama jusqu'à la plage, trembla toute la nuit, et au matin, courut chez les pêcheurs. « Ne sortez pas ce soir ! »
+---
+On se moqua de lui. Un seul homme le crut. À la nuit, ils restèrent à terre. Les autres partirent, comme toujours, sur une mer huileuse. Vers minuit, un grain violent, sorti d'un ciel sans nuage, balaya la baie. On entendit des cris, des chocs. Au matin, six pirogues manquaient. Amadi pleura sur la plage, longtemps, pour ceux qui n'avaient pas voulu l'écouter. Puis il leva la tête vers l'horizon et murmura simplement : « Merci. »
+
+=== conte: ocean-tortue-marine
+titre: La tortue qui retrouva la plage de sa naissance
+accroche: Vingt ans plus tard, elle revint pondre là où elle était née. Une femme l'attendait.
+etiquette: Sagesse
+origine: Conte d'inspiration de l'océan Indien
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: nuit
+figures: tortue, enfant
+morale: Un geste minuscule peut mettre vingt ans à revenir.
+# relecture : les tortues marines reviennent pondre sur leur plage natale (comportement attesté) après plusieurs décennies de maturation ; l'histoire de Nafisa est inventée.
+---
+Sur une plage de l'océan Indien, une nuit de pleine lune, la petite Nafisa, neuf ans, accompagnait sa grand-mère qui surveillait les nids. Le sable bougeait. Soudain, il se fendit, et une centaine de petites tortues, grosses comme des galets, se mirent à courir vers la mer, vacillant sur leurs nageoires encore molles, sous le regard attentif de la lune, qui éclairait chaque pas.
+---
+Les oiseaux de nuit tournaient déjà au-dessus. « Il faut les aider, souffla la grand-mère. Mais sans les toucher. » Nafisa, le cœur battant, forma un petit couloir avec ses mains, repoussa les crabes, éloigna les chiens errants. Une petite tortue, plus lente que les autres, s'attarda. Nafisa se pencha vers elle. « Courage », murmura-t-elle. Elle l'accompagna jusqu'à l'eau, et la regarda disparaître.
+---
+Les années passèrent. Nafisa grandit, quitta l'île pour étudier, revint, devint guide pour les visiteurs, puis gardienne des tortues à son tour. Chaque saison, elle surveillait les nids, protégeait les œufs, comptait les petits qui s'échappaient. Elle ne pensait plus à la petite tortue lente. Elle savait que très peu survivaient, une sur mille peut-être, et qu'il faudrait vingt ans pour qu'une femelle revienne.
+---
+Vingt-sept ans plus tard, par une nuit sans lune, Nafisa, devenue femme, patrouillait sur la plage quand elle vit une forme sombre sortir des vagues. Une femelle immense, couverte de coquillages, avançait lentement dans le sable, creusait un trou de ses nageoires arrière, et se mettait à pondre. Nafisa s'assit à distance, sans bouger, les yeux brillants, retenant son souffle pour ne pas troubler la visiteuse.
+---
+Elle ne put jamais prouver que c'était la même, la petite lente d'autrefois. Mais, lorsque la tortue repartit à l'aube, elle se retourna une seconde et la regarda. « Bienvenue chez toi », murmura Nafisa. Elle resta longtemps assise sur le sable tiède. Elle comprit que certains gestes minuscules, offerts à des inconnus, reviennent parfois des décennies plus tard, sous la forme exacte de ce qu'on avait donné.
+
+=== conte: maurice-sega-esclaves
+titre: Le sega qui parlait de liberté sans la nommer
+accroche: On leur interdisait de se plaindre. Ils dansèrent. Le sega est né de cette danse.
+etiquette: Histoire
+origine: Histoire du sega de l'île Maurice, d'après les historiens et la tradition orale
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: tambour, griot
+morale: Ils n'avaient rien, et ils ont fait de ce rien une musique.
+# relecture OBLIGATOIRE : (1) Maurice, colonie française puis britannique ; plantations de canne, travail d'esclaves venus d'Afrique et de Madagascar : attesté. (2) Instruments du sega (ravanne, maravanne, triangle) : attesté. (3) Abolition de l'esclavage à Maurice : 1835 (date de l'abolition effective) : attesté. (4) Reconnaissance par l'UNESCO du sega tambour mauricien comme patrimoine culturel immatériel : à confirmer avant publication (formulé sans date).
+---
+Au XVIIIe et au XIXe siècle, l'île Maurice, dans l'océan Indien, était une colonie où l'on produisait du sucre. Des milliers d'hommes et de femmes, arrachés à l'Afrique et à Madagascar, y furent réduits en esclavage. Ils travaillaient de l'aube au soir dans les champs de canne, sous la surveillance de contremaîtres, sans salaire, sans droits et sans espoir d'être un jour entendus.
+---
+Le soir, après le travail, ils se rassemblaient parfois sur la plage ou près d'un feu. Ils n'avaient presque rien : pas de terres, pas de biens, pas de liberté. Mais ils avaient leur voix, leur mémoire, leurs mains. Avec une peau de chèvre tendue sur un cadre de bois, ils fabriquaient une ravanne, un tambour. Avec des graines dans un tube de fer-blanc, une maravanne, un hochet.
+---
+Ils chantaient en créole, la langue qu'ils avaient inventée entre eux, mélange de français et de leurs langues d'origine. Les paroles disaient la fatigue, le mal du pays, les amours, parfois les moqueries à l'adresse des maîtres, glissées dans un rire pour ne pas être comprises. La danse accompagnait le chant : les pieds glissaient dans le sable sans quitter le sol, les hanches ondulaient, comme pour garder, dans le corps, ce que la chaîne ne pouvait pas toucher.
+---
+Ce rythme, qu'on appela le sega, devint le langage d'une communauté. On disait ce qu'on ne pouvait pas dire autrement. Un mot, un geste, une pause pouvaient porter un message de colère, de tendresse, d'espoir. L'esclavage fut aboli dans l'île en 1835, mais le sega, lui, ne s'arrêta pas. Il passa de génération en génération, de plage en plage, de cour en cour.
+---
+Aujourd'hui, le sega est la musique de toute l'île. On le danse dans les mariages, dans les fêtes, sur les places et dans les maisons. L'UNESCO l'a reconnu comme patrimoine culturel immatériel. Mais derrière la joie du rythme, les Mauriciens savent d'où il vient. Il vient de ceux qui n'avaient rien, et qui ont fait de ce rien une musique, pour que leur douleur ne soit pas la dernière chose qu'on dise d'eux.
+
+=== conte: mada-crocodile-sacre
+titre: Le village qui refusa l'hospitalité
+accroche: Un étranger demanda de l'eau. Le village se moqua. Le lendemain, il n'y avait plus de village.
+etiquette: Légende
+origine: Légende antakarana du lac sacré d'Anivorano (nord de Madagascar)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: aube
+figures: crocodile, ancien
+morale: Ce que l'on refuse à l'étranger, on se le refuse à soi-même.
+# relecture OBLIGATOIRE : le lac sacré d'Anivorano (peuple antakarana) et ses crocodiles sacrés sont réels ; la légende du village englouti pour avoir refusé l'hospitalité est une version courante, à confronter à une source locale. Le texte reste sobre sur les rites.
+---
+Au nord de Madagascar, près du village d'Anivorano, s'étend un lac que le peuple antakarana tient pour sacré. On y vit des crocodiles que personne n'ose chasser. Les anciens racontent pourquoi. Selon la légende, il y avait autrefois à cet endroit un grand village prospère, où l'on célébrait ce jour-là une fête, avec des danses, des chants et de grands festins.
+---
+Un étranger arriva, couvert de poussière, épuisé par un long voyage. Il demanda de l'eau et un morceau de pain. Il passa de case en case. Partout, on lui ferma la porte. « Nous n'avons pas de temps pour les mendiants », dit l'un. « Va-t'en, tu gâches la fête », dit un autre. Les enfants se moquèrent de ses vêtements usés. Personne ne lui offrit un abri.
+---
+Une seule femme, au bout du village, le fit entrer. Elle n'avait presque rien, mais elle lui donna de l'eau fraîche, un peu de riz, une natte pour dormir. Avant l'aube, l'étranger lui dit : « Tu es la seule à m'avoir ouvert ta porte. Prends tes enfants et quitte ce lieu. Ne te retourne pas. » Elle ne comprit pas, mais quelque chose, dans sa voix, la fit obéir.
+---
+Quand elle fut loin, elle entendit un grondement. La terre trembla. Elle se retourna malgré elle : l'eau jaillissait de partout, engloutissant les cases, les enclos, la place de la fête. En quelques instants, le village avait disparu sous un lac profond, calme et noir. À la surface, on vit des formes sombres : des crocodiles. La légende dit que ce sont les habitants.
+---
+Depuis, les Antakarana honorent les crocodiles du lac. Ils viennent y faire des offrandes, demandent la permission d'approcher. Personne ne leur fait de mal. Et lorsqu'un voyageur frappe à leur porte, on lui ouvre. « Ce que l'on refuse à l'étranger, disent les anciens, on se le refuse à soi-même. Un village sans hospitalité n'est plus qu'un lac qui attend de se former. »

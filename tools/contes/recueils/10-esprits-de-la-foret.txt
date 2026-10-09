@@ -1,0 +1,246 @@
+recueil: Les Esprits de la Forêt
+categorie: Mystères et frissons
+description: Sous la canopée du Congo et du Gabon, les arbres parlent, les rivières ont des noms et les masques ne dorment jamais.
+ordre: 10
+prix: 70
+
+=== conte: foret-pygmee-chant-miel
+titre: Le chant qui ouvre le miel
+accroche: Un petit oiseau gris le guidait vers les ruches. Le prix de ce service tenait en une règle.
+etiquette: Mythe
+origine: Conte d'inspiration des peuples de la forêt d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: aube
+figures: enfant, oiseau
+morale: On laisse toujours sa part à celui qui nous a guidés.
+# relecture : la coopération entre humains et indicateurs (oiseaux « guides du miel ») est un fait attesté dans plusieurs régions d'Afrique ; le récit est une libre invention d'inspiration.
+---
+Au cœur de la forêt équatoriale, là où les arbres cachent le ciel, vivait un jeune chasseur nommé Kolo. Il connaissait les sentiers, les odeurs, les cris. Mais il y avait une chose qu'il ne parvenait pas à trouver seul : les ruches d'abeilles sauvages, cachées très haut dans le creux des troncs. Sans miel, le campement s'affaiblissait. Kolo avait honte.
+---
+Un matin, un petit oiseau gris l'appela depuis une branche. Il ne chantait pas : il criait un « tchirr-tchirr » aigu, rapide, qui semblait dire : « Suis-moi ! » Kolo, surpris, fit semblant de ne pas entendre. Mais l'oiseau le suivit d'arbre en arbre, de plus en plus insistant, jusqu'à ce que le garçon cède. Il se mit à marcher derrière lui, intrigué, un peu moqueur.
+---
+L'oiseau le conduisit, de branche en branche, vers un gigantesque arbre mort. Là, dans une fente, bourdonnait un essaim énorme. Kolo comprit. Il enfuma le creux avec des herbes brûlées, grimpa à mains nues, découpa les rayons dorés et les rapporta au campement. Les anciens poussèrent des cris de joie. On fit de la nourriture, de la bière de miel, une fête.
+---
+Au milieu des rires, un ancien rappela à Kolo la règle : « Avant de partir, laisse une part du rayon pour l'oiseau. C'est lui qui t'a guidé. » Mais Kolo, repu, grisé par la fête, avait envie de tout garder. Il pensa : « Il n'a qu'à se débrouiller. » Il laissa, sur le tronc, seulement un morceau de cire vide, sans miel. L'oiseau le regarda, ne dit rien, et s'envola.
+---
+Le lendemain, Kolo l'appela dans la forêt. Rien. Le jour suivant, rien. Le troisième jour, il crut entendre un cri, mais il le suivit jusqu'à un arbre creux, vide de toute abeille, et en revint les mains vides. Kolo comprit. Il retourna à l'arbre, déposa un énorme rayon de miel, et attendit trois jours, assis. Le quatrième, un petit oiseau gris vint se poser près de lui. Il picora, puis cria : « Tchirr-tchirr ! » Il avait pardonné, mais son regard disait : plus jamais.
+
+=== conte: foret-masque-qui-regarde
+titre: Le masque qui regardait de l'autre côté
+accroche: Chaque nuit, le masque pendu au mur tournait un peu plus vers la porte.
+etiquette: Frisson
+origine: Conte d'inspiration d'Afrique centrale (Gabon)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: masque, ancien
+morale: La peur disparaît quand on comprend ce que l'on regarde.
+---
+Dans une case au bord de la forêt, au Gabon, un vieux masque était accroché au mur depuis plus de cent ans. Il avait un front haut, des yeux en amande, une bouche étroite peinte en blanc. Personne ne savait qui l'avait sculpté. Mabiala, une fillette de dix ans, y jetait chaque soir un coup d'œil avant de s'endormir, par habitude, comme on salue un voisin.
+---
+Une nuit, en rouvrant les yeux, elle crut remarquer que le masque avait bougé. Il regardait un peu plus vers la porte qu'avant. Elle se dit qu'elle rêvait. Le lendemain soir, il tournait encore. Le surlendemain aussi. Chaque nuit, d'un doigt de plus, lentement, comme l'aiguille d'une horloge. Elle n'osa en parler à personne : on se serait moqué d'elle. Mais elle ne dormit plus aussi bien.
+---
+Au septième soir, le masque faisait face à la porte. Mabiala, terrorisée, prit sa couverture et alla se réfugier contre sa grand-mère. « Mamie, dit-elle, le masque nous regarde. — Non, mon enfant, répondit la vieille femme, les yeux fermés. Il ne nous regarde pas. Il regarde ce qui va arriver. » Elle se redressa lentement dans le noir. « Allume le feu. Prépare du thé. Quelqu'un vient. »
+---
+Mabiala obéit sans comprendre. Dehors, un orage grondait. Au bout d'un moment, on frappa à la porte. Mabiala sursauta. Sa grand-mère ouvrit : un homme trempé jusqu'aux os, un sac sur le dos, les lèvres bleues, se tenait sur le seuil. Il avait marché toute la journée dans la forêt, perdu, sans trouver un seul abri. « La lumière m'a guidé, murmura-t-il. Cette case est la première depuis des lieues. »
+---
+Ils le firent entrer, le séchèrent, le nourrirent. Il dormit près du feu. Au matin, il remercia et repartit. Mabiala, qui avait veillé, se tourna vers le masque. Il avait repris sa position d'origine, immobile, tourné vers le mur. « Il ne fait pas peur, dit sa grand-mère. Il prévient. Notre maison a toujours été une halte, et les anciens ont voulu que la porte ne reste jamais fermée à celui qui en a besoin. Le jour où nous l'oublierons, il cessera de tourner. »
+
+=== conte: foret-elephant-mort
+titre: L'éléphante qui revenait pleurer
+accroche: Chaque année, elle revenait au même endroit. Un chasseur finit par comprendre pourquoi.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique centrale (Congo)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: savane
+lumiere: crepuscule
+figures: elephant, enfant
+morale: Qui a vu un deuil ne peut plus ignorer la peine qu'il cause.
+# relecture : les éléphants revisitent les ossements de leurs congénères, comportement observé ; le chasseur est un personnage inventé.
+---
+Nzamba était chasseur d'ivoire. Il connaissait tous les couloirs des éléphants de la forêt, toutes leurs habitudes, tous leurs points d'eau. Il avait vendu, en quinze ans, plus de défenses que n'importe quel autre chasseur de la région. Il n'y avait pas de cruauté en lui. Il croyait simplement, comme beaucoup, qu'un éléphant n'était qu'une grosse bête qui ne pensait à rien.
+---
+Un jour de saison sèche, il abattit un jeune mâle près d'un marigot, prit les défenses, et laissa la carcasse. Il rentra au village, vendit l'ivoire, oublia l'affaire. Un an plus tard, par hasard, la chasse le ramena au même marigot. Il s'accroupit derrière un buisson, attendant un gibier. Il attendit longtemps. Puis il entendit des pas lourds, très lents, comme ceux d'une procession.
+---
+Une file d'éléphants apparut entre les arbres. En tête, une vieille femelle, la peau ridée, les défenses usées. Elle s'arrêta au centre de la clairière. Devant elle, parmi les herbes hautes, blanchissaient des os. Elle tendit la trompe et les toucha. Un par un. Elle fit lentement le tour du crâne, des côtes, des défenses manquantes. Derrière elle, tous les autres demeuraient immobiles, silencieux, la tête basse.
+---
+Nzamba retint son souffle. Il avait déjà vu des éléphants. Il n'en avait jamais vu pleurer. Ce n'étaient pas des larmes, mais il y avait dans la manière dont la vieille caressait chaque os quelque chose de si humain qu'il se sentit rougir. Il resta là jusqu'au crépuscule, le fusil à ses pieds. Quand la harde repartit, la vieille se retourna, une fois, et regarda droit vers son buisson. Il eut le sentiment qu'elle l'avait vu.
+---
+Nzamba rentra au village sans rien dire. Il ne chassa plus d'éléphants. L'année suivante, il revint au marigot avec les dernières défenses qu'il n'avait pas vendues, les déposa sur l'herbe, et se tint à l'écart. La vieille femelle vint, toucha l'ivoire, resta longtemps, puis s'en alla. Nzamba devint guide pour ceux qui voulaient voir les éléphants sans les tuer. Et quand on lui demandait ce qui l'avait changé, il disait simplement : « J'ai vu une famille faire son deuil. »
+
+=== conte: foret-gorille-roi
+titre: Le roi qui apprit à se taire chez le gorille
+accroche: Un roi bavard confié aux gorilles pour une saison : on y apprend le silence ou on y reste.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique centrale (Gabon et Congo)
+region: Afrique centrale
+type: long
+gratuites: 2
+decor: foret
+lumiere: midi
+figures: singe, ancien
+morale: Le chef qui se tait entend ce que les autres n'osent pas lui dire.
+---
+Le roi Mbenga régnait sur un grand pays de forêt et de rivières. Il avait un défaut qui épuisait son entourage : il parlait tout le temps. Il donnait des ordres, les reprenait, en donnait d'autres, jugeait avant de savoir, répondait avant la fin des questions. Ses conseillers n'osaient plus rien dire. Les villages, déroutés, ne savaient plus quelle parole écouter.
+---
+Une vieille guérisseuse, la seule à oser lui faire face, vint un jour au palais. « Roi, dit-elle, ta langue court plus vite que ta tête. Il existe un endroit où l'on apprend à se taire. Je te propose d'y passer une saison. » Mbenga voulut la faire chasser, mais la curiosité fut plus forte. « Où est cet endroit ? — Chez les gorilles. Tu y vivras sans parler. Si tu tiens, tu reviendras roi pour de bon. »
+---
+Le roi quitta son palais, ses gardes, ses sandales. Une semaine plus tard, il se trouvait au cœur de la forêt profonde, seul, devant un groupe de gorilles qui broutaient. Au centre, un énorme mâle au dos argenté, Dibala, le regarda longtemps. Mbenga ouvrit la bouche pour se présenter, par habitude. Dibala se redressa, grogna très bas. Le roi se tut. Il comprit que dans ce lieu, parler était une offense.
+---
+Les premiers jours furent un supplice. Le roi avait mille mots qui lui brûlaient la langue. Il apprit pourtant à observer. Il remarqua que Dibala ne criait jamais : un regard suffisait pour calmer une querelle, un frôlement pour rassembler le groupe. Il remarqua qu'une femelle, rien qu'en s'asseyant d'une certaine manière, signalait un danger. Plus il se taisait, plus il entendait : le vent dans les feuilles, le craquement d'un pas, la respiration de ceux qui l'entouraient.
+---
+Un après-midi, il sentit une odeur lourde, musquée, et vit trembler une branche. Il ne cria pas. Il se leva lentement, fixa Dibala, et pointa du doigt le buisson. Le grand mâle comprit. En un instant, le groupe se dispersa sans un bruit. Un léopard, déçu, bondit sur l'endroit où les gorilles venaient d'être. Le roi, haletant, sourit. Pour la première fois, sa parole avait été sauvée par son silence.
+---
+Le roi revint au palais à la saison suivante, maigre, brûlé de soleil, mais calme. Ses conseillers attendaient un discours. Il s'assit et dit : « Qui veut parler en premier ? » Un silence surpris. Puis un vieux ministre prit la parole, et le roi l'écouta jusqu'au bout. Dès lors, Mbenga parla moins, mais chacune de ses paroles pesait. On dit qu'il garda, sur son trône, une peau de gorille. « Pour me rappeler, disait-il, que le chef qui se tait entend ce que les autres n'osent pas lui dire. »
+
+=== conte: foret-fleuve-congo-nom
+titre: Le fleuve qui avait trois noms
+accroche: Un nom pour les vivants, un pour les morts, un pour ceux qui ne sont pas encore nés.
+etiquette: Légende
+origine: Conte d'inspiration d'Afrique centrale (fleuve Congo)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: crepuscule
+figures: pirogue, ancien
+morale: Il y a des noms qu'on ne confie qu'à ceux qu'on aime.
+---
+Sur le grand fleuve Congo, qui serpente à travers la forêt comme un reptile d'argent, vivait un vieux piroguier nommé Mpia. Il avait transporté, en cinquante ans, des marchands, des poissons, des mariées, des morts. Il ne parlait presque jamais, sauf à son fleuve, auquel il racontait chaque soir sa journée, les yeux mi-clos, comme on parle à un vieil ami qui ne répond pas, mais écoute.
+---
+Un matin, une vieille femme, maigre comme une branche, lui demanda de la conduire jusqu'à son village natal, à trois jours en aval. « Je veux mourir chez moi », dit-elle. Mpia accepta sans poser de question. Ils partirent à l'aube, sur l'eau lisse. La vieille s'assit à l'avant, emmitouflée dans son pagne, et regarda le fleuve avec une sorte de tendresse inquiète.
+---
+Le premier soir, elle dit : « Tu connais le nom du fleuve ? — Le fleuve, répondit Mpia. Ou le Congo, comme disent les marchands. — C'est son nom de jour, dit-elle. Celui qu'on donne aux vivants, pour le commerce, pour les cartes. Il en a deux autres. » Mpia tendit l'oreille, intrigué. « Le second, murmura-t-elle, est un nom de nuit. Il ne se prononce que quand quelqu'un nous quitte. Parce que les morts voyagent sur l'eau. »
+---
+La deuxième nuit, elle lui souffla ce second nom, du bout des lèvres, comme une prière. Mpia ne le répéta jamais à personne. Il sentit, en l'entendant, l'eau devenir plus profonde, comme si le fleuve se souvenait d'avoir porté des milliers de voyageurs sans retour. Il ramait plus doucement, par respect. La vieille, elle, parlait de moins en moins. Sa respiration s'espaçait.
+---
+Au troisième soir, ils arrivèrent à son village. Elle se redressa avec peine. « Le troisième nom, dit-elle, est celui que l'on donne aux enfants pas encore nés. Il ne se dit qu'une fois, à l'oreille du nouveau-né, pour que le fleuve le reconnaisse. » Elle le lui chuchota. Puis elle sourit, referma les yeux, et ne les rouvrit plus. Mpia la porta lui-même jusqu'à la rive, et chanta.
+---
+Un an plus tard, la fille de Mpia mit au monde un garçon. Le vieux piroguier le prit dans ses bras, se pencha vers son oreille, et prononça le troisième nom du fleuve. L'enfant, qui pleurait, se tut. Mpia sourit. Il ne dit jamais ce nom à personne d'autre, mais on remarqua que le fleuve, ce jour-là, fut plus calme que d'habitude. Comme s'il saluait quelqu'un.
+
+=== conte: foret-feu-ne-brule-pas
+titre: Le feu qui ne brûlait que les menteurs
+accroche: Un vol, un accusé, un feu sacré. Mais c'était le feu le plus ordinaire du village.
+etiquette: Fin surprenante
+origine: Conte d'inspiration d'Afrique centrale (Cameroun)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: village
+lumiere: orage
+figures: feu, guerrier
+morale: Le mensonge finit par se brûler tout seul.
+---
+Dans un village de la forêt, un matin, le sac de graines du chef disparut. Ces graines étaient la réserve de toute la communauté pour la saison des pluies. Le chef, hors de lui, fit rassembler le village sur la grande place. Un homme prospère, Ngomo, se leva aussitôt et désigna un jeune orphelin, Beka, qui vivait seul au bout du sentier : « C'est lui. Je l'ai vu rôder cette nuit. »
+---
+Beka protesta de son innocence, la voix tremblante. Personne ne le crut vraiment, personne ne le soupçonna vraiment non plus. Il était pauvre, sans famille, sans défenseur. Les villageois hésitaient. Le chef allait le condamner quand une vieille femme, Mama Sali, qui avait vu bien des disputes, demanda la parole. « Chef, dit-elle, je connais un feu qui sait reconnaître les menteurs. »
+---
+Un murmure parcourut la foule. Mama Sali fit allumer un petit feu de brindilles au centre de la place. « Ce feu est sacré, dit-elle. Il vient d'un ancêtre qui détestait le mensonge. Chacun de vous viendra à côté de lui et répétera sa version. Si l'un d'entre vous ment, le feu le brûlera. » Personne n'osa rire. Dans le silence, le crépitement des brindilles paraissait étrangement fort.
+---
+Beka passa le premier. Il s'approcha, pâle, mais calme, et dit : « Je n'ai pas volé les graines. » Le feu craqua, sans plus. Quelques villageois suivirent, rassurés. Puis vint le tour de Ngomo. Il s'avança, très droit, mais chaque pas lui coûtait. Il fixait les flammes. Il ouvrit la bouche. Il la referma. Son front se couvrit de sueur. Soudain, il se jeta en avant en criant : « C'est dangereux ! Éteignez-le ! » Et il se mit à jeter du sable sur le foyer.
+---
+Mama Sali fit signe à deux hommes de l'arrêter. « Pourquoi éteindre un feu qui ne brûle que les menteurs ? demanda-t-elle doucement. — Parce que... parce que... » Ngomo ne trouva pas la fin de sa phrase. Alors Mama Sali sourit. « C'est un feu ordinaire, dit-elle. Il n'a jamais brûlé personne. Mais ta peur, elle, est en train de te brûler vif. » On retrouva les graines dans sa case. L'orphelin récupéra sa réputation, et le village apprit qu'on peut parfois démasquer un coupable sans lever la main.
+
+=== conte: foret-lucioles-deuil
+titre: Les lucioles de la veuve
+accroche: Chaque soir, elle allumait une petite lampe pour lui. Une nuit, la forêt lui répondit.
+etiquette: Amour
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: nuit
+figures: reine, enfant
+morale: La lumière qu'on offre chaque soir finit par attirer la lumière.
+---
+Au bord de la forêt, la veuve Ndeye vivait seule depuis que son mari, un chasseur, n'était pas revenu d'une expédition. On avait retrouvé son arc au bord d'un ruisseau, mais pas son corps. Les villageois lui disaient d'oublier. Elle ne répondait rien. Chaque soir, à la tombée de la nuit, elle posait sur le seuil de sa case une petite lampe à huile, pour lui montrer le chemin.
+---
+Les années passèrent. Elle vieillit. Les enfants du village l'appelaient « la dame de la lampe ». Certains avaient peur d'elle, d'autres l'aimaient. Un petit garçon, Kouam, venait parfois s'asseoir à côté d'elle, à la nuit tombante, et la regardait faire. « Il va revenir ? demandait-il. — Je ne sais pas, répondait-elle. Mais si je n'allume pas la lampe, il ne saura pas où est la maison. »
+---
+Une nuit de saison sèche, la lampe vacilla puis s'éteignit, faute d'huile. Ndeye, trop âgée pour aller en chercher, resta sur son seuil dans le noir, les mains jointes. Elle ne pleura pas. Elle attendit, simplement, comme elle l'avait toujours fait. La forêt, devant elle, était un mur d'ombre. Un souffle de vent passa dans les feuilles. Et soudain, tout près, une minuscule lueur verte clignota.
+---
+Puis une autre. Puis dix, puis cent. Des lucioles sortaient de la forêt par vagues, montaient en spirales, se rassemblaient devant la case comme une constellation tombée. Il en vint des milliers. Elles dessinèrent, dans l'air, un chemin de lumière entre la lisière et le seuil. Ndeye se leva, la main sur la bouche. Elle n'avait jamais rien vu de si beau, ni de si immobile.
+---
+Elle ne sut jamais si c'était un signe, un hasard, ou l'âme de son mari. Mais elle comprit que la lampe n'avait pas été vaine : elle avait fini par attirer la lumière qu'elle appelait. Le lendemain, Kouam apporta de l'huile, et chaque soir ensuite, il alluma lui-même la lampe. Aujourd'hui encore, dit-on, quand les lucioles s'assemblent à l'orée du village, les vieux soufflent : « C'est la dame de la lampe qui reçoit ses invités. »
+
+=== conte: foret-serpent-gardien
+titre: Le serpent qui gardait la source
+accroche: Il n'attaquait jamais personne. Il suffisait d'oublier de dire merci.
+etiquette: Mythe
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: orage
+figures: serpent, enfant
+morale: Ce que l'on reçoit sans remercier finit par ne plus couler.
+---
+À l'écart d'un village de la forêt, sous un grand figuier, coulait une source claire, fraîche en toute saison. Un python de la taille d'un tronc dormait à son ombre, enroulé autour des racines. On l'appelait « le gardien ». Il n'attaquait jamais personne. Mais chacun, avant de puiser, murmurait : « Merci, gardien », et laissait tomber une petite poignée de farine dans l'eau. C'était la règle.
+---
+Une famille venue de loin s'installa un jour dans le village. Le père, Okoro, riait de ces coutumes. « Une source est une source, disait-il. Elle coule pour tous. Pourquoi remercier un serpent ? » Il remplit ses jarres sans un mot, sous le regard immobile du python. Les villageois le prévinrent, avec douceur d'abord, puis avec inquiétude. Il haussa les épaules.
+---
+Les jours suivants, l'eau qu'il puisait devint trouble, puis amère. Ses jarres, pourtant propres, sentaient la vase. Sa femme tomba malade. Les enfants refusaient de boire. Okoro, de plus en plus irrité, accusa les voisins d'avoir empoisonné la source. Les voisins, eux, ne s'en plaignaient pas : leur eau restait claire et douce. Le soupçon commença à empoisonner le village mieux que toute vase.
+---
+La fille d'Okoro, Adaeze, huit ans, observait. Elle vit les vieilles femmes puiser, dire merci, laisser tomber la farine. Elle vit le gardien, à chaque fois, battre lentement des paupières. Un matin, elle prit une jarre, s'agenouilla à la source, et dit tout bas : « Merci, gardien. Merci pour l'eau. Pardon pour mon père. » Elle jeta une pincée de farine. L'eau devint claire.
+---
+Elle courut l'annoncer à son père. Okoro, sceptique, alla à la source, but une gorgée, resta muet. Longtemps après, il revint, s'agenouilla à côté de sa fille, et dit lui-même les mots, d'une voix rauque. Le python ne bougea pas. Mais depuis ce jour, Okoro fut le premier à rappeler la règle aux nouveaux arrivants. « Ce que l'on reçoit sans remercier, disait-il, finit par ne plus couler. »
+
+=== conte: foret-tambours-sans-main
+titre: Les tambours qui jouaient sans mains
+accroche: Dans un village vide, des tambours battaient encore. Un jeune guerrier voulut savoir qui jouait.
+etiquette: Frisson
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: long
+gratuites: 2
+decor: baobab
+lumiere: nuit
+figures: tambour, masque, guerrier
+morale: Il n'y avait pas de fantôme : seulement quelqu'un qui n'avait pas cessé d'appeler.
+---
+La forêt avait avalé le village de Mbandjok. Une fièvre y avait passé trois saisons plus tôt, et les survivants avaient fui, laissant leurs cases, leurs greniers, leurs jarres. Les voyageurs évitaient le sentier qui y menait. On disait que, la nuit, les tambours y battaient encore. Personne n'avait jamais osé aller voir qui les jouait, ni pourquoi, ni pour qui.
+---
+Obiang, un jeune guerrier de vingt ans, se moquait des peurs de sa tribu. « Il n'y a pas de fantôme dans un tambour, disait-il. Il y a un joueur, ou un vent, ou une illusion. » Un soir, malgré les mises en garde de son père, il prit sa lance, une torche et un peu de nourriture, et s'enfonça dans la forêt, par le sentier que tout le monde évitait.
+---
+Il arriva à la tombée de la nuit. Le village était silencieux, envahi de lianes, les toits effondrés. Il s'assit sur une souche et attendit. Longtemps. Rien ne bougea. Puis, au cœur de la nuit, il entendit le premier coup. Sourd, grave, régulier, venu du fond du village. Puis un deuxième, plus aigu. Puis un rythme complet, ample, vibrant, qui fit frissonner ses bras. Il se leva, la lance au poing.
+---
+Il avança vers le bruit, la torche tremblante. Les tambours résonnaient dans toutes les ruelles à la fois, comme si le village entier jouait. À chaque pas, il croyait voir des ombres se glisser entre les cases. Son cœur cognait. Il arriva devant la grande case des assemblées, dont la porte pendait. Les tambours s'arrêtèrent net. Un silence si dense qu'Obiang eut l'impression de l'entendre. Puis une voix très faible, derrière la porte : « Il y a quelqu'un ? »
+---
+Il poussa la porte. Au fond de la case, dans la lueur de sa torche, une très vieille femme était assise sur une natte, les yeux blancs, aveugles, les mains posées sur trois petits tambours. « J'ai entendu des pas, dit-elle. Je croyais que je rêvais. » Obiang laissa tomber sa lance. « Qui êtes-vous ? — Sania, dit-elle. J'étais la griotte du village. Quand la fièvre est venue, je ne pouvais plus marcher, ni voir. Ils m'ont laissée avec de l'eau et du mil. Alors j'ai joué. »
+---
+Elle jouait chaque nuit, des appels, des chants, des saluts, au cas où quelqu'un reviendrait. Elle avait appris à reconnaître le vent, les chauves-souris, les pas des animaux. Obiang resta longtemps silencieux. Puis il la prit dans ses bras, doucement, et la porta jusqu'à son village. Elle y vécut vingt ans de plus, et enseigna les rythmes aux enfants. Quand on racontait l'histoire des tambours sans mains, elle riait : « Il n'y avait pas de fantôme. Il y avait seulement quelqu'un qui n'avait pas cessé d'appeler. »
+
+=== conte: foret-okapi-cache
+titre: L'okapi que personne n'avait vu
+accroche: Seuls les enfants l'apercevaient. Les adultes le cherchaient trop fort.
+etiquette: Légende
+origine: Conte d'inspiration d'Afrique centrale (forêt de l'Ituri, RD Congo)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: aube
+figures: enfant, ancien
+morale: On ne montre pas un okapi : on le laisse venir.
+# relecture : l'okapi vit dans la forêt de l'Ituri ; il est connu des habitants depuis toujours, et sa description scientifique par des Européens date de 1901 (fait cité dans le conte).
+---
+Dans la forêt de l'Ituri, au cœur du Congo, vivait un animal que presque personne ne voyait : mi-zèbre, mi-girafe, croyaient les rares voyageurs qui en avaient entendu parler. Le corps brun, les pattes rayées de blanc, des oreilles immenses. Les chasseurs du pays le connaissaient bien, de nom, mais aucun n'était capable de dire l'avoir vu en pleine lumière. Ils l'appelaient l'okapi.
+---
+Il y avait pourtant, dans un petit village au bord d'un ruisseau, une fillette de neuf ans, Aba, qui prétendait le voir tous les jours. Elle s'asseyait à la lisière, sans bruit, un morceau de manioc à la main, et attendait. Les adultes riaient. « Tu inventes, disaient-ils. Nous avons battu la forêt pendant des semaines, nous n'avons jamais vu cet animal. »
+---
+Un jour, un étranger arriva, venu de loin, accompagné de chasseurs et de filets. Il avait entendu parler de l'okapi et voulait le capturer. Il engagea tous les hommes du village. Pendant trois jours, ils sillonnèrent la forêt, tendirent des pièges, battirent les fourrés. Il n'y eut pas un poil d'okapi. L'étranger, furieux, accusa les villageois de lui avoir menti. Alors, Aba prit la parole.
+---
+« Il n'est pas caché, dit-elle. Il est juste prudent. Vous le cherchez avec trop de bruit, trop de peur de le perdre, trop d'envie de le prendre. Il le sent. Moi, je viens m'asseoir et je ne veux rien. C'est pour cela qu'il vient. » L'étranger éclata de rire, puis se tut, vexé. « Montre-moi, dit-il. » Aba haussa les épaules. « Venez demain, à l'aube. Mais sans les filets. »
+---
+Le lendemain, l'étranger vint seul, sans armes, tenant à peine sa respiration. Ils s'assirent derrière un buisson. Longtemps, il ne se passa rien. Les oiseaux chantèrent, le ruisseau coula, la brume monta des fougères. Puis un frémissement. Entre deux troncs, une silhouette brune, des rayures blanches, des yeux de velours. L'okapi s'avança vers le ruisseau, but, leva la tête, et resta là, simplement, quelques secondes.
+---
+L'étranger ne bougea pas. Il ne tendit pas la main. Quand l'animal repartit, il s'aperçut qu'il avait les larmes aux yeux. « Je ne parlerai de lui à personne, dit-il à Aba. — Les gens finiront par savoir, répondit-elle. » Elle avait raison : les Européens ne décriront l'okapi qu'en 1901, alors qu'ici des enfants le regardaient depuis toujours. Elle espérait seulement qu'ils comprendraient qu'on ne montre pas un okapi : on le laisse venir.
