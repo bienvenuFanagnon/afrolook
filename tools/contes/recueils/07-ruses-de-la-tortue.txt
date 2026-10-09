@@ -1,0 +1,237 @@
+recueil: Les Ruses de la Tortue
+categorie: Ruses et malices
+description: Lente, patiente et plus rusée que tous les coureurs de la forêt : la tortue gagne en pensant pendant que les autres courent.
+ordre: 7
+prix: 70
+
+=== conte: tortue-festin-ciel
+titre: La tortue invitée au festin du ciel
+accroche: Elle s'est donné un nom qui n'était pas le sien. Le festin fut pour elle seule.
+etiquette: Fin surprenante
+origine: Conte traditionnel igbo (Nigeria), librement raconté
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: montagne
+lumiere: midi
+figures: tortue, oiseau
+morale: Celui qui prend tout finit par n'avoir plus personne.
+---
+Il y eut une année où la famine tomba sur la terre. Les greniers étaient vides, les rivières maigres, et même les fourmis cherchaient de quoi manger. Seule la tortue ne maigrissait pas : elle avait toujours une histoire à échanger contre une poignée de mil. Un matin, elle entendit des oiseaux discuter sur un arbre : ils étaient invités à un grand festin dans le ciel, chez un seigneur qui célébrait le mariage de sa fille.
+---
+« Il y aura de la viande, de la farine, du vin de palme à ne savoir qu'en faire ! » chantait un oiseau. La tortue se frotta le ventre. Elle se glissa jusqu'à eux : « Mes amis, emmenez-moi ! — Toi ? se moquèrent-ils. Tu n'as pas d'ailes. » La tortue pleurnicha, promit de les faire rire, de les payer en proverbes, et jura de partager sa part avec chacun. Ils finirent par céder. Chaque oiseau lui prêta une plume, et la tortue, couverte de plumes, s'envola avec la troupe.
+---
+En route, elle leur dit : « Au ciel, chaque invité se présente sous un nom nouveau. Je veux le mien. » Les oiseaux, amusés, acceptèrent. « Je m'appellerai Vous-Tous », déclara-t-elle. À leur arrivée, l'hôte accueillit les convives avec de grands rires et demanda le nom de chacun. La tortue répondit la première : « Vous-Tous. » Puis il fit servir les plats. Le premier fut posé devant eux. « Pour qui est ce repas ? demanda la tortue. — Pour vous tous », répondit l'hôte, en souriant à ses invités.
+---
+Elle se jeta sur la nourriture. Les oiseaux, affamés, attendirent poliment qu'elle goûte, puis qu'elle partage. Elle ne partagea pas. À chaque plat, elle posait la même question, l'hôte donnait la même réponse, et elle engloutissait tout : la viande, la farine, le miel. Quand elle eut fini, les oiseaux n'avaient mangé que des miettes. Ils se regardèrent en silence, la gorge serrée. Quelque chose venait de mourir entre eux et elle.
+---
+Le soir venu, il fallait rentrer. Chaque oiseau, sans un mot, reprit sa plume sur le dos de la tortue. Elle supplia, jura, pleura. Rien n'y fit. Les oiseaux s'envolèrent. La tortue, seule au bord des nuages, regarda la terre, très loin, tout en bas. Elle ouvrit la bouche pour crier. Et c'est ainsi, dit le conteur, que commence l'histoire de sa carapace. Mais cela, c'est une autre histoire, plus douloureuse.
+
+=== conte: tortue-coquille-fendue
+titre: Pourquoi la carapace de la tortue est en morceaux
+accroche: Tombée du ciel sur des pierres, en mille morceaux. Il fallut un guérisseur pour la recoller.
+etiquette: Mythe
+origine: Conte traditionnel igbo (Nigeria), librement raconté
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: foret
+lumiere: orage
+figures: tortue, oiseau
+morale: La ruse qui vole le repas des autres finit par se payer sur le dos de celui qui l'a menée.
+---
+Quand les oiseaux la laissèrent seule au bord du ciel, la tortue comprit qu'elle n'avait plus qu'une chance. Elle appela l'hôte du festin. « Je dois rentrer chez moi, dit-elle. Pourriez-vous envoyer un messager à ma femme ? Qu'elle couvre la cour de toutes les choses molles de la maison : des nattes, des peaux, des paniers. Que mon retour soit doux. » L'hôte, touché, appela le perroquet, le plus bavard et le plus rancunier des oiseaux.
+---
+Le perroquet n'avait presque rien mangé au festin. Il descendit en volant jusqu'à la maison de la tortue et dit à la femme : « Ton mari m'a chargé de te transmettre ceci : sors de la maison tous les objets durs, la lance, la houe, le mortier de pierre, les cailloux, et dispose-les bien en rond dans la cour. Il va revenir de loin et veut les trouver prêts. » La femme, étonnée, mais docile, obéit.
+---
+Du haut du ciel, la tortue se jeta. Elle tomba longtemps, bien plus vite qu'elle ne l'avait cru. Elle vit la cour, les pierres, la houe, la lance, le mortier. Elle comprit en un éclair, trop tard, ce que peut devenir un message transmis par un affamé en colère. Elle heurta le sol avec un fracas qu'on entendit jusqu'au fleuve. Sa carapace éclata en cent morceaux.
+---
+Sa femme accourut en hurlant. Elle ramassa les éclats, un à un, dans un pagne, et courut chez le guérisseur le plus renommé du pays. Il examina la bête, qui respirait à peine. « Pour la guérir, je dois recoller chaque éclat avec de l'argile et du feu, dit-il. Mais je te préviens : cela ne sera jamais comme avant. » Il travailla trois jours et trois nuits, patiemment, un fragment après l'autre.
+---
+Quand la tortue se leva enfin, sa carapace était entière, mais zébrée de lignes, comme un champ divisé en parcelles. Elle respirait, et elle n'oublia pas. C'est depuis ce jour, raconte-t-on, que la carapace de toutes les tortues est faite de plaques jointes par des fissures : un souvenir qu'elles portent sur le dos, pour ne pas oublier que la ruse qui prive les autres finit par casser celui qui la porte.
+
+=== conte: tortue-porte-parole
+titre: Le jour où la tortue devint porte-parole des animaux
+accroche: Les animaux la choisirent parce qu'elle était lente. Le chef des hommes comprit autre chose.
+etiquette: Rire
+origine: Conte d'inspiration yoruba (Nigeria)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: tortue, ancien
+morale: Qui réfléchit avant de parler est écouté deux fois.
+---
+Un été, la rivière qui nourrissait les animaux de la forêt fut barrée par les hommes d'un village voisin, qui y construisirent un grand piège à poissons. Les antilopes ne pouvaient plus boire, les crocodiles n'avaient plus de ruisseau pour descendre, et même les oiseaux se plaignaient de la boue. Les bêtes tinrent assemblée. « Il faut parler au chef du village, dit le lion. Qui ira ? »
+---
+Chacun avait une excuse. Le lion avait peur des lances, l'antilope courait trop vite pour tenir une conversation, le singe parlait trop. Quelqu'un dit : « Envoyons la tortue. — La tortue ? s'esclaffa le lièvre. Elle mettra trois jours à arriver ! — Justement, répondit le vieil éléphant. Elle aura trois jours pour réfléchir à ce qu'elle dira. » On la désigna porte-parole à l'unanimité. La tortue ne dit rien et se mit en route.
+---
+Elle arriva au village le troisième soir, couverte de poussière. Le chef l'écouta, étonné qu'une tortue parle. « Que veux-tu, petite ? » Elle prit une longue inspiration : « Je suis venue pour la rivière. — Et que proposes-tu ? — Je vais y réfléchir, dit la tortue. » Le chef haussa les sourcils : il s'attendait à des cris. Il demanda : « Les hommes ont-ils tort de pêcher ? — Je vais y réfléchir, répéta la tortue. »
+---
+Le chef lui posa dix questions. À chacune, elle répondit : « Je vais y réfléchir. » Peu à peu, il se sentit mal à l'aise. Il comprit que cette bête-là n'était pas venue pour gagner, mais pour comprendre. Elle ne l'accusait pas, ne le suppliait pas, elle écoutait. « Voilà bien la première fois, dit-il, qu'un visiteur me laisse le temps de me poser mes propres questions. » Il demanda à ses pêcheurs de rouvrir le barrage un jour sur deux.
+---
+La tortue rentra au bout de six jours, et la forêt entière l'attendait. « Alors ? » demanda le lion. « Ils ont ouvert la rivière un jour sur deux, répondit-elle. — Mais qu'as-tu dit pour les convaincre ? — Rien, avoua-t-elle. J'ai seulement répété que j'allais y réfléchir. » Les animaux se regardèrent, interdits. Le vieil éléphant sourit dans sa trompe : « Qui réfléchit avant de parler, dit-il, est écouté deux fois. »
+
+=== conte: tortue-lion-balance
+titre: La tortue et la balance du lion
+accroche: La balance du lion condamnait toujours les petits. Une tortue se demanda pourquoi.
+etiquette: Ruse
+origine: Conte d'inspiration d'Afrique centrale (bassin du Congo)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: savane
+lumiere: crepuscule
+figures: tortue, lion
+morale: Une justice qui ne se laisse pas juger n'est qu'une force déguisée.
+---
+Un lion, las de rugir, inventa un jour une grande balance à deux plateaux, faite de roseaux et de cordes de liane. Il la dressa sous le plus vieux manguier de la savane et proclama : « Ma balance dit la vérité. Quand un animal est accusé, il monte sur un plateau, et sur l'autre on pose le fruit volé. Si la balance penche de son côté, il est coupable. » Les animaux murmurèrent, mal à l'aise.
+---
+Dès le premier jour, la balance condamna une gazelle, puis un lièvre, puis un jeune singe. Toujours des petits. Jamais un gros. « Comme c'est étrange, remarqua la tortue, assise dans l'ombre. Elle n'est jamais injuste avec les puissants. » Elle fixa la balance en plissant les yeux. Quelque chose clochait dans la façon dont le plateau gauche tombait, toujours trop vite, toujours du côté où le lion aimait se tenir, la queue ballante.
+---
+Le lendemain, on accusa la tortue d'avoir volé une mangue. Elle monta sur le plateau avec sa carapace, et la balance pencha de son côté, comme prévu. Le lion se frotta les griffes : « Coupable ! » Mais la tortue demanda la parole. « Grand juge, dit-elle, ta balance juge les petits. Elle doit bien savoir juger aussi les grands. Veux-tu prouver sa justice ? Viens te tenir à ta place habituelle et jure devant elle que tu n'as jamais menti. »
+---
+Le lion hésita. Mais devant tous les animaux, il ne pouvait refuser. Il vint à sa place, posa la patte sur son cœur et déclara : « Je n'ai jamais menti. » Sa queue, comme chaque jour, reposait sur le plateau gauche. Et sous les yeux de la foule, la balance se mit à pencher lourdement de ce côté, avec un grincement de roseaux, comme pour déclarer : coupable.
+---
+Le silence fut total. Les animaux comprenaient d'un seul coup pourquoi la balance avait toujours condamné les petits : elle penchait de son côté, celui de la queue du lion. Il voulut rugir, mais la tortue parla la première : « Voilà une balance très juste, dit-elle. Elle pèse ce que l'on cache. » La savane éclata de rire. Le lion s'enfuit, la queue basse, et la balance resta sous le manguier, où les enfants viennent encore jouer.
+
+=== conte: tortue-herbes-mensonge
+titre: Les herbes qui ne savaient pas mentir
+accroche: Un singe menteur accusa la tortue. Elle ne répondit qu'une phrase : « Demandez à l'herbe. »
+etiquette: Fin surprenante
+origine: Conte d'inspiration d'Afrique centrale (bassin du Congo)
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: aube
+figures: tortue, singe
+morale: Le menteur est son propre accusateur.
+---
+Dans la grande forêt, le singe Kofi était connu pour deux choses : sa vitesse et ses mensonges. Il racontait qu'il avait vu un éléphant voler, qu'il avait gagné une course contre le vent, qu'il avait bu le fleuve entier d'une gorgée. Personne ne le croyait, mais tout le monde l'écoutait, parce qu'il avait une manière de mentir qui sentait presque la vérité.
+---
+Un matin, les mangues du chef des animaux disparurent. Elles étaient les plus belles de la forêt, et le chef entra dans une colère noire. Kofi, qui les avait mangées, se précipita le premier : « J'ai vu le voleur ! cria-t-il. C'est la tortue ! Elle rôdait sous l'arbre cette nuit ! » La tortue, qui broutait tranquillement, leva la tête. Elle se savait lente et incapable de grimper.
+---
+« Singe, dit-elle sans hausser la voix, je n'ai pas quitté mon étang. Mais tu as vu quelque chose, dis-tu. L'herbe, elle aussi, a vu. Elle garde la trace de tous ceux qui passent. Demandons-lui qui est venu sous l'arbre, cette nuit. » Les animaux rirent. L'herbe, parler ? Kofi rit le plus fort, mais au fond de lui, une petite inquiétude tintait comme une clochette.
+---
+Le lendemain à l'aube, le chef réunit tout le monde sous le manguier. On s'assit en cercle autour d'une large touffe d'herbe haute, couverte de rosée. La tortue s'avança et demanda, à voix haute et claire : « Herbe, toi qui as tout vu, dis-nous qui est venu cette nuit. » Un souffle de vent traversa la touffe, qui se mit à murmurer doucement, comme une foule lointaine. Kofi devint gris sous sa fourrure.
+---
+Avant même que le murmure ne finisse, il hurla : « C'est moi ! J'ai pris les mangues ! Je ne voulais pas, j'avais faim ! Qu'elle se taise ! » Tous se tournèrent vers lui, stupéfaits. L'herbe n'avait pas dit un mot. C'était le vent. Le chef condamna Kofi à replanter dix manguiers. Et la tortue, en rentrant à son étang, conclut : « Ce n'est pas l'herbe qui a parlé. C'est la peur qu'il avait de se taire. »
+
+=== conte: tortue-tambour-roi
+titre: Le tambour du roi et la patience de la tortue
+accroche: Le tambour du roi avait disparu en pleine nuit. La tortue ne chercha pas de traces : elle tendit l'oreille.
+etiquette: Ruse
+origine: Conte d'inspiration yoruba (Nigeria)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: tortue, tambour
+morale: Les mains n'oublient pas ce qu'on essaie de cacher.
+---
+Le roi du village avait un tambour magnifique, sculpté dans un tronc d'iroko, couvert de peau de gazelle, que l'on ne battait que les jours de fête. Le matin d'une grande cérémonie, on trouva sa niche vide. Plus de tambour. Le roi entra dans une rage froide. « Qui a osé ? » tonna-t-il. Les gardes interrogèrent tous les habitants. Personne n'avait rien vu, rien entendu, rien su.
+---
+Trois suspects furent amenés devant lui : le lièvre, qui aimait la musique, la hyène, qui aimait tout ce qui brille, et le singe, qui aimait les farces. Chacun jura son innocence avec tant de force que le roi ne put trancher. C'est alors que la tortue, venue vendre des noix au marché, demanda la parole. « Roi, laisse-moi essayer. Je ne vois pas bien, mais j'ai l'oreille fine. »
+---
+On rit. Mais le roi, qui n'avait plus d'idées, accepta. La tortue fit tracer un grand cercle sur la terre battue. « Que chacun des trois frappe le sol de ses deux mains, dit-elle, au rythme qu'il voudra. » Le lièvre tapa un rythme vif, joyeux, tout en sautillements. La hyène un rythme lourd et maladroit. Le singe un rythme fantaisiste, plein de grimaces. La tortue écoutait, les yeux fermés.
+---
+« Merci, dit-elle. Maintenant, que chacun frappe le rythme du tambour du roi, celui qu'il entend depuis sa naissance. » Le lièvre et la hyène hésitèrent, puis trouvèrent un rythme proche, approximatif, comme tous les habitants. Le singe, lui, se mit à frapper sans réfléchir, avec une précision absolue, les cinq coups et la pause du roi. Ses mains avaient appris la leçon pendant des nuits, en cachette. Il s'arrêta net. Il comprit.
+---
+« Voilà le voleur », dit la tortue. Le singe, rouge de honte, avoua qu'il avait volé le tambour pour s'exercer, de nuit, dans la forêt, parce qu'il rêvait de devenir tambourinaire. Le roi, qui avait prévu de le punir, resta silencieux. Puis il dit : « On n'apprend pas à jouer en cachette. Rapporte mon tambour, et sois mon élève. » Le singe devint plus tard le grand tambourinaire du royaume, et il enseignait toujours : « Les mains n'oublient pas ce qu'on essaie de cacher. »
+
+=== conte: tortue-chef-riviere
+titre: La tortue qui voulut commander la rivière
+accroche: Le crocodile faisait payer le passage. La sécheresse lui apprit à qui appartenait vraiment l'eau.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique centrale (bassin du Congo)
+region: Afrique centrale
+type: long
+gratuites: 2
+decor: fleuve
+lumiere: crepuscule
+figures: tortue, crocodile
+morale: Le maître de l'eau est celui qui la partage.
+---
+Sur un grand fleuve du bassin du Congo, vivait un crocodile nommé Ngando, long comme trois pirogues, avec des dents que les poissons voyaient dans leurs rêves. Il se proclama « maître de l'eau ». Chaque animal qui voulait traverser devait lui laisser une offrande : un fruit, un poisson, un cri de respect. Ceux qui refusaient glissaient sous la surface et on ne les revoyait pas.
+---
+La tortue, qui habitait la berge depuis plus de cent ans, regardait ce commerce avec calme. Un jour, une jeune antilope vint la trouver, en larmes : on lui avait pris sa dernière mangue. « Il se prend pour le fleuve, murmura la vieille. Mais on n'est pas maître de ce qu'on ne fait que traverser. » Elle prit une feuille de nénuphar et alla saluer Ngando, qui prenait le soleil sur son banc de sable.
+---
+« Maître de l'eau, dit-elle avec un grand respect, d'où vient ton pouvoir ? — De mes dents, ricana Ngando. — Et l'eau, d'où vient-elle ? — Du fleuve. — Et le fleuve ? — De la pluie. — Et la pluie, qui l'envoie ? » Le crocodile cligna de l'œil. « Le ciel, je suppose. » La tortue sourit. « Alors le ciel est maître de l'eau, et toi, tu en es seulement le locataire. » Ngando éclata d'un rire effrayant, mais il ne put s'empêcher d'y penser toute la nuit.
+---
+Cette année-là, la pluie ne vint pas. Les affluents se mirent à tarir, puis le fleuve lui-même. Les bancs de sable s'élargirent, les poissons s'entassèrent dans des mares tièdes, et Ngando, qui ne pouvait plus nager, rampait dans la boue, les écailles craquelées. Les animaux le regardaient de loin, sans pitié. « Maître de l'eau, lui lança une antilope, donne-nous de l'eau. » Il ne répondit pas. Il n'en avait plus.
+---
+C'est alors que la vieille tortue sortit de sa vase. Elle savait, pour l'avoir vu cent fois, qu'à trois jours de marche au nord, dans un creux de roche, dormait une source ancienne que seule la saison la plus rude réveillait. Elle conduisit les animaux, un à un, jusqu'à l'endroit, et ils creusèrent ensemble. Au bout d'une journée, une eau claire jaillit. Elle ne servait à personne seule : il fallait être cent pour la creuser, et elle était assez abondante pour cent.
+---
+Ngando arriva le dernier, traînant ses écailles sèches. Il resta à la lisière de la source, sans oser parler. Les animaux se tournèrent vers la tortue. « Il peut boire, dit-elle, à une condition : qu'il n'exige plus jamais d'offrande pour qu'on traverse. » Le crocodile baissa la tête. « Je n'étais pas le maître de l'eau, murmura-t-il. J'en étais seulement le gardien, et je l'avais oublié. » Il but longuement. Et depuis, dit-on, quand une rivière s'assèche, c'est le crocodile qui montre le chemin de la source.
+
+=== conte: tortue-pluie-promise
+titre: La tortue qui promit la pluie
+accroche: Elle promit la pluie à tout un village, sans savoir en faire tomber une goutte.
+etiquette: Sagesse
+origine: Conte d'inspiration est-africaine (Kenya)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: desert
+lumiere: midi
+figures: tortue, enfant
+morale: On mérite la pluie en creusant avant qu'elle tombe.
+---
+Dans un village de la plaine, la sécheresse durait depuis trois saisons. Les puits étaient secs, les champs couverts de poussière, et les anciens avaient cessé de chanter. Un matin, une tortue arriva au village, lente et poussiéreuse. Elle s'arrêta au milieu de la place, leva la tête vers les villageois fatigués et déclara : « Je viens vous promettre la pluie. »
+---
+Un frémissement parcourut la foule. Les enfants se pressèrent autour d'elle, les mères pleuraient de joie. « Tu as le pouvoir de faire pleuvoir ? demanda le chef. — Je promets, répondit la tortue. Mais d'abord, je dois dormir. » Elle s'installa sous le plus grand arbre et ferma les yeux. Le village attendit trois jours. Chaque matin, le ciel restait désespérément clair.
+---
+La colère monta. « Tu nous as menti ! cria un jeune homme. Elle n'a aucun pouvoir ! » La tortue rouvrit un œil. « Je vous ai promis la pluie, dit-elle. Je ne vous ai jamais promis qu'elle tomberait du ciel. » Un petit garçon, Baraka, la regardait fixement. « Alors, d'où viendra-t-elle ? » Elle sourit pour la première fois. « Suis-moi, petit. » Et elle partit lentement vers le lit asséché de la rivière.
+---
+Elle s'arrêta devant un tas de pierres, dans le creux d'un virage. « Ici, il y avait un bassin, il y a longtemps. Les anciens l'ont comblé en croyant qu'il ne servait plus. En saison sèche, il garde l'eau sous le sable. » Baraka courut raconter la nouvelle. D'abord, personne ne voulut le croire. Puis un vieillard dit : « Je me rappelle ce bassin. Mon père me racontait... » Alors tous se levèrent, et la fatigue du village eut un but.
+---
+Ils creusèrent pendant six jours, à la pelle, à la houe, à mains nues. Le sixième soir, le sable devint humide, puis sombre, puis un filet d'eau claire monta. Le village entier poussa un cri. Et deux jours plus tard, très haut, les premiers nuages grondèrent. La pluie tomba enfin, sur un bassin déjà prêt à la boire. « Tu avais raison, dit Baraka. La pluie est venue. — Oui, dit la tortue. Mais seulement parce que vous aviez creusé pour la recevoir. »
+
+=== conte: tortue-lievre-revanche
+titre: La revanche du lièvre et la deuxième course
+accroche: Le lièvre exigea une revanche. La tortue accepta, mais fixa elle-même ce qu'on mesurerait.
+etiquette: Rire
+origine: Conte d'inspiration haoussa (Nigeria et Niger)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: savane
+lumiere: aube
+figures: tortue, lievre
+morale: Avant de courir, demande à quelle règle on joue.
+---
+Depuis la fameuse course, le lièvre n'avait plus connu de repos. Tous les animaux de la savane lui lançaient en riant : « Alors, champion, toujours pas rattrapé la tortue ? » Il en perdait l'appétit. Un matin, n'y tenant plus, il alla la trouver au bord de la mare. « Je veux une revanche ! — Tu as déjà perdu, fit la tortue. — Cette fois, pas de cousins cachés, pas de ruse. Une vraie course ! »
+---
+La tortue réfléchit longtemps. « J'accepte, dit-elle. Mais c'est moi qui fixe la règle. » Le lièvre, sûr de son fait, gonfla la poitrine : « Fixe ce que tu veux, je te battrai à tout ! » Elle sourit. « Alors voici. Nous irons chacun jusqu'au grand baobab, avec une calebasse pleine d'eau sur la tête. Celui qui arrive avec le plus d'eau dans sa calebasse a gagné. » Le lièvre éclata de rire. Il avait déjà gagné.
+---
+Le jour de la course, tous les animaux vinrent regarder. Chacun reçut une calebasse remplie à ras bord. « Prêts ? » cria le vieux hibou. « Partez ! » Le lièvre bondit, les oreilles au vent, la calebasse sur le crâne, et l'eau jaillit à chaque saut, trempant son dos, ses pattes, ses moustaches. À cent pas, la calebasse était à moitié vide. À trois cents, il ne lui restait que quelques gouttes.
+---
+La tortue, elle, avançait d'un pas régulier, sans balancer la tête, la calebasse bien droite, comme si elle portait un œuf. Elle croisait des escargots, des fourmis, des enfants qui l'encourageaient. Quand elle arriva au baobab, le lièvre l'attendait depuis longtemps, la calebasse presque vide, essoufflé et furieux. Elle posa la sienne, pleine à ras bord, devant le hibou. « Voilà, dit-il, l'eau est intacte. La tortue a gagné. »
+---
+Le lièvre hurla à l'injustice. « Tu m'avais promis une course ! — Je t'ai promis une règle, répondit la tortue. Tu as oublié de me demander laquelle. » La savane entière éclata de rire. Le lièvre mit longtemps à rire à son tour, mais quand il le fit, ce fut de bon cœur. « Alors, dit-il, la prochaine fois, je demanderai les règles avant de courir. — La prochaine fois, répondit la tortue, demande aussi qui les écrit. »
+
+=== conte: tortue-maison-sur-le-dos
+titre: Celle qui portait sa maison
+accroche: Il enviait la carapace qui évite de chercher un toit. Elle lui dit ce que cela coûtait.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique australe (Kalahari)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: desert
+lumiere: crepuscule
+figures: tortue, feu
+morale: Une maison qu'on porte seul n'est jamais tout à fait une maison.
+---
+Dans les grandes plaines du Kalahari, un voyageur marchait depuis des jours. Il avait traversé la sécheresse, dormi à la belle étoile, souffert du froid de la nuit et de la morsure du soleil. Ses pieds saignaient et son sac était vide. Un soir, tandis que le soleil rougissait l'horizon, il vit une tortue qui avançait paisiblement vers un buisson. Elle portait sa maison sur le dos, et ne semblait pas pressée du tout.
+---
+Il s'assit près d'elle, brisé de fatigue. « Comme tu as de la chance, soupira-t-il. Tu n'as jamais à chercher un toit. Tu dors où tu veux, la pluie ne te mouille pas, le vent ne te dérange pas. Moi, je marche depuis des jours sans trouver une case. » La tortue le regarda avec calme. « Tu envies ma maison ? — Je l'envie, avoua-t-il. Je donnerais tout pour une maison comme la tienne. »
+---
+« Alors écoute ce qu'elle me coûte, dit la tortue. Je n'ai jamais de seuil à franchir, personne ne m'attend sur le pas de la porte. Je n'ai pas de foyer où me réchauffer, pas de voisin qui me tende un bol de lait, pas d'enfants qui crient mon nom au retour. Ma maison est parfaitement fermée : voilà son seul défaut. Elle me protège de tout, et d'abord de ceux qui voudraient entrer dans ma vie. »
+---
+Le voyageur resta silencieux. À l'horizon, un orage montait. La pluie tomba bientôt, droite et froide. La tortue rentra la tête dans sa carapace. Le voyageur, trempé, ramassa quelques branches, trouva un creux de rocher, y alluma un petit feu, et appela : « Viens ! Il y a de la place pour deux. » La tortue hésita, longtemps. Puis elle sortit la tête, et marcha, lentement, jusqu'à la chaleur.
+---
+Ils passèrent la nuit côte à côte. Au matin, le voyageur reprit sa route, et la tortue regarda sa silhouette disparaître. « Il pensait avoir besoin d'une maison, murmura-t-elle. Il avait besoin de quelqu'un à qui rentrer. » Elle resta un moment près des cendres tièdes. Puis elle repartit, plus lentement que d'habitude, en laissant derrière elle, pour la première fois, une trace dans la cendre : celle d'une visite.

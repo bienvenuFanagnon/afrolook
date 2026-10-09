@@ -1,0 +1,245 @@
+recueil: Veillées de la Savane de l'Est
+categorie: Mythes et sagesse
+description: Maasai, Kikuyu, Swahili, Éthiopiens : l'Afrique de l'Est raconte le bétail, la pluie, la mer et les villes de pierre.
+ordre: 9
+prix: 70
+
+=== conte: ethiopie-cafe-chevrier
+titre: Le chevrier dont les chèvres ne dormaient plus
+accroche: Elles dansaient en pleine nuit. Il crut à un sortilège. C'était un cadeau.
+etiquette: Fin surprenante
+origine: Légende éthiopienne du chevrier Kaldi (récit populaire, rapporté à partir du XVIIe siècle)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: montagne
+lumiere: aube
+figures: enfant, ancien
+morale: Ne jette pas par peur ce que tu ne comprends pas encore.
+# relecture : la légende de Kaldi est un récit populaire tardif, pas une source historique ; l'origine le dit.
+---
+Dans les hauts plateaux d'Éthiopie, au temps où les montagnes n'avaient pas encore de routes, vivait un jeune chevrier nommé Kaldi. Chaque matin, il emmenait ses chèvres brouter sur les pentes, et chaque soir il les ramenait, fatiguées et dociles. Il les connaissait toutes par leur nom, leur voix, leur façon de pousser du front. Rien dans ce métier ne l'étonnait plus. Jusqu'au jour où il remarqua que le troupeau refusait de rentrer au crépuscule.
+---
+Cette nuit-là, elles ne dormirent pas. Elles bondissaient entre les rochers, se dressaient sur leurs pattes arrière, cognaient leurs cornes en riant, si l'on peut dire qu'une chèvre rit. Kaldi, inquiet, se frotta les yeux sous la lune. « Quelqu'un leur a jeté un sort », murmura-t-il. Il chercha l'ombre d'un sorcier derrière chaque buisson. Il ne trouva rien, sinon un arbuste aux feuilles brillantes, chargé de petites baies rouges que les bêtes avaient dépouillé jusqu'aux branches.
+---
+Au matin, mi-curieux, mi-effrayé, Kaldi goûta une baie. Elle était amère, mais une chaleur claire monta dans sa poitrine, et toute sa fatigue s'envola. Il courut d'une traite jusqu'au monastère voisin, la poche pleine de baies. Le supérieur l'écouta, les sourcils froncés. « Ce sont des fruits du diable, déclara-t-il enfin. Un honnête berger n'a pas à les connaître. » Et d'un geste sec, il jeta les baies dans le feu.
+---
+Mais le feu se mit à parfumer toute la salle. Une odeur épaisse, ronde, chaude, comme un pain tout juste sorti du four, fit lever la tête aux moines endormis. Le supérieur se tut. Il ramassa les baies noircies, les écrasa, les versa dans de l'eau chaude et but une gorgée lente, les yeux fermés. Quand il les rouvrit, ce n'était plus le même homme. « Cette nuit, dit-il, nous veillerons pour la prière, et personne ne s'endormira. »
+---
+Ainsi, raconte-t-on, le café naquit des chèvres dansantes d'Éthiopie et d'une colère retournée. Kaldi resta chevrier, mais chaque soir, on lui servait la première tasse. « Ce que l'on rejette par peur, remarquait-il, a parfois le goût de ce qu'on cherchait. » La boisson a voyagé depuis, de montagne en port, de port en palais. Et pourtant, dans les villages d'Éthiopie, on la sert encore lentement, en cérémonie, comme on accueille un vieil ami.
+
+=== conte: maasai-premiere-vache
+titre: La première vache descendue du ciel
+accroche: Une corde de cuir descendue du ciel, des vaches à l'infini, et une main trop pressée.
+etiquette: Mythe
+origine: Mythe maasai (Kenya et Tanzanie), dans l'une de ses versions
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: baobab
+lumiere: aube
+figures: ancien, guerrier
+morale: Celui qui coupe la corde par peur de manquer perd ce qui allait lui être donné.
+# relecture : le mythe du bétail descendu du ciel le long d'une lanière de cuir existe en plusieurs versions ; celle-ci reste volontairement sans désigner un peuple fautif.
+---
+Au commencement, disent les Maasai, la terre n'avait pas de troupeaux. Les hommes vivaient de chasse et de racines, et ils regardaient le ciel, car le ciel était habité par Enkai, celui qui donne la pluie et l'herbe. Un jour, un homme sage, déjà vieux, s'assit à la lisière de la plaine et dit : « Je ne demande ni richesse, ni royaume. Je demande de quoi nourrir mes enfants sans trembler pour eux chaque matin. » Le vent tourna ce jour-là, très doucement.
+---
+Alors, raconte-t-on, une lanière de cuir tressée descendit du ciel, très mince au début, puis plus épaisse, jusqu'à toucher le sol. Le long de cette corde, une à une, sans bruit, descendaient des vaches : des rousses, des tachetées, des noires comme la nuit, aux yeux calmes. La voix d'Enkai résonna dans l'herbe : « Voici mon don. Prenez-en soin, et elles prendront soin de vous. » Les hommes n'osaient plus respirer.
+---
+Les villageois accouraient, les mains tendues, le cœur battant. Les vaches continuaient de descendre, et chaque fois que l'une touchait la terre, une autre apparaissait au bout de la corde. Les enfants dansaient. Mais parmi la foule, un jeune homme, plus pressé que les autres, murmura : « Et si la corde casse ? Et si le ciel reprend son don avant que j'aie ma part ? » La peur serra sa gorge comme une main.
+---
+Il saisit son couteau. D'un geste, il trancha la lanière à hauteur de sa poitrine. La corde fila vers le ciel comme un serpent frappé, et le dernier groupe de vaches resta suspendu un instant, puis disparut dans les nuages. Un grand silence tomba. Enkai ne gronda pas. Il dit seulement, d'une voix très lasse : « Je vous avais donné tout ce qu'il fallait. Vous aurez donc ce que vous avez saisi, et pas davantage. »
+---
+Depuis ce jour, il n'y a plus de vaches qui descendent du ciel, mais le troupeau déjà reçu est devenu l'honneur des Maasai, leur lait, leur chant, leur mesure de la richesse. Et quand un enfant se précipite sur le plat avant les anciens, on lui raconte la corde coupée. « Prends, dit-on, mais laisse le don finir de descendre. Ce que tu coupes par peur, tu ne le retrouveras pas par force. »
+
+=== conte: maasai-lion-et-berger
+titre: Le berger qui parla au lion
+accroche: Seul, sans lance, face à un lion affamé. Le berger a choisi de parler.
+etiquette: Sagesse
+origine: Conte d'inspiration maasai (Kenya et Tanzanie)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: savane
+lumiere: crepuscule
+figures: lion, enfant
+morale: Mieux vaut un pacte tenu que mille combats gagnés.
+---
+Le jeune Saruni gardait seul le troupeau de son père sur la colline, ce soir-là, quand l'herbe se mit à frémir sans qu'il y eût de vent. Il avait douze ans. Il n'avait pas de lance, seulement un bâton de berger et une calebasse de lait caillé. Entre les acacias, deux yeux dorés le regardaient. Un lion, vieux, maigre, la crinière en désordre, sortit lentement de l'ombre et s'assit à dix pas de lui, comme un voisin qui vient demander une faveur.
+---
+Saruni sentit ses jambes devenir de l'eau. Il pensa à courir, mais il savait qu'on ne court pas devant un lion. Il pensa à crier, mais ses frères étaient loin. Alors il fit la seule chose qui lui restait : il parla. « Grand-père de la colline, dit-il d'une voix qui tremblait, tu as faim, je le vois. Mais regarde ces bêtes : elles sont à mon père, et mon père a des lances. Si tu prends un veau, elles te suivront jusqu'à ta tanière. »
+---
+Le lion bâilla, montrant des dents jaunies. « Je n'ai plus la force de chasser les zèbres, dit-il enfin. Ni celle de fuir les lances. Que me proposes-tu, petit ? » Saruni avala sa salive. « Chaque fois qu'une bête mourra de maladie ou de vieillesse, je la laisserai au pied du grand rocher. Tu mangeras sans courir, nous vivrons sans guerre. Mais promets-moi une chose : tant que tu mangeras là, tu ne toucheras pas à un veau vivant. »
+---
+Le lion le fixa longtemps. Puis, lentement, il baissa la tête. « Un pacte, alors, dit-il. Que le soleil en soit témoin. » Il se leva et disparut dans les herbes. Saruni rentra au village à la nuit tombée, sans rien dire à personne, de peur qu'on ne le crût fou. Mais le lendemain, une vache vieille et malade s'éteignit à l'aube, et il la traîna jusqu'au grand rocher, le cœur battant. Au matin, il n'en restait que les os.
+---
+Les saisons passèrent. Les bergers racontaient que les veaux de cette colline ne s'étaient jamais perdus, que les nuits y étaient étrangement calmes. Saruni devint homme, puis ancien, et chaque année, il laissait sa part au pied du rocher. Quand son petit-fils lui demanda pourquoi, il répondit : « Parce qu'une parole donnée à un lion pèse aussi lourd qu'une lance. Et qu'un pacte tenu vaut mieux que mille combats gagnés. »
+
+=== conte: swahili-sultan-et-poete
+titre: Le poète qui répondit au sultan en trois vers
+accroche: Le sultan voulait des louanges. Le poète lui offrit trois vers, et un miroir.
+etiquette: Rire
+origine: Conte d'inspiration swahilie (côte de l'Afrique de l'Est)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: griot, calebasse
+morale: Un ami qui dit non vaut mieux que cent courtisans qui disent oui.
+---
+Sur l'île de Lamu, le sultan Ali aimait trois choses : les pagnes de soie, les dattes confites et les compliments. Chaque matin, ses courtisans se pressaient sous la véranda pour lui en offrir. « Votre sagesse éclaire la mer, Majesté ! — Votre voix est plus douce que la brise ! » Le sultan souriait, sans jamais demander s'ils le pensaient. Son grand vizir, en particulier, répondait « Oui, Majesté » à tout, même quand le sultan demandait l'heure.
+---
+Un jour arriva sur l'île un poète nommé Juma, qui récitait des vers sur les marchés pour quelques pièces. On le conduisit au palais. « Poète, dit le sultan, dis-moi un poème. Pour chaque vers qui me plaira, tu recevras une pièce d'or. » Le poète s'inclina. Le vizir ricana derrière sa main : un mendiant de plus venait chercher fortune. Mais le poète, sans se presser, ferma les yeux, et sa voix se fit grave.
+---
+« Premier vers, commença-t-il. J'ai connu un perroquet dans la maison d'un riche. Il répétait tout ce qu'on lui disait, et on le nourrissait de dattes. » Le sultan rit. « Deuxième vers : j'ai connu un miroir qui ne disait jamais non à son maître. Un matin, le maître ne se reconnut plus. » Le sultan rit moins fort. Le vizir toussa. « Troisième vers : l'ombre du sultan le suit partout sans rien demander, mais c'est la seule à le quitter à la nuit. »
+---
+Un grand silence tomba. Le vizir fixait ses sandales. Le sultan, lentement, tendit la main vers la bourse : « Trois vers, trois pièces d'or. Mais pourquoi un perroquet, un miroir, une ombre ? » Le poète sourit. « Parce que ceux-là disent ce qu'on veut entendre, Majesté, ou ne disent rien. Il fallait bien qu'un homme vous parle autrement, une fois dans sa vie. » Le vizir, rouge, murmura : « Oui, Majesté... » Et pour la première fois, toute la salle éclata de rire.
+---
+Ce soir-là, le sultan fit appeler son vizir. « À partir de demain, tu me diras non une fois par jour, dit-il. Sinon, je prendrai le perroquet comme conseiller. » Le poète, lui, refusa le poste de ministre qu'on lui proposait. Il garda ses trois pièces, en donna une aux enfants de l'école coranique, et reprit le chemin des marchés. « Un poème qui flatte, disait-il en partant, fait plaisir une heure. Un poème qui éclaire fait du bien toute une vie. »
+
+=== conte: kikuyu-figuier-sacre
+titre: Le figuier où les Kikuyu faisaient leurs prières
+accroche: On ne coupe pas un mugumo. Il l'a fait, et ce qu'il découvrit dessous l'a laissé sans voix.
+etiquette: Légende
+origine: Légende d'inspiration kikuyu (Kenya)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: foret
+lumiere: aube
+figures: ancien, oiseau
+morale: Ce que l'on abat en une matinée, il faut des générations pour le replanter.
+# relecture : le mugumo (figuier sacré) et la montagne Kirinyaga (mont Kenya) sont réels dans la tradition kikuyu ; l'histoire de Kamau est une libre invention d'inspiration, dite comme telle.
+---
+Au pied de la montagne que les Kikuyu appelaient Kirinyaga, la montagne blanche où habite Ngai, un immense figuier étendait ses branches sur tout le village. On l'appelait le mugumo. À son ombre, les anciens se réunissaient pour juger, les mères pour prier, les enfants pour jouer. Sous ses racines, disait-on, dormait la bonne fortune des gens. Personne n'avait jamais osé lever une hache contre lui.
+---
+Kamau, un jeune homme du village, revint un jour d'un long voyage avec une hache de fer toute neuve, achetée au prix de trois chèvres. Il en était fier comme d'un enfant. « Avec cette hache, disait-il, je défricherai un champ plus grand que celui de mon père. » Et son regard se posa sur le figuier. Il y avait là, juste à côté, une belle terre noire où le mil pousserait mieux qu'ailleurs, si seulement l'arbre n'y mettait pas son ombre.
+---
+Une vieille femme, Wanjiru, l'arrêta sur le sentier. « Mon fils, dit-elle, ce n'est pas un arbre. C'est une promesse. Celui qui le coupe ne comprend pas ce qu'il abat. » Kamau sourit poliment, mais à l'aube suivante, avant que le village se réveille, il se tint devant le mugumo, la hache levée. Le premier coup résonna comme un coup de tonnerre sur la montagne. Le second fit tomber une pluie de figues mûres. Au troisième, il sentit quelque chose trembler sous ses pieds.
+---
+L'arbre tomba à la fin de la matinée. Les villageois accoururent, stupéfaits, mais personne ne cria. Sous les racines arrachées, une eau claire se mit à sourdre, une source que personne n'avait jamais vue et qui nourrissait la terre depuis des générations. Kamau comprit alors ce que Wanjiru voulait dire. Les racines du figuier retenaient l'eau et la rendaient au village goutte à goutte. L'arbre abattu, la source, faute de racines, commençait déjà à s'étaler dans la boue.
+---
+Il se mit à genoux. Il ne demanda pas pardon à voix haute, car il n'avait pas de mots. Il ramassa une figue tombée, en tira un pépin, et le planta sur la souche. Chaque matin, jusqu'à sa vieillesse, il vint l'arroser. Il ne vit jamais le nouvel arbre assez grand pour abriter un village. Mais ses petits-enfants s'assirent à son ombre, et leurs enfants plus tard. « On ne répare pas tout, disait Kamau, mais on peut replanter ce que l'on a abattu. »
+
+=== conte: swahili-dhow-tempete
+titre: Le capitaine qui rentra sans cargaison
+accroche: Il a jeté à la mer l'or de dix marchands. Au port, ils l'attendaient les poings serrés.
+etiquette: Sagesse
+origine: Conte d'inspiration swahilie (côte de l'océan Indien)
+region: Afrique de l'Est
+type: long
+gratuites: 2
+decor: fleuve
+lumiere: orage
+figures: pirogue, guerrier
+morale: Une cargaison se rachète, un équipage jamais.
+---
+Sur la côte de l'océan Indien, à l'époque où les boutres à voile triangulaire portaient les épices, l'ivoire et les étoffes de port en port, vivait un capitaine nommé Rashid. Il commandait le plus beau boutre de Kilwa, l'« Étoile du Matin ». Ses marins disaient qu'il savait lire la mer comme les savants lisent un livre. Ce voyage-là, il avait chargé du clou de girofle, de l'ivoire et des sacs de cuivre, au compte de dix marchands, pour les vendre dans les ports d'Arabie.
+---
+Trois jours après le départ, le ciel prit une teinte de plomb. Les oiseaux de mer rentrèrent vers la terre. « Capitaine, dit le vieux timonier, la mer retient son souffle. » Rashid regarda l'horizon et ne répondit pas. Quand la tempête éclata, elle vint de tous les côtés à la fois. Les vagues montaient plus haut que le mât, la voile claquait comme un fouet, et chaque creux de houle semblait vouloir avaler le boutre.
+---
+Au bout d'une nuit entière, l'eau entrait par les flancs. Le boutre, trop chargé, s'enfonçait. Rashid rassembla ses hommes, vingt-deux marins trempés et pâles. « Ou nous jetons la cargaison, dit-il, ou la mer nous prend avec. » Un marchand à bord, Hassan, qui accompagnait ses sacs, hurla : « Ce cuivre est tout ce que j'ai ! Jette tes marins avant mon cuivre ! » Rashid le regarda sans colère. « Un sac se rachète. Un homme, non. » Et il donna lui-même l'ordre.
+---
+Sac après sac, ballot après ballot, l'ivoire, le cuivre et les épices disparurent dans l'eau noire. Le boutre se redressa, léger, comme soulagé. À l'aube, la tempête mourut. Il ne restait à bord que des cordes, de l'eau douce et vingt-quatre cœurs battants. Hassan pleurait, les yeux fixés sur le sillage. « Tu m'as ruiné », murmura-t-il. Rashid répondit simplement : « Je t'ai gardé en vie. Le reste, nous le referons. » Mais personne, ce matin-là, ne trouva la phrase très consolante.
+---
+Au port, les neuf autres marchands attendaient sur le quai, les poings serrés. Rashid descendit seul, tête haute, les mains vides. « Voici mon rapport, dit-il. J'ai jeté vos marchandises à la mer pour sauver vos frères, vos fils, vos amis qui ramaient. Si vous voulez me juger, jugez-moi. » Les marchands hurlèrent. Le plus vieux d'entre eux demanda le silence. Il appela alors, un par un, les marins, et leur demanda ce qu'ils avaient vu. Chacun dit la même chose : le capitaine avait donné l'ordre en dernier, après avoir tout essayé.
+---
+Le vieux marchand se tourna vers les autres. « Nous avons perdu de l'or, dit-il. Nous aurions perdu aussi des hommes, et les hommes, on ne les rachète pas. » Le lendemain, les marchands se cotisèrent pour équiper un nouveau voyage, et c'est à Rashid qu'ils confièrent le boutre. Il revint au bout de six mois, chargé de poivre, de perles et d'étoffes, et le premier sac qu'il déposa devant Hassan portait un fil rouge. « Pour le cuivre, dit-il. Avec les intérêts de la mer. » Hassan sourit, enfin.
+
+=== conte: ethiopie-reine-de-saba
+titre: La reine qui traversa le désert pour une question
+accroche: Elle avait l'or, les caravanes et un trône. Il lui manquait une réponse.
+etiquette: Légende
+origine: Légende éthiopienne, d'après le Kebra Nagast (XIVe siècle), librement racontée
+region: Afrique de l'Est
+type: long
+gratuites: 2
+decor: desert
+lumiere: crepuscule
+figures: reine, calebasse
+morale: Le sage est celui qui continue de poser des questions.
+# relecture : le Kebra Nagast (« Livre de la gloire des rois ») est un texte éthiopien du XIVe siècle ; la reine y porte le nom de Makeda. La question posée et la réponse de Salomon sont une libre invention du conteur ; la fin précise que les historiens débattent de la part d'histoire.
+---
+Dans le pays que les Éthiopiens appellent Saba, régnait il y a bien longtemps une reine nommée Makeda. Elle était belle, riche, respectée, et pourtant un souci la suivait jusque dans son sommeil. Ses ministres lui apportaient de l'encens, ses marchands de l'or, ses devins des présages. Aucun ne lui répondait quand elle demandait : « Comment un roi sait-il qu'il est vraiment sage ? »
+---
+Un jour, un marchand nommé Tamrin revint d'un long voyage vers le nord. Il avait vu à Jérusalem un roi dont on disait qu'il jugeait mieux que tous les juges. « Il s'appelle Salomon, dit Tamrin. Ses réponses sont des puits sans fond. » Makeda ne dormit pas cette nuit-là. À l'aube, elle donna l'ordre de préparer la plus grande caravane du royaume : des centaines de chameaux, des coffres d'or, des épices, des pierres précieuses.
+---
+Le voyage dura des mois. Il fallut traverser le désert sous un soleil de cuivre, franchir des gorges où le vent sifflait comme un chacal, camper sous un ciel si étoilé que les chameliers murmuraient des prières. Plusieurs de ses conseillers voulurent rebrousser chemin. La reine répondit toujours la même chose : « Celui qui n'ose pas la distance n'aura jamais la réponse. » Quand les murs de Jérusalem apparurent enfin, elle descendit de sa litière pour marcher les derniers pas à pied.
+---
+Salomon la reçut avec honneur. Pendant plusieurs jours, elle l'éprouva par des énigmes, des questions de droit, des histoires dont il fallait deviner la fin. Le roi répondit à toutes sans hésiter, mais la reine remarqua autre chose, quelque chose que les devins n'avaient jamais su lui apprendre : Salomon écoutait. Quand elle parlait, il se taisait vraiment. Quand elle se trompait, il ne riait pas. Quand lui-même se trompait, il le disait.
+---
+Le dernier soir, sous les lampes, elle posa enfin la question qui la suivait depuis son pays : « Comment un roi sait-il qu'il est sage ? » Salomon sourit. « Quand il continue de poser des questions, répondit-il. Le roi qui croit tout savoir est déjà mort sur son trône. » Makeda baissa la tête. Elle venait d'apprendre en une phrase ce que les richesses ne lui avaient jamais enseigné. Elle offrit au roi des cadeaux sans nombre, mais c'est la phrase qu'elle emporta.
+---
+Selon la tradition éthiopienne, Makeda revint dans son pays avec un fils, Ménélik, dont la lignée régna longtemps sur l'Éthiopie. Les historiens discutent encore de ce que cette légende doit à l'histoire, mais les Éthiopiens la racontent depuis des siècles, car elle dit quelque chose de vrai : on ne gouverne bien qu'en acceptant de demander. Les conteurs ajoutent qu'elle fit graver sur la porte de son palais une seule phrase : « Ici, on pose des questions. »
+
+=== conte: zanzibar-epices-lune
+titre: La femme qui vendait la lune en épices
+accroche: Elle vendait des épices au parfum de lune. Lui n'avait pas un sou, mais des secrets.
+etiquette: Amour
+origine: Conte d'inspiration swahilie (Zanzibar)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: calebasse, pirogue
+morale: Les vérités qu'on partage valent plus que les pièces qu'on compte.
+---
+Au marché de Stone Town, à Zanzibar, une marchande nommée Fatuma tenait un étal qui sentait la lune. C'est du moins ce qu'on disait. Clous de girofle, cardamome, cannelle, vanille : ses épices étaient rangées dans des calebasses polies, et chaque soir, quand le marché se vidait, elle les regardait briller à la lumière des lampes comme de petites étoiles brunes. « Mes épices, disait-elle aux clients, sentent le ciel de l'île. »
+---
+Un soir de mousson, un marin nommé Hamisi s'arrêta devant son étal. Il revenait d'un voyage où le capitaine l'avait payé en promesses. Ses poches étaient vides, sa chemise trouée, mais ses yeux brillaient. « Je voudrais ce parfum que tu appelles la lune, dit-il. Je n'ai pas un sou. » Fatuma releva le menton. « Tout se paie, dit-elle, mais pas toujours avec des pièces. Dis-moi quelque chose que tu n'as jamais dit à personne. »
+---
+Hamisi hésita. Puis il parla, doucement, du village de pêcheurs où il était né, de sa mère qui chantait en tressant les filets, de la nuit où il avait quitté la maison sans lui dire adieu et qui ne cessait de revenir dans ses rêves. Il parla longtemps, sans la regarder. Quand il se tut, le marché était vide. Fatuma remplit un petit sac de cardamome et le lui tendit. « Voilà ton parfum de lune. Il est à toi. »
+---
+Hamisi revint à chaque saison. À chaque fois, il n'avait pas d'argent, et à chaque fois, Fatuma lui demandait une vérité nouvelle. Il lui parla de la peur qui le prenait en mer, de l'ami qu'il avait perdu dans une tempête, de la joie qu'il ressentait en la voyant. Elle, de son côté, lui racontait ses silences, la mort de son père, le goût du premier clou de girofle croqué enfant. Ils échangeaient leurs vérités comme d'autres échangent des pièces, et cela les rendait plus riches.
+---
+Un soir, après dix voyages, Hamisi se présenta devant l'étal les mains vides. « Je n'ai plus rien à te dire, avoua-t-il. Je t'ai tout dit. » Fatuma sourit comme elle n'avait jamais souri. « Alors le prix est payé, répondit-elle. Il ne reste plus qu'à rester. » Il ne repartit pas. Et les conteurs de Zanzibar assurent que son étal sentit la lune jusqu'à la fin de ses jours, parce que ce parfum-là n'avait jamais été dans les épices.
+
+=== conte: serengeti-gnous-chemin
+titre: Pourquoi les gnous marchent toujours vers la pluie
+accroche: Les gnous ne bougeaient jamais. Une vieille femelle entendit la pluie et partit seule.
+etiquette: Mythe
+origine: Conte d'inspiration est-africaine (Serengeti, Tanzanie)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: savane
+lumiere: orage
+figures: enfant, oiseau
+morale: Qui n'ose pas quitter sa terre sèche ne trouvera jamais la pluie.
+# relecture : explication imaginée de la grande migration des gnous (réelle, annuelle, liée aux pluies) ; aucune prétention d'être un mythe attesté, l'origine dit « d'inspiration ».
+---
+Il y eut un temps, disent les anciens du Serengeti, où les gnous vivaient comme tout le monde, sur le même carré d'herbe, de leur naissance à leur vieillesse. Ils connaissaient chaque touffe, chaque termitière, chaque trou d'eau. Leur plus grande fierté était de ne jamais partir. « Un gnou sage, disaient-ils, ne quitte pas la terre qui l'a vu naître. » Le chef du troupeau était un mâle puissant et têtu nommé Dume.
+---
+Un matin, l'herbe jaunit. Le trou d'eau devint boue, puis poussière. Les jeunes se plaignirent, les mères s'inquiétèrent. Dume ordonna d'attendre : la pluie reviendrait, comme elle revenait toujours. Seule Nyota, la plus vieille femelle du troupeau, secoua la tête. Elle avait vu trop de saisons pour croire aux promesses du ciel. « Quand la terre dit au revoir, murmura-t-elle, il faut savoir écouter. Moi, j'entends la pluie, mais elle est loin. »
+---
+Personne ne la crut. Les semaines passèrent. Les veaux maigrissaient, les cris des mères devenaient plus rauques. Une nuit, Nyota se leva et partit, seule, vers l'horizon où le ciel s'assombrissait. Le troupeau la regarda s'éloigner. Dume, vexé, déclara que les vieilles femelles finissent toujours par rêver. Mais sa propre fille, la jeune Zuri, suivit en cachette la vieille gnou, dès qu'elle la vit disparaître derrière la colline.
+---
+Elles marchèrent trois jours. Le premier jour, la faim leur tordit le ventre. Le deuxième, la soif leur brûla la gorge. Le troisième, au sommet d'une colline, Nyota s'arrêta, huma l'air, et dit : « Écoute. » Au loin, très bas, roulait le tonnerre. Puis l'odeur de la terre mouillée monta jusqu'à elles. Plus loin encore, étendue sous un ciel noir, s'étalait une plaine verte et ruisselante, où l'herbe montait jusqu'aux genoux.
+---
+Zuri courut annoncer la nouvelle. Dume, humilié, dut avouer son erreur. Le troupeau entier prit le chemin de la pluie, dans une longue file bruyante, et ceux qui suivaient la vieille Nyota arrivèrent les premiers. Depuis ce jour, chaque année, les gnous se mettent en marche à l'approche de la saison sèche, par centaines de milliers, et toujours dans la même direction : celle où gronde le tonnerre. Ils ne s'en souviennent plus, mais la terre, elle, se souvient de la vieille Nyota qui a su partir.
+
+=== conte: ouganda-tambours-baganda
+titre: Les tambours qui annonçaient le roi
+accroche: Pendant des siècles, ils ont dit au royaume : ton roi est là. Les tambours du Buganda.
+etiquette: Histoire
+origine: Tradition du royaume du Buganda (Ouganda), d'après les historiens et la mémoire orale
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: tambour, griot
+morale: Un peuple garde sa mémoire dans ce qu'il continue de faire résonner.
+# relecture OBLIGATOIRE avant envoi : (1) Buganda, Kabaka, lac Nyanza/Victoria : certains. (2) Mujaguzo = tambours royaux, symbole de l'autorité du Kabaka : attesté. (3) Rôle des tambours dans l'investiture et les grandes cérémonies : attesté ; le détail « tambour de fête / d'alerte / de deuil » est une présentation générale, à vérifier avec une source (historiens du Buganda). (4) Protectorat britannique 1900, abolition du royaume 1967, rétablissement comme royaume culturel 1993 : attestés. Le texte évite toute anecdote inventée.
+---
+Sur les rives du lac Nyanza, que les Européens appelleront plus tard lac Victoria, s'étend depuis plusieurs siècles le royaume du Buganda. Son roi porte un titre unique : le Kabaka. Et près de lui reposent des tambours que les Baganda appellent le Mujaguzo. Ce ne sont pas des instruments comme les autres. Pour comprendre le Buganda, il faut commencer par eux.
+---
+Selon la tradition, les tambours royaux incarnent l'autorité du Kabaka. On ne les joue pas pour distraire. Ils résonnent dans les grandes occasions : les cérémonies de la cour et l'investiture d'un nouveau roi. Leurs gardiens remplissent une charge respectée, qui demande de connaître les rythmes, les peaux, les gestes, et surtout la juste mesure des silences, car un tambour qui parle trop perd sa voix.
+---
+Le son voyageait loin, de colline en colline, sur un pays vallonné et verdoyant. Dans un royaume où les messages couraient à pied, un roulement bien choisi pouvait rassembler des chefs, annoncer une cérémonie, saluer un hôte de marque. Les habitants apprenaient très tôt à reconnaître ces rythmes à l'oreille, comme on apprend sa langue maternelle, sans jamais avoir besoin de les écrire.
+---
+Puis vint le XXe siècle. À partir de 1900, le Buganda passa sous la tutelle des Britanniques. L'Ouganda devint indépendant en 1962, et en 1967, son gouvernement abolit les royaumes traditionnels, dont celui du Buganda. Les cérémonies perdirent leur place officielle. La mémoire des rythmes, elle, resta dans les familles, transmise à voix basse, de génération en génération, comme un secret que l'on refuse de laisser mourir.
+---
+En 1993, le royaume du Buganda fut rétabli comme royaume culturel, et un Kabaka fut de nouveau intronisé. Les tambours royaux ont de nouveau résonné. Pour beaucoup de Baganda, entendre ces tambours, c'est entendre la voix de ceux qui sont venus avant eux. Voilà pourquoi, au Buganda, un tambour n'est pas du bruit : c'est de la mémoire qui bat, et qui continue de battre, malgré les siècles.
