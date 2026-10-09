@@ -1,0 +1,237 @@
+recueil: Les Petits Malins
+categorie: Ruses et malices
+description: Des enfants plus rusés que les grands, plus courageux que les lions, plus rapides que les mensonges.
+ordre: 15
+prix: 70
+
+=== conte: enfant-ruse-lion
+titre: La petite fille qui loua son ombre au lion
+accroche: Le lion voulait de l'ombre. Elle lui en loua, mais pas là où il pensait.
+etiquette: Ruse
+origine: Conte d'inspiration ouest-africaine
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: savane
+lumiere: midi
+figures: enfant, lion
+morale: Le plus fort perd quand il oublie que l'ombre aussi bouge.
+---
+Une année de grande chaleur, un lion traversait la savane, le crâne brûlé de soleil, la langue pendante. Il ne trouvait pas un arbre où s'abriter. Enfin, il en aperçut un, un manguier immense, dont l'ombre ronde et fraîche s'étalait sur la terre rouge. Sous cette ombre, une petite fille de huit ans, Awa, jouait aux osselets, sans se soucier de la chaleur, comme si l'ombre était sa maison.
+---
+Le lion s'approcha. « Écarte-toi, petite. Cette ombre me convient. » Awa leva la tête, sans peur. « Cette ombre est à moi, dit-elle. Mon père a planté l'arbre, mon grand-père l'a arrosé. Si tu veux t'y asseoir, il faut la louer. » Le lion eut un rire grave. « Louer ? À qui ? À toi ? — À moi. Une patte de gazelle pour la journée. »
+---
+Le lion, trop fatigué pour discuter, jeta devant elle une patte de gazelle qu'il gardait de la veille. « Voilà. Maintenant, l'ombre est à moi. — Pour aujourd'hui, dit Awa. Mais n'oublie pas : tu l'as louée, tu ne l'as pas achetée. Tu dois y rester dessous. Si tu en sors, le contrat est fini. » Le lion grogna d'assentiment et se coucha avec un soupir de satisfaction.
+---
+Le soleil monta, puis se mit à descendre. L'ombre, qui tournait doucement autour du tronc, se déplaçait lentement vers l'est. Le lion, qui se voulait loyal, se traîna avec elle. Un pas à gauche. Encore un pas à gauche. Il ne pouvait pas se lever pour chasser, il ne pouvait pas aller boire : s'il sortait, plus d'ombre. Il resta rivé à la tache fraîche, suivant son lent glissement, essoufflé, humilié.
+---
+Pendant ce temps, dans la savane, les gazelles, les zèbres et les antilopes s'abreuvaient en paix et broutaient sans crainte. Le soir venu, le lion, épuisé, affamé, n'avait même pas la force de rugir. Awa ramassa ses osselets. « Tu as bien respecté le contrat, dit-elle. Le contrat de demain, c'est la même chose. » Le lion eut un long gémissement. Dès le lendemain, il alla chasser à l'autre bout de la plaine, loin du manguier.
+
+=== conte: enfant-tambour-cache
+titre: Le garçon qui cacha le tambour dans le mil
+accroche: Le roi avait interdit les tambours. Les soldats cherchaient partout, sauf là où il était.
+etiquette: Fin surprenante
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: enfant, tambour
+morale: On peut confisquer les tambours, pas la voix d'un peuple.
+---
+Le roi Kangué avait peur des tambours. Dans son royaume, ils transmettaient les nouvelles plus vite que ses messagers. Les villages se prévenaient quand les soldats arrivaient, quand les impôts augmentaient, quand un jugement injuste était rendu. Un matin, le roi publia un décret : tous les tambours seraient apportés au palais avant la nouvelle lune, sous peine de prison.
+---
+Les villageois obéirent, la mort dans l'âme. On empila les tambours, grands et petits, devant le palais. Mais le petit Mbaye, dix ans, n'apporta pas le sien. C'était le tambour de son père, mort l'année précédente. Il ne put se résoudre à le donner. Il le prit, le glissa dans la jarre à mil de la case, et le recouvrit entièrement de grain doré.
+---
+Les soldats vinrent fouiller les cases. Ils soulevèrent les nattes, éventrèrent les matelas, sondèrent les murs avec leurs lances. Ils arrivèrent chez Mbaye, regardèrent partout. La jarre à mil les arrêta un instant. Le capitaine plongea sa lance dans le grain, la ressortit : rien. Il haussa les épaules. Un tambour ne tient pas dans du mil. Ils repartirent, bredouilles.
+---
+Ce soir-là, Mbaye resta dans la case, seul. Il plongea la main dans le grain, sentit sous ses doigts la peau tendue du tambour, et frappa doucement. Le mil amortit le son, ne laissant qu'un murmure, un battement sourd, à peine audible. Mais en tendant l'oreille, il découvrit autre chose : le grain, en glissant sur la peau, produisait un chuchotement régulier, un bruissement rythmé comme une pluie fine.
+---
+Il comprit alors que tous les greniers du royaume, tous ces grands vases de grain, pouvaient devenir des tambours qu'on ne confisquerait jamais. Il alla de case en case, apprendre aux voisins à frapper les jarres, à faire rouler le mil, à envoyer des messages avec ses doigts. Le roi interdit les tambours, mais pas le grain. Et jusqu'à la fin de son règne, les villages se prévinrent, discrètement, en faisant chanter le mil.
+
+=== conte: enfant-voix-riviere
+titre: Le gamin qui prêta sa voix à la rivière
+accroche: Le chef écrasait le village d'impôts. Une nuit, une voix monta de la rivière.
+etiquette: Ruse
+origine: Conte d'inspiration est-africaine
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: aube
+figures: enfant, ancien
+morale: Un message juste mérite d'être entendu, quelle que soit la voix qui le porte.
+---
+Le chef Mwamba était un homme riche, dur, qui augmentait les impôts chaque année. Les villageois lui livraient la moitié de leur récolte, puis les deux tiers, puis presque tout. Beaucoup avaient faim. Personne n'osait protester : les gardes du chef frappaient ceux qui parlaient. Seul un garçon de douze ans, Juma, supportait mal ce silence, et se promettait en secret de le briser un jour.
+---
+Juma avait une particularité : il savait imiter les voix. Il imitait les oiseaux, les hyènes, le vieil instituteur, l'écho dans la gorge de la falaise. Un soir, près de la rivière, en entendant sa voix revenir grave et cassée sous l'arche du vieux pont, il eut une idée. Il alla voir le vieux pêcheur, un ami de son grand-père, et lui murmura son plan.
+---
+La nuit suivante, le chef Mwamba prenait l'air sur la berge, comme chaque soir, quand une voix monta de l'eau. Une voix grave, solennelle, qui venait de partout et de nulle part. « Mwamba, fils de Mwamba, disait-elle. Je suis la rivière. J'ai nourri ton père, j'ai nourri ton grand-père. Aujourd'hui, ton village a faim. Pourquoi mon peuple a-t-il faim, quand tu as les greniers pleins ? »
+---
+Le chef se figea. Il regarda l'eau noire, ne vit rien. La voix reprit : « Si tu veux garder tes champs, n'écrase pas ceux qui les cultivent. Si tu prends tout, je prendrai tout. » Mwamba tomba à genoux. Il murmura quelque chose, un serment peut-être. Puis il se releva, pâle, et rentra en courant dans son palais. Juma, caché sous le pont, se mordait la main pour ne pas rire.
+---
+Le lendemain, le chef baissa les impôts de moitié. Puis encore de moitié. Le village respira. Des mois plus tard, un soir, il rencontra Juma au bord de la rivière. Il le regarda longtemps. « Tu parles bien, jeune homme, dit-il. Presque aussi bien que la rivière. » Juma pâlit. Mais le chef sourit. « Je sais qui c'était. Mais le message, lui, était juste. C'est pour cela que je l'ai écouté. »
+
+=== conte: enfant-mensonge-trois
+titre: Les trois mensonges de Yaw
+accroche: Chaque mensonge était plus beau que le précédent. Le dernier était la vérité.
+etiquette: Rire
+origine: Conte d'inspiration akan (Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: enfant, griot
+morale: À force de raconter des histoires, on n'est plus cru quand on dit vrai.
+---
+Yaw, huit ans, était connu dans tout le village pour ses mensonges. Pas des mensonges méchants : de grands mensonges joyeux, extravagants, qu'il racontait avec un sérieux de juge. Il avait vu un éléphant jouer du tambour, croisé un crocodile qui récitait des proverbes, bu à la fontaine un vin qui chantait. Les adultes riaient, les enfants applaudissaient, et chacun attendait avec impatience le prochain.
+---
+Un matin, il courut chez la voisine, essoufflé. « Madame Esi, il y a un lion dans votre cour ! » Elle sortit avec un balai. Dans la cour, un chat endormi. « Yaw ! — Il avait peut-être des griffes de lion ! » Elle rit malgré elle. Le deuxième mensonge vint à midi : « Le chef a un chapeau de plumes qui vole quand il éternue ! » Tout le village alla vérifier. Le chef avait un chapeau ordinaire.
+---
+Le troisième mensonge fut le plus grand. Il vint le soir, au moment où tout le monde dînait. Yaw entra dans la case du chef, hors d'haleine. « Chef, chef ! J'ai trouvé un sac d'or sur le chemin du marché, et je l'ai rendu à son propriétaire ! » Le chef éclata de rire. Les autres aussi. « Et bien sûr, ajouta quelqu'un, le propriétaire t'a donné un cheval ! » La case résonnait de plaisanteries.
+---
+Yaw baissa la tête. Il savait que personne ne le croirait. Cette fois, c'était vrai. Il avait trouvé le sac sur la piste, l'avait porté au chef de la caravane qui passait, et il s'était fait remercier d'un sourire. Il aurait voulu hurler, mais les mots lui manquaient. Il s'assit dans un coin, vexé, humilié, sentant pour la première fois le poids des mensonges.
+---
+C'est alors qu'un homme entra dans la case, un étranger, essoufflé lui aussi. Il tenait un bracelet d'or. « Je cherche le garçon qui m'a rendu mon sac, dit-il. Je lui apporte ceci. » Il posa le bracelet sur les genoux de Yaw. La case devint silencieuse. Les adultes se regardèrent. Le chef se racla la gorge. « Il semble, dit-il, que le garçon ait menti trois fois, mais que la dernière fois, il disait vrai. » Yaw sourit, et jura de ne plus jamais confondre les deux.
+
+=== conte: enfant-chevre-et-lionne
+titre: La chevrière et la lionne affamée
+accroche: Seule face à une lionne, elle appela ses frères. Ils n'existaient pas.
+etiquette: Ruse
+origine: Conte d'inspiration d'Afrique australe
+region: Afrique australe
+type: court
+gratuites: 2
+decor: savane
+lumiere: crepuscule
+figures: enfant, lion
+morale: Le courage, c'est parfois d'avoir une voix pour trois.
+---
+Nomsa, onze ans, gardait seule le troupeau de chèvres de sa famille, sur une colline d'Afrique australe, quand les herbes s'écartèrent. Une lionne amaigrie, les côtes saillantes, apparut à vingt pas. Elle regarda les chèvres, puis la petite fille. Nomsa n'avait ni lance, ni chien, ni frère à côté d'elle. Rien que son bâton, ses chèvres qui bêlaient de peur et son cœur qui cognait comme un tambour.
+---
+Elle comprit qu'elle ne pourrait ni fuir ni se battre. Alors, très lentement, elle se tourna vers la colline vide et appela, d'une voix claire : « Sipho ! Thabo ! Lwazi ! Venez ! Il y a de la viande sur la colline ! » La lionne dressa les oreilles. Nomsa continua d'appeler, en variant la voix, comme si des garçons lui répondaient depuis les rochers.
+---
+Elle fit mine d'écouter. « Oui, Sipho, dit-elle à voix haute. Apporte la grande lance. Thabo, prends l'arc de papa ! Lwazi, ne touche pas à la corde, elle est neuve ! » Elle tapait sur un rocher avec son bâton, imitant le pas de plusieurs hommes. La lionne regarda autour d'elle, sentit l'odeur du danger, dans les herbes, dans le vent. Elle recula d'un pas, puis de deux.
+---
+« Sipho est en train de la viser ! cria Nomsa, le cœur battant. Elle est maigre, mais elle mangera du fer. » La lionne gronda, hésita, puis s'enfonça dans les herbes. Nomsa continua d'appeler jusqu'à ce que le dernier froissement s'éteigne. Alors seulement, ses jambes lâchèrent. Elle s'assit au milieu de ses chèvres, tremblante, et rit nerveusement, longtemps, jusqu'à ce que les larmes lui viennent aux yeux.
+---
+Le soir, elle rentra au village avec le troupeau intact. Sa mère, entendant l'histoire, la prit dans ses bras. « Et qui sont Sipho, Thabo et Lwazi ? demanda-t-elle. — Ce sont les frères que j'aurais aimé avoir », répondit Nomsa. Sa mère sourit. « Alors ils t'ont bien servie. Souviens-toi : le courage, c'est parfois d'avoir une voix pour trois. »
+
+=== conte: enfant-peur-de-rien
+titre: Le garçon qui n'avait peur de rien sauf d'une chose
+accroche: Il défia le désert, les serpents, les djinns. Trois mots le firent trembler.
+etiquette: Sagesse
+origine: Conte d'inspiration saharienne
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: nuit
+figures: enfant, ancien
+morale: Le vrai courage est de dire : c'est moi, pardon.
+---
+Brahim, douze ans, se vantait de n'avoir peur de rien. Il avait dormi seul dans le désert, attrapé un serpent par la queue, défié des scorpions. Les enfants du campement l'admiraient. Les adultes secouaient la tête. « Un jour, disaient-ils, quelque chose t'apprendra la peur. » Il haussait les épaules : il ne croyait pas aux avertissements, et trouvait ridicule la prudence des anciens.
+---
+Une nuit de tempête, il sortit de la tente pour montrer qu'il pouvait affronter le vent des sables. Il marcha droit dans le noir, au milieu des tourbillons, le visage fouetté de grains de sable. Il rentra triomphant, à l'aube, couvert de poussière. Il se vanta de nouveau : « Même les djinns n'oseraient pas m'approcher ! » Mais ce matin-là, quelque chose avait changé.
+---
+En se lavant, il s'aperçut que la jarre d'eau de son grand-père, précieuse, héritée du père de son père, était cassée. En sortant dans la tempête, il l'avait renversée, sans le voir. Il resta immobile, glacé. Ni le sable, ni les serpents, ni les djinns ne l'avaient jamais paralysé comme ce simple débris de terre cuite. Il ramassa les morceaux, les cacha sous sa natte.
+---
+Le grand-père, à midi, chercha sa jarre. Brahim, la gorge nouée, entendit son nom appelé. Il voulut courir, disparaître dans le désert, quitter la tente, le campement, le monde. Il n'en eut pas la force. Il avait défié des vents, mais il n'osait pas prononcer trois mots : « C'est moi. Pardon. » Il resta des heures assis, la tête dans les genoux.
+---
+Le soir, le vieil homme s'assit à côté de lui. Il ne dit rien. Il attendit, longtemps. Enfin Brahim, la voix cassée, murmura les trois mots. Le grand-père hocha la tête. « Il faut plus de courage pour dire cela que pour traverser une tempête. Tu viens de faire la chose la plus difficile de ta vie. » Brahim leva les yeux, et pour la première fois, il comprit que la vraie peur, ce n'était pas celle du sable, mais celle du regard des siens.
+
+=== conte: enfant-puits-secret
+titre: Le puits que seul un enfant pouvait descendre
+accroche: La bague du chef était tombée au fond. Les hommes avaient des idées. L'enfant avait de petites épaules.
+etiquette: Sagesse
+origine: Conte d'inspiration ouest-africaine
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: aube
+figures: enfant, ancien
+morale: Ceux qu'on n'écoute pas voient parfois ce que les autres ne voient pas.
+---
+Au cœur du village, il y avait un puits très ancien, étroit, profond, dont l'eau avait toujours désaltéré les habitants. Un matin, en se penchant pour boire, le chef laissa tomber sa bague, un anneau d'or hérité de ses ancêtres. Elle fit un petit bruit, loin, très loin, tout au fond. Le chef pâlit. « Cette bague, dit-il, est le symbole de mon autorité. Qui me la rapportera aura sa récompense. »
+---
+Les hommes proposèrent mille solutions. Descendre un crochet au bout d'une corde, vider le puits, creuser un tunnel. Le forgeron fabriqua un aimant, qui ne retint rien, car l'or ne s'aimante pas. Le pêcheur lança un filet. Le puits était si étroit qu'aucun adulte ne pouvait s'y glisser, et si profond qu'on ne voyait même pas le reflet du ciel. Les heures passèrent. Le chef s'impatientait de plus en plus.
+---
+Une petite fille de dix ans, Abena, observait la scène. « Moi, je peux descendre », dit-elle simplement. Tout le monde éclata de rire. « Une enfant ! Dans un puits ! » Mais le chef, qui n'avait plus d'idées, accepta. On lui attacha une corde sous les bras, on lui donna une lampe. Elle descendit lentement, les pieds contre la paroi, glissant dans l'obscurité.
+---
+Tout en bas, elle trouva la bague, dans un creux de pierre. Mais elle trouva aussi autre chose. Le fond du puits était obstrué par des feuilles pourries, des branches, des débris accumulés depuis des années, qui empêchaient l'eau de remonter librement. Elle comprit pourquoi le niveau avait tant baissé. Elle glissa la bague dans sa poche, et se mit à dégager les saletés, à pleines mains.
+---
+Quand on la remonta, elle tenait la bague, trempée, grelottante, mais triomphante. Elle la tendit au chef, puis ajouta : « J'ai aussi nettoyé le fond. L'eau remontera. » Dès le lendemain, le puits se remplit comme jamais. Le chef offrit une récompense à Abena, mais elle ne demanda qu'une chose : qu'on l'écoute, la prochaine fois, avant de rire.
+
+=== conte: enfant-etoiles-roi
+titre: Le garçon qui dut compter les étoiles
+accroche: Le roi exigea l'impossible. Le garçon répondit par un impossible plus petit.
+etiquette: Rire
+origine: Conte d'inspiration est-africaine
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: baobab
+lumiere: nuit
+figures: guerrier, enfant
+morale: Une question bien posée renvoie l'absurde à son auteur.
+---
+Le roi Mutesa était un homme fier, qui aimait mettre ses sujets à l'épreuve. Il lançait des défis impossibles, pour le plaisir de voir les gens échouer, puis de les punir ou de les moquer. Un jour, il entendit parler d'un garçon de douze ans, Okello, dont la réputation de malice avait traversé la vallée. « Amenez-le-moi, dit-il. Je vais voir ce que vaut sa malice. »
+---
+Okello fut conduit devant le trône. Le roi lui dit, avec un sourire cruel : « Garçon, on dit que tu es malin. Je te demande de compter pour moi toutes les étoiles du ciel avant demain matin. Si tu réussis, tu seras mon conseiller. Si tu échoues, tu travailleras aux champs toute ta vie. » La cour retint son souffle.
+---
+Okello s'inclina avec respect. « Sire, dit-il, ce sera un honneur. Mais pour compter, il me faut un étalon. Pourriez-vous me dire combien de poils compte votre barbe ? Je n'ai pas besoin du chiffre exact, un à un d'écart suffira. Une fois que je saurai cela, je compterai les étoiles par comparaison. » Les courtisans étouffèrent un rire, ne sachant s'il fallait admirer l'audace du garçon ou plaindre sa témérité.
+---
+Le roi fronça les sourcils. « Qui peut compter les poils d'une barbe ? — Alors, Sire, répondit Okello, qui peut compter les étoiles ? » Il y eut un silence. Le roi serra les poings, puis éclata de rire. Un rire fort, spontané, qui secoua son trône. « Tu as raison, garçon ! Mon défi était aussi absurde que ta demande ! » Il se leva et applaudit.
+---
+Okello devint le conseiller du roi, non parce qu'il avait compté quoi que ce soit, mais parce qu'il avait montré, avec courtoisie, la bêtise d'un ordre absurde. Dans les années qui suivirent, quand le roi proposait un projet insensé, Okello levait doucement la main : « Majesté, combien de poils compte votre barbe ? » Et le roi, souriant, renonçait.
+
+=== conte: enfant-oiseau-tisserand
+titre: Ce que l'oiseau-tisserand apprit à la petite fille
+accroche: Elle avait regardé les nids tout l'été. L'orage lui donna raison.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: foret
+lumiere: orage
+figures: enfant, oiseau
+morale: Qui regarde bien apprend de tout.
+---
+Dans un village au bord d'une forêt, une petite fille de neuf ans, Ndala, passait ses journées au bord d'un étang, à observer les oiseaux-tisserands. Ces petits oiseaux jaunes construisaient des nids suspendus aux branches, tissés de brins d'herbe si finement noués qu'aucun vent ne les défaisait. Elle restait des heures, immobile, à regarder leurs becs faire et défaire des nœuds.
+---
+Les adultes se moquaient d'elle. « Tu perds ton temps, disaient-ils. Va aider ta mère. » Mais Ndala apprenait. Elle ramassa des brins d'herbe, les noua comme les oiseaux, d'abord de travers, puis de mieux en mieux. Elle découvrit un nœud qui se serrait quand on tirait dessus, un autre qui se bloquait seul. Elle en fit des cordes, des filets, des nattes minuscules.
+---
+Une nuit de saison des pluies, un orage terrible s'abattit sur le village. Le vent arracha des toits de paille, renversa des clôtures, emporta des nattes. La case de la veuve voisine, mal attachée, menaçait de s'envoler avec ses habitants. Ndala sortit sous la pluie avec ses cordes tissées. Elle noua le toit au tronc d'un arbre, de la manière des oiseaux. Le toit tint.
+---
+Les anciens, abasourdis, la regardèrent courir de case en case, nouer les toits, fixer les clôtures, tendre des liens aux endroits où le vent s'engouffrait. Peu à peu, les adultes s'y mirent aussi. Elle leur montrait le nœud, ils le répétaient. À l'aube, le village était debout, trempé, épuisé, mais intact. Seuls trois toits, qu'on n'avait pas eu le temps de nouer, gisaient dans la boue.
+---
+Le lendemain, le chef convoqua l'assemblée. « Nous avons perdu du temps à rire d'une enfant, dit-il. Elle est restée des mois à écouter une leçon que nous n'avons pas voulu entendre. » Il lui demanda d'enseigner aux autres. Ndala devint la maîtresse des nœuds du village, et les toits ne s'envolèrent plus. À l'étang, les oiseaux-tisserands continuaient à construire, discrets, fiers d'avoir eu une élève.
+
+=== conte: enfant-voyageur-peur
+titre: Le petit voyageur et les trois portes de la nuit
+accroche: Pour rentrer chez lui, il devait franchir trois portes. Chacune exigeait quelque chose.
+etiquette: Frisson
+origine: Conte d'inspiration d'Afrique australe
+region: Afrique australe
+type: long
+gratuites: 2
+decor: savane
+lumiere: nuit
+figures: enfant, masque
+morale: On ne rentre pas chez soi avec tout ce qu'on porte.
+---
+Le petit Themba avait dix ans quand il se perdit sur le chemin du retour. La nuit tombait sur la plaine, froide, immense. Il avait quitté la maison de son oncle pour rentrer chez sa mère, avant la tombée du jour, mais il avait traîné, joué, perdu la piste. Il n'avait ni lampe, ni compagnon, ni courage, seulement un ventre qui gargouillait et des jambes de plus en plus lourdes.
+---
+Il marcha longtemps dans le noir, trébuchant sur les pierres, s'accrochant aux buissons. Au loin, il aperçut une lueur et se dirigea vers elle. C'était un feu de bergers éteint, entouré de pierres dressées. Entre deux grandes pierres, il y avait une ouverture étroite, comme une porte. Une voix, grave, sans corps, résonna : « Pour passer cette porte, laisse ici ta peur. »
+---
+Themba trembla. « Ma peur ? Mais elle est à moi ! Je la porte depuis que je suis né ! — Et elle te pèse, répondit la voix. Pose-la. » Themba ferma les yeux. Il imagina sa peur comme une pierre, la tira de sa poitrine et la posa à terre. Une légèreté étrange lui monta dans les jambes. Il franchit la porte.
+---
+Plus loin, une deuxième porte, entre deux arbres noueux. La voix reprit : « Pour passer celle-ci, laisse ton mensonge. » Themba rougit. Il se souvint du mensonge qu'il avait dit à son oncle, pour cacher qu'il avait cassé une calebasse. Il le laissa tomber, comme on laisse un fardeau, et la porte s'ouvrit. Sa poitrine, soulagée, respira mieux, comme si un grand poids avait été retiré d'un coup.
+---
+La troisième porte était une arche de roches, au bord d'un ravin. La voix, cette fois, parut presque tendre. « Pour passer ici, laisse ta colère. » Themba hésita. Il était en colère contre son oncle, contre la nuit, contre lui-même. Il la serra dans son poing, comme une braise, puis la jeta dans le ravin. Il entendit un lointain tintement. Alors il franchit la porte, la dernière.
+---
+De l'autre côté, la lune se leva. À ses pieds, il vit la piste, claire, argentée, qui menait droit à son village. Au bout, une fenêtre éclairée, et une silhouette penchée : sa mère, qui l'attendait. Il courut. Elle le serra contre elle sans demander pourquoi il était en retard. Plus tard, il raconta les trois portes. Elle sourit : « On ne rentre jamais chez soi avec tout ce qu'on porte. On laisse en route ce qui est trop lourd. »
