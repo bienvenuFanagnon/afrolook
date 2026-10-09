@@ -184,10 +184,15 @@ carte du fil (affichages, clics, croix), ambiance coupée, contes les plus ouver
 
 ## Nouvelles vagues
 - `tools/contes/GUIDE_REDACTION.md` : format, voix, règles de vérité (étiquette `Histoire`), équilibre des régions.
-- `tools/contes/vagues/vague-02.txt` : plan de 100 contes en 10 recueils (Est 30, Ouest 20, centre 20, Sud 16, Nord 14), `scaffold.js` le contrôle et crée les brouillons.
-- `build_contes.js --report` : état et équilibre de la bibliothèque. La vague 1 est très « Ouest » (29/36) : la vague 2 corrige.
+- `tools/contes/vagues/vague-02.txt` : plan de la vague 2 (100 contes, 10 recueils). **Écrite** : recueils 07 à 16 dans `tools/contes/recueils/` (les identifiants et quelques
+  scènes ont été ajustés en écrivant ; les fichiers de `recueils/` font foi, le plan sert de mémoire). Bibliothèque : 16 recueils, 136 contes, environ 51 600 mots.
+- `build_contes.js --report` : état et équilibre de la bibliothèque.
+- **Relecture des contes d'histoire** : un conte dont l'en-tête contient `# relecture OBLIGATOIRE` (faits datés, personnages réels) est envoyé **masqué**.
+  Une personne le relit (les points à vérifier sont listés dans le commentaire), puis son identifiant est ajouté à `tools/contes/relu.txt` et l'envoi suivant le publie.
+  Les contes masqués sont exclus du « conte du jour » et du compte d'un recueil.
+- `build_contes.js` : minimum de 50 mots par page (les pages d'histoire sont plus denses que celles des contes).
 
 ## À faire ensuite
 - Lancer la traduction anglaise des contes (puis quiz et étude) après relecture de l'échantillon.
-- Écrire la vague 2 (100 contes) puis la traduire ; recueils d'épopées en chapitres ensuite.
+- Faire relire les 18 contes d'histoire masqués (liste : `node tools/contes/build_contes.js` puis `relu.txt`), puis traduire la bibliothèque ; recueils d'épopées en chapitres ensuite.
 - Servir `lang` dans les fonctions du Quiz et de l'Étude quand leurs traductions seront prêtes.

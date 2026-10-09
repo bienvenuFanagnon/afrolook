@@ -1,0 +1,2 @@
+# Contes d'histoire relus par une personne : ajouter ici l'identifiant (un par ligne) pour les publier au prochain `node build_contes.js --upload`.
+# Tant qu'un conte marqué « # relecture OBLIGATOIRE » n'est pas listé, il est envoyé masqué.

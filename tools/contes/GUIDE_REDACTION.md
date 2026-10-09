@@ -14,7 +14,7 @@ Pour écrire une vague de contes (100 par session) sans perdre la voix ni la qua
 
 ## Format d'un conte
 
-- 4 à 8 pages, 60 à 190 mots chacune (visé : 90 à 150). Un conte « court » tient en 5 pages, 400 à 450 mots, 2 à 3 minutes.
+- 4 à 8 pages, 50 à 190 mots chacune (visé : 80 à 150). Un conte « court » tient en 5 pages, 400 à 450 mots, 2 à 3 minutes.
 - Le premier conte d'un recueil est gratuit. Pour les autres, `gratuites: 2` : le lecteur lit les 2 premières pages, la suivante s'arrête sur un **moment fort** (la question, l'ombre qui bouge, la promesse). Le cliffhanger se prépare dès la page 2.
 - `accroche` : 140 signes maximum, deux phrases courtes, une promesse et un manque. Jamais la fin.
 - `titre` : 70 signes maximum, concret (« Le puits où le lièvre invita le lion »), jamais « Histoire de… ».

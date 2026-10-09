@@ -83,7 +83,7 @@ function parseRecueil(file) {
         return;
       }
       if (!inBody) {
-        if (line.trim().startsWith('#')) return; // commentaire (idée du plan, note de relecture)
+        if (line.trim().startsWith('#')) { if (/^#\s*relecture OBLIGATOIRE/.test(line.trim())) st.review = true; return; } // commentaire (idée du plan, note de relecture)
         const m = /^(titre|accroche|etiquette|origine|region|type|gratuites|decor|lumiere|figures|morale):\s*(.*)$/.exec(line.trim());
         if (!m) { if (line.trim()) problems.push(`${sid} : ligne d'en-tête inconnue « ${line.slice(0, 40)} »`); return; }
         const v = m[2].trim();
@@ -107,6 +107,10 @@ function parseRecueil(file) {
   });
   return rec;
 }
+
+// Contes marqués « # relecture OBLIGATOIRE » : publiés (visibles) seulement quand leur id figure dans relu.txt (une personne les a relus).
+const reluFile = path.join(dir, 'relu.txt');
+const relu = new Set(fs.existsSync(reluFile) ? fs.readFileSync(reluFile, 'utf8').split('\n').map((l) => l.replace(/#.*/, '').trim()).filter(Boolean) : []);
 
 const files = fs.readdirSync(path.join(dir, 'recueils')).filter((f) => f.endsWith('.txt')).sort();
 const recueils = files.map((f) => parseRecueil(path.join(dir, 'recueils', f)));
@@ -142,7 +146,7 @@ recueils.forEach((r) => {
     s.pages.forEach((p, k) => {
       const n = words(p);
       sw += n;
-      if (n < 60) problems.push(`${w} p.${k + 1} : ${n} mots (60 mini)`);
+      if (n < 50) problems.push(`${w} p.${k + 1} : ${n} mots (50 mini)`);
       if (n > 190) problems.push(`${w} p.${k + 1} : ${n} mots (190 maxi)`);
     });
     s.words = sw;
@@ -208,16 +212,18 @@ const card = (s) => ({
 });
 const meta = {
   collections: recueils.map((r) => ({
-    id: r.id, title: r.title, category: r.category, desc: r.description, order: r.order, count: r.stories.length,
+    id: r.id, title: r.title, category: r.category, desc: r.description, order: r.order, count: r.stories.filter((x) => !(x.review && !relu.has(x.id))).length,
     ...(r.price ? { price: r.price } : {}),
     sc: (() => { const s = stories.find((x) => x.recueil === r.id); return { d: s.decor, l: s.light, f: s.figures, s: s.seed }; })(),
   })),
   chunks: Math.ceil(stories.length / CHUNK),
-  dailyPool: stories.map((s) => s.id),
+  dailyPool: stories.filter((s) => !(s.review && !relu.has(s.id))).map((s) => s.id), // jamais un conte masqué
   updatedAt: Date.now(),
 };
 
 Object.entries(coverage).forEach(([l, c]) => console.log(`Traduction ${l} : ${c.done}/${c.total} contes complets`));
+const pendingReview = stories.filter((x) => x.review && !relu.has(x.id));
+if (pendingReview.length) console.log(`${pendingReview.length} conte(s) d'histoire à relire avant publication (masqués à l'envoi) : voir relu.txt`);
 console.log(`${recueils.length} recueils, ${stories.length} contes, ${totalWords} mots (~${Math.round(totalWords / Math.max(1, stories.length))} par conte)`);
 if (warnings.length) console.log(`${warnings.length} avertissement(s) :\n  ` + warnings.slice(0, 20).join('\n  '));
 if (problems.length) {
@@ -256,12 +262,15 @@ if (process.argv.includes('--upload')) {
       const old = existing[s.id] || {};
       const c = card(s);
       if (typeof old.active === 'boolean') c.active = old.active;
+      const pending = !!s.review && !relu.has(s.id);
+      if (pending) c.active = false; // en attente de relecture : masqué
+      else if (s.review && old.review === true) c.active = true; // relecture faite : publié
       if (typeof old.featured === 'boolean') c.feat = old.featured;
       if (typeof old.price === 'number') c.pr = old.price;
       (chunks[s.chunk] = chunks[s.chunk] || []).push(c);
       batch.set(db.collection('ContesStories').doc(s.id), {
         ...c, title: s.title, collectionId: s.recueil, kind: s.kind, free: s.free, pages: s.pages.length, chunk: s.chunk,
-        featured: c.feat, ...(typeof old.price === 'number' ? { price: old.price } : {}), updatedAt: Date.now(),
+        featured: c.feat, review: pending, ...(typeof old.price === 'number' ? { price: old.price } : {}), updatedAt: Date.now(),
       });
       batch.set(db.collection('ContesText').doc(s.id), {
         pages: s.pages, morale: s.morale, rev: s.rev, i18n: Object.fromEntries(Object.entries(s.i18n).map(([l, v]) => [l, { pages: v.pages, morale: v.morale }])), updatedAt: Date.now(),
