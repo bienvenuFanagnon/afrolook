@@ -1,0 +1,250 @@
+recueil: Contes du Sahara et du Nil
+categorie: Légendes et royaumes
+description: Des dunes touarègues aux rives du Nil, des histoires de caravanes, d'étoiles et de reines que le sable n'a pas effacées.
+ordre: 8
+prix: 70
+
+=== conte: egypte-scribe-menteur
+titre: Le scribe qui ne put pas écrire un mensonge
+accroche: Son roseau se brisait chaque fois qu'il écrivait faux. L'intendant voulait des chiffres flatteurs.
+etiquette: Rire
+origine: Conte d'inspiration égyptienne antique (vallée du Nil)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: midi
+figures: griot, calebasse
+morale: La vérité est le seul roseau qui ne se brise pas.
+---
+Au temps où le Nil nourrissait les pharaons, un scribe nommé Nakht tenait les comptes du grenier royal. Il écrivait sur du papyrus, avec un roseau taillé et une encre noire de suie. Son travail était simple : noter ce qui entrait, noter ce qui sortait. Il en était fier, car il savait que la vérité d'un royaume commence par ses chiffres.
+---
+Un jour, l'intendant du palais le convoqua. « Les récoltes sont mauvaises, dit-il à voix basse, mais le pharaon ne doit pas le savoir. Écris que les greniers sont pleins. » Nakht trempa son roseau. Il écrivit « mille sacs », là où il n'y en avait que trois cents. Le roseau se brisa net dans ses doigts, avec un craquement sec, comme un os.
+---
+Étonné, il en prit un autre. Il écrivit encore le faux chiffre. Le second roseau se fendit du haut en bas. Un troisième ploya, un quatrième éclata, et l'encre se renversa sur la table. Les autres scribes s'attroupèrent, intrigués. « Votre roseau est capricieux, plaisanta l'intendant. — Non, dit Nakht, troublé. Il refuse d'écrire ce qui n'existe pas, et je crois qu'il a raison. »
+---
+L'intendant, furieux, fit apporter dix roseaux de réserve. Nakht les brisa tous, un par un, chaque fois qu'il traçait un chiffre faux. Mais quand il notait la vérité, trois cents sacs, la plume glissait sans effort sur le papyrus, comme sur de l'eau calme. À la fin de la journée, la table était jonchée de débris, et le seul chiffre qui subsistait sur le papyrus était le bon.
+---
+Le pharaon, informé de la scène, fit venir Nakht. Il écouta, lut, et resta silencieux. « Tu as là un roseau précieux, dit-il enfin. Mes ministres me mentent depuis longtemps, et je n'avais jamais de preuve. » Quand on lui demanda son secret, Nakht répondit : « Le roseau n'a rien fait. J'ai simplement cessé de lui mentir. » L'intendant fut chargé de remplir les greniers à la sueur de son front.
+
+=== conte: touareg-puits-tamasna
+titre: Le puits que personne n'osait creuser
+accroche: Une caravane perdue, un puits à creuser à la main, et un enfant qui montre l'exemple.
+etiquette: Légende
+origine: Conte d'inspiration touarègue (Sahara)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: crepuscule
+figures: enfant, calebasse
+morale: Un puits ne se trouve pas, il se creuse, et jamais seul.
+---
+Au cœur du Sahara, une caravane de quarante chameaux marchait depuis quatre jours sans trouver une goutte d'eau. Les outres étaient presque vides, les bêtes titubaient. À la tête de la colonne, le vieux guide Amastan scrutait l'horizon sans rien dire. Ses fils se taisaient aussi. Dans le désert, quand on se tait, c'est que la situation est grave, et que chacun fait ses comptes.
+---
+Le soir du quatrième jour, le guide s'arrêta au creux d'une cuvette de sable pâle. « Ici, dit-il, il y avait un puits, du temps de mon grand-père. Les sables l'ont avalé. » Personne n'osa parler. Creuser à la main dans le sable sec, avec des outres presque vides, c'était risquer de perdre ses dernières forces pour rien. Beaucoup préféraient marcher encore, au hasard, plutôt que d'échouer ici.
+---
+Un enfant de dix ans, Ilias, petit-fils du guide, s'agenouilla et commença à creuser avec ses mains. Personne ne bougea. « Tu perds ton énergie », lui dit un chamelier. L'enfant ne répondit pas. Il enfonça les bras jusqu'aux coudes, évacuant le sable par poignées. Au bout d'une heure, ses mains saignaient. Alors, lentement, son grand-père s'agenouilla à côté de lui. Puis ce fut un oncle, puis un chamelier.
+---
+À la nuit, ils étaient vingt à creuser, en équipe, chacun relayant l'autre. Ils creusèrent toute la nuit, sans parler, en chantant parfois à mi-voix pour tenir. Vers l'aube, le sable devint tiède, puis humide. Quelqu'un poussa un cri. Un fond de boue grise, puis une eau trouble, puis une eau claire, se mit à monter. Les chameaux se précipitèrent, les hommes les retinrent : l'eau devait d'abord être partagée selon la règle.
+---
+Quand tout le monde eut bu, le guide se tourna vers l'enfant. « Tu as compris quelque chose que je n'ai pas dit, murmura-t-il. — Quoi ? — Qu'un puits ne se trouve pas, il se creuse. Mais pas seul. » Il lui tendit la première gorgée. La caravane repartit le lendemain, plus lente, mais entière. Et depuis, dit-on chez les Touaregs, quand on ne sait pas où est l'eau, on commence par creuser ensemble.
+
+=== conte: berbere-tapis-tisseuse
+titre: La tisseuse qui cacha une carte dans son tapis
+accroche: Elle ne savait ni lire ni écrire. Elle tissa pourtant le chemin de la source.
+etiquette: Fin surprenante
+origine: Conte d'inspiration amazighe (Maroc et Algérie)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: montagne
+lumiere: aube
+figures: reine, ancien
+morale: Ceux qui n'ont pas la parole écrivent parfois dans ce qu'ils tissent.
+# relecture : les tapis amazighs portent des motifs symboliques réels ; l'idée d'une carte tissée est une libre invention d'inspiration.
+---
+Dans les montagnes de l'Atlas, au-dessus d'un village de pierre rouge, vivait une vieille tisseuse nommée Tamimt. Ses mains étaient déformées par le travail, mais ses motifs étaient les plus fins de la vallée : losanges, zigzags, croix, triangles, tous noués avec une précision de bijou. Elle ne savait ni lire ni écrire. Mais elle savait quelque chose que personne d'autre ne savait : l'endroit où dormait la source.
+---
+C'était un secret de sa grand-mère. Une source cachée dans une gorge, trois jours de marche plus haut, derrière une falaise couleur d'orge. Elle l'avait vue une seule fois dans sa jeunesse. Quand la sécheresse commença à gagner le village, Tamimt alla trouver les anciens. « Je connais de l'eau, dit-elle. Laissez-moi vous y conduire. » Les anciens se regardèrent, sceptiques. « Une vieille femme ? Dans la montagne ? Reste à ton métier à tisser. »
+---
+Elle ne protesta pas. Mais le soir même, elle s'assit devant son métier, et durant les semaines suivantes, elle tissa un grand tapis rouge et indigo. Chaque losange était un sommet, chaque zigzag un sentier, chaque croix un carrefour, chaque ligne bleue un ruisseau d'autrefois. Au centre, un petit motif doré : une goutte. Quand le tapis fut fini, elle le fit porter au chef du conseil en cadeau. « Pour votre salle de réunion », dit-elle.
+---
+Le chef l'accepta avec plaisir, et le tapis fut suspendu au mur de la salle, sous les portraits des ancêtres. On l'admirait, on le montrait aux visiteurs. Tamimt mourut l'hiver suivant, sans que personne n'ait lu ce qu'elle avait écrit. La sécheresse s'aggrava. Les puits baissèrent, le bétail s'affaiblit, les familles parlèrent de partir. Au conseil, les hommes se réunissaient, discutaient, se querellaient, sous le tapis.
+---
+Un jour, une petite fille, Fadma, la petite-fille de Tamimt, entra dans la salle pour apporter du thé. Elle leva les yeux, regarda le tapis, et se figea. Elle connaissait ces motifs : sa grand-mère les lui avait chantés. « Le losange avec une croix, c'est le col, murmura-t-elle. Les zigzags, c'est le chemin dans la gorge. Et là, la goutte... » Les hommes se turent. Quelqu'un dit : « Ce n'est pas un tapis. C'est une carte. »
+---
+Ils partirent à l'aube, Fadma en tête, le tapis roulé sous le bras. Trois jours plus tard, derrière une falaise couleur d'orge, ils trouvèrent la gorge, puis, tout au fond, un filet d'eau claire qui sourdait de la roche. Les anciens, silencieux, s'agenouillèrent. Le chef sortit le tapis de sa housse et le serra contre lui. « Elle nous l'avait dit, murmura-t-il. Nous n'avions pas su l'entendre. » Le village fut sauvé, et le tapis ne quitta plus la salle du conseil.
+
+=== conte: nil-crue-du-fleuve
+titre: Le soir où le Nil refusa de monter
+accroche: Cette année-là, la crue ne vint pas. On chercha un coupable. Une petite fille remonta le fleuve.
+etiquette: Sagesse
+origine: Conte d'inspiration égyptienne (vallée du Nil)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: crepuscule
+figures: enfant, pirogue
+morale: Avant d'accuser, il faut remonter le fleuve.
+---
+Chaque été, depuis la nuit des temps, le Nil montait. Il sortait de son lit, couvrait les champs d'une eau brune et d'un limon noir, puis se retirait, laissant derrière lui la terre la plus riche du monde. Les paysans de la vallée appelaient cela le cadeau du fleuve. Ils comptaient les jours, guettaient la première rougeur de l'eau, et dansaient quand elle arrivait.
+---
+Cette année-là, le fleuve ne monta pas. Les jours passèrent. Le niveau restait bas, tranquille, désespérément bas. Les champs attendaient. Le village s'agita, puis s'inquiéta, puis chercha un coupable. « C'est la faute de Khenti, dit quelqu'un. Il a ri pendant la fête des offrandes. — C'est la faute de la veuve, dit un autre. Elle n'a pas donné sa part de grain. » Les accusations volaient comme des flèches.
+---
+Une petite fille de neuf ans, Meret, écoutait en silence. Elle n'aimait pas qu'on accuse des gens sans preuve. « Si le fleuve est fâché, dit-elle, il faut le lui demander. » On rit d'elle. Mais le lendemain, avant l'aube, elle prit une barque, un peu de pain et une gourde, et remonta le courant, vers le sud, vers l'endroit d'où venait l'eau. Le soleil frappait. Le fleuve paraissait immobile.
+---
+Au bout de trois jours, elle rencontra un vieux pêcheur nubien, assis près d'une cataracte. Elle lui raconta son village, son inquiétude, ses accusés. Il écouta sans l'interrompre. Puis il montra du doigt, très loin au sud, des nuages sombres qui s'accumulaient au-dessus des montagnes. « Le fleuve ne se fâche pas, petite, dit-il. Il voyage. Parfois, la pluie qui le nourrit tombe plus tard, plus loin, et il lui faut simplement plus de temps pour arriver. »
+---
+Meret rentra aussi vite que ses bras le lui permirent. Le cinquième jour, au matin, l'eau au bout de sa rame prit une teinte rouge. Elle cria. Le village accourut sur la rive. La crue arrivait, lente et lourde, comme un animal qui s'étire. Les paysans, honteux, allèrent trouver Khenti et la veuve et s'excusèrent un par un, à voix basse. Quand on demanda à Meret comment elle avait deviné, elle répondit : « Je n'ai rien deviné. J'ai demandé au lieu d'accuser. »
+
+=== conte: maghreb-conteuse-nuit
+titre: La conteuse et les questions sans fin
+accroche: Chaque nuit, une histoire laissée en suspens repoussait la sentence. Le sultan voulait la fin.
+etiquette: Légende
+origine: Conte d'inspiration maghrébine, librement raconté
+region: Afrique du Nord
+type: long
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: reine, griot, feu
+morale: Le souverain qui écoute la vérité est plus fort que celui qui la fait taire.
+---
+Dans la ville de Tlemcen, au temps des sultans, vivait une conteuse nommée Zahra. Elle avait une voix de miel et un sens du détail. Chaque soir, sur la place du marché, elle s'asseyait sur une natte, et la foule se pressait pour l'écouter. Un soir, elle raconta l'histoire d'un roi qui avait rendu les impôts si lourds que les paysans mangeaient des cailloux. Des espions du sultan prenaient des notes dans l'ombre.
+---
+Le lendemain, on l'arrêta. Le sultan, un homme sec et sans humour, la fit comparaître devant le trône. « Tu as offensé ma couronne, dit-il. Tu seras exécutée à l'aube. » Zahra ne trembla pas. « Sire, répondit-elle, accordez-moi une dernière faveur : une nuit, pour vous raconter une histoire. Si elle vous ennuie, vous ferez ce que vous voudrez. » Le sultan haussa les épaules. Un condamné de plus qui espérait gagner du temps.
+---
+La nuit tombée, devant le sultan et ses conseillers, elle commença. C'était l'histoire d'un jeune roi qui avait condamné un poète pour un vers déplaisant. Mais le poète, avant de mourir, avait posé une question : « Le roi qui a peur d'un vers est-il plus fort que le vers ? » Le roi n'avait pas su répondre. Zahra s'arrêta là, à l'aube. « Sire, murmura-t-elle, la fin de l'histoire dépend de votre réponse. »
+---
+Le sultan, agacé, resta songeur toute la journée. Le soir, il dit : « Tu m'as pris par la curiosité. Une nuit encore. » Chaque nuit, Zahra racontait un chapitre, et chaque nuit s'achevait sur une question : à un juge, un marchand, un général, un père. Chaque question ressemblait à une décision du sultan. Il s'en apercevait peu à peu et rougissait dans l'ombre. Il ne savait plus s'il écoutait un conte ou un miroir.
+---
+Les nuits passèrent, vingt, trente, quarante. Les conseillers s'inquiétaient. Un matin, le sultan fit appeler le vizir chargé des impôts. « Combien de paysans mangent des cailloux ? » demanda-t-il, à la surprise générale. Le vizir balbutia. Le sultan fit ouvrir les greniers royaux, baissa les taxes, libéra des prisonniers. Ce soir-là, il écouta la dernière question de Zahra, qui était la sienne : « Le sultan qui entend la vérité est-il plus fort que le sultan qui la fait taire ? »
+---
+Il resta longtemps silencieux. « Plus fort, dit-il enfin. Parce qu'il peut encore apprendre. » Il libéra Zahra, la combla de présents, et lui offrit une place à la cour. Elle refusa. « Je préfère ma natte, dit-elle. Un conteur qui dîne au palais finit par raconter ce qui plaît au palais. » Elle retourna sur la place du marché, où le peuple l'attendait, et reprit son histoire là où elle l'avait laissée.
+
+=== conte: sahel-sable-chante
+titre: Les dunes qui chantaient le nom des morts
+accroche: Le vent faisait chanter les dunes. Cette nuit-là, elles chantèrent un air qu'il connaissait.
+etiquette: Frisson
+origine: Conte d'inspiration saharienne (Sahara)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: nuit
+figures: ancien, feu
+morale: Les dunes qui chantent ne cherchent pas à attirer : elles cherchent à rendre.
+# relecture : les « dunes chantantes » (bourdonnement du sable) sont un phénomène réel ; le récit est une libre invention d'inspiration.
+---
+Dans le désert, il existe des dunes qui chantent. Quand le vent souffle sur leur crête et que le sable glisse, elles émettent un bourdonnement grave, long, qui fait vibrer la poitrine. Les nomades disent que ce sont les voix de ceux que le sable a avalés. Les anciens interdisent aux jeunes de suivre ce chant la nuit. Il attire, disent-ils, ceux qui écoutent trop.
+---
+Idir avait quinze ans et rêvait de devenir guide. Son père, guide lui aussi, avait disparu dans une tempête de sable quand il avait huit ans. On n'avait jamais retrouvé son corps. Sa mère n'en parlait plus, mais gardait un peu d'eau et de dattes sur l'étagère, au cas où. Idir, lui, pensait au sifflement que son père faisait en marchant : trois notes basses et une haute, comme un oiseau du désert.
+---
+Une nuit de pleine lune, la caravane campait au pied d'une grande dune rousse. Idir, qui ne dormait pas, entendit un bourdonnement monter de la crête. Il écouta. Peu à peu, dans le grondement, une forme apparut : trois notes basses, une haute. Il se leva. Son cœur battait à tout rompre. Il savait qu'il ne devait pas y aller. Il y alla.
+---
+Il gravit la dune pieds nus, dans le sable froid. Le chant l'accompagnait, tantôt devant, tantôt derrière, comme un guide invisible. Au sommet, il vit la plaine d'argent, et au loin, une cuvette sombre entre deux crêtes. Le chant s'arrêta. Idir descendit jusqu'à la cuvette, où le vent avait dégagé des objets de sous le sable : des piquets de tente, une selle de chameau, une gourde de cuir sec. Et, tout près, une petite flûte de roseau.
+---
+Il la reconnut au premier coup d'œil : elle portait les initiales de son père, gravées au couteau. Il resta à genoux, longtemps, le roseau serré dans la main. Quand il se leva, l'aube se levait aussi. Le vent était tombé. La dune était silencieuse, comme si elle n'avait jamais chanté. Idir reprit le chemin du camp, la flûte sous son burnous, sans dire à personne où il avait été.
+---
+Le soir, sous la tente, il porta la flûte à ses lèvres. Trois notes basses, une haute. Sa mère, au fond de la tente, se redressa, les mains tremblantes. Ni l'un ni l'autre ne dit un mot. Elle s'approcha, lui prit la flûte, la serra contre elle, et pleura longtemps, mais d'un chagrin différent, plus doux. Depuis, quand les dunes chantent, Idir sait qu'elles ne cherchent pas à attirer. Elles cherchent à rendre.
+
+=== conte: nubie-kandake-pont
+titre: La reine Amanirenas et le pays qui ne plia pas
+accroche: Un historien grec l'appelait « la Candace borgne ». Elle tint tête à l'empire le plus puissant du monde.
+etiquette: Histoire
+origine: Histoire du royaume de Koush (Soudan actuel), Ier siècle av. J.-C., d'après les sources antiques
+region: Afrique du Nord
+type: long
+gratuites: 2
+decor: savane
+lumiere: midi
+figures: reine, guerrier
+morale: La paix la plus solide est celle qu'on obtient sans avoir plié.
+# relecture OBLIGATOIRE : (1) Koush, capitale Méroé ; titre « kandake » latinisé en « Candace » : attesté. (2) Amanirenas, reine vers 40-10 av. J.-C., fils Akinidad : attesté (inscriptions de Méroé, Hamadab). (3) Attaque d'Assouan/Syène, Éléphantine, Philae vers 25-24 av. J.-C. : attesté (Strabon). (4) Tête de bronze d'Auguste enterrée sous le seuil d'un temple à Méroé, trouvée par John Garstang en 1910, au British Museum : attesté. (5) Contre-attaque de Pétronius, prise de Napata vers 23 av. J.-C. : attesté (Strabon). (6) Strabon décrit la Candace comme « de caractère viril, borgne » : attesté. (7) Traité de Samos, 21-20 av. J.-C., pas de tribut, retrait de la Basse-Nubie : attesté. (8) Koush indépendant jusqu'au IVe siècle ap. J.-C. : attesté. La phrase sur « fouler aux pieds » est une interprétation courante, présentée comme telle.
+---
+Au sud de l'Égypte, le long du Nil, s'étendait depuis des siècles le royaume de Koush, dont la capitale était Méroé. Ses souverains se faisaient enterrer sous des pyramides et commerçaient l'or, l'ivoire et le fer. Ses reines portaient le titre de kandake, que les Romains transformeront en « Candace ». À la fin du Ier siècle avant notre ère, l'une d'elles gouvernait avec fermeté : Amanirenas.
+---
+Rome venait de conquérir l'Égypte. Son empereur Auguste y avait installé un préfet et des soldats, et exigeait des tributs que Koush n'avait pas l'intention de payer. Vers 25 av. J.-C., Amanirenas et son fils, le prince Akinidad, prirent les armes. Leur armée descendit le Nil, franchit la frontière et s'empara de plusieurs villes d'Égypte du Sud, dont Éléphantine et Syène, l'actuelle Assouan.
+---
+Les Koushites ne rentrèrent pas les mains vides. Ils emportèrent des statues de l'empereur Auguste, dont une tête de bronze à l'expression sévère. Une fois à Méroé, la tête fut enterrée sous le seuil d'un temple, comme pour que chaque visiteur la foule aux pieds : c'est l'interprétation la plus courante. Un symbole d'une audace tranquille, à la face de l'empire le plus puissant de l'époque.
+---
+Rome ne pouvait laisser passer l'affront. Le gouverneur d'Égypte, Gaius Pétronius, contre-attaqua avec des légions, remonta le Nil, reprit les villes perdues et s'enfonça jusqu'à Napata, ancienne capitale religieuse de Koush, qu'il fit raser. Selon le géographe grec Strabon, la reine que les Romains affrontèrent était « une femme de caractère viril, borgne ». Elle avait perdu un œil, mais pas sa détermination.
+---
+Amanirenas ne se rendit pas. Elle continua de harceler les garnisons, négocia, temporisa. Les Romains, eux, trouvaient la guerre coûteuse dans un pays où le désert tuait plus sûrement qu'une armée. Vers 21-20 avant notre ère, des ambassadeurs de Koush rencontrèrent Auguste lui-même, qui se trouvait alors à Samos, en Grèce. La suite montre que l'empereur les écouta, et qu'il préféra un accord à une guerre sans fin.
+---
+Le traité fut généreux pour les Koushites. Rome renonça à exiger le tribut et retira ses troupes de la région. Koush resta indépendant pendant plusieurs siècles encore. Quant à la tête de bronze, elle fut redécouverte au début du XXe siècle sous le seuil du temple de Méroé, et se trouve aujourd'hui au British Museum. La reine borgne avait obtenu ce que bien des armées n'obtinrent jamais : une paix sans soumission.
+
+=== conte: sahara-sel-et-or
+titre: Le sel et l'or du grand commerce
+accroche: Au Sahara, on échangeait le sel contre l'or. Un vieux marchand expliqua à un jeune pourquoi.
+etiquette: Sagesse
+origine: Histoire du commerce transsaharien (Sahara et Sahel), d'après les voyageurs arabes
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: midi
+figures: ancien, calebasse
+morale: La vraie richesse est ce dont on a besoin au moment où on en a besoin.
+# relecture : les mines de sel de Taghaza et le troc sel/or sont attestés (Ibn Battuta, 1352) ; le « commerce muet » est rapporté par des sources anciennes (Hérodote, voyageurs arabes) et présenté comme tel (« certains disaient ») ; les personnages sont inventés.
+---
+Au XIVe siècle, une caravane de plusieurs centaines de chameaux quittait chaque année les mines de sel de Taghaza, en plein Sahara, pour rejoindre les villes du Sahel. Les dalles de sel pesaient lourd, et chaque chameau en portait deux. Un jeune marchand nommé Amadou, qui faisait son premier voyage, se demandait pourquoi on prenait tant de peine pour transporter une pierre blanche.
+---
+Le vieux chef de la caravane, Sidi, le prit à part. « Regarde ces dalles, dit-il. Le sel, ici, ne vaut presque rien. On le coupe dans la terre, à la sueur de mineurs qui n'ont jamais vu un arbre. Mais plus au sud, dans les villes du fleuve, là où poussent le mil et l'or, on n'a pas de sel. Et sans sel, on ne conserve pas la viande, on ne soigne pas la fatigue, on ne vit pas longtemps. »
+---
+Ils arrivèrent des semaines plus tard à une grande ville sur le fleuve, où les attendaient des commerçants vêtus de blanc. Les marchandises furent posées sur la place. D'un côté, les dalles de sel, de l'autre, de petits sacs de poudre d'or, venus de mines lointaines. On échangeait peu, on regardait beaucoup. Certains disaient qu'il existait, plus au sud encore, des marchés où l'on déposait les marchandises sans se voir ni se parler.
+---
+Amadou voyait des hommes qui donnaient de l'or avec un sourire pour recevoir un bloc de sel qui tenait dans leurs mains. « C'est fou, dit-il. L'or brille, il est rare, il vaut cher. Pourquoi donner de l'or pour du sel ? » Sidi sourit. « Ces hommes ont de l'or à ne savoir qu'en faire. Ils n'ont pas de sel. Et la valeur d'une chose, mon garçon, ce n'est pas ce qu'elle est : c'est ce dont on a besoin au moment où on la cherche. »
+---
+Au retour, la caravane traversa une zone sans puits. Un chamelier tomba malade de soif. Sidi lui tendit sa gourde, sans compter. Amadou le regarda faire, étonné. « Ici, dit le vieux, une gorgée vaut mille pièces d'or. Mais plus loin, dans la ville, on te la vendra pour un cauris. Ne l'oublie jamais : l'or n'a de valeur que par ce qu'il permet. Le sel, l'eau, une main tendue en ont plus. » Amadou ne parla plus de prix cette nuit-là.
+
+=== conte: touareg-etoile-guide
+titre: L'étoile qui guidait les caravanes
+accroche: Les chameliers la suivent sans l'avoir jamais touchée. Voici ce qu'elle a coûté à celui qui l'a trouvée.
+etiquette: Mythe
+origine: Conte d'inspiration touarègue (Sahara)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: aube
+figures: enfant, feu
+morale: Ceux qui montrent le chemin paient souvent le prix des nuits qu'ils ont veillées.
+---
+Au temps où les caravanes du désert se perdaient une fois sur trois, un jeune chamelier nommé Moussa faisait route avec son oncle. Une nuit sans lune, la tempête de sable avait effacé les traces. Ils marchèrent jusqu'à l'aube dans la mauvaise direction. Quand le soleil se leva enfin, ils étaient à deux jours de toute eau. L'oncle ne se releva pas.
+---
+Moussa, seul, survécut. Il rejoignit un campement, les lèvres fendues, la gorge en feu. Pendant des semaines, il ne parla plus. Un soir, une vieille femme, assise près de lui, murmura : « Il y a des choses qui ne bougent pas dans le ciel. Les anciens le disaient. Mais personne n'a jamais pris le temps de le vérifier. » Moussa leva les yeux. Pour la première fois depuis longtemps, il regarda les étoiles.
+---
+Il décida de trouver cette chose qui ne bougeait pas. Chaque nuit, il s'asseyait au même endroit et marquait, avec des cailloux, la position des astres. Il passa ainsi des mois, dormant le jour, veillant la nuit. Sa femme, Aïcha, lui apportait du thé sans rien dire. Les voisins se moquaient : « Il compte les étoiles comme d'autres comptent leurs chèvres. » Il ne répondait pas.
+---
+Au bout d'un an, un soir de printemps, il remarqua que tous les cailloux avaient bougé... sauf un. Une étoile, tout au nord, discrète, ne tournait pas comme les autres : elle restait fixe, tandis que le ciel tournait autour d'elle. Il se leva, le cœur battant. « La voilà », murmura-t-il. Il appela sa femme. Elle regarda longtemps, puis posa sa tête sur son épaule.
+---
+Moussa enseigna à toute la tribu à reconnaître l'étoile fidèle. Les caravanes, dès lors, la gardèrent à gauche en allant vers l'est, à droite en revenant, et cessèrent de se perdre. Mais Moussa avait payé cette lumière de mille nuits sans sommeil, et ses yeux fatigués ne supportaient plus la clarté du jour. Il vécut ses dernières années sous une tente sombre. Chaque nuit, Aïcha l'asseyait dehors, et il souriait vers le nord.
+
+=== conte: carthage-elephants-hannibal
+titre: L'homme qui fit traverser les Alpes aux éléphants
+accroche: Des éléphants d'Afrique, des soldats de dix peuples, la neige des Alpes. Hannibal tenta l'impossible.
+etiquette: Histoire
+origine: Histoire de Carthage (Tunisie actuelle), 218 av. J.-C., d'après l'historien Polybe
+region: Afrique du Nord
+type: long
+gratuites: 2
+decor: montagne
+lumiere: orage
+figures: elephant, guerrier
+morale: Certaines frontières n'existent que dans la tête de ceux qui n'osent pas les franchir.
+# relecture OBLIGATOIRE : (1) 218 av. J.-C., Hannibal Barca, environ 29 ans : attesté. (2) 37 éléphants selon Polybe : attesté (chiffre de Polybe). (3) Composition de l'armée (Libyens, Numides, Ibères, frondeurs baléares) : attesté. (4) Passage du Rhône sur des radeaux : attesté (Polybe, Tite-Live). (5) Traversée des Alpes à l'automne, pertes importantes : attesté. (6) Le fait de faire éclater la roche par le feu est une tradition rapportée par Tite-Live, présentée comme telle. (7) Bataille de Cannes (Cannae) 216 av. J.-C., Zama 202 av. J.-C., destruction de Carthage 146 av. J.-C. : attestés.
+---
+En 218 avant notre ère, Carthage, grande cité de l'actuelle Tunisie, était en guerre contre Rome pour la deuxième fois. Son général, Hannibal Barca, avait à peine vingt-neuf ans. Il prit une décision que ses ennemis jugeaient impossible : au lieu d'attendre Rome au sud, il l'attaquerait au nord, en traversant l'Espagne, la Gaule, puis les Alpes. Avec une armée, des chevaux, et trente-sept éléphants d'Afrique, selon l'historien grec Polybe.
+---
+Son armée venait de tout le monde connu : des Libyens et des Numides d'Afrique du Nord, célèbres pour leurs cavaliers sans selle ni bride, des Ibères d'Espagne, des Baléares maîtres de la fronde. Peu parlaient la même langue. Hannibal les tenait ensemble par un mélange d'autorité et de présence : on disait qu'il dormait à même le sol, enveloppé dans un manteau, comme le dernier de ses soldats.
+---
+Les éléphants affrontèrent d'abord le Rhône. Les hommes construisirent d'énormes radeaux recouverts de terre, pour que les bêtes croient marcher sur le sol ferme. Plusieurs paniquèrent, plusieurs tombèrent à l'eau, les cornacs hurlaient, mais d'après les historiens antiques, les éléphants finirent par passer. Puis vinrent les Alpes. Le chemin était étroit, les falaises à pic, les montagnards hostiles, et l'automne déjà froid.
+---
+La montée dura environ quinze jours. Des avalanches emportèrent des hommes, des pierres roulèrent sur les rangs, des chevaux glissèrent dans le vide. Au sommet, la neige était déjà tombée. La tradition raconte qu'on fit éclater un éboulement par le feu pour dégager le passage. Hannibal montra l'Italie du doigt, à l'horizon, pour redonner du courage à ses hommes épuisés.
+---
+Quand l'armée descendit enfin dans la plaine du Pô, elle avait perdu une grande partie de ses hommes et de ses bêtes. Mais elle était là. Hannibal infligea à Rome plusieurs défaites cuisantes, dont celle de Cannes en 216 avant notre ère, encore étudiée dans les écoles militaires, où il encercla une armée bien plus nombreuse. Rome tremblait, et pendant des années, personne n'osa plus l'affronter en rase campagne.
+---
+Mais Rome ne céda pas. Après des années en Italie, Hannibal dut rentrer défendre Carthage, où il fut vaincu à Zama en 202 avant notre ère par Scipion. Carthage fut finalement détruite par Rome en 146. Pourtant, on se souvient d'Hannibal plus que de ses vainqueurs : l'homme qui avait fait passer des éléphants d'Afrique par les neiges d'Europe, et prouvé qu'il y a des frontières qui n'existent que dans la tête de ceux qui n'osent pas les franchir.
