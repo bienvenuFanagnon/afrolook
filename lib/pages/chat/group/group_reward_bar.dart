@@ -31,6 +31,7 @@ class _GroupRewardBarState extends State<GroupRewardBar> {
   static const _offerId = 'coins_2';
 
   RewardsStatus _status = RewardsStatus.empty;
+  int _weekCoins = 0;
   bool _loaded = false;
   bool _delayElapsed = false;
   bool _busy = false;
@@ -68,9 +69,11 @@ class _GroupRewardBarState extends State<GroupRewardBar> {
   Future<void> _refresh() async {
     if (_uid.isEmpty) return;
     final s = await RewardsService.status(_uid);
+    final week = await RewardsService.coinsThisWeek(_uid);
     if (mounted) {
       setState(() {
         _status = s;
+        _weekCoins = week;
         _loaded = true;
       });
     }
@@ -115,6 +118,8 @@ class _GroupRewardBarState extends State<GroupRewardBar> {
     if (!AdConfig.current.groupRewardEnabled || !RewardsService.available(user)) return const SizedBox.shrink();
     final offer = RewardsService.offerById(_offerId);
     if (offer == null || !RewardsService.canClaimToday(_status, offer)) return const SizedBox.shrink();
+    // Plafond hebdomadaire de pièces gagnées avec des pubs : inutile de proposer une pub qui ne paierait pas
+    if (_weekCoins + RewardsService.coinOfferCoins > RewardsService.coinsMaxPerWeek) return const SizedBox.shrink();
 
     final colors = AppColors.of(context);
     final coins = RewardsService.coinOfferCoins;

@@ -118,6 +118,28 @@ class RewardsService {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
+  /// Plafond de pièces gagnées avec des pubs par semaine (AppConfig/rewards.coinsMaxPerWeek, 20 par défaut côté serveur).
+  static int get coinsMaxPerWeek => ((_cfg['coinsMaxPerWeek'] as num?)?.toInt() ?? 20).clamp(0, 1000);
+
+  /// Clé de la semaine ISO courante (UTC), identique à celle du serveur (`weekKey` de functions/src/ads/rewards.ts).
+  static String weekKey([DateTime? now]) {
+    final n = (now ?? DateTime.now()).toUtc();
+    final day = DateTime.utc(n.year, n.month, n.day);
+    final date = day.add(Duration(days: 4 - day.weekday));
+    final week = ((date.difference(DateTime.utc(date.year, 1, 1)).inDays + 1) / 7).ceil();
+    return '${date.year}W${week.toString().padLeft(2, '0')}';
+  }
+
+  /// Pièces déjà gagnées avec des pubs cette semaine.
+  static Future<int> coinsThisWeek(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('AdRewardsWeek').doc('${uid}_${weekKey()}').get();
+      return (doc.data()?['coins'] as num?)?.toInt() ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   /// Pièces cadeau données par l'offre « coins_2 » (réglable côté serveur : AppConfig/rewards.offers.coins_2.coins).
   static int get coinOfferCoins {
     final offers = _cfg['offers'];
