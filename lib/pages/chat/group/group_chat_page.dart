@@ -10,6 +10,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
 import '../../../services/coin_checkout.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:image_picker/image_picker.dart';
@@ -35,6 +36,10 @@ import '../../LiveAgora/livesAgora.dart';
 import '../../LiveAgora/livePage.dart';
 import '../../LiveAgora/live_ended_page.dart';
 import 'group_info_page.dart';
+import 'group_reward_bar.dart';
+import '../../../ads/ad_config.dart';
+import '../../../ads/ad_slot.dart';
+import '../../pub/afrolook_inline_ad.dart';
 import 'media_preview_page.dart';
 
 class GroupChatPage extends StatefulWidget {
@@ -77,7 +82,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isReadOnly = false;
   bool _sendHidden = false;
   bool _showScrollBtn = false;
+  /// Le membre est arrivé en bas du fil en le faisant défiler (déclenche la carte « pub bonus »).
+  bool _readToBottom = false;
   bool _ownerIsGold = false;
+  /// Le statut du propriétaire est connu (évite de charger une pub avant de savoir si le groupe en est exempt).
+  bool _ownerChecked = false;
   int _seenByPage = 10;
   String _myRole = 'member';
   Map<String, dynamic> _myPermissions = {};
@@ -219,7 +228,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   Future<void> _checkOwnerPremium(Map<String, dynamic> data) async {
     final ownerId = data['owner_id'] as String?;
-    if (ownerId == null) return;
+    if (ownerId == null) {
+      if (mounted) setState(() => _ownerChecked = true);
+      return;
+    }
     try {
       final ownerDoc = await _firestore.collection('Users').doc(ownerId).get();
       final ownerData = ownerDoc.data() ?? {};
@@ -233,7 +245,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         isStillActive = ab.estPremium;
         if (ab.estGold) ownerGold = true;
       }
-      if (mounted) setState(() => _ownerIsGold = ownerGold);
+      if (mounted) setState(() { _ownerIsGold = ownerGold; _ownerChecked = true; });
 
       final isFrozenNow = _groupData['is_frozen'] == true;
       if (!isStillActive && !isFrozenNow) {
@@ -246,7 +258,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
       // Vérifier l'abonnement payant si groupe privé
       if (mounted) await _checkPaidSubscription(data);
-    } catch (_) {}
+    } catch (_) {
+      if (mounted && !_ownerChecked) setState(() => _ownerChecked = true);
+    }
   }
 
   /// Pour les groupes privés payants : vérifie si l'utilisateur est abonné.
@@ -780,6 +794,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
     if (!_scrollController.hasClients) return;
     final pos = _scrollController.position;
     final atBottom = pos.pixels >= pos.maxScrollExtent - 200;
+    if (atBottom && !_readToBottom && pos.userScrollDirection != ScrollDirection.idle) {
+      setState(() => _readToBottom = true);
+    }
     if (atBottom == _showScrollBtn) {
       setState(() => _showScrollBtn = !atBottom);
     }
@@ -2269,16 +2286,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                     ? Center(child: CircularProgressIndicator(color: _colors.primary, strokeWidth: 2))
                     : _messages.isEmpty
                         ? _buildEmptyState()
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: _messages.length,
-                            itemBuilder: (_, index) {
-                              final msg = _messages[index];
-                              final isMe = msg['send_by'] == myId;
-                              return _buildMessageBubble(msg, isMe);
-                            },
-                          ),
+                        : _buildMessageList(myId),
                 if (_showScrollBtn)
                   Positioned(
                     bottom: 8,
@@ -2301,7 +2309,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
             ),
           ),
           if (_permissionsLoaded) ...[
+            if (_userCanWrite) _buildGroupBanner(),
             if (_userCanWrite) _buildInputBar(),
+            if (!_userCanWrite && _isOfficialGroup && _groupAdsAllowed && !_isAppAdmin)
+              GroupRewardBar(readToBottom: _readToBottom),
             if (!_userCanWrite) _buildBlockedInputPlaceholder(),
           ],
         ],
@@ -2309,6 +2320,71 @@ class _GroupChatPageState extends State<GroupChatPage> {
       ),
       ),  // Scaffold
     );    // PopScope
+  }
+
+  // ─── PUBLICITÉ ───────────────────────────────────────────────────────────────
+
+  bool get _isOfficialGroup => _groupData['is_official'] == true;
+
+  /// Pubs dans le fil : partout, sauf dans un groupe dont le propriétaire est Gold (même règle pour les groupes
+  /// privés). Les groupes officiels en affichent toujours, bien que leur propriétaire soit l'administrateur.
+  /// Un propriétaire Premium ne retire pas les pubs. Les membres Gold ne voient aucune pub (voir AdGate.userSeesAds).
+  bool get _groupAdsAllowed => _ownerChecked && !_isBlocked && (_isOfficialGroup || !_ownerIsGold);
+
+  /// Emplacements publicitaires du fil : indices de messages après lesquels une pub est insérée,
+  /// plus -1 pour la pub sous le dernier message (groupes officiels). Jamais entre un message et sa réponse directe.
+  Set<int> _adAfterIndexes() {
+    final n = _messages.length;
+    if (!_groupAdsAllowed || n < 3) return const {};
+    final c = AdConfig.current;
+    final every = _isOfficialGroup ? c.groupOfficialEvery : c.groupFreeEvery;
+    final out = <int>{};
+    for (var i = every - 1; i < n - 1; i += every) {
+      final next = _messages[i + 1]['reply_to_id'];
+      if (next != null && next == _messages[i]['id']) continue;
+      out.add(i);
+    }
+    if (_isOfficialGroup && !out.contains(n - 1)) out.add(n - 1);
+    return out;
+  }
+
+  Widget _buildMessageList(String myId) {
+    final ads = _adAfterIndexes();
+    final entries = <int>[]; // index de message, ou -(index + 1) pour une pub placée après ce message
+    for (var i = 0; i < _messages.length; i++) {
+      entries.add(i);
+      if (ads.contains(i)) entries.add(-(i + 1));
+    }
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: entries.length,
+      itemBuilder: (_, index) {
+        final e = entries[index];
+        if (e < 0) {
+          final after = -e - 1;
+          return AdSlot(
+            key: ValueKey(after == _messages.length - 1 ? 'group_ad_tail' : 'group_ad_$after'),
+            kind: AdSlotKind.groupFeed,
+            own: () => const AfrolookInlineAd(compact: true),
+          );
+        }
+        final msg = _messages[e];
+        final isMe = msg['send_by'] == myId;
+        return _buildMessageBubble(msg, isMe);
+      },
+    );
+  }
+
+  /// Bannière fixe au-dessus de la saisie des groupes gratuits (masquée quand le clavier est ouvert).
+  Widget _buildGroupBanner() {
+    if (_isOfficialGroup || !_groupAdsAllowed) return const SizedBox.shrink();
+    if (MediaQuery.of(context).viewInsets.bottom > 0) return const SizedBox.shrink();
+    return AdSlot(
+      key: const ValueKey('group_banner'),
+      kind: AdSlotKind.groupBanner,
+      own: () => const AfrolookInlineAd(compact: true),
+    );
   }
 
   // ─── APPBAR ──────────────────────────────────────────────────────────────────

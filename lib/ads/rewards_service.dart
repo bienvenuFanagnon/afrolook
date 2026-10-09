@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/model_data.dart';
 import '../services/utils/abonnement_utils.dart';
 import 'ad_config.dart';
+import 'admob_service.dart';
 
 /// Une offre de la page Récompenses (le serveur reste seul juge : catalogue, plafonds, rôles).
 class RewardOffer {
@@ -115,5 +116,50 @@ class RewardsService {
   static Future<Map<String, dynamic>> claim(String offerId) async {
     final res = await FirebaseFunctions.instance.httpsCallable('claimReward').call({'offerId': offerId});
     return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Pièces cadeau données par l'offre « coins_2 » (réglable côté serveur : AppConfig/rewards.offers.coins_2.coins).
+  static int get coinOfferCoins {
+    final offers = _cfg['offers'];
+    final c = offers is Map && offers['coins_2'] is Map ? offers['coins_2'] as Map : const {};
+    return (c['coins'] as num?)?.toInt() ?? 2;
+  }
+
+  /// L'offre d'id [id] avec les réglages Firestore ; null si inconnue ou désactivée.
+  static RewardOffer? offerById(String id) {
+    for (final o in offers) {
+      if (o.id == id) return effective(o);
+    }
+    return null;
+  }
+
+  /// Reste-t-il au moins une récompense [id] à prendre aujourd'hui (plafond de pubs et plafond de l'offre) ?
+  static bool canClaimToday(RewardsStatus st, RewardOffer o) =>
+      st.watched < maxAdsPerDay && (o.cap <= 0 || (st.claims[o.id] ?? 0) < o.cap);
+
+  /// Parcours complet d'une récompense depuis un autre écran que la page Récompenses :
+  /// regarde les pubs nécessaires, les compte (vérification AdMob ou déclaration), puis réclame l'offre.
+  /// Retourne `false` si aucune pub n'était disponible. Lève [FirebaseFunctionsException] si le serveur refuse.
+  static Future<bool> watchAndClaim(String offerId, String uid) async {
+    final o = offerById(offerId);
+    if (o == null) return false;
+    var pending = (await status(uid)).pending;
+    while (pending < o.ads) {
+      final earned = await AdmobService.watchRewarded(userId: uid);
+      if (!earned) return false;
+      if (AdConfig.current.ssvEnabled) {
+        final target = pending + 1;
+        for (var i = 0; i < 8; i++) {
+          pending = (await status(uid)).pending;
+          if (pending >= target) break;
+          await Future<void>.delayed(const Duration(milliseconds: 1500));
+        }
+        if (pending < target) return false;
+      } else {
+        pending = (await recordView()) ?? pending + 1;
+      }
+    }
+    await claim(offerId);
+    return true;
   }
 }

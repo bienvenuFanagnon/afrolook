@@ -25,6 +25,12 @@ enum AdSlotKind {
   comments,
   /// Listes (profils, services, défis…) : petite pub native.
   list,
+  /// Liste des conversations : petite pub native.
+  chatList,
+  /// Fil d'un groupe : petite pub native entre deux messages.
+  groupFeed,
+  /// Groupe gratuit : bannière adaptative fixe au-dessus de la saisie.
+  groupBanner,
 }
 
 class AdSlot extends StatefulWidget {
@@ -60,10 +66,20 @@ class _AdSlotState extends State<AdSlot> {
         return c.commentsNative;
       case AdSlotKind.list:
         return c.listsNative;
+      case AdSlotKind.chatList:
+        return c.chatListNative;
+      case AdSlotKind.groupFeed:
+        return c.groupsNative;
+      case AdSlotKind.groupBanner:
+        return c.groupsBanner;
     }
   }
 
-  String get _type => (widget.kind == AdSlotKind.detail || widget.kind == AdSlotKind.detailMrec) ? 'banner' : 'native';
+  String get _type => (widget.kind == AdSlotKind.detail ||
+          widget.kind == AdSlotKind.detailMrec ||
+          widget.kind == AdSlotKind.groupBanner)
+      ? 'banner'
+      : 'native';
 
   _Mode _decide(UserAuthProvider auth) {
     final user = auth.loginUserData;
@@ -98,6 +114,7 @@ class _AdSlotState extends State<AdSlot> {
           case _Mode.admob:
             switch (widget.kind) {
               case AdSlotKind.detail:
+              case AdSlotKind.groupBanner:
                 return AdmobBannerWidget(onFailed: _onAdmobFailed);
               case AdSlotKind.detailMrec:
                 return AdmobBannerWidget(mrec: true, onFailed: _onAdmobFailed);
@@ -105,6 +122,8 @@ class _AdSlotState extends State<AdSlot> {
                 return AdmobNativeWidget(onFailed: _onAdmobFailed);
               case AdSlotKind.comments:
               case AdSlotKind.list:
+              case AdSlotKind.chatList:
+              case AdSlotKind.groupFeed:
                 return AdmobNativeWidget(small: true, onFailed: _onAdmobFailed);
             }
           case _Mode.none:

@@ -80,6 +80,21 @@ class AdConfig {
   bool get commentsNative => _b('commentsNative', true);
   bool get listsNative => _b('listsNative', true);
 
+  // Discussions et groupes (liste des conversations, fil des groupes, carte « pub bonus »)
+  /// Pub native dans la liste des conversations : à la ligne N, puis toutes les N lignes.
+  bool get chatListNative => _b('chatListNative', true);
+  int get chatListStartAt => _i('chatListStartAt', 4).clamp(2, 30);
+  int get chatListEvery => _i('chatListEvery', 10).clamp(4, 50);
+  /// Pub native dans le fil d'un groupe : toutes les N messages (officiel / gratuit d'un utilisateur).
+  bool get groupsNative => _b('groupsNative', true);
+  int get groupOfficialEvery => _i('groupOfficialEvery', 12).clamp(5, 60);
+  int get groupFreeEvery => _i('groupFreeEvery', 15).clamp(5, 60);
+  /// Bannière fixe au-dessus de la saisie, dans les groupes gratuits.
+  bool get groupsBanner => _b('groupsBanner', true);
+  /// Carte « pub bonus » (pub récompensée) dans les groupes officiels.
+  bool get groupRewardEnabled => _b('groupRewardEnabled', true);
+  int get groupRewardDelaySeconds => _i('groupRewardDelaySeconds', 20).clamp(0, 120);
+
   // Plein écran entre les vidéos
   bool get interstitialEnabled => _b('interstitialEnabled', true);
   int get interstitialEveryVideos => kDebugMode ? 2 : _i('interstitialEveryVideos', 4).clamp(2, 20);

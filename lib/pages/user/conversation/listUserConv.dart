@@ -53,6 +53,10 @@ import '../../home/user_presence_widget.dart';
 import '../../../widgets/user_badge_widget.dart';
 
 import '../../pub/native_ad_widget.dart';
+import '../../pub/afrolook_inline_ad.dart';
+import '../../../ads/ad_config.dart';
+import '../../../ads/ad_placement.dart';
+import '../../../ads/ad_slot.dart';
 
 import '../../chat/group/create_group_page.dart';
 
@@ -1840,9 +1844,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       return tsB.compareTo(tsA);
     });
 
+    final rows = _withChatListAds(merged);
     return ListView.builder(
       controller: _scrollController,
-      itemCount: merged.length + 2, // +1 ad banner, +1 archive tile
+      itemCount: rows.length + 2, // +1 ad banner, +1 archive tile
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -1850,8 +1855,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             child: _buildAdBanner(key: 'chat_list_first_ad'),
           );
         }
-        if (index == merged.length + 1) return _buildArchiveTile();
-        final item = merged[index - 1];
+        if (index == rows.length + 1) return _buildArchiveTile();
+        final item = rows[index - 1];
+        if (item is _ChatListAd) return _buildChatListAd(item);
         if (item is Map<String, dynamic>) {
           return _buildGroupTile(item);
         }
@@ -2232,9 +2238,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       return (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0);
     });
 
+    final rows = _withChatListAds(visibleChats);
     return ListView.builder(
       controller: _scrollController,
-      itemCount: visibleChats.length + 2, // +1 ad, +1 archive tile
+      itemCount: rows.length + 2, // +1 ad, +1 archive tile
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -2242,12 +2249,13 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             child: _buildAdBanner(key: 'chat_list_first_ad'),
           );
         }
-        if (index == visibleChats.length + 1) return _buildArchiveTile();
+        if (index == rows.length + 1) return _buildArchiveTile();
 
         final chatIndex = index - 1;
-        if (chatIndex >= visibleChats.length) return const SizedBox.shrink();
+        if (chatIndex >= rows.length) return const SizedBox.shrink();
+        if (rows[chatIndex] is _ChatListAd) return _buildChatListAd(rows[chatIndex] as _ChatListAd);
 
-        final chatWithMessage = visibleChats[chatIndex];
+        final chatWithMessage = rows[chatIndex] as ChatWithLastMessage;
         final Chat chat = chatWithMessage.chat;
         final Message? lastMessage = chatWithMessage.lastMessage;
 
@@ -2601,6 +2609,29 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     return const SizedBox.shrink();
   }
 
+  /// Intercale une pub native dans la liste des conversations : après la [AdConfig.chatListStartAt]ᵉ ligne,
+  /// puis toutes les [AdConfig.chatListEvery] lignes. Jamais parmi les conversations épinglées.
+  List<dynamic> _withChatListAds(List<dynamic> items) {
+    final c = AdConfig.current;
+    if (!c.chatListNative) return items;
+    final pinned = items.where((e) => e is ChatWithLastMessage && _pinnedChatIds.contains(e.chat.docId)).length;
+    final after = AdPlacement.afterRows(items.length, startAt: c.chatListStartAt, every: c.chatListEvery, pinned: pinned).toSet();
+    final out = <dynamic>[];
+    var n = 0;
+    for (final it in items) {
+      out.add(it);
+      n++;
+      if (after.contains(n)) out.add(_ChatListAd(n));
+    }
+    return out;
+  }
+
+  Widget _buildChatListAd(_ChatListAd ad) => AdSlot(
+        key: ValueKey('chat_list_ad_${ad.after}'),
+        kind: AdSlotKind.chatList,
+        own: () => const AfrolookInlineAd(compact: true),
+      );
+
   String _formatTime(int? timestamp) {
     if (timestamp == null) return "";
 
@@ -2620,6 +2651,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       return _l10n.convJustNowCap;
     }
   }
+}
+
+/// Emplacement publicitaire de la liste des conversations ([after] = nombre de lignes qui le précèdent).
+class _ChatListAd {
+  const _ChatListAd(this.after);
+  final int after;
 }
 
 // ---------------------------------------------------------------------------
