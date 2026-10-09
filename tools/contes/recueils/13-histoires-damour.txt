@@ -1,0 +1,238 @@
+recueil: Histoires d'Amour
+categorie: Amour et destin
+description: Le premier regard, la promesse tenue, le cadeau qui ne coûte rien : l'amour raconté comme à la veillée.
+ordre: 13
+prix: 70
+
+=== conte: amour-calebasse-eau
+titre: La calebasse d'eau offerte à l'inconnu
+accroche: Elle lui donna l'eau de sa journée. Trois ans plus tard, il revint payer sa dette.
+etiquette: Amour
+origine: Conte d'inspiration sahélienne (Afrique de l'Ouest)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: savane
+lumiere: midi
+figures: enfant, calebasse
+morale: Un geste de générosité peut devenir un puits.
+---
+Dans un village du Sahel, la saison sèche durait neuf mois et le puits le plus proche était à deux heures de marche. Chaque matin, bien avant l'aube, Aminata partait avec sa grande calebasse sur la tête et celles de ses frères sous le bras, pour rapporter l'eau du jour. Elle avait seize ans, des jambes de gazelle, et une patience que ses frères enviaient.
+---
+Un matin, au retour, la calebasse pleine sur la tête, elle vit un homme étendu au bord du sentier, la bouche craquelée, les yeux mi-clos. Un voyageur, perdu, que la soif avait renversé. Elle hésita une seconde. Cette eau était celle de toute sa famille pour la journée. Puis elle posa la calebasse, souleva la tête de l'homme et le fit boire, gorgée après gorgée, jusqu'à la dernière goutte.
+---
+L'inconnu reprit ses esprits. Il s'appelait Issa. Il voulut la remercier, mais ses mots se perdaient dans sa gorge sèche. Aminata l'aida à se relever, lui indiqua le chemin du village, puis repartit vers le puits, deux heures de marche à l'envers, sans rien dire. Quand elle rentra, à la nuit, sa mère la gronda : une famille entière sans eau pour le dîner ! Elle baissa la tête et ne se défendit pas.
+---
+Trois ans passèrent. Un jour, un convoi arriva au village : des ânes chargés de pioches, de cordes, de poulies, et à leur tête, un homme maigre, au regard tranquille. Il demanda à voir le chef. « J'ai appris un métier, dit-il. Je creuse des puits. J'ai appris à creuser en pensant à une jeune fille qui m'avait donné l'eau d'une journée. Je viens payer ma dette. » Aminata, au fond de la foule, sentit ses joues brûler.
+---
+Pendant deux mois, Issa et ses hommes creusèrent au centre du village. Ils trouvèrent l'eau à trente mètres, claire et fraîche. Le jour où elle jaillit, tout le village poussa un cri. Aminata remplit sa calebasse en dix pas. Issa la regardait faire. « Alors, dit-il, ma dette est payée ? » Elle sourit. « Pas encore. Le village voisin n'a pas de puits non plus. » Ils partirent le lendemain, ensemble, avec les ânes.
+
+=== conte: amour-griot-chant
+titre: Le griot qui chanta tous les noms sauf le sien
+accroche: Il connaissait mille histoires d'amour. Pas le courage de raconter la sienne.
+etiquette: Amour
+origine: Conte d'inspiration mandingue (Mali)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: griot, reine
+morale: Il faut parfois laisser l'autre prononcer le nom qu'on n'ose pas dire.
+---
+Sory était le meilleur griot de la vallée du Niger. Il chantait les généalogies avec une mémoire de fer, les louanges avec une voix de miel, les batailles avec le souffle d'un lion. On l'invitait à toutes les fêtes, tous les baptêmes, tous les mariages. Il connaissait les noms de mille familles, de mille ancêtres, de mille héros. Il y avait pourtant un nom qu'il n'osait jamais prononcer.
+---
+C'était celui de Fanta, la fille du forgeron, qu'il croisait chaque semaine au marché. Elle ne le regardait jamais vraiment, ou peut-être le regardait-elle trop, il ne savait plus. Quand elle passait, ses doigts dérapaient sur les cordes de la kora, ses phrases se brouillaient. Il se disait : « Un griot ne chante pas pour lui-même. Il chante pour les autres. » Et il se taisait.
+---
+Une nuit de pleine lune, le village organisa la grande fête de la récolte. Tout le monde se rassembla autour du feu. Les anciens demandèrent à Sory de chanter les noms des familles. Il se leva, prit sa kora, et fit ce qu'il faisait toujours : il chanta les noms des chefs, des cultivateurs, des chasseurs, des tisserands. Un à un, chaque nom fut accueilli par des cris de joie. Mais quand vint le nom du forgeron, il passa, sans rien dire.
+---
+Un silence étonné s'abattit. Le forgeron, surpris, se leva. Sory baissa les yeux. Les musiciens se turent. Alors, au fond de la foule, une voix s'éleva, claire, tremblante, sans accompagnement. C'était Fanta. Elle chantait, d'une voix hésitante, le nom de Sory. Pas son nom de griot, pas son titre, seulement son prénom, répété trois fois, comme on pose une main sur une épaule.
+---
+Sory leva la tête. Ses doigts retrouvèrent la kora d'eux-mêmes, et il chanta, pour la première fois de sa vie, une louange qu'il n'avait pas préparée. Il y dit un nom, une lumière, un marché, une journée de chaleur. Le village entier comprit. Le forgeron sourit dans sa barbe. Et on raconte que, ce soir-là, ce fut Fanta qui eut la dernière strophe : « Chante-moi, mais reste. »
+
+=== conte: amour-tisserand-fil
+titre: Le fil qu'il ne coupa jamais
+accroche: Dans chaque pagne qu'il vendait, il laissait dépasser un fil. Il attendait que quelqu'un le tire.
+etiquette: Amour
+origine: Conte d'inspiration ouest-africaine (Ghana)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: baobab
+lumiere: aube
+figures: calebasse, ancien
+morale: Il y a des fils qu'on laisse dépasser pour que quelqu'un puisse les tirer.
+---
+Kwame était tisserand, comme son père, et comme le père de son père. Dans son atelier au bord de la rivière, il tissait des pagnes aux couleurs vives que les marchands emportaient jusqu'à la côte. Mais il avait une habitude étrange : à la fin de chaque pagne, il laissait un fil rouge dépasser sur le bord, de la longueur d'un doigt. Les clients lui disaient : « Vous avez oublié de le couper. » Il souriait : « Non. »
+---
+Autrefois, il avait aimé une jeune femme du nom d'Ama. Elle avait quitté le village, un jour de sécheresse, pour aller travailler dans une ville lointaine, en promettant de revenir. Avant de partir, elle lui avait laissé une bobine de fil rouge, en disant : « Tisse avec ça. Un jour, quelqu'un tirera un fil, et je saurai que c'est toi. » Il avait gardé la bobine, et en avait fait son secret.
+---
+Les années passèrent. Les pagnes de Kwame voyageaient de marché en marché, de ville en ville. Chaque fois qu'il en vendait un, il se disait : « Peut-être celui-ci. » Chaque fois, il attendait, en vain. Les voisins disaient qu'il perdait son temps. Sa mère murmurait que le malheur le rendait têtu. Il n'écoutait personne. Il tissait, et il laissait dépasser le fil.
+---
+Un jour, dans une ville de la côte, une femme d'âge mûr, élégante, fatiguée, s'arrêta devant l'étal d'un marchand et caressa un pagne aux couleurs du soleil levant. Un fil rouge dépassait du bord. Elle s'immobilisa. Sa main trembla. Elle tira le fil, doucement, avec une précision de brodeuse. Il ne céda pas. Elle sourit, les yeux humides. « Ce nœud, dit-elle, je le connais. Je l'ai appris à quelqu'un, il y a longtemps. »
+---
+Elle acheta le pagne sans discuter, loua une pirogue, remonta la rivière pendant trois jours. À la porte de l'atelier, elle posa le pagne devant le tisserand, qui venait de lever la tête. Elle prit le fil rouge entre ses doigts. « Je tire », dit-elle. Il ne répondit pas tout de suite. Puis il tendit la main, saisit l'autre extrémité du fil, et dit : « Je tiens. » Et pour la première fois depuis vingt ans, il n'eut plus besoin d'en laisser dépasser un.
+
+=== conte: amour-pirogue-fleuve
+titre: Le cavalier, la pirogue et le fleuve entre eux
+accroche: Deux rives en guerre, un fleuve qui sépare, une promesse qui traverse.
+etiquette: Légende
+origine: Conte d'inspiration mandingue (Mali et Guinée)
+region: Afrique de l'Ouest
+type: long
+gratuites: 2
+decor: fleuve
+lumiere: crepuscule
+figures: guerrier, pirogue, reine
+morale: Le fleuve ne choisit pas son camp.
+---
+Deux villages se faisaient face sur les rives du Niger, Dougou à l'est, Kouro à l'ouest, séparés par une centaine de pas d'eau. Ils avaient été frères avant d'être ennemis. Une querelle de pêche, il y avait longtemps, avait tout gâté. Depuis, aucun habitant de Dougou ne traversait vers Kouro, aucun de Kouro vers Dougou. Même les enfants se jetaient des insultes d'une rive à l'autre.
+---
+Bintou, une potière de Dougou, et Sékou, un cavalier de Kouro, se virent un soir par hasard. Elle puisait de l'eau à l'extrémité du village, lui abreuvait son cheval sur l'autre rive. Ils se regardèrent à travers la brume, un instant, sans un mot. Le lendemain, ils revinrent à la même heure. Puis le jour suivant. Un matin, Bintou lui fit un signe de la main. Sékou répondit.
+---
+Ils trouvèrent un moyen. Une vieille pêcheuse, que la querelle n'avait jamais touchée, acceptait de passer entre les deux villages dans sa pirogue, comme elle l'avait toujours fait. Au milieu du fleuve, à midi, ils pouvaient s'asseoir ensemble sur sa barque, sans appartenir ni à l'une ni à l'autre rive. Ils y parlèrent des heures, des mois durant. Ils parlaient de poteries, de chevaux, de rêves, de l'absurdité de la haine.
+---
+Mais la querelle s'envenima. Un incident, un mort, une flèche. Chaque village se prépara à attaquer l'autre à la saison des pluies. Bintou et Sékou, pris entre deux feux, se jurèrent de ne pas se battre l'un contre l'autre. Ils ne savaient pas comment tenir cette promesse. La veille de l'attaque, le ciel s'assombrit. Une pluie terrible s'abattit sur le bassin du fleuve, quatre jours sans interruption, du jamais vu.
+---
+Le cinquième jour, l'eau monta. Le fleuve sortit de son lit, couvrit les champs, atteignit les premières cases des deux villages à la fois. Chaque rive se vit submergée. Les guerriers, les armes à la main, restèrent figés devant les vagues. Bintou et Sékou, chacun de son côté, coururent vers les anciens : « Le fleuve ne choisit pas son camp ! Si nous ne nous aidons pas, nous mourrons tous ! » Personne ne les écouta d'abord.
+---
+Puis une pirogue traversa la tempête. La vieille pêcheuse, seule, ramait contre le courant, chargée d'enfants des deux villages. Elle les déposa sur la colline la plus haute, sans demander d'où ils venaient. Le spectacle brisa quelque chose. Les hommes de Dougou et de Kouro se mirent à l'eau ensemble, sauvèrent les troupeaux, les greniers, les vieillards. Au matin, ils étaient assis côte à côte, trempés, épuisés, sur la même colline. Bintou et Sékou se marièrent à la fin de la saison, et la querelle ne reprit jamais. On dit que leur pirogue, repeinte chaque année, reste toujours au milieu du fleuve.
+
+=== conte: amour-vieux-couple
+titre: Le vieux couple et la dernière récolte
+accroche: Quarante ans de disputes, une dernière récolte, et un seul panier à porter à deux.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: savane
+lumiere: aube
+figures: ancien, calebasse
+morale: Seul, on porte ; à deux, on ne sent plus le poids.
+---
+Mbala et Nzinga étaient mariés depuis quarante ans, et se disputaient depuis quarante ans. Pour la sauce trop salée, pour le chemin à prendre, pour la façon de plier le linge. Les voisins s'étaient habitués à leurs éclats de voix, comme on s'habitue au vent. Chacun était convaincu d'avoir raison. Aucun n'avait jamais cédé, même sur le plus petit détail.
+---
+Ce matin-là, c'était la dernière récolte de l'année, et la plus belle : des ignames énormes, couleur de terre claire. Mbala avait un genou capricieux, Nzinga un dos qui la faisait grimacer. Ils ramassèrent chacun leur part, les entassèrent dans un grand panier d'osier. Ils se chamaillèrent pour savoir qui le porterait. « Moi, dit Mbala. — Moi, dit Nzinga. — Tu as un genou, dit-elle. — Et toi un dos, dit-il. »
+---
+Chacun essaya seul. Mbala souleva le panier, fit trois pas, et s'effondra sur son genou. Nzinga prit la relève, grimaça, le posa en gémissant. Ils se regardèrent, vexés, essoufflés. Le soleil montait, les ignames attendaient. Finalement, sans mot dire, Nzinga attrapa une anse du panier, et Mbala l'autre. Ils soulevèrent ensemble, en comptant tout bas, comme deux enfants qui jouent à un jeu très sérieux.
+---
+Le panier ne pesait plus rien. Chacun portait sa moitié, réglant son pas sur celui de l'autre, sans y penser, avec la précision de quarante années de marche côte à côte. Ils prirent le sentier lentement. De temps à autre, Mbala corrigeait la hauteur, Nzinga ralentissait pour attendre son genou. Ils ne parlaient pas. Les oiseaux s'envolaient devant eux, et la poussière du sentier se posait derrière.
+---
+Arrivés à la case, ils déposèrent le panier, puis restèrent un moment debout, sans savoir quoi dire. Nzinga fit chauffer de l'eau. Mbala lui apporta, sans qu'elle le demande, le coussin pour son dos. Ils burent le thé côte à côte, sur le seuil, en silence. À la fin, Mbala murmura : « C'est drôle. Seul, je n'ai jamais rien porté de si lourd. Avec toi, je n'ai jamais rien senti. » Nzinga ne répondit pas. Mais elle posa sa main sur la sienne.
+
+=== conte: amour-mere-chanson
+titre: La berceuse que sa mère lui chantait
+accroche: Il avait tout oublié, son nom, ses enfants. Une seule berceuse lui restait.
+etiquette: Amour
+origine: Conte d'inspiration est-africaine (Éthiopie)
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: ancien, enfant
+morale: Certains amours restent dans le chant, même quand la mémoire s'efface.
+---
+Le vieux Tadesse avait oublié beaucoup de choses. Le nom de ses voisins, celui de ses enfants, le chemin de la fontaine, parfois même le sien. Il vivait dans un brouillard doux, qui se déchirait de temps en temps pour laisser passer un morceau de souvenir. Sa petite-fille Selam, onze ans, s'occupait de lui chaque après-midi, après l'école, avec un sérieux de grande personne.
+---
+Elle lui lisait le journal, lui préparait son thé, lui montrait des photographies. Il hochait la tête, poli, sans reconnaître personne. « C'est qui, ce monsieur ? demandait-il. — C'est toi, grand-père. » Il souriait avec bienveillance, comme à une aimable inconnue. Selam avait appris à ne plus pleurer. Mais chaque soir, en rentrant, elle sentait quelque chose se serrer dans sa gorge.
+---
+Un soir de pluie, elle chantonna pour passer le temps, sans y penser, une vieille chanson que sa propre mère fredonnait en tricotant, une berceuse de leur région. Des paroles simples sur un oiseau qui garde le nid. Soudain, le vieil homme se redressa. Ses yeux, jusque-là vagues, s'allumèrent. « Qui t'a appris cela ? » demanda-t-il, d'une voix forte, claire, qu'elle n'avait pas entendue depuis des mois.
+---
+« Maman, répondit Selam, interdite. C'est la chanson de maman. — C'est celle de ma mère, dit-il. Elle me la chantait quand j'avais peur de l'orage. » Il reprit le couplet, un peu faux, mais chaque mot était juste. Selam chanta avec lui. Ils chantèrent trois fois, dix fois, sans se lasser. Le vieux souriait, les larmes coulant sur ses joues. Il avait retrouvé sa mère, sa maison, sa voix.
+---
+Le lendemain, il avait de nouveau tout oublié. Mais Selam n'eut plus peur. Désormais, quand le brouillard devenait trop épais, elle s'asseyait à côté de lui et fredonnait la berceuse. Parfois, il ne réagissait pas. Parfois, une lumière passait, et il murmurait : « Maman ? » Selam répondait : « Oui. » Et elle comprit qu'il y a des amours que le temps ne peut pas effacer, parce qu'elles ne sont pas dans la mémoire : elles sont dans le chant.
+
+=== conte: amour-lettre-sable
+titre: La lettre écrite dans le sable
+accroche: Elle écrivit trois signes au pied d'un rocher. Quelqu'un sut les lire.
+etiquette: Amour
+origine: Conte d'inspiration touarègue (Sahara)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: crepuscule
+figures: enfant, feu
+morale: Il y a des lettres que le vent n'efface pas.
+# relecture : les femmes touarègues sont traditionnellement les gardiennes du tifinagh, qu'elles écrivent notamment sur le sable et la pierre ; l'histoire de Tala et d'Ahmed est inventée.
+---
+Chez les Touaregs, les femmes sont depuis toujours les gardiennes de l'écriture. Elles lisent et écrivent le tifinagh, ces lignes, ces points et ces cercles que les hommes savent à peine déchiffrer. Elles écrivent sur la pierre, sur le sable, sur les tentes. Tala, quinze ans, était la meilleure scribe de son campement. Elle savait écrire en un seul geste tout un poème.
+---
+Un jour, au pied d'un rocher qui abritait le puits où les caravanes s'arrêtaient, elle remarqua des traces dans le sable. Pas des empreintes : des signes. Quelqu'un avait tracé, avec un bâton, trois mots en tifinagh. « Qui lit ceci ? » Son cœur battit. Les caractères étaient maladroits, mais précis. Elle prit un bâton à son tour et répondit : « Une fille du campement. Et toi ? »
+---
+Pendant des mois, elle laissa des messages au pied du rocher, et chaque fois qu'une caravane passait, une réponse apparaissait. Elle apprit qu'il s'appelait Ahmed, qu'il était chamelier, qu'il avait appris à lire de sa grand-mère, qu'il adorait les étoiles et détestait les tempêtes. Elle lui décrivit les couleurs du soir sur les dunes, le goût du thé après la marche, la peur qu'elle avait de la solitude.
+---
+Le vent effaçait parfois les messages avant qu'il les lise. Alors ils les récrivaient, plus grands. Ils inventèrent des signes pour se retrouver : un point entouré de trois traits pour dire « je pense à toi », une ligne brisée pour dire « reviens ». Ils ne s'étaient jamais vus. Ils savaient pourtant l'un de l'autre ce que bien des couples mettent des années à apprendre.
+---
+Un jour de grande chaleur, quand la caravane d'Ahmed arriva au puits, il trouva Tala debout devant le rocher, un bâton à la main. Il s'arrêta. Elle tendit le bâton vers le sable et écrivit un seul mot, très simple, qu'ils n'avaient jamais osé tracer. Ahmed s'agenouilla, lut, leva les yeux vers elle. Sans un mot, il prit le bâton à son tour et écrivit la même chose. Le vent, ce jour-là, ne souffla pas.
+
+=== conte: amour-forgeron-masque
+titre: Le forgeron qui forgea un bracelet qui chantait
+accroche: Il lui offrit un bracelet qui chantait. Elle voulut savoir pourquoi il ne chantait qu'avec elle.
+etiquette: Amour
+origine: Conte d'inspiration ouest-africaine (Burkina Faso)
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: orage
+figures: feu, guerrier
+morale: L'attention est le plus beau des bijoux.
+---
+Dramane était forgeron, comme tous les hommes de sa famille. Dans sa forge enfumée, au bout du village, il travaillait le fer rouge au rythme du soufflet, et personne ne l'égalait pour fabriquer des houes, des couteaux, des pointes de lance. Mais ce qu'il aimait par-dessus tout, c'était forger de petits objets délicats que personne ne lui avait commandés, et dont lui seul connaissait l'usage.
+---
+Un jour, il se mit à fabriquer un bracelet. Ce n'était pas un bracelet ordinaire. Il l'orna de petites perles creuses, chacune renfermant un grain minuscule de fer, qui devait résonner au moindre mouvement. Il y travailla trois lunes, ajustant chaque perle, changeant la taille du grain, écoutant, recommençant. Les autres forgerons se moquaient : « Tu perds ton temps, Dramane. » Il ne répondait pas.
+---
+Quand il eut terminé, il se rendit au marché et chercha celle à qui il destinait son travail : Zénabou, la fille du tisserand, qui vendait ses cotonnades à l'ombre d'un manguier. Il lui offrit le bracelet, sans un mot. Elle le glissa à son poignet, étonnée. À l'instant où elle remua le bras, le bracelet se mit à chanter. Une mélodie claire, nette, légère, comme le ruisseau après la pluie.
+---
+Tous les marchands se retournèrent. Zénabou, émerveillée, voulut le montrer à sa sœur. Mais quand celle-ci l'essaya, le bracelet resta muet, ou ne tinta qu'un son terne, sans grâce. Elle le rendit à Zénabou, qui le remit. De nouveau, il chanta. Zénabou posa une question simple : « Pourquoi ne chante-t-il que pour moi ? » Dramane baissa les yeux.
+---
+« Parce que je l'ai écouté longtemps avant de le faire, dit-il. Chaque jour, pendant trois ans, je t'ai regardée marcher. J'ai appris la cadence de ton pas, la vitesse de ton bras, la façon dont tu tournes le poignet quand tu pèses le coton. Chaque perle est réglée sur toi. Il ne chante qu'avec toi parce qu'il t'a attendue avant d'exister. » Zénabou ne dit rien. Elle sourit, et son bracelet chanta, plus clair que jamais.
+
+=== conte: amour-cadeau-rien
+titre: Le cadeau qui ne coûtait rien
+accroche: Le riche offrit trente vaches. Le pauvre offrit son temps. Elle choisit.
+etiquette: Sagesse
+origine: Conte d'inspiration d'Afrique australe
+region: Afrique australe
+type: court
+gratuites: 2
+decor: montagne
+lumiere: midi
+figures: enfant, calebasse
+morale: Le temps donné vaut plus que tous les troupeaux.
+---
+Dans un village d'Afrique australe, la belle Thandeka avait deux prétendants. Le premier, Bheki, était fils d'un riche éleveur. Il avait des troupeaux de plusieurs dizaines de bêtes, un cheval, une maison au toit de tôle. Le second, Sipho, ne possédait rien d'autre que ses deux bras, une vieille couverture et une dette envers le chef et un sourire que tout le village lui enviait.
+---
+Bheki vint demander la main de Thandeka avec trente vaches, des perles, de la soie. « Voilà qui est généreux », dit la mère de la jeune fille, veuve et fatiguée. Thandeka, elle, hésitait. Bheki était poli, bien habillé, pas méchant. Mais quand il parlait, c'était pour dire ce qu'il possédait, ce qu'il avait acheté, ce qu'il comptait acquérir. Elle ne trouvait pas, dans ses paroles, de place pour elle.
+---
+Sipho, lui, ne vint pas avec des vaches. Il s'assit un soir devant la case de la mère, un fagot sur le dos. « Madame, dit-il, je n'ai rien à offrir à votre fille. Mais je peux couper du bois pour vous chaque matin, porter l'eau, réparer le toit avant les pluies. Je peux le faire pour rien, pendant un an, pour vous montrer ce que je suis. » La veuve le regarda longtemps, puis hocha la tête.
+---
+Pendant un an, Sipho vint chaque jour. Il coupait le bois, portait l'eau, réparait la clôture. Le soir, il restait un moment à écouter la vieille mère raconter ses souvenirs, que personne n'écoutait plus. Il riait avec elle, soignait sa toux, lui apportait des plantes. Thandeka, qui l'observait de loin, découvrit peu à peu ce que valait un homme qui donne sans compter, et ce que coûtent ceux qui comptent tout.
+---
+Au bout de l'année, la sécheresse frappa. Les troupeaux de Bheki périrent presque tous. Il vint voir Thandeka, abattu : « J'ai tout perdu. » Elle hocha la tête avec douceur. « Mais ce n'est pas pour cela que je ne t'épouse pas, dit-elle. C'est parce qu'un an plus tôt, un autre m'a offert ce qui ne s'achète pas : son temps. » Elle épousa Sipho à la saison suivante, et la veuve eut, jusqu'à sa mort, un fils de plus à sa table.
+
+=== conte: amour-tambour-mariage
+titre: Le tambour qui annonça deux mariages
+accroche: Un message tambouriné de travers, et tout un village préparait la mauvaise noce.
+etiquette: Rire
+origine: Conte d'inspiration d'Afrique centrale
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: tambour, ancien
+morale: Écoute bien le tambour, mais n'oublie pas de lire entre les silences.
+---
+Dans la vallée, les villages se parlaient par le tambour. Un roulement long pour appeler, trois coups secs pour avertir, un rythme particulier pour chaque nom. Le tambourinaire de Mbouda, Ngoran, était fier de son art : en vingt ans, il n'avait jamais commis une seule erreur. Jusqu'au jour où le chef lui confia un message très simple, en apparence.
+---
+« Annonce à tout le monde, dit le chef, que mon fils se marie dimanche. » Ngoran s'exécuta. Il joua le roulement du chef, le nom du fils, le signe « mariage », le signe « dimanche ». Mais ce jour-là, un orage lointain faisait vibrer l'air, et le vent emporta une partie du message. Le village voisin, Bangou, ne reçut que : « Le fils du chef... mariage... forgeron... dimanche. »
+---
+On compléta ce qui manquait. À Bangou, on conclut que le fils du chef allait épouser la fille du forgeron. Le forgeron lui-même, ravi, se mit à préparer la fête, à découper des moutons, à inviter la moitié de la vallée. Aïssa, sa fille, resta stupéfaite : elle n'avait jamais parlé au fils du chef. Dans l'ombre de la forge, un jeune apprenti, Kamga, devint tout pâle : lui, secrètement, l'aimait.
+---
+Le dimanche, les deux villages se rassemblèrent sur la grande place de Mbouda. Le fils du chef sortit de sa case, tout beau, tenant par la main une jeune fille que personne ne connaissait : Mina, la fille d'un pêcheur. Le forgeron, stupéfait, regarda Aïssa, qui regarda Kamga, qui regarda ses pieds. Le chef, qui comprit enfin ce qui s'était passé, fronça les sourcils. Puis il éclata de rire.
+---
+« Tambourinaire ! cria-t-il. Tu as fait un mariage de plus ! » Ngoran, rouge de honte, bégaya des excuses. Le chef leva la main : « Tu as annoncé un mariage, il y en aura deux. » Il se tourna vers le forgeron : « Ta fille est en âge. Cet apprenti la regarde depuis trois ans. Marions-les aussi. » Le jour même, deux couples s'unirent, devant deux villages ravis. Depuis, dans la vallée, on dit : « Écoute bien le tambour, mais n'oublie pas de lire entre les silences. »
