@@ -203,7 +203,7 @@ decor: village
 lumiere: nuit
 figures: tambour, griot
 morale: Ils n'avaient rien, et ils ont fait de ce rien une musique.
-# relecture OBLIGATOIRE : (1) Maurice, colonie française puis britannique ; plantations de canne, travail d'esclaves venus d'Afrique et de Madagascar : attesté. (2) Instruments du sega (ravanne, maravanne, triangle) : attesté. (3) Abolition de l'esclavage à Maurice : 1835 (date de l'abolition effective) : attesté. (4) Reconnaissance par l'UNESCO du sega tambour mauricien comme patrimoine culturel immatériel : à confirmer avant publication (formulé sans date).
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Maurice, colonie française puis britannique ; plantations de canne, travail d'esclaves venus d'Afrique et de Madagascar : attesté. (2) Instruments du sega (ravanne, maravanne, triangle) : attesté. (3) Abolition de l'esclavage à Maurice : 1835 (date de l'abolition effective) : attesté. (4) Reconnaissance par l'UNESCO du sega tambour mauricien comme patrimoine culturel immatériel : à confirmer avant publication (formulé sans date).
 ---
 Au XVIIIe et au XIXe siècle, l'île Maurice, dans l'océan Indien, était une colonie où l'on produisait du sucre. Des milliers d'hommes et de femmes, arrachés à l'Afrique et à Madagascar, y furent réduits en esclavage. Ils travaillaient de l'aube au soir dans les champs de canne, sous la surveillance de contremaîtres, sans salaire, sans droits et sans espoir d'être un jour entendus.
 ---
@@ -211,15 +211,15 @@ Le soir, après le travail, ils se rassemblaient parfois sur la plage ou près d
 ---
 Ils chantaient en créole, la langue qu'ils avaient inventée entre eux, mélange de français et de leurs langues d'origine. Les paroles disaient la fatigue, le mal du pays, les amours, parfois les moqueries à l'adresse des maîtres, glissées dans un rire pour ne pas être comprises. La danse accompagnait le chant : les pieds glissaient dans le sable sans quitter le sol, les hanches ondulaient, comme pour garder, dans le corps, ce que la chaîne ne pouvait pas toucher.
 ---
-Ce rythme, qu'on appela le sega, devint le langage d'une communauté. On disait ce qu'on ne pouvait pas dire autrement. Un mot, un geste, une pause pouvaient porter un message de colère, de tendresse, d'espoir. L'esclavage fut aboli dans l'île en 1835, mais le sega, lui, ne s'arrêta pas. Il passa de génération en génération, de plage en plage, de cour en cour.
+Ce rythme, qu'on appela le sega, devint le langage d'une communauté. On disait ce qu'on ne pouvait pas dire autrement. Un mot, un geste, une pause pouvaient porter un message de colère, de tendresse, d'espoir. L'esclavage fut aboli en 1835, remplacé par un « apprentissage » forcé qui dura jusqu'en 1839, mais le sega, lui, ne s'arrêta pas. Il passa de génération en génération, de plage en plage, de cour en cour.
 ---
-Aujourd'hui, le sega est la musique de toute l'île. On le danse dans les mariages, dans les fêtes, sur les places et dans les maisons. L'UNESCO l'a reconnu comme patrimoine culturel immatériel. Mais derrière la joie du rythme, les Mauriciens savent d'où il vient. Il vient de ceux qui n'avaient rien, et qui ont fait de ce rien une musique, pour que leur douleur ne soit pas la dernière chose qu'on dise d'eux.
+Aujourd'hui, le sega est la musique de toute l'île. On le danse dans les mariages, dans les fêtes, sur les places et dans les maisons. En 2014, l'UNESCO l'a reconnu comme patrimoine culturel immatériel de l'humanité. Mais derrière la joie du rythme, les Mauriciens savent d'où il vient. Il vient de ceux qui n'avaient rien, et qui ont fait de ce rien une musique, pour que leur douleur ne soit pas la dernière chose qu'on dise d'eux.
 
 === conte: mada-crocodile-sacre
 titre: Le village qui refusa l'hospitalité
 accroche: Un étranger demanda de l'eau. Le village se moqua. Le lendemain, il n'y avait plus de village.
 etiquette: Légende
-origine: Légende antakarana du lac sacré d'Anivorano (nord de Madagascar)
+origine: Légende du lac sacré d'Anivorano (nord de Madagascar)
 region: Afrique de l'Est
 type: court
 gratuites: 2
@@ -227,9 +227,9 @@ decor: fleuve
 lumiere: aube
 figures: crocodile, ancien
 morale: Ce que l'on refuse à l'étranger, on se le refuse à soi-même.
-# relecture OBLIGATOIRE : le lac sacré d'Anivorano (peuple antakarana) et ses crocodiles sacrés sont réels ; la légende du village englouti pour avoir refusé l'hospitalité est une version courante, à confronter à une source locale. Le texte reste sobre sur les rites.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : le lac sacré d'Anivorano (peuple antakarana) et ses crocodiles sacrés sont réels ; la légende du village englouti pour avoir refusé l'hospitalité est une version courante, à confronter à une source locale. Le texte reste sobre sur les rites.
 ---
-Au nord de Madagascar, près du village d'Anivorano, s'étend un lac que le peuple antakarana tient pour sacré. On y vit des crocodiles que personne n'ose chasser. Les anciens racontent pourquoi. Selon la légende, il y avait autrefois à cet endroit un grand village prospère, où l'on célébrait ce jour-là une fête, avec des danses, des chants et de grands festins.
+Au nord de Madagascar, près du village d'Anivorano, s'étend un lac que les habitants de la région tiennent pour sacré. On y vit des crocodiles que personne n'ose chasser. Les anciens racontent pourquoi. Selon la légende, il y avait autrefois à cet endroit un grand village prospère, où l'on célébrait ce jour-là une fête, avec des danses, des chants et de grands festins.
 ---
 Un étranger arriva, couvert de poussière, épuisé par un long voyage. Il demanda de l'eau et un morceau de pain. Il passa de case en case. Partout, on lui ferma la porte. « Nous n'avons pas de temps pour les mendiants », dit l'un. « Va-t'en, tu gâches la fête », dit un autre. Les enfants se moquèrent de ses vêtements usés. Personne ne lui offrit un abri.
 ---
@@ -237,4 +237,4 @@ Une seule femme, au bout du village, le fit entrer. Elle n'avait presque rien, m
 ---
 Quand elle fut loin, elle entendit un grondement. La terre trembla. Elle se retourna malgré elle : l'eau jaillissait de partout, engloutissant les cases, les enclos, la place de la fête. En quelques instants, le village avait disparu sous un lac profond, calme et noir. À la surface, on vit des formes sombres : des crocodiles. La légende dit que ce sont les habitants.
 ---
-Depuis, les Antakarana honorent les crocodiles du lac. Ils viennent y faire des offrandes, demandent la permission d'approcher. Personne ne leur fait de mal. Et lorsqu'un voyageur frappe à leur porte, on lui ouvre. « Ce que l'on refuse à l'étranger, disent les anciens, on se le refuse à soi-même. Un village sans hospitalité n'est plus qu'un lac qui attend de se former. »
+Depuis, les habitants de la région honorent les crocodiles du lac. Ils viennent y faire des offrandes, demandent la permission d'approcher. Personne ne leur fait de mal. Et lorsqu'un voyageur frappe à leur porte, on lui ouvre. « Ce que l'on refuse à l'étranger, disent les anciens, on se le refuse à soi-même. Un village sans hospitalité n'est plus qu'un lac qui attend de se former. »

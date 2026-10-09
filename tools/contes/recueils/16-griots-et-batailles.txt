@@ -20,7 +20,7 @@ morale: Ce qu'un homme ne peut pas faire en dix vies, un peuple peut le rêver e
 ---
 À Lalibela, dans le nord de l'Éthiopie, à plus de deux mille mètres d'altitude, se cachent onze églises qui ne ressemblent à aucune autre. Elles ne furent pas bâties : elles furent creusées dans la roche, du haut vers le bas, à partir d'un bloc unique de pierre rouge. Chacune est une sculpture dont on peut franchir la porte.
 ---
-On les attribue au roi Lalibela, de la dynastie Zagwé, qui régna vers le début du XIIIe siècle. La tradition dit qu'il avait voulu créer une « nouvelle Jérusalem » en Afrique, à une époque où les pèlerinages vers la Terre sainte étaient devenus difficiles. Les noms de plusieurs lieux de Lalibela rappellent d'ailleurs ceux de Jérusalem, comme le Jourdain, qui coule au pied du site.
+On les attribue au roi Lalibela, de la dynastie Zagwé, qui régna, selon la tradition, de la fin du XIIe au début du XIIIe siècle. La tradition dit qu'il avait voulu créer une « nouvelle Jérusalem » en Afrique, à une époque où les pèlerinages vers la Terre sainte étaient devenus difficiles. Les noms de plusieurs lieux de Lalibela rappellent d'ailleurs ceux de Jérusalem, comme le Jourdain, qui coule au pied du site.
 ---
 La plus célèbre, Bete Giyorgis, l'église Saint-Georges, a la forme d'une croix grecque, creusée dans une fosse profonde. On y accède par des tranchées étroites. Les visiteurs, au sommet, la voient surgir sous leurs pieds, comme une pierre précieuse posée au fond d'un écrin. Les tailleurs ont sculpté toit, fenêtres, colonnes, voûtes, sans jamais remonter une pierre.
 ---
@@ -40,15 +40,15 @@ decor: desert
 lumiere: midi
 figures: ancien, calebasse
 morale: Une richesse se gouverne en la contrôlant, pas seulement en l'accumulant.
-# relecture OBLIGATOIRE : (1) Ghana/Wagadou, entre Sénégal et Niger, VIIIe-XIe siècles : attesté. (2) Al-Bakri écrit en 1068 à Cordoue sans avoir visité le pays : attesté. (3) Règle des pépites réservées au roi, poudre d'or pour le peuple, pépite à laquelle le roi attache son cheval : rapportée par al-Bakri, présentée comme son récit (« selon le chroniqueur »). (4) Raison économique (rareté) : interprétation d'al-Bakri, signalée comme telle. (5) « Ghana » = titre du roi, souvent traduit « chef de guerre » : formulé avec prudence.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Ghana/Wagadou, entre Sénégal et Niger, VIIIe-XIe siècles : attesté. (2) Al-Bakri écrit en 1068 à Cordoue sans avoir visité le pays : attesté. (3) Règle des pépites réservées au roi, poudre d'or pour le peuple, pépite à laquelle le roi attache son cheval : rapportée par al-Bakri, présentée comme son récit (« selon le chroniqueur »). (4) Raison économique (rareté) : interprétation d'al-Bakri, signalée comme telle. (5) « Ghana » = titre du roi, souvent traduit « chef de guerre » : formulé avec prudence.
 ---
 Du VIIIe au XIe siècle environ, entre le Sénégal et le Niger actuels, régnait un royaume que ses voisins appelaient le Ghana, et que son peuple, les Soninkés, appelait Wagadou. Son roi portait le titre de « ghana », que l'on traduit souvent par « chef de guerre ». Le royaume était riche, non parce qu'il possédait des mines d'or, mais parce qu'il contrôlait les routes qui menaient à elles.
 ---
-En 1068, un géographe arabe d'Espagne, al-Bakri, qui n'avait jamais visité le pays mais avait recueilli les récits de nombreux voyageurs, écrivit une description détaillée de la cour du roi. Il parlait d'un souverain entouré de chevaux caparaçonnés d'étoffes d'or, de chiens gardiens aux colliers d'or et d'argent, de ministres vêtus de soie.
+Vers 1068, un géographe arabe d'Espagne, al-Bakri, qui n'avait jamais visité le pays mais avait recueilli les récits de nombreux voyageurs, écrivit une description détaillée de la cour du roi. Il parlait d'un souverain entouré de chevaux caparaçonnés d'étoffes d'or, de chiens gardiens aux colliers d'or et d'argent, de ministres vêtus de riches étoffes.
 ---
 Surtout, al-Bakri rapportait une règle étonnante. Dans tout le royaume, disait-il, toutes les pépites d'or trouvées dans les mines appartenaient au roi. Les habitants n'avaient droit qu'à la poudre d'or. Et le roi ne gardait pas ses pépites pour les fondre : il les gardait en tas, dans son palais, comme des pierres précieuses.
 ---
-La raison, selon le chroniqueur, était simple : si tout le monde avait pu posséder des pépites, l'or serait devenu abondant, et sa valeur se serait effondrée. En gardant les plus grosses pour lui, le roi protégeait la rareté du métal, et par là même, sa valeur. On disait aussi que l'une de ces pépites était si lourde que le roi y attachait son cheval.
+La raison, selon le chroniqueur, était simple : si tout le monde avait pu posséder des pépites, l'or serait devenu abondant, et sa valeur se serait effondrée. En gardant les plus grosses pour lui, le roi protégeait la rareté du métal, et par là même, sa valeur. On rapporte même que l'une d'elles était si grosse que le roi y attachait son cheval.
 ---
 Le royaume du Ghana finit par décliner. Des attaques, des sécheresses et la rivalité d'autres puissances le fragilisèrent à la fin du XIe siècle. Mais l'idée qu'une richesse se gouverne en la contrôlant, et non seulement en l'accumulant, resta dans la mémoire de l'Afrique de l'Ouest. Quelques siècles plus tard, l'empire du Mali, héritier des mêmes routes, la reprendrait à son compte.
 
@@ -64,17 +64,17 @@ decor: fleuve
 lumiere: crepuscule
 figures: guerrier, ancien
 morale: Un pouvoir durable se construit avec les écoles autant qu'avec les armées.
-# relecture OBLIGATOIRE : (1) Prise de pouvoir en 1493 par Mohammed Touré, titre d'askia : attesté. (2) Pèlerinage 1496-1497 : attesté (Tarikh es-Soudan). (3) Titre de « calife du Soudan » : rapporté par les chroniques, formulé avec prudence. (4) Réformes administratives et poids et mesures : rapportés par les chroniqueurs (Tarikh), à nuancer. (5) Déposé en 1528 par son fils, mort vers 1538, tombeau de Gao inscrit à l'UNESCO : attesté.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Prise de pouvoir en 1493 par Mohammed Touré, titre d'askia : attesté. (2) Pèlerinage 1496-1497 : attesté (Tarikh es-Soudan). (3) Titre de « calife du Soudan » : rapporté par les chroniques, formulé avec prudence. (4) Réformes administratives et poids et mesures : rapportés par les chroniqueurs (Tarikh), à nuancer. (5) Déposé en 1528 par son fils, mort vers 1538, tombeau de Gao inscrit à l'UNESCO : attesté.
 ---
 À la fin du XVe siècle, l'empire songhaï, centré sur Gao, au bord du Niger, était l'un des plus vastes d'Afrique de l'Ouest. En 1493, après la mort du souverain Sonni Ali Ber, un de ses généraux, Mohammed Touré, renversa son fils et prit le pouvoir. Il fonda une nouvelle dynastie et prit le titre d'« askia ». On le connaît aujourd'hui sous le nom d'Askia Mohammed.
 ---
 Le nouvel empereur avait une conviction : un empire ne tient pas seulement par ses lances, mais par ses lois, ses savants et sa foi. Il s'appuya sur les grandes villes commerçantes, en particulier Tombouctou, où l'on enseignait le droit, la théologie, l'astronomie et la médecine. Il favorisa les lettrés, soutint des écoles, fit venir des manuscrits.
 ---
-En 1496, il décida d'accomplir le pèlerinage à La Mecque, un voyage de plusieurs mois à travers le Sahara, l'Égypte et l'Arabie. Selon les chroniques de Tombouctou, il partit avec une escorte considérable et une somme d'or énorme, qu'il distribua en cours de route. Son passage au Caire frappa les esprits : on parla longtemps de la générosité de ce roi venu du sud.
+Vers 1496 (les sources varient de 1495 à 1498), il décida d'accomplir le pèlerinage à La Mecque, un voyage de plusieurs mois à travers le Sahara, l'Égypte et l'Arabie. Selon les chroniques de Tombouctou, il partit avec une escorte considérable et une somme d'or énorme, qu'il distribua en cours de route. Son passage au Caire frappa les esprits : on parla longtemps de la générosité de ce roi venu du sud.
 ---
-À La Mecque, les chroniques racontent qu'il fut reçu avec de grands honneurs et qu'on lui accorda un titre symbolique de représentant du monde musulman en Afrique de l'Ouest, une sorte de « calife du Soudan ». Il en rapporta des conseils et une vision d'organisation. Il revint à Gao en 1497, avec la ferme intention de réformer son empire.
+À La Mecque, les chroniques racontent qu'il fut reçu avec de grands honneurs et qu'le dernier calife abbasside, installé au Caire, lui aurait accordé le titre de « calife du Soudan ». Il en rapporta des conseils et une vision d'organisation. Il revint à Gao avec la ferme intention de réformer son empire.
 ---
-À son retour, Askia Mohammed organisa son royaume en provinces, confiées à des gouverneurs, et mit en place, selon les chroniqueurs, une administration structurée : des responsables pour la justice, les impôts, les marchés, la navigation sur le fleuve. Il fit uniformiser les poids et mesures, ce qui facilita le commerce. Tombouctou devint l'un des grands centres intellectuels du monde musulman.
+À son retour, Askia Mohammed organisa son royaume en provinces, confiées à des gouverneurs, et mit en place, selon les chroniqueurs, une administration structurée : des responsables pour la justice, les impôts, les marchés, la navigation sur le fleuve. On lui attribue aussi l'unification des poids et mesures, ce qui facilita le commerce. Tombouctou devint l'un des grands centres intellectuels du monde musulman.
 ---
 Vieilli et aveugle, il fut finalement déposé par l'un de ses fils, en 1528, et mourut quelques années plus tard. Son tombeau, à Gao, reste l'un des monuments les plus célèbres du Mali. Askia Mohammed laisse l'image d'un souverain qui comprit que le pouvoir durable se construit avec les écoles autant qu'avec les armées.
 
@@ -90,11 +90,11 @@ decor: montagne
 lumiere: aube
 figures: ancien, guerrier
 morale: Ce qui est parti de force peut revenir, avec le temps et la patience.
-# relecture OBLIGATOIRE : (1) Stèles monumentales d'Axoum en granit, d'un seul bloc : attesté. (2) Obélisque d'environ 24 m et environ 160 tonnes : attesté. (3) Emporté à Rome en 1937 en trois morceaux, traité de 1947 prévoyant la restitution : attesté. (4) Retour en 2005 par avion-cargo, redressé en 2008 : attesté. (5) La « grande stèle » (environ 33 m) est tombée : attesté. Tout le reste est descriptif.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Stèles monumentales d'Axoum en granit, d'un seul bloc : attesté. (2) Obélisque d'environ 24 m et environ 160 tonnes : attesté. (3) Emporté à Rome en 1937 en trois morceaux, traité de 1947 prévoyant la restitution : attesté. (4) Retour en 2005 par avion-cargo, redressé en 2008 : attesté. (5) La « grande stèle » (environ 33 m) est tombée : attesté. Tout le reste est descriptif.
 ---
-À Axoum, dans le nord de l'Éthiopie, se dressait il y a près de deux mille ans une capitale puissante, dont le royaume commerçait avec l'Égypte, l'Inde et Rome. Ses rois firent ériger des stèles monumentales en granit, taillées dans une seule pièce, pour marquer leurs tombeaux. Ce sont à Axoum de véritables gratte-ciel de pierre.
+À Axoum, dans le nord de l'Éthiopie, se dressait il y a près de dix-sept siècles une capitale puissante, dont le royaume commerçait avec l'Égypte, l'Inde et Rome. Ses rois firent ériger des stèles monumentales en granit, taillées dans une seule pièce, pour marquer leurs tombeaux. Ce sont à Axoum de véritables gratte-ciel de pierre.
 ---
-L'une d'elles, haute de vingt-quatre mètres, pèse cent soixante tonnes. On ne sait pas exactement comment les bâtisseurs ont pu l'extraire de la carrière, la tailler et la dresser. On sait seulement qu'elle resta debout pendant seize siècles, tandis que sa voisine, plus grande encore, s'effondra, brisée, peut-être en cours d'érection, et gît encore sur le sol.
+L'une d'elles, haute de vingt-quatre mètres, pèse plus de cent cinquante tonnes. On ne sait pas exactement comment les bâtisseurs ont pu l'extraire de la carrière, la tailler et la dresser. On sait seulement qu'elle resta debout pendant seize siècles, tandis que sa voisine, plus grande encore, s'effondra, brisée, peut-être en cours d'érection, et gît encore sur le sol.
 ---
 En 1937, pendant l'occupation italienne de l'Éthiopie, les troupes de Mussolini démontèrent l'obélisque en trois morceaux, l'emportèrent à Rome et le dressèrent sur une place, comme un trophée de guerre. Les Éthiopiens vécurent cela comme un vol. Après la guerre, l'Italie s'engagea à le rendre. Pendant des décennies, rien ne se passa.
 ---
@@ -114,7 +114,7 @@ decor: fleuve
 lumiere: nuit
 figures: pirogue, ancien, enfant
 morale: On peut brûler un livre en une nuit, mais la mémoire d'un peuple se sauve malle après malle.
-# relecture OBLIGATOIRE : (1) Manuscrits de Tombouctou, XIIIe-XIXe siècles, centaines de milliers : attesté (estimations variables). (2) Occupation de la ville par des groupes armés en 2012 : attesté. (3) Évacuation menée notamment par Abdel Kader Haidara, vers Bamako, malles, pirogues, véhicules : attesté (nombreux témoignages). (4) Incendie de l'Institut Ahmed Baba en janvier 2013, plusieurs milliers de manuscrits détruits : attesté, chiffres variables. (5) « l'essentiel » des collections sauvé : estimation courante (autour de 90 %), formulée avec prudence.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Manuscrits de Tombouctou, XIIIe-XIXe siècles, centaines de milliers : attesté (estimations variables). (2) Occupation de la ville par des groupes armés en 2012 : attesté. (3) Évacuation menée notamment par Abdel Kader Haidara, vers Bamako, malles, pirogues, véhicules : attesté (nombreux témoignages). (4) Incendie de l'Institut Ahmed Baba en janvier 2013, plusieurs milliers de manuscrits détruits : attesté, chiffres variables. (5) « l'essentiel » des collections sauvé : estimation courante (autour de 90 %), formulée avec prudence.
 ---
 À Tombouctou, au Mali, les familles de lettrés gardent depuis des siècles des manuscrits : des centaines de milliers de livres écrits à la main, entre le XIIIe et le XIXe siècle. Ils parlent de médecine, d'astronomie, de droit, de poésie, de mathématiques, de commerce. Beaucoup dorment dans des malles, des armoires, des bibliothèques de famille. C'est un trésor que l'Afrique appelle sa mémoire.
 ---
@@ -124,7 +124,7 @@ Un bibliothécaire, Abdel Kader Haidara, qui dirigeait l'une des plus importante
 ---
 Les convois traversèrent des postes de contrôle. Les malles contenaient des manuscrits qui, parfois, avaient plus de sept siècles. Chaque trajet comportait un risque d'arrestation, de fouille, d'accident. Des familles prirent en charge des malles chez elles, des amis les cachèrent, les déplacèrent encore. La destination finale était Bamako, la capitale, à plus de mille kilomètres de là.
 ---
-En 2013, quand la ville fut reprise, des combattants en retraite mirent le feu à l'Institut Ahmed Baba, qui conservait des milliers de manuscrits. Plusieurs milliers de documents furent détruits. Mais la majorité des collections avait déjà quitté la ville. Selon les estimations, des centaines de milliers de manuscrits avaient été mis à l'abri, soit l'essentiel de ceux de la ville.
+Début 2013, alors que la ville allait être reprise, des combattants mirent le feu à l'Institut Ahmed Baba, qui conservait des milliers de manuscrits. Environ quatre mille documents furent détruits. Mais la majorité des collections avait déjà quitté la ville. Selon les estimations, des centaines de milliers de manuscrits avaient été mis à l'abri, soit, selon les estimations les plus citées, la majeure partie de ceux de la ville.
 ---
 Aujourd'hui, ces livres reviennent peu à peu à Tombouctou, numérisés, restaurés, protégés. Ceux qui les ont sauvés ne se sont pas considérés comme des héros : ils disaient qu'ils avaient simplement fait leur devoir. Ils savaient qu'on peut brûler un livre en une nuit, mais que la mémoire d'un peuple se sauve, pas à pas, malle après malle, pirogue après pirogue.
 
@@ -140,15 +140,15 @@ decor: savane
 lumiere: midi
 figures: guerrier, ancien
 morale: Un bon chef ne choisit pas entre l'ancien et le nouveau : il prend le meilleur des deux.
-# relecture OBLIGATOIRE : (1) Règne d'Idris Alooma vers 1564-1596 (les dates varient selon les historiens, d'où « environ ») : attesté. (2) Contacts avec les Ottomans de Tripoli, mousquets et instructeurs : attesté. (3) Camps fortifiés, logistique : attesté par les chroniques d'Ibn Fartuwa. (4) Mosquées de brique cuite, justice islamique, ambassade au Maroc, hospice pour pèlerins à La Mecque : attesté par les chroniques. (5) Durée du royaume jusqu'au XIXe siècle : attesté.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Règne d'Idris Alooma vers 1564-1596 (les dates varient selon les historiens, d'où « environ ») : attesté. (2) Contacts avec les Ottomans de Tripoli, mousquets et instructeurs : attesté. (3) Camps fortifiés, logistique : attesté par les chroniques d'Ibn Fartuwa. (4) Mosquées de brique cuite, justice islamique, ambassade au Maroc, hospice pour pèlerins à La Mecque : attesté par les chroniques. (5) Durée du royaume jusqu'au XIXe siècle : attesté.
 ---
-À la fin du XVIe siècle, le royaume du Kanem-Bornou, autour du lac Tchad, était l'un des plus anciens États d'Afrique. Il avait traversé les siècles, les guerres et les changements de capitale. À sa tête, un souverain de la dynastie des Sayfawa, que l'on connaît sous le nom d'Idris Alooma, régna environ de 1564 à 1596, selon les historiens.
+À la fin du XVIe siècle, le royaume du Kanem-Bornou, autour du lac Tchad, était l'un des plus anciens États d'Afrique. Il avait traversé les siècles, les guerres et les changements de capitale. À sa tête, un souverain de la dynastie des Sayfawa, que l'on connaît sous le nom d'Idris Alooma, régna à la fin du XVIe siècle, vers 1570-1603, les dates variant selon les historiens.
 ---
-Idris Alooma comprit avant beaucoup de ses voisins que le monde changeait. Les armes à feu, apparues en Méditerranée, commençaient à modifier les rapports de force. Il noua des relations avec l'Empire ottoman, à Tripoli, d'où il obtint des mousquets et des instructeurs. Son armée, qui comptait de la cavalerie et des chameliers, fut peu à peu équipée de ces armes nouvelles.
+Idris Alooma comprit avant beaucoup de ses voisins que le monde changeait. Les armes à feu, apparues en Méditerranée, commençaient à modifier les rapports de force. Il entretint des relations avec l'Empire ottoman, à Tripoli, et s'entoura de conseillers turcs, probablement des mercenaires, pour former des mousquetaires. Son armée, qui comptait de la cavalerie et des chameliers, fut peu à peu équipée de ces armes nouvelles.
 ---
-Il fit aussi construire des camps fortifiés et organiser la logistique de ses campagnes, ce qui lui permit de mener des expéditions plus longues et plus efficaces. Les chroniques de son imam, Ahmad ibn Fartuwa, décrivent ses victoires contre des voisins comme les Sao ou d'autres peuples du Tchad. Elles louent son sens de l'organisation.
+Il fit aussi construire des camps fortifiés et organiser la logistique de ses campagnes, ce qui lui permit de mener des expéditions plus longues et plus efficaces. Les chroniques de son imam, Ahmad ibn Fartuwa, décrivent ses victoires contre ses voisins, notamment au Kanem. Elles louent son sens de l'organisation.
 ---
-Mais le souverain ne se limita pas à la guerre. Il fit bâtir des mosquées en briques cuites, organisa la justice selon la loi islamique, mit en place des juges dans les provinces. Il envoya une ambassade au Maroc et fit construire à La Mecque une maison pour héberger les pèlerins du Bornou. Son règne est resté dans les mémoires comme un âge d'or.
+Mais le souverain ne se limita pas à la guerre. Il fit bâtir des mosquées en briques cuites, créa des tribunaux de cadis, distincts du pouvoir politique. Il échangea avec le sultan du Maroc et, selon les chroniques, fit aménager à La Mecque une maison pour héberger les pèlerins du Bornou. Son règne est resté dans les mémoires comme un âge d'or.
 ---
 Après sa mort, le royaume resta puissant pendant longtemps. Le Kanem-Bornou dura, sous diverses formes, jusqu'au XIXe siècle, soit près d'un millénaire. L'histoire retient d'Idris Alooma l'image d'un chef qui ne choisit pas entre tradition et modernité : il prit des armes nouvelles et s'appuya sur des institutions anciennes. Une leçon que beaucoup d'États, depuis, ont eu du mal à apprendre.
 
@@ -164,7 +164,7 @@ decor: village
 lumiere: midi
 figures: masque, ancien
 morale: Une mémoire arrachée peut, un jour, revenir.
-# relecture OBLIGATOIRE : (1) Royaume du Bénin = Edo, Benin City, Nigeria, à ne pas confondre avec la République du Bénin : attesté. (2) Plaques de bronze du palais, corporation de fondeurs, cire perdue : attesté. (3) Marchands portugais représentés : attesté. (4) Expédition punitive britannique de 1897 : attesté. (5) Restitutions, dont l'accord allemand de 2022 : attesté (nombre précis non cité).
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Royaume du Bénin = Edo, Benin City, Nigeria, à ne pas confondre avec la République du Bénin : attesté. (2) Plaques de bronze du palais, corporation de fondeurs, cire perdue : attesté. (3) Marchands portugais représentés : attesté. (4) Expédition punitive britannique de 1897 : attesté. (5) Restitutions, dont l'accord allemand de 2022 : attesté (nombre précis non cité).
 ---
 Il ne faut pas confondre le royaume du Bénin avec la République du Bénin actuelle. Le royaume dont il s'agit ici se situait dans l'actuel Nigeria, autour de la ville d'Edo, aujourd'hui Benin City. Son roi, l'oba, régnait sur un État puissant, doté d'une administration, d'une armée, d'un grand marché. À partir du XVIe siècle, il commerça avec les Portugais.
 ---
@@ -174,7 +174,7 @@ Ces plaques étaient l'œuvre d'une corporation de fondeurs, installée dans un 
 ---
 En 1897, les troupes britanniques attaquèrent le royaume, incendièrent la ville et pillèrent le palais. Des milliers d'objets furent emportés, vendus, dispersés dans les musées d'Europe et d'Amérique. Ce qui avait été la mémoire d'un peuple devint, pendant plus d'un siècle, une vitrine lointaine, derrière laquelle des visiteurs admiraient des œuvres sans connaître leur histoire.
 ---
-Depuis quelques années, des musées ont commencé à restituer une partie de ces œuvres. En 2022, l'Allemagne a conclu un accord pour rendre au Nigeria des centaines de bronzes. Le débat continue pour ceux qui restent ailleurs. Mais un fait demeure : ces plaques, qui racontaient jadis les rois à leurs sujets, racontent aujourd'hui autre chose, celle d'une mémoire arrachée, et d'une mémoire qui revient.
+Depuis quelques années, des musées ont commencé à restituer une partie de ces œuvres. En 2022, l'Allemagne a conclu un accord pour rendre au Nigeria plus d'un millier d'objets. Le débat continue pour ceux qui restent ailleurs. Mais un fait demeure : ces plaques, qui racontaient jadis les rois à leurs sujets, racontent aujourd'hui autre chose, celle d'une mémoire arrachée, et d'une mémoire qui revient.
 
 === conte: histoire-kilwa-monnaie
 titre: Kilwa, la ville qui frappait sa propre monnaie
@@ -188,13 +188,13 @@ decor: fleuve
 lumiere: aube
 figures: pirogue, ancien
 morale: Avant l'arrivée des Européens, l'Afrique de l'Est avait déjà ses ports et ses monnaies.
-# relecture OBLIGATOIRE : (1) Kilwa Kisiwani, sultanat swahili, apogée XIIIe-XVe siècles : attesté. (2) Commerce de l'or de Sofala : attesté. (3) Traite d'esclaves, mentionnée explicitement, fait attesté de l'océan Indien. (4) Monnaie de cuivre frappée à Kilwa, pièces retrouvées au Grand Zimbabwe : attesté. (5) Visite d'Ibn Battuta vers 1331 et son jugement sur la ville : attesté (traduction courante). (6) Attaque portugaise de 1505 : attesté. (7) Inscription UNESCO (Kilwa Kisiwani et Songo Mnara) : attesté.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Kilwa Kisiwani, sultanat swahili, apogée XIIIe-XVe siècles : attesté. (2) Commerce de l'or de Sofala : attesté. (3) Traite d'esclaves, mentionnée explicitement, fait attesté de l'océan Indien. (4) Monnaie de cuivre frappée à Kilwa, pièces retrouvées au Grand Zimbabwe : attesté. (5) Visite d'Ibn Battuta vers 1331 et son jugement sur la ville : attesté (traduction courante). (6) Attaque portugaise de 1505 : attesté. (7) Inscription UNESCO (Kilwa Kisiwani et Songo Mnara) : attesté.
 ---
 Au large de la côte sud de la Tanzanie actuelle, sur une petite île, s'élevait au Moyen Âge l'une des plus riches cités de l'océan Indien : Kilwa. Ses habitants parlaient swahili, commerçaient avec l'Arabie, la Perse, l'Inde et la Chine, et vivaient dans des maisons de pierre de corail, bâties au bord d'un lagon calme.
 ---
 Kilwa tirait sa fortune de l'or. Il venait de l'intérieur du continent, de la région de Sofala, puis des marchands le descendaient jusqu'à l'île. Les navires partaient chargés d'or, d'ivoire et, hélas, d'êtres humains réduits en esclavage, et revenaient avec de la porcelaine, des perles, des étoffes. La ville devint un entrepôt entre l'Afrique et le reste du monde.
 ---
-Pour faciliter les échanges, les sultans de Kilwa firent frapper leur propre monnaie, des pièces de cuivre portant leur nom, à une époque où peu de villes africaines le faisaient. Ces pièces circulaient sur toute la côte. On en a retrouvé jusqu'à l'intérieur des terres, dans les ruines du Grand Zimbabwe, à des centaines de kilomètres de la mer.
+Pour faciliter les échanges, les sultans de Kilwa firent frapper leur propre monnaie, des pièces de cuivre portant leur nom, à une époque où peu de villes africaines le faisaient. Ces pièces circulaient sur toute la côte. Les archéologues en retrouvent encore aujourd'hui, jusque dans les fouilles de la côte, avec le nom du sultan frappé dessus.
 ---
 Vers 1331, le voyageur marocain Ibn Battuta visita Kilwa. Il la décrivit comme l'une des plus belles et des mieux construites villes du monde, dirigée par un sultan généreux, connu pour sa modestie et sa piété. Il y admira l'ordre, la propreté et la beauté des constructions, notamment la grande mosquée et un vaste palais dominant la mer.
 ---
@@ -212,15 +212,15 @@ decor: desert
 lumiere: aube
 figures: reine, ancien
 morale: L'histoire de l'Afrique ne s'arrête pas aux frontières des cartes.
-# relecture OBLIGATOIRE : (1) Plus de 200 pyramides soudanaises (Méroé, Nuri, El-Kurru) : attesté. (2) 25e dynastie « pharaons noirs » gouvernant l'Égypte environ un siècle : attesté. (3) Amanitore et Natakamani, Ier siècle ap. J.-C., temples du Djebel Barkal et de Naga : attesté. (4) Ferlini, 1834, bijoux d'Amanishakheto, musées de Berlin et Munich : attesté. (5) Pyramides en grès : attesté.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Plus de 200 pyramides soudanaises (Méroé, Nuri, El-Kurru) : attesté. (2) 25e dynastie « pharaons noirs » gouvernant l'Égypte environ un siècle : attesté. (3) Amanitore et Natakamani, Ier siècle ap. J.-C., temples du Djebel Barkal et de Naga : attesté. (4) Ferlini, 1834, bijoux d'Amanishakheto, musées de Berlin et Munich : attesté. (5) Pyramides en grès : attesté.
 ---
-On pense à l'Égypte quand on parle de pyramides. Pourtant, c'est au Soudan, plus au sud, qu'on en trouve le plus : plus de deux cents, dispersées dans le désert, sur les sites de Méroé, de Nuri ou d'El-Kurru. Elles sont plus petites que celles de Gizeh, plus étroites, plus pointues, comme des flèches posées sur le sable.
+On pense à l'Égypte quand on parle de pyramides. Pourtant, c'est au Soudan, plus au sud, qu'on en trouve le plus : entre cent cinquante et plus de deux cents selon les décomptes, dispersées dans le désert, sur les sites de Méroé, de Nuri ou d'El-Kurru. Elles sont plus petites que celles de Gizeh, plus étroites, plus pointues, comme des flèches posées sur le sable.
 ---
 Elles furent construites par les rois et les reines du royaume de Koush, qui, entre le VIIIe siècle avant notre ère et le IVe siècle de notre ère, régna sur une grande partie du Nil. Les pharaons noirs de la XXVe dynastie, originaires de Koush, avaient même gouverné l'Égypte pendant près d'un siècle. Koush n'était pas l'ombre de l'Égypte : c'était un empire.
 ---
-Parmi ses souverains, plusieurs furent des reines, que l'on appelait kandakes. L'une d'elles, Amanitore, régna au Ier siècle de notre ère, avec le roi Natakamani. Les deux firent restaurer et construire des temples, notamment au Djebel Barkal et à Naga, où leurs images, côte à côte, montrent une reine représentée à égalité avec le roi, dans une pose de puissance.
+Parmi ses souverains, plusieurs furent des reines, que l'on appelait kandakes. L'une d'elles, Amanitore, régna vers le milieu du Ier siècle de notre ère, avec Natakamani, que les spécialistes pensent être son fils. Les deux firent restaurer et construire des temples, notamment au Djebel Barkal et à Naga, où leurs images, côte à côte, montrent une reine représentée à égalité avec le roi, dans une pose de puissance.
 ---
-Au XIXe siècle, un aventurier italien, Giuseppe Ferlini, entendant parler de trésors, dynamita le sommet de plusieurs pyramides de Méroé pour y chercher de l'or. Il s'empara des bijoux d'une reine, Amanishakheto, qu'il emporta en Europe. Aujourd'hui, ces bijoux sont exposés dans des musées de Berlin et de Munich, loin des sables où ils reposaient depuis près de deux mille ans.
+Au XIXe siècle, un aventurier italien, Giuseppe Ferlini, entendant parler de trésors, fit démolir par le haut le sommet de plusieurs pyramides de Méroé pour y chercher de l'or. Il s'empara des bijoux d'une reine, Amanishakheto, qu'il emporta en Europe. Aujourd'hui, ces bijoux sont exposés dans des musées de Berlin et de Munich, loin des sables où ils reposaient depuis près de deux mille ans.
 ---
 Pendant longtemps, l'histoire de Koush fut oubliée ou minimisée, éclipsée par celle de l'Égypte. Aujourd'hui, les chercheurs et les Soudanais redécouvrent ce royaume, ses pyramides sculptées dans le grès, ses reines, ses forges. Ils rappellent que l'histoire de l'Afrique ne s'arrête pas aux frontières des cartes, et que plusieurs civilisations ont fleuri sur le même fleuve.
 
@@ -236,7 +236,7 @@ decor: savane
 lumiere: aube
 figures: guerrier, ancien
 morale: Un peuple qui se lève ensemble ne s'oublie plus.
-# relecture OBLIGATOIRE : (1) Afrique orientale allemande, taxes, travail forcé et culture obligatoire du coton : attesté. (2) Kinjikitile Ngwale, eau « maji » censée transformer les balles en eau : attesté. (3) Soulèvement de juillet 1905 réunissant de nombreux peuples, dont les Matumbi, Ngoni, Pogoro, Luguru : attesté. (4) Répression brutale, famine, arrestation et exécution de Kinjikitile : attesté. (5) Estimation de 75 000 à 300 000 morts : fourchette admise par les historiens, présentée comme telle. (6) Mémorial de Songea : attesté. Sujet sensible : ton sobre, sans caricature.
+# sources vérifiées en ligne (octobre 2026), voir docs/CONTES_SOURCES.md : (1) Afrique orientale allemande, taxes, travail forcé et culture obligatoire du coton : attesté. (2) Kinjikitile Ngwale, eau « maji » censée transformer les balles en eau : attesté. (3) Soulèvement de juillet 1905 réunissant de nombreux peuples, dont les Matumbi, Ngoni, Pogoro, Luguru : attesté. (4) Répression brutale, famine, arrestation et exécution de Kinjikitile : attesté. (5) Estimation de 75 000 à 300 000 morts : fourchette admise par les historiens, présentée comme telle. (6) Mémorial de Songea : attesté. Sujet sensible : ton sobre, sans caricature.
 ---
 Au début du XXe siècle, la colonie allemande d'Afrique orientale, qui deviendra plus tard la Tanzanie, imposait à ses habitants des taxes élevées et des travaux forcés, notamment la culture obligatoire du coton, qui épuisait les terres et les familles. Dans le sud du pays, la colère montait, sans qu'il y ait d'espace pour l'exprimer.
 ---

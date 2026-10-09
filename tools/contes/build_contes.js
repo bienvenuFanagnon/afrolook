@@ -83,7 +83,7 @@ function parseRecueil(file) {
         return;
       }
       if (!inBody) {
-        if (line.trim().startsWith('#')) { if (/^#\s*relecture OBLIGATOIRE/.test(line.trim())) st.review = true; return; } // commentaire (idée du plan, note de relecture)
+        if (line.trim().startsWith('#')) { if (/^#\s*(relecture OBLIGATOIRE|à relire)/.test(line.trim())) st.review = true; return; } // commentaire (idée du plan, note de relecture)
         const m = /^(titre|accroche|etiquette|origine|region|type|gratuites|decor|lumiere|figures|morale):\s*(.*)$/.exec(line.trim());
         if (!m) { if (line.trim()) problems.push(`${sid} : ligne d'en-tête inconnue « ${line.slice(0, 40)} »`); return; }
         const v = m[2].trim();
@@ -264,7 +264,7 @@ if (process.argv.includes('--upload')) {
       if (typeof old.active === 'boolean') c.active = old.active;
       const pending = !!s.review && !relu.has(s.id);
       if (pending) c.active = false; // en attente de relecture : masqué
-      else if (s.review && old.review === true) c.active = true; // relecture faite : publié
+      else if (old.review === true) c.active = true; // relecture faite (ou marque retirée) : publié
       if (typeof old.featured === 'boolean') c.feat = old.featured;
       if (typeof old.price === 'number') c.pr = old.price;
       (chunks[s.chunk] = chunks[s.chunk] || []).push(c);

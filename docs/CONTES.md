@@ -187,7 +187,7 @@ carte du fil (affichages, clics, croix), ambiance coupée, contes les plus ouver
 - `tools/contes/vagues/vague-02.txt` : plan de la vague 2 (100 contes, 10 recueils). **Écrite** : recueils 07 à 16 dans `tools/contes/recueils/` (les identifiants et quelques
   scènes ont été ajustés en écrivant ; les fichiers de `recueils/` font foi, le plan sert de mémoire). Bibliothèque : 16 recueils, 136 contes, environ 51 600 mots.
 - `build_contes.js --report` : état et équilibre de la bibliothèque.
-- **Relecture des contes d'histoire** : un conte dont l'en-tête contient `# relecture OBLIGATOIRE` (faits datés, personnages réels) est envoyé **masqué**.
+- **Contrôle des contes d'histoire** : les 18 contes de la vague 2 ont été confrontés à des sources en ligne et corrigés (voir `docs/CONTES_SOURCES.md`). Pour tout nouveau conte d'histoire : un conte dont l'en-tête contient `# relecture OBLIGATOIRE` (faits datés, personnages réels) est envoyé **masqué**.
   Une personne le relit (les points à vérifier sont listés dans le commentaire), puis son identifiant est ajouté à `tools/contes/relu.txt` et l'envoi suivant le publie.
   Les contes masqués sont exclus du « conte du jour » et du compte d'un recueil.
 - `build_contes.js` : minimum de 50 mots par page (les pages d'histoire sont plus denses que celles des contes).
