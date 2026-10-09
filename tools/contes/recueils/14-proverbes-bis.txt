@@ -1,0 +1,237 @@
+recueil: Un Proverbe, une Histoire — 2
+categorie: Sagesse et proverbes
+description: Dix nouveaux proverbes et leurs histoires : on les dit en une phrase, on les comprend en entier au bout du conte.
+ordre: 14
+prix: 70
+
+=== conte: prov-toiles-araignee
+titre: Quand les toiles d'araignée s'unissent
+accroche: Une toile, c'est fragile. Mille toiles ensemble ont arrêté un lion.
+etiquette: Sagesse
+origine: Proverbe éthiopien, conte librement inspiré
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: montagne
+lumiere: aube
+figures: lion, araignee
+morale: Quand les toiles d'araignée s'unissent, elles peuvent arrêter un lion.
+---
+Dans une vallée d'Éthiopie vivait un lion si orgueilleux qu'il s'était proclamé maître des pâturages. Chaque jour, il choisissait une victime parmi les gazelles, les chèvres, les jeunes zébus des bergers. Personne n'osait lever la voix. Les griffes du lion étaient plus longues que les arguments de ses voisins, et plus personne ne dormait sans rêver de lui, ni sans trembler à la tombée du jour.
+---
+Les bêtes tinrent conseil. Les antilopes proposèrent de fuir, les bergers de poser des pièges, mais le lion déjouait tout. C'est alors qu'une minuscule araignée, accrochée à une branche, prit la parole. « Nous, les araignées, pouvons essayer. — Vous ? ricana un buffle. Un seul de ses coups de patte emporterait tout un nid de vous ! » L'araignée ne se vexa pas. « Un seul fil n'arrêterait pas un papillon, dit-elle. Mais nous sommes nombreuses. »
+---
+Cette nuit-là, des milliers d'araignées se rassemblèrent au bord du sentier que le lion empruntait chaque soir pour rejoindre sa tanière. Chacune tira son fil d'un arbre à l'autre, d'un buisson à l'autre, d'un rocher à l'autre. Elles travaillèrent jusqu'à l'aube. Un fil, puis deux, puis cent, puis mille. Le sentier se couvrit d'une toile si dense qu'elle brillait comme une rivière d'argent sous la rosée.
+---
+Au crépuscule, le lion arriva, fier, bâillant. Il vit l'argent brillant et crut à une plaisanterie. Il fit un pas. La toile plia, s'étira, ne céda pas. Il fit un deuxième pas, puis un bond. Les fils s'accrochèrent à ses pattes, à sa crinière, à sa gueule. Plus il se débattait, plus ils le serraient, et chaque fil, à lui seul, aurait craqué. Ensemble, ils tenaient.
+---
+Le lion rugit, mais personne ne vint à son secours. Les animaux sortirent des fourrés, silencieux, puis se rassemblèrent autour de lui. Il dut promettre de ne plus attaquer personne sans nécessité, de laisser la vallée en paix. Alors les araignées relâchèrent leurs fils, un à un. Le lion partit sans un mot. Depuis, les Éthiopiens disent : « Quand les toiles d'araignée s'unissent, elles peuvent arrêter un lion. »
+
+=== conte: prov-deux-elephants
+titre: Quand deux éléphants se battent, l'herbe souffre
+accroche: Deux puissants se disputaient un point d'eau. L'herbe, elle, n'avait rien demandé.
+etiquette: Sagesse
+origine: Proverbe swahili, conte librement inspiré
+region: Afrique de l'Est
+type: court
+gratuites: 2
+decor: savane
+lumiere: midi
+figures: elephant, oiseau
+morale: Quand les grands se battent, ce sont les petits qui paient.
+---
+Dans la savane de Tanzanie, deux éléphants régnaient chacun sur une moitié de la plaine : Dume à l'est, Kimbo à l'ouest. Ils s'étaient longtemps ignorés. Mais cette année-là, la saison sèche était dure, et il ne restait qu'un seul point d'eau, au milieu de la plaine. Ils s'y rencontrèrent le même soir, et chacun déclara que l'endroit lui appartenait.
+---
+Le combat commença à l'aube. Deux géants qui se jettent l'un sur l'autre, défenses contre défenses, trompe contre trompe, c'est un tremblement de terre. L'herbe fut piétinée, les termitières écrasées, les nids d'oiseaux renversés. Les fourmis fuyaient en colonnes, les gazelles bondissaient hors du champ de bataille. Les deux éléphants ne virent rien : ils ne regardaient que leur adversaire.
+---
+Le combat dura trois jours. À la fin, le point d'eau était une mare de boue. La plaine entière, autour, était rasée comme après un incendie. Les herbivores n'avaient plus rien à brouter, les oiseaux plus rien à picorer. Un petit oiseau jaune, posé sur le dos d'un buffle affamé, soupira : « Tout le monde souffre pour une dispute qui n'est pas la sienne. »
+---
+Il s'envola et alla se poser sur la défense de Dume. « Grand éléphant, dit-il, regarde sous tes pieds. » Dume baissa la tête. Il ne vit que de la terre nue. « Là où tu marches, il y avait de l'herbe. Là où tu te bats, il y avait des nids. Qui boira dans cette boue ? » Dume ne répondit pas. L'oiseau fit de même avec Kimbo. Les deux géants s'arrêtèrent, haletants.
+---
+Ils regardèrent la plaine, ravagée de leur main, puis la mare fangeuse. Le silence tomba. « Qu'avons-nous gagné ? » murmura Kimbo. Dume baissa les yeux. Ils convinrent de boire à tour de rôle, l'un le matin, l'autre le soir, et de ne plus se battre là où l'herbe pousse. La pluie revint, plus tard, et l'herbe avec elle. Les Swahilis en ont tiré un proverbe : « Quand deux éléphants se battent, c'est l'herbe qui souffre. »
+
+=== conte: prov-profondeur-riviere
+titre: La rivière qu'on ne mesure pas avec les deux pieds
+accroche: Il voulait traverser vite. Il testa la rivière avec ses deux pieds à la fois.
+etiquette: Fin surprenante
+origine: Proverbe ouest-africain (Ghana), conte librement inspiré
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: midi
+figures: ancien, calebasse
+morale: On ne teste pas la profondeur d'une rivière avec les deux pieds.
+---
+Kojo, un jeune colporteur du Ghana, était de ceux qui font tout vite. Il marchait vite, parlait vite, jugeait vite. Il disait que le temps, c'était de l'argent, et qu'il n'en perdrait jamais. Un matin, il arriva au bord d'une rivière brune, large, qui coupait sa route vers le grand marché. Il n'y avait pas de pont. Il y avait seulement une vieille femme, assise sur une pierre, qui pilait du manioc.
+---
+« Elle est profonde ? demanda-t-il. — Ça dépend, répondit la vieille. — Je n'ai pas le temps pour des "ça dépend". » Il jeta son baluchon sur l'épaule, et d'un bond, il sauta dans l'eau avec ses deux pieds à la fois, pour tester la profondeur. La vieille ne bougea pas. « Attention », dit-elle simplement. Mais il était déjà au milieu du courant.
+---
+L'eau lui arriva à la poitrine, puis au cou. Le fond se déroba. Le courant, sournois, saisit ses jambes. Son baluchon partit en flottant, les marchandises dispersées, les bouteilles cassées contre les rochers. Il hurla, battit des bras. La vieille se leva, prit une longue perche, la lui tendit. Il s'y agrippa, tira, et se retrouva sur la berge, trempé, crachant, humilié.
+---
+« Je vous l'avais dit, murmura-t-elle. — Vous m'avez dit "attention" ! — C'est un début. » Elle le laissa reprendre son souffle, puis se leva à son tour. « Regarde. » Elle posa un seul pied dans l'eau, doucement, sans bouger l'autre de la berge. Elle fit un pas, sonda de la perche, avança le pied suivant, toujours un seul. Elle traversa lentement, en vérifiant chaque pas.
+---
+De l'autre côté, elle se retourna. « On ne mesure pas la profondeur d'une rivière avec les deux pieds, dit-elle. On en laisse un sur la rive, au cas où. » Kojo regarda ses marchandises perdues, puis la vieille. Pour la première fois de sa vie, il rit de lui-même. Ce jour-là, il apprit que la vitesse est un luxe qu'on ne se permet qu'avec un pied encore au sec.
+
+=== conte: prov-village-enfant
+titre: L'enfant que tout le village avait élevée
+accroche: Orpheline à six ans, elle n'a jamais manqué d'une mère. Elle en a eu trente.
+etiquette: Amour
+origine: Proverbe igbo et yoruba (Nigeria), conte librement inspiré
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: village
+lumiere: aube
+figures: enfant, ancien
+morale: Il faut tout un village pour élever un enfant.
+---
+Quand la fièvre emporta les parents de Ngozi, elle avait six ans et pas un oncle à qui s'accrocher. Dans un village comme celui-là, on aurait pu croire qu'une petite orpheline serait vite oubliée. Mais le soir même de l'enterrement, une voisine, Mama Ifeoma, vint frapper à la porte de la case vide. « Tu manges chez moi ce soir », dit-elle.
+---
+Le lendemain, une autre voisine, Mama Chidi, lui apporta des vêtements trop grands pour elle, retaillés à sa mesure. Le jour suivant, le forgeron lui offrit une petite houe, légère, à sa taille. Chacun fit sa part sans en parler. Une femme lui apprit à faire cuire le riz sans le brûler, une autre à nouer son pagne, un vieillard à reconnaître les plantes qui soignent.
+---
+À sept ans, elle apprit à nager grâce à un jeune pêcheur, à huit ans à compter grâce au maître d'école, à neuf ans à chanter grâce à la femme du chef. Elle grandit comme un arbre arrosé par plusieurs mains. Elle faisait parfois des bêtises, et dix paires d'yeux la surveillaient pour les lui pardonner. Jamais elle ne se sentit seule.
+---
+Elle quitta le village à dix-huit ans pour étudier la médecine, dans la grande ville. Les premières années furent dures, mais elle trouvait, dans chaque difficulté, un souvenir d'une voix connue : « Tu peux le faire. » Des années plus tard, elle revint. Un matin, elle monta sur la place du village, devant tous, et dit : « Je suis la docteure Ngozi. Je viens vous soigner. »
+---
+On la porta en triomphe. Au repas, le chef lui demanda : « À laquelle de tes mères dois-tu le plus ? » Elle regarda la foule, les visages usés, les rides, les sourires. « À toutes, dit-elle. Aucune ne m'a fait ce que je suis. Toutes ensemble, si. » Les anciens hochèrent la tête. Et ce soir-là, dit-on, on redit l'ancien proverbe : « Il faut tout un village pour élever un enfant. »
+
+=== conte: prov-lions-historiens
+titre: L'histoire de la chasse racontée par le lion
+accroche: Le chasseur racontait toujours la chasse. Une vieille lionne exigea de raconter la sienne.
+etiquette: Légende
+origine: Proverbe igbo (Nigeria), conte librement inspiré
+region: Afrique de l'Ouest
+type: court
+gratuites: 2
+decor: foret
+lumiere: crepuscule
+figures: lion, griot, guerrier
+morale: Tant que les lions n'auront pas leurs propres historiens, l'histoire de la chasse glorifiera toujours le chasseur.
+---
+Le chasseur Obi rentrait chaque soir au village avec un récit plus héroïque que la veille. Il avait affronté seul un lion de trois mètres, disait-il, d'un coup de lance entre les yeux. Personne n'avait jamais vu ce lion, mais les enfants l'écoutaient bouche bée, les femmes hochaient la tête, les anciens souriaient, et chaque soir, la bête grandissait un peu, jusqu'à devenir un monstre que nul n'avait jamais croisé.
+---
+Dans la case du chef, un sculpteur façonna une statue en bois d'iroko pour fêter l'exploit : un chasseur debout, une lance au poing, un pied posé sur un lion à terre. Tout le village la trouva magnifique. Tout, sauf un vieux griot aveugle, qui toucha la statue du bout des doigts et dit : « C'est une belle sculpture. Mais qui l'a commandée ? »
+---
+La nuit suivante, dans la forêt, les animaux tinrent leur conseil. Une vieille lionne prit la parole : « Les hommes racontent la chasse. Mais c'est nous qui y mourons. Qui racontera ce que nous avons vu ? » Les animaux restèrent silencieux. Chacun réfléchissait à ce qu'il aurait pu dire. La lionne continua : « Tant que nous ne raconterons pas nos propres histoires, la chasse sera toujours belle pour le chasseur. »
+---
+Elle décida alors de raconter. Elle s'approcha d'un campement de chasseurs, une nuit, et parla à voix basse, dans le noir, à ceux qui voulaient bien l'entendre. Elle raconta la faim, la sécheresse, le petit qu'elle protégeait. Elle raconta la peur du lion devant la lance, et la douleur d'un père qui ne rentre pas. Les chasseurs, éveillés, l'écoutèrent sans un mot.
+---
+Au matin, Obi ne raconta plus son exploit. Il demanda qu'on enlève la statue de la case du chef. « Un lion peut avoir une version, dit-il, que je n'ai jamais entendue. » Le griot aveugle sourit. Il venait de comprendre pourquoi ce proverbe igbo, longtemps répété sans être compris, était resté si vivant : « Tant que les lions n'auront pas leurs propres historiens, l'histoire de la chasse glorifiera toujours le chasseur. »
+
+=== conte: prov-arbre-fruits
+titre: L'arbre qui donnait trop
+accroche: Il avait les plus beaux fruits du village. C'est pour cela qu'on lui jetait des pierres.
+etiquette: Sagesse
+origine: Proverbe d'Afrique centrale, conte librement inspiré
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: baobab
+lumiere: midi
+figures: oiseau, enfant
+morale: Qui donne beaucoup attire les mains ; il lui reste à grandir hors de portée des pierres.
+---
+Au bord du village, un manguier donnait les fruits les plus doux de toute la région. Au printemps, ses branches ployaient sous des mangues dorées qui sentaient le soleil. Les passants s'arrêtaient pour les admirer, et beaucoup avaient envie d'y goûter. Peu pensaient à demander la permission, et moins encore à remercier l'arbre qui les offrait, humblement, sans jamais rien exiger.
+---
+Un matin, un garçon lança une pierre dans les branches. Une mangue tomba, puis une autre. Le lendemain, deux autres garçons vinrent faire de même. Bientôt, chaque jour, une pluie de cailloux s'abattait sur le manguier, qui perdait des feuilles, des fruits, des brindilles. Il se tordait de douleur. « Pourquoi moi ? se plaignit-il. Les autres arbres du village sont tranquilles. »
+---
+Un vieux baobab, voisin depuis cent ans, lui répondit d'une voix profonde. « Parce que tu donnes. On ne jette pas de pierres à un arbre qui ne porte rien. Tes fruits attirent les mains, et les mains font parfois du mal. C'est le prix de ce que tu es. — Alors il vaudrait mieux ne plus donner ? — Peut-être. Mais regarde autour de toi. »
+---
+Le manguier regarda. Sur la route, un voyageur épuisé s'était assis à son ombre et mangeait une mangue tombée, avec des larmes de gratitude. Plus loin, une mère donnait un fruit à son enfant. Des oiseaux nichaient dans ses branches, et des abeilles butinaient ses fleurs. Il comprit qu'il ne pouvait pas être aimé de ces êtres-là sans être aussi la cible de ceux qui prennent.
+---
+Alors il décida de continuer, mais autrement. Il laissa pousser ses branches les plus hautes, hors de portée des lanceurs, et garda ses fruits les plus bas pour ceux qui venaient sans pierres. Les enfants comprirent vite. Ils apprirent à demander, à attendre le vent, à ramasser sans frapper. « On ne lance des pierres qu'à l'arbre chargé de fruits, dit le baobab. Mais il revient à l'arbre d'apprendre à pousser vers le ciel. »
+
+=== conte: prov-parole-fleche
+titre: La parole qu'on ne peut pas rappeler
+accroche: Un mot lancé trop vite à son meilleur ami. Toute une nuit pour essayer de le reprendre.
+etiquette: Sagesse
+origine: Proverbe d'Afrique centrale, conte librement inspiré
+region: Afrique centrale
+type: court
+gratuites: 2
+decor: savane
+lumiere: nuit
+figures: guerrier, ancien
+morale: Une parole lâchée est une flèche qu'on ne rappelle pas, mais on peut aller soigner la blessure.
+---
+Mukiwa et Kabwe étaient amis depuis l'enfance. Ils avaient grandi dans la même rue, pêché dans la même rivière, cassé les mêmes vitres. À vingt ans, ils étaient devenus chasseurs ensemble. Un soir, après une journée sans gibier, ils rentraient fatigués, énervés, les ventres creux. Kabwe fit une plaisanterie sur l'adresse de Mukiwa, qui avait manqué un buffle, deux fois de suite, à vingt pas.
+---
+Mukiwa, vexé, répondit sans réfléchir : « Toi, tu n'as jamais rien attrapé de ta vie, sauf des excuses ! » Il le regretta avant même d'avoir fini. Kabwe se figea, pâlit, et se tut. Ils firent le reste du chemin en silence. À l'entrée du village, Kabwe tourna les talons sans un mot. Mukiwa, la gorge nouée, le regarda s'éloigner.
+---
+Toute la nuit, il tourna sur sa natte. Il aurait voulu rattraper ses mots comme on rattrape un oiseau qui s'envole. Il se leva, alla à la case de Kabwe, hésita sur le seuil, et rebroussa chemin trois fois. Au troisième passage, il s'assit au pied d'un arbre, la tête dans les mains, au milieu de la nuit, sans trouver ce qu'il fallait dire.
+---
+Un vieux chasseur, qui n'arrivait pas à dormir, vint s'asseoir à côté de lui. « Tu as lancé une flèche, dit-il sans attendre qu'on lui explique. Elle est partie. Tu ne peux pas la rappeler. Mais tu peux aller voir où elle est tombée, et panser la plaie. » Mukiwa leva les yeux. « Que dois-je faire ? — Aller le voir. Sans excuse, sans explication. Juste lui dire que tu as mal d'avoir mal fait. »
+---
+Au premier chant du coq, Mukiwa se leva, alla frapper à la porte de Kabwe, et dit simplement : « J'ai dit une chose que je ne pense pas. J'ai mal depuis. » Kabwe ouvrit, le visage fatigué, lui aussi sans sommeil. Ils restèrent un moment silencieux. Puis Kabwe fit un pas de côté, laissant passer son ami. « Entre, dit-il. Il y a du thé. » Le mot ne s'effaça pas. Mais il cessa de faire mal.
+
+=== conte: prov-une-main-n-applaudit
+titre: La main qui voulait applaudir seule
+accroche: Elle se croyait la plus habile des deux. Elle n'avait jamais essayé d'applaudir.
+etiquette: Rire
+origine: Proverbe du Maghreb, conte librement inspiré
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: griot, calebasse
+morale: Une seule main n'applaudit pas.
+---
+Dans une ruelle de Fès, un tailleur nommé Hamid avait deux mains. La droite tenait l'aiguille, taillait le tissu, servait le thé, saluait les clients. La gauche tenait le tissu, retenait les épingles, essuyait la sueur. La droite se vantait chaque soir : « Sans moi, il n'y a pas de couture ! » La gauche se taisait, un peu blessée.
+---
+Un soir, la gauche sortit de ses gonds. « Tu ne ferais rien sans moi ! Qui tient le tissu quand tu piques ? Qui retient les épingles ? » La droite éclata de rire. « Tu es la servante. Moi, je suis la maîtresse ! » Elles se jurèrent de ne plus rien faire l'une pour l'autre, puis de travailler chacune de son côté. Hamid, sans comprendre, les regardait se disputer.
+---
+Le lendemain, la droite voulut coudre sans la gauche. Le tissu glissa, l'aiguille se perdit, le fil s'emmêla. La gauche, de son côté, essaya de ramasser le tissu pour le tailler : elle ne tint que des chiffons. Au bout d'une heure, la boutique était un champ de bataille. Hamid soupira : « Que m'arrive-t-il ? » Les clients repartaient, perplexes.
+---
+Le soir, le sultan donna une grande fête en l'honneur des artisans de la ville. À la fin du spectacle, la foule se leva pour applaudir. Hamid voulut en faire autant. Sa main droite frappa l'air, sans rien rencontrer. Sa main gauche fit de même. Le silence qui suivit était plus lourd que le bruit. Les gens se retournèrent, intrigués. Hamid, rouge, ne comprenait toujours pas.
+---
+Alors il comprit. Il baissa les yeux sur ses deux mains, qui n'osaient plus se regarder. Il les rapprocha doucement, et elles se touchèrent, enfin. Un claquement sec, franc, résonna dans la salle. Tout le monde sourit. « Une seule main n'applaudit pas », dit le sultan, qui avait tout vu. Hamid rentra chez lui et, ce soir-là, ses deux mains cousirent ensemble, sans plus rien se dire.
+
+=== conte: prov-ubuntu
+titre: Je suis parce que nous sommes
+accroche: Un voyageur leur proposa de courir pour gagner un panier de fruits. Les enfants se prirent par la main.
+etiquette: Légende
+origine: Philosophie ubuntu (Afrique australe), conte librement inspiré
+region: Afrique australe
+type: court
+gratuites: 2
+decor: montagne
+lumiere: midi
+figures: enfant, calebasse
+morale: Je suis, parce que nous sommes.
+# relecture : « ubuntu » est un concept réel des langues nguni (« une personne est une personne à travers les autres personnes ») ; l'anecdote de la course est un récit moderne souvent repris, présenté ici comme un conte librement inspiré, sans prétention d'être un fait.
+---
+Dans un village du Cap-Oriental, un voyageur venu d'ailleurs s'arrêta près d'un groupe d'enfants qui jouaient. Il avait une corbeille de fruits sucrés sur l'épaule, achetés au marché de la ville. Il les posa sous un arbre, à bonne distance, et dit aux enfants : « Je vous propose un jeu. Le premier qui touche l'arbre gagnera tous les fruits. »
+---
+Les enfants s'alignèrent. Le voyageur leva la main : « À vos marques, prêts... » Il s'attendait à une course effrénée, aux coudes, aux bousculades. Mais quand il baissa la main, les enfants ne s'élancèrent pas. Ils se tournèrent les uns vers les autres, se prirent la main, formant une longue chaîne, puis se mirent à courir ensemble, au même rythme.
+---
+Ils arrivèrent tous en même temps, hors d'haleine, riant. Ils touchèrent l'arbre à vingt mains à la fois. Le voyageur, stupéfait, resta immobile. Puis il demanda à la plus petite : « Pourquoi n'avez-vous pas couru chacun pour gagner ? Le vainqueur aurait tout eu. » La fillette le regarda avec une gravité étonnante. « Comment l'un de nous pourrait-il être heureux si tous les autres étaient tristes ? »
+---
+Le voyageur s'assit sous l'arbre. Il avait fait le tour du monde, lu des livres, rencontré des savants. Aucun ne lui avait expliqué cela aussi simplement. « Chez nous, expliqua la fillette, on dit "ubuntu". Ça veut dire : une personne est une personne à travers les autres personnes. Si on gagne seul, on a gagné le vide. Et un vide, ça ne se partage pas. »
+---
+Ils partagèrent les fruits à vingt, riant, collants de jus. Le voyageur reprit la route le lendemain, mais il laissa un mot à l'école du village. Il y avait écrit, en lettres capitales : « J'ai appris ici ce que l'on ne m'a jamais enseigné : je suis, parce que nous sommes. » Les enfants l'affichèrent sous le préau, et la phrase y est restée, comme une fleur qui ne fane pas.
+
+=== conte: prov-eau-qui-dort
+titre: Ne réveille pas l'eau qui dort
+accroche: Un défi lancé à une mare tranquille. Ce qui en sortit n'était pas ce qu'on attendait.
+etiquette: Frisson
+origine: Conte d'inspiration saharienne (Sahara)
+region: Afrique du Nord
+type: court
+gratuites: 2
+decor: desert
+lumiere: crepuscule
+figures: crocodile, enfant
+morale: Ne réveille jamais l'eau qui dort.
+# relecture : des crocodiles du Nil relictuels survivent dans des gueltas (mares) isolées du Sahara (Mauritanie, Tchad) ; l'histoire de Karim est inventée.
+---
+Au fond d'un ouadi du Sahara, caché entre des falaises rouges, dormait une mare profonde et verte que les nomades appelaient la guelta. Son eau était claire, froide, immobile. Aucun vent ne l'agitait. Les bergers y menaient leurs bêtes boire, mais jamais trop près, jamais bruyamment, comme on s'approche d'un vieillard qu'on ne veut pas déranger. « Elle dort, disaient-ils. Ne la réveillez pas. »
+---
+Karim, douze ans, trouvait cela ridicule. « Une mare qui dort ? ricanait-il. Une mare est une mare. » Il ne croyait pas aux interdits, il croyait à ce qu'il voyait, et il n'avait jamais rien vu de dangereux dans cette eau tranquille. Un après-midi où les adultes étaient partis sur les pâturages, il resta seul avec son troupeau près de la guelta. Il ramassa un galet, le soupesa, sourit.
+---
+Il le jeta. Plouf. Des ronds s'ouvrirent à la surface, s'élargirent, vinrent mourir sur la roche. Rien de plus. Il en jeta un second, plus gros. Puis un troisième. À chaque fois, l'eau reprenait son calme. Déçu, il allait partir quand, au milieu de la mare, la surface se creusa, très doucement, sans clapotis. Quelque chose de long et de sombre venait de bouger sous l'eau.
+---
+Il se figea. Une tête plate, couverte d'écailles vertes et noires, émergea sans bruit. Deux yeux jaunes, immobiles, se fixèrent sur lui. Un crocodile, vieux, immense, plus long qu'une pirogue. Karim recula d'un pas, puis de deux. L'animal ne bougea pas. Il le regardait comme on regarde un moucheron qui a eu l'audace de siffler. Puis il s'enfonça à nouveau, lentement, sans un remous.
+---
+Karim courut jusqu'au campement et raconta tout. Son grand-père l'écouta sans sourciller. « Ce crocodile est là depuis plus longtemps que ma mémoire, dit-il. Il est le dernier d'un temps où le Sahara était vert, quand les rivières coulaient ici. Il n'a jamais fait de mal à personne, parce que personne ne l'a jamais réveillé. » Karim baissa la tête. « Alors pourquoi me laisse-t-il vivre ? — Parce qu'il est vieux, et sage, répondit le grand-père. Souviens-toi : ne réveille jamais l'eau qui dort. »
