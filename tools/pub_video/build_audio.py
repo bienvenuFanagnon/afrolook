@@ -1,4 +1,4 @@
-import numpy as np, wave, math
+import numpy as np, wave, math, os
 SR=44100; DUR=32.0; N=int(SR*DUR)
 rng=np.random.default_rng(7)
 def load(path):
@@ -87,7 +87,7 @@ fade=np.ones(N); i0=int((DUR-1.2)*SR); fade[i0:]=np.linspace(1,0,N-i0); music*=f
 VO=[('l1',0.3),('l2',4.9),('l3',9.2),('l4',12.8),('l5',18.3),('l6',21.3),('l7',23.9)]
 voice=np.zeros(N,np.float32)
 for k,t in VO:
-    d=load(f'vo/{k}.wav'); d=d/np.max(np.abs(d))*0.9; place(voice,d,t,1.0)
+    d=load(os.environ.get('VO','vo')+f'/{k}.wav'); d=d/np.max(np.abs(d))*0.9; place(voice,d,t,1.0)
 # enveloppe de voix → ducking
 win=int(0.05*SR); env=np.convolve(np.abs(voice),np.ones(win)/win,'same'); env=np.clip(env*6,0,1)
 env=np.convolve(env,np.ones(int(0.2*SR))/int(0.2*SR),'same')
@@ -111,6 +111,6 @@ place(sfx,coin,24.6,0.9)
 mix=voice*1.0+music_d*0.55+sfx*0.7
 mix=np.tanh(mix*1.2)/np.tanh(1.2)
 mix=mix/np.max(np.abs(mix))*0.92
-w=wave.open('mix.wav','wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+w=wave.open(os.environ.get('OUT','mix.wav'),'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
 w.writeframes((mix*32767).astype(np.int16).tobytes()); w.close()
 print('ok',N/SR)
