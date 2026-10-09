@@ -1,0 +1,248 @@
+recueil: Les Gardiens du Sud
+categorie: Légendes et royaumes
+description: San, Shona, Zoulous, Xhosas, Basotho : des étoiles jetées dans la nuit, des murs de pierre, des mères et des rois qui ont tenu bon.
+ordre: 12
+prix: 70
+
+=== conte: san-etoile-premiere
+titre: La fille qui jeta la braise dans le ciel
+accroche: La nuit était noire comme un puits. Une jeune fille prit un peu de feu et le lança vers le haut.
+etiquette: Mythe
+origine: Mythe san (Kalahari), d'après les récits recueillis au XIXe siècle
+region: Afrique australe
+type: court
+gratuites: 2
+decor: desert
+lumiere: nuit
+figures: enfant, feu
+morale: Une seule braise peut éclairer tous ceux qui marchent encore dans la nuit.
+# relecture : le mythe de la Voie lactée créée par une fille qui jette des braises (ou de la cendre) dans le ciel figure dans les récits san/|xam recueillis par Bleek et Lloyd ; l'expression « épine dorsale de la nuit » est attestée pour la Voie lactée.
+---
+Au commencement, disent les San du Kalahari, la nuit était si noire qu'on n'y voyait pas ses propres mains. Les chasseurs rentraient à tâtons vers le campement, trébuchant sur les racines, s'égarant dans la brousse. Les enfants avaient peur de dormir. Les anciens racontaient que le monde avait été fait avec une moitié de jour seulement : il manquait de la lumière pour l'autre moitié.
+---
+Une jeune fille que les récits n'ont pas nommée regardait chaque soir les hommes revenir dans le noir. Une nuit, l'un d'eux ne revint pas. On le chercha en vain jusqu'à l'aube : il s'était perdu à quelques pas du feu, sans que personne puisse le guider. Ce matin-là, la jeune fille ne dit rien. Elle regarda les cendres du foyer, encore tièdes, et sentit quelque chose se réveiller dans sa poitrine.
+---
+Le soir suivant, elle prit une poignée de braises ardentes dans une peau de gazelle. Les anciens la prévinrent : « On ne joue pas avec le feu, ma fille. » Elle ne répondit pas. Elle grimpa sur la colline la plus haute, celle d'où l'on voyait toute la plaine, et leva la main. Le vent était tombé. Les étoiles n'existaient pas encore. Il n'y avait qu'un grand ciel noir, vide, qui attendait.
+---
+Elle jeta les braises de toutes ses forces. Elles montèrent, montèrent, en traçant de longues traînées d'or, et se dispersèrent comme du sable doré. Là où elles retombèrent sur le ciel, elles s'accrochèrent et se mirent à briller. Une longue rivière de lumière apparut, d'un bout à l'autre de la nuit, et la plaine entière se trouva éclairée d'un blanc doux, comme au lever de la lune. Les chasseurs levèrent la tête, bouche bée.
+---
+Depuis cette nuit-là, les San appellent cette rivière d'étoiles « l'épine dorsale de la nuit » et s'en servent comme d'une route : tant qu'elle brille, on sait où l'on va. Quand un enfant a peur de l'obscurité, on lui raconte la jeune fille et sa poignée de braises. « Regarde-les bien, dit-on. Chaque étoile est un peu de feu que quelqu'un a donné pour que tu ne te perdes pas. »
+
+=== conte: shona-mbira-esprit
+titre: La mbira qui parlait aux ancêtres
+accroche: Un instrument qui ne se joue pas pour plaire : il pose des questions.
+etiquette: Légende
+origine: Conte d'inspiration shona (Zimbabwe)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: village
+lumiere: nuit
+figures: tambour, ancien
+morale: On joue la mbira pour entendre ce que les vivants n'osent plus se dire.
+# relecture : la mbira shona (mbira dzavadzimu) est réellement associée à la communication avec les ancêtres ; l'histoire du garçon est une libre invention d'inspiration.
+---
+Chez les Shona du Zimbabwe, on raconte que certains instruments ne se jouent pas, mais s'écoutent. La mbira, ce petit piano de lames de fer fixées sur une caisse de bois, que l'on tient entre les mains et sur lequel les pouces dansent, en fait partie. Nyamu, un garçon de douze ans, en reçut une un matin, des mains de sa grand-mère mourante. « Garde-la, dit-elle. Ne la joue pas pour faire plaisir. Joue-la pour écouter. »
+---
+Nyamu ne comprit pas. Pendant des mois, il répéta les morceaux appris au village, vite, fort, pour impressionner ses amis. Les gens applaudissaient. Mais lui avait le sentiment de parler dans une pièce vide. Un soir, il s'enfonça dans la brousse, s'assit contre un baobab, et se mit à jouer plus doucement. Il ferma les yeux, comme le faisait sa grand-mère.
+---
+Peu à peu, une lame de fer parut vibrer plus longtemps que les autres, et dans sa vibration, quelque chose se mêla au vent. Le garçon se figea. C'était comme un murmure, un souffle qui lui rappelait la voix de sa grand-mère quand elle racontait. Une phrase apparut, non dans l'air, mais en lui : « Joue la lame qui tremble. » Il obéit. Il joua une note. Et une autre lui répondit, tout au fond de lui.
+---
+Cette nuit-là, il apprit à jouer sans calculer. Sa mélodie s'ouvrit comme un chemin qu'il traversait sans le connaître. Il ne jouait plus pour être beau, mais pour demander : « Que dois-je comprendre ? Que dois-je réparer ? » Les notes semblaient lui poser d'autres questions en retour. Il pensa à son frère, avec lequel il s'était disputé. Il pensa à son père, qu'il n'osait pas écouter. Chaque pensée faisait vibrer une autre lame.
+---
+Au matin, Nyamu rentra au village et alla trouver son frère. Il ne s'excusa pas avec des mots : il joua. Le frère, interdit, écouta, puis s'assit à côté de lui. Les conteurs ajoutent que, depuis ce jour, quand deux Shona veulent se réconcilier, ils disent qu'ils vont « écouter la mbira ». Et les anciens concluent : « On ne joue pas cet instrument pour parler aux morts. On le joue pour entendre ce que les vivants n'osent plus se dire. »
+
+=== conte: san-antilope-chasseur
+titre: Le chasseur qui demanda pardon à l'antilope
+accroche: Sa première chasse était réussie. Son grand-père lui demanda d'aller s'excuser.
+etiquette: Sagesse
+origine: Conte d'inspiration san (Kalahari)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: savane
+lumiere: crepuscule
+figures: enfant, ancien
+morale: Celui qui prend une vie doit se souvenir de ce qu'il prend.
+---
+Kaha avait quatorze ans le jour où son grand-père l'autorisa à chasser seul. Pendant trois jours, il traqua une antilope élan dans les dunes, suivant ses traces, respirant son rythme, courant à sa vitesse. Le soir du troisième jour, sa flèche empoisonnée l'atteignit. Il resta à genoux près d'elle, le cœur battant, partagé entre la fierté et un sentiment étrange qu'il ne comprenait pas.
+---
+Quand il rentra au campement, tous le félicitèrent, mais son grand-père ne sourit pas. Il regarda le garçon, puis la dépouille de l'animal. « Tu as bien chassé, dit-il. Maintenant, retourne là-bas et demande-lui pardon. » Kaha crut mal entendre. « Pardon ? Elle est morte. Elle ne m'entend plus. — C'est pour cela, dit le vieil homme, que tu dois le dire. »
+---
+Le garçon s'éloigna, vexé, jusqu'à l'endroit où l'antilope était tombée. Le vent soufflait doucement. Il y eut un long silence. Il se sentit stupide, debout dans l'obscurité, à parler à un corps vide. Il serra les poings. Puis il dit, à voix basse : « Tu étais plus rapide que moi. Je n'ai gagné que par le poison. » Et il fut surpris que sa gorge se noue.
+---
+Il resta là longtemps. Il raconta à l'antilope qu'il avait faim, que son campement avait faim, qu'il l'avait suivie parce qu'on avait besoin d'elle, et que rien dans cette faim n'était de la haine. Il dit merci pour sa viande, pour sa peau, pour ses os qui deviendraient des outils. Un par un, ses mots se firent plus simples. Quand il se tut, une légère brise passa sur son visage, comme si on avait répondu.
+---
+Au retour, son grand-père l'attendait près du feu. « Qu'as-tu appris ? » Le garçon hésita. « Que celui qui prend la vie doit se souvenir de ce qu'il prend. » Le vieil homme hocha la tête. « Un chasseur qui oublie de remercier devient bientôt un voleur. Et le jour où le désert n'aura plus d'antilopes, il ne pourra plus accuser que lui-même. » Cette nuit-là, Kaha ne dormit pas, mais le silence ne lui pesait plus.
+
+=== conte: ndebele-murs-peints
+titre: Les murs que les femmes peignaient en couleurs
+accroche: Les soldats voyaient de jolis dessins. Les femmes y écrivaient un message.
+etiquette: Fin surprenante
+origine: Conte d'inspiration ndebele (Afrique du Sud)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: village
+lumiere: midi
+figures: reine, calebasse
+morale: Ce qui est beau peut tout cacher à ceux qui ne cherchent que des armes.
+# relecture : la peinture murale ndebele (motifs géométriques peints par les femmes) est réelle ; l'idée d'un message codé et l'épisode des soldats sont une libre invention d'inspiration, pas un fait historique.
+---
+Dans le pays ndebele, en Afrique du Sud, les femmes sont depuis toujours les peintres du village. Chaque année, avant les pluies, elles mélangent de l'argile, de l'eau, des cendres et des pigments, et couvrent les murs de leurs cases de motifs : triangles, losanges, lignes brisées, tous plus éclatants les uns que les autres. Les enfants regardent, la bouche ouverte, apprenant les formes comme d'autres apprennent à lire.
+---
+Cette année-là, les soldats étaient dans la région. Ils fouillaient les villages, cherchaient des hommes qui avaient refusé de se soumettre, des blessés cachés, des armes. Les habitants avaient peur. La petite Thandi, huit ans, vit sa mère réunir les femmes, un soir, autour d'un feu. « Nous peindrons plus que d'habitude, dit-elle. Et nous peindrons autrement. » Personne ne posa de question.
+---
+Dès l'aube, les femmes se mirent au travail. Un triangle rouge sur une porte voulait dire : ici, quelqu'un est malade, ne frappez pas. Un losange bleu : ici, de l'eau. Une ligne brisée jaune, tracée à hauteur de poitrine : les soldats approchent. Thandi, qui connaissait déjà toutes les formes, comprit que le village parlait. Il parlait sans bruit, sans mots, à voix de couleur.
+---
+Quand les soldats entrèrent dans le village, ils s'arrêtèrent, éblouis. Jamais ils n'avaient vu de murs si beaux. Le capitaine, un homme dur, descendit de cheval et caressa un triangle, étonné. « Qui a fait cela ? » demanda-t-il. Les femmes baissèrent les yeux. « Nous, répondit la mère de Thandi. C'est notre façon de saluer l'année. » Les soldats fouillèrent quelques cases, ne trouvèrent rien, et repartirent, l'esprit occupé par ce qu'ils avaient vu.
+---
+Plus tard, le village se rassembla pour fêter son silence. Les blessés avaient guéri en cachette, les hommes étaient revenus des collines. Thandi demanda à sa mère comment les soldats avaient pu regarder tout cela sans rien comprendre. « Parce que, dit-elle, les gens qui ne cherchent que des armes ne savent pas lire ce qui est beau. Et ce qui est beau peut tout cacher. » Depuis, les murs ndebele se repeignent chaque année, et chaque couleur garde un peu de ce secret.
+
+=== conte: zambeze-victoria-fumee
+titre: La fumée qui tonne
+accroche: Un fleuve tombe dans un trou du monde. Un piroguier têtu voulut voir de plus près.
+etiquette: Légende
+origine: Récit des riverains du Zambèze (Zambie et Zimbabwe), librement raconté
+region: Afrique australe
+type: court
+gratuites: 2
+decor: fleuve
+lumiere: aube
+figures: pirogue, ancien
+morale: Le fleuve ne nous interdit pas d'approcher : il nous apprend où nous arrêter.
+# relecture : Mosi-oa-Tunya (« la fumée qui gronde ») est le nom ancien des chutes Victoria ; le piroguier Mwila est un personnage inventé pour le conte.
+---
+Sur le Zambèze, le grand fleuve d'Afrique australe, les riverains avaient un nom pour l'endroit où l'eau tombait dans le vide : Mosi-oa-Tunya, la fumée qui gronde. De très loin, on voyait monter un nuage blanc au-dessus de la forêt, haut comme une montagne, et on entendait un grondement continu, jour et nuit, que les enfants prenaient pour la voix du fleuve.
+---
+Les anciens interdisaient aux jeunes de s'en approcher. « Là-bas, disaient-ils, la terre s'ouvre et l'eau y disparaît. Ceux qui s'y aventurent dans leurs pirogues ne reviennent pas. » Un jeune piroguier nommé Mwila, brave et têtu, se moquait de ces histoires. Il avait pêché dans toutes les eaux du pays, connu tous les courants. Un matin, il glissa sa pirogue au fil de l'eau et se dirigea droit vers la fumée.
+---
+Plus il avançait, plus le fleuve semblait se presser. L'eau devint lisse, puis rapide, puis vorace. Le grondement monta jusqu'à couvrir sa propre respiration. Il tenta de ramer à contre-courant. La pirogue n'obéissait plus. Elle filait vers l'endroit où le fleuve semblait finir, et au-delà duquel il ne voyait plus que du blanc. Alors, pour la première fois, Mwila eut peur.
+---
+Au dernier moment, sa pirogue heurta un rocher, tourna sur elle-même et le jeta contre un arbre couché au bord du courant. Il s'y agrippa de toutes ses forces, trempé, les mains en sang. Devant lui, à quelques pas, l'eau basculait dans un abîme si profond qu'il n'en voyait pas le fond. Un vent froid, chargé de gouttelettes, lui fouettait le visage. Il resta là, immobile, jusqu'à la fin du jour.
+---
+On le retrouva à la nuit, grâce à ses compagnons qui avaient suivi les cris. En le ramenant, ils ne lui firent aucun reproche. Mwila, lui, resta silencieux longtemps. Puis il dit aux enfants du village : « Ce n'est pas le fleuve qui interdit d'approcher. C'est lui qui nous apprend où nous arrêter. » Et depuis, quand les riverains évoquent la fumée qui tonne, ils baissent un peu la voix, comme devant quelqu'un qu'on respecte.
+
+=== conte: zoulou-nandi-mere
+titre: Nandi, la mère qu'on ne voulait pas dans le village
+accroche: Rejetée par sa famille, elle éleva seule l'enfant qui allait fonder un empire.
+etiquette: Histoire
+origine: Histoire du peuple zoulou (Afrique du Sud), d'après les traditions orales recueillies au XIXe siècle
+region: Afrique australe
+type: long
+gratuites: 2
+decor: montagne
+lumiere: crepuscule
+figures: reine, enfant, guerrier
+morale: Un empire est parfois né de la ténacité d'une seule femme que personne n'attendait.
+# relecture OBLIGATOIRE : (1) Nandi, mère de Shaka (naissance vers 1787), fille du clan Langeni ; Senzangakhona, chef zoulou. (2) L'histoire de l'« iShaka » (ver/coléoptère intestinal) comme origine du nom est rapportée par la tradition ; présentée comme telle. (3) Refuge chez les Mthethwa (Dingiswayo). (4) Shaka chef des Zoulous vers 1816. (5) Mort de Nandi en 1827, assassinat de Shaka en 1828 : attestés. (6) Le détail de la rudesse du deuil est volontairement non décrit ; la gravité est signalée comme discutée.
+---
+Dans le pays qui deviendrait le Zoulouland, à la fin du XVIIIe siècle, une jeune femme nommée Nandi, du clan des Langeni, attendait un enfant d'un chef zoulou, Senzangakhona. Ils n'étaient pas mariés. Selon les traditions orales, la famille du chef refusa d'abord d'admettre cette grossesse, prétendant qu'elle était causée par un petit parasite intestinal, l'iShaka. Quand l'enfant naquit, vers 1787, on raconte qu'il reçut ce nom en dérision : Shaka.
+---
+Nandi fut finalement admise comme épouse, mais la vie à la cour fut dure pour elle et pour son fils. Les autres épouses la méprisaient. Quand Shaka eut quelques années, Senzangakhona les renvoya tous les deux. Nandi dut quitter le village avec son enfant. Elle retourna chez les siens, les Langeni, qui l'accueillirent froidement : une femme répudiée, avec un fils sans père, n'était pas toujours bienvenue.
+---
+Shaka grandit dans cette hostilité. Les enfants se moquaient de lui, des bergers le rudoyaient. Nandi, racontent les anciens, ne baissait pas la tête. Elle lui apprit à se tenir droit, à ne pas répondre à l'insulte par l'insulte mais par l'entraînement. Il l'écoutait, serrant les poings, le regard fixé sur l'horizon où les lances luisaient. Les conditions de vie étaient rudes, et ils durent changer plusieurs fois de refuge.
+---
+Les conflits entre clans s'aggravaient. Famines, guerres, déplacements : la région traversait une époque de grands troubles, que l'on appellera plus tard le mfecane, « l'écrasement ». Nandi et Shaka, chassés une nouvelle fois, trouvèrent refuge auprès du chef Dingiswayo, qui dirigeait les Mthethwa. Shaka devint guerrier, puis chef de régiment, et montra un talent hors du commun pour l'organisation des armées.
+---
+À la mort de Senzangakhona, vers 1816, Shaka revint chez les Zoulous et en devint le chef, avec l'appui de Dingiswayo. Il fit de ce petit clan une puissance. Nandi était désormais la mère du roi. Elle reçut des honneurs et un foyer à elle. Les traditions la décrivent comme une conseillère influente et très aimée de son fils, dont elle apaisait parfois les colères.
+---
+Nandi mourut en 1827. Shaka, bouleversé, ordonna un deuil d'une dureté extrême, que les sources européennes de l'époque ont décrit avec effroi, et dont l'ampleur est encore discutée par les historiens. Un an plus tard, il était assassiné par ses demi-frères. Ce que l'histoire retient : un empire est né de l'obstination d'une femme rejetée, qui avait élevé seule un enfant traité comme un rebut. Et la tendresse et la dureté peuvent habiter le même homme.
+
+=== conte: tswana-pula-pluie
+titre: Pula, le mot qui fit pleuvoir
+accroche: La soif avait fait taire tout un village. Une petite fille cria le seul mot qui lui restait.
+etiquette: Mythe
+origine: Conte d'inspiration tswana (Botswana)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: savane
+lumiere: orage
+figures: enfant, calebasse
+morale: Un seul mot de bienvenue peut rompre le plus long des silences.
+# relecture : « pula » signifie pluie en setswana et sert aussi d'exclamation de bénédiction/de toast et de nom à la monnaie du Botswana ; l'origine racontée est une libre invention.
+---
+Il y a très longtemps, au pays des Tswana, la sécheresse dura si longtemps que les gens prirent l'habitude de se taire. Parler asséchait la gorge, disaient-ils. On ne se saluait plus, on ne chantait plus, on se contentait de hocher la tête en croisant son voisin. Les enfants apprenaient à parler à voix très basse, juste assez pour demander de l'eau.
+---
+Une petite fille de six ans, Neo, détestait ce silence. Elle regardait le ciel tous les matins, d'un bleu dur, sans nuage. « Pourquoi personne ne dit bonjour ? demandait-elle. — Parce que la bouche doit rester humide, répondaient les adultes. — Alors comment saura-t-on qu'on est ensemble ? » Personne ne lui répondait. La grand-mère de Neo regardait la fillette avec un petit sourire triste.
+---
+Un après-midi, alors que le village était assoupi sous la chaleur, Neo sortit de la case pour jouer avec la poussière. Elle sentit sur son front une goutte. Puis une autre. Elle leva les yeux : un nuage gris, minuscule, venait de se former au-dessus de la colline. Elle ouvrit la bouche et, sans réfléchir, cria le seul mot qui lui venait : « Pula ! » Ce qui veut dire : la pluie.
+---
+Le cri fit sortir tout le monde. Un à un, les villageois levèrent la tête. Le nuage grossit, noircit, éclata. L'eau tomba en rideaux épais, tièdes, fracassants. Les anciens riaient et pleuraient, les enfants dansaient pieds nus dans la boue, les femmes tendaient leurs calebasses vers le ciel. Et ce mot, que tous avaient presque oublié, revenait de bouche en bouche : « Pula ! Pula ! »
+---
+Depuis, disent les Tswana, ce mot veut dire bien plus que la pluie. On le crie pour fêter une naissance, pour porter un toast, pour souhaiter bonne chance, pour saluer quelqu'un qu'on aime. Quand un Tswana lance « Pula ! » à un voisin, il lui souhaite ce qu'il y a de plus précieux au monde : de l'eau, de la chance, de la vie. Et il rompt, une seconde, le grand silence de la soif.
+
+=== conte: shona-grand-zimbabwe
+titre: Le Grand Zimbabwe et les oiseaux de pierre
+accroche: Des murs sans mortier, des oiseaux sculptés, et des visiteurs qui refusaient d'y croire.
+etiquette: Légende
+origine: Tradition shona et archéologie du Grand Zimbabwe (XIe-XVe siècles)
+region: Afrique australe
+type: court
+gratuites: 2
+decor: montagne
+lumiere: midi
+figures: oiseau, ancien
+morale: Les pierres tiennent par ce qu'elles racontent, pas par ce qu'on veut leur faire dire.
+# relecture OBLIGATOIRE : (1) « dzimba dza mabwe » = maisons de pierre : étymologie généralement admise. (2) Occupation XIe-XVe siècles, capitale d'un royaume commerçant : attesté. (3) Perles de verre, porcelaine chinoise, pièce de Kilwa retrouvées : attesté. (4) Huit oiseaux de pierre à savon : attesté (on en cite huit). (5) Négation coloniale de l'origine africaine (Phéniciens, reine de Saba) : attesté. (6) Gertrude Caton-Thompson, 1929 : fouilles concluant à l'origine africaine : attesté. (7) Oiseau du Zimbabwe sur le drapeau : attesté.
+---
+Au sud de l'Afrique, dans une région de collines couvertes de rochers, se dressent des murs de granit hauts de plus de dix mètres. Aucun mortier ne les relie : les pierres sont simplement posées, taillées et ajustées, une à une, par des mains patientes. Les Shona appellent ce lieu dzimba dza mabwe, « les maisons de pierre ». C'est de ce nom qu'est venu celui de tout un pays : le Zimbabwe.
+---
+Entre le XIe et le XVe siècle, le Grand Zimbabwe fut la capitale d'un royaume puissant, qui commerçait avec la côte de l'océan Indien. On y a retrouvé des perles de verre, de la porcelaine chinoise, une pièce de monnaie de Kilwa. Ses habitants élevaient des troupeaux, travaillaient l'or et le fer, et bâtissaient avec un sens de la forme qui étonne encore aujourd'hui.
+---
+Dans l'enceinte royale, on découvrit plus tard huit oiseaux sculptés dans la pierre à savon, posés sur des piliers. Leur bec, leurs ailes, leur regard sont d'une précision troublante. Que représentaient-ils ? Beaucoup y voient un messager entre les rois et les ancêtres, peut-être un aigle, oiseau du ciel. Les chercheurs hésitent encore : le silence des pierres a quelque chose de voulu.
+---
+Quand les premiers Européens arrivèrent, au XIXe siècle, ils refusèrent de croire que des Africains avaient pu bâtir cela. Ils parlèrent de Phéniciens, de la reine de Saba, d'une civilisation perdue venue d'ailleurs. Des collectionneurs pillèrent le site. Les Shona, eux, avaient toujours su : c'étaient leurs ancêtres. Mais on ne les écoutait pas, parce qu'il est plus facile de nier une histoire que de reconnaître qu'on s'était trompé.
+---
+En 1929, l'archéologue Gertrude Caton-Thompson mit fin au débat en prouvant, fouille après fouille, que le Grand Zimbabwe avait été bâti par des Africains de la région. Aujourd'hui, l'oiseau de pierre figure sur le drapeau du pays. Quand des enfants shona demandent qui a posé ces pierres, on leur répond simplement : « Nous. » Et les murs, qui n'ont jamais eu besoin de mortier, tiennent encore par la seule force de ce qu'ils racontent.
+
+=== conte: xhosa-nongqawuse-betail
+titre: La prophétie qui coûta tout un peuple
+accroche: Une jeune fille entendit des voix. Un peuple tua son bétail. Ce que l'on sait de 1856.
+etiquette: Histoire
+origine: Histoire du peuple xhosa (Afrique du Sud), 1856-1857, d'après les historiens
+region: Afrique australe
+type: court
+gratuites: 2
+decor: savane
+lumiere: aube
+figures: enfant, ancien
+morale: Dans les heures les plus sombres, l'espérance peut devenir un piège autant qu'un refuge.
+# relecture OBLIGATOIRE : (1) 1856, Nongqawuse (environ 15 ans) près de l'embouchure de la Gxarha ; oncle Mhlakaza ; message des ancêtres : tuer le bétail, détruire les récoltes. (2) Contexte : guerres de frontière, pleuropneumonie bovine (1855), pertes de terres. (3) Chef Sarhili (Kreli) a soutenu. (4) Estimations : environ 400 000 têtes tuées, environ 40 000 morts, chiffres variables selon les historiens. (5) Date prophétisée : 18 février 1857. (6) Nongqawuse arrêtée par les autorités du Cap. (7) Le gouverneur George Grey a ensuite profité de la famine : interprétation d'historiens, présentée avec prudence. Sujet sensible : ton sobre, aucune accusation du peuple xhosa.
+---
+En 1856, le peuple xhosa, dans l'est de l'actuelle Afrique du Sud, traversait des années très dures. Des guerres de frontière l'opposaient depuis longtemps à la colonie du Cap, qui lui prenait ses terres. Une maladie du poumon décimait les troupeaux, et chez les Xhosa, le bétail n'était pas seulement une richesse : il était le sang, le lait, la mémoire d'une famille.
+---
+Cette année-là, une jeune fille d'environ quinze ans, Nongqawuse, affirma avoir rencontré des esprits près de l'embouchure de la rivière Gxarha. Ils lui auraient dit que les ancêtres reviendraient, avec de nouveaux troupeaux et une force immense, pour chasser les colons, à une condition : que le peuple tue ses bêtes malades et détruise ses réserves de grain. Son oncle Mhlakaza porta le message.
+---
+Beaucoup n'y crurent pas d'abord. Puis les prophéties se répétèrent, et l'espoir, quand il vient après tant de pertes, pèse plus lourd que la prudence. Le chef Sarhili finit par donner son appui. Dans toute la région, des familles abattirent leurs bêtes, par centaines de milliers selon les estimations, et laissèrent leurs champs en friche. Le jour annoncé pour le grand retour fut fixé au 18 février 1857.
+---
+Ce jour-là, le soleil se leva comme tous les autres. Les ancêtres ne vinrent pas. Il ne restait ni troupeaux, ni grain. La famine s'abattit sur le pays. Les historiens estiment qu'environ quarante mille personnes moururent, et que beaucoup d'autres partirent chercher du travail dans la colonie, par désespoir. Nongqawuse fut arrêtée par les autorités coloniales, puis éloignée des siens.
+---
+Les historiens discutent encore de ce qui s'est passé : désespoir, divisions internes, rôle des chefs, manipulations possibles. Certains soulignent que le gouverneur de la colonie profita de la famine pour s'emparer de terres et de main-d'œuvre. Ce que l'on retient surtout, c'est la douleur d'un peuple qui avait tout perdu, sauf l'espoir, et dont l'espoir a conduit à la catastrophe. À nous de veiller, aujourd'hui encore, à ce que l'espoir ne devienne jamais un piège.
+
+=== conte: sotho-moshoeshoe-montagne
+titre: Moshoeshoe et la montagne qui devint royaume
+accroche: Il n'avait pas la plus grande armée. Il avait une montagne, de la patience, et des amis.
+etiquette: Histoire
+origine: Histoire des Basotho (Lesotho), XIXe siècle, d'après les historiens
+region: Afrique australe
+type: long
+gratuites: 2
+decor: montagne
+lumiere: aube
+figures: guerrier, ancien
+morale: Une montagne protège ceux qui, au sommet, savent accueillir.
+# relecture OBLIGATOIRE : (1) Mfecane/Difaqane, années 1810-1830. (2) Moshoeshoe, chef des Bakoena, installé à Thaba Bosiu vers 1824. (3) Accueil de réfugiés, formation du peuple basotho : attesté. (4) Missionnaires français invités en 1833 (Casalis, Arbousset, Gosselin) : attesté. (5) Attaques des Ndebele de Mzilikazi (années 1830) et des Boers de l'État libre d'Orange : attesté. (6) 1868 : protectorat britannique (Basutoland) : attesté. (7) Mort de Moshoeshoe en 1870, indépendance du Lesotho en 1966 : attestés. (8) Cadeaux à des adversaires (bétail à Mzilikazi, notamment) : rapporté par les sources ; formulé avec prudence.
+---
+Au début du XIXe siècle, dans le sud de l'Afrique, des guerres ravageaient les territoires et jetaient des peuples entiers sur les routes. On les appellera plus tard le Mfecane ou le Difaqane, « l'écrasement », « la dispersion ». Dans ces années de chaos, un jeune chef nommé Moshoeshoe, de la lignée des Bakoena, refusait de se laisser emporter. Il observait. Il réfléchissait. Il cherchait un endroit où son peuple pourrait respirer.
+---
+Vers 1824, il conduisit ses gens vers une montagne en forme de table, au sommet plat, dont les flancs étaient abrupts et les accès faciles à défendre. On l'appelait Thaba Bosiu, « la montagne de la nuit ». Elle devint sa forteresse, mais aussi sa capitale. Au sommet, on trouvait des pâturages, des sources, de quoi nourrir des milliers de personnes en cas de siège. Une montagne qui n'était pas une prison, mais une réserve de paix.
+---
+Moshoeshoe avait compris que la force ne se mesure pas seulement au nombre de lances. Quand des familles fuyant la guerre frappaient à sa porte, il les accueillait. Il leur donnait des terres, des vaches à garder, une place dans son conseil. Ainsi, autour de lui, des clans qui ne se connaissaient pas devinrent un seul peuple : les Basotho. On rapporte que, lorsqu'un voisin hostile lui envoyait des guerriers, il lui renvoyait parfois du bétail et un message de paix.
+---
+Les ennemis hésitèrent plus d'une fois devant cette stratégie déroutante. Les conflits ne disparurent pas pour autant : il fallut défendre la montagne contre les Ndebele, puis contre les Boers qui convoitaient les pâturages. En 1833, Moshoeshoe invita des missionnaires français, parce qu'il avait compris que l'écriture, les langues et les alliances lointaines pourraient aider son peuple à survivre dans un monde qui changeait vite.
+---
+Au fil des décennies, les Boers de l'État libre d'Orange grignotèrent les terres basotho. Après plusieurs guerres, Moshoeshoe, vieillissant, comprit que seul un protecteur puissant pourrait sauver ce qui restait. En 1868, il demanda que son peuple soit placé sous la protection de la reine Victoria. Un choix amer, mais prudent : le territoire resta aux Basotho, au lieu d'être englouti par ses voisins.
+---
+Moshoeshoe mourut en 1870. Près d'un siècle plus tard, en 1966, le pays redevint indépendant sous le nom de Lesotho. Aujourd'hui, c'est un royaume enclavé dans l'Afrique du Sud, qui doit son existence à un chef qui préféra rassembler plutôt qu'écraser. On y raconte qu'une montagne ne protège pas à elle seule : elle protège ceux qui, au sommet, savent accueillir.
