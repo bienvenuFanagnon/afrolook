@@ -102,7 +102,9 @@ service cloud.firestore {
               .hasAny(['votre_solde_principal', 'solde_ventes',
                        'solde_affiliation', 'solde_promo',
                        'canalCreationCredits', 'groupCreationCredits', 'lastPostAt',
-                       'adFreeUntil', 'modulesAdFreeUntil']);
+                       'adFreeUntil', 'modulesAdFreeUntil',
+                       // suppression / restauration de compte : décidées par le serveur seulement
+                       'accountStatus', 'restoreFeeDue', 'deletionScheduledAt', 'deletionRequestedAt']);
       allow delete: if false;
     }
 

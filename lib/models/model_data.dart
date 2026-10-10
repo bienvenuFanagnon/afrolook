@@ -1017,6 +1017,8 @@ class UserData {
   /// « PENDING_DELETION » : suppression demandée, effacement définitif à [deletionScheduledAt] (ms).
   String? accountStatus;
   int? deletionScheduledAt;
+  /// « RESTORE_FEE_DUE » : compte restauré, bloqué jusqu'au paiement du déblocage de [restoreFeeDue] pièces.
+  int? restoreFeeDue;
   /// Nombre d'abonnés affiché : le compteur tenu par le serveur (`abonnes`).
   /// Repli sur la liste (ancienne) tant que le compteur n'existe pas.
   int get followersCount {
@@ -1460,6 +1462,7 @@ class UserData {
     creatorScore = (json['creatorScore'] as num?)?.toDouble() ?? 0.0;
     accountStatus = json['accountStatus'] as String?;
     deletionScheduledAt = (json['deletionScheduledAt'] as num?)?.toInt();
+    restoreFeeDue = (json['restoreFeeDue'] as num?)?.toInt();
   }
 
   Map<String, dynamic> toJson() {

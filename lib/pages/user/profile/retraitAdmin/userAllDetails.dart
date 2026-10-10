@@ -622,15 +622,47 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 
-  Future<void> _restoreAccount() async {
+  /// Compte restauré mais bloqué : le déblocage en pièces n'est pas encore payé.
+  Widget _buildRestoreFeeBanner() {
+    final fee = _userData!.restoreFeeDue ?? 0;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _gold.withValues(alpha: 0.5)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.lock_clock_rounded, color: _gold),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Compte restauré — déblocage de $fee pièces à payer',
+                style: TextStyle(color: _textP, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        Text('Toutes ses activités restent bloquées tant qu\'il n\'est pas payé. La personne peut recharger ses pièces.',
+            style: TextStyle(color: _textS, fontSize: 13)),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _waiveRestoreFee,
+          icon: const Icon(Icons.card_giftcard_rounded, size: 18),
+          label: const Text('Offrir le déblocage'),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _waiveRestoreFee() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Restaurer ce compte ?'),
-        content: const Text('La personne pourra de nouveau se connecter et la suppression est annulée.'),
+        title: const Text('Offrir le déblocage ?'),
+        content: const Text('Le compte est réactivé tout de suite, sans payer de pièces.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restaurer')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Offrir')),
         ],
       ),
     );
@@ -638,9 +670,60 @@ class _UserManagementPageState extends State<UserManagementPage> {
     try {
       await FirebaseFunctions.instance
           .httpsCallable('restoreDeletedAccount')
-          .call({'userId': _userData!.id});
+          .call({'userId': _userData!.id, 'waiveFee': true});
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compte restauré')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compte débloqué sans frais')));
+      await _loadUserData();
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Action impossible')));
+    }
+  }
+
+  Future<void> _restoreAccount() async {
+    var waiveFee = false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Restaurer ce compte ?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('La suppression est annulée et la personne peut de nouveau se connecter.'),
+              const SizedBox(height: 10),
+              Text(
+                waiveFee
+                    ? 'Compte réactivé tout de suite, sans frais.'
+                    : 'Elle devra d\'abord payer le déblocage en pièces (même barème que les comptes inactifs : 500 à 3 000 selon ses abonnés). Toutes ses activités restent bloquées tant qu\'elle n\'a pas payé ; elle peut recharger son solde.',
+                style: const TextStyle(fontSize: 13),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: waiveFee,
+                onChanged: (v) => setLocal(() => waiveFee = v == true),
+                title: const Text('Sans frais (erreur de notre part)', style: TextStyle(fontSize: 13.5)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restaurer')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final res = await FirebaseFunctions.instance
+          .httpsCallable('restoreDeletedAccount')
+          .call({'userId': _userData!.id, 'waiveFee': waiveFee});
+      if (!mounted) return;
+      final fee = (res.data is Map ? (res.data['feeCoins'] as num?)?.toInt() : null) ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(fee > 0 ? 'Compte restauré : déblocage de $fee pièces à payer' : 'Compte restauré')));
       await _loadUserData();
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
@@ -981,6 +1064,10 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 children: [
                   if (_userData!.accountStatus == 'PENDING_DELETION') ...[
                     _buildDeletionBanner(),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_userData!.accountStatus == 'RESTORE_FEE_DUE') ...[
+                    _buildRestoreFeeBanner(),
                     const SizedBox(height: 16),
                   ],
                   _buildProfileCard(),

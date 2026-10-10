@@ -54,6 +54,7 @@ import 'auth/authTest/Screens/updateUserData.dart';
 import 'home/homeScreen.dart';
 import 'home/home_boot_cache.dart';
 import 'suspension_screen.dart';
+import 'account_restore_fee_screen.dart';
 
 class DestinationData {
   final String type;
@@ -319,6 +320,14 @@ class _SplashChargementState extends State<SplashChargement> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => SuspensionScreen(user: user)),
+      );
+      return;
+    }
+    // Compte restauré après suppression : bloqué tant que le déblocage n'est pas payé (voir payRestoreFee)
+    if (AccountRestoreFeeScreen.requiredFor(user)) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AccountRestoreFeeScreen(user: user)),
       );
       return;
     }
