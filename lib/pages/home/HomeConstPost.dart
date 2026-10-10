@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:math';
@@ -3781,6 +3782,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
       if (i == 21) {
         contentWidgets.add(const ContesFeedCard(key: ValueKey('contes_card_home_2'), slot: 2));
+      }
+
+      // Invitation « Crée ta carte Afrolook » : après le 13e post, puis plus loin (au plus une fois tous les 3 jours, jamais sur le web)
+      if (i == 12) {
+        contentWidgets.add(const CardFeedInvite(key: ValueKey('card_invite_home_1')));
+      }
+      if (i == 33) {
+        contentWidgets.add(const CardFeedInvite(key: ValueKey('card_invite_home_2')));
       }
 
       // Cours universitaire du jour : de temps en temps dans le fil, deux cours différents
