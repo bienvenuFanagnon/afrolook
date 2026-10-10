@@ -79,7 +79,7 @@ class CardEntry {
       isVideo: isVideo && images.isNotEmpty,
       postId: post.id,
       date: _date(post.createdAt),
-      likes: post.likes ?? 0,
+      likes: (post.loves ?? 0) > (post.likes ?? 0) ? post.loves! : (post.likes ?? 0),
       comments: post.comments ?? 0,
       followers: author?.followersCount ?? 0,
       profileId: author?.id ?? post.user_id,

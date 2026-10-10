@@ -139,7 +139,7 @@ Widget _layoutMagazine(_Args a) => LayoutBuilder(builder: (context, c) {
         const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xAA000000), Color(0x00000000), Color(0x00000000), Color(0xCC000000)], stops: [0, .3, .5, 1])))),
         Positioned(
           left: 16,
-          right: 58,
+          right: 16,
           top: 12,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text('AFROLOOK', style: _t('AbrilFatface', 60, Colors.white, ls: -1.5, shadows: const [Shadow(color: Colors.black38, offset: Offset(0, 2))]))),
@@ -185,7 +185,7 @@ Widget _layoutCollector(_Args a) {
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
       child: Column(children: [
         Padding(
-          padding: const EdgeInsets.only(right: 34),
+          padding: EdgeInsets.zero,
           child: Row(children: [
             Expanded(child: Text('@${a.source.pseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: _t('Rajdhani', 20, Colors.white, w: FontWeight.w700))),
             if (a.source.verified) const Icon(Icons.verified_rounded, color: Color(0xFF2196F3), size: 16),
@@ -294,7 +294,6 @@ Widget _layoutGamer(_Args a) {
           child: FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: prog.clamp(0.08, 1.0), child: Container(decoration: BoxDecoration(color: cyan, borderRadius: BorderRadius.circular(4), boxShadow: const [BoxShadow(color: cyan, blurRadius: 6)]))),
         ),
       ),
-      const SizedBox(width: 44),
     ]),
     _gap(8),
     if (a.hasImage)
@@ -329,7 +328,7 @@ Widget _layoutStreet(_Args a) {
       ),
       const Spacer(),
       if (a.spec.showAuthor)
-        Padding(padding: const EdgeInsets.only(right: 40), child: Text('@${a.source.pseudo}', style: _t('Roboto', 13, const Color(0xFF111111), w: FontWeight.w800))),
+        Padding(padding: EdgeInsets.zero, child: Text('@${a.source.pseudo}', style: _t('Roboto', 13, const Color(0xFF111111), w: FontWeight.w800))),
     ]),
     _gap(12),
     if (a.hasImage)
@@ -379,7 +378,7 @@ Widget _layoutPassport(_Args a) {
     Container(
       width: double.infinity,
       color: navy,
-      padding: const EdgeInsets.fromLTRB(16, 12, 56, 9),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 9),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('AFROLOOK · ${tr('PASSEPORT')}', style: _t('Roboto', 12, gold, w: FontWeight.w800, ls: 3)),
         Text(tr('CITOYEN DU MONDE'), style: _t('Roboto', 8.5, gold, ls: 2.4)),
@@ -668,7 +667,7 @@ Widget _layoutFilm(_Args a) => LayoutBuilder(builder: (context, c) {
       return Stack(fit: StackFit.expand, children: [
         if (a.hasImage) Positioned(left: 0, right: 0, top: 0, height: h * 0.62, child: a.media()),
         Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: const [Color(0x00000000), Color(0x00000000), Color(0xFF000000), Color(0xFF000000)], stops: [0, a.hasImage ? .25 : 0, a.hasImage ? .62 : 0, 1]))),),
-        if (a.spec.showAuthor) Positioned(left: 16, right: 58, top: 12, child: Text('${tr('UN POST DE')} @${a.source.pseudo.toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: _t('Roboto', 10, Colors.white, w: FontWeight.w700, ls: 2.4, shadows: const [Shadow(color: Colors.black87, blurRadius: 4)]))),
+        if (a.spec.showAuthor) Positioned(left: 16, right: 16, top: 12, child: Text('${tr('UN POST DE')} @${a.source.pseudo.toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: _t('Roboto', 10, Colors.white, w: FontWeight.w700, ls: 2.4, shadows: const [Shadow(color: Colors.black87, blurRadius: 4)]))),
         Positioned(
           left: 18,
           right: 18,
@@ -707,7 +706,7 @@ Widget _layoutNewspaper(_Args a) {
     ),
   );
   return Column(children: [
-    Padding(padding: const EdgeInsets.only(right: 44), child: FittedBox(fit: BoxFit.scaleDown, child: Text('L\'Afrolook Quotidien', style: _t('AbrilFatface', 30, ink, ls: -.5)))),
+    Padding(padding: EdgeInsets.zero, child: FittedBox(fit: BoxFit.scaleDown, child: Text('L\'Afrolook Quotidien', style: _t('AbrilFatface', 30, ink, ls: -.5)))),
     Container(height: 3, margin: const EdgeInsets.only(top: 2), decoration: const BoxDecoration(border: Border.symmetric(horizontal: BorderSide(color: ink, width: 1.2)))),
     Padding(
       padding: const EdgeInsets.only(top: 3),
@@ -803,7 +802,7 @@ Widget _layoutBoarding(_Args a) {
           child: Column(children: [
             Container(
               color: navy,
-              padding: const EdgeInsets.fromLTRB(14, 9, 46, 9),
+              padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
               child: Row(children: [
                 Flexible(child: Text('AFROLOOK AIR', maxLines: 1, overflow: TextOverflow.ellipsis, style: _t('Roboto', 10, Colors.white, w: FontWeight.w800, ls: 2))),
                 const Spacer(),

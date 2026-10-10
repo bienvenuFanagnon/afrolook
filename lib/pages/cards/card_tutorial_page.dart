@@ -4,6 +4,7 @@ import '../../l10n/tr.dart';
 import '../../theme/app_colors.dart';
 import 'card_canvas.dart';
 import 'card_entry.dart';
+import 'card_guard.dart';
 import 'card_models.dart';
 
 /// Tutoriel du Studio Cartes : des exemples réels, dessinés avec les images de l'application, pour montrer ce que
@@ -59,7 +60,14 @@ class _CardTutorialPageState extends State<CardTutorialPage> {
   int _page = 0;
 
   @override
+  void initState() {
+    super.initState();
+    CardGuard.enter();
+  }
+
+  @override
   void dispose() {
+    CardGuard.leave();
     _pc.dispose();
     super.dispose();
   }

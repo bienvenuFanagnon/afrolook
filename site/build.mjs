@@ -7,7 +7,11 @@ import { T } from './src/i18n.mjs';
 
 const root = path.dirname(new URL(import.meta.url).pathname);
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
-const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf8'));
+const MONEY = /commission|\d+(,\d+)? ?%|RPM|FCFA|minimum|\$|part du créateur|palier|taux de change|encaiss|parrain/i;
+// Page publique : les règles de fonctionnement, sans les montants ni les parts (ils restent dans l'application).
+const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf8'))
+  .map((s) => ({ ...s, rules: s.rules.filter(([a, b]) => !MONEY.test(a) && !MONEY.test(b)) }))
+  .filter((s) => s.rules.length && !/RPM|Rémunération|Gains|Retrait|monétis|Monétis|Publicité|Récompenses|DÉFI/i.test(s.title));
 const dist = path.join(root, 'dist');
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
@@ -216,8 +220,8 @@ function earnPage(lang) {
   const alt = { fr: P.fr.earn, en: P.en.earn };
   const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].earn, t.nav.earn]])}<h1>${e.h1}</h1><p>${e.lead}</p><div class="cta" style="margin-top:24px">${storeBtns(t)}</div></div></section>
 <section class="earn" style="padding-block:56px"><div class="wrap">${waysHtml(lang)}<p class="fine" style="text-align:left;margin-top:18px">${h.earnFine}</p></div></section>
-<section><div class="wrap twocol"><div><span class="kicker">${e.example}</span><h2 class="h2">${coins} ${h.coins}</h2><p class="sub">≈ ${fcfa} FCFA ≈ ${eur} €. ${h.flowSub(coins, fcfa, eur).split('Exemple')[0].split('Example')[0]}</p><div class="pay">${h.pay.map((x) => `<span>${x}</span>`).join('')}</div><p class="fine" style="text-align:left">${h.fine}</p></div>
-<div class="grp"><h3>${e.rules}</h3><p>${e.rulesText}</p><p><a class="btn btn-line" href="${P[lang].rules}" hreflang="fr">${e.rulesCta}</a></p></div></div></section>
+<section><div class="wrap twocol"><div><span class="kicker">${e.example}</span><h2 class="h2">${coins} ${h.coins}</h2><p class="sub">${h.flowSub(coins, fcfa, eur)}</p><div class="pay">${h.pay.map((x) => `<span>${x}</span>`).join('')}</div><p class="fine" style="text-align:left">${h.fine}</p></div>
+<div class="grp"><h3>${e.rules}</h3><p>${e.rulesText}</p><p><a class="btn btn-line" href="${P[lang].download}">${e.rulesCta}</a></p></div></div></section>
 <section style="padding-top:0"><div class="wrap"><span class="kicker">${h.faqK}</span><h2 class="h2">${h.faqH}</h2>${faqHtml(lang)}</div></section>`;
   emit(lang, 'earn', P[lang].earn, { alt, title: e.title, desc: e.desc, body, jsonld: [faqLd(lang)] });
 }

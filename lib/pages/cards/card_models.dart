@@ -291,6 +291,9 @@ class CardSpec {
     this.showDate = true,
     this.country,
     this.country2,
+    this.likesText,
+    this.commentsText,
+    this.followersText,
   })  : imageOrder = imageOrder ?? <int>[],
         pickedSentences = pickedSentences ?? <int>{};
 
@@ -315,6 +318,16 @@ class CardSpec {
   /// Pays des styles « drapeau » (code ISO à 2 lettres) ; null : pays de l'auteur. [country2] sert au style Duo.
   String? country;
   String? country2;
+
+  /// Chiffres écrits à la main (« 1,2 M ») qui remplacent les vrais ; null ou vide : le chiffre réel du post.
+  String? likesText;
+  String? commentsText;
+  String? followersText;
+
+  static String? _clean(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
+  String? get likesOverride => _clean(likesText);
+  String? get commentsOverride => _clean(commentsText);
+  String? get followersOverride => _clean(followersText);
 
   static const maxImages = 4;
 }

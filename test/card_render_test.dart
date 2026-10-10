@@ -119,6 +119,19 @@ void main() {
     }
   });
 
+  test('chiffres personnalisés : vide ou espaces = vrai chiffre', () {
+    expect(CardSpec(style: CardStyleId.neon).likesOverride, isNull);
+    expect(CardSpec(style: CardStyleId.neon, likesText: '  ').likesOverride, isNull);
+    expect(CardSpec(style: CardStyleId.neon, likesText: ' 12k ').likesOverride, '12k');
+  });
+
+  testWidgets('chiffres personnalisés : tous les styles se dessinent', (tester) async {
+    for (final st in CardStyleId.values) {
+      final png = await render(tester, source(), CardSpec(style: st, showFollowers: true, likesText: '12,4k', commentsText: '350', followersText: '1,2M', country: 'SN'));
+      expect(png.length > 10000, true, reason: st.name);
+    }
+  }, timeout: const Timeout(Duration(minutes: 5)));
+
   test('le lien du QR : post, sinon profil, sinon accueil', () {
     expect(source().link, 'https://afrolookmedia.com/share/post/abc123');
     expect(CardSource.draft(pseudo: 'a', profileId: 'u1').link, 'https://afrolookmedia.com/share/creator/u1');

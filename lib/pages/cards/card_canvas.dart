@@ -25,7 +25,7 @@ const _ink = Color(0xFF0E0E0E);
 /// - un média n'est jamais recadré : il est montré en entier dans un cadre de forme fixe, les bords étant remplis
 ///   par un flou de la même image ;
 /// - le texte s'adapte à la place restante (la police diminue, puis le texte est coupé proprement) ;
-/// - la signature Afrolook (coin plié, bande tricolore, sceau, QR) est identique sur tous les styles.
+/// - la signature Afrolook (bande tricolore, sceau « Créé par », QR) est identique sur tous les styles.
 class CardCanvas extends StatelessWidget {
   const CardCanvas(
       {super.key, required this.source, required this.spec, this.text});
@@ -77,7 +77,6 @@ class CardCanvas extends StatelessWidget {
               children: [
                 theme.background(size),
                 Padding(padding: theme.padding, child: theme.wrap(content)),
-                const Positioned(right: 0, top: 0, child: _Fold()),
                 const Positioned(
                     left: 0, right: 0, bottom: 0, child: _TriBand()),
               ],
@@ -227,7 +226,6 @@ class _Header extends StatelessWidget {
                 style: TextStyle(color: theme.muted, fontSize: 11)),
         ]),
       ),
-      const SizedBox(width: 40), // place du coin plié
     ]);
   }
 
@@ -308,12 +306,14 @@ class _Footer extends StatelessWidget {
                             fontFamily: theme.headFont)),
                   if (!hideStats &&
                       (spec.showStats ||
-                          (spec.showFollowers && source.followers > 0)))
+                          (spec.showFollowers &&
+                              (spec.followersOverride != null ||
+                                  source.followers > 0))))
                     Row(mainAxisSize: MainAxisSize.min, children: [
                       if (spec.showStats) ...[
                         Icon(Icons.favorite_rounded, size: 15, color: theme.fg),
                         const SizedBox(width: 4),
-                        Text(_compact(source.likes),
+                        Text(spec.likesOverride ?? _compact(source.likes),
                             style: TextStyle(
                                 color: theme.fg,
                                 fontSize: 13,
@@ -322,18 +322,20 @@ class _Footer extends StatelessWidget {
                         Icon(Icons.chat_bubble_rounded,
                             size: 14, color: theme.fg),
                         const SizedBox(width: 4),
-                        Text(_compact(source.comments),
+                        Text(spec.commentsOverride ?? _compact(source.comments),
                             style: TextStyle(
                                 color: theme.fg,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700)),
                       ],
-                      if (spec.showFollowers && source.followers > 0) ...[
+                      if (spec.showFollowers &&
+                          (spec.followersOverride != null ||
+                              source.followers > 0)) ...[
                         if (spec.showStats) const SizedBox(width: 12),
                         Icon(Icons.people_alt_rounded,
                             size: 16, color: theme.fg),
                         const SizedBox(width: 4),
-                        Text(_compact(source.followers),
+                        Text(spec.followersOverride ?? _compact(source.followers),
                             style: TextStyle(
                                 color: theme.fg,
                                 fontSize: 13,
@@ -431,51 +433,6 @@ class _Seal extends StatelessWidget {
               ]),
         ]),
       );
-}
-
-/// Coin plié jaune « A » en haut à droite : le repère de la marque.
-class _Fold extends StatelessWidget {
-  const _Fold();
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 64,
-        height: 64,
-        child: CustomPaint(
-          painter: _FoldPainter(),
-          child: const Align(
-            alignment: Alignment(0.55, -0.62),
-            child: Text('A',
-                style: TextStyle(
-                    color: _ink,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
-                    fontFamily: 'Roboto')),
-          ),
-        ),
-      );
-}
-
-class _FoldPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size s) {
-    final p = Path()
-      ..moveTo(0, 0)
-      ..lineTo(s.width, 0)
-      ..lineTo(s.width, s.height)
-      ..close();
-    canvas.drawShadow(p, Colors.black, 4, true);
-    canvas.drawPath(p, Paint()..color = _yellow);
-    // pli : un triangle plus clair le long de l'hypoténuse
-    final fold = Path()
-      ..moveTo(0, 0)
-      ..lineTo(s.width * 0.34, s.height * 0.34)
-      ..lineTo(0, s.height * 0.34 * 0.0)
-      ..close();
-    canvas.drawPath(fold, Paint()..color = const Color(0x22FFFFFF));
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 class _TriBand extends StatelessWidget {

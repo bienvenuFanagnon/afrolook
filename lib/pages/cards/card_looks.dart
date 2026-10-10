@@ -38,16 +38,19 @@ class _Args {
 
 /// Les trois statistiques d'une carte, déjà filtrées par les interrupteurs du studio.
 class _StatItem {
-  const _StatItem(this.kind, this.value);
+  const _StatItem(this.kind, this.text);
   final int kind; // 0 j'aime, 1 commentaires, 2 abonnés
-  final int value;
-  String get text => _compact(value);
+  final String text;
 }
 
 List<_StatItem> _statsOf(CardSource s, CardSpec spec) => [
-      if (spec.showStats) _StatItem(0, s.likes),
-      if (spec.showStats) _StatItem(1, s.comments),
-      if (spec.showFollowers && s.followers > 0) _StatItem(2, s.followers),
+      if (spec.showStats)
+        _StatItem(0, spec.likesOverride ?? _compact(s.likes)),
+      if (spec.showStats)
+        _StatItem(1, spec.commentsOverride ?? _compact(s.comments)),
+      if (spec.showFollowers &&
+          (spec.followersOverride != null || s.followers > 0))
+        _StatItem(2, spec.followersOverride ?? _compact(s.followers)),
     ];
 
 /// Description complète d'un style.

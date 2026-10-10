@@ -16,6 +16,7 @@ import 'card_events.dart';
 import 'card_export.dart';
 import 'card_flags.dart';
 import 'card_flow.dart';
+import 'card_guard.dart';
 import 'card_models.dart';
 import 'card_service.dart';
 import 'card_text.dart';
@@ -38,6 +39,10 @@ class CardStudioPage extends StatefulWidget {
   final CardStyleId? initialStyle;
   final String? initialCountry;
 
+  /// Désactivé seulement par le banc de test qui fabrique les images du site vitrine.
+  @visibleForTesting
+  static bool previewMark = true;
+
   @override
   State<CardStudioPage> createState() => _CardStudioPageState();
 }
@@ -47,6 +52,9 @@ class _CardStudioPageState extends State<CardStudioPage> {
   late final CardSpec _spec;
   final GlobalKey _boundaryKey = GlobalKey();
   final TextEditingController _textCtl = TextEditingController();
+  late final TextEditingController _likesCtl = TextEditingController(text: _source.likes.toString());
+  late final TextEditingController _commentsCtl = TextEditingController(text: _source.comments.toString());
+  late final TextEditingController _followersCtl = TextEditingController(text: _source.followers.toString());
   CardQuote _quote = CardQuote.fallback();
   int _tab = 0;
   bool _busy = false;
@@ -67,6 +75,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
       imageOrder: List<int>.generate(_source.images.length.clamp(0, 3), (i) => i),
     );
     _textCtl.text = _source.text;
+    CardGuard.enter();
     _loadQuote();
     WidgetsBinding.instance.addPostFrameCallback((_) => _firstUseTutorial());
   }
@@ -74,6 +83,10 @@ class _CardStudioPageState extends State<CardStudioPage> {
   @override
   void dispose() {
     _textCtl.dispose();
+    _likesCtl.dispose();
+    _commentsCtl.dispose();
+    _followersCtl.dispose();
+    CardGuard.leave();
     super.dispose();
   }
 
@@ -239,9 +252,28 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   // ── Interface ─────────────────────────────────────────────────────────────
 
+  /// Sur le web, une capture d'écran ne peut pas être bloquée : le studio reste dans l'application.
+  Widget _webGate(AppColors c) => Scaffold(
+        backgroundColor: c.background,
+        appBar: AppBar(backgroundColor: c.background, foregroundColor: c.textPrimary, elevation: 0),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.phone_android_rounded, size: 56, color: c.primary),
+              const SizedBox(height: 16),
+              Text(context.tr('Le Studio Cartes est dans l\'application'), textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text(context.tr('Ouvre Afrolook sur ton téléphone pour créer, enregistrer et partager tes cartes.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 14)),
+            ]),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    if (!CardGuard.supported) return _webGate(c);
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -278,7 +310,11 @@ class _CardStudioPageState extends State<CardStudioPage> {
             fit: BoxFit.contain,
             child: DecoratedBox(
               decoration: BoxDecoration(boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 26, offset: const Offset(0, 12))], borderRadius: BorderRadius.circular(28)),
-              child: RepaintBoundary(key: _boundaryKey, child: CardCanvas(source: _source, spec: _spec)),
+              // Le bandeau « aperçu » est posé HORS du RepaintBoundary : il n'apparaît jamais dans l'image exportée.
+              child: Stack(children: [
+                RepaintBoundary(key: _boundaryKey, child: CardCanvas(source: _source, spec: _spec)),
+                if (CardStudioPage.previewMark) const Positioned.fill(child: IgnorePointer(child: _PreviewMark())),
+              ]),
             ),
           ),
         ),
@@ -661,8 +697,44 @@ class _CardStudioPageState extends State<CardStudioPage> {
         toggle(context.tr('Abonnés'), _spec.showFollowers, (v) => _spec.showFollowers = v),
         toggle(context.tr('Date'), _spec.showDate, (v) => _spec.showDate = v),
       ]),
+      if (_spec.showStats || _spec.showFollowers) ...[
+        const SizedBox(height: 10),
+        Text(context.tr('Chiffres affichés sur la carte (modifiables)'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        Row(children: [
+          if (_spec.showStats) ...[
+            Expanded(child: _statField(c, context.tr('J\'aime'), Icons.favorite_rounded, _likesCtl, _source.likes, (v) => _spec.likesText = v)),
+            const SizedBox(width: 8),
+            Expanded(child: _statField(c, context.tr('Commentaires'), Icons.chat_bubble_rounded, _commentsCtl, _source.comments, (v) => _spec.commentsText = v)),
+          ],
+          if (_spec.showStats && _spec.showFollowers) const SizedBox(width: 8),
+          if (_spec.showFollowers) Expanded(child: _statField(c, context.tr('Abonnés'), Icons.people_alt_rounded, _followersCtl, _source.followers, (v) => _spec.followersText = v)),
+        ]),
+      ],
     ]);
   }
+
+  /// Champ d'un chiffre de la carte : vide ou égal au vrai chiffre = valeur réelle ; sinon le texte saisi (« 12k », « 1,2 M », « 350 »).
+  Widget _statField(AppColors c, String label, IconData icon, TextEditingController ctl, int real, void Function(String?) set) => TextField(
+        controller: ctl,
+        keyboardType: TextInputType.text,
+        maxLength: 8,
+        style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
+        decoration: InputDecoration(
+          isDense: true,
+          counterText: '',
+          labelText: label,
+          prefixIcon: Icon(icon, size: 16, color: c.textSecondary),
+          prefixIconConstraints: const BoxConstraints(minWidth: 34, minHeight: 30),
+          filled: true,
+          fillColor: c.surfaceVariant,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        ),
+        onChanged: (v) => setState(() {
+          set(v.trim() == real.toString() ? null : v);
+          _captureDone = false;
+        }),
+      );
 
   // ── Onglet Texte ──────────────────────────────────────────────────────────
 
@@ -794,4 +866,45 @@ class _PriceChip extends StatelessWidget {
       child: Text(cost.label, style: TextStyle(color: cost.free ? c.primary : c.supportAccent, fontWeight: FontWeight.w800, fontSize: 12)),
     );
   }
+}
+
+/// Bandeau diagonal répété « APERÇU · AFROLOOK » : il rend une capture d'écran de l'aperçu inutilisable.
+/// Il est posé par-dessus la carte, hors de la zone exportée, donc absent de l'image enregistrée ou partagée.
+class _PreviewMark extends StatelessWidget {
+  const _PreviewMark();
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: CustomPaint(painter: _PreviewMarkPainter()),
+      );
+}
+
+class _PreviewMarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.rotate(-0.42);
+    final stripe = Paint()..color = const Color(0xFFFFC107).withOpacity(0.78);
+    final tp = TextPainter(
+      text: const TextSpan(
+        text: 'APERÇU · AFROLOOK  ·  APERÇU · AFROLOOK  ·  APERÇU · AFROLOOK  ·  APERÇU · AFROLOOK',
+        style: TextStyle(color: Color(0xFF1B1B1B), fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.4),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    final h = tp.height + 12;
+    final span = size.longestSide * 1.6;
+    // Trois bandes en travers : une capture reste lisible comme « aperçu », jamais comme rendu final.
+    for (final f in const [0.28, 0.58, 0.86]) {
+      final y = size.height * f - size.width * 0.25;
+      canvas.drawRect(Rect.fromLTWH(-span / 2, y, span, h), stripe);
+      tp.paint(canvas, Offset(-span / 2 + 12, y + 6));
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
