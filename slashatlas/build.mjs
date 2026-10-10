@@ -136,15 +136,15 @@ function cmdPage(l, c) {
   const rel = [...same, ...COMMANDS.filter((x) => x.cat !== c.cat)].slice(0, 3);
   const tools = [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Midjourney', 'https://www.midjourney.com/']];
   const fullText = `${c.code} : ${ct.prompt}`;
+const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] };
+  const fsteps = FS[l].map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x}</b></li>`).join('');
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
-<div class="fiche"><div>${poster(c, l, true)}${ad('rect')}</div><div><div class="eyebrow">${cat[l]}</div><h1>${esc(ct.title)}</h1><p class="lead sm">${esc(ct.desc)}</p>
-<div class="chips"><span>${t.ratio} : ${c.ratio}</span><span>${t.compat} ${tools.map((x) => x[0]).join(', ')}</span></div>
-<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><button class="btn pri big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${t.copy}</button></div><p class="hint">${t.notTested}</p>${ad('lb')}
-<h2 class="h3">${t.steps}</h2><ol class="steps"><li>${t.s1}</li><li>${t.s2}</li><li>${t.s3}</li></ol>
-<div class="test">${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${t.testOn} ${n} ↗</a>`).join('')}</div>
-<p class="tip"><b>${t.tip} :</b> ${t.tipT}</p>
-<div class="after" id="after"><b>${t.afterT}</b> ${t.afterB}<div class="grid">${rel.map((x) => card(x, l)).join('')}</div></div></div></div>
-${same.length ? `<div class="sec"><h2>${t.similar}</h2></div><div class="grid">${same.map((x) => card(x, l)).join('')}</div>` : ''}${band(l)}</div>`;
+<div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]} · ${c.ratio}</div><h1>${esc(ct.title)}</h1></div><div class="fpost">${poster(c, l, true)}</div>
+<div class="fbody"><div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><button class="btn pri big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div>
+<ol class="steps3 mini3">${fsteps}</ol>
+<div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
+<div class="after" id="after"><b>${t.afterT}</b><div class="grid">${rel.map((x) => card(x, l)).join('')}</div></div></div></div>
+${same.length ? `<div class="sec"><h2>${t.similar}</h2></div><div class="grid">${same.map((x) => card(x, l)).join('')}</div>` : ''}</div>`;
   const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: t.crumbHome, item: abs(p.home) }, { '@type': 'ListItem', position: 2, name: cat[l], item: abs(p.cat(c.cat)) }, { '@type': 'ListItem', position: 3, name: c.code, item: abs(p.cmd(c.slug)) }] };
   emit(l, 'cmd', p.cmd(c.slug), { title: t.title(c.code, ct.title), desc: ct.desc, body, alt: alt2(P.fr.cmd(c.slug), P.en.cmd(c.slug)), ld });
   if (l === 'fr') pages.push({ fr: P.fr.cmd(c.slug), en: P.en.cmd(c.slug) });

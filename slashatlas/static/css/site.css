@@ -200,3 +200,32 @@ input[type=email],input[type=text],input[type=search]{font-size:15px}
 @media (min-width:720px){.rail{scroll-padding-inline:34px}.rp .poster{aspect-ratio:4/3}}
 .tsteps .d{font-style:normal;display:block}
 body[data-page=home] .tuto .lead,body[data-page=home] .tuto .d,body[data-page=home] .band p{display:none}
+
+/* pages intérieures : compactes sur téléphone */
+.fiche{grid-template-columns:minmax(0,1fr);gap:14px}
+.fiche .fhead{order:1}.fiche .fpost{order:2}.fiche .fbody{order:3;display:flex;flex-direction:column;gap:14px;min-width:0}
+.fiche h1{margin:6px 0 0;font-size:clamp(26px,7.4vw,42px)}
+.fpost .poster.big{aspect-ratio:16/9;padding:16px;container-type:inline-size}.fpost .poster.big b{font-size:clamp(20px,7cqi,34px)}.fpost .poster.big .shape{width:20%}
+.fbody .cmd .big{display:flex}.fbody .cmd .big svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cmd pre{max-height:150px;overflow:auto}
+.mini3{margin:0}.mini3 li{flex-direction:row;align-items:center;gap:8px;padding:9px 10px}.mini3 .si{margin:0;width:28px;height:28px;flex:none}.mini3 b{font-size:13.5px}.mini3 li+li::before{display:none}
+.test{align-items:center}.test .tl{color:var(--faint);font-size:12.5px}
+@media (min-width:720px){.fiche{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);grid-template-areas:"post head" "post body";gap:18px 36px;align-items:start}.fiche .fhead{grid-area:head}.fiche .fpost{grid-area:post}.fiche .fbody{grid-area:body}.fpost .poster.big{aspect-ratio:4/5}.fpost .poster.big .shape{width:30%}}
+
+/* listes de commandes : une ligne par commande sur téléphone */
+@media (max-width:719px){
+  .grid{grid-template-columns:minmax(0,1fr);gap:10px}
+  .card{flex-direction:row;align-items:stretch;border-radius:18px}
+  .card .cl{flex:0 0 108px;display:block;container-type:inline-size}
+  .card .poster{aspect-ratio:auto;height:100%;min-height:112px;padding:10px;justify-content:flex-end}
+  .card .poster b{font-size:12px}.card .poster small,.card .poster .ex{display:none}.card .poster .shape{width:30%;right:10px;top:10px}.card .poster .tag{display:none}
+  .card .cb{flex:1;min-width:0;padding:11px 12px;align-content:center;gap:6px}
+  .card .cb .code{font-size:13px}.card h3{font-size:14px}
+  .card .meta{display:flex;align-items:center;justify-content:space-between;gap:8px}.card .meta span{color:var(--faint);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .mini{background:var(--acc);color:#fff;border:0;border-radius:999px;padding:9px 18px;font-weight:700;font-size:13.5px;cursor:pointer;flex:none}
+}
+/* bandeau d'inscription : sobre */
+.band{padding:20px 18px}.band h3{font-size:19px;margin:0 0 4px}.band p{margin:0 0 12px;font-size:14px}
+/* pack et offres */
+.how2{grid-template-columns:1fr 1fr;gap:8px}.how2>div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px}.how2 p{font-size:12.5px;line-height:1.35}
+.pack .cmd pre{max-height:120px}
