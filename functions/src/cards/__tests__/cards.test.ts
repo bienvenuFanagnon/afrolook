@@ -11,6 +11,12 @@ const cfg = {
 const base = { isAdmin: false, plan: "free" as const, passActive: false, trialLeft: 0, adCredits: 0, used: { captures: 0, publishes: 0 }, balance: 1000 };
 
 describe("costOf", () => {
+  it("un compte gratuit a 1 capture offerte par mois (partage ailleurs), puis paie", () => {
+    const c = { ...cfg, trialCards: 0, quotas: { ...cfg.quotas, free: { captures: 1, publishes: 0 } } };
+    expect(costOf("capture", false, base, c)).toEqual({ via: "quota", coins: 0 });
+    expect(costOf("capture", false, { ...base, used: { captures: 1, publishes: 0 } }, c)).toEqual({ via: "coins", coins: 25 });
+    expect(costOf("publish", false, base, c)).toEqual({ via: "coins", coins: 10 });
+  });
   it("un gratuit paie en pièces : 25 la capture, 10 la publication, +20 pour un style Pro", () => {
     expect(costOf("capture", false, base, cfg)).toEqual({ via: "coins", coins: 25 });
     expect(costOf("publish", false, base, cfg)).toEqual({ via: "coins", coins: 10 });

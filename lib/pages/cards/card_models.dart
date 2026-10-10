@@ -173,7 +173,6 @@ class CardSpec {
     this.showAuthor = true,
     this.showStats = true,
     this.showDate = true,
-    this.showQr = true,
   })  : imageOrder = imageOrder ?? <int>[],
         pickedSentences = pickedSentences ?? <int>{};
 
@@ -191,7 +190,6 @@ class CardSpec {
   bool showAuthor;
   bool showStats;
   bool showDate;
-  bool showQr;
 
   static const maxImages = 4;
 }

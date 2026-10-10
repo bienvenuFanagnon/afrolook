@@ -549,7 +549,6 @@ class _CardStudioPageState extends State<CardStudioPage> {
         toggle(context.tr('Pseudo'), _spec.showAuthor, (v) => _spec.showAuthor = v),
         toggle(context.tr('Statistiques'), _spec.showStats, (v) => _spec.showStats = v),
         toggle(context.tr('Date'), _spec.showDate, (v) => _spec.showDate = v),
-        toggle(context.tr('QR'), _spec.showQr, (v) => _spec.showQr = v),
       ]),
     ]);
   }

@@ -207,8 +207,7 @@ class _Footer extends StatelessWidget {
                     ]))
                   : const SizedBox.shrink()),
         ),
-        if (spec.showQr)
-          Container(
+        Container(
             width: 40,
             height: 40,
             margin: const EdgeInsets.only(right: 8),

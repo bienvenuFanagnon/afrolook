@@ -12,7 +12,7 @@ Transforme un post (texte, texte + image(s), texte + vidéo) en carte partageabl
 - 4 styles (Kente, Wax, Néon Lagos, Bogolan – Bogolan en Pro), formats portrait 3:2, story 4:5, carré 2:1, export 1080 px.
 - Images **jamais coupées** : image entière sur fond flou de la même image ; mises en page mosaïque / polaroïds / bande / unique (4 images max au choix).
 - Texte long coupé à la fin d'une phrase + « Lire la suite » (`card_text.dart`).
-- Signature Afrolook + QR vers le post. Vidéo : image de couverture + badge lecture.
+- Signature Afrolook + QR vers le post (permanents, aucun interrupteur). Vidéo : image de couverture + badge lecture.
 - Sorties : enregistrer (galerie, `gal`), partager (`share_plus`), publier en Chronique (`AddChroniquePage`) ou en post.
 
 ## Économie (serveur : `functions/src/cards/cards.ts`)

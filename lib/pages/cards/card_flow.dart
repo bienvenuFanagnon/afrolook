@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:provider/provider.dart';
 
+import '../../ads/admob_service.dart';
 import '../../ads/rewards_service.dart';
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
@@ -82,7 +83,41 @@ class CardFlow {
       if (ok != true) return false;
     }
     if (!context.mounted) return false;
+    if (kind == CardKind.capture && quote.plan == 'free' && cost.via == 'quota' && !await _freeCardAd(context)) return false;
+    if (!context.mounted) return false;
     return _send(context, kind, pro: pro, quote: quote);
+  }
+
+  /// La carte offerte du mois d'un compte gratuit se « paie » avec une pub récompensée. Si aucune pub n'est
+  /// disponible (désactivées, pas de remplissage, hors connexion), la carte reste offerte : on ne bloque jamais le partage.
+  static Future<bool> _freeCardAd(BuildContext context) async {
+    final user = context.read<UserAuthProvider>().loginUserData;
+    if (!RewardsService.available(user)) return true;
+    AdmobService.loadRewarded();
+    for (var i = 0; i < 8 && !AdmobService.rewardedReadyNotifier.value; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    if (!AdmobService.rewardedReadyNotifier.value || !context.mounted) return true;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final c = AppColors.of(ctx);
+        return AlertDialog(
+          backgroundColor: c.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(ctx.tr('Ta carte offerte du mois'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+          content: Text(ctx.tr('Regarde une courte pub pour enregistrer ou partager cette carte gratuitement.'), style: TextStyle(color: c.textSecondary, height: 1.4)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Regarder la pub'))),
+          ],
+        );
+      },
+    );
+    if (go != true) return false;
+    final earned = await AdmobService.watchRewarded(userId: user.id);
+    if (!earned && context.mounted) _say(context, tr('Regarde la pub jusqu\'au bout pour obtenir ta carte offerte.'));
+    return earned;
   }
 
   static Future<bool> _send(BuildContext context, CardKind kind, {required bool pro, required CardQuote quote, bool retried = false}) async {

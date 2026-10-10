@@ -18,7 +18,7 @@ import { recordAppCommission } from "../payments/coinShares";
  * sauf avec le pass. Le Premium obtenu avec des pubs ne donne pas de quota.
  *
  * Réglages (AppConfig/cards, relus toutes les 60 s) : enabled, priceCapture, pricePublish, priceProStyle,
- * priceProStyleGold, passPrice, passDays, trialCards, quotas.{premium,gold}.{captures,publishes}, proStyles[].
+ * priceProStyleGold, passPrice, passDays, trialCards, quotas.{free,premium,gold}.{captures,publishes} (gratuit : 1 capture / 0 publication par mois), proStyles[].
  */
 
 const DAY = 86400000;
@@ -54,9 +54,9 @@ export async function loadCardsConfig(): Promise<CardsConfig> {
     priceProStyleGold: Math.max(0, Math.round(num(d["priceProStyleGold"], 10))),
     passPrice: Math.max(1, Math.round(num(d["passPrice"], 400))),
     passDays: Math.max(1, Math.min(90, Math.round(num(d["passDays"], 30)))),
-    trialCards: Math.max(0, Math.round(num(d["trialCards"], 1))),
+    trialCards: Math.max(0, Math.round(num(d["trialCards"], 0))),
     quotas: {
-      free: { captures: 0, publishes: 0 },
+      free: { captures: quota("free", "captures", 1), publishes: quota("free", "publishes", 0) },
       premium: { captures: quota("premium", "captures", 2), publishes: quota("premium", "publishes", 3) },
       gold: { captures: quota("gold", "captures", 5), publishes: quota("gold", "publishes", 20) },
     },
