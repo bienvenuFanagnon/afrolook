@@ -59,10 +59,26 @@ class UserPostLookImageTab extends StatefulWidget {
 
   final Canal? canal;
   final String? defiPostId;
+
+  /// Studio Cartes : image(s) et légende déjà prêtes (la carte), publiées avec les MÊMES règles qu'un post image
+  /// (images max, caractères, délai entre deux posts, pays…).
+  final List<Uint8List>? initialImages;
+  final String? initialDescription;
+
+  /// Appelée juste avant la publication réelle, une fois toutes les vérifications passées (ex. débit de la carte).
+  /// Retourne false pour annuler.
+  final Future<bool> Function()? beforePublish;
+
+  /// Appelée quand le post est publié (le Studio referme alors son écran).
+  final VoidCallback? onPublished;
   const UserPostLookImageTab({
     super.key,
     required this.canal,
     this.defiPostId,
+    this.initialImages,
+    this.initialDescription,
+    this.beforePublish,
+    this.onPublished,
   });
 
   @override
@@ -147,6 +163,16 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     // Pour une réponse DÉFI, forcer le type LOOKS
     if (widget.defiPostId != null) {
       _selectedPostType = 'LOOKS';
+    }
+
+    // Carte du Studio : l'image et la légende sont déjà prêtes
+    final cardImages = widget.initialImages;
+    if (cardImages != null && cardImages.isNotEmpty) {
+      _selectedImages = [...cardImages];
+      _imageNames = [for (var i = 0; i < cardImages.length; i++) 'carte_afrolook_$i.jpg'];
+    }
+    if (widget.initialDescription != null) {
+      _descriptionController.text = widget.initialDescription!;
     }
   }
 
@@ -1438,6 +1464,15 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         }
       }
 
+      // Studio Cartes : débit de la carte à l'instant de la vraie publication (toutes les vérifications sont passées)
+      if (widget.beforePublish != null) {
+        final go = await widget.beforePublish!();
+        if (!go) {
+          if (mounted) setState(() => onTap = false);
+          return;
+        }
+      }
+
       try {
         showDialog(
           context: context,
@@ -1685,6 +1720,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         );
 
         _checkPostCooldown();
+        widget.onPublished?.call();
 
       } catch (e) {
         printVm("❌ Erreur lors de la publication: $e");

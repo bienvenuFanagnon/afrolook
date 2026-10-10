@@ -24,7 +24,8 @@ type Offer =
   | { ads: number; cap: number; kind: "coins"; coins: number }
   | { ads: number; cap: number; kind: "shield" }
   | { ads: number; cap: number; kind: "stickers"; count: number }
-  | { ads: number; cap: number; kind: "photos" };
+  | { ads: number; cap: number; kind: "photos" }
+  | { ads: number; cap: number; kind: "cardcredit" };
 
 export const OFFERS: Record<string, Offer> = {
   premium_5h: { ads: 2, cap: 3, kind: "premium", hours: 5 },
@@ -35,6 +36,8 @@ export const OFFERS: Record<string, Offer> = {
   flame_shield: { ads: 1, cap: 1, kind: "shield" },
   stickers_3: { ads: 1, cap: 2, kind: "stickers", count: 3 },
   photos_3: { ads: 2, cap: 3, kind: "photos" },
+  // Studio Cartes : une pub regardée = une capture de carte (voir cards/cards.ts)
+  card_capture: { ads: 1, cap: 2, kind: "cardcredit" },
 };
 
 /**
@@ -191,6 +194,9 @@ export const claimReward = onCall({ timeoutSeconds: 20 }, async (request) => {
       if (anyPremium && !admin) throw new HttpsError("failed-precondition", "Les photos multiples sont déjà incluses dans ton abonnement.");
       tx.set(userRef, { multiPhotoCredits: FieldValue.increment(1) }, { merge: true });
       out["photoCredits"] = Number(u["multiPhotoCredits"] ?? 0) + 1;
+    } else if (offer.kind === "cardcredit") {
+      tx.set(userRef, { cardAdCredits: FieldValue.increment(1) }, { merge: true });
+      out["cardCredits"] = Number(u["cardAdCredits"] ?? 0) + 1;
     } else {
       const shields = Number(u["streakShields"] ?? 0);
       if (shields >= 3) throw new HttpsError("failed-precondition", "Boucliers déjà au maximum.");

@@ -44,6 +44,7 @@ import 'package:flutter/gestures.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'cards/card_entry.dart';
 import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
 import '../services/media_cache_service.dart';
@@ -2216,6 +2217,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (CardEntry.canMake(post, authProvider.loginUserData))
+              CardMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  CardEntry.openFromPost(this.context, post);
+                },
+              ),
             // Bouton Partager (externe)
             ListTile(
               leading: Icon(Icons.share, color: colors.info),

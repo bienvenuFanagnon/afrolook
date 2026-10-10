@@ -226,6 +226,8 @@ dependencies:
   flutter_slidable: ^3.1.1
   video_player_web: ^2.4.0
   in_app_purchase: ^3.3.1
+  qr_flutter: ^4.1.0
+  gal: ^2.3.3
 #  ffmpeg_kit_flutter_new: ^4.2.1
 
 
@@ -355,6 +357,18 @@ flutter:
           style: italic
         - asset: assets/fonts/contes/CrimsonText-SemiBold.ttf
           weight: 600
+    # Studio Cartes (licence SIL OFL : voir assets/fonts/cartes/OFL-*.txt)
+    - family: Righteous
+      fonts:
+        - asset: assets/fonts/cartes/Righteous-Regular.ttf
+    - family: Audiowide
+      fonts:
+        - asset: assets/fonts/cartes/Audiowide-Regular.ttf
+    - family: Arvo
+      fonts:
+        - asset: assets/fonts/cartes/Arvo-Regular.ttf
+        - asset: assets/fonts/cartes/Arvo-Bold.ttf
+          weight: 700
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

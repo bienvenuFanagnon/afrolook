@@ -33,6 +33,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../models/model_data.dart';
 import '../../../theme/app_colors.dart';
+import '../../cards/card_entry.dart';
 import '../../../providers/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'translatable_description.dart';
@@ -983,8 +984,21 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 
   @override
   Widget build(BuildContext context) {
-    if (BlockService.instance.isBlocked(widget.post.user_id)) return const SizedBox.shrink();
     super.build(context);
+    // Appui long : menu du post (avec « Créer une carte Afrolook »)
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onLongPress: () {
+        if (widget.post.isAdvertisement == true || widget.post.user == null) return;
+        HapticFeedback.mediumImpact();
+        _showPostMenu(widget.post);
+      },
+      child: _buildPostBody(context),
+    );
+  }
+
+  Widget _buildPostBody(BuildContext context) {
+    if (BlockService.instance.isBlocked(widget.post.user_id)) return const SizedBox.shrink();
     final colors = AppColors.of(context);
     final h = MediaQuery.of(context).size.height;
     final w = widget.width;
@@ -3305,6 +3319,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (CardEntry.canMake(post, authProvider.loginUserData))
+              CardMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  CardEntry.openFromPost(this.context, post);
+                },
+              ),
             if (post.user!.id == authProvider.loginUserData.id &&
                 post.isAdvertisement != true)
               _buildMenuOption(

@@ -201,6 +201,15 @@ class ChroniqueMessage {
 }
 
 class AddChroniquePage extends StatefulWidget {
+  AddChroniquePage({this.initialImage, this.initialText, this.beforePublish});
+
+  /// Studio Cartes : la carte (image Story) est déjà prête ; la chronique suit les MÊMES règles qu'une chronique image.
+  final File? initialImage;
+  final String? initialText;
+
+  /// Appelée juste avant l'envoi réel, une fois les vérifications passées (ex. débit de la carte). false = annuler.
+  final Future<bool> Function()? beforePublish;
+
   @override
   State<AddChroniquePage> createState() => _AddChroniquePageState();
 }
@@ -243,6 +252,12 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialImage != null) {
+      _selectedType = ChroniqueType.IMAGE;
+      _selectedMedia = widget.initialImage;
+      final t = widget.initialText ?? '';
+      _textController.text = t.length > 100 ? t.substring(0, 100) : t;
+    }
     _textController.addListener(() => setState(() {}));
   }
 
@@ -406,6 +421,11 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         return;
       }
 
+      if (widget.beforePublish != null && !await widget.beforePublish!()) {
+        if (mounted) setState(() => _isUploading = false);
+        return;
+      }
+
       final uploadedMediaUrl = await chroniqueProvider.publishChronique(
         userId: authProvider.loginUserData.id!,
         userPseudo: authProvider.loginUserData.pseudo!,
@@ -433,7 +453,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             ),
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       printVm("Erreur chronique form : $e");

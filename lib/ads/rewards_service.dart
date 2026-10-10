@@ -19,7 +19,9 @@ class RewardOffer {
   final bool premium;
   final int hours; // durée du Premium (offres Premium)
   final bool freeOnly; // inutile pour un abonné (déjà inclus dans Premium/Gold)
-  const RewardOffer(this.id, this.icon, this.title, this.desc, this.ads, this.cap, {this.premium = false, this.hours = 0, this.freeOnly = false});
+  final bool hidden; // proposée seulement depuis un écran précis (pas dans la page Récompenses)
+  const RewardOffer(this.id, this.icon, this.title, this.desc, this.ads, this.cap,
+      {this.premium = false, this.hours = 0, this.freeOnly = false, this.hidden = false});
 }
 
 class RewardsStatus {
@@ -57,7 +59,7 @@ class RewardsService {
     if (c['enabled'] == false) return null;
     int n(String k, int def) => (c[k] as num?)?.toInt() ?? def;
     return RewardOffer(o.id, o.icon, o.title, o.desc, n('ads', o.ads).clamp(1, 30), n('cap', o.cap),
-        premium: o.premium, hours: n('hours', o.hours), freeOnly: o.freeOnly);
+        premium: o.premium, hours: n('hours', o.hours), freeOnly: o.freeOnly, hidden: o.hidden);
   }
 
   static const offers = <RewardOffer>[
@@ -69,6 +71,8 @@ class RewardsService {
     RewardOffer('flame_shield', Icons.local_fire_department_rounded, 'Bouclier de flamme', 'Protège ta série de commentaires une fois', 1, 1),
     RewardOffer('stickers_3', Icons.sticky_note_2_rounded, '3 stickers aujourd\'hui', 'Pour les comptes gratuits', 1, 2, freeOnly: true),
     RewardOffer('photos_3', Icons.photo_library_rounded, 'Post avec 3 photos', 'Une publication avec plusieurs photos', 2, 3, freeOnly: true),
+    // Studio Cartes : une pub = une capture de carte sans pièces (proposée depuis le studio)
+    RewardOffer('card_capture', Icons.auto_awesome_rounded, 'Une carte Afrolook', 'Une capture de carte offerte', 1, 2, hidden: true),
   ];
 
   /// La page et les pubs récompensées sont-elles proposées à cette personne ?
@@ -83,7 +87,7 @@ class RewardsService {
 
   /// Offres affichées selon le rôle : un vrai Premium (payé) ne voit pas les offres Premium.
   static List<RewardOffer> visibleOffers(UserData u) {
-    final all = offers.map(effective).whereType<RewardOffer>().toList();
+    final all = offers.where((o) => !o.hidden).map(effective).whereType<RewardOffer>().toList();
     if (AbonnementUtils.isAdmin(u.role)) return all;
     final ab = u.abonnement;
     final paidPremium = ab?.estPremium == true && ab?.methodePaiement != 'pubs';

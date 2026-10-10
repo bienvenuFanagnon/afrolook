@@ -35,6 +35,7 @@ export * from "./posts/unreadCleanup";
 export * from "./users/presenceMirror";
 export * from "./contes/contes";
 export * from "./modules/adFree";
+export * from "./cards/cards";
 export { weeklyTopCreatorsRanking } from "./posts/weeklyRankings";
 export * from "./social/socialClicks";
 export * from "./ads/adFree";

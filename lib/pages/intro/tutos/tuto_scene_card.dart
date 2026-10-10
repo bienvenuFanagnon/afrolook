@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../l10n/tr.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/pseudo_tag.dart';
+import '../../cards/card_tutorial_page.dart';
 import 'tuto_catalog.dart';
 import 'tuto_layouts.dart';
 
@@ -569,9 +570,45 @@ class TutoListPage extends StatelessWidget {
       ),
       body: ListView.separated(
         padding: const EdgeInsets.all(14),
-        itemCount: scenes.length,
+        itemCount: scenes.length + 1,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, i) {
+        itemBuilder: (context, idx) {
+          // Premier tutoriel : le Studio Cartes (exemples réels avec les images de l'application)
+          if (idx == 0) {
+            return InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CardTutorialPage())),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.primary.withOpacity(0.6), width: 1.5),
+                ),
+                child: Row(children: [
+                  const Text('✨', style: TextStyle(fontSize: 28)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Flexible(child: Text(context.tr('Crée ta carte Afrolook'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15))),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(5)),
+                          child: const Text('NOUVEAU', style: TextStyle(color: Color(0xFF1F1F1F), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                        ),
+                      ]),
+                      const SizedBox(height: 2),
+                      Text(context.tr('Transforme un post en carte à partager, avec des exemples.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+                    ]),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+                ]),
+              ),
+            );
+          }
+          final i = idx - 1;
           final s = scenes[i];
           return InkWell(
             borderRadius: BorderRadius.circular(16),

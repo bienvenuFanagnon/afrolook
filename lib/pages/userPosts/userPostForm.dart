@@ -18,6 +18,7 @@ import '../../../constant/logo.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../component/consoleWidget.dart';
+import '../cards/card_post_tab.dart';
 
 class UserPostForm extends StatefulWidget {
   final Canal? canal;
@@ -55,6 +56,7 @@ class _UserPostFormState extends State<UserPostForm> {
     _MediaType(icon: Icons.text_fields, label: 'Texte'),
     _MediaType(icon: Icons.photo, label: 'Image'),
     _MediaType(icon: Icons.videocam, label: 'Vidéo'),
+    _MediaType(icon: Icons.auto_awesome_rounded, label: 'Carte'),
   ];
 
   bool get _isCanal => widget.canal != null;
@@ -128,6 +130,7 @@ class _UserPostFormState extends State<UserPostForm> {
                     UserPubText(canal: widget.canal, defiPostId: widget.defiPostId),
                     UserPostLookImageTab(canal: widget.canal, defiPostId: widget.defiPostId),
                     UserPubVideo(canal: widget.canal, defiPostId: widget.defiPostId),
+                    UserPostCardTab(canal: widget.canal, defiPostId: widget.defiPostId),
                   ],
                 ),
               ),

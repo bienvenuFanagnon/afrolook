@@ -1,4 +1,6 @@
 import 'package:afrotok/widgets/name_tag.dart';
+import 'package:flutter/services.dart';
+import '../cards/card_entry.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import '../../services/followers_count_service.dart';
@@ -2841,6 +2843,19 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Widget build(BuildContext context) {
     if (BlockService.instance.isBlocked(widget.post.user_id)) return const SizedBox.shrink();
     super.build(context);
+    // Appui long : proposition « Créer une carte Afrolook » (les vidéos n'ont pas de menu « ⋯ » dans le fil)
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onLongPress: () {
+        if (widget.post.isAdvertisement == true) return;
+        HapticFeedback.mediumImpact();
+        CardEntry.showQuickSheet(context, widget.post);
+      },
+      child: _buildVideoCard(context),
+    );
+  }
+
+  Widget _buildVideoCard(BuildContext context) {
     final colors = AppColors.of(context);
     final isAdCard = widget.post.isAdvertisement == true;
 

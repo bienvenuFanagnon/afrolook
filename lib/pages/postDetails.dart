@@ -47,6 +47,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'cards/card_entry.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/block_service.dart';
@@ -3401,6 +3402,13 @@ class _DetailsPostState extends State<DetailsPost>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (CardEntry.canMake(post, authProvider.loginUserData))
+              CardMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  CardEntry.openFromPost(this.context, post);
+                },
+              ),
             _buildMenuOption(
               _isFavorite ? Icons.bookmark : Icons.bookmark_border,
               _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',

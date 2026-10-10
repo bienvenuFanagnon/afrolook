@@ -44,6 +44,7 @@ import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'cards/card_entry.dart';
 import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
 import '../services/media_cache_service.dart';
@@ -1444,6 +1445,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
         return Container(
           padding: EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (CardEntry.canMake(_currentPost, authProvider.loginUserData))
+              CardMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  CardEntry.openFromPost(this.context, _currentPost);
+                },
+              ),
             _buildMenuOption(
               _isFavorite ? Icons.bookmark : Icons.bookmark_border,
               _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
