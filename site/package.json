@@ -1,0 +1,8 @@
+{
+  "name": "afrolook-site",
+  "private": true,
+  "type": "module",
+  "description": "Site vitrine afrolookmedia.com : génération des pages statiques (node build.mjs → dist/).",
+  "scripts": { "build": "node build.mjs", "check": "node check.mjs" },
+  "devDependencies": { "qrcode": "1.5.4" }
+}

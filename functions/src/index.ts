@@ -53,3 +53,4 @@ export { creationQuote, onCanalCreatedCharge, onGroupCreatedCharge } from "./pay
 export * from "./quiz/quiz";
 export * from "./quiz/quizAdmin";
 export * from "./etude/etude";
+export * from "./site/contact";

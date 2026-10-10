@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "afrolooki"
+  },
+  "targets": {
+    "afrolooki": {
+      "hosting": {
+        "vitrine": [
+          "afrolooki"
+        ],
+        "app": [
+          "afrolook-app"
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,541 @@
+[
+ {
+  "title": "Vues monétisées",
+  "rules": [
+   [
+    "Vues des abonnés uniquement",
+    "Seules les vues provenant de tes abonnés comptent pour la monétisation. Une vue d'un utilisateur non-abonné est enregistrée sur le post mais ne génère pas de revenu."
+   ],
+   [
+    "Plus d'abonnés = plus de revenus",
+    "Plus tu as d'abonnés actifs, plus tes vues monétisées peuvent être élevées. Encourage tes spectateurs à s'abonner pour augmenter tes gains."
+   ],
+   [
+    "Vues propres exclues",
+    "Tes propres vues sur tes posts ne sont jamais comptabilisées, qu'elles soient monétisées ou non."
+   ],
+   [
+    "Types de posts éligibles",
+    "Seuls les posts de type \"Post\" standard dont le créateur a activé l'option « Post monétisé » à la publication sont éligibles aux vues monétisées. Les posts non monétisés, les publicités, challenges et services sont exclus."
+   ]
+  ]
+ },
+ {
+  "title": "Rémunération des vues (RPM)",
+  "rules": [
+   [
+    "Principe du RPM",
+    "Le RPM (Revenue Per Mille) est le montant que tu gagnes pour 1 000 vues. Ton RPM dépend de ton score créateur : plus ton score est élevé, plus ton palier est haut et plus ton RPM est grand."
+   ],
+   [
+    "RPM maximum (modifiable à tout moment)",
+    "Le RPM maximum actuel est de 1 000 FCFA pour 1 000 vues. Ce montant est le plafond pour les créateurs Élite. Il peut être ajusté par Afrolook selon l'économie de la plateforme. Ton RPM réel est toujours calculé à partir du taux en vigueur au moment de l'encaissement."
+   ],
+   [
+    "Paliers selon le score",
+    "Débutant (score < 10) → 200 FCFA RPM. Standard (10–24) → 400 FCFA RPM. Avancé (25–49) → 600 FCFA RPM. Expert (50–79) → 800 FCFA RPM. Élite (80+) → 1 000 FCFA RPM. Ton palier actuel est visible dans ta page de monétisation."
+   ],
+   [
+    "Encaissement manuel",
+    "Tes gains s'accumulent au fil du temps en fonction de tes vues et de ton palier. Tu choisis toi-même quand les encaisser depuis la page \"Gains par vues\". Un minimum d'encaissement s'applique."
+   ],
+   [
+    "Augmente ton score pour gagner plus",
+    "Publie du contenu de qualité, régulièrement apprécié par ta communauté (likes, loves, commentaires). Plus tes posts génèrent d'engagement, plus ton score créateur monte — et plus ton RPM augmente."
+   ],
+   [
+    "Impact des signalements sur tes revenus",
+    "Si tes posts sont signalés ou jugés inappropriés, leur score chute. Ce déclin du score post entraîne une baisse du score créateur, ce qui peut faire descendre ton palier et donc ton RPM. Maintenir un contenu de qualité protège directement tes revenus."
+   ]
+  ]
+ },
+ {
+  "title": "Likes, commentaires et cadeaux",
+  "rules": [
+   [
+    "Post monétisé : le choix du créateur",
+    "À la publication d'un post, le créateur choisit s'il est monétisé. L'option « Post monétisé » est désactivée par défaut. Un post monétisé a des likes payants et ses vues d'abonnés sont rémunérées ; un post non monétisé a des likes gratuits et ses vues ne rapportent rien. Ce choix ne peut plus être modifié après la publication."
+   ],
+   [
+    "Like sur un post monétisé",
+    "Sur un post monétisé, un like coûte 2 pièces à celui qui like, et 1 pièce revient au créateur du post. Un petit « +1 » s'affiche alors sur le cœur. Il n'y a pas de parrainage sur les likes. Les posts publiés avant cette option restent monétisés."
+   ],
+   [
+    "Commentaire sur un post",
+    "Commenter est gratuit : aucun commentaire ne débite de pièces, sur aucun post."
+   ],
+   [
+    "Like sur un commentaire ou une réponse",
+    "Liker un commentaire ou une réponse coûte 2 pièces ; 1 pièce revient à son auteur. Tu ne paies qu'une seule fois par commentaire : retirer puis remettre ton like ne te fait pas repayer. Liker ton propre commentaire est gratuit. Sans pièces, ton like est compté quand même mais rien n'est débité et une fenêtre te propose de recharger."
+   ],
+   [
+    "Cadeau sur un commentaire ou une réponse",
+    "Tu peux offrir un cadeau à l'auteur d'un commentaire ou d'une réponse qui t'a impressionné, depuis le bouton « Cadeau ». Il reçoit sa part en pièces gagnées, selon les mêmes règles que les cadeaux sur un post. Tu ne peux pas t'offrir un cadeau à toi-même."
+   ],
+   [
+    "Pièces reçues affichées",
+    "Sous un commentaire ou une réponse, le total de pièces reçues par son auteur (likes et cadeaux) est affiché. Sous un post, le bandeau indique ce que le post a rapporté à son créateur."
+   ],
+   [
+    "Commentaire d'un canal",
+    "Quand le propriétaire d'un canal commente sur un post de son canal, le commentaire s'affiche avec le profil du canal. Un clic ouvre la page du canal, pas le profil personnel de son propriétaire."
+   ],
+   [
+    "Confirmation",
+    "Quand un like ou un cadeau est payé, une confirmation « Tu viens de soutenir… » s'affiche avec le nom de la personne soutenue."
+   ]
+  ]
+ },
+ {
+  "title": "Récompenses commentaires",
+  "rules": [
+   [
+    "Classement hebdomadaire",
+    "Chaque semaine (lundi au dimanche), les meilleurs commentateurs sont classés et récompensés. Le classement est calculé chaque lundi matin."
+   ],
+   [
+    "Poids des commentaires",
+    "Tous les commentaires n'ont pas le même poids. Un commentaire court vaut moins qu'un commentaire long et instructif. Plus votre commentaire est développé, pertinent et varié, plus il contribue fortement à votre score."
+   ],
+   [
+    "Qualité avant quantité",
+    "Le système valorise la qualité du contenu : un commentaire détaillé sur un seul post peut valoir plus que dix commentaires minimalistes. Les commentaires trop courts ou répétitifs sont peu ou pas comptabilisés."
+   ],
+   [
+    "Règles d'éligibilité",
+    "Un commentaire doit contenir au minimum 10 caractères et au moins 2 mots pour être pris en compte. La répétition du même commentaire n'est pas éligible."
+   ],
+   [
+    "Anti-spam",
+    "Commenter plusieurs fois le même post ne rapporte rien de plus. Seul le premier commentaire éligible par post est pris en compte. Les comportements de spam entraînent une disqualification."
+   ],
+   [
+    "Ancienneté du compte",
+    "Le compte doit avoir au moins 7 jours d'ancienneté pour participer au classement."
+   ],
+   [
+    "Récompenses en pièces",
+    "Le top 5 hebdomadaire reçoit des pièces automatiquement : 🥇 500 • 🥈 300 • 🥉 200 • 4e 100 • 5e 50 pièces. Les récompenses sont distribuées en fin de semaine."
+   ]
+  ]
+ },
+ {
+  "title": "Niveaux d'abonnement",
+  "rules": [
+   [
+    "Gratuit",
+    "Accès aux fonctionnalités de base : feed, posts, canaux publics, groupes publics, commentaires. Publicités affichées dans l'application."
+   ],
+   [
+    "Premium",
+    "Toutes les fonctionnalités gratuites + suppression des publicités dans le feed, accès aux fonctionnalités exclusives premium, badge Premium visible sur le profil."
+   ],
+   [
+    "Gold",
+    "Toutes les fonctionnalités Premium + avantages Gold exclusifs, badge Gold visible sur le profil, priorité dans les algorithmes de mise en avant."
+   ],
+   [
+    "Changement de niveau",
+    "Le changement de niveau prend effet immédiatement après validation du paiement. Le niveau est lié au compte Afrolook et non à l'appareil."
+   ]
+  ]
+ },
+ {
+  "title": "Monétisation",
+  "rules": [
+   [
+    "Abonnement canal",
+    "Les propriétaires de canaux peuvent activer l'abonnement payant. Les abonnés paient un montant mensuel défini par le propriétaire pour accéder au contenu exclusif du canal."
+   ],
+   [
+    "Vente de contenu",
+    "Les créateurs peuvent mettre en vente des contenus numériques (vidéos, photos, documents). L'acheteur obtient un accès permanent au contenu acheté."
+   ],
+   [
+    "Live privé",
+    "Un live privé est accessible uniquement aux spectateurs qui ont payé le ticket d'entrée, fixé en pièces par le créateur avant le démarrage du live."
+   ],
+   [
+    "Canal privé",
+    "Un canal privé est visible uniquement par ses membres. L'accès peut être gratuit (sur invitation) ou payant (abonnement mensuel défini par le propriétaire)."
+   ],
+   [
+    "Groupe privé",
+    "Un groupe privé fonctionne comme un espace de discussion fermé. L'accès peut être limité par invitation ou conditionné à un abonnement défini par l'administrateur."
+   ],
+   [
+    "Tout se paie en pièces",
+    "Les abonnements (Premium, Gold, compte officiel, groupes, canaux), les lives privés, les publicités, les boosts, les votes, les DÉFI, les cadeaux et les likes se paient en pièces. Les prix sont affichés en pièces. Sur iPhone et iPad, ils sont affichés uniquement en pièces, sans équivalent en argent ; ailleurs, un équivalent dans la devise de ton pays est indiqué à titre indicatif. Seule la vente de contenus reste payée en FCFA pour le moment (elle n'est pas proposée sur iPhone et iPad)."
+   ],
+   [
+    "Devises et taux de change",
+    "Les montants en argent sont affichés dans la devise de ton pays, converties au taux du jour (mis à jour chaque jour). Le taux affiché est indicatif : le montant réellement versé est celui enregistré au moment de ta demande de retrait."
+   ],
+   [
+    "Part du créateur : 70 %",
+    "Sur chaque abonnement à un groupe ou à un canal, chaque entrée de live privé, chaque cadeau, vote ou participation à un DÉFI, le créateur reçoit 70 % du montant, en pièces gagnées."
+   ],
+   [
+    "Parrainage",
+    "Le parrain de celui qui paie reçoit 2,5 % du montant et le parrain du créateur reçoit 2,5 %, en pièces gagnées. Le créateur garde toujours ses 70 %, qu'il ait un parrain ou non."
+   ],
+   [
+    "Pièces achetées et pièces gagnées",
+    "Les pièces achetées (recharge Mobile Money ou App Store) servent à tout payer dans l'application, mais ne sont pas convertibles en argent. Les pièces gagnées (cadeaux, likes, parts de créateur, parrainage, récompenses) sont convertibles : 25 pièces = 10 FCFA."
+   ],
+   [
+    "Versement des gains",
+    "Tes pièces gagnées se convertissent en argent dans ton portefeuille (« Gains à retirer »), puis tu fais une demande de retrait. Le versement s'effectue selon les conditions en vigueur dans ton portefeuille."
+   ],
+   [
+    "Moyens de retrait",
+    "Tu saisis le montant dans ta devise. Le retrait peut se faire par Mobile Money, ou par virement, carte ou PayPal hors Mobile Money (minimum 100 \\$ dans ce cas). Le taux de change appliqué est enregistré avec ta demande."
+   ]
+  ]
+ },
+ {
+  "title": "Republication",
+  "rules": [
+   [
+    "Comment ça fonctionne",
+    "La republication te permet de partager sur ton profil un post d'un autre créateur que tu as apprécié. Le post apparaît sur ton profil avec le nom, l'avatar et un lien vers le profil de l'auteur original. Seul le créateur original reçoit les vues monétisées générées sur ce post."
+   ],
+   [
+    "Une seule fois par post",
+    "Tu ne peux republier un même post qu'une seule fois. Si tu as déjà republié un post, l'option ne s'affiche plus pour ce post."
+   ],
+   [
+    "Ce qui ne peut pas être republié",
+    "Ton propre post ne peut pas être republié. Les publicités (posts sponsorisés) ne sont pas non plus republiables."
+   ]
+  ]
+ },
+ {
+  "title": "Inactivité créateur & canal",
+  "rules": [
+   [
+    "Score et décroissance",
+    "Le score créateur et le score canal décroissent progressivement si aucune publication n'est faite. Cette décroissance est lente mais constante : un créateur qui ne publie plus finira par sortir des sections de recommandation, quelle que soit sa popularité passée."
+   ],
+   [
+    "Impact sur le RPM",
+    "Le RPM (revenu par vue) est directement lié au palier de score. Si l'inactivité fait descendre ton score sous le seuil d'un palier, ton RPM baisse en conséquence — par exemple, passer du palier Expert (800 FCFA) au palier Standard (400 FCFA). Les vues accumulées avant la baisse de palier restent calculées au tarif du moment où elles ont été générées."
+   ],
+   [
+    "Reprendre de l'activité",
+    "La reprise des publications remet le score en croissance. Il n'y a pas de pénalité permanente liée à l'inactivité — le score se reconstruit naturellement avec le nouvel engagement, et le palier de RPM remonte au fur et à mesure."
+   ],
+   [
+    "Blocage après 20 jours sans publication",
+    "Un canal qui ne publie rien pendant 20 jours est bloqué automatiquement. Tant qu'il est bloqué, plus personne ne peut y publier, et une bannière indique qu'il est inactif. Chaque publication remet le compteur de 20 jours à zéro."
+   ],
+   [
+    "Rappel avant le blocage",
+    "À partir de 15 jours sans publication, le propriétaire reçoit un rappel pour publier avant que le canal ne soit bloqué."
+   ],
+   [
+    "Déblocage en pièces",
+    "Le propriétaire débloque son canal depuis la page du canal, en pièces, selon le nombre d'abonnés : moins de 100 abonnés → 500 pièces ; moins de 2 000 → 1 500 pièces ; moins de 3 000 → 2 000 pièces ; à partir de 3 000 → 3 000 pièces. Le prix est calculé par Afrolook au moment du déblocage. Après le déblocage, le compteur de 20 jours repart de zéro."
+   ],
+   [
+    "Même règle pour les comptes",
+    "Un compte qui n'a rien publié depuis 20 jours est bloqué : il ne peut plus publier (avec son profil ou via un canal), ni créer de canal, de groupe ou de live, tant qu'il n'est pas débloqué. Le déblocage se fait en pièces, avec le même barème selon le nombre d'abonnés (500 / 1 500 / 2 000 / 3 000 pièces). Comme pour les canaux, tu reçois un rappel à 15 jours sans publication. Les comptes qui n'ont jamais publié et les administrateurs ne sont pas concernés."
+   ],
+   [
+    "Canaux sans membres",
+    "Les canaux sans aucun abonné n'apparaissent pas dans les suggestions de découverte, même s'ils ont publié du contenu récemment."
+   ]
+  ]
+ },
+ {
+  "title": "Création de canaux et de groupes",
+  "rules": [
+   [
+    "Le premier est gratuit",
+    "Chaque compte peut créer gratuitement un canal et un groupe. Pour créer un canal ou un groupe supplémentaire, il faut payer 500 pièces par canal ou par groupe."
+   ],
+   [
+    "Paiement avant la création",
+    "Le paiement se fait en pièces au moment de créer. Il est vérifié par Afrolook : un canal ou un groupe supplémentaire non payé est refusé. Les administrateurs de la plateforme ne sont pas concernés."
+   ]
+  ]
+ },
+ {
+  "title": "Stickers & médias dans les commentaires",
+  "rules": [
+   [
+    "Envoyer un sticker ou un média",
+    "Les abonnés Premium et Gold peuvent ajouter dans un commentaire une image, une image animée ou une courte vidéo de 1 à 3 secondes (sans son), avec un texte de description. Les comptes gratuits voient la fonction avec le signe Premium et peuvent s'abonner pour l'utiliser."
+   ],
+   [
+    "Limites selon l'abonnement",
+    "Premium : 1 sticker ou média par post et 10 par jour. Gold : 3 par post et 50 par jour. Les limites sont appliquées par Afrolook : un commentaire au-dessus de la limite est refusé."
+   ],
+   [
+    "Poids des médias",
+    "Pour rester rapides, les médias sont compressés : une image pèse au plus 300 Ko et une animation au plus 600 Ko. Les fichiers trop lourds sont refusés."
+   ],
+   [
+    "Stickers officiels et stickers de créateurs",
+    "Afrolook propose des packs de stickers officiels. Les créateurs peuvent aussi proposer leurs propres stickers ou packs. Chaque sticker de créateur est vérifié par l'équipe Afrolook avant d'être publié."
+   ],
+   [
+    "Monétisation des stickers",
+    "Un créateur peut gagner des pièces avec ses stickers : lorsqu'un pack payant est acheté, le créateur reçoit 70 % du prix en pièces gagnées. Un sticker-cadeau, envoyé en pièces sous un commentaire, rapporte 40 % de son prix à l'auteur du commentaire et 30 % au créateur du sticker. Les prix sont toujours en pièces."
+   ],
+   [
+    "Droits et contenus interdits",
+    "Tu ne peux proposer que des stickers dont tu détiens les droits : pas de contenu copié, de marque ou de personne utilisée sans accord. Les contenus violents, haineux, sexuels ou trompeurs sont refusés, et Afrolook peut retirer un sticker ou suspendre ses gains en cas de non-respect."
+   ]
+  ]
+ },
+ {
+  "title": "Publicité & Boosts",
+  "rules": [
+   [
+    "Boost post",
+    "Tu peux booster un post pour le mettre en avant dans le feed des utilisateurs. Le post apparaît sous forme de bannière horizontale avec un badge \"Sponsorisé\"."
+   ],
+   [
+    "Boost entité",
+    "Les profils, canaux et groupes peuvent être boostés pour apparaître dans le feed sous forme de carte verticale avec un aperçu de l'entité et un bouton d'action."
+   ],
+   [
+    "Validation requise",
+    "Tout boost doit être validé par l'équipe Afrolook avant d'être affiché. Un boost en attente de validation n'est pas visible dans le feed."
+   ],
+   [
+    "Ne plus voir les pubs",
+    "Les utilisateurs Premium et Gold peuvent désactiver l'affichage des publicités dans leur feed."
+   ]
+  ]
+ },
+ {
+  "title": "Système de score & Recommandations",
+  "rules": [
+   [
+    "Score du post",
+    "Chaque publication reçoit un score calculé automatiquement et régulièrement. Ce score prend en compte les réactions de ta communauté (likes, loves, commentaires) et l'ancienneté du post. Plus un post est récent et apprécié, plus son score est élevé."
+   ],
+   [
+    "Décroissance dans le temps",
+    "Les anciens posts perdent progressivement du score, même si leur engagement reste constant. Cela garantit qu'un contenu frais et de qualité est régulièrement mis en avant, plutôt que de favoriser toujours les mêmes publications."
+   ],
+   [
+    "Score créateur",
+    "Chaque créateur dispose d'un score qui reflète la qualité et la régularité de son contenu. Ce score est calculé à partir des performances de ses publications récentes. Il est visible sur son profil."
+   ],
+   [
+    "Score canal",
+    "Les canaux disposent également d'un score reflétant leur vitalité et la qualité du contenu publié. Visible dans les détails du canal."
+   ],
+   [
+    "Impact sur les recommandations",
+    "Les créateurs et canaux ayant les meilleurs scores apparaissent en priorité dans les sections de découverte du feed. Un bon score augmente ta visibilité sur toute la plateforme."
+   ],
+   [
+    "Impact du signalement",
+    "Signaler un post a un impact négatif sur son score. Si plusieurs utilisateurs signalent le même post, il est progressivement retiré des recommandations. Un post modéré par l'équipe Afrolook voit son score fortement réduit. Maintenir un contenu de qualité est la meilleure façon de protéger ton score."
+   ],
+   [
+    "Découverte froide (nouveau créateur)",
+    "Les nouveaux créateurs bénéficient d'un bonus temporaire pour être mis en avant dans la découverte, même sans historique d'engagement. Cela leur donne une chance d'être vus dès leurs premières publications."
+   ],
+   [
+    "Canaux dans la recherche",
+    "Seuls les canaux ayant au moins un membre sont suggérés dans la page de recherche. Un canal sans abonné n'apparaît pas dans les suggestions Top, même s'il est actif en contenu."
+   ],
+   [
+    "Transparence",
+    "Le score de tes posts, de ton profil créateur et de tes canaux est visible par tous. Il n'est pas possible de l'acheter ou de le manipuler artificiellement — tout comportement frauduleux entraîne une suspension."
+   ]
+  ]
+ },
+ {
+  "title": "DÉFI — Nouveau système de compétition",
+  "rules": [
+   [
+    "Qu'est-ce qu'un Défi ?",
+    "Un Défi est un post compétitif lancé par un créateur ou un canal. D'autres utilisateurs peuvent y répondre avec leur propre post (vidéo, image, audio ou texte). La communauté vote pour désigner les meilleurs participants."
+   ],
+   [
+    "Comment lancer un Défi",
+    "Lors de la création d'un post, sélectionne le type \"Défi 🏆\". Tu dois définir une cagnotte de départ (en pièces, débitée immédiatement de ton solde : c'est une mise en garantie, donc une dépense pour toi), une date de fin, des frais de participation optionnels, des frais de vote optionnels, et le nombre de gagnants (1, 2 ou 3)."
+   ],
+   [
+    "Participer à un Défi",
+    "Pour participer à un Défi actif, clique sur \"Participer\" depuis le post original. Si le créateur a fixé des frais de participation, ils te seront débités au moment de l'inscription. Ta réponse est un nouveau post lié au Défi original."
+   ],
+   [
+    "Voter pour un participant",
+    "Chaque vote coûte le montant fixé par le créateur du Défi (0 = gratuit). Tu n'as droit qu'à un seul vote par Défi, tous participants confondus : tu ne peux pas voter une deuxième fois, ni pour un autre participant. Si tu n'as pas assez de pièces pour un vote payant, une fenêtre te propose de recharger."
+   ],
+   [
+    "Classement & résultats",
+    "Les participants sont classés par nombre de votes. En cas d'égalité, le score du post départage. Le Défi se clôture automatiquement à la date de fin définie par le créateur."
+   ],
+   [
+    "Distribution des gains",
+    "La cagnotte (la mise de départ du créateur) revient aux gagnants, selon la répartition : 1 gagnant → 100 % ; 2 gagnants → 70 % / 30 % ; 3 gagnants → 60 % / 30 % / 10 %. Les gains sont versés automatiquement à la clôture ; la part non attribuée est rendue au créateur. Les frais de participation et de vote sont, eux, un revenu du Défi : le créateur en reçoit 70 %."
+   ],
+   [
+    "Ce que le Défi a rapporté",
+    "Le créateur du Défi voit dans le détail du post ce que son Défi a rapporté : le total des votes et des participations payants. La cagnotte de départ n'en fait pas partie, puisqu'elle est sa mise."
+   ],
+   [
+    "Règles du Défi",
+    "Les réponses à un Défi doivent respecter les règles générales de publication d'Afrolook. Tout contenu signalé ou modéré est automatiquement exclu du Défi. Le créateur du Défi ne peut pas voter pour ses propres participants pour éviter les conflits d'intérêts."
+   ],
+   [
+    "Défi expiré",
+    "Un Défi clôturé n'accepte plus de nouvelles participations ni de votes. Les gains sont distribués automatiquement à la clôture, dans l'ordre du classement (votes, puis score du post, puis likes). La cagnotte non attribuée, par exemple sans participant, est rendue à son créateur."
+   ]
+  ]
+ },
+ {
+  "title": "Pseudos et noms de canaux",
+  "rules": [
+   [
+    "Format unique",
+    "Les pseudos et les noms de canaux s'écrivent en minuscules, avec des points pour séparer les mots (ex. olivier.bernard, mode.afro). Espaces, tirets et underscores sont convertis en points, les accents sont retirés. Seuls les lettres, les chiffres et le point sont autorisés : pas d'emojis, de symboles ni de signes comme @ / ( ) ? #."
+   ],
+   [
+    "Longueur",
+    "Un pseudo fait de 3 à 20 caractères, un nom de canal de 3 à 32 caractères. Pas de point au début ni à la fin, et pas deux points de suite."
+   ],
+   [
+    "Aperçu avant validation",
+    "À l'inscription, à la modification du pseudo et à la création ou modification d'un canal, un aperçu montre le rendu final avant que tu valides."
+   ],
+   [
+    "Affichage",
+    "Les pseudos s'affichent dans une capsule avec un @ doré et des points dorés. Les canaux s'affichent dans un badge carré avec un # vert et des points verts, pour ne jamais confondre un canal et une personne."
+   ],
+   [
+    "Unicité",
+    "Un pseudo ou un nom de canal est unique. Si un nom est déjà pris, choisis-en un autre. Le pseudo ne peut être changé qu'une fois tous les 7 jours."
+   ],
+   [
+    "Comptes et canaux existants",
+    "Les pseudos et noms de canaux créés avant ce format sont convertis automatiquement par Afrolook : minuscules, points à la place des espaces et underscores, emojis retirés. En cas de doublon, un numéro est ajouté (ex. olivier.bernard2). Si un nom ne contient plus rien de valable après nettoyage, un nom de remplacement est attribué ; tu peux ensuite le modifier. Les anciennes @mentions écrites dans d'anciens textes ne sont pas modifiées."
+   ]
+  ]
+ },
+ {
+  "title": "Règles d'utilisation",
+  "rules": [
+   [
+    "Contenu autorisé",
+    "Tu peux publier du contenu personnel, artistique, informatif et divertissant dans le respect des présentes règles. Tout contenu doit être légal dans ton pays de résidence."
+   ],
+   [
+    "Contenu interdit",
+    "Sont strictement interdits : la nudité explicite, la violence graphique, le discours haineux (racisme, sexisme, homophobie), le harcèlement, les menaces, la promotion de la drogue, les armes illégales, la propagande terroriste et tout contenu pédopornographique."
+   ],
+   [
+    "Contenu trompeur",
+    "Il est interdit de diffuser des informations délibérément fausses (fake news), d'usurper l'identité d'une autre personne ou d'une marque, ou de manipuler des médias de manière trompeuse."
+   ],
+   [
+    "Spam & manipulation",
+    "Tout comportement visant à gonfler artificiellement les statistiques (vues, abonnés, likes) par des moyens automatisés ou des échanges coordonnés est interdit et entraîne la suspension du compte."
+   ],
+   [
+    "Respect des utilisateurs",
+    "Le harcèlement, la cyberintimidation, les insultes répétées et les comportements hostiles envers d'autres utilisateurs sont prohibés. Utilise la fonction de signalement pour alerter l'équipe."
+   ]
+  ]
+ },
+ {
+  "title": "Droits d'auteur & Propriété intellectuelle",
+  "rules": [
+   [
+    "Tes propres créations",
+    "Tu conserves tous tes droits sur le contenu que tu publies. En publiant sur Afrolook, tu accordes à la plateforme une licence non exclusive d'affichage et de distribution dans l'application."
+   ],
+   [
+    "Contenu tiers",
+    "Ne publie pas de musique, vidéos, images ou textes protégés par le droit d'auteur sans autorisation explicite du détenteur des droits. Les contenus en infraction seront supprimés."
+   ],
+   [
+    "Signalement de violation",
+    "Si tu constatez qu'un contenu viole tes droits d'auteur, tu peux le signaler via le bouton de signalement ou en contactant contact@afrolookmedia.com avec les justificatifs nécessaires."
+   ],
+   [
+    "Licence du contenu",
+    "Afrolook se réserve le droit d'utiliser ton contenu à des fins de promotion de la plateforme (ex: mise en avant sur les réseaux sociaux officiels) avec mention de l'auteur. Tu peux t'y opposer en contactant le support."
+   ]
+  ]
+ },
+ {
+  "title": "Sécurité du compte",
+  "rules": [
+   [
+    "Responsabilité du compte",
+    "Tu es entièrement responsable de l'activité sur ton compte. Ne partage jamais ton mot de passe. Afrolook ne te demandera jamais ton mot de passe par message."
+   ],
+   [
+    "Authentification",
+    "Nous recommandons d'activer la vérification en deux étapes pour protéger ton compte. En cas de connexion suspecte, change immédiatement ton mot de passe."
+   ],
+   [
+    "Compte compromis",
+    "Si tu penses que ton compte a été piraté, contacte immédiatement le support à contact@afrolookmedia.com. Afrolook peut temporairement restreindre l'accès à un compte compromis pour le protéger."
+   ],
+   [
+    "Un compte par personne",
+    "Chaque utilisateur ne peut posséder qu'un seul compte actif. Les comptes multiples créés pour contourner une suspension seront définitivement bannis."
+   ]
+  ]
+ },
+ {
+  "title": "Sanctions & Modération",
+  "rules": [
+   [
+    "Avertissement",
+    "Un premier manquement mineur aux règles peut faire l'objet d'un avertissement. Le contenu en infraction est supprimé et l'utilisateur est informé de la violation."
+   ],
+   [
+    "Suspension temporaire",
+    "Les violations répétées ou plus graves entraînent une suspension temporaire du compte (1 à 30 jours). Durant cette période, l'utilisateur ne peut pas accéder à l'application."
+   ],
+   [
+    "Suspension définitive",
+    "Les violations graves (contenu pédopornographique, terrorisme, harcèlement grave, fraude avérée) entraînent une suspension permanente et irréversible du compte."
+   ],
+   [
+    "Appel & recours",
+    "Si tu penses que la sanction est injustifiée, tu peux contester la décision en écrivant à contact@afrolookmedia.com dans les 14 jours suivant la sanction. L'équipe de modération examinera ton cas."
+   ],
+   [
+    "Contenu signalé",
+    "Tout utilisateur peut signaler un contenu ou un compte. Les signalements sont examinés par l'équipe de modération. Les signalements abusifs répétés peuvent eux-mêmes faire l'objet de sanctions."
+   ]
+  ]
+ },
+ {
+  "title": "Confidentialité & Données",
+  "rules": [
+   [
+    "Données collectées",
+    "Afrolook collecte les données nécessaires au fonctionnement de l'application : profil, publications, interactions, transactions. Aucune donnée n'est vendue à des tiers."
+   ],
+   [
+    "Utilisation des données",
+    "Tes données sont utilisées pour personnaliser ton expérience, calculer tes récompenses, et assurer la sécurité de la plateforme."
+   ],
+   [
+    "Suppression du compte",
+    "Tu peux demander la suppression de ton compte depuis les paramètres du profil. Ton accès est coupé immédiatement, puis tes données sont effacées définitivement 15 jours plus tard. Pendant ce délai, le support peut restaurer ton compte en cas d'erreur. Avant de supprimer, retire tes soldes (pièces, gains à retirer, revenus des vues) ou confirme y renoncer. L'historique financier (transactions, retraits, achats) est conservé. Tes canaux et groupes sont transmis à un autre administrateur, sinon supprimés."
+   ],
+   [
+    "Traduction des posts",
+    "Un lien « Voir la traduction » permet de lire un post dans la langue de ton téléphone. L'application utilise la langue de ton téléphone par défaut, sinon l'anglais ; ton choix manuel reste prioritaire."
+   ],
+   [
+    "Sécurité des paiements",
+    "Toutes les transactions financières sont traitées de manière sécurisée. Afrolook ne stocke jamais tes informations bancaires ou de carte sur ses serveurs."
+   ]
+  ]
+ }
+]

@@ -108,6 +108,11 @@ void main() {
     'music': (demo(text: 'La playlist de mon dimanche', images: ['intro1']), CardSpec(style: CardStyleId.music)),
     'kente': (demo(text: 'Fier de notre héritage.', images: ['intro2']), CardSpec(style: CardStyleId.kente)),
     'wax': (demo(text: 'Wax du jour, sourire du jour.', images: ['intro3']), CardSpec(style: CardStyleId.wax)),
+    'anime': (demo(text: 'Épisode 1 : le début d\'une belle aventure.', images: ['intro1']), CardSpec(style: CardStyleId.anime)),
+    'y2k': (demo(text: 'Retour en 2005 avec mes amis.', images: ['intro3']), CardSpec(style: CardStyleId.y2k)),
+    'street': (demo(text: 'Nouvelle collection, nouveau style.', images: ['intro2']), CardSpec(style: CardStyleId.street)),
+    'bogolan': (demo(text: 'Les motifs de chez nous.', images: ['intro2']), CardSpec(style: CardStyleId.bogolan)),
+    'pro': (demo(text: 'Ravi de rejoindre l\'équipe, merci pour la confiance.', images: ['intro3']), CardSpec(style: CardStyleId.pro)),
     'story_neon': (demo(text: 'Ma journée à Abidjan en une carte.', images: ['intro1']), CardSpec(style: CardStyleId.neon, format: CardFormat.story)),
     'square_pro': (demo(text: 'Rendez-vous demain à 9 h, pensez à vos badges.', images: []), CardSpec(style: CardStyleId.pro, format: CardFormat.square)),
   };
