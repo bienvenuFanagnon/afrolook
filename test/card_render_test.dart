@@ -132,6 +132,71 @@ void main() {
     }
   }, timeout: const Timeout(Duration(minutes: 5)));
 
+  test('cadrage d\'image : limites et valeurs par défaut', () {
+    expect(const ImageAdjust().isDefault, true);
+    final big = const ImageAdjust(zoom: 20, dx: 9, dy: -9).clamped();
+    expect(big.zoom, ImageAdjust.maxZoom);
+    expect(big.dx <= 3, true);
+    expect(big.dy >= -3, true);
+    expect(const ImageAdjust(zoom: 0.1).clamped().zoom, ImageAdjust.minZoom);
+  });
+
+  testWidgets('cadrage d\'image : zoom et décalage dessinés sur tous les styles, 1 à 4 images', (tester) async {
+    for (final st in CardStyleId.values) {
+      for (final n in [1, 2, 4]) {
+        final spec = CardSpec(style: st, imageOrder: List<int>.generate(n, (i) => i));
+        for (var i = 0; i < n; i++) {
+          spec.adjusts[i] = ImageAdjust(zoom: 2.2, dx: 0.2, dy: -0.1 * i);
+        }
+        final png = await render(tester, source(images: n), spec);
+        expect(png.length > 10000, true, reason: '${st.name} x$n');
+      }
+    }
+  }, timeout: const Timeout(Duration(minutes: 6)));
+
+  testWidgets('cadrage d\'image : glisser et pincer sur l\'aperçu recadre l\'image, l\'export reste sans geste', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final spec = CardSpec(style: CardStyleId.neon);
+    final got = <int, ImageAdjust>{};
+    late StateSetter set;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: StatefulBuilder(builder: (c, s) {
+            set = s;
+            return CardCanvas(source: source(), spec: spec, onAdjust: (i, a) => set(() { spec.adjusts[i] = a; got[i] = a; }));
+          }),
+        ),
+      ),
+    ));
+    await tester.pump();
+    final img = find.byType(FitImage).first;
+    await tester.drag(img, const Offset(60, 0));
+    await tester.pump();
+    expect(got[0]!.dx > 0, true, reason: 'le glisser décale l\'image');
+    // pincement à deux doigts
+    final c = tester.getCenter(img);
+    final g1 = await tester.startGesture(c - const Offset(20, 0));
+    final g2 = await tester.startGesture(c + const Offset(20, 0));
+    await tester.pump();
+    for (var i = 0; i < 6; i++) {
+      await g1.moveBy(const Offset(-15, 0));
+      await g2.moveBy(const Offset(15, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await g1.up();
+    await g2.up();
+    expect(got[0]!.zoom > 1.2, true, reason: 'le pincement zoome');
+    // double-tape : recentre
+    await tester.tap(img);
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.tap(img);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(got[0]!.isDefault, true);
+  });
+
   test('le lien du QR : post, sinon profil, sinon accueil', () {
     expect(source().link, 'https://afrolookmedia.com/share/post/abc123');
     expect(CardSource.draft(pseudo: 'a', profileId: 'u1').link, 'https://afrolookmedia.com/share/creator/u1');

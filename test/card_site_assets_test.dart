@@ -34,6 +34,9 @@ Future<void> loadFonts() async {
   if (dir != null) {
     final r = FontLoader('Roboto')..addFont(Future.value(ByteData.sublistView(File('$dir/Roboto-Bold.ttf').readAsBytesSync())));
     await r.load();
+    // la bande « passeport » est écrite en police à chasse fixe, que le banc de test n'a pas : Roboto la remplace pour l'image
+    final mono = FontLoader('monospace')..addFont(Future.value(ByteData.sublistView(File('$dir/RobotoCondensed-Regular.ttf').readAsBytesSync())));
+    await mono.load();
     final m = FontLoader('MaterialIcons')..addFont(Future.value(ByteData.sublistView(File('$dir/MaterialIcons-Regular.otf').readAsBytesSync())));
     await m.load();
   }

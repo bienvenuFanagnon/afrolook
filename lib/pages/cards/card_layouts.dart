@@ -42,6 +42,17 @@ Widget _avatarFill(CardSource s) => s.avatar != null
 
 Widget _mediaOrAvatar(_Args a, {double? ratio}) => a.hasImage ? a.media(ratio: ratio) : _avatarFill(a.source);
 
+/// « @pseudo » suivi d'une coche dessinée (une icône, pas un caractère : elle s'affiche sur tous les téléphones).
+Widget _pseudoCheck(String pseudo, bool verified, TextStyle style, {bool ellipsis = false}) => Text.rich(
+      TextSpan(children: [
+        TextSpan(text: '@$pseudo'),
+        if (verified) WidgetSpan(alignment: PlaceholderAlignment.middle, child: Padding(padding: const EdgeInsets.only(left: 4), child: Icon(Icons.verified_rounded, size: (style.fontSize ?? 14) + 1, color: style.color))),
+      ]),
+      maxLines: ellipsis ? 1 : null,
+      overflow: ellipsis ? TextOverflow.ellipsis : TextOverflow.clip,
+      style: style,
+    );
+
 Widget _iconStats(List<_StatItem> st, Color color, {double size = 13, double gap = 12}) => st.isEmpty
     ? const SizedBox.shrink()
     : FittedBox(
@@ -392,7 +403,7 @@ Widget _layoutPassport(_Args a) {
             SizedBox(
               width: 98,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                AspectRatio(aspectRatio: 0.78, child: Container(decoration: BoxDecoration(border: Border.all(color: ink, width: 2), color: const Color(0xFFD8D0BD)), clipBehavior: Clip.hardEdge, child: a.hasImage ? FitImage(image: a.images.first) : _avatarFill(a.source))),
+                AspectRatio(aspectRatio: 0.78, child: Container(decoration: BoxDecoration(border: Border.all(color: ink, width: 2), color: const Color(0xFFD8D0BD)), clipBehavior: Clip.hardEdge, child: a.hasImage ? a.fit(0) : _avatarFill(a.source))),
                 label('NATIONALITÉ'),
                 const SizedBox(height: 2),
                 Row(children: [
@@ -405,7 +416,7 @@ Widget _layoutPassport(_Args a) {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 label('TITULAIRE'),
-                Text('@${a.source.pseudo}${a.source.verified ? ' ✓' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: _t('Roboto', 15, ink, w: FontWeight.w800)),
+                _pseudoCheck(a.source.pseudo, a.source.verified, _t('Roboto', 15, ink, w: FontWeight.w800), ellipsis: true),
                 label('MESSAGE'),
                 Expanded(child: Align(alignment: Alignment.topLeft, child: _FitText(text: a.text, style: a.style(_t('Roboto', 14, ink, w: FontWeight.w600)), maxSize: 15, minSize: 10))),
                 label('DATE'),
@@ -649,7 +660,7 @@ Widget _layoutPride(_Args a) {
       }),
     ),
     _gap(6),
-    Text('@${a.source.pseudo}${a.source.verified ? ' ✓' : ''}', style: _t('Roboto', 17, Colors.white, w: FontWeight.w800)),
+    _pseudoCheck(a.source.pseudo, a.source.verified, _t('Roboto', 17, Colors.white, w: FontWeight.w800)),
     Text(CardFlags.name(code).toUpperCase(), style: _t('Roboto', 10, const Color(0xFFFFD400), w: FontWeight.w700, ls: 2.5)),
     _gap(4),
     Expanded(flex: 3, child: Center(child: _FitText(text: a.text, style: a.style(_t('Roboto', 16, Colors.white, w: FontWeight.w600)), maxSize: 18, minSize: 11, align: TextAlign.center))),
@@ -879,13 +890,13 @@ Widget _layoutQuote(_Args a) {
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('@${a.source.pseudo}${a.source.verified ? ' ✓' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: _t('Roboto', 15, Colors.white, w: FontWeight.w800)),
+              _pseudoCheck(a.source.pseudo, a.source.verified, _t('Roboto', 15, Colors.white, w: FontWeight.w800), ellipsis: true),
               if (a.spec.showDate && a.source.date != null) Text(_fmtDate(a.source.date!), style: _t('Roboto', 10.5, const Color(0xCCFFFFFF))),
             ]),
           ),
         ] else
           const Spacer(),
-        if (a.hasImage) Container(width: 64, height: 64, decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white, width: 2)), clipBehavior: Clip.antiAlias, child: FitImage(image: a.images.first)),
+        if (a.hasImage) Container(width: 64, height: 64, decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white, width: 2)), clipBehavior: Clip.antiAlias, child: a.fit(0, interactive: false)),
       ]),
       if (st.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Align(alignment: Alignment.centerLeft, child: _iconStats(st, Colors.white, size: 12.5))),
       _gap(8),

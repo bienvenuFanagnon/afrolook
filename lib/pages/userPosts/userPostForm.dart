@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
@@ -266,7 +267,8 @@ class _UserPostFormState extends State<UserPostForm> {
       color: _colors.surfaceVariant,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
-        children: List.generate(_mediaTypes.length, (i) {
+        // la création de carte n'est pas proposée sur le web (impossible d'y bloquer les captures d'écran)
+        children: List.generate(kIsWeb ? _mediaTypes.length - 1 : _mediaTypes.length, (i) {
           final selected = i == _selectedMediaIndex;
           final type = _mediaTypes[i];
           return Expanded(

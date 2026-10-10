@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -42,6 +43,7 @@ class CardEntry {
   /// Ce post peut-il devenir une carte ? Pas les publicités, ni les posts d'un canal privé (sauf pour leur auteur
   /// et les administrateurs) : une carte sort de l'application, elle ne doit pas révéler un contenu réservé.
   static bool canMake(Post post, UserData me) {
+    if (kIsWeb) return false; // le studio n'existe que dans l'application
     if (post.isAdvertisement == true) return false;
     if (post.canal?.isPrivate == true && post.user_id != me.id && me.role != UserRole.ADM.name) return false;
     return true;

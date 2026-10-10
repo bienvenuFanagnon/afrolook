@@ -2,11 +2,25 @@ part of 'card_canvas.dart';
 
 /// Ce dont un style a besoin pour se dessiner en plus de la taille : la source, les réglages, les drapeaux et les images retenues.
 class _Env {
-  const _Env({required this.source, required this.spec, required this.flags, required this.images});
+  const _Env({required this.source, required this.spec, required this.flags, required this.images, this.imageIdx = const [], this.onAdjust});
   final CardSource source;
   final CardSpec spec;
   final List<String> flags;
   final List<ImageProvider> images;
+
+  /// Indice de chaque image retenue dans [CardSource.images] (la clé de son cadrage).
+  final List<int> imageIdx;
+  final void Function(int imageIndex, ImageAdjust adjust)? onAdjust;
+
+  /// L'image retenue n° [pos], avec son cadrage ; recadrable au doigt seulement dans l'aperçu du studio.
+  Widget fit(int pos, {bool interactive = true}) {
+    final idx = pos < imageIdx.length ? imageIdx[pos] : null;
+    return FitImage(
+      image: images[pos],
+      adjust: idx == null ? null : spec.adjusts[idx],
+      onAdjust: (interactive && idx != null && onAdjust != null) ? (a) => onAdjust!(idx, a) : null,
+    );
+  }
 }
 
 /// Tout ce que reçoit une mise en page propre à un style.
@@ -32,6 +46,9 @@ class _Args {
       _Footer(source: source, spec: spec, theme: theme, truncated: truncated, showPseudo: showPseudo, hideStats: hideStats);
 
   Widget header() => _Header(source: source, spec: spec, theme: theme);
+
+  /// L'image retenue n° [pos] avec son cadrage (voir [_Env.fit]).
+  Widget fit(int pos, {bool interactive = true}) => theme.env.fit(pos, interactive: interactive);
 
   Widget media({double? ratio, bool? isVideo}) => _MediaFrame(images: images, layout: spec.layout, ratio: ratio, isVideo: isVideo ?? source.isVideo, theme: theme);
 }

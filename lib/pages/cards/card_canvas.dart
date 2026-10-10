@@ -25,10 +25,18 @@ const _ink = Color(0xFF0E0E0E);
 /// - un média n'est jamais recadré : il est montré en entier dans un cadre de forme fixe, les bords étant remplis
 ///   par un flou de la même image ;
 /// - le texte s'adapte à la place restante (la police diminue, puis le texte est coupé proprement) ;
-/// - la signature Afrolook (bande tricolore, sceau « Créé par », QR) est identique sur tous les styles.
+/// - la signature Afrolook (bande tricolore, sceau « Créé sur Afrolook », QR) est identique sur tous les styles.
 class CardCanvas extends StatelessWidget {
   const CardCanvas(
-      {super.key, required this.source, required this.spec, this.text});
+      {super.key,
+      required this.source,
+      required this.spec,
+      this.text,
+      this.onAdjust});
+
+  /// Aperçu du studio : pincer ou glisser une image la recadre (clé : indice dans [CardSource.images]).
+  /// Null (export, miniatures) : les images sont seulement dessinées avec leur cadrage.
+  final void Function(int imageIndex, ImageAdjust adjust)? onAdjust;
 
   final CardSource source;
   final CardSpec spec;
@@ -39,7 +47,8 @@ class CardCanvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = spec.format.size;
-    final selected = _selectedImages();
+    final selectedIdx = _selectedIndices();
+    final selected = [for (final i in selectedIdx) source.images[i]];
     final hasMedia = selected.isNotEmpty;
     final theme = _ThemeOf(
         spec.style,
@@ -47,7 +56,9 @@ class CardCanvas extends StatelessWidget {
             source: source,
             spec: spec,
             flags: CardFlags.flagsOf(source, spec),
-            images: selected));
+            images: selected,
+            imageIdx: selectedIdx,
+            onAdjust: onAdjust));
     final cut = text == null
         ? cardText(source.text, spec, hasMedia: hasMedia)
         : CardCut(text!, false);
@@ -85,7 +96,7 @@ class CardCanvas extends StatelessWidget {
         ));
   }
 
-  List<ImageProvider> _selectedImages() {
+  List<int> _selectedIndices() {
     if (source.images.isEmpty) return const [];
     final idx = spec.imageOrder
         .where((i) => i >= 0 && i < source.images.length)
@@ -93,9 +104,7 @@ class CardCanvas extends StatelessWidget {
     final order = idx.isEmpty
         ? List<int>.generate(math.min(3, source.images.length), (i) => i)
         : idx;
-    final list = [
-      for (final i in order.take(CardSpec.maxImages)) source.images[i]
-    ];
+    final list = order.take(CardSpec.maxImages).toList();
     return spec.layout == CardLayout.single ? [list.first] : list;
   }
 }
@@ -410,7 +419,7 @@ class _Seal extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tr('Créé par'),
+                Text(tr('Créé sur'),
                     style: const TextStyle(
                         color: Color(0xFFBDBDBD),
                         fontSize: 7.5,
@@ -421,7 +430,7 @@ class _Seal extends StatelessWidget {
                 const Text.rich(
                     TextSpan(children: [
                       TextSpan(
-                          text: 'afro', style: TextStyle(color: Colors.white)),
+                          text: 'Afro', style: TextStyle(color: Colors.white)),
                       TextSpan(text: 'look', style: TextStyle(color: _yellow)),
                     ]),
                     style: TextStyle(
@@ -521,34 +530,83 @@ class _FitText extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════════════════════
 
 /// Une image montrée EN ENTIER (contain), les bords étant remplis par un flou de la même image.
-class FitImage extends StatelessWidget {
-  const FitImage({super.key, required this.image});
+/// [adjust] la zoome et la décale ; avec [onAdjust], un pincement ou un glissement la recadre (aperçu du studio).
+class FitImage extends StatefulWidget {
+  const FitImage({super.key, required this.image, this.adjust, this.onAdjust});
   final ImageProvider image;
+  final ImageAdjust? adjust;
+  final ValueChanged<ImageAdjust>? onAdjust;
 
   @override
-  Widget build(BuildContext context) => ClipRect(
-        child: Stack(fit: StackFit.expand, children: [
-          const ColoredBox(color: Color(0xFF111111)),
-          Transform.scale(
-            scale: 1.3,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+  State<FitImage> createState() => _FitImageState();
+}
+
+class _FitImageState extends State<FitImage> {
+  ImageAdjust _start = const ImageAdjust();
+  Offset _startFocal = Offset.zero;
+
+  ImageAdjust get _cur => widget.adjust ?? const ImageAdjust();
+
+  @override
+  Widget build(BuildContext context) {
+    final image = widget.image;
+    final a = _cur;
+    Widget view = ClipRect(
+      child: Stack(fit: StackFit.expand, children: [
+        const ColoredBox(color: Color(0xFF111111)),
+        Transform.scale(
+          scale: 1.3,
+          child: ImageFiltered(
+            imageFilter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: Image(
+                image: image,
+                fit: BoxFit.cover,
+                color: const Color(0x99000000),
+                colorBlendMode: BlendMode.darken,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+          ),
+        ),
+        LayoutBuilder(
+          builder: (_, c) => Transform.translate(
+            offset: Offset(a.dx * c.maxWidth, a.dy * c.maxHeight),
+            child: Transform.scale(
+              scale: a.zoom,
               child: Image(
                   image: image,
-                  fit: BoxFit.cover,
-                  color: const Color(0x99000000),
-                  colorBlendMode: BlendMode.darken,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Center(
+                      child: Icon(Icons.image_not_supported_rounded,
+                          color: Colors.white54))),
             ),
           ),
-          Image(
-              image: image,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Center(
-                  child: Icon(Icons.image_not_supported_rounded,
-                      color: Colors.white54))),
-        ]),
-      );
+        ),
+      ]),
+    );
+    final on = widget.onAdjust;
+    if (on == null) return view;
+    return LayoutBuilder(
+      builder: (_, c) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onScaleStart: (d) {
+          _start = _cur;
+          _startFocal = d.localFocalPoint;
+        },
+        onScaleUpdate: (d) {
+          final w = c.maxWidth == 0 ? 1.0 : c.maxWidth;
+          final h = c.maxHeight == 0 ? 1.0 : c.maxHeight;
+          final move = d.localFocalPoint - _startFocal;
+          on(_start
+              .copyWith(
+                  zoom: _start.zoom * d.scale,
+                  dx: _start.dx + move.dx / w,
+                  dy: _start.dy + move.dy / h)
+              .clamped());
+        },
+        onDoubleTap: () => on(const ImageAdjust()),
+        child: view,
+      ),
+    );
+  }
 }
 
 class _MediaFrame extends StatelessWidget {
@@ -571,11 +629,11 @@ class _MediaFrame extends StatelessWidget {
     final multi = images.length > 1;
     Widget inner;
     if (!multi) {
-      inner = FitImage(image: images.first);
+      inner = theme.env.fit(0);
     } else {
       switch (layout) {
         case CardLayout.polaroid:
-          inner = _Polaroids(images: images);
+          inner = _Polaroids(images: images, fit: theme.env.fit);
         case CardLayout.film:
           inner = Row(children: [
             for (var i = 0; i < images.length; i++) ...[
@@ -583,11 +641,11 @@ class _MediaFrame extends StatelessWidget {
               Expanded(
                   child: ClipRRect(
                       borderRadius: BorderRadius.circular(5),
-                      child: FitImage(image: images[i]))),
+                      child: theme.env.fit(i))),
             ]
           ]);
         default:
-          inner = _Mosaic(images: images);
+          inner = _Mosaic(images: images, fit: theme.env.fit);
       }
     }
     final frame = Container(
@@ -626,10 +684,11 @@ class _PlayBadge extends StatelessWidget {
 }
 
 class _Mosaic extends StatelessWidget {
-  const _Mosaic({required this.images});
+  const _Mosaic({required this.images, required this.fit});
   final List<ImageProvider> images;
-  Widget _c(ImageProvider p) => ClipRRect(
-      borderRadius: BorderRadius.circular(5), child: FitImage(image: p));
+  final Widget Function(int pos) fit;
+  Widget _c(int i) =>
+      ClipRRect(borderRadius: BorderRadius.circular(5), child: fit(i));
 
   @override
   Widget build(BuildContext context) {
@@ -637,35 +696,35 @@ class _Mosaic extends StatelessWidget {
     switch (images.length) {
       case 2:
         return Row(children: [
-          Expanded(child: _c(images[0])),
+          Expanded(child: _c(0)),
           const SizedBox(width: gap),
-          Expanded(child: _c(images[1]))
+          Expanded(child: _c(1))
         ]);
       case 3:
         return Row(children: [
-          Expanded(flex: 2, child: _c(images[0])),
+          Expanded(flex: 2, child: _c(0)),
           const SizedBox(width: gap),
           Expanded(
               child: Column(children: [
-            Expanded(child: _c(images[1])),
+            Expanded(child: _c(1)),
             const SizedBox(height: gap),
-            Expanded(child: _c(images[2]))
+            Expanded(child: _c(2))
           ])),
         ]);
       default:
         return Column(children: [
           Expanded(
               child: Row(children: [
-            Expanded(child: _c(images[0])),
+            Expanded(child: _c(0)),
             const SizedBox(width: gap),
-            Expanded(child: _c(images[1]))
+            Expanded(child: _c(1))
           ])),
           const SizedBox(height: gap),
           Expanded(
               child: Row(children: [
-            Expanded(child: _c(images[2])),
+            Expanded(child: _c(2)),
             const SizedBox(width: gap),
-            Expanded(child: _c(images[3]))
+            Expanded(child: _c(3))
           ])),
         ]);
     }
@@ -673,8 +732,9 @@ class _Mosaic extends StatelessWidget {
 }
 
 class _Polaroids extends StatelessWidget {
-  const _Polaroids({required this.images});
+  const _Polaroids({required this.images, required this.fit});
   final List<ImageProvider> images;
+  final Widget Function(int pos) fit;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (context, c) {
@@ -714,7 +774,7 @@ class _Polaroids extends StatelessWidget {
                             offset: Offset(0, 3))
                       ]),
                   child: AspectRatio(
-                      aspectRatio: 1, child: FitImage(image: images[i])),
+                      aspectRatio: 1, child: fit(i)),
                 ),
               ),
             ),

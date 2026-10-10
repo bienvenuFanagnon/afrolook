@@ -53,6 +53,9 @@ class _CardStudioPageState extends State<CardStudioPage> {
   late final TextEditingController _followersCtl = TextEditingController(text: _source.followers.toString());
   CardQuote _quote = CardQuote.fallback();
   int _tab = 0;
+
+  /// Image (indice dans la source) dont le curseur de zoom règle le cadrage : la dernière touchée sur la carte.
+  int? _adjIdx;
   bool _busy = false;
 
   /// Capture déjà réglée pour cette carte (enregistrer puis partager ne se paie qu'une fois), avec le niveau de style payé.
@@ -306,7 +309,18 @@ class _CardStudioPageState extends State<CardStudioPage> {
             fit: BoxFit.contain,
             child: DecoratedBox(
               decoration: BoxDecoration(boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 26, offset: const Offset(0, 12))], borderRadius: BorderRadius.circular(28)),
-              child: RepaintBoundary(key: _boundaryKey, child: CardCanvas(source: _source, spec: _spec)),
+              child: RepaintBoundary(
+                key: _boundaryKey,
+                child: CardCanvas(
+                  source: _source,
+                  spec: _spec,
+                  onAdjust: (i, a) => setState(() {
+                    _spec.adjusts[i] = a;
+                    _adjIdx = i;
+                    _captureDone = false;
+                  }),
+                ),
+              ),
             ),
           ),
         ),
@@ -532,6 +546,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
             ),
         ]),
       ],
+      if (!_source.isVideo) ..._zoomControls(c),
       if (!multi)
         Text(
           _source.isVideo
@@ -544,6 +559,42 @@ class _CardStudioPageState extends State<CardStudioPage> {
         TextButton.icon(onPressed: _addImages, icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: Text(context.tr('Changer les images'))),
       ],
     ]);
+  }
+
+  /// Zoom et recentrage de l'image réglée (la dernière touchée sur la carte, sinon la première retenue).
+  List<Widget> _zoomControls(AppColors c) {
+    final order = _spec.imageOrder.isEmpty ? [0] : _spec.imageOrder;
+    final idx = (_adjIdx != null && order.contains(_adjIdx)) ? _adjIdx! : order.first;
+    final cur = _spec.adjusts[idx] ?? const ImageAdjust();
+    return [
+      const SizedBox(height: 10),
+      Row(children: [
+        Icon(Icons.zoom_in_rounded, size: 20, color: c.textSecondary),
+        Expanded(
+          child: Slider(
+            value: cur.zoom.clamp(ImageAdjust.minZoom, ImageAdjust.maxZoom).toDouble(),
+            min: ImageAdjust.minZoom,
+            max: ImageAdjust.maxZoom,
+            onChanged: (v) => setState(() {
+              _spec.adjusts[idx] = cur.copyWith(zoom: v).clamped();
+              _adjIdx = idx;
+              _captureDone = false;
+            }),
+          ),
+        ),
+        Text('${(cur.zoom * 100).round()} %', style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+        IconButton(
+          tooltip: context.tr('Recentrer'),
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.center_focus_strong_rounded),
+          onPressed: cur.isDefault ? null : () => setState(() {
+            _spec.adjusts.remove(idx);
+            _captureDone = false;
+          }),
+        ),
+      ]),
+      Text(context.tr('Pince ou glisse l\'image directement sur la carte pour l\'agrandir et la placer. Double-tape pour recentrer.'), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
+    ];
   }
 
   // ── Onglet Style ──────────────────────────────────────────────────────────

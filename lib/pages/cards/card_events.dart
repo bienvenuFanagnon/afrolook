@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -195,6 +196,7 @@ class CardEvents {
 
   /// À appeler depuis l'accueil : si c'est la fête et que l'invitation n'a pas encore été vue, l'affiche (une fois par fête et par an).
   static Future<void> maybeShow(BuildContext context, {DateTime? now}) async {
+    if (kIsWeb) return;
     final me = context.read<UserAuthProvider>().loginUserData;
     final ev = forToday(me.countryData?['countryCode'], now ?? DateTime.now());
     if (ev == null) return;

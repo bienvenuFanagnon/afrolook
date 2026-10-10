@@ -276,6 +276,28 @@ class CardSource {
 }
 
 /// Les réglages choisis dans le studio.
+/// Cadrage d'une image sur la carte : zoom (1 = l'image entière) et décalage en fraction de la taille du cadre.
+class ImageAdjust {
+  const ImageAdjust({this.zoom = 1, this.dx = 0, this.dy = 0});
+  final double zoom;
+  final double dx;
+  final double dy;
+
+  static const minZoom = 0.5;
+  static const maxZoom = 6.0;
+
+  bool get isDefault => zoom == 1 && dx == 0 && dy == 0;
+
+  /// Garde l'image dans des limites raisonnables : le zoom reste entre 0,5 et 6, et l'image ne sort pas du cadre.
+  ImageAdjust clamped() {
+    final z = zoom.clamp(minZoom, maxZoom).toDouble();
+    final lim = (z <= 1 ? 0.0 : (z - 1) / 2) + 0.35;
+    return ImageAdjust(zoom: z, dx: dx.clamp(-lim, lim).toDouble(), dy: dy.clamp(-lim, lim).toDouble());
+  }
+
+  ImageAdjust copyWith({double? zoom, double? dx, double? dy}) => ImageAdjust(zoom: zoom ?? this.zoom, dx: dx ?? this.dx, dy: dy ?? this.dy);
+}
+
 class CardSpec {
   CardSpec({
     this.style = CardStyleId.neon,
@@ -323,6 +345,9 @@ class CardSpec {
   String? likesText;
   String? commentsText;
   String? followersText;
+
+  /// Cadrage de chaque image (clé : indice dans [CardSource.images]) ; absent = image entière, centrée.
+  final Map<int, ImageAdjust> adjusts = {};
 
   static String? _clean(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
   String? get likesOverride => _clean(likesText);
