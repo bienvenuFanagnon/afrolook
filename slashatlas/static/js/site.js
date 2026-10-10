@@ -111,4 +111,20 @@
     $('#replay').addEventListener('click', function () { touched = false; start(); });
     start();
   }
+
+  // ── Compte Google facultatif : le SDK se charge au clic ou si la personne est déjà connectée ──
+  (function () {
+    var loaded = false;
+    function load() { if (loaded) return Promise.resolve(); loaded = true; return import('/js/auth.js').catch(function () { loaded = false; }); }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-auth]');
+      if (b && !loaded) { e.preventDefault(); e.stopImmediatePropagation(); load().then(function () { b.click(); }); }
+    }, true);
+    if (store('sa_in') === '1' || page === 'account' || page === 'admin') load();
+    else {
+      // préchargement dès qu'on approche du bouton, pour que la fenêtre Google s'ouvre sans blocage
+      var warm = function (e) { if (e.target.closest && e.target.closest('[data-auth],[data-login]')) { load(); document.removeEventListener('pointerover', warm); document.removeEventListener('focusin', warm); } };
+      document.addEventListener('pointerover', warm); document.addEventListener('focusin', warm);
+    }
+  })();
 })();

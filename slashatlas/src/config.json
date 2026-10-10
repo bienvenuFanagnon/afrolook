@@ -2,7 +2,17 @@
   "name": "SlashAtlas",
   "domain": "https://slashatlas.web.app",
   "indexable": false,
-  "ads": { "enabled": false, "client": "" },
-  "pro": { "price": "3,99 €", "priceEn": "€3.99" },
-  "gen": "2026-10-10"
+  "ads": {
+    "enabled": false,
+    "client": ""
+  },
+  "pro": {
+    "price": "3,99 €",
+    "priceEn": "€3.99"
+  },
+  "gen": "2026-10-10",
+  "alternateNames": [
+    "Slash Atlas",
+    "SlashAtlas.com"
+  ]
 }
