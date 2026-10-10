@@ -3,22 +3,108 @@ import 'dart:typed_data';
 import 'package:flutter/painting.dart';
 import 'package:flutter/widgets.dart';
 
-/// Les styles de carte. Kente, Wax et Néon sont inclus ; les autres sont des styles « Pro » (réglage serveur
-/// `AppConfig/cards.proStyles`, `bogolan` par défaut).
-enum CardStyleId { kente, wax, neon, bogolan }
+/// Les styles de carte. Kente, Wax, Néon, Glass et Pro sont inclus ; tous les autres sont des styles « Pro »
+/// (réglage serveur `AppConfig/cards.proStyles`, voir [CardStyleIdX.defaultPro]).
+enum CardStyleId {
+  // Inclus et héritage
+  kente, wax, neon, bogolan,
+  // Moderne
+  glass, pro, manga, anime, magazine, collector, sport, gamer, y2k, street,
+  // Drapeaux
+  flag, passport, stamp, supporter, duo, pride,
+  // Idées
+  film, newspaper, music, boarding, tarot, quote,
+}
+
+/// Les familles de styles, pour le sélecteur du studio.
+enum CardPack { moderne, drapeaux, idees, heritage }
+
+extension CardPackX on CardPack {
+  String get label => switch (this) {
+        CardPack.moderne => 'Moderne',
+        CardPack.drapeaux => 'Drapeaux',
+        CardPack.idees => 'Idées',
+        CardPack.heritage => 'Héritage',
+      };
+  List<CardStyleId> get styles => CardStyleId.values.where((s) => s.pack == this).toList();
+}
 
 extension CardStyleIdX on CardStyleId {
+  CardPack get pack => switch (this) {
+        CardStyleId.kente || CardStyleId.wax || CardStyleId.bogolan => CardPack.heritage,
+        CardStyleId.neon || CardStyleId.glass || CardStyleId.pro || CardStyleId.manga || CardStyleId.anime || CardStyleId.magazine || CardStyleId.collector ||
+        CardStyleId.sport || CardStyleId.gamer || CardStyleId.y2k || CardStyleId.street =>
+          CardPack.moderne,
+        CardStyleId.flag || CardStyleId.passport || CardStyleId.stamp || CardStyleId.supporter || CardStyleId.duo || CardStyleId.pride => CardPack.drapeaux,
+        _ => CardPack.idees,
+      };
+
+  /// Ces styles utilisent le drapeau d'un pays ; [duo] en utilise deux.
+  bool get usesFlag => pack == CardPack.drapeaux;
+  bool get usesSecondFlag => this == CardStyleId.duo;
+
+  /// Styles gratuits (les autres sont « Pro » sauf réglage serveur contraire).
+  static const freeStyles = {CardStyleId.kente, CardStyleId.wax, CardStyleId.neon, CardStyleId.glass, CardStyleId.pro};
+
+  /// Liste Pro utilisée si le serveur n'en donne pas.
+  static List<String> get defaultPro => [for (final s in CardStyleId.values) if (!freeStyles.contains(s)) s.name];
+
   String get label => switch (this) {
         CardStyleId.kente => 'Kente',
         CardStyleId.wax => 'Wax',
-        CardStyleId.neon => 'Néon Lagos',
+        CardStyleId.neon => 'Néon',
         CardStyleId.bogolan => 'Bogolan',
+        CardStyleId.glass => 'Glass',
+        CardStyleId.pro => 'Pro',
+        CardStyleId.manga => 'Manga',
+        CardStyleId.anime => 'Anime',
+        CardStyleId.magazine => 'Magazine',
+        CardStyleId.collector => 'Collector',
+        CardStyleId.sport => 'Sport',
+        CardStyleId.gamer => 'Gamer',
+        CardStyleId.y2k => 'Y2K',
+        CardStyleId.street => 'Street',
+        CardStyleId.flag => 'Drapeau',
+        CardStyleId.passport => 'Passeport',
+        CardStyleId.stamp => 'Timbre',
+        CardStyleId.supporter => 'Supporter',
+        CardStyleId.duo => 'Duo',
+        CardStyleId.pride => 'Fierté',
+        CardStyleId.film => 'Film',
+        CardStyleId.newspaper => 'Journal',
+        CardStyleId.music => 'Musique',
+        CardStyleId.boarding => 'Embarquement',
+        CardStyleId.tarot => 'Tarot',
+        CardStyleId.quote => 'Citation',
       };
+
   String get subtitle => switch (this) {
         CardStyleId.kente => 'tissage royal, or et vert',
         CardStyleId.wax => 'motifs pop, couleurs vives',
-        CardStyleId.neon => 'nuit électrique, vert Afrolook',
+        CardStyleId.neon => 'cyber, grille lumineuse',
         CardStyleId.bogolan => 'terre et motifs peints',
+        CardStyleId.glass => 'verre dépoli sur fond flou',
+        CardStyleId.pro => 'sobre et professionnel',
+        CardStyleId.manga => 'planche noir et blanc',
+        CardStyleId.anime => 'ciel d\'anime au crépuscule',
+        CardStyleId.magazine => 'couverture de magazine de mode',
+        CardStyleId.collector => 'carte à collectionner holo',
+        CardStyleId.sport => 'affiche de match',
+        CardStyleId.gamer => 'interface de jeu',
+        CardStyleId.y2k => 'fenêtre rétro des années 2000',
+        CardStyleId.street => 'streetwear, polaroïd au scotch',
+        CardStyleId.flag => 'le drapeau en plein fond',
+        CardStyleId.passport => 'passeport citoyen du monde',
+        CardStyleId.stamp => 'timbre-poste dentelé',
+        CardStyleId.supporter => 'écharpe et écusson',
+        CardStyleId.duo => 'deux pays, une carte',
+        CardStyleId.pride => 'couronne de drapeaux',
+        CardStyleId.film => 'affiche de cinéma',
+        CardStyleId.newspaper => 'une de journal',
+        CardStyleId.music => 'lecteur de musique',
+        CardStyleId.boarding => 'carte d\'embarquement',
+        CardStyleId.tarot => 'carte de tarot dorée',
+        CardStyleId.quote => 'grosse citation sur dégradé',
       };
 }
 
@@ -109,6 +195,7 @@ class CardSource {
     this.comments = 0,
     this.followers = 0,
     this.profileId,
+    this.country,
     this.credit,
   });
 
@@ -132,6 +219,9 @@ class CardSource {
 
   /// Auteur du post, ou créateur de la carte pour un brouillon : le QR mène à son profil quand il n'y a pas de post.
   final String? profileId;
+
+  /// Pays de l'auteur (code ISO à 2 lettres), pour les styles « drapeau ».
+  final String? country;
 
   /// Crédit affiché quand la carte reprend le post d'un autre auteur (« Post de @pseudo »).
   final String? credit;
@@ -157,6 +247,7 @@ class CardSource {
         comments: comments,
         followers: followers,
         profileId: profileId,
+        country: country,
         credit: credit,
       );
 
@@ -169,6 +260,7 @@ class CardSource {
     List<Uint8List> imageBytes = const [],
     int followers = 0,
     String? profileId,
+    String? country,
   }) =>
       CardSource(
         pseudo: pseudo,
@@ -179,6 +271,7 @@ class CardSource {
         date: DateTime.now(),
         followers: followers,
         profileId: profileId,
+        country: country,
       );
 }
 
@@ -196,6 +289,8 @@ class CardSpec {
     this.showStats = true,
     this.showFollowers = false,
     this.showDate = true,
+    this.country,
+    this.country2,
   })  : imageOrder = imageOrder ?? <int>[],
         pickedSentences = pickedSentences ?? <int>{};
 
@@ -216,6 +311,10 @@ class CardSpec {
   /// Nombre d'abonnés de l'auteur (facultatif, désactivé par défaut).
   bool showFollowers;
   bool showDate;
+
+  /// Pays des styles « drapeau » (code ISO à 2 lettres) ; null : pays de l'auteur. [country2] sert au style Duo.
+  String? country;
+  String? country2;
 
   static const maxImages = 4;
 }

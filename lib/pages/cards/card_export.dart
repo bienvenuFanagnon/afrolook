@@ -8,6 +8,7 @@ import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'card_flags.dart';
 import 'card_models.dart';
 
 /// Sorties d'une carte : image PNG (1080 px de large), enregistrement dans la galerie, partage.
@@ -24,7 +25,10 @@ class CardExport {
       for (final i in (spec.imageOrder.isEmpty ? List<int>.generate(source.images.length.clamp(0, 3), (i) => i) : spec.imageOrder))
         if (i >= 0 && i < source.images.length) source.images[i],
     ];
-    await Future.wait(imgs.map((p) => precacheImage(p, context).catchError((_) {})));
+    await Future.wait([
+      ...imgs.map((p) => precacheImage(p, context).catchError((_) {})),
+      if (spec.style.usesFlag) CardFlags.precache(CardFlags.flagsOf(source, spec)),
+    ]);
   }
 
   /// Capture la carte dessinée sous [boundaryKey] (un [RepaintBoundary]) en PNG.

@@ -39,6 +39,8 @@ class CardDemo {
         date: DateTime(2026, 10, 10),
         likes: 1200,
         comments: 214,
+        followers: 3400,
+        country: 'SN',
       );
 
   static CardSource multi() => post(images: const [_portrait, _selfie, _bench, _yellow], text: 'Ma journée à Abidjan, en quatre images 🎉');
@@ -69,14 +71,14 @@ class _CardTutorialPageState extends State<CardTutorialPage> {
       visual: (c) => _pair(c),
     ),
     _Slide(
-      title: 'Choisis ton style',
-      body: 'Kente, Wax, Néon Lagos, Bogolan… Chaque style a sa couleur, sa police et son motif. Trois sont inclus, d\'autres sont en Pro.',
+      title: '26 styles, du manga aux drapeaux',
+      body: 'Manga, mode, jeu vidéo, carte à collectionner, passeport aux couleurs de ton pays, affiche de film… Cinq styles sont inclus, les autres sont en Pro. Le drapeau est celui de ton pays, tu peux en choisir un autre.',
       visual: (c) => _row([
-        _card(CardDemo.post(), CardSpec(style: CardStyleId.kente)),
-        _card(CardDemo.post(), CardSpec(style: CardStyleId.wax)),
-        _card(CardDemo.post(), CardSpec(style: CardStyleId.neon)),
-        _card(CardDemo.post(), CardSpec(style: CardStyleId.bogolan)),
-      ], names: ['Kente', 'Wax', 'Néon Lagos', 'Bogolan']),
+        _card(CardDemo.post(), CardSpec(style: CardStyleId.manga)),
+        _card(CardDemo.post(), CardSpec(style: CardStyleId.collector)),
+        _card(CardDemo.post(), CardSpec(style: CardStyleId.passport)),
+        _card(CardDemo.post(), CardSpec(style: CardStyleId.film)),
+      ], names: ['Manga', 'Collector', 'Passeport', 'Film']),
     ),
     _Slide(
       title: 'Aucune image n\'est coupée',
@@ -190,7 +192,7 @@ class _CardTutorialPageState extends State<CardTutorialPage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
       child: Column(children: [
-        line(context.tr('Gratuit'), context.tr('1 carte d\'essai, puis pièces ou 1 pub')),
+        line(context.tr('Gratuit'), context.tr('1 carte offerte par mois, puis pièces ou 1 pub')),
         line('Premium ⭐', context.tr('2 captures + 3 publications par mois')),
         line('Gold 👑', context.tr('5 captures + 20 publications par mois')),
         line(context.tr('Pass Studio'), context.tr('tout à volonté pendant 30 jours')),

@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../l10n/tr.dart';
+import 'card_models.dart';
 
 enum CardKind { capture, publish }
 
@@ -49,6 +50,7 @@ class CardQuote {
     required this.passDays,
     required this.proStyles,
     required this.options,
+    this.promoFlagCountry,
   });
 
   final bool enabled;
@@ -61,8 +63,14 @@ class CardQuote {
   final int priceCapture, pricePublish, priceProStyle, passPrice, passDays;
   final List<String> proStyles;
 
+  /// Fête nationale du pays de la personne : ses styles « drapeau » sont offerts aujourd'hui (code du pays), sinon null.
+  final String? promoFlagCountry;
+
   /// Coût de chaque sortie : `options[kind][pro]`.
   final Map<CardKind, Map<bool, CardCost>> options;
+
+  /// Ce style est-il payant (Pro) pour cette personne, aujourd'hui ?
+  bool isPro(CardStyleId s) => proStyles.contains(s.name) && !(promoFlagCountry != null && s.usesFlag);
 
   bool get passActive => passUntil > DateTime.now().millisecondsSinceEpoch;
 
@@ -97,8 +105,9 @@ class CardQuote {
       priceProStyle: n(prices['proStyle']),
       passPrice: n(prices['pass']),
       passDays: n(prices['passDays']),
-      proStyles: ((m['proStyles'] as List?) ?? const ['bogolan']).map((e) => '$e').toList(),
+      proStyles: m['proStyles'] is List ? (m['proStyles'] as List).map((e) => '$e').toList() : CardStyleIdX.defaultPro,
       options: {CardKind.capture: pair('capture'), CardKind.publish: pair('publish')},
+      promoFlagCountry: (m['promo'] is Map && (m['promo'] as Map)['flagFree'] == true) ? '${(m['promo'] as Map)['country'] ?? ''}' : null,
     );
   }
 

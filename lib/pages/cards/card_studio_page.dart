@@ -13,6 +13,7 @@ import '../../theme/app_colors.dart';
 import '../coins/coin_recharge_screen.dart';
 import 'card_canvas.dart';
 import 'card_export.dart';
+import 'card_flags.dart';
 import 'card_flow.dart';
 import 'card_models.dart';
 import 'card_service.dart';
@@ -86,7 +87,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     } catch (_) {}
   }
 
-  bool get _isPro => _quote.proStyles.contains(_spec.style.name);
+  bool get _isPro => _quote.isPro(_spec.style);
   bool get _hasMedia => _source.images.isNotEmpty;
   void _say(String t) {
     if (!mounted) return;
@@ -501,50 +502,141 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   // ── Onglet Style ──────────────────────────────────────────────────────────
 
-  Widget _stylePanel(AppColors c) {
-    Widget thumb(CardStyleId s) {
-      final on = _spec.style == s;
-      final pro = _quote.proStyles.contains(s.name);
-      final deco = switch (s) {
-        CardStyleId.kente => const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFF2B705), Color(0xFF1AA24E), Color(0xFFC8321E), Color(0xFF121212)], stops: [0, .35, .7, 1])),
-        CardStyleId.wax => const BoxDecoration(color: Color(0xFFE8590C), gradient: RadialGradient(colors: [Color(0xFFFFD43B), Color(0xFF0B7285), Color(0xFFC2255C), Color(0xFFE8590C)], stops: [.15, .4, .65, .9])),
-        CardStyleId.neon => BoxDecoration(color: const Color(0xFF04070A), border: Border.all(color: const Color(0xFF2ECC71), width: 2), boxShadow: const [BoxShadow(color: Color(0x662ECC71), blurRadius: 10)]),
-        CardStyleId.bogolan => const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFC98B4B), Color(0xFF3A200C), Color(0xFFC98B4B), Color(0xFF3A200C)], stops: [0, .35, .65, 1])),
-      };
-      return GestureDetector(
-        onTap: () => setState(() {
-          _spec.style = s;
-        }),
-        child: Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: Column(children: [
-            Container(
-              width: 64,
-              height: 80,
-              decoration: deco.copyWith(borderRadius: BorderRadius.circular(12), border: on ? Border.all(color: c.primary, width: 3) : deco.border),
-              child: Align(
+  late CardPack _pack = _spec.style.pack;
+
+  /// Mini-carte du style, dessinée par le vrai moteur (une pastille ne peut donc pas mentir sur le rendu).
+  Widget _thumb(AppColors c, CardStyleId s) {
+    final on = _spec.style == s;
+    final pro = _quote.isPro(s);
+    final sample = CardSource(pseudo: _source.pseudo, avatar: _source.avatar, verified: _source.verified, text: 'Ton texte ici', likes: 1200, comments: 86, country: _source.country, postId: _source.postId, profileId: _source.profileId, date: _source.date);
+    return GestureDetector(
+      onTap: () => setState(() => _spec.style = s),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Column(children: [
+          Container(
+            width: 70,
+            height: 88,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: on ? c.primary : Colors.transparent, width: 3)),
+            padding: const EdgeInsets.all(2),
+            child: Stack(fit: StackFit.expand, children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: IgnorePointer(child: FittedBox(fit: BoxFit.cover, alignment: Alignment.topCenter, child: CardCanvas(source: sample, spec: CardSpec(style: s, country: _spec.country, country2: _spec.country2, showFollowers: false), text: 'Ton texte ici'))),
+              ),
+              Align(
                 alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(color: pro ? c.accent : c.primary, borderRadius: BorderRadius.circular(5)),
-                    child: Text(pro ? '+${_quote.priceProStyle} 🪙' : tr('INCLUS'), style: TextStyle(color: pro ? const Color(0xFF1F1F1F) : c.onPrimary, fontSize: 8.5, fontWeight: FontWeight.w800)),
-                  ),
+                child: Container(
+                  margin: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(color: pro ? c.accent : c.primary, borderRadius: BorderRadius.circular(5)),
+                  child: Text(pro ? '+${_quote.priceProStyle} 🪙' : tr('INCLUS'), style: TextStyle(color: pro ? const Color(0xFF1F1F1F) : c.onPrimary, fontSize: 8.5, fontWeight: FontWeight.w800)),
                 ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(s.label, style: TextStyle(color: on ? c.primary : c.textSecondary, fontSize: 11, fontWeight: on ? FontWeight.w800 : FontWeight.w500)),
-          ]),
-        ),
-      );
-    }
+            ]),
+          ),
+          const SizedBox(height: 4),
+          Text(context.tr(s.label), style: TextStyle(color: on ? c.primary : c.textSecondary, fontSize: 11, fontWeight: on ? FontWeight.w800 : FontWeight.w500)),
+        ]),
+      ),
+    );
+  }
 
+  /// Choix du pays d'un style « drapeau » : feuille de recherche parmi tous les pays.
+  Future<void> _pickCountry({required bool second}) async {
+    final c = AppColors.of(context);
+    final all = CardFlags.all();
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (ctx) {
+        var q = '';
+        return StatefulBuilder(builder: (ctx, setM) {
+          final list = all.where((e) => e.name.toLowerCase().contains(q.toLowerCase()) || e.code.toLowerCase() == q.toLowerCase()).toList();
+          return SafeArea(
+            child: SizedBox(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                  child: TextField(
+                    autofocus: false,
+                    style: TextStyle(color: c.textPrimary),
+                    decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: ctx.tr('Chercher un pays'), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    onChanged: (v) => setM(() => q = v),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: list.length,
+                    itemBuilder: (_, i) => ListTile(
+                      leading: Container(width: 36, height: 24, clipBehavior: Clip.antiAlias, decoration: BoxDecoration(borderRadius: BorderRadius.circular(3), border: Border.all(color: c.border)), child: CardFlag(list[i].code)),
+                      title: Text(list[i].name, style: TextStyle(color: c.textPrimary)),
+                      onTap: () => Navigator.pop(ctx, list[i].code),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        });
+      },
+    );
+    if (chosen == null || !mounted) return;
+    await CardFlags.load(chosen);
+    setState(() {
+      if (second) {
+        _spec.country2 = chosen;
+      } else {
+        _spec.country = chosen;
+      }
+    });
+  }
+
+  Widget _countryRow(AppColors c) {
+    final flags = CardFlags.flagsOf(_source, _spec);
+    Widget chip(int i) => ActionChip(
+          avatar: Container(width: 26, height: 18, clipBehavior: Clip.antiAlias, decoration: BoxDecoration(borderRadius: BorderRadius.circular(2)), child: CardFlag(flags[i])),
+          label: Text(CardFlags.name(flags[i])),
+          onPressed: () => _pickCountry(second: i == 1),
+          visualDensity: VisualDensity.compact,
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Wrap(spacing: 6, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        Text(context.tr('Pays') + ' :', style: TextStyle(color: c.textSecondary, fontSize: 13)),
+        chip(0),
+        if (flags.length > 1) ...[Text('×', style: TextStyle(color: c.textSecondary)), chip(1)],
+      ]),
+    );
+  }
+
+  Widget _stylePanel(AppColors c) {
     Widget toggle(String label, bool v, ValueChanged<bool> f) => FilterChip(label: Text(label), selected: v, onSelected: (x) => setState(() => f(x)), visualDensity: VisualDensity.compact);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      SizedBox(height: 108, child: ListView(scrollDirection: Axis.horizontal, children: [for (final s in CardStyleId.values) thumb(s)])),
+      SizedBox(
+        height: 38,
+        child: ListView(scrollDirection: Axis.horizontal, children: [
+          for (final p in CardPack.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(label: Text(context.tr(p.label)), selected: _pack == p, onSelected: (_) => setState(() => _pack = p), visualDensity: VisualDensity.compact),
+            ),
+        ]),
+      ),
+      const SizedBox(height: 8),
+      SizedBox(height: 118, child: ListView(scrollDirection: Axis.horizontal, children: [for (final s in _pack.styles) _thumb(c, s)])),
+      if (_quote.promoFlagCountry != null && _pack == CardPack.drapeaux)
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(color: c.primary.withOpacity(0.14), borderRadius: BorderRadius.circular(10)),
+          child: Text('🎉 ${context.tr('C\'est la fête nationale : les styles drapeau sont offerts aujourd\'hui !')}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ),
+      if (_spec.style.usesFlag) _countryRow(c),
       Wrap(spacing: 8, children: [
         toggle(context.tr('Pseudo'), _spec.showAuthor, (v) => _spec.showAuthor = v),
         toggle(context.tr('J\'aime · commentaires'), _spec.showStats, (v) => _spec.showStats = v),

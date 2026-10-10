@@ -1,7 +1,7 @@
 jest.mock("../../shared/firebase", () => ({ db: {} }));
 jest.mock("../../payments/coinShares", () => ({ recordAppCommission: jest.fn() }));
 
-import { costOf, planOf, monthKey } from "../cards";
+import { costOf, planOf, monthKey, DEFAULT_PRO_STYLES, FREE_STYLES, isNationalDay, countryOf } from "../cards";
 
 const cfg = {
   enabled: true, priceCapture: 25, pricePublish: 10, priceProStyle: 20, priceProStyleGold: 10, passPrice: 400, passDays: 30, trialCards: 1,
@@ -66,4 +66,30 @@ describe("planOf", () => {
 it("la clé du mois est AAAAMM en UTC", () => {
   expect(monthKey(Date.parse("2026-10-31T23:59:59Z"))).toBe("202610");
   expect(monthKey(Date.parse("2026-11-01T00:00:00Z"))).toBe("202611");
+});
+
+describe("styles Pro par défaut", () => {
+  it("les styles gratuits ne sont jamais Pro, tous les autres le sont", () => {
+    expect(FREE_STYLES.sort()).toEqual(["glass", "kente", "neon", "pro", "wax"]);
+    expect(DEFAULT_PRO_STYLES).toHaveLength(21);
+    expect(DEFAULT_PRO_STYLES).toContain("bogolan");
+    expect(DEFAULT_PRO_STYLES).toContain("tarot");
+    for (const f of FREE_STYLES) expect(DEFAULT_PRO_STYLES).not.toContain(f);
+  });
+});
+
+describe("fête nationale", () => {
+  it("le 27 avril (UTC) est la fête du Togo, pas du Sénégal", () => {
+    const d = Date.UTC(2027, 3, 27, 10, 0, 0);
+    expect(isNationalDay("TG", d)).toBe(true);
+    expect(isNationalDay("tg", d)).toBe(true);
+    expect(isNationalDay("SN", d)).toBe(false);
+    expect(isNationalDay(null, d)).toBe(false);
+    expect(isNationalDay("XX", d)).toBe(false);
+  });
+  it("lit le pays du profil", () => {
+    expect(countryOf({ countryData: { countryCode: "sn" } })).toBe("SN");
+    expect(countryOf({})).toBeNull();
+    expect(countryOf({ countryData: { countryCode: "SEN" } })).toBeNull();
+  });
 });

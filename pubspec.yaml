@@ -82,6 +82,7 @@ dependencies:
   comment_tree: ^0.3.0
   csc_picker_plus: ^0.0.3
   country_flags: ^3.2.0
+  jovial_svg: ^1.1.28  # dessin des drapeaux du Studio Cartes (déjà utilisé par country_flags)
   country_code_picker: ^3.1.0
   palette_generator: ^0.3.3+6
   path_provider: ^2.0.15  # vérifie la dernière version
@@ -357,7 +358,7 @@ flutter:
           style: italic
         - asset: assets/fonts/contes/CrimsonText-SemiBold.ttf
           weight: 600
-    # Studio Cartes (licence SIL OFL : voir assets/fonts/cartes/OFL-*.txt)
+    # Studio Cartes (licence SIL OFL : voir assets/fonts/cartes/OFL-*.txt ; Permanent Marker : Apache 2.0, voir LICENSE-permanentmarker-apache2.txt)
     - family: Righteous
       fonts:
         - asset: assets/fonts/cartes/Righteous-Regular.ttf
@@ -369,6 +370,27 @@ flutter:
         - asset: assets/fonts/cartes/Arvo-Regular.ttf
         - asset: assets/fonts/cartes/Arvo-Bold.ttf
           weight: 700
+    - family: Anton
+      fonts:
+        - asset: assets/fonts/cartes/Anton-Regular.ttf
+    - family: Bangers
+      fonts:
+        - asset: assets/fonts/cartes/Bangers-Regular.ttf
+    - family: PermanentMarker
+      fonts:
+        - asset: assets/fonts/cartes/PermanentMarker-Regular.ttf
+    - family: PressStart2P
+      fonts:
+        - asset: assets/fonts/cartes/PressStart2P-Regular.ttf
+    - family: Rajdhani
+      fonts:
+        - asset: assets/fonts/cartes/Rajdhani-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/cartes/Rajdhani-Bold.ttf
+          weight: 700
+    - family: AbrilFatface
+      fonts:
+        - asset: assets/fonts/cartes/AbrilFatface-Regular.ttf
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

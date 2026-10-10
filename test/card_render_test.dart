@@ -15,6 +15,13 @@ Future<void> loadFonts() async {
     'Righteous': ['assets/fonts/cartes/Righteous-Regular.ttf'],
     'Audiowide': ['assets/fonts/cartes/Audiowide-Regular.ttf'],
     'Arvo': ['assets/fonts/cartes/Arvo-Regular.ttf', 'assets/fonts/cartes/Arvo-Bold.ttf'],
+    'Anton': ['assets/fonts/cartes/Anton-Regular.ttf'],
+    'Bangers': ['assets/fonts/cartes/Bangers-Regular.ttf'],
+    'PermanentMarker': ['assets/fonts/cartes/PermanentMarker-Regular.ttf'],
+    'PressStart2P': ['assets/fonts/cartes/PressStart2P-Regular.ttf'],
+    'Rajdhani': ['assets/fonts/cartes/Rajdhani-SemiBold.ttf', 'assets/fonts/cartes/Rajdhani-Bold.ttf'],
+    'AbrilFatface': ['assets/fonts/cartes/AbrilFatface-Regular.ttf'],
+    'CinzelDecorative': ['assets/fonts/contes/CinzelDecorative-Bold.ttf'],
   };
   // Roboto et les icônes Material : fournies avec le SDK Flutter (FLUTTER_FONTS = dossier material_fonts)
   final dir = Platform.environment['FLUTTER_FONTS'];
@@ -78,6 +85,24 @@ void main() {
   setUpAll(loadFonts);
 
   for (final style in CardStyleId.values) {
+    testWidgets('style ${style.name} : portrait image, texte seul, story, carré, 3 images, abonnés', (tester) async {
+      final cases = <String, (CardSource, CardSpec)>{
+        'p_img': (source(images: 1), CardSpec(style: style, showFollowers: true)),
+        'p_txt': (source(images: 0), CardSpec(style: style)),
+        'p_long': (source(text: _longText, images: 1), CardSpec(style: style)),
+        's_img': (source(images: 1), CardSpec(style: style, format: CardFormat.story, showFollowers: true)),
+        'q_img': (source(images: 1), CardSpec(style: style, format: CardFormat.square)),
+        'p_3img': (source(images: 3), CardSpec(style: style, layout: CardLayout.mosaic, imageOrder: [0, 1, 2])),
+      };
+      for (final e in cases.entries) {
+        final png = await render(tester, e.value.$1, e.value.$2);
+        expect(png.length > 15000, true, reason: '${style.name} ${e.key}');
+        if (out != null) File('$out/st_${style.name}_${e.key}.png').writeAsBytesSync(png);
+      }
+    });
+  }
+
+  for (final style in CardStyleId.values.take(4)) {
     testWidgets('carte ${style.name} : texte + image, portrait', (tester) async {
       final png = await render(tester, source(images: 1), CardSpec(style: style));
       expect(png.length > 20000, true);

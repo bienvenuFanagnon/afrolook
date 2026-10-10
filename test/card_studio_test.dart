@@ -50,8 +50,15 @@ void main() {
     await t.pump(const Duration(milliseconds: 400));
     await t.tap(find.text('Style'));
     await t.pump();
-    expect(find.text('INCLUS'), findsNWidgets(3));
-    expect(find.text('+20 🪙'), findsOneWidget);
+    // familles : Moderne, Drapeaux, Idées, Héritage
+    expect(find.text('Moderne'), findsOneWidget);
+    expect(find.text('Drapeaux'), findsOneWidget);
+    await t.drag(find.text('Moderne'), const Offset(-300, 0));
+    await t.pump();
+    await t.tap(find.text('Héritage'));
+    await t.pump();
+    expect(find.text('INCLUS'), findsNWidgets(2)); // Kente et Wax
+    expect(find.text('+20 🪙'), findsOneWidget); // Bogolan
     await t.tap(find.text('Bogolan'));
     await t.pump();
     await t.tap(find.text('Format'));
@@ -79,6 +86,27 @@ void main() {
     await t.pump(const Duration(milliseconds: 400));
     expect(find.text('Utiliser cette carte'), findsOneWidget);
     expect(find.text('Enregistrer'), findsNothing);
+  });
+
+  testWidgets('un style drapeau propose le choix du pays (celui de l\'auteur par défaut)', (t) async {
+    await bigScreen(t);
+    await t.pumpWidget(app(CardStudioPage(source: CardDemo.post())));
+    await t.pump(const Duration(milliseconds: 400));
+    await t.tap(find.text('Style'));
+    await t.pump();
+    expect(find.textContaining('Pays'), findsNothing);
+    await t.tap(find.text('Drapeaux'));
+    await t.pump();
+    await t.tap(find.text('Passeport'));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.textContaining('Pays'), findsOneWidget);
+    expect(find.text('Sénégal'), findsWidgets);
+    // le style Duo demande deux pays
+    await t.ensureVisible(find.text('Duo'));
+    await t.pump();
+    await t.tap(find.text('Duo'));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('France'), findsWidgets);
   });
 
   testWidgets('le tutoriel se parcourt jusqu\'au bout', (t) async {

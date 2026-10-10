@@ -40,6 +40,36 @@ interface CardsConfig {
   proStyles: string[];
 }
 
+/** Styles gratuits : tous les autres sont « Pro ». Reflète `CardStyleIdX.freeStyles` de l'application. */
+export const FREE_STYLES = ["kente", "wax", "neon", "glass", "pro"];
+const ALL_STYLES = [
+  "kente", "wax", "neon", "bogolan", "glass", "pro", "manga", "anime", "magazine", "collector", "sport", "gamer", "y2k", "street",
+  "flag", "passport", "stamp", "supporter", "duo", "pride", "film", "newspaper", "music", "boarding", "tarot", "quote",
+];
+export const DEFAULT_PRO_STYLES = ALL_STYLES.filter((s) => !FREE_STYLES.includes(s));
+
+/**
+ * Fêtes nationales [mois, jour] : ce jour-là, les styles « drapeau » sont offerts aux personnes de ce pays
+ * (voir `promo` dans `cardQuote`). Une entrée manquante ou fausse ne fait que supprimer la promotion.
+ */
+export const NATIONAL_DAYS: Record<string, [number, number]> = {
+  DZ: [7, 5], AO: [11, 11], BJ: [8, 1], BW: [9, 30], BF: [12, 11], BI: [7, 1], CV: [7, 5], CM: [5, 20], CF: [12, 1], TD: [8, 11],
+  KM: [7, 6], CG: [8, 15], CD: [6, 30], CI: [8, 7], DJ: [6, 27], EG: [7, 23], GQ: [10, 12], ER: [5, 24], SZ: [9, 6], GA: [8, 17],
+  GM: [2, 18], GH: [3, 6], GN: [10, 2], GW: [9, 24], KE: [12, 12], LS: [10, 4], LR: [7, 26], LY: [12, 24], MG: [6, 26], MW: [7, 6],
+  ML: [9, 22], MR: [11, 28], MU: [3, 12], MA: [7, 30], MZ: [6, 25], NA: [3, 21], NE: [8, 3], NG: [10, 1], RW: [7, 1], ST: [7, 12],
+  SN: [4, 4], SC: [6, 29], SL: [4, 27], SO: [7, 1], ZA: [4, 27], SS: [7, 9], TZ: [12, 9], TG: [4, 27], TN: [3, 20], UG: [10, 9],
+  ZM: [10, 24], ZW: [4, 18],
+  FR: [7, 14], BE: [7, 21], CA: [7, 1], US: [7, 4], BR: [9, 7], DE: [10, 3], IT: [6, 2], CH: [8, 1], HT: [1, 1], JM: [8, 6],
+};
+
+/** Est-ce aujourd'hui (date UTC) la fête nationale de ce pays ? */
+export function isNationalDay(country: unknown, now: number): boolean {
+  const d = typeof country === "string" ? NATIONAL_DAYS[country.toUpperCase()] : undefined;
+  if (!d) return false;
+  const t = new Date(now);
+  return t.getUTCMonth() + 1 === d[0] && t.getUTCDate() === d[1];
+}
+
 let cache: { at: number; cfg: CardsConfig } | null = null;
 export async function loadCardsConfig(): Promise<CardsConfig> {
   if (cache && Date.now() - cache.at < 60000) return cache.cfg;
@@ -60,10 +90,16 @@ export async function loadCardsConfig(): Promise<CardsConfig> {
       premium: { captures: quota("premium", "captures", 2), publishes: quota("premium", "publishes", 3) },
       gold: { captures: quota("gold", "captures", 5), publishes: quota("gold", "publishes", 20) },
     },
-    proStyles: Array.isArray(d["proStyles"]) ? (d["proStyles"] as unknown[]).map(String) : ["bogolan"],
+    proStyles: Array.isArray(d["proStyles"]) ? (d["proStyles"] as unknown[]).map(String) : DEFAULT_PRO_STYLES,
   };
   cache = { at: Date.now(), cfg };
   return cfg;
+}
+
+/** Code pays (ISO 2 lettres) du profil, ou null. */
+export function countryOf(u: FirebaseFirestore.DocumentData): string | null {
+  const c = (u["countryData"] ?? {}) as { countryCode?: unknown };
+  return typeof c.countryCode === "string" && c.countryCode.length === 2 ? c.countryCode.toUpperCase() : null;
 }
 
 /** Plan payant actif : le Premium obtenu en regardant des pubs ne compte pas (il n'ouvre aucun quota). */
@@ -138,6 +174,8 @@ export const cardQuote = onCall({ timeoutSeconds: 15, maxInstances: 10 }, async 
     month: { captures: s.used.captures, publishes: s.used.publishes, capturesMax: limits.captures, publishesMax: limits.publishes },
     prices: { capture: cfg.priceCapture, publish: cfg.pricePublish, proStyle: s.plan === "gold" ? cfg.priceProStyleGold : cfg.priceProStyle, pass: cfg.passPrice, passDays: cfg.passDays },
     proStyles: cfg.proStyles,
+    // fête nationale du pays de la personne : styles « drapeau » offerts aujourd'hui
+    promo: isNationalDay(countryOf(us.data()!), now) ? { flagFree: true, country: countryOf(us.data()!) } : null,
     options: {
       capture: { base: costOf("capture", false, s, cfg), pro: costOf("capture", true, s, cfg) },
       publish: { base: costOf("publish", false, s, cfg), pro: costOf("publish", true, s, cfg) },
