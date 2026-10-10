@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../coins/coin_recharge_screen.dart';
 import 'card_canvas.dart';
+import 'card_events.dart';
 import 'card_export.dart';
 import 'card_flags.dart';
 import 'card_flow.dart';
@@ -26,12 +27,16 @@ import 'card_tutorial_page.dart';
 /// - [compose] = true : on part d'un brouillon (page de création de post) ; l'écran se ferme en renvoyant un
 ///   [CardResult] que la page de création publie ensuite avec les règles des posts.
 class CardStudioPage extends StatefulWidget {
-  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId});
+  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.initialStyle, this.initialCountry});
 
   final CardSource source;
   final bool compose;
   final Canal? canal;
   final String? defiPostId;
+
+  /// Style et pays proposés au départ (invitation d'une fête) ; par défaut Néon et le pays de l'auteur.
+  final CardStyleId? initialStyle;
+  final String? initialCountry;
 
   @override
   State<CardStudioPage> createState() => _CardStudioPageState();
@@ -56,7 +61,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
   void initState() {
     super.initState();
     _spec = CardSpec(
-      style: CardStyleId.neon,
+      style: widget.initialStyle ?? CardStyleId.neon,
+      country: widget.initialCountry,
       format: CardFormat.portrait,
       imageOrder: List<int>.generate(_source.images.length.clamp(0, 3), (i) => i),
     );
@@ -87,7 +93,19 @@ class _CardStudioPageState extends State<CardStudioPage> {
     } catch (_) {}
   }
 
-  bool get _isPro => _quote.isPro(_spec.style);
+  /// Fête nationale du pays de la personne (date locale du téléphone) : les styles drapeau sont offerts.
+  late final bool _flagFreeToday = CardEvents.nationalDayCountry(_source.country ?? _meCountry(), DateTime.now()) != null;
+
+  String? _meCountry() {
+    try {
+      return context.read<UserAuthProvider>().loginUserData.countryData?['countryCode'];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _styleIsPro(CardStyleId s) => _quote.isPro(s) && !(_flagFreeToday && s.usesFlag);
+  bool get _isPro => _styleIsPro(_spec.style);
   bool get _hasMedia => _source.images.isNotEmpty;
   void _say(String t) {
     if (!mounted) return;
@@ -507,7 +525,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
   /// Mini-carte du style, dessinée par le vrai moteur (une pastille ne peut donc pas mentir sur le rendu).
   Widget _thumb(AppColors c, CardStyleId s) {
     final on = _spec.style == s;
-    final pro = _quote.isPro(s);
+    final pro = _styleIsPro(s);
     final sample = CardSource(pseudo: _source.pseudo, avatar: _source.avatar, verified: _source.verified, text: 'Ton texte ici', likes: 1200, comments: 86, country: _source.country, postId: _source.postId, profileId: _source.profileId, date: _source.date);
     return GestureDetector(
       onTap: () => setState(() => _spec.style = s),
@@ -629,7 +647,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
       ),
       const SizedBox(height: 8),
       SizedBox(height: 118, child: ListView(scrollDirection: Axis.horizontal, children: [for (final s in _pack.styles) _thumb(c, s)])),
-      if (_quote.promoFlagCountry != null && _pack == CardPack.drapeaux)
+      if ((_quote.promoFlagCountry != null || _flagFreeToday) && _pack == CardPack.drapeaux)
         Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

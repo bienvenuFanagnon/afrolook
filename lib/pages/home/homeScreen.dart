@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/cards/card_events.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/utils/platform_guard.dart';
@@ -1032,6 +1033,11 @@ class _MyHomePageState extends State<MyHomePage>
 
       // Mise à jour silencieuse du pays en arrière-plan (max 1x/mois)
       _checkAndUpdateCountryMonthly();
+
+      // Fête nationale, fête de l'Afrique, Noël, Nouvel An… : invitation à créer une carte (une fois par fête)
+      Future.delayed(const Duration(seconds: 9), () {
+        if (mounted) CardEvents.maybeShow(context);
+      });
 
       // Préchargement des groupes Gold/officiels pour la liste des groupes
       context.read<GoldGroupsProvider>().load();
