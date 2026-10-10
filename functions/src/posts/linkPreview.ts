@@ -5,6 +5,7 @@ import { isIP } from "net";
 import { getStorage } from "firebase-admin/storage";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { tierOf } from "../stickers/stickers";
 
 /**
  * Aperçu d'un lien collé dans un post texte (YouTube, TikTok, Instagram, Facebook, sites web) : titre, description,
@@ -12,7 +13,7 @@ import { db } from "../shared/firebase";
  *  - uniquement http(s), jamais d'adresse interne (protection contre l'accès au réseau de Google),
  *  - redirections suivies à la main, taille et durée limitées,
  *  - l'image est recopiée dans Firebase Storage (les images de TikTok / Instagram expirent),
- *  - une petite limite par personne et par heure.
+ *  - réservé aux membres Gold (contrôlé ici), avec une petite limite par personne et par heure.
  */
 
 export interface LinkPreview {
@@ -220,6 +221,9 @@ export async function buildPreview(rawUrl: string): Promise<LinkPreview | null> 
 export const fetchLinkPreview = onCall({ region: "us-central1", timeoutSeconds: 30, memory: "256MiB", maxInstances: 10 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
+  // Réservé aux membres Gold (et à l'administrateur) : le contrôle est ici, pas seulement dans l'application.
+  const userDoc = await db.collection("Users").doc(uid).get();
+  if (tierOf(userDoc.data()) !== "gold") throw new HttpsError("permission-denied", "Réservé aux membres Gold.");
   const url = firstUrl(String(request.data?.url ?? "")) ?? "";
   if (!url || url.length > 600) throw new HttpsError("invalid-argument", "Lien invalide.");
 

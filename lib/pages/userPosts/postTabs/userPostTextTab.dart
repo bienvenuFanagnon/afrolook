@@ -263,8 +263,62 @@ class _UserPubTextState extends State<UserPubText> {
     }
   }
 
+  /// Aperçu de lien : réservé aux membres Gold (et à l'administrateur de l'application).
+  bool get _canLinkPreview => authProvider.loginUserData.role == 'ADM' || AbonnementUtils.isGold(authProvider.loginUserData.abonnement);
+
+  void _showLinkGoldModal() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFB300), size: 36),
+        title: const Text('Réservé aux membres Gold'),
+        content: const Text('Avec Gold, tes liens YouTube, TikTok, Instagram ou Facebook s\'affichent avec leur image et leur description, comme sur un statut WhatsApp.', textAlign: TextAlign.center),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Plus tard')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen()));
+            },
+            child: const Text('Découvrir Gold'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Case à cocher + aperçu du lien dans le formulaire.
   Widget _buildLinkPreviewOption() {
+    if (!_canLinkPreview) {
+      return GestureDetector(
+        onTap: _showLinkGoldModal,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(color: _c.primary.withOpacity(0.04), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
+          child: Row(children: [
+            Icon(Icons.link_rounded, color: _c.textSecondary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Afficher l\'aperçu d\'un lien', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+                const SizedBox(height: 2),
+                Text('YouTube, TikTok, Instagram… avec image et description', style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
+              ]),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: const Color(0xFFFFB300), borderRadius: BorderRadius.circular(8)),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.lock_rounded, size: 13, color: Colors.black87),
+                SizedBox(width: 3),
+                Text('GOLD', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w800, fontSize: 11)),
+              ]),
+            ),
+          ]),
+        ),
+      );
+    }
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
@@ -1822,7 +1876,7 @@ class _UserPubTextState extends State<UserPubText> {
         post.id = postId;
         post.images = [];
         // aperçu du lien : seulement si l'option est cochée et que le lien est toujours dans le texte
-        if (_linkOn && _linkPreview != null && _linkUrl != null && _linkUrl == firstLinkIn(post.description)) {
+        if (_canLinkPreview && _linkOn && _linkPreview != null && _linkUrl != null && _linkUrl == firstLinkIn(post.description)) {
           post.linkPreview = _linkPreview;
         }
 

@@ -5,6 +5,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/tr.dart';
+
 /// Première adresse web d'un texte (sans la ponctuation finale), ou null.
 String? firstLinkIn(String? text) {
   final m = RegExp(r'https?://[^\s<>"\x27]+', caseSensitive: false).firstMatch(text ?? '');
@@ -40,9 +42,28 @@ class LinkPreviewCard extends StatelessWidget {
 
   String _s(String k) => (data[k] ?? '').toString();
 
-  Future<void> _open() async {
+  /// Un appui demande confirmation : le lien s'ouvre hors d'Afrolook (navigateur ou application du site : YouTube, TikTok…).
+  Future<void> _open(BuildContext context) async {
     final u = Uri.tryParse(_s('url'));
     if (u == null || !(u.scheme == 'http' || u.scheme == 'https')) return;
+    final site = _s('siteName').isNotEmpty ? _s('siteName') : u.host.replaceFirst('www.', '');
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.open_in_new_rounded),
+        title: Text(ctx.tr('Quitter Afrolook ?')),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(ctx.tr('Tu vas être dirigé vers une autre application ou ton navigateur pour ouvrir ce lien ({site}).', {'site': site}), textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          Text(u.host.replaceFirst('www.', ''), textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Continuer'))),
+        ],
+      ),
+    );
+    if (go != true) return;
     try {
       await launchUrl(u, mode: LaunchMode.externalApplication);
     } catch (_) {}
@@ -66,7 +87,7 @@ class LinkPreviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: _open,
+          onTap: () => _open(context),
           child: Stack(children: [
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (image.isNotEmpty)

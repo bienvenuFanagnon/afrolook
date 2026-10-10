@@ -28,6 +28,20 @@ void main() {
     expect(removed, true);
   });
 
+  testWidgets('un appui demande confirmation avant de quitter Afrolook', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: LinkPreviewCard(data: {'url': 'https://www.tiktok.com/@a/video/1', 'title': 'Une vidéo', 'siteName': 'TikTok', 'isVideo': true})),
+    ));
+    await tester.tap(find.text('Une vidéo'));
+    await tester.pumpAndSettle();
+    // la fenêtre de confirmation s'affiche (texte traduit selon la langue du téléphone) et annuler la ferme
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('tiktok.com'), findsWidgets);
+    await tester.tap(find.byType(TextButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
   testWidgets('un lien qui n\'est pas http(s) n\'affiche rien', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: LinkPreviewCard(data: {'url': 'javascript:alert(1)', 'title': 'x'}))));
     expect(find.text('x'), findsNothing);

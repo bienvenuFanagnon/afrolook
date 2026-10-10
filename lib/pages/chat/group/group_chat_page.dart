@@ -1,7 +1,10 @@
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
+import 'dart:async';
 import 'dart:math';
+import 'package:afrotok/widgets/link_preview_card.dart';
+import 'package:afrotok/services/utils/abonnement_utils.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -61,6 +64,13 @@ class GroupChatPage extends StatefulWidget {
 class _GroupChatPageState extends State<GroupChatPage> {
   late AppColors _colors;
   late UserAuthProvider _auth;
+
+  // ── Aperçu de lien (groupes officiels, membres Gold) ──
+  Map<String, dynamic>? _lp;
+  String? _lpUrl;
+  String? _lpDismissed; // lien dont la personne a retiré l'aperçu
+  bool _lpLoading = false;
+  Timer? _lpTimer;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _textController = TextEditingController();
@@ -147,16 +157,74 @@ class _GroupChatPageState extends State<GroupChatPage> {
     super.initState();
     _auth = Provider.of<UserAuthProvider>(context, listen: false);
     _scrollController.addListener(_onScrollBtn);
+    _textController.addListener(_onTextForLink);
     _loadGroup();
     _subscribeMessages();
   }
 
   @override
   void dispose() {
+    _lpTimer?.cancel();
+    _textController.removeListener(_onTextForLink);
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  // ─── APERÇU DE LIEN ──────────────────────────────────────────────────────────
+
+  /// Réservé aux groupes officiels, et aux membres Gold (ou à l'administrateur de l'application).
+  bool get _canLinkPreview => _isOfficialGroup && (_isAppAdmin || AbonnementUtils.isGold(_auth.loginUserData.abonnement));
+
+  void _clearLinkPreview() {
+    _lpTimer?.cancel();
+    _lp = null;
+    _lpUrl = null;
+    _lpLoading = false;
+  }
+
+  void _onTextForLink() {
+    if (!_canLinkPreview) return;
+    final url = firstLinkIn(_textController.text);
+    if (url == null) {
+      if (_lp != null || _lpLoading || _lpUrl != null) setState(_clearLinkPreview);
+      _lpDismissed = null;
+      return;
+    }
+    if (url == _lpUrl || url == _lpDismissed) return;
+    _lpTimer?.cancel();
+    _lpTimer = Timer(const Duration(milliseconds: 700), () => _loadLinkPreview(url));
+  }
+
+  Future<void> _loadLinkPreview(String url) async {
+    if (!mounted) return;
+    setState(() { _lpUrl = url; _lpLoading = true; _lp = null; });
+    try {
+      final p = await LinkPreviewService.fetch(url);
+      if (!mounted || _lpUrl != url) return;
+      setState(() { _lp = p; _lpLoading = false; });
+    } catch (_) {
+      if (!mounted || _lpUrl != url) return;
+      setState(() => _lpLoading = false);
+    }
+  }
+
+  /// Aperçu du lien au-dessus de la zone de saisie, comme sur WhatsApp.
+  Widget _buildLinkPreviewStrip() {
+    if (!_canLinkPreview || (_lp == null && !_lpLoading)) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      color: _colors.surface,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+      child: _lp != null
+          ? LinkPreviewCard(data: _lp!, onRemove: () => setState(() { _lpDismissed = _lpUrl; _clearLinkPreview(); }))
+          : Row(children: [
+              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _colors.primary)),
+              const SizedBox(width: 10),
+              Text('Chargement de l\'aperçu…', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+            ]),
+    );
   }
 
   // ─── CHARGEMENT ──────────────────────────────────────────────────────────────
@@ -908,8 +976,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final myId = _auth.loginUserData.id!;
     if (!_isAppAdmin && !_isMember(myId)) return;
 
+    // aperçu du lien : seulement s'il correspond toujours au lien du texte envoyé
+    final linkPreview = (_canLinkPreview && _lp != null && _lpUrl == firstLinkIn(text)) ? _lp : null;
     setState(() => _isSending = true);
     _textController.clear();
+    _clearLinkPreview();
+    _lpDismissed = null;
     _lastSentAt = DateTime.now().millisecondsSinceEpoch;
 
     final replySnapshot = _replyingToMsg;
@@ -927,6 +999,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'sender_image': _senderImage,
         'message': text,
         'message_type': 'text',
+        if (linkPreview != null) 'link_preview': linkPreview,
         'is_valide': true,
         'is_deleted': false,
         'is_encrypted': false,
@@ -3040,6 +3113,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         ),
                       ),
 
+                    // Aperçu du lien joint (groupes officiels, messages Gold)
+                    if (!isDeleted && type == 'text' && msg['link_preview'] is Map)
+                      LinkPreviewCard(
+                        data: Map<String, dynamic>.from(msg['link_preview'] as Map),
+                        margin: const EdgeInsets.only(top: 8),
+                      ),
+
                     // Heure + vues (messages envoyés par moi)
                     const SizedBox(height: 3),
                     GestureDetector(
@@ -3889,6 +3969,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
         children: [
           // Banniere reponse
           if (_replyingToMsg != null) _buildReplyBanner(),
+
+          // Aperçu du lien collé (Gold, groupes officiels)
+          _buildLinkPreviewStrip(),
 
           // Indicateur message invisible actif
           if (_sendHidden)
