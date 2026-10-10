@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart' show IconData, Icons;
 import 'package:flutter/widgets.dart';
 
 /// Les styles de carte. Kente, Wax, Néon, Glass et Pro sont inclus ; tous les autres sont des styles « Pro »
@@ -282,6 +283,72 @@ class CardSource {
       );
 }
 
+/// Modèles de carte : un formulaire à remplir (événement, promo, annonce, citation) au lieu d'un texte libre.
+/// La carte garde le style choisi (couleurs, fond, police) ; la mise en page est celle d'une affiche.
+enum CardTemplateId { event, promo, ad, quote }
+
+/// Un champ d'un modèle : [key] est la clé stockée dans [CardSpec.fields] ; [example] pré-remplit le champ.
+class TemplateField {
+  const TemplateField(this.key, this.label, this.example, this.icon, {this.max = 60, this.lines = 1, this.main = false});
+  final String key;
+  final String label;
+  final String example;
+  final IconData icon;
+  final int max;
+  final int lines;
+
+  /// Champ principal (titre, citation) : mis en grand sur la carte.
+  final bool main;
+}
+
+extension CardTemplateX on CardTemplateId {
+  String get label => switch (this) {
+        CardTemplateId.event => 'Événement',
+        CardTemplateId.promo => 'Promo',
+        CardTemplateId.ad => 'Annonce',
+        CardTemplateId.quote => 'Citation',
+      };
+
+  IconData get icon => switch (this) {
+        CardTemplateId.event => Icons.celebration_rounded,
+        CardTemplateId.promo => Icons.local_offer_rounded,
+        CardTemplateId.ad => Icons.campaign_rounded,
+        CardTemplateId.quote => Icons.format_quote_rounded,
+      };
+
+  /// Champs du modèle, dans l'ordre d'affichage. Le premier est le champ principal.
+  List<TemplateField> get fields => switch (this) {
+        CardTemplateId.event => const [
+            TemplateField('title', 'Titre', 'Soirée Afrobeats', Icons.title_rounded, main: true),
+            TemplateField('date', 'Date et heure', 'Samedi 25 oct. · 20h', Icons.event_rounded),
+            TemplateField('place', 'Lieu', 'Abidjan, Cocody', Icons.place_rounded),
+            TemplateField('price', 'Prix ou entrée', 'Entrée 5 000 FCFA', Icons.payments_rounded),
+            TemplateField('contact', 'Contact', '+225 07 00 00 00 00', Icons.phone_rounded),
+          ],
+        CardTemplateId.promo => const [
+            TemplateField('title', 'Titre', 'Grande vente de la rentrée', Icons.title_rounded, main: true),
+            TemplateField('offer', 'Offre', '-30 %', Icons.local_offer_rounded, max: 24),
+            TemplateField('date', 'Valable jusqu\'au', 'Jusqu\'au 31 oct.', Icons.event_rounded),
+            TemplateField('place', 'Lieu', 'Boutique Afro Style, Dakar', Icons.place_rounded),
+            TemplateField('contact', 'Contact', '+221 77 000 00 00', Icons.phone_rounded),
+          ],
+        CardTemplateId.ad => const [
+            TemplateField('title', 'Titre', 'Appartement à louer', Icons.title_rounded, main: true),
+            TemplateField('price', 'Prix', '150 000 FCFA / mois', Icons.payments_rounded),
+            TemplateField('place', 'Lieu', 'Douala, Bonamoussadi', Icons.place_rounded),
+            TemplateField('details', 'Détails', '2 chambres, salon, cuisine, eau et courant.', Icons.notes_rounded, max: 140, lines: 3),
+            TemplateField('contact', 'Contact', '+237 6 00 00 00 00', Icons.phone_rounded),
+          ],
+        CardTemplateId.quote => const [
+            TemplateField('quote', 'Citation', 'Seul, on va vite. Ensemble, on va loin.', Icons.format_quote_rounded, max: 180, lines: 3, main: true),
+            TemplateField('author', 'Auteur', 'Proverbe africain', Icons.person_rounded, max: 50),
+          ],
+      };
+
+  /// Le champ « lien » facultatif (le QR code l'ouvre) est commun à tous les modèles sauf la citation.
+  bool get hasLink => this != CardTemplateId.quote;
+}
+
 /// Les réglages choisis dans le studio.
 /// Cadrage d'une image sur la carte : zoom (1 = l'image entière) et décalage en fraction de la taille du cadre.
 class ImageAdjust {
@@ -323,6 +390,7 @@ class CardSpec {
     this.likesText,
     this.commentsText,
     this.followersText,
+    this.template,
   })  : imageOrder = imageOrder ?? <int>[],
         pickedSentences = pickedSentences ?? <int>{};
 
@@ -355,6 +423,32 @@ class CardSpec {
 
   /// Cadrage de chaque image (clé : indice dans [CardSource.images]) ; absent = image entière, centrée.
   final Map<int, ImageAdjust> adjusts = {};
+
+  /// Modèle de carte choisi (null : texte libre) et valeurs de ses champs.
+  CardTemplateId? template;
+  final Map<String, String> fields = {};
+
+  String field(String key) => (fields[key] ?? '').trim();
+
+  /// Lien du QR code : le lien du modèle s'il est valide, sinon celui de la source (post, profil, vidéo d'origine…).
+  String linkFor(CardSource source) {
+    if (template != null && template!.hasLink) {
+      var l = field('link');
+      if (l.isNotEmpty) {
+        if (!RegExp(r'^[a-z][a-z0-9+.-]*://', caseSensitive: false).hasMatch(l)) l = 'https://$l';
+        final u = Uri.tryParse(l);
+        if (u != null && (u.scheme == 'http' || u.scheme == 'https') && u.host.contains('.')) return l;
+      }
+    }
+    return source.link;
+  }
+
+  /// Résumé en une ligne par champ (légende de la publication quand la carte vient d'un modèle).
+  String templateSummary() {
+    if (template == null) return '';
+    final parts = <String>[for (final f in template!.fields) if (field(f.key).isNotEmpty) field(f.key)];
+    return parts.join(' · ');
+  }
 
   static String? _clean(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
   String? get likesOverride => _clean(likesText);

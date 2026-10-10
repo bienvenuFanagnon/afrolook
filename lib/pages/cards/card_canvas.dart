@@ -12,6 +12,7 @@ import 'card_text.dart';
 part 'card_layouts.dart';
 part 'card_looks.dart';
 part 'card_painters.dart';
+part 'card_templates.dart';
 
 const _green = Color(0xFF2ECC71);
 const _yellow = Color(0xFFFFE14D);
@@ -71,9 +72,11 @@ class CardCanvas extends StatelessWidget {
         truncated: cut.truncated,
         images: selected,
         tags: tags);
-    final content = theme.look.layout != null
-        ? theme.look.layout!(args)
-        : _Content(args: args);
+    final content = spec.template != null
+        ? _TemplateContent(args: args)
+        : theme.look.layout != null
+            ? theme.look.layout!(args)
+            : _Content(args: args);
 
     // la carte est une image : elle ne suit pas la taille de texte choisie dans les réglages du téléphone
     return MediaQuery(
@@ -293,7 +296,7 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final link = source.link;
+    final link = spec.linkFor(source);
     return SizedBox(
       height: 40,
       child: Row(children: [

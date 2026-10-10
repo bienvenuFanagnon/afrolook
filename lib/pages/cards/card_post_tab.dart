@@ -58,7 +58,18 @@ class UserPostCardTab extends StatelessWidget {
             label: Text(context.tr('Carte à partir d\'un lien'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 14),
+        Align(alignment: Alignment.centerLeft, child: Text(context.tr('Ou commence par un modèle'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5))),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final m in CardTemplateId.values)
+            ActionChip(
+              avatar: Icon(m.icon, size: 18),
+              label: Text(context.tr(m.label), style: const TextStyle(fontWeight: FontWeight.w700)),
+              onPressed: () => CardEntry.openCompose(context, canal: canal, defiPostId: defiPostId, template: m),
+            ),
+        ]),
+        const SizedBox(height: 6),
         TextButton.icon(
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CardTutorialPage())),
           icon: const Icon(Icons.play_circle_outline_rounded, size: 20),

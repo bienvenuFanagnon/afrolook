@@ -216,6 +216,42 @@ void main() {
     }
   }, timeout: const Timeout(Duration(minutes: 5)));
 
+  CardSpec withTemplate(CardStyleId st, CardTemplateId t, {int images = 0, CardFormat format = CardFormat.portrait}) {
+    final spec = CardSpec(style: st, template: t, format: format, imageOrder: List<int>.generate(images, (i) => i), layout: CardLayout.single);
+    for (final f in t.fields) {
+      spec.fields[f.key] = f.example;
+    }
+    if (t.hasLink) spec.fields['link'] = 'afrolookmedia.com/evenement';
+    return spec;
+  }
+
+  test('modèles : lien du QR, résumé et valeurs vides', () {
+    final spec = withTemplate(CardStyleId.neon, CardTemplateId.event);
+    expect(spec.linkFor(source()), 'https://afrolookmedia.com/evenement');
+    spec.fields['link'] = 'pas un lien';
+    expect(spec.linkFor(source()), source().link);
+    spec.fields['link'] = 'https://wa.me/22507000000';
+    expect(spec.linkFor(source()), 'https://wa.me/22507000000');
+    expect(spec.templateSummary().startsWith('Soirée Afrobeats'), true);
+    expect(CardSpec(style: CardStyleId.neon).templateSummary(), '');
+    expect(CardTemplateId.quote.hasLink, false);
+  });
+
+  testWidgets('modèles : tous les styles, avec et sans image, 3 formats', (tester) async {
+    for (final st in CardStyleId.values) {
+      for (final t in CardTemplateId.values) {
+        final png = await render(tester, source(images: 1), withTemplate(st, t, images: t == CardTemplateId.promo ? 1 : 0));
+        expect(png.length > 10000, true, reason: '${st.name} ${t.name}');
+        if (out != null && (t == CardTemplateId.event || t == CardTemplateId.quote)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
+      }
+    }
+    for (final f in CardFormat.values) {
+      final png = await render(tester, source(images: 1), withTemplate(CardStyleId.wax, CardTemplateId.ad, images: 1, format: f));
+      expect(png.length > 10000, true, reason: f.name);
+      if (out != null) File('$out/modele_ad_wax_${f.name}.png').writeAsBytesSync(png);
+    }
+  }, timeout: const Timeout(Duration(minutes: 8)));
+
   test('le lien du QR : post, sinon profil, sinon accueil', () {
     expect(source().link, 'https://afrolookmedia.com/share/post/abc123');
     expect(CardSource.draft(pseudo: 'a', profileId: 'u1').link, 'https://afrolookmedia.com/share/creator/u1');

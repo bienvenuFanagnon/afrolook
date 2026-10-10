@@ -30,7 +30,7 @@ import 'card_tutorial_page.dart';
 /// - [compose] = true : on part d'un brouillon (page de création de post) ; l'écran se ferme en renvoyant un
 ///   [CardResult] que la page de création publie ensuite avec les règles des posts.
 class CardStudioPage extends StatefulWidget {
-  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.initialStyle, this.initialCountry, this.askLink = false});
+  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.initialStyle, this.initialCountry, this.askLink = false, this.initialTemplate});
 
   final CardSource source;
   final bool compose;
@@ -43,6 +43,9 @@ class CardStudioPage extends StatefulWidget {
 
   /// Ouvre tout de suite la fenêtre « Depuis un lien » (carte à partir d'une vidéo ou d'une page).
   final bool askLink;
+
+  /// Ouvre le Studio directement sur un modèle (événement, promo, annonce, citation).
+  final CardTemplateId? initialTemplate;
 
   @override
   State<CardStudioPage> createState() => _CardStudioPageState();
@@ -67,7 +70,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
   bool _captureDone = false;
   bool _capturePaidPro = false;
 
-  static const _tabs = ['Médias', 'Style', 'Texte', 'Format'];
+  static const _tabs = ['Médias', 'Style', 'Modèle', 'Texte', 'Format'];
 
   @override
   void initState() {
@@ -93,6 +96,9 @@ class _CardStudioPageState extends State<CardStudioPage> {
     _likesCtl.dispose();
     _commentsCtl.dispose();
     _followersCtl.dispose();
+    for (final c in _fieldCtl.values) {
+      c.dispose();
+    }
     CardGuard.leave();
     super.dispose();
   }
@@ -171,7 +177,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     try {
       final png = await _captureImage();
       if (png == null) return;
-      await CardExport.share(png, text: _source.link);
+      await CardExport.share(png, text: _spec.linkFor(_source));
     } catch (_) {
       _say(tr('Impossible de partager la carte. Réessaie.'));
     } finally {
@@ -471,7 +477,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
   Widget _panel(AppColors c) => switch (_tab) {
         0 => _mediaPanel(c),
         1 => _stylePanel(c),
-        2 => _textPanel(c),
+        2 => _templatePanel(c),
+        3 => _textPanel(c),
         _ => _formatPanel(c),
       };
 
@@ -706,6 +713,103 @@ class _CardStudioPageState extends State<CardStudioPage> {
     ];
   }
 
+  // ── Onglet Modèle ─────────────────────────────────────────────────────────
+
+  final Map<String, TextEditingController> _fieldCtl = {};
+
+  TextEditingController _ctlFor(String key) => _fieldCtl.putIfAbsent(key, () => TextEditingController(text: _spec.fields[key] ?? ''));
+
+  /// Choisit un modèle (ou aucun) : ses champs sont pré-remplis avec un exemple modifiable.
+  void _applyTemplate(CardTemplateId? t) {
+    _spec.template = t;
+    _spec.fields.clear();
+    for (final c in _fieldCtl.values) {
+      c.dispose();
+    }
+    _fieldCtl.clear();
+    if (t != null) {
+      for (final f in t.fields) {
+        _spec.fields[f.key] = tr(f.example);
+      }
+    }
+    _captureDone = false;
+    _syncTemplateText();
+  }
+
+  /// La légende de la publication reprend les champs du modèle.
+  void _syncTemplateText() {
+    if (_spec.template == null) return;
+    _source = _source.copyWith(text: _spec.templateSummary());
+  }
+
+  Widget _templatePanel(AppColors c) {
+    final t = _spec.template;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(context.tr('Choisis un modèle : tu remplis les champs, le style de ta carte reste le tien.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35)),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, runSpacing: 4, children: [
+        ChoiceChip(label: Text(context.tr('Aucun modèle')), selected: t == null, onSelected: (_) => setState(() => _applyTemplate(null)), visualDensity: VisualDensity.compact),
+        for (final m in CardTemplateId.values)
+          ChoiceChip(
+            avatar: Icon(m.icon, size: 16),
+            label: Text(context.tr(m.label)),
+            selected: t == m,
+            onSelected: (_) => setState(() => _applyTemplate(m)),
+            visualDensity: VisualDensity.compact,
+          ),
+      ]),
+      if (t != null) ...[
+        const SizedBox(height: 12),
+        for (final f in t.fields)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TextField(
+              controller: _ctlFor(f.key),
+              maxLength: f.max,
+              minLines: 1,
+              maxLines: f.lines,
+              style: TextStyle(color: c.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                isDense: true,
+                counterText: '',
+                labelText: context.tr(f.label),
+                prefixIcon: Icon(f.icon, size: 18, color: c.textSecondary),
+                filled: true,
+                fillColor: c.surfaceVariant,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+              onChanged: (v) => setState(() {
+                _spec.fields[f.key] = v;
+                _syncTemplateText();
+                _captureDone = false;
+              }),
+            ),
+          ),
+        if (t.hasLink)
+          TextField(
+            controller: _ctlFor('link'),
+            keyboardType: TextInputType.url,
+            style: TextStyle(color: c.textPrimary, fontSize: 14),
+            decoration: InputDecoration(
+              isDense: true,
+              labelText: context.tr('Lien (facultatif, le QR code l\'ouvre)'),
+              hintText: 'https://…',
+              prefixIcon: Icon(Icons.link_rounded, size: 18, color: c.textSecondary),
+              filled: true,
+              fillColor: c.surfaceVariant,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+            onChanged: (v) => setState(() {
+              _spec.fields['link'] = v;
+              _captureDone = false;
+            }),
+          ),
+        const SizedBox(height: 4),
+        Text(context.tr('Ajoute une image dans l\'onglet Médias si tu veux une affiche avec photo.'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
+      ],
+    ]);
+  }
+
   // ── Onglet Style ──────────────────────────────────────────────────────────
 
   late CardPack _pack = _spec.style.pack;
@@ -891,6 +995,13 @@ class _CardStudioPageState extends State<CardStudioPage> {
   // ── Onglet Texte ──────────────────────────────────────────────────────────
 
   Widget _textPanel(AppColors c) {
+    if (_spec.template != null) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(context.tr('Cette carte utilise un modèle : son texte se remplit dans l\'onglet Modèle.'), style: TextStyle(color: c.textSecondary, height: 1.4)),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(onPressed: () => setState(() { _applyTemplate(null); _source = _source.copyWith(text: _textCtl.text); }), icon: const Icon(Icons.edit_note_rounded), label: Text(context.tr('Revenir au texte libre'))),
+      ]);
+    }
     final body = separateTags(_source.text).body;
     final sentences = splitSentences(body);
     final budget = cardCharBudget(_spec.format, hasMedia: _spec.imageOrder.isNotEmpty && _hasMedia);
