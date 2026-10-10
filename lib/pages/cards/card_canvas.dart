@@ -269,13 +269,7 @@ const _months = [
 ];
 String _fmtDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
 
-String _compact(int n) {
-  if (n >= 1000000)
-    return '${(n / 1000000).toStringAsFixed(n >= 10000000 ? 0 : 1).replaceAll('.0', '')} M';
-  if (n >= 1000)
-    return '${(n / 1000).toStringAsFixed(n >= 10000 ? 0 : 1).replaceAll('.0', '')} k';
-  return '$n';
-}
+String _compact(int n) => compactCount(n);
 
 class _Footer extends StatelessWidget {
   const _Footer(

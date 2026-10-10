@@ -252,6 +252,25 @@ void main() {
     }
   }, timeout: const Timeout(Duration(minutes: 8)));
 
+  test('chiffres courts : 1400 devient 1,4k', () {
+    expect(compactCount(0, lang: 'fr'), '0');
+    expect(compactCount(950, lang: 'fr'), '950');
+    expect(compactCount(1000, lang: 'fr'), '1k');
+    expect(compactCount(1400, lang: 'fr'), '1,4k');
+    expect(compactCount(1999, lang: 'fr'), '1,9k');
+    expect(compactCount(12500, lang: 'fr'), '12,5k');
+    expect(compactCount(999999, lang: 'fr'), '999,9k');
+    expect(compactCount(1000000, lang: 'fr'), '1M');
+    expect(compactCount(2300000, lang: 'fr'), '2,3M');
+    expect(compactCount(1400, lang: 'en'), '1.4k');
+    // chiffres écrits à la main
+    expect(CardSpec(style: CardStyleId.neon, likesText: '1400').likesOverride, compactCount(1400));
+    expect(CardSpec(style: CardStyleId.neon, likesText: ' 12 500 ').likesOverride, compactCount(12500));
+    expect(CardSpec(style: CardStyleId.neon, likesText: '12k').likesOverride, '12k');
+    expect(CardSpec(style: CardStyleId.neon, likesText: '1,2 M').likesOverride, '1,2 M');
+    expect(CardSpec(style: CardStyleId.neon, likesText: '350').likesOverride, '350');
+  });
+
   test('le lien du QR : post, sinon profil, sinon accueil', () {
     expect(source().link, 'https://afrolookmedia.com/share/post/abc123');
     expect(CardSource.draft(pseudo: 'a', profileId: 'u1').link, 'https://afrolookmedia.com/share/creator/u1');

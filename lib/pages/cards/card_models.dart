@@ -4,6 +4,8 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/material.dart' show IconData, Icons;
 import 'package:flutter/widgets.dart';
 
+import '../../l10n/tr.dart' show trCurrentLanguage;
+
 /// Les styles de carte. Kente, Wax, Néon, Glass et Pro sont inclus ; tous les autres sont des styles « Pro »
 /// (réglage serveur `AppConfig/cards.proStyles`, voir [CardStyleIdX.defaultPro]).
 enum CardStyleId {
@@ -283,6 +285,25 @@ class CardSource {
       );
 }
 
+/// Chiffre court des statistiques : 950 → « 950 », 1400 → « 1,4k », 12 500 → « 12,5k », 2 300 000 → « 2,3M ».
+/// La virgule décimale suit la langue (français, espagnol, allemand, portugais) ; le point sinon.
+String compactCount(int n, {String? lang}) {
+  final comma = const {'fr', 'es', 'de', 'pt'}.contains(lang ?? trCurrentLanguage);
+  String fmt(double v) {
+    final t = v.toStringAsFixed(1);
+    final s = t.endsWith('.0') ? t.substring(0, t.length - 2) : t;
+    return comma ? s.replaceAll('.', ',') : s;
+  }
+
+  if (n < 1000) return '$n';
+  if (n < 1000000) {
+    final k = (n / 100).floor() / 10; // une décimale, arrondie vers le bas : 1999 → 1,9k
+    if (k < 1000) return '${fmt(k)}k';
+  }
+  final m = (n / 100000).floor() / 10;
+  return '${fmt(m)}M';
+}
+
 /// Modèles de carte : un formulaire à remplir (événement, promo, annonce, citation) au lieu d'un texte libre.
 /// La carte garde le style choisi (couleurs, fond, police) ; la mise en page est celle d'une affiche.
 enum CardTemplateId { event, promo, ad, quote }
@@ -451,9 +472,18 @@ class CardSpec {
   }
 
   static String? _clean(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
-  String? get likesOverride => _clean(likesText);
-  String? get commentsOverride => _clean(commentsText);
-  String? get followersOverride => _clean(followersText);
+  /// Chiffre écrit à la main : un nombre entier (« 1400 », « 1 400 ») devient « 1,4k » ; un texte (« 12k », « 1,2 M ») reste tel quel.
+  static String? _count(String? v) {
+    final c = _clean(v);
+    if (c == null) return null;
+    final digits = c.replaceAll(RegExp(r'[\s\u00A0\u202F]'), '');
+    if (RegExp(r'^\d{1,12}$').hasMatch(digits)) return compactCount(int.parse(digits));
+    return c;
+  }
+
+  String? get likesOverride => _count(likesText);
+  String? get commentsOverride => _count(commentsText);
+  String? get followersOverride => _count(followersText);
 
   static const maxImages = 4;
 }
