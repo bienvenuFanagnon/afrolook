@@ -1,0 +1,13 @@
+{
+  "name": "slashatlas",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "SlashAtlas : bibliothèque de commandes et de prompts pour créer des affiches publicitaires avec l'IA (site statique FR/EN).",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node check.mjs",
+    "stats": "node scripts/stats.mjs",
+    "deploy": "node build.mjs && node check.mjs && firebase deploy --only hosting,functions:slashatlas --project afrolooki"
+  }
+}
