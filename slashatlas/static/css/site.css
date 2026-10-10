@@ -229,3 +229,22 @@ body[data-page=home] .tuto .lead,body[data-page=home] .tuto .d,body[data-page=ho
 /* pack et offres */
 .how2{grid-template-columns:1fr 1fr;gap:8px}.how2>div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px}.how2 p{font-size:12.5px;line-height:1.35}
 .pack .cmd pre{max-height:120px}
+
+/* vraies images générées */
+.poster.img{background:#0b0b0d;padding:0}
+.poster.img>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 35%}
+.poster.img .tag{z-index:1}.poster.img .shape{display:none}
+.poster .ai{position:absolute;right:8px;top:8px;z-index:1;font:600 9.5px var(--mono);letter-spacing:.04em;color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:3px 8px;backdrop-filter:blur(6px)}
+.card .poster .ai{display:none}
+.rp .poster{aspect-ratio:1/1}
+.rp .poster .ai{display:block}
+.poster.big{padding:0}.poster.big>img{object-fit:contain;object-position:50% 50%;background:#0b0b0d}
+.poster .av{position:absolute;left:10px;bottom:10px;z-index:1;width:27%;max-width:130px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.85);box-shadow:0 6px 18px rgba(0,0,0,.5);background:#000}
+.poster .av img{display:block;width:100%;height:auto}
+.poster .av small{position:absolute;left:0;right:0;bottom:0;margin:0;padding:3px 4px;font:700 9px var(--mono);text-align:center;color:#fff;background:rgba(0,0,0,.6)}
+.fpost .poster.big{aspect-ratio:1/1}
+@media (min-width:720px){.fpost .poster.big{aspect-ratio:4/5}}
+img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
+.rposter{padding:0;background:#0b0b0d}.rposter img{width:100%;height:100%;object-fit:cover;display:block;min-height:220px}
+@media (max-width:719px){.card .poster{min-height:112px}.card .poster.img>img{object-position:50% 30%}}
+.poster.img.ls>img{object-fit:contain;background:#111}
