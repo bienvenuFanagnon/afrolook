@@ -248,3 +248,5 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .rposter{padding:0;background:#0b0b0d}.rposter img{width:100%;height:100%;object-fit:cover;display:block;min-height:220px}
 @media (max-width:719px){.card .poster{min-height:112px}.card .poster.img>img{object-position:50% 30%}}
 .poster.img.ls>img{object-fit:contain;background:#111}
+.fpost .poster.big{aspect-ratio:var(--ar,4/5);max-height:62vh;width:100%}
+@media (min-width:720px){.fpost .poster.big{aspect-ratio:var(--ar,4/5);max-height:78vh}}

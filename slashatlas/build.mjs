@@ -31,7 +31,7 @@ const imgAlt = (c, l) => (l === 'fr' ? `Résultat de la commande ${c.code} : ${c
 function poster(c, l, big = false) {
   const t = c[l];
   if (big) {
-    return `<div class="poster img big"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high"><span class="ai">${AIWORD[l]} · Gemini</span><div class="av"><img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy"><small>${BEFORE[l]}</small></div></div>`;
+    return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high"><span class="ai">${AIWORD[l]} · Gemini</span><div class="av"><img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy"><small>${BEFORE[l]}</small></div></div>`;
   }
   return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span></div>`;
 }

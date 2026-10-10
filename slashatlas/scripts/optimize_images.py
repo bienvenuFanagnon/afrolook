@@ -1,6 +1,6 @@
 """Prépare les visuels générés (JPEG de 900 px et plus) pour le site : WebP léger, 3 tailles.
 Usage : python3 scripts/optimize_images.py <dossier>[:<dossier>…] (le dernier dossier qui contient un slug l'emporte)
-Sortie : static/img/c/<slug>-apres.webp (960 px), <slug>-t.webp (480 px, vignettes) et <slug>-avant.webp (480 px)."""
+Sortie : static/img/c/<slug>-apres.webp (1280 px), <slug>-t.webp (720 px, vignettes) et <slug>-avant.webp (640 px)."""
 import sys, os
 from PIL import Image
 here = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +22,7 @@ def save(im, name, w, q):
 for slug, (d, ext) in sorted(found.items()):
     a = Image.open(os.path.join(d, f'{slug}-apres.{ext}'))
     b = Image.open(os.path.join(d, f'{slug}-avant.{ext}'))
-    save(a, f'{slug}-apres.webp', 960, 80)
-    save(a, f'{slug}-t.webp', 480, 78)
-    save(b, f'{slug}-avant.webp', 480, 74)
+    save(a, f'{slug}-apres.webp', 1280, 90)
+    save(a, f'{slug}-t.webp', 720, 86)
+    save(b, f'{slug}-avant.webp', 640, 84)
     print(slug, a.size)
