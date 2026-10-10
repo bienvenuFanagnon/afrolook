@@ -46,7 +46,7 @@ function tuto(l, h1 = false) {
   const t = T[l].tuto;
   const c = COMMANDS.find((x) => x.slug === 'productglow');
   const cmdText = c[l].prompt;
-  return `<section class="tuto" id="tuto" data-copied="${esc(t.copied)}"><div><div class="eyebrow">${t.k}</div><${h1 ? 'h1' : 'h2'} class="t">${t.h}</${h1 ? 'h1' : 'h2'}><p class="lead">${t.l}</p><div class="tsteps">${t.steps.map((s, i) => `<button class="ts" type="button" data-tstep="${i}"><span class="n">${i + 1}</span><span><b>${s[0]}</b>${s[1]}</span></button>`).join('')}</div></div>
+  return `<section class="tuto" id="tuto" data-copied="${esc(t.copied)}"><div><div class="eyebrow">${t.k}</div><${h1 ? 'h1' : 'h2'} class="t">${t.h}</${h1 ? 'h1' : 'h2'}><p class="lead">${t.l}</p><div class="tsteps">${t.steps.map((s, i) => `<button class="ts" type="button" data-tstep="${i}"><span class="n">${i + 1}</span><span><b>${s[0]}</b><em class="d">${s[1]}</em></span></button>`).join('')}</div></div>
 <div><div class="demo" id="demo">
 <div class="pane" data-p="0"><div class="ph"><span>${t.p1}</span></div><div class="toast" id="ttoast">${t.copied}</div><div class="mcmd"><div class="code">${esc(c.code)}</div><p>${esc(cmdText)}</p><button class="btn pri pulse" id="tcopy" type="button" tabindex="-1">${T[l].cmd.copy}</button></div></div>
 <div class="pane" data-p="1"><div class="ph"><span>${t.p2}</span><span>${t.yourTool}</span></div><div class="chat"><div class="bub">${t.bubble}</div><div class="comp"><div class="att"><div class="thumb"></div><small>${t.attach}</small></div><div class="typed" id="typed" data-text="${esc(c.code + ' ' + cmdText)}"></div><div class="send">↑</div></div></div></div>
@@ -54,13 +54,14 @@ function tuto(l, h1 = false) {
 </div><div class="dots" id="dots"><i></i><i></i><i></i></div><div class="cta center"><button class="btn gl sm" id="replay" type="button">↻ ${t.replay}</button></div></div></section>`;
 }
 
+const LANG_JS = `<script>(function(){try{if(location.search||/bot|crawl|spider|lighthouse|preview/i.test(navigator.userAgent))return;var c=localStorage.getItem('sa_lang_choice');var w=c;if(!w){var L=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'fr'];w=String(L[0]).toLowerCase().indexOf('fr')===0?'fr':'en'}var here=location.pathname.indexOf('/en')===0?'en':'fr';if(w!==here)location.replace(w==='en'?'/en/':'/')}catch(e){}})()</script>`;
 function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs, extraJs }) {
   const t = T[l], p = P[l];
   const robots = (!cfg.indexable || noindex) ? '<meta name="robots" content="noindex,nofollow">' : '';
   const hl = alt ? `<link rel="alternate" hreflang="fr" href="${abs(alt.fr)}"><link rel="alternate" hreflang="en" href="${abs(alt.en)}"><link rel="alternate" hreflang="x-default" href="${abs(alt.fr)}">` : '';
   const sw = alt ? `<a class="langsw" href="${alt[other(l)]}" hreflang="${other(l)}" data-lang-switch="${other(l)}">${t.ft.lang}</a>` : '';
   const nav = [[p.cmds, t.nav.cmds, 'cmds'], [p.pack, t.nav.pack, 'pack'], [p.tuto, t.nav.tuto, 'tuto']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('');
-  return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#000000"><meta name="color-scheme" content="dark">${robots}<link rel="canonical" href="${abs(pth)}">${hl}
+  return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">${key === 'home' ? LANG_JS : ''}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#000000"><meta name="color-scheme" content="dark">${robots}<link rel="canonical" href="${abs(pth)}">${hl}
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${abs(pth)}"><meta property="og:site_name" content="${cfg.name}"><meta name="twitter:card" content="summary">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/site.css?v=${V.css}">${ld ? `<script type="application/ld+json">${JSON.stringify(ld)}</script>` : ''}</head>
 <body data-page="${key}" data-lang="${l}"><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
@@ -73,16 +74,44 @@ function emit(l, key, pth, o) { write(pth.endsWith('/') ? pth + 'index.html' : p
 const alt2 = (fr, en) => ({ fr, en });
 
 // ───────── pages ─────────
+const HOME = {
+  fr: {
+    h1: ['Copiez. Collez.', 'Votre affiche IA est prête.'],
+    sub: 'Des commandes toutes prêtes pour créer vos visuels dans ChatGPT, Gemini ou Midjourney.',
+    steps: [['Copiez', 'une commande'], ['Collez', 'avec votre photo dans votre IA'], ['Publiez', 'votre visuel']],
+    rail: 'Essayez une commande', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
+    tools: 'Fonctionne avec', tapHint: 'Faites glisser',
+  },
+  en: {
+    h1: ['Copy. Paste.', 'Your AI poster is ready.'],
+    sub: 'Ready-made commands to create your visuals in ChatGPT, Gemini or Midjourney.',
+    steps: [['Copy', 'a command'], ['Paste', 'with your photo in your AI'], ['Post', 'your visual']],
+    rail: 'Try a command', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
+    tools: 'Works with', tapHint: 'Swipe',
+  },
+};
+const ICON = {
+  copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
+  paste: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 3-3 5 5"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>',
+};
+function railCard(c, l) {
+  const t = c[l], H = HOME[l];
+  return `<article class="rc" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><button class="btn pri copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${ICON.copy}${H.copy}</button><pre id="p-${c.slug}" hidden>${esc(c.code + ' : ' + t.prompt)}</pre></div></article>`;
+}
 function home(l) {
-  const t = T[l].home, p = P[l];
-  const doms = t.doms.map(([cat, h, d, link]) => `<a class="dom" href="${p.cat(cat)}"><h3>${h}</h3><p>${d}</p><span class="link">${link} ›</span></a>`).join('');
-  const featured = ['fashionposter', 'productglow', 'menuhero', 'openhouse', 'matchday', 'coverdrop', 'reelcover', 'eventnight'].map((s) => COMMANDS.find((c) => c.slug === s));
-  const body = `<div class="wrap"><div class="eyebrow">${t.eb}</div><h1 class="big">${t.h1a.replace(/ ([?!:;])/g, "\u00a0$1")} <span>${t.h1b}</span></h1><p class="lead">${t.lead}</p>
-<div class="cta"><a class="btn pri" href="${p.cmds}">${t.cta1}</a><a class="link" href="${p.tuto}">${t.cta2} ›</a></div>
-<div class="who">${t.who.map((x) => `<span>${x}</span>`).join('')}</div>${ad('lb')}
-<div class="sec"><h2>${t.domH}</h2><span>${t.domK}</span></div><div class="doms">${doms}</div>
-<div class="gap"></div>${tuto(l)}
-<div class="sec"><h2>${t.latest}</h2><a class="more" href="${p.cmds}">${t.all} ›</a></div><div class="grid">${featured.map((c) => card(c, l)).join('')}</div>${ad('rect')}${band(l)}</div>`;
+  const t = T[l].home, p = P[l], H = HOME[l];
+  const featured = ['productglow', 'fashionposter', 'menuhero', 'openhouse', 'matchday', 'eventnight', 'coverdrop', 'reelcover'].map((s) => COMMANDS.find((c) => c.slug === s));
+  const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
+  const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
+  const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span>${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
+<ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
+<div class="sec tight"><h2>${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div></div>
+<div class="rail" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
+<div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>${ad('lb')}
+<div class="tools"><span>${H.tools}</span><b>ChatGPT</b><b>Gemini</b><b>Midjourney</b></div>
+<div class="sec"><h2>${H.cats}</h2></div><div class="cats">${cats}</div>
+<div class="gap"></div>${tuto(l)}${ad('rect')}${band(l)}</div>`;
   emit(l, 'home', p.home, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.home, P.en.home),
     ld: { '@context': 'https://schema.org', '@graph': [{ '@type': 'WebSite', '@id': abs('/') + '#site', name: cfg.name, alternateName: cfg.alternateNames, url: abs(p.home), inLanguage: T[l].htmlLang, publisher: { '@id': abs('/') + '#org' } }, { '@type': 'Organization', '@id': abs('/') + '#org', name: cfg.name, alternateName: cfg.alternateNames, url: abs('/'), logo: abs('/favicon.svg') }] } });
   if (l === 'fr') pages.push({ fr: P.fr.home, en: P.en.home });

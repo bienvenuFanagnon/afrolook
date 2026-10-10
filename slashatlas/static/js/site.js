@@ -30,13 +30,8 @@
   var returning = store('sa_seen') === '1'; store('sa_seen', '1');
   track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0 });
 
-  // ── Langue : à la première visite, selon le navigateur ──
-  $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang', a.dataset.langSwitch); }); });
-  if (!isBot && (location.pathname === '/' || location.pathname === '/en/') && !store('sa_lang') && !location.search) {
-    var want = (navigator.language || 'fr').toLowerCase().indexOf('fr') === 0 ? 'fr' : 'en';
-    store('sa_lang', want);
-    if (want !== lang) { var a = $('[data-lang-switch]'); if (a) location.replace(a.getAttribute('href')); }
-  }
+  // ── Langue : l'accueil suit la langue du téléphone (script en tête de page) ; seul un choix explicite est mémorisé ──
+  $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang_choice', a.dataset.langSwitch); }); });
 
   // ── Copier ──
   function fallbackCopy(txt, done) { var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove(); done(); }
