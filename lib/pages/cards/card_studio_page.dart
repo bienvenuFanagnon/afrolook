@@ -39,10 +39,6 @@ class CardStudioPage extends StatefulWidget {
   final CardStyleId? initialStyle;
   final String? initialCountry;
 
-  /// Désactivé seulement par le banc de test qui fabrique les images du site vitrine.
-  @visibleForTesting
-  static bool previewMark = true;
-
   @override
   State<CardStudioPage> createState() => _CardStudioPageState();
 }
@@ -310,11 +306,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
             fit: BoxFit.contain,
             child: DecoratedBox(
               decoration: BoxDecoration(boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 26, offset: const Offset(0, 12))], borderRadius: BorderRadius.circular(28)),
-              // Le bandeau « aperçu » est posé HORS du RepaintBoundary : il n'apparaît jamais dans l'image exportée.
-              child: Stack(children: [
-                RepaintBoundary(key: _boundaryKey, child: CardCanvas(source: _source, spec: _spec)),
-                if (CardStudioPage.previewMark) const Positioned.fill(child: IgnorePointer(child: _PreviewMark())),
-              ]),
+              child: RepaintBoundary(key: _boundaryKey, child: CardCanvas(source: _source, spec: _spec)),
             ),
           ),
         ),
@@ -866,45 +858,4 @@ class _PriceChip extends StatelessWidget {
       child: Text(cost.label, style: TextStyle(color: cost.free ? c.primary : c.supportAccent, fontWeight: FontWeight.w800, fontSize: 12)),
     );
   }
-}
-
-/// Bandeau diagonal répété « APERÇU · AFROLOOK » : il rend une capture d'écran de l'aperçu inutilisable.
-/// Il est posé par-dessus la carte, hors de la zone exportée, donc absent de l'image enregistrée ou partagée.
-class _PreviewMark extends StatelessWidget {
-  const _PreviewMark();
-
-  @override
-  Widget build(BuildContext context) => ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: CustomPaint(painter: _PreviewMarkPainter()),
-      );
-}
-
-class _PreviewMarkPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.rotate(-0.42);
-    final stripe = Paint()..color = const Color(0xFFFFC107).withOpacity(0.78);
-    final tp = TextPainter(
-      text: const TextSpan(
-        text: 'APERÇU · AFROLOOK  ·  APERÇU · AFROLOOK  ·  APERÇU · AFROLOOK  ·  APERÇU · AFROLOOK',
-        style: TextStyle(color: Color(0xFF1B1B1B), fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.4),
-      ),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout();
-    final h = tp.height + 12;
-    final span = size.longestSide * 1.6;
-    // Trois bandes en travers : une capture reste lisible comme « aperçu », jamais comme rendu final.
-    for (final f in const [0.28, 0.58, 0.86]) {
-      final y = size.height * f - size.width * 0.25;
-      canvas.drawRect(Rect.fromLTWH(-span / 2, y, span, h), stripe);
-      tp.paint(canvas, Offset(-span / 2 + 12, y + 6));
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
 }

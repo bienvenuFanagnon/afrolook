@@ -125,8 +125,6 @@ void main() {
   }
 
   testWidgets('site : capture du studio (onglet Style)', (tester) async {
-    CardStudioPage.previewMark = false;
-    addTearDown(() => CardStudioPage.previewMark = true);
     SharedPreferences.setMockInitialValues({'cards_tuto_seen': true});
     tester.view.physicalSize = const Size(1080, 2200);
     tester.view.devicePixelRatio = 3.0;

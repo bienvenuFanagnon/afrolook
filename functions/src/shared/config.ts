@@ -5,7 +5,7 @@ export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com
 
 // URLs Afrolook
 export const APP_PLAY_STORE_URL_AFRO = "https://play.google.com/store/apps/details?id=com.afrotok.afrotok&pcampaignid=web_share";
-export const APP_WEB_URL_AFRO = "https://afrolookmedia.com/";
+export const APP_WEB_URL_AFRO = "https://afrolookmedia.com/app/";
 
 // FeexPay configuration (clés depuis les variables d'environnement)
 export const FEEXPAY_API_KEY_AFROLOOK = process.env.FEEXPAY_API_KEY!;

@@ -87,6 +87,7 @@ function layout({ lang, key, path: pth, alt, title, desc, body, ogImage = '/img/
 <link rel="icon" href="/img/favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Afrolook"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canon}"><meta property="og:image" content="${abs(ogImage)}"><meta property="og:locale" content="${lang === 'fr' ? 'fr_FR' : 'en_US'}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${abs(ogImage)}">
+<script>if(location.pathname==='/'&&location.hash.indexOf('#/')===0)location.replace('/app/'+location.hash)</script>
 <link rel="preload" href="/fonts/FONT_PRELOAD" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css?v=${ASSET_V}">${extraHead}
 <script>document.documentElement.classList.add('js')</script>${ld}

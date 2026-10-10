@@ -7,9 +7,6 @@
       "hosting": {
         "vitrine": [
           "afrolooki"
-        ],
-        "app": [
-          "afrolook-app"
         ]
       }
     }

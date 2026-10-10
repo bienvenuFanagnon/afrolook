@@ -4,11 +4,11 @@ import path from 'node:path';
 
 const dist = path.join(path.dirname(new URL(import.meta.url).pathname), 'dist');
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
-const files = walk(dist);
+const files = walk(dist).filter((f) => !f.startsWith(path.join(dist, 'app') + path.sep)); // /app/ = application Flutter, hors du site
 const htmls = files.filter((f) => f.endsWith('.html'));
 const exists = (u) => {
   const clean = decodeURIComponent(u.split('#')[0].split('?')[0]);
-  if (!clean) return true;
+  if (!clean || clean.startsWith('/app/')) return true; // l'application Flutter est ajoutée par with-app.mjs
   const p = path.join(dist, clean);
   return fs.existsSync(p) && (fs.statSync(p).isFile() || fs.existsSync(path.join(p, 'index.html')));
 };

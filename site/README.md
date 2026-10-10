@@ -29,41 +29,35 @@ node check.mjs         # liens internes, ancres, titres et descriptions uniques,
 - **Exemple de gains** (624 750 pièces ≈ 249 900 FCFA ≈ 381 €) : `src/config.json` → `example`. Taux : 10 FCFA = 25 pièces.
 
 ## Formulaire de contact
-`contactMessage` (`functions/src/site/contact.ts`) : enregistre dans `ContactMessages` (collection fermée aux clients),
-envoie un e-mail à l'équipe (`officiel.afrolook@gmail.com`, réponse directe à la personne), limite à 5 messages par heure et par
-adresse IP, champ piège anti-robots. Les messages se lisent dans la console Firebase.
+`contactMessage` (`functions/src/site/contact.ts`) : enregistre dans `ContactMessages` (collection fermée aux clients), puis envoie
+l'e-mail à `contact@afrolookmedia.com` ET à `officiel.afrolook@gmail.com` (secours) en un seul envoi, réponse directe à la personne.
+Le résultat de l'envoi est noté sur le message (`mailStatus` : `sent`, `partial`, `backup_only`, `failed`, avec `mailDetail`).
+Limite : 5 messages par heure et par adresse IP, champ piège anti-robots. Les messages se lisent dans la console Firebase.
+Expéditeur : le serveur d'envoi LWS n'accepte que l'adresse du compte SMTP (`SMTP_USER`) ; `contact@afrolookmedia.com` est refusé comme expéditeur.
 
-## Mise en ligne
-Deux sites Firebase Hosting dans le projet `afrolooki` (cibles dans `.firebaserc`) :
+## Mise en ligne : un seul site, un seul domaine
+Un seul site Firebase Hosting (`afrolooki`, cible `vitrine`, domaine `afrolookmedia.com`) sert tout :
+- `/` et toutes les pages du site : `site/dist` ;
+- `/app/` : l'application web Flutter (connexion, inscription, fil…), même domaine donc mêmes domaines autorisés Firebase Auth ;
+- `/share/**` : fonction `sharePostLink` ; `/.well-known/*` et `app-ads.txt` à la racine ;
+- anciennes adresses : `/#/…` (ancienne application à la racine) est redirigé vers `/app/#/…` par un petit script de l'accueil ;
+  `/post/**` et `/feexpay-callback` redirigent vers `/app/` ; `/flutter_service_worker.js` à la racine est un nettoyeur qui retire
+  l'ancien service worker chez les visiteurs de retour.
 
-| Cible | Site Firebase | Contenu |
-|---|---|---|
-| `vitrine` | `afrolooki` (domaine `afrolookmedia.com`) | ce site (`site/dist`) |
-| `app` | `afrolook-app` | l'application web Flutter (`build/web`) |
-
-### 0. Aperçu sans risque (rien ne change pour le public)
+### Mettre à jour le site ET l'application web
 ```bash
-node build.mjs && node check.mjs
-firebase hosting:channel:deploy apercu --only vitrine --expires 14d --project afrolooki
+flutter build web --release --base-href /app/ --no-tree-shake-icons --no-wasm-dry-run   # à la racine du dépôt
+cd site && node build.mjs && node with-app.mjs && node check.mjs
+firebase hosting:channel:deploy apercu --only vitrine --expires 14d --project afrolooki   # aperçu sans risque
+firebase deploy --only hosting:vitrine --project afrolooki                               # mise en ligne
 ```
+Sans changement de l'application, `node build.mjs` seul vide `dist/` : toujours enchaîner `with-app.mjs`, sinon `/app/` disparaît.
+Les liens du site vers l'application web pointent vers `/app/` (`appWebUrl` dans `src/config.json`) ; les e-mails de l'app aussi (`APP_WEB_URL_AFRO`).
+Si Cloudflare met des pages en cache, purger le cache après la mise en ligne.
 
-### 1. Mettre l'application web à sa nouvelle adresse (à faire AVANT de remplacer l'accueil)
-1. `flutter build web` puis `firebase deploy --only hosting:app` → `https://afrolook-app.web.app`.
-2. Console Firebase → **Authentication → Paramètres → Domaines autorisés** : ajouter `afrolook-app.web.app` (et `app.afrolookmedia.com`). Sans cela, la connexion échoue sur la nouvelle adresse.
-3. Console Firebase → Hosting → site `afrolook-app` → **Ajouter un domaine personnalisé** `app.afrolookmedia.com`, puis créer l'enregistrement DNS demandé (CNAME dans Cloudflare).
-4. Vérifier la connexion, un post, un live sur `https://app.afrolookmedia.com`. Si Google Sign-In ou un autre service limite les domaines (clés API, OAuth, Agora…), ajouter la nouvelle adresse.
-
-### 2. Remplacer l'accueil
-```bash
-node build.mjs && node check.mjs
-firebase deploy --only hosting:vitrine --project afrolooki
-```
-Les liens de partage `/share/**`, `/.well-known/assetlinks.json` (liens Android), `/.well-known/apple-app-site-association` (liens iOS) et `app-ads.txt`
-continuent de fonctionner : ils sont inclus dans le site. **Après la bascule, ouvrir un lien `https://afrolookmedia.com/share/post/…` sur un téléphone avec l'app pour vérifier.**
-Si Cloudflare met les pages en cache, purger le cache après la bascule.
-
-### 3. Retour en arrière
+### Retour en arrière
 `firebase hosting:clone afrolooki:<version précédente> afrolooki:live` (ou « Restaurer » dans la console, Hosting → historique).
+Version en ligne avant la bascule du 10 octobre 2026 : `4d5aa6716eb6399a` (ancienne application à la racine).
 
 ## À faire plus tard
 - Badges officiels Google Play / App Store à la place des boutons dessinés.

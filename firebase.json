@@ -87,45 +87,55 @@
               "value": "public, max-age=300"
             }
           ]
-        }
-      ],
-      "rewrites": [
-        {
-          "source": "/share/**",
-          "function": "sharePostLink"
         },
         {
-          "source": "/media/**",
-          "destination": "https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/"
-        }
-      ]
-    },
-    {
-      "target": "app",
-      "public": "build/web",
-      "ignore": [
-        "firebase.json",
-        "**/node_modules/**"
-      ],
-      "headers": [
-        {
-          "source": "/.well-known/apple-app-site-association",
+          "source": "/flutter_service_worker.js",
           "headers": [
             {
-              "key": "Content-Type",
-              "value": "application/json"
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/app/@(index.html|flutter_bootstrap.js|flutter_service_worker.js|version.json|main.dart.js|manifest.json)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
             }
           ]
         }
       ],
       "rewrites": [
         {
+          "source": "/app/**",
+          "destination": "/app/index.html"
+        },
+        {
           "source": "/share/**",
           "function": "sharePostLink"
         },
         {
           "source": "/media/**",
           "destination": "https://firebasestorage.googleapis.com/v0/b/afrolooki.appspot.com/o/"
+        }
+      ],
+      "redirects": [
+        {
+          "source": "/post/**",
+          "destination": "/app/",
+          "type": 302
+        },
+        {
+          "source": "/feexpay-callback",
+          "destination": "/app/",
+          "type": 302
+        },
+        {
+          "source": "/feexpay-callback/**",
+          "destination": "/app/",
+          "type": 302
         }
       ]
     }

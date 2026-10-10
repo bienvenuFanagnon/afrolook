@@ -1,6 +1,6 @@
 {
   "domain": "https://afrolookmedia.com",
-  "appWebUrl": "https://app.afrolookmedia.com",
+  "appWebUrl": "/app/",
   "playUrl": "https://play.google.com/store/apps/details?id=com.afrotok.afrotok",
   "appStoreUrl": "https://apps.apple.com/app/id6811423047",
   "contactEmail": "contact@afrolookmedia.com",
@@ -11,5 +11,11 @@
     "youtube": "https://youtube.com/@afrolookstudioofficiel",
     "x": "https://x.com/Afrolook2"
   },
-  "example": { "coins": "624 750", "coinsEn": "624,750", "fcfa": "249 900", "fcfaEn": "249,900", "eur": "381" }
+  "example": {
+    "coins": "624 750",
+    "coinsEn": "624,750",
+    "fcfa": "249 900",
+    "fcfaEn": "249,900",
+    "eur": "381"
+  }
 }
