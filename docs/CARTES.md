@@ -35,6 +35,13 @@ Tout est réglable dans Firestore `AppConfig/cards` sans mise à jour. Le plan v
 
 Fonctions : `cardQuote`, `cardCommit`, `cardPassBuy`. Collection `CardUsage` (écriture serveur seulement).
 
+## Fêtes : invitation du jour (`card_events.dart`)
+- À l'ouverture de l'accueil (9 s après), `CardEvents.maybeShow` affiche une **fenêtre d'invitation** si c'est la fête du jour, une seule fois par fête et par an (`SharedPreferences` : `card_event_seen_<id>`). Le bouton « Créer ma carte » ouvre le studio en mode création avec le texte, le style et le pays de la fête déjà réglés.
+- Priorité : **fête nationale du pays du profil** (≈ 60 pays, Afrique d'abord ; même table que `NATIONAL_DAYS` côté serveur, un test vérifie qu'elles sont identiques) > Journée de l'Afrique (25 mai) > Aïd el-Fitr / Tabaski (dates lunaires approximatives 2026-2030 ; ce jour et le lendemain) > Nouvel An (31 déc. – 1ᵉʳ janv.), Noël (24-25 déc.), Saint-Valentin, 8 mars, fête du travail, Pâques, fête des mères (2ᵉ dim. de mai), fête des pères (3ᵉ dim. de juin).
+- Le jour de la fête nationale, les **styles drapeau sont offerts** (date du téléphone côté app, date UTC côté serveur : `promo` dans `cardQuote`).
+- Ajouter une fête : une entrée dans `CardEvents.forToday` (et, pour une fête nationale, dans les deux tables).
+- Pas encore de notification push le matin de la fête.
+
 ## Non fait / limites connues
 - Séries de cartes et possibilité pour un auteur de refuser que ses posts deviennent des cartes : non implémentés.
 - Nouveaux plugins natifs (`gal`, `qr_flutter`) et nouvelles polices → il faut une vraie version store (pas un patch Shorebird).
