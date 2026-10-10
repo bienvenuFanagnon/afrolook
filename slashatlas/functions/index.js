@@ -14,7 +14,7 @@ const ORIGINS = [
   /^https:\/\/(www\.)?slashatlas\.(com|app|io)$/,
   /^http:\/\/localhost(:\d+)?$/,
 ];
-// Seules ces adresses Google (vérifiées) ouvrent l'administration.
+// Seule cette adresse (compte Afrolook existant, e-mail vérifié) ouvre l'administration. Aucune inscription publique.
 const ADMINS = ['jorbienvenu@gmail.com'];
 const LANGS = ['fr', 'en'];
 const KINDS = ['newsletter', 'waitlist', 'request'];
@@ -118,48 +118,21 @@ async function whoIs(req) {
     return { uid: t.uid, email: t.email.toLowerCase(), name: clean(t.name, 80), picture: clean(t.picture, 300), provider: t.firebase && t.firebase.sign_in_provider };
   } catch { return null; }
 }
-const isAdmin = (u) => !!u && u.provider === 'google.com' && ADMINS.includes(u.email);
-
-async function account(u, b) {
-  const ref = db.collection('SlashAtlasUsers').doc(u.uid);
-  const snap = await ref.get();
-  await ref.set({
-    email: u.email, name: u.name, lang: LANGS.includes(b.lang) ? b.lang : 'fr',
-    lastSeenAt: FieldValue.serverTimestamp(),
-    ...(snap.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
-  }, { merge: true });
-  if (!snap.exists) {
-    const stat = db.collection('SlashAtlasStats').doc(day());
-    await stat.set({ day: day() }, { merge: true });
-    await stat.update({ accounts: FieldValue.increment(1) });
-  }
-  return { ok: true, admin: isAdmin(u), created: !snap.exists };
-}
-
-async function deleteAccount(u) {
-  await db.collection('SlashAtlasUsers').doc(u.uid).delete();
-  if (!isAdmin(u)) { try { await getAuth().deleteUser(u.uid); } catch (e) { console.error('deleteUser', e.message); } }
-  return { ok: true };
-}
+const isAdmin = (u) => !!u && ['password', 'google.com'].includes(u.provider) && ADMINS.includes(u.email);
 
 const ts = (v) => (v && v.toDate ? v.toDate().toISOString() : null);
 async function adminData(daysIn) {
   const days = Math.min(Math.max(parseInt(daysIn, 10) || 14, 1), 90);
   const since = new Date(Date.now() - (days - 1) * 864e5).toISOString().slice(0, 10);
-  const [st, subs, users] = await Promise.all([
+  const [st, subs] = await Promise.all([
     db.collection('SlashAtlasStats').where('day', '>=', since).get(),
     db.collection('SlashAtlasSubscribers').orderBy('updatedAt', 'desc').limit(300).get(),
-    db.collection('SlashAtlasUsers').orderBy('createdAt', 'desc').limit(300).get(),
   ]);
-  const [subCount, userCount] = await Promise.all([
-    db.collection('SlashAtlasSubscribers').count().get(),
-    db.collection('SlashAtlasUsers').count().get(),
-  ]);
+  const subCount = await db.collection('SlashAtlasSubscribers').count().get();
   return {
     days,
     stats: st.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id)),
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
-    users: { total: userCount.data().count, items: users.docs.map((d) => { const x = d.data(); return { email: x.email, name: x.name, lang: x.lang, createdAt: ts(x.createdAt), lastSeenAt: ts(x.lastSeenAt) }; }) },
   };
 }
 
@@ -185,16 +158,12 @@ exports.slashatlasApi = onRequest(
         const r = await subscribe(body(req));
         return res.status(r.error ? 400 : 200).json(r);
       }
-      if (path.endsWith('/account') || path.endsWith('/account/delete') || path.endsWith('/admin')) {
+      if (path.endsWith('/admin')) {
         if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
         const u = await whoIs(req);
         if (!u) return res.status(401).json({ error: 'auth' });
-        if (path.endsWith('/admin')) {
-          if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
-          return res.status(200).json(await adminData(body(req).days));
-        }
-        if (path.endsWith('/account/delete')) return res.status(200).json(await deleteAccount(u));
-        return res.status(200).json(await account(u, body(req)));
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        return res.status(200).json(await adminData(body(req).days));
       }
       return res.status(404).json({ error: 'not_found' });
     } catch (e) {

@@ -2,7 +2,7 @@
 export const T = {
   fr: {
     htmlLang: 'fr', hreflang: 'fr',
-    nav: { cmds: 'Commandes', pack: 'Packs', tuto: 'Tutoriel', pro: 'Sans pub', menu: 'Menu', login: 'Connexion' },
+    nav: { cmds: 'Commandes', pack: 'Packs', tuto: 'Tutoriel', pro: 'Sans pub', menu: 'Menu' },
     home: {
       title: 'SlashAtlas : commandes IA pour créer vos affiches publicitaires',
       desc: 'Mode, restaurants, immobilier, sport, musique : des commandes courtes prêtes à copier. Collez-les avec votre image dans votre outil IA et obtenez une affiche publicitaire.',
@@ -37,7 +37,7 @@ export const T = {
     ft: { privacy: 'Confidentialité', cookies: 'Cookies', lang: 'English', tag: 'Commandes IA pour créer des affiches.' },
     legal: {
       pTitle: 'Confidentialité | SlashAtlas', pDesc: 'Ce que SlashAtlas mesure, sans cookie ni identifiant, et comment sont gardées les adresses e-mail laissées sur le site.', pH: 'Confidentialité',
-      pBody: ['Compte Google (facultatif) : si vous vous connectez avec Google, nous conservons votre nom et votre adresse e-mail pour gérer votre compte. Vous pouvez supprimer le compte et ces données à tout moment depuis la page Compte. Nous ne recevons jamais votre mot de passe.', 'Ce site est un test. Nous mesurons sa fréquentation sans cookie et sans identifiant personnel : pages vues, commandes copiées, langue, type d’appareil, grande origine de la visite (moteur de recherche, réseau social, direct). Ces chiffres sont agrégés par jour.', 'Si vous laissez votre adresse e-mail (liste d’attente, prévenez-moi), nous la gardons pour vous écrire à ce sujet seulement. Vous pouvez demander sa suppression en répondant à notre message.', 'Nous n’utilisons aucun cookie publicitaire aujourd’hui. Si de la publicité est ajoutée plus tard, un bandeau vous demandera votre accord avant tout cookie publicitaire.', 'Texte provisoire, à faire relire avant le lancement public.'],
+      pBody: ['Ce site est un test. Nous mesurons sa fréquentation sans cookie et sans identifiant personnel : pages vues, commandes copiées, langue, type d’appareil, grande origine de la visite (moteur de recherche, réseau social, direct). Ces chiffres sont agrégés par jour.', 'Si vous laissez votre adresse e-mail (liste d’attente, prévenez-moi), nous la gardons pour vous écrire à ce sujet seulement. Vous pouvez demander sa suppression en répondant à notre message.', 'Nous n’utilisons aucun cookie publicitaire aujourd’hui. Si de la publicité est ajoutée plus tard, un bandeau vous demandera votre accord avant tout cookie publicitaire.', 'Texte provisoire, à faire relire avant le lancement public.'],
       cTitle: 'Cookies et traceurs | SlashAtlas', cDesc: 'SlashAtlas ne dépose aucun cookie aujourd’hui. Voici ce que le site retient dans votre navigateur et ce qui pourrait changer.', cH: 'Cookies', cBody: ['Aujourd’hui, ce site ne dépose aucun cookie. Il retient seulement dans votre navigateur, sans l’envoyer, votre langue choisie et si vous êtes déjà venu.', 'Des cookies publicitaires pourraient être ajoutés plus tard. Dans ce cas, vous pourrez les accepter ou les refuser avant leur dépôt.', 'Texte provisoire, à faire relire avant le lancement public.'],
     },
     nf: { title: 'Page introuvable | SlashAtlas', h: 'Cette page n’existe pas.', p: 'La commande a peut-être changé de nom.', btn: 'Voir les commandes' },
@@ -45,7 +45,7 @@ export const T = {
   },
   en: {
     htmlLang: 'en', hreflang: 'en',
-    nav: { cmds: 'Commands', pack: 'Packs', tuto: 'Tutorial', pro: 'No ads', menu: 'Menu', login: 'Sign in' },
+    nav: { cmds: 'Commands', pack: 'Packs', tuto: 'Tutorial', pro: 'No ads', menu: 'Menu' },
     home: {
       title: 'SlashAtlas: AI commands to create advertising posters',
       desc: 'Fashion, restaurants, real estate, sports, music: short commands ready to copy. Paste them with your image into your AI tool and get an advertising poster.',
@@ -80,7 +80,7 @@ export const T = {
     ft: { privacy: 'Privacy', cookies: 'Cookies', lang: 'Français', tag: 'AI commands to create posters.' },
     legal: {
       pTitle: 'Privacy | SlashAtlas', pDesc: 'What SlashAtlas measures, without cookies or identifiers, and how e-mail addresses left on the site are kept.', pH: 'Privacy',
-      pBody: ['Google account (optional): if you sign in with Google, we keep your name and e-mail address to run your account. You can delete the account and this data at any time from the Account page. We never receive your password.', 'This site is a test. We measure its traffic without cookies and without personal identifiers: page views, copied commands, language, device type, broad origin of the visit (search engine, social network, direct). These numbers are aggregated per day.', 'If you leave your e-mail address (waiting list, notify me), we keep it only to write to you about that. You can ask for its deletion by replying to our message.', 'We use no advertising cookies today. If advertising is added later, a banner will ask for your consent before any advertising cookie.', 'Provisional text, to be reviewed before the public launch.'],
+      pBody: ['This site is a test. We measure its traffic without cookies and without personal identifiers: page views, copied commands, language, device type, broad origin of the visit (search engine, social network, direct). These numbers are aggregated per day.', 'If you leave your e-mail address (waiting list, notify me), we keep it only to write to you about that. You can ask for its deletion by replying to our message.', 'We use no advertising cookies today. If advertising is added later, a banner will ask for your consent before any advertising cookie.', 'Provisional text, to be reviewed before the public launch.'],
       cTitle: 'Cookies and trackers | SlashAtlas', cDesc: 'SlashAtlas sets no cookies today. Here is what the site remembers in your browser and what could change.', cH: 'Cookies', cBody: ['Today, this site sets no cookies. It only remembers, in your browser and without sending it, your chosen language and whether you have visited before.', 'Advertising cookies may be added later. In that case, you will be able to accept or refuse them before they are set.', 'Provisional text, to be reviewed before the public launch.'],
     },
     nf: { title: 'Page not found | SlashAtlas', h: 'This page does not exist.', p: 'The command may have been renamed.', btn: 'Browse commands' },

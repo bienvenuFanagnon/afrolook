@@ -15,8 +15,8 @@ const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 
 const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
 
 const P = {
-  fr: { home: '/', cmds: '/commandes/', account: '/compte/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', account: '/en/account/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -64,7 +64,7 @@ function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${abs(pth)}"><meta property="og:site_name" content="${cfg.name}"><meta name="twitter:card" content="summary">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/site.css?v=${V.css}">${ld ? `<script type="application/ld+json">${JSON.stringify(ld)}</script>` : ''}</head>
 <body data-page="${key}" data-lang="${l}"><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
-<header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a><button class="btn pri sm" type="button" data-auth data-account="${p.account}">${t.nav.login}</button></header>
+<header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a></header>
 <main id="main">${body}</main>
 <footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.cookies}">${t.ft.cookies}</a></footer>
 <script src="/js/site.js?v=${V.js}" defer></script>${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
@@ -158,27 +158,12 @@ function legalPage(l, kind) {
   if (l === 'fr') pages.push({ fr: P.fr[kind], en: P.en[kind] });
 }
 
-const ACC = {
-  fr: { title: 'Mon compte | SlashAtlas', desc: 'Votre compte SlashAtlas : connexion avec Google, facultative, et suppression de vos données en un clic.', k: 'Compte', h: 'Votre compte SlashAtlas', out: 'Vous n’êtes pas connecté·e.', outP: 'Le compte est facultatif : toutes les commandes restent libres d’accès. Il servira bientôt à garder vos favoris et vos commandes sur tous vos appareils.', login: 'Continuer avec Google', in: 'Connecté·e en tant que', logout: 'Se déconnecter', del: 'Supprimer mon compte', delP: 'Supprime votre compte et les données associées (nom, adresse e-mail). Action définitive.', delOk: 'Compte supprimé.', delAsk: 'Confirmer la suppression définitive', soon: 'Bientôt : favoris synchronisés, historique de vos commandes copiées.', note: 'Nous ne recevons de Google que votre nom et votre adresse e-mail, jamais votre mot de passe.' },
-  en: { title: 'My account | SlashAtlas', desc: 'Your SlashAtlas account: optional Google sign-in, and one-click deletion of your data.', k: 'Account', h: 'Your SlashAtlas account', out: 'You are not signed in.', outP: 'An account is optional: every command stays free to use. It will soon keep your favourites and commands across all your devices.', login: 'Continue with Google', in: 'Signed in as', logout: 'Sign out', del: 'Delete my account', delP: 'Deletes your account and the data attached to it (name, e-mail address). This cannot be undone.', delOk: 'Account deleted.', delAsk: 'Confirm permanent deletion', soon: 'Coming soon: synced favourites and history of the commands you copied.', note: 'We only receive your name and e-mail address from Google, never your password.' },
-};
-function accountPage(l) {
-  const a = ACC[l], p = P[l];
-  const body = `<div class="wrap narrow"><div class="eyebrow">${a.k}</div><h1 class="big sm">${a.h}</h1>
-<div class="acc" id="acc" data-del-ok="${esc(a.delOk)}" data-del-ask="${esc(a.delAsk)}">
-<div id="acc-out"><p class="lead">${a.out}</p><p class="hint">${a.outP}</p><button class="btn pri big" type="button" data-login>${a.login}</button></div>
-<div id="acc-in" hidden><div class="who"><img id="acc-pic" alt="" width="56" height="56" referrerpolicy="no-referrer"><div><small>${a.in}</small><b id="acc-name"></b><span id="acc-mail"></span></div></div><p class="hint">${a.soon}</p>
-<div class="row"><button class="btn gl" type="button" data-logout>${a.logout}</button></div>
-<div class="danger"><b>${a.del}</b><p>${a.delP}</p><button class="btn gl sm" type="button" id="acc-del">${a.del}</button></div></div>
-<p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p><p class="hint">${a.note}</p></div></div>`;
-  emit(l, 'account', p.account, { title: a.title, desc: a.desc, body, alt: alt2(P.fr.account, P.en.account), noindex: true, extraJs: '/js/account.js' });
-}
 function adminPage() {
   const body = `<div class="wrap"><div class="eyebrow">Administration</div><h1 class="big sm">Suivi de SlashAtlas</h1>
-<div id="adm-out"><p class="lead">Réservé à l’administrateur. Connectez-vous avec le compte Google autorisé.</p><button class="btn pri big" type="button" data-login>Continuer avec Google</button><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>
+<form id="adm-out" class="adm-login" novalidate><p class="lead">Accès réservé à l’administrateur. Utilisez votre compte Afrolook.</p><label>E-mail<input type="email" name="email" autocomplete="username" required></label><label>Mot de passe<input type="password" name="password" autocomplete="current-password" required></label><button class="btn pri big" type="submit">Se connecter</button><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></form>
 <div id="adm-no" hidden><p class="lead">Ce compte n’a pas accès à l’administration.</p><button class="btn gl" type="button" data-logout>Changer de compte</button></div>
 <div id="adm" hidden></div></div>`;
-  emit('fr', 'admin', '/admin/', { title: 'Administration | SlashAtlas', desc: 'Tableau de bord privé de SlashAtlas : audience, commandes copiées, inscriptions et comptes. Accès réservé.', body, noindex: true, extraJs: '/js/admin.js' });
+  emit('fr', 'admin', '/admin/', { title: 'Administration | SlashAtlas', desc: 'Tableau de bord privé de SlashAtlas : audience, commandes copiées et inscriptions. Accès réservé à l’administrateur.', body, noindex: true, extraJs: '/js/admin.js' });
 }
 function notFound() {
   const t = T.fr.nf;
@@ -190,7 +175,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 for (const l of ['fr', 'en']) {
-  home(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); accountPage(l);
+  home(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies');
   for (const c of CATEGORIES) catPage(l, c);
   for (const c of COMMANDS) cmdPage(l, c);
 }
