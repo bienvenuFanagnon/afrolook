@@ -132,7 +132,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     try {
       final png = await _captureImage();
       if (png == null) return;
-      await CardExport.share(png, text: _source.link == null ? 'afrolookmedia.com' : '${_source.link}');
+      await CardExport.share(png, text: _source.link);
     } catch (_) {
       _say(tr('Impossible de partager la carte. Réessaie.'));
     } finally {
@@ -547,7 +547,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
       SizedBox(height: 108, child: ListView(scrollDirection: Axis.horizontal, children: [for (final s in CardStyleId.values) thumb(s)])),
       Wrap(spacing: 8, children: [
         toggle(context.tr('Pseudo'), _spec.showAuthor, (v) => _spec.showAuthor = v),
-        toggle(context.tr('Statistiques'), _spec.showStats, (v) => _spec.showStats = v),
+        toggle(context.tr('J\'aime · commentaires'), _spec.showStats, (v) => _spec.showStats = v),
+        toggle(context.tr('Abonnés'), _spec.showFollowers, (v) => _spec.showFollowers = v),
         toggle(context.tr('Date'), _spec.showDate, (v) => _spec.showDate = v),
       ]),
     ]);

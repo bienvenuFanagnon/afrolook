@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../l10n/tr.dart';
 import 'card_models.dart';
 import 'card_text.dart';
 
@@ -186,26 +187,39 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final link = source.link ?? 'https://afrolookmedia.com';
+    final link = source.link;
     return SizedBox(
       height: 40,
       child: Row(children: [
         Expanded(
-          child: showPseudo
-              ? Text('@${source.pseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: theme.fg, fontSize: 14, fontWeight: FontWeight.w800, fontFamily: theme.headFont))
-              : truncated
-              ? Text('Lire la suite sur Afrolook ↗', maxLines: 2, style: TextStyle(color: theme.fg.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w700))
-              : (spec.showStats
-                  ? FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Row(children: [
-                      Icon(Icons.favorite_rounded, size: 15, color: theme.fg),
-                      const SizedBox(width: 4),
-                      Text(_compact(source.likes), style: TextStyle(color: theme.fg, fontSize: 13, fontWeight: FontWeight.w700)),
-                      const SizedBox(width: 12),
-                      Icon(Icons.chat_bubble_rounded, size: 14, color: theme.fg),
-                      const SizedBox(width: 4),
-                      Text(_compact(source.comments), style: TextStyle(color: theme.fg, fontSize: 13, fontWeight: FontWeight.w700)),
-                    ]))
-                  : const SizedBox.shrink()),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (showPseudo)
+                Text('@${source.pseudo}', maxLines: 1, style: TextStyle(color: theme.fg, fontSize: 14, fontWeight: FontWeight.w800, fontFamily: theme.headFont)),
+              if (spec.showStats || (spec.showFollowers && source.followers > 0))
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (spec.showStats) ...[
+                    Icon(Icons.favorite_rounded, size: 15, color: theme.fg),
+                    const SizedBox(width: 4),
+                    Text(_compact(source.likes), style: TextStyle(color: theme.fg, fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 12),
+                    Icon(Icons.chat_bubble_rounded, size: 14, color: theme.fg),
+                    const SizedBox(width: 4),
+                    Text(_compact(source.comments), style: TextStyle(color: theme.fg, fontSize: 13, fontWeight: FontWeight.w700)),
+                  ],
+                  if (spec.showFollowers && source.followers > 0) ...[
+                    if (spec.showStats) const SizedBox(width: 12),
+                    Icon(Icons.people_alt_rounded, size: 16, color: theme.fg),
+                    const SizedBox(width: 4),
+                    Text(_compact(source.followers), style: TextStyle(color: theme.fg, fontSize: 13, fontWeight: FontWeight.w700)),
+                  ],
+                ]),
+              if (truncated)
+                Text('Lire la suite sur Afrolook ↗', maxLines: 1, style: TextStyle(color: theme.fg.withOpacity(0.9), fontSize: 11.5, fontWeight: FontWeight.w700)),
+            ]),
+          ),
         ),
         Container(
             width: 40,
@@ -239,10 +253,14 @@ class _Seal extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 5),
-          const Text.rich(TextSpan(children: [
-            TextSpan(text: 'afro', style: TextStyle(color: Colors.white)),
-            TextSpan(text: 'look', style: TextStyle(color: _yellow)),
-          ]), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: .2, fontFamily: 'Roboto')),
+          Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(tr('Créé par'), style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 7.5, fontWeight: FontWeight.w600, height: 1, fontFamily: 'Roboto')),
+            const SizedBox(height: 1),
+            const Text.rich(TextSpan(children: [
+              TextSpan(text: 'afro', style: TextStyle(color: Colors.white)),
+              TextSpan(text: 'look', style: TextStyle(color: _yellow)),
+            ]), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, letterSpacing: .2, height: 1, fontFamily: 'Roboto')),
+          ]),
         ]),
       );
 }

@@ -91,6 +91,9 @@ extension CardFontX on CardFont {
 /// Lien de partage d'un post (même adresse que `AppLinkService.generateLink`).
 String cardPostLink(String postId) => 'https://afrolookmedia.com/share/post/$postId';
 
+/// Lien de partage d'un profil (ouvre la page de la personne dans l'application, ou la page web si elle n'est pas installée).
+String cardProfileLink(String userId) => 'https://afrolookmedia.com/share/creator/$userId';
+
 /// Ce que la carte raconte : l'auteur, le texte d'origine et les médias du post (ou d'un brouillon).
 class CardSource {
   const CardSource({
@@ -104,6 +107,8 @@ class CardSource {
     this.date,
     this.likes = 0,
     this.comments = 0,
+    this.followers = 0,
+    this.profileId,
     this.credit,
   });
 
@@ -122,11 +127,22 @@ class CardSource {
   final int likes;
   final int comments;
 
+  /// Abonnés de l'auteur (statistique facultative de la carte).
+  final int followers;
+
+  /// Auteur du post, ou créateur de la carte pour un brouillon : le QR mène à son profil quand il n'y a pas de post.
+  final String? profileId;
+
   /// Crédit affiché quand la carte reprend le post d'un autre auteur (« Post de @pseudo »).
   final String? credit;
 
   bool get hasMedia => images.isNotEmpty;
-  String? get link => postId == null ? null : cardPostLink(postId!);
+  /// Lien du QR (obligatoire sur toute carte) : le post d'origine, sinon le profil de la personne, sinon l'accueil.
+  String get link => postId != null
+      ? cardPostLink(postId!)
+      : (profileId ?? '').isNotEmpty
+          ? cardProfileLink(profileId!)
+          : 'https://afrolookmedia.com';
 
   CardSource copyWith({String? text, List<ImageProvider>? images}) => CardSource(
         pseudo: pseudo,
@@ -139,6 +155,8 @@ class CardSource {
         date: date,
         likes: likes,
         comments: comments,
+        followers: followers,
+        profileId: profileId,
         credit: credit,
       );
 
@@ -149,6 +167,8 @@ class CardSource {
     bool verified = false,
     String text = '',
     List<Uint8List> imageBytes = const [],
+    int followers = 0,
+    String? profileId,
   }) =>
       CardSource(
         pseudo: pseudo,
@@ -157,6 +177,8 @@ class CardSource {
         text: text,
         images: [for (final b in imageBytes) MemoryImage(b)],
         date: DateTime.now(),
+        followers: followers,
+        profileId: profileId,
       );
 }
 
@@ -172,6 +194,7 @@ class CardSpec {
     this.font = CardFont.auto,
     this.showAuthor = true,
     this.showStats = true,
+    this.showFollowers = false,
     this.showDate = true,
   })  : imageOrder = imageOrder ?? <int>[],
         pickedSentences = pickedSentences ?? <int>{};
@@ -189,6 +212,9 @@ class CardSpec {
   CardFont font;
   bool showAuthor;
   bool showStats;
+
+  /// Nombre d'abonnés de l'auteur (facultatif, désactivé par défaut).
+  bool showFollowers;
   bool showDate;
 
   static const maxImages = 4;

@@ -47,6 +47,8 @@ CardSource source({String text = 'Coucher de soleil sur la corniche de Dakar �
       date: DateTime(2026, 10, 10),
       likes: 1200,
       comments: 214,
+      followers: 3400,
+      profileId: 'u1',
     );
 
 void main() {
@@ -83,6 +85,20 @@ void main() {
       if (out != null) File('$out/${style.name}_portrait_image.png').writeAsBytesSync(png);
     });
   }
+
+  testWidgets('stats avec abonnés + texte long (les stats restent visibles)', (tester) async {
+    for (final long in [false, true]) {
+      final png = await render(tester, source(text: long ? _longText : 'Coucher de soleil sur la corniche de Dakar 🌅'), CardSpec(style: CardStyleId.neon, showFollowers: true));
+      expect(png.length > 20000, true);
+      if (out != null) File('$out/stats_${long ? 'long' : 'court'}.png').writeAsBytesSync(png);
+    }
+  });
+
+  test('le lien du QR : post, sinon profil, sinon accueil', () {
+    expect(source().link, 'https://afrolookmedia.com/share/post/abc123');
+    expect(CardSource.draft(pseudo: 'a', profileId: 'u1').link, 'https://afrolookmedia.com/share/creator/u1');
+    expect(CardSource.draft(pseudo: 'a').link, 'https://afrolookmedia.com');
+  });
 
   testWidgets('formats story et carré, texte seul, vidéo, texte long', (tester) async {
     final cases = <String, (CardSource, CardSpec)>{

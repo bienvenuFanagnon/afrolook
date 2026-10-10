@@ -81,6 +81,8 @@ class CardEntry {
       date: _date(post.createdAt),
       likes: post.likes ?? 0,
       comments: post.comments ?? 0,
+      followers: author?.followersCount ?? 0,
+      profileId: author?.id ?? post.user_id,
       credit: mine ? null : 'carte de @${me.pseudo ?? 'afrolook'}',
     );
     _markOpened();
@@ -137,7 +139,7 @@ class CardEntry {
     final ctx = nav.context;
     final me = ctx.read<UserAuthProvider>().loginUserData;
     final avatar = (me.imageUrl ?? '').isNotEmpty ? CachedNetworkImageProvider(me.imageUrl!) : null;
-    final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images);
+    final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images, followers: me.followersCount, profileId: me.id);
     _markOpened();
     final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId)));
     if (result is! CardResult || !nav.mounted) return;
