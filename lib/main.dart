@@ -343,6 +343,8 @@ class _MyAppState extends State<MyApp> {
         await NavigationCacheService().storeContenuNavigation(id, affiliateId: affiliateId);
         break;
       case 'creator':
+      case 'profil': // lien de partage d'un profil (AppLinkType.profil) : ouvre la page de la personne
+      case 'user':
         await NavigationCacheService().storeCreatorNavigation(id);
         break;
       case 'chronique':
