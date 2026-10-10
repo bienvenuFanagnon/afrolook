@@ -136,16 +136,16 @@ class CardEntry {
 
   /// Mode carte de la page de création de post : crée une carte puis la publie avec les règles des posts.
   /// [style] et [country] pré-règlent le studio (invitations des fêtes : drapeau du pays, style du jour).
-  static Future<void> openCompose(BuildContext context, {Canal? canal, String? defiPostId, String text = '', List<Uint8List> images = const [], CardStyleId? style, String? country}) =>
-      composeOn(Navigator.of(context), canal: canal, defiPostId: defiPostId, text: text, images: images, style: style, country: country);
+  static Future<void> openCompose(BuildContext context, {Canal? canal, String? defiPostId, String text = '', List<Uint8List> images = const [], CardStyleId? style, String? country, bool askLink = false}) =>
+      composeOn(Navigator.of(context), canal: canal, defiPostId: defiPostId, text: text, images: images, style: style, country: country, askLink: askLink);
 
-  static Future<void> composeOn(NavigatorState nav, {Canal? canal, String? defiPostId, String text = '', List<Uint8List> images = const [], CardStyleId? style, String? country}) async {
+  static Future<void> composeOn(NavigatorState nav, {Canal? canal, String? defiPostId, String text = '', List<Uint8List> images = const [], CardStyleId? style, String? country, bool askLink = false}) async {
     final ctx = nav.context;
     final me = ctx.read<UserAuthProvider>().loginUserData;
     final avatar = (me.imageUrl ?? '').isNotEmpty ? CachedNetworkImageProvider(me.imageUrl!) : null;
     final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images, followers: me.followersCount, profileId: me.id, country: me.countryData?['countryCode']);
     _markOpened();
-    final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, initialStyle: style, initialCountry: country)));
+    final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, initialStyle: style, initialCountry: country, askLink: askLink)));
     if (result is! CardResult || !nav.mounted) return;
     final quote = await CardService.quote();
     if (!nav.mounted) return;

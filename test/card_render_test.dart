@@ -197,6 +197,25 @@ void main() {
     expect(got[0]!.isDefault, true);
   });
 
+  test('carte lien : le QR et le partage mènent à la vidéo d\'origine', () {
+    final base = source();
+    expect(base.externalLink, isNull);
+    final link = base.copyWith(externalLink: 'https://www.youtube.com/watch?v=abc', credit: 'YouTube · Une chaîne', isVideo: true);
+    expect(link.link, 'https://www.youtube.com/watch?v=abc');
+    expect(link.isVideo, true);
+    expect(link.copyWith(text: 'Autre titre').externalLink, 'https://www.youtube.com/watch?v=abc');
+    expect(link.copyWith(text: 'Autre titre').credit, 'YouTube · Une chaîne');
+  });
+
+  testWidgets('carte lien : se dessine sur tous les styles', (tester) async {
+    final link = source(images: 1).copyWith(text: 'Rick Astley - Never Gonna Give You Up (Official Video)', externalLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', credit: 'YouTube · Rick Astley', isVideo: true);
+    for (final st in CardStyleId.values) {
+      final png = await render(tester, link, CardSpec(style: st, layout: CardLayout.single, imageOrder: [0]));
+      expect(png.length > 10000, true, reason: st.name);
+      if (out != null) File('$out/lien_${st.name}.png').writeAsBytesSync(png);
+    }
+  }, timeout: const Timeout(Duration(minutes: 5)));
+
   test('le lien du QR : post, sinon profil, sinon accueil', () {
     expect(source().link, 'https://afrolookmedia.com/share/post/abc123');
     expect(CardSource.draft(pseudo: 'a', profileId: 'u1').link, 'https://afrolookmedia.com/share/creator/u1');

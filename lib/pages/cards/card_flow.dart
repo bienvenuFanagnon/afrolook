@@ -47,6 +47,8 @@ class CardFlow {
   static String postCaption(CardSource s) {
     final body = separateTags(s.text).body;
     final excerpt = body.isEmpty ? '' : ' — ${cutText(body, 110).text}';
+    // carte « lien » : la légende reprend l'adresse de la vidéo
+    if ((s.externalLink ?? '').isNotEmpty) return '✨ Carte Afrolook$excerpt\n🔗 ${s.externalLink}\n#carteafrolook';
     final credit = s.credit == null ? '' : '\nPost de @${s.pseudo}';
     return '✨ Carte Afrolook$excerpt$credit\n#carteafrolook';
   }

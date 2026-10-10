@@ -13,7 +13,8 @@ import { tierOf } from "../stickers/stickers";
  *  - uniquement http(s), jamais d'adresse interne (protection contre l'accès au réseau de Google),
  *  - redirections suivies à la main, taille et durée limitées,
  *  - l'image est recopiée dans Firebase Storage (les images de TikTok / Instagram expirent),
- *  - réservé aux membres Gold (contrôlé ici), avec une petite limite par personne et par heure.
+ *  - aperçu de post / message : réservé aux membres Gold (contrôlé ici) ; carte « lien » du Studio : ouverte à tous ;
+ *  - une petite limite par personne et par heure.
  */
 
 export interface LinkPreview {
@@ -32,6 +33,7 @@ const FB_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uag
 const MAX_HTML = 1_500_000;
 const MAX_IMAGE = 3_000_000;
 const MAX_PER_HOUR = 40;
+const MAX_PER_HOUR_CARD = 20;
 const CACHE_MS = 24 * 3600_000;
 
 // ── Outils purs (testés) ────────────────────────────────────────────────────
@@ -221,21 +223,26 @@ export async function buildPreview(rawUrl: string): Promise<LinkPreview | null> 
 export const fetchLinkPreview = onCall({ region: "us-central1", timeoutSeconds: 30, memory: "256MiB", maxInstances: 10 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
-  // Réservé aux membres Gold (et à l'administrateur) : le contrôle est ici, pas seulement dans l'application.
-  const userDoc = await db.collection("Users").doc(uid).get();
-  if (tierOf(userDoc.data()) !== "gold") throw new HttpsError("permission-denied", "Réservé aux membres Gold.");
+  // Deux usages : l'aperçu d'un post ou d'un message (réservé aux membres Gold et à l'administrateur, contrôlé ici),
+  // et la carte « lien » du Studio (ouverte à tous : la carte a son propre quota et ses propres prix).
+  const forCard = request.data?.purpose === "card";
+  if (!forCard) {
+    const userDoc = await db.collection("Users").doc(uid).get();
+    if (tierOf(userDoc.data()) !== "gold") throw new HttpsError("permission-denied", "Réservé aux membres Gold.");
+  }
   const url = firstUrl(String(request.data?.url ?? "")) ?? "";
   if (!url || url.length > 600) throw new HttpsError("invalid-argument", "Lien invalide.");
 
-  // limite par personne et par heure
-  const ref = db.collection("LinkPreviewLimits").doc(uid);
+  // limite par personne et par heure (compteur séparé pour les cartes)
+  const ref = db.collection("LinkPreviewLimits").doc(forCard ? `${uid}_card` : uid);
+  const max = forCard ? MAX_PER_HOUR_CARD : MAX_PER_HOUR;
   const ok = await db.runTransaction(async (tx) => {
     const s = await tx.get(ref);
     const d = s.data() as { start?: number; n?: number } | undefined;
     const now = Date.now();
     const fresh = !d?.start || now - d.start > 3600_000;
     const n = fresh ? 0 : d?.n ?? 0;
-    if (n >= MAX_PER_HOUR) return false;
+    if (n >= max) return false;
     tx.set(ref, { start: fresh ? now : d!.start, n: n + 1, updatedAt: FieldValue.serverTimestamp() });
     return true;
   });

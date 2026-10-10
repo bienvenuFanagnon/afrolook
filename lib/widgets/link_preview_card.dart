@@ -21,12 +21,13 @@ class LinkPreviewService {
   static final Map<String, Map<String, dynamic>?> _cache = {};
 
   /// Retourne l'aperçu, ou null si le lien n'en a pas ; lève une erreur si le serveur refuse ou ne répond pas.
-  static Future<Map<String, dynamic>?> fetch(String url) async {
-    if (_cache.containsKey(url)) return _cache[url];
-    final res = await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('fetchLinkPreview', options: HttpsCallableOptions(timeout: const Duration(seconds: 25))).call({'url': url});
+  static Future<Map<String, dynamic>?> fetch(String url, {bool forCard = false}) async {
+    final key = forCard ? 'card:$url' : url;
+    if (_cache.containsKey(key)) return _cache[key];
+    final res = await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('fetchLinkPreview', options: HttpsCallableOptions(timeout: const Duration(seconds: 25))).call({'url': url, if (forCard) 'purpose': 'card'});
     final raw = (res.data as Map?)?['preview'];
     final out = raw is Map ? Map<String, dynamic>.from(raw) : null;
-    _cache[url] = out;
+    _cache[key] = out;
     return out;
   }
 }

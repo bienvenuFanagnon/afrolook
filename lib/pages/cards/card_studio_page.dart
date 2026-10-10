@@ -2,11 +2,13 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../l10n/tr.dart';
+import '../../widgets/link_preview_card.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
@@ -28,7 +30,7 @@ import 'card_tutorial_page.dart';
 /// - [compose] = true : on part d'un brouillon (page de création de post) ; l'écran se ferme en renvoyant un
 ///   [CardResult] que la page de création publie ensuite avec les règles des posts.
 class CardStudioPage extends StatefulWidget {
-  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.initialStyle, this.initialCountry});
+  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.initialStyle, this.initialCountry, this.askLink = false});
 
   final CardSource source;
   final bool compose;
@@ -38,6 +40,9 @@ class CardStudioPage extends StatefulWidget {
   /// Style et pays proposés au départ (invitation d'une fête) ; par défaut Néon et le pays de l'auteur.
   final CardStyleId? initialStyle;
   final String? initialCountry;
+
+  /// Ouvre tout de suite la fenêtre « Depuis un lien » (carte à partir d'une vidéo ou d'une page).
+  final bool askLink;
 
   @override
   State<CardStudioPage> createState() => _CardStudioPageState();
@@ -76,7 +81,10 @@ class _CardStudioPageState extends State<CardStudioPage> {
     _textCtl.text = _source.text;
     CardGuard.enter();
     _loadQuote();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _firstUseTutorial());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _firstUseTutorial();
+      if (widget.askLink && mounted) _fromLink();
+    });
   }
 
   @override
@@ -469,6 +477,101 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   // ── Onglet Médias ─────────────────────────────────────────────────────────
 
+  /// Carte « lien » : on colle l'adresse d'une vidéo ou d'une page (YouTube, TikTok, Instagram, Facebook, site) ; le titre,
+  /// l'image et l'auteur remplissent la carte, et le QR mène à ce lien.
+  Future<void> _fromLink() async {
+    final c = AppColors.of(context);
+    final ctl = TextEditingController();
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final clip = firstLinkIn(data?.text);
+      if (clip != null) ctl.text = clip;
+    } catch (_) {}
+    if (!mounted) return;
+    final url = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(ctx.tr('Carte à partir d\'un lien'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Text(ctx.tr('Colle le lien d\'une vidéo YouTube, TikTok, Instagram, Facebook ou d\'une page web. Le titre et l\'image remplissent la carte, et son QR code ouvre ce lien.'), style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctl,
+            autofocus: true,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              hintText: 'https://…',
+              isDense: true,
+              filled: true,
+              fillColor: c.surfaceVariant,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.content_paste_rounded),
+                onPressed: () async {
+                  final d = await Clipboard.getData(Clipboard.kTextPlain);
+                  if (d?.text != null) ctl.text = d!.text!.trim();
+                },
+              ),
+            ),
+            onSubmitted: (v) => Navigator.pop(ctx, firstLinkIn(v)),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(onPressed: () => Navigator.pop(ctx, firstLinkIn(ctl.text)), child: Text(ctx.tr('Créer l\'aperçu'))),
+          ),
+        ]),
+      ),
+    );
+    if (url == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final p = await LinkPreviewService.fetch(url, forCard: true);
+      if (!mounted) return;
+      if (p == null) {
+        _say(tr('Aucun aperçu pour ce lien : essaie un autre lien.'));
+        return;
+      }
+      final title = (p['title'] ?? '').toString().trim();
+      final site = (p['siteName'] ?? '').toString().trim();
+      final author = (p['author'] ?? '').toString().trim();
+      final image = (p['image'] ?? '').toString();
+      final text = title.isNotEmpty ? title : (p['description'] ?? '').toString();
+      setState(() {
+        _source = CardSource(
+          pseudo: _source.pseudo,
+          avatar: _source.avatar,
+          verified: _source.verified,
+          text: text,
+          images: image.isNotEmpty ? [CachedNetworkImageProvider(image)] : const [],
+          isVideo: p['isVideo'] == true && image.isNotEmpty,
+          date: _source.date,
+          followers: _source.followers,
+          profileId: _source.profileId,
+          country: _source.country,
+          credit: [site, author].where((e) => e.isNotEmpty).join(' · '),
+          externalLink: (p['url'] ?? url).toString(),
+        );
+        _textCtl.text = text;
+        _spec.imageOrder = image.isNotEmpty ? [0] : <int>[];
+        _spec.layout = CardLayout.single;
+        _spec.showStats = false; // une vidéo d'ailleurs n'a pas de j'aime Afrolook : la personne peut les réactiver et écrire ses chiffres
+        _spec.adjusts.clear();
+        _captureDone = false;
+        _tab = 0;
+      });
+    } catch (e) {
+      _say(tr('Impossible de lire ce lien pour le moment. Vérifie l\'adresse et ta connexion.'));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _addImages() async {
     final picked = await ImagePicker().pickMultiImage(imageQuality: 88, maxWidth: 1600, maxHeight: 1600, limit: CardSpec.maxImages);
     if (picked.isEmpty) return;
@@ -487,7 +590,10 @@ class _CardStudioPageState extends State<CardStudioPage> {
         Text(context.tr(widget.compose ? 'Ajoute jusqu\'à 4 images à ta carte (facultatif).' : 'Ce post n\'a pas d\'image : la carte est un texte mis en forme.'), style: TextStyle(color: c.textSecondary, height: 1.4)),
         if (widget.compose) ...[
           const SizedBox(height: 10),
-          OutlinedButton.icon(onPressed: _addImages, icon: const Icon(Icons.add_photo_alternate_rounded), label: Text(context.tr('Ajouter des images'))),
+          Wrap(spacing: 8, runSpacing: 6, children: [
+            OutlinedButton.icon(onPressed: _addImages, icon: const Icon(Icons.add_photo_alternate_rounded), label: Text(context.tr('Ajouter des images'))),
+            OutlinedButton.icon(onPressed: _fromLink, icon: const Icon(Icons.link_rounded), label: Text(context.tr('Depuis un lien'))),
+          ]),
         ],
       ]);
     }
@@ -556,7 +662,10 @@ class _CardStudioPageState extends State<CardStudioPage> {
         ),
       if (widget.compose) ...[
         const SizedBox(height: 8),
-        TextButton.icon(onPressed: _addImages, icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: Text(context.tr('Changer les images'))),
+        Wrap(spacing: 4, children: [
+          TextButton.icon(onPressed: _addImages, icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: Text(context.tr('Changer les images'))),
+          TextButton.icon(onPressed: _fromLink, icon: const Icon(Icons.link_rounded, size: 18), label: Text(context.tr('Depuis un lien'))),
+        ]),
       ],
     ]);
   }

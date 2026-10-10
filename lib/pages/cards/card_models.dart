@@ -197,6 +197,7 @@ class CardSource {
     this.profileId,
     this.country,
     this.credit,
+    this.externalLink,
   });
 
   final String pseudo;
@@ -226,21 +227,26 @@ class CardSource {
   /// Crédit affiché quand la carte reprend le post d'un autre auteur (« Post de @pseudo »).
   final String? credit;
 
+  /// Carte « lien » : adresse de la vidéo ou de la page d'origine (YouTube, TikTok, Instagram…). Le QR et le partage mènent là.
+  final String? externalLink;
+
   bool get hasMedia => images.isNotEmpty;
   /// Lien du QR (obligatoire sur toute carte) : le post d'origine, sinon le profil de la personne, sinon l'accueil.
-  String get link => postId != null
+  String get link => (externalLink ?? '').isNotEmpty
+      ? externalLink!
+      : postId != null
       ? cardPostLink(postId!)
       : (profileId ?? '').isNotEmpty
           ? cardProfileLink(profileId!)
           : 'https://afrolookmedia.com';
 
-  CardSource copyWith({String? text, List<ImageProvider>? images}) => CardSource(
+  CardSource copyWith({String? text, List<ImageProvider>? images, bool? isVideo, String? externalLink, String? credit}) => CardSource(
         pseudo: pseudo,
         avatar: avatar,
         verified: verified,
         text: text ?? this.text,
         images: images ?? this.images,
-        isVideo: isVideo,
+        isVideo: isVideo ?? this.isVideo,
         postId: postId,
         date: date,
         likes: likes,
@@ -248,7 +254,8 @@ class CardSource {
         followers: followers,
         profileId: profileId,
         country: country,
-        credit: credit,
+        credit: credit ?? this.credit,
+        externalLink: externalLink ?? this.externalLink,
       );
 
   /// Brouillon : texte et images que l'utilisateur vient de saisir dans la page de création de post.
