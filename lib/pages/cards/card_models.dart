@@ -372,6 +372,7 @@ enum CardTemplateId {
   promo,
   ad,
   quote,
+  creator,
   birthday,
   wedding,
   congrats,
@@ -399,6 +400,7 @@ extension CardTemplateX on CardTemplateId {
         CardTemplateId.promo => 'Promo',
         CardTemplateId.ad => 'Annonce',
         CardTemplateId.quote => 'Citation',
+        CardTemplateId.creator => 'Carte de visite',
         CardTemplateId.birthday => 'Anniversaire',
         CardTemplateId.wedding => 'Mariage',
         CardTemplateId.congrats => 'Félicitations',
@@ -410,11 +412,15 @@ extension CardTemplateX on CardTemplateId {
         CardTemplateId.promo => Icons.local_offer_rounded,
         CardTemplateId.ad => Icons.campaign_rounded,
         CardTemplateId.quote => Icons.format_quote_rounded,
+        CardTemplateId.creator => Icons.badge_rounded,
         CardTemplateId.birthday => Icons.cake_rounded,
         CardTemplateId.wedding => Icons.favorite_rounded,
         CardTemplateId.congrats => Icons.emoji_events_rounded,
         CardTemplateId.condolence => Icons.local_florist_rounded,
       };
+
+  /// Carte de visite : photo de profil ronde, nom, métier, présentation, coordonnées.
+  bool get isCreator => this == CardTemplateId.creator;
 
   /// Cartes de vœux et de messages personnels : photo ronde, prénom en grand, message et signature.
   bool get isWish => index >= CardTemplateId.birthday.index;
@@ -477,6 +483,14 @@ extension CardTemplateX on CardTemplateId {
             TemplateField(
                 'author', 'Auteur', 'Proverbe africain', Icons.person_rounded,
                 max: 50),
+          ],
+        CardTemplateId.creator => const [
+            TemplateField('name', 'Nom ou pseudo', 'Aminata Koné', Icons.person_rounded, max: 40, main: true),
+            TemplateField('job', 'Métier ou activité', 'Photographe & créatrice de contenu', Icons.work_rounded, max: 60),
+            TemplateField('bio', 'Présentation', 'Portraits, mariages et reportages à Abidjan. Disponible pour vos projets.', Icons.notes_rounded, max: 140, lines: 3),
+            TemplateField('place', 'Lieu', 'Abidjan, Côte d\'Ivoire', Icons.place_rounded),
+            TemplateField('contact', 'Contact', '+225 07 00 00 00 00', Icons.phone_rounded),
+            TemplateField('social', 'Réseaux sociaux', '@aminata_k · Instagram, TikTok', Icons.alternate_email_rounded, max: 60),
           ],
         CardTemplateId.birthday => const [
             TemplateField('heading', 'Intitulé', 'Joyeux anniversaire',

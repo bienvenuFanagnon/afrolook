@@ -731,6 +731,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
       for (final f in t.fields) {
         _spec.fields[f.key] = tr(f.example);
       }
+      // carte de visite : le nom de la personne est déjà connu
+      if (t.isCreator && _source.pseudo.isNotEmpty) _spec.fields['name'] = _source.pseudo;
     }
     _captureDone = false;
     _syncTemplateText();

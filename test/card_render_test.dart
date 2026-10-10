@@ -242,7 +242,7 @@ void main() {
       for (final t in CardTemplateId.values) {
         final png = await render(tester, source(images: 1), withTemplate(st, t, images: (t == CardTemplateId.promo || t == CardTemplateId.birthday || t == CardTemplateId.wedding) ? 1 : 0));
         expect(png.length > 10000, true, reason: '${st.name} ${t.name}');
-        if (out != null && (t.isWish || t == CardTemplateId.event)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
+        if (out != null && (t.isCreator || t == CardTemplateId.event)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
       }
     }
     for (final f in CardFormat.values) {
@@ -280,6 +280,20 @@ void main() {
     final spec = withTemplate(CardStyleId.neon, CardTemplateId.birthday);
     expect(spec.templateSummary(), contains('Joyeux anniversaire'));
     expect(spec.linkFor(source()), source().link);
+  });
+
+  test('carte de visite : champs, QR vers le profil par défaut', () {
+    expect(CardTemplateId.creator.isCreator, true);
+    expect(CardTemplateId.creator.isWish, false);
+    expect(CardTemplateId.creator.hasLink, true);
+    final spec = CardSpec(style: CardStyleId.neon, template: CardTemplateId.creator);
+    for (final f in CardTemplateId.creator.fields) {
+      spec.fields[f.key] = f.example;
+    }
+    expect(spec.linkFor(source()), source().link);
+    spec.fields['link'] = 'https://afrolookmedia.com/p/aminata';
+    expect(spec.linkFor(source()), 'https://afrolookmedia.com/p/aminata');
+    expect(spec.templateSummary(), startsWith('Aminata Koné'));
   });
 
   test('le lien du QR : post, sinon profil, sinon accueil', () {

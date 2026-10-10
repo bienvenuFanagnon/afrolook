@@ -40,10 +40,13 @@ class _TemplateContent extends StatelessWidget {
     final ink = _PosterInk.of(theme);
     final body = t.isWish
         ? _WishBody(args: args, ink: ink)
-        : t == CardTemplateId.quote
-            ? _QuoteBody(args: args, ink: ink)
-            : _PosterBody(args: args, compact: compact, ink: ink);
-    final header = spec.showAuthor && !compact
+        : t.isCreator
+            ? _CreatorBody(args: args, ink: ink)
+            : t == CardTemplateId.quote
+                ? _QuoteBody(args: args, ink: ink)
+                : _PosterBody(args: args, compact: compact, ink: ink);
+    // la carte de visite montre déjà le nom et la photo : pas d'en-tête en plus
+    final header = spec.showAuthor && !compact && !t.isCreator
         ? _Header(source: source, spec: spec, theme: theme)
         : null;
     final footer =
@@ -419,6 +422,82 @@ class _WishBody extends StatelessWidget {
                             fontFamily: theme.headFont))),
                 const SizedBox(width: 8),
                 Container(width: 18, height: 2, color: ink.accent),
+              ]),
+            ),
+        ]),
+      );
+    });
+  }
+}
+
+
+/// Carte de visite : photo ronde (celle de la carte, sinon la photo de profil), nom, métier, présentation, coordonnées.
+class _CreatorBody extends StatelessWidget {
+  const _CreatorBody({required this.args, required this.ink});
+  final _Args args;
+  final _PosterInk ink;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = args.spec, theme = args.theme, source = args.source;
+    final t = spec.template!;
+    final name = spec.field('name');
+    final job = spec.field('job');
+    final bio = spec.field('bio');
+    final rows = [
+      for (final f in t.fields)
+        if (const ['place', 'contact', 'social'].contains(f.key) && spec.field(f.key).isNotEmpty) f,
+    ];
+    final headStyle = args.style(TextStyle(fontFamily: theme.headFont, color: ink.fg, fontWeight: FontWeight.w900));
+    final body = TextStyle(color: ink.fg, fontSize: 14.5, fontWeight: FontWeight.w600, height: 1.25);
+    final photo = args.hasImage ? args.fit(0) : (source.avatar != null ? FitImage(image: source.avatar!) : null);
+    return LayoutBuilder(builder: (context, box) {
+      final size = box.maxHeight > 260 ? 96.0 : 72.0;
+      return ClipRect(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            if (photo != null)
+              Container(
+                width: size,
+                height: size,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ink.accent, width: 3)),
+                clipBehavior: Clip.antiAlias,
+                child: ClipOval(child: photo),
+              ),
+            Expanded(
+              child: SizedBox(
+                height: size,
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 3, child: Align(alignment: Alignment.bottomLeft, child: _FitText(text: name, style: headStyle, maxSize: 28, minSize: 14, glow: theme.glow))),
+                  if (job.isNotEmpty)
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Align(alignment: Alignment.topLeft, child: _FitText(text: job, style: TextStyle(color: ink.accent, fontWeight: FontWeight.w800, fontFamily: theme.headFont), maxSize: 15, minSize: 11)),
+                      ),
+                    ),
+                ]),
+              ),
+            ),
+          ]),
+          Container(margin: const EdgeInsets.symmetric(vertical: 8), height: 3, width: 56, decoration: BoxDecoration(color: ink.accent, borderRadius: BorderRadius.circular(2))),
+          if (bio.isNotEmpty)
+            Expanded(
+              flex: 3,
+              child: Align(alignment: Alignment.centerLeft, child: _FitText(text: bio, style: args.style(TextStyle(color: ink.fg.withOpacity(0.92), fontWeight: FontWeight.w500, fontStyle: FontStyle.italic)), maxSize: 16, minSize: 11)),
+            )
+          else
+            const Spacer(),
+          const SizedBox(height: 6),
+          for (final f in rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(padding: const EdgeInsets.only(top: 1), child: Icon(f.icon, size: 16, color: ink.accent)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(spec.field(f.key), maxLines: 2, overflow: TextOverflow.ellipsis, style: body)),
               ]),
             ),
         ]),
