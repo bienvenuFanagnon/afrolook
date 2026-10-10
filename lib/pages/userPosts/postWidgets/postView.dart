@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/link_preview_card.dart';
 import '../../../services/followers_count_service.dart';
 import '../../../utils/count_format.dart';
 import 'dart:async';
@@ -2574,18 +2575,29 @@ class _PostViewState extends State<PostView>
                             alignment: Alignment.centerLeft,
                             child: Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  "${post.description}",
-                                  textAlign: TextAlign
-                                      .center, //overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: post.description!.length < 350
-                                        ? 25
-                                        : 16,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    //fontStyle: FontStyle.italic
-                                  ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: SingleChildScrollView(
+                                        child: Text(
+                                          "${post.description}",
+                                          textAlign: TextAlign
+                                              .center, //overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: post.description!.length < 350
+                                                ? (post.linkPreview != null ? 18 : 25)
+                                                : 16,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            //fontStyle: FontStyle.italic
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (post.linkPreview != null)
+                                      LinkPreviewCard(data: post.linkPreview!, margin: const EdgeInsets.only(top: 12)),
+                                  ],
                                 )),
                           ),
                         ),

@@ -1683,6 +1683,9 @@ class Post {
 
   // Snapshot du créateur/canal stocké à la création du post pour éviter les fetches profil
   Map<String, dynamic>? creatorSnapshot;
+
+  /// Aperçu d'un lien (YouTube, TikTok, Instagram…) joint à un post texte : url, title, description, image, siteName, provider, author, isVideo.
+  Map<String, dynamic>? linkPreview;
   Map<String, dynamic>? canalSnapshot;
 
   // Seules les infos stables pour l'affichage immédiat — pas de badges (isVerify/abonnement)
@@ -1904,6 +1907,7 @@ class Post {
         ? List<String>.from(json['hashtags'])
         : null;
 
+    linkPreview = json['linkPreview'] is Map ? Map<String, dynamic>.from(json['linkPreview'] as Map) : null;
     creatorSnapshot = json['creatorSnapshot'] != null
         ? Map<String, dynamic>.from(json['creatorSnapshot'] as Map)
         : null;
@@ -2021,6 +2025,7 @@ class Post {
     if (eventDate != null) data['eventDate'] = _tsToMs(eventDate);
     if (postInterests != null) data['postInterests'] = postInterests;
     if (creatorSnapshot != null) data['creatorSnapshot'] = creatorSnapshot;
+    if (linkPreview != null) data['linkPreview'] = linkPreview;
     if (canalSnapshot != null) data['canalSnapshot'] = canalSnapshot;
     return data;
   }

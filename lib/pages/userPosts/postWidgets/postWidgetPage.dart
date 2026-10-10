@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/link_preview_card.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import '../../../services/followers_count_service.dart';
 import '../../../utils/count_format.dart';
@@ -1873,6 +1874,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
             ],
           ),
         ],
+        if (widget.post.linkPreview != null)
+          LinkPreviewCard(data: widget.post.linkPreview!, margin: const EdgeInsets.only(top: 8, bottom: 4)),
         _buildEventBadge(widget.post),
       ],
     );

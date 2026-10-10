@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/link_preview_card.dart';
 import 'package:afrotok/ads/ad_slot.dart';
 import 'package:afrotok/utils/post_time_ago.dart';
 import 'package:afrotok/pages/stickers/sticker_quick_button.dart';
@@ -3656,6 +3657,8 @@ class _DetailsPostState extends State<DetailsPost>
             onToggle: (t) => setState(() => _translatedDescription = t),
             style: TextStyle(color: _colors.textPrimary),
           ),
+        if (post.linkPreview != null)
+          LinkPreviewCard(data: post.linkPreview!, margin: const EdgeInsets.only(top: 8, bottom: 6)),
 
         // Affichage selon le type de média
         if (post.dataType == PostDataType.AUDIO.name)

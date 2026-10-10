@@ -1,5 +1,6 @@
 import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'package:afrotok/widgets/name_tag.dart';
+import 'package:afrotok/widgets/link_preview_card.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -47,6 +48,14 @@ class _UserPubTextState extends State<UserPubText> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _countrySearchController = TextEditingController();
+
+  // ── Aperçu de lien (comme sur un statut WhatsApp) ──
+  bool _linkOn = false;
+  bool _linkLoading = false;
+  String? _linkUrl; // lien dont l'aperçu est affiché ou en cours de chargement
+  String? _linkError;
+  Map<String, dynamic>? _linkPreview;
+  Timer? _linkTimer;
 
   late PostProvider postProvider = Provider.of<PostProvider>(context, listen: false);
   late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -220,10 +229,92 @@ class _UserPubTextState extends State<UserPubText> {
 
   @override
   void dispose() {
+    _linkTimer?.cancel();
     _countrySearchController.removeListener(_filterCountries);
     _countrySearchController.dispose();
     _countrySearchFocus.dispose();
     super.dispose();
+  }
+
+  /// Après une pause de frappe, cherche l'aperçu du premier lien du texte (si l'option est cochée).
+  void _scheduleLinkPreview() {
+    _linkTimer?.cancel();
+    if (!_linkOn) return;
+    final url = firstLinkIn(_descriptionController.text);
+    if (url == null) {
+      setState(() { _linkUrl = null; _linkPreview = null; _linkError = null; _linkLoading = false; });
+      return;
+    }
+    if (url == _linkUrl) return;
+    _linkTimer = Timer(const Duration(milliseconds: 700), () => _loadLinkPreview(url));
+  }
+
+  Future<void> _loadLinkPreview(String url) async {
+    if (!mounted) return;
+    setState(() { _linkUrl = url; _linkLoading = true; _linkError = null; _linkPreview = null; });
+    try {
+      final p = await LinkPreviewService.fetch(url);
+      if (!mounted || _linkUrl != url) return;
+      setState(() { _linkPreview = p; _linkLoading = false; _linkError = p == null ? 'Aucun aperçu pour ce lien : il sera publié comme simple texte.' : null; });
+    } catch (e) {
+      if (!mounted || _linkUrl != url) return;
+      final msg = e is FirebaseFunctionsException && e.code == 'resource-exhausted' ? 'Trop d\'aperçus demandés, réessaie dans un moment.' : 'Aperçu indisponible pour le moment : le lien sera publié comme simple texte.';
+      setState(() { _linkLoading = false; _linkError = msg; });
+    }
+  }
+
+  /// Case à cocher + aperçu du lien dans le formulaire.
+  Widget _buildLinkPreviewOption() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      decoration: BoxDecoration(
+        color: _c.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _linkOn ? _c.primary.withOpacity(0.5) : _c.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          value: _linkOn,
+          activeColor: _c.primary,
+          title: Text('Afficher l\'aperçu d\'un lien', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+          subtitle: Text('Colle un lien YouTube, TikTok, Instagram, Facebook ou un site : il s\'affiche avec son image et sa description, comme sur un statut WhatsApp.', style: TextStyle(color: _c.textSecondary, fontSize: 11.5, height: 1.35)),
+          onChanged: (v) {
+            setState(() {
+              _linkOn = v;
+              if (!v) { _linkTimer?.cancel(); _linkUrl = null; _linkPreview = null; _linkError = null; _linkLoading = false; }
+            });
+            if (v) _scheduleLinkPreview();
+          },
+        ),
+        if (_linkOn && firstLinkIn(_descriptionController.text) == null)
+          Text('Ajoute un lien (https://…) dans ton texte pour voir l\'aperçu ici.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+        if (_linkOn && _linkLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _c.primary)),
+              const SizedBox(width: 10),
+              Text('Chargement de l\'aperçu…', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+            ]),
+          ),
+        if (_linkOn && _linkError != null && !_linkLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(_linkError!, style: TextStyle(color: _c.warning, fontSize: 12, height: 1.35)),
+          ),
+        if (_linkOn && _linkPreview != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: LinkPreviewCard(
+              data: _linkPreview!,
+              onRemove: () => setState(() { _linkOn = false; _linkPreview = null; _linkUrl = null; }),
+            ),
+          ),
+      ]),
+    );
   }
 
   /// Pays de l'utilisateur en premier, puis son continent, puis le reste du monde.
@@ -1730,6 +1821,10 @@ class _UserPubTextState extends State<UserPubText> {
         post.feedScore = 0.0;
         post.id = postId;
         post.images = [];
+        // aperçu du lien : seulement si l'option est cochée et que le lien est toujours dans le texte
+        if (_linkOn && _linkPreview != null && _linkUrl != null && _linkUrl == firstLinkIn(post.description)) {
+          post.linkPreview = _linkPreview;
+        }
 
         // Quand l'utilisateur coche "Tous les pays"
         if (_selectAllCountries) {
@@ -1800,6 +1895,10 @@ class _UserPubTextState extends State<UserPubText> {
         // Nettoyer le formulaire
         _descriptionController.clear();
         setState(() {
+          _linkOn = false;
+          _linkPreview = null;
+          _linkUrl = null;
+          _linkError = null;
           onTap = false;
           _selectedCountries.clear();
           _selectAllCountries = false;
@@ -2169,6 +2268,7 @@ class _UserPubTextState extends State<UserPubText> {
                                   textAlignVertical: TextAlignVertical.top,
                                   onChanged: (value) {
                                     setState(() {});
+                                    _scheduleLinkPreview();
                                   },
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
@@ -2199,6 +2299,7 @@ class _UserPubTextState extends State<UserPubText> {
                           descriptionController: _descriptionController,
                           onHashtagAdded: () => setState(() {}),
                         ),
+                        _buildLinkPreviewOption(),
                         Container(
                           margin: const EdgeInsets.fromLTRB(16, 6, 16, 0),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
