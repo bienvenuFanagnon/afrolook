@@ -38,9 +38,11 @@ class _TemplateContent extends StatelessWidget {
     final t = spec.template!;
     final compact = spec.format == CardFormat.square && args.hasImage;
     final ink = _PosterInk.of(theme);
-    final body = t == CardTemplateId.quote
-        ? _QuoteBody(args: args, ink: ink)
-        : _PosterBody(args: args, compact: compact, ink: ink);
+    final body = t.isWish
+        ? _WishBody(args: args, ink: ink)
+        : t == CardTemplateId.quote
+            ? _QuoteBody(args: args, ink: ink)
+            : _PosterBody(args: args, compact: compact, ink: ink);
     final header = spec.showAuthor && !compact
         ? _Header(source: source, spec: spec, theme: theme)
         : null;
@@ -268,5 +270,159 @@ class _QuoteBody extends StatelessWidget {
         Expanded(flex: 2, child: args.media(ratio: null)),
       ],
     ]);
+  }
+}
+
+/// Carte de vœux (anniversaire, mariage, félicitations, condoléances) : intitulé, photo ronde, prénom en grand, message, signature.
+/// La photo se zoome et se déplace au doigt comme sur les autres cartes.
+class _WishBody extends StatelessWidget {
+  const _WishBody({required this.args, required this.ink});
+  final _Args args;
+  final _PosterInk ink;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = args.spec, theme = args.theme;
+    final t = spec.template!;
+    final heading = spec.field('heading');
+    final name = spec.field('name');
+    final date = spec.field('date');
+    final message = spec.field('message');
+    final from = spec.field('from');
+    final sober = t == CardTemplateId.condolence;
+    final headStyle = args.style(TextStyle(
+        fontFamily: theme.headFont,
+        color: ink.fg,
+        fontWeight: FontWeight.w800));
+    final nameStyle = args.style(TextStyle(
+        fontFamily: theme.headFont,
+        color: ink.accent,
+        fontWeight: FontWeight.w900));
+    final bodyStyle = args.style(TextStyle(
+        color: ink.fg.withOpacity(0.92),
+        fontWeight: FontWeight.w500,
+        fontStyle: FontStyle.italic));
+    return LayoutBuilder(builder: (context, box) {
+      final tall = box.maxHeight > 250;
+      return ClipRect(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(t.icon, size: 20, color: ink.accent),
+            if (!sober) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.auto_awesome_rounded, size: 14, color: ink.accent)
+            ],
+          ]),
+          const SizedBox(height: 4),
+          if (heading.isNotEmpty)
+            SizedBox(
+              height: tall ? 46 : 34,
+              width: double.infinity,
+              child: _FitText(
+                  text: heading,
+                  style: headStyle,
+                  maxSize: sober ? 22 : 26,
+                  minSize: 13,
+                  align: TextAlign.center,
+                  glow: theme.glow),
+            ),
+          if (args.hasImage) ...[
+            const SizedBox(height: 6),
+            Expanded(
+              flex: 5,
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: ink.accent, width: 3)),
+                    clipBehavior: Clip.antiAlias,
+                    child: ClipOval(child: args.fit(0)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (args.hasImage)
+            SizedBox(
+              height: tall ? 44 : 34,
+              width: double.infinity,
+              child: _FitText(
+                  text: name,
+                  style: nameStyle,
+                  maxSize: 34,
+                  minSize: 14,
+                  align: TextAlign.center,
+                  glow: theme.glow),
+            )
+          else
+            Expanded(
+              flex: 3,
+              child: Align(
+                alignment: Alignment.center,
+                child: SizedBox(
+                    width: double.infinity,
+                    child: _FitText(
+                        text: name,
+                        style: nameStyle,
+                        maxSize: 44,
+                        minSize: 16,
+                        align: TextAlign.center,
+                        glow: theme.glow)),
+              ),
+            ),
+          if (date.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(date,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: ink.fg.withOpacity(0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4)),
+            ),
+          if (message.isNotEmpty)
+            Expanded(
+              flex: args.hasImage ? 3 : 4,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Align(
+                    alignment: Alignment.center,
+                    child: _FitText(
+                        text: message,
+                        style: bodyStyle,
+                        maxSize: 16,
+                        minSize: 11,
+                        align: TextAlign.center)),
+              ),
+            )
+          else
+            const Spacer(),
+          if (from.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child:
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Container(width: 18, height: 2, color: ink.accent),
+                const SizedBox(width: 8),
+                Flexible(
+                    child: Text(from,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: ink.accent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: theme.headFont))),
+                const SizedBox(width: 8),
+                Container(width: 18, height: 2, color: ink.accent),
+              ]),
+            ),
+        ]),
+      );
+    });
   }
 }

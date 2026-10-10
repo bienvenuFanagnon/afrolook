@@ -240,9 +240,9 @@ void main() {
   testWidgets('modèles : tous les styles, avec et sans image, 3 formats', (tester) async {
     for (final st in CardStyleId.values) {
       for (final t in CardTemplateId.values) {
-        final png = await render(tester, source(images: 1), withTemplate(st, t, images: t == CardTemplateId.promo ? 1 : 0));
+        final png = await render(tester, source(images: 1), withTemplate(st, t, images: (t == CardTemplateId.promo || t == CardTemplateId.birthday || t == CardTemplateId.wedding) ? 1 : 0));
         expect(png.length > 10000, true, reason: '${st.name} ${t.name}');
-        if (out != null && (t == CardTemplateId.event || t == CardTemplateId.quote)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
+        if (out != null && (t.isWish || t == CardTemplateId.event)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
       }
     }
     for (final f in CardFormat.values) {
@@ -269,6 +269,17 @@ void main() {
     expect(CardSpec(style: CardStyleId.neon, likesText: '12k').likesOverride, '12k');
     expect(CardSpec(style: CardStyleId.neon, likesText: '1,2 M').likesOverride, '1,2 M');
     expect(CardSpec(style: CardStyleId.neon, likesText: '350').likesOverride, '350');
+  });
+
+  test('cartes de vœux : quatre modèles, sans lien, avec photo ronde', () {
+    expect(CardTemplateId.values.where((t) => t.isWish).length, 4);
+    for (final t in CardTemplateId.values.where((t) => t.isWish)) {
+      expect(t.hasLink, false);
+      expect(t.fields.map((f) => f.key), containsAll(['heading', 'name', 'message', 'from']));
+    }
+    final spec = withTemplate(CardStyleId.neon, CardTemplateId.birthday);
+    expect(spec.templateSummary(), contains('Joyeux anniversaire'));
+    expect(spec.linkFor(source()), source().link);
   });
 
   test('le lien du QR : post, sinon profil, sinon accueil', () {
