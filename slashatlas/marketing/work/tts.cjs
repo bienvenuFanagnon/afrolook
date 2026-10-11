@@ -42,7 +42,18 @@ const LINES_AD3 = {
     l6: ['Pas envie de coller ? Cliquez sur Générer ici : envoyez votre photo, et obtenez votre visuel directement sur le site.', 11.4],
     l7: ['Slash Atlas point com. Gratuit, sans inscription pour copier. [pause short] Essayez, puis dites-nous ce que vous en pensez. Et si vous voulez collaborer, écrivez-nous.', 8.4] } },
 };
-const LINES = process.env.AD === '3' ? LINES_AD3 : (process.env.AD === '2' ? LINES_AD2 : LINES_AD1);
+const LINES_AD4 = {
+  fr: { code: 'fr-FR', l: {
+    l1: ['Vous vendez des robes, des cosmétiques, des plats ? [pause short] Votre affiche est belle. Mais comment vos clients commandent-ils ?', 9.0],
+    l2: ['Ils doivent noter votre numéro, chercher votre page, taper votre lien… [pause short] et beaucoup abandonnent en chemin.', 8.0],
+    l3: ['Il y a bien plus simple : [pause short] un QR code sur votre affiche.', 4.2],
+    l4: ['Sur Slash Atlas, vous importez votre photo, vous collez le lien de votre site, de votre boutique ou de votre WhatsApp, [pause short] et vous générez. L’affiche est créée, avec un petit QR code placé au meilleur endroit.', 13.5],
+    l5: ['Votre client scanne avec son téléphone, [pause short] et arrive directement chez vous. Il choisit, il commande, en quelques secondes.', 9.0],
+    l6: ['Vous choisissez le texte au-dessus, l’emplacement et la taille. Ou vous le retirez, gratuitement, même après la création.', 8.5],
+    l7: ['Le QR code ouvre uniquement votre lien. Sous le code, une simple mention : créé avec slashatlas point com.', 8.0],
+    l8: ['Slash Atlas point com. Copiez gratuitement les commandes, ou créez votre affiche avec QR code dans le Studio. [pause short] Et rejoignez notre canal WhatsApp pour les surprises.', 13.0] } },
+};
+const LINES = process.env.AD === '4' ? LINES_AD4 : process.env.AD === '3' ? LINES_AD3 : (process.env.AD === '2' ? LINES_AD2 : LINES_AD1);
 function wavInfo(buf) {
   const pcm = new Int16Array(buf.buffer.slice(buf.byteOffset + 44, buf.byteOffset + buf.length));
   let a = 0, b = pcm.length - 1; const th = 400;
@@ -58,7 +69,7 @@ function writeWav(path, pcm) {
   const [lang, voice] = process.argv.slice(2); const L = LINES[lang];
   const auth = new GoogleAuth({ keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
   const t = (await (await auth.getClient()).getAccessToken()).token;
-  const dir = `vo${process.env.AD === '3' ? '3' : (process.env.AD === '2' ? '2' : '')}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
+  const dir = `vo${process.env.AD === '4' ? '4' : process.env.AD === '3' ? '3' : (process.env.AD === '2' ? '2' : '')}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
   let chars = 0;
   for (const [k, [text, win]] of Object.entries(L.l)) {
     if (process.env.ONLY && !process.env.ONLY.split(',').includes(k)) continue;
