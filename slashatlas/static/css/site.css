@@ -250,3 +250,18 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .poster.img.ls>img{object-fit:contain;background:#111}
 .fpost .poster.big{aspect-ratio:var(--ar,4/5);max-height:62vh;width:100%}
 @media (min-width:720px){.fpost .poster.big{aspect-ratio:var(--ar,4/5);max-height:78vh}}
+
+/* Tester d'abord, copier ensuite */
+.acts{display:flex;gap:8px;align-items:center}.acts .btn{flex:1 1 0}.acts .btn.pri{flex:1.5 1 0;font-weight:800}
+.acts.big{margin-top:10px}.acts.big .btn{flex:1 1 0;padding:15px 10px;font-size:15.5px}.acts.big .btn.pri{flex:1.6 1 0}
+.rb .acts .btn.copy{padding:11px 8px;font-size:14px}.rb .acts .btn.gl.copy{color:var(--mut)}
+.card .acts .btn.sm{padding:9px 10px;font-size:13px}.card .acts .btn.gl{color:var(--mut)}
+.cmd .btn.big{width:auto}
+.adapt{display:grid;gap:8px;grid-template-columns:minmax(0,1fr) auto;align-items:end}
+.adapt label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--mut);min-width:0}
+.adapt input{background:#0d0e10;border:1px solid var(--line2);border-radius:14px;color:var(--txt);padding:12px 13px;font:inherit;font-size:14.5px;min-width:0}.adapt input:focus{outline:2px solid var(--acc);outline-offset:1px}
+.seg2{display:flex;border:1px solid var(--line2);border-radius:14px;padding:3px;height:46px}.seg2 button{background:none;border:0;color:var(--mut);font-weight:700;font-size:13px;padding:0 12px;border-radius:11px;cursor:pointer}.seg2 button[aria-pressed=true]{background:var(--acc);color:#fff}
+.trysel{display:flex;flex-direction:column;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:16px 0}.trysel small{color:var(--faint);font-size:12px}.trysel b{font:700 16px var(--mono);color:var(--acc2)}.trysel span{color:var(--mut)}
+@media (max-width:719px){.card .cb .meta{display:none}.card .acts{margin-top:2px}}
+.ex2{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:14px;display:grid;gap:10px}.ex2>b{font-size:14px}.ex2>div{display:flex;align-items:center;gap:10px}.ex2 span{color:var(--faint)}.ex2 figure{margin:0;flex:1;min-width:0;display:grid;gap:5px}.ex2 img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block}.ex2 figcaption,.ex2 small{color:var(--faint);font-size:11.5px}
+.cmd .acts.big{width:100%}.cmd .acts.big .btn{min-width:0;width:auto}

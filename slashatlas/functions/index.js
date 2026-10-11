@@ -17,7 +17,7 @@ const ORIGINS = [
 // Seule cette adresse (compte Afrolook existant, e-mail vérifié) ouvre l'administration. Aucune inscription publique.
 const ADMINS = ['jorbienvenu@gmail.com'];
 const LANGS = ['fr', 'en'];
-const KINDS = ['newsletter', 'waitlist', 'request'];
+const KINDS = ['newsletter', 'waitlist', 'request', 'studio'];
 const BOT = /bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|curl|wget|python|monitor/i;
 
 // Limiteur mémoire (par instance) : suffisant pour freiner les abus simples.
@@ -74,6 +74,9 @@ async function statsWrite(b, req) {
   } else if (t === 'test') {
     u.tests = inc;
     u[`tool.${key(b.tool)}`] = inc;
+  } else if (t === 'try') {
+    u.tries = inc;
+    u[`try.${key(b.n)}`] = inc;
   } else return;
   const ref = db.collection('SlashAtlasStats').doc(day());
   try {

@@ -54,9 +54,14 @@ async function one(slug) {
   const c = COMMANDS.find((x) => x.slug === slug);
   if (!c || !SRC[slug]) { console.error('inconnu', slug); return; }
   console.log('→', slug);
-  const a = await gen([{ text: SRC[slug] + ` Format ${c.ratio}.` }], c.ratio);
-  if (!a) return;
-  const pa = path.join(out, `${slug}-avant.${ext(a.mime)}`); fs.writeFileSync(pa, a.data);
+  let a, pa;
+  const keep = ['jpg', 'png'].map((e) => path.join(out, `${slug}-avant.${e}`)).find((f) => fs.existsSync(f));
+  if (keep) { pa = keep; a = { data: fs.readFileSync(keep), mime: keep.endsWith('png') ? 'image/png' : 'image/jpeg' }; } // photo de départ déjà générée : on la réutilise
+  else {
+    a = await gen([{ text: SRC[slug] + ` Format ${c.ratio}.` }], c.ratio);
+    if (!a) return;
+    pa = path.join(out, `${slug}-avant.${ext(a.mime)}`); fs.writeFileSync(pa, a.data);
+  }
   const b = await gen([{ inlineData: { mimeType: a.mime, data: a.data.toString('base64') } }, { text: `${c.code} : ${c.fr.prompt}` }], c.ratio);
   if (!b) return;
   const pb = path.join(out, `${slug}-apres.${ext(b.mime)}`); fs.writeFileSync(pb, b.data);

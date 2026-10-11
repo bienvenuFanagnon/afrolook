@@ -46,6 +46,7 @@
       return;
     }
     var t = e.target.closest('[data-test]'); if (t) track('test', { tool: t.dataset.test });
+    var u = e.target.closest('[data-try]'); if (u) track('try', { n: u.dataset.try });
   });
 
   // ── Recherche et filtre ──
@@ -106,4 +107,16 @@
     $('#replay').addEventListener('click', function () { touched = false; start(); });
     start();
   }
+
+  // ── Adapter la commande au produit : texte libre + un ou plusieurs éléments ──
+  $$('.adapt').forEach(function (box) {
+    var pre = document.getElementById(box.dataset.for), input = $('input', box), mode = '1';
+    function build() {
+      var type = input.value.trim().replace(/[()]/g, '');
+      var clause = (mode === 'n' ? box.dataset.cn : box.dataset.c1).replace('{T}', type ? ' (' + type + ')' : '');
+      if (pre) pre.textContent = box.dataset.code + ' : ' + box.dataset.base + ' ' + clause;
+    }
+    input.addEventListener('input', build);
+    $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
+  });
 })();

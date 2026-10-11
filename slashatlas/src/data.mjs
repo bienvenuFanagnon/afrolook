@@ -14,7 +14,9 @@ export const CATEGORIES = [
 ];
 
 // x, y : position de la lueur sur l'affiche ; r : forme (rayon) ; ratio : format conseillé
-export const COMMANDS = [
+import { KIND, EXTRA } from './data_extra.mjs';
+
+const BASE = [
   { slug: 'fashionposter', code: '/fashionposter', cat: 'mode', ratio: '4:5', x: '70%', y: '78%', r: '50%',
     fr: { title: 'Affiche de collection', poster: 'Nouvelle collection', desc: 'Transforme la photo d’un vêtement en affiche de collection, avec de la place pour le titre.',
       prompt: 'Transforme la photo jointe en affiche publicitaire de mode, format vertical 4:5. Le vêtement reste identique (coupe, couleurs, motifs). Fond uni sobre, lumière de studio douce, ombre légère sous le vêtement. Grand espace libre en haut pour le titre. Rendu net, éditorial, sans texte inventé.' },
@@ -32,9 +34,9 @@ export const COMMANDS = [
       prompt: 'The product in the attached photo floats in the center in a glowing halo, dark gradient background, soft shadow, studio light. Vertical 4:5 advertising poster, free space at the top for the headline. Keep the product perfectly identical (shape, colors, logo, label).' } },
   { slug: 'splashshot', code: '/splashshot', cat: 'produit', ratio: '1:1', x: '65%', y: '35%', r: '50%',
     fr: { title: 'Produit et éclaboussures', poster: 'Fraîcheur', desc: 'Le produit au milieu d’éclaboussures figées : idéal pour boissons, cosmétiques, soins.',
-      prompt: 'Le produit de la photo jointe au centre, entouré d’éclaboussures d’eau figées en plein mouvement, gouttes nettes, reflets frais, fond dégradé bleu-gris clair. Format carré 1:1, lumière de studio. Le produit reste identique (forme, couleurs, logo).' },
+      prompt: 'Le produit de la photo jointe au centre, entouré d’éclaboussures figées en plein mouvement, adaptées à l’univers du produit (de l’eau pour une boisson, de la crème ou des pétales pour un cosmétique, etc.), gouttes nettes, reflets frais, fond dégradé aux couleurs du produit. Format carré 1:1, lumière de studio. Le produit reste identique (forme, couleurs, logo).' },
     en: { title: 'Product with splashes', poster: 'Fresh', desc: 'The product amid frozen splashes: ideal for drinks, cosmetics, skincare.',
-      prompt: 'The product from the attached photo in the center, surrounded by water splashes frozen mid-motion, crisp droplets, fresh reflections, light blue-grey gradient background. Square 1:1 format, studio light. The product stays identical (shape, colors, logo).' } },
+      prompt: 'The product from the attached photo in the center, surrounded by splashes frozen mid-motion, matched to the product’s world (water for a drink, cream or petals for a cosmetic, etc.), crisp droplets, fresh reflections, gradient background in the product’s colors. Square 1:1 format, studio light. The product stays identical (shape, colors, logo).' } },
   { slug: 'menuhero', code: '/menuhero', cat: 'food', ratio: '4:5', x: '60%', y: '60%', r: '50%',
     fr: { title: 'Plat vedette du menu', poster: 'Menu du jour', desc: 'Un plat en gros plan, vapeur et lumière chaude, pour une affiche de menu qui donne faim.',
       prompt: 'Le plat de la photo jointe en gros plan, légère vapeur, lumière chaude latérale, fond sombre flou, ingrédients frais autour. Affiche de restaurant verticale 4:5 avec espace libre en bas pour le prix. Le plat reste fidèle à la photo, sans ajouter d’ingrédients ni de texte.' },
@@ -106,3 +108,5 @@ export const COMMANDS = [
     en: { title: 'Hair showcase', poster: 'New cut', desc: 'Highlights a hairstyle or color with professional salon lighting.',
       prompt: 'With the attached photo, create a vertical 4:5 hair salon poster: soft studio lighting, shiny highlights on the hair, neutral slightly graded background. The hairstyle and face stay identical. Free space for the salon name and price. No added text or prices: leave the free areas empty.' } },
 ];
+
+export const COMMANDS = [...BASE.map((c) => ({ ...c, kind: KIND[c.slug] })), ...EXTRA];

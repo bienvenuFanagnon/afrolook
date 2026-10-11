@@ -15,14 +15,37 @@ const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 
 const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
 
 const P = {
-  fr: { home: '/', cmds: '/commandes/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/tester/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/try/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
 const pages = []; // pour le sitemap : { fr, en }
 
 // ───────── composants ─────────
+const CLAUSE = {
+  fr: {
+    product: ['S’il y a plusieurs produits sur la photo, garde-les tous, identiques et bien visibles. Adapte le décor à la nature du produit{T} : n’ajoute aucun élément sans rapport avec lui (pas d’eau si ce n’est pas un produit lié à l’eau).', 'La photo contient plusieurs produits{T} : garde-les tous, identiques, bien visibles et harmonieusement disposés. Adapte le décor à leur nature : n’ajoute aucun élément sans rapport avec eux.'],
+    dish: ['S’il y a plusieurs plats ou boissons sur la photo, garde-les tous, identiques et bien visibles. Adapte l’ambiance au type de cuisine{T}.', 'La photo contient plusieurs plats ou boissons{T} : garde-les tous, identiques, bien visibles et bien disposés. Adapte l’ambiance à leur type de cuisine.'],
+    person: ['S’il y a plusieurs personnes sur la photo, garde-les toutes, visages, tenues et proportions identiques{T}.', 'La photo contient plusieurs personnes{T} : garde-les toutes, visages, tenues et proportions identiques, bien visibles et bien cadrées.'],
+    place: ['Adapte l’ambiance au type de bien{T} et garde l’architecture identique : ne change ni la structure, ni les dimensions.', 'La photo contient plusieurs pièces ou plusieurs vues du bien{T} : traite chacune avec la même ambiance, structure et dimensions identiques.'],
+  },
+  en: {
+    product: ['If the photo shows several products, keep them all, identical and clearly visible. Adapt the setting to the nature of the product{T}: add nothing unrelated to it (no water unless it is a water-related product).', 'The photo contains several products{T}: keep them all, identical, clearly visible and nicely arranged. Adapt the setting to their nature: add nothing unrelated to them.'],
+    dish: ['If the photo shows several dishes or drinks, keep them all, identical and clearly visible. Adapt the mood to the type of cuisine{T}.', 'The photo contains several dishes or drinks{T}: keep them all, identical, clearly visible and well arranged. Adapt the mood to their type of cuisine.'],
+    person: ['If the photo shows several people, keep them all, faces, outfits and proportions identical{T}.', 'The photo contains several people{T}: keep them all, faces, outfits and proportions identical, clearly visible and well framed.'],
+    place: ['Adapt the mood to the type of property{T} and keep the architecture identical: change neither the structure nor the dimensions.', 'The photo contains several rooms or several views of the property{T}: treat each with the same mood, structure and dimensions identical.'],
+  },
+};
+const KIND_LABEL = {
+  fr: { product: ['Votre produit', 'ex. crème visage, 3 bouteilles de jus'], dish: ['Votre plat', 'ex. poulet braisé, 2 pizzas et une boisson'], person: ['Sur la photo', 'ex. un coach sportif, un groupe de 3 amies'], place: ['Votre bien', 'ex. appartement 3 pièces, villa avec piscine'] },
+  en: { product: ['Your product', 'e.g. face cream, 3 juice bottles'], dish: ['Your dish', 'e.g. grilled chicken, 2 pizzas and a drink'], person: ['In the photo', 'e.g. a fitness coach, a group of 3 friends'], place: ['Your property', 'e.g. 3-room flat, villa with a pool'] },
+};
+const MULTI = { fr: ['Un seul', 'Plusieurs'], en: ['Single', 'Several'] };
+const clauseOf = (c, l, multi = false, type = '') => CLAUSE[l][c.kind || 'product'][multi ? 1 : 0].replace('{T}', type ? ` (${type})` : '');
+const fullPrompt = (c, l) => `${c.code} : ${c[l].prompt} ${clauseOf(c, l)}`;
+const TEST = { fr: 'Tester', en: 'Try it' };
+
 const ad = (kind) => (cfg.ads.enabled ? `<div class="ad ad-${kind}" data-slot="${kind}" aria-label="Publicité"></div>` : '');
 
 const AIWORD = { fr: 'Généré par IA', en: 'AI-generated' };
@@ -30,6 +53,9 @@ const BEFORE = { fr: 'Photo de départ', en: 'Starting photo' };
 const imgAlt = (c, l) => (l === 'fr' ? `Résultat de la commande ${c.code} : ${c.fr.title}` : `Result of the ${c.code} command: ${c.en.title}`);
 function poster(c, l, big = false) {
   const t = c[l];
+  if (c.noImage) {
+    return `<div class="poster${big ? ' big' : ''}" style="--x:${c.x};--y:${c.y};--r:${c.r}"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="shape"></span><b>${esc(t.poster)}</b><small>${esc(c.code)}</small></div>`;
+  }
   if (big) {
     return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high"><span class="ai">${AIWORD[l]} · Gemini</span><div class="av"><img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy"><small>${BEFORE[l]}</small></div></div>`;
   }
@@ -38,7 +64,7 @@ function poster(c, l, big = false) {
 function card(c, l) {
   const t = c[l];
   const search = `${c.code} ${t.title} ${catOf(c.cat)[l]} ${t.desc}`.toLowerCase();
-  return `<article class="card" data-search="${esc(search)}" data-cat="${c.cat}"><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="code">${esc(c.code)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])} · ${c.ratio}</span><button class="mini" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${T[l].cmd.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(c.code + ' : ' + t.prompt)}</pre></div></article>`;
+  return `<article class="card" data-search="${esc(search)}" data-cat="${c.cat}"><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="code">${esc(c.code)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])} · ${c.ratio}</span></div><div class="acts"><a class="btn pri sm" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]}</a><button class="btn gl sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${T[l].cmd.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 function bandForm(l, kind = 'request') {
   const b = T[l].band;
@@ -103,7 +129,7 @@ const ICON = {
 };
 function railCard(c, l) {
   const t = c[l], H = HOME[l];
-  return `<article class="rc" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><button class="btn pri copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${ICON.copy}${H.copy}</button><pre id="p-${c.slug}" hidden>${esc(c.code + ' : ' + t.prompt)}</pre></div></article>`;
+  return `<article class="rc" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><div class="acts"><a class="btn pri copy" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]}</a><button class="btn gl copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${H.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];
@@ -141,18 +167,20 @@ function cmdPage(l, c) {
   const same = COMMANDS.filter((x) => x.cat === c.cat && x.slug !== c.slug);
   const rel = [...same, ...COMMANDS.filter((x) => x.cat !== c.cat)].slice(0, 3);
   const tools = [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Midjourney', 'https://www.midjourney.com/']];
-  const fullText = `${c.code} : ${ct.prompt}`;
+  const fullText = fullPrompt(c, l);
+  const KL = KIND_LABEL[l][c.kind || 'product'];
+  const adapt = `<div class="adapt" data-for="p-${c.slug}" data-code="${esc(c.code)}" data-base="${esc(ct.prompt)}" data-c1="${esc(CLAUSE[l][c.kind || 'product'][0])}" data-cn="${esc(CLAUSE[l][c.kind || 'product'][1])}"><label>${KL[0]}<input type="text" maxlength="60" placeholder="${esc(KL[1])}" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="true">${MULTI[l][0]}</button><button type="button" data-n="n" aria-pressed="false">${MULTI[l][1]}</button></div></div>`;
 const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] };
   const fsteps = FS[l].map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x}</b></li>`).join('');
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 <div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]} · ${c.ratio}</div><h1>${esc(ct.title)}</h1></div><div class="fpost">${poster(c, l, true)}</div>
-<div class="fbody"><div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><button class="btn pri big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div>
+<div class="fbody">${adapt}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big"><a class="btn pri big" href="${p.try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]}</a><button class="btn gl big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div></div>
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
-<div class="after" id="after"><b>${t.afterT}</b><div class="grid">${rel.map((x) => card(x, l)).join('')}</div></div></div></div>
+${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b><div class="grid">${rel.map((x) => card(x, l)).join('')}</div></div></div></div>
 ${same.length ? `<div class="sec"><h2>${t.similar}</h2></div><div class="grid">${same.map((x) => card(x, l)).join('')}</div>` : ''}</div>`;
   const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: t.crumbHome, item: abs(p.home) }, { '@type': 'ListItem', position: 2, name: cat[l], item: abs(p.cat(c.cat)) }, { '@type': 'ListItem', position: 3, name: c.code, item: abs(p.cmd(c.slug)) }] };
-  emit(l, 'cmd', p.cmd(c.slug), { img: `/img/c/${c.slug}-apres.webp`, title: t.title(c.code, ct.title), desc: ct.desc, body, alt: alt2(P.fr.cmd(c.slug), P.en.cmd(c.slug)), ld });
+  emit(l, 'cmd', p.cmd(c.slug), { img: c.noImage ? undefined : `/img/c/${c.slug}-apres.webp`, title: t.title(c.code, ct.title), desc: ct.desc, body, alt: alt2(P.fr.cmd(c.slug), P.en.cmd(c.slug)), ld });
   if (l === 'fr') pages.push({ fr: P.fr.cmd(c.slug), en: P.en.cmd(c.slug) });
 }
 function tutoPage(l) {
@@ -200,6 +228,23 @@ function adminPage() {
 <div id="adm" hidden></div></div>`;
   emit('fr', 'admin', '/admin/', { title: 'Administration | SlashAtlas', desc: 'Tableau de bord privé de SlashAtlas : audience, commandes copiées et inscriptions. Accès réservé à l’administrateur.', body, noindex: true, extraJs: '/js/admin.js' });
 }
+
+const TRY = {
+  fr: { title: 'Tester une commande sur SlashAtlas', desc: 'Bientôt : importez votre photo, choisissez une commande et obtenez votre visuel directement sur SlashAtlas, avec des crédits.', k: 'Bientôt disponible', h: 'Testez la commande sur votre photo', lead: 'Importez votre photo, choisissez la commande, obtenez votre visuel ici, sans quitter le site. Vous payez seulement les crédits que vous utilisez.', steps: [['Importez', 'votre photo (un ou plusieurs produits)'], ['Précisez', 'votre produit et la commande'], ['Obtenez', 'votre visuel à télécharger']], cmd: 'Commande choisie', pay: 'Paiement par mobile money ou par carte bancaire.', btn: 'Prévenez-moi à l’ouverture', copyTitle: 'En attendant', copyBtn: 'Copier la commande', all: 'Choisir une autre commande' },
+  en: { title: 'Try a command on SlashAtlas', desc: 'Coming soon: upload your photo, pick a command and get your visual right on SlashAtlas, using credits.', k: 'Coming soon', h: 'Try the command on your photo', lead: 'Upload your photo, pick the command, get your visual here without leaving the site. You only pay for the credits you use.', steps: [['Upload', 'your photo (one or several products)'], ['Describe', 'your product and the command'], ['Get', 'your visual to download']], cmd: 'Selected command', pay: 'Pay by mobile money or by card.', btn: 'Notify me at launch', copyTitle: 'Meanwhile', copyBtn: 'Copy the command', all: 'Choose another command' },
+};
+function tryPage(l) {
+  const t = TRY[l], p = P[l];
+  const steps = t.steps.map((x, i) => `<li><span class="si">${[ICON.paste, ICON.copy, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
+  const map = Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, title: c[l].title, href: p.cmd(c.slug) }]));
+  const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="lead">${t.lead}</p>
+<ol class="steps3" aria-hidden="false">${steps}</ol>
+<div class="trysel" id="trysel" hidden data-map="${esc(JSON.stringify(map))}"><small>${t.cmd}</small><b id="try-code"></b><span id="try-title"></span><a class="link" href="${p.cmds}">${t.all} ›</a></div>
+<p class="hint">${t.pay}</p>
+<div class="band"><form class="col" data-form="studio" data-ok="${esc(T[l].band.ok)}" data-err="${esc(T[l].band.err)}" data-invalid="${esc(T[l].band.invalid)}" data-sending="${esc(T[l].band.sending)}" data-lang="${l}" novalidate><div class="row"><input type="email" name="email" placeholder="${esc(T[l].band.ph)}" aria-label="E-mail" autocomplete="email" required><input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn pri" type="submit">${t.btn}</button></div><p class="fmsg" role="status" aria-live="polite"></p></form></div>
+<div class="sec"><h2>${t.copyTitle}</h2></div><div class="cmd" id="try-cmd" hidden><pre id="p-try"></pre><button class="btn gl big" type="button" data-copy="#p-try">${ICON.copy}${t.copyBtn}</button></div></div>`;
+  emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
+}
 function notFound() {
   const t = T.fr.nf;
   write('404.html', layout({ l: 'fr', key: '404', path: '/404.html', title: t.title, desc: t.p, noindex: true, body: `<div class="wrap narrow center"><h1 class="big sm">${t.h}</h1><p class="lead">${t.p}</p><a class="btn pri" href="/commandes/">${t.btn}</a></div>` }));
@@ -210,7 +255,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 for (const l of ['fr', 'en']) {
-  home(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies');
+  home(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); tryPage(l);
   for (const c of CATEGORIES) catPage(l, c);
   for (const c of COMMANDS) cmdPage(l, c);
 }
