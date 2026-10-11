@@ -1,3 +1,5 @@
 {
-  "projects": { "default": "afrolooki" }
+  "projects": {
+    "default": "slashatlas-studio"
+  }
 }

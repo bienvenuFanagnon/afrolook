@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "slashatlas",
+    "site": "slashatlas-studio",
     "public": "dist",
     "cleanUrls": true,
     "trailingSlash": true,
@@ -86,5 +86,9 @@
         "*.log"
       ]
     }
-  ]
+  ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
 }
