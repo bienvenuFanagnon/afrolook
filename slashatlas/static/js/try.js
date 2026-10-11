@@ -78,11 +78,11 @@
     Array.prototype.forEach.call(root.querySelectorAll('[data-rm]'), function (b) { b.addEventListener('click', function () { var p = state.photos.splice(+b.dataset.rm, 1)[0]; if (p) URL.revokeObjectURL(p.url); render(); }); });
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
-    var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy(); else generate(); });
-    var ag = $('#s-again'); if (ag) ag.addEventListener('click', function () { if (state.credits < 1) openBuy(); else generate(); });
+    var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
+    var ag = $('#s-again'); if (ag) ag.addEventListener('click', function () { if (state.credits < 1) openBuy('refaire'); else generate(); });
     var by = $('#s-buy'); if (by) by.addEventListener('click', openBuy);
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
-    var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy(); else editImage(); });
+    var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy('corriger'); else editImage(); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; render(); }); });
   }
 
@@ -125,7 +125,7 @@
         state.versions = [state.result]; state.cur = 0; state.instruction = '';
         state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
       } else {
-        if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy(); return; }
+        if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); return; }
         render(); msg(errText(r.data && r.data.error));
       }
     }).catch(function () { state.busy = false; render(); msg(T.e.server); });
@@ -143,15 +143,16 @@
         var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
         var v = { id: r.data.id, url: URL.createObjectURL(new Blob([arr], { type: r.data.mime })), ext: r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png' };
         state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
-      } else if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy(); }
+      } else if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); }
       else { render(); msg(errText(r.data && r.data.error)); }
     }).catch(function () { state.busy = false; render(); msg(T.e.server); });
   }
 
   // ── achat de crédits (mobile money) ──
   function quote(price, payin, payout) { var send = Math.ceil(price * (1 + payout / 100)), total = Math.ceil(send * (1 + payin / 100)); return { send: send, total: total, fee: total - price }; }
-  function openBuy() {
+  function openBuy(from) {
     var cfg = state.cfg; if (!cfg) return;
+    try { window.saTrack && window.saTrack('buyopen', { n: typeof from === 'string' ? from : 'button' }); } catch (e) {}
     var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
     var sel = { pack: cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id, country: countries[0], op: null, method: 'mm', terms: false };
     var TL = L === 'en' ? '/en/terms/' : '/conditions/';
@@ -212,6 +213,8 @@
     }
     function pay() {
       var btn = $('#b-pay', modal), phone = $('#b-phone', modal).value.replace(/\D/g, ''), otp = sel.op.otp ? ($('#b-otp', modal).value || '').trim() : '';
+      var okForm = phone.length >= 8 && !(sel.op.otp && !otp) && sel.terms;
+      try { window.saTrack && window.saTrack('paytry', { m: 'mm', n: sel.pack, o: sel.op.code, v: okForm ? 1 : 0 }); } catch (e) {}
       if (phone.length < 8) return bmsg(T.e.bad_phone);
       if (sel.op.otp && !otp) return bmsg(T.e.otp_required);
       if (!sel.terms) return bmsg(T.e.terms_required);

@@ -72,6 +72,7 @@ async function statsWrite(b, req) {
     u[`dev.${['m', 'd', 't'].includes(b.d) ? b.d : 'x'}`] = inc;
     if (b.r) u[`ref.${key(b.r)}`] = inc;
     if (b.s) u.sessions = inc;
+    if (b.tz) u[`tz.${key(b.tz)}`] = inc; // fuseau horaire du navigateur : indique la région sans stocker d'adresse IP
     if (b.ret) u.returning = inc;
   } else if (t === 'copy') {
     u.copies = inc;
@@ -82,6 +83,18 @@ async function statsWrite(b, req) {
   } else if (t === 'try') {
     u.tries = inc;
     u[`try.${key(b.n)}`] = inc;
+  } else if (t === 'nopub') { // clic vers l'offre « sans pub »
+    u.nopub = inc;
+    u[`nopub_from.${key(b.p)}`] = inc;
+  } else if (t === 'buyopen') { // fenêtre d'achat de crédits ouverte
+    u.buyopen = inc;
+    u[`buyopen_from.${key(b.n)}`] = inc;
+  } else if (t === 'paytry') { // clic sur le bouton final « Payer » (v = 1 si le formulaire était complet)
+    u.paytry = inc;
+    if (b.v) u.paytry_valid = inc;
+    u[`paytry_m.${key(b.m)}`] = inc;
+    u[`paytry_pack.${key(b.n)}`] = inc;
+    if (b.o) u[`paytry_op.${key(b.o)}`] = inc;
   } else if (t === 'cardwish') { // intérêt pour le paiement par carte (bouton « bientôt »)
     u.cardwish = inc;
     u[`cardwish_pack.${key(b.n)}`] = inc;

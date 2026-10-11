@@ -212,6 +212,7 @@ async function runJob(u, parts, ratio, meta) {
   } catch (e) {
     await addCredits(u.uid, GEN_COST, 'refund', id, { reason: e.code || 'error' });
     await gref.update({ status: 'failed', error: e.code || 'error' });
+    await bump({ genfails: 1 });
     throw e;
   }
 }
@@ -241,6 +242,15 @@ async function feexRequest(url, method, body) {
   return { ok: r.ok, status: r.status, data: j };
 }
 
+/** Compteur du jour (tableau de bord) : n'interrompt jamais un achat si l'écriture échoue. */
+async function bump(fields) {
+  try {
+    const stat = db().collection('SlashAtlasStats').doc(day());
+    await stat.set({ day: day() }, { merge: true });
+    await stat.update(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, FieldValue.increment(v)])));
+  } catch (e) { console.error('bump', e.message); }
+}
+
 async function payStart(u, b, ctx) {
   const terms = acceptance(b, ctx);
   const pack = PACKS.find((p) => p.id === b.packId);
@@ -257,6 +267,7 @@ async function payStart(u, b, ctx) {
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
   await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount, total: q.total, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, email: u.email || '', terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await bump({ orders_created: 1, [`orders_created_op.${op.code}`]: 1 });
   const name = clean(u.name, 60).split(/\s+/);
   const payload = { shop: FEEXPAY_SHOP, amount, phoneNumber: phone, firstName: name[0] || 'Client', lastName: name.slice(1).join(' ') || 'SlashAtlas', description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   if (otp) payload.otp = otp;
@@ -265,6 +276,7 @@ async function payStart(u, b, ctx) {
   if (!r.ok || !reference) {
     console.error('feexpay start', r.status, JSON.stringify(r.data).slice(0, 300));
     await oref.update({ status: 'failed', failure: String((r.data && r.data.message) || r.status).slice(0, 200) });
+    await bump({ orders_failed: 1 });
     throw fail(502, 'payment_refused');
   }
   await oref.update({ status: 'processing', reference, processingAt: FieldValue.serverTimestamp() });
@@ -303,6 +315,7 @@ async function payCard(u, b, ctx) {
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
   await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await bump({ orders_created: 1, 'orders_created_op.card': 1 });
   const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, city, zip, country, description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   // Collecte par carte (API v2) : même famille que le mobile money, point d'entrée « init » ; exige le KYC carte validé (sinon CARD_PAYMENT_NOT_AUTHORIZED).
   const r = await feexRequest(`${FEEXPAY_API}/requesttopay/init`, 'POST', payload);
@@ -311,6 +324,7 @@ async function payCard(u, b, ctx) {
   if (!r.ok || !reference || !url) {
     console.error('feexpay card', r.status, JSON.stringify(r.data).slice(0, 300));
     await oref.update({ status: 'failed', failure: String((r.data && r.data.message) || r.status).slice(0, 200) });
+    await bump({ orders_failed: 1 });
     throw fail(502, 'payment_refused');
   }
   await oref.update({ status: 'processing', reference, processingAt: FieldValue.serverTimestamp() });
@@ -333,10 +347,10 @@ async function settle(orderId) {
     await oref.update({ status: 'paid', paidAt: FieldValue.serverTimestamp() });
     const stat = db().collection('SlashAtlasStats').doc(day());
     await stat.set({ day: day() }, { merge: true });
-    await stat.update({ orders: FieldValue.increment(1), revenueXof: FieldValue.increment(o.price) });
+    await stat.update({ orders: FieldValue.increment(1), revenueXof: FieldValue.increment(o.price), [`orders_paid_op.${o.operator}`]: FieldValue.increment(1) });
     return { status: 'paid', credits: o.credits };
   }
-  if (st === 'FAILED') { await oref.update({ status: 'failed', failure: String(r.data.reason || '').slice(0, 200) }); return { status: 'failed' }; }
+  if (st === 'FAILED') { await oref.update({ status: 'failed', failure: String(r.data.reason || '').slice(0, 200) }); await bump({ orders_failed: 1 }); return { status: 'failed' }; }
   return { status: 'pending' };
 }
 

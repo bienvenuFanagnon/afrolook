@@ -29,7 +29,8 @@
   }
   var n = parseInt(sstore('sa_n') || '0', 10) + 1; sstore('sa_n', String(n));
   var returning = store('sa_seen') === '1'; store('sa_seen', '1');
-  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0 });
+  var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz });
 
   // ── Langue : l'accueil suit la langue du téléphone (script en tête de page) ; seul un choix explicite est mémorisé ──
   $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang_choice', a.dataset.langSwitch); }); });
@@ -48,6 +49,7 @@
     }
     var t = e.target.closest('[data-test]'); if (t) track('test', { tool: t.dataset.test });
     var u = e.target.closest('[data-try]'); if (u) track('try', { n: u.dataset.try });
+    var np = e.target.closest('a[href$="/pro/"]'); if (np) track('nopub', {});
   });
 
   // ── Recherche et filtre ──
