@@ -31,7 +31,18 @@ const LINES_AD2 = {
     l5: ['Testez-la sur notre plateforme, ou dans ChatGPT, Gemini ou Midjourney. Deux cent vingt-cinq commandes gratuites.', 5.6],
     l6: ['Slash Atlas point com. [pause short] Gratuit, sans inscription.', 4.6] } },
 };
-const LINES = process.env.AD === '2' ? LINES_AD2 : LINES_AD1;
+const LINES_AD3 = {
+  fr: { code: 'fr-FR', l: {
+    l1: ['Vous vendez de la mode, des cosmétiques, ou vous créez des looks ? [pause short] Voilà comment la plupart des gens font leurs visuels avec l’IA.', 6.2],
+    l2: ['On choisit une photo. On écrit un prompt : fais une belle affiche pour ma robe. [pause short] Bof. Alors on en écrit un plus long. [pause short] Toujours pas ça. On ajoute la lumière, le fond, le style, le format... [pause short] et un quart d’heure plus tard, le résultat reste moyen.', 17.0],
+    l3: ['Il y a bien plus rapide.', 3.2],
+    l4: ['Sur Slash Atlas, les prompts sont déjà prêts. [pause short] Une robe ? Copiez la commande, collez-la avec votre photo : l’affiche est prête. [pause short] Un soin de peau ? Même geste, un visuel premium en quelques secondes. [pause short] Un look complet ? Une page de lookbook élégante, sans photographe.', 19.4],
+    l5: ['Plus de six cent cinquante commandes gratuites, en trente-deux catégories. Mode, beauté, produits, food, immobilier, événements, marque, vidéo publicitaire. [pause short] Des logos en verre, des planches de poses, des couvertures de magazine, des pubs prêtes à publier. En français et en anglais.', 19.4],
+    l5b: ['Pour la mode : affiche de collection, lookbook, tenue de rue, robe de mariée. [pause short] Pour la beauté : soin du visage, maquillage, coiffure, ongles, parfum. [pause short] Et de nouveaux visuels s’ajoutent au fil des jours.', 12.2],
+    l6: ['Pas envie de coller ? Cliquez sur Générer ici : envoyez votre photo, et obtenez votre visuel directement sur le site. Des crédits payables par mobile money, dès cinq cents francs CFA.', 11.4],
+    l7: ['Slash Atlas point com. Gratuit, sans inscription pour copier. [pause short] Essayez, puis dites-nous ce que vous en pensez. Et si vous voulez collaborer, écrivez-nous.', 8.4] } },
+};
+const LINES = process.env.AD === '3' ? LINES_AD3 : (process.env.AD === '2' ? LINES_AD2 : LINES_AD1);
 function wavInfo(buf) {
   const pcm = new Int16Array(buf.buffer.slice(buf.byteOffset + 44, buf.byteOffset + buf.length));
   let a = 0, b = pcm.length - 1; const th = 400;
@@ -47,7 +58,7 @@ function writeWav(path, pcm) {
   const [lang, voice] = process.argv.slice(2); const L = LINES[lang];
   const auth = new GoogleAuth({ keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
   const t = (await (await auth.getClient()).getAccessToken()).token;
-  const dir = `vo${process.env.AD === '2' ? '2' : ''}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
+  const dir = `vo${process.env.AD === '3' ? '3' : (process.env.AD === '2' ? '2' : '')}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
   let chars = 0;
   for (const [k, [text, win]] of Object.entries(L.l)) {
     let rate = 1.0, dur = 99, out = null;

@@ -3,3 +3,4 @@ work/test/
 work/vo_*/
 work/*.wav
 work/__pycache__/
+work/vo*_*/
