@@ -389,3 +389,8 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .pwa-n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;font-weight:800;display:grid;place-items:center;font-size:14px}.pwa-steps b{display:block;font-size:15px}.pwa-steps small{display:block;color:var(--mut);font-size:13.5px;margin-top:2px}
 .pwa .btn{width:100%;justify-content:center}
 @media (prefers-reduced-motion:reduce){.pwa-sheet{animation:none}}
+
+.vplay2{position:absolute;left:50%;top:44%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.85);box-shadow:0 6px 24px rgba(0,0,0,.45);pointer-events:none;z-index:2}
+.vplay2:after{content:'';position:absolute;left:25px;top:19px;border-style:solid;border-width:12px 0 12px 20px;border-color:transparent transparent transparent #fff}
+.card .vplay2,.rc .vplay2{width:48px;height:48px;margin:-24px 0 0 -24px}.card .vplay2:after,.rc .vplay2:after{left:19px;top:14px;border-width:10px 0 10px 16px}
+.vnote{margin:10px 2px 0;color:var(--mut);font-size:13px;line-height:1.4}
