@@ -14,6 +14,7 @@
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       help: 'Un souci de paiement ? Écrivez-nous :', buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
+      passUnit: 'jours', passTag: 'Sans pub', passOne: 'Pass sans pub', passWhat: 'sur tout le site', passTitle: 'Pass sans pub · 30 jours', passSub: 'Aucune publicité pendant 30 jours, sur tous vos appareils où vous vous connectez. Pas de renouvellement automatique.', noAdsUntil: 'Sans pub jusqu’au {d}', paidPass: 'Paiement reçu : pass sans pub activé', passLogin: 'Connectez-vous pour activer votre pass sans pub (30 jours).', passBuy: 'Activer le pass sans pub',
       soon: 'bientôt', cardSoon: 'Le paiement par carte arrive bientôt. Merci, nous avons noté votre demande : en attendant, payez par mobile money.', card: 'Carte bancaire : bientôt', mm: 'Mobile money', cardTab: 'Carte bancaire', feeLine: 'Pack {p} FCFA + frais de paiement {f} FCFA', feeNote: 'Les frais de l’opérateur sont payés par l’acheteur.', firstName: 'Prénom', lastName: 'Nom', city: 'Ville', zip: 'Code postal', countryCard: 'Pays', phoneCard: 'Téléphone (avec indicatif)', cardGo: 'Payer par carte', cardInfo: 'Vous serez redirigé vers la page de paiement sécurisée de FeexPay (3D Secure).', pending: 'Paiement en cours de vérification…', approx: '≈ {e} €', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l’opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer',
       termsAccept: 'J’ai lu et j’accepte les ', termsLink: 'conditions générales', termsNote: ' Je demande l’exécution immédiate du service et je reconnais perdre mon droit de rétractation pour les crédits utilisés.', cardPackOnly: 'Par carte : packs de 20 et 55 crédits.', 
       e: { terms_required: 'Cochez l’acceptation des conditions générales.', card_pack_limited: 'Ce pack n’est pas disponible par carte. Choisissez un pack plus petit.', card_limit: 'Limite d’achats par carte atteinte. Réessayez plus tard ou payez par mobile money.', no_instruction: 'Décrivez la modification à faire.', no_image: 'Image introuvable : refaites une génération.', insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', bad_card_info: 'Complétez tous les champs.', card_unavailable: 'Le paiement par carte n’est pas encore disponible.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
@@ -26,6 +27,7 @@
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       help: 'Payment problem? Write to us:', buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
+      passUnit: 'days', passTag: 'No ads', passOne: 'No-ads pass', passWhat: 'on the whole site', passTitle: 'No-ads pass · 30 days', passSub: 'No advertising for 30 days, on every device where you sign in. No automatic renewal.', noAdsUntil: 'Ad-free until {d}', paidPass: 'Payment received: no-ads pass activated', passLogin: 'Sign in to activate your no-ads pass (30 days).', passBuy: 'Activate the no-ads pass',
       soon: 'soon', cardSoon: 'Card payment is coming soon. Thanks, we noted your request: for now, please pay by mobile money.', card: 'Card payment: coming soon', mm: 'Mobile money', cardTab: 'Bank card', feeLine: 'Pack {p} FCFA + payment fees {f} FCFA', feeNote: 'Operator fees are paid by the buyer.', firstName: 'First name', lastName: 'Last name', city: 'City', zip: 'Postal code', countryCard: 'Country', phoneCard: 'Phone (with country code)', cardGo: 'Pay by card', cardInfo: 'You will be redirected to FeexPay’s secure payment page (3D Secure).', pending: 'Checking your payment…', approx: '≈ €{e}', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator’s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close',
       termsAccept: 'I have read and accept the ', termsLink: 'terms and conditions', termsNote: ' I request immediate performance of the service and acknowledge that I lose my right of withdrawal for credits already used.', cardPackOnly: 'By card: 20 and 55 credit packs.', 
       e: { terms_required: 'Please tick the box to accept the terms.', card_pack_limited: 'This pack is not available by card. Choose a smaller pack.', card_limit: 'Card purchase limit reached. Try again later or pay by mobile money.', no_instruction: 'Describe the change you want.', no_image: 'Image not found: please generate again.', insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', bad_card_info: 'Please fill in every field.', card_unavailable: 'Card payment is not available yet.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
@@ -34,11 +36,16 @@
   var data = {}; try { data = JSON.parse(root.dataset.map); } catch (e) {}
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
-  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '' };
+  var wantPass = params.get('pass') === '1';
+  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', adFreeUntil: 0 };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); };
+  function setAdFree(ms) {
+    state.adFreeUntil = ms > Date.now() ? ms : 0;
+    try { if (state.adFreeUntil) localStorage.setItem('sa_nopub', String(state.adFreeUntil)); else localStorage.removeItem('sa_nopub'); } catch (e) {}
+  }
   var errText = function (code) { return T.e[code] || T.e.server; };
 
   function cmdBlock() {
@@ -48,7 +55,7 @@
   }
   function render() {
     if (!state.user) {
-      root.innerHTML = '<div class="sbox">' + cmdBlock() + '<button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
+      root.innerHTML = '<div class="sbox">' + (wantPass ? '<p class="lead">' + T.passLogin + '</p>' : cmdBlock()) + '<button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
       bind(); return;
     }
     var kind = data.commands[slug].kind, lab = T.prodLabel[kind] || T.prodLabel.product;
@@ -57,7 +64,7 @@
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < 1 ? T.buy : T.genCost;
     root.innerHTML =
-      '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b></div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Admin</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>' +
+      '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>' +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
@@ -154,7 +161,7 @@
     var cfg = state.cfg; if (!cfg) return;
     try { window.saTrack && window.saTrack('buyopen', { n: typeof from === 'string' ? from : 'button' }); } catch (e) {}
     var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
-    var sel = { pack: cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id, country: countries[0], op: null, method: 'mm', terms: false };
+    var sel = { pack: (typeof from === 'string' && from === 'pass') ? 'nopub' : (cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id), country: countries[0], op: null, method: 'mm', terms: false };
     var TL = L === 'en' ? '/en/terms/' : '/conditions/';
     function cardOk(id) { return !cfg.card.packs || cfg.card.packs.indexOf(id) >= 0; }
     var modal = document.createElement('div'); modal.className = 'smodal'; modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true');
@@ -184,9 +191,9 @@
           '<div class="two"><label>' + T.city + '<input id="c-city" autocomplete="address-level2"></label><label>' + T.zip + '<input id="c-zip" autocomplete="postal-code"></label></div>' +
           '<label>' + T.countryCard + '<select id="c-country">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc(countryName(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + T.cardInfo + '</p>';
       }
-      modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + T.buyTitle + '</h2><p class="hint">' + T.buySub + '</p>' +
-        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + Math.round(p.xof / p.credits) + ' FCFA ' + T.perCredit + '</small></button>'; }).join('') + '</div>' + tabs + form +
-        '<div class="feebox"><span>' + T.feeLine.replace('{p}', fmt(pk.xof)).replace('{f}', fmt(q.fee)) + '</span><b>' + fmt(q.total) + ' FCFA</b>' + (isCard ? '<small>' + T.approx.replace('{e}', (q.total / 655.957).toFixed(2)) + '</small>' : '') + '</div>' +
+      modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' +
+        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + (p.days ? '<b>' + p.days + '</b><span>' + T.passUnit + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + T.passTag + '</small>' : '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + Math.round(p.xof / p.credits) + ' FCFA ' + T.perCredit + '</small>') + '</button>'; }).join('') + '</div>' + tabs + form +
+        '<div class="feebox"><span>' + (pk.days ? T.feeLine.replace(/^Pack/, 'Pass') : T.feeLine).replace('{p}', fmt(pk.xof)).replace('{f}', fmt(q.fee)) + '</span><b>' + fmt(q.total) + ' FCFA</b>' + (isCard ? '<small>' + T.approx.replace('{e}', (q.total / 655.957).toFixed(2)) + '</small>' : '') + '</div>' +
         '<label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
         '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo : T.pay) + ' ' + fmt(q.total) + ' FCFA</button><p class="hint soft">' + T.feeNote + '</p><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p>' + (CONTACT ? '<p class="hint soft">' + T.help + ' <a href="mailto:' + CONTACT + '">' + CONTACT + '</a></p>' : '') + '</div>';
       $('.x', modal).onclick = close;
@@ -205,7 +212,7 @@
         tries++;
         window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
           if (s.status !== 200) return;
-          if (s.data.status === 'paid') { clearInterval(timer); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; bmsg(T.paid, true); setTimeout(function () { close(); render(); }, 1200); }
+          if (s.data.status === 'paid') { clearInterval(timer); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; if (s.data.adFreeUntil) setAdFree(s.data.adFreeUntil); bmsg(s.data.adFreeUntil && !s.data.credits ? T.paidPass : T.paid, true); setTimeout(function () { close(); render(); }, 1200); }
           else if (s.data.status === 'failed') { clearInterval(timer); btn.disabled = false; bmsg(T.payFailed); }
         });
         if (tries > 60) { clearInterval(timer); btn.disabled = false; bmsg(T.payFailed); }
@@ -247,7 +254,7 @@
     var tries = 0, t = setInterval(function () {
       tries++;
       window.slashAuth.call('pay/status', { orderId: id }).then(function (s) {
-        if (s.status === 200 && s.data.status === 'paid') { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; render(); msg(T.paid, true); }
+        if (s.status === 200 && s.data.status === 'paid') { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; if (s.data.adFreeUntil) setAdFree(s.data.adFreeUntil); render(); msg(s.data.adFreeUntil && !s.data.credits ? T.paidPass : T.paid, true); }
         else if (s.status === 200 && s.data.status === 'failed') { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} msg(T.payFailed); }
         else if (s.status === 404) { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} msg(''); }
       });
@@ -255,14 +262,16 @@
     }, 4000);
   }
 
+  function maybePass() { if (wantPass && state.user && state.cfg && !state.adFreeUntil && state.meLoaded) { wantPass = false; openBuy('pass'); } }
+
   // ── démarrage ──
   import('/js/auth.js');
-  fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) { state.cfg = c; }).catch(function () {});
+  fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) { state.cfg = c; maybePass(); }).catch(function () {});
   document.addEventListener('sa:auth', function (e) {
     var u = e.detail.user; state.user = u;
     if (!u) { state.credits = 0; state.result = null; render(); return; }
     window.slashAuth.call('me').then(function (r) {
-      if (r.status === 200) { state.credits = r.data.credits; render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); }
+      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); }
       else { render(); msg(errText(r.data && r.data.error)); }
     });
   });

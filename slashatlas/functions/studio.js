@@ -24,6 +24,9 @@ const PACKS = [
   { id: 'p55', credits: 55, xof: 3900, tag: 'popular' },
   { id: 'p160', credits: 160, xof: 11000 },
 ];
+// Pass « sans pub » : 30 jours sans publicité sur tout le site, 1 000 FCFA (même prix par mobile money ou par carte ; frais de paiement en plus, comme pour les crédits).
+const PASS = { id: 'nopub', days: 30, xof: 1000, pass: true };
+const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PASS : null);
 // Plafonds de sécurité (par jour, UTC)
 const LIMITS = { userPerDay: 40, globalPerDay: 400 };
 
@@ -53,7 +56,7 @@ const OPERATORS = [
 // Carte bancaire (FeexPay) : désactivée tant que le KYB carte de la boutique n'est pas validé. Frais à renseigner (en %) après confirmation de FeexPay.
 const CARD = { enabled: false, currency: 'XOF', payin: 0, payout: 0 };
 // Limites de sécurité carte (risque de rétrofacturation) : petits paquets seulement, quelques achats par compte, par IP, par mois et par jour.
-const CARD_LIMITS = { packs: ['p20', 'p55'], userPerDay: 2, ipPerDay: 3, userMonthXof: 20000, globalPerDay: 30 };
+const CARD_LIMITS = { packs: ['p20', 'p55', 'nopub'], userPerDay: 2, ipPerDay: 3, userMonthXof: 20000, globalPerDay: 30 };
 const TERMS_VERSION = COMMANDS.termsVersion;
 const ipHash = (ip) => crypto.createHash('sha256').update(String(ip || '')).digest('hex').slice(0, 16);
 /** Preuve d'acceptation des conditions, stockée sur la commande (version, date, IP, navigateur). */
@@ -95,7 +98,7 @@ async function me(u) {
     await stat.set({ day: day() }, { merge: true });
     await stat.update({ accounts: FieldValue.increment(1) });
   }
-  return { uid: u.uid, email: u.email, name: u.name || data.name || '', credits: data.credits || 0, created };
+  return { uid: u.uid, email: u.email, name: u.name || data.name || '', credits: data.credits || 0, adFreeUntil: data.adFreeUntil || 0, created };
 }
 
 // ───────── crédits ─────────
@@ -110,6 +113,21 @@ async function addCredits(uid, n, type, ref, meta = {}) {
     tx.update(user, { credits: FieldValue.increment(n) });
     tx.set(ledger, { uid, delta: n, type, ref, ...meta, at: FieldValue.serverTimestamp() });
     return { applied: true };
+  });
+}
+/** Prolonge le pass « sans pub » (à partir de la fin du pass en cours s'il court encore) ; une même commande ne compte qu'une fois. */
+async function addAdFree(uid, days, ref, meta = {}) {
+  const user = db().collection('StudioUsers').doc(uid);
+  const ledger = db().collection('StudioLedger').doc(`adfree_${ref}`);
+  return db().runTransaction(async (tx) => {
+    const l = await tx.get(ledger);
+    const s = await tx.get(user);
+    if (!s.exists) throw fail(404, 'no_user');
+    if (l.exists) return { applied: false, until: s.data().adFreeUntil || 0 };
+    const until = Math.max(Date.now(), s.data().adFreeUntil || 0) + days * 86400000;
+    tx.update(user, { adFreeUntil: until });
+    tx.set(ledger, { uid, delta: 0, days, type: 'adfree', ref, until, ...meta, at: FieldValue.serverTimestamp() });
+    return { applied: true, until };
   });
 }
 async function spendCredits(uid, n, ref) {
@@ -254,7 +272,7 @@ async function bump(fields) {
 
 async function payStart(u, b, ctx) {
   const terms = acceptance(b, ctx);
-  const pack = PACKS.find((p) => p.id === b.packId);
+  const pack = findPack(b.packId);
   const op = opByCode[b.operator];
   if (!pack || !op) throw fail(400, 'bad_request');
   let phone = String(b.phone || '').replace(/[^0-9]/g, '');
@@ -267,10 +285,10 @@ async function payStart(u, b, ctx) {
   const amount = q.send;
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
-  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount, total: q.total, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, email: u.email || '', terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits || 0, days: pack.days || 0, price: pack.xof, amount, total: q.total, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, email: u.email || '', terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
   await bump({ orders_created: 1, [`orders_created_op.${op.code}`]: 1 });
   const name = clean(u.name, 60).split(/\s+/);
-  const payload = { shop: FEEXPAY_SHOP, amount, phoneNumber: phone, firstName: name[0] || 'Client', lastName: name.slice(1).join(' ') || 'SlashAtlas', description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
+  const payload = { shop: FEEXPAY_SHOP, amount, phoneNumber: phone, firstName: name[0] || 'Client', lastName: name.slice(1).join(' ') || 'SlashAtlas', description: pack.days ? `SlashAtlas no ads ${pack.days} days` : `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   if (otp) payload.otp = otp;
   const r = await feexRequest(`${FEEXPAY_API}/requesttopay/${op.code}`, 'POST', payload);
   const reference = r.data && r.data.reference;
@@ -305,7 +323,7 @@ async function cardGuard(u, pack, ctx) {
 async function payCard(u, b, ctx) {
   if (!CARD.enabled) throw fail(503, 'card_unavailable');
   const terms = acceptance(b, ctx);
-  const pack = PACKS.find((p) => p.id === b.packId);
+  const pack = findPack(b.packId);
   if (!pack) throw fail(400, 'bad_request');
   const ipH = await cardGuard(u, pack, ctx);
   const first = clean(b.firstName, 40), last = clean(b.lastName, 40), city = clean(b.city, 60), zip = clean(b.zip, 12);
@@ -315,9 +333,9 @@ async function payCard(u, b, ctx) {
   const q = quote(pack.xof, CARD.payin, CARD.payout);
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
-  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits || 0, days: pack.days || 0, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
   await bump({ orders_created: 1, 'orders_created_op.card': 1 });
-  const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, city, zip, country, description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
+  const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, city, zip, country, description: pack.days ? `SlashAtlas no ads ${pack.days} days` : `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   // Collecte par carte (API v2) : même famille que le mobile money, point d'entrée « init » ; exige le KYC carte validé (sinon CARD_PAYMENT_NOT_AUTHORIZED).
   const r = await feexRequest(`${FEEXPAY_API}/requesttopay/init`, 'POST', payload);
   const reference = r.data && r.data.reference;
@@ -338,18 +356,20 @@ async function settle(orderId) {
   const s = await oref.get();
   if (!s.exists) throw fail(404, 'no_order');
   const o = s.data();
-  if (o.status === 'paid') return { status: 'paid', credits: o.credits };
+  if (o.status === 'paid') return { status: 'paid', credits: o.credits || 0, adFreeUntil: o.days ? ((await db().collection('StudioUsers').doc(o.uid).get()).data() || {}).adFreeUntil || 0 : 0 };
   if (o.status === 'failed') return { status: 'failed' };
   if (!o.reference) return { status: 'pending' };
   const r = await feexRequest(`${FEEXPAY_API}/single/status/${encodeURIComponent(o.reference)}`, 'GET');
   const st = String((r.data && r.data.status) || '').toUpperCase();
   if (st === 'SUCCESSFUL' || st === 'SUCCESS') {
-    await addCredits(o.uid, o.credits, 'purchase', orderId, { price: o.price, currency: o.currency, operator: o.operator });
+    let adFreeUntil = 0;
+    if (o.days) adFreeUntil = (await addAdFree(o.uid, o.days, orderId, { price: o.price, currency: o.currency, operator: o.operator })).until;
+    else await addCredits(o.uid, o.credits, 'purchase', orderId, { price: o.price, currency: o.currency, operator: o.operator });
     await oref.update({ status: 'paid', paidAt: FieldValue.serverTimestamp() });
     const stat = db().collection('SlashAtlasStats').doc(day());
     await stat.set({ day: day() }, { merge: true });
-    await stat.update({ orders: FieldValue.increment(1), revenueXof: FieldValue.increment(o.price), [`orders_paid_op.${o.operator}`]: FieldValue.increment(1) });
-    return { status: 'paid', credits: o.credits };
+    await stat.update({ orders: FieldValue.increment(1), revenueXof: FieldValue.increment(o.price), [`orders_paid_op.${o.operator}`]: FieldValue.increment(1), ...(o.days ? { adfree_orders: FieldValue.increment(1) } : {}) });
+    return { status: 'paid', credits: o.credits || 0, adFreeUntil };
   }
   if (st === 'FAILED') { await oref.update({ status: 'failed', failure: String(r.data.reason || '').slice(0, 200) }); await bump({ orders_failed: 1 }); return { status: 'failed' }; }
   return { status: 'pending' };
@@ -360,8 +380,8 @@ async function payStatus(u, b) {
   const s = await db().collection('StudioOrders').doc(orderId).get();
   if (!s.exists || s.data().uid !== u.uid) throw fail(404, 'no_order');
   const r = await settle(orderId);
-  const cr = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
-  return { ...r, balance: cr };
+  const ud = (await db().collection('StudioUsers').doc(u.uid).get()).data();
+  return { ...r, balance: ud.credits || 0, adFreeUntil: ud.adFreeUntil || 0 };
 }
 
 /** Webhook FeexPay : on ne lui fait pas confiance, on ne s'en sert que pour savoir quelle commande revérifier. */
@@ -376,7 +396,7 @@ async function payWebhook(b) {
 function publicConfig() {
   return {
     genCost: GEN_COST,
-    packs: PACKS,
+    packs: [...PACKS, PASS],
     currency: 'XOF',
     card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout, packs: CARD_LIMITS.packs },
     termsVersion: TERMS_VERSION,

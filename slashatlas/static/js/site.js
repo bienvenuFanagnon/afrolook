@@ -44,7 +44,7 @@
     if (el) {
       var src = $(el.dataset.copy); if (!src) return;
       var old = el.textContent;
-      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); } setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
+      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
       var txt = src.textContent;
       try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); }); } catch (err) { fallbackCopy(txt, done); }
       return;
@@ -52,6 +52,17 @@
     var t = e.target.closest('[data-test]'); if (t) track('test', { tool: t.dataset.test });
     var u = e.target.closest('[data-try]'); if (u) track('try', { n: u.dataset.try });
     var np = e.target.closest('a[href$="/pro/"]'); if (np) track('nopub', {});
+  });
+
+  // Copie par sélection + clic droit (ou Ctrl+C) dans la commande : même effet que le bouton « Copier ».
+  document.addEventListener('copy', function () {
+    try {
+      var sel = window.getSelection(), nd = sel && sel.anchorNode; if (!nd) return;
+      var pre = (nd.nodeType === 1 ? nd : nd.parentElement).closest('.cmd pre'); if (!pre) return;
+      var a = $('#after'); if (a) a.classList.add('on');
+      window.saAds && window.saAds.late();
+      track('copy', { s: pre.id.replace(/^p-/, ''), via: 'sel' });
+    } catch (e) {}
   });
 
   // ── Recherche et filtre ──
@@ -134,24 +145,37 @@
 })();
 
 // Publicité : les emplacements restent masqués tant que l'administration n'a pas activé la publicité (réglages lus via /api/config).
+// Pass « sans pub » : l'échéance (ms) est mémorisée par la page Générer ici après connexion ; tant qu'elle court, aucune publicité n'est chargée.
+// Les emplacements data-adlate (sous « Copié ») ne se remplissent qu'au moment de la copie, qu'elle se fasse par le bouton ou par clic droit.
 (function () {
   try {
-    var slots = document.querySelectorAll('[data-ad]'); if (!slots.length) return;
-    fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
-      var a = c && c.ads; if (!a || !a.enabled) return;
-      var s = document.createElement('script'); s.async = true; s.crossOrigin = 'anonymous';
-      s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.client); document.head.appendChild(s);
-      var p = document.querySelector('[data-adprefs]'); if (p) { p.hidden = false; p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} }); }
-      var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); window.saTrack && window.saTrack('adview', { n: en.target.dataset.ad }); } }); }, { threshold: 0.5 }) : null;
-      Array.prototype.forEach.call(slots, function (el) {
-        var id = a.slots && a.slots[el.dataset.ad]; if (!id) return;
-        var ins = document.createElement('ins'); ins.className = 'adsbygoogle'; ins.style.display = 'block';
-        ins.setAttribute('data-ad-client', a.client); ins.setAttribute('data-ad-slot', id); ins.setAttribute('data-ad-format', 'auto'); ins.setAttribute('data-full-width-responsive', 'true');
-        el.appendChild(ins); el.hidden = false;
-        try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-        if (io) io.observe(el);
-      });
-    }).catch(function () {});
+    var slots = Array.prototype.slice.call(document.querySelectorAll('[data-ad]')); if (!slots.length) return;
+    var until = 0; try { until = parseInt(localStorage.getItem('sa_nopub') || '0', 10) || 0; } catch (e) {}
+    if (until > Date.now()) { document.documentElement.classList.add('nopub'); return; }
+    var cfgP = null, io = null;
+    function loadCfg() {
+      return cfgP || (cfgP = fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
+        var a = c && c.ads; if (!a || !a.enabled) return null;
+        var s = document.createElement('script'); s.async = true; s.crossOrigin = 'anonymous';
+        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.client); document.head.appendChild(s);
+        var p = document.querySelector('[data-adprefs]'); if (p) { p.hidden = false; p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} }); }
+        io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); window.saTrack && window.saTrack('adview', { n: en.target.dataset.ad }); } }); }, { threshold: 0.5 }) : null;
+        return a;
+      }).catch(function () { return null; }));
+    }
+    function fill(el, a) {
+      if (el.dataset.filled) return;
+      var id = a.slots && a.slots[el.dataset.ad]; if (!id) return;
+      el.dataset.filled = '1';
+      var ins = document.createElement('ins'); ins.className = 'adsbygoogle'; ins.style.display = 'block';
+      ins.setAttribute('data-ad-client', a.client); ins.setAttribute('data-ad-slot', id); ins.setAttribute('data-ad-format', 'auto'); ins.setAttribute('data-full-width-responsive', 'true');
+      el.appendChild(ins); el.hidden = false;
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+      if (io) io.observe(el);
+    }
+    var early = slots.filter(function (el) { return !el.hasAttribute('data-adlate'); });
+    if (early.length) loadCfg().then(function (a) { if (a) early.forEach(function (el) { fill(el, a); }); });
+    window.saAds = { late: function () { loadCfg().then(function (a) { if (a) setTimeout(function () { slots.forEach(function (el) { if (el.hasAttribute('data-adlate')) fill(el, a); }); }, 60); }); } };
   } catch (e) {}
 })();
 
@@ -165,12 +189,12 @@
   matchMedia('(min-width:720px)').addEventListener && matchMedia('(min-width:720px)').addEventListener('change', function () { set(false); });
 })();
 
-// Lien « Admin » (menu téléphone + pied de page) pour l'administrateur connecté : simple confort, l'accès reste contrôlé par le serveur.
+// Lien « Hub » (menu téléphone + pied de page) pour l'administrateur connecté : simple confort, l'accès reste contrôlé par le serveur.
 (function () {
   try {
     if (localStorage.getItem('sa_admin') !== '1') return;
     var m = document.getElementById('mnav'), f = document.querySelector('.ft');
-    [m, f].forEach(function (c) { if (!c) return; var a = document.createElement('a'); a.href = '/admin/'; a.textContent = 'Admin'; if (c === m) c.appendChild(a); else c.appendChild(a); });
+    [m, f].forEach(function (c) { if (!c) return; var a = document.createElement('a'); a.href = '/admin/'; a.textContent = 'Hub'; if (c === m) c.appendChild(a); else c.appendChild(a); });
   } catch (e) {}
 })();
 

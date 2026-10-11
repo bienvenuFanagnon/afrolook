@@ -28,3 +28,10 @@ Onglets : Vue d'ensemble (audience) · Studio (KPI, commandes + bouton Preuves, 
 - Emplacements masqués par défaut dans les pages (accueil, tutoriel, packs) ; `static/js/site.js` les active et charge le script AdSense seulement si la publicité est activée. Jamais sur `/generer/`, `/admin/`, ni près d'un bouton. `/ads.txt` est servi par la fonction.
 - Consentement : activer dans AdSense « Confidentialité et messagerie » le message GDPR (EEE/RU/CH) ; le lien « Préférences publicitaires » du pied de page le rouvre.
 - AdSense exige un domaine propre validé (un sous-domaine `web.app` est souvent refusé) et un site indexable (`indexable: true`).
+
+## Pass « sans pub » (30 jours, 1 000 FCFA)
+
+- Serveur (`functions/studio.js`) : `PASS = { id: 'nopub', days: 30, xof: 1000 }`, vendu par le même parcours que les packs (mobile money, carte quand elle sera activée ; `nopub` est dans `CARD_LIMITS.packs`). Au paiement vérifié, `StudioUsers.adFreeUntil` (ms) est prolongé (cumulable), journal `StudioLedger/adfree_<commande>`, compteur du jour `adfree_orders`.
+- `/api/me` et `/api/pay/status` renvoient `adFreeUntil`. La page « Générer ici » le copie dans `localStorage.sa_nopub` ; `site.js` ne charge alors aucune publicité. Sur un nouvel appareil : se connecter une fois sur « Générer ici » pour réactiver.
+- Publicité à la copie : bloc `rect` sous « Copié » (`data-adlate`), rempli seulement après un clic sur « Copier » ou une copie par sélection (clic droit / Ctrl+C) dans la commande.
+- Lien d'achat : `/generer/?pass=1` (page « Sans pub » `/pro/`).
