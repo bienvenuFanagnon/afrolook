@@ -46,3 +46,14 @@ Les visites apparaissent sous « ad_youtube_en_launch », etc. Les clics « Gén
 1. Facebook / Instagram (Meta Ads) : mêmes vidéos, mêmes textes, objectif « Trafic », public identique.
 2. TikTok Ads : version 9:16, mêmes liens avec `utm_source=tiktok`.
 3. Variantes à tester : autre accroche (« Stop paying for every product poster »), autre produit (nourriture, mode, immobilier).
+
+---
+# Publicité n°2 : « Avant / avec SlashAtlas » (32 s)
+Fichiers : `slashatlas_avant_apres_{en,fr}_{16x9,9x16}.mp4` (dans `marketing/work/out/`, non versionnés).
+Histoire : une personne choisit une photo (crème de soin), écrit un premier prompt, puis un plus long, puis un très long : résultats moyens, le chrono grimpe. Puis « Il y a plus rapide » : on copie une commande SlashAtlas, on la colle avec la photo, l'affiche est prête en 20 secondes. Ensuite, on la teste sur notre plateforme ou dans ChatGPT, Gemini, Midjourney ; 225 commandes gratuites ; adresse à l'écran.
+La mention « Illustration · visuels générés par IA » reste affichée : les « mauvais résultats » et les durées sont une mise en scène, pas une mesure.
+
+## Textes à coller
+**Titre EN** (≤ 100) : `Stop rewriting AI prompts: copy a free command, get a pro poster` 
+**Titre FR** (≤ 100) : `Arrêtez de réécrire vos prompts IA : copiez une commande gratuite, affiche pro`
+**Liens** : `…/en/?utm_source=youtube&utm_campaign=en_before_after` et `…/?utm_source=youtube&utm_campaign=fr_before_after`
