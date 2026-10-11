@@ -7,6 +7,7 @@ import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
+import '../../services/utils/abonnement_utils.dart';
 import '../userPosts/postWidgets/defi_config_section.dart';
 import 'defi_ui.dart';
 
@@ -71,6 +72,20 @@ class DefiConvertPage extends StatefulWidget {
 class _DefiConvertPageState extends State<DefiConvertPage> {
   DefiConfig? _config;
   bool _busy = false;
+  late final TextEditingController _desc = TextEditingController(text: widget.post.description ?? '');
+
+  @override
+  void dispose() {
+    _desc.dispose();
+    super.dispose();
+  }
+
+  /// Même plafond de caractères qu'un post ordinaire (gratuit 300, premium 3 000, Gold et admin 5 000).
+  int get _maxChars {
+    final me = context.read<UserAuthProvider>().loginUserData;
+    if (me.role == UserRole.ADM.name || AbonnementUtils.isGold(me.abonnement)) return 5000;
+    return AbonnementUtils.isPremiumActive(me.abonnement) ? 3000 : 300;
+  }
 
   String? get _thumb {
     final p = widget.post;
@@ -113,6 +128,7 @@ class _DefiConvertPageState extends State<DefiConvertPage> {
         'action': 'convert',
         'postId': widget.post.id,
         'defi_config': config.toJson(),
+        if (_desc.text.trim() != (widget.post.description ?? '').trim()) 'description': _desc.text.trim(),
       });
       if (!mounted) return;
       auth.refreshUserData();
@@ -170,6 +186,24 @@ class _DefiConvertPageState extends State<DefiConvertPage> {
               child: Text(
                 context.tr('Les autres répondent à ton post en participant, et la communauté vote. Mêmes règles qu\'un nouveau défi : la cagnotte est prélevée sur ton solde, tu fixes la date de fin, les frais de participation et de vote, et le nombre de gagnants.'),
                 style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.45),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: TextField(
+                controller: _desc,
+                maxLines: 4,
+                minLines: 2,
+                maxLength: _maxChars,
+                style: TextStyle(color: c.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: context.tr('Description du défi'),
+                  helperText: context.tr('Tu peux la changer avant de lancer le défi.'),
+                  helperMaxLines: 2,
+                  filled: true,
+                  fillColor: c.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c.border)),
+                ),
               ),
             ),
             DefiConfigSection(onChanged: (config) => setState(() => _config = config)),

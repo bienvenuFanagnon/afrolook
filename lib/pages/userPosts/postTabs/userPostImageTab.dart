@@ -178,7 +178,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
       _imageNames = [for (var i = 0; i < cardImages.length; i++) 'carte_afrolook_$i.jpg'];
     }
     if (widget.initialDescription != null) {
-      _descriptionController.text = widget.initialDescription!;
+      final d = widget.initialDescription!;
+      _descriptionController.text = d.length > _maxCharacters ? d.characters.take(_maxCharacters).toString() : d; // la description d'un post d'origine peut dépasser la limite du compte
     }
   }
 

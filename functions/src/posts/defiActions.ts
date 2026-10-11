@@ -66,7 +66,7 @@ export const handleDefiAction = onCall(
       return handleCreateDefi(uid, postId, post);
     }
     if (action === "convert") {
-      return handleConvertToDefi(uid, postId, request.data?.defi_config);
+      return handleConvertToDefi(uid, postId, request.data?.defi_config, request.data?.description);
     }
 
     throw new HttpsError("invalid-argument", `Action inconnue : ${action}`);
@@ -574,13 +574,22 @@ function parseDefiConfig(raw: unknown) {
 // ── Transformer un post existant en DÉFI ─────────────────────────────────
 // Seul l'auteur peut le faire, uniquement sur un post ordinaire (ni pub, ni réponse à un DÉFI, ni DÉFI existant),
 // et la cagnotte est débitée dans la même transaction, exactement comme à la création.
-async function handleConvertToDefi(uid: string, postId: string, rawCfg: unknown) {
+async function handleConvertToDefi(uid: string, postId: string, rawCfg: unknown, rawDescription?: unknown) {
   if (!POST_ID_PATTERN.test(postId)) {
     throw new HttpsError("invalid-argument", "Identifiant de post invalide.");
   }
   const { cagnotte, participationFee, voteFee, winnersCount, endDate } = parseDefiConfig(rawCfg);
   const postRef = db.collection("Posts").doc(postId);
   const userRef = db.collection("Users").doc(uid);
+
+  // Description modifiable au moment de lancer le DÉFI (texte seulement, jamais plus de 5 000 caractères).
+  if (rawDescription !== undefined && rawDescription !== null && typeof rawDescription !== "string") {
+    throw new HttpsError("invalid-argument", "Description invalide.");
+  }
+  const newDescription = typeof rawDescription === "string" ? rawDescription.trim() : null;
+  if (newDescription !== null && newDescription.length > 5000) {
+    throw new HttpsError("invalid-argument", "Description trop longue.");
+  }
 
   const result = await db.runTransaction(async (tx) => {
     const [postDoc, userDoc] = await Promise.all([tx.get(postRef), tx.get(userRef)]);
@@ -636,6 +645,7 @@ async function handleConvertToDefi(uid: string, postId: string, rawCfg: unknown)
     }
 
     tx.update(postRef, {
+      ...(newDescription !== null ? { description: newDescription } : {}),
       type: "DEFI",
       defi_participant_ids: [],
       defi_participant_count: 0,

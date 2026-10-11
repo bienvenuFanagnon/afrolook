@@ -197,7 +197,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     await CardExport.precache(context, _source, _spec);
     final png = await CardExport.toPng(_boundaryKey, format: format);
     final jpeg = await CardFlow.toJpeg(png);
-    return CardResult(image: jpeg, caption: CardFlow.postCaption(_source), pro: _isPro, format: format);
+    return CardResult(image: jpeg, caption: CardFlow.postCaption(_source), pro: _isPro, format: format, sourcePostId: _source.postId);
   }
 
   Future<void> _publish() async {

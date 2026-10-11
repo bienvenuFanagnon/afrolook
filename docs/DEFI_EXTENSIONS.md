@@ -20,3 +20,9 @@ Nécessite une nouvelle version de l'application pour les écrans ; la partie se
 - Garde-fous : un défi n'est annoncé qu'une fois (`defi_broadcast_at` posé dans une transaction) ; l'annonce large est limitée à **une toutes les 6 h par créateur** (`lastDefiBroadcastAt`), au-delà seuls les abonnés sont prévenus.
 - `sendBulkNotification` (notification « a posté » envoyée par l'application après publication) ignore désormais les défis déjà annoncés : pas de doublon, y compris avec les anciennes versions de l'application.
 - Test : `functions/src/posts/__tests__/defiBroadcast.test.ts`.
+
+## Description modifiable et défis dans le fil
+- **Carte depuis un post** : la page de publication reprend la description d'origine du post (modifiable, tronquée à la limite du compte : 300 / 3 000 / 5 000 caractères), avec « Post de @… » pour le post d'un autre. Un bandeau rappelle que la publication crée un NOUVEAU post et ne modifie pas l'ancien (`CardResult.sourcePostId`, `card_flow.dart`).
+- **Transformer en défi** (menu d'un post) : la description est modifiable avant le lancement ; l'action `convert` de `handleDefiAction` accepte un champ `description` (texte, 5 000 caractères au plus) appliqué avec la conversion.
+- **Défis en cours dans le fil** : `lib/widgets/feed/sections/defi_feed_card.dart`, traités comme des pubs (après les posts 4, 11, 19, puis tous les 12 posts, accueil et fil sport). Un défi différent par emplacement (non participés d'abord, jamais montrés d'abord, les plus proches de la fin en premier), cagnotte, temps restant, bouton Participer ou Voir et voter. Pas de croix : le défi reste visible jusqu'à sa fin. Liste relue au plus toutes les 4 minutes (requête sans index composite).
+- Version de l'application : 2.0.8+251, une nouvelle publication sur les stores est nécessaire pour ces changements Flutter.

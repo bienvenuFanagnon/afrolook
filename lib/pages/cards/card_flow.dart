@@ -20,8 +20,11 @@ import 'card_text.dart';
 
 /// Carte prête à être publiée ou utilisée : l'image (JPEG 1080 px), la légende proposée et le style choisi.
 class CardResult {
-  CardResult({required this.image, required this.caption, required this.pro, required this.format});
+  CardResult({required this.image, required this.caption, required this.pro, required this.format, this.sourcePostId});
   final Uint8List image;
+
+  /// Post d'origine de la carte (carte créée depuis un post existant) : la publication crée un NOUVEAU post, l'ancien n'est pas modifié.
+  final String? sourcePostId;
   final String caption;
 
   /// Un style Pro a été choisi (coût supplémentaire, sauf avec le pass).
@@ -45,6 +48,13 @@ class CardFlow {
 
   /// Légende proposée pour un post : respecte les règles du post image (au moins 10 caractères et un hashtag).
   static String postCaption(CardSource s) {
+    // Carte créée depuis un post qui a déjà une description : on la reprend telle quelle (modifiable avant de publier).
+    final original = s.text.trim();
+    if (s.postId != null && original.isNotEmpty && (s.externalLink ?? '').isEmpty) {
+      final credit = s.credit == null ? '' : '\n\nPost de @${s.pseudo}';
+      final tag = original.toLowerCase().contains('#carteafrolook') ? '' : '\n#carteafrolook';
+      return '$original$credit$tag';
+    }
     final body = separateTags(s.text).body;
     final excerpt = body.isEmpty ? '' : ' — ${cutText(body, 110).text}';
     // carte « lien » : la légende reprend l'adresse de la vidéo
@@ -277,7 +287,25 @@ class _PostPublishPage extends StatelessWidget {
         elevation: 0,
         title: Text(asDefi ? context.tr('Lancer un défi avec la carte') : context.tr('Publier la carte'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
-      body: UserPostLookImageTab(
+      body: Column(children: [
+        if (result.sourcePostId != null)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.info_outline_rounded, size: 18, color: c.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.tr('Ceci crée un nouveau post : la carte devient son image. Le post d’origine n’est pas modifié. Tu peux changer la description avant de publier.'),
+                  style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4),
+                ),
+              ),
+            ]),
+          ),
+        Expanded(child: UserPostLookImageTab(
         canal: canal,
         defiPostId: defiPostId,
         initialImages: [result.image],
@@ -285,7 +313,8 @@ class _PostPublishPage extends StatelessWidget {
         initialPostType: asDefi && defiPostId == null ? 'DEFI' : null,
         beforePublish: () => CardFlow.commit(context, CardKind.publish, pro: result.pro, quote: quote),
         onPublished: () => Navigator.of(context).pop(true),
-      ),
+      )),
+      ]),
     );
   }
 }

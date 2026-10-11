@@ -1,4 +1,5 @@
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
+import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'dart:math';
@@ -3782,6 +3783,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
       if (i == 21) {
         contentWidgets.add(const ContesFeedCard(key: ValueKey('contes_card_home_2'), slot: 2));
+      }
+
+      // Défis en cours : traités comme des pubs, ils reviennent souvent (après les posts 4, 11, 19 puis tous les 12 posts), un défi différent à chaque fois
+      if (i == 3 || i == 10 || i == 18 || (i > 18 && (i - 18) % 12 == 0)) {
+        contentWidgets.add(DefiFeedCard(key: ValueKey('defi_card_home_$i'), slot: i == 3 ? 0 : i == 10 ? 1 : i == 18 ? 2 : 3 + (i - 18) ~/ 12));
       }
 
       // Invitation « Crée ta carte Afrolook » : après le 13e post, puis plus loin (au plus une fois tous les 3 jours, jamais sur le web)
