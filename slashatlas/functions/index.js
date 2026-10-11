@@ -69,16 +69,16 @@ async function popular(l) {
   }
   const counts = {};
   popCache.rows.forEach((r) => { counts[r.slug] = [r.copies, r.tries]; });
-  const top = popCache.rows.slice(0, 12).map((r) => {
+  const top = popCache.rows.slice(0, 30).map((r) => {
     const c = CMDS.commands[r.slug];
-    return { slug: r.slug, copies: r.copies, tries: r.tries, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
+    return { slug: r.slug, copies: r.copies, tries: r.tries, catId: c.cat, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
   });
   return { counts, top };
 }
-/** Compteur public par commande (copies et clics « Générer ici ») : chaque événement compte, commandes connues seulement ; « score » sert au classement. */
+/** Compteur public par commande (copies et clics « Générer ici ») : chaque événement compte, commandes connues seulement ; « score » sert au classement : un essai « Générer ici » vaut 10 copies. */
 async function publicCount(slug, field) {
   if (!CMDS.commands[slug]) return;
-  try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ [field]: FieldValue.increment(1), score: FieldValue.increment(1), at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
+  try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ [field]: FieldValue.increment(1), score: FieldValue.increment(field === 'tries' ? 10 : 1), at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
 }
 async function statsWrite(b, req) {
   // Les clés pointées doivent passer par update() pour créer des maps imbriquées.

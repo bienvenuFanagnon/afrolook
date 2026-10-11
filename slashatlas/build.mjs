@@ -129,14 +129,14 @@ const HOME = {
     h1: ['Copiez. Collez.', 'Votre affiche IA est prête.'],
     sub: 'Des commandes toutes prêtes pour créer vos visuels dans ChatGPT, Gemini ou Midjourney.',
     steps: [['Copiez', 'une commande'], ['Collez', 'avec votre photo dans votre IA'], ['Publiez', 'votre visuel']],
-    rail: 'Essayez une commande', tabPop: 'Les plus utilisées', tabSel: 'Notre sélection', tabNew: 'Nouveautés', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
+    rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
   },
   en: {
     h1: ['Copy. Paste.', 'Your AI poster is ready.'],
     sub: 'Ready-made commands to create your visuals in ChatGPT, Gemini or Midjourney.',
     steps: [['Copy', 'a command'], ['Paste', 'with your photo in your AI'], ['Post', 'your visual']],
-    rail: 'Try a command', tabPop: 'Most used', tabSel: 'Our picks', tabNew: 'New', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
+    rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
   },
 };
@@ -159,15 +159,14 @@ function videoBlock(l) {
 }
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];
-  const featured = ['productglow', 'fashionposter', 'menuhero', 'openhouse', 'matchday', 'eventnight', 'coverdrop', 'reelcover'].map((s) => COMMANDS.find((c) => c.slug === s));
+  const featured = ['fashionposter', 'productglow', 'skincareglow', 'lookbook', 'splashshot', 'hairshowcase', 'menuhero', 'openhouse'].map((s) => COMMANDS.find((c) => c.slug === s)); // mode, produit et cosmétique d'abord ; l'accueil les remplace par les plus utilisées dès qu'il y a des données
   const newest = ['typobehind', 'logoglass', 'sheetpose9', 'infoexploded', 'dioskislope', 'brandboard', 'magcover', 'shopflash', 'mascotproduct', 'animeposter'].map((s) => COMMANDS.find((c) => c.slug === s));
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
   const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
   const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span>${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
 <ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
 <div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
-<div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab" data-rail="pop" role="tab" hidden>${H.tabPop}</button><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button></div></div>
-<div class="rail" id="rail-pop" role="list" hidden></div>
+<div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button></div></div>
 <div class="rail" id="rail-sel" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-new" role="list" hidden>${newest.map((c) => railCard(c, l)).join('')}</div>
 <div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>${ad('lb', l)}

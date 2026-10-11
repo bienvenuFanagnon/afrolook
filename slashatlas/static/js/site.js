@@ -154,7 +154,7 @@
   var lang = document.body.dataset.lang === 'en' ? 'en' : 'fr', MIN = 1, counts = {};
   // counts[slug] = [copies, essais « Générer ici »] ; le total sert au classement
   var C = function (slug) { var v = counts[slug]; return v ? v : [0, 0]; };
-  var score = function (slug) { var v = C(slug); return v[0] + v[1]; };
+  var score = function (slug) { var v = C(slug); return v[0] + 10 * v[1]; }; // un essai « Générer ici » vaut 10 copies
   var cw = function (n) { return n + ' ' + (n > 1 ? 'copies' : (lang === 'fr' ? 'copie' : 'copy')); };
   var tw = function (n) { return lang === 'fr' ? n + (n > 1 ? ' essais' : ' essai') : n + (n > 1 ? ' tries' : ' try'); };
   var label = function (v, full) {
@@ -176,15 +176,26 @@
     var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</a>' : '';
     return '<article class="rc" data-slug="' + r.slug + '" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pp-' + r.slug + '" data-slug="' + r.slug + '">' + (lang === 'fr' ? 'Copier' : 'Copy') + '</button></div><pre id="pp-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
   }
+  // « À la une » : les commandes les plus utilisées (copie = 1 point, essai « Générer ici » = 10 points), mélangées entre catégories :
+  // d'abord la meilleure de Mode, Pub produit et Beauté, puis le reste par score avec au plus 2 par catégorie ; la sélection éditoriale complète jusqu'à 10.
+  var PRI = ['mode', 'produit', 'beaute'];
   function railFill(top) {
-    var pop = top.filter(function (r) { return r.copies + r.tries >= 3; }).slice(0, 10);
-    var rp = document.getElementById('rail-pop'), tab = document.querySelector('[data-rail="pop"]');
-    if (!rp || !tab || pop.length < 3) return;
-    rp.innerHTML = pop.map(railCard).join('');
-    tab.hidden = false; showRail('pop');
+    if (!rail) return;
+    var pool = top.map(function (r) { r.score = r.copies + 10 * r.tries; return r; }).filter(function (r) { return r.score > 0; }).sort(function (a, b) { return b.score - a.score; });
+    if (!pool.length) return;
+    var picked = [], per = {};
+    var take = function (r) { picked.push(r); per[r.catId] = (per[r.catId] || 0) + 1; };
+    PRI.forEach(function (cat) { var r = pool.filter(function (x) { return x.catId === cat && picked.indexOf(x) < 0; })[0]; if (r) take(r); });
+    pool.forEach(function (r) { if (picked.length < 10 && picked.indexOf(r) < 0 && (per[r.catId] || 0) < 2) take(r); });
+    picked.sort(function (a, b) { return b.score - a.score; });
+    var have = {}; picked.forEach(function (r) { have[r.slug] = 1; });
+    var base = Array.prototype.filter.call(rail.children, function (c) { return c.dataset.slug && !have[c.dataset.slug]; });
+    rail.innerHTML = picked.map(railCard).join('');
+    base.slice(0, Math.max(0, 10 - picked.length)).forEach(function (c) { rail.appendChild(c); });
+    Array.prototype.forEach.call(rail.querySelectorAll('.rc'), function (c) { show(c.querySelector('.cnt'), c.dataset.slug, false); });
   }
   function showRail(k) {
-    ['pop', 'sel', 'new'].forEach(function (n) { var r = document.getElementById('rail-' + n); if (r) { r.hidden = n !== k; if (n === k) r.scrollLeft = 0; } });
+    ['sel', 'new'].forEach(function (n) { var r = document.getElementById('rail-' + n); if (r) { r.hidden = n !== k; if (n === k) r.scrollLeft = 0; } });
     Array.prototype.forEach.call(document.querySelectorAll('.rtab'), function (t) { var on = t.dataset.rail === k; t.classList.toggle('on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
   }
   Array.prototype.forEach.call(document.querySelectorAll('.rtab'), function (t) { t.addEventListener('click', function () { showRail(t.dataset.rail); }); });
