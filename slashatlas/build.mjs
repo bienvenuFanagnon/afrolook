@@ -154,7 +154,8 @@ const VIDEO_T = { fr: { h: 'Voyez-le en 30 secondes', play: 'Lire la vidéo', al
 function videoBlock(l) {
   const id = cfg.video && cfg.video[l]; if (!id) return '';
   const v = VIDEO_T[l];
-  return `<div class="sec"><h2>${v.h}</h2></div><div class="vid"><button class="vfacade" type="button" data-yt="${id}" data-title="${esc(v.alt)}" aria-label="${esc(v.play)}"><img src="/img/video-${l}.webp" width="1280" height="720" alt="${esc(v.alt)}" loading="lazy"><span class="vplay" aria-hidden="true"></span></button></div>`;
+  // Vidéo hébergée sur le site (1,4 Mo, lecture immédiate) : préchargée en arrière-plan après le chargement de la page, démarrée par le clic.
+  return `<div class="sec"><h2>${v.h}</h2></div><div class="vid" data-vid><video playsinline preload="none" poster="/img/video-${l}.webp" aria-label="${esc(v.alt)}" data-yt="${id}"><source src="/video/slashatlas-${l}.mp4" type="video/mp4"></video><button class="vfacade" type="button" aria-label="${esc(v.play)}"><span class="vplay" aria-hidden="true"></span></button></div><p class="vyt"><a href="https://youtu.be/${id}" target="_blank" rel="noopener">${l === 'fr' ? 'Voir aussi sur YouTube' : 'Also on YouTube'} ↗</a></p>`;
 }
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];

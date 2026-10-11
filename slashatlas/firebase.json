@@ -36,6 +36,15 @@
         ]
       },
       {
+        "source": "**/*.mp4",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=604800"
+          }
+        ]
+      },
+      {
         "source": "**/*.@(css|js)",
         "headers": [
           {
