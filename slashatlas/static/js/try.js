@@ -217,7 +217,7 @@
         tries++;
         window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
           if (s.status !== 200) return;
-          if (s.data.status === 'paid') { clearInterval(timer); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; if (s.data.adFreeUntil) setAdFree(s.data.adFreeUntil); bmsg(s.data.adFreeUntil && !s.data.credits ? T.paidPass : T.paid, true); setTimeout(function () { close(); render(); }, 1200); }
+          if (s.data.status === 'paid') { clearInterval(timer); try { var pp = cfg.packs.filter(function (x) { return x.id === sel.pack; })[0]; if (window.gtag && pp) window.gtag('event', 'purchase', { transaction_id: orderId, value: pp.usd, currency: 'USD', items: [{ item_id: pp.id, item_name: pp.days ? 'no-ads-pass' : 'credits-' + pp.credits, price: pp.usd, quantity: 1 }] }); } catch (e) {} try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; if (s.data.adFreeUntil) setAdFree(s.data.adFreeUntil); bmsg(s.data.adFreeUntil && !s.data.credits ? T.paidPass : T.paid, true); setTimeout(function () { close(); render(); }, 1200); }
           else if (s.data.status === 'failed') { clearInterval(timer); busy(btn, false); bmsg(T.payFailed); }
         });
         if (tries > 60) { clearInterval(timer); busy(btn, false); bmsg(T.payFailed); }

@@ -13,11 +13,15 @@
     if (isBot || dnt) return;
     var d = { t: t, p: page, l: lang, d: matchMedia('(max-width:719px)').matches ? 'm' : 'd' };
     for (var k in extra) d[k] = extra[k];
+    toGa(t, d);
     try {
       var b = new Blob([JSON.stringify(d)], { type: 'application/json' });
       if (!navigator.sendBeacon || !navigator.sendBeacon('/api/event', b)) fetch('/api/event', { method: 'POST', body: JSON.stringify(d), keepalive: true, headers: { 'content-type': 'application/json' } });
     } catch (e) {}
   }
+  // Les mêmes événements partent aussi vers Google Analytics (si présent) : copie, essai, outil, achat…
+  var GA = { copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish' };
+  function toGa(t, d) { try { if (window.gtag && GA[t]) window.gtag('event', GA[t], { command: d.s || d.n || '', tool: d.tool || '', method: d.m || '', page_type: d.p || '' }); } catch (e) {} }
   window.saTrack = track;
   function refClass() {
     // liens des publicités : ?utm_source=youtube&utm_campaign=… → compté sous « ad_source_campagne » dans l'administration
