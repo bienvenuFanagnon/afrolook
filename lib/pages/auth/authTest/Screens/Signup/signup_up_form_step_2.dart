@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/language_selector.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 
 import 'dart:typed_data';
@@ -757,7 +758,8 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           l10n.signupStep2Title,
           style: TextStyle(color: _colors.textPrimary, fontSize: 18),
         ),
-      ),
+        actions: const [Padding(padding: EdgeInsets.only(right: 12), child: Center(child: LanguageSelectorButton()))],
+        ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(

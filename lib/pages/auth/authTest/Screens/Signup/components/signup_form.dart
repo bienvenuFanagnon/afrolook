@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/language_selector.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
@@ -124,7 +125,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           icon: Icon(Icons.arrow_back, color: primaryGreen),
           onPressed: () => Navigator.pop(context),
         ),
-      ),
+        actions: const [Padding(padding: EdgeInsets.only(right: 12), child: Center(child: LanguageSelectorButton()))],
+        ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -496,6 +498,11 @@ NamePreview(controller: pseudoController),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Choix de la langue
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Align(alignment: Alignment.centerRight, child: LanguageSelectorButton()),
+                    ),
                     // Barre navigation : retour + toggle thème
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

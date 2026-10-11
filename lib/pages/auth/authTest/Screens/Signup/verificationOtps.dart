@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/language_selector.dart';
 import 'dart:async';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
@@ -200,8 +201,9 @@ class _VerificationOtpState extends State<VerificationOtp> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-          elevation:0
-      ),
+          elevation:0,
+          actions: const [Padding(padding: EdgeInsets.only(right: 12), child: Center(child: LanguageSelectorButton()))],
+        ),
       backgroundColor: colors.background,
       body: WillPopScope(
         onWillPop: () async {

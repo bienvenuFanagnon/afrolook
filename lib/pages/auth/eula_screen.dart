@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/language_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './authTest/Screens/Signup/components/signup_form.dart';
@@ -69,6 +70,7 @@ class _EulaScreenState extends State<EulaScreen> {
                 icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
+        actions: const [Padding(padding: EdgeInsets.only(right: 12), child: Center(child: LanguageSelectorButton()))],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Divider(height: 1, color: colors.divider),

@@ -1,4 +1,5 @@
 ﻿
+import 'package:afrotok/widgets/language_selector.dart';
 import 'dart:math';
 
 import 'package:afrotok/layout/branding_carousel_panel.dart';
@@ -400,7 +401,10 @@ class _LoginPageUserState extends State<LoginPageUser> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Toggle mode clair/sombre
+        // Choix de la langue + toggle mode clair/sombre
+        Row(mainAxisSize: MainAxisSize.min, children: [
+        const LanguageSelectorButton(),
+        const SizedBox(width: 8),
         Consumer<ThemeProvider>(
           builder: (ctx, tp, _) {
             final isDark = tp.themeMode == ThemeMode.dark;
@@ -421,6 +425,7 @@ class _LoginPageUserState extends State<LoginPageUser> {
             );
           },
         ),
+        ]),
         // Bouton créer un compte
         Container(
           decoration: BoxDecoration(
