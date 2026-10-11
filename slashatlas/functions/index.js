@@ -198,9 +198,9 @@ exports.slashatlasApi = onRequest(
       } catch (e) { console.error('og', e.message); return res.status(404).send(''); }
     }
     if (req.method === 'GET' && /\/ads\.txt$/.test(req.path)) {
-      const a = await getAds();
+      const a = await adminAds(); // l'identifiant éditeur est publié dès qu'il est enregistré (vérification du site), même si les blocs ne sont pas encore activés
       res.set('Content-Type', 'text/plain; charset=utf-8').set('Cache-Control', 'public, max-age=300');
-      return res.status(200).send(a.enabled ? `google.com, ${a.client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n` : '');
+      return res.status(200).send(/^ca-pub-\d{10,20}$/.test(a.client) ? `google.com, ${a.client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n` : '');
     }
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
