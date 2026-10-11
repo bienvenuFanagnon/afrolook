@@ -252,47 +252,33 @@
   } catch (e) {}
 })();
 
-// Vidéo de présentation hébergée sur le site : préchargée en arrière-plan après le chargement de la page, puis lue automatiquement
-// quand sa section est à l'écran (et mise en pause quand on la quitte). Volume réduit (40 %). Les navigateurs interdisent souvent le son
-// sans geste de l'utilisateur : la lecture démarre alors sans le son, avec un bouton « Activer le son » ; le premier toucher sur la page l'active aussi.
+// Vidéo de présentation hébergée sur le site : préchargée en arrière-plan après le chargement de la page, puis lue automatiquement AVEC le son
+// (volume 40 %) quand sa section est à l'écran, et mise en pause quand on la quitte. Règle des navigateurs : le son automatique n'est autorisé
+// qu'après un premier geste sur la page (toucher, clic, touche). Tant que ce geste n'a pas eu lieu, on n'affiche pas une vidéo muette : un grand
+// bouton « lancer avec le son » attend le toucher ; dès le premier toucher n'importe où sur la page, les lectures suivantes démarrent seules avec le son.
 (function () {
   var box = document.querySelector('[data-vid]'); if (!box) return;
   var v = box.querySelector('video'), btn = box.querySelector('.vfacade'); if (!v || !btn) return;
   var fr = document.body.dataset.lang !== 'en';
   var c = navigator.connection || {}, slow = c.saveData || /(^|-)2g$/.test(c.effectiveType || '');
-  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
-  var VOL = 0.4, visible = false, userPaused = false, started = false, tracked = false, sound = null;
+  var VOL = 0.4, visible = false, userPaused = false, tracked = false;
+  var cap = document.createElement('span'); cap.className = 'vcap'; cap.textContent = fr ? 'Touchez pour lancer avec le son' : 'Tap to play with sound'; btn.appendChild(cap);
   function preload() { if (slow || v.preload === 'auto') return; v.preload = 'auto'; try { v.load(); } catch (e) {} }
   function whenIdle() { if ('requestIdleCallback' in window) requestIdleCallback(preload, { timeout: 3000 }); else setTimeout(preload, 1500); }
   if (document.readyState === 'complete') whenIdle(); else window.addEventListener('load', whenIdle);
-  v.volume = VOL;
-  function showSoundBtn(on) {
-    if (on && !sound) {
-      sound = document.createElement('button'); sound.type = 'button'; sound.className = 'vsound';
-      sound.innerHTML = '<span>' + (fr ? 'Touchez pour activer le son' : 'Tap to turn the sound on') + '</span>';
-      sound.addEventListener('click', function (e) { e.stopPropagation(); unmute(); });
-      box.appendChild(sound);
-    }
-    if (sound) sound.hidden = !on;
-  }
-  function unmute() { v.muted = false; v.volume = VOL; v.controls = true; showSoundBtn(false); }
-  function begun() {
-    started = true; btn.hidden = true; v.controls = !v.muted;
-    if (!tracked && window.saTrack) { tracked = true; window.saTrack('video', { n: v.dataset.yt }); }
-  }
+  v.volume = VOL; v.muted = false;
+  function begun() { btn.hidden = true; v.controls = true; if (!tracked && window.saTrack) { tracked = true; window.saTrack('video', { n: v.dataset.yt }); } }
   function play() {
     if (userPaused || !v.paused) return;
     v.muted = false; v.volume = VOL;
     var p = v.play();
-    var muted = function () { v.muted = true; var q = v.play(); if (q && q.then) q.then(function () { begun(); showSoundBtn(true); }, function () { btn.hidden = false; }); };
-    if (p && p.then) p.then(function () { begun(); }, muted); else begun();
+    if (p && p.then) p.then(begun, function () { btn.hidden = false; v.controls = false; }); else begun();
   }
-  v.addEventListener('pause', function () { if (started && visible && !v.ended) userPaused = true; });
-  v.addEventListener('play', function () { if (v.muted && started) showSoundBtn(true); });
-  // premier geste de l'utilisateur sur la page : le son devient autorisé
-  ['pointerdown', 'keydown', 'touchend'].forEach(function (ev) { window.addEventListener(ev, function () { if (v.muted && !v.paused) unmute(); }, { once: true, passive: true }); });
-  btn.addEventListener('click', function () { userPaused = false; v.volume = VOL; v.muted = false; v.play().then(begun, function () {}); begun(); });
-  if ('IntersectionObserver' in window && !slow && !calm) {
+  v.addEventListener('pause', function () { if (!btn.hidden && visible && !v.ended) userPaused = true; });
+  // premier geste de l'utilisateur sur la page : le son automatique devient autorisé, on lance la vidéo si sa section est déjà visible
+  ['pointerdown', 'keydown', 'touchend'].forEach(function (ev) { window.addEventListener(ev, function () { if (visible) setTimeout(play, 0); }, { once: true, passive: true }); });
+  btn.addEventListener('click', function () { userPaused = false; v.muted = false; v.volume = VOL; var p = v.play(); if (p && p.then) p.then(begun, function () {}); begun(); });
+  if ('IntersectionObserver' in window && !slow) {
     new IntersectionObserver(function (es) {
       es.forEach(function (en) {
         visible = en.isIntersecting && en.intersectionRatio >= 0.5;
