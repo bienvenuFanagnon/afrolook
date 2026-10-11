@@ -83,6 +83,8 @@ async function statsWrite(b, req) {
   } else if (t === 'try') {
     u.tries = inc;
     u[`try.${key(b.n)}`] = inc;
+  } else if (t === 'video') { // lecture de la vidéo de présentation
+    u.videoplays = inc;
   } else if (t === 'nopub') { // clic vers l'offre « sans pub »
     u.nopub = inc;
     u[`nopub_from.${key(b.p)}`] = inc;

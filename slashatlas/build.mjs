@@ -138,6 +138,13 @@ function railCard(c, l) {
   const t = c[l], H = HOME[l];
   return `<article class="rc" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><div class="acts"><a class="btn pri copy" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]}</a><button class="btn gl copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${H.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
+// Vidéo YouTube : image locale + lecteur chargé seulement au clic (youtube-nocookie.com) : aucune requête vers Google avant que le visiteur lise la vidéo.
+const VIDEO_T = { fr: { h: 'Voyez-le en 30 secondes', play: 'Lire la vidéo', alt: 'Vidéo : copier une commande gratuite, obtenir une affiche pro' }, en: { h: 'See it in 30 seconds', play: 'Play the video', alt: 'Video: copy a free command, get a pro poster' } };
+function videoBlock(l) {
+  const id = cfg.video && cfg.video[l]; if (!id) return '';
+  const v = VIDEO_T[l];
+  return `<div class="sec"><h2>${v.h}</h2></div><div class="vid"><button class="vfacade" type="button" data-yt="${id}" data-title="${esc(v.alt)}" aria-label="${esc(v.play)}"><img src="/img/video-${l}.webp" width="1280" height="720" alt="${esc(v.alt)}" loading="lazy"><span class="vplay" aria-hidden="true"></span></button></div>`;
+}
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];
   const featured = ['productglow', 'fashionposter', 'menuhero', 'openhouse', 'matchday', 'eventnight', 'coverdrop', 'reelcover'].map((s) => COMMANDS.find((c) => c.slug === s));
@@ -149,6 +156,7 @@ function home(l) {
 <div class="rail" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
 <div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>${ad('lb', l)}
 <div class="tools"><span>${H.tools}</span><b>ChatGPT</b><b>Gemini</b><b>Midjourney</b></div>
+${videoBlock(l)}
 <div class="sec"><h2>${H.cats}</h2></div><div class="cats">${cats}</div>
 <div class="gap"></div>${tuto(l)}${ad('rect', l)}${band(l)}</div>`;
   emit(l, 'home', p.home, { ogTitle: t.ogTitle, title: t.title, desc: t.desc, body, alt: alt2(P.fr.home, P.en.home),

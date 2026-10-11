@@ -173,3 +173,16 @@
     [m, f].forEach(function (c) { if (!c) return; var a = document.createElement('a'); a.href = '/admin/'; a.textContent = 'Admin'; if (c === m) c.appendChild(a); else c.appendChild(a); });
   } catch (e) {}
 })();
+
+// Vidéo YouTube : le lecteur n'est chargé qu'au clic (domaine sans cookie youtube-nocookie.com).
+(function () {
+  document.addEventListener('click', function (e) {
+    var f = e.target.closest('.vfacade'); if (!f) return;
+    var id = f.dataset.yt; if (!/^[\w-]{6,20}$/.test(id)) return;
+    var i = document.createElement('iframe');
+    i.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    i.title = f.dataset.title || 'Video'; i.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; i.allowFullscreen = true; i.setAttribute('loading', 'lazy');
+    f.replaceWith(i);
+    if (window.saTrack) window.saTrack('video', { n: id });
+  });
+})();
