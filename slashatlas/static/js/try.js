@@ -12,7 +12,8 @@
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
-      share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareQr: 'Ajouter un petit QR code SlashAtlas dans un coin de l’image partagée', shareQrNote: 'Décochez pour l’enlever. Le fichier téléchargé reste toujours sans QR.', shareImg: 'Partager l’image', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
+      qrTitle: 'Ajouter un QR code vers mon site ou ma boutique', qrHint: 'Collez le lien de votre site, boutique, page ou votre numéro WhatsApp : un QR code est ajouté sur l’affiche. Vos clients le scannent pour ouvrir votre lien.', qrLabel: 'Votre lien ou numéro WhatsApp', qrPh: 'ex. maboutique.com ou +225 07 00 00 00 00', qrOpens: 'Le QR code ouvrira :', qrBad: 'Lien non reconnu. Écrivez par exemple maboutique.com', qrLong: 'lien long, le code sera plus dense : préférez un lien court', qrPos: 'Emplacement sur l’affiche', qrBL: 'Bas gauche', qrBR: 'Bas droite', qrTL: 'Haut gauche', qrTR: 'Haut droite', qrNote: 'Sous le QR code, la mention « Créé avec slashatlas.com » est une simple information, pas un lien. L’IA laisse le coin libre ; vous pouvez changer le lien ou l’emplacement après la génération, gratuitement.',
+      share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareImg: 'Partager l’image', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       help: 'Un souci de paiement ? Écrivez-nous :', buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       feeLineCard: 'Pack {p} + frais de paiement {f}', usdNote: 'Prix en dollars. Par mobile money, le montant est converti en FCFA.',
@@ -27,7 +28,8 @@
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
-      share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareQr: 'Add a small SlashAtlas QR code in a corner of the shared image', shareQrNote: 'Untick to remove it. The downloaded file never has a QR.', shareImg: 'Share the image', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
+      qrTitle: 'Add a QR code to my website or shop', qrHint: 'Paste the link to your website, shop, page or your WhatsApp number: a QR code is added to the poster. Your customers scan it to open your link.', qrLabel: 'Your link or WhatsApp number', qrPh: 'e.g. myshop.com or +225 07 00 00 00 00', qrOpens: 'The QR code will open:', qrBad: 'Link not recognized. Write for example myshop.com', qrLong: 'long link, the code will be denser: prefer a short link', qrPos: 'Position on the poster', qrBL: 'Bottom left', qrBR: 'Bottom right', qrTL: 'Top left', qrTR: 'Top right', qrNote: 'Under the QR code, the text “Made with slashatlas.com” is just information, not a link. The AI leaves the corner free; you can change the link or position after generation, for free.',
+      share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareImg: 'Share the image', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       help: 'Payment problem? Write to us:', buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       feeLineCard: 'Pack {p} + payment fees {f}', usdNote: 'Prices in US dollars. With mobile money, the amount is converted to FCFA.',
@@ -41,7 +43,7 @@
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, adFreeUntil: 0, checking: true };
+  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'br' }, adFreeUntil: 0, checking: true };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -79,47 +81,81 @@
     var nets = [['WhatsApp', 'https://wa.me/?text=' + t + '%20' + u], ['Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + u], ['X', 'https://twitter.com/intent/tweet?text=' + t + '&url=' + u], ['LinkedIn', 'https://www.linkedin.com/sharing/share-offsite/?url=' + u], ['Telegram', 'https://t.me/share/url?url=' + u + '&text=' + t]];
     var canNative = !!(navigator.share && navigator.canShare);
     return '<div class="sshare" id="s-sharebox" hidden><b>' + T.shareTitle + '</b>' +
-      '<label class="qrchk"><input type="checkbox" id="s-qr"' + (qrWanted() ? ' checked' : '') + '><span>' + T.shareQr + '<small>' + T.shareQrNote + '</small></span></label>' +
-      '<img class="sprev" id="s-prev" alt="" hidden>' +
       (canNative ? '<button class="btn pri big" type="button" id="s-native">' + T.shareImg + '</button>' : '') +
       '<p class="hint">' + T.shareHint + '</p><div class="snets">' +
       nets.map(function (n) { return '<a class="btn gl sm" href="' + n[1] + '" target="_blank" rel="noopener" data-net="' + n[0] + '">' + n[0] + '</a>'; }).join('') +
       '</div><div class="snets"><button class="btn gl sm" type="button" id="s-copyimg">' + T.shareCopyImg + '</button><button class="btn gl sm" type="button" id="s-copylink">' + T.shareCopyLink + '</button></div></div>';
   }
-  // Petit QR code (vers le site) dans le coin le plus calme de l'image, pour la copie partagée uniquement ; le téléchargement reste intact.
-  function qrWanted() { try { return localStorage.getItem('sa_shareqr') !== '0'; } catch (e) { return true; } }
+  // ── QR code de l'utilisateur (son site, sa boutique, son WhatsApp) ajouté sur l'affiche après la génération ──
+  // Le QR ouvre uniquement le lien de l'utilisateur ; « Créé avec slashatlas.com » en dessous est une simple mention, pas un lien.
+  function normUrl(v) {
+    v = String(v || '').trim().replace(/\s+/g, ' ');
+    if (!v || v.length > 200) return '';
+    if (/^\+?[\d ().-]{8,}$/.test(v)) return 'https://wa.me/' + v.replace(/\D/g, '');
+    v = v.replace(/ /g, '');
+    if (/^https?:\/\/[^\/\s]+\.[^\/\s]+/i.test(v)) return v;
+    if (/^[a-z0-9][a-z0-9-]*(\.[a-z0-9-]+)+(\/\S*)?$/i.test(v)) return 'https://' + v;
+    return '';
+  }
+  var qrLib = null;
+  function loadQrLib() {
+    if (window.qrcode) return Promise.resolve();
+    return qrLib || (qrLib = new Promise(function (res, rej) { var sc = document.createElement('script'); sc.src = '/js/qrcode-1.4.4.js'; sc.onload = res; sc.onerror = function () { qrLib = null; rej(new Error('qrlib')); }; document.head.appendChild(sc); }));
+  }
   function loadImg(src) { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = src; }); }
-  function withQr(blob) {
-    return Promise.all([loadImg(URL.createObjectURL(blob)), loadImg('/img/qr-' + L + '.svg')]).then(function (a) {
-      var img = a[0], qr = a[1], w = img.naturalWidth, h = img.naturalHeight, c = document.createElement('canvas'); c.width = w; c.height = h;
-      var g = c.getContext('2d'); g.drawImage(img, 0, 0);
-      var size = Math.round(Math.max(Math.min(w, h) * 0.15, 130)), m = Math.round(Math.min(w, h) * 0.03), reg = size + m;
-      // coin le plus calme (écart-type de luminance le plus faible) ; les coins du haut sont un peu pénalisés
-      var best = null;
-      [[0, 1.25], [1, 1.25], [2, 1], [3, 1]].forEach(function (k) {
-        var x0 = (k[0] % 2) ? w - reg : 0, y0 = k[0] < 2 ? 0 : h - reg, d = g.getImageData(x0, y0, reg, reg).data, n = 0, sum = 0, sq = 0;
-        for (var i = 0; i < d.length; i += 16) { var l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; sum += l; sq += l * l; n++; }
-        var sd = Math.sqrt(Math.max(0, sq / n - (sum / n) * (sum / n))) * k[1];
-        if (!best || sd < best.sd) best = { sd: sd, x: (k[0] % 2) ? w - size - m : m, y: k[0] < 2 ? m : h - size - m };
-      });
-      g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = size * 0.08; g.beginPath();
-      if (g.roundRect) g.roundRect(best.x, best.y, size, size, size * 0.1); else g.rect(best.x, best.y, size, size);
-      g.fillStyle = '#fff'; g.fill(); g.clip(); g.shadowColor = 'transparent'; g.drawImage(qr, best.x, best.y, size, size); g.restore();
+  function qrKey() { var u = normUrl(state.qr.raw); return u ? u + '|' + state.qr.pos : ''; }
+  function composeQr(raw, url, pos) {
+    return Promise.all([loadImg(URL.createObjectURL(raw)), loadQrLib()]).then(function (a) {
+      var img = a[0], w = img.naturalWidth, h = img.naturalHeight, mn = Math.min(w, h);
+      var q = window.qrcode(0, 'M'); q.addData(url); q.make(); var n = q.getModuleCount();
+      // au moins 4 px par module pour que le code se lise bien, sans dépasser 30 % de l'image
+      var side = Math.min(Math.max(mn * 0.17, 4 * (n + 6)), mn * 0.30), cell = Math.max(2, Math.floor(side / (n + 6))), tw = cell * (n + 6), ch = Math.round(tw * 0.27), th = tw + ch, m = Math.round(mn * 0.03);
+      var x = (pos === 'bl' || pos === 'tl') ? m : w - tw - m, y = (pos === 'tl' || pos === 'tr') ? m : h - th - m;
+      var c = document.createElement('canvas'); c.width = w; c.height = h; var g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = tw * 0.06; g.fillStyle = '#fff'; g.beginPath();
+      if (g.roundRect) g.roundRect(x, y, tw, th, tw * 0.07); else g.rect(x, y, tw, th); g.fill(); g.restore();
+      g.fillStyle = '#000'; for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect(x + (k + 3) * cell, y + (r + 3) * cell, cell, cell);
+      g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      var f = 'Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+      g.font = '500 ' + Math.round(tw * 0.075) + 'px ' + f; g.fillText(L === 'en' ? 'Made with' : 'Créé avec', x + tw / 2, y + tw + ch * 0.38);
+      g.font = '800 ' + Math.round(tw * 0.105) + 'px ' + f; g.fillText('slashatlas.com', x + tw / 2, y + tw + ch * 0.80);
       URL.revokeObjectURL(img.src);
-      var type = blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
-      return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error('qr')); }, type, 0.92); });
+      var type = raw.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+      return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error('qr')); }, type, 0.93); });
     });
   }
-  var shareCache = {};
-  /** Image à partager (avec ou sans QR), préparée à l'avance : le partage natif doit partir directement du geste de l'utilisateur. */
-  function shareBlob() {
-    var r = state.result, k = r.url + (qrWanted() ? '|qr' : '');
-    if (!shareCache[k]) shareCache[k] = qrWanted() ? withQr(r.blob).catch(function () { return r.blob; }) : Promise.resolve(r.blob);
-    return shareCache[k];
+  /** Met la version à jour avec le QR actuel (ou sans QR) ; gratuit, calculé dans le navigateur à partir de l'image d'origine. */
+  function ensureQr(v) {
+    var key = qrKey();
+    if (v.qrKey === key) return Promise.resolve(v);
+    var done = function (blob) { if (v.url) URL.revokeObjectURL(v.url); v.blob = blob; v.url = URL.createObjectURL(blob); v.qrKey = key; return v; };
+    if (!key) return Promise.resolve(done(v.raw));
+    return composeQr(v.raw, normUrl(state.qr.raw), state.qr.pos).then(done, function () { v.qrKey = key; return v; });
   }
-  function refreshPrev() {
-    var pv = $('#s-prev'); if (!pv || !state.result) return;
-    shareBlob().then(function (b) { if (pv.dataset.u) URL.revokeObjectURL(pv.dataset.u); pv.dataset.u = URL.createObjectURL(b); pv.src = pv.dataset.u; pv.hidden = false; });
+  function newVersion(id, mime, b64) {
+    var bin = atob(b64), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    var raw = new Blob([arr], { type: mime });
+    return ensureQr({ id: id, raw: raw, blob: raw, url: '', qrKey: null, ext: mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png' });
+  }
+  function applyQr() {
+    var v = state.result; if (!v) return;
+    ensureQr(v).then(function () {
+      var im = $('.sres > img'), dl = $('.sres a[download]'); if (im) im.src = v.url; if (dl) dl.href = v.url;
+      try { if (qrKey()) window.saTrack && window.saTrack('qr', { n: state.qr.pos }); } catch (e) {}
+    });
+  }
+  function qrStatus() {
+    var el = $('#s-qrmsg'); if (!el) return;
+    var raw = (state.qr.raw || '').trim(), u = normUrl(raw);
+    el.className = 'hint' + (raw && !u ? ' bad' : '');
+    el.textContent = !raw ? '' : (u ? T.qrOpens + ' ' + u + (u.length > 70 ? ' · ' + T.qrLong : '') : T.qrBad);
+  }
+  function qrBox() {
+    var P = [['bl', T.qrBL], ['br', T.qrBR], ['tl', T.qrTL], ['tr', T.qrTR]];
+    return '<details class="brandbox sf qrbox"' + (state.qr.raw ? ' open' : '') + '><summary>' + T.qrTitle + '</summary><p class="hint">' + T.qrHint + '</p>' +
+      '<label>' + T.qrLabel + '<input id="s-qrurl" type="text" inputmode="url" maxlength="200" placeholder="' + esc(T.qrPh) + '" value="' + esc(state.qr.raw) + '" autocomplete="off" autocapitalize="off"></label><p class="hint" id="s-qrmsg"></p>' +
+      '<div class="qrpos"><small>' + T.qrPos + '</small><div class="qrseg" role="group">' + P.map(function (p) { return '<button type="button" data-qp="' + p[0] + '" aria-pressed="' + (state.qr.pos === p[0]) + '">' + p[1] + '</button>'; }).join('') + '</div></div>' +
+      '<p class="hint">' + T.qrNote + '</p></details>';
   }
   function flash(btn, txt) { var o = btn.textContent; btn.textContent = txt; setTimeout(function () { btn.textContent = o; }, 1800); }
   function toPng(blob) {
@@ -136,10 +172,10 @@
     b.hidden = !b.hidden;
     if (b.hidden) return;
     try { window.saTrack && window.saTrack('share', { n: 'open' }); } catch (e) {}
-    refreshPrev(); b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   function nativeShare(btn) {
-    shareBlob().then(function (blob) {
+    Promise.resolve(state.result.blob).then(function (blob) {
       var file; try { file = new File([blob], 'slashatlas-' + slug + '.' + (blob.type === 'image/jpeg' ? 'jpg' : 'png'), { type: blob.type }); } catch (e) { return; }
       var data = { files: [file], title: 'SlashAtlas', text: T.shareText + ' ' + shareLink() };
       if (!navigator.canShare(data)) { flash(btn, T.shareFail); return; }
@@ -162,7 +198,7 @@
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
-      brandBox() +
+      brandBox() + qrBox() +
       '<button class="btn pri big' + (state.busy ? ' loading' : '') + '" type="button" id="s-gen"' + (state.credits >= 1 && !canGen ? ' disabled' : '') + '>' + (state.busy ? T.working : (state.credits >= 1 && !state.photos.length ? T.needPhoto : genLabel)) + '</button>' +
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
       (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt="">' +
@@ -182,12 +218,13 @@
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
+    var qu = $('#s-qrurl'); if (qu) { var qt = null; qrStatus(); qu.addEventListener('input', function () { state.qr.raw = qu.value; qrStatus(); clearTimeout(qt); qt = setTimeout(applyQr, 700); }); }
+    Array.prototype.forEach.call(root.querySelectorAll('[data-qp]'), function (b) { b.addEventListener('click', function () { state.qr.pos = b.dataset.qp; Array.prototype.forEach.call(root.querySelectorAll('[data-qp]'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); applyQr(); }); });
     var sh = $('#s-share'); if (sh) sh.addEventListener('click', doShare);
     var nb = $('#s-native'); if (nb) nb.addEventListener('click', function () { nativeShare(nb); });
-    var qc = $('#s-qr'); if (qc) qc.addEventListener('change', function () { try { localStorage.setItem('sa_shareqr', qc.checked ? '1' : '0'); } catch (e) {} refreshPrev(); });
     var ci = $('#s-copyimg'); if (ci) ci.addEventListener('click', function () {
       if (!(navigator.clipboard && window.ClipboardItem) || !state.result) { flash(ci, T.shareFail); return; }
-      shareBlob().then(toPng).then(function (b) { return navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); }).then(function () { flash(ci, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copyimg' }); } catch (e) {} }, function () { flash(ci, T.shareFail); });
+      toPng(state.result.blob).then(function (b) { return navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); }).then(function () { flash(ci, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copyimg' }); } catch (e) {} }, function () { flash(ci, T.shareFail); });
     });
     var cl = $('#s-copylink'); if (cl) cl.addEventListener('click', function () {
       var done = function () { flash(cl, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copylink' }); } catch (e) {} };
@@ -198,7 +235,7 @@
     var by = $('#s-buy'); if (by) by.addEventListener('click', openBuy);
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
     var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy('corriger'); else editImage(); });
-    Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; render(); }); });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; ensureQr(state.result).then(render); }); });
   }
 
   // ── photos : réduites dans le navigateur (1600 px, JPEG) avant l'envoi ──
@@ -230,16 +267,14 @@
   function generate() {
     if (state.busy || !state.photos.length) return;
     state.busy = true; state.result = null; state.versions = []; render(); msg('');
-    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
+    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: normUrl(state.qr.raw) ? state.qr.pos : '', photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {
-        var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        var ext = r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png';
-        var blob = new Blob([arr], { type: r.data.mime });
-        state.result = { id: r.data.id, url: URL.createObjectURL(blob), blob: blob, ext: ext };
-        state.versions = [state.result]; state.cur = 0; state.instruction = '';
-        state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
+        newVersion(r.data.id, r.data.mime, r.data.image).then(function (v) {
+          state.result = v; state.versions = [v]; state.cur = 0; state.instruction = '';
+          state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
+        });
       } else {
         if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); return; }
         render(); msg(errText(r.data && r.data.error));
@@ -256,10 +291,9 @@
     window.slashAuth.call('edit', { id: cur.id, lang: L, instruction: text }).then(function (r) {
       state.busy = false;
       if (r.status === 200) {
-        var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        var vb = new Blob([arr], { type: r.data.mime });
-        var v = { id: r.data.id, url: URL.createObjectURL(vb), blob: vb, ext: r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png' };
-        state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
+        newVersion(r.data.id, r.data.mime, r.data.image).then(function (v) {
+          state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
+        });
       } else if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); }
       else { render(); msg(errText(r.data && r.data.error)); }
     }).catch(function () { state.busy = false; render(); msg(T.e.server); });

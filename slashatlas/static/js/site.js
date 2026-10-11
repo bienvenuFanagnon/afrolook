@@ -20,7 +20,7 @@
     } catch (e) {}
   }
   // Les mêmes événements partent aussi vers Google Analytics (si présent) : copie, essai, outil, achat…
-  var GA = { copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', pwa: 'pwa_install', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish', share: 'share' };
+  var GA = { copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', pwa: 'pwa_install', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish', share: 'share', qr: 'qr_add' };
   function toGa(t, d) { try { if (window.gtag && GA[t]) window.gtag('event', GA[t], { command: d.s || d.n || '', tool: d.tool || '', method: d.m || '', page_type: d.p || '' }); } catch (e) {} }
   window.saTrack = track;
   function refClass() {

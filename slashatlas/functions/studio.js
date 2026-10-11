@@ -167,7 +167,15 @@ function brandClause(kind, lang, texts) {
   const lay = `${B.lay}${texts.map((r) => B.place[r.role]).join(' ; ')}. ${B.kind[kind]}`;
   return `${B.intro.replace('{L}', names)} ${lay} ${B.outro}`;
 }
-function composePrompt(slug, lang, product, multi, nPhotos, texts = []) {
+const QR_CORNER = { br: ['inférieur droit', 'bottom-right'], bl: ['inférieur gauche', 'bottom-left'], tr: ['supérieur droit', 'top-right'], tl: ['supérieur gauche', 'top-left'] };
+function qrClause(lang, pos) {
+  const c = QR_CORNER[pos];
+  if (!c) return '';
+  return lang === 'en'
+    ? `Leave the ${c[1]} corner of the visual completely free (about 20% of the width and 25% of the height), with no text, no important element and no detail of the subject: a QR code will be added there afterwards. Do not write or draw any QR code yourself.`
+    : `Laisse entièrement libre le coin ${c[0]} du visuel (environ 20 % de la largeur et 25 % de la hauteur), sans texte, sans élément important ni détail du sujet : un code QR y sera ajouté après coup. N’écris et ne dessine aucun code QR toi-même.`;
+}
+function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '') {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
   if (['video', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
@@ -177,7 +185,8 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = []) {
     ? (L === 'fr' ? 'Les photos jointes montrent les éléments à réunir dans une même création. ' : 'The attached photos show the elements to bring together in a single creation. ')
     : '';
   const brand = brandClause(c.kind, L, texts);
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}`.trim(), ratio: c.ratio };
+  const qr = qrClause(L, qrpos);
+  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}`.trim(), ratio: c.ratio };
 }
 
 async function callGemini(parts, ratio) {
@@ -219,10 +228,11 @@ async function generate(u, b) {
   }
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
   const texts = cleanTexts(b.texts);
-  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts);
+  const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
+  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos);
   parts.push({ text });
 
-  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length });
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos });
 }
 
 /** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */

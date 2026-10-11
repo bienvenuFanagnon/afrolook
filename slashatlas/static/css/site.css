@@ -415,3 +415,11 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .qrchk input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--acc,#1e90ff)}
 .qrchk small{display:block;font-weight:400;color:var(--mut);margin-top:2px}
 .sprev{max-height:200px;max-width:100%;width:auto;border-radius:12px;align-self:flex-start;border:1px solid var(--line2)}
+.qrbox label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--mut)}
+.qrbox input{background:#0d0e10;border:1px solid var(--line2);border-radius:12px;color:var(--txt);padding:12px 13px;font:inherit;font-size:14.5px;min-width:0}
+.qrbox .hint.bad{color:#ff8a80}.qrbox>.hint:last-child{margin-bottom:14px}
+.qrpos{display:flex;flex-direction:column;gap:6px;margin:10px 0}.qrpos small{font-weight:600;color:var(--mut);font-size:12px}
+.qrseg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.qrseg button{border:1px solid var(--line2);background:transparent;color:var(--txt);border-radius:12px;padding:11px 4px;font:inherit;font-size:12.5px;font-weight:700;min-height:44px;cursor:pointer}
+.qrseg button[aria-pressed=true]{background:var(--acc,#1e90ff);border-color:var(--acc,#1e90ff);color:#fff}
+@media (max-width:420px){.qrseg{grid-template-columns:repeat(2,minmax(0,1fr))}}

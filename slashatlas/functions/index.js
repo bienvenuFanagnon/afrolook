@@ -129,6 +129,9 @@ async function statsWrite(b, req) {
   } else if (t === 'share') { // partage du visuel généré (feuille native, réseau choisi, copie)
     u.shares = inc;
     u[`share_via.${key(b.n)}`] = inc;
+  } else if (t === 'qr') { // QR code du client ajouté sur l'affiche (coin choisi)
+    u.qrs = inc;
+    u[`qr_pos.${key(b.n)}`] = inc;
   } else if (t === 'adview') { // bloc publicitaire affiché à l'écran
     u.adviews = inc;
     u[`ad.${key(b.n)}`] = inc;
