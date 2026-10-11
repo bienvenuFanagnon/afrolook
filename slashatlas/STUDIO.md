@@ -55,9 +55,12 @@ Le lien du canal se renseigne dans `src/config.json` → `community.whatsapp` (h
 ## Vidéos publicitaires (onglet « Vidéo » du Studio)
 - Principe : montage maison (pas d'IA vidéo). Photos du client + textes → vidéo MP4 de 15 à 40 s : animations dessinées image par image (`functions/video.js`, @napi-rs/canvas), musique synthétisée par style, voix off facultative (Google Cloud Text-to-Speech, voix Chirp 3 HD Aoede/Puck, FR et EN), QR code de fin facultatif. Le produit reste identique à la photo.
 - Styles : `mode`, `beaute`, `promo` (palette tirée de la photo). Formats : 9:16, 1:1, 16:9. Les durées des scènes s'adaptent à la voix.
-- Prix : `VIDEO_COST` dans `functions/studio.js` (3 crédits, +1 avec voix). Plafonds : `VIDEO_LIMITS` (8 par jour et par compte, 150 par jour au total). Débit avant le rendu, remboursement automatique en cas d'échec.
+- Prix : `VIDEO_COST` dans `functions/studio.js` (4 crédits, prix unique : détourage IA, texte écrit par l'IA, voix off et musique compris). Plafonds : `VIDEO_LIMITS` (8 par jour et par compte, 150 par jour au total). Débit avant le rendu, remboursement automatique en cas d'échec.
 - Serveur : `functions/videoApi.js` (validation, crédits, stockage `videos/{uid}/{id}.mp4`, collection `StudioVideos`) ; fonction dédiée `slashatlasVideo` (2 Go, 2 processeurs, 300 s, appelée directement par le navigateur : le délai de Hosting est de 60 s) ; `/api/video/script` (texte proposé par Gemini, gratuit, 25 par jour), `/api/video/file`, `/api/video/list`.
 - URL de la fonction de rendu : `src/config.json` → `video.renderUrl` (l'onglet Vidéo n'apparaît que si elle est renseignée).
 - Interface : `static/js/videomode.js`, chargé par `try.js`. Exemples : `static/video/exemples/` (générés avec `functions/video.js`, voir l'historique du dépôt).
 - Coût de revient mesuré : environ 20 s de calcul pour une vidéo de 20 s, quelques centimes de voix, quelques Mo de stockage.
 - À prévoir : règle de cycle de vie du bucket pour supprimer `videos/` après 30 jours.
+
+### Vidéo : tout est automatique (principe de simplicité)
+La personne donne une photo et touche le bouton. Côté serveur (`videoApi.render`) : texte, style (beauté, mode ou promo) et phrases de la voix sont écrits par Gemini à partir de la **photo** (`autoCopy`) ; le détourage est local quand le fond est simple, sinon IA sur fond vert (`aiCutout`), sinon photo entière dans un cadre ; un numéro WhatsApp ou un site dans le champ « contact » devient le QR code de fin ; voix off et musique par défaut. « Personnaliser » (facultatif) permet de changer style, format, textes, musique, voix, QR code. Après la création, « Modifier » reprend ce que le site a choisi (`used` dans la réponse).

@@ -6,11 +6,12 @@ const { FieldValue } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 const studio = require('./studio');
 const video = require('./video');
-const { chromaKey } = require('./cutout');
+const { chromaKey, localCutout } = require('./cutout');
 
 const { fail, clean, db, day, spendCredits, addCredits, bump } = studio;
 const STYLES = Object.keys(video.STYLES);
 const RATIOS = Object.keys(video.SIZES);
+const SCRIPT_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
 const oneLine = (v, n) => clean(v, n).replace(/\s+/g, ' ');
 
 function cleanTexts(t) {
@@ -41,10 +42,35 @@ function cleanVoice(v, T, lang) {
   return out;
 }
 
-/** Crée la vidéo : débit, plafonds, rendu, stockage, remboursement si échec. Appelée par la fonction longue durée. */
+/** Un téléphone ou un lien dans le champ « contact » devient le QR code de fin, sans rien demander de plus. */
+function qrFromContact(c) { try { return normUrl(c); } catch (e) { return ''; } }
+
+/** Texte de la vidéo écrit par l'IA à partir de la PHOTO (et de ce que la personne a donné) : l'utilisateur n'a rien à écrire. */
+async function autoCopy(photo, mime, ctx) {
+  const lang = ctx.lang; const info = [ctx.about && (lang === 'fr' ? 'Description donnée : ' : 'Description given: ') + ctx.about, ctx.brand && (lang === 'fr' ? 'Marque : ' : 'Brand: ') + ctx.brand, ctx.price && (lang === 'fr' ? 'Prix : ' : 'Price: ') + ctx.price].filter(Boolean).join('\n');
+  const prompt = lang === 'fr'
+    ? `Regarde la photo : c'est le produit d'un petit commerçant. Écris le texte d'une courte publicité vidéo (15 à 25 secondes).\n${info}\nChoisis aussi le style : "beaute" (cosmétiques, soins, parfums, coiffure), "mode" (vêtements, chaussures, sacs, bijoux, accessoires), "promo" (nourriture, boissons, électronique, maison, tout le reste).\nRéponds uniquement en JSON : {"style": "beaute|mode|promo", "hook": accroche de 3 à 6 mots, "lines": [3 atouts de 2 à 5 mots, visibles sur la photo ou évidents pour ce type de produit], "cta": appel à l'action de 2 à 4 mots, "voice": {"hook": phrase parlée de 8 mots au plus, "product": 1 ou 2 phrases de 22 mots au plus, "benefits": 1 phrase de 20 mots au plus, "offer": "" , "cta": 1 phrase de 12 mots au plus}}.\nRègles : français simple et chaleureux ; n'invente ni marque, ni chiffre, ni prix, ni certification, ni promesse de résultat ou de santé ; ne lis aucun texte de l'emballage sauf s'il est donné ; pas d'émoji ; pas de guillemets dans les textes.`
+    : `Look at the photo: it is a small business owner's product. Write the text of a short video ad (15 to 25 seconds).\n${info}\nAlso pick the style: "beaute" (cosmetics, skincare, perfume, hair), "mode" (clothes, shoes, bags, jewelry, accessories), "promo" (food, drinks, electronics, home, everything else).\nReply with JSON only: {"style": "beaute|mode|promo", "hook": a 3 to 6 word hook, "lines": [3 benefits of 2 to 5 words, visible in the photo or obvious for this kind of product], "cta": a 2 to 4 word call to action, "voice": {"hook": spoken hook of 8 words max, "product": 1 or 2 sentences of 22 words max, "benefits": 1 sentence of 20 words max, "offer": "", "cta": 1 sentence of 12 words max}}.\nRules: simple, warm English; invent no brand, number, price, certification, health or result claim; do not read any packaging text unless given; no emoji; no quotation marks inside the texts.`;
+  for (const model of SCRIPT_MODELS) {
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': studio.GEMINI_API_KEY.value() },
+        body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType: mime || 'image/jpeg', data: photo.toString('base64') } }, { text: prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } }) });
+      const x = await r.json(); const txt = x.candidates && x.candidates[0] && x.candidates[0].content && x.candidates[0].content.parts && x.candidates[0].content.parts[0] && x.candidates[0].content.parts[0].text;
+      if (!txt) { console.error('autoCopy', model, JSON.stringify(x.error || x.promptFeedback || '').slice(0, 200)); continue; }
+      const j = JSON.parse(txt); const v = j.voice && typeof j.voice === 'object' ? j.voice : {};
+      const out = { style: STYLES.includes(j.style) ? j.style : null, hook: oneLine(j.hook, 60), lines: (Array.isArray(j.lines) ? j.lines : []).map((q) => oneLine(q, 48)).filter(Boolean).slice(0, 3), cta: oneLine(j.cta, 30),
+        voice: { hook: oneLine(v.hook, 120), product: oneLine(v.product, 240), benefits: oneLine(v.benefits, 240), offer: '', cta: oneLine(v.cta, 160) } };
+      if (out.hook.length >= 3) return out;
+    } catch (e) { console.error('autoCopy', model, e.message); }
+  }
+  return null;
+}
+const FALLBACK = { fr: { hook: 'Découvrez-le', cta: 'Commandez maintenant' }, en: { hook: 'Discover it', cta: 'Order now' } };
+
+/** Crée la vidéo : débit, plafonds, rendu, stockage, remboursement si échec. Appelée par la fonction longue durée.
+ *  L'utilisateur n'a presque rien à fournir : une photo suffit. Détourage, texte, style, musique, voix et QR code sont choisis ici. */
 async function render(u, b) {
   const lang = b.lang === 'en' ? 'en' : 'fr';
-  const style = STYLES.includes(b.style) ? b.style : 'mode';
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : '9:16';
   const photosIn = Array.isArray(b.photos) ? b.photos.slice(0, 3) : [];
   if (!photosIn.length) throw fail(400, 'no_photo');
@@ -57,16 +83,14 @@ async function render(u, b) {
     total += bytes; photos.push(Buffer.from(data, 'base64'));
   }
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
-  const texts = cleanTexts(b.texts);
-  if (texts.hook.length < 3) throw fail(400, 'no_hook');
-  const withVoice = b.voice === true || (b.voice && b.voice.on === true);
+  let texts = cleanTexts(b.texts); const about = oneLine(b.about, 240);
+  const auto = texts.hook.length < 3; // pas d'accroche fournie : l'IA l'écrit
+  const withVoice = !(b.voice === false || (b.voice && b.voice.on === false));
   const gender = b.voice && b.voice.gender === 'm' ? 'm' : 'f';
-  const voice = withVoice ? { gender, segments: cleanVoice(b.voice && b.voice.segments, texts, lang) } : null;
-  const qrUrl = normUrl(b.qr);
   const music = ['none', 'ambient', 'beat'].includes(b.music) ? b.music : undefined; // sans choix : celle du style
   const sfx = b.sfx !== false;
-  const cutoutMode = ['auto', 'ai', 'off'].includes(b.cutout) ? b.cutout : 'auto';
-  const cost = studio.VIDEO_COST.base + (withVoice ? studio.VIDEO_COST.voice : 0) + (cutoutMode === 'ai' ? studio.VIDEO_COST.cutout * photos.length : 0);
+  const cutoutMode = ['smart', 'auto', 'ai', 'off'].includes(b.cutout) ? b.cutout : 'smart';
+  const cost = studio.VIDEO_COST.base; // prix unique
   const id = crypto.randomBytes(10).toString('hex');
   await spendCredits(u.uid, cost, 'v' + id);
   const d = day(); const cUser = db().collection('StudioCounters').doc(`v_${d}_${u.uid}`); const cAll = db().collection('StudioCounters').doc(`v_${d}_all`);
@@ -80,27 +104,43 @@ async function render(u, b) {
     });
   } catch (e) { await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: e.code || 'limit' }); throw e; }
   const vref = db().collection('StudioVideos').doc(id);
-  await vref.set({ uid: u.uid, style, ratio, lang, cost, voice: withVoice, qr: !!qrUrl, photos: photos.length, brand: texts.brand, hook: texts.hook, status: 'pending', createdAt: FieldValue.serverTimestamp() });
-  let out = null; let paid = cost;
+  await vref.set({ uid: u.uid, ratio, lang, cost, photos: photos.length, brand: texts.brand, status: 'pending', createdAt: FieldValue.serverTimestamp() });
+  let out = null;
   try {
-    // détourage IA : le produit est isolé sur fond vert par l'IA, puis le vert est retiré ; en cas d'échec sur une photo, détourage local et crédit rendu
-    let sprites = null;
-    if (cutoutMode === 'ai') {
-      sprites = await Promise.all(photos.map((buf, i) => aiCutout(buf, photosIn[i].mime, lang)));
-      const failed = sprites.filter((x) => !x).length;
-      if (failed) { await addCredits(u.uid, failed * studio.VIDEO_COST.cutout, 'refund', 'vc' + id, { reason: 'cutout_failed' }); paid -= failed * studio.VIDEO_COST.cutout; }
-      await bump({ videoCutoutAi: sprites.length - failed, videoCutoutAiFail: failed });
+    // 1. texte et style : écrits par l'IA d'après la photo si la personne n'a rien écrit
+    let styleChoice = STYLES.includes(b.style) ? b.style : null; let aiVoice = null;
+    if (auto) {
+      const c = await autoCopy(photos[0], photosIn[0].mime, { lang, about, brand: texts.brand, price: texts.price });
+      const fb = FALLBACK[lang];
+      texts = { ...texts, hook: (c && c.hook) || (about && about.length >= 3 ? about.slice(0, 60) : texts.brand || fb.hook), lines: texts.lines.length ? texts.lines : (c ? c.lines : []), cta: texts.cta || (c ? c.cta : fb.cta) };
+      if (c) { aiVoice = c.voice; styleChoice = styleChoice || c.style; }
+      await bump({ videoAutoCopy: c ? 1 : 0, videoAutoCopyFail: c ? 0 : 1 });
     }
+    const style = styleChoice || (texts.price || texts.offer ? 'promo' : 'mode');
+    const qrUrl = normUrl(b.qr) || qrFromContact(texts.contact);
+    const voiceSrc = b.voice && b.voice.segments ? b.voice.segments : aiVoice;
+    const voice = withVoice ? { gender, segments: cleanVoice(voiceSrc, texts, lang) } : null;
+    // 2. détourage : local si la photo est simple, sinon IA (fond vert) ; en dernier recours la photo entière dans un cadre
+    let sprites = null;
+    if (cutoutMode === 'ai' || cutoutMode === 'smart') {
+      sprites = await Promise.all(photos.map(async (buf, i) => {
+        if (cutoutMode === 'smart') { try { const lc = await localCutout(buf); if (lc.ok && lc.sprite) return lc.sprite.canvas.toBuffer('image/png'); } catch (e) { /* on essaie l'IA */ } }
+        return aiCutout(buf, photosIn[i].mime, lang);
+      }));
+      const ai = sprites.filter(Boolean).length; await bump({ videoCutoutKept: ai, videoCutoutMiss: sprites.length - ai });
+    }
+    await vref.update({ style, hook: texts.hook, voice: !!voice, qr: !!qrUrl });
     out = await video.render({ style, ratio, lang, photos, sprites, cutout: cutoutMode === 'off' ? 'off' : 'auto', music, sfx, texts, qrUrl, voice });
     const path = `videos/${u.uid}/${id}.mp4`;
     await getStorage().bucket().file(path).save(fs.readFileSync(out.file), { contentType: 'video/mp4', resumable: false });
-    await vref.update({ status: 'done', path, cost: paid, cutout: cutoutMode, music: music || 'default', sfx, cutouts: out.cutouts, seconds: Math.round(out.seconds * 10) / 10, ttsChars: out.ttsChars, doneAt: FieldValue.serverTimestamp() });
+    await vref.update({ status: 'done', path, cutout: cutoutMode, music: music || 'default', sfx, cutouts: out.cutouts, seconds: Math.round(out.seconds * 10) / 10, ttsChars: out.ttsChars, doneAt: FieldValue.serverTimestamp() });
     await bump({ videos: 1, videoSecs: Math.round(out.seconds), videoTts: out.ttsChars, [`videoStyle_${style}`]: 1 });
     const left = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
-    return { id, seconds: out.seconds, cost: paid, credits: left };
+    // ce qui a été choisi pour la personne : l'écran « Modifier » le reprend
+    return { id, seconds: out.seconds, cost, credits: left, used: { style, texts, voice: voice ? { gender, segments: voice.segments } : null, qr: qrUrl ? 1 : 0, cutouts: out.cutouts } };
   } catch (e) {
     console.error('video render', e && e.stack || e);
-    await addCredits(u.uid, paid, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
+    await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
     await vref.update({ status: 'failed', error: (e && e.code) || 'error' });
     await bump({ videofails: 1 });
     throw e && e.status ? e : fail(500, e && e.code === 'too_long' ? 'too_long' : e && e.code === 'tts' ? 'voice_error' : 'render_failed');
@@ -131,7 +171,6 @@ async function list(u) {
 }
 
 // ───────── texte proposé par l'IA (gratuit, plafonné) ─────────
-const SCRIPT_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
 async function script(u, b) {
   const lang = b.lang === 'en' ? 'en' : 'fr'; const about = oneLine(b.about, 240); if (about.length < 4) throw fail(400, 'no_about');
   const d = day(); const c = db().collection('StudioCounters').doc(`s_${d}_${u.uid}`);

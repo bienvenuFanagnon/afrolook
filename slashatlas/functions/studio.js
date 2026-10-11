@@ -20,7 +20,7 @@ const IMAGE_MODEL = 'gemini-3.1-flash-image';
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
 const GEN_COST = 1;
 // Vidéo pub (montage maison : photos + animations + musique + voix Google). Coût de revient réel ≈ 0,02 $ (calcul + voix + stockage), soit moins de 15 FCFA : la marge est très large.
-const VIDEO_COST = { base: 3, voice: 1, cutout: 1 }; // 3 crédits sans voix, +1 avec voix off, +1 par photo pour le détourage IA (un appel d'image par photo, ≈ 0,067 $)
+const VIDEO_COST = { base: 4, voice: 0, cutout: 0 }; // prix unique : détourage IA, texte écrit par l'IA, voix off et musique sont compris (coût réel ≈ 0,02 à 0,25 $ selon le nombre de photos détourées par l'IA)
 const VIDEO_LIMITS = { userPerDay: 8, globalPerDay: 150 };
 const PACKS = [
   { id: 'p6', credits: 6, xof: 500, usd: 0.85 }, // petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
