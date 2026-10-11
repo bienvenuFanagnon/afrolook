@@ -52,8 +52,31 @@ const LINES_AD4 = {
     l6: ['Vous choisissez le texte au-dessus, l’emplacement et la taille. Ou vous le retirez, gratuitement, même après la création.', 8.5],
     l7: ['Le QR code ouvre uniquement votre lien. Sous le code, une simple mention : créé avec slashatlas point com.', 8.0],
     l8: ['Slash Atlas point com. Copiez gratuitement les commandes, ou créez votre affiche avec QR code dans le Studio. [pause short] Et rejoignez notre canal WhatsApp pour les surprises.', 13.0] } },
+  en: { code: 'en-US', l: {
+    l1: ['Do you sell dresses, cosmetics, meals? [pause short] Your poster looks great. But how do your customers place an order?', 6.2],
+    l2: ['They have to write down your number, look for your page, type your link… [pause short] and many give up along the way.', 5.6],
+    l3: ['There is a much simpler way: [pause short] a QR code on your poster.', 3.4],
+    l4: ['On Slash Atlas, you upload your photo, paste the link to your website, your shop or your WhatsApp, [pause short] and you generate. The poster is created, with a small QR code placed in the best spot.', 10.4],
+    l5: ['Your customer scans it with their phone, [pause short] and lands right on your page. They choose and order in seconds.', 6.8],
+    l6: ['You choose the text above, the position and the size. Or you remove it, for free, even after creation.', 6.8],
+    l7: ['The QR code only opens your link. Under the code, a simple note: made with slashatlas dot com.', 7.2],
+    l8: ['Slash Atlas dot com. Copy the commands for free, or create your poster with a QR code in the Studio. [pause short] And join our WhatsApp channel for surprises.', 11.0] } },
 };
-const LINES = process.env.AD === '4' ? LINES_AD4 : process.env.AD === '3' ? LINES_AD3 : (process.env.AD === '2' ? LINES_AD2 : LINES_AD1);
+const LINES_AD5 = {
+  fr: { code: 'fr-FR', l: {
+    l1: ['Nouveau sur Afrolook : transformez vos posts en cartes de style africain, prêtes à partager.', 7.5],
+    l2: ['Wax, kenté, manga, passeport aux couleurs de votre pays, affiche de film… [pause short] plus de vingt-cinq styles, et jamais une image coupée.', 10.0],
+    l3: ['Première façon : [pause short] à partir d’un post.', 4.5],
+    l4: ['Depuis l’accueil, repérez un post. Appuyez longtemps dessus, ou touchez les trois petits points en haut à droite. [pause short] Puis choisissez : créer une carte Afrolook.', 13.5],
+    l5: ['Le studio s’ouvre. Choisissez votre style, le format, les images, et le pays pour le drapeau. [pause short] Votre carte est prête.', 11.0],
+    l6: ['Enregistrez-la, partagez-la sur WhatsApp, Instagram ou TikTok, ou publiez-la en Chronique ou en post.', 8.5],
+    l7: ['Deuxième façon : [pause short] créer une carte de zéro.', 4.5],
+    l8: ['Toujours depuis l’accueil, touchez le bouton plus, Créer, dans la barre du bas. [pause short] Choisissez l’onglet Carte, puis : créer ma carte. Écrivez votre texte, ajoutez jusqu’à quatre images, ou partez d’un modèle ou d’un lien.', 15.5],
+    l9: ['Une citation, une fête nationale, une playlist, un passeport, une affiche de film… [pause short] à chaque occasion, sa carte.', 10.0],
+    l10: ['Vous ne voyez pas cette fonction ? [pause short] Mettez Afrolook à jour depuis le Play Store ou l’App Store : elle est dans la dernière version.', 11.0],
+    l11: ['Afrolook. [pause short] Créez votre première carte dès aujourd’hui.', 5.5] } },
+};
+const LINES = process.env.AD === '5' ? LINES_AD5 : process.env.AD === '4' ? LINES_AD4 : process.env.AD === '3' ? LINES_AD3 : (process.env.AD === '2' ? LINES_AD2 : LINES_AD1);
 function wavInfo(buf) {
   const pcm = new Int16Array(buf.buffer.slice(buf.byteOffset + 44, buf.byteOffset + buf.length));
   let a = 0, b = pcm.length - 1; const th = 400;
@@ -69,7 +92,7 @@ function writeWav(path, pcm) {
   const [lang, voice] = process.argv.slice(2); const L = LINES[lang];
   const auth = new GoogleAuth({ keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
   const t = (await (await auth.getClient()).getAccessToken()).token;
-  const dir = `vo${process.env.AD === '4' ? '4' : process.env.AD === '3' ? '3' : (process.env.AD === '2' ? '2' : '')}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
+  const dir = `vo${process.env.AD === '5' ? '5' : process.env.AD === '4' ? '4' : process.env.AD === '3' ? '3' : (process.env.AD === '2' ? '2' : '')}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
   let chars = 0;
   for (const [k, [text, win]] of Object.entries(L.l)) {
     if (process.env.ONLY && !process.env.ONLY.split(',').includes(k)) continue;
