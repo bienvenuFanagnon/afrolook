@@ -223,7 +223,7 @@ function legalPage(l, kind) {
 
 function adminPage() {
   const body = `<div class="wrap"><div class="eyebrow">Administration</div><h1 class="big sm">Suivi de SlashAtlas</h1>
-<form id="adm-out" class="adm-login" novalidate><p class="lead">Accès réservé à l’administrateur. Utilisez votre compte Afrolook.</p><label>E-mail<input type="email" name="email" autocomplete="username" required></label><label>Mot de passe<input type="password" name="password" autocomplete="current-password" required></label><button class="btn pri big" type="submit">Se connecter</button><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></form>
+<div id="adm-out" class="adm-login"><p class="lead">Accès réservé à l’administrateur. Connectez-vous avec le compte Google autorisé.</p><button class="btn pri big" type="button" data-login>Continuer avec Google</button><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>
 <div id="adm-no" hidden><p class="lead">Ce compte n’a pas accès à l’administration.</p><button class="btn gl" type="button" data-logout>Changer de compte</button></div>
 <div id="adm" hidden></div></div>`;
   emit('fr', 'admin', '/admin/', { title: 'Administration | SlashAtlas', desc: 'Tableau de bord privé de SlashAtlas : audience, commandes copiées et inscriptions. Accès réservé à l’administrateur.', body, noindex: true, extraJs: '/js/admin.js' });

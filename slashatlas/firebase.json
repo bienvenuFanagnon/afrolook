@@ -59,7 +59,7 @@
         "source": "/api/**",
         "function": {
           "functionId": "slashatlasApi",
-          "region": "us-central1"
+          "region": "europe-west1"
         }
       }
     ],

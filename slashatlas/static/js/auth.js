@@ -1,19 +1,25 @@
-// Connexion réservée à l'administrateur (e-mail + mot de passe du compte Afrolook).
-// Aucune création de compte ici : seule la connexion à un compte existant est proposée.
+// Connexion avec Google (projet Firebase slashatlas-studio). Aucun mot de passe : la session reste dans le navigateur.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+
+const lang = document.body.dataset.lang === 'en' ? 'en' : 'fr';
+const MSG = {
+  fr: { closed: 'Fenêtre fermée avant la fin de la connexion.', domain: 'Cette adresse n’est pas encore autorisée pour la connexion Google.', off: 'La connexion Google n’est pas encore activée.', err: 'Connexion impossible pour le moment. Réessayez.' },
+  en: { closed: 'Window closed before sign-in finished.', domain: 'This address is not yet authorised for Google sign-in.', off: 'Google sign-in is not enabled yet.', err: 'Sign-in failed. Please try again.' },
+}[lang];
 
 const auth = getAuth(initializeApp({
-  apiKey: 'AIzaSyBES1Ej6uR4FouRRkh-1PF1B89wRpW7bQo',
-  authDomain: 'afrolooki.firebaseapp.com',
-  projectId: 'afrolooki',
-  appId: '1:186049947777:web:7dc6951123bfb3ff940580',
+  apiKey: 'AIzaSyDw_toWGZHcmg86ljS20sXVAkCErucQDTY',
+  authDomain: 'slashatlas-studio.firebaseapp.com',
+  projectId: 'slashatlas-studio',
+  appId: '1:485906805806:web:d18b3b66f3472601209bbf',
 }));
-auth.languageCode = 'fr';
+auth.languageCode = lang;
 const $ = (s) => document.querySelector(s);
 const note = (m) => { const n = $('#auth-msg'); if (n) n.textContent = m || ''; };
 
 window.slashAuth = {
+  get user() { return auth.currentUser; },
   async call(path, body) {
     const token = await auth.currentUser.getIdToken();
     const r = await fetch('/api/' + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify(body || {}) });
@@ -21,22 +27,22 @@ window.slashAuth = {
     return { status: r.status, data: j };
   },
   signOut: () => signOut(auth),
+  login,
 };
 
-const form = $('#adm-out');
-if (form) form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+async function login() {
   note('');
-  const email = form.email.value.trim(), pwd = form.password.value;
-  if (!email || !pwd) { note('Saisissez votre e-mail et votre mot de passe.'); return; }
-  const btn = form.querySelector('button'); btn.disabled = true;
-  try { await signInWithEmailAndPassword(auth, email, pwd); form.password.value = ''; }
-  catch (err) {
-    const c = (err && err.code) || '';
-    note(c === 'auth/too-many-requests' ? 'Trop d’essais. Patientez quelques minutes avant de réessayer.'
-      : c === 'auth/network-request-failed' ? 'Connexion réseau impossible.'
-      : 'E-mail ou mot de passe incorrect.');
-  } finally { btn.disabled = false; }
+  document.querySelectorAll('[data-login]').forEach((b) => { b.disabled = true; });
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) {
+    const c = (e && e.code) || '';
+    note(c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request' ? MSG.closed
+      : c === 'auth/unauthorized-domain' ? MSG.domain
+      : c === 'auth/operation-not-allowed' || c === 'auth/configuration-not-found' ? MSG.off : MSG.err);
+  } finally { document.querySelectorAll('[data-login]').forEach((b) => { b.disabled = false; }); }
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-login]')) { e.preventDefault(); login(); }
+  if (e.target.closest('[data-logout]')) { e.preventDefault(); signOut(auth); }
 });
-document.addEventListener('click', (e) => { if (e.target.closest('[data-logout]')) { e.preventDefault(); signOut(auth); } });
 onAuthStateChanged(auth, (u) => document.dispatchEvent(new CustomEvent('sa:auth', { detail: { user: u } })));

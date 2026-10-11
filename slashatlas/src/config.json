@@ -1,6 +1,6 @@
 {
   "name": "SlashAtlas",
-  "domain": "https://slashatlas.web.app",
+  "domain": "https://slashatlas-studio.web.app",
   "indexable": false,
   "ads": {
     "enabled": false,

@@ -10,7 +10,7 @@ if (!getApps().length) initializeApp();
 const db = getFirestore();
 
 const ORIGINS = [
-  /^https:\/\/slashatlas(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)$/,
+  /^https:\/\/slashatlas(-studio)?(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)$/,
   /^https:\/\/(www\.)?slashatlas\.(com|app|io)$/,
   /^http:\/\/localhost(:\d+)?$/,
 ];
@@ -140,7 +140,7 @@ async function adminData(daysIn) {
 }
 
 exports.slashatlasApi = onRequest(
-  { region: 'us-central1', invoker: 'public', memory: '256MiB', maxInstances: 5, timeoutSeconds: 15 },
+  { region: 'europe-west1', invoker: 'public', memory: '256MiB', maxInstances: 5, timeoutSeconds: 15 },
   async (req, res) => {
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
