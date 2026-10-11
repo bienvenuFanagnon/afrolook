@@ -57,7 +57,7 @@
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < 1 ? T.buy : T.genCost;
     root.innerHTML =
-      '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b></div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>' +
+      '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b></div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Admin</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>' +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +

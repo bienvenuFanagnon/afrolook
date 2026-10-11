@@ -160,3 +160,12 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
   matchMedia('(min-width:720px)').addEventListener && matchMedia('(min-width:720px)').addEventListener('change', function () { set(false); });
 })();
+
+// Lien « Admin » (menu téléphone + pied de page) pour l'administrateur connecté : simple confort, l'accès reste contrôlé par le serveur.
+(function () {
+  try {
+    if (localStorage.getItem('sa_admin') !== '1') return;
+    var m = document.getElementById('mnav'), f = document.querySelector('.ft');
+    [m, f].forEach(function (c) { if (!c) return; var a = document.createElement('a'); a.href = '/admin/'; a.textContent = 'Admin'; if (c === m) c.appendChild(a); else c.appendChild(a); });
+  } catch (e) {}
+})();
