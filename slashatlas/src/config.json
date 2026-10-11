@@ -2,11 +2,6 @@
   "name": "SlashAtlas",
   "domain": "https://slashatlas-studio.web.app",
   "indexable": false,
-  "ads": {
-    "enabled": false,
-    "client": "",
-    "slots": { "lb": "", "rect": "" }
-  },
   "pro": {
     "price": "3,99 €",
     "priceEn": "€3.99"

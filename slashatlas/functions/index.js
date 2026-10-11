@@ -82,6 +82,12 @@ async function statsWrite(b, req) {
   } else if (t === 'try') {
     u.tries = inc;
     u[`try.${key(b.n)}`] = inc;
+  } else if (t === 'cardwish') { // intérêt pour le paiement par carte (bouton « bientôt »)
+    u.cardwish = inc;
+    u[`cardwish_pack.${key(b.n)}`] = inc;
+  } else if (t === 'adview') { // bloc publicitaire affiché à l'écran
+    u.adviews = inc;
+    u[`ad.${key(b.n)}`] = inc;
   } else return;
   const ref = db.collection('SlashAtlasStats').doc(day());
   try {
@@ -129,6 +135,33 @@ async function whoIs(req) {
 const isAdmin = (u) => !!u && ['password', 'google.com'].includes(u.provider) && ADMINS.includes(u.email);
 
 const ts = (v) => (v && v.toDate ? v.toDate().toISOString() : null);
+// Réglages de publicité modifiables depuis l'administration (aucun redéploiement nécessaire).
+let adsCache = { at: 0, v: { enabled: false } };
+async function getAds(force) {
+  if (!force && Date.now() - adsCache.at < 60000) return adsCache.v;
+  const s = await db.collection('SlashAtlasSettings').doc('ads').get();
+  const d = s.exists ? s.data() : {};
+  const slots = {};
+  for (const k of ['lb', 'rect']) if (/^\d{6,20}$/.test(String((d.slots || {})[k] || ''))) slots[k] = String(d.slots[k]);
+  const ok = !!d.enabled && /^ca-pub-\d{10,20}$/.test(String(d.client || '')) && Object.keys(slots).length > 0;
+  adsCache = { at: Date.now(), v: ok ? { enabled: true, client: d.client, slots } : { enabled: false } };
+  return adsCache.v;
+}
+async function adminAds() {
+  const s = await db.collection('SlashAtlasSettings').doc('ads').get();
+  const d = s.exists ? s.data() : {};
+  return { enabled: !!d.enabled, client: d.client || '', slots: { lb: (d.slots || {}).lb || '', rect: (d.slots || {}).rect || '' } };
+}
+async function saveAds(b, admin) {
+  const client = clean(b.client, 40), slots = { lb: clean((b.slots || {}).lb, 20), rect: clean((b.slots || {}).rect, 20) };
+  if (client && !/^ca-pub-\d{10,20}$/.test(client)) return { error: 'bad_client' };
+  for (const k of Object.keys(slots)) if (slots[k] && !/^\d{6,20}$/.test(slots[k])) return { error: 'bad_slot' };
+  await db.collection('SlashAtlasSettings').doc('ads').set({ enabled: !!b.enabled, client, slots, updatedAt: FieldValue.serverTimestamp(), by: admin.email });
+  await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: admin.email, action: 'ads', enabled: !!b.enabled, client });
+  adsCache.at = 0;
+  return { ok: true };
+}
+
 async function adminData(daysIn) {
   const days = Math.min(Math.max(parseInt(daysIn, 10) || 14, 1), 90);
   const since = new Date(Date.now() - (days - 1) * 864e5).toISOString().slice(0, 10);
@@ -138,9 +171,12 @@ async function adminData(daysIn) {
   ]);
   const subCount = await db.collection('SlashAtlasSubscribers').count().get();
   const accCount = await db.collection('StudioUsers').count().get();
+  const us = await db.collection('StudioUsers').orderBy('createdAt', 'desc').limit(50).get();
   const os = await db.collection('StudioOrders').orderBy('createdAt', 'desc').limit(50).get();
   return {
     days,
+    users: us.docs.map((d) => { const x = d.data(); return { email: x.email, name: x.name || '', credits: x.credits || 0, at: ts(x.createdAt), seen: ts(x.lastSeenAt) }; }),
+    ads: await adminAds(),
     orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
     stats: st.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id)),
     studioUsers: accCount.data().count,
@@ -161,6 +197,11 @@ exports.slashatlasApi = onRequest(
         return res.status(200).send(fs.readFileSync(nodePath.join(OG_DIR, f)));
       } catch (e) { console.error('og', e.message); return res.status(404).send(''); }
     }
+    if (req.method === 'GET' && /\/ads\.txt$/.test(req.path)) {
+      const a = await getAds();
+      res.set('Content-Type', 'text/plain; charset=utf-8').set('Cache-Control', 'public, max-age=300');
+      return res.status(200).send(a.enabled ? `google.com, ${a.client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n` : '');
+    }
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
     if (req.method !== 'POST' && !(req.method === 'GET' && req.path.endsWith('/config'))) return res.status(405).json({ error: 'method' });
@@ -180,7 +221,10 @@ exports.slashatlasApi = onRequest(
         const r = await subscribe(body(req));
         return res.status(r.error ? 400 : 200).json(r);
       }
-      if (path.endsWith('/config')) return res.status(200).json(studio.publicConfig());
+      if (path.endsWith('/config')) {
+        res.set('Cache-Control', 'public, max-age=60');
+        return res.status(200).json({ ...studio.publicConfig(), ads: await getAds() });
+      }
       if (path.endsWith('/pay/webhook')) {
         if (limited('w' + ipKey, 120, 60000)) return res.status(429).json({ error: 'rate' });
         await studio.payWebhook(body(req));
@@ -196,6 +240,17 @@ exports.slashatlasApi = onRequest(
         if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req), { ip, ua: req.get('user-agent') }));
         if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
         return res.status(200).json(await studio.payStatus(u, body(req)));
+      }
+      if (/\/admin\/(grant|ads)$/.test(path)) {
+        if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        const b = body(req);
+        if (path.endsWith('/ads')) { const r = await saveAds(b, u); return res.status(r.error ? 400 : 200).json(r); }
+        const r = await studio.grant(b.email, b.credits, b.note);
+        await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'grant', to: clean(b.email, 160), credits: Math.trunc(Number(b.credits)) || 0, note: clean(b.note, 120) });
+        return res.status(200).json(r);
       }
       if (path.endsWith('/admin/evidence')) {
         if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });

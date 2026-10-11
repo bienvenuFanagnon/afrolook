@@ -297,3 +297,7 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .smodal .terms input{flex:none;width:1.15rem;height:1.15rem;margin-top:.1rem;accent-color:#f5c542}
 .smodal .terms a{color:inherit;text-decoration:underline}
 .smodal .pack:disabled{opacity:.35;cursor:not-allowed}
+.mtabs .soon{font-style:normal;font-size:.65rem;padding:.1rem .4rem;border-radius:99px;background:rgba(245,197,66,.18);color:#f5c542;margin-left:.3rem;text-transform:uppercase;letter-spacing:.04em}
+.adm-tabs{margin:0 0 16px;overflow-x:auto;max-width:100%}.adm-tabs button{white-space:nowrap}
+.adm-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:center}.adm-form input[type=text],.adm-form input[type=email],.adm-form input[type=number],.adm-form input:not([type]){min-width:0;background:transparent;border:1px solid var(--line2);border-radius:12px;color:inherit;padding:11px 12px;font:inherit;font-size:14px}.adm-form .chk{display:flex;gap:8px;align-items:center;font-weight:700}
+.adm-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--mut)}.adm-list a{color:inherit;text-decoration:underline}

@@ -18,6 +18,7 @@
       if (!navigator.sendBeacon || !navigator.sendBeacon('/api/event', b)) fetch('/api/event', { method: 'POST', body: JSON.stringify(d), keepalive: true, headers: { 'content-type': 'application/json' } });
     } catch (e) {}
   }
+  window.saTrack = track;
   function refClass() {
     var r = document.referrer; if (!r) return 'direct';
     var h; try { h = new URL(r).hostname; } catch (e) { return 'other'; }
@@ -128,12 +129,24 @@
   });
 })();
 
-// Publicité : initialise les blocs AdSense présents ; le lien « Préférences publicitaires » rouvre le message de consentement Google.
+// Publicité : les emplacements restent masqués tant que l'administration n'a pas activé la publicité (réglages lus via /api/config).
 (function () {
   try {
-    var ins = document.querySelectorAll('ins.adsbygoogle');
-    for (var i = 0; i < ins.length; i++) { try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {} }
-    var p = document.querySelector('[data-adprefs]');
-    if (p) p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} });
+    var slots = document.querySelectorAll('[data-ad]'); if (!slots.length) return;
+    fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
+      var a = c && c.ads; if (!a || !a.enabled) return;
+      var s = document.createElement('script'); s.async = true; s.crossOrigin = 'anonymous';
+      s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.client); document.head.appendChild(s);
+      var p = document.querySelector('[data-adprefs]'); if (p) { p.hidden = false; p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} }); }
+      var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); window.saTrack && window.saTrack('adview', { n: en.target.dataset.ad }); } }); }, { threshold: 0.5 }) : null;
+      Array.prototype.forEach.call(slots, function (el) {
+        var id = a.slots && a.slots[el.dataset.ad]; if (!id) return;
+        var ins = document.createElement('ins'); ins.className = 'adsbygoogle'; ins.style.display = 'block';
+        ins.setAttribute('data-ad-client', a.client); ins.setAttribute('data-ad-slot', id); ins.setAttribute('data-ad-format', 'auto'); ins.setAttribute('data-full-width-responsive', 'true');
+        el.appendChild(ins); el.hidden = false;
+        try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+        if (io) io.observe(el);
+      });
+    }).catch(function () {});
   } catch (e) {}
 })();

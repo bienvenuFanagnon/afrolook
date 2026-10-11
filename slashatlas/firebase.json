@@ -56,6 +56,13 @@
     ],
     "rewrites": [
       {
+        "source": "/ads.txt",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "/og.jpg",
         "function": {
           "functionId": "slashatlasApi",

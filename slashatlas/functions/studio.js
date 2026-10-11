@@ -386,4 +386,15 @@ async function evidence(orderId) {
   return out;
 }
 
-module.exports = { evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
+/** Don de crédits par l'administrateur (journal : type « grant », référence unique). */
+async function grant(email, n, note) {
+  const q = await db().collection('StudioUsers').where('email', '==', clean(email, 160).toLowerCase()).limit(1).get();
+  if (q.empty) throw fail(404, 'no_user');
+  n = Math.trunc(Number(n));
+  if (!n || Math.abs(n) > 500) throw fail(400, 'bad_amount');
+  const ref = crypto.randomBytes(6).toString('hex');
+  await addCredits(q.docs[0].id, n, 'grant', ref, { note: clean(note, 120) });
+  return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
+}
+
+module.exports = { grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
