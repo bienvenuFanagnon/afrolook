@@ -1,0 +1,9 @@
+rules_version = '2';
+// Les visuels générés sont écrits et lus par le serveur uniquement (Admin SDK).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

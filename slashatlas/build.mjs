@@ -230,19 +230,14 @@ function adminPage() {
 }
 
 const TRY = {
-  fr: { title: 'Générer votre visuel sur SlashAtlas', desc: 'Bientôt : importez votre photo, choisissez une commande et obtenez votre visuel directement sur SlashAtlas, avec des crédits.', k: 'Bientôt disponible', h: 'Générez votre visuel ici', lead: 'Importez votre photo, choisissez la commande, obtenez votre visuel ici, sans quitter le site. Vous payez seulement les crédits que vous utilisez.', steps: [['Importez', 'votre photo (un ou plusieurs produits)'], ['Précisez', 'votre produit et la commande'], ['Obtenez', 'votre visuel à télécharger']], cmd: 'Commande choisie', pay: 'Paiement par mobile money ou par carte bancaire.', btn: 'Prévenez-moi à l’ouverture', copyTitle: 'En attendant', copyBtn: 'Copier la commande', all: 'Choisir une autre commande' },
-  en: { title: 'Generate your visual on SlashAtlas', desc: 'Coming soon: upload your photo, pick a command and get your visual right on SlashAtlas, using credits.', k: 'Coming soon', h: 'Generate your visual here', lead: 'Upload your photo, pick the command, get your visual here without leaving the site. You only pay for the credits you use.', steps: [['Upload', 'your photo (one or several products)'], ['Describe', 'your product and the command'], ['Get', 'your visual to download']], cmd: 'Selected command', pay: 'Pay by mobile money or by card.', btn: 'Notify me at launch', copyTitle: 'Meanwhile', copyBtn: 'Copy the command', all: 'Choose another command' },
+  fr: { title: 'Générer votre visuel sur SlashAtlas', desc: 'Importez votre photo, choisissez une commande et obtenez votre visuel directement sur SlashAtlas, avec des crédits payables par mobile money.', k: 'Studio', h: 'Générez votre visuel ici' },
+  en: { title: 'Generate your visual on SlashAtlas', desc: 'Upload your photo, pick a command and get your visual right on SlashAtlas, with credits you can pay by mobile money.', k: 'Studio', h: 'Generate your visual here' },
 };
 function tryPage(l) {
   const t = TRY[l], p = P[l];
-  const steps = t.steps.map((x, i) => `<li><span class="si">${[ICON.paste, ICON.copy, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
-  const map = Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, title: c[l].title, href: p.cmd(c.slug) }]));
-  const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="lead">${t.lead}</p>
-<ol class="steps3" aria-hidden="false">${steps}</ol>
-<div class="trysel" id="trysel" hidden data-map="${esc(JSON.stringify(map))}"><small>${t.cmd}</small><b id="try-code"></b><span id="try-title"></span><a class="link" href="${p.cmds}">${t.all} ›</a></div>
-<p class="hint">${t.pay}</p>
-<div class="band"><form class="col" data-form="studio" data-ok="${esc(T[l].band.ok)}" data-err="${esc(T[l].band.err)}" data-invalid="${esc(T[l].band.invalid)}" data-sending="${esc(T[l].band.sending)}" data-lang="${l}" novalidate><div class="row"><input type="email" name="email" placeholder="${esc(T[l].band.ph)}" aria-label="E-mail" autocomplete="email" required><input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn pri" type="submit">${t.btn}</button></div><p class="fmsg" role="status" aria-live="polite"></p></form></div>
-<div class="sec"><h2>${t.copyTitle}</h2></div><div class="cmd" id="try-cmd" hidden><pre id="p-try"></pre><button class="btn gl big" type="button" data-copy="#p-try">${ICON.copy}${t.copyBtn}</button></div></div>`;
+  const map = { commands: Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage }])) };
+  const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1>
+<div id="studio" data-map="${esc(JSON.stringify(map))}"></div></div>`;
   emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
 }
 function notFound() {
@@ -251,6 +246,11 @@ function notFound() {
 }
 
 // ───────── génération ─────────
+// Données des commandes pour le serveur (la commande finale est composée côté serveur : le client ne peut pas la modifier).
+fs.writeFileSync(path.join(root, 'functions', 'commands.json'), JSON.stringify({
+  commands: Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, ratio: c.ratio, kind: c.kind || 'product', fr: c.fr.prompt, en: c.en.prompt, titleFr: c.fr.title, titleEn: c.en.title }])),
+  clauses: CLAUSE,
+}));
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });

@@ -5,6 +5,7 @@ const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const crypto = require('crypto');
+const studio = require('./studio');
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -41,7 +42,7 @@ function cors(req, res) {
     res.set('Access-Control-Allow-Origin', o);
     res.set('Vary', 'Origin');
   }
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.set('Cache-Control', 'no-store');
 }
@@ -132,19 +133,21 @@ async function adminData(daysIn) {
     db.collection('SlashAtlasSubscribers').orderBy('updatedAt', 'desc').limit(300).get(),
   ]);
   const subCount = await db.collection('SlashAtlasSubscribers').count().get();
+  const accCount = await db.collection('StudioUsers').count().get();
   return {
     days,
     stats: st.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id)),
+    studioUsers: accCount.data().count,
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
   };
 }
 
 exports.slashatlasApi = onRequest(
-  { region: 'europe-west1', invoker: 'public', memory: '256MiB', maxInstances: 5, timeoutSeconds: 15 },
+  { region: 'europe-west1', invoker: 'public', memory: '512MiB', maxInstances: 10, timeoutSeconds: 120, secrets: studio.SECRETS },
   async (req, res) => {
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
-    if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    if (req.method !== 'POST' && !(req.method === 'GET' && req.path.endsWith('/config'))) return res.status(405).json({ error: 'method' });
     const o = req.get('origin');
     if (o && !ORIGINS.some((r) => r.test(o))) return res.status(403).json({ error: 'origin' });
     const ip = (req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim();
@@ -161,6 +164,21 @@ exports.slashatlasApi = onRequest(
         const r = await subscribe(body(req));
         return res.status(r.error ? 400 : 200).json(r);
       }
+      if (path.endsWith('/config')) return res.status(200).json(studio.publicConfig());
+      if (path.endsWith('/pay/webhook')) {
+        if (limited('w' + ipKey, 120, 60000)) return res.status(429).json({ error: 'rate' });
+        await studio.payWebhook(body(req));
+        return res.status(200).send('OK');
+      }
+      if (/\/(me|generate|pay\/start|pay\/status)$/.test(path)) {
+        if (limited('g' + ipKey, path.endsWith('/generate') ? 30 : 60, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
+        if (path.endsWith('/me')) return res.status(200).json(await studio.me(u));
+        if (path.endsWith('/generate')) return res.status(200).json(await studio.generate(u, body(req)));
+        if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req)));
+        return res.status(200).json(await studio.payStatus(u, body(req)));
+      }
       if (path.endsWith('/admin')) {
         if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
         const u = await whoIs(req);
@@ -170,6 +188,7 @@ exports.slashatlasApi = onRequest(
       }
       return res.status(404).json({ error: 'not_found' });
     } catch (e) {
+      if (e && e.status && e.code) return res.status(e.status).json({ error: e.code });
       console.error('slashatlasApi', e);
       return res.status(500).json({ error: 'server' });
     }
