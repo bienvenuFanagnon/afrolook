@@ -52,12 +52,19 @@
   // ── Recherche et filtre ──
   var q = $('#q');
   if (q) {
-    var cat = '', list = $$('#list .card'), none = $('#none');
-    var apply = function () {
-      var v = q.value.trim().toLowerCase(), c = 0;
-      list.forEach(function (card) { var hit = (!cat || card.dataset.cat === cat) && (!v || card.dataset.search.indexOf(v) > -1); card.hidden = !hit; if (hit) c++; });
+    var cat = '', list = $$('#list .card'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
+    var apply = function (keep) {
+      if (keep !== true) limit = STEP;
+      var v = q.value.trim().toLowerCase(), c = 0, shown = 0;
+      list.forEach(function (card) {
+        var hit = (!cat || card.dataset.cat === cat) && (!v || card.dataset.search.indexOf(v) > -1);
+        if (hit) { c++; if (shown < limit) { shown++; card.hidden = false; } else card.hidden = true; } else card.hidden = true;
+      });
       if (none) none.hidden = c > 0;
+      if (more) { more.hidden = c <= limit; more.textContent = (lang === 'fr' ? 'Voir plus (' : 'Show more (') + (c - limit) + ')'; }
     };
+    if (more) more.addEventListener('click', function () { limit += STEP; apply(true); });
+    apply();
     q.addEventListener('input', apply);
     $$('.chips2 .chip').forEach(function (b) { b.addEventListener('click', function () { cat = b.dataset.cat; $$('.chips2 .chip').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); apply(); }); });
     // /commandes/?q=... depuis les liens internes

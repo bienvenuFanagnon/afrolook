@@ -15,6 +15,7 @@ export const CATEGORIES = [
 
 // x, y : position de la lueur sur l'affiche ; r : forme (rayon) ; ratio : format conseillé
 import { KIND, EXTRA } from './data_extra.mjs';
+import { MORE } from './data_more.mjs';
 
 const BASE = [
   { slug: 'fashionposter', code: '/fashionposter', cat: 'mode', ratio: '4:5', x: '70%', y: '78%', r: '50%',
@@ -109,4 +110,4 @@ const BASE = [
       prompt: 'With the attached photo, create a vertical 4:5 hair salon poster: soft studio lighting, shiny highlights on the hair, neutral slightly graded background. The hairstyle and face stay identical. Free space for the salon name and price. No added text or prices: leave the free areas empty.' } },
 ];
 
-export const COMMANDS = [...BASE.map((c) => ({ ...c, kind: KIND[c.slug] })), ...EXTRA];
+export const COMMANDS = [...BASE.map((c) => ({ ...c, kind: KIND[c.slug] })), ...EXTRA, ...MORE];
