@@ -16,12 +16,13 @@ const FEEXPAY_SHOP = 'crZfM9il1xK9uJ6';
 const FEEXPAY_API = 'https://api-v2.feexpay.me/api/transactions/public';
 const IMAGE_MODEL = 'gemini-3.1-flash-image';
 
-// Un crédit = une génération. Les prix sont en FCFA et comprennent les frais de FeexPay.
+// Un crédit = une génération (ou une correction). Prix en FCFA, hors frais de paiement (ajoutés au client).
+// Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
 const GEN_COST = 1;
 const PACKS = [
-  { id: 'p10', credits: 10, xof: 1500 },
-  { id: 'p30', credits: 30, xof: 3900, tag: 'popular' },
-  { id: 'p100', credits: 100, xof: 11000 },
+  { id: 'p20', credits: 20, xof: 1500 },
+  { id: 'p55', credits: 55, xof: 3900, tag: 'popular' },
+  { id: 'p160', credits: 160, xof: 11000 },
 ];
 // Plafonds de sécurité (par jour, UTC)
 const LIMITS = { userPerDay: 40, globalPerDay: 400 };
