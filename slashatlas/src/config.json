@@ -19,5 +19,8 @@
     "email": "contact@slashatlas.com",
     "phone": ""
   },
-  "adsenseAccount": "ca-pub-4637226486030694"
+  "adsenseAccount": [
+    "ca-pub-4637226486030694",
+    "ca-pub-4937249920200692"
+  ]
 }

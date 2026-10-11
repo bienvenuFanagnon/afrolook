@@ -213,7 +213,8 @@ exports.slashatlasApi = onRequest(
     if (req.method === 'GET' && /\/ads\.txt$/.test(req.path)) {
       const a = await adminAds(); // l'identifiant éditeur est publié dès qu'il est enregistré (vérification du site), même si les blocs ne sont pas encore activés
       res.set('Content-Type', 'text/plain; charset=utf-8').set('Cache-Control', 'public, max-age=300');
-      return res.status(200).send(/^ca-pub-\d{10,20}$/.test(a.client) ? `google.com, ${a.client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n` : '');
+      const pubs = [...new Set([a.client, 'ca-pub-4937249920200692'].filter((c) => /^ca-pub-\d{10,20}$/.test(c)))]; // compte principal de l'éditeur (application Afrolook) + compte du site
+      return res.status(200).send(pubs.map((c) => `google.com, ${c.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n`).join(''));
     }
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
