@@ -352,3 +352,5 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .smodal .terms.err{border-color:#ff453a;background:rgba(255,69,58,.14);animation:sashake .4s}.smodal .terms.err .ttag{color:#ff6b61}
 @keyframes sashake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
 .vid video{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000;object-fit:cover}.vid .vfacade{background:transparent}.vyt{text-align:center;margin:6px 0 0;font-size:13px}.vyt a{color:var(--mut);text-decoration:underline}
+.packs{grid-template-columns:repeat(2,minmax(0,1fr))}.pack.passtile{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:4px 12px;padding:12px 10px}.pack.passtile b{font-size:19px}.pack.passtile em{margin:0}.pack.passtile small{flex-basis:100%;text-align:center}
+.plan .conv{margin:-6px 0 10px;font-size:13px;color:var(--mut)}

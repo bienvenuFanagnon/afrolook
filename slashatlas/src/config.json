@@ -4,7 +4,8 @@
   "indexable": true,
   "pro": {
     "price": "1,70 $",
-    "priceEn": "$1.70"
+    "priceEn": "$1.70",
+    "convFcfa": "1 000 FCFA"
   },
   "gen": "2026-10-10",
   "alternateNames": [

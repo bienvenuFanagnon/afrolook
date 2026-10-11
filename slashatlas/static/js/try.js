@@ -168,7 +168,7 @@
     var cfg = state.cfg; if (!cfg) return;
     try { window.saTrack && window.saTrack('buyopen', { n: typeof from === 'string' ? from : 'button' }); } catch (e) {}
     var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
-    var sel = { pack: (typeof from === 'string' && from === 'pass') ? 'nopub' : (cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id), country: countries[0], op: null, method: 'mm', terms: false };
+    var sel = { pack: (typeof from === 'string' && from === 'pass') ? 'nopub' : (cfg.packs.filter(function (p) { return p.tag; })[0] || cfg.packs[0]).id, country: countries[0], op: null, method: 'mm', terms: false };
     var TL = L === 'en' ? '/en/terms/' : '/conditions/';
     function cardOk(id) { return !cfg.card.packs || cfg.card.packs.indexOf(id) >= 0; }
     var modal = document.createElement('div'); modal.className = 'smodal'; modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true');
@@ -181,7 +181,7 @@
       if (!sel.op || sel.op.country !== sel.country) sel.op = ops()[0];
       var pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
       var isCard = sel.method === 'card';
-      if (isCard && !cardOk(sel.pack)) sel.pack = cfg.packs.filter(function (p) { return cardOk(p.id); }).pop().id;
+      if (isCard && !cardOk(sel.pack)) sel.pack = (cfg.packs.filter(function (p) { return cardOk(p.id) && p.tag; })[0] || cfg.packs.filter(function (p) { return cardOk(p.id); })[0]).id;
       pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
       var tabs = '<div class="mtabs" role="tablist"><button type="button" data-m="mm" aria-pressed="' + !isCard + '">' + T.mm + '</button>' + (cfg.card && cfg.card.enabled ? '<button type="button" data-m="card" aria-pressed="' + isCard + '">' + T.cardTab + '</button>' : '<button type="button" data-soon="1">' + T.cardTab + ' <em class="soon">' + T.soon + '</em></button>') + '</div>';
       var form;
@@ -198,7 +198,7 @@
           '<label>' + T.countryCard + '<select id="c-country">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc(countryName(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + T.cardInfo + '</p>';
       }
       modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' +
-        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + (p.days ? '<b>' + p.days + '</b><span>' + T.passUnit + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>' : '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>') + '</button>'; }).join('') + '</div>' + tabs + form +
+        '<div class="packs">' + cfg.packs.slice().sort(function (x, y) { return (x.days ? 1 : 0) - (y.days ? 1 : 0); }).map(function (p) { return '<button type="button" class="pack' + (p.days ? ' passtile' : '') + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + (p.days ? '<b>' + p.days + ' ' + T.passUnit + '</b><span>' + T.passTag + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>' : '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>') + '</button>'; }).join('') + '</div>' + tabs + form +
         '<p class="hint soft">' + T.feeNote + '</p><label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span><b class="ttag">' + T.termsTag + '</b>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
         '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo + ' ' + usd(pk.usd) : T.pay + ' ' + fmt(pk.xof) + ' FCFA') + '</button><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p>' + (CONTACT ? '<p class="hint soft">' + T.help + ' <a href="mailto:' + CONTACT + '">' + CONTACT + '</a></p>' : '') + '</div>';
       $('.x', modal).onclick = close;

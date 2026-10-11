@@ -20,6 +20,7 @@ const IMAGE_MODEL = 'gemini-3.1-flash-image';
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
 const GEN_COST = 1;
 const PACKS = [
+  { id: 'p6', credits: 6, xof: 500, usd: 0.85 }, // petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
   { id: 'p20', credits: 20, xof: 1500, usd: 2.5 },
   { id: 'p55', credits: 55, xof: 3900, usd: 6.5, tag: 'popular' },
   { id: 'p160', credits: 160, xof: 11000, usd: 18.5 },
