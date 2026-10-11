@@ -107,6 +107,8 @@ async function statsWrite(b, req) {
     u.tries = inc;
     u[`try.${key(b.n)}`] = inc;
     await publicCount(key(b.n), 'tries');
+  } else if (t === 'pwa') { // installation de l'app : affichée, acceptée, refusée, installée
+    u[`pwa.${key(b.n)}`] = inc;
   } else if (t === 'video') { // lecture de la vidéo de présentation
     u.videoplays = inc;
   } else if (t === 'nopub') { // clic vers l'offre « sans pub »

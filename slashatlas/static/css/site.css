@@ -380,3 +380,12 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 @keyframes vpulse{50%{transform:scale(1.05)}}
 @media (max-width:719px){.fpost .poster.big:not(.img){aspect-ratio:16/9;min-height:0}}
 .vfacade{display:block}.vcap{position:absolute;left:0;right:0;bottom:16px;text-align:center;color:#fff;font:800 14px/1.2 var(--sans,system-ui);text-shadow:0 2px 10px rgba(0,0,0,.8);padding:0 12px}.vid .vfacade{background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,0) 45%)}
+
+.pwa{position:fixed;inset:0;z-index:130;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}
+.pwa-sheet{width:100%;max-width:520px;background:#101013;border:1px solid var(--line2);border-radius:26px 26px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:pwaup .35s ease-out}
+@keyframes pwaup{from{transform:translateY(40px);opacity:0}}
+.pwa-head{display:flex;gap:14px;align-items:center}.pwa-head img{border-radius:14px;flex:none}.pwa-head b{display:block;font-size:20px;letter-spacing:-.02em}.pwa-head span{display:block;color:var(--mut);font-size:14.5px;line-height:1.4;margin-top:2px}
+.pwa-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}.pwa-steps li{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.pwa-n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;font-weight:800;display:grid;place-items:center;font-size:14px}.pwa-steps b{display:block;font-size:15px}.pwa-steps small{display:block;color:var(--mut);font-size:13.5px;margin-top:2px}
+.pwa .btn{width:100%;justify-content:center}
+@media (prefers-reduced-motion:reduce){.pwa-sheet{animation:none}}
