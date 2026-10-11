@@ -52,3 +52,6 @@ slashatlas/static/img/c/.*.tmp
 
 # cache de déploiement Firebase Hosting
 slashatlas/.firebase/
+
+# variables secrètes des fonctions : jamais dans Git
+functions/.env
