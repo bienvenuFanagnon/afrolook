@@ -8,6 +8,8 @@
   var T = {
     fr: {
       login: 'Continuer avec Google', loginNote: 'Connexion rapide avec votre compte Google. Si vous avez déjà un compte, vous êtes simplement reconnecté.',
+      tabImage: 'Image', tabVideo: 'Vidéo', tabNew: 'Nouveau', vLoginTitle: 'Créez une vidéo publicitaire pour votre produit', vLoginText: 'Animations, musique et voix off facultative, à partir de vos photos. Connectez-vous pour commencer.',
+      tabImage: 'Image', tabVideo: 'Vidéo', tabNew: 'Nouveau', vLoginTitle: 'Créez une vidéo publicitaire pour votre produit', vLoginText: 'Animations, musique et voix off facultative, à partir de vos photos. Connectez-vous pour commencer.',
       hello: 'Bonjour', back: 'Content de vous revoir', welcome: 'Compte créé', credits: 'crédits', credit: 'crédit', buy: 'Acheter des crédits', logout: 'Se déconnecter',
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
@@ -25,6 +27,7 @@
     },
     en: {
       login: 'Continue with Google', loginNote: 'Quick sign-in with your Google account. If you already have an account, you are simply signed back in.',
+      tabImage: 'Image', tabVideo: 'Video', tabNew: 'New', vLoginTitle: 'Create a video ad for your product', vLoginText: 'Animations, music and optional voice-over, from your photos. Sign in to get started.',
       hello: 'Hello', back: 'Welcome back', welcome: 'Account created', credits: 'credits', credit: 'credit', buy: 'Buy credits', logout: 'Sign out',
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
@@ -45,7 +48,7 @@
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, adFreeUntil: 0, checking: true };
+  var state = { mode: params.get('mode') === 'video' && root.dataset.vurl ? 'video' : 'image', user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, adFreeUntil: 0, checking: true };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -208,10 +211,17 @@
       navigator.share(data).then(function () { try { window.saTrack && window.saTrack('share', { n: 'native' }); } catch (e) {} }, function (e) { if (e && e.name !== 'AbortError') flash(btn, T.shareFail); });
     });
   }
+  function bar() {
+    return '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+  }
+  function tabs() {
+    if (!root.dataset.vurl) return '';
+    return '<div class="stabs" role="tablist"><button type="button" role="tab" data-mode="image" aria-selected="' + (state.mode !== 'video') + '">' + T.tabImage + '</button><button type="button" role="tab" data-mode="video" aria-selected="' + (state.mode === 'video') + '">' + T.tabVideo + ' <i>' + T.tabNew + '</i></button></div>';
+  }
   function render() {
     if (state.checking) { root.innerHTML = '<div class="sbox sload"><span class="spin" aria-label="…"></span></div>'; return; }
     if (!state.user) {
-      root.innerHTML = '<div class="sbox">' + (wantPass ? '<p class="lead">' + T.passLogin + '</p>' : cmdBlock()) + '<button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
+      root.innerHTML = tabs() + '<div class="sbox">' + (wantPass ? '<p class="lead">' + T.passLogin + '</p>' : state.mode === 'video' ? '<h2 class="vh">' + T.vLoginTitle + '</h2><p class="hint">' + T.vLoginText + '</p>' : cmdBlock()) + '<button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
       bind(); return;
     }
     var kind = data.commands[slug].kind, lab = T.prodLabel[kind] || T.prodLabel.product;
@@ -219,8 +229,8 @@
     var addBtn = state.photos.length < 3 ? '<label class="addph"><input id="s-file" type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple hidden><span>+</span><small>' + T.add + '</small></label>' : '';
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < 1 ? T.buy : T.genCost;
-    root.innerHTML =
-      '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>' +
+    if (state.mode === 'video') { root.innerHTML = bar() + tabs() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
+    root.innerHTML = bar() + tabs() +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
@@ -237,6 +247,7 @@
   function msg(t, ok) { var m = $('#s-msg') || $('#auth-msg'); if (m) { m.textContent = t || ''; m.className = 'fmsg' + (ok ? ' ok' : ''); } }
 
   function bind() {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-mode]'), function (b) { b.addEventListener('click', function () { if (state.mode === b.dataset.mode) return; state.mode = b.dataset.mode; try { history.replaceState(null, '', state.mode === 'video' ? '?mode=video' : location.pathname); } catch (e) {} render(); }); });
     var sel = $('#s-cmd'); if (sel) sel.addEventListener('change', function () { slug = sel.value; history.replaceState(null, '', '?c=' + slug); state.result = null; render(); });
     var f = $('#s-file'); if (f) f.addEventListener('change', function () { addFiles(f.files); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-rm]'), function (b) { b.addEventListener('click', function () { var p = state.photos.splice(+b.dataset.rm, 1)[0]; if (p) URL.revokeObjectURL(p.url); render(); }); });
@@ -265,6 +276,21 @@
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
     var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy('corriger'); else editImage(); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; ensureQr(state.result).then(render); }); });
+  }
+
+  // ── onglet vidéo : module chargé à la demande ──
+  var vapi = {
+    get cfg() { return state.cfg; }, get credits() { return state.credits; }, T: T, errText: errText, shrink: function (f) { return shrink(f); },
+    call: function (p, b) { return window.slashAuth.call(p, b); }, post: function (u, b, t) { return window.slashAuth.post(u, b, t); }, blob: function (p, b) { return window.slashAuth.blob(p, b); },
+    setCredits: function (n) { state.credits = n; var e = $('#s-bal'); if (e) e.textContent = n + ' ' + (n === 1 ? T.credit : T.credits); },
+    refreshMe: function () { window.slashAuth.call('me').then(function (r) { if (r.status === 200) vapi.setCredits(r.data.credits); }); },
+    openBuy: function (f) { openBuy(f); }, renderUrl: root.dataset.vurl || '',
+  };
+  function mountVideo() {
+    var node = $('#v-root'); if (!node) return;
+    var go = function () { window.saVideo.mount(node, vapi); };
+    if (window.saVideo) return go();
+    var sc = document.createElement('script'); sc.src = '/js/videomode.js?v=' + (root.dataset.vv || ''); sc.onload = go; document.head.appendChild(sc);
   }
 
   // ── photos : réduites dans le navigateur (1600 px, JPEG) avant l'envoi ──

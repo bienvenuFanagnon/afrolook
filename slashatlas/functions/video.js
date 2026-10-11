@@ -312,7 +312,7 @@ function plan(P, voiceDur) {
   const T = P.texts; const sc = [];
   sc.push({ k: 'hook', min: 2.8 });
   sc.push({ k: 'product', min: 3.8 });
-  if ((T.lines || []).length > 1 || (T.lines || []).length === 1 && P.voice) sc.push({ k: 'benefits', min: 1.5 + 1.1 * Math.min(3, (T.lines || []).length) });
+  if ((T.lines || []).length >= 2) sc.push({ k: 'benefits', min: 1.5 + 1.1 * Math.min(3, (T.lines || []).length) });
   if (T.price || T.offer) sc.push({ k: 'offer', min: 3.6 });
   sc.push({ k: 'cta', min: 4 });
   let t0 = 0;
@@ -400,7 +400,8 @@ async function render(P, hooks = {}) {
   const voice = P.voice && P.voice.segments ? P.voice : null;
   let ttsChars = 0; const clips = {}; const vd = {};
   if (voice) {
-    for (const k of ['hook', 'product', 'benefits', 'offer', 'cta']) {
+    const kinds = plan(P, null).scenes.map((x) => x.k);
+    for (const k of kinds) {
       const text = voice.segments[k]; if (!text || !String(text).trim()) continue;
       const r = await tts(text, V.lang, voice.gender, k === 'hook' ? 5 : 9); clips[k] = r.pcm; vd[k] = r.pcm.length / SR; ttsChars += r.chars;
     }

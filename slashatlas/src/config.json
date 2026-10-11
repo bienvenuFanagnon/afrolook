@@ -27,7 +27,8 @@
   ],
   "video": {
     "en": "P0SJ5sNJntc",
-    "fr": "y2juuOVMOjw"
+    "fr": "y2juuOVMOjw",
+    "renderUrl": "https://europe-west1-slashatlas-studio.cloudfunctions.net/slashatlasVideo"
   },
   "community": {
     "whatsapp": "https://whatsapp.com/channel/0029Vb9H9ht9Bb67cMwhv026"

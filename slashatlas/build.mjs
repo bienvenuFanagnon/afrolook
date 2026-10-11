@@ -212,7 +212,7 @@ const STUDIO = {
     flow: [['1', 'Idée et script', 'Le kit créateur écrit vos accroches, votre script de 15 ou 30 secondes, votre voix off et votre plan de tournage.', 'kit'], ['2', 'Visuel', 'Affiche, couverture de Reel, miniature : une commande gratuite, ou le Studio « Générer ici » qui crée l’image à votre place.', 'reseaux'], ['3', 'Vidéo', 'Motion design (texte animé, logo qui apparaît, compte à rebours, promo) ou vidéo publicitaire à partir de votre photo.', 'motion'], ['4', 'Légende et calendrier', 'Légende, hashtags, réponses aux clients, calendrier de 7 ou 30 jours : tout ce qui vient après la création.', 'kit']],
     famH: 'Quatre familles de commandes', fam: [['Commandes gratuites', 'Plus de 600 commandes d’affiches à copier, par métier.'], ['Studio « Générer ici »', 'L’image est créée directement sur le site, à partir de votre photo, avec votre marque et un QR code si vous le souhaitez.'], ['Motion design vidéo', 'Des commandes pour générateurs de vidéo (Veo, Runway, Kling) : prêtes à poster sur vos réseaux.'], ['Kit créateur', 'Des commandes texte pour ChatGPT, Gemini ou Claude : scripts, accroches, légendes, calendriers.']],
     honestH: 'Ce que fait le site, et ce qu’il ne fait pas', honest: ['Les commandes vidéo et texte se collent dans l’outil IA de votre choix : SlashAtlas ne génère pas encore les vidéos lui-même.', 'Le Studio « Générer ici » crée des images (affiches, visuels de produit) et les ajoute à votre compte ; il est payant au crédit, les commandes restent gratuites.', 'Les résultats dépendent de l’outil IA utilisé : relisez toujours le texte et vérifiez les informations avant de publier.'],
-    sCats: 'Découvrir', cta: 'Voir les commandes', cta2: 'Essayer le Studio', stripH: 'Studio de création rapide de contenu IA', stripP: 'Du script à la vidéo, de l’affiche à la légende : tout ce qu’il faut pour vos réseaux, au même endroit.', stripBtn: 'Découvrir le studio',
+    exH: 'Vidéos créées avec le studio', exP: 'Photos du client, textes, musique et voix off : 20 secondes, prêtes à poster. Les produits montrés sont des exemples.', exStyle: { mode: 'Mode', beaute: 'Beauté', promo: 'Promo flash' }, vidH: 'Créez votre vidéo pub', vidP: 'Importez 1 à 3 photos, écrivez quelques mots (ou laissez l’IA les écrire), choisissez le style, avec ou sans voix off : votre vidéo est prête en moins d’une minute. 3 crédits sans voix, 4 avec voix.', vidBtn: 'Créer une vidéo', sCats: 'Découvrir', cta: 'Voir les commandes', cta2: 'Essayer le Studio', stripH: 'Studio de création rapide de contenu IA', stripP: 'Du script à la vidéo, de l’affiche à la légende : tout ce qu’il faut pour vos réseaux, au même endroit.', stripBtn: 'Découvrir le studio',
   },
   en: {
     nav: 'Content studio', title: 'AI content studio: posters, videos, texts | SlashAtlas', desc: 'From script to video, from poster to caption: SlashAtlas’s fast studio to create your TikTok, Instagram, Reels and Shorts content with AI.',
@@ -221,12 +221,18 @@ const STUDIO = {
     flow: [['1', 'Idea and script', 'The creator kit writes your hooks, your 15 or 30 second script, your voice-over and your shot plan.', 'kit'], ['2', 'Visual', 'Poster, Reel cover, thumbnail: a free command, or the “Generate here” Studio that creates the image for you.', 'reseaux'], ['3', 'Video', 'Motion design (animated text, logo reveal, countdown, promo) or an advertising video from your photo.', 'motion'], ['4', 'Caption and calendar', 'Caption, hashtags, customer replies, 7 or 30 day calendar: everything that comes after creating.', 'kit']],
     famH: 'Four families of commands', fam: [['Free commands', 'Over 600 poster commands to copy, by trade.'], ['“Generate here” Studio', 'The image is created directly on the site from your photo, with your brand and a QR code if you wish.'], ['Motion design video', 'Commands for video generators (Veo, Runway, Kling): ready to post on your networks.'], ['Creator kit', 'Text commands for ChatGPT, Gemini or Claude: scripts, hooks, captions, calendars.']],
     honestH: 'What the site does, and what it does not', honest: ['Video and text commands are pasted into the AI tool of your choice: SlashAtlas does not generate the videos itself yet.', 'The “Generate here” Studio creates images (posters, product visuals) and adds them to your account; it is paid by credit, while the commands stay free.', 'Results depend on the AI tool used: always reread the text and check the information before publishing.'],
-    sCats: 'Explore', cta: 'See the commands', cta2: 'Try the Studio', stripH: 'Fast AI content creation studio', stripP: 'From script to video, from poster to caption: everything for your social media, in one place.', stripBtn: 'Discover the studio',
+    exH: 'Videos made with the studio', exP: 'Customer photos, texts, music and voice-over: 20 seconds, ready to post. The products shown are examples.', exStyle: { mode: 'Fashion', beaute: 'Beauty', promo: 'Flash sale' }, vidH: 'Create your video ad', vidP: 'Upload 1 to 3 photos, write a few words (or let AI write them), pick the style, with or without voice-over: your video is ready in under a minute. 3 credits without voice, 4 with voice.', vidBtn: 'Create a video', sCats: 'Explore', cta: 'See the commands', cta2: 'Try the Studio', stripH: 'Fast AI content creation studio', stripP: 'From script to video, from poster to caption: everything for your social media, in one place.', stripBtn: 'Discover the studio',
   },
 };
 function studioStrip(l) {
   const S = STUDIO[l], p = P[l];
-  return `<div class="studio-strip"><div><b>${S.stripH}</b><p>${S.stripP}</p></div><div class="ss-links"><a class="btn pri" href="${p.studio}">${S.stripBtn}</a><a class="btn gl" href="${p.cat('motion')}">${catOf('motion')[l]}</a><a class="btn gl" href="${p.cat('kit')}">${catOf('kit')[l]}</a></div></div>`;
+  return `<div class="studio-strip"><div><b>${S.stripH}</b><p>${S.stripP}</p></div><div class="ss-links"><a class="btn pri" href="${p.studio}">${S.stripBtn}</a>${cfg.video && cfg.video.renderUrl ? `<a class="btn gl" href="${p.try}?mode=video">${S.vidBtn}</a>` : ''}<a class="btn gl" href="${p.cat('motion')}">${catOf('motion')[l]}</a><a class="btn gl" href="${p.cat('kit')}">${catOf('kit')[l]}</a></div></div>`;
+}
+function videoSection(l) {
+  const S = STUDIO[l], p = P[l];
+  if (!(cfg.video && cfg.video.renderUrl)) return '';
+  const cards = ['beaute', 'mode', 'promo'].map((k) => `<figure class="vex"><video controls playsinline preload="none" poster="/img/video/ex-${k}.webp" src="/video/exemples/ex-${k}-${l}.mp4" aria-label="${esc(S.exStyle[k])}"></video><figcaption>${S.exStyle[k]}</figcaption></figure>`).join('');
+  return `<div class="sec"><h2>${S.exH}</h2></div><p class="lead sm">${S.exP}</p><div class="vexs">${cards}</div><div class="cta"><a class="btn pri big" href="${p.try}?mode=video">${S.vidBtn}</a></div><p class="hint">${S.vidH} : ${S.vidP}</p>`;
 }
 function studioPage(l) {
   const S = STUDIO[l], p = P[l];
@@ -238,7 +244,7 @@ function studioPage(l) {
   const body = `<div class="wrap"><div class="eyebrow">${S.k}</div><h1 class="big sm">${S.h}</h1><p class="lead">${S.lead}</p>
 <div class="cta"><a class="btn pri big" href="${p.cmds}">${S.cta}</a><a class="btn gl big" href="${p.try}">${S.cta2}</a></div>
 <div class="sec"><h2>${S.flowH}</h2></div><ol class="steps3 studio-flow">${flow}</ol>
-<div class="sec"><h2>${S.famH}</h2></div><div class="plans studio-fam">${fam.replace(/Plus de 600/, 'Plus de ' + Math.floor(nCmd / 50) * 50).replace(/Over 600/, 'Over ' + Math.floor(nCmd / 50) * 50)}</div>
+${videoSection(l)}<div class="sec"><h2>${S.famH}</h2></div><div class="plans studio-fam">${fam.replace(/Plus de 600/, 'Plus de ' + Math.floor(nCmd / 50) * 50).replace(/Over 600/, 'Over ' + Math.floor(nCmd / 50) * 50)}</div>
 <div class="sec"><h2>${S.sCats}</h2></div><div class="grid">${cards.map((c) => card(c, l)).join('')}</div>
 <div class="sec"><h2>${S.honestH}</h2></div><ul class="prose">${S.honest.map((x) => `<li>${x}</li>`).join('')}</ul>${band(l)}</div>`;
   emit(l, 'studio', p.studio, { title: S.title, desc: S.desc, body, alt: alt2(P.fr.studio, P.en.studio) });
@@ -395,7 +401,7 @@ function tryPage(l) {
   const t = TRY[l], p = P[l];
   const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage }])), brand: BRAND[l] };
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1>
-<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''} data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div></div>`;
+<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div></div>`;
   emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
 }
 function notFound() {

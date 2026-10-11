@@ -6,6 +6,7 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const crypto = require('crypto');
 const studio = require('./studio');
+const videoApi = require('./videoApi');
 const fs = require('fs');
 const nodePath = require('path');
 const OG_DIR = nodePath.join(__dirname, 'og');
@@ -280,6 +281,16 @@ exports.slashatlasApi = onRequest(
         res.set('Cache-Control', 'public, max-age=60');
         return res.status(200).json({ ...studio.publicConfig(), ads: await getAds() });
       }
+      if (/\/video\/(script|file|list)$/.test(path)) {
+        if (limited('v' + ipKey, 60, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
+        if (path.endsWith('/video/script')) return res.status(200).json(await videoApi.script(u, body(req)));
+        if (path.endsWith('/video/list')) return res.status(200).json(await videoApi.list(u));
+        const buf = await videoApi.file(u, body(req));
+        res.set('Content-Type', 'video/mp4').set('Content-Length', String(buf.length));
+        return res.status(200).send(buf);
+      }
       if (path.endsWith('/pay/webhook')) {
         if (limited('w' + ipKey, 120, 60000)) return res.status(429).json({ error: 'rate' });
         await studio.payWebhook(body(req));
@@ -325,6 +336,30 @@ exports.slashatlasApi = onRequest(
     } catch (e) {
       if (e && e.status && e.code) return res.status(e.status).json({ error: e.code });
       console.error('slashatlasApi', e);
+      return res.status(500).json({ error: 'server' });
+    }
+  },
+);
+
+// Rendu des vidéos publicitaires : fonction à part (2 Go, 2 processeurs, 5 minutes), appelée directement par le navigateur (le délai de 60 s de Hosting serait trop court).
+exports.slashatlasVideo = onRequest(
+  { region: 'europe-west1', invoker: 'public', memory: '2GiB', cpu: 2, concurrency: 1, maxInstances: 6, timeoutSeconds: 300 },
+  async (req, res) => {
+    cors(req, res);
+    if (req.method === 'OPTIONS') return res.status(204).send('');
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    const o = req.get('origin');
+    if (!o || !ORIGINS.some((r) => r.test(o))) return res.status(403).json({ error: 'origin' });
+    const ip = (req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim();
+    const ipKey = crypto.createHash('sha256').update(ip).digest('hex').slice(0, 12);
+    try {
+      if (limited('r' + ipKey, 12, 600000)) return res.status(429).json({ error: 'rate' });
+      const u = await whoIs(req);
+      if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
+      return res.status(200).json(await videoApi.render(u, body(req)));
+    } catch (e) {
+      if (e && e.status && e.code) return res.status(e.status).json({ error: e.code });
+      console.error('slashatlasVideo', e);
       return res.status(500).json({ error: 'server' });
     }
   },

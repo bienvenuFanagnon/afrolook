@@ -19,6 +19,9 @@ const IMAGE_MODEL = 'gemini-3.1-flash-image';
 // Un crédit = une génération (ou une correction). Prix en FCFA, hors frais de paiement (ajoutés au client).
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
 const GEN_COST = 1;
+// Vidéo pub (montage maison : photos + animations + musique + voix Google). Coût de revient réel ≈ 0,02 $ (calcul + voix + stockage), soit moins de 15 FCFA : la marge est très large.
+const VIDEO_COST = { base: 3, voice: 1 }; // 3 crédits sans voix, 4 avec voix off
+const VIDEO_LIMITS = { userPerDay: 8, globalPerDay: 150 };
 const PACKS = [
   { id: 'p6', credits: 6, xof: 500, usd: 0.85 }, // petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
   { id: 'p20', credits: 20, xof: 1500, usd: 2.5 },
@@ -434,6 +437,7 @@ async function payWebhook(b) {
 function publicConfig() {
   return {
     genCost: GEN_COST,
+    video: { base: VIDEO_COST.base, voice: VIDEO_COST.voice, userPerDay: VIDEO_LIMITS.userPerDay },
     packs: [...PACKS, PASS],
     currency: 'XOF',
     card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout, packs: CARD_LIMITS.packs },
@@ -470,4 +474,4 @@ async function grant(email, n, note) {
   return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
 }
 
-module.exports = { grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
+module.exports = { grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS };

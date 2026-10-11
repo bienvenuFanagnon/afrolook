@@ -26,6 +26,23 @@ window.slashAuth = {
     let j = {}; try { j = await r.json(); } catch (e) {}
     return { status: r.status, data: j };
   },
+  // Appel d'une adresse complète (fonction de rendu vidéo, hors Hosting) : délai long, même jeton.
+  async post(url, body, timeoutMs) {
+    const token = await auth.currentUser.getIdToken();
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeoutMs || 60000);
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify(body || {}), signal: ctl.signal });
+      let j = {}; try { j = await r.json(); } catch (e) {}
+      return { status: r.status, data: j };
+    } finally { clearTimeout(timer); }
+  },
+  // Fichier binaire (vidéo) renvoyé par l'API.
+  async blob(path, body) {
+    const token = await auth.currentUser.getIdToken();
+    const r = await fetch('/api/' + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token }, body: JSON.stringify(body || {}) });
+    if (!r.ok) throw new Error('blob ' + r.status);
+    return r.blob();
+  },
   signOut: () => signOut(auth),
   login,
 };
