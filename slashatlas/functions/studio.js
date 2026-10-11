@@ -157,6 +157,11 @@ async function generate(u, b) {
   const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length);
   parts.push({ text });
 
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length });
+}
+
+/** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */
+async function runJob(u, parts, ratio, meta) {
   const id = crypto.randomBytes(10).toString('hex');
   await spendCredits(u.uid, GEN_COST, id); // lève 402 s'il n'y a pas assez de crédits (avant tout compteur : un compte sans crédit ne peut pas saturer les plafonds)
   // plafonds du jour (utilisateur et global)
@@ -173,16 +178,16 @@ async function generate(u, b) {
     });
   } catch (e) { await addCredits(u.uid, GEN_COST, 'refund', id, { reason: e.code || 'limit' }); throw e; }
   const gref = db().collection('StudioGenerations').doc(id);
-  await gref.set({ uid: u.uid, slug, lang, product, multi, photos: photos.length, cost: GEN_COST, status: 'pending', createdAt: FieldValue.serverTimestamp() });
+  await gref.set({ uid: u.uid, ratio, cost: GEN_COST, status: 'pending', createdAt: FieldValue.serverTimestamp(), ...meta });
   try {
     const img = await callGemini(parts, ratio);
     const ext = img.mime.includes('jpeg') ? 'jpg' : 'png';
     const path = `generations/${u.uid}/${id}.${ext}`;
     try { await getStorage().bucket().file(path).save(Buffer.from(img.data, 'base64'), { contentType: img.mime, resumable: false }); } catch (e) { console.error('storage', e.message); }
-    await gref.update({ status: 'done', path, doneAt: FieldValue.serverTimestamp() });
+    await gref.update({ status: 'done', path, mime: img.mime, doneAt: FieldValue.serverTimestamp() });
     const stat = db().collection('SlashAtlasStats').doc(d);
     await stat.set({ day: d }, { merge: true });
-    await stat.update({ generations: FieldValue.increment(1), [`gen.${slug}`]: FieldValue.increment(1) });
+    await stat.update(meta.parent ? { edits: FieldValue.increment(1) } : { generations: FieldValue.increment(1), [`gen.${meta.slug}`]: FieldValue.increment(1) });
     const left = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
     return { id, image: img.data, mime: img.mime, credits: left };
   } catch (e) {
@@ -190,6 +195,24 @@ async function generate(u, b) {
     await gref.update({ status: 'failed', error: e.code || 'error' });
     throw e;
   }
+}
+
+/** Corriger ou modifier une image déjà générée : un crédit, comme une génération. L'image de départ est relue côté serveur (jamais envoyée par le client). */
+async function edit(u, b) {
+  const parentId = clean(b.id, 40);
+  const instruction = clean(b.instruction, 300);
+  const lang = b.lang === 'en' ? 'en' : 'fr';
+  if (instruction.length < 3) throw fail(400, 'no_instruction');
+  const ps = await db().collection('StudioGenerations').doc(parentId).get();
+  const p = ps.exists ? ps.data() : null;
+  if (!p || p.uid !== u.uid || p.status !== 'done' || !p.path) throw fail(404, 'no_image');
+  let buf;
+  try { [buf] = await getStorage().bucket().file(p.path).download(); } catch (e) { console.error('storage read', e.message); throw fail(404, 'no_image'); }
+  const text = lang === 'fr'
+    ? `Modifie l’image jointe selon cette demande : « ${instruction} ». Garde tout le reste identique (produit ou personnes, composition, cadrage, format). N’ajoute aucun texte sauf si la demande le précise.`
+    : `Edit the attached image according to this request: “${instruction}”. Keep everything else identical (product or people, composition, framing, format). Add no text unless the request says so.`;
+  const parts = [{ inlineData: { mimeType: p.mime || 'image/png', data: buf.toString('base64') } }, { text }];
+  return runJob(u, parts, p.ratio || '1:1', { slug: p.slug, lang, parent: parentId, instruction });
 }
 
 // ───────── paiement mobile money (FeexPay) ─────────
@@ -277,4 +300,4 @@ function publicConfig() {
   };
 }
 
-module.exports = { SECRETS, me, generate, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
+module.exports = { SECRETS, me, generate, edit, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };

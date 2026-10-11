@@ -10,28 +10,28 @@
       hello: 'Bonjour', back: 'Content de vous revoir', welcome: 'Compte créé', credits: 'crédits', credit: 'crédit', buy: 'Acheter des crédits', logout: 'Se déconnecter',
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
-      gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
+      gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       card: 'Carte bancaire : bientôt', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l’opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer',
-      e: { insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
+      e: { no_instruction: 'Décrivez la modification à faire.', no_image: 'Image introuvable : refaites une génération.', insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
     },
     en: {
       login: 'Continue with Google', loginNote: 'Quick sign-in with your Google account. If you already have an account, you are simply signed back in.',
       hello: 'Hello', back: 'Welcome back', welcome: 'Account created', credits: 'credits', credit: 'credit', buy: 'Buy credits', logout: 'Sign out',
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
-      gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
+      gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       card: 'Card payment: coming soon', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator’s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close',
-      e: { insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
+      e: { no_instruction: 'Describe the change you want.', no_image: 'Image not found: please generate again.', insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
     },
   }[L];
   var data = {}; try { data = JSON.parse(root.dataset.map); } catch (e) {}
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
-  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null };
+  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '' };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -60,7 +60,11 @@
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
       '<button class="btn pri big" type="button" id="s-gen"' + (state.credits >= 1 && !canGen ? ' disabled' : '') + '>' + (state.busy ? T.working : (state.credits >= 1 && !state.photos.length ? T.needPhoto : genLabel)) + '</button>' +
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
-      (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt=""><div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div><small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '');
+      (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt="">' +
+        (state.versions.length > 1 ? '<div class="vers">' + state.versions.map(function (v, i) { return '<button type="button" data-v="' + i + '" aria-pressed="' + (i === state.cur) + '">' + T.version + ' ' + (i + 1) + '</button>'; }).join('') + '</div>' : '') +
+        '<div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '-v' + (state.cur + 1) + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div>' +
+        '<div class="sedit"><b>' + T.editTitle + '</b><textarea id="s-edit" rows="2" maxlength="300" placeholder="' + esc(T.editPh) + '">' + esc(state.instruction) + '</textarea><small class="hint">' + T.editHint + '</small><button class="btn pri big" type="button" id="s-editgo"' + (state.busy ? ' disabled' : '') + '>' + (state.busy ? T.editing : T.editBtn) + '</button></div>' +
+        '<small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '');
     bind();
   }
   function msg(t, ok) { var m = $('#s-msg') || $('#auth-msg'); if (m) { m.textContent = t || ''; m.className = 'fmsg' + (ok ? ' ok' : ''); } }
@@ -74,6 +78,9 @@
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy(); else generate(); });
     var ag = $('#s-again'); if (ag) ag.addEventListener('click', function () { if (state.credits < 1) openBuy(); else generate(); });
     var by = $('#s-buy'); if (by) by.addEventListener('click', openBuy);
+    var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
+    var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy(); else editImage(); });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; render(); }); });
   }
 
   // ── photos : réduites dans le navigateur (1600 px, JPEG) avant l'envoi ──
@@ -104,19 +111,37 @@
   // ── génération ──
   function generate() {
     if (state.busy || !state.photos.length) return;
-    state.busy = true; state.result = null; render(); msg('');
+    state.busy = true; state.result = null; state.versions = []; render(); msg('');
     var body = { slug: slug, lang: L, product: state.product, multi: state.multi, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {
         var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
         var ext = r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png';
-        state.result = { url: URL.createObjectURL(new Blob([arr], { type: r.data.mime })), ext: ext };
+        state.result = { id: r.data.id, url: URL.createObjectURL(new Blob([arr], { type: r.data.mime })), ext: ext };
+        state.versions = [state.result]; state.cur = 0; state.instruction = '';
         state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
       } else {
         if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy(); return; }
         render(); msg(errText(r.data && r.data.error));
       }
+    }).catch(function () { state.busy = false; render(); msg(T.e.server); });
+  }
+
+  function editImage() {
+    var cur = state.versions[state.cur];
+    if (state.busy || !cur) return;
+    var text = (state.instruction || '').trim();
+    if (text.length < 3) return msg(T.e.no_instruction);
+    state.busy = true; render();
+    window.slashAuth.call('edit', { id: cur.id, lang: L, instruction: text }).then(function (r) {
+      state.busy = false;
+      if (r.status === 200) {
+        var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        var v = { id: r.data.id, url: URL.createObjectURL(new Blob([arr], { type: r.data.mime })), ext: r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png' };
+        state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
+      } else if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy(); }
+      else { render(); msg(errText(r.data && r.data.error)); }
     }).catch(function () { state.busy = false; render(); msg(T.e.server); });
   }
 

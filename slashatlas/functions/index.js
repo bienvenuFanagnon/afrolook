@@ -170,12 +170,13 @@ exports.slashatlasApi = onRequest(
         await studio.payWebhook(body(req));
         return res.status(200).send('OK');
       }
-      if (/\/(me|generate|pay\/start|pay\/status)$/.test(path)) {
-        if (limited('g' + ipKey, path.endsWith('/generate') ? 30 : 60, 600000)) return res.status(429).json({ error: 'rate' });
+      if (/\/(me|generate|edit|pay\/start|pay\/status)$/.test(path)) {
+        if (limited('g' + ipKey, (path.endsWith('/generate') || path.endsWith('/edit')) ? 30 : 60, 600000)) return res.status(429).json({ error: 'rate' });
         const u = await whoIs(req);
         if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
         if (path.endsWith('/me')) return res.status(200).json(await studio.me(u));
         if (path.endsWith('/generate')) return res.status(200).json(await studio.generate(u, body(req)));
+        if (path.endsWith('/edit')) return res.status(200).json(await studio.edit(u, body(req)));
         if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req)));
         return res.status(200).json(await studio.payStatus(u, body(req)));
       }
