@@ -1,0 +1,5 @@
+out/
+work/test/
+work/vo_*/
+work/*.wav
+work/__pycache__/

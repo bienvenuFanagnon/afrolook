@@ -20,6 +20,8 @@
   }
   window.saTrack = track;
   function refClass() {
+    // liens des publicités : ?utm_source=youtube&utm_campaign=… → compté sous « ad_source_campagne » dans l'administration
+    try { var q = new URLSearchParams(location.search), us = q.get('utm_source'); if (us) return ('ad_' + us + '_' + (q.get('utm_campaign') || '')).toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 40); } catch (e) {}
     var r = document.referrer; if (!r) return 'direct';
     var h; try { h = new URL(r).hostname; } catch (e) { return 'other'; }
     if (h === location.hostname) return 'internal';
