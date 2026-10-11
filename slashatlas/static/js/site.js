@@ -127,3 +127,13 @@
     $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
   });
 })();
+
+// Publicité : initialise les blocs AdSense présents ; le lien « Préférences publicitaires » rouvre le message de consentement Google.
+(function () {
+  try {
+    var ins = document.querySelectorAll('ins.adsbygoogle');
+    for (var i = 0; i < ins.length; i++) { try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {} }
+    var p = document.querySelector('[data-adprefs]');
+    if (p) p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} });
+  } catch (e) {}
+})();

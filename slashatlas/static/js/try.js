@@ -14,7 +14,8 @@
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       card: 'Carte bancaire : bientôt', mm: 'Mobile money', cardTab: 'Carte bancaire', feeLine: 'Pack {p} FCFA + frais de paiement {f} FCFA', feeNote: 'Les frais de l’opérateur sont payés par l’acheteur.', firstName: 'Prénom', lastName: 'Nom', city: 'Ville', zip: 'Code postal', countryCard: 'Pays', phoneCard: 'Téléphone (avec indicatif)', cardGo: 'Payer par carte', cardInfo: 'Vous serez redirigé vers la page de paiement sécurisée de FeexPay (3D Secure).', pending: 'Paiement en cours de vérification…', approx: '≈ {e} €', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l’opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer',
-      e: { no_instruction: 'Décrivez la modification à faire.', no_image: 'Image introuvable : refaites une génération.', insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', bad_card_info: 'Complétez tous les champs.', card_unavailable: 'Le paiement par carte n’est pas encore disponible.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
+      termsAccept: 'J’ai lu et j’accepte les ', termsLink: 'conditions générales', termsNote: ' Je demande l’exécution immédiate du service et je reconnais perdre mon droit de rétractation pour les crédits utilisés.', cardPackOnly: 'Par carte : packs de 20 et 55 crédits.', 
+      e: { terms_required: 'Cochez l’acceptation des conditions générales.', card_pack_limited: 'Ce pack n’est pas disponible par carte. Choisissez un pack plus petit.', card_limit: 'Limite d’achats par carte atteinte. Réessayez plus tard ou payez par mobile money.', no_instruction: 'Décrivez la modification à faire.', no_image: 'Image introuvable : refaites une génération.', insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', bad_card_info: 'Complétez tous les champs.', card_unavailable: 'Le paiement par carte n’est pas encore disponible.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
     },
     en: {
       login: 'Continue with Google', loginNote: 'Quick sign-in with your Google account. If you already have an account, you are simply signed back in.',
@@ -25,7 +26,8 @@
       noCredit: 'You need credits to generate.', balance: 'Balance',
       buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       card: 'Card payment: coming soon', mm: 'Mobile money', cardTab: 'Bank card', feeLine: 'Pack {p} FCFA + payment fees {f} FCFA', feeNote: 'Operator fees are paid by the buyer.', firstName: 'First name', lastName: 'Last name', city: 'City', zip: 'Postal code', countryCard: 'Country', phoneCard: 'Phone (with country code)', cardGo: 'Pay by card', cardInfo: 'You will be redirected to FeexPay’s secure payment page (3D Secure).', pending: 'Checking your payment…', approx: '≈ €{e}', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator’s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close',
-      e: { no_instruction: 'Describe the change you want.', no_image: 'Image not found: please generate again.', insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', bad_card_info: 'Please fill in every field.', card_unavailable: 'Card payment is not available yet.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
+      termsAccept: 'I have read and accept the ', termsLink: 'terms and conditions', termsNote: ' I request immediate performance of the service and acknowledge that I lose my right of withdrawal for credits already used.', cardPackOnly: 'By card: 20 and 55 credit packs.', 
+      e: { terms_required: 'Please tick the box to accept the terms.', card_pack_limited: 'This pack is not available by card. Choose a smaller pack.', card_limit: 'Card purchase limit reached. Try again later or pay by mobile money.', no_instruction: 'Describe the change you want.', no_image: 'Image not found: please generate again.', insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', bad_card_info: 'Please fill in every field.', card_unavailable: 'Card payment is not available yet.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
     },
   }[L];
   var data = {}; try { data = JSON.parse(root.dataset.map); } catch (e) {}
@@ -150,7 +152,9 @@
   function openBuy() {
     var cfg = state.cfg; if (!cfg) return;
     var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
-    var sel = { pack: cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id, country: countries[0], op: null, method: 'mm' };
+    var sel = { pack: cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id, country: countries[0], op: null, method: 'mm', terms: false };
+    var TL = L === 'en' ? '/en/terms/' : '/conditions/';
+    function cardOk(id) { return !cfg.card.packs || cfg.card.packs.indexOf(id) >= 0; }
     var modal = document.createElement('div'); modal.className = 'smodal'; modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true');
     document.body.appendChild(modal); document.body.style.overflow = 'hidden';
     var timer = null, ISO = ['FR', 'BE', 'CH', 'LU', 'DE', 'ES', 'PT', 'IT', 'NL', 'GB', 'IE', 'US', 'CA', 'BR', 'MX', 'CO', 'BJ', 'TG', 'CI', 'SN', 'BF', 'ML', 'CM', 'CG', 'GA', 'GN', 'NE', 'TD', 'CD', 'MA', 'DZ', 'TN', 'GH', 'NG'];
@@ -161,6 +165,8 @@
       if (!sel.op || sel.op.country !== sel.country) sel.op = ops()[0];
       var pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
       var isCard = sel.method === 'card';
+      if (isCard && !cardOk(sel.pack)) sel.pack = cfg.packs.filter(function (p) { return cardOk(p.id); }).pop().id;
+      pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
       var q = isCard ? quote(pk.xof, cfg.card.payin, cfg.card.payout) : quote(pk.xof, sel.op.payin, sel.op.payout);
       var tabs = '<div class="mtabs" role="tablist"><button type="button" data-m="mm" aria-pressed="' + !isCard + '">' + T.mm + '</button>' + (cfg.card && cfg.card.enabled ? '<button type="button" data-m="card" aria-pressed="' + isCard + '">' + T.cardTab + '</button>' : '<button type="button" disabled>' + T.card + '</button>') + '</div>';
       var form;
@@ -177,14 +183,16 @@
           '<label>' + T.countryCard + '<select id="c-country">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc(countryName(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + T.cardInfo + '</p>';
       }
       modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + T.buyTitle + '</h2><p class="hint">' + T.buySub + '</p>' +
-        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '">' + (p.tag ? '<i>' + T.popular + '</i>' : '') + '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + Math.round(p.xof / p.credits) + ' FCFA ' + T.perCredit + '</small></button>'; }).join('') + '</div>' + tabs + form +
+        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + Math.round(p.xof / p.credits) + ' FCFA ' + T.perCredit + '</small></button>'; }).join('') + '</div>' + tabs + form +
         '<div class="feebox"><span>' + T.feeLine.replace('{p}', fmt(pk.xof)).replace('{f}', fmt(q.fee)) + '</span><b>' + fmt(q.total) + ' FCFA</b>' + (isCard ? '<small>' + T.approx.replace('{e}', (q.total / 655.957).toFixed(2)) + '</small>' : '') + '</div>' +
+        '<label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
         '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo : T.pay) + ' ' + fmt(q.total) + ' FCFA</button><p class="hint soft">' + T.feeNote + '</p><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p></div>';
       $('.x', modal).onclick = close;
       Array.prototype.forEach.call(modal.querySelectorAll('.pack'), function (b) { b.onclick = function () { sel.pack = b.dataset.p; draw(); }; });
       Array.prototype.forEach.call(modal.querySelectorAll('[data-m]'), function (b) { b.onclick = function () { sel.method = b.dataset.m; draw(); }; });
       var co = $('#b-country', modal); if (co) co.onchange = function (e) { sel.country = e.target.value; sel.op = null; draw(); };
       var op = $('#b-op', modal); if (op) op.onchange = function (e) { sel.op = ops().filter(function (o) { return o.code === e.target.value; })[0]; draw(); };
+      $('#b-terms', modal).onchange = function (e) { sel.terms = e.target.checked; };
       $('#b-pay', modal).onclick = isCard ? payCard : pay;
     }
     function bmsg(t, ok) { var m = $('#b-msg', modal); if (m) { m.textContent = t || ''; m.className = 'fmsg' + (ok ? ' ok' : ''); } }
@@ -204,8 +212,9 @@
       var btn = $('#b-pay', modal), phone = $('#b-phone', modal).value.replace(/\D/g, ''), otp = sel.op.otp ? ($('#b-otp', modal).value || '').trim() : '';
       if (phone.length < 8) return bmsg(T.e.bad_phone);
       if (sel.op.otp && !otp) return bmsg(T.e.otp_required);
+      if (!sel.terms) return bmsg(T.e.terms_required);
       btn.disabled = true; bmsg(T.paying, true);
-      window.slashAuth.call('pay/start', { packId: sel.pack, operator: sel.op.code, phone: phone, otp: otp }).then(function (r) {
+      window.slashAuth.call('pay/start', { packId: sel.pack, operator: sel.op.code, phone: phone, otp: otp, terms: cfg.termsVersion }).then(function (r) {
         if (r.status !== 200) { btn.disabled = false; return bmsg(errText(r.data && r.data.error)); }
         if (r.data.paymentUrl) { var a = document.createElement('a'); a.href = r.data.paymentUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.openPay; a.className = 'btn gl'; $('#b-msg', modal).after(a); }
         track(r.data.orderId, btn);
@@ -213,7 +222,8 @@
     }
     function payCard() {
       var btn = $('#b-pay', modal), v = function (id) { return ($('#' + id, modal).value || '').trim(); };
-      var body = { packId: sel.pack, firstName: v('c-first'), lastName: v('c-last'), phone: v('c-phone'), city: v('c-city'), zip: v('c-zip'), country: $('#c-country', modal).value };
+      var body = { packId: sel.pack, firstName: v('c-first'), lastName: v('c-last'), phone: v('c-phone'), city: v('c-city'), zip: v('c-zip'), country: $('#c-country', modal).value, terms: cfg.termsVersion };
+      if (!sel.terms) return bmsg(T.e.terms_required);
       if (!body.firstName || !body.lastName || !body.city || !body.zip || body.phone.replace(/\D/g, '').length < 8) return bmsg(T.e.bad_card_info);
       btn.disabled = true; bmsg(T.paying, true);
       window.slashAuth.call('pay/card', body).then(function (r) {

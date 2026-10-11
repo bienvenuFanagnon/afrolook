@@ -4,7 +4,8 @@
   "indexable": false,
   "ads": {
     "enabled": false,
-    "client": ""
+    "client": "",
+    "slots": { "lb": "", "rect": "" }
   },
   "pro": {
     "price": "3,99 €",
@@ -14,5 +15,13 @@
   "alternateNames": [
     "Slash Atlas",
     "SlashAtlas.com"
-  ]
+  ],
+  "legal": {
+    "name": "",
+    "form": "",
+    "registration": "",
+    "address": "",
+    "email": "",
+    "phone": ""
+  }
 }

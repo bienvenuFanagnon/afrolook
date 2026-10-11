@@ -138,8 +138,10 @@ async function adminData(daysIn) {
   ]);
   const subCount = await db.collection('SlashAtlasSubscribers').count().get();
   const accCount = await db.collection('StudioUsers').count().get();
+  const os = await db.collection('StudioOrders').orderBy('createdAt', 'desc').limit(50).get();
   return {
     days,
+    orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
     stats: st.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id)),
     studioUsers: accCount.data().count,
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
@@ -191,9 +193,16 @@ exports.slashatlasApi = onRequest(
         if (path.endsWith('/me')) return res.status(200).json(await studio.me(u));
         if (path.endsWith('/generate')) return res.status(200).json(await studio.generate(u, body(req)));
         if (path.endsWith('/edit')) return res.status(200).json(await studio.edit(u, body(req)));
-        if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req)));
-        if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req)));
+        if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req), { ip, ua: req.get('user-agent') }));
+        if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
         return res.status(200).json(await studio.payStatus(u, body(req)));
+      }
+      if (path.endsWith('/admin/evidence')) {
+        if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        return res.status(200).json(await studio.evidence(body(req).orderId));
       }
       if (path.endsWith('/admin')) {
         if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });

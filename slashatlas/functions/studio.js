@@ -52,6 +52,15 @@ const OPERATORS = [
 ];
 // Carte bancaire (FeexPay) : désactivée tant que le KYB carte de la boutique n'est pas validé. Frais à renseigner (en %) après confirmation de FeexPay.
 const CARD = { enabled: false, currency: 'XOF', payin: 0, payout: 0 };
+// Limites de sécurité carte (risque de rétrofacturation) : petits paquets seulement, quelques achats par compte, par IP, par mois et par jour.
+const CARD_LIMITS = { packs: ['p20', 'p55'], userPerDay: 2, ipPerDay: 3, userMonthXof: 20000, globalPerDay: 30 };
+const TERMS_VERSION = COMMANDS.termsVersion;
+const ipHash = (ip) => crypto.createHash('sha256').update(String(ip || '')).digest('hex').slice(0, 16);
+/** Preuve d'acceptation des conditions, stockée sur la commande (version, date, IP, navigateur). */
+function acceptance(b, ctx) {
+  if (!b || b.terms !== TERMS_VERSION) throw fail(400, 'terms_required');
+  return { version: TERMS_VERSION, at: new Date().toISOString(), ip: String((ctx && ctx.ip) || '').slice(0, 64), ua: clean(ctx && ctx.ua, 200) };
+}
 /** Montant à envoyer à FeexPay (prix + frais de retrait) et total payé par le client (FeexPay y ajoute ses frais de dépôt). */
 function quote(price, payin, payout) {
   const send = Math.ceil(price * (1 + payout / 100));
@@ -232,7 +241,8 @@ async function feexRequest(url, method, body) {
   return { ok: r.ok, status: r.status, data: j };
 }
 
-async function payStart(u, b) {
+async function payStart(u, b, ctx) {
+  const terms = acceptance(b, ctx);
   const pack = PACKS.find((p) => p.id === b.packId);
   const op = opByCode[b.operator];
   if (!pack || !op) throw fail(400, 'bad_request');
@@ -246,7 +256,7 @@ async function payStart(u, b) {
   const amount = q.send;
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
-  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount, total: q.total, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount, total: q.total, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, email: u.email || '', terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
   const name = clean(u.name, 60).split(/\s+/);
   const payload = { shop: FEEXPAY_SHOP, amount, phoneNumber: phone, firstName: name[0] || 'Client', lastName: name.slice(1).join(' ') || 'SlashAtlas', description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   if (otp) payload.otp = otp;
@@ -262,10 +272,29 @@ async function payStart(u, b) {
 }
 
 
-async function payCard(u, b) {
+async function cardGuard(u, pack, ctx) {
+  if (!CARD_LIMITS.packs.includes(pack.id)) throw fail(400, 'card_pack_limited');
+  const since = (ms) => new Date(Date.now() - ms);
+  const col = db().collection('StudioOrders');
+  const day = await col.where('createdAt', '>=', since(86400000)).get(); // un seul champ : pas d'index composite à créer
+  const valid = day.docs.map((d) => d.data()).filter((o) => o.provider === 'feexpay_card' && o.status !== 'failed');
+  if (valid.length >= CARD_LIMITS.globalPerDay) throw fail(429, 'card_limit');
+  if (valid.filter((o) => o.uid === u.uid).length >= CARD_LIMITS.userPerDay) throw fail(429, 'card_limit');
+  const h = ipHash(ctx && ctx.ip);
+  if (valid.filter((o) => o.ipHash === h).length >= CARD_LIMITS.ipPerDay) throw fail(429, 'card_limit');
+  const month = await col.where('uid', '==', u.uid).get();
+  const from = since(30 * 86400000).getTime();
+  const spent = month.docs.map((d) => d.data()).filter((o) => o.provider === 'feexpay_card' && o.status === 'paid' && o.createdAt && o.createdAt.toMillis() >= from).reduce((a, o) => a + (o.price || 0), 0);
+  if (spent + pack.xof > CARD_LIMITS.userMonthXof) throw fail(429, 'card_limit');
+  return h;
+}
+
+async function payCard(u, b, ctx) {
   if (!CARD.enabled) throw fail(503, 'card_unavailable');
+  const terms = acceptance(b, ctx);
   const pack = PACKS.find((p) => p.id === b.packId);
   if (!pack) throw fail(400, 'bad_request');
+  const ipH = await cardGuard(u, pack, ctx);
   const first = clean(b.firstName, 40), last = clean(b.lastName, 40), city = clean(b.city, 60), zip = clean(b.zip, 12);
   const country = String(b.country || '').toUpperCase();
   let phone = String(b.phone || '').replace(/[^0-9]/g, '');
@@ -273,7 +302,7 @@ async function payCard(u, b) {
   const q = quote(pack.xof, CARD.payin, CARD.payout);
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
-  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
   const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, city, zip, country, description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   // Collecte par carte (API v2) : même famille que le mobile money, point d'entrée « init » ; exige le KYC carte validé (sinon CARD_PAYMENT_NOT_AUTHORIZED).
   const r = await feexRequest(`${FEEXPAY_API}/requesttopay/init`, 'POST', payload);
@@ -334,9 +363,27 @@ function publicConfig() {
     genCost: GEN_COST,
     packs: PACKS,
     currency: 'XOF',
-    card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout },
+    card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout, packs: CARD_LIMITS.packs },
+    termsVersion: TERMS_VERSION,
     operators: OPERATORS.map(({ code, label, country, dial, payin, payout, redirect, otp }) => ({ code, label, country, dial, payin, payout, redirect: !!redirect, otp: !!otp })),
   };
 }
 
-module.exports = { SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
+/** Dossier de preuves d'une commande (litige, rétrofacturation) : commande, acceptation des conditions, crédits, images générées. */
+async function evidence(orderId) {
+  const s = await db().collection('StudioOrders').doc(clean(orderId, 40)).get();
+  if (!s.exists) throw fail(404, 'no_order');
+  const o = s.data();
+  const out = { order: o, ledger: [], generations: [], user: null };
+  const iso = (v) => (v && v.toDate ? v.toDate().toISOString() : v);
+  for (const k of Object.keys(o)) o[k] = iso(o[k]);
+  const ls = await db().collection('StudioLedger').where('uid', '==', o.uid).get();
+  out.ledger = ls.docs.map((d) => ({ id: d.id, ...d.data() })).map((x) => ({ ...x, at: iso(x.at || x.createdAt) })).slice(0, 200);
+  const gs = await db().collection('StudioGenerations').where('uid', '==', o.uid).get();
+  out.generations = gs.docs.map((d) => { const x = d.data(); return { id: d.id, slug: x.slug, at: iso(x.createdAt), status: x.status, path: x.path, instruction: x.instruction }; }).slice(0, 200);
+  const us = await db().collection('StudioUsers').doc(o.uid).get();
+  if (us.exists) { const x = us.data(); out.user = { uid: o.uid, email: x.email, name: x.name, createdAt: iso(x.createdAt), credits: x.credits }; }
+  return out;
+}
+
+module.exports = { evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
