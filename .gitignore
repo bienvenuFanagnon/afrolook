@@ -49,3 +49,6 @@ docs/Afrolook_Pub_32s_horizontal.mp4
 tools/quiz/levels.json
 tools/quiz/levels_*.json
 slashatlas/static/img/c/.*.tmp
+
+# cache de déploiement Firebase Hosting
+slashatlas/.firebase/
