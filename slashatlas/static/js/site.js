@@ -96,10 +96,12 @@
       var say = function (t, err) { msg.textContent = t; msg.className = 'fmsg' + (err ? ' err' : ''); };
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say(f.dataset.invalid, true); return; }
       say(f.dataset.sending);
+      var sb = f.querySelector('button[type="submit"]'); if (sb) { sb.disabled = true; sb.classList.add('loading'); }
       var data = { email: email, kind: f.dataset.form, note: f.elements.note ? f.elements.note.value : '', lang: f.dataset.lang, website: f.elements.website ? f.elements.website.value : '', page: page };
       fetch('/api/subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) })
         .then(function (r) { if (!r.ok) throw new Error(r.status); say(f.dataset.ok); f.reset(); })
-        .catch(function () { say(f.dataset.err, true); });
+        .catch(function () { say(f.dataset.err, true); })
+        .then(function () { if (sb) { sb.disabled = false; sb.classList.remove('loading'); } });
     });
   });
 

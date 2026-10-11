@@ -32,14 +32,14 @@ window.slashAuth = {
 
 async function login() {
   note('');
-  document.querySelectorAll('[data-login]').forEach((b) => { b.disabled = true; });
+  document.querySelectorAll('[data-login]').forEach((b) => { b.disabled = true; b.classList.add('loading'); });
   try { await signInWithPopup(auth, new GoogleAuthProvider()); }
   catch (e) {
     const c = (e && e.code) || '';
     note(c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request' ? MSG.closed
       : c === 'auth/unauthorized-domain' ? MSG.domain
       : c === 'auth/operation-not-allowed' || c === 'auth/configuration-not-found' ? MSG.off : MSG.err);
-  } finally { document.querySelectorAll('[data-login]').forEach((b) => { b.disabled = false; }); }
+  } finally { document.querySelectorAll('[data-login]').forEach((b) => { b.disabled = false; b.classList.remove('loading'); }); }
 }
 document.addEventListener('click', (e) => {
   if (e.target.closest('[data-login]')) { e.preventDefault(); login(); }

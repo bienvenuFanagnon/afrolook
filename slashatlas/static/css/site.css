@@ -342,3 +342,12 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .sbar .okline{color:var(--ok);font-weight:600}
 .cnt{display:inline-block;font:600 11px var(--mono);letter-spacing:.02em;color:var(--ok);background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.28);border-radius:999px;padding:2px 8px;white-space:nowrap}.cnt[hidden]{display:none}.cnt.big{margin:10px 0 0;font-size:12px}.card .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.rb .cnt{align-self:flex-start;margin:2px 0}
 .stp{font:600 11px var(--mono);color:var(--blue,#4da3ff);background:rgba(77,163,255,.1);border:1px solid rgba(77,163,255,.3);border-radius:999px;padding:2px 8px}.cmd.step{margin-top:14px}.stepnote{margin:14px 0 0}
+@keyframes saspin{to{transform:rotate(360deg)}}
+.btn.loading{pointer-events:none;cursor:progress}.btn.loading::before{content:"";flex:none;width:1.05em;height:1.05em;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:saspin .7s linear infinite}
+.btn[disabled]{opacity:.75}
+.spin{display:inline-block;width:38px;height:38px;border:4px solid rgba(255,255,255,.18);border-top-color:#2997ff;border-radius:50%;animation:saspin .8s linear infinite}.sload{display:flex;justify-content:center;padding:56px 0}
+.smodal .terms{display:flex;flex-direction:row;font-weight:500;gap:.85rem;align-items:flex-start;padding:.95rem 1rem;border:2px solid #f5c542;border-radius:14px;background:rgba(245,197,66,.1);font-size:.85rem;line-height:1.45;color:var(--fg,#fff);margin:1rem 0;cursor:pointer;text-align:left}
+.smodal .terms input{flex:none;width:1.7rem;height:1.7rem;padding:0;margin:.05rem 0 0;accent-color:#f5c542;cursor:pointer}
+.smodal .terms .ttag{display:block;margin-bottom:.2rem;color:#f5c542;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
+.smodal .terms.err{border-color:#ff453a;background:rgba(255,69,58,.14);animation:sashake .4s}.smodal .terms.err .ttag{color:#ff6b61}
+@keyframes sashake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
