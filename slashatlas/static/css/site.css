@@ -394,3 +394,14 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .vplay2:after{content:'';position:absolute;left:25px;top:19px;border-style:solid;border-width:12px 0 12px 20px;border-color:transparent transparent transparent #fff}
 .card .vplay2,.rc .vplay2{width:48px;height:48px;margin:-24px 0 0 -24px}.card .vplay2:after,.rc .vplay2:after{left:19px;top:14px;border-width:10px 0 10px 16px}
 .vnote{margin:10px 2px 0;color:var(--mut);font-size:13px;line-height:1.4}
+
+/* Marque et contacts sur le visuel (Studio et page de commande) */
+.brandbox{border:1px solid var(--line2);border-radius:14px;background:rgba(255,255,255,.03);padding:0 14px;margin:10px 0}
+.brandbox summary{cursor:pointer;font-weight:700;font-size:14px;padding:13px 0;list-style:none;display:flex;align-items:center;gap:8px;min-height:44px}
+.brandbox summary::-webkit-details-marker{display:none}
+.brandbox summary::before{content:"+";display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--acc,#1e90ff);color:#fff;font-weight:800;line-height:1;transition:transform .15s}
+.brandbox[open] summary::before{content:"\2212"}
+.brandbox .hint{margin:0 0 10px}
+.brandbox .bgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));padding-bottom:14px}
+.brandbox .bgrid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--mut);min-width:0}
+.brandbox .bgrid input{background:#0d0e10;border:1px solid var(--line2);border-radius:12px;color:var(--txt);padding:12px 13px;font:inherit;font-size:14.5px;min-width:0}

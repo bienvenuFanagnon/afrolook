@@ -150,7 +150,24 @@ async function spendCredits(uid, n, ref) {
 }
 
 // ───────── génération ─────────
-function composePrompt(slug, lang, product, multi, nPhotos) {
+/** Marque et contacts à inscrire sur le visuel : trois champs fixes (marque, contact, autre), assainis ici ; les modèles viennent de commands.json, partagés avec le site. */
+const BRAND_MAX = { brand: 60, contact: 60, other: 80 };
+function cleanTexts(t) {
+  const o = [];
+  for (const role of ['brand', 'contact', 'other']) {
+    const v = String((t && t[role]) || '').replace(/[«»"“”\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, BRAND_MAX[role]);
+    if (v) o.push({ role, text: v });
+  }
+  return o;
+}
+function brandClause(kind, lang, texts) {
+  const B = COMMANDS.brand && COMMANDS.brand[lang];
+  if (!B || !texts.length || !B.kind[kind]) return '';
+  const names = texts.map((r) => `${B.names[r.role]} « ${r.text} »`).join(' ; ');
+  const lay = `${B.lay}${texts.map((r) => B.place[r.role]).join(' ; ')}. ${B.kind[kind]}`;
+  return `${B.intro.replace('{L}', names)} ${lay} ${B.outro}`;
+}
+function composePrompt(slug, lang, product, multi, nPhotos, texts = []) {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
   if (['video', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
@@ -159,7 +176,8 @@ function composePrompt(slug, lang, product, multi, nPhotos) {
   const intro = nPhotos > 1
     ? (L === 'fr' ? 'Les photos jointes montrent les éléments à réunir dans une même création. ' : 'The attached photos show the elements to bring together in a single creation. ')
     : '';
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}`.trim(), ratio: c.ratio };
+  const brand = brandClause(c.kind, L, texts);
+  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}`.trim(), ratio: c.ratio };
 }
 
 async function callGemini(parts, ratio) {
@@ -200,10 +218,11 @@ async function generate(u, b) {
     parts.push({ inlineData: { mimeType: mime, data } });
   }
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
-  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length);
+  const texts = cleanTexts(b.texts);
+  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts);
   parts.push({ text });
 
-  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length });
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length });
 }
 
 /** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */

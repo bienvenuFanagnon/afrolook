@@ -35,3 +35,7 @@ Onglets : Vue d'ensemble (audience) · Studio (KPI, commandes + bouton Preuves, 
 - `/api/me` et `/api/pay/status` renvoient `adFreeUntil`. La page « Générer ici » le copie dans `localStorage.sa_nopub` ; `site.js` ne charge alors aucune publicité. Sur un nouvel appareil : se connecter une fois sur « Générer ici » pour réactiver.
 - Publicité à la copie : bloc `rect` sous « Copié » (`data-adlate`), rempli seulement après un clic sur « Copier » ou une copie par sélection (clic droit / Ctrl+C) dans la commande.
 - Lien d'achat : `/generer/?pass=1` (page « Sans pub » `/pro/`).
+
+
+## Marque et contacts sur le visuel
+Sur la page d'une commande (photo : produit, plat, personne, lieu, logo) et dans le Studio, un bloc repliable « Ajouter ma marque ou mes contacts » propose 3 champs (nom de marque, téléphone ou contact, autre texte). Les modèles de phrase et de mise en page par type de sujet sont dans `BRAND` (`build.mjs`), partagés avec le site (commande copiée), le Studio (`try.js`) et le serveur (`commands.json` → `brandClause` dans `functions/studio.js`). Le serveur assainit les textes (guillemets, retours à la ligne, 60/60/80 caractères) et ne les compose que pour les types de sujet prévus ; les commandes vidéo, affiche à texte et libres sont inchangées.

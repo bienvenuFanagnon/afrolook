@@ -39,7 +39,7 @@
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', adFreeUntil: 0, checking: true };
+  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, adFreeUntil: 0, checking: true };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -58,6 +58,17 @@
     return '<div class="scmd"><img src="/img/c/' + (c.img ? slug : 'none') + '-t.webp" alt="" ' + (c.img ? '' : 'hidden') + '><div><small>' + T.cmd + '</small><b>' + esc(c.code) + '</b><span>' + esc(c.title) + '</span></div>' +
       '<select id="s-cmd" aria-label="' + T.change + '">' + Object.keys(data.commands).map(function (k) { return '<option value="' + k + '"' + (k === slug ? ' selected' : '') + '>' + esc(data.commands[k].code + ' · ' + data.commands[k].title) + '</option>'; }).join('') + '</select></div>';
   }
+  // Marque et contacts à inscrire sur le visuel (3 champs au plus) ; le serveur compose la mise en page.
+  function brandBox() {
+    var B = data.brand; if (!B) return '';
+    var filled = B.fields.some(function (f) { return state.brand[f[0]]; });
+    return '<details class="brandbox sf"' + (filled ? ' open' : '') + '><summary>' + B.title + '</summary><p class="hint">' + B.hint + '</p><div class="bgrid">' + B.fields.map(function (f) {
+      return '<label>' + f[1] + '<input type="text" data-brole="' + f[0] + '" maxlength="' + f[3] + '" placeholder="' + esc(f[2]) + '" value="' + esc(state.brand[f[0]]) + '" autocomplete="off"></label>';
+    }).join('') + '</div></details>';
+  }
+  function brandTexts() {
+    var o = {}; Object.keys(state.brand).forEach(function (k) { var v = window.saBrandClean(state.brand[k], k === 'other' ? 80 : 60); if (v) o[k] = v; }); return o;
+  }
   function render() {
     if (state.checking) { root.innerHTML = '<div class="sbox sload"><span class="spin" aria-label="…"></span></div>'; return; }
     if (!state.user) {
@@ -74,6 +85,7 @@
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
+      brandBox() +
       '<button class="btn pri big' + (state.busy ? ' loading' : '') + '" type="button" id="s-gen"' + (state.credits >= 1 && !canGen ? ' disabled' : '') + '>' + (state.busy ? T.working : (state.credits >= 1 && !state.photos.length ? T.needPhoto : genLabel)) + '</button>' +
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
       (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt="">' +
@@ -89,6 +101,7 @@
     var sel = $('#s-cmd'); if (sel) sel.addEventListener('change', function () { slug = sel.value; history.replaceState(null, '', '?c=' + slug); state.result = null; render(); });
     var f = $('#s-file'); if (f) f.addEventListener('change', function () { addFiles(f.files); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-rm]'), function (b) { b.addEventListener('click', function () { var p = state.photos.splice(+b.dataset.rm, 1)[0]; if (p) URL.revokeObjectURL(p.url); render(); }); });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-brole]'), function (i) { i.addEventListener('input', function () { state.brand[i.dataset.brole] = i.value; }); });
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
@@ -128,7 +141,7 @@
   function generate() {
     if (state.busy || !state.photos.length) return;
     state.busy = true; state.result = null; state.versions = []; render(); msg('');
-    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
+    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {

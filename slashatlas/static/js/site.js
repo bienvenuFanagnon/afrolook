@@ -138,15 +138,29 @@
     start();
   }
 
+
+  // ── Marque et contacts sur le visuel : 3 textes au plus, ajoutés à la commande avec une mise en page soignée ──
+  window.saBrand = function (B, items) {
+    var list = (items || []).filter(function (r) { return r && r.text; }).slice(0, 3);
+    if (!list.length) return '';
+    var names = list.map(function (r) { return B.names[r.role] + ' « ' + r.text + ' »'; }).join(' ; ');
+    var lay = B.lay + list.map(function (r) { return B.place[r.role]; }).join(' ; ') + '. ' + (B.kind[B.k] || '');
+    return B.intro.replace('{L}', names) + ' ' + lay + ' ' + B.outro;
+  };
+  window.saBrandClean = function (v, max) { return String(v || '').replace(/[«»"“”\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); };
+  
   // ── Adapter la commande au produit : texte libre + un ou plusieurs éléments ──
   $$('.adapt').forEach(function (box) {
     var pre = document.getElementById(box.dataset.for), input = $('input', box), mode = '1';
+    var bb = box.nextElementSibling && box.nextElementSibling.classList.contains('brandbox') ? box.nextElementSibling : null, B = bb ? JSON.parse(bb.dataset.brand) : null;
     function build() {
       var type = input.value.trim().replace(/[()]/g, '');
       var clause = (mode === 'n' ? box.dataset.cn : box.dataset.c1).replace('{T}', type ? ' (' + type + ')' : '');
-      if (pre) pre.textContent = box.dataset.code + ' : ' + box.dataset.base + ' ' + clause;
+      var extra = bb ? window.saBrand(B, $$('input', bb).map(function (i) { return { role: i.dataset.role, text: window.saBrandClean(i.value, +i.maxLength || 60) }; })) : '';
+      if (pre) pre.textContent = box.dataset.code + ' : ' + box.dataset.base + ' ' + clause + (extra ? ' ' + extra : '');
     }
     input.addEventListener('input', build);
+    if (bb) $$('input', bb).forEach(function (i) { i.addEventListener('input', build); });
     $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
   });
 })();

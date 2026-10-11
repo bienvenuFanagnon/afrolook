@@ -61,6 +61,28 @@ const CLAUSE = {
 };
 const canGen = (c) => c.kind !== 'video' && c.kind !== 'poster' && c.kind !== 'free' && !/[\[«]/.test(c.fr.prompt + c.en.prompt); // seuls les sujets avec photo sans texte à écrire passent par le Studio // les commandes vidéo se testent dans un générateur de vidéo, pas dans le Studio d'images
 const tryBtn = (c, l, cls) => (canGen(c) ? `<a class="btn pri ${cls}" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]}</a>` : '');
+// Marque et contacts à inscrire sur le visuel (3 champs au plus) : les mêmes modèles servent au site (commande copiée) et au serveur (Studio).
+const BRAND = {
+  fr: {
+    title: 'Ajouter ma marque ou mes contacts', hint: 'Facultatif, 3 textes au plus. Ils seront placés sur le visuel avec une mise en page soignée.',
+    fields: [['brand', 'Nom de marque', 'ex. Maison Awa', 60], ['contact', 'Téléphone ou contact', 'ex. +225 07 00 00 00 00', 60], ['other', 'Autre texte', 'ex. adresse, slogan ou prix', 80]],
+    intro: 'Par exception à toute consigne qui interdit ou limite le texte, écris sur le visuel uniquement ces textes : {L}. Recopie chaque texte exactement, caractère par caractère (chiffres du numéro compris), sans faute, dans une typographie nette et très lisible, avec un fort contraste avec le fond.',
+    names: { brand: 'nom de marque', contact: 'contact', other: 'texte' },
+    place: { brand: 'le nom de marque en logotype élégant, bien visible, en haut ou en bas', contact: 'le contact en plus petit mais lisible, sur une seule ligne ou dans un discret bandeau, en bas', other: 'l’autre texte en accroche ou en sous-titre, plus petit que le nom de marque' },
+    lay: 'Mise en page soignée : ', outro: 'Garde des marges de sécurité, ne cache ni le sujet ni le visage, n’ajoute aucun autre mot, et accorde les couleurs des lettres à la palette du visuel.',
+    kind: { product: 'Dans l’esprit d’une publicité de marque.', person: 'Dans l’esprit d’une affiche de mode ou d’une couverture de magazine, sans masquer le visage ni la tenue.', dish: 'Dans l’esprit d’une publicité de restaurant.', place: 'Dans l’esprit d’une annonce immobilière, avec les coordonnées dans un bandeau en bas.', logo: 'Autour du logo, sans jamais le modifier.' },
+  },
+  en: {
+    title: 'Add my brand or contact details', hint: 'Optional, up to 3 texts. They will be placed on the visual with a clean layout.',
+    fields: [['brand', 'Brand name', 'e.g. Maison Awa', 60], ['contact', 'Phone or contact', 'e.g. +225 07 00 00 00 00', 60], ['other', 'Other text', 'e.g. address, slogan or price', 80]],
+    intro: 'As an exception to any instruction that forbids or limits text, write only these texts on the visual: {L}. Copy each text exactly, character by character (phone digits included), without errors, in a sharp, very legible typeface with strong contrast against the background.',
+    names: { brand: 'brand name', contact: 'contact', other: 'text' },
+    place: { brand: 'the brand name as an elegant, clearly visible wordmark, at the top or bottom', contact: 'the contact smaller but legible, on a single line or in a discreet band, at the bottom', other: 'the other text as a tagline or subtitle, smaller than the brand name' },
+    lay: 'Careful layout: ', outro: 'Keep safe margins, do not hide the subject or the face, add no other word, and match the letter colors to the visual’s palette.',
+    kind: { product: 'In the spirit of a brand advertisement.', person: 'In the spirit of a fashion poster or magazine cover, without hiding the face or the outfit.', dish: 'In the spirit of a restaurant advertisement.', place: 'In the spirit of a real-estate listing, with the contact details in a band at the bottom.', logo: 'Around the logo, never altering it.' },
+  },
+};
+const BRAND_KINDS = ['product', 'person', 'dish', 'place', 'logo'];
 const KIND_LABEL = {
   fr: { product: ['Votre produit', 'ex. crème visage, 3 bouteilles de jus'], dish: ['Votre plat', 'ex. poulet braisé, 2 pizzas et une boisson'], person: ['Sur la photo', 'ex. un coach sportif, un groupe de 3 amies'], place: ['Votre bien', 'ex. appartement 3 pièces, villa avec piscine'], video: ['Votre produit', 'ex. flacon de parfum, baskets, boîte de thé'], poster: ['Votre sujet', 'ex. baskets rouges, une coach sportive'], logo: ['Votre logo', 'ex. logo d’un café, emblème d’un club'], free: ['Votre sujet', 'ex. un salon de coiffure, une appli de livraison'] },
   en: { product: ['Your product', 'e.g. face cream, 3 juice bottles'], dish: ['Your dish', 'e.g. grilled chicken, 2 pizzas and a drink'], person: ['In the photo', 'e.g. a fitness coach, a group of 3 friends'], place: ['Your property', 'e.g. 3-room flat, villa with a pool'], video: ['Your product', 'e.g. perfume bottle, sneakers, tea box'], poster: ['Your subject', 'e.g. red sneakers, a fitness coach'], logo: ['Your logo', 'e.g. a café logo, a club emblem'], free: ['Your subject', 'e.g. a hair salon, a delivery app'] },
@@ -214,12 +236,13 @@ function cmdPage(l, c) {
   const tools = c.kind === 'video' ? [['Gemini (Veo)', 'https://gemini.google.com/'], ['Runway', 'https://runwayml.com/'], ['Kling', 'https://klingai.com/'], ['Pika', 'https://pika.art/']] : [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Midjourney', 'https://www.midjourney.com/']];
   const fullText = fullPrompt(c, l);
   const KL = KIND_LABEL[l][c.kind || 'product'];
+  const brandBox = BRAND_KINDS.includes(c.kind || 'product') && canGen(c) ? `<details class="brandbox" data-brand="${esc(JSON.stringify({ k: c.kind || 'product', ...BRAND[l] }))}"><summary>${BRAND[l].title}</summary><p class="hint">${BRAND[l].hint}</p><div class="bgrid">${BRAND[l].fields.map((f) => `<label>${f[1]}<input type="text" data-role="${f[0]}" maxlength="${f[3]}" placeholder="${esc(f[2])}" autocomplete="off"></label>`).join('')}</div></details>` : '';
   const adapt = `<div class="adapt" data-for="p-${c.slug}" data-code="${esc(c.code)}" data-base="${esc(ct.prompt)}" data-c1="${esc(CLAUSE[l][c.kind || 'product'][0])}" data-cn="${esc(CLAUSE[l][c.kind || 'product'][1])}"><label>${KL[0]}<input type="text" maxlength="60" placeholder="${esc(KL[1])}" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="true">${MULTI[l][0]}</button><button type="button" data-n="n" aria-pressed="false">${MULTI[l][1]}</button></div></div>`;
 const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] };
   const fsteps = FS[l].map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x}</b></li>`).join('');
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 <div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]} · ${c.ratio}</div><h1>${esc(ct.title)}</h1></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
-<div class="fbody">${adapt}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
+<div class="fbody">${adapt}${brandBox}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
 ${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b><div class="grid">${rel.map((x) => card(x, l)).join('')}</div>${ad('rect', l, true)}</div></div></div>
@@ -317,7 +340,7 @@ const TRY = {
 };
 function tryPage(l) {
   const t = TRY[l], p = P[l];
-  const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage }])) };
+  const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage }])), brand: BRAND[l] };
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1>
 <div id="studio" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div></div>`;
   emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
@@ -333,6 +356,7 @@ fs.writeFileSync(path.join(root, 'functions', 'commands.json'), JSON.stringify({
   commands: Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, ratio: c.ratio, kind: c.kind || 'product', fr: c.fr.prompt, en: c.en.prompt, titleFr: c.fr.title, titleEn: c.en.title, cat: c.cat, can: canGen(c) ? 1 : 0, img: c.noImage ? 0 : 1, x: c.x, y: c.y, r: c.r, posterFr: c.fr.poster, posterEn: c.en.poster, full: { fr: fullPrompt(c, 'fr'), en: fullPrompt(c, 'en') } }])),
   cats: Object.fromEntries(CATEGORIES.map((k) => [k.id, { fr: k.fr, en: k.en }])),
   clauses: CLAUSE,
+  brand: BRAND,
   termsVersion: TERMS_VERSION,
 }));
 fs.rmSync(dist, { recursive: true, force: true });
