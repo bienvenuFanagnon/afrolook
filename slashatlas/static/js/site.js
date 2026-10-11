@@ -180,8 +180,14 @@
     var f = e.target.closest('.vfacade'); if (!f) return;
     var id = f.dataset.yt; if (!/^[\w-]{6,20}$/.test(id)) return;
     var i = document.createElement('iframe');
-    i.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    i.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
     i.title = f.dataset.title || 'Video'; i.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; i.allowFullscreen = true; i.setAttribute('loading', 'lazy');
+    // Le clic autorise le son ; on baisse le volume à 50 % dès que le lecteur répond (API YouTube par messages).
+    i.addEventListener('load', function () {
+      var send = function (func, args) { try { i.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), '*'); } catch (e) {} };
+      try { i.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (e) {}
+      [400, 1200, 2500].forEach(function (ms) { setTimeout(function () { send('setVolume', [50]); }, ms); });
+    });
     f.replaceWith(i);
     if (window.saTrack) window.saTrack('video', { n: id });
   });
