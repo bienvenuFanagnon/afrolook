@@ -6,6 +6,7 @@ const { FieldValue } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 const studio = require('./studio');
 const video = require('./video');
+const { chromaKey } = require('./cutout');
 
 const { fail, clean, db, day, spendCredits, addCredits, bump } = studio;
 const STYLES = Object.keys(video.STYLES);
@@ -62,7 +63,10 @@ async function render(u, b) {
   const gender = b.voice && b.voice.gender === 'm' ? 'm' : 'f';
   const voice = withVoice ? { gender, segments: cleanVoice(b.voice && b.voice.segments, texts, lang) } : null;
   const qrUrl = normUrl(b.qr);
-  const cost = studio.VIDEO_COST.base + (withVoice ? studio.VIDEO_COST.voice : 0);
+  const music = ['none', 'ambient', 'beat'].includes(b.music) ? b.music : undefined; // sans choix : celle du style
+  const sfx = b.sfx !== false;
+  const cutoutMode = ['auto', 'ai', 'off'].includes(b.cutout) ? b.cutout : 'auto';
+  const cost = studio.VIDEO_COST.base + (withVoice ? studio.VIDEO_COST.voice : 0) + (cutoutMode === 'ai' ? studio.VIDEO_COST.cutout * photos.length : 0);
   const id = crypto.randomBytes(10).toString('hex');
   await spendCredits(u.uid, cost, 'v' + id);
   const d = day(); const cUser = db().collection('StudioCounters').doc(`v_${d}_${u.uid}`); const cAll = db().collection('StudioCounters').doc(`v_${d}_all`);
@@ -77,22 +81,40 @@ async function render(u, b) {
   } catch (e) { await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: e.code || 'limit' }); throw e; }
   const vref = db().collection('StudioVideos').doc(id);
   await vref.set({ uid: u.uid, style, ratio, lang, cost, voice: withVoice, qr: !!qrUrl, photos: photos.length, brand: texts.brand, hook: texts.hook, status: 'pending', createdAt: FieldValue.serverTimestamp() });
-  let out = null;
+  let out = null; let paid = cost;
   try {
-    out = await video.render({ style, ratio, lang, photos, texts, qrUrl, voice });
+    // détourage IA : le produit est isolé sur fond vert par l'IA, puis le vert est retiré ; en cas d'échec sur une photo, détourage local et crédit rendu
+    let sprites = null;
+    if (cutoutMode === 'ai') {
+      sprites = await Promise.all(photos.map((buf, i) => aiCutout(buf, photosIn[i].mime, lang)));
+      const failed = sprites.filter((x) => !x).length;
+      if (failed) { await addCredits(u.uid, failed * studio.VIDEO_COST.cutout, 'refund', 'vc' + id, { reason: 'cutout_failed' }); paid -= failed * studio.VIDEO_COST.cutout; }
+      await bump({ videoCutoutAi: sprites.length - failed, videoCutoutAiFail: failed });
+    }
+    out = await video.render({ style, ratio, lang, photos, sprites, cutout: cutoutMode === 'off' ? 'off' : 'auto', music, sfx, texts, qrUrl, voice });
     const path = `videos/${u.uid}/${id}.mp4`;
     await getStorage().bucket().file(path).save(fs.readFileSync(out.file), { contentType: 'video/mp4', resumable: false });
-    await vref.update({ status: 'done', path, seconds: Math.round(out.seconds * 10) / 10, ttsChars: out.ttsChars, doneAt: FieldValue.serverTimestamp() });
+    await vref.update({ status: 'done', path, cost: paid, cutout: cutoutMode, music: music || 'default', sfx, cutouts: out.cutouts, seconds: Math.round(out.seconds * 10) / 10, ttsChars: out.ttsChars, doneAt: FieldValue.serverTimestamp() });
     await bump({ videos: 1, videoSecs: Math.round(out.seconds), videoTts: out.ttsChars, [`videoStyle_${style}`]: 1 });
     const left = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
-    return { id, seconds: out.seconds, cost, credits: left };
+    return { id, seconds: out.seconds, cost: paid, credits: left };
   } catch (e) {
     console.error('video render', e && e.stack || e);
-    await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
+    await addCredits(u.uid, paid, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
     await vref.update({ status: 'failed', error: (e && e.code) || 'error' });
     await bump({ videofails: 1 });
     throw e && e.status ? e : fail(500, e && e.code === 'too_long' ? 'too_long' : e && e.code === 'tts' ? 'voice_error' : 'render_failed');
   } finally { if (out) { try { fs.rmSync(out.dir, { recursive: true, force: true }); } catch (e) { /* temporaire */ } } }
+}
+
+/** Produit isolé par l'IA sur fond vert, puis détouré. Retourne un PNG transparent, ou null si ça n'a pas marché (la vidéo se rabat sur le détourage local). */
+async function aiCutout(buf, mime, lang) {
+  try {
+    const text = 'Isolate the product(s) shown in the attached photo on a perfectly flat, uniform chroma-key green background (pure #00FF00). The product must stay strictly identical: same shape, colors, logo, label, proportions and every detail, fully visible, centered, with a small margin around it. No shadow, no reflection, no gradient, no floor, no hand, no other object, no added text. If the photo shows several products, keep them all.';
+    const img = await studio.callGemini([{ inlineData: { mimeType: mime || 'image/jpeg', data: buf.toString('base64') } }, { text }], '1:1');
+    const r = await chromaKey(Buffer.from(img.data, 'base64'));
+    return r.ok && r.sprite ? r.sprite.canvas.toBuffer('image/png') : null;
+  } catch (e) { console.error('aiCutout', e && (e.code || e.message)); return null; }
 }
 
 /** Fichier MP4 d'une vidéo du client (jamais celle d'un autre compte). */

@@ -343,7 +343,7 @@ exports.slashatlasApi = onRequest(
 
 // Rendu des vidéos publicitaires : fonction à part (2 Go, 2 processeurs, 5 minutes), appelée directement par le navigateur (le délai de 60 s de Hosting serait trop court).
 exports.slashatlasVideo = onRequest(
-  { region: 'europe-west1', invoker: 'public', memory: '2GiB', cpu: 2, concurrency: 1, maxInstances: 6, timeoutSeconds: 300 },
+  { region: 'europe-west1', invoker: 'public', memory: '2GiB', cpu: 2, concurrency: 1, maxInstances: 6, timeoutSeconds: 300, secrets: [studio.GEMINI_API_KEY] },
   async (req, res) => {
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');

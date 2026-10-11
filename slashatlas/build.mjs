@@ -196,12 +196,50 @@ function railCard(c, l) {
   return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${H.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 // Vidéo YouTube : image locale + lecteur chargé seulement au clic (youtube-nocookie.com) : aucune requête vers Google avant que le visiteur lise la vidéo.
-const VIDEO_T = { fr: { h: 'Voyez-le en 30 secondes', play: 'Lire la vidéo', alt: 'Vidéo : copier une commande gratuite, obtenir une affiche pro' }, en: { h: 'See it in 30 seconds', play: 'Play the video', alt: 'Video: copy a free command, get a pro poster' } };
+const VIDEO_T = { fr: { h: 'Voyez le site en 40 secondes', play: 'Lire la vidéo', alt: 'Vidéo : des visuels pro et des vidéos publicitaires à partir de votre photo' }, en: { h: 'See the site in 40 seconds', play: 'Play the video', alt: 'Video: pro visuals and video ads made from your photo' } };
 function videoBlock(l) {
-  const id = cfg.video && cfg.video[l]; if (!id) return '';
+  if (!(cfg.video && cfg.video[l])) return '';
   const v = VIDEO_T[l];
-  // Vidéo hébergée sur le site (1,4 Mo, lecture immédiate) : préchargée en arrière-plan après le chargement de la page, démarrée par le clic.
-  return `<div class="sec"><h2>${v.h}</h2></div><div class="vid" data-vid><video playsinline preload="none" poster="/img/video-${l}.webp" aria-label="${esc(v.alt)}" data-yt="${id}"><source src="/video/slashatlas-${l}.mp4" type="video/mp4"></video><button class="vfacade" type="button" aria-label="${esc(v.play)}"><span class="vplay" aria-hidden="true"></span></button></div><p class="vyt"><a href="https://youtu.be/${id}" target="_blank" rel="noopener">${l === 'fr' ? 'Voir aussi sur YouTube' : 'Also on YouTube'} ↗</a></p>`;
+  // Vidéo de présentation hébergée sur le site (4 Mo) : préchargée en arrière-plan après le chargement de la page, démarrée par le clic.
+  return `<div class="sec"><h2>${v.h}</h2></div><div class="vid" data-vid><video playsinline preload="none" poster="/img/video/presentation-${l}.webp" aria-label="${esc(v.alt)}" data-yt="presentation"><source src="/video/tuto/presentation-${l}-16x9.mp4" type="video/mp4"></video><button class="vfacade" type="button" aria-label="${esc(v.play)}"><span class="vplay" aria-hidden="true"></span></button></div>`;
+}
+
+const SHOW = {
+  fr: {
+    h: 'Deux studios, un seul site', imgT: 'Visuels : affiches et photos pro', imgP: 'Copiez une commande gratuite ou générez directement sur le site : votre photo devient une affiche prête à publier.', before: 'Votre photo', after: 'Le résultat',
+    vidT: 'Vidéos pub : motion design', vidP: 'Votre photo, vos textes, de la musique, des effets sonores et une voix off au choix : le produit est détouré et mis en scène.', s1: 'Votre photo', s2: 'Produit détouré', s3: 'Votre vidéo',
+    cmds: 'Voir les commandes', gen: 'Générer ici', mk: 'Créer une vidéo', exH: 'Des vidéos créées avec le studio', exP: 'Touchez pour lancer, avec le son. Chaque exemple montre la photo de départ.', orig: 'Photo d’origine', styles: { beaute: 'Beauté', mode: 'Mode', promo: 'Promo flash' }, tutoV: 'Voir toutes les vidéos',
+  },
+  en: {
+    h: 'Two studios, one site', imgT: 'Visuals: posters and pro photos', imgP: 'Copy a free command or generate right on the site: your photo becomes a ready-to-post poster.', before: 'Your photo', after: 'The result',
+    vidT: 'Video ads: motion design', vidP: 'Your photo, your texts, music, sound effects and an optional voice-over: the product is cut out and staged.', s1: 'Your photo', s2: 'Cut-out product', s3: 'Your video',
+    cmds: 'See the commands', gen: 'Generate here', mk: 'Create a video', exH: 'Videos made with the studio', exP: 'Tap to play, with sound. Each example shows the starting photo.', orig: 'Original photo', styles: { beaute: 'Beauty', mode: 'Fashion', promo: 'Flash sale' }, tutoV: 'See all the videos',
+  },
+};
+function examplesRail(l, id = 'rail-ex') {
+  const S = SHOW[l]; if (!(cfg.video && cfg.video.renderUrl)) return '';
+  const cards = ['beaute', 'mode', 'promo'].map((k) => `<figure class="vexc" role="listitem"><div class="vexv"><video controls playsinline preload="none" poster="/img/video/ex-${k}.webp" src="/video/exemples/ex-${k}-${l}.mp4" aria-label="${esc(S.styles[k])}"></video><span class="vorig"><img src="/img/video/before-${k}.webp" alt="" loading="lazy" width="72" height="72"><small>${S.orig}</small></span></div><figcaption>${S.styles[k]}</figcaption></figure>`).join('');
+  return `<div class="sec tight"><h2>${S.exH}</h2><span class="swipe">${S.exP}</span></div><div class="rail railx" id="${id}" role="list" tabindex="0">${cards}</div>`;
+}
+function showcase(l) {
+  const S = SHOW[l], p = P[l]; const vid = cfg.video && cfg.video.renderUrl;
+  const img = `<article class="duo-c"><h3>${S.imgT}</h3><p>${S.imgP}</p><div class="ba"><figure><img src="/img/c/fashionposter-avant.webp" alt="${esc(S.before)}" loading="lazy"><figcaption>${S.before}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure><img src="/img/c/fashionposter-apres.webp" alt="${esc(S.after)}" loading="lazy"><figcaption class="hot">${S.after}</figcaption></figure></div><div class="acts"><a class="btn pri" href="${p.cmds}">${S.cmds}</a><a class="btn gl" href="${p.try}">${S.gen}</a></div></article>`;
+  const mov = vid ? `<article class="duo-c"><h3>${S.vidT}</h3><p>${S.vidP}</p><div class="ba ba3"><figure><img src="/img/video/before-beaute.webp" alt="${esc(S.s1)}" loading="lazy"><figcaption>${S.s1}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="cut"><img src="/img/video/cut-beaute.webp" alt="${esc(S.s2)}" loading="lazy"><figcaption>${S.s2}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="pv"><img src="/img/video/ex-beaute.webp" alt="${esc(S.s3)}" loading="lazy"><i class="vplay2" aria-hidden="true"></i><figcaption class="hot">${S.s3}</figcaption></figure></div><div class="acts"><a class="btn pri" href="${p.try}?mode=video">${S.mk}</a><a class="btn gl" href="${p.tuto}#videos">${S.tutoV}</a></div></article>` : '';
+  return `<div class="sec"><h2>${S.h}</h2></div><div class="duo">${img}${mov}</div>`;
+}
+const TV = {
+  fr: { h: 'Toutes nos vidéos', lead: 'Pour comprendre en quelques minutes tout ce que le site propose : commandes gratuites, Studio « Générer ici », vidéos pub et QR code.',
+    items: [['presentation', 'SlashAtlas en 40 secondes', 'Les deux studios : des visuels pro et des vidéos pub à partir de votre photo.'], ['avant-apres', 'Avant / après : copier une commande', 'Pourquoi une commande toute prête donne de meilleurs résultats qu’un prompt écrit à la main.'], ['qr', 'Un QR code sur votre affiche', 'Le client scanne, arrive sur votre site ou votre WhatsApp et commande.']],
+    exT: 'Exemples de vidéos pub', exP: 'Créées dans le Studio, avec la photo de départ.' },
+  en: { h: 'All our videos', lead: 'Understand everything the site offers in a few minutes: free commands, the “Generate here” Studio, video ads and QR codes.',
+    items: [['presentation', 'SlashAtlas in 40 seconds', 'The two studios: pro visuals and video ads made from your photo.'], ['avant-apres', 'Before / after: copy a command', 'Why a ready-made command beats a hand-written prompt.'], ['qr', 'A QR code on your poster', 'The customer scans, lands on your site or WhatsApp, and orders.']],
+    exT: 'Video ad examples', exP: 'Made in the Studio, with the starting photo.' },
+};
+function tutoVideos(l) {
+  const t = TV[l]; const files = { presentation: `presentation-${l}-16x9`, 'avant-apres': `avant-apres-${l}-16x9`, qr: `qr-${l}-16x9` };
+  const poster = (k) => (k === 'presentation' ? `/img/video/presentation-${l}.webp` : `/img/video/tuto-${files[k]}.webp`);
+  const cards = t.items.map(([k, ti, d]) => `<figure class="tv"><video controls playsinline preload="none" poster="${poster(k)}" src="/video/tuto/${files[k]}.mp4" aria-label="${esc(ti)}"></video><figcaption><b>${esc(ti)}</b><span>${esc(d)}</span></figcaption></figure>`).join('');
+  return `<div class="sec" id="videos"><h2>${t.h}</h2></div><p class="lead sm">${t.lead}</p><div class="tvs">${cards}</div>${examplesRail(l, 'rail-ex2')}`;
 }
 
 const STUDIO = {
@@ -228,12 +266,6 @@ function studioStrip(l) {
   const S = STUDIO[l], p = P[l];
   return `<div class="studio-strip"><div><b>${S.stripH}</b><p>${S.stripP}</p></div><div class="ss-links"><a class="btn pri" href="${p.studio}">${S.stripBtn}</a>${cfg.video && cfg.video.renderUrl ? `<a class="btn gl" href="${p.try}?mode=video">${S.vidBtn}</a>` : ''}<a class="btn gl" href="${p.cat('motion')}">${catOf('motion')[l]}</a><a class="btn gl" href="${p.cat('kit')}">${catOf('kit')[l]}</a></div></div>`;
 }
-function videoSection(l) {
-  const S = STUDIO[l], p = P[l];
-  if (!(cfg.video && cfg.video.renderUrl)) return '';
-  const cards = ['beaute', 'mode', 'promo'].map((k) => `<figure class="vex"><video controls playsinline preload="none" poster="/img/video/ex-${k}.webp" src="/video/exemples/ex-${k}-${l}.mp4" aria-label="${esc(S.exStyle[k])}"></video><figcaption>${S.exStyle[k]}</figcaption></figure>`).join('');
-  return `<div class="sec"><h2>${S.exH}</h2></div><p class="lead sm">${S.exP}</p><div class="vexs">${cards}</div><div class="cta"><a class="btn pri big" href="${p.try}?mode=video">${S.vidBtn}</a></div><p class="hint">${S.vidH} : ${S.vidP}</p>`;
-}
 function studioPage(l) {
   const S = STUDIO[l], p = P[l];
   const nCmd = COMMANDS.length;
@@ -244,7 +276,7 @@ function studioPage(l) {
   const body = `<div class="wrap"><div class="eyebrow">${S.k}</div><h1 class="big sm">${S.h}</h1><p class="lead">${S.lead}</p>
 <div class="cta"><a class="btn pri big" href="${p.cmds}">${S.cta}</a><a class="btn gl big" href="${p.try}">${S.cta2}</a></div>
 <div class="sec"><h2>${S.flowH}</h2></div><ol class="steps3 studio-flow">${flow}</ol>
-${videoSection(l)}<div class="sec"><h2>${S.famH}</h2></div><div class="plans studio-fam">${fam.replace(/Plus de 600/, 'Plus de ' + Math.floor(nCmd / 50) * 50).replace(/Over 600/, 'Over ' + Math.floor(nCmd / 50) * 50)}</div>
+${showcase(l)}${examplesRail(l)}<div class="cta"><a class="btn pri big" href="${p.try}?mode=video">${SHOW[l].mk}</a></div><div class="sec"><h2>${S.famH}</h2></div><div class="plans studio-fam">${fam.replace(/Plus de 600/, 'Plus de ' + Math.floor(nCmd / 50) * 50).replace(/Over 600/, 'Over ' + Math.floor(nCmd / 50) * 50)}</div>
 <div class="sec"><h2>${S.sCats}</h2></div><div class="grid">${cards.map((c) => card(c, l)).join('')}</div>
 <div class="sec"><h2>${S.honestH}</h2></div><ul class="prose">${S.honest.map((x) => `<li>${x}</li>`).join('')}</ul>${band(l)}</div>`;
   emit(l, 'studio', p.studio, { title: S.title, desc: S.desc, body, alt: alt2(P.fr.studio, P.en.studio) });
@@ -259,7 +291,7 @@ function home(l) {
   const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
   const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span>${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
 <ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
-<div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
+${showcase(l)}</div>${examplesRail(l)}<div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>
 <div class="rail" id="rail-sel" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-new" role="list" hidden>${newest.map((c) => railCard(c, l)).join('')}</div>
@@ -312,7 +344,7 @@ ${same.length ? `<div class="sec"><h2>${t.similar}</h2></div><div class="grid">$
 }
 function tutoPage(l) {
   const t = T[l].tuto, p = P[l];
-  const body = `<div class="wrap">${tuto(l, true)}${videoBlock(l)}${ad('lb', l)}<div class="sec"><h2>${t.faqH}</h2></div><div class="faq">${t.faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</div><div class="cta"><a class="btn pri" href="${p.cmds}">${T[l].home.cta1}</a></div>${band(l)}</div>`;
+  const body = `<div class="wrap">${tuto(l, true)}${tutoVideos(l)}${ad('lb', l)}<div class="sec"><h2>${t.faqH}</h2></div><div class="faq">${t.faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</div><div class="cta"><a class="btn pri" href="${p.cmds}">${T[l].home.cta1}</a></div>${band(l)}</div>`;
   const ld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: t.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
   emit(l, 'tuto', p.tuto, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.tuto, P.en.tuto), ld });
   if (l === 'fr') pages.push({ fr: P.fr.tuto, en: P.en.tuto });

@@ -13,6 +13,8 @@
       texts: 'Vos textes', brand: ['Nom de votre marque', 'ex. Maison Awa'], hook: ['Accroche (obligatoire)', 'ex. Une peau qui rayonne'], l1: ['Atout 1', 'ex. Hydratation 24 h'], l2: ['Atout 2', 'ex. Sans parfum ni alcool'], l3: ['Atout 3', 'facultatif'],
       price: ['Prix', 'ex. 12 500 FCFA'], oldPrice: ['Ancien prix', 'facultatif'], offer: ['Pastille', 'ex. -25 %'], cta: ['Appel à l’action', 'ex. Commander sur WhatsApp'], contact: ['Contact', 'ex. +225 07 00 00 00 00'],
       qr: 'QR code à la fin (facultatif)', qrPh: 'Lien de votre site ou numéro WhatsApp', qrHint: 'Vos clients scannent et arrivent chez vous. Le code n’ouvre que votre lien.',
+      music: 'Musique', musics: { none: ['Sans musique', 'Seulement les effets sonores'], ambient: ['Ambiance douce', 'Nappes calmes, sans batterie'], beat: ['Rythmée', 'Beat dynamique, selon le style'] }, sfx: 'Effets sonores calés sur les mouvements (souffle, impact, pop, caisse…)',
+      cutout: 'Mise en valeur du produit', cutouts: { ai: ['Détourage IA', 'Le produit est isolé et mis en scène, même si la photo est prise chez vous'], auto: ['Automatique', 'Gratuit : marche si le fond de la photo est simple'] }, cutHint: 'Le produit reste identique à la photo. Si le détourage IA échoue sur une photo, le crédit est rendu.', plus: '+',
       voice: 'Voix off', voiceOff: 'Sans voix', voiceF: 'Voix de femme', voiceM: 'Voix d’homme', voiceText: 'Texte lu par la voix (modifiable)', voiceHint: 'Écrit pour vous à partir de vos textes. Vous pouvez le changer.', seg: { hook: 'Accroche', product: 'Présentation', benefits: 'Atouts', offer: 'Prix ou offre', cta: 'Appel à l’action' },
       create: 'Créer la vidéo', credit: 'crédit', credits: 'crédits', needPhoto: 'Ajoutez au moins une photo', needHook: 'Écrivez une accroche', working: 'Création de la vidéo…', workHint: 'Cela prend 30 à 60 secondes. Ne fermez pas la page.',
       steps: ['Montage des images…', 'Ajout de la musique…', 'Enregistrement de la voix…', 'Finalisation de la vidéo…'],
@@ -29,6 +31,8 @@
       texts: 'Your texts', brand: ['Your brand name', 'e.g. Maison Awa'], hook: ['Hook (required)', 'e.g. Skin that glows'], l1: ['Benefit 1', 'e.g. 24-hour hydration'], l2: ['Benefit 2', 'e.g. No perfume, no alcohol'], l3: ['Benefit 3', 'optional'],
       price: ['Price', 'e.g. 12,500 FCFA'], oldPrice: ['Old price', 'optional'], offer: ['Badge', 'e.g. -25%'], cta: ['Call to action', 'e.g. Order on WhatsApp'], contact: ['Contact', 'e.g. +225 07 00 00 00 00'],
       qr: 'QR code at the end (optional)', qrPh: 'Your website link or WhatsApp number', qrHint: 'Customers scan and land on your page. The code only opens your link.',
+      music: 'Music', musics: { none: ['No music', 'Sound effects only'], ambient: ['Soft ambient', 'Calm pads, no drums'], beat: ['Upbeat', 'Dynamic beat, depends on the style'] }, sfx: 'Sound effects synced with the movements (whoosh, impact, pop, cash register…)',
+      cutout: 'Product showcase', cutouts: { ai: ['AI cut-out', 'The product is isolated and staged, even if the photo was taken at home'], auto: ['Automatic', 'Free: works if the photo background is simple'] }, cutHint: 'The product stays identical to the photo. If the AI cut-out fails on a photo, the credit is returned.', plus: '+',
       voice: 'Voice-over', voiceOff: 'No voice', voiceF: 'Female voice', voiceM: 'Male voice', voiceText: 'Text read by the voice (editable)', voiceHint: 'Written for you from your texts. You can change it.', seg: { hook: 'Hook', product: 'Introduction', benefits: 'Benefits', offer: 'Price or offer', cta: 'Call to action' },
       create: 'Create the video', credit: 'credit', credits: 'credits', needPhoto: 'Add at least one photo', needHook: 'Write a hook', working: 'Creating the video…', workHint: 'This takes 30 to 60 seconds. Do not close the page.',
       steps: ['Assembling the images…', 'Adding the music…', 'Recording the voice…', 'Finalizing the video…'],
@@ -38,7 +42,7 @@
     },
   }[L];
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var st = { style: 'beaute', ratio: '9:16', photos: [], f: { brand: '', hook: '', l1: '', l2: '', l3: '', price: '', oldPrice: '', offer: '', cta: '', contact: '' }, qr: '', voice: false, gender: 'f', vt: {}, about: '', busy: false, ai: false, result: null, list: null, listLoaded: false, step: 0 };
+  var st = { style: 'beaute', ratio: '9:16', photos: [], f: { brand: '', hook: '', l1: '', l2: '', l3: '', price: '', oldPrice: '', offer: '', cta: '', contact: '' }, qr: '', voice: false, gender: 'f', music: '', sfx: true, cutout: 'ai', vt: {}, about: '', busy: false, ai: false, result: null, list: null, listLoaded: false, step: 0 };
   var api = null, el = null, stepTimer = null;
 
   function lines() { return [st.f.l1, st.f.l2, st.f.l3].map(function (x) { return x.trim(); }).filter(Boolean); }
@@ -53,7 +57,8 @@
     };
   }
   function voiceSegs() { var a = autoVoice(), o = {}; Object.keys(a).forEach(function (k) { o[k] = st.vt[k] != null ? st.vt[k] : a[k]; }); return o; }
-  function cost() { var v = (api.cfg && api.cfg.video) || { base: 3, voice: 1 }; return v.base + (st.voice ? v.voice : 0); }
+  function cost() { var v = (api.cfg && api.cfg.video) || { base: 3, voice: 1, cutout: 1 }; return v.base + (st.voice ? v.voice : 0) + (st.cutout === 'ai' ? (v.cutout || 1) * Math.max(1, st.photos.length) : 0); }
+  function defaultMusic() { return st.style === 'beaute' ? 'ambient' : 'beat'; }
   function field(k, ph) { return '<label>' + esc(T[k][0]) + '<input type="text" data-f="' + k + '" maxlength="' + (k === 'hook' ? 60 : k === 'price' || k === 'oldPrice' ? 24 : k === 'offer' ? 16 : k === 'cta' ? 30 : k === 'brand' || k === 'contact' ? 40 : 48) + '" placeholder="' + esc(T[k][1]) + '" value="' + esc(st.f[k]) + '" autocomplete="off"></label>'; }
   function seg(attr, cur, items) { return '<div class="vseg" role="group">' + items.map(function (it) { return '<button type="button" data-' + attr + '="' + it[0] + '" aria-pressed="' + (cur === it[0]) + '"><b>' + esc(it[1]) + '</b>' + (it[2] ? '<small>' + esc(it[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>'; }
 
@@ -70,6 +75,8 @@
       '<div class="sf vai"><label>' + T.about + '<textarea id="v-about" rows="2" maxlength="240" placeholder="' + esc(T.aboutPh) + '">' + esc(st.about) + '</textarea></label><button class="btn gl' + (st.ai ? ' loading' : '') + '" type="button" id="v-ai"' + (st.ai ? ' disabled' : '') + '>' + (st.ai ? T.aiWait : '✨ ' + T.ai) + '</button><small class="hint">' + T.aiHint + '</small></div>' +
       '<div class="sf"><b>' + T.texts + '</b><div class="bgrid">' + ['brand', 'hook', 'l1', 'l2', 'l3', 'price', 'oldPrice', 'offer', 'cta', 'contact'].map(field).join('') + '</div></div>' +
       '<div class="sf"><b>' + T.qr + '</b><input type="text" id="v-qr" maxlength="200" placeholder="' + esc(T.qrPh) + '" value="' + esc(st.qr) + '" autocomplete="off"><small class="hint">' + T.qrHint + '</small></div>' +
+      '<div class="sf"><b>' + T.cutout + '</b>' + seg('cutout', st.cutout, ['ai', 'auto'].map(function (k) { return [k, T.cutouts[k][0], T.cutouts[k][1]]; })) + '<small class="hint">' + T.cutHint + '</small></div>' +
+      '<div class="sf"><b>' + T.music + '</b>' + seg('music', st.music || defaultMusic(), ['beat', 'ambient', 'none'].map(function (k) { return [k, T.musics[k][0], T.musics[k][1]]; })) + '<label class="vchk"><input type="checkbox" id="v-sfx"' + (st.sfx ? ' checked' : '') + '><span>' + T.sfx + '</span></label></div>' +
       '<div class="sf"><b>' + T.voice + '</b>' + seg('voice', st.voice ? st.gender : 'off', [['off', T.voiceOff], ['f', T.voiceF], ['m', T.voiceM]]) +
       (st.voice ? '<details class="brandbox sf"><summary>' + T.voiceText + '</summary><p class="hint">' + T.voiceHint + '</p>' + ['hook', 'product', 'benefits', 'offer', 'cta'].filter(function (k) { return has[k]; }).map(function (k) { return '<label>' + T.seg[k] + '<textarea rows="2" maxlength="240" data-vt="' + k + '">' + esc(segs[k]) + '</textarea></label>'; }).join('') + '</details>' : '') + '</div>' +
       '<button class="btn pri big' + (st.busy ? ' loading' : '') + '" type="button" id="v-go"' + (!ready && enough ? ' disabled' : '') + '>' + (!enough && st.photos.length && st.f.hook.trim().length >= 3 ? api.T.buy : label) + '</button>' +
@@ -90,6 +97,9 @@
   function bind() {
     Array.prototype.forEach.call(el.querySelectorAll('[data-style]'), function (b) { b.addEventListener('click', function () { st.style = b.dataset.style; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-ratio]'), function (b) { b.addEventListener('click', function () { st.ratio = b.dataset.ratio; draw(); }); });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-cutout]'), function (b) { b.addEventListener('click', function () { st.cutout = b.dataset.cutout; draw(); }); });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-music]'), function (b) { b.addEventListener('click', function () { st.music = b.dataset.music; draw(); }); });
+    var sx = el.querySelector('#v-sfx'); if (sx) sx.addEventListener('change', function () { st.sfx = sx.checked; });
     Array.prototype.forEach.call(el.querySelectorAll('[data-voice]'), function (b) { b.addEventListener('click', function () { var v = b.dataset.voice; st.voice = v !== 'off'; if (st.voice) st.gender = v; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-rm]'), function (b) { b.addEventListener('click', function () { var p = st.photos.splice(+b.dataset.rm, 1)[0]; if (p) URL.revokeObjectURL(p.url); draw(); }); });
     var f = el.querySelector('#v-file'); if (f) f.addEventListener('change', function () { addFiles(f.files); });
@@ -126,7 +136,7 @@
     if (st.busy || !st.photos.length || st.f.hook.trim().length < 3) return;
     st.busy = true; st.result = null; st.step = 0; draw(); msg('');
     stepTimer = setInterval(function () { st.step++; var b = el.querySelector('.vwork b'); if (b) b.textContent = T.steps[Math.min(st.step, T.steps.length - 1)]; }, 9000);
-    var body = { lang: L, style: st.style, ratio: st.ratio, qr: st.qr.trim(), voice: st.voice ? { on: true, gender: st.gender, segments: voiceSegs() } : false,
+    var body = { lang: L, style: st.style, ratio: st.ratio, qr: st.qr.trim(), cutout: st.cutout, music: st.music || defaultMusic(), sfx: st.sfx, voice: st.voice ? { on: true, gender: st.gender, segments: voiceSegs() } : false,
       texts: { brand: st.f.brand, hook: st.f.hook, lines: lines(), price: st.f.price, oldPrice: st.f.oldPrice, offer: st.f.offer, cta: st.f.cta, contact: st.f.contact },
       photos: st.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     var url = api.renderUrl;

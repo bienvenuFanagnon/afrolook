@@ -334,3 +334,38 @@
     }, { threshold: [0, 0.5, 0.75] }).observe(box);
   }
 })();
+
+
+// Lignes horizontales (produits, vidéos) : sur ordinateur, flèches, glisser avec la souris, et touches ← → quand la souris est au-dessus
+// (ou que la ligne a le focus). Sur téléphone, le défilement tactile habituel reste inchangé.
+(function () {
+  var rails = document.querySelectorAll('.rail'); if (!rails.length) return;
+  var fine = window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  var fr = document.body.dataset.lang !== 'en';
+  Array.prototype.forEach.call(rails, function (r) {
+    var wrap = document.createElement('div'); wrap.className = 'railwrap'; r.parentNode.insertBefore(wrap, r); wrap.appendChild(r);
+    var prev = null, next = null;
+    function step() { var c = r.querySelector('.rc,.vexc,.card'); return c ? c.getBoundingClientRect().width + 12 : 260; }
+    function by(d) { r.scrollBy({ left: d * step() * 1.5, behavior: 'smooth' }); }
+    function sync() { wrap.hidden = r.hidden; if (!prev) return; prev.disabled = r.scrollLeft <= 2; next.disabled = r.scrollLeft >= r.scrollWidth - r.clientWidth - 2; }
+    if (fine) {
+      prev = document.createElement('button'); prev.type = 'button'; prev.className = 'rnav prev'; prev.setAttribute('aria-label', fr ? 'Précédent' : 'Previous'); prev.textContent = '‹';
+      next = document.createElement('button'); next.type = 'button'; next.className = 'rnav next'; next.setAttribute('aria-label', fr ? 'Suivant' : 'Next'); next.textContent = '›';
+      wrap.appendChild(prev); wrap.appendChild(next); prev.addEventListener('click', function () { by(-1); }); next.addEventListener('click', function () { by(1); });
+      // glisser avec la souris (le clic qui suit un vrai glissement est ignoré)
+      var down = false, sx = 0, sl = 0, moved = 0;
+      r.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('video,button,input')) return; down = true; sx = e.clientX; sl = r.scrollLeft; moved = 0; });
+      window.addEventListener('pointermove', function (e) { if (!down) return; var dx = e.clientX - sx; moved = Math.max(moved, Math.abs(dx)); if (moved > 6) { r.classList.add('dragging'); r.scrollLeft = sl - dx; } });
+      window.addEventListener('pointerup', function () { if (!down) return; down = false; if (moved > 6) { var stop = function (ev) { ev.preventDefault(); ev.stopPropagation(); }; r.addEventListener('click', stop, { capture: true, once: true }); setTimeout(function () { r.removeEventListener('click', stop, true); }, 0); } r.classList.remove('dragging'); sync(); });
+    }
+    r.addEventListener('scroll', sync, { passive: true }); window.addEventListener('resize', sync);
+    if ('MutationObserver' in window) new MutationObserver(sync).observe(r, { attributes: true, attributeFilter: ['hidden'] });
+    sync(); setTimeout(sync, 400); window.addEventListener('load', sync);
+  });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey) return;
+    var t = e.target; if (t && (/^(INPUT|TEXTAREA|SELECT|VIDEO)$/.test(t.tagName) || t.isContentEditable)) return;
+    var target = null; Array.prototype.forEach.call(rails, function (r) { if (!r.hidden && r.scrollWidth > r.clientWidth + 4 && (r === document.activeElement || r.contains(document.activeElement) || r.matches(':hover'))) target = r; });
+    if (!target) return; e.preventDefault(); var c = target.querySelector('.rc,.vexc,.card'); var w = (c ? c.getBoundingClientRect().width : 240) + 12; target.scrollBy({ left: (e.key === 'ArrowRight' ? 1 : -1) * w * 1.5, behavior: 'smooth' });
+  });
+})();
