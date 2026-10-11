@@ -59,6 +59,22 @@ function body(req) {
   return b && typeof b === 'object' ? b : {};
 }
 
+const CMDS = require('./commands.json');
+let popCache = { at: 0, rows: [] };
+/** Commandes les plus copiées (compteur public) : lecture mise en cache 15 min côté fonction et 15 min côté CDN. */
+async function popular(l) {
+  if (Date.now() - popCache.at > 900000) {
+    const q = await getFirestore().collection('SlashAtlasCounts').orderBy('copies', 'desc').limit(150).get();
+    popCache = { at: Date.now(), rows: q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0 })).filter((r) => CMDS.commands[r.slug]) };
+  }
+  const counts = {};
+  popCache.rows.forEach((r) => { counts[r.slug] = r.copies; });
+  const top = popCache.rows.slice(0, 12).map((r) => {
+    const c = CMDS.commands[r.slug];
+    return { slug: r.slug, copies: r.copies, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
+  });
+  return { counts, top };
+}
 async function statsWrite(b, req) {
   // Les clés pointées doivent passer par update() pour créer des maps imbriquées.
   if (BOT.test(req.get('user-agent') || '')) return;
@@ -76,7 +92,12 @@ async function statsWrite(b, req) {
     if (b.ret) u.returning = inc;
   } else if (t === 'copy') {
     u.copies = inc;
-    u[`cmd.${key(b.n)}`] = inc;
+    const slug = key(b.s || b.n);
+    u[`cmd.${slug}`] = inc;
+    // Compteur public « copies » : une seule copie par visiteur et par commande et par session (b.f = première copie de la session), commandes connues seulement.
+    if (b.f && CMDS.commands[slug]) {
+      try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ copies: inc, at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
+    }
   } else if (t === 'test') {
     u.tests = inc;
     u[`tool.${key(b.tool)}`] = inc;
@@ -220,7 +241,7 @@ exports.slashatlasApi = onRequest(
     }
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
-    if (req.method !== 'POST' && !(req.method === 'GET' && req.path.endsWith('/config'))) return res.status(405).json({ error: 'method' });
+    if (req.method !== 'POST' && !(req.method === 'GET' && /\/(config|popular)$/.test(req.path))) return res.status(405).json({ error: 'method' });
     const o = req.get('origin');
     if (o && !ORIGINS.some((r) => r.test(o))) return res.status(403).json({ error: 'origin' });
     const ip = (req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim();
@@ -236,6 +257,10 @@ exports.slashatlasApi = onRequest(
         if (limited('s' + ipKey, 6, 600000)) return res.status(429).json({ error: 'rate' });
         const r = await subscribe(body(req));
         return res.status(r.error ? 400 : 200).json(r);
+      }
+      if (path.endsWith('/popular')) {
+        res.set('Cache-Control', 'public, max-age=300, s-maxage=900');
+        return res.status(200).json(await popular(req.query.l === 'en' ? 'en' : 'fr'));
       }
       if (path.endsWith('/config')) {
         res.set('Cache-Control', 'public, max-age=60');

@@ -38,13 +38,16 @@
   $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang_choice', a.dataset.langSwitch); }); });
 
   // ── Copier ──
+  // Une copie ne compte qu'une fois par visiteur, par commande et par session pour le compteur public.
+  function firstCopy(slug) { if (!slug) return 0; var k = 'sa_c_' + slug; if (sstore(k)) return 0; sstore(k, '1'); return 1; }
+  function popBump(slug) { try { if (window.saPop && slug) window.saPop.bump(slug); } catch (e) {} }
   function fallbackCopy(txt, done) { var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove(); done(); }
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-copy]');
     if (el) {
       var src = $(el.dataset.copy); if (!src) return;
       var old = el.textContent;
-      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
+      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '', f: firstCopy(el.dataset.slug) }); popBump(el.dataset.slug); };
       var txt = src.textContent;
       try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); }); } catch (err) { fallbackCopy(txt, done); }
       return;
@@ -61,7 +64,7 @@
       var pre = (nd.nodeType === 1 ? nd : nd.parentElement).closest('.cmd pre'); if (!pre) return;
       var a = $('#after'); if (a) a.classList.add('on');
       window.saAds && window.saAds.late();
-      track('copy', { s: pre.id.replace(/^p-/, ''), via: 'sel' });
+      var sl = pre.id.replace(/^p-/, ''); track('copy', { s: sl, via: 'sel', f: firstCopy(sl) }); popBump(sl);
     } catch (e) {}
   });
 
@@ -69,6 +72,7 @@
   var q = $('#q');
   if (q) {
     var cat = '', list = $$('#list .card'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
+    window.saReorder = function () { list = $$('#list .card'); apply(); };
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
       var v = q.value.trim().toLowerCase(), c = 0, shown = 0;
@@ -142,6 +146,45 @@
     input.addEventListener('input', build);
     $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
   });
+})();
+
+// Commandes les plus copiées : compteurs publics (/api/popular), badges sur les cartes, rangée « Les plus copiées » sur l'accueil, liste triée.
+(function () {
+  var cards = document.querySelectorAll('.card[data-slug]'), one = document.getElementById('cmd-cnt'), rail = document.getElementById('rail');
+  if (!cards.length && !one && !rail) return;
+  var lang = document.body.dataset.lang === 'en' ? 'en' : 'fr', MIN = 5, counts = {};
+  var word = function (n) { return n + ' ' + (lang === 'fr' ? (n > 1 ? 'copies' : 'copie') : (n > 1 ? 'copies' : 'copy')); };
+  var show = function (el, n) { if (!el) return; if (n >= MIN) { el.textContent = '⧉ ' + word(n); el.hidden = false; } };
+  function paint() {
+    Array.prototype.forEach.call(cards, function (c) { show(c.querySelector('.cnt'), counts[c.dataset.slug] || 0); });
+    if (one) show(one, counts[one.dataset.slug] || 0);
+  }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function railCard(r) {
+    var poster = r.img ? '<div class="poster img' + (r.ratio === '16:9' ? ' ls' : '') + '"><img src="/img/c/' + r.slug + '-t.webp" alt="" loading="lazy" decoding="async"><span class="tag">' + esc(r.cat) + '</span></div>'
+      : '<div class="poster" style="--x:' + esc(r.x) + ';--y:' + esc(r.y) + ';--r:' + esc(r.r) + '"><span class="tag">' + esc(r.cat) + '</span><span class="shape"></span><b>' + esc(r.poster) + '</b><small>' + esc(r.code) + '</small></div>';
+    var href = (lang === 'en' ? '/en/c/' : '/c/') + r.slug + '/';
+    var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</a>' : '';
+    return '<article class="rc" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt">⧉ ' + word(r.copies) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#p-' + r.slug + '" data-slug="' + r.slug + '">' + (lang === 'fr' ? 'Copier' : 'Copy') + '</button></div><pre id="p-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
+  }
+  function railFill(top) {
+    var pop = top.filter(function (r) { return r.copies >= MIN; }).slice(0, 8);
+    if (!rail || pop.length < 3) return;
+    var have = {}; pop.forEach(function (r) { have[r.slug] = 1; });
+    var keep = Array.prototype.filter.call(rail.children, function (c) { var m = c.querySelector('[data-slug]'); return m && !have[m.dataset.slug]; });
+    rail.innerHTML = pop.map(railCard).join('');
+    keep.slice(0, Math.max(0, 8 - pop.length)).forEach(function (c) { rail.appendChild(c); });
+    var h = document.getElementById('rail-h'); if (h && h.dataset.pop) h.textContent = h.dataset.pop;
+  }
+  function sortList(counts) {
+    var list = document.getElementById('list'); if (!list) return;
+    var items = Array.prototype.slice.call(list.children);
+    if (items.filter(function (c) { return (counts[c.dataset.slug] || 0) >= MIN; }).length < 3) return;
+    items.map(function (c, i) { return [c, i]; }).sort(function (a, b) { return (counts[b[0].dataset.slug] || 0) - (counts[a[0].dataset.slug] || 0) || a[1] - b[1]; }).forEach(function (x) { list.appendChild(x[0]); });
+    if (window.saReorder) window.saReorder();
+  }
+  window.saPop = { bump: function (slug) { counts[slug] = (counts[slug] || 0); } }; // l'affichage se met à jour au prochain chargement
+  fetch('/api/popular?l=' + lang).then(function (r) { return r.json(); }).then(function (d) { counts = d.counts || {}; paint(); railFill(d.top || []); sortList(counts); }).catch(function () {});
 })();
 
 // Publicité : les emplacements restent masqués tant que l'administration n'a pas activé la publicité (réglages lus via /api/config).
