@@ -12,6 +12,7 @@
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
+      share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       help: 'Un souci de paiement ? Écrivez-nous :', buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       feeLineCard: 'Pack {p} + frais de paiement {f}', usdNote: 'Prix en dollars. Par mobile money, le montant est converti en FCFA.',
@@ -26,6 +27,7 @@
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
+      share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       help: 'Payment problem? Write to us:', buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       feeLineCard: 'Pack {p} + payment fees {f}', usdNote: 'Prices in US dollars. With mobile money, the amount is converted to FCFA.',
@@ -69,6 +71,35 @@
   function brandTexts() {
     var o = {}; Object.keys(state.brand).forEach(function (k) { var v = window.saBrandClean(state.brand[k], k === 'other' ? 80 : 60); if (v) o[k] = v; }); return o;
   }
+  // ── Partage du visuel : feuille de partage du téléphone avec l'image ; sinon liens vers les réseaux + copie de l'image ──
+  var SITE = location.origin + (L === 'en' ? '/en/' : '/');
+  function shareLink() { return SITE + '?utm_source=share&utm_medium=studio'; }
+  function sharePanel() {
+    var u = encodeURIComponent(shareLink()), t = encodeURIComponent(T.shareText);
+    var nets = [['WhatsApp', 'https://wa.me/?text=' + t + '%20' + u], ['Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + u], ['X', 'https://twitter.com/intent/tweet?text=' + t + '&url=' + u], ['LinkedIn', 'https://www.linkedin.com/sharing/share-offsite/?url=' + u], ['Telegram', 'https://t.me/share/url?url=' + u + '&text=' + t]];
+    return '<div class="sshare" id="s-sharebox" hidden><b>' + T.shareTitle + '</b><p class="hint">' + T.shareHint + '</p><div class="snets">' +
+      nets.map(function (n) { return '<a class="btn gl sm" href="' + n[1] + '" target="_blank" rel="noopener" data-net="' + n[0] + '">' + n[0] + '</a>'; }).join('') +
+      '</div><div class="snets"><button class="btn gl sm" type="button" id="s-copyimg">' + T.shareCopyImg + '</button><button class="btn gl sm" type="button" id="s-copylink">' + T.shareCopyLink + '</button></div></div>';
+  }
+  function flash(btn, txt) { var o = btn.textContent; btn.textContent = txt; setTimeout(function () { btn.textContent = o; }, 1800); }
+  function toPng(blob) {
+    return new Promise(function (resolve, reject) {
+      if (blob.type === 'image/png') return resolve(blob);
+      var url = URL.createObjectURL(blob), img = new Image();
+      img.onload = function () { var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0); URL.revokeObjectURL(url); c.toBlob(function (b) { b ? resolve(b) : reject(new Error('png')); }, 'image/png'); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('png')); }; img.src = url;
+    });
+  }
+  function doShare(btn) {
+    var r = state.result; if (!r || !r.blob) return;
+    var file; try { file = new File([r.blob], 'slashatlas-' + slug + '.' + r.ext, { type: r.blob.type }); } catch (e) { file = null; }
+    var data = { files: file ? [file] : [], title: 'SlashAtlas', text: T.shareText + ' ' + shareLink() };
+    try { window.saTrack && window.saTrack('share', { n: 'open' }); } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare(data) && navigator.share) {
+      navigator.share(data).then(function () { try { window.saTrack && window.saTrack('share', { n: 'native' }); } catch (e) {} }, function (e) { if (e && e.name !== 'AbortError') toggleShare(); });
+    } else toggleShare();
+    function toggleShare() { var b = $('#s-sharebox'); if (b) { b.hidden = !b.hidden; if (!b.hidden) b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+  }
   function render() {
     if (state.checking) { root.innerHTML = '<div class="sbox sload"><span class="spin" aria-label="…"></span></div>'; return; }
     if (!state.user) {
@@ -90,7 +121,7 @@
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
       (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt="">' +
         (state.versions.length > 1 ? '<div class="vers">' + state.versions.map(function (v, i) { return '<button type="button" data-v="' + i + '" aria-pressed="' + (i === state.cur) + '">' + T.version + ' ' + (i + 1) + '</button>'; }).join('') + '</div>' : '') +
-        '<div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '-v' + (state.cur + 1) + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div>' +
+        '<div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '-v' + (state.cur + 1) + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-share">' + T.share + '</button><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div>' + sharePanel() +
         '<div class="sedit"><b>' + T.editTitle + '</b><textarea id="s-edit" rows="2" maxlength="300" placeholder="' + esc(T.editPh) + '">' + esc(state.instruction) + '</textarea><small class="hint">' + T.editHint + '</small><button class="btn pri big' + (state.busy ? ' loading' : '') + '" type="button" id="s-editgo"' + (state.busy ? ' disabled' : '') + '>' + (state.busy ? T.editing : T.editBtn) + '</button></div>' +
         '<small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '');
     bind();
@@ -105,6 +136,16 @@
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
+    var sh = $('#s-share'); if (sh) sh.addEventListener('click', function () { doShare(sh); });
+    var ci = $('#s-copyimg'); if (ci) ci.addEventListener('click', function () {
+      if (!(navigator.clipboard && window.ClipboardItem) || !state.result) { flash(ci, T.shareFail); return; }
+      toPng(state.result.blob).then(function (b) { return navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); }).then(function () { flash(ci, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copyimg' }); } catch (e) {} }, function () { flash(ci, T.shareFail); });
+    });
+    var cl = $('#s-copylink'); if (cl) cl.addEventListener('click', function () {
+      var done = function () { flash(cl, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copylink' }); } catch (e) {} };
+      try { navigator.clipboard.writeText(shareLink()).then(done, function () { flash(cl, T.shareFail); }); } catch (e) { flash(cl, T.shareFail); }
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-net]'), function (a) { a.addEventListener('click', function () { try { window.saTrack && window.saTrack('share', { n: a.dataset.net }); } catch (e) {} }); });
     var ag = $('#s-again'); if (ag) ag.addEventListener('click', function () { if (state.credits < 1) openBuy('refaire'); else generate(); });
     var by = $('#s-buy'); if (by) by.addEventListener('click', openBuy);
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
@@ -147,7 +188,8 @@
       if (r.status === 200) {
         var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
         var ext = r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png';
-        state.result = { id: r.data.id, url: URL.createObjectURL(new Blob([arr], { type: r.data.mime })), ext: ext };
+        var blob = new Blob([arr], { type: r.data.mime });
+        state.result = { id: r.data.id, url: URL.createObjectURL(blob), blob: blob, ext: ext };
         state.versions = [state.result]; state.cur = 0; state.instruction = '';
         state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
       } else {
@@ -167,7 +209,8 @@
       state.busy = false;
       if (r.status === 200) {
         var bin = atob(r.data.image), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        var v = { id: r.data.id, url: URL.createObjectURL(new Blob([arr], { type: r.data.mime })), ext: r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png' };
+        var vb = new Blob([arr], { type: r.data.mime });
+        var v = { id: r.data.id, url: URL.createObjectURL(vb), blob: vb, ext: r.data.mime.indexOf('jpeg') >= 0 ? 'jpg' : 'png' };
         state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
       } else if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); }
       else { render(); msg(errText(r.data && r.data.error)); }

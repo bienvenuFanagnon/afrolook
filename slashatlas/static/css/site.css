@@ -405,3 +405,9 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .brandbox .bgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));padding-bottom:14px}
 .brandbox .bgrid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--mut);min-width:0}
 .brandbox .bgrid input{background:#0d0e10;border:1px solid var(--line2);border-radius:12px;color:var(--txt);padding:12px 13px;font:inherit;font-size:14.5px;min-width:0}
+
+/* Partage du visuel généré */
+.sres .acts.big{flex-wrap:wrap}
+.sshare{border:1px solid var(--line2);border-radius:14px;background:rgba(255,255,255,.03);padding:14px;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.sshare .hint{margin:0}
+.snets{display:flex;flex-wrap:wrap;gap:8px}
