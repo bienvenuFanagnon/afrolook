@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { T } from './src/i18n.mjs';
 import { CATEGORIES, COMMANDS } from './src/data.mjs';
 import { termsBody, TERMS_VERSION } from './src/terms.mjs';
+import { aboutBody } from './src/about.mjs';
 
 const root = path.dirname(new URL(import.meta.url).pathname);
 const dist = path.join(root, 'dist');
@@ -16,8 +17,8 @@ const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 
 const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
 
 const P = {
-  fr: { home: '/', cmds: '/commandes/', try: '/generer/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/generer/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -104,7 +105,7 @@ function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs
 <body data-page="${key}" data-lang="${l}"><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
 <header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a></header>
 <main id="main">${body}</main>
-<footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}</footer>
+<footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.about}">${t.ft.about}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}</footer>
 <script src="/js/site.js?v=${V.js}" defer></script>${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
 }
 function emit(l, key, pth, o) { write(pth.endsWith('/') ? pth + 'index.html' : pth, layout({ l, key, path: pth, ...o })); }
@@ -226,6 +227,12 @@ function legalPage(l, kind) {
   if (l === 'fr') pages.push({ fr: P.fr[kind], en: P.en[kind] });
 }
 
+function aboutPage(l) {
+  const x = aboutBody(l, cfg.legal || {}, COMMANDS.length);
+  const body = `<div class="wrap narrow prose"><h1 class="big sm">${x.h}</h1>${x.sections.map(([h, ps]) => `<h2>${h}</h2>${ps.filter(Boolean).map((q) => `<p>${q}</p>`).join('')}`).join('')}</div>`;
+  emit(l, 'about', P[l].about, { title: x.title, desc: x.desc, body, alt: alt2(P.fr.about, P.en.about) });
+  if (l === 'fr') pages.push({ fr: P.fr.about, en: P.en.about });
+}
 function termsPage(l) {
   const x = termsBody(l, cfg.legal || {});
   const body = `<div class="wrap narrow prose"><h1 class="big sm">${x.title.replace(/ \| SlashAtlas$/, "")}</h1>${x.sections.map(([h, ps]) => `<h2>${h}</h2>${ps.map((q) => `<p>${q}</p>`).join('')}`).join('')}</div>`;
@@ -268,7 +275,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 for (const l of ['fr', 'en']) {
-  home(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); tryPage(l);
+  home(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); tryPage(l);
   for (const c of CATEGORIES) catPage(l, c);
   for (const c of COMMANDS) cmdPage(l, c);
 }
