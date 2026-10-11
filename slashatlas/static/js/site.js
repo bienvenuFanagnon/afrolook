@@ -150,3 +150,13 @@
     }).catch(function () {});
   } catch (e) {}
 })();
+
+// Menu du téléphone : bouton hamburger, se ferme au clic sur un lien, sur Échap ou au retour sur grand écran.
+(function () {
+  var b = document.querySelector('.menubtn'), m = document.getElementById('mnav'); if (!b || !m) return;
+  function set(o) { b.setAttribute('aria-expanded', o ? 'true' : 'false'); m.hidden = !o; }
+  b.addEventListener('click', function () { set(m.hidden); });
+  m.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+  matchMedia('(min-width:720px)').addEventListener && matchMedia('(min-width:720px)').addEventListener('change', function () { set(false); });
+})();
