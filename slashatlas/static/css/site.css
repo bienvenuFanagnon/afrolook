@@ -411,3 +411,7 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .sshare{border:1px solid var(--line2);border-radius:14px;background:rgba(255,255,255,.03);padding:14px;margin-top:12px;display:flex;flex-direction:column;gap:10px}
 .sshare .hint{margin:0}
 .snets{display:flex;flex-wrap:wrap;gap:8px}
+.qrchk{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:14px;font-weight:600}
+.qrchk input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--acc,#1e90ff)}
+.qrchk small{display:block;font-weight:400;color:var(--mut);margin-top:2px}
+.sprev{max-height:200px;max-width:100%;width:auto;border-radius:12px;align-self:flex-start;border:1px solid var(--line2)}

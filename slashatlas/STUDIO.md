@@ -39,3 +39,6 @@ Onglets : Vue d'ensemble (audience) · Studio (KPI, commandes + bouton Preuves, 
 
 ## Marque et contacts sur le visuel
 Sur la page d'une commande (photo : produit, plat, personne, lieu, logo) et dans le Studio, un bloc repliable « Ajouter ma marque ou mes contacts » propose 3 champs (nom de marque, téléphone ou contact, autre texte). Les modèles de phrase et de mise en page par type de sujet sont dans `BRAND` (`build.mjs`), partagés avec le site (commande copiée), le Studio (`try.js`) et le serveur (`commands.json` → `brandClause` dans `functions/studio.js`). Le serveur assainit les textes (guillemets, retours à la ligne, 60/60/80 caractères) et ne les compose que pour les types de sujet prévus ; les commandes vidéo, affiche à texte et libres sont inchangées.
+
+## Partage du visuel
+Bouton « Partager » dans le Studio : panneau avec aperçu, feuille de partage native (téléphone), liens WhatsApp/Facebook/X/LinkedIn/Telegram, copie de l’image et du lien. Une case (cochée par défaut, mémorisée dans `sa_shareqr`) ajoute un petit QR code vers le site (`static/img/qr-fr.svg`, `qr-en.svg`, générés avec qrcode-generator, correction M) dans le coin le plus calme de l’image partagée ; le fichier téléchargé n’a jamais de QR. Événement `share` (via : open, native, réseau, copyimg, copylink).

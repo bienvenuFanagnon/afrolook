@@ -12,7 +12,7 @@
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
-      share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
+      share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareQr: 'Ajouter un petit QR code SlashAtlas dans un coin de l’image partagée', shareQrNote: 'Décochez pour l’enlever. Le fichier téléchargé reste toujours sans QR.', shareImg: 'Partager l’image', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       help: 'Un souci de paiement ? Écrivez-nous :', buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       feeLineCard: 'Pack {p} + frais de paiement {f}', usdNote: 'Prix en dollars. Par mobile money, le montant est converti en FCFA.',
@@ -27,7 +27,7 @@
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
-      share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
+      share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareQr: 'Add a small SlashAtlas QR code in a corner of the shared image', shareQrNote: 'Untick to remove it. The downloaded file never has a QR.', shareImg: 'Share the image', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       help: 'Payment problem? Write to us:', buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       feeLineCard: 'Pack {p} + payment fees {f}', usdNote: 'Prices in US dollars. With mobile money, the amount is converted to FCFA.',
@@ -77,9 +77,49 @@
   function sharePanel() {
     var u = encodeURIComponent(shareLink()), t = encodeURIComponent(T.shareText);
     var nets = [['WhatsApp', 'https://wa.me/?text=' + t + '%20' + u], ['Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + u], ['X', 'https://twitter.com/intent/tweet?text=' + t + '&url=' + u], ['LinkedIn', 'https://www.linkedin.com/sharing/share-offsite/?url=' + u], ['Telegram', 'https://t.me/share/url?url=' + u + '&text=' + t]];
-    return '<div class="sshare" id="s-sharebox" hidden><b>' + T.shareTitle + '</b><p class="hint">' + T.shareHint + '</p><div class="snets">' +
+    var canNative = !!(navigator.share && navigator.canShare);
+    return '<div class="sshare" id="s-sharebox" hidden><b>' + T.shareTitle + '</b>' +
+      '<label class="qrchk"><input type="checkbox" id="s-qr"' + (qrWanted() ? ' checked' : '') + '><span>' + T.shareQr + '<small>' + T.shareQrNote + '</small></span></label>' +
+      '<img class="sprev" id="s-prev" alt="" hidden>' +
+      (canNative ? '<button class="btn pri big" type="button" id="s-native">' + T.shareImg + '</button>' : '') +
+      '<p class="hint">' + T.shareHint + '</p><div class="snets">' +
       nets.map(function (n) { return '<a class="btn gl sm" href="' + n[1] + '" target="_blank" rel="noopener" data-net="' + n[0] + '">' + n[0] + '</a>'; }).join('') +
       '</div><div class="snets"><button class="btn gl sm" type="button" id="s-copyimg">' + T.shareCopyImg + '</button><button class="btn gl sm" type="button" id="s-copylink">' + T.shareCopyLink + '</button></div></div>';
+  }
+  // Petit QR code (vers le site) dans le coin le plus calme de l'image, pour la copie partagée uniquement ; le téléchargement reste intact.
+  function qrWanted() { try { return localStorage.getItem('sa_shareqr') !== '0'; } catch (e) { return true; } }
+  function loadImg(src) { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = src; }); }
+  function withQr(blob) {
+    return Promise.all([loadImg(URL.createObjectURL(blob)), loadImg('/img/qr-' + L + '.svg')]).then(function (a) {
+      var img = a[0], qr = a[1], w = img.naturalWidth, h = img.naturalHeight, c = document.createElement('canvas'); c.width = w; c.height = h;
+      var g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      var size = Math.round(Math.max(Math.min(w, h) * 0.15, 130)), m = Math.round(Math.min(w, h) * 0.03), reg = size + m;
+      // coin le plus calme (écart-type de luminance le plus faible) ; les coins du haut sont un peu pénalisés
+      var best = null;
+      [[0, 1.25], [1, 1.25], [2, 1], [3, 1]].forEach(function (k) {
+        var x0 = (k[0] % 2) ? w - reg : 0, y0 = k[0] < 2 ? 0 : h - reg, d = g.getImageData(x0, y0, reg, reg).data, n = 0, sum = 0, sq = 0;
+        for (var i = 0; i < d.length; i += 16) { var l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; sum += l; sq += l * l; n++; }
+        var sd = Math.sqrt(Math.max(0, sq / n - (sum / n) * (sum / n))) * k[1];
+        if (!best || sd < best.sd) best = { sd: sd, x: (k[0] % 2) ? w - size - m : m, y: k[0] < 2 ? m : h - size - m };
+      });
+      g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = size * 0.08; g.beginPath();
+      if (g.roundRect) g.roundRect(best.x, best.y, size, size, size * 0.1); else g.rect(best.x, best.y, size, size);
+      g.fillStyle = '#fff'; g.fill(); g.clip(); g.shadowColor = 'transparent'; g.drawImage(qr, best.x, best.y, size, size); g.restore();
+      URL.revokeObjectURL(img.src);
+      var type = blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+      return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error('qr')); }, type, 0.92); });
+    });
+  }
+  var shareCache = {};
+  /** Image à partager (avec ou sans QR), préparée à l'avance : le partage natif doit partir directement du geste de l'utilisateur. */
+  function shareBlob() {
+    var r = state.result, k = r.url + (qrWanted() ? '|qr' : '');
+    if (!shareCache[k]) shareCache[k] = qrWanted() ? withQr(r.blob).catch(function () { return r.blob; }) : Promise.resolve(r.blob);
+    return shareCache[k];
+  }
+  function refreshPrev() {
+    var pv = $('#s-prev'); if (!pv || !state.result) return;
+    shareBlob().then(function (b) { if (pv.dataset.u) URL.revokeObjectURL(pv.dataset.u); pv.dataset.u = URL.createObjectURL(b); pv.src = pv.dataset.u; pv.hidden = false; });
   }
   function flash(btn, txt) { var o = btn.textContent; btn.textContent = txt; setTimeout(function () { btn.textContent = o; }, 1800); }
   function toPng(blob) {
@@ -90,15 +130,21 @@
       img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('png')); }; img.src = url;
     });
   }
-  function doShare(btn) {
-    var r = state.result; if (!r || !r.blob) return;
-    var file; try { file = new File([r.blob], 'slashatlas-' + slug + '.' + r.ext, { type: r.blob.type }); } catch (e) { file = null; }
-    var data = { files: file ? [file] : [], title: 'SlashAtlas', text: T.shareText + ' ' + shareLink() };
+  var nativeData = null;
+  function doShare() {
+    var b = $('#s-sharebox'); if (!b || !state.result) return;
+    b.hidden = !b.hidden;
+    if (b.hidden) return;
     try { window.saTrack && window.saTrack('share', { n: 'open' }); } catch (e) {}
-    if (file && navigator.canShare && navigator.canShare(data) && navigator.share) {
-      navigator.share(data).then(function () { try { window.saTrack && window.saTrack('share', { n: 'native' }); } catch (e) {} }, function (e) { if (e && e.name !== 'AbortError') toggleShare(); });
-    } else toggleShare();
-    function toggleShare() { var b = $('#s-sharebox'); if (b) { b.hidden = !b.hidden; if (!b.hidden) b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+    refreshPrev(); b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function nativeShare(btn) {
+    shareBlob().then(function (blob) {
+      var file; try { file = new File([blob], 'slashatlas-' + slug + '.' + (blob.type === 'image/jpeg' ? 'jpg' : 'png'), { type: blob.type }); } catch (e) { return; }
+      var data = { files: [file], title: 'SlashAtlas', text: T.shareText + ' ' + shareLink() };
+      if (!navigator.canShare(data)) { flash(btn, T.shareFail); return; }
+      navigator.share(data).then(function () { try { window.saTrack && window.saTrack('share', { n: 'native' }); } catch (e) {} }, function (e) { if (e && e.name !== 'AbortError') flash(btn, T.shareFail); });
+    });
   }
   function render() {
     if (state.checking) { root.innerHTML = '<div class="sbox sload"><span class="spin" aria-label="…"></span></div>'; return; }
@@ -136,10 +182,12 @@
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
-    var sh = $('#s-share'); if (sh) sh.addEventListener('click', function () { doShare(sh); });
+    var sh = $('#s-share'); if (sh) sh.addEventListener('click', doShare);
+    var nb = $('#s-native'); if (nb) nb.addEventListener('click', function () { nativeShare(nb); });
+    var qc = $('#s-qr'); if (qc) qc.addEventListener('change', function () { try { localStorage.setItem('sa_shareqr', qc.checked ? '1' : '0'); } catch (e) {} refreshPrev(); });
     var ci = $('#s-copyimg'); if (ci) ci.addEventListener('click', function () {
       if (!(navigator.clipboard && window.ClipboardItem) || !state.result) { flash(ci, T.shareFail); return; }
-      toPng(state.result.blob).then(function (b) { return navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); }).then(function () { flash(ci, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copyimg' }); } catch (e) {} }, function () { flash(ci, T.shareFail); });
+      shareBlob().then(toPng).then(function (b) { return navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); }).then(function () { flash(ci, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copyimg' }); } catch (e) {} }, function () { flash(ci, T.shareFail); });
     });
     var cl = $('#s-copylink'); if (cl) cl.addEventListener('click', function () {
       var done = function () { flash(cl, T.shareDone); try { window.saTrack && window.saTrack('share', { n: 'copylink' }); } catch (e) {} };
