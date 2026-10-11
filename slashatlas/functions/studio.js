@@ -127,6 +127,7 @@ async function spendCredits(uid, n, ref) {
 function composePrompt(slug, lang, product, multi, nPhotos) {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
+  if (c.kind === 'video') throw fail(400, 'not_image'); // les commandes vidéo ne passent pas par le Studio d'images
   const L = lang === 'en' ? 'en' : 'fr';
   const clause = COMMANDS.clauses[L][c.kind][multi ? 1 : 0].replace('{T}', product ? ` (${product})` : '');
   const intro = nPhotos > 1

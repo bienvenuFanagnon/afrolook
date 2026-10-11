@@ -11,6 +11,17 @@ export const CATEGORIES = [
   { id: 'reseaux', fr: 'Réseaux sociaux', en: 'Social media', fr_d: 'Couvertures de Reels, miniatures, annonces : plus vite, plus beau.', en_d: 'Reel covers, thumbnails, announcements: faster and better.' },
   { id: 'evenement', fr: 'Événements', en: 'Events', fr_d: 'Soirées, mariages, inaugurations : l’affiche qui remplit la salle.', en_d: 'Parties, weddings, openings: the poster that fills the room.' },
   { id: 'beaute', fr: 'Beauté', en: 'Beauty', fr_d: 'Soins, coiffure, maquillage : un rendu propre et lumineux.', en_d: 'Skincare, hair, makeup: a clean, luminous look.' },
+  { id: 'effets', fr: 'Effets spectaculaires', en: 'Spectacular effects', fr_d: 'Eau, feu, néon, espace, luxe : des ambiances spectaculaires pour faire ressortir votre produit.', en_d: 'Water, fire, neon, space, luxury: spectacular moods that make your product stand out.' },
+  { id: 'video', fr: 'Vidéo publicitaire', en: 'Video ads', fr_d: 'Des commandes pour générateurs de vidéo : révélation de produit, rotation, ralenti, annonce animée.', en_d: 'Commands for video generators: product reveal, turntable, slow motion, animated announcement.' },
+  { id: 'tech', fr: 'Tech et gadgets', en: 'Tech and gadgets', fr_d: 'Téléphones, casques, ordinateurs, objets connectés : un rendu net, moderne et premium.', en_d: 'Phones, headphones, laptops, smart devices: a sharp, modern, premium look.' },
+  { id: 'auto', fr: 'Auto et moto', en: 'Cars and bikes', fr_d: 'Voitures, motos, pièces et garages : des visuels de vente qui donnent envie de rouler.', en_d: 'Cars, motorbikes, parts and garages: sales visuals that make people want to drive.' },
+  { id: 'bijoux', fr: 'Bijoux et montres', en: 'Jewelry and watches', fr_d: 'Bijoux, montres, lunettes, sacs : des détails qui brillent et un rendu précieux.', en_d: 'Jewelry, watches, glasses, bags: details that shine and a precious look.' },
+  { id: 'maison', fr: 'Maison et déco', en: 'Home and decor', fr_d: 'Meubles, électroménager, linge, objets déco : une maison à vivre, présentée avec soin.', en_d: 'Furniture, appliances, linen, decor items: a home worth living in, carefully presented.' },
+  { id: 'education', fr: 'Formation et éducation', en: 'Training and education', fr_d: 'Cours, ateliers, webinaires, rentrée : des affiches claires qui remplissent les inscriptions.', en_d: 'Courses, workshops, webinars, back-to-school: clear posters that fill registrations.' },
+  { id: 'sante', fr: 'Santé et bien-être', en: 'Health and wellness', fr_d: 'Cabinets, pharmacies, coachs, spas : des visuels rassurants, sans promesse médicale.', en_d: 'Clinics, pharmacies, coaches, spas: reassuring visuals, with no medical promise.' },
+  { id: 'voyage', fr: 'Voyage et hôtels', en: 'Travel and hotels', fr_d: 'Hôtels, circuits, restaurants de plage : des visuels qui donnent envie de partir.', en_d: 'Hotels, tours, beach restaurants: visuals that make people want to travel.' },
+  { id: 'business', fr: 'Business et recrutement', en: 'Business and hiring', fr_d: 'Recrutement, services, boutiques, partenariats : des visuels professionnels et crédibles.', en_d: 'Hiring, services, shops, partnerships: professional, credible visuals.' },
+  { id: 'packaging', fr: 'Packaging et marque', en: 'Packaging and brand', fr_d: 'Emballages, étiquettes, maquettes de marque : présentez votre produit comme une vraie marque.', en_d: 'Packaging, labels, brand mockups: present your product like a real brand.' },
 ];
 
 // x, y : position de la lueur sur l'affiche ; r : forme (rayon) ; ratio : format conseillé
