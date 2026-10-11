@@ -20,12 +20,12 @@ const IMAGE_MODEL = 'gemini-3.1-flash-image';
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
 const GEN_COST = 1;
 const PACKS = [
-  { id: 'p20', credits: 20, xof: 1500 },
-  { id: 'p55', credits: 55, xof: 3900, tag: 'popular' },
-  { id: 'p160', credits: 160, xof: 11000 },
+  { id: 'p20', credits: 20, xof: 1500, usd: 2.5 },
+  { id: 'p55', credits: 55, xof: 3900, usd: 6.5, tag: 'popular' },
+  { id: 'p160', credits: 160, xof: 11000, usd: 18.5 },
 ];
-// Pass « sans pub » : 30 jours sans publicité sur tout le site, 1 000 FCFA (même prix par mobile money ou par carte ; frais de paiement en plus, comme pour les crédits).
-const PASS = { id: 'nopub', days: 30, xof: 1000, pass: true };
+// Pass « sans pub » : 30 jours sans publicité sur tout le site. Prix affiché en dollars (usd), payé en FCFA par mobile money (xof) ou en dollars par carte ; frais de paiement en plus, comme pour les crédits.
+const PASS = { id: 'nopub', days: 30, xof: 1000, usd: 1.7, pass: true };
 const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PASS : null);
 // Plafonds de sécurité (par jour, UTC)
 const LIMITS = { userPerDay: 40, globalPerDay: 400 };
@@ -54,7 +54,7 @@ const OPERATORS = [
   { code: 'mobicash_ml', label: 'Mobicash', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
 ];
 // Carte bancaire (FeexPay) : désactivée tant que le KYB carte de la boutique n'est pas validé. Frais à renseigner (en %) après confirmation de FeexPay.
-const CARD = { enabled: false, currency: 'XOF', payin: 0, payout: 0 };
+const CARD = { enabled: false, currency: 'USD', payin: 0, payout: 0 }; // la carte se paie en dollars (pack.usd) ; à confirmer avec FeexPay lors de l'activation du KYC carte
 // Limites de sécurité carte (risque de rétrofacturation) : petits paquets seulement, quelques achats par compte, par IP, par mois et par jour.
 const CARD_LIMITS = { packs: ['p20', 'p55', 'nopub'], userPerDay: 2, ipPerDay: 3, userMonthXof: 20000, globalPerDay: 30 };
 const TERMS_VERSION = COMMANDS.termsVersion;
@@ -69,6 +69,13 @@ function quote(price, payin, payout) {
   const send = Math.ceil(price * (1 + payout / 100));
   const total = Math.ceil(send * (1 + payin / 100));
   return { send, total, fee: total - price };
+}
+/** Même calcul en dollars (au cent près) pour la carte. */
+function quoteUsd(price, payin, payout) {
+  const r2 = (n) => Math.round(n * 100) / 100;
+  const send = r2(price * (1 + payout / 100));
+  const total = r2(send * (1 + payin / 100));
+  return { send, total, fee: r2(total - price) };
 }
 const opByCode = Object.fromEntries(OPERATORS.map((o) => [o.code, o]));
 
@@ -330,10 +337,10 @@ async function payCard(u, b, ctx) {
   const country = String(b.country || '').toUpperCase();
   let phone = String(b.phone || '').replace(/[^0-9]/g, '');
   if (!first || !last || !city || !zip || !/^[A-Z]{2}$/.test(country) || phone.length < 8 || phone.length > 15) throw fail(400, 'bad_card_info');
-  const q = quote(pack.xof, CARD.payin, CARD.payout);
+  const q = quoteUsd(pack.usd, CARD.payin, CARD.payout);
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
-  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits || 0, days: pack.days || 0, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits || 0, days: pack.days || 0, price: pack.xof, priceUsd: pack.usd, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
   await bump({ orders_created: 1, 'orders_created_op.card': 1 });
   const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, city, zip, country, description: pack.days ? `SlashAtlas no ads ${pack.days} days` : `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   // Collecte par carte (API v2) : même famille que le mobile money, point d'entrée « init » ; exige le KYC carte validé (sinon CARD_PAYMENT_NOT_AUTHORIZED).

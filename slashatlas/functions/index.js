@@ -64,16 +64,21 @@ let popCache = { at: 0, rows: [] };
 /** Commandes les plus copiées (compteur public) : lecture mise en cache 15 min côté fonction et 15 min côté CDN. */
 async function popular(l) {
   if (Date.now() - popCache.at > 900000) {
-    const q = await getFirestore().collection('SlashAtlasCounts').orderBy('copies', 'desc').limit(150).get();
-    popCache = { at: Date.now(), rows: q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0 })).filter((r) => CMDS.commands[r.slug]) };
+    const q = await getFirestore().collection('SlashAtlasCounts').orderBy('score', 'desc').limit(150).get();
+    popCache = { at: Date.now(), rows: q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0, tries: d.data().tries || 0 })).filter((r) => CMDS.commands[r.slug]) };
   }
   const counts = {};
-  popCache.rows.forEach((r) => { counts[r.slug] = r.copies; });
+  popCache.rows.forEach((r) => { counts[r.slug] = [r.copies, r.tries]; });
   const top = popCache.rows.slice(0, 12).map((r) => {
     const c = CMDS.commands[r.slug];
-    return { slug: r.slug, copies: r.copies, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
+    return { slug: r.slug, copies: r.copies, tries: r.tries, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
   });
   return { counts, top };
+}
+/** Compteur public par commande (copies et clics « Générer ici ») : chaque événement compte, commandes connues seulement ; « score » sert au classement. */
+async function publicCount(slug, field) {
+  if (!CMDS.commands[slug]) return;
+  try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ [field]: FieldValue.increment(1), score: FieldValue.increment(1), at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
 }
 async function statsWrite(b, req) {
   // Les clés pointées doivent passer par update() pour créer des maps imbriquées.
@@ -94,16 +99,14 @@ async function statsWrite(b, req) {
     u.copies = inc;
     const slug = key(b.s || b.n);
     u[`cmd.${slug}`] = inc;
-    // Compteur public « copies » : une seule copie par visiteur et par commande et par session (b.f = première copie de la session), commandes connues seulement.
-    if (b.f && CMDS.commands[slug]) {
-      try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ copies: inc, at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
-    }
+    await publicCount(slug, 'copies');
   } else if (t === 'test') {
     u.tests = inc;
     u[`tool.${key(b.tool)}`] = inc;
   } else if (t === 'try') {
     u.tries = inc;
     u[`try.${key(b.n)}`] = inc;
+    await publicCount(key(b.n), 'tries');
   } else if (t === 'video') { // lecture de la vidéo de présentation
     u.videoplays = inc;
   } else if (t === 'nopub') { // clic vers l'offre « sans pub »

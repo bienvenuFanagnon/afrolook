@@ -20,10 +20,25 @@
     }).join('') + '</div>';
   }
   function mapPairs(rows, k, nameFn) { return merge(rows, k).map(function (p) { return [nameFn ? nameFn(p[0]) : p[0], p[1]]; }); }
+  // Pays des visiteurs : déduits du fuseau horaire de leur navigateur (aucune adresse IP conservée). Un VPN ou un appareil réglé sur un autre fuseau fausse un peu.
+  var TZC = null, lastD = null;
+  fetch('/js/tzc.json').then(function (r) { return r.json(); }).then(function (m) { TZC = m; if (lastD) render(lastD); }).catch(function () { TZC = {}; });
+  function countryPairs(r) {
+    if (!TZC) return null;
+    var out = {};
+    merge(r, 'tz').forEach(function (p) { var cc = TZC[p[0]] || '??'; out[cc] = (out[cc] || 0) + p[1]; });
+    var dn; try { dn = new Intl.DisplayNames(['fr'], { type: 'region' }); } catch (e) {}
+    return Object.keys(out).map(function (cc) {
+      var flag = cc.length === 2 && cc !== '??' ? String.fromCodePoint(127397 + cc.charCodeAt(0), 127397 + cc.charCodeAt(1)) + ' ' : '';
+      var name = cc === '??' ? 'Inconnu' : ((dn && dn.of(cc)) || cc);
+      return [flag + name, out[cc]];
+    }).sort(function (a, b) { return b[1] - a[1]; });
+  }
   var fmt = function (iso) { return iso ? new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
   function fmtN(n) { return String(n || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function kpi(n, l, sub) { return '<div class="kpi"><b>' + n + '</b><span>' + l + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; }
   function render(d) {
+    lastD = d;
     var r = d.stats, pv = sum(r, 'pv'), cp = sum(r, 'copies');
     var maxPv = Math.max.apply(null, r.map(function (x) { return x.pv || 0; }).concat([1]));
     var rate = pv ? (100 * cp / pv).toFixed(1).replace('.', ',') + ' % des vues' : '';
@@ -48,7 +63,7 @@
     var proPv = 0; r.forEach(function (x) { var p = x.pages || {}; proPv += (p['_pro_'] || 0) + (p['_en_pro_'] || 0); });
     var np = sum(r, 'nopub'), wl = r.reduce(function (n, x) { return n + ((x.signupKind || {}).waitlist || 0); }, 0);
     var nopub = '<div class="kpis">' + kpi(np, 'Clics vers « Sans pub »', pv ? (100 * np / pv).toFixed(1).replace('.', ',') + ' % des vues' : '') + kpi(proPv, 'Vues de la page « Sans pub »') + kpi(wl, 'Inscrits à l’offre sans pub', proPv ? (100 * wl / proPv).toFixed(1).replace('.', ',') + ' % des vues de la page' : '') + '</div>' + list('Clics « Sans pub » depuis quelle page', mapPairs(r, 'nopub_from', function (p) { var q = p.replace(/^_|_$/g, '').replace(/_/g, '/'); return q === '' ? 'accueil' : q === 'en' ? 'accueil (EN)' : q; }));
-    var TABS = [['over', 'Vue d’ensemble', kpAud + tbl + cols + list('Fuseaux horaires (région des visiteurs)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (bientôt)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['tools', 'Outils', tools]];
+    var TABS = [['over', 'Vue d’ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d’après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (bientôt)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['tools', 'Outils', tools]];
     var tabNav = '<div class="seg adm-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '"' + (t[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
     root.innerHTML = head + tabNav + TABS.filter(function (t) { return t[0] === tab; }).map(function (t) { return t[2]; }).join('');
     Array.prototype.forEach.call(root.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; try { sessionStorage.setItem('sa_admtab', tab); } catch (e) {} render(d); }); });
