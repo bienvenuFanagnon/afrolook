@@ -145,7 +145,9 @@ class CardEntry {
     final avatar = (me.imageUrl ?? '').isNotEmpty ? CachedNetworkImageProvider(me.imageUrl!) : null;
     final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images, followers: me.followersCount, profileId: me.id, country: me.countryData?['countryCode']);
     _markOpened();
-    final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, initialStyle: style, initialCountry: country, askLink: askLink, initialTemplate: template)));
+    // Participation à un DÉFI : l'identifiant du futur post est réservé tout de suite, pour que le QR code « Vote pour moi » de la carte y mène.
+    final presetPostId = defiPostId != null ? FirebaseFirestore.instance.collection('Posts').doc().id : null;
+    final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, presetPostId: presetPostId, initialStyle: style, initialCountry: country, askLink: askLink, initialTemplate: template)));
     if (result is! CardResult || !nav.mounted) return;
     final quote = await CardService.quote();
     if (!nav.mounted) return;
@@ -156,7 +158,7 @@ class CardEntry {
       if (choice == null || !nav.mounted) return;
       asDefi = choice == 'defi';
     }
-    await CardFlow.publishAsPost(nav.context, result, quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi);
+    await CardFlow.publishAsPost(nav.context, result, quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi, presetPostId: presetPostId);
   }
 }
 

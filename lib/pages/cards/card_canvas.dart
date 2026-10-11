@@ -78,25 +78,35 @@ class CardCanvas extends StatelessWidget {
             ? theme.look.layout!(args)
             : _Content(args: args);
 
+    final card = SizedBox(
+      width: size.width,
+      height: size.height,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            theme.background(size),
+            Padding(padding: theme.padding, child: theme.wrap(content)),
+            const Positioned(left: 0, right: 0, bottom: 0, child: _TriBand()),
+          ],
+        ),
+      ),
+    );
+    // Carte de participation à un DÉFI : un bandeau « Vote pour moi » avec un grand QR code se colle sous la carte
+    // (la carte est partagée sur d'autres réseaux : on scanne le code ou on ouvre le lien pour voter dans l'application).
+    final Widget body = !spec.hasVote
+        ? card
+        : SizedBox(
+            width: size.width,
+            height: size.height + _VoteBand.height,
+            child: Stack(children: [
+              Positioned(left: 0, right: 0, bottom: 0, height: _VoteBand.height + 28, child: _VoteBand(text: spec.voteText!.trim(), link: spec.voteLink!)),
+              Positioned(left: 0, top: 0, child: card),
+            ]),
+          );
     // la carte est une image : elle ne suit pas la taille de texte choisie dans les réglages du téléphone
-    return MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
-        child: SizedBox(
-          width: size.width,
-          height: size.height,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                theme.background(size),
-                Padding(padding: theme.padding, child: theme.wrap(content)),
-                const Positioned(
-                    left: 0, right: 0, bottom: 0, child: _TriBand()),
-              ],
-            ),
-          ),
-        ));
+    return MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling), child: body);
   }
 
   List<int> _selectedIndices() {
@@ -381,6 +391,53 @@ class _Footer extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Bandeau « Vote pour moi » : la mention, une phrase d'explication et un grand QR code qui mène à la participation.
+class _VoteBand extends StatelessWidget {
+  const _VoteBand({required this.text, required this.link});
+  final String text;
+  final String link;
+  static const double height = 100;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(color: _ink, borderRadius: BorderRadius.circular(28), border: Border.all(color: _green, width: 2)),
+        padding: const EdgeInsets.fromLTRB(14, 28, 12, 8),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(color: _green, shape: BoxShape.circle),
+            child: const Icon(Icons.how_to_vote_rounded, color: _ink, size: 22),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(text.toUpperCase(), maxLines: 1, style: const TextStyle(color: _yellow, fontSize: 21, fontWeight: FontWeight.w900, letterSpacing: 0.3)),
+              ),
+              const SizedBox(height: 2),
+              Text(tr('Scanne le QR code ou ouvre le lien du post, dans Afrolook'), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 10.5, height: 1.25, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 66,
+            height: 66,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+            child: QrImageView(
+                data: link,
+                padding: EdgeInsets.zero,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Color(0xFF111111)),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF111111))),
+          ),
+        ]),
+      );
 }
 
 /// Sceau Afrolook : pastille noire cerclée de vert, avec le logo et le nom. Identique sur tous les styles.

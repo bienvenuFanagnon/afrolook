@@ -60,6 +60,9 @@ class UserPostLookImageTab extends StatefulWidget {
   final Canal? canal;
   final String? defiPostId;
 
+  /// Identifiant déjà choisi pour le post (carte « Vote pour moi » : son QR code mène à ce post).
+  final String? presetPostId;
+
   /// Studio Cartes : image(s) et légende déjà prêtes (la carte), publiées avec les MÊMES règles qu'un post image
   /// (images max, caractères, délai entre deux posts, pays…).
   final List<Uint8List>? initialImages;
@@ -78,6 +81,7 @@ class UserPostLookImageTab extends StatefulWidget {
     super.key,
     required this.canal,
     this.defiPostId,
+    this.presetPostId,
     this.initialImages,
     this.initialDescription,
     this.initialPostType,
@@ -1504,7 +1508,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           },
         );
 
-        String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
+        String postId = widget.presetPostId ?? FirebaseFirestore.instance.collection('Posts').doc().id;
 
         Post post = Post()
           ..monetized = _monetized

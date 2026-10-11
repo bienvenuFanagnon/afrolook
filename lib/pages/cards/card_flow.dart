@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../ads/admob_service.dart';
 import '../../ads/rewards_service.dart';
@@ -20,11 +22,14 @@ import 'card_text.dart';
 
 /// Carte prête à être publiée ou utilisée : l'image (JPEG 1080 px), la légende proposée et le style choisi.
 class CardResult {
-  CardResult({required this.image, required this.caption, required this.pro, required this.format, this.sourcePostId});
+  CardResult({required this.image, required this.caption, required this.pro, required this.format, this.sourcePostId, this.voteLink});
   final Uint8List image;
 
   /// Post d'origine de la carte (carte créée depuis un post existant) : la publication crée un NOUVEAU post, l'ancien n'est pas modifié.
   final String? sourcePostId;
+
+  /// Lien « Vote pour moi » de la carte (participation à un DÉFI) : le post est publié avec l'identifiant qu'il contient.
+  final String? voteLink;
   final String caption;
 
   /// Un style Pro a été choisi (coût supplémentaire, sauf avec le pass).
@@ -61,6 +66,15 @@ class CardFlow {
     if ((s.externalLink ?? '').isNotEmpty) return '✨ Carte Afrolook$excerpt\n🔗 ${s.externalLink}\n#carteafrolook';
     final credit = s.credit == null ? '' : '\nPost de @${s.pseudo}';
     return '✨ Carte Afrolook$excerpt$credit\n#carteafrolook';
+  }
+
+  /// Légende d'une participation à un DÉFI : la mention de vote et le lien du post, pour qu'on puisse voter depuis un autre réseau.
+  static String voteCaption(String mention, String link) => '🏆 $mention ! ${tr('Je participe au défi sur Afrolook')}\n👉 $link\n#defiafrolook #carteafrolook';
+
+  /// Partage de la carte (JPEG) avec un texte : la carte publiée dans Afrolook se partage ensuite sur les autres réseaux.
+  static Future<void> shareCard(Uint8List jpeg, {String? text}) async {
+    final f = await File('${Directory.systemTemp.path}/carte_vote_${DateTime.now().millisecondsSinceEpoch}.jpg').writeAsBytes(jpeg, flush: true);
+    await Share.shareXFiles([XFile(f.path, mimeType: 'image/jpeg')], text: text);
   }
 
   /// Légende proposée pour une chronique (100 caractères au plus).
@@ -209,10 +223,10 @@ class CardFlow {
   /// Publication en post : l'écran « image » des posts, déjà rempli avec la carte. Mêmes règles qu'un post
   /// (images max, caractères, délai entre deux posts, pays…), le débit de la carte se fait à la vraie publication.
   /// [asDefi] : « Lancer un défi avec cette carte » : même écran, avec le type « Défi » déjà choisi (cagnotte, date de fin…).
-  static Future<bool> publishAsPost(BuildContext context, CardResult r, CardQuote quote, {Canal? canal, String? defiPostId, bool asDefi = false}) async {
+  static Future<bool> publishAsPost(BuildContext context, CardResult r, CardQuote quote, {Canal? canal, String? defiPostId, bool asDefi = false, String? presetPostId}) async {
     final done = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => _PostPublishPage(result: r, quote: quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi)),
+      MaterialPageRoute(builder: (_) => _PostPublishPage(result: r, quote: quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi, presetPostId: presetPostId)),
     );
     return done == true;
   }
@@ -269,12 +283,57 @@ class CardFlow {
 }
 
 class _PostPublishPage extends StatelessWidget {
-  const _PostPublishPage({required this.result, required this.quote, this.canal, this.defiPostId, this.asDefi = false});
+  const _PostPublishPage({required this.result, required this.quote, this.canal, this.defiPostId, this.asDefi = false, this.presetPostId});
   final bool asDefi;
+  final String? presetPostId;
   final CardResult result;
   final CardQuote quote;
   final Canal? canal;
   final String? defiPostId;
+
+  Future<void> _offerShare(BuildContext context) async {
+    final c = AppColors.of(context);
+    final link = result.voteLink!;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(ctx.tr('Ta participation est publiée 🏆'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text(ctx.tr('Partage ta carte sur WhatsApp, Facebook, TikTok… Tes amis scannent le QR code ou ouvrent le lien pour voter pour toi dans Afrolook.'), style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  await CardFlow.shareCard(result.image, text: CardFlow.voteCaption(ctx.tr('Vote pour moi'), link));
+                },
+                icon: const Icon(Icons.ios_share_rounded, size: 18),
+                label: Text(ctx.tr('Partager ma carte')),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: link));
+                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(ctx.tr('Lien copié'))));
+                },
+                icon: const Icon(Icons.link_rounded, size: 18),
+                label: Text(ctx.tr('Copier le lien de mon post')),
+              ),
+            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Center(child: Text(ctx.tr('Plus tard')))),
+          ]),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -308,11 +367,16 @@ class _PostPublishPage extends StatelessWidget {
         Expanded(child: UserPostLookImageTab(
         canal: canal,
         defiPostId: defiPostId,
+        presetPostId: presetPostId,
         initialImages: [result.image],
         initialDescription: result.caption,
         initialPostType: asDefi && defiPostId == null ? 'DEFI' : null,
         beforePublish: () => CardFlow.commit(context, CardKind.publish, pro: result.pro, quote: quote),
-        onPublished: () => Navigator.of(context).pop(true),
+        onPublished: () async {
+          // participation à un DÉFI avec une carte « Vote pour moi » : on propose tout de suite de la partager pour récolter des votes
+          if (result.voteLink != null && context.mounted) await _offerShare(context);
+          if (context.mounted) Navigator.of(context).pop(true);
+        },
       )),
       ]),
     );

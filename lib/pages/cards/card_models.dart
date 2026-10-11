@@ -658,6 +658,13 @@ class CardSpec {
   String? commentsText;
   String? followersText;
 
+  /// Carte créée pour participer à un DÉFI : mention « Vote pour moi » et QR code vers la participation (bandeau sous la carte).
+  /// Null ou vide : pas de bandeau. [voteLink] : lien de la participation (le post est publié avec cet identifiant).
+  String? voteText;
+  String? voteLink;
+
+  bool get hasVote => (voteText ?? '').trim().isNotEmpty && (voteLink ?? '').isNotEmpty;
+
   /// Cadrage de chaque image (clé : indice dans [CardSource.images]) ; absent = image entière, centrée.
   final Map<int, ImageAdjust> adjusts = {};
 

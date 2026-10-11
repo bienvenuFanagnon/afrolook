@@ -26,3 +26,11 @@ Nécessite une nouvelle version de l'application pour les écrans ; la partie se
 - **Transformer en défi** (menu d'un post) : la description est modifiable avant le lancement ; l'action `convert` de `handleDefiAction` accepte un champ `description` (texte, 5 000 caractères au plus) appliqué avec la conversion.
 - **Défis en cours dans le fil** : `lib/widgets/feed/sections/defi_feed_card.dart`, traités comme des pubs (après les posts 4, 11, 19, puis tous les 12 posts, accueil et fil sport). Un défi différent par emplacement (non participés d'abord, jamais montrés d'abord, les plus proches de la fin en premier), cagnotte, temps restant, bouton Participer ou Voir et voter. Pas de croix : le défi reste visible jusqu'à sa fin. Liste relue au plus toutes les 4 minutes (requête sans index composite).
 - Version de l'application : 2.0.8+251, une nouvelle publication sur les stores est nécessaire pour ces changements Flutter.
+
+## Carte « Vote pour moi » (participation à un défi)
+- Quand on crée une carte pour **participer à un défi**, un bandeau « Vote pour moi » avec un grand QR code se colle sous la carte (`_VoteBand`, `card_canvas.dart`, hauteur 100 en plus du format choisi). Le QR et le lien mènent au post de participation : `https://afrolookmedia.com/share/post/<id>`.
+- L'identifiant du futur post est **réservé dès l'ouverture du studio** (`CardEntry.composeOn` → `presetPostId`), transmis à la page de publication (`UserPostLookImageTab.presetPostId`) puis utilisé comme identifiant du post (la fonction `handleDefiAction`/participate l'accepte : même motif que les identifiants Firestore).
+- Onglet « Format » du studio : interrupteur de la mention (activée par défaut) et 4 phrases au choix (Vote pour moi, Soutiens-moi, Je compte sur ton vote, Vote et fais-moi gagner).
+- Légende proposée : « 🏆 Vote pour moi ! Je participe au défi sur Afrolook 👉 lien #defiafrolook #carteafrolook » (modifiable).
+- Après la publication : feuille « Ta participation est publiée » avec **Partager ma carte** (image + lien, pour WhatsApp, Facebook, TikTok…) et **Copier le lien de mon post**.
+- Test : `test/vote_band_test.dart` (taille et absence de débordement du bandeau).

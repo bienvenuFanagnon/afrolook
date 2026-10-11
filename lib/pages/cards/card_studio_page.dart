@@ -30,12 +30,15 @@ import 'card_tutorial_page.dart';
 /// - [compose] = true : on part d'un brouillon (page de création de post) ; l'écran se ferme en renvoyant un
 ///   [CardResult] que la page de création publie ensuite avec les règles des posts.
 class CardStudioPage extends StatefulWidget {
-  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.initialStyle, this.initialCountry, this.askLink = false, this.initialTemplate});
+  const CardStudioPage({super.key, required this.source, this.compose = false, this.canal, this.defiPostId, this.presetPostId, this.initialStyle, this.initialCountry, this.askLink = false, this.initialTemplate});
 
   final CardSource source;
   final bool compose;
   final Canal? canal;
   final String? defiPostId;
+
+  /// Identifiant réservé au post de participation à un DÉFI : le QR code et le lien « Vote pour moi » de la carte y mènent.
+  final String? presetPostId;
 
   /// Style et pays proposés au départ (invitation d'une fête) ; par défaut Néon et le pays de l'auteur.
   final CardStyleId? initialStyle;
@@ -82,6 +85,10 @@ class _CardStudioPageState extends State<CardStudioPage> {
       imageOrder: List<int>.generate(_source.images.length.clamp(0, 3), (i) => i),
     );
     _textCtl.text = _source.text;
+    if (widget.defiPostId != null && widget.presetPostId != null) {
+      _spec.voteText = tr('Vote pour moi');
+      _spec.voteLink = cardPostLink(widget.presetPostId!);
+    }
     CardGuard.enter();
     _loadQuote();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -197,7 +204,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     await CardExport.precache(context, _source, _spec);
     final png = await CardExport.toPng(_boundaryKey, format: format);
     final jpeg = await CardFlow.toJpeg(png);
-    return CardResult(image: jpeg, caption: CardFlow.postCaption(_source), pro: _isPro, format: format, sourcePostId: _source.postId);
+    return CardResult(image: jpeg, caption: _spec.hasVote ? CardFlow.voteCaption(_spec.voteText!.trim(), _spec.voteLink!) : CardFlow.postCaption(_source), pro: _isPro, format: format, sourcePostId: _source.postId, voteLink: _spec.hasVote ? _spec.voteLink : null);
   }
 
   Future<void> _publish() async {
@@ -239,7 +246,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
       if (r == null || !mounted) return;
       final done = choice == 'chronique'
           ? await CardFlow.publishAsChronique(context, r, _quote, caption: CardFlow.chroniqueCaption(_source))
-          : await CardFlow.publishAsPost(context, r, _quote, canal: widget.canal, defiPostId: widget.defiPostId, asDefi: choice == 'defi');
+          : await CardFlow.publishAsPost(context, r, _quote, canal: widget.canal, defiPostId: widget.defiPostId, asDefi: choice == 'defi', presetPostId: widget.presetPostId);
       if (done && mounted) Navigator.of(context).pop(true);
     } catch (_) {
       _say(tr('Impossible de créer la carte. Réessaie.'));
@@ -1070,7 +1077,47 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   // ── Onglet Format ─────────────────────────────────────────────────────────
 
+  static const _voteTexts = ['Vote pour moi', 'Soutiens-moi', 'Je compte sur ton vote', 'Vote et fais-moi gagner'];
+
+  /// Mention de vote d'une carte de participation à un DÉFI : activable, et choix de la phrase.
+  Widget _votePanel(AppColors c) => Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.how_to_vote_rounded, size: 20, color: Color(0xFFFF9500)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(context.tr('Mention « Vote pour moi » et QR code'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14))),
+            Switch(
+              value: _spec.hasVote,
+              onChanged: (on) => setState(() {
+                _spec.voteText = on ? context.tr(_voteTexts.first) : '';
+                _captureDone = false;
+              }),
+            ),
+          ]),
+          Text(context.tr('Quand tu partages ta carte sur un autre réseau, on scanne le QR code ou on ouvre le lien de ton post pour voter dans Afrolook.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4)),
+          if (_spec.hasVote) ...[
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 4, children: [
+              for (final t in _voteTexts)
+                ChoiceChip(
+                  label: Text(context.tr(t)),
+                  selected: (_spec.voteText ?? '').trim() == context.tr(t),
+                  onSelected: (_) => setState(() {
+                    _spec.voteText = context.tr(t);
+                    _captureDone = false;
+                  }),
+                  visualDensity: VisualDensity.compact,
+                ),
+            ]),
+          ],
+        ]),
+      );
+
   Widget _formatPanel(AppColors c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (widget.defiPostId != null && widget.presetPostId != null) _votePanel(c),
         Wrap(spacing: 8, children: [
           for (final f in CardFormat.values)
             ChoiceChip(label: Text(f.label), selected: _spec.format == f, onSelected: (_) => setState(() => _spec.format = f), visualDensity: VisualDensity.compact),
