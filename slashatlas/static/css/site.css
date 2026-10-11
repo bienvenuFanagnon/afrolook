@@ -426,3 +426,17 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .qrwhy b{display:block;margin-bottom:4px}.qrwhy ol{margin:0 0 6px;padding-left:20px;display:flex;flex-direction:column;gap:3px}.qrwhy p{margin:0;color:var(--mut);font-size:12.5px}
 .qrbox select{background:#0d0e10;border:1px solid var(--line2);border-radius:12px;color:var(--txt);padding:12px 13px;font:inherit;font-size:14.5px;min-height:44px}
 .qrbox .hint:empty{display:none}
+
+/* Canal WhatsApp */
+.btn.wa{background:#25d366;border-color:#25d366;color:#04210f}.btn.wa:hover{filter:brightness(1.06)}
+.wacard{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid rgba(37,211,102,.4);background:rgba(37,211,102,.07);border-radius:18px;padding:16px 18px;margin:22px 0}
+.wacard>div{flex:1 1 220px;min-width:0}.wacard b{display:block;font-size:16px}.wacard p{margin:4px 0 0;color:var(--mut);font-size:13.5px}
+.waic{width:44px;height:44px;border-radius:50%;background:#25d366;color:#04210f;display:grid;place-items:center;flex:none}
+.after .wacard{margin:12px 0 0}
+.ftwa{color:#25d366!important;font-weight:700}
+#wa-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;width:min(520px,calc(100% - 24px));display:flex;align-items:center;gap:10px;background:#121416;border:1px solid rgba(37,211,102,.5);border-radius:16px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:watoast .35s ease-out}
+#wa-toast p{margin:0;flex:1;font-size:13.5px;font-weight:600;line-height:1.35;min-width:0}
+#wa-toast .waic{display:none}
+#wa-toast button{background:none;border:0;color:var(--mut);font-size:22px;line-height:1;padding:6px 8px;cursor:pointer;min-height:40px}
+@keyframes watoast{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+.wastudio{margin:12px 0 0;font-size:13.5px;color:var(--mut)}.wastudio a{color:#25d366;font-weight:700}

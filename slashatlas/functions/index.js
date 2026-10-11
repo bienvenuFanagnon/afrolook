@@ -132,6 +132,9 @@ async function statsWrite(b, req) {
   } else if (t === 'qr') { // QR code du client ajouté sur l'affiche (coin choisi)
     u.qrs = inc;
     u[`qr_pos.${key(b.n)}`] = inc;
+  } else if (t === 'wa') { // clic vers le canal WhatsApp (emplacement : home, after, footer, toast, studio)
+    u.wa = inc;
+    u[`wa_from.${key(b.n)}`] = inc;
   } else if (t === 'adview') { // bloc publicitaire affiché à l'écran
     u.adviews = inc;
     u[`ad.${key(b.n)}`] = inc;

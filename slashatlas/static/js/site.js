@@ -20,7 +20,7 @@
     } catch (e) {}
   }
   // Les mêmes événements partent aussi vers Google Analytics (si présent) : copie, essai, outil, achat…
-  var GA = { copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', pwa: 'pwa_install', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish', share: 'share', qr: 'qr_add' };
+  var GA = { copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', pwa: 'pwa_install', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish', share: 'share', qr: 'qr_add', wa: 'join_group' };
   function toGa(t, d) { try { if (window.gtag && GA[t]) window.gtag('event', GA[t], { command: d.s || d.n || '', tool: d.tool || '', method: d.m || '', page_type: d.p || '' }); } catch (e) {} }
   window.saTrack = track;
   function refClass() {
@@ -41,6 +41,23 @@
   // ── Langue : l'accueil suit la langue du téléphone (script en tête de page) ; seul un choix explicite est mémorisé ──
   $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang_choice', a.dataset.langSwitch); }); });
 
+
+  // ── Canal WhatsApp : petite invitation après une copie (une seule fois par visite ; jamais après avoir rejoint, 14 jours de pause après fermeture) ──
+  var WA_KEY = 'sa_wa';
+  function waGet() { try { return JSON.parse(localStorage.getItem(WA_KEY) || '{}'); } catch (e) { return {}; } }
+  function waSet(o) { try { var s = waGet(); for (var k in o) s[k] = o[k]; localStorage.setItem(WA_KEY, JSON.stringify(s)); } catch (e) {} }
+  window.saWaToast = function () {
+    var url = document.body.dataset.wa; if (!url || document.getElementById('wa-toast') || document.getElementById('after')) return;
+    var s = waGet(); if (s.j || (s.c && Date.now() - s.c < 14 * 864e5)) return;
+    setTimeout(function () {
+      if (document.getElementById('wa-toast') || document.querySelector('.pwa')) return;
+      var fr = lang === 'fr', d = document.createElement('div'); d.id = 'wa-toast'; d.setAttribute('role', 'status');
+      d.innerHTML = '<span class="waic" aria-hidden="true"></span><p>' + (fr ? 'Des surprises arrivent bientôt sur notre canal WhatsApp.' : 'Surprises are coming soon on our WhatsApp channel.') + '</p><a class="btn wa sm" href="' + url + '" target="_blank" rel="noopener" data-wa="toast">' + (fr ? 'Rejoindre' : 'Join') + '</a><button type="button" aria-label="' + (fr ? 'Fermer' : 'Close') + '">×</button>';
+      d.querySelector('button').addEventListener('click', function () { waSet({ c: Date.now() }); d.remove(); });
+      document.body.appendChild(d);
+    }, 1200);
+  };
+
   // ── Copier ──
   function fallbackCopy(txt, done) { var ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove(); done(); }
   document.addEventListener('click', function (e) {
@@ -48,7 +65,7 @@
     if (el) {
       var src = $(el.dataset.copy); if (!src) return;
       var old = el.textContent;
-      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
+      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } window.saWaToast && window.saWaToast(); setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
       var txt = src.textContent;
       try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); }); } catch (err) { fallbackCopy(txt, done); }
       return;
@@ -56,6 +73,7 @@
     var t = e.target.closest('[data-test]'); if (t) track('test', { tool: t.dataset.test });
     var u = e.target.closest('[data-try]'); if (u) track('try', { n: u.dataset.try });
     var np = e.target.closest('a[href$="/pro/"]'); if (np) track('nopub', {});
+    var wl = e.target.closest('[data-wa]'); if (wl && wl.tagName === 'A') { track('wa', { n: wl.dataset.wa }); waSet({ j: 1 }); var wt = document.getElementById('wa-toast'); if (wt) wt.remove(); }
   });
 
   // Copie par sélection + clic droit (ou Ctrl+C) dans la commande : même effet que le bouton « Copier ».
@@ -64,7 +82,7 @@
       var sel = window.getSelection(), nd = sel && sel.anchorNode; if (!nd) return;
       var pre = (nd.nodeType === 1 ? nd : nd.parentElement).closest('.cmd pre'); if (!pre) return;
       var a = $('#after'); if (a) a.classList.add('on');
-      window.saAds && window.saAds.late();
+      window.saAds && window.saAds.late(); window.saWaToast && window.saWaToast();
       track('copy', { s: pre.id.replace(/^p-/, ''), via: 'sel' });
     } catch (e) {}
   });
