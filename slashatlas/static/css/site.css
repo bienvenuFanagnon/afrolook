@@ -354,3 +354,24 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .vid video{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000;object-fit:cover}.vid .vfacade{background:transparent}.vyt{text-align:center;margin:6px 0 0;font-size:13px}.vyt a{color:var(--mut);text-decoration:underline}
 .packs{grid-template-columns:repeat(2,minmax(0,1fr))}.pack.passtile{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:4px 12px;padding:12px 10px}.pack.passtile b{font-size:19px}.pack.passtile em{margin:0}.pack.passtile small{flex-basis:100%;text-align:center}
 .plan .conv{margin:-6px 0 10px;font-size:13px;color:var(--mut)}
+.vsound{position:absolute;left:12px;bottom:12px;z-index:3;border:0;border-radius:999px;padding:9px 14px;background:rgba(0,0,0,.72);color:#fff;font:700 13px/1 var(--sans,system-ui);cursor:pointer;backdrop-filter:blur(6px)}.vsound:hover{background:rgba(0,0,0,.9)}
+/* Cartes de commandes : affichage propre sur téléphone, tablette et ordinateur */
+.card .cb{min-width:0}
+.card .acts,.rb .acts{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+.card .acts .btn,.card .acts .btn.pri,.card .acts .btn.gl,.card .acts .btn.copy,.rb .acts .btn,.rb .acts .btn.copy{flex:1 1 auto;min-width:0;width:auto;padding:8px 10px;font-size:12.5px;white-space:nowrap}
+.card .meta{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;justify-content:flex-start}
+.card .meta span{overflow:visible;text-overflow:clip;white-space:normal}
+.card .meta .cnt,.card .meta .stp{white-space:nowrap}
+.card h3{overflow-wrap:anywhere}
+@media (min-width:720px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1100px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:719px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .card .cl{flex-basis:96px}
+  .card .cb{padding:10px 11px;gap:5px}
+  .card .cb .meta{display:flex}
+  .card .cb .meta span:not(.cnt):not(.stp){display:none}
+  .card .cb .meta:not(:has(.cnt:not([hidden]))):not(:has(.stp)){display:none}
+  .card .acts .btn,.card .acts .btn.pri,.card .acts .btn.gl,.card .acts .btn.copy{padding:8px 10px;font-size:12.5px}
+}
+@media (min-width:720px){.card .cb{display:flex;flex-direction:column;flex:1;gap:5px}.card .cb .acts{margin-top:auto;padding-top:6px}}
