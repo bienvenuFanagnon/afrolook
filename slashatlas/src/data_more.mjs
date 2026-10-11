@@ -32,11 +32,13 @@ import jalons from './cmds/jalons.mjs';
 import magazine from './cmds/magazine.mjs';
 import ecom from './cmds/ecom.mjs';
 import mascotte from './cmds/mascotte.mjs';
+import motion from './cmds/motion.mjs';
+import kit from './cmds/kit.mjs';
 
-const FILES = { mode, produit, food, immobilier, sport, musique, reseaux, evenement, beaute, effets, video, tech, auto, bijoux, maison, education, sante, voyage, business, packaging, typo, logomat, planches, infographie, diorama, anime, marque, editorial, jalons, magazine, ecom, mascotte };
+const FILES = { mode, produit, food, immobilier, sport, musique, reseaux, evenement, beaute, effets, video, tech, auto, bijoux, maison, education, sante, voyage, business, packaging, typo, logomat, planches, infographie, diorama, anime, marque, editorial, jalons, magazine, ecom, mascotte, motion, kit };
 const FMT = {
-  fr: { '4:5': 'vertical 4:5', '1:1': 'carré 1:1', '3:2': 'paysage 3:2', '9:16': 'vertical 9:16', '16:9': 'paysage 16:9', '3:4': 'vertical 3:4' },
-  en: { '4:5': 'vertical 4:5', '1:1': 'square 1:1', '3:2': 'landscape 3:2', '9:16': 'vertical 9:16', '16:9': 'landscape 16:9', '3:4': 'vertical 3:4' },
+  fr: { '4:5': 'vertical 4:5', '1:1': 'carré 1:1', '3:2': 'paysage 3:2', '9:16': 'vertical 9:16', '16:9': 'paysage 16:9', '3:4': 'vertical 3:4', 'texte': 'texte' },
+  en: { '4:5': 'vertical 4:5', '1:1': 'square 1:1', '3:2': 'landscape 3:2', '9:16': 'vertical 9:16', '16:9': 'landscape 16:9', '3:4': 'vertical 3:4', 'texte': 'text' },
 };
 const FRAME = {
   fr: {
@@ -48,6 +50,8 @@ const FRAME = {
     logo: (s, f) => `Avec le logo joint, crée ${s} Format ${f}. Le logo garde exactement sa forme, ses proportions et ses couleurs d’origine. Aucun autre texte ajouté.`,
     free: (s, f) => `Crée ${s} Format ${f}. Remplacez les mots entre crochets par votre sujet.`,
     video: (s, f) => `Avec la photo jointe du produit comme image de départ, crée une vidéo publicitaire : ${s} Format ${f}. Le produit reste parfaitement identique (forme, couleurs, logo, étiquette). Aucun texte ajouté.`,
+    motion: (s, f) => `Crée une vidéo de motion design de 6 à 8 secondes : ${s} Format ${f}. Si une image est jointe (logo, photo), elle garde exactement sa forme et ses couleurs. Les textes entre guillemets sont écrits exactement tels quels, bien lisibles et sans faute : remplacez-les par les vôtres. Mouvements fluides, sans coupure brusque.`,
+    text: (s) => s,
   },
   en: {
     product: (s, f) => `With the product(s) in the attached photo, create ${s} ${f} format. Each product stays perfectly identical (shape, colors, logo, label). No added text.`,
@@ -58,6 +62,8 @@ const FRAME = {
     logo: (s, f) => `Using the attached logo, create ${s} ${f} format. The logo keeps exactly its original shape, proportions and colors. No other text added.`,
     free: (s, f) => `Create ${s} ${f} format. Replace the words in square brackets with your own subject.`,
     video: (s, f) => `Using the attached product photo as the starting frame, create an advertising video: ${s} ${f} format. The product stays perfectly identical (shape, colors, logo, label). No added text.`,
+    motion: (s, f) => `Create a 6 to 8 second motion design video: ${s} ${f} format. If an image is attached (logo, photo), it keeps exactly its shape and colors. Texts in quotation marks are written exactly as given, clearly legible and without errors: replace them with your own. Smooth movements, no abrupt cuts.`,
+    text: (s) => s,
   },
 };
 const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);

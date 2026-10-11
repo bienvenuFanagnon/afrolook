@@ -179,7 +179,7 @@ function qrClause(lang, pos) {
 function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '') {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
-  if (['video', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
+  if (['video', 'motion', 'text', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
   const L = lang === 'en' ? 'en' : 'fr';
   const clause = COMMANDS.clauses[L][c.kind][multi ? 1 : 0].replace('{T}', product ? ` (${product})` : '');
   const intro = nPhotos > 1

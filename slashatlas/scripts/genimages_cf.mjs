@@ -22,6 +22,7 @@ const INTRO = {
   place: 'Professional architectural photograph of a property. ',
   free: '',
   video: 'Cinematic still frame from an advertising video: ',
+  motion: 'Still frame from a motion design video, graphic and polished, clean modern composition, vivid colors: ',
 };
 function prompt(c) {
   let s = (c.scene && c.scene.en) || c.en.prompt;
@@ -32,7 +33,7 @@ function prompt(c) {
   return `${INTRO[c.kind] ?? ''}${s} No text, no letters, no logo, no watermark. Sharp, high quality.`.slice(0, 1800);
 }
 const NOGEN = new Set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo blueprint cyberpunk barbershop vintagerack inauguration conference djnight mascotsticker2 jewelgold jewelpearl'.split(' ')); // texte parasite ou refus du filtre du modèle
-const skip = (c) => NOGEN.has(c.slug) || ['poster', 'logo'].includes(c.kind) || fs.existsSync(path.join(OUT, `${c.slug}-apres.webp`));
+const skip = (c) => NOGEN.has(c.slug) || ['poster', 'logo', 'text'].includes(c.kind) || fs.existsSync(path.join(OUT, `${c.slug}-apres.webp`));
 let list = COMMANDS.filter((c) => !skip(c));
 if (SLUGS) list = list.filter((c) => String(SLUGS).split(',').includes(c.slug));
 if (CATS) list = list.filter((c) => String(CATS).split(',').includes(c.cat));

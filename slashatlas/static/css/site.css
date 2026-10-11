@@ -440,3 +440,15 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 #wa-toast button{background:none;border:0;color:var(--mut);font-size:22px;line-height:1;padding:6px 8px;cursor:pointer;min-height:40px}
 @keyframes watoast{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
 .wastudio{margin:12px 0 0;font-size:13.5px;color:var(--mut)}.wastudio a{color:#25d366;font-weight:700}
+
+/* Studio de contenu */
+.studio-flow{grid-template-columns:1fr;gap:10px;max-width:none}
+.studio-flow li{padding:14px 14px 15px}.studio-flow li+li::before{content:none}
+.studio-flow .si{font-weight:800;font-size:15px;color:var(--acc2)}
+.studio-flow small{font-size:13px;line-height:1.45}
+.studio-flow .more{margin-top:6px;font-size:13px;color:var(--acc2);text-decoration:none}
+.studio-fam .plan p{margin:6px 0 0;color:var(--mut);font-size:14px;line-height:1.5}
+.studio-strip{margin:22px 0 4px;padding:18px 16px;border:1px solid var(--line);border-radius:20px;background:var(--card);display:flex;flex-direction:column;gap:12px}
+.studio-strip b{font-size:17px;letter-spacing:-.01em}.studio-strip p{margin:4px 0 0;color:var(--mut);font-size:14px;line-height:1.45}
+.ss-links{display:flex;flex-wrap:wrap;gap:8px}
+@media (min-width:720px){.studio-flow{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-strip{flex-direction:row;align-items:center;justify-content:space-between;padding:20px 24px}}
