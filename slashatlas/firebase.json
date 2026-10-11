@@ -4,22 +4,87 @@
     "public": "dist",
     "cleanUrls": true,
     "trailingSlash": true,
-    "ignore": ["firebase.json", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**"
+    ],
     "headers": [
-      { "source": "**", "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
-      ] },
-      { "source": "**/*.@(woff2|webp|png|svg|ico)", "headers": [ { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" } ] },
-      { "source": "**/*.@(css|js)", "headers": [ { "key": "Cache-Control", "value": "public, max-age=3600" } ] },
-      { "source": "**/*.html", "headers": [ { "key": "Cache-Control", "value": "public, max-age=300" } ] }
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "camera=(), microphone=(), geolocation=()"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(woff2|webp|png|svg|ico)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(css|js)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=300"
+          }
+        ]
+      }
     ],
     "rewrites": [
-      { "source": "/api/**", "function": { "functionId": "slashatlasApi", "region": "us-central1" } }
+      {
+        "source": "/api/**",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "us-central1"
+        }
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/tester/**",
+        "destination": "/generer/",
+        "type": 301
+      },
+      {
+        "source": "/en/try/**",
+        "destination": "/en/generate/",
+        "type": 301
+      }
     ]
   },
   "functions": [
-    { "source": "functions", "codebase": "slashatlas", "ignore": ["node_modules", ".git", "*.log"] }
+    {
+      "source": "functions",
+      "codebase": "slashatlas",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.log"
+      ]
+    }
   ]
 }

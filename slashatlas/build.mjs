@@ -15,8 +15,8 @@ const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 
 const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
 
 const P = {
-  fr: { home: '/', cmds: '/commandes/', try: '/tester/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', try: '/en/try/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/generer/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', privacy: '/confidentialite/', cookies: '/cookies/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', privacy: '/en/privacy/', cookies: '/en/cookies/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -44,7 +44,7 @@ const KIND_LABEL = {
 const MULTI = { fr: ['Un seul', 'Plusieurs'], en: ['Single', 'Several'] };
 const clauseOf = (c, l, multi = false, type = '') => CLAUSE[l][c.kind || 'product'][multi ? 1 : 0].replace('{T}', type ? ` (${type})` : '');
 const fullPrompt = (c, l) => `${c.code} : ${c[l].prompt} ${clauseOf(c, l)}`;
-const TEST = { fr: 'Tester', en: 'Try it' };
+const TEST = { fr: 'Générer ici', en: 'Generate here' };
 
 const ad = (kind) => (cfg.ads.enabled ? `<div class="ad ad-${kind}" data-slot="${kind}" aria-label="Publicité"></div>` : '');
 
@@ -230,8 +230,8 @@ function adminPage() {
 }
 
 const TRY = {
-  fr: { title: 'Tester une commande sur SlashAtlas', desc: 'Bientôt : importez votre photo, choisissez une commande et obtenez votre visuel directement sur SlashAtlas, avec des crédits.', k: 'Bientôt disponible', h: 'Testez la commande sur votre photo', lead: 'Importez votre photo, choisissez la commande, obtenez votre visuel ici, sans quitter le site. Vous payez seulement les crédits que vous utilisez.', steps: [['Importez', 'votre photo (un ou plusieurs produits)'], ['Précisez', 'votre produit et la commande'], ['Obtenez', 'votre visuel à télécharger']], cmd: 'Commande choisie', pay: 'Paiement par mobile money ou par carte bancaire.', btn: 'Prévenez-moi à l’ouverture', copyTitle: 'En attendant', copyBtn: 'Copier la commande', all: 'Choisir une autre commande' },
-  en: { title: 'Try a command on SlashAtlas', desc: 'Coming soon: upload your photo, pick a command and get your visual right on SlashAtlas, using credits.', k: 'Coming soon', h: 'Try the command on your photo', lead: 'Upload your photo, pick the command, get your visual here without leaving the site. You only pay for the credits you use.', steps: [['Upload', 'your photo (one or several products)'], ['Describe', 'your product and the command'], ['Get', 'your visual to download']], cmd: 'Selected command', pay: 'Pay by mobile money or by card.', btn: 'Notify me at launch', copyTitle: 'Meanwhile', copyBtn: 'Copy the command', all: 'Choose another command' },
+  fr: { title: 'Générer votre visuel sur SlashAtlas', desc: 'Bientôt : importez votre photo, choisissez une commande et obtenez votre visuel directement sur SlashAtlas, avec des crédits.', k: 'Bientôt disponible', h: 'Générez votre visuel ici', lead: 'Importez votre photo, choisissez la commande, obtenez votre visuel ici, sans quitter le site. Vous payez seulement les crédits que vous utilisez.', steps: [['Importez', 'votre photo (un ou plusieurs produits)'], ['Précisez', 'votre produit et la commande'], ['Obtenez', 'votre visuel à télécharger']], cmd: 'Commande choisie', pay: 'Paiement par mobile money ou par carte bancaire.', btn: 'Prévenez-moi à l’ouverture', copyTitle: 'En attendant', copyBtn: 'Copier la commande', all: 'Choisir une autre commande' },
+  en: { title: 'Generate your visual on SlashAtlas', desc: 'Coming soon: upload your photo, pick a command and get your visual right on SlashAtlas, using credits.', k: 'Coming soon', h: 'Generate your visual here', lead: 'Upload your photo, pick the command, get your visual here without leaving the site. You only pay for the credits you use.', steps: [['Upload', 'your photo (one or several products)'], ['Describe', 'your product and the command'], ['Get', 'your visual to download']], cmd: 'Selected command', pay: 'Pay by mobile money or by card.', btn: 'Notify me at launch', copyTitle: 'Meanwhile', copyBtn: 'Copy the command', all: 'Choose another command' },
 };
 function tryPage(l) {
   const t = TRY[l], p = P[l];
