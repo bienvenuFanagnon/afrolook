@@ -149,7 +149,7 @@
 
 // Commandes les plus copiées : compteurs publics (/api/popular), badges sur les cartes, rangée « Les plus copiées » sur l'accueil, liste triée.
 (function () {
-  var cards = document.querySelectorAll('.card[data-slug]'), one = document.getElementById('cmd-cnt'), rail = document.getElementById('rail');
+  var cards = document.querySelectorAll('.card[data-slug], .rc[data-slug]'), one = document.getElementById('cmd-cnt'), rail = document.getElementById('rail-sel');
   if (!cards.length && !one && !rail) return;
   var lang = document.body.dataset.lang === 'en' ? 'en' : 'fr', MIN = 1, counts = {};
   // counts[slug] = [copies, essais « Générer ici »] ; le total sert au classement
@@ -174,17 +174,20 @@
       : '<div class="poster" style="--x:' + esc(r.x) + ';--y:' + esc(r.y) + ';--r:' + esc(r.r) + '"><span class="tag">' + esc(r.cat) + '</span><span class="shape"></span><b>' + esc(r.poster) + '</b><small>' + esc(r.code) + '</small></div>';
     var href = (lang === 'en' ? '/en/c/' : '/c/') + r.slug + '/';
     var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</a>' : '';
-    return '<article class="rc" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#p-' + r.slug + '" data-slug="' + r.slug + '">' + (lang === 'fr' ? 'Copier' : 'Copy') + '</button></div><pre id="p-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
+    return '<article class="rc" data-slug="' + r.slug + '" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pp-' + r.slug + '" data-slug="' + r.slug + '">' + (lang === 'fr' ? 'Copier' : 'Copy') + '</button></div><pre id="pp-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
   }
   function railFill(top) {
-    var pop = top.filter(function (r) { return r.copies + r.tries >= 3; }).slice(0, 8);
-    if (!rail || pop.length < 3) return;
-    var have = {}; pop.forEach(function (r) { have[r.slug] = 1; });
-    var keep = Array.prototype.filter.call(rail.children, function (c) { var m = c.querySelector('[data-slug]'); return m && !have[m.dataset.slug]; });
-    rail.innerHTML = pop.map(railCard).join('');
-    keep.slice(0, Math.max(0, 8 - pop.length)).forEach(function (c) { rail.appendChild(c); });
-    var h = document.getElementById('rail-h'); if (h && h.dataset.pop) h.textContent = h.dataset.pop;
+    var pop = top.filter(function (r) { return r.copies + r.tries >= 3; }).slice(0, 10);
+    var rp = document.getElementById('rail-pop'), tab = document.querySelector('[data-rail="pop"]');
+    if (!rp || !tab || pop.length < 3) return;
+    rp.innerHTML = pop.map(railCard).join('');
+    tab.hidden = false; showRail('pop');
   }
+  function showRail(k) {
+    ['pop', 'sel', 'new'].forEach(function (n) { var r = document.getElementById('rail-' + n); if (r) { r.hidden = n !== k; if (n === k) r.scrollLeft = 0; } });
+    Array.prototype.forEach.call(document.querySelectorAll('.rtab'), function (t) { var on = t.dataset.rail === k; t.classList.toggle('on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.rtab'), function (t) { t.addEventListener('click', function () { showRail(t.dataset.rail); }); });
   function sortList(counts) {
     var list = document.getElementById('list'); if (!list) return;
     var items = Array.prototype.slice.call(list.children);
@@ -250,7 +253,7 @@
 })();
 
 // Vidéo de présentation hébergée sur le site : préchargée en arrière-plan après le chargement de la page, puis lue automatiquement
-// quand sa section est à l'écran (et mise en pause quand on la quitte). Volume réduit (30 %). Les navigateurs interdisent souvent le son
+// quand sa section est à l'écran (et mise en pause quand on la quitte). Volume réduit (40 %). Les navigateurs interdisent souvent le son
 // sans geste de l'utilisateur : la lecture démarre alors sans le son, avec un bouton « Activer le son » ; le premier toucher sur la page l'active aussi.
 (function () {
   var box = document.querySelector('[data-vid]'); if (!box) return;
@@ -258,7 +261,7 @@
   var fr = document.body.dataset.lang !== 'en';
   var c = navigator.connection || {}, slow = c.saveData || /(^|-)2g$/.test(c.effectiveType || '');
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
-  var VOL = 0.3, visible = false, userPaused = false, started = false, tracked = false, sound = null;
+  var VOL = 0.4, visible = false, userPaused = false, started = false, tracked = false, sound = null;
   function preload() { if (slow || v.preload === 'auto') return; v.preload = 'auto'; try { v.load(); } catch (e) {} }
   function whenIdle() { if ('requestIdleCallback' in window) requestIdleCallback(preload, { timeout: 3000 }); else setTimeout(preload, 1500); }
   if (document.readyState === 'complete') whenIdle(); else window.addEventListener('load', whenIdle);
@@ -266,15 +269,15 @@
   function showSoundBtn(on) {
     if (on && !sound) {
       sound = document.createElement('button'); sound.type = 'button'; sound.className = 'vsound';
-      sound.textContent = fr ? 'Activer le son' : 'Turn sound on';
+      sound.innerHTML = '<span>' + (fr ? 'Touchez pour activer le son' : 'Tap to turn the sound on') + '</span>';
       sound.addEventListener('click', function (e) { e.stopPropagation(); unmute(); });
       box.appendChild(sound);
     }
     if (sound) sound.hidden = !on;
   }
-  function unmute() { v.muted = false; v.volume = VOL; showSoundBtn(false); }
+  function unmute() { v.muted = false; v.volume = VOL; v.controls = true; showSoundBtn(false); }
   function begun() {
-    started = true; btn.hidden = true; v.controls = true;
+    started = true; btn.hidden = true; v.controls = !v.muted;
     if (!tracked && window.saTrack) { tracked = true; window.saTrack('video', { n: v.dataset.yt }); }
   }
   function play() {
