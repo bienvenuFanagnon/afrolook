@@ -4,8 +4,8 @@ export const T = {
     htmlLang: 'fr', hreflang: 'fr',
     nav: { cmds: 'Commandes', pack: 'Packs', tuto: 'Tutoriel', pro: 'Sans pub', menu: 'Menu' },
     home: {
-      title: 'SlashAtlas : commandes IA pour créer vos affiches publicitaires',
-      desc: 'Mode, restaurants, immobilier, sport, musique : des commandes courtes prêtes à copier. Collez-les avec votre image dans votre outil IA et obtenez une affiche publicitaire.',
+      title: 'SlashAtlas : commandes IA gratuites pour créer vos affiches de produits', ogTitle: 'Trouvez des commandes IA gratuites pour créer vos affiches de produits',
+      desc: 'Des commandes IA gratuites, prêtes à copier : mode, produits, food, immobilier, beauté, sport… Copiez, collez dans votre IA, publiez votre affiche.',
       eb: 'Prompts prêts à l’emploi', h1a: 'Vous créez des affiches publicitaires avec l’IA ?', h1b: 'Gagnez des heures.',
       lead: 'Mode, restaurants, immobilier, sport, musique : des commandes courtes à copier. Vous les collez avec votre image dans votre outil IA, vous obtenez une affiche prête à publier.',
       cta1: 'Voir les commandes', cta2: 'Voir comment ça marche',
@@ -47,8 +47,8 @@ export const T = {
     htmlLang: 'en', hreflang: 'en',
     nav: { cmds: 'Commands', pack: 'Packs', tuto: 'Tutorial', pro: 'No ads', menu: 'Menu' },
     home: {
-      title: 'SlashAtlas: AI commands to create advertising posters',
-      desc: 'Fashion, restaurants, real estate, sports, music: short commands ready to copy. Paste them with your image into your AI tool and get an advertising poster.',
+      title: 'SlashAtlas: free AI commands to create your product posters', ogTitle: 'Find free AI commands to create your product posters',
+      desc: 'Free, ready-to-copy AI commands: fashion, products, food, real estate, beauty, sport… Copy, paste into your AI, publish your poster.',
       eb: 'Ready-to-use prompts', h1a: 'Do you create advertising posters with AI?', h1b: 'Save hours.',
       lead: 'Fashion, restaurants, real estate, sports, music: short commands to copy. Paste them with your image into your AI tool, get a poster ready to publish.',
       cta1: 'Browse commands', cta2: 'See how it works',

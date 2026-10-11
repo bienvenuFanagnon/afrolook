@@ -6,6 +6,10 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const crypto = require('crypto');
 const studio = require('./studio');
+const fs = require('fs');
+const nodePath = require('path');
+const OG_DIR = nodePath.join(__dirname, 'og');
+let OG_FILES = null;
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -145,6 +149,16 @@ async function adminData(daysIn) {
 exports.slashatlasApi = onRequest(
   { region: 'europe-west1', invoker: 'public', memory: '512MiB', maxInstances: 10, timeoutSeconds: 120, secrets: studio.SECRETS },
   async (req, res) => {
+    // Aperçu de lien (WhatsApp, Facebook…) : une image tirée au hasard à chaque lecture, jamais mise en cache.
+    if (req.method === 'GET' && /\/og\.jpg$/.test(req.path)) {
+      try {
+        if (!OG_FILES) OG_FILES = fs.readdirSync(OG_DIR).filter((f) => f.endsWith('.jpg'));
+        const f = OG_FILES[Math.floor(Math.random() * OG_FILES.length)];
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', 'no-store, max-age=0');
+        return res.status(200).send(fs.readFileSync(nodePath.join(OG_DIR, f)));
+      } catch (e) { console.error('og', e.message); return res.status(404).send(''); }
+    }
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
     if (req.method !== 'POST' && !(req.method === 'GET' && req.path.endsWith('/config'))) return res.status(405).json({ error: 'method' });
