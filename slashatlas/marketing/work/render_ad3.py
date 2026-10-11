@@ -144,42 +144,66 @@ def s_demo(t):
     img = R.pill(img, label, g['tx'], g['ty'], 52 if not LAND else 44, bgc=(20, 22, 28), fg=ACC2, padx=40, pady=16)
     return R.badge(img, t, a0 + 0.8)
 _strip = {}
-def strip_row(row, ch):
+POOL = None
+def pool():
+    """Toutes les illustrations disponibles (celles de mode, beauté et produit en premier), réparties en rangées."""
+    global POOL
+    if POOL is None:
+        import os, random
+        NOTEXT = set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo blueprint cyberpunk barbershop vintagerack'.split())  # images avec du texte parasite
+        names = sorted({f[:-len('-t.webp')] for f in os.listdir(IMG) if f.endswith('-t.webp') and f[:-len('-t.webp')] not in NOTEXT and os.path.exists(IMG + f[:-len('-t.webp')] + '-apres.webp')})
+        pri = ['fashionposter', 'lookbook', 'skincareglow', 'hairshowcase', 'productglow', 'splashshot']
+        rest = [n for n in names if n not in pri]
+        random.Random(11).shuffle(rest)
+        POOL = [n for n in pri if n in names] + rest
+    return POOL
+def thumb_t(n):
+    k = ('t', n)
+    if k not in _th: _th[k] = R.load(n, 't')
+    return _th[k]
+def strip_row(row, ch, rows):
     key = (row, ch)
     if key in _strip: return _strip[key]
-    items = CAT_ITEMS[row::(2 if LAND else 3)] or CAT_ITEMS
-    items = (items * 3)[:max(8, len(items))] if len(items) < 8 else items
-    cw = int(ch * 0.8); gap = int(24 * U); n = len(items); length = n * (cw + gap)
-    s = Image.new('RGBA', (length * 2, ch + int(46 * U)), (0, 0, 0, 0)); d = ImageDraw.Draw(s)
+    items = pool()[row::rows][:34]
+    cw = int(ch * 0.8); gap = int(18 * U); n = len(items); length = n * (cw + gap)
+    s = Image.new('RGBA', (length * 2, ch + int(40 * U)), (0, 0, 0, 0)); d = ImageDraw.Draw(s)
     for rep in range(2):
         for i, nm in enumerate(items):
             x = rep * length + i * (cw + gap)
-            s.alpha_composite(R.fit(thumb(nm), cw, ch, 22), (x, 0))
-            d.text((x + cw / 2, ch + 24 * U), '/' + nm, font=R.font(26 * U, 'm'), fill=ACC2 + (255,), anchor='mm')
+            s.alpha_composite(R.fit(thumb_t(nm), cw, ch, 18), (x, 0))
+            d.text((x + cw / 2, ch + 20 * U), ('/' + nm) if len(nm) < 13 else ('/' + nm[:11] + '…'), font=R.font(20 * U, 'm'), fill=ACC2 + (255,), anchor='mm')
     _strip[key] = (s, length); return _strip[key]
-CATS = ['Mode', 'Beauté', 'Pub produit', 'Food', 'Immobilier', 'Événements', 'Marque', 'Vidéo publicitaire']
+CATS = ['Mode', 'Beauté', 'Pub produit', 'Food', 'Immobilier', 'Événements', 'Marque', 'Vidéo pub']
 def s_cat(t):
     tt = t - TL['cat'][0]; img = R.bg(t)
-    a = ease_out((tt - 0.2) / 0.5)
-    img = R.text(img, '650 commandes gratuites', W / 2, H * (0.10 if LAND else 0.08), 78 if LAND else 70, alpha=a, maxw=W * 0.92)
-    rows = 2 if LAND else 3; ch = int(H * (0.23 if LAND else 0.135)); top = H * (0.17 if LAND else 0.13); hh = ch + 46 * U
+    n = int(650 * ease_out(tt / 3.0))
+    a = ease_out((tt - 0.1) / 0.4)
+    if LAND:
+        img = R.text(img, str(n), W * 0.36, H * 0.085, 120, col=ACC2, alpha=a, anchor='rm')
+        img = R.text(img, 'commandes gratuites', W * 0.38, H * 0.088, 64, alpha=a, anchor='lm')
+    else:
+        img = R.text(img, f'{n} commandes gratuites', W / 2, H * 0.065, 76, alpha=a, maxw=W * 0.94)
+    rows = 3 if LAND else 4; ch = int(H * (0.17 if LAND else 0.115)); top = H * (0.235 if LAND else 0.215); hh = ch + 40 * U
     for r in range(rows):
-        s, length = strip_row(r, ch); off = (tt * (90 if r % 2 == 0 else -90) * U) % length
+        s, length = strip_row(r, ch, rows); off = (tt * (230 if r % 2 == 0 else -230) * U + r * 300 * U) % length
         x = int(off) if r % 2 == 1 else int(length - off) % length
-        crop = s.crop((x, 0, x + W, s.height)); y = top + r * (hh + 22 * U)
-        aa = ease_out((tt - 0.4 - r * 0.2) / 0.5)
+        crop = s.crop((x, 0, x + W, s.height)); y = top + r * (hh + 12 * U)
+        aa = ease_out((tt - 0.3 - r * 0.15) / 0.5)
         if aa < 1: crop.putalpha(crop.getchannel('A').point(lambda v: int(v * aa)))
         img.alpha_composite(crop, (0, int(y)))
-    # pastilles des catégories
-    y0 = H * (0.845 if LAND else 0.72); cols = 8 if LAND else 4
+    cols = 8 if LAND else 4; y0 = H * (0.155 if LAND else 0.108)
     for i, c in enumerate(CATS):
-        a = ease_back((tt - 2.0 - i * 0.35) / 0.4)
-        if a <= 0: continue
-        cx = W * (0.085 + 0.119 * (i % cols)) if LAND else W * (0.17 + 0.22 * (i % cols)); cy = y0 + (i // cols) * 100 * U
-        img = R.pill(img, c, cx, cy, 27 if LAND else 28, bgc=(ACC if i < 2 else (30, 32, 40)), fg=WHITE, scale=clamp(a, 0.01, 1.05), alpha=clamp(a, 0, 1), padx=26, pady=14)
-    a = ease_out((tt - 5.5) / 0.5)
-    img = R.text(img, '32 catégories · en français et en anglais', W / 2, H * (0.945 if LAND else 0.90), 38 if LAND else 36, col=MUT, kind='r', alpha=a, maxw=W * 0.92)
-    return R.badge(img, t, TL['cat'][0] + 0.8)
+        aa = ease_back((tt - 3.2 - i * 0.45) / 0.4)
+        if aa <= 0: continue
+        cx = W * (0.085 + 0.119 * (i % cols)) if LAND else W * (0.14 + 0.24 * (i % cols)); cy = y0 + (i // cols) * 74 * U
+        img = R.pill(img, c, cx, cy, 27 if LAND else 28, bgc=(ACC if i < 2 else (30, 32, 40)), fg=WHITE, scale=clamp(aa, 0.01, 1.05), alpha=clamp(aa, 0, 1), padx=24, pady=12)
+    for i, (c, col) in enumerate([('Copier', ACC), ('Coller', ACC), ('Gratuit', OK)]):
+        aa = ease_back((tt - 11.5 - i * 0.7) / 0.45)
+        if aa <= 0: continue
+        pulse = 1 + 0.03 * math.sin(tt * 5 + i)
+        cx = W * (0.30 + 0.20 * i) if LAND else W * (0.2 + 0.30 * i); cy = H * (0.935 if LAND else 0.885)
+        img = R.pill(img, c, cx, cy, 52 if LAND else 46, bgc=col, fg=(WHITE if col != OK else (0, 30, 10)), scale=clamp(aa, 0.01, 1.05) * pulse, alpha=clamp(aa, 0, 1), padx=40, pady=18)
+    return img if LAND else R.badge(img, t, TL['cat'][0] + 0.8)
 def s_catb(t):
     tt = t - TL['catb'][0]; img = R.bg(t)
     mode = tt < 5.7
