@@ -318,3 +318,10 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .acts.big .btn{padding:11px 18px;font-size:14.5px}.acts.big .btn.pri{flex:1 1 auto}
 .cmd .acts.big .btn{width:auto}.cmd .acts.big .btn.pri{flex:1 1 auto}
 .ftmail{color:var(--mut);text-decoration:underline}.smodal .hint a{color:inherit;text-decoration:underline}
+/* correctif boutons (téléphone + tablette) : une seule ligne, « Copier » à sa taille, jamais de retour à la ligne dans un bouton */
+.acts{flex-wrap:nowrap}
+.acts .btn{white-space:nowrap;width:auto;flex:0 0 auto}
+.acts .btn.pri{flex:1 1 auto;min-width:0}
+.acts .btn.copy,.rb .acts .btn.copy,.card .acts .btn.copy,.acts.big .btn.copy{width:auto;flex:0 0 auto;padding:8px 14px;font-size:13px}
+.rb .acts .btn,.card .acts .btn{padding:8px 12px;font-size:13px}
+.acts.big .btn{padding:11px 18px;font-size:14.5px}.acts.big .btn.copy{padding:11px 16px;font-size:14px}
