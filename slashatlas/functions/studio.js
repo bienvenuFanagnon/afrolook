@@ -265,7 +265,7 @@ async function payCard(u, b) {
   if (!CARD.enabled) throw fail(503, 'card_unavailable');
   const pack = PACKS.find((p) => p.id === b.packId);
   if (!pack) throw fail(400, 'bad_request');
-  const first = clean(b.firstName, 40), last = clean(b.lastName, 40), city = clean(b.city, 60), zip = clean(b.zip, 12), address = clean(b.address, 80);
+  const first = clean(b.firstName, 40), last = clean(b.lastName, 40), city = clean(b.city, 60), zip = clean(b.zip, 12);
   const country = String(b.country || '').toUpperCase();
   let phone = String(b.phone || '').replace(/[^0-9]/g, '');
   if (!first || !last || !city || !zip || !/^[A-Z]{2}$/.test(country) || phone.length < 8 || phone.length > 15) throw fail(400, 'bad_card_info');
@@ -273,8 +273,9 @@ async function payCard(u, b) {
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
   await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', status: 'created', createdAt: FieldValue.serverTimestamp() });
-  const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, adress: address || city, city, zip, country, description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
-  const r = await feexRequest('https://api-v2.feexpay.me/api/public/card', 'POST', payload);
+  const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, city, zip, country, description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
+  // Collecte par carte (API v2) : même famille que le mobile money, point d'entrée « init » ; exige le KYC carte validé (sinon CARD_PAYMENT_NOT_AUTHORIZED).
+  const r = await feexRequest(`${FEEXPAY_API}/requesttopay/init`, 'POST', payload);
   const reference = r.data && r.data.reference;
   const url = r.data && (r.data.payment_url || r.data.paymentUrl);
   if (!r.ok || !reference || !url) {
