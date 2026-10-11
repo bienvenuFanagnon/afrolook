@@ -2,6 +2,7 @@ import { creditSponsors, recordAppCommission, resolveSponsors, SponsorShare } fr
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue, Transaction, DocumentReference } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { broadcastDefiLaunch } from "./defiBroadcast";
 import {
   APP_DATA_DOC, POST_ID_PATTERN, defaultRewardSplit, defiLabel, sanitizeClientPost, sendDefiNotification,
 } from "./defiShared";
@@ -23,6 +24,11 @@ function computeShares(prix: number): { appShare: number; creatorShare: number }
  *                   une seule participation par utilisateur et par DÉFI
  *   "create"      — créer un DÉFI en débitant la cagnotte au créateur dans la même
  *                   transaction (postId = id du nouveau post, post = post DÉFI sérialisé)
+ *   "convert"     — transformer un post existant de l'utilisateur en DÉFI : mêmes règles que
+ *                   "create" (cagnotte débitée, mêmes limites), mais sur un post déjà publié
+ *                   (postId = id du post, defi_config = configuration du DÉFI)
+ *
+ * Après "create" et "convert", le lancement du DÉFI est annoncé à un large public (voir defiBroadcast.ts).
  */
 export const handleDefiAction = onCall(
   { timeoutSeconds: 30, memory: "256MiB", cpu: "gcf_gen1" },
@@ -58,6 +64,9 @@ export const handleDefiAction = onCall(
         throw new HttpsError("invalid-argument", "Le post DÉFI est requis.");
       }
       return handleCreateDefi(uid, postId, post);
+    }
+    if (action === "convert") {
+      return handleConvertToDefi(uid, postId, request.data?.defi_config);
     }
 
     throw new HttpsError("invalid-argument", `Action inconnue : ${action}`);
@@ -470,7 +479,7 @@ async function handleCreateDefi(creatorId: string, newPostId: string, rawPost: R
   const postRef = db.collection("Posts").doc(newPostId);
   const creatorRef = db.collection("Users").doc(creatorId);
 
-  return db.runTransaction(async (tx) => {
+  const created = await db.runTransaction(async (tx) => {
     const [existingDoc, creatorDoc] = await Promise.all([tx.get(postRef), tx.get(creatorRef)]);
 
     // Relance après une réponse perdue : le DÉFI a déjà été créé et la cagnotte débitée.
@@ -535,4 +544,128 @@ async function handleCreateDefi(creatorId: string, newPostId: string, rawPost: R
 
     return { success: true, postId: newPostId };
   });
+  if (!("alreadyCreated" in created)) await announceDefi(newPostId);
+  return created;
+}
+
+
+// ── Configuration d'un DÉFI : mêmes contrôles pour la création et la conversion d'un post ──
+function parseDefiConfig(raw: unknown) {
+  const cfg = raw as Record<string, unknown> | undefined;
+  if (!cfg || typeof cfg !== "object") {
+    throw new HttpsError("invalid-argument", "Configuration du DÉFI manquante.");
+  }
+  const cagnotte = toInt(cfg["cagnotte_pieces"]);
+  const participationFee = toInt(cfg["participation_fee"] ?? 0);
+  const voteFee = toInt(cfg["vote_fee"] ?? 0);
+  const winnersCount = toInt(cfg["winners_count"] ?? 1);
+  const endDate = toInt(cfg["end_date"]);
+  const now = Date.now();
+  if (!(cagnotte >= 0 && cagnotte <= MAX_CAGNOTTE)
+      || !(participationFee >= 0)
+      || !(voteFee === 0 || voteFee >= 5)
+      || !(winnersCount >= 1 && winnersCount <= 3)
+      || !(endDate > now && endDate <= now + MAX_DEFI_DURATION_MS)) {
+    throw new HttpsError("invalid-argument", "Configuration du DÉFI invalide.");
+  }
+  return { cagnotte, participationFee, voteFee, winnersCount, endDate };
+}
+
+// ── Transformer un post existant en DÉFI ─────────────────────────────────
+// Seul l'auteur peut le faire, uniquement sur un post ordinaire (ni pub, ni réponse à un DÉFI, ni DÉFI existant),
+// et la cagnotte est débitée dans la même transaction, exactement comme à la création.
+async function handleConvertToDefi(uid: string, postId: string, rawCfg: unknown) {
+  if (!POST_ID_PATTERN.test(postId)) {
+    throw new HttpsError("invalid-argument", "Identifiant de post invalide.");
+  }
+  const { cagnotte, participationFee, voteFee, winnersCount, endDate } = parseDefiConfig(rawCfg);
+  const postRef = db.collection("Posts").doc(postId);
+  const userRef = db.collection("Users").doc(uid);
+
+  const result = await db.runTransaction(async (tx) => {
+    const [postDoc, userDoc] = await Promise.all([tx.get(postRef), tx.get(userRef)]);
+    if (!postDoc.exists) throw new HttpsError("not-found", "Post introuvable.");
+    if (!userDoc.exists) throw new HttpsError("not-found", "Compte créateur introuvable.");
+    const post = postDoc.data()!;
+
+    if (post["user_id"] !== uid) {
+      throw new HttpsError("permission-denied", "Seul l'auteur du post peut le transformer en DÉFI.");
+    }
+    // Relance après une réponse perdue : le post est déjà un DÉFI financé.
+    if (post["type"] === "DEFI") {
+      if (post["defi_config"]) return { success: true, postId, alreadyCreated: true };
+      throw new HttpsError("failed-precondition", "Ce post est déjà un DÉFI.");
+    }
+    if ((post["type"] ?? "POST") !== "POST" || post["isAdvertisement"] === true || post["defi_response_to_post_id"]) {
+      throw new HttpsError("failed-precondition", "Ce post ne peut pas devenir un DÉFI.");
+    }
+    if (post["status"] && post["status"] !== "VALIDE") {
+      throw new HttpsError("failed-precondition", "Ce post n'est pas publié.");
+    }
+
+    const now = Date.now();
+    if (cagnotte > 0) {
+      const balance = (userDoc.data()!["giftCoinsBalance"] as number) ?? 0;
+      if (balance < cagnotte) {
+        throw new HttpsError(
+          "resource-exhausted",
+          `Solde insuffisant — ${balance} pièces disponibles, ${cagnotte} requises pour la cagnotte.`,
+          { coins: cagnotte, balance }
+        );
+      }
+      tx.update(userRef, {
+        giftCoinsBalance: FieldValue.increment(-cagnotte),
+        totalGiftCoinsSpent: FieldValue.increment(cagnotte),
+        updatedAt: now,
+      });
+      const txRef = db.collection("TransactionSoldes").doc();
+      tx.set(txRef, {
+        id: txRef.id,
+        user_id: uid,
+        type: "DEPENSE",
+        statut: "VALIDER",
+        description: `Cagnotte DÉFI — ${cagnotte} pièces mises en jeu`,
+        montant: cagnotte,
+        frais: 0,
+        montant_total: cagnotte,
+        methode_paiement: "pieces",
+        createdAt: now,
+        updatedAt: now,
+        defiPostId: postId,
+      });
+    }
+
+    tx.update(postRef, {
+      type: "DEFI",
+      defi_participant_ids: [],
+      defi_participant_count: 0,
+      defi_votes: 0,
+      defi_voter_ids: [],
+      defi_converted_at: now,
+      defi_config: {
+        cagnotte_pieces: cagnotte,
+        participation_fee: participationFee,
+        vote_fee: voteFee,
+        winners_count: winnersCount,
+        reward_split: defaultRewardSplit(winnersCount),
+        end_date: endDate,
+        status: "en_cours",
+        cagnotte_funded: true,
+      },
+    });
+    return { success: true, postId };
+  });
+
+  if (!("alreadyCreated" in result)) await announceDefi(postId);
+  return result;
+}
+
+// Annonce élargie du lancement d'un DÉFI : jamais bloquante (le DÉFI est déjà créé et financé).
+async function announceDefi(postId: string) {
+  try {
+    const stats = await broadcastDefiLaunch(postId);
+    console.log(`[defi] annonce du DÉFI ${postId} :`, JSON.stringify(stats));
+  } catch (err) {
+    console.error(`[defi] annonce du DÉFI ${postId} échouée :`, err);
+  }
 }

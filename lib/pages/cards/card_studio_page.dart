@@ -226,6 +226,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
               const SizedBox(height: 6),
               opt(Icons.add_circle_outline_rounded, ctx.tr('Publier en Chronique'), ctx.tr('Format Story · visible 24 h'), 'chronique'),
               opt(Icons.article_outlined, ctx.tr('Publier en post'), ctx.tr('Sur ton profil, avec légende'), 'post'),
+              if (widget.defiPostId == null) opt(Icons.emoji_events_rounded, ctx.tr('Lancer un défi avec cette carte'), ctx.tr('Les autres participent, la communauté vote'), 'defi'),
             ]),
           ),
         );
@@ -238,7 +239,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
       if (r == null || !mounted) return;
       final done = choice == 'chronique'
           ? await CardFlow.publishAsChronique(context, r, _quote, caption: CardFlow.chroniqueCaption(_source))
-          : await CardFlow.publishAsPost(context, r, _quote, canal: widget.canal, defiPostId: widget.defiPostId);
+          : await CardFlow.publishAsPost(context, r, _quote, canal: widget.canal, defiPostId: widget.defiPostId, asDefi: choice == 'defi');
       if (done && mounted) Navigator.of(context).pop(true);
     } catch (_) {
       _say(tr('Impossible de créer la carte. Réessaie.'));

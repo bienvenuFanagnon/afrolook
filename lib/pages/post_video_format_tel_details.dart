@@ -45,6 +45,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'cards/card_entry.dart';
+import 'defi/defi_convert.dart';
 import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
 import '../services/media_cache_service.dart';
@@ -2222,6 +2223,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                 onTap: () {
                   Navigator.pop(context);
                   CardEntry.openFromPost(this.context, post);
+                },
+              ),
+            if (DefiConvert.canConvert(post, authProvider.loginUserData))
+              DefiMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  DefiConvert.openFromPost(this.context, post);
                 },
               ),
             // Bouton Partager (externe)

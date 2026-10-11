@@ -65,6 +65,9 @@ class UserPostLookImageTab extends StatefulWidget {
   final List<Uint8List>? initialImages;
   final String? initialDescription;
 
+  /// Type de post présélectionné (ex. 'DEFI' : « Lancer un défi avec cette carte »).
+  final String? initialPostType;
+
   /// Appelée juste avant la publication réelle, une fois toutes les vérifications passées (ex. débit de la carte).
   /// Retourne false pour annuler.
   final Future<bool> Function()? beforePublish;
@@ -77,6 +80,7 @@ class UserPostLookImageTab extends StatefulWidget {
     this.defiPostId,
     this.initialImages,
     this.initialDescription,
+    this.initialPostType,
     this.beforePublish,
     this.onPublished,
   });
@@ -163,6 +167,8 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
     // Pour une réponse DÉFI, forcer le type LOOKS
     if (widget.defiPostId != null) {
       _selectedPostType = 'LOOKS';
+    } else if (widget.initialPostType != null && _postTypes.containsKey(widget.initialPostType)) {
+      _selectedPostType = widget.initialPostType;
     }
 
     // Carte du Studio : l'image et la légende sont déjà prêtes

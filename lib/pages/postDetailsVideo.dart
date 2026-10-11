@@ -45,6 +45,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'cards/card_entry.dart';
+import 'defi/defi_convert.dart';
 import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/widgets/smart_video_player.dart';
 import '../services/media_cache_service.dart';
@@ -1450,6 +1451,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
                 onTap: () {
                   Navigator.pop(context);
                   CardEntry.openFromPost(this.context, _currentPost);
+                },
+              ),
+            if (DefiConvert.canConvert(_currentPost, authProvider.loginUserData))
+              DefiMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  DefiConvert.openFromPost(this.context, _currentPost);
                 },
               ),
             _buildMenuOption(

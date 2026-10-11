@@ -35,6 +35,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../models/model_data.dart';
 import '../../../theme/app_colors.dart';
 import '../../cards/card_entry.dart';
+import '../../defi/defi_convert.dart';
 import '../../../providers/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'translatable_description.dart';
@@ -3327,6 +3328,13 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 onTap: () {
                   Navigator.pop(context);
                   CardEntry.openFromPost(this.context, post);
+                },
+              ),
+            if (DefiConvert.canConvert(post, authProvider.loginUserData))
+              DefiMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  DefiConvert.openFromPost(this.context, post);
                 },
               ),
             if (post.user!.id == authProvider.loginUserData.id &&

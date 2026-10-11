@@ -149,7 +149,14 @@ class CardEntry {
     if (result is! CardResult || !nav.mounted) return;
     final quote = await CardService.quote();
     if (!nav.mounted) return;
-    await CardFlow.publishAsPost(nav.context, result, quote, canal: canal, defiPostId: defiPostId);
+    // Une carte créée depuis la page de publication peut devenir un défi (sauf pour répondre à un défi).
+    var asDefi = false;
+    if (defiPostId == null) {
+      final choice = await CardFlow.askPostOrDefi(nav.context);
+      if (choice == null || !nav.mounted) return;
+      asDefi = choice == 'defi';
+    }
+    await CardFlow.publishAsPost(nav.context, result, quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi);
   }
 }
 

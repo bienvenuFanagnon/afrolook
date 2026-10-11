@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/cards/card_entry.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -190,7 +192,49 @@ void openDefiParticipation(BuildContext context, Post defiPost) {
     DefiDialogs.insufficientBalance(context, isVote: false);
     return;
   }
-  Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(defiPostId: defiPost.id!)));
+  _chooseParticipation(context, defiPost);
+}
+
+/// Comment participer : avec une photo, une vidéo, un audio ou un texte (formulaire habituel), ou avec une carte Afrolook.
+/// La carte est publiée comme réponse au DÉFI, avec exactement les mêmes règles que les autres participations
+/// (frais de participation, une seule participation par DÉFI, vote…).
+Future<void> _chooseParticipation(BuildContext context, Post defiPost) async {
+  if (kIsWeb) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(defiPostId: defiPost.id!)));
+    return;
+  }
+  final c = AppColors.of(context);
+  final choice = await showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: c.surface,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 14, 8, 10),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Comment veux-tu participer ?', style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_rounded, color: _yellow),
+            title: Text('Avec une carte Afrolook', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+            subtitle: Text('Crée une carte de style africain et réponds au défi avec elle', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            onTap: () => Navigator.pop(ctx, 'card'),
+          ),
+          ListTile(
+            leading: Icon(Icons.photo_camera_outlined, color: c.primary),
+            title: Text('Avec une photo, une vidéo, un audio ou un texte', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+            onTap: () => Navigator.pop(ctx, 'post'),
+          ),
+        ]),
+      ),
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  if (choice == 'card') {
+    await CardEntry.openCompose(context, defiPostId: defiPost.id!);
+  } else {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(defiPostId: defiPost.id!)));
+  }
 }
 
 /// Animation "+1 Vote" partant du widget [anchor] (ou du centre de l'écran).

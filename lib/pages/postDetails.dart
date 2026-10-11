@@ -49,6 +49,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'cards/card_entry.dart';
+import 'defi/defi_convert.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/block_service.dart';
@@ -3408,6 +3409,13 @@ class _DetailsPostState extends State<DetailsPost>
                 onTap: () {
                   Navigator.pop(context);
                   CardEntry.openFromPost(this.context, post);
+                },
+              ),
+            if (DefiConvert.canConvert(post, authProvider.loginUserData))
+              DefiMenuTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  DefiConvert.openFromPost(this.context, post);
                 },
               ),
             _buildMenuOption(

@@ -53,6 +53,15 @@ export const sendBulkNotification = onCall(
       }
       const senderData = senderDoc.data();
 
+      // Un DÉFI est déjà annoncé à un large public par le serveur (posts/defiBroadcast.ts) :
+      // on n'envoie pas une seconde fois la notification « a posté » aux abonnés (anciennes versions de l'application).
+      if (postId && typeNotif === "POST") {
+        const postData = (await db.collection("Posts").doc(postId).get()).data();
+        if (postData?.type === "DEFI" && postData?.defi_broadcast_at) {
+          return { success: true, message: "DÉFI déjà annoncé", processedCount: 0 };
+        }
+      }
+
       // ── Rate limit : 1 notification bulk par expéditeur toutes les 30 min ──
       const RATE_LIMIT_MS = 30 * 60 * 1000;
       const lastSentAt = senderData?.lastBulkNotifSentAt ?? 0;
