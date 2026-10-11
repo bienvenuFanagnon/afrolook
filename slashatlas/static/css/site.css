@@ -311,3 +311,10 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .mnav .btn{margin-bottom:8px;justify-content:center}
 @media (max-width:719px){.menubtn{display:flex}}
 @media (min-width:720px){.mnav{display:none!important}}
+
+/* boutons plus discrets : « Générer ici » reste le principal, « Copier » plus petit */
+.acts{gap:6px}.acts .btn{flex:0 0 auto}.acts .btn.pri{flex:1 1 auto;font-weight:800}
+.rb .acts .btn.copy,.card .acts .btn.sm{padding:8px 14px;font-size:13px}
+.acts.big .btn{padding:11px 18px;font-size:14.5px}.acts.big .btn.pri{flex:1 1 auto}
+.cmd .acts.big .btn{width:auto}.cmd .acts.big .btn.pri{flex:1 1 auto}
+.ftmail{color:var(--mut);text-decoration:underline}.smodal .hint a{color:inherit;text-decoration:underline}
