@@ -167,13 +167,14 @@ function brandClause(kind, lang, texts) {
   const lay = `${B.lay}${texts.map((r) => B.place[r.role]).join(' ; ')}. ${B.kind[kind]}`;
   return `${B.intro.replace('{L}', names)} ${lay} ${B.outro}`;
 }
-const QR_CORNER = { br: ['inférieur droit', 'bottom-right'], bl: ['inférieur gauche', 'bottom-left'], tr: ['supérieur droit', 'top-right'], tl: ['supérieur gauche', 'top-left'] };
+const QR_CORNER = { auto: ['inférieur droit', 'bottom-right'], br: ['inférieur droit', 'bottom-right'], bl: ['inférieur gauche', 'bottom-left'], tr: ['supérieur droit', 'top-right'], tl: ['supérieur gauche', 'top-left'] };
 function qrClause(lang, pos) {
   const c = QR_CORNER[pos];
   if (!c) return '';
+  const pref = pos === 'auto';
   return lang === 'en'
-    ? `Leave the ${c[1]} corner of the visual completely free (about 20% of the width and 25% of the height), with no text, no important element and no detail of the subject: a QR code will be added there afterwards. Do not write or draw any QR code yourself.`
-    : `Laisse entièrement libre le coin ${c[0]} du visuel (environ 20 % de la largeur et 25 % de la hauteur), sans texte, sans élément important ni détail du sujet : un code QR y sera ajouté après coup. N’écris et ne dessine aucun code QR toi-même.`;
+    ? `Leave the ${pref ? 'bottom-right corner (or, if the composition requires it, another calm corner)' : c[1] + ' corner'} of the visual completely free, a small area of about 15% of the width and 20% of the height, with no text, no important element and no detail of the subject: a small QR code will be added there afterwards. Keep any contact text away from that corner. Do not write or draw any QR code yourself.`
+    : `Laisse entièrement libre ${pref ? 'le coin inférieur droit du visuel (ou, si la composition l’exige, un autre coin calme)' : 'le coin ' + c[0] + ' du visuel'}, une petite zone d’environ 15 % de la largeur et 20 % de la hauteur, sans texte, sans élément important ni détail du sujet : un petit code QR y sera ajouté après coup. Éloigne de ce coin les textes de contact éventuels. N’écris et ne dessine aucun code QR toi-même.`;
 }
 function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '') {
   const c = COMMANDS.commands[slug];

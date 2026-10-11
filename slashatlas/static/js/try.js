@@ -12,7 +12,7 @@
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
-      qrTitle: 'Ajouter un QR code vers mon site ou ma boutique', qrHint: 'Collez le lien de votre site, boutique, page ou votre numéro WhatsApp : un QR code est ajouté sur l’affiche. Vos clients le scannent pour ouvrir votre lien.', qrLabel: 'Votre lien ou numéro WhatsApp', qrPh: 'ex. maboutique.com ou +225 07 00 00 00 00', qrOpens: 'Le QR code ouvrira :', qrBad: 'Lien non reconnu. Écrivez par exemple maboutique.com', qrLong: 'lien long, le code sera plus dense : préférez un lien court', qrPos: 'Emplacement sur l’affiche', qrBL: 'Bas gauche', qrBR: 'Bas droite', qrTL: 'Haut gauche', qrTR: 'Haut droite', qrNote: 'Sous le QR code, la mention « Créé avec slashatlas.com » est une simple information, pas un lien. L’IA laisse le coin libre ; vous pouvez changer le lien ou l’emplacement après la génération, gratuitement.',
+      qrTitle: 'Ajouter un QR code à mon affiche (site, boutique, WhatsApp)', qrWhyT: 'À quoi sert le QR code ?', qrW1: 'Vous collez votre lien ou votre numéro WhatsApp.', qrW2: 'Un petit QR code apparaît sur l’affiche, à l’endroit le plus calme.', qrW3: 'Vos clients le scannent avec leur téléphone et arrivent directement chez vous : pour commander, réserver ou vous écrire, sans rien recopier.', qrWhyEnd: 'Facultatif. Vous pouvez le déplacer, le réduire ou le retirer, gratuitement, même après la génération.', qrLabel: 'Votre lien ou numéro WhatsApp', qrPh: 'ex. maboutique.com ou +225 07 00 00 00 00', qrOpens: 'Le QR code ouvrira :', qrBad: 'Lien non reconnu. Écrivez par exemple maboutique.com', qrLong: 'lien long, le code sera plus dense : préférez un lien court', qrCtaL: 'Texte au-dessus du QR code', qrCta_order: 'Scannez pour commander', qrCta_book: 'Scannez pour réserver', qrCta_contact: 'Scannez pour nous écrire', qrCta_shop: 'Scannez pour voir la boutique', qrPos: 'Emplacement', qrAuto: 'Automatique (conseillé)', qrBL: 'Bas gauche', qrBR: 'Bas droite', qrTL: 'Haut gauche', qrTR: 'Haut droite', qrNone: 'Aucun QR code', qrSize: 'Taille', qrS: 'Petit', qrM: 'Moyen', qrL: 'Grand', qrWarn: 'Ce coin n’avait pas été gardé libre à la génération : vérifiez que le QR code ne cache rien.', qrNote: 'Sous le QR code, « Créé avec slashatlas.com » est une simple information, pas un lien : le QR code ouvre uniquement votre lien.',
       share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareImg: 'Partager l’image', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       help: 'Un souci de paiement ? Écrivez-nous :', buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
@@ -28,7 +28,7 @@
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
-      qrTitle: 'Add a QR code to my website or shop', qrHint: 'Paste the link to your website, shop, page or your WhatsApp number: a QR code is added to the poster. Your customers scan it to open your link.', qrLabel: 'Your link or WhatsApp number', qrPh: 'e.g. myshop.com or +225 07 00 00 00 00', qrOpens: 'The QR code will open:', qrBad: 'Link not recognized. Write for example myshop.com', qrLong: 'long link, the code will be denser: prefer a short link', qrPos: 'Position on the poster', qrBL: 'Bottom left', qrBR: 'Bottom right', qrTL: 'Top left', qrTR: 'Top right', qrNote: 'Under the QR code, the text “Made with slashatlas.com” is just information, not a link. The AI leaves the corner free; you can change the link or position after generation, for free.',
+      qrTitle: 'Add a QR code to my poster (website, shop, WhatsApp)', qrWhyT: 'What is the QR code for?', qrW1: 'You paste your link or your WhatsApp number.', qrW2: 'A small QR code appears on the poster, in the calmest spot.', qrW3: 'Your customers scan it with their phone and land straight on your page: to order, book or message you, without typing anything.', qrWhyEnd: 'Optional. You can move it, shrink it or remove it, for free, even after generation.', qrLabel: 'Your link or WhatsApp number', qrPh: 'e.g. myshop.com or +225 07 00 00 00 00', qrOpens: 'The QR code will open:', qrBad: 'Link not recognized. Write for example myshop.com', qrLong: 'long link, the code will be denser: prefer a short link', qrCtaL: 'Text above the QR code', qrCta_order: 'Scan to order', qrCta_book: 'Scan to book', qrCta_contact: 'Scan to message us', qrCta_shop: 'Scan to see the shop', qrPos: 'Position', qrAuto: 'Automatic (recommended)', qrBL: 'Bottom left', qrBR: 'Bottom right', qrTL: 'Top left', qrTR: 'Top right', qrNone: 'No QR code', qrSize: 'Size', qrS: 'Small', qrM: 'Medium', qrL: 'Large', qrWarn: 'This corner was not kept free during generation: check that the QR code hides nothing.', qrNote: 'Under the QR code, “Made with slashatlas.com” is just information, not a link: the QR code only opens your link.',
       share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareImg: 'Share the image', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       help: 'Payment problem? Write to us:', buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
@@ -43,7 +43,7 @@
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'br' }, adFreeUntil: 0, checking: true };
+  var state = { user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, adFreeUntil: 0, checking: true };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -103,22 +103,36 @@
     return qrLib || (qrLib = new Promise(function (res, rej) { var sc = document.createElement('script'); sc.src = '/js/qrcode-1.4.4.js'; sc.onload = res; sc.onerror = function () { qrLib = null; rej(new Error('qrlib')); }; document.head.appendChild(sc); }));
   }
   function loadImg(src) { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = src; }); }
-  function qrKey() { var u = normUrl(state.qr.raw); return u ? u + '|' + state.qr.pos : ''; }
-  function composeQr(raw, url, pos) {
+  function qrKey() { var u = normUrl(state.qr.raw); return u && state.qr.pos !== 'none' ? [u, state.qr.pos, state.qr.size, state.qr.cta, L].join('|') : ''; }
+  function composeQr(raw, url, pos, size, cta) {
     return Promise.all([loadImg(URL.createObjectURL(raw)), loadQrLib()]).then(function (a) {
       var img = a[0], w = img.naturalWidth, h = img.naturalHeight, mn = Math.min(w, h);
       var q = window.qrcode(0, 'M'); q.addData(url); q.make(); var n = q.getModuleCount();
-      // au moins 4 px par module pour que le code se lise bien, sans dépasser 30 % de l'image
-      var side = Math.min(Math.max(mn * 0.17, 4 * (n + 6)), mn * 0.30), cell = Math.max(2, Math.floor(side / (n + 6))), tw = cell * (n + 6), ch = Math.round(tw * 0.27), th = tw + ch, m = Math.round(mn * 0.03);
-      var x = (pos === 'bl' || pos === 'tl') ? m : w - tw - m, y = (pos === 'tl' || pos === 'tr') ? m : h - th - m;
+      // petit par défaut ; jamais moins de 3 px par module (sinon le code ne se lit plus), jamais plus de 30 % de l'image
+      var base = mn * ({ s: 0.12, m: 0.16, l: 0.22 }[size] || 0.12), side = Math.min(Math.max(base, 3 * (n + 6)), mn * 0.30);
+      var cell = Math.max(2, Math.floor(side / (n + 6))), tw = cell * (n + 6), top = Math.round(tw * 0.17), bot = Math.round(tw * 0.27), th = top + tw + bot, m = Math.round(mn * 0.03);
       var c = document.createElement('canvas'); c.width = w; c.height = h; var g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      var spots = { bl: [m, h - th - m], br: [w - tw - m, h - th - m], tl: [m, m], tr: [w - tw - m, m] };
+      if (!spots[pos]) { // « Auto » : le coin le plus calme de l'affiche (écart-type de luminance le plus faible) ; le bas est préféré, comme demandé à l'IA
+        var best = null, bias = { br: 1, bl: 1.1, tr: 1.3, tl: 1.3 };
+        Object.keys(spots).forEach(function (k) {
+          var d = g.getImageData(spots[k][0], spots[k][1], tw, th).data, cnt = 0, sum = 0, sq = 0;
+          for (var i = 0; i < d.length; i += 16) { var l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; sum += l; sq += l * l; cnt++; }
+          var sd = Math.sqrt(Math.max(0, sq / cnt - (sum / cnt) * (sum / cnt))) * bias[k];
+          if (!best || sd < best.sd) best = { sd: sd, k: k };
+        });
+        pos = best.k;
+      }
+      var x = spots[pos][0], y = spots[pos][1];
       g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = tw * 0.06; g.fillStyle = '#fff'; g.beginPath();
       if (g.roundRect) g.roundRect(x, y, tw, th, tw * 0.07); else g.rect(x, y, tw, th); g.fill(); g.restore();
-      g.fillStyle = '#000'; for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect(x + (k + 3) * cell, y + (r + 3) * cell, cell, cell);
-      g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-      var f = 'Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-      g.font = '500 ' + Math.round(tw * 0.075) + 'px ' + f; g.fillText(L === 'en' ? 'Made with' : 'Créé avec', x + tw / 2, y + tw + ch * 0.38);
-      g.font = '800 ' + Math.round(tw * 0.105) + 'px ' + f; g.fillText('slashatlas.com', x + tw / 2, y + tw + ch * 0.80);
+      g.fillStyle = '#000'; for (var r = 0; r < n; r++) for (var k2 = 0; k2 < n; k2++) if (q.isDark(r, k2)) g.fillRect(x + (k2 + 3) * cell, y + top + (r + 3) * cell, cell, cell);
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      var f = 'Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif', line = T['qrCta_' + cta] || T.qrCta_order;
+      var fs = Math.round(tw * 0.082); g.font = '800 ' + fs + 'px ' + f; while (g.measureText(line).width > tw * 0.94 && fs > 6) { fs--; g.font = '800 ' + fs + 'px ' + f; }
+      g.fillStyle = '#111'; g.fillText(line, x + tw / 2, y + top * 0.72);
+      g.fillStyle = '#444'; g.font = '500 ' + Math.round(tw * 0.07) + 'px ' + f; g.fillText(L === 'en' ? 'Made with' : 'Créé avec', x + tw / 2, y + top + tw + bot * 0.36);
+      g.fillStyle = '#111'; g.font = '800 ' + Math.round(tw * 0.105) + 'px ' + f; g.fillText('slashatlas.com', x + tw / 2, y + top + tw + bot * 0.80);
       URL.revokeObjectURL(img.src);
       var type = raw.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
       return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error('qr')); }, type, 0.93); });
@@ -130,7 +144,7 @@
     if (v.qrKey === key) return Promise.resolve(v);
     var done = function (blob) { if (v.url) URL.revokeObjectURL(v.url); v.blob = blob; v.url = URL.createObjectURL(blob); v.qrKey = key; return v; };
     if (!key) return Promise.resolve(done(v.raw));
-    return composeQr(v.raw, normUrl(state.qr.raw), state.qr.pos).then(done, function () { v.qrKey = key; return v; });
+    return composeQr(v.raw, normUrl(state.qr.raw), state.qr.pos, state.qr.size, state.qr.cta).then(done, function () { v.qrKey = key; return v; });
   }
   function newVersion(id, mime, b64) {
     var bin = atob(b64), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
@@ -141,8 +155,15 @@
     var v = state.result; if (!v) return;
     ensureQr(v).then(function () {
       var im = $('.sres > img'), dl = $('.sres a[download]'); if (im) im.src = v.url; if (dl) dl.href = v.url;
+      qrWarn();
       try { if (qrKey()) window.saTrack && window.saTrack('qr', { n: state.qr.pos }); } catch (e) {}
     });
+  }
+  // Si l'utilisateur déplace le QR dans un coin que l'IA n'avait pas gardé libre, on le lui signale.
+  function qrWarn() {
+    var el = $('#s-qrwarn'); if (!el) return;
+    var v = state.result, p = state.qr.pos, g = v && v.genPos;
+    el.textContent = v && g && p !== 'none' && p !== 'auto' && p !== g && g !== 'auto' ? T.qrWarn : '';
   }
   function qrStatus() {
     var el = $('#s-qrmsg'); if (!el) return;
@@ -151,10 +172,13 @@
     el.textContent = !raw ? '' : (u ? T.qrOpens + ' ' + u + (u.length > 70 ? ' · ' + T.qrLong : '') : T.qrBad);
   }
   function qrBox() {
-    var P = [['bl', T.qrBL], ['br', T.qrBR], ['tl', T.qrTL], ['tr', T.qrTR]];
-    return '<details class="brandbox sf qrbox"' + (state.qr.raw ? ' open' : '') + '><summary>' + T.qrTitle + '</summary><p class="hint">' + T.qrHint + '</p>' +
+    var seg = function (attr, cur, items) { return '<div class="qrseg" role="group">' + items.map(function (p) { return '<button type="button" data-' + attr + '="' + p[0] + '" aria-pressed="' + (cur === p[0]) + '">' + p[1] + '</button>'; }).join('') + '</div>'; };
+    return '<details class="brandbox sf qrbox"' + (state.qr.raw ? ' open' : '') + '><summary>' + T.qrTitle + '</summary>' +
+      '<div class="qrwhy"><b>' + T.qrWhyT + '</b><ol><li>' + T.qrW1 + '</li><li>' + T.qrW2 + '</li><li>' + T.qrW3 + '</li></ol><p>' + T.qrWhyEnd + '</p></div>' +
       '<label>' + T.qrLabel + '<input id="s-qrurl" type="text" inputmode="url" maxlength="200" placeholder="' + esc(T.qrPh) + '" value="' + esc(state.qr.raw) + '" autocomplete="off" autocapitalize="off"></label><p class="hint" id="s-qrmsg"></p>' +
-      '<div class="qrpos"><small>' + T.qrPos + '</small><div class="qrseg" role="group">' + P.map(function (p) { return '<button type="button" data-qp="' + p[0] + '" aria-pressed="' + (state.qr.pos === p[0]) + '">' + p[1] + '</button>'; }).join('') + '</div></div>' +
+      '<div class="qrpos"><small>' + T.qrCtaL + '</small><select id="s-qrcta">' + ['order', 'book', 'contact', 'shop'].map(function (k) { return '<option value="' + k + '"' + (state.qr.cta === k ? ' selected' : '') + '>' + T['qrCta_' + k] + '</option>'; }).join('') + '</select></div>' +
+      '<div class="qrpos"><small>' + T.qrPos + '</small>' + seg('qp', state.qr.pos, [['auto', T.qrAuto], ['br', T.qrBR], ['bl', T.qrBL], ['tr', T.qrTR], ['tl', T.qrTL], ['none', T.qrNone]]) + '<p class="hint" id="s-qrwarn"></p></div>' +
+      '<div class="qrpos"><small>' + T.qrSize + '</small>' + seg('qs', state.qr.size, [['s', T.qrS], ['m', T.qrM], ['l', T.qrL]]) + '</div>' +
       '<p class="hint">' + T.qrNote + '</p></details>';
   }
   function flash(btn, txt) { var o = btn.textContent; btn.textContent = txt; setTimeout(function () { btn.textContent = o; }, 1800); }
@@ -219,7 +243,10 @@
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
     var qu = $('#s-qrurl'); if (qu) { var qt = null; qrStatus(); qu.addEventListener('input', function () { state.qr.raw = qu.value; qrStatus(); clearTimeout(qt); qt = setTimeout(applyQr, 700); }); }
-    Array.prototype.forEach.call(root.querySelectorAll('[data-qp]'), function (b) { b.addEventListener('click', function () { state.qr.pos = b.dataset.qp; Array.prototype.forEach.call(root.querySelectorAll('[data-qp]'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); applyQr(); }); });
+    var segBind = function (attr, key) { Array.prototype.forEach.call(root.querySelectorAll('[data-' + attr + ']'), function (b) { b.addEventListener('click', function () { state.qr[key] = b.dataset[attr]; Array.prototype.forEach.call(root.querySelectorAll('[data-' + attr + ']'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); qrWarn(); applyQr(); }); }); };
+    segBind('qp', 'pos'); segBind('qs', 'size');
+    var qcta = $('#s-qrcta'); if (qcta) qcta.addEventListener('change', function () { state.qr.cta = qcta.value; applyQr(); });
+    qrWarn();
     var sh = $('#s-share'); if (sh) sh.addEventListener('click', doShare);
     var nb = $('#s-native'); if (nb) nb.addEventListener('click', function () { nativeShare(nb); });
     var ci = $('#s-copyimg'); if (ci) ci.addEventListener('click', function () {
@@ -267,12 +294,13 @@
   function generate() {
     if (state.busy || !state.photos.length) return;
     state.busy = true; state.result = null; state.versions = []; render(); msg('');
-    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: normUrl(state.qr.raw) ? state.qr.pos : '', photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
+    var genPos = normUrl(state.qr.raw) && state.qr.pos !== 'none' ? state.qr.pos : '';
+    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: genPos, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {
         newVersion(r.data.id, r.data.mime, r.data.image).then(function (v) {
-          state.result = v; state.versions = [v]; state.cur = 0; state.instruction = '';
+          v.genPos = genPos; state.result = v; state.versions = [v]; state.cur = 0; state.instruction = '';
           state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
         });
       } else {
@@ -292,7 +320,7 @@
       state.busy = false;
       if (r.status === 200) {
         newVersion(r.data.id, r.data.mime, r.data.image).then(function (v) {
-          state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
+          v.genPos = cur.genPos; state.versions.push(v); state.cur = state.versions.length - 1; state.result = v; state.instruction = ''; state.credits = r.data.credits; render();
         });
       } else if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); }
       else { render(); msg(errText(r.data && r.data.error)); }
