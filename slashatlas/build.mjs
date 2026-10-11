@@ -231,7 +231,7 @@ function legalPage(l, kind) {
 
 function termsPage(l) {
   const x = termsBody(l, cfg.legal || {});
-  const body = `<div class="wrap narrow prose"><h1 class="big sm">${x.title}</h1>${x.sections.map(([h, ps]) => `<h2>${h}</h2>${ps.map((q) => `<p>${q}</p>`).join('')}`).join('')}</div>`;
+  const body = `<div class="wrap narrow prose"><h1 class="big sm">${x.title.replace(/ \| SlashAtlas$/, "")}</h1>${x.sections.map(([h, ps]) => `<h2>${h}</h2>${ps.map((q) => `<p>${q}</p>`).join('')}`).join('')}</div>`;
   emit(l, 'terms', P[l].terms, { title: x.title, desc: x.desc, body, alt: alt2(P.fr.terms, P.en.terms) });
   if (l === 'fr') pages.push({ fr: P.fr.terms, en: P.en.terms });
 }
