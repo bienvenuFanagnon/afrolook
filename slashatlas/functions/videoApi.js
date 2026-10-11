@@ -7,6 +7,7 @@ const { getStorage } = require('firebase-admin/storage');
 const studio = require('./studio');
 const video = require('./video');
 const { chromaKey, localCutout } = require('./cutout');
+const { matte } = require('./matting');
 
 const { fail, clean, db, day, spendCredits, addCredits, bump } = studio;
 const STYLES = Object.keys(video.STYLES);
@@ -123,10 +124,15 @@ async function render(u, b) {
     // 2. détourage : local si la photo est simple, sinon IA (fond vert) ; en dernier recours la photo entière dans un cadre
     let sprites = null;
     if (cutoutMode === 'ai' || cutoutMode === 'smart') {
-      sprites = await Promise.all(photos.map(async (buf, i) => {
-        if (cutoutMode === 'smart') { try { const lc = await localCutout(buf); if (lc.ok && lc.sprite) return lc.sprite.canvas.toBuffer('image/png'); } catch (e) { /* on essaie l'IA */ } }
+      sprites = [];
+      for (let i = 0; i < photos.length; i++) { const buf = photos[i]; sprites.push(await (async () => {
+        if (cutoutMode === 'smart') {
+          // 1. modèle de détourage (pixels du produit intacts, marche sur n'importe quel fond) ; 2. remplissage simple pour les fonds unis ; 3. IA sur fond vert en dernier recours
+          try { const mr = await matte(buf); if (mr.ok && mr.sprite) return mr.sprite.canvas.toBuffer('image/png'); } catch (e) { console.error('matte', e && e.message); }
+          try { const lc = await localCutout(buf); if (lc.ok && lc.sprite) return lc.sprite.canvas.toBuffer('image/png'); } catch (e) { /* on essaie l'IA */ }
+        }
         return aiCutout(buf, photosIn[i].mime, lang);
-      }));
+      })()); }
       const ai = sprites.filter(Boolean).length; await bump({ videoCutoutKept: ai, videoCutoutMiss: sprites.length - ai });
     }
     await vref.update({ style, hook: texts.hook, voice: !!voice, qr: !!qrUrl });

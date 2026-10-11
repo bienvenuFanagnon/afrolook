@@ -336,6 +336,23 @@
 })();
 
 
+// Visuels qui changent à chaque visite : paires avant/après de l'accueil, trio photo → détourage → vidéo, ordre des vidéos d'exemple.
+(function () {
+  var n = NaN; try { n = parseInt(localStorage.getItem('sa_rot') || '', 10); } catch (e) {}
+  if (isNaN(n)) n = Math.floor(Math.random() * 1000); try { localStorage.setItem('sa_rot', String(n + 1)); } catch (e) {}
+  var els = document.querySelectorAll('[data-rot]'); if (!els.length) return;
+  Array.prototype.forEach.call(els, function (el, k) {
+    var kind = el.getAttribute('data-rot');
+    if (kind === 'rail') { var kids = Array.prototype.slice.call(el.children); if (kids.length < 2) return; var o = (n + k) % kids.length; kids.slice(o).concat(kids.slice(0, o)).forEach(function (c) { el.appendChild(c); }); return; }
+    var ids; try { ids = JSON.parse(el.getAttribute('data-ids')); } catch (e) { return; } if (!ids || !ids.length) return;
+    var id = ids[n % ids.length];
+    Array.prototype.forEach.call(el.querySelectorAll('img[data-r]'), function (im) {
+      var r = im.getAttribute('data-r'); var src = kind === 'img' ? '/img/c/' + id + '-' + r + '.webp' : '/img/video/' + r + '-' + id + '.webp';
+      if (im.getAttribute('src') !== src) im.setAttribute('src', src);
+    });
+  });
+})();
+
 // Lignes horizontales (produits, vidéos) : sur ordinateur, flèches, glisser avec la souris, et touches ← → quand la souris est au-dessus
 // (ou que la ligne a le focus). Sur téléphone, le défilement tactile habituel reste inchangé.
 (function () {

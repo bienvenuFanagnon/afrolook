@@ -195,15 +195,15 @@ const MIN = { s1: 3.8, s2: 9.0, s3: 10.5, s4: 6.0, s5: 5.2 };
   fonts();
   // images fixes
   STILLS = { before: await img(C('skincareglow-avant')), after: await img(C('skincareglow-apres')) };
-  const spPath = path.join(STATIC, 'img', 'video', 'cut-beaute.webp'); STILLS.sprite = await img(spPath);
+  const spPath = path.join(STATIC, 'img', 'video', 'cut-lotion.webp'); STILLS.sprite = await img(spPath);
   STILLS.collA = await Promise.all(['fashionposter', 'splashshot', 'skincareglow', 'bagluxury', 'lipstickline', 'menuhero', 'productglow', 'openhouse'].map((n) => img(C(n + '-apres'))));
   // vidéos d'exemple : une image par seconde de chacune pour la ligne « vidéos », et toutes les images (12 par seconde) de l'exemple de beauté
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'promo-'));
   const exDir = path.join(STATIC, 'video', 'exemples'); const stills = [];
-  for (const st of ['beaute', 'mode', 'promo']) for (const sec of [4.8, 9.5, 15.0]) { const f = path.join(tmp, `s_${st}_${sec}.png`); execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-ss', String(sec), '-i', path.join(exDir, `ex-${st}-${LANG}.mp4`), '-frames:v', '1', '-vf', 'scale=300:-2', f]); stills.push(await img(f)); }
+  for (const st of ['lotion', 'robe', 'plat']) for (const sec of [4.8, 9.5, 15.0]) { const f = path.join(tmp, `s_${st}_${sec}.png`); execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-ss', String(sec), '-i', path.join(exDir, `ex-${st}-${LANG}.mp4`), '-frames:v', '1', '-vf', 'scale=300:-2', f]); stills.push(await img(f)); }
   STILLS.collB = stills;
   const fdir = path.join(tmp, 'f'); fs.mkdirSync(fdir);
-  execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-t', '16', '-i', path.join(exDir, `ex-beaute-${LANG}.mp4`), '-vf', 'fps=12,scale=300:-2', path.join(fdir, 'e%04d.jpg')]);
+  execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-t', '16', '-i', path.join(exDir, `ex-lotion-${LANG}.mp4`), '-vf', 'fps=12,scale=300:-2', path.join(fdir, 'e%04d.jpg')]);
   EX = []; for (const f of fs.readdirSync(fdir).sort()) EX.push(await loadImage(path.join(fdir, f)));
   // voix
   const kinds = ['s1', 's2', 's3', 's4', 's5']; const clips = {}; const vd = {};
