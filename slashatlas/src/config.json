@@ -1,7 +1,7 @@
 {
   "name": "SlashAtlas",
-  "domain": "https://slashatlas-studio.web.app",
-  "indexable": false,
+  "domain": "https://slashatlas.com",
+  "indexable": true,
   "pro": {
     "price": "3,99 €",
     "priceEn": "€3.99"
