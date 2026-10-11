@@ -65,7 +65,7 @@ const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
 export const MORE = Object.entries(FILES).flatMap(([cat, rows]) => rows.map(([slug, kind, ratio, ft, fp, fd, fs, et, ep, ed, es, steps]) => {
   const h = hash(slug);
   return {
-    slug, code: '/' + slug, cat, ratio, kind, noImage: true,
+    slug, code: '/' + slug, cat, ratio, kind, noImage: true, scene: { fr: fs, en: es },
     steps: steps ? steps.map(([f, e]) => ({ fr: f, en: e })) : undefined,
     x: `${25 + (h % 50)}%`, y: `${25 + ((h >> 3) % 50)}%`, r: ['50%', '8%', '30%'][h % 3],
     fr: { title: ft, poster: fp, desc: fd, prompt: FRAME.fr[kind](fs, FMT.fr[ratio]) },

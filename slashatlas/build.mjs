@@ -9,6 +9,17 @@ import { aboutBody } from './src/about.mjs';
 import { GUIDES } from './src/guides.mjs';
 
 const root = path.dirname(new URL(import.meta.url).pathname);
+// Illustrations ajoutées au fil de l'eau : une commande qui a ses fichiers -apres.webp et -t.webp dans static/img/c affiche son image ;
+// le moteur (Gemini par défaut, ou celui noté dans engines.json) est affiché honnêtement ; sans fichier -avant.webp, pas de « photo de départ ».
+{
+  const dir = path.join(root, 'static', 'img', 'c'); let engines = {};
+  try { engines = JSON.parse(fs.readFileSync(path.join(dir, 'engines.json'), 'utf8')); } catch (e) {}
+  for (const c of COMMANDS) {
+    c.engine = engines[c.slug] || 'Gemini';
+    if (c.noImage && fs.existsSync(path.join(dir, `${c.slug}-apres.webp`)) && fs.existsSync(path.join(dir, `${c.slug}-t.webp`))) { c.noImage = false; c.noBefore = !fs.existsSync(path.join(dir, `${c.slug}-avant.webp`)); }
+  }
+}
+
 const dist = path.join(root, 'dist');
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
 const esc = (s) => String(s).replace(/ ([?!:;»])/g, '\u00a0$1').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -65,14 +76,14 @@ const ad = (kind, l = 'fr', late = false) => `<aside class="ad ad-${kind}" data-
 
 const AIWORD = { fr: 'Généré par IA', en: 'AI-generated' };
 const BEFORE = { fr: 'Photo de départ', en: 'Starting photo' };
-const imgAlt = (c, l) => (l === 'fr' ? `Résultat de la commande ${c.code} : ${c.fr.title}` : `Result of the ${c.code} command: ${c.en.title}`);
+const imgAlt = (c, l) => (c.noBefore ? (l === 'fr' ? `Exemple illustrant la commande ${c.code} : ${c.fr.title}` : `Example illustrating the ${c.code} command: ${c.en.title}`) : (l === 'fr' ? `Résultat de la commande ${c.code} : ${c.fr.title}` : `Result of the ${c.code} command: ${c.en.title}`));
 function poster(c, l, big = false) {
   const t = c[l];
   if (c.noImage) {
     return `<div class="poster${big ? ' big' : ''}" style="--x:${c.x};--y:${c.y};--r:${c.r}"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="shape"></span><b>${esc(t.poster)}</b><small>${esc(c.code)}</small></div>`;
   }
   if (big) {
-    return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high"><span class="ai">${AIWORD[l]} · Gemini</span><div class="av"><img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy"><small>${BEFORE[l]}</small></div></div>`;
+    return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high"><span class="ai">${AIWORD[l]} · ${c.engine}</span>${c.noBefore ? '' : `<div class="av"><img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy"><small>${BEFORE[l]}</small></div>`}</div>`;
   }
   return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span></div>`;
 }
