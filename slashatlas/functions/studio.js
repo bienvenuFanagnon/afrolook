@@ -26,28 +26,37 @@ const PACKS = [
 // Plafonds de sécurité (par jour, UTC)
 const LIMITS = { userPerDay: 40, globalPerDay: 400 };
 
-// Opérateurs FeexPay : code, libellé, indicatif du pays, frais de collecte (%)
+// Opérateurs FeexPay : frais de dépôt (payin, ajoutés par FeexPay au montant payé par le client) et de retrait (payout, que nous ajoutons
+// pour que le retrait des fonds ne réduise pas le prix du pack). Mêmes taux que dans Afrolook (functions/src/shared/config.ts).
 const OPERATORS = [
-  { code: 'mtn', label: 'MTN', country: 'Bénin', dial: '229', fee: 1.7 },
-  { code: 'moov', label: 'Moov', country: 'Bénin', dial: '229', fee: 1.7 },
-  { code: 'celtiis_bj', label: 'Celtiis', country: 'Bénin', dial: '229', fee: 1.7 },
-  { code: 'coris', label: 'Coris', country: 'Bénin', dial: '229', fee: 1.7 },
-  { code: 'togocom_tg', label: 'Togocom', country: 'Togo', dial: '228', fee: 3.0 },
-  { code: 'moov_tg', label: 'Moov', country: 'Togo', dial: '228', fee: 3.0 },
-  { code: 'mtn_ci', label: 'MTN', country: 'Côte d’Ivoire', dial: '225', fee: 2.0 },
-  { code: 'moov_ci', label: 'Moov', country: 'Côte d’Ivoire', dial: '225', fee: 2.0 },
-  { code: 'wave_ci', label: 'Wave', country: 'Côte d’Ivoire', dial: '225', fee: 2.0, redirect: true },
-  { code: 'orange_ci', label: 'Orange', country: 'Côte d’Ivoire', dial: '225', fee: 2.0 },
-  { code: 'orange_sn', label: 'Orange', country: 'Sénégal', dial: '221', fee: 2.0 },
-  { code: 'wave_sn', label: 'Wave', country: 'Sénégal', dial: '221', fee: 2.0, redirect: true },
-  { code: 'free_sn', label: 'Free', country: 'Sénégal', dial: '221', fee: 2.0, redirect: true },
-  { code: 'mtn_cg', label: 'MTN', country: 'Congo-Brazzaville', dial: '242', fee: 3.0 },
-  { code: 'moov_bf', label: 'Moov', country: 'Burkina Faso', dial: '226', fee: 3.2 },
-  { code: 'orange_bf', label: 'Orange', country: 'Burkina Faso', dial: '226', fee: 3.2, otp: true },
-  { code: 'wave_bf', label: 'Wave', country: 'Burkina Faso', dial: '226', fee: 3.2, redirect: true },
-  { code: 'orange_ml', label: 'Orange', country: 'Mali', dial: '223', fee: 3.2 },
-  { code: 'mobicash_ml', label: 'Mobicash', country: 'Mali', dial: '223', fee: 3.2 },
+  { code: 'mtn', label: 'MTN', country: 'Bénin', dial: '229', payin: 1.7, payout: 1.7 },
+  { code: 'moov', label: 'Moov', country: 'Bénin', dial: '229', payin: 1.7, payout: 1.7 },
+  { code: 'celtiis_bj', label: 'Celtiis', country: 'Bénin', dial: '229', payin: 1.7, payout: 1.7 },
+  { code: 'coris', label: 'Coris', country: 'Bénin', dial: '229', payin: 1.7, payout: 1.7 },
+  { code: 'togocom_tg', label: 'Togocom', country: 'Togo', dial: '228', payin: 3.0, payout: 2.4 },
+  { code: 'moov_tg', label: 'Moov', country: 'Togo', dial: '228', payin: 3.0, payout: 2.4 },
+  { code: 'mtn_ci', label: 'MTN', country: 'Côte d’Ivoire', dial: '225', payin: 2.0, payout: 2.0 },
+  { code: 'moov_ci', label: 'Moov', country: 'Côte d’Ivoire', dial: '225', payin: 2.0, payout: 2.0 },
+  { code: 'wave_ci', label: 'Wave', country: 'Côte d’Ivoire', dial: '225', payin: 2.0, payout: 2.0, redirect: true },
+  { code: 'orange_ci', label: 'Orange', country: 'Côte d’Ivoire', dial: '225', payin: 2.0, payout: 2.0 },
+  { code: 'orange_sn', label: 'Orange', country: 'Sénégal', dial: '221', payin: 2.0, payout: 2.0 },
+  { code: 'wave_sn', label: 'Wave', country: 'Sénégal', dial: '221', payin: 2.0, payout: 2.0, redirect: true },
+  { code: 'free_sn', label: 'Free', country: 'Sénégal', dial: '221', payin: 2.0, payout: 2.0, redirect: true },
+  { code: 'mtn_cg', label: 'MTN', country: 'Congo-Brazzaville', dial: '242', payin: 3.0, payout: 2.0 },
+  { code: 'moov_bf', label: 'Moov', country: 'Burkina Faso', dial: '226', payin: 3.2, payout: 3.2 },
+  { code: 'orange_bf', label: 'Orange', country: 'Burkina Faso', dial: '226', payin: 3.2, payout: 3.2, otp: true },
+  { code: 'wave_bf', label: 'Wave', country: 'Burkina Faso', dial: '226', payin: 3.2, payout: 3.2, redirect: true },
+  { code: 'orange_ml', label: 'Orange', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
+  { code: 'mobicash_ml', label: 'Mobicash', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
 ];
+// Carte bancaire (FeexPay) : désactivée tant que le KYB carte de la boutique n'est pas validé. Frais à renseigner (en %) après confirmation de FeexPay.
+const CARD = { enabled: false, currency: 'XOF', payin: 0, payout: 0 };
+/** Montant à envoyer à FeexPay (prix + frais de retrait) et total payé par le client (FeexPay y ajoute ses frais de dépôt). */
+function quote(price, payin, payout) {
+  const send = Math.ceil(price * (1 + payout / 100));
+  const total = Math.ceil(send * (1 + payin / 100));
+  return { send, total, fee: total - price };
+}
 const opByCode = Object.fromEntries(OPERATORS.map((o) => [o.code, o]));
 
 const day = () => new Date().toISOString().slice(0, 10);
@@ -231,11 +240,12 @@ async function payStart(u, b) {
   if (phone.length < 10 || phone.length > 15) throw fail(400, 'bad_phone');
   const otp = clean(b.otp, 12);
   if (op.otp && !otp) throw fail(400, 'otp_required');
-  // L'utilisateur paie le prix affiché ; les frais FeexPay sont inclus (le montant envoyé est le net, FeexPay y ajoute ses frais).
-  const amount = Math.ceil(pack.xof / (1 + op.fee / 100));
+  // Le client paie les frais : nous envoyons prix + frais de retrait, FeexPay ajoute ses frais de dépôt.
+  const q = quote(pack.xof, op.payin, op.payout);
+  const amount = q.send;
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
-  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, status: 'created', createdAt: FieldValue.serverTimestamp() });
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount, total: q.total, currency: 'XOF', provider: 'feexpay', operator: op.code, phone: `${phone.slice(0, 5)}***${phone.slice(-2)}`, status: 'created', createdAt: FieldValue.serverTimestamp() });
   const name = clean(u.name, 60).split(/\s+/);
   const payload = { shop: FEEXPAY_SHOP, amount, phoneNumber: phone, firstName: name[0] || 'Client', lastName: name.slice(1).join(' ') || 'SlashAtlas', description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
   if (otp) payload.otp = otp;
@@ -247,7 +257,33 @@ async function payStart(u, b) {
     throw fail(502, 'payment_refused');
   }
   await oref.update({ status: 'processing', reference, processingAt: FieldValue.serverTimestamp() });
-  return { orderId, reference, paymentUrl: r.data.payment_url || null, message: r.data.message || '' };
+  return { orderId, reference, total: q.total, paymentUrl: r.data.payment_url || null, message: r.data.message || '' };
+}
+
+
+async function payCard(u, b) {
+  if (!CARD.enabled) throw fail(503, 'card_unavailable');
+  const pack = PACKS.find((p) => p.id === b.packId);
+  if (!pack) throw fail(400, 'bad_request');
+  const first = clean(b.firstName, 40), last = clean(b.lastName, 40), city = clean(b.city, 60), zip = clean(b.zip, 12), address = clean(b.address, 80);
+  const country = String(b.country || '').toUpperCase();
+  let phone = String(b.phone || '').replace(/[^0-9]/g, '');
+  if (!first || !last || !city || !zip || !/^[A-Z]{2}$/.test(country) || phone.length < 8 || phone.length > 15) throw fail(400, 'bad_card_info');
+  const q = quote(pack.xof, CARD.payin, CARD.payout);
+  const orderId = crypto.randomBytes(8).toString('hex');
+  const oref = db().collection('StudioOrders').doc(orderId);
+  await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits, price: pack.xof, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', status: 'created', createdAt: FieldValue.serverTimestamp() });
+  const payload = { shop: FEEXPAY_SHOP, amount: String(q.send), currency: CARD.currency, first_name: first, last_name: last, email: u.email, phoneNumber: phone, adress: address || city, city, zip, country, description: `SlashAtlas ${pack.credits} credits`, callback_info: JSON.stringify({ orderId, uid: u.uid }) };
+  const r = await feexRequest('https://api-v2.feexpay.me/api/public/card', 'POST', payload);
+  const reference = r.data && r.data.reference;
+  const url = r.data && (r.data.payment_url || r.data.paymentUrl);
+  if (!r.ok || !reference || !url) {
+    console.error('feexpay card', r.status, JSON.stringify(r.data).slice(0, 300));
+    await oref.update({ status: 'failed', failure: String((r.data && r.data.message) || r.status).slice(0, 200) });
+    throw fail(502, 'payment_refused');
+  }
+  await oref.update({ status: 'processing', reference, processingAt: FieldValue.serverTimestamp() });
+  return { orderId, reference, total: q.total, paymentUrl: url };
 }
 
 /** Vérifie la commande auprès de FeexPay et crédite le compte, une seule fois. */
@@ -296,8 +332,9 @@ function publicConfig() {
     genCost: GEN_COST,
     packs: PACKS,
     currency: 'XOF',
-    operators: OPERATORS.map(({ code, label, country, dial, fee, redirect, otp }) => ({ code, label, country, dial, redirect: !!redirect, otp: !!otp })),
+    card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout },
+    operators: OPERATORS.map(({ code, label, country, dial, payin, payout, redirect, otp }) => ({ code, label, country, dial, payin, payout, redirect: !!redirect, otp: !!otp })),
   };
 }
 
-module.exports = { SECRETS, me, generate, edit, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };
+module.exports = { SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST };

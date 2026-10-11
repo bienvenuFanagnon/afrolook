@@ -13,8 +13,8 @@
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
-      card: 'Carte bancaire : bientôt', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l’opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer',
-      e: { no_instruction: 'Décrivez la modification à faire.', no_image: 'Image introuvable : refaites une génération.', insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
+      card: 'Carte bancaire : bientôt', mm: 'Mobile money', cardTab: 'Carte bancaire', feeLine: 'Pack {p} FCFA + frais de paiement {f} FCFA', feeNote: 'Les frais de l’opérateur sont payés par l’acheteur.', firstName: 'Prénom', lastName: 'Nom', city: 'Ville', zip: 'Code postal', countryCard: 'Pays', phoneCard: 'Téléphone (avec indicatif)', cardGo: 'Payer par carte', cardInfo: 'Vous serez redirigé vers la page de paiement sécurisée de FeexPay (3D Secure).', pending: 'Paiement en cours de vérification…', approx: '≈ {e} €', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l’opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer',
+      e: { no_instruction: 'Décrivez la modification à faire.', no_image: 'Image introuvable : refaites une génération.', insufficient_credits: 'Pas assez de crédits.', daily_limit: 'Limite quotidienne atteinte. Revenez demain.', refused: 'L’image n’a pas pu être créée avec cette photo. Essayez-en une autre. Votre crédit est rendu.', busy: 'Service très sollicité. Réessayez dans un instant. Votre crédit est rendu.', gemini_error: 'La création a échoué. Votre crédit est rendu.', photo_too_big: 'Photo trop lourde.', bad_photo: 'Format de photo non pris en charge.', auth: 'Reconnectez-vous.', payment_refused: 'Le paiement n’a pas pu démarrer. Vérifiez le numéro et l’opérateur.', bad_phone: 'Numéro invalide.', bad_card_info: 'Complétez tous les champs.', card_unavailable: 'Le paiement par carte n’est pas encore disponible.', otp_required: 'Code OTP requis.', rate: 'Trop de demandes, patientez un instant.', server: 'Erreur du service, réessayez.' },
     },
     en: {
       login: 'Continue with Google', loginNote: 'Quick sign-in with your Google account. If you already have an account, you are simply signed back in.',
@@ -24,8 +24,8 @@
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
-      card: 'Card payment: coming soon', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator’s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close',
-      e: { no_instruction: 'Describe the change you want.', no_image: 'Image not found: please generate again.', insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
+      card: 'Card payment: coming soon', mm: 'Mobile money', cardTab: 'Bank card', feeLine: 'Pack {p} FCFA + payment fees {f} FCFA', feeNote: 'Operator fees are paid by the buyer.', firstName: 'First name', lastName: 'Last name', city: 'City', zip: 'Postal code', countryCard: 'Country', phoneCard: 'Phone (with country code)', cardGo: 'Pay by card', cardInfo: 'You will be redirected to FeexPay’s secure payment page (3D Secure).', pending: 'Checking your payment…', approx: '≈ €{e}', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator’s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close',
+      e: { no_instruction: 'Describe the change you want.', no_image: 'Image not found: please generate again.', insufficient_credits: 'Not enough credits.', daily_limit: 'Daily limit reached. Come back tomorrow.', refused: 'The image could not be created from this photo. Try another one. Your credit is refunded.', busy: 'The service is busy. Try again in a moment. Your credit is refunded.', gemini_error: 'Creation failed. Your credit is refunded.', photo_too_big: 'Photo too large.', bad_photo: 'Unsupported photo format.', auth: 'Please sign in again.', payment_refused: 'The payment could not start. Check the number and operator.', bad_phone: 'Invalid number.', bad_card_info: 'Please fill in every field.', card_unavailable: 'Card payment is not available yet.', otp_required: 'OTP code required.', rate: 'Too many requests, please wait a moment.', server: 'Service error, please try again.' },
     },
   }[L];
   var data = {}; try { data = JSON.parse(root.dataset.map); } catch (e) {}
@@ -146,32 +146,60 @@
   }
 
   // ── achat de crédits (mobile money) ──
+  function quote(price, payin, payout) { var send = Math.ceil(price * (1 + payout / 100)), total = Math.ceil(send * (1 + payin / 100)); return { send: send, total: total, fee: total - price }; }
   function openBuy() {
     var cfg = state.cfg; if (!cfg) return;
     var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
-    var sel = { pack: cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id, country: countries[0], op: null };
+    var sel = { pack: cfg.packs[1] ? cfg.packs[1].id : cfg.packs[0].id, country: countries[0], op: null, method: 'mm' };
     var modal = document.createElement('div'); modal.className = 'smodal'; modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true');
     document.body.appendChild(modal); document.body.style.overflow = 'hidden';
-    var timer = null;
+    var timer = null, ISO = ['FR', 'BE', 'CH', 'LU', 'DE', 'ES', 'PT', 'IT', 'NL', 'GB', 'IE', 'US', 'CA', 'BR', 'MX', 'CO', 'BJ', 'TG', 'CI', 'SN', 'BF', 'ML', 'CM', 'CG', 'GA', 'GN', 'NE', 'TD', 'CD', 'MA', 'DZ', 'TN', 'GH', 'NG'];
     function close() { clearInterval(timer); modal.remove(); document.body.style.overflow = ''; }
     function ops() { return cfg.operators.filter(function (o) { return o.country === sel.country; }); }
+    function countryName(c) { try { return new Intl.DisplayNames([L], { type: 'region' }).of(c) || c; } catch (e) { return c; } }
     function draw() {
       if (!sel.op || sel.op.country !== sel.country) sel.op = ops()[0];
       var pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
+      var isCard = sel.method === 'card';
+      var q = isCard ? quote(pk.xof, cfg.card.payin, cfg.card.payout) : quote(pk.xof, sel.op.payin, sel.op.payout);
+      var tabs = '<div class="mtabs" role="tablist"><button type="button" data-m="mm" aria-pressed="' + !isCard + '">' + T.mm + '</button>' + (cfg.card && cfg.card.enabled ? '<button type="button" data-m="card" aria-pressed="' + isCard + '">' + T.cardTab + '</button>' : '<button type="button" disabled>' + T.card + '</button>') + '</div>';
+      var form;
+      if (!isCard) {
+        form = '<label>' + T.country + '<select id="b-country">' + countries.map(function (c) { return '<option' + (c === sel.country ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
+          '<label>' + T.operator + '<select id="b-op">' + ops().map(function (o) { return '<option value="' + o.code + '"' + (o.code === sel.op.code ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select></label>' +
+          '<label>' + T.phone + '<span class="pfx"><i>+' + sel.op.dial + '</i><input id="b-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="XXXXXXXX"></span></label>' +
+          (sel.op.otp ? '<label>' + T.otp + '<input id="b-otp" type="text" inputmode="numeric" autocomplete="one-time-code"></label><p class="hint">' + T.otpHint + '</p>' : '');
+      } else {
+        var nm = (state.user.displayName || '').split(' ');
+        form = '<div class="two"><label>' + T.firstName + '<input id="c-first" autocomplete="given-name" value="' + esc(nm[0] || '') + '"></label><label>' + T.lastName + '<input id="c-last" autocomplete="family-name" value="' + esc(nm.slice(1).join(' ')) + '"></label></div>' +
+          '<label>' + T.phoneCard + '<input id="c-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+33…"></label>' +
+          '<div class="two"><label>' + T.city + '<input id="c-city" autocomplete="address-level2"></label><label>' + T.zip + '<input id="c-zip" autocomplete="postal-code"></label></div>' +
+          '<label>' + T.countryCard + '<select id="c-country">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc(countryName(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + T.cardInfo + '</p>';
+      }
       modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + T.buyTitle + '</h2><p class="hint">' + T.buySub + '</p>' +
-        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '">' + (p.tag ? '<i>' + T.popular + '</i>' : '') + '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + Math.round(p.xof / p.credits) + ' FCFA ' + T.perCredit + '</small></button>'; }).join('') + '</div>' +
-        '<label>' + T.country + '<select id="b-country">' + countries.map(function (c) { return '<option' + (c === sel.country ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
-        '<label>' + T.operator + '<select id="b-op">' + ops().map(function (o) { return '<option value="' + o.code + '"' + (o.code === sel.op.code ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select></label>' +
-        '<label>' + T.phone + '<span class="pfx"><i>+' + sel.op.dial + '</i><input id="b-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="XXXXXXXX"></span></label>' +
-        (sel.op.otp ? '<label>' + T.otp + '<input id="b-otp" type="text" inputmode="numeric" autocomplete="one-time-code"></label><p class="hint">' + T.otpHint + '</p>' : '') +
-        '<button class="btn pri big" type="button" id="b-pay">' + T.pay + ' ' + fmt(pk.xof) + ' FCFA</button><p class="hint soft">' + T.card + '</p><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p></div>';
+        '<div class="packs">' + cfg.packs.map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '">' + (p.tag ? '<i>' + T.popular + '</i>' : '') + '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + fmt(p.xof) + ' FCFA</em><small>' + Math.round(p.xof / p.credits) + ' FCFA ' + T.perCredit + '</small></button>'; }).join('') + '</div>' + tabs + form +
+        '<div class="feebox"><span>' + T.feeLine.replace('{p}', fmt(pk.xof)).replace('{f}', fmt(q.fee)) + '</span><b>' + fmt(q.total) + ' FCFA</b>' + (isCard ? '<small>' + T.approx.replace('{e}', (q.total / 655.957).toFixed(2)) + '</small>' : '') + '</div>' +
+        '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo : T.pay) + ' ' + fmt(q.total) + ' FCFA</button><p class="hint soft">' + T.feeNote + '</p><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p></div>';
       $('.x', modal).onclick = close;
       Array.prototype.forEach.call(modal.querySelectorAll('.pack'), function (b) { b.onclick = function () { sel.pack = b.dataset.p; draw(); }; });
-      $('#b-country', modal).onchange = function (e) { sel.country = e.target.value; sel.op = null; draw(); };
-      $('#b-op', modal).onchange = function (e) { sel.op = ops().filter(function (o) { return o.code === e.target.value; })[0]; draw(); };
-      $('#b-pay', modal).onclick = pay;
+      Array.prototype.forEach.call(modal.querySelectorAll('[data-m]'), function (b) { b.onclick = function () { sel.method = b.dataset.m; draw(); }; });
+      var co = $('#b-country', modal); if (co) co.onchange = function (e) { sel.country = e.target.value; sel.op = null; draw(); };
+      var op = $('#b-op', modal); if (op) op.onchange = function (e) { sel.op = ops().filter(function (o) { return o.code === e.target.value; })[0]; draw(); };
+      $('#b-pay', modal).onclick = isCard ? payCard : pay;
     }
     function bmsg(t, ok) { var m = $('#b-msg', modal); if (m) { m.textContent = t || ''; m.className = 'fmsg' + (ok ? ' ok' : ''); } }
+    function track(orderId, btn) {
+      var tries = 0; bmsg(T.waitPay, true);
+      timer = setInterval(function () {
+        tries++;
+        window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
+          if (s.status !== 200) return;
+          if (s.data.status === 'paid') { clearInterval(timer); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; bmsg(T.paid, true); setTimeout(function () { close(); render(); }, 1200); }
+          else if (s.data.status === 'failed') { clearInterval(timer); btn.disabled = false; bmsg(T.payFailed); }
+        });
+        if (tries > 60) { clearInterval(timer); btn.disabled = false; bmsg(T.payFailed); }
+      }, 4000);
+    }
     function pay() {
       var btn = $('#b-pay', modal), phone = $('#b-phone', modal).value.replace(/\D/g, ''), otp = sel.op.otp ? ($('#b-otp', modal).value || '').trim() : '';
       if (phone.length < 8) return bmsg(T.e.bad_phone);
@@ -180,20 +208,36 @@
       window.slashAuth.call('pay/start', { packId: sel.pack, operator: sel.op.code, phone: phone, otp: otp }).then(function (r) {
         if (r.status !== 200) { btn.disabled = false; return bmsg(errText(r.data && r.data.error)); }
         if (r.data.paymentUrl) { var a = document.createElement('a'); a.href = r.data.paymentUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.openPay; a.className = 'btn gl'; $('#b-msg', modal).after(a); }
-        var tries = 0, orderId = r.data.orderId;
-        bmsg(T.waitPay, true);
-        timer = setInterval(function () {
-          tries++;
-          window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
-            if (s.status !== 200) return;
-            if (s.data.status === 'paid') { clearInterval(timer); state.credits = s.data.balance; bmsg(T.paid, true); setTimeout(function () { close(); render(); }, 1200); }
-            else if (s.data.status === 'failed') { clearInterval(timer); btn.disabled = false; bmsg(T.payFailed); }
-          });
-          if (tries > 60) { clearInterval(timer); btn.disabled = false; bmsg(T.payFailed); }
-        }, 4000);
+        track(r.data.orderId, btn);
+      }).catch(function () { btn.disabled = false; bmsg(T.e.server); });
+    }
+    function payCard() {
+      var btn = $('#b-pay', modal), v = function (id) { return ($('#' + id, modal).value || '').trim(); };
+      var body = { packId: sel.pack, firstName: v('c-first'), lastName: v('c-last'), phone: v('c-phone'), city: v('c-city'), zip: v('c-zip'), country: $('#c-country', modal).value };
+      if (!body.firstName || !body.lastName || !body.city || !body.zip || body.phone.replace(/\D/g, '').length < 8) return bmsg(T.e.bad_card_info);
+      btn.disabled = true; bmsg(T.paying, true);
+      window.slashAuth.call('pay/card', body).then(function (r) {
+        if (r.status !== 200) { btn.disabled = false; return bmsg(errText(r.data && r.data.error)); }
+        try { localStorage.setItem('sa_pending', r.data.orderId); } catch (e) {}
+        location.href = r.data.paymentUrl;
       }).catch(function () { btn.disabled = false; bmsg(T.e.server); });
     }
     draw();
+  }
+  // retour de la page de paiement par carte : on vérifie la commande en attente
+  function resumePending() {
+    var id = null; try { id = localStorage.getItem('sa_pending'); } catch (e) {}
+    if (!id || !state.user) return;
+    msg(T.pending, true);
+    var tries = 0, t = setInterval(function () {
+      tries++;
+      window.slashAuth.call('pay/status', { orderId: id }).then(function (s) {
+        if (s.status === 200 && s.data.status === 'paid') { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} state.credits = s.data.balance; render(); msg(T.paid, true); }
+        else if (s.status === 200 && s.data.status === 'failed') { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} msg(T.payFailed); }
+        else if (s.status === 404) { clearInterval(t); try { localStorage.removeItem('sa_pending'); } catch (e) {} msg(''); }
+      });
+      if (tries > 30) clearInterval(t);
+    }, 4000);
   }
 
   // ── démarrage ──
@@ -203,7 +247,7 @@
     var u = e.detail.user; state.user = u;
     if (!u) { state.credits = 0; state.result = null; render(); return; }
     window.slashAuth.call('me').then(function (r) {
-      if (r.status === 200) { state.credits = r.data.credits; render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); }
+      if (r.status === 200) { state.credits = r.data.credits; render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); }
       else { render(); msg(errText(r.data && r.data.error)); }
     });
   });
