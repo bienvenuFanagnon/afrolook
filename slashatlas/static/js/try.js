@@ -10,7 +10,7 @@
       hello: 'Bonjour', back: 'Content de vous revoir', welcome: 'Compte créé', credits: 'crédits', credit: 'crédit', buy: 'Acheter des crédits', logout: 'Se déconnecter',
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
-      gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', ai: 'Généré par IA · Gemini',
+      gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
       noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       card: 'Carte bancaire : bientôt', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l’opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer',
@@ -21,7 +21,7 @@
       hello: 'Hello', back: 'Welcome back', welcome: 'Account created', credits: 'credits', credit: 'credit', buy: 'Buy credits', logout: 'Sign out',
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
-      gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', ai: 'AI-generated · Gemini',
+      gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
       noCredit: 'You need credits to generate.', balance: 'Balance',
       buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       card: 'Card payment: coming soon', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator’s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close',
@@ -60,7 +60,7 @@
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
       '<button class="btn pri big" type="button" id="s-gen"' + (state.credits >= 1 && !canGen ? ' disabled' : '') + '>' + (state.busy ? T.working : (state.credits >= 1 && !state.photos.length ? T.needPhoto : genLabel)) + '</button>' +
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
-      (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt=""><span class="aib">' + T.ai + '</span><div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div></div>' : '');
+      (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt=""><div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div><small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '');
     bind();
   }
   function msg(t, ok) { var m = $('#s-msg') || $('#auth-msg'); if (m) { m.textContent = t || ''; m.className = 'fmsg' + (ok ? ' ok' : ''); } }

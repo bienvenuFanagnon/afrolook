@@ -287,3 +287,4 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .pfx{display:flex;align-items:center;gap:8px}.pfx i{font-style:normal;color:var(--mut);font-size:15px;flex:none}.hint.soft{text-align:center}
 @media (min-width:720px){.smodal{align-items:center}.sheet{border-radius:26px}}
 .adapt.sf{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.adapt.sf .seg2{justify-self:start}
+.aic{color:var(--faint);font-size:11.5px;text-align:center}
