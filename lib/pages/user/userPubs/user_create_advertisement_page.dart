@@ -27,6 +27,7 @@ import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/ad_config_service.dart';
+import '../../../widgets/link_preview_card.dart';
 import '../../paiement/depotPaiment.dart';
 import '../../paiement/newDepot.dart';
 
@@ -110,6 +111,12 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     // Si post existant fourni, pré-remplir la description
     if (widget.existingPost != null) {
       _descriptionController.text = widget.existingPost!.description ?? '';
+      // Post avec aperçu de lien : le lien devient le bouton d'action de la pub (modifiable).
+      final lpUrl = (widget.existingPost!.linkPreview?['url'] ?? '').toString();
+      if (lpUrl.startsWith('http')) {
+        _actionUrlController.text = lpUrl;
+        _selectedActionType = 'visit';
+      }
     }
   }
 
@@ -787,12 +794,14 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         child: const Center(child: Icon(Icons.headphones, color: Colors.white, size: 36)),
       );
     } else {
-      preview = Container(
-        height: 60,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12)),
-        child: Text(post.description ?? '', style: TextStyle(color: _c.textPrimary, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
-      );
+      preview = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12)),
+          child: Text(post.description ?? '', style: TextStyle(color: _c.textPrimary, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+        ),
+        if (post.linkPreview != null) LinkPreviewCard(data: post.linkPreview!, margin: const EdgeInsets.only(top: 8)),
+      ]);
     }
 
     return Container(

@@ -1338,6 +1338,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     final firstImg = post.images?.isNotEmpty == true ? post.images!.first : null;
     if (firstImg?.isNotEmpty == true) return firstImg;
     if (post.dataType != 'VIDEO' && post.url_media?.isNotEmpty == true) return post.url_media;
+    // Post texte avec aperçu de lien : l'image de l'aperçu sert de miniature à la pub.
+    final lp = post.linkPreview;
+    final lpImg = lp == null ? null : (lp['image'] ?? '').toString();
+    if (lpImg != null && lpImg.isNotEmpty) return lpImg;
     return null;
   }
 
@@ -1453,7 +1457,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                                 errorWidget: (_, __, ___) => Icon(Icons.image, color: subText),
                               )
                             else
-                              Icon(Icons.image, color: subText),
+                              Icon(post.linkPreview != null ? Icons.link_rounded : Icons.image, color: subText),
                             // Badge play si vidéo
                             if (post.dataType == PostDataType.VIDEO.name ||
                                 (post.url_media?.contains('.mp4') ?? false))
