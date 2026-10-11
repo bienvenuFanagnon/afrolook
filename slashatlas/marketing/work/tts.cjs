@@ -39,7 +39,7 @@ const LINES_AD3 = {
     l4: ['Sur Slash Atlas, les prompts sont déjà prêts. [pause short] Une robe ? Copiez la commande, collez-la avec votre photo : l’affiche est prête. [pause short] Un soin de peau ? Même geste, un visuel premium en quelques secondes. [pause short] Un look complet ? Une page de lookbook élégante, sans photographe.', 19.4],
     l5: ['Plus de six cent cinquante commandes gratuites, en trente-deux catégories. Mode, beauté, produits, food, immobilier, événements, marque, vidéo publicitaire. [pause short] Des logos en verre, des planches de poses, des couvertures de magazine, des pubs prêtes à publier. En français et en anglais.', 19.4],
     l5b: ['Pour la mode : affiche de collection, lookbook, tenue de rue, robe de mariée. [pause short] Pour la beauté : soin du visage, maquillage, coiffure, ongles, parfum. [pause short] Et de nouveaux visuels s’ajoutent au fil des jours.', 12.2],
-    l6: ['Pas envie de coller ? Cliquez sur Générer ici : envoyez votre photo, et obtenez votre visuel directement sur le site. Des crédits payables par mobile money, dès cinq cents francs CFA.', 11.4],
+    l6: ['Pas envie de coller ? Cliquez sur Générer ici : envoyez votre photo, et obtenez votre visuel directement sur le site.', 11.4],
     l7: ['Slash Atlas point com. Gratuit, sans inscription pour copier. [pause short] Essayez, puis dites-nous ce que vous en pensez. Et si vous voulez collaborer, écrivez-nous.', 8.4] } },
 };
 const LINES = process.env.AD === '3' ? LINES_AD3 : (process.env.AD === '2' ? LINES_AD2 : LINES_AD1);
@@ -61,6 +61,7 @@ function writeWav(path, pcm) {
   const dir = `vo${process.env.AD === '3' ? '3' : (process.env.AD === '2' ? '2' : '')}_${lang}_${voice}`; fs.mkdirSync(dir, { recursive: true });
   let chars = 0;
   for (const [k, [text, win]] of Object.entries(L.l)) {
+    if (process.env.ONLY && !process.env.ONLY.split(',').includes(k)) continue;
     let rate = 1.0, dur = 99, out = null;
     for (let tries = 0; tries < 4 && dur > win; tries++) {
       const r = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'x-goog-user-project': 'slashatlas-studio', 'Content-Type': 'application/json' },

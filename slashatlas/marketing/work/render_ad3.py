@@ -247,11 +247,6 @@ def s_studio(t):
             aa = math.sin(clamp((tt - 5.7 - off * 0.6) / 0.8) * math.pi)
             if aa > 0: img = R.sparkle(img, rx + (sx - 0.5) * cw * 1.2, ry + (sy - 0.5) * chh * 1.1, r * U * aa, aa)
         if a > 0.8: img = R.pill(img, S['done'], rx, ry + chh * 0.60, 36, bgc=OK, fg=(0, 30, 10), padx=28, pady=13)
-    for i, c in enumerate(['Mobile money', 'dès 500 FCFA']):
-        aa = ease_back((tt - 6.8 - i * 0.8) / 0.4)
-        if aa <= 0: continue
-        cx = W * (0.40 + 0.20 * i) if LAND else W * (0.30 + 0.40 * i); cy = H * (0.90 if LAND else 0.72)
-        img = R.pill(img, c, cx, cy, 44 if LAND else 40, bgc=(OK if i == 1 else (30, 32, 40)), fg=((0, 30, 10) if i == 1 else WHITE), scale=clamp(aa, 0.01, 1.05), alpha=clamp(aa, 0, 1), padx=36, pady=18)
     return R.badge(img, t, TL['studio'][0] + 0.8)
 def s_cta(t):
     tt = t - TL['cta'][0]; img = R.bg(t)
