@@ -20,6 +20,7 @@ EN = {'Bonjour, je veux commander la robe wax, taille M.': 'Hello, I would like 
 EN = {k.replace('\\n', '\n'): v.replace('\\n', '\n') for k, v in EN.items()}
 EN['Votre lien · '] = 'Your link · '
 def X(s): return EN.get(s, s) if R.LANG == 'en' else s
+EN_ = (R.LANG == 'en')
 CTA = X('Scannez pour commander')
 # ---------- dessin : icônes ----------
 def check(img, cx, cy, r, col=(255, 255, 255), w=None, alpha=1.0):
@@ -180,7 +181,7 @@ def s_prob(t):
         cx = W * 0.5 if not LAND else W * 0.5; cy = H * ((0.22 + 0.16 * i) if not LAND else (0.27 + 0.17 * i))
         img = R.pill(img, s_, cx, cy, 56 if not LAND else 50, bgc=(30, 32, 40), fg=WHITE, scale=clamp(a, 0.01, 1.05), alpha=clamp(a, 0, 1), padx=54, pady=26)
         if tt > t0 + 0.9:
-            k = ease_back((tt - t0 - 0.9) / 0.35); x = cx + (W * 0.335 if not LAND else W * 0.215); img = disc(img, x, cy, 38 * U * clamp(k), RED); img = cross(img, x, cy, 38 * U * clamp(k), (255, 255, 255))
+            k = ease_back((tt - t0 - 0.9) / 0.35); x = cx + (W * 0.375 if not LAND else W * 0.215); img = disc(img, x, cy, 38 * U * clamp(k), RED); img = cross(img, x, cy, 38 * U * clamp(k), (255, 255, 255))
     if tt > 3.9:
         a = ease_back((tt - 3.9) / 0.5); img = R.pill(img, X('Clients perdus en chemin'), W / 2, H * (0.78 if not LAND else 0.80), 62 if not LAND else 54, bgc=RED, fg=WHITE, scale=clamp(a, 0.01, 1.05), alpha=clamp(a, 0, 1), padx=48, pady=24)
     return img
