@@ -2,6 +2,7 @@
 import { isSale } from './src/sale.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { T } from './src/i18n.mjs';
 import { CATEGORIES, COMMANDS } from './src/data.mjs';
@@ -9,7 +10,7 @@ import { termsBody, TERMS_VERSION } from './src/terms.mjs';
 import { aboutBody } from './src/about.mjs';
 import { GUIDES } from './src/guides.mjs';
 
-const root = path.dirname(new URL(import.meta.url).pathname);
+const root = path.dirname(fileURLToPath(import.meta.url));
 // Illustrations ajoutées au fil de l'eau : une commande qui a ses fichiers -apres.webp et -t.webp dans static/img/c affiche son image ;
 // le moteur (Gemini par défaut, ou celui noté dans engines.json) est affiché honnêtement ; sans fichier -avant.webp, pas de « photo de départ ».
 {

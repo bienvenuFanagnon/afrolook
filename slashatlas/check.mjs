@@ -1,7 +1,8 @@
 // Vérifie le site généré : liens internes, titres et descriptions uniques, fichiers indispensables.
 import fs from 'node:fs';
 import path from 'node:path';
-const dist = path.join(path.dirname(new URL(import.meta.url).pathname), 'dist');
+import { fileURLToPath } from 'node:url';
+const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), 'dist');
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
 const files = walk(dist), htmls = files.filter((f) => f.endsWith('.html'));
 const exists = (u) => { const c = decodeURIComponent(u.split('#')[0].split('?')[0]); if (!c) return true; if (c.startsWith('/api/')) return true; const p = path.join(dist, c); return fs.existsSync(p) && (fs.statSync(p).isFile() || fs.existsSync(path.join(p, 'index.html'))); };
