@@ -146,16 +146,16 @@ const bestBox = (l, slug) => `<div class="best"><div class="best-h">${bestTag(l)
 const REFC = { p6: 1, p20: 3, p55: 8, p160: 24 };
 const REFT = {
   fr: { k: 'Parrainage', h: 'Gagnez des crédits gratuits', lead: 'Partagez votre lien. Quand un ami crée un compte et achète des crédits, vous gagnez des crédits en plus.',
-    strip: 'Générez gratuitement : parrainez un ami, gagnez des crédits.', stripBtn: 'Obtenir mon lien', cart: 'Plus de crédit ? Gagnez-en gratuitement : parrainez un ami.',
+    strip: 'Gagnez des crédits gratuits : créez votre compte, partagez votre lien à vos amis.', stripBtn: 'Voir comment', cart: 'Plus de crédit ? Gagnez-en gratuitement : parrainez un ami.',
     steps: [['1', 'Copiez votre lien', 'Chaque compte a son lien personnel.'], ['2', 'Votre ami crée un compte', 'Avec Google, en quelques secondes.'], ['3', 'Il achète des crédits', 'Vous recevez environ 15 % de crédits en plus.']],
     tabH: 'Ce que vous gagnez', tabRow: (pk, n) => `Pack de ${pk} crédits : <b>+${n} crédit${n > 1 ? 's' : ''}</b>`, small: 'Pendant 12 mois pour chaque ami, en crédits (pas en argent), sur les achats par mobile money.',
-    login: 'Continuer avec Google', loginNote: 'Connectez-vous pour obtenir votre lien de parrainage.', link: 'Votre lien', copy: 'Copier', copied: 'Copié ✓', wa: 'Partager sur WhatsApp', share: 'Partager',
+    login: 'Créer mon compte et obtenir mon lien', loginNote: 'Gratuit, avec votre compte Google. Vous recevrez votre lien de parrainage tout de suite.', link: 'Votre lien', copy: 'Copier', copied: 'Copié ✓', wa: 'Partager sur WhatsApp', share: 'Partager',
     n1: 'Amis inscrits', n2: 'Ont acheté', n3: 'Crédits gagnés', listH: 'Vos amis', none: 'Aucun ami pour le moment. Partagez votre lien !', bought: 'a acheté', joined: 'inscrit', gen: 'Générer une affiche', shareText: 'Crée tes affiches avec l’IA sur SlashAtlas :', title: 'Parrainage : gagnez des crédits gratuits | SlashAtlas', desc: 'Partagez votre lien SlashAtlas et gagnez des crédits gratuits quand vos amis achètent des crédits.' },
   en: { k: 'Referral', h: 'Earn free credits', lead: 'Share your link. When a friend creates an account and buys credits, you earn extra credits.',
-    strip: 'Generate for free: refer a friend, earn credits.', stripBtn: 'Get my link', cart: 'Out of credits? Earn some for free: refer a friend.',
+    strip: 'Earn free credits: create your account, share your link with friends.', stripBtn: 'See how', cart: 'Out of credits? Earn some for free: refer a friend.',
     steps: [['1', 'Copy your link', 'Every account has its own link.'], ['2', 'Your friend creates an account', 'With Google, in seconds.'], ['3', 'They buy credits', 'You get about 15% extra credits.']],
     tabH: 'What you earn', tabRow: (pk, n) => `${pk}-credit pack: <b>+${n} credit${n > 1 ? 's' : ''}</b>`, small: 'For 12 months per friend, in credits (not cash), on mobile money purchases.',
-    login: 'Continue with Google', loginNote: 'Sign in to get your referral link.', link: 'Your link', copy: 'Copy', copied: 'Copied ✓', wa: 'Share on WhatsApp', share: 'Share',
+    login: 'Create my account and get my link', loginNote: 'Free, with your Google account. You get your referral link right away.', link: 'Your link', copy: 'Copy', copied: 'Copied ✓', wa: 'Share on WhatsApp', share: 'Share',
     n1: 'Friends joined', n2: 'Bought credits', n3: 'Credits earned', listH: 'Your friends', none: 'No friends yet. Share your link!', bought: 'bought', joined: 'joined', gen: 'Create a poster', shareText: 'Create posters with AI on SlashAtlas:', title: 'Referral: earn free credits | SlashAtlas', desc: 'Share your SlashAtlas link and earn free credits when your friends buy credits.' },
 };
 const refStrip = (l, cls = '') => `<a class="refstrip ${cls}" href="${P[l].ref}" data-ref-cta><span aria-hidden="true">🎁</span><b>${REFT[l].strip}</b><i>${REFT[l].stripBtn} ›</i></a>`;

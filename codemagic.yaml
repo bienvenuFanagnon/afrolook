@@ -38,10 +38,10 @@ workflows:
       app_store_connect:
         auth: integration
         # Pas de soumission automatique à la revue bêta : elle échoue (422) quand un autre build de la même version est déjà en revue.
-        # Le build est ajouté au groupe interne (sans revue) ; l'envoi en production se fait depuis App Store Connect.
+        # Le build est envoyé sur TestFlight ; le groupe interne « Testeurs interne » le reçoit tout seul (distribution automatique),
+        # donc pas de beta_groups ici : Codemagic ne peut pas ajouter un groupe interne à la main (erreur « Cannot add internal group to a build »).
+        # L'envoi en production se fait depuis App Store Connect.
         submit_to_testflight: false
-        beta_groups:
-          - Testeurs interne
       email:
         recipients:
           - techbienos@gmail.com
