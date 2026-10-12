@@ -383,6 +383,20 @@ class _SplashChargementState extends State<SplashChargement> {
     super.dispose();
   }
 
+  /// Relance le chargement de la session sans repasser par la connexion.
+  void _retryAfterError() {
+    setState(() {
+      _hasError = false;
+      _errorMessage = '';
+      _authHandled = false;
+      _isAuthCompleted = false;
+      _isCheckingSession = false;
+      _isProcessing = false;
+      _loadingText = 'Connexion...';
+    });
+    _startSessionCheck();
+  }
+
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
@@ -403,8 +417,13 @@ class _SplashChargementState extends State<SplashChargement> {
               Text(_errorMessage, style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _redirectToLogin,
+                onPressed: _retryAfterError,
                 style: ElevatedButton.styleFrom(backgroundColor: _colors.primary),
+                child: const Text('Réessayer'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _redirectToLogin,
                 child: const Text('Retour à l\'accueil'),
               ),
             ],
@@ -553,7 +572,14 @@ class _SplashChargementState extends State<SplashChargement> {
       setState(() => _loadingText = "Connexion...");
       final success = await authProvider.getLoginUser(userId);
       if (!success) {
-        _redirectToLogin();
+        if (authProvider.loginUserNotFound) {
+          // Le profil n'existe plus : la session enregistrée n'est plus valable.
+          await SessionUserFirebaseService.clearSession();
+          _redirectToLogin();
+        } else {
+          // Panne réseau ou serveur : on ne déconnecte pas la personne, on propose de réessayer.
+          if (mounted) setState(() { _hasError = true; _errorMessage = 'Connexion au serveur impossible. Vérifiez votre internet puis réessayez.'; });
+        }
         return;
       }
 

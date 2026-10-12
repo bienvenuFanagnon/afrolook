@@ -24,7 +24,13 @@ class SessionCheckerService {
     required UserAuthProvider authProvider,
     bool showModalIfExpired = true,
   }) async {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    // Au démarrage, Firebase restaure la session enregistrée avec un léger retard : on l'attend avant de la croire perdue.
+    var currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      try {
+        currentUser = await FirebaseAuth.instance.authStateChanges().first.timeout(const Duration(seconds: 4));
+      } catch (_) {}
+    }
 
     // Si l'utilisateur Firebase est null
     if (currentUser == null) {

@@ -7,7 +7,8 @@ import '../cache/startup_cache_service.dart';
 class SessionUserFirebaseService {
   static const String TOKEN_KEY = 'token';
   static const String LAST_ACTIVE_KEY = 'last_active_timestamp';
-  static const int MAX_INACTIVE_DAYS = 3;
+  /// Jours sans ouvrir l'application avant de redemander la connexion (la durée repart à zéro à chaque ouverture).
+  static const int MAX_INACTIVE_DAYS = 60;
   static const int ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
   /// Sauvegarde l'ID utilisateur et la date de connexion
@@ -26,7 +27,7 @@ class SessionUserFirebaseService {
     return prefs.getString(TOKEN_KEY);
   }
 
-  /// Vérifie si l'utilisateur peut rester connecté (moins de 3 jours d'inactivité)
+  /// Vérifie si l'utilisateur peut rester connecté (moins de MAX_INACTIVE_DAYS jours d'inactivité)
   static Future<bool> canStayConnected() async {
     final prefs = await SharedPreferences.getInstance();
     final lastActive = prefs.getInt(LAST_ACTIVE_KEY);

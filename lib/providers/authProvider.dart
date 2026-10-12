@@ -44,6 +44,8 @@ class UserAuthProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
   late List<UserPhoneNumber> listNumbers = [];
   late UserData loginUserData = UserData();
+  /// Vrai quand le dernier getLoginUser a prouvé que le profil n'existe pas (et non une simple panne réseau).
+  bool loginUserNotFound = false;
   late UserData registerUser = UserData();
   late String registerText = "";
   late String? token = '';
@@ -1196,6 +1198,7 @@ class UserAuthProvider extends ChangeNotifier {
   Future<bool> getLoginUser(String id) async {
     await getAppData();
     bool haveData = false;
+    loginUserNotFound = false;
 
     try {
       final userSnapshot = await FirebaseFirestore.instance
@@ -1204,7 +1207,10 @@ class UserAuthProvider extends ChangeNotifier {
           .limit(1)
           .get();
 
-      if (userSnapshot.docs.isEmpty) return false;
+      if (userSnapshot.docs.isEmpty) {
+        loginUserNotFound = true;
+        return false;
+      }
 
       // 1. Chargement des données utilisateur
       final userDoc = userSnapshot.docs.first;
