@@ -39,22 +39,28 @@ const PRICE = { // [min, max, pas]
   auto: [2500000, 9500000, 50000], maison: [15000, 250000, 1000], immobilier: [18000000, 85000000, 500000], produit: [2000, 60000, 500], packaging: [150, 1800, 25],
 };
 const PHONES = ['+225 07 12 34 56 78', '+229 97 12 34 56', '+221 77 123 45 67', '+237 6 77 12 34 56', '+225 05 98 76 54 32', '+228 90 12 34 56', '+234 803 123 4567', '+243 81 234 5678'];
-const CURS = ['FCFA', 'FCFA', 'FCFA', 'FCFA', 'FCFA', '€', '$', 'MAD', 'GNF', 'FCFA'];
+// deux devises seulement, mélangées : environ la moitié des affiches en dollars, l'autre moitié en FCFA
+const USD_RATE = 600; // 1 $ ≈ 600 FCFA, pour des prix de même ordre de grandeur
 const MODELS = S.MODELS;
 
+function money(fcfa, usd) {
+  if (!usd) return String(fcfa);
+  const v = fcfa / USD_RATE;
+  if (v < 10) return (Math.max(0.5, Math.round(v * 2) / 2)).toFixed(2); // 2,50 $ : centimes pour les petits prix
+  return String(v < 100 ? Math.round(v) : Math.round(v / 5) * 5);
+}
 function content(c, i) {
   const h = hash(c.slug), cat = c.cat, [lo, hi, step] = PRICE[cat] || PRICE.produit;
-  const val = Math.round((lo + ((h >>> 3) % 1000) / 1000 * (hi - lo)) / step) * step;
-  let cur = pick(CURS, h >>> 5); if (cur === 'GNF') cur = 'FCFA'; if (['€', '$', 'MAD'].includes(cur)) { /* prix converti à peu près */ }
-  const k = cur === '€' || cur === '$' ? 655 : cur === 'MAD' ? 60 : 1;
-  const price = Math.max(1, Math.round(val / k / (k > 1 ? 1 : 1)));
+  const fcfa = Math.round((lo + ((h >>> 3) % 1000) / 1000 * (hi - lo)) / step) * step;
+  const usd = ((h >>> 5) % 100) < 48; // ≈ la moitié en dollars
   const disc = (h >>> 7) % 100 < 45 ? pick(['-10 %', '-15 %', '-20 %', '-25 %', '-30 %', '-40 %', '-50 %'], h >>> 9) : '';
   const pct = disc ? +disc.replace(/\D/g, '') : 0;
-  const old = pct ? Math.round(price / (1 - pct / 100) / (price > 1000 ? 100 : 5)) * (price > 1000 ? 100 : 5) : 0;
+  const oldFcfa = pct ? Math.round(fcfa / (1 - pct / 100) / (fcfa > 10000 ? 500 : 25)) * (fcfa > 10000 ? 500 : 25) : 0;
   const rent = cat === 'immobilier' && (h >>> 11) % 3 === 0;
+  const rentFcfa = rent ? Math.max(100000, Math.round(fcfa / 120 / 50000) * 50000) : fcfa; // loyer mensuel
   const tagText = rent ? 'FOR RENT' : disc ? 'PROMO' : pick(['FOR SALE', 'FOR SALE', 'NEW', 'FOR SALE'], h >>> 13);
   return {
-    model: MODELS[(i * 3 + (h >>> 15)) % MODELS.length], tagText, price: String(rent ? Math.round(price / 120 / 1000) * 1000 || price : price), cur: rent && cur === 'FCFA' ? 'FCFA/mo' : cur, old: old ? String(old) : '', disc,
+    model: MODELS[(i * 3 + (h >>> 15)) % MODELS.length], tagText, price: money(rentFcfa, usd), cur: usd ? '$' : (rent ? 'FCFA/mo' : 'FCFA'), old: oldFcfa ? money(rent ? Math.round(oldFcfa / 120 / 50000) * 50000 || rentFcfa : oldFcfa, usd) : '', disc,
     brand: pick(BRANDS[cat] || BRANDS.produit, h >>> 17), contact: pick(PHONES, h >>> 19), qr: 'https://slashatlas.com/generer/', qrSize: 's', lang: 'en',
   };
 }
