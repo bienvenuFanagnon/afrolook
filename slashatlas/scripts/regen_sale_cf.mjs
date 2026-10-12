@@ -2,6 +2,8 @@
 // de la place aux éléments de l'affiche (prix, À VENDRE, marque, contact, QR) ; ces éléments sont ajoutés ensuite par scripts/salemark.mjs.
 // Les images de base sont rangées dans assets/c-base (hors du site) : une base n'est remplacée que si la nouvelle image est réussie.
 // Usage : CF_ACCOUNT_ID=… CF_API_TOKEN=… node scripts/regen_sale_cf.mjs [--mod 2 --rem 0] [--limit 120] [--slugs a,b]
+// Pour les slugs de la démo homepage (IMGPAIRS), si une photo avant existe, on utilise SD 1.5 img2img pour
+// conserver la tenue exacte tout en recontextualisant l'image en affiche pro.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,12 +26,18 @@ const INTRO = {
   place: 'Professional architectural photograph of a property for sale. ',
 };
 const COMPOSE = ' Composition for a sales advertisement: the subject is large, sharp and centered slightly above the middle, with a clean, calm, uncluttered background area along the bottom quarter of the image.';
-// Prompts spécifiques pour les cas où le prompt générique donne un résultat trop éloigné de l'avant
-const PROMPT_OVERRIDE = {
-  fashionposter: 'Professional fashion photograph of a colorful African wax print dress (bold geometric patterns in vivid orange, green and blue Kente-inspired fabric), displayed as a fashion advertising poster, vertical 4:5 format. The dress is laid flat or hanging, clearly visible. Plain neutral background, soft studio light, slight shadow below. Large empty space at the top for the headline. Sharp, editorial, high quality.',
+// Slugs de la démo homepage avec photo "avant" → img2img SD 1.5 pour conserver la tenue
+const IMGPAIRS_PROMPTS = {
+  fashionposter: 'fashion advertising poster, garment displayed on plain white background, soft studio lighting, editorial style, professional product photography',
+  lookbook: 'fashion lookbook page, outfit on neutral textured background, editorial lighting, magazine style, generous margins',
+  hairshowcase: 'hair salon poster, professional studio lighting, shiny hair highlights, neutral gradient background',
+  splashshot: 'product advertising, splash effect, clean gradient background, studio lighting, premium feel',
+  productglow: 'product floating on dark background, glowing halo, studio light, premium luxury advertisement',
+  menuhero: 'food photography, dish close-up, warm side lighting, dark blurred background, restaurant menu poster',
+  coverdrop: 'album cover art, centered portrait, strong contrast, clean background, music release single cover',
+  skincareglow: 'skincare product advertisement, clean white background, soft diffused light, premium cosmetics packaging',
 };
 function prompt(c) {
-  if (PROMPT_OVERRIDE[c.slug]) return `${PROMPT_OVERRIDE[c.slug]}${COMPOSE} No text, no letters, no logo, no watermark.`.slice(0, 1800);
   let s = (c.scene && c.scene.en) || c.en.prompt;
   s = s.replace(/(?:with )?the (?:product|products|dish|dishes|person|people|property)?\(?s?\)?\s*(?:in|from) the attached photo(?: of the [a-z ]+)?/gi, 'a generic subject')
     .replace(/the attached photo/gi, 'a generic subject').replace(/attached/gi, '')
@@ -57,6 +65,24 @@ async function cf(p) {
   if (!r.ok || !j.success || !j.result || !j.result.image) { const e = (j.errors && j.errors[0]) || {}; const err = new Error(`${r.status} ${e.code || ''} ${e.message || ''}`); err.status = r.status; throw err; }
   return Buffer.from(j.result.image, 'base64');
 }
+// img2img SD 1.5 : part de la vraie photo pour conserver le sujet (tenue, produit) tout en recontextualisant
+async function cfImg2Img(avantPath, promptText, ratio) {
+  const [rw, rh] = ratio.split(':').map(Number);
+  // SD 1.5 travaille en 512x512 ; on crop au bon ratio puis on redimensionne
+  const size = 512;
+  const raw = await sharp(avantPath)
+    .resize(rw >= rh ? size : Math.round(size * rw / rh), rh >= rw ? size : Math.round(size * rh / rw), { fit: 'cover', position: 'centre' })
+    .resize(size, size, { fit: 'fill' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const floats = Array.from(raw.data).map(v => v / 255);
+  const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACC}/ai/run/@cf/runwayml/stable-diffusion-v1-5-img2img`,
+    { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: promptText, image: floats, strength: 0.62, num_steps: 20, guidance: 7.5 }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.success || !j.result || !j.result.image) { const e = (j.errors && j.errors[0]) || {}; const err = new Error(`SD15i2i ${r.status} ${e.code || ''} ${e.message || ''}`); err.status = r.status; throw err; }
+  const out = j.result.image; // tableau de floats RGB 512×512×3
+  const uint8 = Buffer.from(out.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255)));
+  return await sharp(uint8, { raw: { width: size, height: size, channels: 3 } }).png().toBuffer();
+}
 async function cropAndSave(imgBuf, outPath, ratio) {
   const [rw, rh] = ratio.split(':').map(Number);
   const meta = await sharp(imgBuf).metadata();
@@ -71,9 +97,15 @@ async function cropAndSave(imgBuf, outPath, ratio) {
 let done = 0;
 for (const c of list) {
   try {
-    const img = await cf(prompt(c));
+    const avantPath = path.join(CUR, `${c.slug}-avant.webp`);
+    const useI2I = IMGPAIRS_PROMPTS[c.slug] && fs.existsSync(avantPath);
+    const img = useI2I
+      ? await cfImg2Img(avantPath, IMGPAIRS_PROMPTS[c.slug], c.ratio)
+      : await cf(prompt(c));
     await cropAndSave(img, path.join(BASE, `${c.slug}-apres.webp`), c.ratio);
-    state[c.slug] = 1; fs.writeFileSync(stateFile, JSON.stringify(state)); engines[c.slug] = 'FLUX'; done++; console.log('ok', c.slug);
+    state[c.slug] = 1; fs.writeFileSync(stateFile, JSON.stringify(state));
+    engines[c.slug] = useI2I ? 'SD15i2i' : 'FLUX'; done++;
+    console.log('ok', c.slug, useI2I ? '(img2img)' : '(flux)');
   } catch (e) {
     console.error('échec', c.slug, e.message);
     if (e.status === 429 || /4006|neurons|allocation|limit/i.test(e.message)) { console.error('Quota du jour atteint : on s\'arrête, reprise demain.'); break; }
