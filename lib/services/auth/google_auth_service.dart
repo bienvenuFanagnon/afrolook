@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -14,18 +13,12 @@ class GoogleAuthService {
 
   static final GoogleSignIn _google = GoogleSignIn(scopes: const ['email']);
 
-  /// Le bouton Google n'est proposé que si la configuration native est complète : sur iPhone, un identifiant client
-  /// Google absent de GoogleService-Info.plist ferait planter l'application au retour de la fenêtre Google.
+  /// Le bouton Google n'est pas proposé sur iPhone : la règle 4.8 de l'App Store impose « Se connecter avec Apple »
+  /// (ou équivalent) dès qu'une connexion par un service tiers existe. À rouvrir quand Apple sera ajouté
+  /// (voir docs/AUTH_EMAILS_GOOGLE.md). Android et web gardent le bouton.
   static bool get isAvailable {
     if (kIsWeb) return true;
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      try {
-        final id = Firebase.app().options.iosClientId;
-        return id != null && id.isNotEmpty;
-      } catch (_) {
-        return false;
-      }
-    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) return false;
     return true;
   }
 

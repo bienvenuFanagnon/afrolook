@@ -18,3 +18,6 @@
 3. iPhone : ajouter dans `ios/Runner/Info.plist` un `CFBundleURLTypes` avec le `REVERSED_CLIENT_ID` comme schéma d'URL.
 4. Web : Authentication → Paramètres → Domaines autorisés : afrolookmedia.com et afrolooki.web.app.
 5. Android : les empreintes SHA-1/SHA-256 de débogage, de publication et **de la signature Play Store** (Play Console → Intégrité de l'application) doivent être dans l'application Android Firebase.
+
+### iPhone : bouton Google masqué (décision du 12/10/2026)
+Règle App Store 4.8 : une app qui propose Google doit aussi proposer « Se connecter avec Apple » (ou équivalent respectueux de la vie privée). Pour ne pas risquer un refus, `GoogleAuthService.isAvailable` renvoie `false` sur iPhone. Android et web gardent le bouton. Pour rouvrir : ajouter Sign in with Apple (capacité sur l'identifiant d'app, fournisseur Apple dans Firebase, package `sign_in_with_apple`), puis remettre `true` sur iOS. La configuration iOS Google (plist, schéma d'URL) reste en place.

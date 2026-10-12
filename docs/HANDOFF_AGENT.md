@@ -102,6 +102,8 @@ Afrolook : `cd functions && npm run build`, puis `npx firebase-tools deploy --on
 
 ## 6. Pièges connus
 
+- **iPhone : bouton Google masqué** (règle App Store 4.8 : Google exige aussi « Se connecter avec Apple »). `GoogleAuthService.isAvailable` = `false` sur iOS. Pour le rouvrir, ajouter Sign in with Apple d'abord (voir `docs/AUTH_EMAILS_GOOGLE.md`).
+
 - **Build Android release (R8)** : l'ajout de `google_sign_in` a fait échouer R8 (« Missing class com.google.android.gms.auth.api.credentials.* », ancienne API mentionnée par `smart_auth`, utilisée par `pinput`). Corrigé par `android/app/r8-missing-rules.pro` (référencé dans `android/app/build.gradle`). Si R8 réclame d'autres classes, lire `android/app/build/outputs/mapping/release/missing_rules.txt` et compléter ce fichier. `android/app/proguard-rules.pro` est référencé mais **absent du dépôt** (il n'existe que sur la machine du propriétaire).
 
 - Afrolook : `functions/.env` hors git (voir §2). Fichiers Dart avec BOM (ex. `confirm_user.dart`) : éditer en UTF-8 sans casser le début.
