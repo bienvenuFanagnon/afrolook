@@ -1,4 +1,5 @@
 // Génère le site statique dans dist/ : node build.mjs
+import { isSale } from './src/sale.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -86,6 +87,36 @@ const BRAND = {
     kind: { product: 'In the spirit of a brand advertisement.', person: 'In the spirit of a fashion poster or magazine cover, without hiding the face or the outfit.', dish: 'In the spirit of a restaurant advertisement.', place: 'In the spirit of a real-estate listing, with the contact details in a band at the bottom.', logo: 'Around the logo, never altering it.' },
   },
 };
+
+// ───────── Affiche de vente : À VENDRE, prix, devise, réduction, marque, contact, QR ─────────
+// Cases du Studio « Générer ici » (rendu composé dans le navigateur, textes exacts) et de la commande copiée (consigne ajoutée au prompt).
+const SALE = {
+  fr: {
+    title: 'Affiche de vente : le rendu final', hint: 'Cochez ce qui doit figurer sur votre affiche. Décochez tout si ce n’est pas un article à vendre.',
+    master: 'Ajouter les éléments de vente', tag: 'Étiquette', tags: { sale: 'À VENDRE', promo: 'PROMO', new: 'NOUVEAU', rent: 'À LOUER' }, price: 'Prix', pricePh: 'ex. 25 000', cur: 'Devise', curOther: 'Autre devise…',
+    old: 'Ancien prix (barré)', oldPh: 'ex. 35 000', disc: 'Réduction', discPh: 'ex. -30 %', brand: 'Marque', brandPh: 'ex. Maison Awa', contact: 'Contact', contactPh: 'ex. +225 07 00 00 00 00',
+    qr: 'Petit QR code', qrPh: 'Votre lien ou numéro WhatsApp', model: 'Présentation', models: { auto: 'Automatique', band: 'Bandeau', tag: 'Étiquette', badge: 'Pastille', side: 'Colonne', ribbon: 'Ruban', minimal: 'Sobre', promo: 'Promo flash' },
+    note: 'Les textes sont ajoutés par le site, exactement comme vous les écrivez. Le QR code reste petit, dans un coin.',
+    intro: 'Présente le résultat comme une affiche de vente finie. Par exception à toute consigne qui interdit ou limite le texte, écris sur le visuel uniquement ces éléments, recopiés exactement, caractère par caractère, sans faute, dans une typographie nette et très lisible, avec un fort contraste : {L}.',
+    el: { tag: 'un ruban ou une étiquette « {v} »', price: 'le prix « {v} » en grand, bien visible', old: 'l’ancien prix « {v} » barré, plus petit', disc: 'une pastille de réduction « {v} »', brand: 'le nom de marque « {v} » en logotype élégant', contact: 'le contact « {v} » sur une seule ligne, lisible' },
+    qrClause: 'Laisse entièrement libre le coin inférieur droit, une petite zone d’environ 10 % de la largeur, sans texte ni détail : j’y ajouterai moi-même un petit QR code.',
+    outro: 'Mise en page soignée et professionnelle, marges de sécurité, ne cache ni le produit ni le visage, n’ajoute aucun autre mot, et accorde les couleurs à la palette du visuel.',
+    gen: 'Laisse le bas de l’image calme et dégagé : le prix, le contact et le QR code y seront ajoutés ensuite. N’écris aucun texte.',
+  },
+  en: {
+    title: 'Sales poster: the final look', hint: 'Tick what should appear on your poster. Untick everything if it is not an item for sale.',
+    master: 'Add the sales elements', tag: 'Label', tags: { sale: 'FOR SALE', promo: 'SALE', new: 'NEW', rent: 'FOR RENT' }, price: 'Price', pricePh: 'e.g. 25,000', cur: 'Currency', curOther: 'Other currency…',
+    old: 'Old price (crossed out)', oldPh: 'e.g. 35,000', disc: 'Discount', discPh: 'e.g. -30%', brand: 'Brand', brandPh: 'e.g. Maison Awa', contact: 'Contact', contactPh: 'e.g. +225 07 00 00 00 00',
+    qr: 'Small QR code', qrPh: 'Your link or WhatsApp number', model: 'Layout', models: { auto: 'Automatic', band: 'Banner', tag: 'Tag', badge: 'Badge', side: 'Side panel', ribbon: 'Ribbon', minimal: 'Minimal', promo: 'Flash sale' },
+    note: 'The site adds the texts exactly as you type them. The QR code stays small, in a corner.',
+    intro: 'Present the result as a finished sales poster. As an exception to any instruction that forbids or limits text, write only these elements on the visual, copied exactly, character by character, without errors, in a sharp, very legible typeface with strong contrast: {L}.',
+    el: { tag: 'a ribbon or label “{v}”', price: 'the price “{v}” large and clearly visible', old: 'the old price “{v}” crossed out, smaller', disc: 'a discount badge “{v}”', brand: 'the brand name “{v}” as an elegant wordmark', contact: 'the contact “{v}” on a single legible line' },
+    qrClause: 'Leave the bottom-right corner completely free, a small area of about 10% of the width, with no text or detail: I will add a small QR code there myself.',
+    outro: 'Careful, professional layout, safe margins, do not hide the product or the face, add no other word, and match the colors to the visual’s palette.',
+    gen: 'Keep the bottom of the image calm and uncluttered: the price, contact and QR code will be added afterwards. Write no text.',
+  },
+};
+const CURRENCIES = ['FCFA', '€', '$', '£', '₦', 'GH₵', 'MAD', 'DZD', 'TND', 'GNF', 'CDF', 'RWF', 'KES', 'ZAR'];
 const BRAND_KINDS = ['product', 'person', 'dish', 'place', 'logo'];
 const KIND_LABEL = {
   fr: { product: ['Votre produit', 'ex. crème visage, 3 bouteilles de jus'], dish: ['Votre plat', 'ex. poulet braisé, 2 pizzas et une boisson'], person: ['Sur la photo', 'ex. un coach sportif, un groupe de 3 amies'], place: ['Votre bien', 'ex. appartement 3 pièces, villa avec piscine'], video: ['Votre produit', 'ex. flacon de parfum, baskets, boîte de thé'], motion: ['Votre activité', 'ex. boutique de mode, salon de coiffure'], text: ['Votre activité', 'ex. salon de coiffure à Abidjan'], poster: ['Votre sujet', 'ex. baskets rouges, une coach sportive'], logo: ['Votre logo', 'ex. logo d’un café, emblème d’un club'], free: ['Votre sujet', 'ex. un salon de coiffure, une appli de livraison'] },
@@ -296,11 +327,12 @@ function home(l) {
   const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
   const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span>${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
 <ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
-${showcase(l)}</div>${examplesRail(l)}<div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
+${showcase(l)}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>
 <div class="rail" id="rail-sel" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-new" role="list" hidden>${newest.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-vid" role="list" hidden>${vids.map((c) => railCard(c, l)).join('')}</div>
+${examplesRail(l)}
 <div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>${ad('lb', l)}
 <div class="tools"><span>${H.tools}</span><b>ChatGPT</b><b>Gemini</b><b>Midjourney</b><b>Veo</b><b>Runway</b></div>${studioStrip(l)}
 ${videoBlock(l)}
@@ -332,13 +364,21 @@ function cmdPage(l, c) {
   const tools = c.kind === 'text' ? [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Claude', 'https://claude.ai/']] : c.kind === 'video' || c.kind === 'motion' ? [['Gemini (Veo)', 'https://gemini.google.com/'], ['Runway', 'https://runwayml.com/'], ['Kling', 'https://klingai.com/'], ['Pika', 'https://pika.art/']] : [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Midjourney', 'https://www.midjourney.com/']];
   const fullText = fullPrompt(c, l);
   const KL = KIND_LABEL[l][c.kind || 'product'];
-  const brandBox = BRAND_KINDS.includes(c.kind || 'product') && canGen(c) ? `<details class="brandbox" data-brand="${esc(JSON.stringify({ k: c.kind || 'product', ...BRAND[l] }))}"><summary>${BRAND[l].title}</summary><p class="hint">${BRAND[l].hint}</p><div class="bgrid">${BRAND[l].fields.map((f) => `<label>${f[1]}<input type="text" data-role="${f[0]}" maxlength="${f[3]}" placeholder="${esc(f[2])}" autocomplete="off"></label>`).join('')}</div></details>` : '';
+  const brandBox = BRAND_KINDS.includes(c.kind || 'product') && canGen(c) ? `<details class="brandbox" data-brand="${esc(JSON.stringify({ k: c.kind || 'product', ...BRAND[l] }))}"><summary>${BRAND[l].title}</summary><p class="hint">${BRAND[l].hint}</p><div class="bgrid">${BRAND[l].fields.filter((f) => !(isSale(c) && f[0] !== 'other')).map((f) => `<label>${f[1]}<input type="text" data-role="${f[0]}" maxlength="${f[3]}" placeholder="${esc(f[2])}" autocomplete="off"></label>`).join('')}</div></details>` : '';
+  const saleBox = isSale(c) && canGen(c) ? `<details class="brandbox salebox" open data-sale="${esc(JSON.stringify({ ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' }))}"><summary>${SALE[l].title}</summary><p class="hint">${SALE[l].hint}</p><div class="sgrid">
+<label class="chk"><input type="checkbox" data-s="tag" checked><span>${SALE[l].tag}</span><select data-sv="tagv">${Object.entries(SALE[l].tags).map(([k, v]) => `<option value="${k}"${(c.cat === 'immobilier' ? 'sale' : 'sale') === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+<label class="chk"><input type="checkbox" data-s="price" checked><span>${SALE[l].price}</span><input type="text" data-sv="price" maxlength="20" placeholder="${esc(SALE[l].pricePh)}" inputmode="decimal" autocomplete="off"><select data-sv="cur">${CURRENCIES.map((x) => `<option${x === (l === 'fr' ? 'FCFA' : '$') ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+<label class="chk"><input type="checkbox" data-s="old"><span>${SALE[l].old}</span><input type="text" data-sv="old" maxlength="20" placeholder="${esc(SALE[l].oldPh)}" autocomplete="off"></label>
+<label class="chk"><input type="checkbox" data-s="disc"><span>${SALE[l].disc}</span><input type="text" data-sv="disc" maxlength="12" placeholder="${esc(SALE[l].discPh)}" autocomplete="off"></label>
+<label class="chk"><input type="checkbox" data-s="brand" checked><span>${SALE[l].brand}</span><input type="text" data-sv="brand" maxlength="40" placeholder="${esc(SALE[l].brandPh)}" autocomplete="off"></label>
+<label class="chk"><input type="checkbox" data-s="contact" checked><span>${SALE[l].contact}</span><input type="text" data-sv="contact" maxlength="40" placeholder="${esc(SALE[l].contactPh)}" autocomplete="off"></label>
+<label class="chk"><input type="checkbox" data-s="qr" checked><span>${SALE[l].qr}</span><small class="hint">${l === 'fr' ? 'Une petite zone vide est gardée en bas à droite.' : 'A small empty area is kept at the bottom right.'}</small></label></div></details>` : '';
   const adapt = `<div class="adapt" data-for="p-${c.slug}" data-code="${esc(c.code)}" data-base="${esc(ct.prompt)}" data-c1="${esc(CLAUSE[l][c.kind || 'product'][0])}" data-cn="${esc(CLAUSE[l][c.kind || 'product'][1])}"><label>${KL[0]}<input type="text" maxlength="60" placeholder="${esc(KL[1])}" autocomplete="off"></label>${c.kind === 'text' ? '' : `<div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="true">${MULTI[l][0]}</button><button type="button" data-n="n" aria-pressed="false">${MULTI[l][1]}</button></div>`}</div>`;
 const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] };
   const fsteps = FS[l].map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x}</b></li>`).join('');
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 <div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]}${c.kind === 'text' ? '' : ' · ' + c.ratio}</div><h1>${esc(ct.title)}</h1></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' || c.kind === 'motion' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
-<div class="fbody">${adapt}${brandBox}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
+<div class="fbody">${adapt}${brandBox}${saleBox}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
 ${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b>${waCard(l, 'after')}<div class="grid">${rel.map((x) => card(x, l)).join('')}</div>${ad('rect', l, true)}</div></div></div>
@@ -436,9 +476,9 @@ const TRY = {
 };
 function tryPage(l) {
   const t = TRY[l], p = P[l];
-  const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage }])), brand: BRAND[l] };
+  const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage, sale: isSale(c) }])), brand: BRAND[l], sale: { ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' } };
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1>
-<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div></div>`;
+<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-sv="${hashOf('js/sale.js')}" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div></div>`;
   emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
 }
 function notFound() {

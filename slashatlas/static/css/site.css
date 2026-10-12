@@ -513,3 +513,20 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
   .rnav:hover{background:var(--acc,#1e90ff);transform:scale(1.06)}.rnav:disabled{opacity:0;pointer-events:none}.rnav.prev{left:6px}.rnav.next{right:6px}
 }
 @media (min-width:900px){.railx{justify-content:center}.vexc{flex-basis:250px}}
+
+/* Affiche de vente : cases à cocher (commande copiée et Studio) */
+.salebox .sgrid{display:grid;gap:8px;padding-bottom:12px}
+.chk{display:grid;grid-template-columns:auto minmax(76px,auto) 1fr auto;align-items:center;gap:8px;font-size:14px;font-weight:600;min-height:44px}
+.chk>input[type=checkbox]{width:20px;height:20px;accent-color:var(--acc,#1e90ff);margin:0}
+.chk>span{white-space:nowrap}
+.chk>input[type=text],.chk>select{min-width:0;width:100%;font:inherit;font-size:14px;font-weight:500;padding:9px 10px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);color:var(--txt)}
+.chk>select{width:auto;max-width:120px}
+.chk>small{grid-column:3/-1;margin:0}
+.chk>select[data-sv=tagv]{grid-column:3/-1;max-width:none}
+.chk input:disabled,.chk select:disabled{opacity:.45}
+.smodels{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
+.smodels button{border:1px solid var(--line2);background:transparent;color:var(--txt);border-radius:999px;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;min-height:40px;cursor:pointer}
+.smodels button[aria-pressed=true]{background:var(--acc,#1e90ff);border-color:transparent;color:#fff}
+.sale-hd{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;padding:12px 0;min-height:44px}
+.sale-hd input{width:20px;height:20px;accent-color:var(--acc,#1e90ff)}
+@media(max-width:520px){.chk{grid-template-columns:auto 1fr auto}.chk>span{grid-column:2/-1}.chk>input[type=text]{grid-column:2/3}.chk>select{grid-column:3}.chk>small{grid-column:2/-1}}

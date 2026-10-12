@@ -1,0 +1,76 @@
+// Pose le rendu final d'une annonce (FOR SALE, prix, réduction, marque, contact, petit QR code) sur les images d'exemple des commandes de VENTE.
+// Part toujours de l'image de base (assets/c-base, sans affiche) et écrit static/img/c/<slug>-apres.webp et -t.webp : relançable sans risque.
+// Plusieurs présentations et emplacements (sale.js : bandeau, étiquette, pastille, colonne, ruban, sobre, promo) et des contenus variés (marque, prix, devise, contact).
+// Usage : node scripts/salemark.mjs [--slugs a,b] [--sheet fichier.png]   (depuis le dossier slashatlas, NODE_PATH inutile)
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { COMMANDS } from '../src/data.mjs';
+import { isSale } from '../src/sale.mjs';
+
+const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+const BASE = path.join(ROOT, 'assets', 'c-base'), OUT = path.join(ROOT, 'static', 'img', 'c');
+const req = createRequire(path.join(ROOT, 'functions', 'package.json'));
+const { createCanvas, loadImage, GlobalFonts } = req('@napi-rs/canvas');
+const qrcode = req(path.join(ROOT, 'functions', 'vendor', 'qrcode.js'));
+for (const [f, n] of [['manrope-latin-800-normal.woff2', 'Manrope'], ['manrope-latin-500-normal.woff2', 'Manrope']]) GlobalFonts.registerFromPath(path.join(ROOT, 'functions', 'fonts', f), n);
+await import(path.join(ROOT, 'static', 'js', 'sale.js'));
+const S = globalThis.saSale;
+const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i < 0 ? d : process.argv[i + 1]; };
+const only = arg('slugs', ''); const sheetFile = arg('sheet', '');
+
+const hash = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const pick = (a, h) => a[h % a.length];
+const BRANDS = {
+  mode: ['Maison Awa', 'Kenzo Mode', 'Atelier Kadi', 'Lina Couture', 'Wax & Style', 'Ama Fashion'],
+  beaute: ['Glow Awa', 'Karité d’Or', 'Belle Peau', 'Nuit d’Afrique', 'Pure Éclat', 'Soin Naturel'],
+  bijoux: ['Or d’Abidjan', 'Perle Rare', 'Bijoux Kadi', 'Éclat Royal'],
+  food: ['Chez Mama Ama', 'Saveurs d’Afrique', 'Le Bon Goût', 'Délices Express', 'Chez Tantie'],
+  tech: ['Tech Plus', 'Abidjan Mobile', 'Digital Shop', 'Smart Afrique'],
+  auto: ['Auto Prestige', 'Garage Soleil', 'Auto Confiance', 'Moto Express'],
+  maison: ['Déco Maison', 'Bois d’Ébène', 'Maison Douce', 'Intérieur Chic'],
+  immobilier: ['Immo Prestige', 'Terre & Toit', 'Villa Plus', 'Cap Immo'],
+  produit: ['Maison Soleil', 'Source Pure', 'Boutique Awa', 'Prix Malin', 'Marché Express'],
+  packaging: ['Pack & Co', 'Boîte Chic', 'Emballage Pro', 'Maison Kraft'],
+};
+const PRICE = { // [min, max, pas]
+  mode: [6000, 45000, 500], beaute: [3500, 28000, 500], bijoux: [8000, 120000, 1000], food: [1500, 9000, 250], tech: [25000, 450000, 5000],
+  auto: [2500000, 9500000, 50000], maison: [15000, 250000, 1000], immobilier: [18000000, 85000000, 500000], produit: [2000, 60000, 500], packaging: [150, 1800, 25],
+};
+const PHONES = ['+225 07 12 34 56 78', '+229 97 12 34 56', '+221 77 123 45 67', '+237 6 77 12 34 56', '+225 05 98 76 54 32', '+228 90 12 34 56', '+234 803 123 4567', '+243 81 234 5678'];
+const CURS = ['FCFA', 'FCFA', 'FCFA', 'FCFA', 'FCFA', '€', '$', 'MAD', 'GNF', 'FCFA'];
+const MODELS = S.MODELS;
+
+function content(c, i) {
+  const h = hash(c.slug), cat = c.cat, [lo, hi, step] = PRICE[cat] || PRICE.produit;
+  const val = Math.round((lo + ((h >>> 3) % 1000) / 1000 * (hi - lo)) / step) * step;
+  let cur = pick(CURS, h >>> 5); if (cur === 'GNF') cur = 'FCFA'; if (['€', '$', 'MAD'].includes(cur)) { /* prix converti à peu près */ }
+  const k = cur === '€' || cur === '$' ? 655 : cur === 'MAD' ? 60 : 1;
+  const price = Math.max(1, Math.round(val / k / (k > 1 ? 1 : 1)));
+  const disc = (h >>> 7) % 100 < 45 ? pick(['-10 %', '-15 %', '-20 %', '-25 %', '-30 %', '-40 %', '-50 %'], h >>> 9) : '';
+  const pct = disc ? +disc.replace(/\D/g, '') : 0;
+  const old = pct ? Math.round(price / (1 - pct / 100) / (price > 1000 ? 100 : 5)) * (price > 1000 ? 100 : 5) : 0;
+  const rent = cat === 'immobilier' && (h >>> 11) % 3 === 0;
+  const tagText = rent ? 'FOR RENT' : disc ? 'PROMO' : pick(['FOR SALE', 'FOR SALE', 'NEW', 'FOR SALE'], h >>> 13);
+  return {
+    model: MODELS[(i * 3 + (h >>> 15)) % MODELS.length], tagText, price: String(rent ? Math.round(price / 120 / 1000) * 1000 || price : price), cur: rent && cur === 'FCFA' ? 'FCFA/mo' : cur, old: old ? String(old) : '', disc,
+    brand: pick(BRANDS[cat] || BRANDS.produit, h >>> 17), contact: pick(PHONES, h >>> 19), qr: 'https://slashatlas.com/generer/', qrSize: 's', lang: 'en',
+  };
+}
+const list = COMMANDS.filter(isSale).filter((c) => !only || only.split(',').includes(c.slug)).filter((c) => fs.existsSync(path.join(BASE, `${c.slug}-apres.webp`)));
+console.log(`${list.length} image(s) de vente à composer`);
+let compFile = path.join(BASE, 'composited.json'), comp = {}; try { comp = JSON.parse(fs.readFileSync(compFile, 'utf8')); } catch (e) {}
+const sheet = sheetFile ? createCanvas(8 * 300, Math.ceil(Math.min(list.length, 32) / 8) * 380) : null; const sx = sheet && sheet.getContext('2d'); if (sx) { sx.fillStyle = '#222'; sx.fillRect(0, 0, sheet.width, sheet.height); }
+for (let i = 0; i < list.length; i++) {
+  const c = list[i], o = content(c, i);
+  const im = await loadImage(path.join(BASE, `${c.slug}-apres.webp`));
+  const cv = S.compose({ create: (w, h) => createCanvas(w, h), qrcode }, im, o);
+  const tmp = path.join(OUT, `.${c.slug}.sale.png`); fs.writeFileSync(tmp, cv.toBuffer('image/png'));
+  execFileSync('python3', ['-c', "import sys\nfrom PIL import Image\nsrc,out,thumb=sys.argv[1:4]\nim=Image.open(src).convert('RGB')\ndef sz(im,m):\n W,H=im.size;k=m/max(W,H);return im.resize((max(1,int(W*k)),max(1,int(H*k))),Image.LANCZOS) if k<1 else im\nsz(im,1000).save(out,'WEBP',quality=84)\nsz(im,480).save(thumb,'WEBP',quality=82)\n", tmp, path.join(OUT, `${c.slug}-apres.webp`), path.join(OUT, `${c.slug}-t.webp`)]);
+  fs.unlinkSync(tmp); comp[c.slug] = o.model;
+  if (sx && i < 32) { const k = Math.min(290 / cv.width, 370 / cv.height); sx.drawImage(cv, (i % 8) * 300 + 5, Math.floor(i / 8) * 380 + 5, cv.width * k, cv.height * k); }
+}
+fs.writeFileSync(compFile, JSON.stringify(comp, null, 1));
+if (sheet) fs.writeFileSync(sheetFile, sheet.toBuffer('image/png'));
+console.log('terminé');

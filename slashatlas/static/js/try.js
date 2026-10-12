@@ -48,7 +48,7 @@
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  var state = { mode: params.get('mode') === 'video' && root.dataset.vurl ? 'video' : 'image', user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, adFreeUntil: 0, checking: true };
+  var state = { mode: params.get('mode') === 'video' && root.dataset.vurl ? 'video' : 'image', user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, sale: { on: true, tag: true, tagv: 'sale', price: true, priceV: '', cur: '', old: false, oldV: '', disc: false, discV: '', brand: true, contact: true, qr: true, model: 'auto' }, adFreeUntil: 0, checking: true };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -67,16 +67,56 @@
     return '<div class="scmd"><img src="/img/c/' + (c.img ? slug : 'none') + '-t.webp" alt="" ' + (c.img ? '' : 'hidden') + '><div><small>' + T.cmd + '</small><b>' + esc(c.code) + '</b><span>' + esc(c.title) + '</span></div>' +
       '<select id="s-cmd" aria-label="' + T.change + '">' + Object.keys(data.commands).map(function (k) { return '<option value="' + k + '"' + (k === slug ? ' selected' : '') + '>' + esc(data.commands[k].code + ' · ' + data.commands[k].title) + '</option>'; }).join('') + '</select></div>';
   }
+
+  // ── Affiche de vente : À VENDRE, prix et devise, réduction, marque, contact, petit QR code (cases à cocher) ──
+  function saleBox() {
+    if (!saleEligible()) return '';
+    var S = data.sale, a = state.sale, cur = a.cur || S.defCur;
+    var chk = function (k, label, inner) { return '<label class="chk"><input type="checkbox" data-sc="' + k + '"' + (a[k] ? ' checked' : '') + '><span>' + label + '</span>' + inner + '</label>'; };
+    var txt = function (k, ph, max) { return '<input type="text" data-sv="' + k + '" maxlength="' + max + '" placeholder="' + esc(ph) + '" value="' + esc(k === 'brand' || k === 'contact' ? state.brand[k] : k === 'qr' ? state.qr.raw : a[k + 'V']) + '" autocomplete="off"' + (a[k === 'qr' ? 'qr' : k] ? '' : ' disabled') + '>'; };
+    var curSel = '<select data-sv="cur"' + (a.price ? '' : ' disabled') + '>' + S.currencies.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + (S.currencies.indexOf(cur) < 0 ? '<option selected>' + esc(cur) + '</option>' : '') + '<option value="__other">' + esc(S.curOther) + '</option></select>';
+    var tagSel = '<select data-sv="tagv"' + (a.tag ? '' : ' disabled') + '>' + Object.keys(S.tags).map(function (k) { return '<option value="' + k + '"' + (a.tagv === k ? ' selected' : '') + '>' + esc(S.tags[k]) + '</option>'; }).join('') + '</select>';
+    return '<details class="brandbox sf salebox"' + (a.on ? ' open' : '') + '><summary>' + S.title + '</summary>' +
+      '<label class="sale-hd"><input type="checkbox" data-sc="on"' + (a.on ? ' checked' : '') + '>' + S.master + '</label><p class="hint">' + S.hint + '</p>' +
+      '<div class="sgrid"' + (a.on ? '' : ' hidden') + '>' +
+      chk('tag', S.tag, tagSel) + chk('price', S.price, txt('price', S.pricePh, 20) + curSel) + chk('old', S.old, txt('old', S.oldPh, 20)) + chk('disc', S.disc, txt('disc', S.discPh, 12)) +
+      chk('brand', S.brand, txt('brand', S.brandPh, 40)) + chk('contact', S.contact, txt('contact', S.contactPh, 40)) + chk('qr', S.qr, txt('qr', S.qrPh, 200)) + '</div>' +
+      '<div class="sgrid"' + (a.on ? '' : ' hidden') + '><b class="hint">' + S.model + '</b><div class="smodels" role="group">' + Object.keys(S.models).map(function (k) { return '<button type="button" data-sm="' + k + '" aria-pressed="' + (a.model === k) + '">' + esc(S.models[k]) + '</button>'; }).join('') + '</div>' +
+      '<p class="hint" id="s-qrmsg2"></p><p class="hint">' + S.note + '</p></div></details>';
+  }
+  function saleOpts() {
+    var a = state.sale, S = data.sale;
+    return { model: a.model === 'auto' ? undefined : a.model, lang: L, tag: a.tag ? a.tagv : '', price: a.price ? a.priceV : '', cur: a.cur || S.defCur, old: a.old ? a.oldV : '', disc: a.disc ? a.discV : '', brand: a.brand ? state.brand.brand : '', contact: a.contact ? state.brand.contact : '', qr: a.qr ? normUrl(state.qr.raw) : '', qrSize: state.qr.size === 's' ? 's' : 'm' };
+  }
+  function saleKey() { return saleOn() ? 'S|' + JSON.stringify(saleOpts()) : ''; }
+  var saleLib = null;
+  function loadSaleLib() {
+    if (window.saSale) return Promise.resolve();
+    return saleLib || (saleLib = new Promise(function (res, rej) { var sc = document.createElement('script'); sc.src = '/js/sale.js?v=' + (root.dataset.sv || ''); sc.onload = res; sc.onerror = function () { saleLib = null; rej(new Error('salelib')); }; document.head.appendChild(sc); }));
+  }
+  function composeSale(raw) {
+    var fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('800 40px Manrope'), document.fonts.load('700 30px Manrope')]).catch(function () {}) : Promise.resolve();
+    return Promise.all([loadImg(URL.createObjectURL(raw)), loadQrLib(), loadSaleLib(), fontsReady]).then(function (a) {
+      var img = a[0], deps = { create: function (w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }, qrcode: window.qrcode };
+      var cv = window.saSale.compose(deps, img, saleOpts()); URL.revokeObjectURL(img.src);
+      var type = raw.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+      return new Promise(function (res, rej) { cv.toBlob(function (b) { b ? res(b) : rej(new Error('sale')); }, type, 0.93); });
+    });
+  }
   // Marque et contacts à inscrire sur le visuel (3 champs au plus) ; le serveur compose la mise en page.
+  function saleEligible() { return !!(data.sale && data.commands[slug] && data.commands[slug].sale); }
+  function saleOn() { return saleEligible() && state.sale.on; }
   function brandBox() {
     var B = data.brand; if (!B) return '';
-    var filled = B.fields.some(function (f) { return state.brand[f[0]]; });
-    return '<details class="brandbox sf"' + (filled ? ' open' : '') + '><summary>' + B.title + '</summary><p class="hint">' + B.hint + '</p><div class="bgrid">' + B.fields.map(function (f) {
+    var fields = B.fields.filter(function (f) { return !(saleOn() && f[0] !== 'other'); });
+    var filled = fields.some(function (f) { return state.brand[f[0]]; });
+    return '<details class="brandbox sf"' + (filled ? ' open' : '') + '><summary>' + B.title + '</summary><p class="hint">' + B.hint + '</p><div class="bgrid">' + fields.map(function (f) {
       return '<label>' + f[1] + '<input type="text" data-brole="' + f[0] + '" maxlength="' + f[3] + '" placeholder="' + esc(f[2]) + '" value="' + esc(state.brand[f[0]]) + '" autocomplete="off"></label>';
     }).join('') + '</div></details>';
   }
   function brandTexts() {
-    var o = {}; Object.keys(state.brand).forEach(function (k) { var v = window.saBrandClean(state.brand[k], k === 'other' ? 80 : 60); if (v) o[k] = v; }); return o;
+    // avec l'affiche de vente, marque et contact sont dessinés par le site (textes exacts) : l'IA n'en reçoit pas
+    var o = {}; Object.keys(state.brand).forEach(function (k) { if (saleOn() && k !== 'other') return; var v = window.saBrandClean(state.brand[k], k === 'other' ? 80 : 60); if (v) o[k] = v; }); return o;
   }
   // ── Partage du visuel : feuille de partage du téléphone avec l'image ; sinon liens vers les réseaux + copie de l'image ──
   var SITE = location.origin + (L === 'en' ? '/en/' : '/');
@@ -114,7 +154,7 @@
       var img = a[0], w = img.naturalWidth, h = img.naturalHeight, mn = Math.min(w, h);
       var q = window.qrcode(0, 'M'); q.addData(url); q.make(); var n = q.getModuleCount();
       // petit par défaut ; jamais moins de 3 px par module (sinon le code ne se lit plus), jamais plus de 30 % de l'image
-      var base = mn * ({ s: 0.12, m: 0.16, l: 0.22 }[size] || 0.12), side = Math.min(Math.max(base, 3 * (n + 6)), mn * 0.30);
+      var base = mn * ({ s: 0.085, m: 0.115, l: 0.16 }[size] || 0.085), side = Math.min(Math.max(base, 3 * (n + 6)), mn * 0.22);
       var cell = Math.max(2, Math.floor(side / (n + 6))), tw = cell * (n + 6), top = Math.round(tw * 0.17), bot = Math.round(tw * 0.27), th = top + tw + bot, m = Math.round(mn * 0.03);
       var c = document.createElement('canvas'); c.width = w; c.height = h; var g = c.getContext('2d'); g.drawImage(img, 0, 0);
       var spots = { bl: [m, h - th - m], br: [w - tw - m, h - th - m], tl: [m, m], tr: [w - tw - m, m] };
@@ -145,11 +185,12 @@
   }
   /** Met la version à jour avec le QR actuel (ou sans QR) ; gratuit, calculé dans le navigateur à partir de l'image d'origine. */
   function ensureQr(v) {
-    var key = qrKey();
+    var key = saleOn() ? saleKey() : qrKey();
     if (v.qrKey === key) return Promise.resolve(v);
     var done = function (blob) { if (v.url) URL.revokeObjectURL(v.url); v.blob = blob; v.url = URL.createObjectURL(blob); v.qrKey = key; return v; };
     if (!key) return Promise.resolve(done(v.raw));
-    return composeQr(v.raw, normUrl(state.qr.raw), state.qr.pos, state.qr.size, state.qr.cta).then(done, function () { v.qrKey = key; return v; });
+    var p = saleOn() ? composeSale(v.raw) : composeQr(v.raw, normUrl(state.qr.raw), state.qr.pos, state.qr.size, state.qr.cta);
+    return p.then(done, function () { v.qrKey = key; return v; });
   }
   function newVersion(id, mime, b64) {
     var bin = atob(b64), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
@@ -234,7 +275,7 @@
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
-      brandBox() + qrBox() +
+      saleBox() + brandBox() + (saleOn() ? '' : qrBox()) +
       '<button class="btn pri big' + (state.busy ? ' loading' : '') + '" type="button" id="s-gen"' + (state.credits >= 1 && !canGen ? ' disabled' : '') + '>' + (state.busy ? T.working : (state.credits >= 1 && !state.photos.length ? T.needPhoto : genLabel)) + '</button>' +
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
       (state.result ? '<div class="sres"><img src="' + state.result.url + '" alt="">' +
@@ -255,6 +296,19 @@
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
+    // affiche de vente : cases, textes, devise, modèle ; recomposition immédiate du résultat (gratuit, dans le navigateur)
+    var st2 = null, applySaleSoon = function () { clearTimeout(st2); st2 = setTimeout(applyQr, 450); };
+    Array.prototype.forEach.call(root.querySelectorAll('[data-sc]'), function (c) { c.addEventListener('change', function () { var k = c.dataset.sc; state.sale[k] = c.checked; if (k === 'on') { render(); applyQr(); return; } var row = c.closest('.chk'); if (row) Array.prototype.forEach.call(row.querySelectorAll('input[type=text],select'), function (x) { x.disabled = !c.checked; }); applySaleSoon(); }); });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-sv]'), function (i) {
+      var k = i.dataset.sv, ev = i.tagName === 'SELECT' ? 'change' : 'input';
+      i.addEventListener(ev, function () {
+        if (k === 'brand' || k === 'contact') state.brand[k] = i.value; else if (k === 'qr') { state.qr.raw = i.value; var m = $('#s-qrmsg2'); if (m) { var u = normUrl(i.value); m.textContent = i.value.trim() ? (u ? T.qrOpens + ' ' + u : T.qrBad) : ''; } }
+        else if (k === 'cur') { if (i.value === '__other') { var v = window.prompt(data.sale.curOther, state.sale.cur || data.sale.defCur); if (v && v.trim()) state.sale.cur = v.trim().slice(0, 8); render(); return; } state.sale.cur = i.value; }
+        else if (k === 'tagv') state.sale.tagv = i.value; else state.sale[k + 'V'] = i.value;
+        applySaleSoon();
+      });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-sm]'), function (b) { b.addEventListener('click', function () { state.sale.model = b.dataset.sm; Array.prototype.forEach.call(root.querySelectorAll('[data-sm]'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); applyQr(); }); });
     var qu = $('#s-qrurl'); if (qu) { var qt = null; qrStatus(); qu.addEventListener('input', function () { state.qr.raw = qu.value; qrStatus(); clearTimeout(qt); qt = setTimeout(applyQr, 700); }); }
     var segBind = function (attr, key) { Array.prototype.forEach.call(root.querySelectorAll('[data-' + attr + ']'), function (b) { b.addEventListener('click', function () { state.qr[key] = b.dataset[attr]; Array.prototype.forEach.call(root.querySelectorAll('[data-' + attr + ']'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); qrWarn(); applyQr(); }); }); };
     segBind('qp', 'pos'); segBind('qs', 'size');
@@ -323,7 +377,7 @@
     if (state.busy || !state.photos.length) return;
     state.busy = true; state.result = null; state.versions = []; render(); msg('');
     var genPos = normUrl(state.qr.raw) && state.qr.pos !== 'none' ? state.qr.pos : '';
-    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: genPos, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
+    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: saleOn() ? '' : genPos, sale: saleOn() || undefined, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {

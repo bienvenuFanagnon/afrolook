@@ -179,7 +179,7 @@ function qrClause(lang, pos) {
     ? `Leave the ${pref ? 'bottom-right corner (or, if the composition requires it, another calm corner)' : c[1] + ' corner'} of the visual completely free, a small area of about 15% of the width and 20% of the height, with no text, no important element and no detail of the subject: a small QR code will be added there afterwards. Keep any contact text away from that corner. Do not write or draw any QR code yourself.`
     : `Laisse entièrement libre ${pref ? 'le coin inférieur droit du visuel (ou, si la composition l’exige, un autre coin calme)' : 'le coin ' + c[0] + ' du visuel'}, une petite zone d’environ 15 % de la largeur et 20 % de la hauteur, sans texte, sans élément important ni détail du sujet : un petit code QR y sera ajouté après coup. Éloigne de ce coin les textes de contact éventuels. N’écris et ne dessine aucun code QR toi-même.`;
 }
-function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '') {
+function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false) {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
   if (['video', 'motion', 'text', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
@@ -190,7 +190,9 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
     : '';
   const brand = brandClause(c.kind, L, texts);
   const qr = qrClause(L, qrpos);
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}`.trim(), ratio: c.ratio };
+  // affiche de vente : le prix, le contact, le QR et l'étiquette sont ajoutés par le site après la génération ; l'IA garde le bas dégagé et n'écrit rien
+  const saleClause = sale ? (L === 'en' ? 'Composition for a sales advertisement: keep the subject large and centered slightly above the middle, and keep the bottom quarter of the image calm and uncluttered. The price, contact details, label and a small QR code will be added afterwards: write no text on the image.' : 'Composition pour une annonce de vente : garde le sujet grand et centré légèrement au-dessus du milieu, et garde le quart inférieur de l’image calme et dégagé. Le prix, les contacts, l’étiquette et un petit QR code seront ajoutés ensuite : n’écris aucun texte sur l’image.') : '';
+  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${saleClause ? ' ' + saleClause : ''}`.trim(), ratio: c.ratio };
 }
 
 async function callGemini(parts, ratio) {
@@ -233,10 +235,11 @@ async function generate(u, b) {
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
   const texts = cleanTexts(b.texts);
   const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
-  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos);
+  const sale = b.sale === true;
+  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale);
   parts.push({ text });
 
-  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos });
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale });
 }
 
 /** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */

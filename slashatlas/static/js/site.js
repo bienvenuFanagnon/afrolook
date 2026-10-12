@@ -170,15 +170,33 @@
   // ── Adapter la commande au produit : texte libre + un ou plusieurs éléments ──
   $$('.adapt').forEach(function (box) {
     var pre = document.getElementById(box.dataset.for), input = $('input', box), mode = '1';
-    var bb = box.nextElementSibling && box.nextElementSibling.classList.contains('brandbox') ? box.nextElementSibling : null, B = bb ? JSON.parse(bb.dataset.brand) : null;
+    var bb = box.nextElementSibling && box.nextElementSibling.classList.contains('brandbox') && !box.nextElementSibling.classList.contains('salebox') ? box.nextElementSibling : null, B = bb ? JSON.parse(bb.dataset.brand) : null;
+    var sb = (bb || box).nextElementSibling; sb = sb && sb.classList.contains('salebox') ? sb : null; var SL = sb ? JSON.parse(sb.dataset.sale) : null;
+    // éléments de vente cochés : À VENDRE, prix et devise, ancien prix, réduction, marque, contact, place pour un QR code
+    function saleExtra() {
+      if (!SL) return '';
+      var on = function (k) { var c = $('input[data-s="' + k + '"]', sb); return !!(c && c.checked); }, val = function (k) { var e = $('[data-sv="' + k + '"]', sb); return e ? window.saBrandClean(e.value, 40) : ''; };
+      var cur = val('cur'), parts = [];
+      if (on('tag')) parts.push(SL.el.tag.replace('{v}', SL.tags[val('tagv')] || SL.tags.sale));
+      if (on('price') && val('price')) parts.push(SL.el.price.replace('{v}', val('price') + ' ' + cur));
+      if (on('old') && val('old')) parts.push(SL.el.old.replace('{v}', val('old') + ' ' + cur));
+      if (on('disc') && val('disc')) parts.push(SL.el.disc.replace('{v}', val('disc')));
+      if (on('brand') && val('brand')) parts.push(SL.el.brand.replace('{v}', val('brand')));
+      if (on('contact') && val('contact')) parts.push(SL.el.contact.replace('{v}', val('contact')));
+      var qr = on('qr');
+      if (!parts.length && !qr) return '';
+      return (parts.length ? SL.intro.replace('{L}', parts.join(' ; ')) : '') + (qr ? ' ' + SL.qrClause : '') + ' ' + SL.outro;
+    }
     function build() {
       var type = input.value.trim().replace(/[()]/g, '');
       var clause = (mode === 'n' ? box.dataset.cn : box.dataset.c1).replace('{T}', type ? ' (' + type + ')' : '');
       var extra = bb ? window.saBrand(B, $$('input', bb).map(function (i) { return { role: i.dataset.role, text: window.saBrandClean(i.value, +i.maxLength || 60) }; })) : '';
-      if (pre) pre.textContent = box.dataset.code + ' : ' + box.dataset.base + ' ' + clause + (extra ? ' ' + extra : '');
+      var sale = saleExtra();
+      if (pre) pre.textContent = box.dataset.code + ' : ' + box.dataset.base + ' ' + clause + (extra ? ' ' + extra : '') + (sale ? ' ' + sale : '');
     }
     input.addEventListener('input', build);
     if (bb) $$('input', bb).forEach(function (i) { i.addEventListener('input', build); });
+    if (sb) { $$('input,select', sb).forEach(function (i) { i.addEventListener('input', build); i.addEventListener('change', build); }); build(); }
     $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
   });
 })();
