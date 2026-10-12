@@ -32,17 +32,37 @@ class CardExport {
   }
 
   /// Capture la carte dessinée sous [boundaryKey] (un [RepaintBoundary]) en PNG.
+  /// Robuste : attend que la carte soit posée et peinte, et réessaie à une taille plus petite si le téléphone manque de mémoire.
   static Future<Uint8List> toPng(GlobalKey boundaryKey, {CardFormat format = CardFormat.portrait}) async {
-    final boundary = boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    RenderRepaintBoundary? boundary;
+    for (var i = 0; i < 8; i++) {
+      final o = boundaryKey.currentContext?.findRenderObject();
+      if (o is RenderRepaintBoundary && o.hasSize) {
+        boundary = o;
+        break;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    }
     if (boundary == null) throw StateError('Carte introuvable');
     // laisse une image au moteur pour finir de peindre
+    await WidgetsBinding.instance.endOfFrame;
     if (boundary.debugNeedsPaint) await Future<void>.delayed(const Duration(milliseconds: 40));
-    final ratio = exportWidth / format.size.width;
-    final ui.Image image = await boundary.toImage(pixelRatio: ratio);
-    final data = await image.toByteData(format: ui.ImageByteFormat.png);
-    image.dispose();
-    if (data == null) throw StateError('Export impossible');
-    return data.buffer.asUint8List();
+    Object? last;
+    for (final width in [exportWidth, 810.0, 540.0]) {
+      ui.Image? image;
+      try {
+        image = await boundary.toImage(pixelRatio: width / format.size.width);
+        final data = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (data != null) return data.buffer.asUint8List();
+        last = StateError('Export impossible');
+      } catch (e) {
+        last = e;
+      } finally {
+        image?.dispose();
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    }
+    throw last ?? StateError('Export impossible');
   }
 
   static Future<File> toTempFile(Uint8List png, {String prefix = 'carte_afrolook'}) async {

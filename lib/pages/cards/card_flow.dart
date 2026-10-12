@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -265,7 +266,7 @@ class CardFlow {
 
   /// Publication en Chronique : le formulaire des chroniques, déjà rempli avec la carte (même règles qu'une chronique image).
   static Future<bool> publishAsChronique(BuildContext context, CardResult r, CardQuote quote, {String? caption}) async {
-    final dir = Directory.systemTemp;
+    final dir = await getTemporaryDirectory();
     final file = await File('${dir.path}/carte_chronique_${DateTime.now().millisecondsSinceEpoch}.jpg').writeAsBytes(r.image, flush: true);
     if (!context.mounted) return false;
     final done = await Navigator.push<bool>(

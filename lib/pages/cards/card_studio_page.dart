@@ -171,11 +171,17 @@ class _CardStudioPageState extends State<CardStudioPage> {
       if (png == null) return;
       final ok = await CardExport.saveToGallery(png);
       _say(ok ? tr('Carte enregistrée dans ta galerie ✅') : tr('Autorise l\'accès aux photos pour enregistrer la carte.'));
-    } catch (_) {
-      _say(tr('Impossible de créer la carte. Réessaie.'));
+    } catch (e, st) {
+      _fail('save', e, st);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Erreur de création : message clair avec un court code (pour le support) et rapport envoyé à l'administration.
+  void _fail(String where, Object e, StackTrace st) {
+    _say('${tr('Impossible de créer la carte. Réessaie.')} (${e.runtimeType})');
+    CardService.report(where, e, st, style: _spec.style.name, format: _spec.format.name, hasMedia: _hasMedia, vote: _spec.hasVote);
   }
 
   Future<void> _share() async {
@@ -185,8 +191,9 @@ class _CardStudioPageState extends State<CardStudioPage> {
       final png = await _captureImage();
       if (png == null) return;
       await CardExport.share(png, text: _spec.linkFor(_source));
-    } catch (_) {
-      _say(tr('Impossible de partager la carte. Réessaie.'));
+    } catch (e, st) {
+      _say('${tr('Impossible de partager la carte. Réessaie.')} (${e.runtimeType})');
+      CardService.report('share', e, st, style: _spec.style.name, format: _spec.format.name, hasMedia: _hasMedia, vote: _spec.hasVote);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -248,8 +255,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
           ? await CardFlow.publishAsChronique(context, r, _quote, caption: CardFlow.chroniqueCaption(_source))
           : await CardFlow.publishAsPost(context, r, _quote, canal: widget.canal, defiPostId: widget.defiPostId, asDefi: choice == 'defi', presetPostId: widget.presetPostId);
       if (done && mounted) Navigator.of(context).pop(true);
-    } catch (_) {
-      _say(tr('Impossible de créer la carte. Réessaie.'));
+    } catch (e, st) {
+      _fail('publish', e, st);
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -264,8 +271,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
     try {
       final r = await _render(CardFormat.portrait);
       if (r != null && mounted) Navigator.of(context).pop(r);
-    } catch (_) {
-      _say(tr('Impossible de créer la carte. Réessaie.'));
+    } catch (e, st) {
+      _fail('use', e, st);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

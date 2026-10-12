@@ -274,3 +274,29 @@ export const cardPassBuy = onCall({ timeoutSeconds: 20, maxInstances: 5 }, async
   });
   return { ok: true, until, price: cfg.passPrice, days: cfg.passDays };
 });
+
+/**
+ * Rapport d'erreur du studio de cartes : l'application envoie la vraie cause quand « Impossible de créer la carte » s'affiche.
+ * Au plus 15 par compte et par jour ; lisible seulement par l'administration (collection CardErrors).
+ */
+export const cardReport = onCall({ timeoutSeconds: 10, maxInstances: 3 }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) return { ok: false };
+  const d = (request.data ?? {}) as Record<string, unknown>;
+  const cut = (v: unknown, n: number) => String(v ?? "").replace(/\s+/g, " ").slice(0, n);
+  const day = new Date().toISOString().slice(0, 10);
+  const cRef = db.collection("CardErrorCounts").doc(`${uid}_${day}`);
+  const ok = await db.runTransaction(async (tx) => {
+    const s = await tx.get(cRef);
+    const n = s.exists ? Number(s.data()!["n"] ?? 0) : 0;
+    if (n >= 15) return false;
+    tx.set(cRef, { n: n + 1, day }, { merge: true });
+    return true;
+  });
+  if (!ok) return { ok: false };
+  await db.collection("CardErrors").add({
+    uid, day, at: Date.now(), where: cut(d["where"], 30), type: cut(d["type"], 80), msg: cut(d["msg"], 400), stack: cut(d["stack"], 600),
+    os: cut(d["os"], 60), style: cut(d["style"], 40), format: cut(d["format"], 20), hasMedia: d["hasMedia"] === true, vote: d["vote"] === true,
+  });
+  return { ok: true };
+});

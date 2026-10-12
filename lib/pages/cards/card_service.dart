@@ -177,4 +177,21 @@ class CardService {
       rethrow;
     }
   }
+
+  /// Envoie à l'administration la vraie cause d'une erreur de création de carte (sans bloquer ni échouer).
+  static Future<void> report(String where, Object error, StackTrace? stack, {String? style, String? format, bool hasMedia = false, bool vote = false}) async {
+    try {
+      await _fn.httpsCallable('cardReport').call({
+        'where': where,
+        'type': error.runtimeType.toString(),
+        'msg': error.toString(),
+        'stack': stack?.toString().split('\n').take(5).join(' | ') ?? '',
+        'os': '${defaultTargetPlatform.name}${kIsWeb ? ' web' : ''}',
+        'style': style ?? '',
+        'format': format ?? '',
+        'hasMedia': hasMedia,
+        'vote': vote,
+      });
+    } catch (_) {/* le rapport ne doit jamais gêner */}
+  }
 }
