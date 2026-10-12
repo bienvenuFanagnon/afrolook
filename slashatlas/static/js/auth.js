@@ -62,4 +62,4 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-login]')) { e.preventDefault(); login(); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); signOut(auth); }
 });
-onAuthStateChanged(auth, (u) => { try { if (u && u.email === 'jorbienvenu@gmail.com') localStorage.setItem('sa_admin', '1'); else localStorage.removeItem('sa_admin'); } catch (e) {} document.dispatchEvent(new CustomEvent('sa:auth', { detail: { user: u } })); });
+onAuthStateChanged(auth, (u) => { try { if (u) localStorage.setItem('sa_u', ((u.displayName || u.email || '').split(' ')[0] || '1').slice(0, 20)); else localStorage.removeItem('sa_u'); } catch (e) {} try { if (u && u.email === 'jorbienvenu@gmail.com') localStorage.setItem('sa_admin', '1'); else localStorage.removeItem('sa_admin'); } catch (e) {} document.dispatchEvent(new CustomEvent('sa:auth', { detail: { user: u } })); });

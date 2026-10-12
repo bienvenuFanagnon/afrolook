@@ -41,6 +41,28 @@
   // page de détails d'une commande : visite comptée (une fois par visite et par commande), pour savoir quelles commandes attirent
   if (page === 'cmd') { var cc = document.getElementById('cmd-cnt'), sl = cc && cc.dataset.slug; if (sl && !sstore('sa_v_' + sl)) { sstore('sa_v_' + sl, '1'); track('view', { s: sl }); } }
 
+  // ── Bouton « Se connecter » de l'en-tête : connexion Google directe (Studio) ou depuis n'importe quelle page, puis retour au Studio ──
+  (function () {
+    var btns = $$('[data-signin]'); if (!btns.length) return;
+    var named = ''; try { named = localStorage.getItem('sa_u') || ''; } catch (e) {}
+    if (named) btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); });
+    btns.forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        if (named) return; // déjà connecté : le lien mène au Studio
+        e.preventDefault();
+        var go = function () { location.href = b.getAttribute('href'); };
+        if (b.dataset.busy) return; b.dataset.busy = '1'; var old = b.textContent; b.textContent = '…';
+        var done = function () { delete b.dataset.busy; b.textContent = old; };
+        var inStudio = !!document.getElementById('studio');
+        import('/js/auth.js').then(function () {
+          if (!window.slashAuth) { go(); return; }
+          if (!inStudio) document.addEventListener('sa:auth', function h(ev) { if (ev.detail && ev.detail.user) { document.removeEventListener('sa:auth', h); go(); } });
+          return window.slashAuth.login().then(done, done);
+        }).catch(function () { done(); go(); });
+      });
+    });
+  })();
+
   // ── Parrainage : le code du lien (?ref=…) est gardé 60 jours ; il est envoyé à la création du compte ──
   try {
     var rm = /[?&]ref=([A-Za-z0-9]{7})(?:&|$)/.exec(location.search);
