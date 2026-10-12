@@ -242,7 +242,7 @@
   }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function railCard(r) {
-    var poster = r.img ? '<div class="poster img' + (r.ratio === '16:9' ? ' ls' : '') + '"><img src="/img/c/' + r.slug + '-t.webp" alt="" loading="lazy" decoding="async"><span class="tag">' + esc(r.cat) + '</span></div>'
+    var poster = r.img ? '<div class="poster img' + (r.ratio === '16:9' ? ' ls' : '') + '" style="--ar:' + String(r.ratio || '4:5').replace(':', '/') + '"><img src="/img/c/' + r.slug + '-t.webp" alt="" loading="lazy" decoding="async"><span class="tag">' + esc(r.cat) + '</span></div>'
       : '<div class="poster" style="--x:' + esc(r.x) + ';--y:' + esc(r.y) + ';--r:' + esc(r.r) + '"><span class="tag">' + esc(r.cat) + '</span><span class="shape"></span><b>' + esc(r.poster) + '</b><small>' + esc(r.code) + '</small></div>';
     var href = (lang === 'en' ? '/en/c/' : '/c/') + r.slug + '/';
     var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</a>' : '';

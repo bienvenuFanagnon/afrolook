@@ -530,3 +530,23 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .sale-hd{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;padding:12px 0;min-height:44px}
 .sale-hd input{width:20px;height:20px;accent-color:var(--acc,#1e90ff)}
 @media(max-width:520px){.chk{grid-template-columns:auto 1fr auto}.chk>span{grid-column:2/-1}.chk>input[type=text]{grid-column:2/3}.chk>select{grid-column:3}.chk>small{grid-column:2/-1}}
+
+/* Les images d'exemple s'affichent EN ENTIER : les bandeaux de prix, le contact et le QR code sont en bas de l'image, un recadrage les ferait disparaître.
+   Le cadre prend le format réel de la commande (--ar) et l'image n'est jamais coupée. */
+.poster.img>img{object-fit:contain;object-position:50% 50%;background:#0b0b0d}
+.card .poster.img{aspect-ratio:var(--ar,4/5)}
+.rp .poster.img{aspect-ratio:var(--ar,1/1)}
+.rail{align-items:flex-start}
+.fpost .poster.big{aspect-ratio:var(--ar,1/1);max-height:82vh;width:100%}
+.ba[data-rot=img] img{object-fit:contain}
+@media (max-width:719px){
+  .card .poster.img{aspect-ratio:var(--ar,4/5);height:auto;min-height:0;max-height:200px;align-self:center}
+  .card .cl{display:flex;align-items:center}
+  .card .cl .poster{width:100%}
+}
+.card .poster.img .tag,.rp .poster.img .tag{display:none}
+
+/* photo de départ : sous l'image (elle masquait les éléments de vente placés en bas de l'affiche) */
+.pstart{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--mut);font:700 12px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.pstart img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--line2)}
+.pstart .aiw{margin-left:auto;font:600 10px var(--mono);letter-spacing:.04em;color:var(--faint);text-transform:none;border:1px solid var(--line2);border-radius:999px;padding:3px 9px}

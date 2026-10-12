@@ -141,9 +141,9 @@ function poster(c, l, big = false) {
     return `<div class="poster${big ? ' big' : ''}" style="--x:${c.x};--y:${c.y};--r:${c.r}"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="shape"></span><b>${esc(t.poster)}</b><small>${esc(c.code)}</small>${pl}</div>`;
   }
   if (big) {
-    return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high"><span class="ai">${AIWORD[l]} · ${c.engine}</span>${c.noBefore ? '' : `<div class="av"><img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy"><small>${BEFORE[l]}</small></div>`}${pl}</div>`;
+    return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high">${pl}</div><div class="pstart">${c.noBefore ? '' : `<img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy" width="64" height="64"><span>${BEFORE[l]}</span>`}<span class="aiw">${AIWORD[l]} · ${c.engine}</span></div>`;
   }
-  return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span>${pl}</div>`;
+  return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span>${pl}</div>`;
 }
 function card(c, l) {
   const t = c[l];
