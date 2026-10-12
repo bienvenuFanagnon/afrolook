@@ -19,12 +19,14 @@ const Color _defiOrange = Color(0xFFFF9500);
 class DefiConvert {
   DefiConvert._();
 
-  /// Seul l'auteur le peut, et seulement sur un post ordinaire : ni publicité, ni réponse à un DÉFI, ni DÉFI existant.
+  /// Seul l'auteur le peut, et seulement sur un post ordinaire non monétisé : ni publicité, ni réponse à un DÉFI, ni DÉFI existant.
   static bool canConvert(Post post, UserData me) {
     if ((post.id ?? '').isEmpty || post.user_id != me.id) return false;
     if ((post.type ?? PostType.POST.name) != PostType.POST.name) return false;
     if (post.isAdvertisement == true || post.defiResponseToPostId != null) return false;
     if (post.status != null && post.status != PostStatus.VALIDE.name) return false;
+    // un post monétisé (ou ancien, sans choix enregistré) ne devient jamais un DÉFI : aucune vue de DÉFI n'est monétisée
+    if (post.isMonetized) return false;
     final t = post.dataType;
     return t == PostDataType.TEXT.name || t == PostDataType.IMAGE.name || t == PostDataType.VIDEO.name || t == PostDataType.AUDIO.name;
   }

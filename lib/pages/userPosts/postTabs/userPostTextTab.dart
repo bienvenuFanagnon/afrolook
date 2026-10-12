@@ -67,6 +67,8 @@ class _UserPubTextState extends State<UserPubText> {
   // Contrôle de temps entre les posts
   bool _canPost = true;
   bool _monetized = false; // likes payants : désactivé par défaut (likes gratuits)
+  /// Un DÉFI (ou une participation à un DÉFI) n'est jamais monétisé : l'option est masquée et le post part toujours non monétisé.
+  bool get _isDefiContext => widget.defiPostId != null || _selectedPostType == 'DEFI';
   String _timeRemaining = '';
 
   // Variables pour les restrictions
@@ -1859,7 +1861,7 @@ class _UserPubTextState extends State<UserPubText> {
         String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
 
         Post post = Post();
-        post.monetized = _monetized;
+        post.monetized = _isDefiContext ? false : _monetized;
         post.user_id = authProvider.loginUserData.id;
         post.description = _descriptionController.text;
         post.updatedAt = DateTime.now().microsecondsSinceEpoch;
@@ -2380,7 +2382,7 @@ class _UserPubTextState extends State<UserPubText> {
 
                         // Bouton de publication
 // Bouton de publication
-                        MonetizedPostOption(value: _monetized, onChanged: (v) => setState(() => _monetized = v)),
+                        if (!_isDefiContext) MonetizedPostOption(value: _monetized, onChanged: (v) => setState(() => _monetized = v)),
                         const SizedBox(height: 16),
                         Container(
                           width: double.infinity,

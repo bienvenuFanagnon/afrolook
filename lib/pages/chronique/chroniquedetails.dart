@@ -1,5 +1,6 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import '../pub/ad_actions.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
@@ -1393,12 +1394,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             child: GestureDetector(
               onTap: () async {
                 _recordAdClick(ad);
-                if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                  final url = Uri.parse(ad.actionUrl!);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                }
+                await AdActions.open(ad);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

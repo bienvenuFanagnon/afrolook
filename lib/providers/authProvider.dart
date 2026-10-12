@@ -195,6 +195,8 @@ class UserAuthProvider extends ChangeNotifier {
           final ad = Advertisement.fromJson(entry['adData'] as Map<String, dynamic>);
           final adDescription = entry['adDescription'] as String;
           final post = Post.fromJson(postDoc.data()!);
+          // publicité d'un DÉFI : plus diffusée une fois le DÉFI terminé
+          if (ad.actionType == 'defi' && (post.defiConfig == null || post.defiConfig!.status != 'en_cours' || post.defiConfig!.endDate <= DateTime.now().millisecondsSinceEpoch)) continue;
           post.advertisementId = ad.id;
           post.isAdvertisement = true;
           final adJson = ad.toJson();

@@ -1,3 +1,4 @@
+import 'ad_actions.dart';
 import '../../ads/ad_gate.dart';
 import 'dart:async';
 import 'dart:math';
@@ -1501,14 +1502,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                               GestureDetector(
                                 onTap: () async {
                                   await _recordClick(ad);
-                                  final url = ad.actionUrl;
-                                  if (url != null && url.isNotEmpty) {
-                                    final uri = Uri.tryParse(url);
-                                    if (uri != null && await canLaunchUrl(uri)) {
-                                      await launchUrl(uri,
-                                          mode: LaunchMode.externalApplication);
-                                    }
-                                  }
+                                  await AdActions.open(ad);
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(

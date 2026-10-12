@@ -1,3 +1,5 @@
+import 'defi/defi_boost.dart';
+import 'pub/ad_actions.dart';
 import 'package:afrotok/ads/admob_service.dart';
 import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/utils/post_time_ago.dart';
@@ -2331,7 +2333,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => UserCreateAdvertisementPage(existingPost: post),
+                      builder: (_) => boostPageFor(post),
                     ),
                   );
                 },
@@ -3426,12 +3428,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
                   'uniqueClicks': FieldValue.increment(1),
                   'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
                 });
-                if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                  final url = Uri.parse(ad.actionUrl!);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                }
+                await AdActions.open(ad);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

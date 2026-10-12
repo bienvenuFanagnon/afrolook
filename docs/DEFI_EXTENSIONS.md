@@ -34,3 +34,13 @@ Nécessite une nouvelle version de l'application pour les écrans ; la partie se
 - Légende proposée : « 🏆 Vote pour moi ! Je participe au défi sur Afrolook 👉 lien #defiafrolook #carteafrolook » (modifiable).
 - Après la publication : feuille « Ta participation est publiée » avec **Partager ma carte** (image + lien, pour WhatsApp, Facebook, TikTok…) et **Copier le lien de mon post**.
 - Test : `test/vote_band_test.dart` (taille et absence de débordement du bandeau).
+
+## Aucune monétisation sur les défis ; publicité d'un défi
+
+**Pas de monétisation.** Aucune vue ni aucun like d'un défi (ni d'une participation) n'est monétisé.
+- Création et participation : l'option « Post monétisé » est masquée dès que « Défi » est choisi ou qu'on participe à un défi, et le post part toujours avec `monetized: false` (onglets texte, image, vidéo, audio).
+- Serveur (`handleDefiAction`) : `sanitizeClientPost` impose `monetized: false` à la création et à la participation, quoi que le client envoie.
+- Conversion d'un post existant : refusée si le post est monétisé (champ `monetized` différent de `false`, donc aussi les anciens posts sans choix enregistré) : le choix ne se modifie plus après publication. Le menu « Transformer en défi » est masqué pour ces posts (`DefiConvert.canConvert`) et le serveur refuse avec `POST_MONETIZED`.
+- Les 2 défis et les 2 participations existants ont été verrouillés (`monetized: false`).
+
+**Publicité d'un défi (distincte des défis en cours dans le fil).** Le créateur d'un défi en cours, avec image ou vidéo, le booste depuis « Booster ce post » (`boostPageFor` → `DefiBoostPage`) : durée au même tarif que les publicités, pays, texte, paiement en pièces (`kind: 'ad'`), validation par l'équipe. Le post reste un défi (jamais transformé en publicité). Une `Advertisement` est créée avec `postId` = le défi, `actionType: 'defi'`, bouton « Participer » ; elle circule dans le même circuit que les publicités Afrolook (rotation partagée). Le bouton ouvre le défi dans l'application (`AdActions.open`, utilisé par tous les écrans de publicité) ; la publicité n'est plus diffusée quand le défi est terminé (`loadAdvertisements`).

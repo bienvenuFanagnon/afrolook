@@ -1,3 +1,5 @@
+import 'defi/defi_boost.dart';
+import 'pub/ad_actions.dart';
 import 'package:afrotok/ads/admob_service.dart';
 import 'package:afrotok/ads/ad_slot.dart';
 import 'package:afrotok/ads/ad_gate.dart';
@@ -2351,12 +2353,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
               // Bouton d'action
               InkWell(
                 onTap: () async {
-                  if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                    final url = Uri.parse(ad.actionUrl!);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
-                    }
-                  }
+                  await AdActions.open(ad);
                   _recordAdClick(ad, _currentPost);
                 },
                 child: Container(
@@ -2452,7 +2449,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => UserCreateAdvertisementPage(existingPost: _currentPost),
+                builder: (_) => boostPageFor(_currentPost),
               )),
               style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
               child: const Text('Booster', style: TextStyle(fontSize: 12)),

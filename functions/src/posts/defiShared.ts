@@ -34,6 +34,8 @@ export function sanitizeClientPost(
     id: postId,
     user_id: userId,
     status: "VALIDE",
+    // Aucune vue ni like de DÉFI (ni de participation) n'est monétisé : imposé ici, quoi que le client envoie.
+    monetized: false,
     defi_votes: 0,
     defi_voter_ids: [],
     likes: 0,

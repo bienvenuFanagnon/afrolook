@@ -1,4 +1,5 @@
 // widgets/advertisement_post_widget.dart
+import '../../pub/ad_actions.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
@@ -205,12 +206,7 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
       if (mounted) setState(() => widget.ad.clicks = (widget.ad.clicks ?? 0) + 1);
       widget.onAdClicked?.call(widget.post, widget.ad);
 
-      if (widget.ad.actionUrl != null && widget.ad.actionUrl!.isNotEmpty) {
-        final url = Uri.parse(widget.ad.actionUrl!);
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        }
-      }
+      await AdActions.open(widget.ad);
     } catch (e) {
       // silently ignore
     }

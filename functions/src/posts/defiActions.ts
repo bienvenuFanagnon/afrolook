@@ -611,6 +611,11 @@ async function handleConvertToDefi(uid: string, postId: string, rawCfg: unknown,
     if (post["status"] && post["status"] !== "VALIDE") {
       throw new HttpsError("failed-precondition", "Ce post n'est pas publié.");
     }
+    // Un post monétisé (champ absent = ancien post = monétisé) ne peut pas devenir un DÉFI : aucune vue de DÉFI n'est monétisée,
+    // et le choix « monétisé » ne se modifie plus après la publication.
+    if ((post["monetized"] ?? post["paidLikes"]) !== false) {
+      throw new HttpsError("failed-precondition", "POST_MONETIZED: un post monétisé ne peut pas devenir un DÉFI.");
+    }
 
     const now = Date.now();
     if (cagnotte > 0) {

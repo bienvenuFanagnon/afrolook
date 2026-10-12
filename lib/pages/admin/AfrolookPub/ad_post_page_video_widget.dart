@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+﻿import '../../pub/ad_actions.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
 
@@ -477,10 +478,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
 
   void _handleActionClick() async {
     await _recordAdClick();
-    if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-      final url = Uri.parse(ad.actionUrl!);
-      if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
+    await AdActions.open(ad);
     _autoAdvanceTimer?.cancel();
     _cleanup();
     widget.onComplete();

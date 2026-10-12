@@ -1,3 +1,5 @@
+import 'defi/defi_boost.dart';
+import 'pub/ad_actions.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
 import 'package:afrotok/ads/ad_slot.dart';
 import 'package:afrotok/utils/post_time_ago.dart';
@@ -995,12 +997,7 @@ class _DetailsPostState extends State<DetailsPost>
           // Bouton d'action (compact)
           InkWell(
             onTap: () async {
-              if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                final url = Uri.parse(ad.actionUrl!);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              }
+              await AdActions.open(ad);
               _recordAdClick(ad, widget.post);
             },
             child: Container(
@@ -1221,7 +1218,7 @@ class _DetailsPostState extends State<DetailsPost>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => UserCreateAdvertisementPage(existingPost: widget.post),
+        builder: (_) => boostPageFor(widget.post),
       ),
     ).then((_) {
       // Recharger après retour

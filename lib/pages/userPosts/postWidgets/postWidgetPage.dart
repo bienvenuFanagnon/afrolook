@@ -1,3 +1,4 @@
+import '../../defi/defi_boost.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import '../../../services/followers_count_service.dart';
@@ -3346,7 +3347,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                 () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => UserCreateAdvertisementPage(existingPost: post),
+                    builder: (_) => boostPageFor(post),
                   ));
                 },
               ),
