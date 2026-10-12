@@ -426,7 +426,7 @@
 // (ou que la ligne a le focus). Sur téléphone, le défilement tactile habituel reste inchangé.
 (function () {
   var rails = document.querySelectorAll('.rail'); if (!rails.length) return;
-  var fine = window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  var fine = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
   var fr = document.body.dataset.lang !== 'en';
   Array.prototype.forEach.call(rails, function (r) {
     var wrap = document.createElement('div'); wrap.className = 'railwrap'; r.parentNode.insertBefore(wrap, r); wrap.appendChild(r);

@@ -24,7 +24,12 @@ const INTRO = {
   place: 'Professional architectural photograph of a property for sale. ',
 };
 const COMPOSE = ' Composition for a sales advertisement: the subject is large, sharp and centered slightly above the middle, with a clean, calm, uncluttered background area along the bottom quarter of the image.';
+// Prompts spécifiques pour les cas où le prompt générique donne un résultat trop éloigné de l'avant
+const PROMPT_OVERRIDE = {
+  fashionposter: 'Professional fashion photograph of a colorful African wax print dress (bold geometric patterns in vivid orange, green and blue Kente-inspired fabric), displayed as a fashion advertising poster, vertical 4:5 format. The dress is laid flat or hanging, clearly visible. Plain neutral background, soft studio light, slight shadow below. Large empty space at the top for the headline. Sharp, editorial, high quality.',
+};
 function prompt(c) {
+  if (PROMPT_OVERRIDE[c.slug]) return `${PROMPT_OVERRIDE[c.slug]}${COMPOSE} No text, no letters, no logo, no watermark.`.slice(0, 1800);
   let s = (c.scene && c.scene.en) || c.en.prompt;
   s = s.replace(/(?:with )?the (?:product|products|dish|dishes|person|people|property)?\(?s?\)?\s*(?:in|from) the attached photo(?: of the [a-z ]+)?/gi, 'a generic subject')
     .replace(/the attached photo/gi, 'a generic subject').replace(/attached/gi, '')
