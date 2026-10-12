@@ -90,6 +90,8 @@ Afrolook : `cd functions && npm run build`, puis `npx firebase-tools deploy --on
 4. **Afrolook** : ajouter une phrase sur le parrainage de SlashAtlas dans les conditions du site si le propriétaire le veut ; surveiller `CardErrors`, `AuthEmailLog`.
 5. **Anciennes tâches nominalement ouvertes** : Stickers phase 2 (sélecteur, récents, pack officiel), Étude plus tard (eCPM, examens blancs, duels, plan universités), documentation vidéo (#50). Voir `docs/STICKERS_SPEC.md`, `docs/ETUDE.md`, `docs/ETUDE_UNIVERSITES.md`.
 
+3bis. **Images d'exemple des deux nouvelles catégories** « Vue du ciel (drone) » (8 commandes `sky*`) et « Afro Fashion et top modèles » (16 commandes `afro*`) : aujourd'hui des dégradés sans image. Les créer avec `scripts/genimages_cf.mjs` quand le quota Cloudflare revient (voir STUDIO.md).
+
 ### À faire par le propriétaire (le lui rappeler)
 - **Compiler et publier Afrolook** (version 2.0.10+253) sur Play Store et App Store : correctifs cartes, défis, Google, e-mails, sessions. **La connexion Google exige un build store** (Shorebird ne suffit pas : nouveau plugin natif + fichiers de configuration). Un patch Shorebird depuis le code actuel afficherait un bouton Google qui échoue ; proposé : masquer le bouton tant que le plugin est absent pour livrer les e-mails par patch.
 - Ajouter `afrolookmedia.com` aux domaines autorisés (Firebase, Authentication, Paramètres) pour Google sur le web.

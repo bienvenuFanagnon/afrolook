@@ -3,6 +3,7 @@
 
 export const CATEGORIES = [
   { id: 'mode', fr: 'Mode', en: 'Fashion', fr_d: 'Affiches de collection, lookbooks, promotions : votre vêtement devient une affiche.', en_d: 'Collection posters, lookbooks, promotions: your garment becomes a poster.' },
+  { id: 'afrofashion', fr: 'Afro Fashion et top modèles', en: 'Afro fashion and top models', fr_d: 'Votre photo devient un visuel de top modèle : studio, défilé, plage, villa, soirée ou cérémonie. Votre visage et votre peau restent fidèles.', en_d: 'Your photo becomes a top-model visual: studio, runway, beach, villa, evening or ceremony. Your face and skin stay faithful.' },
   { id: 'produit', fr: 'Pub produit', en: 'Product ads', fr_d: 'Un produit, une photo, une affiche publicitaire qui donne envie.', en_d: 'One product, one photo, an advertising poster people want to click.' },
   { id: 'food', fr: 'Food', en: 'Food', fr_d: 'Plats qui donnent faim, menus du jour, promotions de restaurant.', en_d: 'Dishes that make people hungry, daily menus, restaurant promotions.' },
   { id: 'immobilier', fr: 'Immobilier', en: 'Real estate', fr_d: 'Biens à vendre ou à louer, présentés comme dans un magazine.', en_d: 'Properties for sale or rent, presented like in a magazine.' },

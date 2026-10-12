@@ -362,7 +362,7 @@ ${showcase(l)}${examplesRail(l)}<div class="cta"><a class="btn pri big" href="${
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];
   const featured = ['fashionposter', 'productglow', 'skincareglow', 'lookbook', 'splashshot', 'hairshowcase', 'menuhero', 'openhouse'].map((s) => COMMANDS.find((c) => c.slug === s)); // mode, produit et cosmétique d'abord ; l'accueil les remplace par les plus utilisées dès qu'il y a des données
-  const newest = ['skyview', 'skypet', 'typobehind', 'logoglass', 'sheetpose9', 'infoexploded', 'dioskislope', 'brandboard', 'magcover', 'shopflash', 'mascotproduct', 'animeposter'].map((s) => COMMANDS.find((c) => c.slug === s));
+  const newest = ['afrotopmodel', 'afrodoll', 'skyview', 'skypet', 'typobehind', 'logoglass', 'sheetpose9', 'infoexploded', 'dioskislope', 'brandboard', 'magcover', 'shopflash', 'mascotproduct', 'animeposter'].map((s) => COMMANDS.find((c) => c.slug === s));
   const vids = ['mgkinetic', 'revealvid', 'mglogoreveal', 'turntable', 'mgoutfitreveal', 'splashslow', 'mgserumdrop', 'unboxing', 'mgsneakerpop', 'mgdressflow', 'mgcountdown', 'kithooks'].map((s) => COMMANDS.find((c) => c.slug === s)).filter(Boolean);
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
   const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
