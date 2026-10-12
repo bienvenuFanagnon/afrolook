@@ -37,7 +37,9 @@
   var n = parseInt(sstore('sa_n') || '0', 10) + 1; sstore('sa_n', String(n));
   var returning = store('sa_seen') === '1'; store('sa_seen', '1');
   var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
-  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz });
+  // Identifiant de visiteur anonyme (UUID persistant dans localStorage, jamais partagé cross-site)
+  var uid = ''; try { uid = store('sa_uid') || ''; if (!uid) { uid = 'u' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10); store('sa_uid', uid); } } catch (e) {}
+  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz, uid: n === 1 ? uid : '' });
   // page de détails d'une commande : visite comptée (une fois par visite et par commande), pour savoir quelles commandes attirent
   if (page === 'cmd') { var cc = document.getElementById('cmd-cnt'), sl = cc && cc.dataset.slug; if (sl && !sstore('sa_v_' + sl)) { sstore('sa_v_' + sl, '1'); track('view', { s: sl }); } }
 
@@ -45,7 +47,26 @@
   (function () {
     var btns = $$('[data-signin]'); if (!btns.length) return;
     var named = ''; try { named = localStorage.getItem('sa_u') || ''; } catch (e) {}
-    if (named) btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); });
+    function applyUser(n) {
+      if (!n) return;
+      named = n;
+      btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); });
+    }
+    applyUser(named);
+    // Charger auth.js en arrière-plan pour mettre à jour le bouton si la session Firebase est active
+    // (cas où localStorage a été effacé mais la session Firebase persiste)
+    if (!named) {
+      setTimeout(function () {
+        import('/js/auth.js').then(function () {
+          document.addEventListener('sa:auth', function h(ev) {
+            document.removeEventListener('sa:auth', h);
+            if (ev.detail && ev.detail.user) {
+              try { applyUser(localStorage.getItem('sa_u') || ''); } catch (e) {}
+            }
+          });
+        }).catch(function () {});
+      }, 300);
+    }
     btns.forEach(function (b) {
       b.addEventListener('click', function (e) {
         if (named) return; // déjà connecté : le lien mène au Studio

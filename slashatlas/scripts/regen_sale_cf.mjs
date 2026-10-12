@@ -37,6 +37,26 @@ const IMGPAIRS_PROMPTS = {
   coverdrop: 'album cover art, centered portrait, strong contrast, clean background, music release single cover',
   skincareglow: 'skincare product advertisement, clean white background, soft diffused light, premium cosmetics packaging',
 };
+// Commandes avec personne : prompts forcés pour des personnes africaines et afro-américaines
+const PERSON_PROMPTS = {
+  lookbook: 'Beautiful Black African woman wearing a stylish modern fashion outfit, full body lookbook editorial, neutral textured studio background, editorial magazine lighting, high fashion pose, professional photography, sharp, no text',
+  streetfit: 'Stylish young Black African man wearing trendy streetwear outfit, colorful bold clothing, urban fashion editorial, clean studio background, confident pose, professional advertising photography, sharp, no text',
+  makeuplook: 'Beautiful Black African woman with stunning professional makeup, close-up beauty portrait, flawless dark skin glowing, editorial beauty lighting, luxury cosmetics advertisement, sharp, no text',
+  barbershop: 'Handsome Black African man with a fresh professional haircut, barbershop portrait, clean short fade hairstyle, confident expression, dark studio background with dramatic lighting, professional barbershop advertisement, sharp, no text',
+  mannequinstudio: 'Beautiful Black African woman wearing elegant fashion outfit, fashion model pose in luxury studio, clean white background, dramatic professional lighting, full body fashion editorial, sharp, no text',
+  summerstyle: 'Beautiful Black African woman in stylish summer outfit, vibrant colorful African wax print clothing, outdoor summer editorial, warm natural lighting, joyful confident pose, fashion advertising, sharp, no text',
+  modestfashion: 'Elegant Black African woman wearing beautiful modest fashion outfit, long flowing dress with African print patterns, graceful pose, luxury studio background, editorial fashion photography, professional lighting, sharp, no text',
+  tailoratelier: 'Skilled Black African tailor working in a professional atelier, measuring fabric with tape, elegant workshop setting with fabrics and sewing tools, fashion craftsmanship advertisement, warm studio lighting, sharp, no text',
+  coupleoutfits: 'Stylish Black African couple wearing matching elegant outfits, man in tailored suit and woman in beautiful dress with African prints, professional fashion editorial, clean studio background, sharp, no text',
+  mensuit: 'Handsome Black African man wearing a sharp well-fitted tailored suit, professional business portrait, confident pose, clean neutral studio background, luxury fashion advertising, sharp, no text',
+  braidstyle: 'Beautiful Black African woman with stunning long braided hairstyle, salon professional portrait, shiny healthy braids, elegant makeup, grey studio background, hair salon advertising poster, sharp, no text',
+  naturalhair: 'Beautiful Black African woman with gorgeous natural afro hair, large voluminous afro crown, radiant smile, clean light studio background, natural hair salon advertising, professional portrait, sharp, no text',
+  massagetime: 'Relaxed Black African woman receiving a professional luxury spa massage, clean elegant spa setting, warm candles and flowers, premium wellness advertising, professional photography, sharp, no text',
+  lashextension: 'Beautiful Black African woman showing perfect eyelash extensions, close-up beauty portrait, dark glowing skin, dramatic eye makeup, professional beauty studio lighting, luxury lash salon advertisement, sharp, no text',
+  facialcare: 'Beautiful Black African woman with glowing healthy dark skin applying luxury facial cream, clean bathroom setting with premium skincare products, beauty advertising, soft studio lighting, sharp, no text',
+  bridalmakeup: 'Beautiful Black African bride with stunning traditional bridal makeup, elaborate headpiece, elegant bridal gown, professional bridal beauty portrait, warm romantic lighting, sharp, no text',
+  hennahands: 'Beautiful dark-skinned Black African woman hands with intricate traditional henna design, elegant jewelry, close-up detail shot, clean light background, cultural fashion advertisement, sharp, no text',
+};
 function prompt(c) {
   let s = (c.scene && c.scene.en) || c.en.prompt;
   s = s.replace(/(?:with )?the (?:product|products|dish|dishes|person|people|property)?\(?s?\)?\s*(?:in|from) the attached photo(?: of the [a-z ]+)?/gi, 'a generic subject')
@@ -107,9 +127,12 @@ for (const c of list) {
       } catch (e2) {
         if (e2.status === 403 || /5018|not allowed/i.test(e2.message)) {
           console.log(`img2img non disponible pour ${c.slug}, bascule sur FLUX`);
-          img = await cf(prompt(c)); engine = 'FLUX';
+          img = await cf(PERSON_PROMPTS[c.slug] || prompt(c)); engine = 'FLUX';
         } else throw e2;
       }
+    } else if (PERSON_PROMPTS[c.slug]) {
+      // Commande avec personne : utiliser le prompt africain forcé
+      img = await cf(PERSON_PROMPTS[c.slug]); engine = 'FLUX';
     } else {
       img = await cf(prompt(c)); engine = 'FLUX';
     }

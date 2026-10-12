@@ -94,8 +94,13 @@ async function statsWrite(b, req) {
     u[`dev.${['m', 'd', 't'].includes(b.d) ? b.d : 'x'}`] = inc;
     if (b.r) u[`ref.${key(b.r)}`] = inc;
     if (b.s) u.sessions = inc;
-    if (b.tz) u[`tz.${key(b.tz)}`] = inc; // fuseau horaire du navigateur : indique la région sans stocker d'adresse IP
+    if (b.tz) u[`tz.${key(b.tz)}`] = inc;
     if (b.ret) u.returning = inc;
+    // Visiteur unique : première page de la session + UID anonyme fourni
+    // On stocke l'UID comme clé d'un sous-map (présence = 1 visiteur distinct) dans le doc journalier
+    if (b.uid && /^u[a-z0-9]{14,18}$/.test(String(b.uid))) {
+      u[`uids.${String(b.uid).slice(0, 20)}`] = 1;
+    }
   } else if (t === 'copy') {
     u.copies = inc;
     const slug = key(b.s || b.n);
@@ -236,7 +241,7 @@ async function adminData(daysIn) {
     users: us.docs.map((d) => { const x = d.data(); return { email: x.email, name: x.name || '', credits: x.credits || 0, at: ts(x.createdAt), seen: ts(x.lastSeenAt) }; }),
     ads: await adminAds(),
     orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
-    stats: st.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id)),
+    stats: st.docs.map((d) => { const x = d.data(); return { id: d.id, ...x, visitors: Object.keys(x.uids || {}).length }; }).sort((a, b) => a.id.localeCompare(b.id)),
     studioUsers: accCount.data().count,
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
   };
