@@ -467,7 +467,8 @@
     }
     r.addEventListener('scroll', sync, { passive: true }); window.addEventListener('resize', sync);
     if ('MutationObserver' in window) new MutationObserver(sync).observe(r, { attributes: true, attributeFilter: ['hidden'] });
-    sync(); setTimeout(sync, 400); window.addEventListener('load', sync);
+    if ('ResizeObserver' in window) new ResizeObserver(sync).observe(r);
+    sync(); setTimeout(sync, 400); setTimeout(sync, 1200); window.addEventListener('load', sync);
   });
   document.addEventListener('keydown', function (e) {
     if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey) return;
