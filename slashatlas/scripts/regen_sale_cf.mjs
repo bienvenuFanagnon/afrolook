@@ -28,7 +28,7 @@ const INTRO = {
 const COMPOSE = ' Composition for a sales advertisement: the subject is large, sharp and centered slightly above the middle, with a clean, calm, uncluttered background area along the bottom quarter of the image.';
 // Slugs de la démo homepage avec photo "avant" → img2img SD 1.5 pour conserver la tenue
 const IMGPAIRS_PROMPTS = {
-  fashionposter: 'fashion advertising poster, garment displayed on plain white background, soft studio lighting, editorial style, professional product photography',
+  fashionposter: 'A traditional African wax print dress hanging on a clean white background, fashion advertising poster, vertical format, soft studio lighting, clothing only, no bottles, no products, no people, no text, editorial fashion photography',
   lookbook: 'fashion lookbook page, outfit on neutral textured background, editorial lighting, magazine style, generous margins',
   hairshowcase: 'hair salon poster, professional studio lighting, shiny hair highlights, neutral gradient background',
   splashshot: 'product advertising, splash effect, clean gradient background, studio lighting, premium feel',
