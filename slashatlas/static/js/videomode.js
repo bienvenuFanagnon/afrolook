@@ -15,6 +15,7 @@
       create: 'Créer ma vidéo', again: 'Refaire avec mes changements', credit: 'crédit', credits: 'crédits', needPhoto: 'Ajoutez une photo', working: 'Création de votre vidéo…', workHint: 'Cela prend environ une minute. Ne fermez pas la page.',
       steps: ['Analyse de votre photo…', 'Détourage du produit…', 'Mise en scène et animations…', 'Musique, effets et voix…', 'Finalisation…'],
       perso: 'Personnaliser (facultatif)', persoHint: 'Tout est déjà choisi pour vous. Changez seulement ce que vous voulez.',
+      model: 'Type de vidéo', models: { auto: ['Automatique', 'Le site choisit pour votre produit'], zoom: ['Gros plan cinéma', 'Zoom sur les détails'], tour360: ['Tour à 360°', 'Le produit tourne sur lui-même'], lancement: ['Lancement', 'Révélation lumineuse, puis détails'], classique: ['Pub complète', 'Accroche, produit, atouts'], promo: ['Promo flash', 'Prix et offre en avant'], catalogue: ['Catalogue', 'Plusieurs photos, une par plan'] },
       style: 'Style', styles: { auto: ['Automatique', 'Choisi d’après votre produit'], mode: ['Mode', 'Dynamique et coloré'], beaute: ['Beauté', 'Doux et élégant'], promo: ['Promo flash', 'Énergique, prix en avant'] },
       format: 'Format', formats: { '9:16': ['Vertical', 'TikTok, Reels, statuts'], '1:1': ['Carré', 'Facebook, Instagram'], '16:9': ['Paysage', 'YouTube'] },
       music: 'Musique', musics: { '': ['Automatique', 'Selon le style'], beat: ['Rythmée', 'Beat dynamique'], ambient: ['Ambiance', 'Nappes calmes'], none: ['Aucune', 'Effets seulement'] }, sfx: 'Effets sonores calés sur les mouvements',
@@ -34,6 +35,7 @@
       create: 'Create my video', again: 'Redo with my changes', credit: 'credit', credits: 'credits', needPhoto: 'Add a photo', working: 'Creating your video…', workHint: 'This takes about a minute. Do not close the page.',
       steps: ['Analyzing your photo…', 'Cutting out the product…', 'Staging and animations…', 'Music, effects and voice…', 'Finalizing…'],
       perso: 'Customize (optional)', persoHint: 'Everything is already chosen for you. Only change what you want.',
+      model: 'Video type', models: { auto: ['Automatic', 'The site picks for your product'], zoom: ['Cinematic close-up', 'Zoom on the details'], tour360: ['360° spin', 'The product turns around'], lancement: ['Launch', 'Light reveal, then details'], classique: ['Full ad', 'Hook, product, benefits'], promo: ['Flash sale', 'Price and offer first'], catalogue: ['Catalog', 'Several photos, one per shot'] },
       style: 'Style', styles: { auto: ['Automatic', 'Chosen from your product'], mode: ['Fashion', 'Dynamic and colorful'], beaute: ['Beauty', 'Soft and elegant'], promo: ['Flash sale', 'Energetic, price first'] },
       format: 'Format', formats: { '9:16': ['Vertical', 'TikTok, Reels, statuses'], '1:1': ['Square', 'Facebook, Instagram'], '16:9': ['Landscape', 'YouTube'] },
       music: 'Music', musics: { '': ['Automatic', 'Depends on the style'], beat: ['Upbeat', 'Dynamic beat'], ambient: ['Ambient', 'Calm pads'], none: ['None', 'Effects only'] }, sfx: 'Sound effects synced with the movements',
@@ -46,7 +48,7 @@
     },
   }[L];
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var st = { style: 'auto', ratio: '9:16', photos: [], f: { brand: '', hook: '', l1: '', l2: '', l3: '', price: '', oldPrice: '', offer: '', cta: '', contact: '' }, qr: '', voice: true, gender: 'f', music: '', sfx: true, cutout: 'smart', vt: {}, vtServer: false, about: '', busy: false, ai: false, open: false, edited: false, result: null, list: null, listLoaded: false, step: 0 };
+  var st = { model: 'auto', style: 'auto', ratio: '9:16', photos: [], f: { brand: '', hook: '', l1: '', l2: '', l3: '', price: '', oldPrice: '', offer: '', cta: '', contact: '' }, qr: '', voice: true, gender: 'f', music: '', sfx: true, cutout: 'smart', vt: {}, vtServer: false, about: '', busy: false, ai: false, open: false, edited: false, result: null, list: null, listLoaded: false, step: 0 };
   var api = null, el = null, stepTimer = null;
 
   function lines() { return [st.f.l1, st.f.l2, st.f.l3].map(function (x) { return x.trim(); }).filter(Boolean); }
@@ -65,6 +67,7 @@
   function perso() {
     var segs = voiceSegs(), has = { hook: 1, product: 1, benefits: lines().length >= 2, offer: st.f.price.trim() || st.f.offer.trim(), cta: 1 };
     return '<details class="brandbox sf vperso"' + (st.open ? ' open' : '') + '><summary>' + T.perso + '</summary><p class="hint">' + T.persoHint + '</p>' +
+      '<div class="sf"><b>' + T.model + '</b>' + seg('model', st.model, ['auto', 'zoom', 'tour360', 'lancement', 'classique', 'promo', 'catalogue'].map(function (k) { return [k, T.models[k][0], T.models[k][1]]; })) + '</div>' +
       '<div class="sf"><b>' + T.style + '</b>' + seg('style', st.style, ['auto', 'mode', 'beaute', 'promo'].map(function (k) { return [k, T.styles[k][0], T.styles[k][1]]; })) + '</div>' +
       '<div class="sf"><b>' + T.format + '</b>' + seg('ratio', st.ratio, ['9:16', '1:1', '16:9'].map(function (k) { return [k, T.formats[k][0], T.formats[k][1]]; })) + '</div>' +
       '<div class="sf"><b>' + T.texts + '</b><div class="bgrid">' + ['hook', 'l1', 'l2', 'l3', 'offer', 'oldPrice', 'cta'].map(field).join('') + '</div><button class="btn gl' + (st.ai ? ' loading' : '') + '" type="button" id="v-ai"' + (st.ai ? ' disabled' : '') + '>' + (st.ai ? T.aiWait : '✨ ' + T.ai) + '</button></div>' +
@@ -102,6 +105,7 @@
   function syncVoice() { var segs = voiceSegs(); Array.prototype.forEach.call(el.querySelectorAll('[data-vt]'), function (t) { if (t !== document.activeElement && segs[t.dataset.vt] != null) t.value = segs[t.dataset.vt]; }); }
   function touched() { st.edited = st.edited || !!st.result; if (st.vtServer) { st.vt = {}; st.vtServer = false; } }
   function bind() {
+    Array.prototype.forEach.call(el.querySelectorAll('[data-model]'), function (b) { b.addEventListener('click', function () { st.model = b.dataset.model; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-style]'), function (b) { b.addEventListener('click', function () { st.style = b.dataset.style; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-ratio]'), function (b) { b.addEventListener('click', function () { st.ratio = b.dataset.ratio; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-music]'), function (b) { b.addEventListener('click', function () { st.music = b.dataset.music; draw(); }); });
@@ -143,10 +147,10 @@
     var body = { lang: L, ratio: st.ratio, about: st.about, texts: texts, qr: st.qr.trim(), cutout: st.cutout, sfx: st.sfx,
       voice: st.voice ? { on: true, gender: st.gender, segments: (st.f.hook.trim() || Object.keys(st.vt).length) ? voiceSegs() : undefined } : false,
       photos: st.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
-    if (st.style !== 'auto') body.style = st.style; if (st.music) body.music = st.music;
+    if (st.style !== 'auto') body.style = st.style; if (st.model !== 'auto') body.model = st.model; if (st.music) body.music = st.music;
     var url = api.renderUrl;
     if (!url) { done(); return msg(api.errText('server')); }
-    api.post(url, body, 290000).then(function (r) {
+    api.post(url, body, 530000).then(function (r) {
       if (r.status === 200) {
         api.setCredits(r.data.credits); var used = r.data.used || {};
         return api.blob('video/file', { id: r.data.id }).then(function (b) {
@@ -162,7 +166,7 @@
   function modify() {
     var u = st.result && st.result.used; if (u) {
       var t = u.texts || {}; ['brand', 'hook', 'price', 'oldPrice', 'offer', 'cta', 'contact'].forEach(function (k) { st.f[k] = t[k] || ''; }); var ls = t.lines || []; st.f.l1 = ls[0] || ''; st.f.l2 = ls[1] || ''; st.f.l3 = ls[2] || '';
-      if (u.style) st.style = u.style; if (u.voice) { st.voice = true; st.gender = u.voice.gender || 'f'; st.vt = u.voice.segments || {}; st.vtServer = true; } else st.voice = false;
+      if (u.style) st.style = u.style; if (u.model) st.model = u.model; if (u.voice) { st.voice = true; st.gender = u.voice.gender || 'f'; st.vt = u.voice.segments || {}; st.vtServer = true; } else st.voice = false;
     }
     st.edited = true; st.forceOpen = true; st.result = null; draw(); var p = el.querySelector('.vperso'); if (p) window.scrollTo({ top: p.offsetTop - 80, behavior: 'smooth' });
   }

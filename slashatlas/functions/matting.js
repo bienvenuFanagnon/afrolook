@@ -69,7 +69,7 @@ async function matte(buf) {
   const ort = require('onnxruntime-node');
   const sess = await session();
   const img = await loadImage(buf);
-  const k = Math.min(1, 1280 / Math.max(img.width, img.height)); const W = Math.round(img.width * k), H = Math.round(img.height * k);
+  const k = Math.min(1, 1600 / Math.max(img.width, img.height)); const W = Math.round(img.width * k), H = Math.round(img.height * k);
   const photo = createCanvas(W, H); const px = photo.getContext('2d'); px.drawImage(img, 0, 0, W, H);
   // entrée du modèle : 1024 × 1024, valeurs normalisées
   const inp = createCanvas(SIZE, SIZE); const ix = inp.getContext('2d'); ix.drawImage(photo, 0, 0, SIZE, SIZE);
@@ -97,7 +97,7 @@ async function matte(buf) {
   if (fraction < 0.01 || fraction > 0.92) return { ok: false, sprite: null, reason: 'unreliable', fraction };
   px.putImageData(pd, 0, 0);
   const pad = Math.round(Math.max(W, H) * 0.012); x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(W - 1, x1 + pad); y1 = Math.min(H - 1, y1 + pad);
-  const bw = x1 - x0 + 1, bh = y1 - y0 + 1; const sc = Math.min(1, 900 / Math.max(bw, bh)); const o = createCanvas(Math.max(8, Math.round(bw * sc)), Math.max(8, Math.round(bh * sc)));
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1; const sc = Math.min(1, 1400 / Math.max(bw, bh)); const o = createCanvas(Math.max(8, Math.round(bw * sc)), Math.max(8, Math.round(bh * sc)));
   o.getContext('2d').drawImage(photo, x0, y0, bw, bh, 0, 0, o.width, o.height);
   return { ok: true, sprite: { canvas: o, w: o.width, h: o.height, fraction }, products: count };
 }

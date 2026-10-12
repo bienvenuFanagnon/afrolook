@@ -207,20 +207,23 @@ function videoBlock(l) {
 const SHOW = {
   fr: {
     h: 'Deux studios, un seul site', imgT: 'Visuels : affiches et photos pro', imgP: 'Copiez une commande gratuite ou générez directement sur le site : votre photo devient une affiche prête à publier.', before: 'Votre photo', after: 'Le résultat',
-    vidT: 'Vidéos pub : motion design', vidP: 'Votre photo, vos textes, de la musique, des effets sonores et une voix off au choix : le produit est détouré et mis en scène.', s1: 'Votre photo', s2: 'Produit détouré', s3: 'Votre vidéo',
+    vidT: 'Vidéos pub : motion design', vidP: 'Votre photo suffit : elle est retouchée, le produit est détouré et mis en scène en gros plan, il tourne à 360°, avec musique, effets sonores et voix off.', s1: 'Votre photo', s2: 'Produit détouré', s3: 'Votre vidéo',
     cmds: 'Voir les commandes', gen: 'Générer ici', mk: 'Créer une vidéo', exH: 'Des vidéos créées avec le studio', exP: 'Touchez pour lancer, avec le son. Chaque exemple montre la photo de départ.', orig: 'Photo d’origine', styles: { lotion: 'Soin visage', parfum: 'Parfum', robe: 'Robe', tenue: 'Tenue complète', eau: 'Eau minérale', plat: 'Plat du jour' }, tutoV: 'Voir toutes les vidéos',
   },
   en: {
     h: 'Two studios, one site', imgT: 'Visuals: posters and pro photos', imgP: 'Copy a free command or generate right on the site: your photo becomes a ready-to-post poster.', before: 'Your photo', after: 'The result',
-    vidT: 'Video ads: motion design', vidP: 'Your photo, your texts, music, sound effects and an optional voice-over: the product is cut out and staged.', s1: 'Your photo', s2: 'Cut-out product', s3: 'Your video',
+    vidT: 'Video ads: motion design', vidP: 'Your photo is enough: it is retouched, the product is cut out and staged in close-up, it spins 360°, with music, sound effects and a voice-over.', s1: 'Your photo', s2: 'Cut-out product', s3: 'Your video',
     cmds: 'See the commands', gen: 'Generate here', mk: 'Create a video', exH: 'Videos made with the studio', exP: 'Tap to play, with sound. Each example shows the starting photo.', orig: 'Original photo', styles: { lotion: 'Face care', parfum: 'Perfume', robe: 'Dress', tenue: 'Full outfit', eau: 'Mineral water', plat: 'Dish of the day' }, tutoV: 'See all the videos',
   },
 };
 const VEX = ['lotion', 'parfum', 'robe', 'tenue', 'eau', 'plat'];
+// type de vidéo montré par chaque exemple (voir MODELS dans functions/video.js)
+const VEX_MODEL = { lotion: 'zoom', parfum: 'tour360', robe: 'lancement', tenue: 'zoom', eau: 'tour360', plat: 'lancement' };
+const MODEL_LBL = { fr: { zoom: 'Gros plan cinéma', tour360: 'Tour à 360°', lancement: 'Lancement' }, en: { zoom: 'Cinematic close-up', tour360: '360° spin', lancement: 'Launch' } };
 const IMGPAIRS = ['fashionposter', 'skincareglow', 'productglow', 'splashshot', 'lookbook', 'hairshowcase', 'menuhero', 'coverdrop'];
 function examplesRail(l, id = 'rail-ex') {
   const S = SHOW[l]; if (!(cfg.video && cfg.video.renderUrl)) return '';
-  const cards = VEX.map((k) => `<figure class="vexc" role="listitem"><div class="vexv"><video controls playsinline preload="none" poster="/img/video/ex-${k}.webp" src="/video/exemples/ex-${k}-${l}.mp4" aria-label="${esc(S.styles[k])}"></video><span class="vorig"><img src="/img/video/before-${k}.webp" alt="" loading="lazy" width="72" height="72"><small>${S.orig}</small></span></div><figcaption>${S.styles[k]}</figcaption></figure>`).join('');
+  const cards = VEX.map((k) => `<figure class="vexc" role="listitem"><div class="vexv"><video controls playsinline preload="none" poster="/img/video/ex-${k}.webp" src="/video/exemples/ex-${k}-${l}.mp4" aria-label="${esc(S.styles[k])}"></video><span class="vorig"><img src="/img/video/before-${k}.webp" alt="" loading="lazy" width="72" height="72"><small>${S.orig}</small></span></div><figcaption>${S.styles[k]}<small>${MODEL_LBL[l][VEX_MODEL[k]]}</small></figcaption></figure>`).join('');
   return `<div class="sec tight"><h2>${S.exH}</h2><span class="swipe">${S.exP}</span></div><div class="rail railx" id="${id}" data-rot="rail" role="list" tabindex="0">${cards}</div>`;
 }
 function showcase(l) {

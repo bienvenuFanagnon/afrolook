@@ -8,10 +8,14 @@ const studio = require('./studio');
 const video = require('./video');
 const { chromaKey, localCutout } = require('./cutout');
 const { matte } = require('./matting');
+const { enhance } = require('./enhance');
+const { loadImage, createCanvas } = require('@napi-rs/canvas');
 
 const { fail, clean, db, day, spendCredits, addCredits, bump } = studio;
 const STYLES = Object.keys(video.STYLES);
 const RATIOS = Object.keys(video.SIZES);
+const MODEL_IDS = Object.keys(video.MODELS);
+const SUBJECTS = ['product', 'food', 'person'];
 const SCRIPT_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
 const oneLine = (v, n) => clean(v, n).replace(/\s+/g, ' ');
 
@@ -50,8 +54,8 @@ function qrFromContact(c) { try { return normUrl(c); } catch (e) { return ''; } 
 async function autoCopy(photo, mime, ctx) {
   const lang = ctx.lang; const info = [ctx.about && (lang === 'fr' ? 'Description donnée : ' : 'Description given: ') + ctx.about, ctx.brand && (lang === 'fr' ? 'Marque : ' : 'Brand: ') + ctx.brand, ctx.price && (lang === 'fr' ? 'Prix : ' : 'Price: ') + ctx.price].filter(Boolean).join('\n');
   const prompt = lang === 'fr'
-    ? `Regarde la photo : c'est le produit d'un petit commerçant. Écris le texte d'une courte publicité vidéo (15 à 25 secondes).\n${info}\nChoisis aussi le style : "beaute" (cosmétiques, soins, parfums, coiffure), "mode" (vêtements, chaussures, sacs, bijoux, accessoires), "promo" (nourriture, boissons, électronique, maison, tout le reste).\nRéponds uniquement en JSON : {"style": "beaute|mode|promo", "hook": accroche de 3 à 6 mots, "lines": [3 atouts de 2 à 5 mots, visibles sur la photo ou évidents pour ce type de produit], "cta": appel à l'action de 2 à 4 mots, "voice": {"hook": phrase parlée de 8 mots au plus, "product": 1 ou 2 phrases de 22 mots au plus, "benefits": 1 phrase de 20 mots au plus, "offer": "" , "cta": 1 phrase de 12 mots au plus}}.\nRègles : français simple et chaleureux ; n'invente ni marque, ni chiffre, ni prix, ni certification, ni promesse de résultat ou de santé ; ne lis aucun texte de l'emballage sauf s'il est donné ; pas d'émoji ; pas de guillemets dans les textes.`
-    : `Look at the photo: it is a small business owner's product. Write the text of a short video ad (15 to 25 seconds).\n${info}\nAlso pick the style: "beaute" (cosmetics, skincare, perfume, hair), "mode" (clothes, shoes, bags, jewelry, accessories), "promo" (food, drinks, electronics, home, everything else).\nReply with JSON only: {"style": "beaute|mode|promo", "hook": a 3 to 6 word hook, "lines": [3 benefits of 2 to 5 words, visible in the photo or obvious for this kind of product], "cta": a 2 to 4 word call to action, "voice": {"hook": spoken hook of 8 words max, "product": 1 or 2 sentences of 22 words max, "benefits": 1 sentence of 20 words max, "offer": "", "cta": 1 sentence of 12 words max}}.\nRules: simple, warm English; invent no brand, number, price, certification, health or result claim; do not read any packaging text unless given; no emoji; no quotation marks inside the texts.`;
+    ? `Regarde la photo : c'est le produit d'un petit commerçant. Écris le texte d'une courte publicité vidéo (15 à 25 secondes).\n${info}\nChoisis aussi le style : "beaute" (cosmétiques, soins, parfums, coiffure), "mode" (vêtements, chaussures, sacs, bijoux, accessoires), "promo" (nourriture, boissons, électronique, maison, tout le reste).\nIndique aussi ce que la photo montre : "subject" = "product" (objet, cosmétique, vêtement seul, sac, chaussure…), "food" (plat, boisson, pâtisserie) ou "person" (une personne porte ou présente l'article). Et le modèle de vidéo qui met le mieux l'article en valeur : "tour360" (flacon, bouteille, boîte, sac, chaussure, objet qui est beau quand il tourne), "zoom" (vêtement, tissu, bijou, plat : gros plans sur les détails), "lancement" (nouveauté, cosmétique, parfum), "classique" (le reste).\nRéponds uniquement en JSON : {"subject": "product|food|person", "model": "tour360|zoom|lancement|classique", "style": "beaute|mode|promo", "hook": accroche de 3 à 6 mots, "lines": [3 atouts de 2 à 5 mots, visibles sur la photo ou évidents pour ce type de produit], "cta": appel à l'action de 2 à 4 mots, "voice": {"hook": phrase parlée de 8 mots au plus, "product": 1 ou 2 phrases de 22 mots au plus, "benefits": 1 phrase de 20 mots au plus, "offer": "" , "cta": 1 phrase de 12 mots au plus}}.\nRègles : français simple et chaleureux ; n'invente ni marque, ni chiffre, ni prix, ni certification, ni promesse de résultat ou de santé ; ne lis aucun texte de l'emballage sauf s'il est donné ; pas d'émoji ; pas de guillemets dans les textes.`
+    : `Look at the photo: it is a small business owner's product. Write the text of a short video ad (15 to 25 seconds).\n${info}\nAlso pick the style: "beaute" (cosmetics, skincare, perfume, hair), "mode" (clothes, shoes, bags, jewelry, accessories), "promo" (food, drinks, electronics, home, everything else).\nAlso say what the photo shows: "subject" = "product" (object, cosmetic, a garment alone, bag, shoe…), "food" (dish, drink, pastry) or "person" (a person wears or presents the item). And the video model that shows the item best: "tour360" (bottle, jar, box, bag, shoe, anything that looks great turning), "zoom" (clothes, fabric, jewelry, food: close-ups on details), "lancement" (new product, cosmetics, perfume), "classique" (the rest).\nReply with JSON only: {"subject": "product|food|person", "model": "tour360|zoom|lancement|classique", "style": "beaute|mode|promo", "hook": a 3 to 6 word hook, "lines": [3 benefits of 2 to 5 words, visible in the photo or obvious for this kind of product], "cta": a 2 to 4 word call to action, "voice": {"hook": spoken hook of 8 words max, "product": 1 or 2 sentences of 22 words max, "benefits": 1 sentence of 20 words max, "offer": "", "cta": 1 sentence of 12 words max}}.\nRules: simple, warm English; invent no brand, number, price, certification, health or result claim; do not read any packaging text unless given; no emoji; no quotation marks inside the texts.`;
   for (const model of SCRIPT_MODELS) {
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': studio.GEMINI_API_KEY.value() },
@@ -59,7 +63,7 @@ async function autoCopy(photo, mime, ctx) {
       const x = await r.json(); const txt = x.candidates && x.candidates[0] && x.candidates[0].content && x.candidates[0].content.parts && x.candidates[0].content.parts[0] && x.candidates[0].content.parts[0].text;
       if (!txt) { console.error('autoCopy', model, JSON.stringify(x.error || x.promptFeedback || '').slice(0, 200)); continue; }
       const j = JSON.parse(txt); const v = j.voice && typeof j.voice === 'object' ? j.voice : {};
-      const out = { style: STYLES.includes(j.style) ? j.style : null, hook: oneLine(j.hook, 60), lines: (Array.isArray(j.lines) ? j.lines : []).map((q) => oneLine(q, 48)).filter(Boolean).slice(0, 3), cta: oneLine(j.cta, 30),
+      const out = { subject: SUBJECTS.includes(j.subject) ? j.subject : 'product', model: MODEL_IDS.includes(j.model) ? j.model : null, style: STYLES.includes(j.style) ? j.style : null, hook: oneLine(j.hook, 60), lines: (Array.isArray(j.lines) ? j.lines : []).map((q) => oneLine(q, 48)).filter(Boolean).slice(0, 3), cta: oneLine(j.cta, 30),
         voice: { hook: oneLine(v.hook, 120), product: oneLine(v.product, 240), benefits: oneLine(v.benefits, 240), offer: '', cta: oneLine(v.cta, 160) } };
       if (out.hook.length >= 3) return out;
     } catch (e) { console.error('autoCopy', model, e.message); }
@@ -108,42 +112,58 @@ async function render(u, b) {
   await vref.set({ uid: u.uid, ratio, lang, cost, photos: photos.length, brand: texts.brand, status: 'pending', createdAt: FieldValue.serverTimestamp() });
   let out = null;
   try {
-    // 1. texte et style : écrits par l'IA d'après la photo si la personne n'a rien écrit
-    let styleChoice = STYLES.includes(b.style) ? b.style : null; let aiVoice = null;
+    // 0. retouche automatique de la photo : lumière, couleurs, netteté, taille (photos sombres, ternes ou petites)
+    for (let i = 0; i < photos.length; i++) {
+      try { const im = await loadImage(photos[i]); const cv = createCanvas(im.width, im.height); cv.getContext('2d').drawImage(im, 0, 0); photos[i] = enhance(cv, { minSide: 1100, maxSide: 1600 }).toBuffer('image/jpeg', 93); photosIn[i] = { ...photosIn[i], mime: 'image/jpeg' }; }
+      catch (e) { console.error('enhance', e && e.message); }
+    }
+    // 1. l'IA regarde la photo : ce qu'elle montre, le meilleur modèle de vidéo, et le texte si la personne n'a rien écrit
+    const c = await autoCopy(photos[0], photosIn[0].mime, { lang, about, brand: texts.brand, price: texts.price });
+    const subject = (c && c.subject) || 'product'; let styleChoice = STYLES.includes(b.style) ? b.style : null; let aiVoice = null;
     if (auto) {
-      const c = await autoCopy(photos[0], photosIn[0].mime, { lang, about, brand: texts.brand, price: texts.price });
       const fb = FALLBACK[lang];
       texts = { ...texts, hook: (c && c.hook) || (about && about.length >= 3 ? about.slice(0, 60) : texts.brand || fb.hook), lines: texts.lines.length ? texts.lines : (c ? c.lines : []), cta: texts.cta || (c ? c.cta : fb.cta) };
-      if (c) { aiVoice = c.voice; styleChoice = styleChoice || c.style; }
+      if (c) aiVoice = c.voice;
       await bump({ videoAutoCopy: c ? 1 : 0, videoAutoCopyFail: c ? 0 : 1 });
     }
-    const style = styleChoice || (texts.price || texts.offer ? 'promo' : 'mode');
+    if (c) styleChoice = styleChoice || c.style;
+    // modèle de vidéo : celui demandé, sinon celui que l'IA conseille (avec un peu de hasard pour que deux vidéos ne se ressemblent pas)
+    let model = MODEL_IDS.includes(b.model) ? b.model : null;
+    if (!model) {
+      const base = (c && c.model) || 'zoom'; const pool = [base, base, 'lancement', 'tour360', 'zoom'];
+      model = photos.length >= 2 ? 'catalogue' : pool[crypto.randomInt(pool.length)];
+      if (subject === 'person' && model === 'tour360') model = 'zoom'; // une personne ne tourne pas sur un plateau
+    }
+    const style = styleChoice || (model === 'promo' || texts.price || texts.offer ? 'promo' : 'mode');
     const qrUrl = normUrl(b.qr) || qrFromContact(texts.contact);
     const voiceSrc = b.voice && b.voice.segments ? b.voice.segments : aiVoice;
     const voice = withVoice ? { gender, segments: cleanVoice(voiceSrc, texts, lang) } : null;
-    // 2. détourage : local si la photo est simple, sinon IA (fond vert) ; en dernier recours la photo entière dans un cadre
-    let sprites = null;
+    // 2. le produit : photo « refaite en studio » par l'IA (même produit, plus beau, entier), détourée ; sinon détourage de la photo retouchée
+    let sprites = null; let shots = 0;
     if (cutoutMode === 'ai' || cutoutMode === 'smart') {
+      const wantShot = b.studio !== false && subject !== 'person'; // une personne n'est jamais régénérée : son visage et sa silhouette restent les siens
+      const shotP = photos.map((buf, i) => (wantShot ? withTimeout(studioShot(buf, photosIn[i].mime, subject), 85000).catch((e) => { console.error('studioShot', e && (e.code || e.message)); return null; }) : Promise.resolve(null)));
       sprites = [];
       for (let i = 0; i < photos.length; i++) { const buf = photos[i]; sprites.push(await (async () => {
         if (cutoutMode === 'smart') {
-          // 1. modèle de détourage (pixels du produit intacts, marche sur n'importe quel fond) ; 2. remplissage simple pour les fonds unis ; 3. IA sur fond vert en dernier recours
+          // modèle de détourage (pixels du produit intacts, marche sur n'importe quel fond) ; sinon remplissage simple pour les fonds unis ; sinon IA sur fond vert
           try { const mr = await matte(buf); if (mr.ok && mr.sprite) return mr.sprite.canvas.toBuffer('image/png'); } catch (e) { console.error('matte', e && e.message); }
           try { const lc = await localCutout(buf); if (lc.ok && lc.sprite) return lc.sprite.canvas.toBuffer('image/png'); } catch (e) { /* on essaie l'IA */ }
         }
         return aiCutout(buf, photosIn[i].mime, lang);
       })()); }
-      const ai = sprites.filter(Boolean).length; await bump({ videoCutoutKept: ai, videoCutoutMiss: sprites.length - ai });
+      const shot = await Promise.all(shotP); shot.forEach((x, i) => { if (x) { sprites[i] = x; shots++; } else if (subject === 'food') sprites[i] = null; }); // un plat mal détouré perd son assiette : sans la version studio, on garde la photo entière
+      const ai = sprites.filter(Boolean).length; await bump({ videoCutoutKept: ai, videoCutoutMiss: sprites.length - ai, videoStudioShot: shots, videoStudioShotMiss: wantShot ? photos.length - shots : 0 });
     }
-    await vref.update({ style, hook: texts.hook, voice: !!voice, qr: !!qrUrl });
-    out = await video.render({ style, ratio, lang, photos, sprites, cutout: cutoutMode === 'off' ? 'off' : 'auto', music, sfx, texts, qrUrl, voice });
+    await vref.update({ style, model, subject, studio: shots, hook: texts.hook, voice: !!voice, qr: !!qrUrl });
+    out = await video.render({ threads: 3, style, model, ratio, lang, photos, sprites, cutout: cutoutMode === 'off' ? 'off' : 'auto', music, sfx, texts, qrUrl, voice });
     const path = `videos/${u.uid}/${id}.mp4`;
     await getStorage().bucket().file(path).save(fs.readFileSync(out.file), { contentType: 'video/mp4', resumable: false });
     await vref.update({ status: 'done', path, cutout: cutoutMode, music: music || 'default', sfx, cutouts: out.cutouts, seconds: Math.round(out.seconds * 10) / 10, ttsChars: out.ttsChars, doneAt: FieldValue.serverTimestamp() });
-    await bump({ videos: 1, videoSecs: Math.round(out.seconds), videoTts: out.ttsChars, [`videoStyle_${style}`]: 1 });
+    await bump({ videos: 1, videoSecs: Math.round(out.seconds), videoTts: out.ttsChars, [`videoStyle_${style}`]: 1, [`videoModel_${model}`]: 1 });
     const left = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
     // ce qui a été choisi pour la personne : l'écran « Modifier » le reprend
-    return { id, seconds: out.seconds, cost, credits: left, used: { style, texts, voice: voice ? { gender, segments: voice.segments } : null, qr: qrUrl ? 1 : 0, cutouts: out.cutouts } };
+    return { id, seconds: out.seconds, cost, credits: left, used: { style, model, subject, studio: shots, texts, voice: voice ? { gender, segments: voice.segments } : null, qr: qrUrl ? 1 : 0, cutouts: out.cutouts } };
   } catch (e) {
     console.error('video render', e && e.stack || e);
     await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
@@ -151,6 +171,17 @@ async function render(u, b) {
     await bump({ videofails: 1 });
     throw e && e.status ? e : fail(500, e && e.code === 'too_long' ? 'too_long' : e && e.code === 'tts' ? 'voice_error' : 'render_failed');
   } finally { if (out) { try { fs.rmSync(out.dir, { recursive: true, force: true }); } catch (e) { /* temporaire */ } } }
+}
+
+function withTimeout(p, ms) { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'timeout' })), ms); })]).finally(() => clearTimeout(t)); }
+
+/** La photo « refaite en studio » : même produit (forme, couleurs, logo), mais bien éclairé, net, entier et bien présenté, sur un fond uni facile à détourer. Retourne un PNG détouré ou null. */
+async function studioShot(buf, mime, subject) {
+  const food = subject === 'food';
+  const text = `Professional commercial photograph of the ${food ? 'dish' : 'product'} shown in the attached photo, as a premium advertising hero shot. Keep it STRICTLY identical: same shape, proportions, colors, materials, logo and every printed or embroidered detail, same number of items. Improve only the presentation: perfect studio lighting with soft highlights and gentle realistic reflections, crisp sharp details, rich natural colors${food ? ', appetizing, fresh and glossy' : ''}, a clean polished premium look. The ENTIRE ${food ? 'dish including the whole plate and its rim' : 'product'} must be fully visible and never cropped, centered, with a generous margin all around. Place it on a plain seamless neutral medium-gray studio background. No shadow on the background, no props, no added text, no hands, no people, no watermark.`;
+  const img = await studio.callGemini([{ inlineData: { mimeType: mime || 'image/jpeg', data: buf.toString('base64') } }, { text }], food ? '1:1' : '4:5');
+  const mr = await matte(Buffer.from(img.data, 'base64'));
+  return mr.ok && mr.sprite ? mr.sprite.canvas.toBuffer('image/png') : null;
 }
 
 /** Produit isolé par l'IA sur fond vert, puis détouré. Retourne un PNG transparent, ou null si ça n'a pas marché (la vidéo se rabat sur le détourage local). */
@@ -202,4 +233,4 @@ async function script(u, b) {
     voice: { hook: oneLine(v.hook, 120), product: oneLine(v.product, 240), benefits: oneLine(v.benefits, 240), offer: oneLine(v.offer, 240), cta: oneLine(v.cta, 160) } };
 }
 
-module.exports = { render, file, list, script, autoVoice, cleanTexts, normUrl };
+module.exports = { studioShot, render, file, list, script, autoVoice, cleanTexts, normUrl };
