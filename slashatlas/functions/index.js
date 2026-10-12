@@ -66,20 +66,20 @@ let popCache = { at: 0, rows: [] };
 async function popular(l) {
   if (Date.now() - popCache.at > 900000) {
     const q = await getFirestore().collection('SlashAtlasCounts').orderBy('score', 'desc').limit(150).get();
-    popCache = { at: Date.now(), rows: q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0, tries: d.data().tries || 0 })).filter((r) => CMDS.commands[r.slug]) };
+    popCache = { at: Date.now(), rows: q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0, tries: d.data().tries || 0, views: d.data().views || 0 })).filter((r) => CMDS.commands[r.slug]) };
   }
   const counts = {};
-  popCache.rows.forEach((r) => { counts[r.slug] = [r.copies, r.tries]; });
+  popCache.rows.forEach((r) => { counts[r.slug] = [r.copies, r.tries, r.views]; });
   const top = popCache.rows.slice(0, 30).map((r) => {
     const c = CMDS.commands[r.slug];
-    return { slug: r.slug, copies: r.copies, tries: r.tries, catId: c.cat, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
+    return { slug: r.slug, copies: r.copies, tries: r.tries, views: r.views, catId: c.cat, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
   });
   return { counts, top };
 }
-/** Compteur public par commande (copies et clics « Générer ici ») : chaque événement compte, commandes connues seulement ; « score » sert au classement : un essai « Générer ici » vaut 10 copies. */
+/** Compteur public par commande (copies, clics « Générer ici » et pages de détails visitées) : chaque événement compte, commandes connues seulement ; « score » sert au classement : un essai « Générer ici » vaut 10 copies, une visite de la page de détails 0,2 copie (5 visites = 1 copie). */
 async function publicCount(slug, field) {
   if (!CMDS.commands[slug]) return;
-  try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ [field]: FieldValue.increment(1), score: FieldValue.increment(field === 'tries' ? 10 : 1), at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
+  try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ [field]: FieldValue.increment(1), score: FieldValue.increment(field === 'tries' ? 10 : field === 'views' ? 0.2 : 1), at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
 }
 async function statsWrite(b, req) {
   // Les clés pointées doivent passer par update() pour créer des maps imbriquées.
@@ -101,6 +101,13 @@ async function statsWrite(b, req) {
     const slug = key(b.s || b.n);
     u[`cmd.${slug}`] = inc;
     await publicCount(slug, 'copies');
+  } else if (t === 'view') { // page de détails d'une commande ouverte (une fois par visite et par commande)
+    const slug = key(b.s || b.n);
+    if (CMDS.commands[slug]) {
+      u.views = inc;
+      u[`view.${slug}`] = inc;
+      await publicCount(slug, 'views');
+    }
   } else if (t === 'test') {
     u.tests = inc;
     u[`tool.${key(b.tool)}`] = inc;

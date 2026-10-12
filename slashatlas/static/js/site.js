@@ -21,7 +21,7 @@
     } catch (e) {}
   }
   // Les mêmes événements partent aussi vers Google Analytics (si présent) : copie, essai, outil, achat…
-  var GA = { copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', pwa: 'pwa_install', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish', share: 'share', qr: 'qr_add', wa: 'join_group' };
+  var GA = { view: 'view_command', copy: 'copy_command', try: 'try_generate', test: 'open_tool', nopub: 'click_no_ads', video: 'video_play', pwa: 'pwa_install', buyopen: 'begin_checkout', paytry: 'add_payment_info', cardwish: 'card_wish', share: 'share', qr: 'qr_add', wa: 'join_group' };
   function toGa(t, d) { try { if (window.gtag && GA[t]) window.gtag('event', GA[t], { command: d.s || d.n || '', tool: d.tool || '', method: d.m || '', page_type: d.p || '' }); } catch (e) {} }
   window.saTrack = track;
   function refClass() {
@@ -38,6 +38,8 @@
   var returning = store('sa_seen') === '1'; store('sa_seen', '1');
   var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
   track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz });
+  // page de détails d'une commande : visite comptée (une fois par visite et par commande), pour savoir quelles commandes attirent
+  if (page === 'cmd') { var cc = document.getElementById('cmd-cnt'), sl = cc && cc.dataset.slug; if (sl && !sstore('sa_v_' + sl)) { sstore('sa_v_' + sl, '1'); track('view', { s: sl }); } }
 
   // ── Langue : l'accueil suit la langue du téléphone (script en tête de page) ; seul un choix explicite est mémorisé ──
   $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang_choice', a.dataset.langSwitch); }); });
@@ -226,17 +228,19 @@
   if (!cards.length && !one && !rail) return;
   var lang = document.body.dataset.lang === 'en' ? 'en' : 'fr', MIN = 1, counts = {};
   // counts[slug] = [copies, essais « Générer ici »] ; le total sert au classement
-  var C = function (slug) { var v = counts[slug]; return v ? v : [0, 0]; };
-  var score = function (slug) { var v = C(slug); return v[0] + 10 * v[1]; }; // un essai « Générer ici » vaut 10 copies
+  var C = function (slug) { var v = counts[slug]; return v ? v : [0, 0, 0]; };
+  var score = function (slug) { var v = C(slug); return v[0] + 10 * v[1] + 0.2 * (v[2] || 0); }; // un essai « Générer ici » vaut 10 copies, une visite de la page de détails 0,2 copie
   var cw = function (n) { return n + ' ' + (n > 1 ? 'copies' : (lang === 'fr' ? 'copie' : 'copy')); };
   var tw = function (n) { return lang === 'fr' ? n + (n > 1 ? ' essais' : ' essai') : n + (n > 1 ? ' tries' : ' try'); };
+  var vw = function (n) { return lang === 'fr' ? n + (n > 1 ? ' visites' : ' visite') : n + (n > 1 ? ' visits' : ' visit'); };
   var label = function (v, full) {
     var out = [];
     if (v[0]) out.push('⧉ ' + (full ? cw(v[0]) : v[0]));
     if (v[1]) out.push('⚡ ' + (full ? tw(v[1]) : v[1]));
+    if (v[2]) out.push('👁 ' + (full ? vw(v[2]) : v[2]));
     return out.join(full ? ' · ' : '  ');
   };
-  var show = function (el, slug, full) { if (!el) return; var v = C(slug); if (v[0] + v[1] >= MIN) { el.textContent = label(v, full); el.title = cw(v[0]) + ' · ' + tw(v[1]); el.hidden = false; } };
+  var show = function (el, slug, full) { if (!el) return; var v = C(slug); if (v[0] + v[1] + (v[2] || 0) >= MIN) { el.textContent = label(v, full); el.title = cw(v[0]) + ' · ' + tw(v[1]) + ' · ' + vw(v[2] || 0); el.hidden = false; } };
   function paint() {
     Array.prototype.forEach.call(cards, function (c) { show(c.querySelector('.cnt'), c.dataset.slug, false); });
     if (one) show(one, one.dataset.slug, true);
@@ -254,7 +258,7 @@
   var PRI = ['mode', 'produit', 'beaute'];
   function railFill(top) {
     if (!rail) return;
-    var pool = top.map(function (r) { r.score = r.copies + 10 * r.tries; return r; }).filter(function (r) { return r.score > 0; }).sort(function (a, b) { return b.score - a.score; });
+    var pool = top.map(function (r) { r.score = r.copies + 10 * r.tries + 0.2 * (r.views || 0); return r; }).filter(function (r) { return r.score > 0; }).sort(function (a, b) { return b.score - a.score; });
     if (!pool.length) return;
     var picked = [], per = {};
     var take = function (r) { picked.push(r); per[r.catId] = (per[r.catId] || 0) + 1; };
