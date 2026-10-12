@@ -271,7 +271,7 @@
     });
   }
   function bar() {
-    return '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
   }
   function tabs() {
     if (!root.dataset.vurl) return '';
@@ -303,6 +303,10 @@
         (root.dataset.wa ? '<p class="wastudio"><span>' + T.waStudio + '</span> <a href="' + esc(root.dataset.wa) + '" target="_blank" rel="noopener" data-wa="studio">' + T.waJoin + '</a></p>' : '') + '<small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '') +
       histSection();
     bind();
+    if (state.user && location.hash === '#account') {
+      var acc = document.getElementById('account');
+      if (acc) { acc.scrollIntoView({ behavior: 'smooth', block: 'start' }); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+    }
     var hw = root.querySelector('.shist-wrap');
     if (hw) {
       hw.addEventListener('toggle', function () {

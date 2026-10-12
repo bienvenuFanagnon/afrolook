@@ -50,7 +50,7 @@
     function applyUser(n) {
       if (!n) return;
       named = n;
-      btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); });
+      btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); if (b.dataset.inHref) b.href = b.dataset.inHref; });
     }
     applyUser(named);
     // Charger auth.js en arrière-plan pour mettre à jour le bouton si la session Firebase est active
