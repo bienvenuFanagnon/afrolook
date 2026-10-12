@@ -46,7 +46,8 @@ class CardExport {
     if (boundary == null) throw StateError('Carte introuvable');
     // laisse une image au moteur pour finir de peindre
     await WidgetsBinding.instance.endOfFrame;
-    if (boundary.debugNeedsPaint) await Future<void>.delayed(const Duration(milliseconds: 40));
+    // (pas de `debugNeedsPaint` : en version publiée ce getter lève une LateError, il n'existe qu'en mode debug)
+    await Future<void>.delayed(const Duration(milliseconds: 40));
     Object? last;
     for (final width in [exportWidth, 810.0, 540.0]) {
       ui.Image? image;
