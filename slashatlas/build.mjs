@@ -39,8 +39,8 @@ const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 
 const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
 
 const P = {
-  fr: { home: '/', cmds: '/commandes/', try: '/generer/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/generer/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -142,6 +142,31 @@ const BEST = {
 };
 const bestTag = (l) => `<span class="best-tag">${BEST[l].tag}</span>`;
 const bestBox = (l, slug) => `<div class="best"><div class="best-h">${bestTag(l)}<b>${BEST[l].t}</b></div><ul>${BEST[l].li.map((x) => `<li>${x}</li>`).join('')}</ul><a class="btn pri" href="${P[l].try}?c=${slug}" data-try="${slug}">${BEST[l].cta}</a></div>`;
+// Parrainage : commission en crédits (voir REF dans functions/studio.js). Les chiffres viennent de la même table que le serveur.
+const REFC = { p6: 1, p20: 3, p55: 8, p160: 24 };
+const REFT = {
+  fr: { k: 'Parrainage', h: 'Gagnez des crédits gratuits', lead: 'Partagez votre lien. Quand un ami crée un compte et achète des crédits, vous gagnez des crédits en plus.',
+    strip: 'Générez gratuitement : parrainez un ami, gagnez des crédits.', stripBtn: 'Obtenir mon lien', cart: 'Plus de crédit ? Gagnez-en gratuitement : parrainez un ami.',
+    steps: [['1', 'Copiez votre lien', 'Chaque compte a son lien personnel.'], ['2', 'Votre ami crée un compte', 'Avec Google, en quelques secondes.'], ['3', 'Il achète des crédits', 'Vous recevez environ 15 % de crédits en plus.']],
+    tabH: 'Ce que vous gagnez', tabRow: (pk, n) => `Pack de ${pk} crédits : <b>+${n} crédit${n > 1 ? 's' : ''}</b>`, small: 'Pendant 12 mois pour chaque ami, en crédits (pas en argent), sur les achats par mobile money.',
+    login: 'Continuer avec Google', loginNote: 'Connectez-vous pour obtenir votre lien de parrainage.', link: 'Votre lien', copy: 'Copier', copied: 'Copié ✓', wa: 'Partager sur WhatsApp', share: 'Partager',
+    n1: 'Amis inscrits', n2: 'Ont acheté', n3: 'Crédits gagnés', listH: 'Vos amis', none: 'Aucun ami pour le moment. Partagez votre lien !', bought: 'a acheté', joined: 'inscrit', gen: 'Générer une affiche', shareText: 'Crée tes affiches avec l’IA sur SlashAtlas :', title: 'Parrainage : gagnez des crédits gratuits | SlashAtlas', desc: 'Partagez votre lien SlashAtlas et gagnez des crédits gratuits quand vos amis achètent des crédits.' },
+  en: { k: 'Referral', h: 'Earn free credits', lead: 'Share your link. When a friend creates an account and buys credits, you earn extra credits.',
+    strip: 'Generate for free: refer a friend, earn credits.', stripBtn: 'Get my link', cart: 'Out of credits? Earn some for free: refer a friend.',
+    steps: [['1', 'Copy your link', 'Every account has its own link.'], ['2', 'Your friend creates an account', 'With Google, in seconds.'], ['3', 'They buy credits', 'You get about 15% extra credits.']],
+    tabH: 'What you earn', tabRow: (pk, n) => `${pk}-credit pack: <b>+${n} credit${n > 1 ? 's' : ''}</b>`, small: 'For 12 months per friend, in credits (not cash), on mobile money purchases.',
+    login: 'Continue with Google', loginNote: 'Sign in to get your referral link.', link: 'Your link', copy: 'Copy', copied: 'Copied ✓', wa: 'Share on WhatsApp', share: 'Share',
+    n1: 'Friends joined', n2: 'Bought credits', n3: 'Credits earned', listH: 'Your friends', none: 'No friends yet. Share your link!', bought: 'bought', joined: 'joined', gen: 'Create a poster', shareText: 'Create posters with AI on SlashAtlas:', title: 'Referral: earn free credits | SlashAtlas', desc: 'Share your SlashAtlas link and earn free credits when your friends buy credits.' },
+};
+const refStrip = (l, cls = '') => `<a class="refstrip ${cls}" href="${P[l].ref}" data-ref-cta><span aria-hidden="true">🎁</span><b>${REFT[l].strip}</b><i>${REFT[l].stripBtn} ›</i></a>`;
+function refPage(l) {
+  const t = REFT[l], p = P[l];
+  const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="lead">${t.lead}</p>
+<ol class="refsteps">${t.steps.map((x) => `<li><span>${x[0]}</span><div><b>${x[1]}</b><small>${x[2]}</small></div></li>`).join('')}</ol>
+<div class="reftab"><b>${t.tabH}</b>${[6, 20, 55, 160].map((pk) => `<p>${t.tabRow(pk, REFC['p' + pk])}</p>`).join('')}<small>${t.small}</small></div>
+<div id="ref" data-t="${esc(JSON.stringify({ login: t.login, loginNote: t.loginNote, link: t.link, copy: t.copy, copied: t.copied, wa: t.wa, share: t.share, n1: t.n1, n2: t.n2, n3: t.n3, listH: t.listH, none: t.none, bought: t.bought, joined: t.joined, gen: t.gen, shareText: t.shareText, tryUrl: p.try, locale: l }))}"></div></div>`;
+  emit(l, 'ref', p.ref, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.ref, P.en.ref), noindex: true, extraJs: '/js/referral.js' });
+}
 
 // Publicité Google AdSense : les emplacements sont masqués dans la page ; le script du site les active
 // seulement si l'administration a activé la publicité (réglages lus via /api/config). Jamais sur /generer/ ni /admin/.
@@ -351,6 +376,7 @@ ${showcase(l)}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H
 ${examplesRail(l)}
 <div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>${ad('lb', l)}
 <div class="tools"><span>${H.tools}</span><b>ChatGPT</b><b>Gemini</b><b>Midjourney</b><b>Veo</b><b>Runway</b></div>${studioStrip(l)}
+${refStrip(l, 'big')}
 ${videoBlock(l)}
 <div class="sec"><h2>${H.cats}</h2></div><div class="cats">${cats}</div>
 <div class="gap"></div>${tuto(l)}${ad('rect', l)}${waCard(l, 'home')}${band(l)}</div>`;
@@ -395,7 +421,7 @@ const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] 
   const fsteps = FS[l].map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x}</b></li>`).join('');
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 <div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]}${c.kind === 'text' ? '' : ' · ' + c.ratio}</div><h1>${esc(ct.title)}</h1></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' || c.kind === 'motion' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
-<div class="fbody">${adapt}${brandBox}${saleBox}${canGen(c) ? bestBox(l, c.slug) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
+<div class="fbody">${adapt}${brandBox}${saleBox}${canGen(c) ? bestBox(l, c.slug) + refStrip(l) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
 ${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b>${canGen(c) ? `<p class="best-after">${bestTag(l)} ${BEST[l].after} <a href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]} →</a></p>` : ''}${waCard(l, 'after')}<div class="grid">${rel.map((x) => card(x, l)).join('')}</div>${ad('rect', l, true)}</div></div></div>
@@ -517,7 +543,7 @@ fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 { const sw = path.join(dist, 'sw.js'); fs.writeFileSync(sw, fs.readFileSync(sw, 'utf8').replace(/__V__/g, createHash('sha1').update(V.js + V.css + Date.now()).digest('hex').slice(0, 8))); } // une version du service worker par construction
 for (const l of ['fr', 'en']) {
-  home(l); studioPage(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); guidesIndexPage(l); GUIDES.forEach((g) => guidePage(l, g)); tryPage(l);
+  home(l); studioPage(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); guidesIndexPage(l); GUIDES.forEach((g) => guidePage(l, g)); tryPage(l); refPage(l); refPage(l);
   for (const c of CATEGORIES) catPage(l, c);
   for (const c of COMMANDS) cmdPage(l, c);
 }

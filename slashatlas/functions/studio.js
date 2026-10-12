@@ -31,6 +31,13 @@ const PACKS = [
 // Pass « sans pub » : 30 jours sans publicité sur tout le site. Prix affiché en dollars (usd), payé en FCFA par mobile money (xof) ou en dollars par carte ; frais de paiement en plus, comme pour les crédits.
 const PASS = { id: 'nopub', days: 30, xof: 1000, usd: 1.7, pass: true };
 const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PASS : null);
+// Parrainage : le parrain gagne des CRÉDITS (jamais d'argent) quand un filleul achète des crédits par mobile money.
+// Calcul de rentabilité : un crédit nous coûte ≈ 40 FCFA (Gemini) et se vend 69 à 83 FCFA ; les frais de paiement sont payés par le client.
+// Commission ≈ 15 % en crédits (p6 : 1, p20 : 3, p55 : 8, p160 : 24) → marge brute après commission, si tous les crédits sont utilisés :
+// p6 ≈ 49 %, p20 ≈ 39 %, p55 ≈ 35 %, p160 ≈ 33 %. Aucune récompense à l'inscription (pas de faux comptes rentables), durée limitée à 12 mois.
+const REF = { credits: { p6: 1, p20: 3, p55: 8, p160: 24 }, months: 12, listMax: 50 };
+const REF_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const newRefCode = () => Array.from(crypto.randomBytes(7), (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join('');
 // Plafonds de sécurité (par jour, UTC)
 const LIMITS = { userPerDay: 40, globalPerDay: 400 };
 
@@ -89,10 +96,11 @@ const fail = (status, code) => Object.assign(new Error(code), { status, code });
 
 // ───────── comptes ─────────
 /** Retrouve le compte ou le crée à la première connexion Google (jamais deux fois). */
-async function me(u) {
+async function me(u, opts = {}) {
   const ref = db().collection('StudioUsers').doc(u.uid);
   let created = false;
   let data;
+  const wanted = /^[A-Z0-9]{7}$/.test(String(opts.ref || '').toUpperCase()) ? String(opts.ref).toUpperCase() : '';
   await db().runTransaction(async (tx) => {
     const s = await tx.get(ref);
     if (s.exists) {
@@ -108,8 +116,76 @@ async function me(u) {
     const stat = db().collection('SlashAtlasStats').doc(day());
     await stat.set({ day: day() }, { merge: true });
     await stat.update({ accounts: FieldValue.increment(1) });
+    if (wanted) await attachReferrer(u, wanted).catch((e) => console.error('referral attach', e && e.message));
   }
-  return { uid: u.uid, email: u.email, name: u.name || data.name || '', credits: data.credits || 0, adFreeUntil: data.adFreeUntil || 0, created };
+  const code = await ensureRefCode(u.uid);
+  return { uid: u.uid, email: u.email, name: u.name || data.name || '', credits: data.credits || 0, adFreeUntil: data.adFreeUntil || 0, created, refCode: code };
+}
+
+// ───────── parrainage ─────────
+/** Code de parrainage du compte (créé une seule fois) et table de correspondance code → compte. */
+async function ensureRefCode(uid) {
+  const user = db().collection('StudioUsers').doc(uid);
+  const cur = (await user.get()).data() || {};
+  if (cur.refCode) return cur.refCode;
+  for (let i = 0; i < 6; i++) {
+    const code = newRefCode();
+    const cref = db().collection('StudioRefCodes').doc(code);
+    const ok = await db().runTransaction(async (tx) => {
+      const [c, u2] = await Promise.all([tx.get(cref), tx.get(user)]);
+      if (u2.data() && u2.data().refCode) return u2.data().refCode;
+      if (c.exists) return null;
+      tx.set(cref, { uid, at: FieldValue.serverTimestamp() });
+      tx.update(user, { refCode: code });
+      return code;
+    });
+    if (ok) return ok;
+  }
+  return '';
+}
+/** Rattache un compte qui vient d'être créé à son parrain (une seule fois, jamais à soi-même). */
+async function attachReferrer(u, code) {
+  const c = await db().collection('StudioRefCodes').doc(code).get();
+  if (!c.exists || c.data().uid === u.uid) return false;
+  const parrain = (await db().collection('StudioUsers').doc(c.data().uid).get()).data();
+  if (!parrain || (parrain.email || '').toLowerCase() === String(u.email || '').toLowerCase()) return false;
+  const rref = db().collection('StudioReferrals').doc(u.uid);
+  const made = await db().runTransaction(async (tx) => {
+    if ((await tx.get(rref)).exists) return false;
+    tx.set(rref, { referrer: c.data().uid, referee: u.uid, name: String(u.name || u.email || '').split(' ')[0].slice(0, 20), emailMask: maskEmail(u.email), code, createdAt: FieldValue.serverTimestamp(), bought: false, earned: 0, orders: 0 });
+    tx.update(db().collection('StudioUsers').doc(u.uid), { referredBy: c.data().uid });
+    tx.update(db().collection('StudioUsers').doc(c.data().uid), { refCount: FieldValue.increment(1) });
+    return true;
+  });
+  if (made) await bump({ referrals: 1 });
+  return made;
+}
+const maskEmail = (e) => { const [a, d] = String(e || '').split('@'); return a ? `${a.slice(0, 2)}***@${(d || '').slice(0, 1)}***` : ''; };
+/** Commission en crédits pour le parrain d'un acheteur, une seule fois par commande (journal à identifiant fixe). */
+async function referralReward(o, orderId) {
+  if (!o || o.days || !o.credits || o.provider === 'feexpay_card') return; // pass sans pub et cartes (risque de rétrofacturation) : pas de commission
+  const n = REF.credits[o.packId] || 0; if (!n) return;
+  const rref = db().collection('StudioReferrals').doc(o.uid);
+  const rs = await rref.get(); if (!rs.exists) return;
+  const r = rs.data();
+  const created = r.createdAt && r.createdAt.toMillis ? r.createdAt.toMillis() : Date.now();
+  if (Date.now() > created + REF.months * 30.5 * 86400000) return;
+  const res = await addCredits(r.referrer, n, 'referral', orderId, { from: o.uid, packId: o.packId });
+  if (!res.applied) return;
+  await db().runTransaction(async (tx) => {
+    const x = (await tx.get(rref)).data();
+    tx.update(rref, { earned: FieldValue.increment(n), orders: FieldValue.increment(1), bought: true, lastAt: FieldValue.serverTimestamp() });
+    tx.update(db().collection('StudioUsers').doc(r.referrer), { refCredits: FieldValue.increment(n), ...(x.bought ? {} : { refBuyers: FieldValue.increment(1) }) });
+  });
+  await bump({ referral_credits: n });
+}
+/** Tableau de bord du parrain : lien, nombre de filleuls, acheteurs, crédits gagnés, derniers filleuls. */
+async function referrals(u) {
+  const code = await ensureRefCode(u.uid);
+  const d = (await db().collection('StudioUsers').doc(u.uid).get()).data() || {};
+  const q = await db().collection('StudioReferrals').where('referrer', '==', u.uid).limit(REF.listMax).get();
+  const items = q.docs.map((x) => { const r = x.data(); return { name: r.name || r.emailMask || '—', at: r.createdAt && r.createdAt.toMillis ? r.createdAt.toMillis() : 0, bought: !!r.bought, earned: r.earned || 0 }; }).sort((a, b) => b.at - a.at);
+  return { code, count: d.refCount || 0, buyers: d.refBuyers || 0, credits: d.refCredits || 0, items, rule: { credits: REF.credits, months: REF.months } };
 }
 
 // ───────── crédits ─────────
@@ -427,6 +503,7 @@ async function settle(orderId) {
     if (o.days) adFreeUntil = (await addAdFree(o.uid, o.days, orderId, { price: o.price, currency: o.currency, operator: o.operator })).until;
     else await addCredits(o.uid, o.credits, 'purchase', orderId, { price: o.price, currency: o.currency, operator: o.operator });
     await oref.update({ status: 'paid', paidAt: FieldValue.serverTimestamp() });
+    await referralReward(o, orderId).catch((e) => console.error('referral reward', e && e.message));
     const stat = db().collection('SlashAtlasStats').doc(day());
     await stat.set({ day: day() }, { merge: true });
     await stat.update({ orders: FieldValue.increment(1), revenueXof: FieldValue.increment(o.price), [`orders_paid_op.${o.operator}`]: FieldValue.increment(1), ...(o.days ? { adfree_orders: FieldValue.increment(1) } : {}) });
@@ -461,6 +538,7 @@ function publicConfig() {
     packs: [...PACKS, PASS],
     currency: 'XOF',
     card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout, packs: CARD_LIMITS.packs },
+    referral: { credits: REF.credits, months: REF.months },
     termsVersion: TERMS_VERSION,
     operators: OPERATORS.map(({ code, label, country, dial, payin, payout, redirect, otp }) => ({ code, label, country, dial, payin, payout, redirect: !!redirect, otp: !!otp })),
   };
@@ -494,4 +572,4 @@ async function grant(email, n, note) {
   return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
 }
 
-module.exports = { grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini };
+module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini };

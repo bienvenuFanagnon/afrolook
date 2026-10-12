@@ -17,7 +17,7 @@
       qrTitle: 'Ajouter un QR code à mon affiche (site, boutique, WhatsApp)', qrWhyT: 'À quoi sert le QR code ?', qrW1: 'Vous collez votre lien ou votre numéro WhatsApp.', qrW2: 'Un petit QR code apparaît sur l’affiche, à l’endroit le plus calme.', qrW3: 'Vos clients le scannent avec leur téléphone et arrivent directement chez vous : pour commander, réserver ou vous écrire, sans rien recopier.', qrWhyEnd: 'Facultatif. Vous pouvez le déplacer, le réduire ou le retirer, gratuitement, même après la génération.', qrLabel: 'Votre lien ou numéro WhatsApp', qrPh: 'ex. maboutique.com ou +225 07 00 00 00 00', qrOpens: 'Le QR code ouvrira :', qrBad: 'Lien non reconnu. Écrivez par exemple maboutique.com', qrLong: 'lien long, le code sera plus dense : préférez un lien court', qrCtaL: 'Texte au-dessus du QR code', qrCta_order: 'Scannez pour commander', qrCta_book: 'Scannez pour réserver', qrCta_contact: 'Scannez pour nous écrire', qrCta_shop: 'Scannez pour voir la boutique', qrPos: 'Emplacement', qrAuto: 'Automatique (conseillé)', qrBL: 'Bas gauche', qrBR: 'Bas droite', qrTL: 'Haut gauche', qrTR: 'Haut droite', qrNone: 'Aucun QR code', qrSize: 'Taille', qrS: 'Petit', qrM: 'Moyen', qrL: 'Grand', qrWarn: 'Ce coin n’avait pas été gardé libre à la génération : vérifiez que le QR code ne cache rien.', qrNote: 'Sous le QR code, « Créé avec slashatlas.com » est une simple information, pas un lien : le QR code ouvre uniquement votre lien.',
       share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareImg: 'Partager l’image', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
       waStudio: 'Des surprises pour les créateurs arrivent sur notre canal WhatsApp.', waJoin: 'Rejoindre le canal',
-      noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
+      refShort: 'Gagner des crédits', refNone: 'Plus de crédit ? Générez gratuitement : parrainez un ami, gagnez des crédits.', refGo: 'Mon lien', noCredit: 'Il vous faut des crédits pour générer.', balance: 'Solde',
       help: 'Un souci de paiement ? Écrivez-nous :', buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n’expirent pas.', popular: 'Populaire', perCredit: 'par crédit', pay: 'Payer', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.',
       feeLineCard: 'Pack {p} + frais de paiement {f}', usdNote: 'Prix en dollars. Par mobile money, le montant est converti en FCFA.',
       termsTag: 'À cocher pour payer', passUnit: 'jours', passTag: 'Sans pub', passOne: 'Pass sans pub', passWhat: 'sur tout le site', passTitle: 'Pass sans pub · 30 jours', passSub: 'Aucune publicité pendant 30 jours. Sans renouvellement automatique.', noAdsUntil: 'Sans pub jusqu’au {d}', paidPass: 'Paiement reçu : pass sans pub activé', passLogin: 'Connectez-vous pour activer votre pass sans pub (30 jours).', passBuy: 'Activer le pass sans pub',
@@ -35,7 +35,7 @@
       qrTitle: 'Add a QR code to my poster (website, shop, WhatsApp)', qrWhyT: 'What is the QR code for?', qrW1: 'You paste your link or your WhatsApp number.', qrW2: 'A small QR code appears on the poster, in the calmest spot.', qrW3: 'Your customers scan it with their phone and land straight on your page: to order, book or message you, without typing anything.', qrWhyEnd: 'Optional. You can move it, shrink it or remove it, for free, even after generation.', qrLabel: 'Your link or WhatsApp number', qrPh: 'e.g. myshop.com or +225 07 00 00 00 00', qrOpens: 'The QR code will open:', qrBad: 'Link not recognized. Write for example myshop.com', qrLong: 'long link, the code will be denser: prefer a short link', qrCtaL: 'Text above the QR code', qrCta_order: 'Scan to order', qrCta_book: 'Scan to book', qrCta_contact: 'Scan to message us', qrCta_shop: 'Scan to see the shop', qrPos: 'Position', qrAuto: 'Automatic (recommended)', qrBL: 'Bottom left', qrBR: 'Bottom right', qrTL: 'Top left', qrTR: 'Top right', qrNone: 'No QR code', qrSize: 'Size', qrS: 'Small', qrM: 'Medium', qrL: 'Large', qrWarn: 'This corner was not kept free during generation: check that the QR code hides nothing.', qrNote: 'Under the QR code, “Made with slashatlas.com” is just information, not a link: the QR code only opens your link.',
       share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareImg: 'Share the image', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
       waStudio: 'Surprises for creators are coming on our WhatsApp channel.', waJoin: 'Join the channel',
-      noCredit: 'You need credits to generate.', balance: 'Balance',
+      refShort: 'Earn credits', refNone: 'Out of credits? Generate for free: refer a friend, earn credits.', refGo: 'My link', noCredit: 'You need credits to generate.', balance: 'Balance',
       help: 'Payment problem? Write to us:', buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', popular: 'Popular', perCredit: 'per credit', pay: 'Pay', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.',
       feeLineCard: 'Pack {p} + payment fees {f}', usdNote: 'Prices in US dollars. With mobile money, the amount is converted to FCFA.',
       termsTag: 'Tick to pay', passUnit: 'days', passTag: 'No ads', passOne: 'No-ads pass', passWhat: 'on the whole site', passTitle: 'No-ads pass · 30 days', passSub: 'No advertising for 30 days. No automatic renewal.', noAdsUntil: 'Ad-free until {d}', paidPass: 'Payment received: no-ads pass activated', passLogin: 'Sign in to activate your no-ads pass (30 days).', passBuy: 'Activate the no-ads pass',
@@ -271,7 +271,7 @@
     });
   }
   function bar() {
-    return '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+    return '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
   }
   function tabs() {
     if (!root.dataset.vurl) return '';
@@ -289,7 +289,7 @@
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < 1 ? T.buy : T.genCost;
     if (state.mode === 'video') { root.innerHTML = bar() + tabs() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
-    root.innerHTML = bar() + tabs() +
+    root.innerHTML = bar() + (state.credits < 1 ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') + tabs() +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
@@ -463,7 +463,7 @@
           '<div class="two"><label>' + T.city + '<input id="c-city" autocomplete="address-level2"></label><label>' + T.zip + '<input id="c-zip" autocomplete="postal-code"></label></div>' +
           '<label>' + T.countryCard + '<select id="c-country">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc(countryName(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + T.cardInfo + '</p>';
       }
-      modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' +
+      modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' + (pk.days ? '' : '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refShort + '</b><i>' + T.refGo + ' ›</i></a>') +
         '<div class="packs">' + cfg.packs.slice().sort(function (x, y) { return (x.days ? 1 : 0) - (y.days ? 1 : 0); }).map(function (p) { return '<button type="button" class="pack' + (p.days ? ' passtile' : '') + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + (p.days ? '<b>' + p.days + ' ' + T.passUnit + '</b><span>' + T.passTag + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>' : '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>') + '</button>'; }).join('') + '</div>' + tabs + form +
         '<p class="hint soft">' + T.feeNote + '</p><label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span><b class="ttag">' + T.termsTag + '</b>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
         '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo + ' ' + usd(pk.usd) : T.pay + ' ' + fmt(pk.xof) + ' FCFA') + '</button><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p>' + (CONTACT ? '<p class="hint soft">' + T.help + ' <a href="mailto:' + CONTACT + '">' + CONTACT + '</a></p>' : '') + '</div>';
@@ -535,6 +535,10 @@
 
   function maybePass() { if (wantPass && state.user && state.cfg && !state.adFreeUntil && state.meLoaded) { wantPass = false; openBuy('pass'); } }
 
+  // ── parrainage ──
+  function savedRef() { try { var o = JSON.parse(localStorage.getItem('sa_ref') || 'null'); return o && Date.now() - o.t < 60 * 864e5 ? o.c : ''; } catch (e) { return ''; } }
+  function refUrl() { return L === 'en' ? '/en/referral/' : '/parrainage/'; }
+
   // ── démarrage ──
   saleLoad();
   import('/js/auth.js');
@@ -542,7 +546,7 @@
   document.addEventListener('sa:auth', function (e) {
     var u = e.detail.user; state.user = u;
     if (!u) { state.checking = false; state.credits = 0; state.result = null; render(); return; }
-    window.slashAuth.call('me').then(function (r) {
+    window.slashAuth.call('me', { ref: savedRef() }).then(function (r) {
       state.checking = false;
       if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); }
       else { render(); msg(errText(r.data && r.data.error)); }

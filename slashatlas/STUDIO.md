@@ -103,3 +103,11 @@ Affichée sur les pages de commande (bloc « Pourquoi générer ici ? » + bouto
 4. **Retouche gratuite après génération** (QR, textes).
 
 À mesurer pour confirmer la promesse : comparer dans `/admin` « essais » (Générer ici) et « copies » par commande ; la partie Gemini (clause qualité, `polishPhoto`) n'a pas encore été testée en production avec la clé de l'API.
+
+## Parrainage (crédits gratuits)
+
+- Chaque compte a un code de 7 caractères (`StudioUsers.refCode`, table `StudioRefCodes`) ; lien `https://slashatlas.com/?ref=CODE`, mémorisé 60 jours (`sa_ref`, `site.js`) et envoyé à la création du compte (`/api/me`, `attachReferrer`). Jamais à soi-même, jamais pour un compte déjà existant.
+- Récompense : **crédits uniquement**, versés quand le filleul **paie** un pack par mobile money (`referralReward`, appelée dans `settle`, une seule fois par commande via le journal `referral_<commande>`). Rien à l'inscription (pas de faux comptes rentables), rien sur le pass sans pub ni sur les paiements par carte (rétrofacturation), 12 mois par filleul.
+- Barème : p6 → 1, p20 → 3, p55 → 8, p160 → 24 crédits (≈ 15 %). Un crédit coûte ≈ 40 FCFA (Gemini) ; marge brute si tous les crédits (achetés + commission) sont utilisés : p6 ≈ 49 %, p20 ≈ 39 %, p55 ≈ 35 %, p160 ≈ 33 %. Un auto-parrainage revient à un rabais d'environ 10 % pour le fraudeur, jamais à une perte.
+- Tableau de bord : page `/parrainage/` (`/en/referral/`), API `/api/referrals` : lien, amis inscrits (`refCount`), acheteurs (`refBuyers`), crédits gagnés (`refCredits`), 50 derniers amis (`StudioReferrals`, nom masqué). Compteurs globaux dans `SlashAtlasStats` (`referrals`, `referral_credits`).
+- Appels à l'action : accueil, page de détail d'une commande, Studio (bouton « Gagner des crédits », bandeau quand le solde est à 0, lien dans la fenêtre d'achat).

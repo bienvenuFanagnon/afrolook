@@ -41,6 +41,12 @@
   // page de détails d'une commande : visite comptée (une fois par visite et par commande), pour savoir quelles commandes attirent
   if (page === 'cmd') { var cc = document.getElementById('cmd-cnt'), sl = cc && cc.dataset.slug; if (sl && !sstore('sa_v_' + sl)) { sstore('sa_v_' + sl, '1'); track('view', { s: sl }); } }
 
+  // ── Parrainage : le code du lien (?ref=…) est gardé 60 jours ; il est envoyé à la création du compte ──
+  try {
+    var rm = /[?&]ref=([A-Za-z0-9]{7})(?:&|$)/.exec(location.search);
+    if (rm) localStorage.setItem('sa_ref', JSON.stringify({ c: rm[1].toUpperCase(), t: Date.now() }));
+  } catch (e) {}
+
   // ── Langue : l'accueil suit la langue du téléphone (script en tête de page) ; seul un choix explicite est mémorisé ──
   $$('[data-lang-switch]').forEach(function (a) { a.addEventListener('click', function () { store('sa_lang_choice', a.dataset.langSwitch); }); });
 
