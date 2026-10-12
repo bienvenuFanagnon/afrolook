@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:186049947777:android:e3723d966eb10f6c940580",
+        "mobilesdk_app_id": "1:186049947777:android:f64288b4f2308d02940580",
         "android_client_info": {
-          "package_name": "com.afrotok.afrotok"
+          "package_name": "com.afrokids.afrokids"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "186049947777-j9cb95dngm1ci6i4qnihmes6bkdlpka3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC1vsKOoO9bPH9CKIVROA7KIyd_pq3uGiI"
@@ -20,9 +25,110 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "186049947777-j9cb95dngm1ci6i4qnihmes6bkdlpka3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "186049947777-33hhkff9d4cb5hi5j4vqre1sf0psh9v3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.afroshop.afroshop"
+              }
+            }
+          ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:186049947777:android:c6bd9be20868f228940580",
+        "android_client_info": {
+          "package_name": "com.afroshop.afroshop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "186049947777-j9cb95dngm1ci6i4qnihmes6bkdlpka3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1vsKOoO9bPH9CKIVROA7KIyd_pq3uGiI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "186049947777-j9cb95dngm1ci6i4qnihmes6bkdlpka3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "186049947777-33hhkff9d4cb5hi5j4vqre1sf0psh9v3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.afroshop.afroshop"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:186049947777:android:e3723d966eb10f6c940580",
+        "android_client_info": {
+          "package_name": "com.afrotok.afrotok"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "186049947777-colggmi2iatvfl34e3negvvbq7g53m6f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.afrotok.afrotok",
+            "certificate_hash": "7f4949e0cce0529c46abc8c36fefd9bb32fcd15b"
+          }
+        },
+        {
+          "client_id": "186049947777-jtsa9soivdpjeknn037p4p82pb3b779n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.afrotok.afrotok",
+            "certificate_hash": "de29956f1dcac8ae96d3c37d6482feb6e99c7b77"
+          }
+        },
+        {
+          "client_id": "186049947777-j9cb95dngm1ci6i4qnihmes6bkdlpka3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1vsKOoO9bPH9CKIVROA7KIyd_pq3uGiI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "186049947777-j9cb95dngm1ci6i4qnihmes6bkdlpka3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "186049947777-33hhkff9d4cb5hi5j4vqre1sf0psh9v3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.afroshop.afroshop"
+              }
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-4937249920200692~5171972878"
     }
   ],
   "configuration_version": "1"

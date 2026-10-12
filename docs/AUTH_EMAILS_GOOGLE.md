@@ -10,7 +10,7 @@
 - Code : `lib/services/auth/google_auth_service.dart`, `lib/pages/auth/authTest/components/google_sign_in_button.dart` (bouton sur Connexion et Inscription).
 - Compte Google déjà complet → connexion directe. Sans profil Afrolook → `SignUpScreen(googleUser)` puis `SignUpFormEtap3(googleUser)` : pas d'e-mail ni de mot de passe à saisir, pas de validation d'e-mail, même profil qu'une inscription classique. Le retour en arrière supprime le compte Google sans profil (pour que l'adresse puisse s'inscrire ensuite avec un mot de passe).
 - Même adresse qu'un compte e-mail existant : Firebase rattache Google à ce compte (adresse Google vérifiée), la personne retrouve son profil.
-- Le bouton n'apparaît sur iPhone que si `GoogleService-Info.plist` contient `CLIENT_ID` (sinon plantage au retour de Google).
+- Configuration faite le 12/10/2026 : Google activé dans Firebase, `google-services.json` et `GoogleService-Info.plist` mis à jour, schéma d’URL iPhone ajouté dans `Info.plist`. Le bouton n’apparaît sur iPhone que si `GoogleService-Info.plist` contient `CLIENT_ID`.
 
 ### Configuration requise (console Firebase, projet afrolooki)
 1. Authentication → Méthode de connexion → **Google** → Activer (e-mail d'assistance) → Enregistrer.
