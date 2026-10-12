@@ -408,7 +408,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
     if (_selectedActionType == 'whatsapp') {
       if (_whatsappController.text.isEmpty) { _showError('Numéro WhatsApp requis'); return; }
-    } else {
+    } else if (_selectedActionType != 'none') {
       if (_actionUrlController.text.isEmpty || !_actionUrlController.text.startsWith('http')) {
         _showError('Lien valide requis (http:// ou https://)'); return;
       }
@@ -442,9 +442,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     try {
 
       final now = DateTime.now().microsecondsSinceEpoch;
-      final String actionUrl = _selectedActionType == 'whatsapp'
-          ? 'https://wa.me/${_whatsappController.text.replaceAll(RegExp(r'[^0-9+]'), '')}'
-          : _actionUrlController.text;
+      final String? actionUrl = _selectedActionType == 'none'
+          ? null
+          : _selectedActionType == 'whatsapp'
+              ? 'https://wa.me/${_whatsappController.text.replaceAll(RegExp(r'[^0-9+]'), '')}'
+              : _actionUrlController.text;
       final int durationDays = _selectedDurationWeeks! * 7;
       final List<String> targetCountries = _selectAllCountries
           ? AfricanCountry.everyCountry.map((c) => c.code).toList()
@@ -598,6 +600,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       case 'visit': return 'Visiter';
       case 'learn_more': return 'En savoir plus';
       case 'whatsapp': return 'WhatsApp';
+      case 'none': return '';
       default: return 'Action';
     }
   }
@@ -952,6 +955,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               _buildActionChip('Visiter', 'visit', Icons.language),
               _buildActionChip('En savoir plus', 'learn_more', Icons.info),
               _buildActionChip('WhatsApp', 'whatsapp', MaterialCommunityIcons.whatsapp),
+              _buildActionChip('Sans bouton', 'none', Icons.remove_circle_outline),
             ]),
             if (_selectedActionType == 'whatsapp')
               Padding(
