@@ -196,7 +196,25 @@
     }
     input.addEventListener('input', build);
     if (bb) $$('input', bb).forEach(function (i) { i.addEventListener('input', build); });
-    if (sb) { $$('input,select', sb).forEach(function (i) { i.addEventListener('input', build); i.addEventListener('change', build); }); build(); }
+    if (sb) {
+      // ce qui est renseigné ici est gardé (localStorage « sa_sale_v1 ») et repris tel quel dans le Studio « Générer ici », et inversement
+      var KEY = 'sa_sale_v1', load = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+      var save = function () {
+        var d = load(); $$('input[data-s]', sb).forEach(function (c) { d[c.dataset.s] = c.checked; });
+        $$('[data-sv]', sb).forEach(function (i) { var k = i.dataset.sv; if (k === 'tagv' || k === 'cur') d[k] = i.value; else d[k + 'V'] = i.value; });
+        try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+      };
+      var d0 = load();
+      $$('input[data-s]', sb).forEach(function (c) { if (typeof d0[c.dataset.s] === 'boolean') c.checked = d0[c.dataset.s]; });
+      $$('[data-sv]', sb).forEach(function (i) {
+        var k = i.dataset.sv, v = k === 'tagv' || k === 'cur' ? d0[k] : d0[k + 'V'];
+        if (v == null || v === '') return;
+        if (i.tagName === 'SELECT' && !Array.prototype.some.call(i.options, function (o) { return o.value === v || o.text === v; })) { var o = document.createElement('option'); o.textContent = v; i.appendChild(o); }
+        i.value = v;
+      });
+      $$('input,select', sb).forEach(function (i) { i.addEventListener('input', function () { save(); build(); }); i.addEventListener('change', function () { save(); build(); }); });
+      build();
+    }
     $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
   });
 })();

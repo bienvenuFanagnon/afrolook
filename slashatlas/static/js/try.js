@@ -68,6 +68,24 @@
       '<select id="s-cmd" aria-label="' + T.change + '">' + Object.keys(data.commands).map(function (k) { return '<option value="' + k + '"' + (k === slug ? ' selected' : '') + '>' + esc(data.commands[k].code + ' · ' + data.commands[k].title) + '</option>'; }).join('') + '</select></div>';
   }
 
+  // ── mémoire partagée avec la page de la commande (« sa_sale_v1 ») : ce qui y est renseigné se retrouve ici, et inversement ──
+  var SALE_KEY = 'sa_sale_v1';
+  function saleLoad() {
+    try {
+      var d = JSON.parse(localStorage.getItem(SALE_KEY) || '{}'), a = state.sale;
+      ['tag', 'price', 'old', 'disc', 'brand', 'contact', 'qr'].forEach(function (k) { if (typeof d[k] === 'boolean') a[k] = d[k]; });
+      if (d.tagv) a.tagv = d.tagv; if (d.cur) a.cur = d.cur; if (d.priceV != null) a.priceV = d.priceV; if (d.oldV != null) a.oldV = d.oldV; if (d.discV != null) a.discV = d.discV;
+      if (d.brandV) state.brand.brand = d.brandV; if (d.contactV) state.brand.contact = d.contactV; if (d.qrV) state.qr.raw = d.qrV;
+    } catch (e) {}
+  }
+  function saleSave() {
+    try {
+      var a = state.sale, d = JSON.parse(localStorage.getItem(SALE_KEY) || '{}');
+      ['tag', 'price', 'old', 'disc', 'brand', 'contact', 'qr'].forEach(function (k) { d[k] = a[k]; });
+      d.tagv = a.tagv; d.cur = a.cur; d.priceV = a.priceV; d.oldV = a.oldV; d.discV = a.discV; d.brandV = state.brand.brand; d.contactV = state.brand.contact; d.qrV = state.qr.raw;
+      localStorage.setItem(SALE_KEY, JSON.stringify(d));
+    } catch (e) {}
+  }
   // ── Affiche de vente : À VENDRE, prix et devise, réduction, marque, contact, petit QR code (cases à cocher) ──
   function saleBox() {
     if (!saleEligible()) return '';
@@ -297,8 +315,8 @@
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
     // affiche de vente : cases, textes, devise, modèle ; recomposition immédiate du résultat (gratuit, dans le navigateur)
-    var st2 = null, applySaleSoon = function () { clearTimeout(st2); st2 = setTimeout(applyQr, 450); };
-    Array.prototype.forEach.call(root.querySelectorAll('[data-sc]'), function (c) { c.addEventListener('change', function () { var k = c.dataset.sc; state.sale[k] = c.checked; if (k === 'on') { render(); applyQr(); return; } var row = c.closest('.chk'); if (row) Array.prototype.forEach.call(row.querySelectorAll('input[type=text],select'), function (x) { x.disabled = !c.checked; }); applySaleSoon(); }); });
+    var st2 = null, applySaleSoon = function () { saleSave(); clearTimeout(st2); st2 = setTimeout(applyQr, 450); };
+    Array.prototype.forEach.call(root.querySelectorAll('[data-sc]'), function (c) { c.addEventListener('change', function () { var k = c.dataset.sc; state.sale[k] = c.checked; saleSave(); if (k === 'on') { render(); applyQr(); return; } var row = c.closest('.chk'); if (row) Array.prototype.forEach.call(row.querySelectorAll('input[type=text],select'), function (x) { x.disabled = !c.checked; }); applySaleSoon(); }); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-sv]'), function (i) {
       var k = i.dataset.sv, ev = i.tagName === 'SELECT' ? 'change' : 'input';
       i.addEventListener(ev, function () {
@@ -518,6 +536,7 @@
   function maybePass() { if (wantPass && state.user && state.cfg && !state.adFreeUntil && state.meLoaded) { wantPass = false; openBuy('pass'); } }
 
   // ── démarrage ──
+  saleLoad();
   import('/js/auth.js');
   fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) { state.cfg = c; maybePass(); }).catch(function () {});
   document.addEventListener('sa:auth', function (e) {
