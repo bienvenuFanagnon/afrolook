@@ -550,3 +550,9 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 .pstart{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--mut);font:700 12px var(--mono);letter-spacing:.04em;text-transform:uppercase}
 .pstart img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--line2)}
 .pstart .aiw{margin-left:auto;font:600 10px var(--mono);letter-spacing:.04em;color:var(--faint);text-transform:none;border:1px solid var(--line2);border-radius:999px;padding:3px 9px}
+
+/* vignettes plus larges : les prix, le contact et le QR code des affiches doivent se lire */
+@media (min-width:720px){.rc{flex-basis:300px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.after .grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1000px){.rc{flex-basis:330px}}
+@media (min-width:1400px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:719px){.card .cl{flex-basis:132px}.card .poster.img{max-height:240px}}

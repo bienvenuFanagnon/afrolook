@@ -88,3 +88,7 @@ L'accueil, la page Studio et le tutoriel changent à chaque visite (`static/js/s
 - **Images d'exemple du site** : `scripts/salemark.mjs` pose ces éléments (modèles, emplacements, marques, prix, devises et contacts variés, QR de 8 à 12 % de l'image) sur les images de base `assets/c-base/<slug>-apres.webp` (hors du site) et écrit `static/img/c/<slug>-apres.webp` et `-t.webp`. Relançable sans risque : `node scripts/salemark.mjs`.
 - **Refaire les images** : `scripts/regen_sale_cf.mjs` (Cloudflare FLUX, gratuit, quota du jour) refait les bases avec une composition qui laisse la place (`CF_ACCOUNT_ID`, `CF_API_TOKEN` en variables d'environnement, jamais dans un fichier) ; une base n'est remplacée que si la nouvelle image est réussie ; reprise le lendemain si le quota est atteint. Ensuite : `node scripts/salemark.mjs && node build.mjs && node check.mjs`, puis déploiement.
 - QR du Studio (hors affiche de vente) plus petit : 8,5 / 11,5 / 16 % de l'image (s / m / l).
+
+### Versions des images et vidéos (cache)
+
+Images et vidéos sont servies avec un cache d'un an (`immutable`) / 7 jours : un fichier remplacé sous le même nom restait chez ceux qui l'avaient déjà vu (vignettes sans affiche de vente, anciennes vidéos d'exemple). `build.mjs` ajoute donc `?v=…` à chaque adresse d'image (`IMGV` : empreinte des noms et tailles de `static/img/c` et `static/img/video`, aussi lue par `site.js` et `try.js` via `data-imgv` sur `<body>`) et à chaque vidéo d'exemple (empreinte du fichier). Rien à faire à la main : il suffit de reconstruire et de déployer.

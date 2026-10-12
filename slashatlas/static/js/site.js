@@ -3,6 +3,7 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var body = document.body, page = body.dataset.page, lang = body.dataset.lang;
+  var IMGQ = (document.body && document.body.dataset.imgv) ? '?v=' + document.body.dataset.imgv : ''; // version des images (voir build.mjs)
   var store = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   var sstore = function (k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) { return null; } };
   var isBot = /bot|crawl|spider|headless|lighthouse/i.test(navigator.userAgent);
@@ -383,7 +384,7 @@
     var ids; try { ids = JSON.parse(el.getAttribute('data-ids')); } catch (e) { return; } if (!ids || !ids.length) return;
     var id = ids[n % ids.length];
     Array.prototype.forEach.call(el.querySelectorAll('img[data-r]'), function (im) {
-      var r = im.getAttribute('data-r'); var src = kind === 'img' ? '/img/c/' + id + '-' + r + '.webp' : '/img/video/' + r + '-' + id + '.webp';
+      var r = im.getAttribute('data-r'); var src = (kind === 'img' ? '/img/c/' + id + '-' + r + '.webp' : '/img/video/' + r + '-' + id + '.webp') + IMGQ;
       if (im.getAttribute('src') !== src) im.setAttribute('src', src);
     });
   });

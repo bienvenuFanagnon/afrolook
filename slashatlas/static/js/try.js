@@ -64,7 +64,7 @@
 
   function cmdBlock() {
     var c = data.commands[slug];
-    return '<div class="scmd"><img src="/img/c/' + (c.img ? slug : 'none') + '-t.webp" alt="" ' + (c.img ? '' : 'hidden') + '><div><small>' + T.cmd + '</small><b>' + esc(c.code) + '</b><span>' + esc(c.title) + '</span></div>' +
+    return '<div class="scmd"><img src="/img/c/' + (c.img ? slug : 'none') + '-t.webp' + (document.body.dataset.imgv ? '?v=' + document.body.dataset.imgv : '') + '" alt="" ' + (c.img ? '' : 'hidden') + '><div><small>' + T.cmd + '</small><b>' + esc(c.code) + '</b><span>' + esc(c.title) + '</span></div>' +
       '<select id="s-cmd" aria-label="' + T.change + '">' + Object.keys(data.commands).map(function (k) { return '<option value="' + k + '"' + (k === slug ? ' selected' : '') + '>' + esc(data.commands[k].code + ' · ' + data.commands[k].title) + '</option>'; }).join('') + '</select></div>';
   }
 

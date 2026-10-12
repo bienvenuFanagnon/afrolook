@@ -25,7 +25,16 @@ const dist = path.join(root, 'dist');
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
 const esc = (s) => String(s).replace(/ ([?!:;»])/g, '\u00a0$1').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const abs = (p) => cfg.domain + p;
-const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
+// Les images et vidéos sont servies « immutable » pendant un an : quand un fichier change (affiches de vente, vidéos d'exemple), un téléphone qui
+// l'a déjà vu garderait l'ancienne version. Chaque adresse porte donc un numéro de version : IMGV (toutes les images, change dès qu'un fichier
+// d'image change de taille ou de nom) et, pour une vidéo, l'empreinte de son contenu.
+const imgVersion = () => { const h = createHash('sha1'); for (const d of ['img/c', 'img/video']) { const dir = path.join(root, 'static', d); if (!fs.existsSync(dir)) continue; for (const f of fs.readdirSync(dir).sort()) h.update(f + ':' + fs.statSync(path.join(dir, f)).size + ';'); } return h.digest('hex').slice(0, 8); };
+const IMGV = imgVersion();
+const mp4Hash = {};
+const versioned = (html) => html
+  .replace(/(\/img\/(?:c|video)\/[A-Za-z0-9_.-]+\.(?:webp|png))(?=["'\s<>,)])/g, `$1?v=${IMGV}`)
+  .replace(/(\/video\/(?:exemples|tuto)\/[A-Za-z0-9_.-]+\.mp4)(?=["'\s<>,)])/g, (m, u) => { const f = path.join(root, 'static', u); if (!(u in mp4Hash)) mp4Hash[u] = fs.existsSync(f) ? createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 8) : ''; return mp4Hash[u] ? `${u}?v=${mp4Hash[u]}` : u; });
+const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, p.endsWith('.html') && typeof c === 'string' ? versioned(c) : c); };
 const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 'static', f))).digest('hex').slice(0, 8);
 const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
 
@@ -190,7 +199,7 @@ function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs
   return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">${key === 'home' ? LANG_JS : ''}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#000000"><meta name="color-scheme" content="dark">${robots}<link rel="canonical" href="${abs(pth)}">${hl}
 <meta property="og:title" content="${esc(ogTitle || title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${abs(pth)}"><meta property="og:site_name" content="${cfg.name}"><meta property="og:image" content="${abs(ogImg)}">${ogDim}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${abs(ogImg)}">
 ${!robots ? [].concat(cfg.adsenseAccount || []).map((a) => `<meta name="google-adsense-account" content="${a}">`).join('') : ''}<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SlashAtlas"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/site.css?v=${V.css}">${ld ? `<script type="application/ld+json">${JSON.stringify(ld)}</script>` : ''}</head>
-<body data-page="${key}" data-lang="${l}"${WA_URL && key !== 'admin' ? ` data-wa="${esc(WA_URL)}"` : ''}><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
+<body data-page="${key}" data-lang="${l}" data-imgv="${IMGV}"${WA_URL && key !== 'admin' ? ` data-wa="${esc(WA_URL)}"` : ''}><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
 <header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a><button class="menubtn" type="button" aria-label="${t.nav.menu}" aria-expanded="false" aria-controls="mnav"><i></i><i></i><i></i></button></header>
 <div class="mnav" id="mnav" hidden><a class="btn pri big" href="${p.try}">${TEST[l]}</a>${[[p.cmds, t.nav.cmds, 'cmds'], [p.pack, t.nav.pack, 'pack'], [p.studio, STUDIO[l].nav, 'studio'], [p.tuto, t.nav.tuto, 'tuto'], [p.guides, t.ft.guides, 'guides'], [p.pro, t.nav.pro, 'pro'], [p.about, t.ft.about, 'about']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('')}</div>
 <main id="main">${body}</main>
