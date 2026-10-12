@@ -1,4 +1,7 @@
 import 'package:afrotok/widgets/language_selector.dart';
+import 'package:afrotok/pages/auth/authTest/components/google_sign_in_button.dart';
+import 'package:afrotok/services/auth/google_auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
@@ -29,7 +32,9 @@ import '../../../../../regles_confidentialite_page.dart';
 const Color primaryGreen = Color(0xFF25D366);
 
 class SignUpScreen extends StatefulWidget {
-  SignUpScreen({Key? key}) : super(key: key);
+  /// Compte déjà connecté avec Google mais sans profil Afrolook : on ne demande ni e-mail ni mot de passe.
+  final User? googleUser;
+  SignUpScreen({Key? key, this.googleUser}) : super(key: key);
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -44,6 +49,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  bool get _google => widget.googleUser != null;
+
+  /// Abandon en cours d'inscription Google : on supprime le compte sans profil puis on revient en arrière.
+  Future<void> _leave() async {
+    if (_google) await GoogleAuthService.abandon();
+    if (mounted) Navigator.pop(context);
+  }
 
   bool onTap = false;
   bool _acceptedTerms = false;
@@ -96,6 +109,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => EulaGate.ensureAccepted(context));
     authProvider.initializeData();
     is_open = false;
+    if (_google) emailController.text = widget.googleUser!.email ?? '';
   }
 
   @override
@@ -111,6 +125,48 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Compte Google sans profil : le retour (bouton ou geste Android) abandonne proprement l'inscription.
+    return PopScope(
+      canPop: !_google,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: _buildScreen(context),
+    );
+  }
+
+  /// Bloc « Continuer avec Google » (inscription classique) ou rappel du compte Google (profil à compléter).
+  Widget _googleHeader(AppColors colors) {
+    if (_google) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 18),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: primaryGreen.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+        child: Text(
+          'Connecté avec Google (${widget.googleUser!.email ?? ''}). Il ne reste qu’à créer votre profil Afrolook : pas de mot de passe à choisir.',
+          style: TextStyle(fontSize: 13, color: colors.textPrimary),
+        ),
+      );
+    }
+    if (!GoogleAuthService.isAvailable) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        children: [
+          const GoogleSignInButton(),
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(child: Divider(color: colors.textSecondary.withOpacity(0.3))),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('ou', style: TextStyle(color: colors.textSecondary))),
+            Expanded(child: Divider(color: colors.textSecondary.withOpacity(0.3))),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     final colors = AppColors.of(context);
     final l10n = AppLocalizations.of(context);
     if (AppLayout.isWide(context)) {
@@ -123,7 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: primaryGreen),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _leave,
         ),
         actions: const [Padding(padding: EdgeInsets.only(right: 12), child: Center(child: LanguageSelectorButton()))],
         ),
@@ -153,7 +209,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   color: colors.textSecondary,
                 ),
               ),
-              SizedBox(height: 30),
+              SizedBox(height: 24),
+              _googleHeader(colors),
+              SizedBox(height: 6),
 
               // Formulaire
               Form(
@@ -201,7 +259,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     SizedBox(height: 15),
 
-                    // Champ email
+                    // Champ email (compte Google : déjà connu)
+                    if (!_google) ...[
                     _buildTextField(
                       context: context,
                       controller: emailController,
@@ -220,6 +279,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     SizedBox(height: 15),
 
+                    ],
                     // Champ pseudo
                     _buildTextField(
                       context: context,
@@ -277,7 +337,8 @@ NamePreview(controller: pseudoController),
                     ),
                     SizedBox(height: 15),
 
-                    // Champ mot de passe
+                    // Mots de passe (compte Google : aucun)
+                    if (!_google) ...[
                     _buildPasswordField(
                       context: context,
                       controller: motDePasseController,
@@ -324,6 +385,7 @@ NamePreview(controller: pseudoController),
                         return null;
                       },
                     ),
+                    ],
                     SizedBox(height: 16),
 
                     // Acceptation des conditions
@@ -388,8 +450,8 @@ NamePreview(controller: pseudoController),
                               authProvider.registerUser.codeParrainage = "${normalizePseudo(pseudoController.text)}${genererNombreAleatoire()}".replaceAll(' ', '');
                               authProvider.registerUser.pseudo = normalizePseudo(pseudoController.text);
                               authProvider.registerUser.genre = selectedGenre;
-                              authProvider.registerUser.password = motDePasseController.text;
-                              authProvider.registerUser.email = emailController.text;
+                              authProvider.registerUser.password = _google ? '' : motDePasseController.text;
+                              authProvider.registerUser.email = _google ? (widget.googleUser!.email ?? emailController.text) : emailController.text;
                               authProvider.registerUser.acceptedTermsAt = DateTime.now().millisecondsSinceEpoch;
                               authProvider.registerUser.acceptedCommunityRulesAt = DateTime.now().millisecondsSinceEpoch;
 
@@ -397,7 +459,7 @@ NamePreview(controller: pseudoController),
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => SignUpFormEtap3()),
+                                MaterialPageRoute(builder: (context) => SignUpFormEtap3(googleUser: widget.googleUser)),
                               );
                             }
                           } catch (e, stack) {
@@ -440,7 +502,7 @@ NamePreview(controller: pseudoController),
                     SizedBox(height: 20),
 
                     // Lien de connexion
-                    Row(
+                    if (!_google) Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
@@ -509,7 +571,7 @@ NamePreview(controller: pseudoController),
                       children: [
                         IconButton(
                           icon: Icon(Icons.arrow_back, color: primaryGreen),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: _leave,
                         ),
                         Consumer<ThemeProvider>(
                           builder: (ctx, tp, _) {
@@ -544,7 +606,8 @@ NamePreview(controller: pseudoController),
                             Text(l10n.signupCreateAccountTitle, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: colors.textPrimary)),
                             const SizedBox(height: 5),
                             Text(l10n.signupJoinCommunity, style: TextStyle(fontSize: 14, color: colors.textSecondary)),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
+                            _googleHeader(colors),
                             Form(
                               key: _formKey,
                               child: Column(children: _buildFormFields(context, colors, l10n)),
@@ -585,12 +648,14 @@ NamePreview(controller: pseudoController),
       const SizedBox(height: 15),
       _buildTextField(context: context, controller: code_parrainageController, hintText: l10n.signupReferralCodeOptional, prefixIcon: Icons.person_add_alt_1_outlined),
       const SizedBox(height: 15),
+      if (!_google) ...[
       _buildTextField(
         context: context, controller: emailController, hintText: l10n.authEmail,
         keyboardType: TextInputType.emailAddress, prefixIcon: Icons.email_outlined,
         validator: (v) => (v == null || v.isEmpty) ? l10n.signupEmailRequired : (!isValidEmail(v) ? l10n.signupEmailInvalidShort : null),
       ),
       const SizedBox(height: 15),
+      ],
       _buildTextField(
         context: context, controller: pseudoController, hintText: l10n.signupPseudoUnique, prefixIcon: Icons.person_outline,
         inputFormatters: [PseudoInputFormatter()],
@@ -622,6 +687,7 @@ NamePreview(controller: pseudoController),
         ),
       ),
       const SizedBox(height: 15),
+      if (!_google) ...[
       _buildPasswordField(
         context: context, controller: motDePasseController, hintText: l10n.signupPasswordHint,
         obscureText: _obscurePassword, onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -638,6 +704,7 @@ NamePreview(controller: pseudoController),
           return null;
         },
       ),
+      ],
       const SizedBox(height: 30),
       SizedBox(
         width: double.infinity,
@@ -656,11 +723,11 @@ NamePreview(controller: pseudoController),
                 authProvider.registerUser.codeParrainage = "${normalizePseudo(pseudoController.text)}${genererNombreAleatoire()}".replaceAll(' ', '');
                 authProvider.registerUser.pseudo = normalizePseudo(pseudoController.text);
                 authProvider.registerUser.genre = selectedGenre;
-                authProvider.registerUser.password = motDePasseController.text;
-                authProvider.registerUser.email = emailController.text;
+                authProvider.registerUser.password = _google ? '' : motDePasseController.text;
+                authProvider.registerUser.email = _google ? (widget.googleUser!.email ?? emailController.text) : emailController.text;
                 if (!mounted) return;
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => SignUpFormEtap3()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => SignUpFormEtap3(googleUser: widget.googleUser)));
               }
             } catch (e) {
               if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red.shade700));
@@ -675,7 +742,7 @@ NamePreview(controller: pseudoController),
         ),
       ),
       const SizedBox(height: 20),
-      Row(
+      if (!_google) Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(l10n.signupAlreadyHaveAccount, style: TextStyle(color: colors.textSecondary)),

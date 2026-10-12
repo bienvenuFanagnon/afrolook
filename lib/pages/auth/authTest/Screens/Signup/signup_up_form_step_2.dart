@@ -1,4 +1,8 @@
 import 'package:afrotok/widgets/language_selector.dart';
+import 'package:afrotok/services/auth/google_auth_service.dart';
+import 'package:afrotok/services/sessions/session_service.dart';
+import 'package:afrotok/pages/splashChargement.dart';
+import 'package:afrotok/services/auth/auth_email_service.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 
 import 'dart:typed_data';
@@ -33,13 +37,16 @@ import '../../../../../l10n/app_localizations.dart';
 const Color primaryGreen = Color(0xFF25D366);
 
 class SignUpFormEtap3 extends StatefulWidget {
-  SignUpFormEtap3({Key? key}) : super(key: key);
+  /// Compte déjà connecté avec Google (sans profil Afrolook) : on réutilise ce compte, sans mot de passe ni e-mail à valider.
+  final User? googleUser;
+  SignUpFormEtap3({Key? key, this.googleUser}) : super(key: key);
 
   @override
   State<SignUpFormEtap3> createState() => _SignUpFormEtap3State();
 }
 
 class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
+  bool get _google => widget.googleUser != null;
   late AppColors _colors;
   late AppLocalizations l10n;
   late UserAuthProvider authProvider;
@@ -177,7 +184,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   // Méthode pour envoyer l'email de vérification
   Future<void> sendVerificationEmail(User user) async {
     try {
-      await user.sendEmailVerification();
+      await AuthEmailService.sendVerification(user);
       _showVerificationModal();
     } catch (e) {
       printVm("Erreur lors de l'envoi de l'email de vérification: $e");
@@ -315,19 +322,27 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   /// Crée le compte PUIS envoie la photo : les règles Storage exigent un utilisateur
   /// connecté (request.auth != null). Si l'upload échoue, le compte tout juste créé
   /// est supprimé pour que l'utilisateur puisse réessayer avec le même e-mail.
-  Future<UserCredential> _createAccountWithPhoto(String email, String password) async {
-    final userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<User> _createAccountWithPhoto(String email, String password) async {
+    final User user;
+    if (_google) {
+      // Compte Google : déjà créé et connecté, on ne crée rien.
+      final current = _auth.currentUser;
+      if (current == null) throw FirebaseAuthException(code: 'requires-recent-login');
+      user = current;
+    } else {
+      user = (await _auth.createUserWithEmailAndPassword(email: email, password: password)).user!;
+    }
     try {
       authProvider.registerUser.imageUrl = await _uploadImage();
-      return userCredential;
+      return user;
     } catch (e) {
-      await _rollbackAccount(userCredential);
+      await _rollbackAccount(user);
       rethrow;
     }
   }
 
   /// Annule une inscription inachevée : supprime la photo envoyée (si besoin) puis le compte.
-  Future<void> _rollbackAccount(UserCredential userCredential) async {
+  Future<void> _rollbackAccount(User user) async {
     final imageUrl = authProvider.registerUser.imageUrl;
     if (imageUrl != null && imageUrl.isNotEmpty) {
       try {
@@ -337,8 +352,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       }
       authProvider.registerUser.imageUrl = null;
     }
+    if (_google) return; // compte Google : il reste connecté pour réessayer
     try {
-      await userCredential.user?.delete();
+      await user.delete();
     } catch (e) {
       printVm("Suppression du compte inachevé impossible : $e");
     }
@@ -462,11 +478,11 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       if (authProvider.registerUser.codeParrain!.isNotEmpty) {
         // Création du compte + photo AVANT de chercher le parrain : les règles Firestore
         // n'autorisent la lecture de Users qu'à un utilisateur connecté.
-        final UserCredential userCredential = await _createAccountWithPhoto(email, password);
+        final User newUser = await _createAccountWithPhoto(email, password);
         final UserData? parrain = await verifierParrain(authProvider.registerUser.codeParrain!);
 
         if (parrain != null) {
-          id = userCredential.user!.uid;
+          id = newUser.uid;
 
           // Configuration des données
           await _configureUserDataWithParrainage(id, pseudo, parrain);
@@ -477,16 +493,12 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           // Envoi de la notification de parrainage
           await _sendParrainageNotification(parrain);
 
-          // Envoi de l'email de vérification
-          await sendVerificationEmail(userCredential.user!);
-
-          // Affichage du succès
-          _showSuccessAndNavigate();
+          await _afterAccountCreated(newUser);
 
         } else {
           // Code de parrainage invalide : on annule le compte tout juste créé
           // pour que l'utilisateur puisse corriger le code et réessayer.
-          await _rollbackAccount(userCredential);
+          await _rollbackAccount(newUser);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -499,9 +511,9 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         }
       } else {
         // Création du compte sans parrainage, puis upload de la photo
-        final UserCredential userCredential = await _createAccountWithPhoto(email, password);
+        final User newUser = await _createAccountWithPhoto(email, password);
 
-        id = userCredential.user!.uid;
+        id = newUser.uid;
 
         // Configuration des données
         await _configureUserDataWithoutParrainage(id, pseudo);
@@ -509,11 +521,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         // Rejoindre les groupes officiels en arrière-plan
         unawaited(_autoJoinOfficialGroups(id));
 
-        // Envoi de l'email de vérification
-        await sendVerificationEmail(userCredential.user!);
-
-        // Affichage du succès
-        _showSuccessAndNavigate();
+        await _afterAccountCreated(newUser);
       }
 
     } on FirebaseAuthException catch (error) {
@@ -525,6 +533,22 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     } finally {
       setState(() => tap = false);
     }
+  }
+
+  /// Fin de l'inscription : compte Google → entrée directe dans l'application ; sinon e-mail de validation.
+  Future<void> _afterAccountCreated(User user) async {
+    if (_google) {
+      _showSuccessAndNavigate();
+      await SessionUserFirebaseService.saveUserSession(user.uid);
+      await SessionUserFirebaseService.updateLastActive();
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SplashChargement()), (r) => false);
+      return;
+    }
+    // Envoi de l'email de vérification
+    await sendVerificationEmail(user);
+    // Affichage du succès
+    _showSuccessAndNavigate();
   }
 
   // Configuration des données avec parrainage
@@ -741,10 +765,25 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     );
   }
 
+  Future<void> _leave() async {
+    if (_google) await GoogleAuthService.abandon();
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
     l10n = AppLocalizations.of(context);
+    return PopScope(
+      canPop: !_google,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: _buildScaffold(context),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: _colors.background,
       appBar: AppBar(
@@ -752,7 +791,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: primaryGreen),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _leave,
         ),
         title: Text(
           l10n.signupStep2Title,

@@ -1,6 +1,7 @@
 ﻿import 'package:afrotok/pages/auth/update_pass_word/confirm_verification_otp.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
+import 'package:afrotok/services/auth/auth_email_service.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -310,9 +311,11 @@ class _ConfirmUserState extends State<ConfirmUser> {
     });
 
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(
-        email: emailController.text.trim(),
-      );
+      final sent = await AuthEmailService.sendPasswordReset(emailController.text.trim());
+      if (!sent) {
+        _showSnackBar('Trop de demandes. Réessayez dans une heure.', isError: true);
+        return;
+      }
 
       // Mise à jour des compteurs
       setState(() {
@@ -328,7 +331,9 @@ class _ConfirmUserState extends State<ConfirmUser> {
 
     } catch (error) {
       _showSnackBar(
-        'Erreur lors de l\'envoi. Veuillez réessayer.',
+        error is FirebaseAuthException && error.code == 'invalid-email'
+            ? 'Format d\'email invalide'
+            : 'Erreur lors de l\'envoi. Veuillez réessayer.',
         isError: true,
       );
     } finally {

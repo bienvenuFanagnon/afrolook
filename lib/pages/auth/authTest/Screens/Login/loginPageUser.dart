@@ -1,4 +1,7 @@
 ﻿
+import 'package:afrotok/pages/auth/authTest/components/google_sign_in_button.dart';
+import 'package:afrotok/services/auth/google_auth_service.dart';
+import 'package:afrotok/services/auth/auth_email_service.dart';
 import 'package:afrotok/widgets/language_selector.dart';
 import 'dart:math';
 
@@ -170,11 +173,26 @@ class _LoginPageUserState extends State<LoginPageUser> {
                     padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                   ),
                   onPressed: () async {
-                    await user.sendEmailVerification();
                     Navigator.pop(context); // fermer le premier modal
-
-                    // Afficher le deuxième modal informatif
-                    _showCheckEmailModal();
+                    try {
+                      final sent = await AuthEmailService.sendVerification(user);
+                      if (!mounted) return;
+                      if (sent) {
+                        // Afficher le deuxième modal informatif
+                        _showCheckEmailModal();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: const Text("Trop de demandes. Réessayez dans une heure."),
+                          backgroundColor: _colors.danger,
+                        ));
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: const Text("Envoi impossible pour le moment. Réessayez dans quelques minutes."),
+                        backgroundColor: _colors.danger,
+                      ));
+                    }
                   },
                   child: Text("Renvoyer le lien"),
                 ),
@@ -643,6 +661,12 @@ class _LoginPageUserState extends State<LoginPageUser> {
           ],
         ),
         SizedBox(height: 20),
+
+        // Connexion / inscription avec Google
+        if (GoogleAuthService.isAvailable) ...[
+          const GoogleSignInButton(),
+          SizedBox(height: 12),
+        ],
 
         // Bouton créer un compte (remplace le bouton nous contacter)
         Container(
