@@ -92,3 +92,14 @@ L'accueil, la page Studio et le tutoriel changent à chaque visite (`static/js/s
 ### Versions des images et vidéos (cache)
 
 Images et vidéos sont servies avec un cache d'un an (`immutable`) / 7 jours : un fichier remplacé sous le même nom restait chez ceux qui l'avaient déjà vu (vignettes sans affiche de vente, anciennes vidéos d'exemple). `build.mjs` ajoute donc `?v=…` à chaque adresse d'image (`IMGV` : empreinte des noms et tailles de `static/img/c` et `static/img/video`, aussi lue par `site.js` et `try.js` via `data-imgv` sur `<body>`) et à chaque vidéo d'exemple (empreinte du fichier). Rien à faire à la main : il suffit de reconstruire et de déployer.
+
+## Étiquette « Meilleur rendu avec SlashAtlas »
+
+Affichée sur les pages de commande (bloc « Pourquoi générer ici ? » + bouton), dans le bloc « après la copie » et en tête du Studio (`BEST` dans `build.mjs`, styles `.best*` dans `site.css`). Elle n'annonce que ce que le Studio fait réellement :
+
+1. **Photo retouchée avant l'IA** (`polishPhoto` dans `functions/studio.js`, basé sur `enhance.js` : niveaux, gamma, balance des blancs, vibrance, netteté, taille).
+2. **Textes exacts** : marque, prix, contact et QR code sont dessinés par le navigateur (`sale.js`, `try.js`), jamais par l'IA d'image.
+3. **Clause « qualité studio »** ajoutée au prompt (`composePrompt`) : produit identique à la photo, lumière soignée.
+4. **Retouche gratuite après génération** (QR, textes).
+
+À mesurer pour confirmer la promesse : comparer dans `/admin` « essais » (Générer ici) et « copies » par commande ; la partie Gemini (clause qualité, `polishPhoto`) n'a pas encore été testée en production avec la clé de l'API.

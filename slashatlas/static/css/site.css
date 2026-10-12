@@ -556,3 +556,11 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 @media (min-width:1000px){.rc{flex-basis:330px}}
 @media (min-width:1400px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:719px){.card .cl{flex-basis:132px}.card .poster.img{max-height:240px}}
+/* étiquette « meilleur rendu » */
+.best-tag{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.02em;color:#1a1200;background:linear-gradient(135deg,#ffd45c,#ff9f1c);padding:3px 10px;border-radius:999px;white-space:nowrap}
+.best{margin:14px 0;padding:14px;border:1px solid rgba(255,190,60,.45);background:rgba(255,190,60,.07);border-radius:16px}
+.best-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}.best-h b{font-size:1rem}
+.best ul{margin:10px 0 12px;padding-left:18px;display:grid;gap:6px;font-size:.92rem;line-height:1.45}
+.best .btn{width:100%;justify-content:center}
+.best-after{margin:10px 0 0;font-size:.92rem;line-height:1.5}
+.best-line{margin:8px 0 14px;font-size:.92rem;line-height:1.55;color:var(--mut,inherit)}

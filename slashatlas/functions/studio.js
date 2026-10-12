@@ -179,6 +179,16 @@ function qrClause(lang, pos) {
     ? `Leave the ${pref ? 'bottom-right corner (or, if the composition requires it, another calm corner)' : c[1] + ' corner'} of the visual completely free, a small area of about 15% of the width and 20% of the height, with no text, no important element and no detail of the subject: a small QR code will be added there afterwards. Keep any contact text away from that corner. Do not write or draw any QR code yourself.`
     : `Laisse entièrement libre ${pref ? 'le coin inférieur droit du visuel (ou, si la composition l’exige, un autre coin calme)' : 'le coin ' + c[0] + ' du visuel'}, une petite zone d’environ 15 % de la largeur et 20 % de la hauteur, sans texte, sans élément important ni détail du sujet : un petit code QR y sera ajouté après coup. Éloigne de ce coin les textes de contact éventuels. N’écris et ne dessine aucun code QR toi-même.`;
 }
+/** Retouche automatique d'une photo (base64) : niveaux, lumière, couleurs, netteté, agrandissement doux des petites photos. Retourne du JPEG en base64, ou null si impossible. */
+async function polishPhoto(b64) {
+  const { loadImage, createCanvas } = require('@napi-rs/canvas');
+  const { enhance } = require('./enhance');
+  const im = await loadImage(Buffer.from(b64, 'base64'));
+  if (!im.width || !im.height || Math.max(im.width, im.height) > 4000) return null;
+  const cv = createCanvas(im.width, im.height); cv.getContext('2d').drawImage(im, 0, 0);
+  return enhance(cv, { minSide: 1024, maxSide: 1600, strength: 0.85 }).toBuffer('image/jpeg', 92).toString('base64');
+}
+
 function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false) {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
@@ -192,7 +202,11 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
   const qr = qrClause(L, qrpos);
   // affiche de vente : le prix, le contact, le QR et l'étiquette sont ajoutés par le site après la génération ; l'IA garde le bas dégagé et n'écrit rien
   const saleClause = sale ? (L === 'en' ? 'Composition for a sales advertisement: keep the subject large and centered slightly above the middle, and keep the bottom quarter of the image calm and uncluttered. The price, contact details, label and a small QR code will be added afterwards: write no text on the image.' : 'Composition pour une annonce de vente : garde le sujet grand et centré légèrement au-dessus du milieu, et garde le quart inférieur de l’image calme et dégagé. Le prix, les contacts, l’étiquette et un petit QR code seront ajoutés ensuite : n’écris aucun texte sur l’image.') : '';
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${saleClause ? ' ' + saleClause : ''}`.trim(), ratio: c.ratio };
+  // qualité studio, propre au Studio : rendu photo premium, fidélité au produit, aucun ajout non demandé
+  const quality = L === 'en'
+    ? 'Studio quality: premium commercial photographic rendering, careful lighting, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.'
+    : 'Qualité studio : rendu photographique commercial premium, lumière soignée, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n’ajoute aucun objet, texte ou filigrane qui n’a pas été demandé.';
+  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
 }
 
 async function callGemini(parts, ratio) {
@@ -233,13 +247,16 @@ async function generate(u, b) {
     parts.push({ inlineData: { mimeType: mime, data } });
   }
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
+  // Rendu optimisé SlashAtlas : la photo est retouchée avant d'être donnée à l'IA (lumière, couleurs, netteté, taille). Une photo sombre ou terne donne un résultat terne.
+  let polished = 0;
+  for (const part of parts) { try { const r = await polishPhoto(part.inlineData.data); if (r) { part.inlineData = { mimeType: 'image/jpeg', data: r }; polished++; } } catch (e) { console.error('polish', e && e.message); } }
   const texts = cleanTexts(b.texts);
   const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
   const sale = b.sale === true;
   const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale);
   parts.push({ text });
 
-  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale });
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale, polished });
 }
 
 /** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */
