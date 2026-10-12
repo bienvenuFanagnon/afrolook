@@ -31,7 +31,9 @@ function prompt(c) {
     .replace(/the attached photo/gi, 'a generic subject').replace(/attached/gi, '')
     .replace(/\[[^\]]*?(?:for example|e\.g\.)[:\s]*([^\]]*)\]/gi, '$1').replace(/\[([^\]]*)\]/g, '$1')
     .replace(/[“"][^”"]*[”"]/g, '').replace(/\s+/g, ' ').trim();
-  return `${INTRO[c.kind] ?? ''}${s} No text, no letters, no logo, no watermark. Sharp, high quality.`.slice(0, 1800);
+  // Catégorie Afro Fashion : les exemples montrent des personnes noires africaines (sans précision, le modèle d'image choisit d'autres profils)
+  const intro = c.cat === 'afrofashion' ? 'Professional editorial fashion photograph of a Black African person with dark brown skin and natural African features (two Black African people if the scene describes a couple or duo). ' : (INTRO[c.kind] ?? '');
+  return `${intro}${s} No text, no letters, no logo, no watermark. Sharp, high quality.`.slice(0, 1800);
 }
 const NOGEN = new Set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo blueprint cyberpunk barbershop vintagerack inauguration conference djnight mascotsticker2 jewelgold jewelpearl'.split(' ')); // texte parasite ou refus du filtre du modèle
 const skip = (c) => NOGEN.has(c.slug) || ['poster', 'logo', 'text'].includes(c.kind) || fs.existsSync(path.join(OUT, `${c.slug}-apres.webp`));

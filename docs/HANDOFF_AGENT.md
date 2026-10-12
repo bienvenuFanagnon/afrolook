@@ -1,9 +1,9 @@
 # Passation : Afrolook et SlashAtlas (à lire en premier par un autre agent IA)
 
-Dernière mise à jour : 12 octobre 2026. Branche de travail : `refonte_claude` (PR brouillon : https://github.com/bienvenuFanagnon/afrolook/pull/2).
-Propriétaire : francophone, répondre **en français**, simple et direct, sans jargon. Il a donné une autorisation permanente de déployer (hébergement, fonctions) ; pour tout ce qui sort du cadre (suppression de données, envoi d'e-mails à de vrais comptes, dépenses), demander d'abord.
+Dernière mise à jour : 12 octobre 2026, fin d'après-midi (UTC). Branche de travail : `refonte_claude` (PR brouillon : https://github.com/bienvenuFanagnon/afrolook/pull/2).
+Propriétaire : francophone, répondre **en français**, simple et direct, sans jargon. Il a donné une autorisation permanente de déployer le site et les fonctions ; pour tout ce qui sort du cadre (suppression de données, e-mails à de vrais comptes, dépenses, soumission à un store sans qu'il l'ait demandé), demander d'abord. Dire honnêtement ce qui n'a pas pu être testé.
 
-> **Aucun secret n'est écrit dans ce fichier.** Il dit où ils se trouvent et comment les redemander au propriétaire. Ne jamais les copier dans le dépôt.
+> **Aucun secret n'est écrit dans ce fichier.** Il dit où ils se trouvent et comment les redemander au propriétaire. Ne jamais les copier dans le dépôt. **Ne pas aller les chercher dans l'historique d'une conversation** : une vérification de sécurité a déjà bloqué ce réflexe. Les redemander au propriétaire, qui les colle dans le chat.
 
 ---
 
@@ -16,7 +16,7 @@ Propriétaire : francophone, répondre **en français**, simple et direct, sans 
 | Firebase | projet `afrolooki` (fonctions `us-central1`) | projet `slashatlas-studio` (fonctions `europe-west1`) |
 | Doc d'exploitation | `docs/*.md` (un fichier par chantier : CARTES, QUIZ, CONTES, ETUDE, DEFI_EXTENSIONS, AUTH_EMAILS_GOOGLE…) | `slashatlas/STUDIO.md` (très complet : lire en entier) |
 
-Application : ID `com.afrotok.afrotok`, nom « Afrolook », version actuelle `2.0.10+253` (`pubspec.yaml`). iOS : App Store Connect app `6811423047`.
+Application : ID `com.afrotok.afrotok`, nom « Afrolook », version `2.0.10+253` (`pubspec.yaml`). iOS : App Store Connect app `6811423047`. L'entreprise est **AFROLOOK, entreprise individuelle** (Lomé, Togo) ; le propriétaire exploite aussi Epargne+ (budget et épargne par mobile money, sans carte).
 
 ---
 
@@ -24,18 +24,18 @@ Application : ID `com.afrotok.afrotok`, nom « Afrolook », version actuelle `2.
 
 Les sessions sont des conteneurs temporaires : **rien de local ne survit**. Au démarrage, demander au propriétaire ce qui manque.
 
-1. **Clé de compte de service Firebase** (fichier JSON `…firebase-adminsdk…json` du projet `afrolooki`).
-   - Elle fonctionne aussi pour `slashatlas-studio` (rôle suffisant pour déployer et lire Firestore).
-   - Utilisation : `export GOOGLE_APPLICATION_CREDENTIALS=/chemin/cle.json`, puis `npx firebase-tools deploy … --project afrolooki|slashatlas-studio --non-interactive`.
-   - Si perdue : console Firebase → Paramètres du projet → Comptes de service → Générer une clé. Elle permet aussi d'appeler les API Google (Firebase Management, Identity Toolkit) avec `google-auth-library`.
-2. **GitHub** : accès via les outils MCP `mcp__github__*` (pas de CLI `gh` classique). Dépôt `bienvenuFanagnon/afrolook`. Toujours pousser sur `refonte_claude`.
-3. **Cloudflare Workers AI (images gratuites FLUX)** : 2 comptes gratuits, un jeton API chacun, **donnés par le propriétaire dans la conversation** (pas dans le dépôt). Variables : `CF_ACCOUNT_ID`, `CF_API_TOKEN`. Quota : 10 000 « neurones » par jour et par compte ; la doc dit remise à zéro à 00:00 UTC mais on a observé un blocage jusqu'à au moins 04:04 UTC. **À la fin, rappeler au propriétaire de supprimer ces jetons** (il le sait).
-4. **Gemini** : secret `GEMINI_API_KEY` dans Secret Manager de `slashatlas-studio` (illisible pour un agent). Conséquence : tout ce qui dépend de Gemini **n'a jamais été testé en production par nous** : génération d'images du Studio, `polishPhoto`, clause « qualité studio », `studioShot` et `autoCopy` des vidéos. Demander au propriétaire de faire un essai réel et de coller les erreurs éventuelles.
-5. **FeexPay** (paiement mobile money) : secret `FEEXPAY_API_KEY` (Secret Manager) ; boutique `crZfM9il1xK9uJ6` ; l'activation de la carte bancaire attend le KYC (`CARD.enabled = false`).
-6. **SMTP LWS (e-mails d'Afrolook)** : `functions/.env` (`SMTP_USER`, `SMTP_PASS`), **ignoré par git**. Un clone neuf ne l'a pas : copier `functions/.env.example` et demander les valeurs. **Ne jamais déployer les fonctions Afrolook sans ce fichier** (les e-mails casseraient). Le serveur n'accepte que l'adresse du compte SMTP comme expéditeur. Le port 587 est bloqué depuis les conteneurs : impossible de tester l'envoi d'ici.
-7. **Codemagic** (builds iOS/Android), **Shorebird** (correctifs Dart sans passer par le store, `shorebird.yaml`), **Play Console**, **App Store Connect** : accès du propriétaire uniquement. Un agent prépare le code et `codemagic.yaml`, le propriétaire lance les builds.
-8. **Compte administrateur du site** : `jorbienvenu@gmail.com` (hub `/admin/`).
-9. **Environnement** : Flutter 3.47 / Dart 3.13 installables dans un dossier temporaire (`flutter pub get`, `flutter analyze`). Playwright + Chromium dans `/opt/pw-browsers` pour tester le site. Test local du site : `cd slashatlas/dist && python3 -m http.server 8099`.
+1. **Clé de compte de service Firebase** (fichier JSON `…firebase-adminsdk…json` du projet `afrolooki`). Elle fonctionne aussi pour `slashatlas-studio` (déployer, lire/écrire Firestore, API Firebase Management et Identity Toolkit).
+   - Utilisation : `export GOOGLE_APPLICATION_CREDENTIALS=/chemin/cle.json`, puis `npx firebase-tools deploy … --project afrolooki|slashatlas-studio --non-interactive`. Pour lire Firestore : `firebase-admin` avec `initializeApp({projectId})`.
+   - Si perdue : console Firebase → Paramètres du projet → Comptes de service → Générer une clé.
+2. **GitHub** : outils MCP `mcp__github__*` (pas de CLI `gh` classique). Dépôt `bienvenuFanagnon/afrolook`. Toujours pousser sur `refonte_claude`.
+3. **App Store Connect (Apple)** : clé d'API (rôle App Manager) fournie par le propriétaire le 12/10 : Key ID `92635PJ66F`, Issuer ID `f8d00327-4eda-47d2-bcab-0e09d7253cd5`, fichier privé `AuthKey_92635PJ66F.p8` (**à redemander**, ne pas le mettre dans le dépôt ; le propriétaire doit la supprimer après usage). Méthode : JWT signé ES256 (`aud: appstoreconnect-v1`, durée ≤ 20 min), appels REST sur `https://api.appstoreconnect.apple.com/v1/…` (builds, `appStoreVersions`, localisations « Nouveautés », `appStoreReviewDetail`, `reviewSubmissions`). Le contenu exact d'un build (commit) n'est pas dans l'API : le déduire des heures ou de Codemagic.
+4. **Cloudflare Workers AI (images gratuites FLUX)** : jeton API + ID de compte **donnés par le propriétaire dans la conversation** (compte n°1 : jeton fourni le 12/10, quota épuisé de nouveau après ≈ 100 images ; le compte n°2 n'a pas été retrouvé). Variables : `CF_ACCOUNT_ID`, `CF_API_TOKEN`. Quota : 10 000 « neurones » par jour et par compte ; la doc dit remise à zéro à 00:00 UTC mais on a observé un blocage bien après (hypothèse : renouvellement 24 h après la première utilisation). Option qui lève la limite : passer le compte en **Workers Paid** (≈ 5 $/mois, < 1 $ de conso pour tout ce qui reste). **À la fin, rappeler au propriétaire de supprimer les jetons.**
+5. **Gemini** : secret `GEMINI_API_KEY` dans Secret Manager de `slashatlas-studio` (illisible pour un agent). **Tout ce qui dépend de Gemini n'a jamais été testé en production par nous** : génération d'images du Studio, `polishPhoto`, clause « qualité studio », `studioShot` et `autoCopy` des vidéos, et la qualité des nouvelles commandes (drone, Afro Fashion). Demander au propriétaire un essai réel et les erreurs éventuelles.
+6. **FeexPay** (paiement mobile money et, bientôt, carte) : secret `FEEXPAY_API_KEY` (Secret Manager) ; boutique `crZfM9il1xK9uJ6`. Voir §5 pour le dossier carte (KYC).
+7. **SMTP LWS (e-mails d'Afrolook)** : `functions/.env` (`SMTP_USER`, `SMTP_PASS`), **ignoré par git**. Un clone neuf ne l'a pas : copier `functions/.env.example` et demander les valeurs. **Ne jamais déployer les fonctions Afrolook sans ce fichier** (les e-mails casseraient). Le serveur n'accepte que l'adresse du compte SMTP comme expéditeur. Le port 587 est bloqué depuis les conteneurs : impossible de tester l'envoi d'ici.
+8. **Codemagic** (builds iOS/Android), **Shorebird** (correctifs Dart sans store, `shorebird.yaml`), **Google Play Console** : accès du propriétaire uniquement. Un agent prépare le code et `codemagic.yaml`, le propriétaire lance les builds.
+9. **Compte administrateur du site** : `jorbienvenu@gmail.com` (hub `/admin/`).
+10. **Environnement** : Flutter 3.47 / Dart 3.13 installables dans un dossier temporaire (`flutter pub get`, `flutter analyze`). Pas d'Android SDK : impossible de reproduire un build Android ici. Playwright + Chromium dans `/opt/pw-browsers` pour tester le site (`cd slashatlas/dist && python3 -m http.server 8099`).
 
 ---
 
@@ -43,35 +43,38 @@ Les sessions sont des conteneurs temporaires : **rien de local ne survit**. Au d
 
 SlashAtlas (depuis `slashatlas/`) :
 ```
-node build.mjs && node check.mjs                      # génère dist/ + vérifie ~1544 pages
+node build.mjs && node check.mjs                      # génère dist/ + vérifie ~1596 pages
 npx firebase-tools deploy --only hosting --project slashatlas-studio --non-interactive
 npx firebase-tools deploy --only hosting,functions:slashatlas:slashatlasApi --project slashatlas-studio --non-interactive
 ```
-Le groupe de fonctions s'appelle `slashatlas` (`slashatlasApi`, `slashatlasVideo`). Pour la vidéo : `functions:slashatlas:slashatlasVideo` (4 Gio, 2 CPU, limite de quota Cloud Run expliquée dans `STUDIO.md`).
+Le groupe de fonctions s'appelle `slashatlas` (`slashatlasApi`, `slashatlasVideo`). Vidéo : `functions:slashatlas:slashatlasVideo` (4 Gio, 2 CPU, limite de quota Cloud Run dans `STUDIO.md`).
 
-Afrolook : `cd functions && npm run build`, puis `npx firebase-tools deploy --only functions:NOM --project afrolooki`. Application : `flutter analyze` (pas d'erreurs attendues ; des centaines d'avertissements anciens sont normaux).
+Afrolook : `cd functions && npm run build`, puis `npx firebase-tools deploy --only functions:NOM --project afrolooki`. Application : `flutter analyze` (aucune erreur attendue ; des centaines d'avertissements anciens sont normaux).
 
 ---
 
-## 4. Ce qui est fait (résumé par chantier)
+## 4. Ce qui est fait
 
-### SlashAtlas (site + Studio)
-- **Site** FR/EN, 718 commandes, 34 catégories, générateur statique (`build.mjs`, `check.mjs`, `src/*.mjs`), cache d'images versionné (`IMGV`), images affichées en entier (cadre au format de la commande), cartes plus larges.
+### SlashAtlas (site + Studio), 742 commandes, 36 catégories
+- **Site** FR/EN, générateur statique (`build.mjs`, `check.mjs`, `src/*.mjs`), cache d'images versionné (`IMGV`), images affichées en entier, cartes plus larges, bouton **« Se connecter »** dans l'en-tête (mobile et ordinateur, connexion Google directe, « Mon compte » ensuite).
 - **Studio « Générer ici »** : connexion Google, crédits (`StudioUsers`, `StudioLedger`), génération Gemini, retouche, QR code, marque/contacts, partage ; paiement FeexPay ; pass « sans pub ».
-- **Affiches de vente** (À VENDRE / prix / devise / remise / marque / contact / petit QR) : compositeur `static/js/sale.js` (même code navigateur et serveur), options dans le Studio **et** sur la page de la commande (mêmes valeurs partagées via `localStorage sa_sale_v1`), clause ajoutée à la commande copiée, 194 images d'exemple recomposées avec un mélange dollars / FCFA.
-- **Vidéos publicitaires v3** (onglet Vidéo du Studio) : HD 1080p, retouche automatique de la photo, plusieurs modèles (`classique`, `lancement`, `tour360`, `zoom`, `promo`, `catalogue`), détourage, QR plus petit, rendu en parallèle (threads). Section « vidéos créées avec le studio » sur l'accueil, après la section des images.
-- **Statistiques** : événements, visites des pages de détail comptées, classement populaire, hub admin.
-- **Étiquette « ★ Meilleur rendu avec SlashAtlas »** + encart « Pourquoi générer ici » (pages de commande, Studio, bloc après copie). Elle n'annonce que : photo retouchée avant l'IA, textes/QR dessinés par le site, clause qualité studio, retouche gratuite. À mesurer : essais vs copies par commande dans `/admin`.
-- **Parrainage** (voir `STUDIO.md` section Parrainage) : lien `?ref=CODE`, commission **en crédits** à chaque rechargement du filleul (mobile money), **sans limite de durée** : +1 / +3 / +8 / +24 crédits pour les packs 6 / 20 / 55 / 160 ; marges calculées (≥ 33 %). Page `/parrainage/` (`/en/referral/`), compteurs, bandeaux (accueil, détail d'une commande, Studio quand le solde est à 0, fenêtre d'achat), texte « jusqu'à 24 crédits par ami ». Testé sur Firestore avec des comptes jetables.
-- **Bouton « Se connecter »** dans l'en-tête (mobile et ordinateur), connexion Google directe depuis toutes les pages, « Mon compte » ensuite.
+- **Affiches de vente** (À VENDRE / prix / devise / remise / marque / contact / petit QR) : `static/js/sale.js`, options dans le Studio **et** sur la page de la commande ; 194 images d'exemple recomposées (mélange $ et FCFA).
+- **Vidéos publicitaires v3** (onglet Vidéo) : HD 1080p, retouche de la photo, modèles `classique`/`lancement`/`tour360`/`zoom`/`promo`/`catalogue`, détourage, rendu en parallèle.
+- **Étiquette « ★ Meilleur rendu avec SlashAtlas »** + encart « Pourquoi générer ici ». Elle n'annonce que ce qui existe vraiment (photo retouchée avant l'IA, textes/QR dessinés par le site, clause qualité, retouche gratuite).
+- **Parrainage** (`STUDIO.md`) : lien `?ref=CODE`, commission **en crédits**, à **chaque** rechargement du filleul (mobile money, pas la carte), sans limite de durée : +1 / +3 / +8 / +24 pour les packs 6 / 20 / 55 / 160 ; marges ≥ 33 %. Page `/parrainage/` (`/en/referral/`), bandeaux partout, texte « jusqu'à 24 crédits par ami ». Testé sur Firestore avec des comptes jetables (compteurs nettoyés).
+- **Deux catégories ajoutées le 12/10** (dans `src/data_extra.mjs` ; images « Vue du ciel » faites, « Afro Fashion » à refaire) :
+  - **« Vue du ciel (drone) »** : 8 commandes `skyview`, `skypet`, `skygroup`, `skyproduct`, `skyshop`, `skybeach`, `skyfood`, `skycar` (la photo vue d'un drone, sujet petit au centre d'un grand décor) ;
+  - **« Afro Fashion et top modèles »** : 16 commandes `afro*` (studio, défilé, soirée, poupée glamour rose, portrait réaliste, toit, plage, tissus wax, jardin, rue, voiture, villa, néon, cérémonie, couple, story). Consigne commune de fidélité : visage, **couleur de peau exacte sans l'éclaircir ni la lisser**, coiffure, morphologie ; tenue élégante, aucune nudité.
+- **Statistiques du 11 au 12/10** (peu de trafic, en partie des tests) : 484 pages vues, 91 copies, 18 clics « Générer ici », 5 comptes, 1 commande payée (500 FCFA). Pas de métrique de visiteurs uniques. **Les publicités sont désactivées** (`SlashAtlasSettings/ads.enabled = false`, aucun emplacement) : à activer dans `/admin` après création des emplacements « lb » et « rect » dans AdSense. Prévision pour 50 000 visiteurs/jour : ≈ 1,4 / 4,9 / 14,4 millions de FCFA par mois (prudent / moyen / optimiste) ; les ventes de crédits peuvent peser davantage.
 
 ### Afrolook
-- **Cartes** : correction de l'erreur « Impossible de créer la carte » (LateError venant de `debugNeedsPaint` en release), rapport d'erreurs `cardReport` (collection `CardErrors`).
-- **Défis** : jamais monétisés (option masquée, imposée côté serveur, un post monétisé ne peut pas devenir un défi) ; un défi peut être boosté en publicité avec son propre bouton Participer (`lib/pages/defi/defi_boost.dart`, `lib/pages/pub/ad_actions.dart`).
-- **E-mails de validation / mot de passe oublié** : fonctions `authSendVerificationEmail` et `authSendPasswordReset` (déployées sur `afrolooki`), envoi par notre SMTP, repli sur l'envoi natif de Firebase (`lib/services/auth/auth_email_service.dart`). Journal `AuthEmailLog`. **L'envoi réel n'a pas pu être testé** : à vérifier avec un vrai compte puis lire `AuthEmailLog`.
-- **Connexion / inscription avec Google** (Android, iPhone, web) : `lib/services/auth/google_auth_service.dart`, bouton dans `lib/pages/auth/authTest/components/google_sign_in_button.dart`, mode « profil à compléter » dans `SignUpScreen(googleUser)` et `SignUpFormEtap3(googleUser)`. Google est activé dans Firebase, `google-services.json`, `GoogleService-Info.plist` et le schéma d'URL de `Info.plist` sont à jour. Détails : `docs/AUTH_EMAILS_GOOGLE.md`. Le SHA-1 de signature Play Store est bien enregistré.
-- **Sessions** : 60 jours sans ouvrir l'app avant déconnexion (avant : 3), plus de retour à la connexion sur simple panne réseau (écran « Réessayer »), attente de la restauration Firebase avant « session expirée ».
-- **Codemagic** : `beta_groups` retiré (erreur « Cannot add internal group to a build »).
+- **Cartes** : correction de « Impossible de créer la carte » (LateError `debugNeedsPaint`), rapport `cardReport` (collection `CardErrors`) ; **carte neuve : boutons Enregistrer et Partager ajoutés** en mode création (pas pour une participation à un défi, `presetPostId`).
+- **Défis** : jamais monétisés (option masquée, imposée côté serveur, conversion refusée) ; un défi peut être boosté en publicité avec bouton Participer.
+- **E-mails de validation / mot de passe oublié** : fonctions `authSendVerificationEmail` et `authSendPasswordReset` (déployées), repli sur Firebase (`lib/services/auth/auth_email_service.dart`), journal `AuthEmailLog`. **Envoi réel non testé.**
+- **Connexion / inscription avec Google** (Android et web ; **masquée sur iPhone**, règle App Store 4.8) : `lib/services/auth/google_auth_service.dart`, bouton `google_sign_in_button.dart`, mode « profil à compléter » (`SignUpScreen(googleUser)`, `SignUpFormEtap3(googleUser)`). Google activé dans Firebase, fichiers de config et schéma d'URL iPhone à jour, SHA-1 Play Store enregistré. Détails : `docs/AUTH_EMAILS_GOOGLE.md`.
+- **Sessions** : 60 jours sans ouvrir l'app avant déconnexion (avant : 3), plus de retour à la connexion sur simple panne réseau (écran « Réessayer »).
+- **Android (R8)** : règle `android/app/r8-missing-rules.pro` pour les classes `auth.api.credentials` (ajout de `google_sign_in`). `codemagic.yaml` : `beta_groups` retiré.
+- **iPhone** : version 2.0.10, build **22**, créée et **envoyée à la revue Apple le 12/10** (état « En attente de revue », publication **manuelle**, « Nouveautés » en 7 langues). Hypothèse non vérifiée : le build 22 contient le commit `4b59788` (Google masqué) mais probablement pas `ad8215d` (Enregistrer/Partager).
 - Versions : 2.0.9+252 puis 2.0.10+253.
 
 ---
@@ -79,39 +82,33 @@ Afrolook : `cd functions && npm run build`, puis `npx firebase-tools deploy --on
 ## 5. Ce qui reste à faire
 
 ### À faire par un agent
-1. **Régénérer les images d'exemple (Cloudflare)**, dès que le quota est revenu (le propriétaire sait que c'est le soir/le lendemain) :
-   - catégories vidéo/motion : `CF_ACCOUNT_ID=… CF_API_TOKEN=… node scripts/genimages_cf.mjs --cats video,motion --limit 90` ;
-   - affiches de vente (les deux comptes en parallèle) : `node scripts/regen_sale_cf.mjs --mod 2 --rem 0` puis `--rem 1` avec l'autre compte ;
-   - ensuite `node scripts/salemark.mjs && node build.mjs && node check.mjs`, déployer l'hébergement, commit/push ;
-   - 33 commandes de vente n'ont pas encore d'image de base (`assets/c-base`, `composited.json`, `regen.json` suivent l'avancement).
-   - Un déclencheur planifié existait (`trig_01XfqaDe84DxeUMBZACpEhSw`, 12/10 15:40 UTC) : il appartient à la session précédente, vérifier s'il a tourné (`list_triggers`) ou refaire à la main.
-2. **Vérifier de bout en bout** (avec le propriétaire, car il faut des comptes réels) : une génération d'image payante, une vidéo complète (voix TTS, `studioShot`), un parrainage complet (inscription via lien → achat → crédits du parrain, `StudioReferrals`), l'envoi réel des e-mails d'Afrolook.
-3. **Afficher les compteurs de parrainage** (`SlashAtlasStats.referrals`, `referral_credits`) dans `/admin` (collectés, pas encore affichés).
-4. **Afrolook** : ajouter une phrase sur le parrainage de SlashAtlas dans les conditions du site si le propriétaire le veut ; surveiller `CardErrors`, `AuthEmailLog`.
-5. **Anciennes tâches nominalement ouvertes** : Stickers phase 2 (sélecteur, récents, pack officiel), Étude plus tard (eCPM, examens blancs, duels, plan universités), documentation vidéo (#50). Voir `docs/STICKERS_SPEC.md`, `docs/ETUDE.md`, `docs/ETUDE_UNIVERSITES.md`.
-
-3bis. **Images d'exemple des deux nouvelles catégories** « Vue du ciel (drone) » (8 commandes `sky*`) et « Afro Fashion et top modèles » (16 commandes `afro*`) : aujourd'hui des dégradés sans image. Les créer avec `scripts/genimages_cf.mjs` quand le quota Cloudflare revient (voir STUDIO.md).
+1. **Images d'exemple de la catégorie Afro Fashion (16 commandes `afro*`)** : à régénérer quand le quota Cloudflare revient (≈ 24 h après la dernière utilisation, soit vers le 13/10 15h40 UTC ; ou Workers Paid). Les premières images montraient des personnes d'origine asiatique : le script `scripts/genimages_cf.mjs` a maintenant un prompt « Black African person » pour cette catégorie, les anciennes images ont été supprimées. Commande : `node scripts/genimages_cf.mjs --cats afrofashion --limit 20`, puis `node build.mjs && node check.mjs`, déploiement de l'hébergement, commit/push. Un rappel automatique (`send_later`, `trig_018pnuErhFSpttZh3bi78XuV`, 13/10 15h50 UTC) existe dans la session actuelle. Déjà faites le 12/10 : vidéo/motion (78), « Vue du ciel » (8), et les affiches de vente (208 commandes avec image, aucune à refaire). Pas d'image : cartes `portalrise` ok ; si Cloudflare refuse un prompt comme « NSFW » (faux positif), réessayer, ça passe souvent.
+2. **Suivre la revue Apple** de la 2.0.10 (API App Store Connect : `reviewSubmissions`, état de la version) ; si refus, lire le message et répondre. Si le propriétaire valide, la publication est manuelle.
+3. **FeexPay carte** : dossier KYC soumis (« Dossier en cours de validation »). Quand FeexPay l'active : régler `CARD.payin/payout` dans `slashatlas/functions/studio.js` avec la vraie grille (commission 3,9 % internationale / 3,5 % UEMOA + 3 % de frais de conversion, soit ≈ 6,9 % ; **utiliser un calcul `prix / (1 - taux)`** pour que le client paie tout, l'actuel multiplie), mettre `CARD.enabled = true`, tester avec un petit paiement du propriétaire. Limites carte actuelles : `CARD_LIMITS` (packs p20/p55/pass, 2 achats/jour/compte, 20 000 FCFA/mois). Chargeback : 70 $, seuil 1 %.
+4. **Afficher dans `/admin`** les compteurs `SlashAtlasStats.referrals` et `referral_credits` (collectés, pas encore affichés).
+5. **Vérifier de bout en bout avec le propriétaire** : une génération d'image payante, une vidéo complète, un parrainage complet, l'envoi réel des e-mails d'Afrolook (puis `AuthEmailLog`), le rendu des commandes drone et Afro Fashion.
+6. **Plus tard** : « Se connecter avec Apple » (puis rouvrir Google sur iPhone), Stickers phase 2, Étude (eCPM, examens blancs, duels), documentation vidéo (#50). Voir `docs/STICKERS_SPEC.md`, `docs/ETUDE.md`, `docs/ETUDE_UNIVERSITES.md`.
 
 ### À faire par le propriétaire (le lui rappeler)
-- **Compiler et publier Afrolook** (version 2.0.10+253) sur Play Store et App Store : correctifs cartes, défis, Google, e-mails, sessions. **La connexion Google exige un build store** (Shorebird ne suffit pas : nouveau plugin natif + fichiers de configuration). Un patch Shorebird depuis le code actuel afficherait un bouton Google qui échoue ; proposé : masquer le bouton tant que le plugin est absent pour livrer les e-mails par patch.
-- Ajouter `afrolookmedia.com` aux domaines autorisés (Firebase, Authentication, Paramètres) pour Google sur le web.
-- Demander une **augmentation du quota CPU Cloud Run** pour passer `slashatlasVideo` à 4 CPU (limité à 2 actuellement).
-- Règle de cycle de vie GCS : supprimer `videos/` après 30 jours.
-- Supprimer les jetons Cloudflare une fois les images régénérées.
-- Tester les e-mails (mot de passe oublié, renvoi du lien) puis ouvrir `AuthEmailLog` ; si l'expéditeur actuel (`SMTP_USER`, compte d'un autre domaine) gêne, fournir le mot de passe de `contact@afrolookmedia.com`.
+- **Relancer le build Android** (Shorebird ou Codemagic) après la règle R8 ; si R8 réclame d'autres classes, lire `android/app/build/outputs/mapping/release/missing_rules.txt` (le compléter dans `r8-missing-rules.pro`). Publier ensuite sur Google Play. **La connexion Google sur Android exige un build store** (Shorebird ne suffit pas : plugin natif + fichiers de config). Les correctifs Dart seuls (e-mails, cartes, sessions) peuvent passer par Shorebird depuis une version sans le plugin Google.
+- **Activer les publicités** du site (AdSense : 2 emplacements « lb » et « rect », puis `/admin`).
+- Ajouter `afrolookmedia.com` aux domaines autorisés (Firebase, Authentication) pour Google sur le web.
+- Décider pour Cloudflare : Workers Paid (≈ 5 $/mois) ou attendre le quota ; **supprimer ensuite les jetons Cloudflare et la clé d'API App Store Connect**.
+- Demander une augmentation du quota CPU Cloud Run (`slashatlasVideo` à 4 CPU) ; règle de cycle de vie GCS pour `videos/` (30 jours).
+- Tester les e-mails d'Afrolook ; si l'expéditeur (`SMTP_USER`, compte d'un autre domaine) gêne, fournir le mot de passe de `contact@afrolookmedia.com`.
+- Dossier FeexPay : répondre à leurs demandes éventuelles ; le contrat est rempli au nom d'AFROLOOK (entreprise individuelle), signature électronique à placer ou à faire sur leur plateforme. Déclarer clairement la vente de crédits numériques (SaaS). Epargne+ n'utilise pas la carte.
 
 ---
 
 ## 6. Pièges connus
 
-- **iPhone : bouton Google masqué** (règle App Store 4.8 : Google exige aussi « Se connecter avec Apple »). `GoogleAuthService.isAvailable` = `false` sur iOS. Pour le rouvrir, ajouter Sign in with Apple d'abord (voir `docs/AUTH_EMAILS_GOOGLE.md`).
-
-- **Build Android release (R8)** : l'ajout de `google_sign_in` a fait échouer R8 (« Missing class com.google.android.gms.auth.api.credentials.* », ancienne API mentionnée par `smart_auth`, utilisée par `pinput`). Corrigé par `android/app/r8-missing-rules.pro` (référencé dans `android/app/build.gradle`). Si R8 réclame d'autres classes, lire `android/app/build/outputs/mapping/release/missing_rules.txt` et compléter ce fichier. `android/app/proguard-rules.pro` est référencé mais **absent du dépôt** (il n'existe que sur la machine du propriétaire).
-
+- **iPhone : bouton Google masqué** (règle App Store 4.8 : Google exige aussi « Se connecter avec Apple »). `GoogleAuthService.isAvailable` = `false` sur iOS. Pour le rouvrir, ajouter Sign in with Apple d'abord.
+- **Build Android release (R8)** : voir `android/app/r8-missing-rules.pro`. `android/app/proguard-rules.pro` est référencé mais **absent du dépôt** (il n'existe que chez le propriétaire).
 - Afrolook : `functions/.env` hors git (voir §2). Fichiers Dart avec BOM (ex. `confirm_user.dart`) : éditer en UTF-8 sans casser le début.
 - Afrolook garde sa **propre session** (SharedPreferences `token` + `last_active_timestamp`), pas seulement Firebase ; les règles Firestore exigent `request.auth`.
 - SlashAtlas : `dist/` est généré, ne pas l'éditer ; changer `static/js/*` ou `src/*` puis `node build.mjs`. Les URL d'images portent un numéro de version (`IMGV`), les mp4 un hachage, à cause du cache `immutable` d'un an.
-- Cloud Run : le quota CPU compte les révisions transitoires en double ; ne pas augmenter `slashatlasVideo` au-delà de 2 CPU sans quota.
+- Cloud Run : le quota CPU compte les révisions transitoires en double ; ne pas dépasser 2 CPU sur `slashatlasVideo` sans quota.
 - Les scripts Node en ESM ont besoin de `.cjs` ou d'`import()` dynamique ; `NODE_PATH=slashatlas/functions/node_modules` pour les scripts hors dossier.
-- Ne jamais écrire de clé ou de mot de passe dans le dépôt ; ne pas envoyer de vrais e-mails pour « tester ».
+- Un autre générateur d'images gratuit (Pollinations) a été testé et **rejeté** : filigrane imposé et textes illisibles.
+- Ne jamais écrire de clé ou de mot de passe dans le dépôt ; ne pas envoyer de vrais e-mails pour « tester » ; ne pas fabriquer de chiffres (revenus, adresses, déclarations légales) dans les formulaires des partenaires.
 - Messages de commit : terminer par les lignes d'attribution demandées par l'environnement ; ne jamais y mettre l'identifiant du modèle.
