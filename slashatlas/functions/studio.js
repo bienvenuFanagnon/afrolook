@@ -332,7 +332,25 @@ async function generate(u, b) {
   const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale);
   parts.push({ text });
 
-  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale, polished });
+  // Paramètres de l'affiche de vente pour l'historique (jamais dans le prompt IA)
+  let saleOpts = null;
+  if (sale && b.saleOpts && typeof b.saleOpts === 'object') {
+    const so = b.saleOpts;
+    saleOpts = {
+      model: clean(String(so.model || ''), 20) || null,
+      tag: clean(String(so.tag || ''), 20),
+      price: clean(String(so.price || ''), 20),
+      cur: clean(String(so.cur || ''), 10),
+      old: clean(String(so.old || ''), 20),
+      disc: clean(String(so.disc || ''), 12),
+      brand: clean(String(so.brand || ''), 60),
+      contact: clean(String(so.contact || ''), 60),
+      qr: clean(String(so.qr || ''), 200),
+      qrSize: so.qrSize === 'm' ? 'm' : 's',
+    };
+  }
+
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale, polished, ...(saleOpts ? { saleOpts } : {}) });
 }
 
 /** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */
@@ -561,6 +579,43 @@ async function evidence(orderId) {
   return out;
 }
 
+/** Historique des générations d'un utilisateur (30 dernières, status=done, hors modifications). */
+async function history(u) {
+  const snap = await db().collection('StudioGenerations')
+    .where('uid', '==', u.uid)
+    .orderBy('createdAt', 'desc')
+    .limit(30)
+    .get();
+  return snap.docs
+    .filter((d) => { const x = d.data(); return x.status === 'done' && x.slug; })
+    .slice(0, 20)
+    .map((d) => {
+      const x = d.data();
+      return {
+        id: d.id,
+        slug: x.slug || '',
+        lang: x.lang || 'fr',
+        product: x.product || '',
+        sale: !!x.sale,
+        saleOpts: x.saleOpts || null,
+        ts: x.createdAt ? x.createdAt.toMillis() : 0,
+      };
+    });
+}
+
+/** Récupère une image déjà générée depuis Firebase Storage (gratuit, sans crédit). */
+async function regen(u, b) {
+  const id = clean(b.id, 40);
+  if (!id) throw fail(400, 'bad_id');
+  const snap = await db().collection('StudioGenerations').doc(id).get();
+  if (!snap.exists) throw fail(404, 'not_found');
+  const data = snap.data();
+  if (data.uid !== u.uid) throw fail(403, 'forbidden');
+  if (data.status !== 'done' || !data.path) throw fail(404, 'not_found');
+  const [buf] = await getStorage().bucket().file(data.path).download();
+  return { id, image: buf.toString('base64'), mime: data.mime || 'image/jpeg' };
+}
+
 /** Don de crédits par l'administrateur (journal : type « grant », référence unique). */
 async function grant(email, n, note) {
   const q = await db().collection('StudioUsers').where('email', '==', clean(email, 160).toLowerCase()).limit(1).get();
@@ -572,4 +627,4 @@ async function grant(email, n, note) {
   return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini };
+module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini };
