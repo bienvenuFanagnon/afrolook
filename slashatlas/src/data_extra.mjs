@@ -214,7 +214,7 @@ const AF = [
     'Evening elegance', 'Gala night', 'An elegant evening outfit in a luxury hotel, warm golden light.',
     'a vertical 4:5 evening-elegance photo: the person wears a refined long dress or evening suit in a luxury hotel lobby (marble, chandeliers, warm golden light), natural pose, ultra-realistic rendering.'],
   ['afrodoll', '4:5', 'Style poupée glamour rose', 'Glamour rose', 'Un look glamour façon poupée : décor rose pastel, lumière douce et rendu très réaliste.',
-    'une photo verticale 4:5 au style « poupée glamour » : la personne dans un décor rose pastel de studio (fond rose, accessoires brillants discrets), tenue rose ou blanche élégante, maquillage lumineux, lumière douce de beauté, pose gracieuse, rendu très réaliste et non caricatural.',
+    'une photo verticale 4:5 au style poupée glamour : la personne dans un décor rose pastel de studio (fond rose, accessoires brillants discrets), tenue rose ou blanche élégante, maquillage lumineux, lumière douce de beauté, pose gracieuse, rendu très réaliste et non caricatural.',
     'Pink glamour doll style', 'Pink glamour', 'A glamour doll-like look: pastel pink set, soft light and very realistic rendering.',
     'a vertical 4:5 photo in a “glamour doll” style: the person in a pastel pink studio set (pink backdrop, discreet shiny props), elegant pink or white outfit, luminous makeup, soft beauty light, graceful pose, very realistic and not caricatured rendering.'],
   ['afrorealistic', '4:5', 'Portrait ultra réaliste', 'Portrait réaliste', 'Un portrait de beauté d’un réalisme saisissant, lumière naturelle et grain de peau fidèle.',
