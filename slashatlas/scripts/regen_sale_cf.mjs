@@ -28,12 +28,12 @@ const INTRO = {
 const COMPOSE = ' Composition for a sales advertisement: the subject is large, sharp and centered slightly above the middle, with a clean, calm, uncluttered background area along the bottom quarter of the image.';
 // Slugs de la démo homepage avec photo "avant" → img2img SD 1.5 pour conserver la tenue
 const IMGPAIRS_PROMPTS = {
-  fashionposter: 'African wax print dress with bold geometric patterns in orange blue and white colors, displayed flat on a pure white background, fashion advertising poster, vertical 4:5 format, soft studio lighting, sharp editorial photography, clothing only, no people, no bottles, no other objects',
+  fashionposter: 'Professional fashion advertising poster, beautiful Black African woman wearing a traditional wax print dress with bold geometric patterns in orange blue and white colors, full body shot, fashion studio with clean neutral background, editorial lighting, magazine style, high end fashion photography, vertical 4:5 format, sharp, no text',
   lookbook: 'fashion lookbook page, outfit on neutral textured background, editorial lighting, magazine style, generous margins',
-  hairshowcase: 'hair salon poster, professional studio lighting, shiny hair highlights, neutral gradient background',
+  hairshowcase: 'Beautiful Black African woman with long braided hair, professional hair salon poster, studio lighting, shiny healthy hair, neutral grey background, fashion portrait, close-up shot',
   splashshot: 'product advertising, splash effect, clean gradient background, studio lighting, premium feel',
   productglow: 'product floating on dark background, glowing halo, studio light, premium luxury advertisement',
-  menuhero: 'food photography, dish close-up, warm side lighting, dark blurred background, restaurant menu poster',
+  menuhero: 'African grilled chicken with rice and tomato salad on a white plate, professional food photography close-up, warm lighting, dark blurred restaurant background, menu poster style, appetizing',
   coverdrop: 'album cover art, centered portrait, strong contrast, clean background, music release single cover',
   skincareglow: 'skincare product advertisement, clean white background, soft diffused light, premium cosmetics packaging',
 };

@@ -40,8 +40,8 @@ const PRICE = { // [min, max, pas]
   auto: [2500000, 9500000, 50000], maison: [15000, 250000, 1000], immobilier: [18000000, 85000000, 500000], produit: [2000, 60000, 500], packaging: [150, 1800, 25],
 };
 const PHONES = ['+225 07 12 34 56 78', '+229 97 12 34 56', '+221 77 123 45 67', '+237 6 77 12 34 56', '+225 05 98 76 54 32', '+228 90 12 34 56', '+234 803 123 4567', '+243 81 234 5678'];
-// deux devises seulement, mélangées : environ la moitié des affiches en dollars, l'autre moitié en FCFA
-const USD_RATE = 600; // 1 $ ≈ 600 FCFA, pour des prix de même ordre de grandeur
+// toujours en FCFA — la cible est l'Afrique francophone
+const USD_RATE = 600; // conservé pour la fonction money() mais usd est toujours false
 const MODELS = S.MODELS;
 
 function money(fcfa, usd) {
@@ -53,7 +53,7 @@ function money(fcfa, usd) {
 function content(c, i) {
   const h = hash(c.slug), cat = c.cat, [lo, hi, step] = PRICE[cat] || PRICE.produit;
   const fcfa = Math.round((lo + ((h >>> 3) % 1000) / 1000 * (hi - lo)) / step) * step;
-  const usd = ((h >>> 5) % 100) < 48; // ≈ la moitié en dollars
+  const usd = false; // toujours FCFA
   const disc = (h >>> 7) % 100 < 45 ? pick(['-10 %', '-15 %', '-20 %', '-25 %', '-30 %', '-40 %', '-50 %'], h >>> 9) : '';
   const pct = disc ? +disc.replace(/\D/g, '') : 0;
   const oldFcfa = pct ? Math.round(fcfa / (1 - pct / 100) / (fcfa > 10000 ? 500 : 25)) * (fcfa > 10000 ? 500 : 25) : 0;
