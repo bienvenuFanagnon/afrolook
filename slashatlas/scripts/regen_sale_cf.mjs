@@ -99,13 +99,24 @@ for (const c of list) {
   try {
     const avantPath = path.join(CUR, `${c.slug}-avant.webp`);
     const useI2I = IMGPAIRS_PROMPTS[c.slug] && fs.existsSync(avantPath);
-    const img = useI2I
-      ? await cfImg2Img(avantPath, IMGPAIRS_PROMPTS[c.slug], c.ratio)
-      : await cf(prompt(c));
+    let img, engine;
+    if (useI2I) {
+      try {
+        img = await cfImg2Img(avantPath, IMGPAIRS_PROMPTS[c.slug], c.ratio);
+        engine = 'SD15i2i';
+      } catch (e2) {
+        if (e2.status === 403 || /5018|not allowed/i.test(e2.message)) {
+          console.log(`img2img non disponible pour ${c.slug}, bascule sur FLUX`);
+          img = await cf(prompt(c)); engine = 'FLUX';
+        } else throw e2;
+      }
+    } else {
+      img = await cf(prompt(c)); engine = 'FLUX';
+    }
     await cropAndSave(img, path.join(BASE, `${c.slug}-apres.webp`), c.ratio);
     state[c.slug] = 1; fs.writeFileSync(stateFile, JSON.stringify(state));
-    engines[c.slug] = useI2I ? 'SD15i2i' : 'FLUX'; done++;
-    console.log('ok', c.slug, useI2I ? '(img2img)' : '(flux)');
+    engines[c.slug] = engine; done++;
+    console.log('ok', c.slug, `(${engine})`);
   } catch (e) {
     console.error('échec', c.slug, e.message);
     if (e.status === 429 || /4006|neurons|allocation|limit/i.test(e.message)) { console.error('Quota du jour atteint : on s\'arrête, reprise demain.'); break; }
