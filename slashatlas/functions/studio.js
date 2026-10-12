@@ -34,8 +34,8 @@ const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PAS
 // Parrainage : le parrain gagne des CRÉDITS (jamais d'argent) quand un filleul achète des crédits par mobile money.
 // Calcul de rentabilité : un crédit nous coûte ≈ 40 FCFA (Gemini) et se vend 69 à 83 FCFA ; les frais de paiement sont payés par le client.
 // Commission ≈ 15 % en crédits (p6 : 1, p20 : 3, p55 : 8, p160 : 24) → marge brute après commission, si tous les crédits sont utilisés :
-// p6 ≈ 49 %, p20 ≈ 39 %, p55 ≈ 35 %, p160 ≈ 33 %. Aucune récompense à l'inscription (pas de faux comptes rentables), durée limitée à 12 mois.
-const REF = { credits: { p6: 1, p20: 3, p55: 8, p160: 24 }, months: 12, listMax: 50 };
+// p6 ≈ 49 %, p20 ≈ 39 %, p55 ≈ 35 %, p160 ≈ 33 %. Aucune récompense à l'inscription (pas de faux comptes rentables), commission à chaque rechargement du filleul, sans limite de durée (chaque achat reste rentable, voir marges ci-dessus).
+const REF = { credits: { p6: 1, p20: 3, p55: 8, p160: 24 }, months: 0, listMax: 50 }; // months: 0 = pas de limite de durée
 const REF_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newRefCode = () => Array.from(crypto.randomBytes(7), (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join('');
 // Plafonds de sécurité (par jour, UTC)
@@ -169,7 +169,7 @@ async function referralReward(o, orderId) {
   const rs = await rref.get(); if (!rs.exists) return;
   const r = rs.data();
   const created = r.createdAt && r.createdAt.toMillis ? r.createdAt.toMillis() : Date.now();
-  if (Date.now() > created + REF.months * 30.5 * 86400000) return;
+  if (REF.months && Date.now() > created + REF.months * 30.5 * 86400000) return;
   const res = await addCredits(r.referrer, n, 'referral', orderId, { from: o.uid, packId: o.packId });
   if (!res.applied) return;
   await db().runTransaction(async (tx) => {
