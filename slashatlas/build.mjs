@@ -37,7 +37,8 @@ const versioned = (html) => html
   .replace(/(\/video\/(?:exemples|tuto)\/[A-Za-z0-9_.-]+\.mp4)(?=["'\s<>,)])/g, (m, u) => { const f = path.join(root, 'static', u); if (!(u in mp4Hash)) mp4Hash[u] = fs.existsSync(f) ? createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 8) : ''; return mp4Hash[u] ? `${u}?v=${mp4Hash[u]}` : u; });
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, p.endsWith('.html') && typeof c === 'string' ? versioned(c) : c); };
 const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 'static', f))).digest('hex').slice(0, 8);
-const V = { css: hashOf('css/site.css'), js: hashOf('js/site.js') };
+const hashDir = (d) => { const h = createHash('sha1'); const dir = path.join(root, 'static', d); for (const f of fs.readdirSync(dir).filter(x => x.endsWith('.js')).sort()) h.update(fs.readFileSync(path.join(dir, f))); return h.digest('hex').slice(0, 8); };
+const V = { css: hashOf('css/site.css'), js: hashDir('js') };
 
 const P = {
   fr: { home: '/', cmds: '/commandes/', try: '/generer/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },

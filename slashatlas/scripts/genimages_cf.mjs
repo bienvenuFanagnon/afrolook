@@ -32,13 +32,18 @@ function prompt(c) {
     .replace(/\[[^\]]*?(?:for example|e\.g\.)[:\s]*([^\]]*)\]/gi, '$1').replace(/\[([^\]]*)\]/g, '$1')
     .replace(/[“"][^”"]*[”"]/g, '').replace(/\s+/g, ' ').trim();
   // Catégorie Afro Fashion : les exemples montrent des personnes noires africaines (sans précision, le modèle d'image choisit d'autres profils)
-  const intro = c.cat === 'afrofashion' ? 'Professional editorial fashion photograph of a Black African person with dark brown skin and natural African features (two Black African people if the scene describes a couple or duo). ' : (INTRO[c.kind] ?? '');
+  // kind:poster (ecom, etc.) : illustration commerciale propre sans texte
+  const posterIntro = 'Professional commercial illustration, clean advertising visual, product or scene centered on solid background. ';
+  const intro = c.cat === 'afrofashion' ? 'Professional editorial fashion photograph of a Black African person with dark brown skin and natural African features (two Black African people if the scene describes a couple or duo). ' : c.kind === 'poster' ? posterIntro : (INTRO[c.kind] ?? '');
   return `${intro}${s} No text, no letters, no logo, no watermark. Sharp, high quality.`.slice(0, 1800);
 }
-const NOGEN = new Set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo blueprint cyberpunk barbershop vintagerack inauguration conference djnight mascotsticker2 jewelgold jewelpearl'.split(' ')); // texte parasite ou refus du filtre du modèle
-const skip = (c) => NOGEN.has(c.slug) || ['poster', 'logo', 'text'].includes(c.kind) || fs.existsSync(path.join(OUT, `${c.slug}-apres.webp`));
+const NOGEN = new Set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo blueprint cyberpunk barbershop vintagerack inauguration conference djnight mascotsticker2 jewelgold jewelpearl logowood'.split(' ')); // texte parasite ou refus du filtre du modèle
+// --force : ignore le filtre kind (poster/logo/text) pour les slugs explicitement listés via --slugs
+const FORCE = !!arg('force', false);
+const slugFilter = SLUGS ? new Set(String(SLUGS).split(',')) : null;
+const skip = (c) => NOGEN.has(c.slug) || (!FORCE || !slugFilter || !slugFilter.has(c.slug)) && ['poster', 'logo', 'text'].includes(c.kind) || fs.existsSync(path.join(OUT, `${c.slug}-apres.webp`));
 let list = COMMANDS.filter((c) => !skip(c));
-if (SLUGS) list = list.filter((c) => String(SLUGS).split(',').includes(c.slug));
+if (slugFilter) list = list.filter((c) => slugFilter.has(c.slug));
 if (CATS) list = list.filter((c) => String(CATS).split(',').includes(c.cat));
 const rank = (c) => { const i = PRIORITY.indexOf(c.cat); return i < 0 ? 99 : i; };
 list = list.map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map((x) => x[0]).slice(0, LIMIT);
