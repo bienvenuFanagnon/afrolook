@@ -9,5 +9,9 @@
     "check": "node check.mjs",
     "stats": "node scripts/stats.mjs",
     "deploy": "node build.mjs && node check.mjs && firebase deploy --only hosting,functions:slashatlas --project afrolooki"
+  },
+  "devDependencies": {
+    "jimp": "^1.6.1",
+    "sharp": "^0.35.5"
   }
 }

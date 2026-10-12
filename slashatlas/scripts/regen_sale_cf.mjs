@@ -4,13 +4,14 @@
 // Usage : CF_ACCOUNT_ID=… CF_API_TOKEN=… node scripts/regen_sale_cf.mjs [--mod 2 --rem 0] [--limit 120] [--slugs a,b]
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { COMMANDS } from '../src/data.mjs';
 import { isSale } from '../src/sale.mjs';
+import sharp from 'sharp';
 
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i < 0 ? d : process.argv[i + 1]; };
 const MOD = +arg('mod', 1), REM = +arg('rem', 0), LIMIT = +arg('limit', 400), SLUGS = arg('slugs', '');
-const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = path.join(ROOT, 'assets', 'c-base'), CUR = path.join(ROOT, 'static', 'img', 'c');
 const ACC = process.env.CF_ACCOUNT_ID, TOKEN = process.env.CF_API_TOKEN;
 if (!ACC || !TOKEN) throw new Error('CF_ACCOUNT_ID et CF_API_TOKEN sont nécessaires');
@@ -51,13 +52,22 @@ async function cf(p) {
   if (!r.ok || !j.success || !j.result || !j.result.image) { const e = (j.errors && j.errors[0]) || {}; const err = new Error(`${r.status} ${e.code || ''} ${e.message || ''}`); err.status = r.status; throw err; }
   return Buffer.from(j.result.image, 'base64');
 }
-const PY = "import sys\nfrom PIL import Image\nsrc,out,ratio=sys.argv[1:4]\nw,h=map(float,ratio.split(':'))\nim=Image.open(src).convert('RGB')\nW,H=im.size;t=w/h\nif W/H>t:\n nw=int(H*t);im=im.crop(((W-nw)//2,0,(W-nw)//2+nw,H))\nelse:\n nh=int(W/t);im=im.crop((0,(H-nh)//2,W,(H-nh)//2+nh))\nk=1000/max(im.size)\nim=im.resize((max(1,int(im.size[0]*k)),max(1,int(im.size[1]*k))),Image.LANCZOS) if k<1 else im\nim.save(out,'WEBP',quality=84)\n";
+async function cropAndSave(imgBuf, outPath, ratio) {
+  const [rw, rh] = ratio.split(':').map(Number);
+  const meta = await sharp(imgBuf).metadata();
+  const W = meta.width, H = meta.height, target = rw / rh;
+  let left = 0, top = 0, cw = W, ch = H;
+  if (W / H > target) { cw = Math.round(H * target); left = Math.round((W - cw) / 2); }
+  else { ch = Math.round(W / target); top = Math.round((H - ch) / 2); }
+  const k = 1000 / Math.max(cw, ch);
+  const w2 = k < 1 ? Math.round(cw * k) : cw, h2 = k < 1 ? Math.round(ch * k) : ch;
+  await sharp(imgBuf).extract({ left, top, width: cw, height: ch }).resize(w2, h2, { kernel: 'lanczos3' }).webp({ quality: 84 }).toFile(outPath);
+}
 let done = 0;
 for (const c of list) {
   try {
     const img = await cf(prompt(c));
-    const tmp = path.join(BASE, `.${c.slug}.tmp`); fs.writeFileSync(tmp, img);
-    execFileSync('python3', ['-c', PY, tmp, path.join(BASE, `${c.slug}-apres.webp`), c.ratio]); fs.unlinkSync(tmp);
+    await cropAndSave(img, path.join(BASE, `${c.slug}-apres.webp`), c.ratio);
     state[c.slug] = 1; fs.writeFileSync(stateFile, JSON.stringify(state)); engines[c.slug] = 'FLUX'; done++; console.log('ok', c.slug);
   } catch (e) {
     console.error('échec', c.slug, e.message);
