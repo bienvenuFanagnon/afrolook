@@ -1162,9 +1162,15 @@ class _CardStudioPageState extends State<CardStudioPage> {
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
       decoration: BoxDecoration(color: c.surface, border: Border(top: BorderSide(color: c.border.withOpacity(0.5)))),
       child: Row(children: [
-        if (widget.compose)
-          btn(Icons.check_circle_rounded, context.tr('Utiliser cette carte'), _quote.cost(CardKind.publish, pro: _isPro), _useCard, primary: true)
-        else ...[
+        if (widget.compose) ...[
+          // Carte neuve (sans post de départ) : on peut aussi l'enregistrer ou la partager avant de l'utiliser.
+          // Pour la participation à un défi, le lien « Vote pour moi » mène à un post pas encore publié : pas de partage avant.
+          if (widget.presetPostId == null) ...[
+            btn(Icons.download_rounded, context.tr('Enregistrer'), _quote.cost(CardKind.capture, pro: _isPro), _save, done: capDone ? tr('Déjà réglé') : null),
+            btn(Icons.ios_share_rounded, context.tr('Partager'), _quote.cost(CardKind.capture, pro: _isPro), _share, done: capDone ? tr('Déjà réglé') : null),
+          ],
+          btn(Icons.check_circle_rounded, context.tr('Utiliser cette carte'), _quote.cost(CardKind.publish, pro: _isPro), _useCard, primary: true),
+        ] else ...[
           btn(Icons.download_rounded, context.tr('Enregistrer'), _quote.cost(CardKind.capture, pro: _isPro), _save, done: capDone ? tr('Déjà réglé') : null),
           btn(Icons.ios_share_rounded, context.tr('Partager'), _quote.cost(CardKind.capture, pro: _isPro), _share, done: capDone ? tr('Déjà réglé') : null),
           btn(Icons.rocket_launch_rounded, context.tr('Publier'), _quote.cost(CardKind.publish, pro: _isPro), _publish, primary: true),

@@ -47,3 +47,6 @@ Fonctions : `cardQuote`, `cardCommit`, `cardPassBuy`. Collection `CardUsage` (é
 - Nouveaux plugins natifs (`gal`, `qr_flutter`) et nouvelles polices → il faut une vraie version store (pas un patch Shorebird).
 - Nouveaux textes pas encore traduits (clés françaises, repli sur le français) ; noms de pays en anglais (liste de `country_code_picker`).
 - Site web de création de cartes : prévu plus tard ; les QR passent par `afrolookmedia.com/share/…`, donc il pourra reprendre ces liens.
+
+## Carte neuve : enregistrer et partager
+En création depuis zéro (mode `compose`, hors post existant), le Studio propose maintenant **Enregistrer**, **Partager** et **Utiliser cette carte** (avant : seulement « Utiliser »). Même règle de prix que les captures. Pas de partage ni d’enregistrement pour une participation à un défi (`presetPostId`) : le lien « Vote pour moi » mène à un post pas encore publié.
