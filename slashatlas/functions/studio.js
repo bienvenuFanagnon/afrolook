@@ -277,14 +277,14 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
   const brand = brandClause(c.kind, L, texts);
   const qr = qrClause(L, qrpos);
   // affiche de vente : le prix, le contact, le QR et l’étiquette sont ajoutés par le site après la génération ; l’IA garde le bas dégagé et n’écrit rien
-  const saleClause = sale ? (L === ‘en’ ? ‘Composition for a sales advertisement: keep the subject large and centered slightly above the middle, and keep the bottom quarter of the image calm and uncluttered. The price, contact details, label and a small QR code will be added afterwards: write no text on the image.’ : ‘Composition pour une annonce de vente : garde le sujet grand et centré légèrement au-dessus du milieu, et garde le quart inférieur de l’image calme et dégagé. Le prix, les contacts, l’étiquette et un petit QR code seront ajoutés ensuite : n’écris aucun texte sur l’image.’) : ‘’;
+  const saleClause = sale ? (L === 'en' ? 'Composition for a sales advertisement: keep the subject large and centered slightly above the middle, and keep the bottom quarter of the image calm and uncluttered. The price, contact details, label and a small QR code will be added afterwards: write no text on the image.' : "Composition pour une annonce de vente : garde le sujet grand et centré légèrement au-dessus du milieu, et garde le quart inférieur de l'image calme et dégagé. Le prix, les contacts, l'étiquette et un petit QR code seront ajoutés ensuite : n'écris aucun texte sur l'image.") : '';
   // instruction de mise en scène libre (fond, ambiance, personnage, etc.)
-  const stagingClause = stagingInstruction ? (L === ‘fr’ ? `Instruction de mise en scène : ${stagingInstruction}` : `Scene instruction: ${stagingInstruction}`) : ‘’;
+  const stagingClause = stagingInstruction ? (L === 'fr' ? `Instruction de mise en scène : ${stagingInstruction}` : `Scene instruction: ${stagingInstruction}`) : '';
   // qualité studio, propre au Studio : rendu photo premium, fidélité au produit, aucun ajout non demandé
-  const quality = L === ‘en’
-    ? ‘Studio quality: premium commercial photographic rendering, careful lighting, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.’
-    : ‘Qualité studio : rendu photographique commercial premium, lumière soignée, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n’ajoute aucun objet, texte ou filigrane qui n’a pas été demandé.’;
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ‘ ‘ + brand : ‘’}${qr ? ‘ ‘ + qr : ‘’}${stagingClause ? ‘ ‘ + stagingClause : ‘’}${saleClause ? ‘ ‘ + saleClause : ‘’} ${quality}`.trim(), ratio: c.ratio };
+  const quality = L === 'en'
+    ? 'Studio quality: premium commercial photographic rendering, careful lighting, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.'
+    : "Qualité studio : rendu photographique commercial premium, lumière soignée, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n'ajoute aucun objet, texte ou filigrane qui n'a pas été demandé.";
+  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${stagingClause ? ' ' + stagingClause : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
 }
 
 async function callGemini(parts, ratio) {
