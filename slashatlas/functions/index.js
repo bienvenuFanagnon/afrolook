@@ -1,5 +1,6 @@
 // SlashAtlas : mesure d'audience sans cookie + liste d'attente / newsletter.
 // Aucune donnée personnelle hors e-mail volontairement saisi ; aucune IP stockée.
+// v2026-10-13
 const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp, getApps } = require('firebase-admin/app');
