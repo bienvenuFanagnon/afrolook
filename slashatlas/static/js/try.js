@@ -13,6 +13,8 @@
       hello: 'Bonjour', back: 'Content de vous revoir', welcome: 'Compte créé', credits: 'crédits', credit: 'crédit', buy: 'Acheter des crédits', logout: 'Se déconnecter',
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
+      scene: 'Mise en scène', sceneHint: 'Décrivez le fond, l'ambiance ou comment composer la scène. Facultatif.', scenePh: 'ex. fond de marché africain, la personne porte le vêtement, ambiance coucher de soleil', sceneChips: ['Porter le vêtement', 'Fond marché africain', 'Studio blanc épuré', 'Ambiance coucher de soleil', 'Avant / Après'],
+      brandSave: 'Mémoriser ma marque', brandSaved: 'Profil mémorisé',
       gen: 'Générer', genCost: 'Générer · 1 crédit', needPhoto: 'Ajoutez une photo pour générer', working: 'Création en cours… environ 20 secondes', done: 'Voici votre visuel', download: 'Télécharger', again: 'Refaire · 1 crédit', editTitle: 'Un défaut ? Corrigez ou modifiez', editPh: 'ex. enlève le reflet à gauche, fond plus clair, logo plus net', editBtn: 'Appliquer · 1 crédit', editing: 'Modification en cours… environ 20 secondes', version: 'Version', editHint: 'Décrivez ce qu’il faut changer. Le reste de l’image est conservé. Chaque modification coûte 1 crédit.', ai: 'Généré par IA · Gemini', aiNote: 'le fichier téléchargé est sans mention sur l’image',
       qrTitle: 'Ajouter un QR code à mon affiche (site, boutique, WhatsApp)', qrWhyT: 'À quoi sert le QR code ?', qrW1: 'Vous collez votre lien ou votre numéro WhatsApp.', qrW2: 'Un petit QR code apparaît sur l’affiche, à l’endroit le plus calme.', qrW3: 'Vos clients le scannent avec leur téléphone et arrivent directement chez vous : pour commander, réserver ou vous écrire, sans rien recopier.', qrWhyEnd: 'Facultatif. Vous pouvez le déplacer, le réduire ou le retirer, gratuitement, même après la génération.', qrLabel: 'Votre lien ou numéro WhatsApp', qrPh: 'ex. maboutique.com ou +225 07 00 00 00 00', qrOpens: 'Le QR code ouvrira :', qrBad: 'Lien non reconnu. Écrivez par exemple maboutique.com', qrLong: 'lien long, le code sera plus dense : préférez un lien court', qrCtaL: 'Texte au-dessus du QR code', qrCta_order: 'Scannez pour commander', qrCta_book: 'Scannez pour réserver', qrCta_contact: 'Scannez pour nous écrire', qrCta_shop: 'Scannez pour voir la boutique', qrPos: 'Emplacement', qrAuto: 'Automatique (conseillé)', qrBL: 'Bas gauche', qrBR: 'Bas droite', qrTL: 'Haut gauche', qrTR: 'Haut droite', qrNone: 'Aucun QR code', qrSize: 'Taille', qrS: 'Petit', qrM: 'Moyen', qrL: 'Grand', qrWarn: 'Ce coin n’avait pas été gardé libre à la génération : vérifiez que le QR code ne cache rien.', qrNote: 'Sous le QR code, « Créé avec slashatlas.com » est une simple information, pas un lien : le QR code ouvre uniquement votre lien.',
       share: 'Partager', shareTitle: 'Partager mon visuel', shareText: 'Mon visuel créé avec SlashAtlas', shareCopyLink: 'Copier le lien', shareImg: 'Partager l’image', shareCopyImg: 'Copier l’image', shareDone: 'Copié', shareHint: 'Les réseaux n’acceptent pas l’image par lien : téléchargez-la ou copiez-la, puis ajoutez-la à votre publication. Le lien SlashAtlas est ajouté au message.', shareFail: 'Copie impossible : téléchargez l’image puis partagez-la.',
@@ -31,6 +33,8 @@
       hello: 'Hello', back: 'Welcome back', welcome: 'Account created', credits: 'credits', credit: 'credit', buy: 'Buy credits', logout: 'Sign out',
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
+      scene: 'Scene setup', sceneHint: 'Describe the background, mood or how the scene should be composed. Optional.', scenePh: 'e.g. African market backdrop, person wears the outfit, sunset mood', sceneChips: ['Wear the outfit', 'African market backdrop', 'Clean white studio', 'Sunset mood', 'Before / After'],
+      brandSave: 'Save my brand', brandSaved: 'Profile saved',
       gen: 'Generate', genCost: 'Generate · 1 credit', needPhoto: 'Add a photo to generate', working: 'Creating… about 20 seconds', done: 'Here is your visual', download: 'Download', again: 'Redo · 1 credit', editTitle: 'Spotted a flaw? Fix or change it', editPh: 'e.g. remove the glare on the left, lighter background, sharper logo', editBtn: 'Apply · 1 credit', editing: 'Editing… about 20 seconds', version: 'Version', editHint: 'Describe what to change. The rest of the image is kept. Each edit costs 1 credit.', ai: 'AI-generated · Gemini', aiNote: 'the downloaded file has no mark on the image',
       qrTitle: 'Add a QR code to my poster (website, shop, WhatsApp)', qrWhyT: 'What is the QR code for?', qrW1: 'You paste your link or your WhatsApp number.', qrW2: 'A small QR code appears on the poster, in the calmest spot.', qrW3: 'Your customers scan it with their phone and land straight on your page: to order, book or message you, without typing anything.', qrWhyEnd: 'Optional. You can move it, shrink it or remove it, for free, even after generation.', qrLabel: 'Your link or WhatsApp number', qrPh: 'e.g. myshop.com or +225 07 00 00 00 00', qrOpens: 'The QR code will open:', qrBad: 'Link not recognized. Write for example myshop.com', qrLong: 'long link, the code will be denser: prefer a short link', qrCtaL: 'Text above the QR code', qrCta_order: 'Scan to order', qrCta_book: 'Scan to book', qrCta_contact: 'Scan to message us', qrCta_shop: 'Scan to see the shop', qrPos: 'Position', qrAuto: 'Automatic (recommended)', qrBL: 'Bottom left', qrBR: 'Bottom right', qrTL: 'Top left', qrTR: 'Top right', qrNone: 'No QR code', qrSize: 'Size', qrS: 'Small', qrM: 'Medium', qrL: 'Large', qrWarn: 'This corner was not kept free during generation: check that the QR code hides nothing.', qrNote: 'Under the QR code, “Made with slashatlas.com” is just information, not a link: the QR code only opens your link.',
       share: 'Share', shareTitle: 'Share my visual', shareText: 'My visual made with SlashAtlas', shareCopyLink: 'Copy link', shareImg: 'Share the image', shareCopyImg: 'Copy image', shareDone: 'Copied', shareHint: 'Social networks cannot take the image from a link: download or copy it, then add it to your post. The SlashAtlas link is added to the message.', shareFail: 'Copy not possible: download the image, then share it.',
@@ -48,7 +52,7 @@
   var params = new URLSearchParams(location.search);
   var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  var state = { mode: params.get('mode') === 'video' && root.dataset.vurl ? 'video' : 'image', user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, sale: { on: true, tag: true, tagv: 'sale', price: true, priceV: '', cur: '', old: false, oldV: '', disc: false, discV: '', brand: true, contact: true, qr: true, model: 'auto' }, adFreeUntil: 0, checking: true };
+  var state = { mode: params.get('mode') === 'video' && root.dataset.vurl ? 'video' : 'image', user: null, credits: 0, photos: [], multi: false, product: '', busy: false, cfg: null, result: null, versions: [], cur: 0, instruction: '', stagingInstruction: '', brand: { brand: '', contact: '', other: '' }, qr: { raw: '', pos: 'auto', size: 's', cta: 'order' }, sale: { on: true, tag: true, tagv: 'sale', price: true, priceV: '', cur: '', old: false, oldV: '', disc: false, discV: '', brand: true, contact: true, qr: true, model: 'auto' }, adFreeUntil: 0, checking: true, brandProfileLoaded: false };
 
   var $ = function (s, r) { return (r || root).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -130,7 +134,7 @@
     var filled = fields.some(function (f) { return state.brand[f[0]]; });
     return '<details class="brandbox sf"' + (filled ? ' open' : '') + '><summary>' + B.title + '</summary><p class="hint">' + B.hint + '</p><div class="bgrid">' + fields.map(function (f) {
       return '<label>' + f[1] + '<input type="text" data-brole="' + f[0] + '" maxlength="' + f[3] + '" placeholder="' + esc(f[2]) + '" value="' + esc(state.brand[f[0]]) + '" autocomplete="off"></label>';
-    }).join('') + '</div></details>';
+    }).join('') + '</div><button class="btn gl sm" type="button" id="s-brand-save">' + (state.brandProfileLoaded ? '✓ ' + T.brandSaved : T.brandSave) + '</button></details>';
   }
   function brandTexts() {
     // avec l'affiche de vente, marque et contact sont dessinés par le site (textes exacts) : l'IA n'en reçoit pas
@@ -310,6 +314,7 @@
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
+      '<details class="brandbox sf scenebox"' + (state.stagingInstruction ? ' open' : '') + '><summary>' + T.scene + '</summary><div class="scene-chips">' + T.sceneChips.map(function (s) { return '<button type="button" class="chip" data-ss="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div><textarea id="s-scene" rows="2" maxlength="200" placeholder="' + esc(T.scenePh) + '" autocomplete="off">' + esc(state.stagingInstruction) + '</textarea><small class="hint">' + T.sceneHint + '</small></details>' +
       saleBox() + brandBox() + (saleOn() ? '' : qrBox()) +
       '<button class="btn pri big' + (state.busy ? ' loading' : '') + '" type="button" id="s-gen"' + (state.credits >= 1 && !canGen ? ' disabled' : '') + '>' + (state.busy ? T.working : (state.credits >= 1 && !state.photos.length ? T.needPhoto : genLabel)) + '</button>' +
       '<p class="fmsg" id="s-msg" role="status" aria-live="polite"></p></div>' +
@@ -342,6 +347,9 @@
     Array.prototype.forEach.call(root.querySelectorAll('[data-brole]'), function (i) { i.addEventListener('input', function () { state.brand[i.dataset.brole] = i.value; }); });
     var pr = $('#s-prod'); if (pr) pr.addEventListener('input', function () { state.product = pr.value; });
     Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (b) { b.addEventListener('click', function () { state.multi = b.dataset.n === 'n'; Array.prototype.forEach.call(root.querySelectorAll('.seg2 button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }); });
+    var sc = $('#s-scene'); if (sc) sc.addEventListener('input', function () { state.stagingInstruction = sc.value; });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-ss]'), function (b) { b.addEventListener('click', function () { var s = $('#s-scene'); state.stagingInstruction = b.dataset.ss; if (s) { s.value = b.dataset.ss; s.closest('details').open = true; s.focus(); } }); });
+    var bsv = $('#s-brand-save'); if (bsv) bsv.addEventListener('click', function () { saveBrandProfileToServer(); flash(bsv, T.brandSaved); });
     var g = $('#s-gen'); if (g) g.addEventListener('click', function () { if (state.credits < 1) openBuy('generer'); else generate(); });
     // affiche de vente : cases, textes, devise, modèle ; recomposition immédiate du résultat (gratuit, dans le navigateur)
     var st2 = null, applySaleSoon = function () { saleSave(); clearTimeout(st2); st2 = setTimeout(applyQr, 450); };
@@ -433,7 +441,7 @@
     if (state.busy || !state.photos.length) return;
     state.busy = true; state.result = null; state.versions = []; render(); msg('');
     var genPos = normUrl(state.qr.raw) && state.qr.pos !== 'none' ? state.qr.pos : '';
-    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: saleOn() ? '' : genPos, sale: saleOn() || undefined, saleOpts: saleOn() ? saleOpts() : undefined, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
+    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: saleOn() ? '' : genPos, sale: saleOn() || undefined, saleOpts: saleOn() ? saleOpts() : undefined, stagingInstruction: state.stagingInstruction || undefined, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {
@@ -664,6 +672,25 @@
     try { localStorage.setItem('sa_bal', String(n)); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent('sa:credits', { detail: n })); } catch (e) {}
   }
+
+  function loadBrandProfile() {
+    if (state.brandProfileLoaded) return;
+    window.slashAuth.call('brand-profile', {}).then(function (r) {
+      if (r.status === 200 && r.data) {
+        var d = r.data;
+        if (d.brand && !state.brand.brand) state.brand.brand = d.brand;
+        if (d.contact && !state.brand.contact) state.brand.contact = d.contact;
+        if (d.other && !state.brand.other) state.brand.other = d.other;
+        if (d.brand || d.contact || d.other) { state.brandProfileLoaded = true; saleSave(); render(); }
+      }
+    }).catch(function () {});
+  }
+  function saveBrandProfileToServer() {
+    if (!state.user) return;
+    window.slashAuth.call('brand-profile', { brand: state.brand.brand, contact: state.brand.contact, other: state.brand.other }).then(function (r) {
+      if (r.status === 200) { state.brandProfileLoaded = true; saleSave(); }
+    }).catch(function () {});
+  }
   window.slashStudio = { openBuy: function (f) { openBuy(f); } };
 
   // ── démarrage ──
@@ -675,7 +702,7 @@
     if (!u) { state.checking = false; state.credits = 0; state.result = null; render(); return; }
     window.slashAuth.call('me', { ref: savedRef() }).then(function (r) {
       state.checking = false;
-      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; syncBal(r.data.credits); setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); loadHistory(); }
+      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; syncBal(r.data.credits); setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); loadHistory(); loadBrandProfile(); }
       else { render(); msg(errText(r.data && r.data.error)); }
     });
   });

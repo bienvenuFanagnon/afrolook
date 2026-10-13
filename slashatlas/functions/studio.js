@@ -265,7 +265,7 @@ async function polishPhoto(b64) {
   return enhance(cv, { minSide: 1024, maxSide: 1600, strength: 0.85 }).toBuffer('image/jpeg', 92).toString('base64');
 }
 
-function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false) {
+function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false, stagingInstruction = '') {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
   if (['video', 'motion', 'text', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
@@ -276,13 +276,15 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
     : '';
   const brand = brandClause(c.kind, L, texts);
   const qr = qrClause(L, qrpos);
-  // affiche de vente : le prix, le contact, le QR et l'étiquette sont ajoutés par le site après la génération ; l'IA garde le bas dégagé et n'écrit rien
-  const saleClause = sale ? (L === 'en' ? 'Composition for a sales advertisement: keep the subject large and centered slightly above the middle, and keep the bottom quarter of the image calm and uncluttered. The price, contact details, label and a small QR code will be added afterwards: write no text on the image.' : 'Composition pour une annonce de vente : garde le sujet grand et centré légèrement au-dessus du milieu, et garde le quart inférieur de l’image calme et dégagé. Le prix, les contacts, l’étiquette et un petit QR code seront ajoutés ensuite : n’écris aucun texte sur l’image.') : '';
+  // affiche de vente : le prix, le contact, le QR et l’étiquette sont ajoutés par le site après la génération ; l’IA garde le bas dégagé et n’écrit rien
+  const saleClause = sale ? (L === ‘en’ ? ‘Composition for a sales advertisement: keep the subject large and centered slightly above the middle, and keep the bottom quarter of the image calm and uncluttered. The price, contact details, label and a small QR code will be added afterwards: write no text on the image.’ : ‘Composition pour une annonce de vente : garde le sujet grand et centré légèrement au-dessus du milieu, et garde le quart inférieur de l’image calme et dégagé. Le prix, les contacts, l’étiquette et un petit QR code seront ajoutés ensuite : n’écris aucun texte sur l’image.’) : ‘’;
+  // instruction de mise en scène libre (fond, ambiance, personnage, etc.)
+  const stagingClause = stagingInstruction ? (L === ‘fr’ ? `Instruction de mise en scène : ${stagingInstruction}` : `Scene instruction: ${stagingInstruction}`) : ‘’;
   // qualité studio, propre au Studio : rendu photo premium, fidélité au produit, aucun ajout non demandé
-  const quality = L === 'en'
-    ? 'Studio quality: premium commercial photographic rendering, careful lighting, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.'
-    : 'Qualité studio : rendu photographique commercial premium, lumière soignée, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n’ajoute aucun objet, texte ou filigrane qui n’a pas été demandé.';
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
+  const quality = L === ‘en’
+    ? ‘Studio quality: premium commercial photographic rendering, careful lighting, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.’
+    : ‘Qualité studio : rendu photographique commercial premium, lumière soignée, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n’ajoute aucun objet, texte ou filigrane qui n’a pas été demandé.’;
+  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ‘ ‘ + brand : ‘’}${qr ? ‘ ‘ + qr : ‘’}${stagingClause ? ‘ ‘ + stagingClause : ‘’}${saleClause ? ‘ ‘ + saleClause : ‘’} ${quality}`.trim(), ratio: c.ratio };
 }
 
 async function callGemini(parts, ratio) {
@@ -329,7 +331,8 @@ async function generate(u, b) {
   const texts = cleanTexts(b.texts);
   const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
   const sale = b.sale === true;
-  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale);
+  const stagingInstruction = clean(b.stagingInstruction || '', 200);
+  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale, stagingInstruction);
   parts.push({ text });
 
   // Paramètres de l'affiche de vente pour l'historique (jamais dans le prompt IA)
@@ -627,4 +630,16 @@ async function grant(email, n, note) {
   return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini };
+async function getBrandProfile(u) {
+  const doc = await db().collection('StudioUsers').doc(u.uid).get();
+  const d = doc.exists ? doc.data() : {};
+  return { brand: d.brandName || '', contact: d.brandContact || '', other: d.brandOther || '' };
+}
+
+async function saveBrandProfile(u, b) {
+  const profile = { brandName: clean(b.brand || '', 60), brandContact: clean(b.contact || '', 60), brandOther: clean(b.other || '', 80) };
+  await db().collection('StudioUsers').doc(u.uid).set(profile, { merge: true });
+  return profile;
+}
+
+module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile };
