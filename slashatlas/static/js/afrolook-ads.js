@@ -4,8 +4,8 @@
   var fr = L !== 'en';
   var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   var AND = /Android/.test(navigator.userAgent);
-  var STORE_IOS = 'https://apps.apple.com/app/afrolook/id6740918963';
-  var STORE_AND = 'https://play.google.com/store/apps/details?id=com.afrolook.afrolook';
+  var STORE_IOS = 'https://apps.apple.com/gh/app/afrolook/id6811423047';
+  var STORE_AND = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok';
 
   var PHOTOS = [
     '/img/afl/intro1.jpg', '/img/afl/intro2.jpg', '/img/afl/intro3.jpg',
