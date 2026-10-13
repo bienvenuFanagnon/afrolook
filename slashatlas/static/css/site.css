@@ -492,6 +492,7 @@ img.thumb{object-fit:cover;background:none}img.thumb::after{display:none}
 /* Accueil : deux studios, exemples vidéo, défilement des lignes à la souris */
 .duo{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media (min-width:860px){.duo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.duo > :only-child{grid-column:1/-1}
 .duo-c{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .duo-c h3{margin:0;font-size:19px;letter-spacing:-.02em}.duo-c p{margin:0;color:var(--mut);font-size:14px;line-height:1.5}
 .duo-c .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
