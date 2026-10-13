@@ -39,7 +39,7 @@
   var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
   // Identifiant de visiteur anonyme (UUID persistant dans localStorage, jamais partagé cross-site)
   var uid = ''; try { uid = store('sa_uid') || ''; if (!uid) { uid = 'u' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10); store('sa_uid', uid); } } catch (e) {}
-  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz, uid: n === 1 ? uid : '' });
+  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz, uid: n === 1 ? uid : '', s: n === 1 ? 1 : 0 });
   // page de détails d'une commande : visite comptée (une fois par visite et par commande), pour savoir quelles commandes attirent
   if (page === 'cmd') { var cc = document.getElementById('cmd-cnt'), sl = cc && cc.dataset.slug; if (sl && !sstore('sa_v_' + sl)) { sstore('sa_v_' + sl, '1'); track('view', { s: sl }); } }
 
@@ -47,11 +47,27 @@
   (function () {
     var btns = $$('[data-signin]'); if (!btns.length) return;
     var named = ''; try { named = localStorage.getItem('sa_u') || ''; } catch (e) {}
+    var balWrap = document.getElementById('hd-bal-wrap');
+    var balEl = document.getElementById('hd-bal');
+    var buyBtn = document.getElementById('hd-buy-btn');
+    function applyBal(n) {
+      if (!balWrap || !balEl || n === null || n === '') return;
+      var nb = parseInt(n, 10); if (isNaN(nb)) return;
+      balEl.textContent = nb + ' ' + (lang === 'en' ? (nb === 1 ? 'credit' : 'credits') : (nb === 1 ? 'crédit' : 'crédits'));
+      balWrap.hidden = false;
+    }
     function applyUser(n) {
       if (!n) return;
       named = n;
       btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); if (b.dataset.inHref) b.href = b.dataset.inHref; });
+      try { applyBal(localStorage.getItem('sa_bal')); } catch (e) {}
     }
+    window.addEventListener('sa:credits', function (ev) { if (named) applyBal(ev.detail); });
+    if (buyBtn) buyBtn.addEventListener('click', function () {
+      var studioEl = document.getElementById('studio');
+      if (studioEl && window.slashStudio && window.slashStudio.openBuy) { window.slashStudio.openBuy('header'); }
+      else { location.href = (lang === 'en' ? '/en/generate/' : '/generer/') + '#account'; }
+    });
     applyUser(named);
     // Charger auth.js en arrière-plan pour mettre à jour le bouton si la session Firebase est active
     // (cas où localStorage a été effacé mais la session Firebase persiste)

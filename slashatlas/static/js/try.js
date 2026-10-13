@@ -392,7 +392,7 @@
   var vapi = {
     get cfg() { return state.cfg; }, get credits() { return state.credits; }, T: T, errText: errText, shrink: function (f) { return shrink(f); },
     call: function (p, b) { return window.slashAuth.call(p, b); }, post: function (u, b, t) { return window.slashAuth.post(u, b, t); }, blob: function (p, b) { return window.slashAuth.blob(p, b); },
-    setCredits: function (n) { state.credits = n; var e = $('#s-bal'); if (e) e.textContent = n + ' ' + (n === 1 ? T.credit : T.credits); },
+    setCredits: function (n) { state.credits = n; var e = $('#s-bal'); if (e) e.textContent = n + ' ' + (n === 1 ? T.credit : T.credits); syncBal(n); },
     refreshMe: function () { window.slashAuth.call('me').then(function (r) { if (r.status === 200) vapi.setCredits(r.data.credits); }); },
     openBuy: function (f) { openBuy(f); }, renderUrl: root.dataset.vurl || '',
   };
@@ -660,6 +660,12 @@
     return '<details class="shist-wrap"' + (hist.open ? ' open' : '') + '><summary>' + TH.title + (hist.items.length ? ' (' + hist.items.length + ')' : '') + '</summary><div id="s-hist" class="shist">' + (hist.busy ? '<span class="spin" aria-label="…"></span>' : '') + '</div></details>';
   }
 
+  function syncBal(n) {
+    try { localStorage.setItem('sa_bal', String(n)); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent('sa:credits', { detail: n })); } catch (e) {}
+  }
+  window.slashStudio = { openBuy: function (f) { openBuy(f); } };
+
   // ── démarrage ──
   saleLoad();
   import('/js/auth.js');
@@ -669,7 +675,7 @@
     if (!u) { state.checking = false; state.credits = 0; state.result = null; render(); return; }
     window.slashAuth.call('me', { ref: savedRef() }).then(function (r) {
       state.checking = false;
-      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); loadHistory(); }
+      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; syncBal(r.data.credits); setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); loadHistory(); }
       else { render(); msg(errText(r.data && r.data.error)); }
     });
   });
