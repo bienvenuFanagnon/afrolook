@@ -130,6 +130,26 @@
         "source": "/en/try/**",
         "destination": "/en/generate/",
         "type": 301
+      },
+      {
+        "source": "/pack/",
+        "destination": "/commandes/",
+        "type": 301
+      },
+      {
+        "source": "/pack",
+        "destination": "/commandes/",
+        "type": 301
+      },
+      {
+        "source": "/en/pack/",
+        "destination": "/en/commands/",
+        "type": 301
+      },
+      {
+        "source": "/en/pack",
+        "destination": "/en/commands/",
+        "type": 301
       }
     ]
   },
