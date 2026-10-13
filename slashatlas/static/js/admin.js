@@ -55,7 +55,9 @@
       '<div class="adm-card"><h3>Derniers comptes Studio (' + (d.studioUsers || 0) + ')</h3><div class="tw"><table><thead><tr><th>E-mail</th><th>Nom</th><th>Crédits</th><th>Inscrit</th><th>Dernière visite</th></tr></thead><tbody>' + ((d.users || []).map(function (x) { return '<tr><td>' + esc(x.email) + '</td><td>' + esc(x.name) + '</td><td>' + esc(x.credits) + '</td><td>' + fmt(x.at) + '</td><td>' + fmt(x.seen) + '</td></tr>'; }).join('') || '<tr><td colspan="5">Aucun compte.</td></tr>') + '</tbody></table></div></div>';
     var A = d.ads || {}, adv = '<div class="adm-card"><h3>Publicité Google AdSense</h3><p class="hint">Quand elle est activée, les blocs apparaissent sur l\'accueil, le tutoriel, les packs et, sous le bouton « Copier » (le bloc « rectangle »), seulement après la copie d\'une commande (jamais sur « Générer ici »). Les détenteurs du pass sans pub n\'en voient aucun. Aucun redéploiement nécessaire.</p><form class="adm-form" id="ads-f"><label class="chk"><input type="checkbox" id="a-on"' + (A.enabled ? ' checked' : '') + '> Publicité activée</label><input id="a-client" placeholder="ID éditeur : ca-pub-1234567890123456" value="' + esc(A.client) + '"><input id="a-lb" placeholder="ID du bloc « bandeau » (chiffres)" value="' + esc((A.slots || {}).lb) + '"><input id="a-rect" placeholder="ID du bloc « rectangle » (chiffres)" value="' + esc((A.slots || {}).rect) + '"><button class="btn pri sm" type="submit">Enregistrer</button></form><p class="fmsg" id="a-msg" role="status" aria-live="polite"></p></div>' +
       '<div class="adm-card"><h3>Avant d\'activer</h3><ul class="adm-list"><li>Compte AdSense créé et site ajouté (domaine propre, par exemple slashatlas.com).</li><li>Site en ligne et indexable (<code>indexable: true</code> dans la configuration) avec le contenu complet.</li><li>Le fichier <a href="/ads.txt" target="_blank" rel="noopener">/ads.txt</a> s\'affiche quand la publicité est active.</li><li>Dans AdSense, « Confidentialité et messagerie » : message de consentement européen activé et publié.</li><li>Créer deux blocs adaptatifs (bandeau, rectangle) et coller leurs identifiants ci-dessus.</li></ul></div>';
-    var tools = '<div class="adm-card"><h3>Outils</h3><ul class="adm-list">' + [['Console Firebase', 'https://console.firebase.google.com/project/slashatlas-studio/overview'], ['Base de données', 'https://console.firebase.google.com/project/slashatlas-studio/firestore'], ['Comptes (Authentication)', 'https://console.firebase.google.com/project/slashatlas-studio/authentication/users'], ['Journaux des fonctions', 'https://console.cloud.google.com/logs/query?project=slashatlas-studio'], ['Facturation Gemini (AI Studio)', 'https://aistudio.google.com/usage'], ['Tableau de bord FeexPay', 'https://app.feexpay.me'], ['Google AdSense', 'https://adsense.google.com'], ['Google Search Console', 'https://search.google.com/search-console']].map(function (x) { return '<li><a href="' + x[1] + '" target="_blank" rel="noopener">' + x[0] + '</a></li>'; }).join('') + '</ul></div>';
+    var _svcs = [{id:'elevenlabs',name:'ElevenLabs',desc:'Synthèse vocale',url:'https://elevenlabs.io/subscription'},{id:'cloudflare',name:'Cloudflare Workers AI',desc:'Génération d\'images',url:'https://dash.cloudflare.com'},{id:'claude',name:'Claude API',desc:'IA de génération de texte',url:'https://console.anthropic.com'},{id:'firebase',name:'Firebase',desc:'Base de données et fonctions',url:'https://console.firebase.google.com/project/slashatlas-studio/usage'},{id:'gemini',name:'Gemini API',desc:'IA supplémentaire',url:'https://aistudio.google.com/usage'},{id:'gtts',name:'gTTS',desc:'Texte en parole (Google)',url:'https://console.cloud.google.com/apis/api/texttospeech.googleapis.com'}];
+    var tools = '<div class="adm-card"><h3>Surveillance des services</h3><p class="hint">Suit les abonnements et quotas pour éviter les coupures de service.</p><button class="btn gl sm" type="button" id="refresh-usage" style="margin-top:6px">Actualiser</button><div id="usage-grid" class="svc-grid" style="margin-top:12px">' + _svcs.map(function(s){return '<div class="svc-card" id="svc-'+s.id+'"><div class="svc-top"><span class="svc-dot" id="dot-'+s.id+'"></span><b>'+esc(s.name)+'</b><a href="'+s.url+'" target="_blank" rel="noopener" class="svc-ext">&#8599;</a></div><p class="svc-desc">'+esc(s.desc)+'</p><div class="svc-bar" id="bar-'+s.id+'" style="display:none"><div class="svc-fill" id="fill-'+s.id+'"></div></div><div class="svc-info" id="info-'+s.id+'"><span class="hint">—</span></div></div>';}).join('') + '</div></div>' +
+      '<div class="adm-card"><h3>Consoles et tableaux de bord</h3><ul class="adm-list">' + [['Console Firebase', 'https://console.firebase.google.com/project/slashatlas-studio/overview'], ['Base de données', 'https://console.firebase.google.com/project/slashatlas-studio/firestore'], ['Comptes (Authentication)', 'https://console.firebase.google.com/project/slashatlas-studio/authentication/users'], ['Journaux des fonctions', 'https://console.cloud.google.com/logs/query?project=slashatlas-studio'], ['Facturation Gemini (AI Studio)', 'https://aistudio.google.com/usage'], ['Tableau de bord FeexPay', 'https://app.feexpay.me'], ['Google AdSense', 'https://adsense.google.com'], ['Google Search Console', 'https://search.google.com/search-console']].map(function (x) { return '<li><a href="' + x[1] + '" target="_blank" rel="noopener">' + x[0] + '</a></li>'; }).join('') + '</ul></div>';
     var tzp = mapPairs(r, 'tz', function (z) { return z.replace(/_/g, ' '); });
     var fun = funnel('Parcours d\'un visiteur, de la visite au paiement', [['Visites', sum(r, 'sessions')], ['Clics « Générer ici »', sum(r, 'tries')], ['Comptes créés', sum(r, 'accounts')], ['Images générées', sum(r, 'generations')], ['Fenêtre d\'achat ouverte', sum(r, 'buyopen')], ['Clic sur le bouton « Payer »', sum(r, 'paytry')], ['… avec formulaire complet', sum(r, 'paytry_valid')], ['Commande envoyée à FeexPay', sum(r, 'orders_created')], ['Achats payés', sum(r, 'orders')]]);
     var opN = function (o) { return o.replace(/_/g, ' '); };
@@ -67,7 +69,8 @@
     var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (bientôt)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['tools', 'Outils', tools]];
     var tabNav = '<div class="seg adm-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '"' + (t[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
     root.innerHTML = head + tabNav + TABS.filter(function (t) { return t[0] === tab; }).map(function (t) { return t[2]; }).join('');
-    Array.prototype.forEach.call(root.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; try { sessionStorage.setItem('sa_admtab', tab); } catch (e) {} render(d); }); });
+    if (tab === 'tools') { var _rb = document.getElementById('refresh-usage'); if (_rb) _rb.addEventListener('click', loadUsageStats); loadUsageStats(); }
+    Array.prototype.forEach.call(root.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; try { sessionStorage.setItem('sa_admtab', tab); } catch (e) {} render(d); if (tab === 'tools') { var rb2 = document.getElementById('refresh-usage'); if (rb2) rb2.addEventListener('click', loadUsageStats); loadUsageStats(); } }); });
     var gf = $('#grant-f'); if (gf) gf.addEventListener('submit', function (e) {
       e.preventDefault(); var m = $('#g-msg'); m.textContent = '…'; m.className = 'fmsg';
       window.slashAuth.call('admin/grant', { email: $('#g-email').value, credits: +$('#g-n').value, note: $('#g-note').value }).then(function (r) {
@@ -94,6 +97,55 @@
       var rows = [['email', 'type', 'langue', 'page', 'note', 'date']].concat(d.subscribers.items.map(function (x) { return [x.email, (x.kinds || []).join('+'), x.lang, x.page, x.note, x.at || '']; }));
       var t = rows.map(function (r) { return r.map(function (c) { c = String(c == null ? '' : c); if (/^[=+\-@]/.test(c)) c = "'" + c; return '"' + c.replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
       var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv' })); a.download = 'slashatlas-inscrits.csv'; a.click();
+    });
+  }
+  function setService(id, res) {
+    var dot = document.getElementById('dot-' + id);
+    var info = document.getElementById('info-' + id);
+    var bar = document.getElementById('bar-' + id);
+    var fill = document.getElementById('fill-' + id);
+    if (dot) dot.className = 'svc-dot' + (res.dot ? ' svc-' + res.dot : '');
+    if (info) info.innerHTML = '<span>' + esc(res.info || '—') + '</span>';
+    if (bar && fill && res.bar != null) {
+      bar.style.display = 'block';
+      fill.style.width = Math.min(100, res.bar) + '%';
+      fill.className = 'svc-fill' + (res.bar >= 90 ? ' svc-fill-err' : res.bar >= 70 ? ' svc-fill-warn' : '');
+    }
+  }
+  function loadUsageStats() {
+    var grid = document.getElementById('usage-grid');
+    if (!grid) return;
+    var btn = document.getElementById('refresh-usage');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    window.slashAuth.call('admin/usage-stats', {}).then(function(r) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Actualiser'; }
+      if (r.status !== 200) return;
+      var d = r.data || {};
+      var el = d.elevenlabs || {};
+      if (el.error) {
+        setService('elevenlabs', { dot: 'err', info: el.error === 'no_config' ? 'Clé non configurée' : 'Erreur : ' + el.error });
+      } else {
+        var pct = el.character_limit ? Math.round(100 * el.character_count / el.character_limit) : 0;
+        setService('elevenlabs', { dot: pct >= 90 ? 'err' : pct >= 70 ? 'warn' : 'ok', bar: pct, info: fmtN(el.character_count) + ' / ' + fmtN(el.character_limit) + ' caractères' + (el.next_reset ? ' — reset ' + fmt(el.next_reset) : '') });
+      }
+      var cf = d.cloudflare || {};
+      if (cf.error) {
+        setService('cloudflare', { dot: cf.error === 'no_config' ? 'warn' : 'err', info: cf.error === 'no_config' ? 'Token non configuré' : 'Erreur : ' + cf.error });
+      } else {
+        setService('cloudflare', { dot: 'ok', info: 'API joignable' });
+      }
+      var cl = d.claude || {};
+      if (cl.error) {
+        setService('claude', { dot: 'warn', info: 'Aucune donnée Firestore' });
+      } else {
+        var cost = (+( cl.cost_usd || 0)).toFixed(2);
+        setService('claude', { dot: cost > 50 ? 'warn' : 'ok', info: fmtN(cl.tokens_this_month || 0) + ' tokens ce mois · ' + cost + ' $' });
+      }
+      setService('firebase', { dot: 'ok', info: 'Actif (vous êtes connecté)' });
+      setService('gemini', { dot: '', info: 'Vérifier dans AI Studio ↗' });
+      setService('gtts', { dot: '', info: 'Vérifier dans Google Cloud ↗' });
+    }).catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Actualiser'; }
     });
   }
   function load() {

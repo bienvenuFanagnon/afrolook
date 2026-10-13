@@ -58,7 +58,6 @@
     },
   }[isFr ? 'fr' : 'en'];
 
-  var packUrl = isFr ? '/generer/' : '/en/generate/';
   var pollTimer = null;
   var currentSeriesId = null; // série sélectionnée pour le prochain épisode
   var uploadedAudioPath = null; // chemin Firebase Storage de l'audio importé
@@ -93,12 +92,15 @@
         '<h3 class="film-cred-h">' + T.credModalH + '</h3>' +
         '<p class="film-cred-p">' + T.credModalP + '</p>' +
         '<div class="film-cred-btns">' +
-          '<a class="btn pri film-cred-btn" href="' + packUrl + '">' + T.credMomo + '</a>' +
-          '<a class="btn pri film-cred-btn" href="' + packUrl + '">' + T.credCard + '</a>' +
+          '<button class="btn pri film-cred-btn" data-buy="mm">' + T.credMomo + '</button>' +
+          '<button class="btn pri film-cred-btn" data-buy="card">' + T.credCard + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(credModal);
     credModal.querySelector('.film-cred-close').addEventListener('click', closeCredModal);
+    credModal.querySelectorAll('[data-buy]').forEach(function (btn) {
+      btn.addEventListener('click', function () { openFilmBuy(btn.dataset.buy); });
+    });
     credModal.addEventListener('click', function (e) { if (e.target === credModal) closeCredModal(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCredModal(); });
   }
@@ -111,6 +113,119 @@
     if (!credModal) return;
     credModal.classList.remove('open');
     document.body.style.overflow = '';
+  }
+
+  // ── Achat de crédits inline depuis la page film ────────────────────────────────
+  var filmCfg = null;
+  function loadFilmCfg(cb) {
+    if (filmCfg) { cb(filmCfg); return; }
+    fetch('/api/config').then(function (r) { return r.json(); }).then(function (d) { filmCfg = d; cb(filmCfg); }).catch(function () { cb(null); });
+  }
+  function openFilmBuy(method) {
+    closeCredModal();
+    loadFilmCfg(function (cfg) {
+      if (!cfg) return;
+      var L = isFr ? 'fr' : 'en';
+      var TL = isFr ? '/conditions/' : '/en/terms/';
+      var TB = {
+        fr: { buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n\'expirent pas.', mm: 'Mobile money', cardTab: 'Carte bancaire', soon: 'bientôt', cardSoon: 'Le paiement par carte arrive bientôt. Merci, nous avons noté votre demande.', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.', pay: 'Payer', cardGo: 'Payer par carte', cardInfo: 'Vous serez redirigé vers la page de paiement sécurisée FeexPay (3D Secure).', firstName: 'Prénom', lastName: 'Nom', city: 'Ville', zip: 'Code postal', countryCard: 'Pays', phoneCard: 'Téléphone (avec indicatif)', feeNote: 'Des frais d\'opérateur peuvent s\'appliquer.', credits: 'crédits', popular: 'Populaire', validate: 'Validez {a} sur votre téléphone (frais d\'opérateur inclus).', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l\'opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer', termsTag: 'À cocher pour payer', termsAccept: 'J\'ai lu et j\'accepte les ', termsLink: 'conditions générales', termsNote: ' Je demande l\'exécution immédiate du service et je reconnais perdre mon droit de rétractation pour les crédits utilisés.', cardPackOnly: 'Par carte : packs de 20 et 55 crédits.', e: { bad_phone: 'Numéro invalide.', otp_required: 'Code OTP requis.', terms_required: 'Cochez l\'acceptation des conditions générales.', bad_card_info: 'Complétez tous les champs.', server: 'Erreur du service, réessayez.', payment_refused: 'Le paiement n\'a pas pu démarrer. Vérifiez le numéro et l\'opérateur.' } },
+        en: { buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', mm: 'Mobile money', cardTab: 'Bank card', soon: 'soon', cardSoon: 'Card payment is coming soon. Thanks, we noted your request.', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.', pay: 'Pay', cardGo: 'Pay by card', cardInfo: 'You will be redirected to FeexPay\'s secure payment page (3D Secure).', firstName: 'First name', lastName: 'Last name', city: 'City', zip: 'Postal code', countryCard: 'Country', phoneCard: 'Phone (with country code)', feeNote: 'Operator fees may apply.', credits: 'credits', popular: 'Popular', validate: 'Confirm {a} on your phone (operator fees included).', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator\'s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close', termsTag: 'Tick to pay', termsAccept: 'I have read and accept the ', termsLink: 'terms and conditions', termsNote: ' I request immediate performance of the service and acknowledge that I lose my right of withdrawal for credits already used.', cardPackOnly: 'By card: 20 and 55 credit packs.', e: { bad_phone: 'Invalid number.', otp_required: 'OTP code required.', terms_required: 'Please tick the box to accept the terms.', bad_card_info: 'Please fill in every field.', server: 'Service error, please try again.', payment_refused: 'The payment could not start. Check the number and operator.' } },
+      }[L];
+      var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
+      var sel = { pack: (cfg.packs.filter(function (p) { return p.tag; })[0] || cfg.packs[0]).id, country: countries[0], op: null, method: method || 'mm', terms: false };
+      function cardOk(id) { return !cfg.card.packs || cfg.card.packs.indexOf(id) >= 0; }
+      function fmtN(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+      function usdN(n) { var t = (Math.round(n * 100) / 100).toFixed(2); return isFr ? t.replace('.', ',') + ' $' : '$' + t; }
+      function esc2(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+      function ops() { return cfg.operators.filter(function (o) { return o.country === sel.country; }); }
+      function cname(c) { try { return new Intl.DisplayNames([L], { type: 'region' }).of(c) || c; } catch (e) { return c; } }
+      var ISO = ['FR', 'BE', 'CH', 'LU', 'DE', 'ES', 'PT', 'IT', 'NL', 'GB', 'IE', 'US', 'CA', 'BR', 'MX', 'CO', 'BJ', 'TG', 'CI', 'SN', 'BF', 'ML', 'CM', 'CG', 'GA', 'GN', 'NE', 'TD', 'CD', 'MA', 'DZ', 'TN', 'GH', 'NG'];
+      var modal = document.createElement('div'); modal.className = 'smodal'; modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true');
+      document.body.appendChild(modal); document.body.style.overflow = 'hidden';
+      var ptimer = null;
+      function busyB(btn, on) { if (!btn) return; btn.disabled = !!on; btn.classList.toggle('loading', !!on); }
+      function flagT() { var t = modal.querySelector('.terms'); if (!t) return; t.classList.remove('err'); void t.offsetWidth; t.classList.add('err'); try { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+      function closeM() { clearInterval(ptimer); modal.remove(); document.body.style.overflow = ''; }
+      function bmsg(txt, ok) { var m = modal.querySelector('#bf-msg'); if (m) { m.textContent = txt || ''; m.className = 'fmsg' + (ok ? ' ok' : ' err'); } }
+      function errT(code) { return TB.e[code] || TB.e.server; }
+      function draw() {
+        if (!sel.op || sel.op.country !== sel.country) sel.op = ops()[0];
+        var pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
+        var isCard = sel.method === 'card';
+        if (isCard && !cardOk(sel.pack)) { var fb = cfg.packs.filter(function (p) { return cardOk(p.id) && p.tag; })[0] || cfg.packs.filter(function (p) { return cardOk(p.id); })[0]; if (fb) sel.pack = fb.id; }
+        pk = cfg.packs.filter(function (p) { return p.id === sel.pack; })[0];
+        var tabs = '<div class="mtabs" role="tablist"><button type="button" data-m="mm" aria-pressed="' + !isCard + '">' + TB.mm + '</button>' + (cfg.card && cfg.card.enabled ? '<button type="button" data-m="card" aria-pressed="' + isCard + '">' + TB.cardTab + '</button>' : '<button type="button" data-soon="1">' + TB.cardTab + ' <em class="soon">' + TB.soon + '</em></button>') + '</div>';
+        var form;
+        if (!isCard) {
+          form = '<label>' + TB.country + '<select id="bf-country">' + countries.map(function (c) { return '<option' + (c === sel.country ? ' selected' : '') + '>' + esc2(c) + '</option>'; }).join('') + '</select></label>' +
+            '<label>' + TB.operator + '<select id="bf-op">' + ops().map(function (o) { return '<option value="' + o.code + '"' + (o.code === sel.op.code ? ' selected' : '') + '>' + esc2(o.label) + '</option>'; }).join('') + '</select></label>' +
+            '<label>' + TB.phone + '<span class="pfx"><i>+' + sel.op.dial + '</i><input id="bf-phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="XXXXXXXX"></span></label>' +
+            (sel.op.otp ? '<label>' + TB.otp + '<input id="bf-otp" type="text" inputmode="numeric" autocomplete="one-time-code"></label><p class="hint">' + TB.otpHint + '</p>' : '');
+        } else {
+          var nm = ((window.slashAuth && window.slashAuth.user && window.slashAuth.user.displayName) || '').split(' ');
+          form = '<div class="two"><label>' + TB.firstName + '<input id="bf-cfirst" autocomplete="given-name" value="' + esc2(nm[0] || '') + '"></label><label>' + TB.lastName + '<input id="bf-clast" autocomplete="family-name" value="' + esc2(nm.slice(1).join(' ')) + '"></label></div>' +
+            '<label>' + TB.phoneCard + '<input id="bf-cphone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+33…"></label>' +
+            '<div class="two"><label>' + TB.city + '<input id="bf-ccity" autocomplete="address-level2"></label><label>' + TB.zip + '<input id="bf-czip" autocomplete="postal-code"></label></div>' +
+            '<label>' + TB.countryCard + '<select id="bf-ccountry">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc2(cname(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + TB.cardInfo + '</p>';
+        }
+        modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + esc2(TB.close) + '">×</button><h2>' + TB.buyTitle + '</h2><p class="hint">' + TB.buySub + '</p>' +
+          '<div class="packs">' + cfg.packs.filter(function (p) { return !p.days; }).map(function (p) { return '<button type="button" class="pack' + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + TB.popular + '</i>' : '') + '<b>' + p.credits + '</b><span>' + TB.credits + '</span><em>' + usdN(p.usd) + '</em><small>≈ ' + fmtN(p.xof) + ' FCFA</small></button>'; }).join('') + '</div>' +
+          tabs + form +
+          '<p class="hint soft">' + TB.feeNote + '</p>' +
+          '<label class="terms"><input type="checkbox" id="bf-terms"' + (sel.terms ? ' checked' : '') + '><span><b class="ttag">' + TB.termsTag + '</b>' + TB.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + TB.termsLink + '</a>.' + TB.termsNote + '</span></label>' +
+          (isCard ? '<p class="hint">' + TB.cardPackOnly + '</p>' : '') +
+          '<button class="btn pri big" type="button" id="bf-pay">' + (isCard ? TB.cardGo + ' ' + usdN(pk.usd) : TB.pay + ' ' + fmtN(pk.xof) + ' FCFA') + '</button>' +
+          '<p class="fmsg" id="bf-msg" role="status" aria-live="polite"></p></div>';
+        modal.querySelector('.x').onclick = closeM;
+        Array.prototype.forEach.call(modal.querySelectorAll('.pack'), function (b) { b.onclick = function () { sel.pack = b.dataset.p; draw(); }; });
+        Array.prototype.forEach.call(modal.querySelectorAll('[data-m]'), function (b) { b.onclick = function () { sel.method = b.dataset.m; draw(); }; });
+        var sn = modal.querySelector('[data-soon]'); if (sn) sn.onclick = function () { bmsg(TB.cardSoon, true); };
+        var co = modal.querySelector('#bf-country'); if (co) co.onchange = function (e) { sel.country = e.target.value; sel.op = null; draw(); };
+        var opEl = modal.querySelector('#bf-op'); if (opEl) opEl.onchange = function (e) { sel.op = ops().filter(function (o) { return o.code === e.target.value; })[0]; draw(); };
+        var tc = modal.querySelector('#bf-terms'); if (tc) tc.onchange = function (e) { sel.terms = e.target.checked; var t = modal.querySelector('.terms'); if (t) t.classList.remove('err'); };
+        var payBtn = modal.querySelector('#bf-pay'); if (payBtn) payBtn.onclick = isCard ? payCard : pay;
+      }
+      function trackPay(orderId, btn, total) {
+        var tries = 0; bmsg(total ? TB.validate.replace('{a}', fmtN(total) + ' FCFA') : TB.waitPay, true);
+        ptimer = setInterval(function () {
+          tries++;
+          window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
+            if (s.status !== 200) return;
+            if (s.data.status === 'paid') { clearInterval(ptimer); bmsg(TB.paid, true); setTimeout(closeM, 1200); }
+            else if (s.data.status === 'failed') { clearInterval(ptimer); busyB(btn, false); bmsg(TB.payFailed); }
+          });
+          if (tries > 60) { clearInterval(ptimer); busyB(btn, false); bmsg(TB.payFailed); }
+        }, 4000);
+      }
+      function pay() {
+        var btn = modal.querySelector('#bf-pay');
+        var phoneEl = modal.querySelector('#bf-phone'); var phone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
+        var otpEl = modal.querySelector('#bf-otp'); var otp = sel.op.otp ? (otpEl ? otpEl.value.trim() : '') : '';
+        if (phone.length < 8) return bmsg(TB.e.bad_phone);
+        if (sel.op.otp && !otp) return bmsg(TB.e.otp_required);
+        if (!sel.terms) { flagT(); return bmsg(TB.e.terms_required); }
+        busyB(btn, true); bmsg(TB.paying, true);
+        window.slashAuth.call('pay/start', { packId: sel.pack, operator: sel.op.code, phone: phone, otp: otp, terms: cfg.termsVersion }).then(function (r) {
+          if (r.status !== 200) { busyB(btn, false); return bmsg(errT(r.data && r.data.error)); }
+          if (r.data.paymentUrl) { var a = document.createElement('a'); a.href = r.data.paymentUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = TB.openPay; a.className = 'btn gl'; var mEl = modal.querySelector('#bf-msg'); if (mEl) mEl.after(a); }
+          trackPay(r.data.orderId, btn, r.data.total);
+        }).catch(function () { busyB(btn, false); bmsg(TB.e.server); });
+      }
+      function payCard() {
+        var btn = modal.querySelector('#bf-pay');
+        var v = function (id) { var el = modal.querySelector('#' + id); return el ? (el.value || '').trim() : ''; };
+        var body = { packId: sel.pack, firstName: v('bf-cfirst'), lastName: v('bf-clast'), phone: v('bf-cphone'), city: v('bf-ccity'), zip: v('bf-czip'), country: (modal.querySelector('#bf-ccountry') || {}).value || '', terms: cfg.termsVersion };
+        if (!sel.terms) { flagT(); return bmsg(TB.e.terms_required); }
+        if (!body.firstName || !body.lastName || !body.city || !body.zip || body.phone.replace(/\D/g, '').length < 8) return bmsg(TB.e.bad_card_info);
+        busyB(btn, true); bmsg(TB.paying, true);
+        window.slashAuth.call('pay/card', body).then(function (r) {
+          if (r.status !== 200) { busyB(btn, false); return bmsg(errT(r.data && r.data.error)); }
+          try { localStorage.setItem('sa_pending', r.data.orderId); } catch (e) {}
+          location.href = r.data.paymentUrl;
+        }).catch(function () { busyB(btn, false); bmsg(TB.e.server); });
+      }
+      draw();
+    });
   }
 
   // ── Progression ───────────────────────────────────────────────────────────────

@@ -1,12 +1,16 @@
 // SlashAtlas : mesure d'audience sans cookie + liste d'attente / newsletter.
 // Aucune donnée personnelle hors e-mail volontairement saisi ; aucune IP stockée.
 const { onRequest } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
 const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
+const { getStorage } = require('firebase-admin/storage');
 const crypto = require('crypto');
 const studio = require('./studio');
 const videoApi = require('./videoApi');
+const filmStudio = require('./filmStudio');
+const filmRenderer = require('./filmRenderer');
 const fs = require('fs');
 const nodePath = require('path');
 const OG_DIR = nodePath.join(__dirname, 'og');
@@ -14,6 +18,9 @@ let OG_FILES = null;
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
+
+const CF_API_TOKEN = defineSecret('CF_API_TOKEN');
+const CF_ACCOUNT_ID = defineSecret('CF_ACCOUNT_ID');
 
 const ORIGINS = [
   /^https:\/\/slashatlas(-studio)?(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)$/,
@@ -247,8 +254,46 @@ async function adminData(daysIn) {
   };
 }
 
+async function adminUsageStats() {
+  const results = {};
+
+  // ElevenLabs — quota de caractères du compte
+  const elKey = process.env.ELEVENLABS_API_KEY;
+  if (elKey) {
+    try {
+      const r = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': elKey } });
+      const d = await r.json();
+      results.elevenlabs = {
+        character_count: d.character_count || 0,
+        character_limit: d.character_limit || 0,
+        tier: d.tier || null,
+        next_reset: d.next_character_count_reset_unix ? new Date(d.next_character_count_reset_unix * 1000).toISOString().slice(0, 10) : null,
+      };
+    } catch (e) { results.elevenlabs = { error: e.message }; }
+  } else { results.elevenlabs = { error: 'no_config' }; }
+
+  // Cloudflare Workers AI — vérification du compte (ping API)
+  const cfToken = String(process.env.CF_API_TOKEN || '').replace(/^﻿/, '').trim();
+  const cfAccount = String(process.env.CF_ACCOUNT_ID || '').replace(/^﻿/, '').trim();
+  if (cfToken && cfAccount) {
+    try {
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/models/search?per_page=1`, { headers: { Authorization: `Bearer ${cfToken}` } });
+      const d = await r.json();
+      results.cloudflare = d.success ? { ok: true } : { error: 'api_error', msg: (d.errors || [])[0] };
+    } catch (e) { results.cloudflare = { error: e.message }; }
+  } else { results.cloudflare = { error: 'no_config' }; }
+
+  // Claude API — compteur dans Firestore (mis à jour par le Studio)
+  try {
+    const doc = await db.collection('SlashAtlasSettings').doc('claude-usage').get();
+    results.claude = doc.exists ? doc.data() : { tokens_this_month: 0, cost_usd: 0 };
+  } catch (e) { results.claude = { error: e.message }; }
+
+  return results;
+}
+
 exports.slashatlasApi = onRequest(
-  { region: 'europe-west1', invoker: 'public', memory: '512MiB', maxInstances: 10, timeoutSeconds: 120, secrets: studio.SECRETS },
+  { region: 'europe-west1', invoker: 'public', memory: '512MiB', maxInstances: 10, timeoutSeconds: 120, secrets: [...studio.SECRETS, CF_API_TOKEN, CF_ACCOUNT_ID] },
   async (req, res) => {
     // Aperçu de lien (WhatsApp, Facebook…) : une image tirée au hasard à chaque lecture, jamais mise en cache.
     if (req.method === 'GET' && /\/og\.jpg$/.test(req.path)) {
@@ -347,6 +392,60 @@ exports.slashatlasApi = onRequest(
         if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
         return res.status(200).json(await adminData(body(req).days));
       }
+      if (path.endsWith('/admin/usage-stats')) {
+        if (limited('a' + ipKey, 20, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        return res.status(200).json(await adminUsageStats());
+      }
+      if (path.endsWith('/studio-film/upload-url')) {
+        // Génère une URL signée pour que le frontend uploade un audio directement vers Firebase Storage
+        if (limited('sfau' + ipKey, 10, 300000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        const b = body(req);
+        const ext = /^audio\/(mpeg|wav|ogg|mp4|webm|x-m4a)$/.test(b.contentType) ? b.contentType.split('/')[1].replace('mpeg', 'mp3').replace('x-m4a', 'm4a') : null;
+        if (!ext) return res.status(400).json({ error: 'bad_type' });
+        const storagePath = `films-audio/${u.uid}/${Date.now()}.${ext}`;
+        const [url] = await getStorage().bucket().file(storagePath).getSignedUrl({
+          action: 'write',
+          expires: Date.now() + 10 * 60 * 1000, // 10 minutes
+          contentType: b.contentType,
+        });
+        return res.status(200).json({ uploadUrl: url, storagePath });
+      }
+      if (path.endsWith('/studio-film/create')) {
+        if (limited('sf' + ipKey, 5, 300000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        const r = await filmStudio.createFilm(u, body(req));
+        return res.status(r.status).json(r.status === 200 ? { jobId: r.jobId, seriesId: r.seriesId || null, cost: r.cost } : { error: r.error });
+      }
+      if (path.endsWith('/studio-film/status')) {
+        if (limited('sfs' + ipKey, 30, 60000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        const r = await filmStudio.getFilmStatus(u, body(req).jobId);
+        return res.status(r.status).json(r.status === 200 ? { status: r.jobStatus, videoUrl: r.videoUrl, title: r.title, duration: r.duration, message: r.message, seriesId: r.seriesId || null, episodeNumber: r.episodeNumber || null } : { error: r.error });
+      }
+      if (path.endsWith('/studio-film/series')) {
+        if (limited('sfser' + ipKey, 10, 60000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        const r = await filmStudio.listUserSeries(u);
+        return res.status(r.status).json(r.status === 200 ? { series: r.series } : { error: r.error });
+      }
+      if (path.endsWith('/studio-film/file')) {
+        if (limited('sff' + ipKey, 10, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        const r = await filmStudio.getFilmFile(u, body(req).jobId);
+        if (!r) return res.status(404).json({ error: 'not_found' });
+        res.set('Content-Type', 'video/mp4').set('Content-Length', String(r.buf.length));
+        res.set('Content-Disposition', `attachment; filename="${encodeURIComponent(r.title)}.mp4"`);
+        return res.status(200).send(r.buf);
+      }
       return res.status(404).json({ error: 'not_found' });
     } catch (e) {
       if (e && e.status && e.code) return res.status(e.status).json({ error: e.code });
@@ -376,6 +475,29 @@ exports.slashatlasVideo = onRequest(
       if (e && e.status && e.code) return res.status(e.status).json({ error: e.code });
       console.error('slashatlasVideo', e);
       return res.status(500).json({ error: 'server' });
+    }
+  },
+);
+
+// Rendu des films & séries : function dédiée (4 Go, 2 CPU, 9 minutes).
+// Appelée en fire-and-forget par filmStudio.processFilm() via HTTP.
+exports.slashatlasFilm = onRequest(
+  { region: 'europe-west1', invoker: 'public', memory: '4GiB', cpu: 2, concurrency: 1, maxInstances: 4, timeoutSeconds: 540, secrets: [CF_API_TOKEN, CF_ACCOUNT_ID] },
+  async (req, res) => {
+    cors(req, res);
+    if (req.method === 'OPTIONS') return res.status(204).send('');
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
+    const { jobId, token } = body(req);
+    if (!jobId || !token) return res.status(400).json({ error: 'missing' });
+    // Vérification du token interne (évite les appels non autorisés)
+    const snap = await db.collection('FilmJobs').doc(String(jobId)).get();
+    if (!snap.exists || snap.data().renderToken !== token) return res.status(403).json({ error: 'forbidden' });
+    try {
+      await filmRenderer.renderFilm(String(jobId), process.env.CF_ACCOUNT_ID, process.env.CF_API_TOKEN);
+      return res.status(200).json({ ok: true });
+    } catch (e) {
+      console.error('slashatlasFilm', jobId, e);
+      return res.status(500).json({ error: 'render_failed' });
     }
   },
 );

@@ -496,3 +496,96 @@
     }, 390);
   }, 3800);
 })();
+
+// Carousel de démos Studio Film & Série + lightbox
+(function () {
+  // Lightbox partagée
+  var overlay = null;
+  function buildOverlay() {
+    if (overlay) return;
+    overlay = document.createElement('div');
+    overlay.className = 'fdm-overlay';
+    overlay.innerHTML = '<div class="fdm-inner"><button class="fdm-close" aria-label="Fermer">✕</button><video class="fdm-vid" controls playsinline></video></div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('.fdm-close').addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeOverlay(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
+  }
+  function openOverlay(src) {
+    buildOverlay();
+    var v = overlay.querySelector('.fdm-vid');
+    v.src = src;
+    v.currentTime = 0;
+    overlay.classList.add('open');
+    v.play().catch(function () {});
+    document.body.style.overflow = 'hidden';
+  }
+  function closeOverlay() {
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    var v = overlay.querySelector('.fdm-vid');
+    v.pause(); v.src = '';
+    document.body.style.overflow = '';
+  }
+
+  var reels = document.querySelectorAll('.film-demo-reel');
+  if (!reels.length) return;
+  reels.forEach(function (reel) {
+    var vids = reel.querySelectorAll('.film-demo-vid');
+    var dots = reel.querySelectorAll('.fdd');
+    var lbl = reel.querySelector('.film-demo-lbl');
+    var names; try { names = JSON.parse(reel.dataset.names || '[]'); } catch (e) { names = []; }
+    var cur = 0;
+    var timer = null;
+
+    // Pré-charger + forcer muted pour débloquer l'autoplay
+    Array.prototype.forEach.call(vids, function (v) {
+      v.muted = true; v.preload = 'auto'; v.load();
+    });
+
+    function show(i) {
+      var prev = cur;
+      cur = (i + vids.length) % vids.length;
+      if (prev !== cur) {
+        vids[prev].pause();
+        vids[prev].classList.remove('active');
+        dots[prev] && dots[prev].classList.remove('active');
+      }
+      vids[cur].classList.add('active');
+      dots[cur] && dots[cur].classList.add('active');
+      if (lbl && names[cur]) lbl.textContent = names[cur];
+      vids[cur].currentTime = 0;
+      vids[cur].play().catch(function () {});
+    }
+
+    function startTimer() {
+      stopTimer();
+      timer = setInterval(function () { show(cur + 1); }, 5500);
+    }
+    function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+
+    // Initialiser la première vidéo
+    show(0);
+    startTimer();
+
+    // Points de navigation
+    dots.forEach(function (d) {
+      d.addEventListener('click', function (e) {
+        e.stopPropagation();
+        stopTimer(); show(+d.dataset.i); startTimer();
+      });
+    });
+
+    // Clic sur la zone vidéo = lightbox
+    reel.addEventListener('click', function (e) {
+      if (e.target.classList.contains('fdd')) return;
+      var src = vids[cur] && vids[cur].src;
+      if (src) openOverlay(src);
+    });
+    reel.style.cursor = 'pointer';
+
+    // Pause au survol (desktop)
+    reel.addEventListener('mouseenter', stopTimer);
+    reel.addEventListener('mouseleave', startTimer);
+  });
+})();

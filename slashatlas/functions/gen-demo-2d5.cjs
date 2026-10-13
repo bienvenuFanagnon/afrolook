@@ -4,6 +4,12 @@
  * Montre : idle (respiration), walk, run, talk, wave, sit, lie, sleep, dance, crouch, point
  * Usage : node gen-demo-2d5.cjs
  */
+// Pointer les credentials Google vers le fichier local service-account.json
+const SA_PATH = require('path').join(__dirname, 'service-account.json');
+if (require('fs').existsSync(SA_PATH)) {
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = SA_PATH;
+}
+
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -12,6 +18,7 @@ const FFMPEG = require('ffmpeg-static');
 const { drawChar } = require('./characterEngine');
 
 const W = 1280, H = 720, FPS = 24;
+const SR_TTS = 24000;
 const OUT_DIR = path.join(__dirname, '..', 'static', 'videos');
 
 // ── Musique ambient via sfx.js ────────────────────────────────────────────────
@@ -20,6 +27,40 @@ try {
   const sfx = require('./sfx');
   sfxMusic = sfx.music; sfxMix = sfx.mix; sfxSR = sfx.SR;
 } catch (e) {}
+
+// ── Google TTS (voix Chirp 3 HD française) ───────────────────────────────────
+let ttsAuth = null;
+async function ttsToken() {
+  const { GoogleAuth } = require('google-auth-library');
+  ttsAuth = ttsAuth || new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+  return (await (await ttsAuth.getClient()).getAccessToken()).token;
+}
+
+async function tts(text, gender) {
+  try {
+    const token = await ttsToken();
+    const name = gender === 'm' ? 'fr-FR-Chirp3-HD-Puck' : 'fr-FR-Chirp3-HD-Aoede';
+    const r = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
+      method: 'POST',
+      signal: AbortSignal.timeout(20000),
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: { text: text.trim() },
+        voice: { languageCode: 'fr-FR', name },
+        audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: SR_TTS, speakingRate: 0.95 },
+      }),
+    });
+    const j = await r.json();
+    if (!j.audioContent) throw new Error('tts_no_audio ' + JSON.stringify(j).slice(0, 120));
+    const raw = Buffer.from(j.audioContent, 'base64');
+    // LINEAR16 = Int16LE, on retire le header WAV de 44 octets
+    const pcm = new Int16Array(raw.buffer, raw.byteOffset + 44, (raw.byteLength - 44) / 2);
+    return pcm;
+  } catch (e) {
+    console.warn('    TTS:', e.message.slice(0, 80));
+    return null;
+  }
+}
 
 function float32ToWav(samples, sr) {
   const len = samples.length;
@@ -239,11 +280,32 @@ function bgVille(ctx) {
 async function renderToMp4(scenes, outFile, musicKind) {
   const totalDur = scenes.reduce((s, sc) => s + sc.dur, 0);
 
+  // Générer les voix TTS pour chaque scène (en parallèle)
+  process.stdout.write(' [TTS]');
+  const voicePcms = await Promise.all(
+    scenes.map((sc) => sc.text ? tts(sc.text, 'f') : Promise.resolve(null))
+  );
+
+  // Mixer musique + voix off
   let audioFile = null;
-  if (sfxMusic && sfxSR) {
+  if (sfxMusic && sfxMix && sfxSR) {
     try {
-      const samples = sfxMusic(musicKind || 'ambient', 'major', totalDur, [0, 1]);
-      const wavBuf = float32ToWav(samples, sfxSR);
+      const bounds = scenes.slice(1).map((_, i) =>
+        scenes.slice(0, i + 1).reduce((s, sc) => s + sc.dur, 0)
+      );
+      const mu = sfxMusic(musicKind || 'ambient', 'major', totalDur + 0.5, bounds);
+      // Voix : décalées de 0.4s dans chaque scène
+      let cursor = 0;
+      const voices = scenes.map((sc, i) => {
+        const at = cursor + 0.4;
+        cursor += sc.dur;
+        return voicePcms[i] ? { at, pcm: voicePcms[i] } : null;
+      }).filter(Boolean);
+      const hasVoice = voices.length > 0;
+      const wavBuf = sfxMix({
+        music: mu, sfx: new Float32Array(Math.ceil((totalDur + 1) * sfxSR)),
+        voices, seconds: totalDur, hasVoice, musicLevel: hasVoice ? 0.5 : 0.85,
+      });
       audioFile = outFile.replace('.mp4', '-aud.wav');
       fs.writeFileSync(audioFile, wavBuf);
     } catch (e) { audioFile = null; }

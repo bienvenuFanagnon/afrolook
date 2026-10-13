@@ -616,7 +616,8 @@ function drawChar(ctx, x, groundY, opts = {}) {
     ctx.rotate(dir === 'W' ? -Math.PI / 2 : Math.PI / 2);
     ctx.scale(sc, sc);
     const localGY = charH / (2 * sc);
-    const localHeadY = -(def.legLen + def.torsoH + def.headR * 0.9);
+    // bodyY = hanche dans drawBodyE — tête = hanche - torso - rayon tête (sans legLen)
+    const localHeadY = localGY - def.torsoH - def.headR * 0.9;
     drawBodyE(ctx, 0, localGY, def, 'idle', phase, false, skin);
     drawHeadE(ctx, 0, localHeadY, def, { skin, talking: false, mouthAmt: 0, sleeping: state === 'sleep' });
     ctx.restore();
@@ -637,14 +638,13 @@ function drawChar(ctx, x, groundY, opts = {}) {
   const leanOff = lean ? Math.sin(lean * Math.PI / 180) * (def.torsoH + def.legLen) : 0;
   const bodyY = ys;
 
-  // headBaseY dépend de la posture
+  // headBaseY : bodyY = hanche (les jambes descendent vers y+), le torse monte vers y-
   let headBaseY;
-  if (state === 'sit') {
-    headBaseY = bodyY - (def.torsoH + def.headR * 0.9) - (bob / sc);
-  } else if (state === 'crouch') {
-    headBaseY = bodyY - (def.legLen * 0.62 + def.torsoH * 0.82 + def.headR * 0.9) - (bob / sc);
+  if (state === 'crouch') {
+    headBaseY = bodyY - (def.torsoH * 0.72 + def.headR * 0.9) - (bob * 0.3 / sc);
   } else {
-    headBaseY = bodyY - (def.legLen + def.torsoH + def.headR * 0.9) - (bob / sc);
+    // sit, idle, walk, run, talk, wave, dance, point — torse monte de torsoH depuis la hanche
+    headBaseY = bodyY - (def.torsoH + def.headR * 0.9) - (bob / sc);
   }
   const headX = xs + leanOff;
   const headOpts = { skin, talking: state === 'talk', mouthAmt: mo };

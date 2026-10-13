@@ -34,7 +34,7 @@ const IMGV = imgVersion();
 const mp4Hash = {};
 const versioned = (html) => html
   .replace(/(\/img\/(?:c|video)\/[A-Za-z0-9_.-]+\.(?:webp|png))(?=["'\s<>,)])/g, `$1?v=${IMGV}`)
-  .replace(/(\/video\/(?:exemples|tuto)\/[A-Za-z0-9_.-]+\.mp4)(?=["'\s<>,)])/g, (m, u) => { const f = path.join(root, 'static', u); if (!(u in mp4Hash)) mp4Hash[u] = fs.existsSync(f) ? createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 8) : ''; return mp4Hash[u] ? `${u}?v=${mp4Hash[u]}` : u; });
+  .replace(/(\/video(?:s)?\/(?:exemples\/|tuto\/|demo-)[A-Za-z0-9_.-]+\.mp4)(?=["'\s<>,)])/g, (m, u) => { const f = path.join(root, 'static', u); if (!(u in mp4Hash)) mp4Hash[u] = fs.existsSync(f) ? createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 8) : ''; return mp4Hash[u] ? `${u}?v=${mp4Hash[u]}` : u; });
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, p.endsWith('.html') && typeof c === 'string' ? versioned(c) : c); };
 const hashOf = (f) => createHash('sha1').update(fs.readFileSync(path.join(root, 'static', f))).digest('hex').slice(0, 8);
 const hashDir = (d) => { const h = createHash('sha1'); const dir = path.join(root, 'static', d); for (const f of fs.readdirSync(dir).filter(x => x.endsWith('.js')).sort()) h.update(fs.readFileSync(path.join(dir, f))); return h.digest('hex').slice(0, 8); };
