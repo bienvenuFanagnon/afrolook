@@ -238,7 +238,7 @@ ${!robots ? [].concat(cfg.adsenseAccount || []).map((a) => `<meta name="google-a
 <div class="mnav" id="mnav" hidden><a class="btn pri big" href="${p.try}">${TEST[l]}</a>${[[p.cmds, t.nav.cmds, 'cmds'], [p.studio, STUDIO[l].nav, 'studio'], [p.tuto, t.nav.tuto, 'tuto'], [p.guides, t.ft.guides, 'guides'], [p.pro, t.nav.pro, 'pro'], [p.about, t.ft.about, 'about']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('')}</div>
 <main id="main">${body}</main>
 <footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span>${cfg.legal && cfg.legal.email ? `<a class="ftmail" href="mailto:${cfg.legal.email}">${t.ft.contact} : ${cfg.legal.email}</a>` : ''}${WA_URL ? `<a class="ftwa" href="${WA_URL}" target="_blank" rel="noopener" data-wa="footer">${WA[l].ft}</a>` : ''}<a href="${p.studio}">${STUDIO[l].nav}</a><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.guides}">${t.ft.guides}</a><a href="${p.about}">${t.ft.about}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}</footer>
-${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
+${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script>` : ''}${key !== 'admin' ? `<script src="/js/afrolook-ads.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
 }
 function emit(l, key, pth, o) { write(pth.endsWith('/') ? pth + 'index.html' : pth, layout({ l, key, path: pth, ...o })); }
 const alt2 = (fr, en) => ({ fr, en });
@@ -638,7 +638,8 @@ function tryPage(l) {
   // sale:true pour toutes les commandes qui génèrent une image (pas les vidéos, motion, textes) — n'importe quel visuel peut devenir une affiche de vente
   const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage, sale: canGen(c) }])), brand: BRAND[l], sale: { ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' } };
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="best-line">${bestTag(l)} ${BEST[l].li.slice(0, 2).map((x) => x.replace(/<\/?b>/g, '')).join(' ')}</p>
-<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-sv="${hashOf('js/sale.js')}" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div></div>`;
+<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-sv="${hashOf('js/sale.js')}" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div>
+<div id="afl-gen-ad" hidden aria-label="${l === 'fr' ? 'Publicité' : 'Advertisement'}"></div></div>`;
   emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
 }
 function notFound() {

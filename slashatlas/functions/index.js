@@ -226,19 +226,20 @@ async function getAds(force) {
   const slots = {};
   for (const k of ['lb', 'rect']) if (/^\d{6,20}$/.test(String((d.slots || {})[k] || ''))) slots[k] = String(d.slots[k]);
   const ok = !!d.enabled && /^ca-pub-\d{10,20}$/.test(String(d.client || '')) && Object.keys(slots).length > 0;
-  adsCache = { at: Date.now(), v: ok ? { enabled: true, client: d.client, slots } : { enabled: false } };
+  const afrolook = !!d.afrolook;
+  adsCache = { at: Date.now(), v: ok ? { enabled: true, client: d.client, slots, afrolook } : { enabled: false, afrolook } };
   return adsCache.v;
 }
 async function adminAds() {
   const s = await db.collection('SlashAtlasSettings').doc('ads').get();
   const d = s.exists ? s.data() : {};
-  return { enabled: !!d.enabled, client: d.client || '', slots: { lb: (d.slots || {}).lb || '', rect: (d.slots || {}).rect || '' } };
+  return { enabled: !!d.enabled, client: d.client || '', slots: { lb: (d.slots || {}).lb || '', rect: (d.slots || {}).rect || '' }, afrolook: !!d.afrolook };
 }
 async function saveAds(b, admin) {
   const client = clean(b.client, 40), slots = { lb: clean((b.slots || {}).lb, 20), rect: clean((b.slots || {}).rect, 20) };
   if (client && !/^ca-pub-\d{10,20}$/.test(client)) return { error: 'bad_client' };
   for (const k of Object.keys(slots)) if (slots[k] && !/^\d{6,20}$/.test(slots[k])) return { error: 'bad_slot' };
-  await db.collection('SlashAtlasSettings').doc('ads').set({ enabled: !!b.enabled, client, slots, updatedAt: FieldValue.serverTimestamp(), by: admin.email });
+  await db.collection('SlashAtlasSettings').doc('ads').set({ enabled: !!b.enabled, client, slots, afrolook: !!b.afrolook, updatedAt: FieldValue.serverTimestamp(), by: admin.email });
   await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: admin.email, action: 'ads', enabled: !!b.enabled, client });
   adsCache.at = 0;
   return { ok: true };

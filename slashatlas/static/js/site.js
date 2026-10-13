@@ -85,7 +85,36 @@
     }
     btns.forEach(function (b) {
       b.addEventListener('click', function (e) {
-        if (named) return; // déjà connecté : le lien mène au Studio
+        if (named) {
+          e.preventDefault();
+          var existing = document.getElementById('sa-accdrop');
+          if (existing) { existing.remove(); return; }
+          var bal = ''; try { var rawBal = localStorage.getItem('sa_bal'); if (rawBal !== null) { var nb = parseInt(rawBal, 10); bal = nb + ' ' + (lang === 'en' ? (nb === 1 ? 'credit' : 'credits') : (nb === 1 ? 'crédit' : 'crédits')); } } catch (e2) {}
+          var firstName = named.split(' ')[0] || named;
+          var genLink = lang === 'en' ? '/en/generate/' : '/genérer/';
+          var refLink = lang === 'en' ? '/en/ref/' : '/parrainage/';
+          var drop = document.createElement('div');
+          drop.id = 'sa-accdrop';
+          drop.innerHTML =
+            '<div class="sa-drop-top"><b>' + firstName + '</b>' + (bal ? '<span>' + bal + '</span>' : '') + '</div>' +
+            '<a class="sa-drop-link" href="' + genLink + '">🎨 Studio</a>' +
+            '<a class="sa-drop-link" href="' + refLink + '">🎁 ' + (lang === 'en' ? 'Referral' : 'Parrainage') + '</a>' +
+            '<button class="sa-drop-link sa-drop-out" type="button" data-accdrop-logout>' + (lang === 'en' ? 'Log out' : 'Se déconnecter') + '</button>';
+          document.body.appendChild(drop);
+          var rect = b.getBoundingClientRect();
+          drop.style.top = (rect.bottom + 6) + 'px';
+          drop.style.right = (window.innerWidth - rect.right) + 'px';
+          var closeH = function (ev) { if (!drop.contains(ev.target) && ev.target !== b) { drop.remove(); document.removeEventListener('click', closeH, true); } };
+          setTimeout(function () { document.addEventListener('click', closeH, true); }, 0);
+          var logBtn = drop.querySelector('[data-accdrop-logout]');
+          if (logBtn) {
+            logBtn.addEventListener('click', function () {
+              drop.remove(); document.removeEventListener('click', closeH, true);
+              import('/js/auth.js').then(function () { if (window.slashAuth) window.slashAuth.logout(); }).catch(function () {});
+            });
+          }
+          return;
+        }
         e.preventDefault();
         var go = function () { location.href = b.getAttribute('href'); };
         if (b.dataset.busy) return; b.dataset.busy = '1'; var old = b.textContent; b.textContent = '…';
@@ -418,7 +447,12 @@
     }
     function fill(el, a) {
       if (el.dataset.filled) return;
-      var id = a.slots && a.slots[el.dataset.ad]; if (!id) return;
+      var id = a.slots && a.slots[el.dataset.ad];
+      if (!id) {
+        // Pas de slot AdSense : utiliser la pub Afrolook si activée
+        if (a.afrolook && window.saAfrolookAds) { el.dataset.filled = '1'; window.saAfrolookAds.fill(el); }
+        return;
+      }
       el.dataset.filled = '1';
       var ins = document.createElement('ins'); ins.className = 'adsbygoogle'; ins.style.display = 'block';
       ins.setAttribute('data-ad-client', a.client); ins.setAttribute('data-ad-slot', id); ins.setAttribute('data-ad-format', 'auto'); ins.setAttribute('data-full-width-responsive', 'true');
