@@ -493,9 +493,9 @@
       window.addEventListener('pointerup', function () { if (!down) return; down = false; if (moved > 6) { var stop = function (ev) { ev.preventDefault(); ev.stopPropagation(); }; r.addEventListener('click', stop, { capture: true, once: true }); setTimeout(function () { r.removeEventListener('click', stop, true); }, 0); } r.classList.remove('dragging'); sync(); });
     }
     r.addEventListener('scroll', sync, { passive: true }); window.addEventListener('resize', sync);
-    if ('MutationObserver' in window) new MutationObserver(sync).observe(r, { attributes: true, attributeFilter: ['hidden'] });
+    if ('MutationObserver' in window) new MutationObserver(function () { requestAnimationFrame(sync); }).observe(r, { attributes: true, attributeFilter: ['hidden'], childList: true });
     if ('ResizeObserver' in window) new ResizeObserver(sync).observe(r);
-    sync(); setTimeout(sync, 400); setTimeout(sync, 1200); window.addEventListener('load', sync);
+    sync(); setTimeout(sync, 400); setTimeout(sync, 1200); setTimeout(sync, 3000); window.addEventListener('load', sync);
   });
   document.addEventListener('keydown', function (e) {
     if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey) return;
