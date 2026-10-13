@@ -77,7 +77,7 @@
           document.addEventListener('sa:auth', function h(ev) {
             document.removeEventListener('sa:auth', h);
             if (ev.detail && ev.detail.user) {
-              try { applyUser(localStorage.getItem('sa_u') || ''); } catch (e) {}
+              try { applyUser(localStorage.getItem('sa_u') || (ev.detail.user.displayName || '')); } catch (e) {}
             }
           });
         }).catch(function () {});
@@ -91,7 +91,7 @@
           if (existing) { existing.remove(); return; }
           var bal = ''; try { var rawBal = localStorage.getItem('sa_bal'); if (rawBal !== null) { var nb = parseInt(rawBal, 10); bal = nb + ' ' + (lang === 'en' ? (nb === 1 ? 'credit' : 'credits') : (nb === 1 ? 'crédit' : 'crédits')); } } catch (e2) {}
           var firstName = named.split(' ')[0] || named;
-          var genLink = lang === 'en' ? '/en/generate/' : '/genérer/';
+          var genLink = lang === 'en' ? '/en/generate/' : '/generer/';
           var refLink = lang === 'en' ? '/en/ref/' : '/parrainage/';
           var drop = document.createElement('div');
           drop.id = 'sa-accdrop';

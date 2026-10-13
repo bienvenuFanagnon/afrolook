@@ -144,6 +144,7 @@
   function buildRect(isFr) {
     var msg = nextMsg(isFr), photo = pickPhoto(), url = storeUrl();
     return '<a class="afl-banner afl-rect" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="rect">' +
+      '<span class="afl-spon">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span>' +
       '<div class="afl-r-img" style="background-image:url(' + photo + ')"></div>' +
       '<div class="afl-r-body">' +
         '<span class="afl-badge">Afrolook</span>' +
@@ -156,6 +157,7 @@
   function buildLb(isFr) {
     var msg = nextMsg(isFr), photo = pickPhoto(), url = storeUrl();
     return '<a class="afl-banner afl-lb" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="lb">' +
+      '<span class="afl-spon">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span>' +
       '<div class="afl-lb-img" style="background-image:url(' + photo + ')"></div>' +
       '<div class="afl-lb-body">' +
         '<span class="afl-badge">Afrolook</span>' +

@@ -170,6 +170,12 @@ async function statsWrite(b, req) {
   } else if (t === 'adview') { // bloc publicitaire affiché à l'écran
     u.adviews = inc;
     u[`ad.${key(b.n)}`] = inc;
+  } else if (t === 'afl_imp') { // bannière Afrolook affichée
+    u.afl_imps = inc;
+    u[`afl.${key(b.fmt || 'x')}`] = inc;
+  } else if (t === 'afl_click') { // clic sur bannière Afrolook
+    u.afl_clicks = inc;
+    u[`afl_c.${key(b.fmt || 'x')}`] = inc;
   } else return;
   const ref = db.collection('SlashAtlasStats').doc(day());
   try {
