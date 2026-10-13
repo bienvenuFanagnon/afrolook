@@ -358,15 +358,23 @@
       if (p < 1) requestAnimationFrame(step); else el.textContent = fmt(n);
     })(t0);
   }
+  function showHeroStats(pv, cp) {
+    var hs = document.getElementById('hero-stats');
+    if (!hs || (!pv && !cp)) return;
+    hs.removeAttribute('hidden');
+    animStat(document.getElementById('hstat-pv'), pv || 0);
+    animStat(document.getElementById('hstat-cp'), cp || 0);
+  }
+  var STATS_KEY = 'sa_hstats', STATS_TTL = 300000; // 5 min
+  try {
+    var cached = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
+    if (cached && Date.now() - cached.at < STATS_TTL && (cached.pv || cached.cp)) showHeroStats(cached.pv, cached.cp);
+  } catch (e) {}
   fetch('/api/popular?l=' + lang).then(function (r) { return r.json(); }).then(function (d) {
     counts = d.counts || {}; paint(); railFill(d.top || []); sortList(counts);
-    var hs = document.getElementById('hero-stats');
-    var hpv = document.getElementById('hstat-pv');
-    var hcp = document.getElementById('hstat-cp');
-    if (hs && (d.globalPv || d.globalCopies)) {
-      hs.removeAttribute('hidden');
-      animStat(hpv, d.globalPv || 0);
-      animStat(hcp, d.globalCopies || 0);
+    if (d.globalPv || d.globalCopies) {
+      try { localStorage.setItem(STATS_KEY, JSON.stringify({ at: Date.now(), pv: d.globalPv || 0, cp: d.globalCopies || 0 })); } catch (e) {}
+      showHeroStats(d.globalPv || 0, d.globalCopies || 0);
     }
   }).catch(function () {});
 })();
