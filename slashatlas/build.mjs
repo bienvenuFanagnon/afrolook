@@ -252,6 +252,7 @@ const HOME = {
     steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
+    statPv: 'créateurs actifs', statCp: 'commandes lancées',
   },
   en: {
     h1: ['Copy. Paste.', 'Your pro visual is ready.'],
@@ -260,6 +261,7 @@ const HOME = {
     steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
+    statPv: 'active creators', statCp: 'commands launched',
   },
 };
 const ICON = {
@@ -387,6 +389,7 @@ function home(l) {
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
   const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
   const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
+<div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><span class="hstat-dot" aria-hidden="true"></span><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl">${H.statPv}</span></div><span class="hstat-sep" aria-hidden="true">·</span><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div></div>
 <ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
 ${showcase(l)}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>

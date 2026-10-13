@@ -69,6 +69,16 @@ function body(req) {
 
 const CMDS = require('./commands.json');
 let popCache = { at: 0, rows: [] };
+let pvCache = { at: 0, pv: 0 };
+/** Vues totales des 90 derniers jours — cache 1 h. */
+async function cachedTotalPv() {
+  if (Date.now() - pvCache.at > 3600000) {
+    const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
+    const q = await getFirestore().collection('SlashAtlasStats').where('day', '>=', since).get();
+    pvCache = { at: Date.now(), pv: q.docs.reduce((s, d) => s + (d.data().pv || 0), 0) };
+  }
+  return pvCache.pv;
+}
 /** Commandes les plus copiées (compteur public) : lecture mise en cache 15 min côté fonction et 15 min côté CDN. */
 async function popular(l) {
   if (Date.now() - popCache.at > 900000) {
@@ -81,7 +91,9 @@ async function popular(l) {
     const c = CMDS.commands[r.slug];
     return { slug: r.slug, copies: r.copies, tries: r.tries, views: r.views, catId: c.cat, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
   });
-  return { counts, top };
+  const globalCopies = popCache.rows.reduce((s, r) => s + r.copies, 0);
+  const globalPv = await cachedTotalPv().catch(() => 0);
+  return { counts, top, globalCopies, globalPv };
 }
 /** Compteur public par commande (copies, clics « Générer ici » et pages de détails visitées) : chaque événement compte, commandes connues seulement ; « score » sert au classement : un essai « Générer ici » vaut 10 copies, une visite de la page de détails 0,2 copie (5 visites = 1 copie). */
 async function publicCount(slug, field) {

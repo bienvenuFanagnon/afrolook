@@ -348,7 +348,27 @@
     items.map(function (c, i) { return [c, i]; }).sort(function (a, b) { return score(b[0].dataset.slug) - score(a[0].dataset.slug) || a[1] - b[1]; }).forEach(function (x) { list.appendChild(x[0]); });
     if (window.saReorder) window.saReorder();
   }
-  fetch('/api/popular?l=' + lang).then(function (r) { return r.json(); }).then(function (d) { counts = d.counts || {}; paint(); railFill(d.top || []); sortList(counts); }).catch(function () {});
+  function animStat(el, n) {
+    if (!el || !n) return;
+    var dur = 1400, t0 = performance.now();
+    var fmt = function (v) { return Math.round(v).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US'); };
+    (function step(ts) {
+      var p = Math.min((ts - t0) / dur, 1), ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(n * ease);
+      if (p < 1) requestAnimationFrame(step); else el.textContent = fmt(n);
+    })(t0);
+  }
+  fetch('/api/popular?l=' + lang).then(function (r) { return r.json(); }).then(function (d) {
+    counts = d.counts || {}; paint(); railFill(d.top || []); sortList(counts);
+    var hs = document.getElementById('hero-stats');
+    var hpv = document.getElementById('hstat-pv');
+    var hcp = document.getElementById('hstat-cp');
+    if (hs && (d.globalPv || d.globalCopies)) {
+      hs.removeAttribute('hidden');
+      animStat(hpv, d.globalPv || 0);
+      animStat(hcp, d.globalCopies || 0);
+    }
+  }).catch(function () {});
 })();
 
 // Publicité : les emplacements restent masqués tant que l'administration n'a pas activé la publicité (réglages lus via /api/config).

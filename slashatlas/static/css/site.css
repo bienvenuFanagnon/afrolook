@@ -715,6 +715,14 @@ textarea.film-input{resize:vertical;min-height:110px}
 .shist-wrap{margin:14px 0;border:1px solid var(--line);border-radius:18px;overflow:hidden}.shist-wrap summary{padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}.shist-wrap summary::-webkit-details-marker{display:none}.shist-wrap summary::before{content:'▸';font-size:10px;transition:transform .2s}.shist-wrap[open] summary::before{transform:rotate(90deg)}.shist{padding:4px 8px 10px;display:flex;flex-direction:column;gap:6px}
 .shistrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--bg2,#111);border:1px solid var(--line)}.shistrow .shinfo{flex:1;min-width:0}.shistrow .shinfo b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shistrow .shinfo small{display:block;font-size:12px;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .shthumb{width:52px;height:52px;border-radius:9px;object-fit:cover;flex:none}
+/* Stats hero : créateurs actifs + commandes lancées */
+.hero-stats{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;margin:14px 0 4px}
+.hstat{display:flex;align-items:center;gap:7px}
+.hstat-dot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--ok,#30d158);animation:hsdot 2.2s ease-in-out infinite}
+@keyframes hsdot{0%,100%{opacity:1;box-shadow:0 0 0 0 color-mix(in srgb,var(--ok,#30d158) 50%,transparent)}60%{opacity:.8;box-shadow:0 0 0 6px color-mix(in srgb,var(--ok,#30d158) 0%,transparent)}}
+.hstat-n{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.hstat-lbl{font-size:.72rem;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.hstat-sep{color:var(--faint);font-size:.9rem;flex:none}
 /* Mise en scène : zone de texte libre + chips rapides */
 .scenebox{margin:6px 0 2px}
 .scenebox summary{padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;user-select:none}.scenebox summary::-webkit-details-marker{display:none}
