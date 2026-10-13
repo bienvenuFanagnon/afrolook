@@ -299,11 +299,18 @@
   var tw = function (n) { return lang === 'fr' ? n + (n > 1 ? ' essais' : ' essai') : n + (n > 1 ? ' tries' : ' try'); };
   var vw = function (n) { return lang === 'fr' ? n + (n > 1 ? ' visites' : ' visite') : n + (n > 1 ? ' visits' : ' visit'); };
   var label = function (v, full) {
-    var out = [];
-    if (v[0]) out.push('⧉ ' + (full ? cw(v[0]) : v[0]));
-    if (v[1]) out.push('⚡ ' + (full ? tw(v[1]) : v[1]));
-    if (v[2]) out.push('👁 ' + (full ? vw(v[2]) : v[2]));
-    return out.join(full ? ' · ' : '  ');
+    var cp = v[0] || 0, tr = v[1] || 0, vi = v[2] || 0;
+    if (full) {
+      var out = [];
+      if (cp) out.push(cw(cp));
+      if (tr) out.push(tw(tr));
+      if (vi) out.push(vw(vi));
+      return out.join(' · ');
+    }
+    // Cartes (téléphone, tablette, ordinateur) : juste le nombre de copies
+    if (cp) return cw(cp);
+    if (tr) return tw(tr);
+    return '';
   };
   var show = function (el, slug, full) { if (!el) return; var v = C(slug); if (v[0] + v[1] + (v[2] || 0) >= MIN) { el.textContent = label(v, full); el.title = cw(v[0]) + ' · ' + tw(v[1]) + ' · ' + vw(v[2] || 0); el.hidden = false; } };
   function paint() {
