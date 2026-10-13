@@ -41,8 +41,8 @@ const hashDir = (d) => { const h = createHash('sha1'); const dir = path.join(roo
 const V = { css: hashOf('css/site.css'), js: hashDir('js') };
 
 const P = {
-  fr: { home: '/', cmds: '/commandes/', try: '/generer/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/generer/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', filmStudio: '/studio-film/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', filmStudio: '/en/film-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -246,18 +246,18 @@ const alt2 = (fr, en) => ({ fr, en });
 // ───────── pages ─────────
 const HOME = {
   fr: {
-    h1: ['Copiez. Collez.', 'Votre contenu IA est prêt.'],
-    hrot: ['Votre contenu IA est prêt.', 'Affiches. Vidéos. Textes.', 'ChatGPT, Midjourney, Runway.', 'Vos réseaux, en 3 gestes.', "Du studio à votre fil d'actu."],
-    sub: 'Affiches, vidéos motion design et textes : des commandes toutes prêtes pour ChatGPT, Gemini, Midjourney, Veo ou Runway. Le studio rapide pour vos réseaux.',
-    steps: [['Copiez', 'une commande'], ['Collez', 'avec votre photo dans votre IA'], ['Publiez', 'votre visuel']],
+    h1: ['Créez. Publiez.', 'Votre contenu IA est prêt.'],
+    hrot: ['Votre contenu IA est prêt.', 'Affiches pro en 30 secondes.', 'Films narrés de 2 à 3 minutes.', 'Vidéos pub motion design.', 'Pour Instagram, TikTok et WhatsApp.', 'Zéro logiciel, zéro expérience.'],
+    sub: 'Affiches, films narrés et vidéos motion design : l\'arsenal créatif IA pour vos réseaux sociaux, votre boutique ou votre marque.',
+    steps: [['Créez', 'une affiche ou un film IA'], ['Publiez', 'sur vos réseaux en un clic'], ['Vendez', 'votre produit ou service']],
     rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
   },
   en: {
-    h1: ['Copy. Paste.', 'Your AI content is ready.'],
-    hrot: ['Your AI content is ready.', 'Posters. Videos. Texts.', 'ChatGPT, Midjourney, Runway.', '3 steps to social media.', 'From studio to your feed.'],
-    sub: 'Posters, motion design videos and texts: ready-made commands for ChatGPT, Gemini, Midjourney, Veo or Runway. The fast studio for your social media.',
-    steps: [['Copy', 'a command'], ['Paste', 'with your photo in your AI'], ['Post', 'your visual']],
+    h1: ['Create. Publish.', 'Your AI content is ready.'],
+    hrot: ['Your AI content is ready.', 'Pro posters in 30 seconds.', 'Narrated films in 2–3 minutes.', 'Motion design video ads.', 'For Instagram, TikTok and WhatsApp.', 'Zero software, zero experience.'],
+    sub: 'Posters, narrated films and motion design videos: the AI creative toolkit for your social media, your shop or your brand.',
+    steps: [['Create', 'a poster or an AI film'], ['Publish', 'on your networks in one click'], ['Sell', 'your product or service']],
     rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
   },
@@ -285,11 +285,15 @@ const SHOW = {
     h: 'Deux studios, un seul site', imgT: 'Visuels : affiches et photos pro', imgP: 'Copiez une commande gratuite ou générez directement sur le site : votre photo devient une affiche prête à publier.', before: 'Votre photo', after: 'Le résultat',
     vidT: 'Vidéos pub : motion design', vidP: 'Votre photo suffit : elle est retouchée, le produit est détouré et mis en scène en gros plan, il tourne à 360°, avec musique, effets sonores et voix off.', s1: 'Votre photo', s2: 'Produit détouré', s3: 'Votre vidéo',
     cmds: 'Voir les commandes', gen: 'Générer ici', mk: 'Créer une vidéo', exH: 'Des vidéos créées avec le studio', exP: 'Touchez pour lancer, avec le son. Chaque exemple montre la photo de départ.', orig: 'Photo d’origine', styles: { lotion: 'Soin visage', parfum: 'Parfum', robe: 'Robe', tenue: 'Tenue complète', eau: 'Eau minérale', plat: 'Plat du jour' }, tutoV: 'Voir toutes les vidéos',
+    filmT: 'Studio Film & Série', filmP: 'Scénario IA, voix off et musique : créez des vidéos narrées de 2 à 3 minutes en motion design, sans caméra ni logiciel.', filmBtn: 'Créer mon film', filmS1: 'Scénario', filmS2: 'Motion design', filmS3: 'Votre vidéo',
+    filmDemoNames: '["La Légende du Baobab","Abidjan 2040","La Cuisinière de Lomé","Les Enfants du Sahel"]', filmDemoFirst: 'La Légende du Baobab',
   },
   en: {
     h: 'Two studios, one site', imgT: 'Visuals: posters and pro photos', imgP: 'Copy a free command or generate right on the site: your photo becomes a ready-to-post poster.', before: 'Your photo', after: 'The result',
     vidT: 'Video ads: motion design', vidP: 'Your photo is enough: it is retouched, the product is cut out and staged in close-up, it spins 360°, with music, sound effects and a voice-over.', s1: 'Your photo', s2: 'Cut-out product', s3: 'Your video',
     cmds: 'See the commands', gen: 'Generate here', mk: 'Create a video', exH: 'Videos made with the studio', exP: 'Tap to play, with sound. Each example shows the starting photo.', orig: 'Original photo', styles: { lotion: 'Face care', parfum: 'Perfume', robe: 'Dress', tenue: 'Full outfit', eau: 'Mineral water', plat: 'Dish of the day' }, tutoV: 'See all the videos',
+    filmT: 'Film & Series Studio', filmP: 'AI script, voice-over and music: create narrated 2 to 3 minute motion design videos with no camera or software.', filmBtn: 'Create my film', filmS1: 'Script', filmS2: 'Motion design', filmS3: 'Your video',
+    filmDemoNames: '["The Legend of the Baobab","Abidjan 2040","The Cook from Lomé","Children of the Sahel"]', filmDemoFirst: 'The Legend of the Baobab',
   },
 };
 const VEX = ['lotion', 'parfum', 'robe', 'tenue', 'eau', 'plat'];
@@ -306,7 +310,9 @@ function showcase(l) {
   const S = SHOW[l], p = P[l]; const vid = cfg.video && cfg.video.renderUrl;
   const img = `<article class="duo-c"><h3>${S.imgT}</h3><p>${S.imgP}</p><div class="ba" data-rot="img" data-ids='${JSON.stringify(IMGPAIRS)}'><figure><img data-r="avant" src="/img/c/fashionposter-avant.webp" alt="${esc(S.before)}" loading="lazy"><figcaption>${S.before}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure><img data-r="apres" src="/img/c/fashionposter-apres.webp" alt="${esc(S.after)}" loading="lazy"><figcaption class="hot">${S.after}</figcaption></figure></div><div class="acts"><a class="btn pri" href="${p.cmds}">${S.cmds}</a><a class="btn gl" href="${p.try}">${S.gen}</a></div></article>`;
   const mov = vid ? `<article class="duo-c"><h3>${S.vidT}</h3><p>${S.vidP}</p><div class="ba ba3" data-rot="vid" data-ids='${JSON.stringify(VEX)}'><figure><img data-r="before" src="/img/video/before-lotion.webp" alt="${esc(S.s1)}" loading="lazy"><figcaption>${S.s1}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="cut"><img data-r="cut" src="/img/video/cut-lotion.webp" alt="${esc(S.s2)}" loading="lazy"><figcaption>${S.s2}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="pv"><img data-r="ex" src="/img/video/ex-lotion.webp" alt="${esc(S.s3)}" loading="lazy"><i class="vplay2" aria-hidden="true"></i><figcaption class="hot">${S.s3}</figcaption></figure></div><div class="acts"><a class="btn pri" href="${p.try}?mode=video">${S.mk}</a><a class="btn gl" href="${p.tuto}#videos">${S.tutoV}</a></div></article>` : '';
-  return `<div class="sec"><h2>${S.h}</h2></div><div class="duo">${img}${mov}</div>`;
+  const filmDemos = `<div class="film-demo-reel" data-names='${S.filmDemoNames}'><video class="film-demo-vid active" src="/videos/demo-baobab.mp4" loop muted autoplay playsinline></video><video class="film-demo-vid" src="/videos/demo-abidjan.mp4" loop muted playsinline></video><video class="film-demo-vid" src="/videos/demo-cuisiniere.mp4" loop muted playsinline></video><video class="film-demo-vid" src="/videos/demo-sahel.mp4" loop muted playsinline></video><div class="film-demo-info"><span class="film-demo-lbl">${S.filmDemoFirst}</span><div class="film-demo-dots"><button class="fdd active" data-i="0" aria-label="1"></button><button class="fdd" data-i="1" aria-label="2"></button><button class="fdd" data-i="2" aria-label="3"></button><button class="fdd" data-i="3" aria-label="4"></button></div></div></div>`;
+  const film = `<article class="duo-c duo-film" id="studio-film"><h3>${S.filmT}</h3>${filmDemos}<p>${S.filmP}</p><div class="film-steps"><span>${S.filmS1}</span><span class="fa">→</span><span>${S.filmS2}</span><span class="fa">→</span><span>${S.filmS3}</span></div><div class="acts"><a class="btn pri" href="${P[l].filmStudio}">${S.filmBtn}</a></div></article>`;
+  return `<div class="sec"><h2>${S.h}</h2></div><div class="duo">${img}${film}${mov}</div>`;
 }
 const TV = {
   fr: { h: 'Toutes nos vidéos', lead: 'Pour comprendre en quelques minutes tout ce que le site propose : commandes gratuites, Studio « Générer ici », vidéos pub et QR code.',
@@ -509,6 +515,97 @@ function termsPage(l) {
   if (l === 'fr') pages.push({ fr: P.fr.terms, en: P.en.terms });
 }
 
+const FILM_EXAMPLES = {
+  fr: [
+    { emoji: '🧵', title: 'La Tisserande de Ouagadougou', genre: 'film', dur: '2', hint: 'Drame · 2 min', synopsis: `Aminata, 28 ans, est tisserande à Ouagadougou. Elle rêve de faire connaître le bogolan burkinabè au monde entier. Une styliste parisienne découvre ses créations sur les réseaux sociaux. Aminata doit choisir : quitter l'Afrique pour Paris, ou rester bâtir son empire depuis chez elle. Sa grand-mère lui murmure : la vraie puissance vient de la terre où tu as grandi.` },
+    { emoji: '🏙️', title: 'Lagos 2050', genre: 'film', dur: '2', hint: 'Science-fiction · 2 min', synopsis: `En 2050, Lagos est devenue la capitale technologique mondiale. Kofi, ingénieur de 32 ans, découvre un algorithme capable de guérir la pauvreté. Mais une multinationale veut racheter son invention pour l'effacer. Il a 48 heures pour choisir entre la richesse et l'avenir de son continent.` },
+    { emoji: '👵', title: 'Les Secrets de Mémé Koffi', genre: 'conte', dur: '2', hint: 'Conte · 2 min', synopsis: `Koffi, 8 ans, passe ses vacances chez sa grand-mère au village. La vieille femme lui raconte une légende : un trésor ancestral est caché dans la forêt depuis cent ans. Les deux partent à la recherche de ce trésor qui cache un secret de famille bien plus précieux que l'or.` },
+    { emoji: '🌊', title: 'La Fille de l\'Océan', genre: 'film', dur: '3', hint: 'Aventure · 3 min', synopsis: `Nadia, 25 ans, est pêcheuse au Sénégal. Elle est la seule femme du village à braver l'Atlantique seule chaque matin. Un jour, elle retrouve un enfant naufragé sur une pirogue abandonnée. Ensemble, ils vont percer un mystère qui remonte aux anciens royaumes de l'Afrique de l'Ouest.` },
+    { emoji: '🎭', title: 'La Troupe du Grand Marché', genre: 'animation', dur: '2', hint: 'Animation · 2 min', synopsis: `Dans le grand marché d'Abidjan, cinq vendeurs farfelus décident de monter un spectacle de théâtre pour le festival du quartier. Ils répètent en secret entre deux clients. Mais le jour J, tout part à vau-l'eau. C'est là que la vraie magie commence.` },
+    { emoji: '⚽', title: 'Le Prodige de Dakar', genre: 'film', dur: '2', hint: 'Sport · 2 min', synopsis: `Moussa, 16 ans, joue au football pieds nus dans les rues de Dakar. Un recruteur de club européen le repère lors d'un tournoi de quartier. Mais sa famille a besoin de lui pour travailler et nourrir ses petits frères. Son rêve ou sa famille : le choix le plus difficile de sa vie.` },
+  ],
+  en: [
+    { emoji: '🧵', title: 'The Weaver of Ouagadougou', genre: 'film', dur: '2', hint: 'Drama · 2 min', synopsis: `Aminata, 28, is a weaver in Ouagadougou who dreams of bringing Burkinabe bogolan to the world. A Parisian stylist discovers her work on social media. Aminata must choose: leave Africa for Paris, or stay and build her empire from home. Her grandmother whispers: true power comes from the soil where you grew up.` },
+    { emoji: '🏙️', title: 'Lagos 2050', genre: 'film', dur: '2', hint: 'Sci-fi · 2 min', synopsis: `In 2050, Lagos is the world's technology capital. Kofi, a 32-year-old engineer, discovers an algorithm that could eradicate poverty. A multinational corporation wants to buy his invention and bury it forever. He has 48 hours to choose between personal wealth and the future of a continent.` },
+    { emoji: '👵', title: 'Grandma Koffi\'s Secrets', genre: 'conte', dur: '2', hint: 'Tale · 2 min', synopsis: `Eight-year-old Koffi spends his holidays at his grandmother's village. She tells him a legend: an ancestral treasure has been hidden in the forest for a hundred years. The two set out to find it — only to discover a family secret far more precious than gold.` },
+    { emoji: '🌊', title: 'Daughter of the Ocean', genre: 'film', dur: '3', hint: 'Adventure · 3 min', synopsis: `Nadia, 25, is a fisherwoman in Senegal — the only woman in her village who braves the Atlantic alone every morning. One day she finds a shipwrecked child on an abandoned dugout canoe. Together they unravel a mystery that stretches back to the ancient kingdoms of West Africa.` },
+    { emoji: '🎭', title: 'The Grand Market Troupe', genre: 'animation', dur: '2', hint: 'Animation · 2 min', synopsis: `In the grand market of Abidjan, five quirky vendors decide to stage a theater show for the neighborhood festival. They rehearse in secret between customers. But on the big day everything goes wrong. That is when the real magic begins.` },
+    { emoji: '⚽', title: 'The Prodigy of Dakar', genre: 'film', dur: '2', hint: 'Sport · 2 min', synopsis: `Moussa, 16, plays football barefoot on the streets of Dakar. A European club scout spots him at a neighborhood tournament. But his family needs him to work and feed his younger siblings. His dream or his family: the hardest choice of his life.` },
+  ],
+};
+
+function filmStudioPage(l) {
+  const p = P[l];
+  const t = {
+    fr: {
+      title: 'Studio Film & Série — Créez votre film en IA | SlashAtlas',
+      desc: 'Décrivez votre histoire, l\'IA écrit le scénario, génère les images et la voix off. Votre film de 2 à 3 minutes prêt en quelques minutes.',
+      eyebrow: 'Studio Film & Série',
+      h: 'Votre histoire en vidéo',
+      lead: 'Décrivez votre histoire, choisissez la durée. L\'IA écrit le scénario scène par scène, génère les visuels et la voix off, puis assemble votre vidéo.',
+      howH: 'Comment ça marche',
+      steps: [['1', 'Vous décrivez', 'Un titre et un synopsis en quelques mots. L\'IA fait le reste.'], ['2', 'Le scénario est écrit', 'L\'IA décompose votre histoire en 6 à 8 scènes avec voix off.'], ['3', 'Images et voix', 'Chaque scène génère une image et un passage lu par une voix naturelle.'], ['4', 'Votre vidéo', 'Toutes les scènes sont assemblées en un fichier MP4 prêt à partager.']],
+      formH: 'Créer mon film',
+      titleL: 'Titre de votre film ou série', titleP: 'Ex. : La princesse et la forêt enchantée',
+      synopsisL: 'Description de l\'histoire', synopsisP: 'Décrivez les personnages, le lieu, ce qui se passe… (50 à 500 mots)',
+      seriesH: 'Mes séries', seriesSub: 'Continuez une série existante ou créez un nouveau film.',
+      seriesBadgeClear: 'Changer',
+      genreL: 'Genre', genres: [['film', 'Film'], ['serie', 'Série (épisode)'], ['animation', 'Animation'], ['conte', 'Conte']],
+      langL: 'Langue de la vidéo', langs: [['fr', 'Français'], ['en', 'English']],
+      durL: 'Durée', dur2: '2 min', dur3: '3 min',
+      watermarkL: 'Afficher « slashatlas.com » dans la vidéo', watermarkHint: 'Économisez 1 crédit. Décochez pour retirer la mention.',
+      audioL: 'Ajouter ma propre voix off', audioHint: 'Importez votre audio (ElevenLabs, etc.) — économise 2 crédits.',
+      audioBrowse: 'Choisir un fichier audio', audioUploading: 'Envoi en cours…',
+      costLabel: 'Coût estimé :',
+      submit: 'Créer mon film', loginNote: 'Connectez-vous pour créer votre film.', loginBtn: 'Se connecter',
+      credNote: 'Crédits insuffisants.', credLink: 'Recharger',
+      genStep: 'Scénario en cours…', renderStep: 'Génération des images et de la voix…', assembleStep: 'Assemblage de la vidéo…',
+      doneH: 'Votre film est prêt !', download: 'Télécharger la vidéo', errMsg: 'Une erreur est survenue, vos crédits n\'ont pas été débités.',
+      demoH: 'Exemples créés avec le Studio', demoP: 'Changement automatique • Cliquez pour voir en plein écran', demoNames: '["La Légende du Baobab","Abidjan 2040","La Cuisinière de Lomé","Les Enfants du Sahel"]', demoFirst: 'La Légende du Baobab',
+      feats: [['🎬', 'Film'], ['📺', 'Série'], ['🎨', 'Animation'], ['📖', 'Conte'], ['🌍', 'FR · EN'], ['⏱', '2 à 3 min'], ['🎙', 'Voix naturelle'], ['🎵', 'Musique incluse']],
+      inspireH: 'Besoin d\'inspiration ?', inspireSub: 'Cliquez sur un exemple pour remplir le formulaire automatiquement',
+    },
+    en: {
+      title: 'Film & Series Studio — Create your AI film | SlashAtlas',
+      desc: 'Describe your story, the AI writes the script, generates the images and voice-over. Your 2 to 3 minute film ready in minutes.',
+      eyebrow: 'Film & Series Studio',
+      h: 'Your story as a video',
+      lead: 'Describe your story, choose the duration. The AI writes the script scene by scene, generates the visuals and voice-over, then assembles your video.',
+      howH: 'How it works',
+      steps: [['1', 'You describe', 'A title and a synopsis in a few words. The AI does the rest.'], ['2', 'The script is written', 'The AI breaks your story into 6 to 8 scenes with voice-over.'], ['3', 'Images and voice', 'Each scene generates an image and a passage read by a natural voice.'], ['4', 'Your video', 'All scenes are assembled into an MP4 file ready to share.']],
+      formH: 'Create my film',
+      titleL: 'Title of your film or series', titleP: 'E.g.: The princess and the enchanted forest',
+      synopsisL: 'Story description', synopsisP: 'Describe the characters, the setting, what happens… (50 to 500 words)',
+      seriesH: 'My series', seriesSub: 'Continue an existing series or create a new film.',
+      seriesBadgeClear: 'Change',
+      genreL: 'Genre', genres: [['film', 'Film'], ['serie', 'Series (episode)'], ['animation', 'Animation'], ['conte', 'Tale']],
+      langL: 'Video language', langs: [['fr', 'Français'], ['en', 'English']],
+      durL: 'Duration', dur2: '2 min', dur3: '3 min',
+      watermarkL: 'Show "slashatlas.com" in the video', watermarkHint: 'Save 1 credit. Uncheck to remove the mention.',
+      audioL: 'Add my own voice-over', audioHint: 'Import your audio (ElevenLabs, etc.) — saves 2 credits.',
+      audioBrowse: 'Choose an audio file', audioUploading: 'Uploading…',
+      costLabel: 'Estimated cost:',
+      submit: 'Create my film', loginNote: 'Sign in to create your film.', loginBtn: 'Sign in',
+      credNote: 'Not enough credits.', credLink: 'Top up',
+      genStep: 'Writing the script…', renderStep: 'Generating images and voice…', assembleStep: 'Assembling the video…',
+      doneH: 'Your film is ready!', download: 'Download the video', errMsg: 'An error occurred, your credits were not deducted.',
+      demoH: 'Examples created with the Studio', demoP: 'Auto-switches • Click to view fullscreen', demoNames: '["The Legend of the Baobab","Abidjan 2040","The Cook from Lomé","Children of the Sahel"]', demoFirst: 'The Legend of the Baobab',
+      feats: [['🎬', 'Film'], ['📺', 'Series'], ['🎨', 'Animation'], ['📖', 'Tale'], ['🌍', 'FR · EN'], ['⏱', '2–3 min'], ['🎙', 'Natural voice'], ['🎵', 'Music included']],
+      inspireH: 'Need inspiration?', inspireSub: 'Click an example to fill the form automatically',
+    },
+  }[l];
+  const stepCards = t.steps.map(([n, h, d]) => `<div class="film-how-step"><div class="film-how-n">${n}</div><b>${h}</b><p>${d}</p></div>`).join('');
+  const genreOpts = t.genres.map(([v, lb]) => `<option value="${v}">${lb}</option>`).join('');
+  const langOpts = t.langs.map(([v, lb]) => `<option value="${v}"${v === l ? ' selected' : ''}>${lb}</option>`).join('');
+  const featsHtml = t.feats.map(([icon, lb]) => `<span class="film-feat">${icon} ${lb}</span>`).join('');
+  const filmDemoSection = `<section class="film-studio-demos"><h2 class="film-demo-sec-h">${t.demoH}</h2><p class="film-demo-sec-p">${t.demoP}</p><div class="film-demo-reel film-demo-big" data-names='${t.demoNames}'><video class="film-demo-vid active" src="/videos/demo-baobab.mp4" loop muted autoplay playsinline></video><video class="film-demo-vid" src="/videos/demo-abidjan.mp4" loop muted playsinline></video><video class="film-demo-vid" src="/videos/demo-cuisiniere.mp4" loop muted playsinline></video><video class="film-demo-vid" src="/videos/demo-sahel.mp4" loop muted playsinline></video><div class="film-demo-info"><span class="film-demo-lbl">${t.demoFirst}</span><div class="film-demo-dots"><button class="fdd active" data-i="0" aria-label="1"></button><button class="fdd" data-i="1" aria-label="2"></button><button class="fdd" data-i="2" aria-label="3"></button><button class="fdd" data-i="3" aria-label="4"></button></div></div></div></section>`;
+  const ideasHtml = `<div class="film-ideas"><h3 class="film-ideas-h">${t.inspireH}</h3><p class="film-ideas-sub">${t.inspireSub}</p><div class="film-ideas-grid">${FILM_EXAMPLES[l].map((ex) => `<button class="film-idea-card" type="button" data-title="${esc(ex.title)}" data-synopsis="${esc(ex.synopsis)}" data-genre="${ex.genre}" data-dur="${ex.dur}"><span class="film-idea-emoji">${ex.emoji}</span><div><b>${esc(ex.title)}</b><span class="film-idea-hint">${ex.hint}</span></div></button>`).join('')}</div></div>`;
+  const seriesSection = `<div class="film-series-section" id="film-series-section" hidden><h3 class="film-series-h">${t.seriesH}</h3><p class="film-series-sub">${t.seriesSub}</p><div id="film-series-wrap" class="film-series-wrap"></div></div>`;
+  const body = `<div class="wrap"><div class="eyebrow">${t.eyebrow}</div><h1 class="big sm">${t.h}</h1><p class="lead">${t.lead}</p><div class="film-feats">${featsHtml}</div>${filmDemoSection}<div class="film-how">${stepCards}</div>${ideasHtml}<div class="film-form-wrap" id="film-out"><div class="adm-login" id="film-login-wall"><p class="lead">${t.loginNote}</p><button class="btn pri big" type="button" data-login>${t.loginBtn}</button><p class="fmsg" id="film-auth-msg" role="status" aria-live="polite"></p></div>${seriesSection}<form class="film-form" id="film-form" hidden><h2 class="film-form-h">${t.formH}</h2><div id="film-series-badge" class="film-series-badge" hidden></div><label class="film-label" for="film-title">${t.titleL}</label><input class="film-input" id="film-title" type="text" maxlength="80" required placeholder="${esc(t.titleP)}"><label class="film-label" for="film-synopsis">${t.synopsisL}</label><textarea class="film-input" id="film-synopsis" rows="6" maxlength="3000" required placeholder="${esc(t.synopsisP)}"></textarea><div class="film-row"><div class="film-col"><label class="film-label" for="film-genre">${t.genreL}</label><select class="film-input" id="film-genre">${genreOpts}</select></div><div class="film-col"><label class="film-label" for="film-lang">${t.langL}</label><select class="film-input" id="film-lang">${langOpts}</select></div></div><fieldset class="film-dur"><legend class="film-label">${t.durL}</legend><label class="film-dur-opt"><input type="radio" name="dur" value="2" checked><span>${t.dur2} — 10 cr.</span></label><label class="film-dur-opt"><input type="radio" name="dur" value="3"><span>${t.dur3} — 15 cr.</span></label></fieldset><div class="film-options"><label class="film-option-row"><input type="checkbox" id="film-watermark" checked><span class="film-option-text"><b>${t.watermarkL}</b><span class="film-option-hint">${t.watermarkHint}</span></span><span class="film-option-save">-1 cr.</span></label><label class="film-option-row"><input type="checkbox" id="film-audio-toggle"><span class="film-option-text"><b>${t.audioL}</b><span class="film-option-hint">${t.audioHint}</span></span><span class="film-option-save">-2 cr.</span></label><div class="film-audio-wrap" id="film-audio-wrap" hidden><div class="film-audio-row"><label class="btn sec film-audio-pick" for="film-audio-input">${t.audioBrowse}</label><input type="file" id="film-audio-input" accept="audio/*" class="sr-only"><span class="film-audio-name" id="film-audio-name"></span></div></div></div><div class="film-cost-row"><span>${t.costLabel}</span> <b id="film-cost-val">9</b> cr.</div><button class="btn sec film-series-reset" type="button" id="film-series-reset" hidden>${t.seriesBadgeClear}</button><button class="btn pri big film-submit" type="submit" id="film-submit">${t.submit}</button><p class="fmsg" id="film-msg" role="status" aria-live="polite"></p><p class="hint" id="film-cred-warn" hidden></p></form><div id="film-result" hidden></div></div></div>`;
+  emit(l, 'studio-film', p.filmStudio, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.filmStudio, P.en.filmStudio), extraJs: '/js/studio-film.js' });
+  if (l === 'fr') pages.push({ fr: P.fr.filmStudio, en: P.en.filmStudio });
+}
+
 function adminPage() {
   const body = `<div class="wrap"><div class="eyebrow">Administration</div><h1 class="big sm">Suivi de SlashAtlas</h1>
 <div id="adm-out" class="adm-login"><p class="lead">Accès réservé à l’administrateur. Connectez-vous avec le compte Google autorisé.</p><button class="btn pri big" type="button" data-login>Continuer avec Google</button><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>
@@ -548,7 +645,7 @@ fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 { const sw = path.join(dist, 'sw.js'); fs.writeFileSync(sw, fs.readFileSync(sw, 'utf8').replace(/__V__/g, createHash('sha1').update(V.js + V.css + Date.now()).digest('hex').slice(0, 8))); } // une version du service worker par construction
 for (const l of ['fr', 'en']) {
-  home(l); studioPage(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); guidesIndexPage(l); GUIDES.forEach((g) => guidePage(l, g)); tryPage(l); refPage(l); refPage(l);
+  home(l); studioPage(l); filmStudioPage(l); cmdsPage(l); tutoPage(l); packPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); guidesIndexPage(l); GUIDES.forEach((g) => guidePage(l, g)); tryPage(l); refPage(l); refPage(l);
   for (const c of CATEGORIES) catPage(l, c);
   for (const c of COMMANDS) cmdPage(l, c);
 }
