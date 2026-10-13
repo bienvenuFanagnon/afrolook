@@ -308,7 +308,7 @@ function examplesRail(l, id = 'rail-ex') {
   const cards = VEX.map((k) => `<figure class="vexc" role="listitem"><div class="vexv"><video controls playsinline preload="none" poster="/img/video/ex-${k}.webp" src="/video/exemples/ex-${k}-${l}.mp4" aria-label="${esc(S.styles[k])}"></video><span class="vorig"><img src="/img/video/before-${k}.webp" alt="" loading="lazy" width="72" height="72"><small>${S.orig}</small></span></div><figcaption>${S.styles[k]}<small>${MODEL_LBL[l][VEX_MODEL[k]]}</small></figcaption></figure>`).join('');
   return `<div class="sec tight"><h2>${S.exH}</h2><span class="swipe">${S.exP}</span></div><div class="rail railx" id="${id}" data-rot="rail" role="list" tabindex="0">${cards}</div>`;
 }
-function showcase(l) {
+function showcase(l, part = 'all') {
   const S = SHOW[l], p = P[l]; const vid = cfg.video && cfg.video.renderUrl;
   const filmDemos = `<div class="film-demo-reel" data-names='${S.filmDemoNames}'><video class="film-demo-vid active" src="/videos/demo-baobab.mp4" loop muted autoplay playsinline></video><video class="film-demo-vid" src="/videos/demo-abidjan.mp4" loop muted playsinline></video><video class="film-demo-vid" src="/videos/demo-cuisiniere.mp4" loop muted playsinline></video><video class="film-demo-vid" src="/videos/demo-sahel.mp4" loop muted playsinline></video><div class="film-demo-info"><span class="film-demo-lbl">${S.filmDemoFirst}</span><div class="film-demo-dots"><button class="fdd active" data-i="0" aria-label="1"></button><button class="fdd" data-i="1" aria-label="2"></button><button class="fdd" data-i="2" aria-label="3"></button><button class="fdd" data-i="3" aria-label="4"></button></div></div></div>`;
   // Studio 1 — Affiches & visuels : avant/après + CTA
@@ -317,6 +317,8 @@ function showcase(l) {
   const sec2 = `<div class="sec"><h2>${S.filmT}</h2></div><div class="duo"><article class="duo-c duo-film" id="studio-film">${filmDemos}<p>${S.filmP}</p><div class="film-steps"><span>${S.filmS1}</span><span class="fa">→</span><span>${S.filmS2}</span><span class="fa">→</span><span>${S.filmS3}</span></div><div class="acts"><a class="btn pri" href="${P[l].filmStudio}">${S.filmBtn}</a></div></article></div>`;
   // Studio 3 — Motion design : avant/résultat + exemples vidéo + CTA
   const sec3 = vid ? `<div class="sec"><h2>${S.vidT}</h2></div><div class="duo"><article class="duo-c"><p>${S.vidP}</p><div class="ba ba3" data-rot="vid" data-ids='${JSON.stringify(VEX)}'><figure><img data-r="before" src="/img/video/before-lotion.webp" alt="${esc(S.s1)}" loading="lazy"><figcaption>${S.s1}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="cut"><img data-r="cut" src="/img/video/cut-lotion.webp" alt="${esc(S.s2)}" loading="lazy"><figcaption>${S.s2}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="pv"><img data-r="ex" src="/img/video/ex-lotion.webp" alt="${esc(S.s3)}" loading="lazy"><i class="vplay2" aria-hidden="true"></i><figcaption class="hot">${S.s3}</figcaption></figure></div><div class="acts"><a class="btn pri" href="${p.try}?mode=video">${S.mk}</a><a class="btn gl" href="${p.tuto}#videos">${S.tutoV}</a></div></article></div>${examplesRail(l)}` : '';
+  if (part === 'sec1') return sec1;
+  if (part === 'sec23') return sec2 + sec3;
   return sec1 + sec2 + sec3;
 }
 const TV = {
@@ -394,12 +396,13 @@ function home(l) {
   const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
 <div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><span class="hstat-dot" aria-hidden="true"></span><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl">${H.statPv}</span></div><span class="hstat-sep" aria-hidden="true">·</span><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div></div>
 <ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
-${showcase(l)}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
+${showcase(l, 'sec1')}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>
 <div class="rail" id="rail-sel" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-new" role="list" hidden>${newest.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-vid" role="list" hidden>${vids.map((c) => railCard(c, l)).join('')}</div>
-<div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>${ad('lb', l)}
+<div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>
+${showcase(l, 'sec23')}${ad('lb', l)}
 <div class="tools"><span>${H.tools}</span><b>ChatGPT</b><b>Gemini</b><b>Midjourney</b><b>Veo</b><b>Runway</b></div>${studioStrip(l)}
 ${refStrip(l, 'big')}
 ${videoBlock(l)}

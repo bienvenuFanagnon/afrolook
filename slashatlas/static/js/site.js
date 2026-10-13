@@ -426,10 +426,12 @@
     var cfgP = null, io = null;
     function loadCfg() {
       return cfgP || (cfgP = fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
-        var a = c && c.ads; if (!a || !a.enabled) return null;
-        var s = document.createElement('script'); s.async = true; s.crossOrigin = 'anonymous';
-        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.client); document.head.appendChild(s);
-        var p = document.querySelector('[data-adprefs]'); if (p) { p.hidden = false; p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} }); }
+        var a = c && c.ads; if (!a || (!a.enabled && !a.afrolook)) return null;
+        if (a.enabled) {
+          var s = document.createElement('script'); s.async = true; s.crossOrigin = 'anonymous';
+          s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.client); document.head.appendChild(s);
+          var p = document.querySelector('[data-adprefs]'); if (p) { p.hidden = false; p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} }); }
+        }
         var _adTimers = {};
         io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
           es.forEach(function (en) {
