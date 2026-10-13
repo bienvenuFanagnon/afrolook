@@ -39,7 +39,7 @@ export default [
   ['mascotsticker2', 'free', '1:1', 'Autocollants de marque', 'Autocollants de marque', 'Une planche d’autocollants pour votre marque, formes rondes et couleurs franches.',
     'une planche de huit autocollants pour [votre marque] aux formes variées (rond, étoile, bulle de dialogue, cœur), couleurs franches, contour blanc épais, mots courts « mot 1 » à « mot 4 », petit personnage de mascotte, fond uni clair, ombre légère.',
     'Brand stickers', 'Brand stickers', 'A sticker sheet for your brand, round shapes and bold colors.',
-    'a sheet of eight stickers for [your brand] in varied shapes (round, star, speech bubble, heart), bold colors, thick white outline, short words “word 1” to “word 4”, a small mascot character, a plain light background, a light shadow.'],
+    'a collection of eight illustrated badges for a brand in varied shapes (round, star, speech bubble, heart), bold flat colors, thick white outline, a small friendly illustrated cartoon figure, plain light background, light drop shadow.'],
   ['mascotvinyl', 'product', '1:1', 'Produit en jouet de collection', 'Jouet de collection', 'Le produit devient un jouet vinyle sur son socle d’exposition.',
     'le produit de la photo transformé en jouet de collection en vinyle brillant avec petits yeux et bras, posé sur un socle d’exposition, boîte ouverte à côté, fond de studio de couleur unie, lumière douce, reflets nets, rendu de photographie de jouet.',
     'Product as a collectible toy', 'Collectible toy', 'The product becomes a vinyl toy on its display base.',

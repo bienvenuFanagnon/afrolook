@@ -477,3 +477,22 @@
     if (!target) return; e.preventDefault(); var c = target.querySelector('.rc,.vexc,.card'); var w = (c ? c.getBoundingClientRect().width : 240) + 12; target.scrollBy({ left: (e.key === 'ArrowRight' ? 1 : -1) * w * 1.5, behavior: 'smooth' });
   });
 })();
+
+// Hero : rotation fluide des propositions de la deuxième ligne du titre
+(function () {
+  var el = document.querySelector('.hrot');
+  if (!el) return;
+  var texts; try { texts = JSON.parse(el.dataset.hrot); } catch (e) { return; }
+  if (!texts || texts.length < 2) return;
+  var i = 0;
+  setInterval(function () {
+    el.classList.add('hout');
+    setTimeout(function () {
+      i = (i + 1) % texts.length;
+      el.classList.remove('hout');
+      el.classList.add('hin');
+      el.textContent = texts[i];
+      requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.remove('hin'); }); });
+    }, 390);
+  }, 3800);
+})();

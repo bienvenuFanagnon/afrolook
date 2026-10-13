@@ -37,7 +37,7 @@ function prompt(c) {
   const intro = c.cat === 'afrofashion' ? 'Professional editorial fashion photograph of a Black African person with dark brown skin and natural African features (two Black African people if the scene describes a couple or duo). ' : c.kind === 'poster' ? posterIntro : (INTRO[c.kind] ?? '');
   return `${intro}${s} No text, no letters, no logo, no watermark. Sharp, high quality.`.slice(0, 1800);
 }
-const NOGEN = new Set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo blueprint cyberpunk barbershop vintagerack inauguration conference djnight mascotsticker2 jewelgold jewelpearl logowood'.split(' ')); // texte parasite ou refus du filtre du modèle
+const NOGEN = new Set('saleposter forrent newarrivals bundleoffer sidebyside menulineup openday shopfront beautypromo barbershop vintagerack jewelgold jewelpearl'.split(' ')); // texte parasite ou refus du filtre du modèle
 // --force : ignore le filtre kind (poster/logo/text) pour les slugs explicitement listés via --slugs
 const FORCE = !!arg('force', false);
 const slugFilter = SLUGS ? new Set(String(SLUGS).split(',')) : null;

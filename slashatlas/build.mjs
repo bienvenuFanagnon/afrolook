@@ -247,6 +247,7 @@ const alt2 = (fr, en) => ({ fr, en });
 const HOME = {
   fr: {
     h1: ['Copiez. Collez.', 'Votre contenu IA est prêt.'],
+    hrot: ['Votre contenu IA est prêt.', 'Affiches. Vidéos. Textes.', 'ChatGPT, Midjourney, Runway.', 'Vos réseaux, en 3 gestes.', "Du studio à votre fil d'actu."],
     sub: 'Affiches, vidéos motion design et textes : des commandes toutes prêtes pour ChatGPT, Gemini, Midjourney, Veo ou Runway. Le studio rapide pour vos réseaux.',
     steps: [['Copiez', 'une commande'], ['Collez', 'avec votre photo dans votre IA'], ['Publiez', 'votre visuel']],
     rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
@@ -254,6 +255,7 @@ const HOME = {
   },
   en: {
     h1: ['Copy. Paste.', 'Your AI content is ready.'],
+    hrot: ['Your AI content is ready.', 'Posters. Videos. Texts.', 'ChatGPT, Midjourney, Runway.', '3 steps to social media.', 'From studio to your feed.'],
     sub: 'Posters, motion design videos and texts: ready-made commands for ChatGPT, Gemini, Midjourney, Veo or Runway. The fast studio for your social media.',
     steps: [['Copy', 'a command'], ['Paste', 'with your photo in your AI'], ['Post', 'your visual']],
     rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
@@ -368,7 +370,7 @@ function home(l) {
   const vids = ['mgkinetic', 'revealvid', 'mglogoreveal', 'turntable', 'mgoutfitreveal', 'splashslow', 'mgserumdrop', 'unboxing', 'mgsneakerpop', 'mgdressflow', 'mgcountdown', 'kithooks'].map((s) => COMMANDS.find((c) => c.slug === s)).filter(Boolean);
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
   const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
-  const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span>${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
+  const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
 <ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
 ${showcase(l)}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>
