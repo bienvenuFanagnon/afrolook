@@ -288,12 +288,12 @@ Une fois les deux fichiers présents, build.mjs retire automatiquement `noImage`
 - [x] milesceremony — Cérémonie / remise
 
 ### ANIME (12)
-- [ ] animeposter — Affiche anime (--force demain)
-- [ ] animesilhouette — Silhouette anime (--force demain)
-- [ ] animeschool — Ambiance école anime (--force demain)
+- [x] animeposter — Affiche anime
+- [x] animesilhouette — Silhouette anime
+- [x] animeschool — Ambiance école anime
 - [x] animechibi — Style chibi
 - [x] animewatercolor — Aquarelle anime
-- [ ] animecrossstitch — Point de croix anime (--force demain)
+- [x] animecrossstitch — Point de croix anime
 - [x] animeline — Ligne claire anime
 - [x] anime3d — Anime 3D
 - [x] animecomicpop — Comic / pop art anime
@@ -304,16 +304,16 @@ Une fois les deux fichiers présents, build.mjs retire automatiquement `noImage`
 ### MARQUE (12)
 - [x] brandboard — Moodboard de marque
 - [x] brandlogo — Logo sur fond
-- [ ] brandcard — Carte de visite marque (--force demain)
-- [ ] brandmerch — Merchandising (--force demain)
+- [x] brandcard — Carte de visite marque
+- [x] brandmerch — Merchandising
 - [x] brandapp — Interface app
-- [ ] brandsign — Signalétique (--force demain)
-- [ ] brandpackaging — Packaging de marque (--force demain)
+- [x] brandsign — Signalétique
+- [x] brandpackaging — Packaging de marque
 - [x] brandsocial — Kit réseaux sociaux
-- [ ] brandbanner — Bannière de marque (--force demain)
+- [x] brandbanner — Bannière de marque
 - [x] brandmockuphero — Mockup hero
 - [x] brandpresentation — Présentation de marque
-- [ ] brandcaps — Casquettes / textiles marqués (--force demain)
+- [x] brandcaps — Casquettes / textiles marqués
 
 ### MAGAZINE (12)
 - [x] magcover — Une de magazine
@@ -330,7 +330,7 @@ Une fois les deux fichiers présents, build.mjs retire automatiquement `noImage`
 - [x] magrecord — Label / record magazine
 
 ### MASCOTTE (2)
-- [ ] mascotrocket — Mascotte fusée (à générer)
+- [x] mascotrocket — Mascotte fusée
 - [NOGEN] mascotsticker2 — Sticker mascotte v2 (refus modèle)
 
 ### KIT (24) — kind:text — pas d'image possible
@@ -384,10 +384,10 @@ Une fois les deux fichiers présents, build.mjs retire automatiquement `noImage`
 | 4 | PLANCHES | 13 | 13 | 0 | 0 |
 | 4 | INFOGRAPHIE | 13 | 13 | 0 | 0 |
 | 4 | JALONS | 12 | 12 | 0 | 0 |
-| 4 | ANIME | 12 | 8 | 0 | 4 (--force) |
-| 4 | MARQUE | 12 | 6 | 0 | 6 (--force) |
+| 4 | ANIME | 12 | 12 | 0 | 0 |
+| 4 | MARQUE | 12 | 12 | 0 | 0 |
 | 4 | MAGAZINE | 12 | 12 | 0 | 0 |
-| 4 | MASCOTTE | 2 | 0 | 1 (mascotsticker2) | 1 (mascotrocket) |
+| 4 | MASCOTTE | 2 | 1 | 1 (mascotsticker2) | 0 |
 | 4 | KIT | 24 | 0 | 24 (N/A) | 0 |
 | 4 | EFFETS | 2 | 0 | 2 (cyberpunk, blueprint) | 0 |
-| **TOTAL** | | **307** | **256** | **31** | **11** |
+| **TOTAL** | | **307** | **267** | **31** | **0** |

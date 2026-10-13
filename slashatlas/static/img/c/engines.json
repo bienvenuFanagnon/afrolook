@@ -139,5 +139,11 @@
  "magestate": "FLUX",
  "magretro": "FLUX",
  "magnewspaper": "FLUX",
- "magrecord": "FLUX"
+ "magrecord": "FLUX",
+ "brandcard": "FLUX",
+ "brandmerch": "FLUX",
+ "brandsign": "FLUX",
+ "brandpackaging": "FLUX",
+ "brandbanner": "FLUX",
+ "brandcaps": "FLUX"
 }
