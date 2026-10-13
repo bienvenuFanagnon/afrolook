@@ -176,20 +176,25 @@
   function buildNativeCard(isFr) {
     var url = storeUrl(), photo = pickPhoto(), msg = nextMsg(isFr);
     return '<a class="cl" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' +
-      '<div class="poster img" style="--ar:4/5"><img src="' + photo + '" alt="" loading="lazy" decoding="async"><span class="tag">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span></div>' +
+      '<div class="poster img" style="--ar:4/5">' +
+        '<img src="' + photo + '" alt="" loading="lazy" decoding="async">' +
+        '<span class="tag">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span>' +
+        '<img class="afl-app-logo" src="/img/afl/logo.png" alt="Afrolook">' +
+      '</div>' +
     '</a>' +
     '<div class="cb">' +
       '<div class="code">Afrolook</div>' +
       '<h3><a href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + msg + '</a></h3>' +
       '<div class="meta"><span>' + storeLbl(isFr) + '</span></div>' +
-      '<div class="acts"><a class="btn pri sm" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + ctaTxt(isFr) + '</a></div>' +
+      '<div class="acts"><a class="btn afl-btn-dl sm" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + ctaTxt(isFr) + '</a></div>' +
     '</div>';
   }
 
   function buildLoad(isFr) {
     var msg = nextMsg(isFr), photo = pickPhoto(), url = storeUrl();
     return '<a class="afl-banner afl-load" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="load">' +
-      '<div class="afl-l-img" style="background-image:url(' + photo + ')"></div>' +
+      '<span class="afl-spon">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span>' +
+      '<div class="afl-l-img" style="background-image:url(' + photo + ')"><img class="afl-app-logo afl-app-logo-sm" src="/img/afl/logo.png" alt=""></div>' +
       '<div class="afl-l-body">' +
         '<span class="afl-badge afl-badge-sm">' + (isFr ? 'Afrolook · Publicité' : 'Afrolook · Ad') + '</span>' +
         '<p class="afl-msg afl-msg-sm">' + msg + '</p>' +

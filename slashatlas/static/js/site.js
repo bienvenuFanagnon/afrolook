@@ -187,8 +187,8 @@
   // ── Recherche et filtre ──
   var q = $('#q');
   if (q) {
-    var cat = '', list = $$('#list .card'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
-    window.saReorder = function () { list = $$('#list .card'); apply(); };
+    var cat = '', list = $$('#list .card:not(.card-ad)'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
+    window.saReorder = function () { list = $$('#list .card:not(.card-ad)'); apply(); };
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
       var v = q.value.trim().toLowerCase(), c = 0, shown = 0;
