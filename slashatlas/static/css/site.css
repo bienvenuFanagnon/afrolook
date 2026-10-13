@@ -771,6 +771,11 @@ textarea.film-input{resize:vertical;min-height:110px}
 /* slot container */
 .ad{border-radius:14px;overflow:hidden}
 #afl-gen-ad{margin-top:16px}
+/* toast copie */
+#afl-copy-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(calc(100% + 24px));width:min(360px,calc(100vw - 32px));z-index:1000;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);transition:transform .32s cubic-bezier(.34,1.4,.64,1);pointer-events:none}
+#afl-copy-toast.on{transform:translateX(-50%) translateY(0);pointer-events:auto}
+.afl-toast-x{position:absolute;top:6px;right:7px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:16px;line-height:1;width:22px;height:22px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:1}
+.afl-toast-x:hover{background:rgba(0,0,0,.7)}
 @media(max-width:520px){
   .afl-rect{max-width:100%}
   .afl-r-img{height:110px}

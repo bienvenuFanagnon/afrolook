@@ -162,7 +162,7 @@
     if (el) {
       var src = $(el.dataset.copy); if (!src) return;
       var old = el.textContent;
-      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } window.saWaToast && window.saWaToast(); setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
+      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } else { window.saAfrolookAds && window.saAfrolookAds.showCopyToast && window.saAfrolookAds.showCopyToast(lang); } window.saWaToast && window.saWaToast(); setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
       var txt = src.textContent;
       try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); }); } catch (err) { fallbackCopy(txt, done); }
       return;

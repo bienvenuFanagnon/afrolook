@@ -213,7 +213,37 @@
     fill: function (el) {
       var fmt = el.dataset.ad;
       if (fmt === 'native') { renderIn(el, buildNativeCard); el.removeAttribute('aria-hidden'); return; }
+      if (fmt === 'load') { renderIn(el, buildLoad); return; }
       renderIn(el, fmt === 'lb' ? buildLb : buildRect);
+    },
+    showCopyToast: function (lang) {
+      var GAP = 90;
+      try {
+        var last = parseInt(sessionStorage.getItem('sa_act') || '0', 10);
+        var now = (Date.now() / 1000) | 0;
+        if (now - last < GAP) return;
+        sessionStorage.setItem('sa_act', now);
+      } catch (e) {}
+      var old = document.getElementById('afl-copy-toast');
+      if (old) old.parentNode.removeChild(old);
+      var toast = document.createElement('div');
+      toast.id = 'afl-copy-toast';
+      toast.dataset.ad = 'load';
+      document.body.appendChild(toast);
+      renderIn(toast, buildLoad);
+      var btn = document.createElement('button');
+      btn.className = 'afl-toast-x';
+      btn.setAttribute('aria-label', lang === 'fr' ? 'Fermer' : 'Close');
+      btn.textContent = '×';
+      toast.appendChild(btn);
+      requestAnimationFrame(function () { toast.classList.add('on'); });
+      var hide = function () {
+        toast.classList.remove('on');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 320);
+      };
+      btn.addEventListener('click', hide, { once: true });
+      var t = setTimeout(hide, 5000);
+      toast.addEventListener('click', function (e) { if (!e.target.closest('.afl-toast-x')) clearTimeout(t); });
     }
   };
 
