@@ -318,6 +318,8 @@ function showcase(l, part = 'all') {
   // Studio 3 — Motion design : avant/résultat + exemples vidéo + CTA
   const sec3 = vid ? `<div class="sec"><h2>${S.vidT}</h2></div><div class="duo"><article class="duo-c"><p>${S.vidP}</p><div class="ba ba3" data-rot="vid" data-ids='${JSON.stringify(VEX)}'><figure><img data-r="before" src="/img/video/before-lotion.webp" alt="${esc(S.s1)}" loading="lazy"><figcaption>${S.s1}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="cut"><img data-r="cut" src="/img/video/cut-lotion.webp" alt="${esc(S.s2)}" loading="lazy"><figcaption>${S.s2}</figcaption></figure><span class="ba-a" aria-hidden="true">→</span><figure class="pv"><img data-r="ex" src="/img/video/ex-lotion.webp" alt="${esc(S.s3)}" loading="lazy"><i class="vplay2" aria-hidden="true"></i><figcaption class="hot">${S.s3}</figcaption></figure></div><div class="acts"><a class="btn pri" href="${p.try}?mode=video">${S.mk}</a><a class="btn gl" href="${p.tuto}#videos">${S.tutoV}</a></div></article></div>${examplesRail(l)}` : '';
   if (part === 'sec1') return sec1;
+  if (part === 'sec2') return sec2;
+  if (part === 'sec3') return sec3;
   if (part === 'sec23') return sec2 + sec3;
   return sec1 + sec2 + sec3;
 }
@@ -402,7 +404,7 @@ ${showcase(l, 'sec1')}</div><div class="wrap"><div class="sec tight"><h2 id="rai
 <div class="rail" id="rail-new" role="list" hidden>${newest.map((c) => railCard(c, l)).join('')}</div>
 <div class="rail" id="rail-vid" role="list" hidden>${vids.map((c) => railCard(c, l)).join('')}</div>
 <div class="wrap"><div class="cta"><a class="btn gl" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>
-${showcase(l, 'sec23')}${ad('lb', l)}
+${showcase(l, 'sec2')}${ad('lb', l)}${showcase(l, 'sec3')}
 <div class="tools"><span>${H.tools}</span><b>ChatGPT</b><b>Gemini</b><b>Midjourney</b><b>Veo</b><b>Runway</b></div>${studioStrip(l)}
 ${refStrip(l, 'big')}
 ${videoBlock(l)}
