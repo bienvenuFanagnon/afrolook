@@ -23,7 +23,7 @@ export default [
   ['logowood', 'logo', '1:1', 'Logo gravé dans le bois', 'Bois gravé', 'Une planche de bois chaude, votre logo gravé et verni.',
     'le logo gravé en creux dans une planche de bois clair avec veines visibles, bords nets, vernis mat, ombres douces, lumière chaude latérale, vue de dessus légèrement inclinée.',
     'Logo engraved in wood', 'Engraved wood', 'A warm wooden board, your logo engraved and varnished.',
-    'the logo engraved in a light wooden board with visible grain, crisp edges, matte varnish, soft shadows, warm side light, a slightly tilted top view.'],
+    'the logo carved into a warm natural timber surface with visible grain lines, crisp incised edges, satin finish, soft shadows, warm side light, a slightly tilted overhead view.'],
   ['logoballoon', 'logo', '1:1', 'Logo en ballon gonflé', 'Ballon', 'Votre logo gonflé comme un ballon brillant, reflets et plis.',
     'le logo en ballon gonflé brillant avec plis de tension, reflets doux, petite valve visible, flottant sur un fond uni de couleur pastel, ombre douce dessous, éclat de lumière.',
     'Inflated balloon logo', 'Balloon', 'Your logo inflated like a shiny balloon, with reflections and folds.',

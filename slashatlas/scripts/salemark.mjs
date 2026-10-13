@@ -4,18 +4,19 @@
 // Usage : node scripts/salemark.mjs [--slugs a,b] [--sheet fichier.png]   (depuis le dossier slashatlas, NODE_PATH inutile)
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
+import sharp from 'sharp';
 import { COMMANDS } from '../src/data.mjs';
 import { isSale } from '../src/sale.mjs';
 
-const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = path.join(ROOT, 'assets', 'c-base'), OUT = path.join(ROOT, 'static', 'img', 'c');
 const req = createRequire(path.join(ROOT, 'functions', 'package.json'));
 const { createCanvas, loadImage, GlobalFonts } = req('@napi-rs/canvas');
 const qrcode = req(path.join(ROOT, 'functions', 'vendor', 'qrcode.js'));
 for (const [f, n] of [['manrope-latin-800-normal.woff2', 'Manrope'], ['manrope-latin-500-normal.woff2', 'Manrope']]) GlobalFonts.registerFromPath(path.join(ROOT, 'functions', 'fonts', f), n);
-await import(path.join(ROOT, 'static', 'js', 'sale.js'));
+await import(pathToFileURL(path.join(ROOT, 'static', 'js', 'sale.js')).href);
 const S = globalThis.saSale;
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i < 0 ? d : process.argv[i + 1]; };
 const only = arg('slugs', ''); const sheetFile = arg('sheet', '');
@@ -39,8 +40,8 @@ const PRICE = { // [min, max, pas]
   auto: [2500000, 9500000, 50000], maison: [15000, 250000, 1000], immobilier: [18000000, 85000000, 500000], produit: [2000, 60000, 500], packaging: [150, 1800, 25],
 };
 const PHONES = ['+225 07 12 34 56 78', '+229 97 12 34 56', '+221 77 123 45 67', '+237 6 77 12 34 56', '+225 05 98 76 54 32', '+228 90 12 34 56', '+234 803 123 4567', '+243 81 234 5678'];
-// deux devises seulement, mélangées : environ la moitié des affiches en dollars, l'autre moitié en FCFA
-const USD_RATE = 600; // 1 $ ≈ 600 FCFA, pour des prix de même ordre de grandeur
+// toujours en FCFA — la cible est l'Afrique francophone
+const USD_RATE = 600; // conservé pour la fonction money() mais usd est toujours false
 const MODELS = S.MODELS;
 
 function money(fcfa, usd) {
@@ -52,7 +53,7 @@ function money(fcfa, usd) {
 function content(c, i) {
   const h = hash(c.slug), cat = c.cat, [lo, hi, step] = PRICE[cat] || PRICE.produit;
   const fcfa = Math.round((lo + ((h >>> 3) % 1000) / 1000 * (hi - lo)) / step) * step;
-  const usd = ((h >>> 5) % 100) < 48; // ≈ la moitié en dollars
+  const usd = false; // toujours FCFA
   const disc = (h >>> 7) % 100 < 45 ? pick(['-10 %', '-15 %', '-20 %', '-25 %', '-30 %', '-40 %', '-50 %'], h >>> 9) : '';
   const pct = disc ? +disc.replace(/\D/g, '') : 0;
   const oldFcfa = pct ? Math.round(fcfa / (1 - pct / 100) / (fcfa > 10000 ? 500 : 25)) * (fcfa > 10000 ? 500 : 25) : 0;
@@ -72,9 +73,11 @@ for (let i = 0; i < list.length; i++) {
   const c = list[i], o = content(c, i);
   const im = await loadImage(path.join(BASE, `${c.slug}-apres.webp`));
   const cv = S.compose({ create: (w, h) => createCanvas(w, h), qrcode }, im, o);
-  const tmp = path.join(OUT, `.${c.slug}.sale.png`); fs.writeFileSync(tmp, cv.toBuffer('image/png'));
-  execFileSync('python3', ['-c', "import sys\nfrom PIL import Image\nsrc,out,thumb=sys.argv[1:4]\nim=Image.open(src).convert('RGB')\ndef sz(im,m):\n W,H=im.size;k=m/max(W,H);return im.resize((max(1,int(W*k)),max(1,int(H*k))),Image.LANCZOS) if k<1 else im\nsz(im,1000).save(out,'WEBP',quality=84)\nsz(im,480).save(thumb,'WEBP',quality=82)\n", tmp, path.join(OUT, `${c.slug}-apres.webp`), path.join(OUT, `${c.slug}-t.webp`)]);
-  fs.unlinkSync(tmp); comp[c.slug] = o.model;
+  const pngBuf = cv.toBuffer('image/png');
+  const resize = (m) => sharp(pngBuf).resize(Math.min(cv.width, m), Math.min(cv.height, m), { fit: 'inside', kernel: 'lanczos3' });
+  await resize(1000).webp({ quality: 84 }).toFile(path.join(OUT, `${c.slug}-apres.webp`));
+  await resize(480).webp({ quality: 82 }).toFile(path.join(OUT, `${c.slug}-t.webp`));
+  comp[c.slug] = o.model;
   if (sx && i < 32) { const k = Math.min(290 / cv.width, 370 / cv.height); sx.drawImage(cv, (i % 8) * 300 + 5, Math.floor(i / 8) * 380 + 5, cv.width * k, cv.height * k); }
 }
 fs.writeFileSync(compFile, JSON.stringify(comp, null, 1));

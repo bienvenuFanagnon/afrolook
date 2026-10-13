@@ -21,7 +21,6 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/model_data.dart';
 import '../../../providers/authProvider.dart';
@@ -408,7 +407,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
 
     if (_selectedActionType == 'whatsapp') {
       if (_whatsappController.text.isEmpty) { _showError('Numéro WhatsApp requis'); return; }
-    } else {
+    } else if (_selectedActionType != 'none') {
       if (_actionUrlController.text.isEmpty || !_actionUrlController.text.startsWith('http')) {
         _showError('Lien valide requis (http:// ou https://)'); return;
       }
@@ -442,9 +441,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     try {
 
       final now = DateTime.now().microsecondsSinceEpoch;
-      final String actionUrl = _selectedActionType == 'whatsapp'
-          ? 'https://wa.me/${_whatsappController.text.replaceAll(RegExp(r'[^0-9+]'), '')}'
-          : _actionUrlController.text;
+      final String? actionUrl = _selectedActionType == 'none'
+          ? null
+          : _selectedActionType == 'whatsapp'
+              ? 'https://wa.me/${_whatsappController.text.replaceAll(RegExp(r'[^0-9+]'), '')}'
+              : _actionUrlController.text;
       final int durationDays = _selectedDurationWeeks! * 7;
       final List<String> targetCountries = _selectAllCountries
           ? AfricanCountry.everyCountry.map((c) => c.code).toList()
@@ -598,6 +599,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       case 'visit': return 'Visiter';
       case 'learn_more': return 'En savoir plus';
       case 'whatsapp': return 'WhatsApp';
+      case 'none': return '';
       default: return 'Action';
     }
   }
@@ -635,7 +637,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Votre publicité sera diffusée après validation par notre équipe.', style: TextStyle(color: _c.textSecondary)),
+            Text(
+              'Votre publicité a bien été soumise. Notre équipe va l\'examiner.',
+              style: TextStyle(color: _c.textSecondary),
+            ),
             SizedBox(height: 12),
             Container(
               padding: EdgeInsets.all(12),
@@ -647,10 +652,10 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.access_time, color: _secondaryColor, size: 18),
+                  Icon(Icons.info_outline, color: _secondaryColor, size: 18),
                   SizedBox(width: 10),
                   Expanded(child: Text(
-                    'Si votre publicité n\'est pas activée sous 24h, contactez notre service client.',
+                    'Pour toute question sur votre publicité, contactez-nous via la page de contact.',
                     style: TextStyle(color: _c.textPrimary, fontSize: 13),
                   )),
                 ],
@@ -659,31 +664,26 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
           ],
         ),
         actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _contactSupport();
-            },
-            child: Text('SERVICE CLIENT'),
-            style: ElevatedButton.styleFrom(backgroundColor: _secondaryColor, foregroundColor: Colors.black),
-          ),
-          TextButton(
-            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
-            child: Text('PLUS TARD'),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/contact');
+              },
+              icon: Icon(Icons.mail_outline, size: 18),
+              label: Text('Nous contacter'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _secondaryColor,
+                foregroundColor: Colors.black,
+                padding: EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
         ],
       ),
     );
-  }
-
-  void _contactSupport() async {
-    const whatsappNumber = "22890000000"; // À remplacer par le vrai numéro
-    final url = Uri.parse("https://wa.me/$whatsappNumber");
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      _showError("Impossible d'ouvrir WhatsApp");
-    }
   }
 
   void _showError(String message) {
@@ -952,6 +952,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
               _buildActionChip('Visiter', 'visit', Icons.language),
               _buildActionChip('En savoir plus', 'learn_more', Icons.info),
               _buildActionChip('WhatsApp', 'whatsapp', MaterialCommunityIcons.whatsapp),
+              _buildActionChip('Sans bouton', 'none', Icons.remove_circle_outline),
             ]),
             if (_selectedActionType == 'whatsapp')
               Padding(

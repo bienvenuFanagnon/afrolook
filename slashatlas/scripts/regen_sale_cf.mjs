@@ -2,15 +2,18 @@
 // de la place aux éléments de l'affiche (prix, À VENDRE, marque, contact, QR) ; ces éléments sont ajoutés ensuite par scripts/salemark.mjs.
 // Les images de base sont rangées dans assets/c-base (hors du site) : une base n'est remplacée que si la nouvelle image est réussie.
 // Usage : CF_ACCOUNT_ID=… CF_API_TOKEN=… node scripts/regen_sale_cf.mjs [--mod 2 --rem 0] [--limit 120] [--slugs a,b]
+// Pour les slugs de la démo homepage (IMGPAIRS), si une photo avant existe, on utilise SD 1.5 img2img pour
+// conserver la tenue exacte tout en recontextualisant l'image en affiche pro.
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { COMMANDS } from '../src/data.mjs';
 import { isSale } from '../src/sale.mjs';
+import sharp from 'sharp';
 
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i < 0 ? d : process.argv[i + 1]; };
 const MOD = +arg('mod', 1), REM = +arg('rem', 0), LIMIT = +arg('limit', 400), SLUGS = arg('slugs', '');
-const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = path.join(ROOT, 'assets', 'c-base'), CUR = path.join(ROOT, 'static', 'img', 'c');
 const ACC = process.env.CF_ACCOUNT_ID, TOKEN = process.env.CF_API_TOKEN;
 if (!ACC || !TOKEN) throw new Error('CF_ACCOUNT_ID et CF_API_TOKEN sont nécessaires');
@@ -23,6 +26,37 @@ const INTRO = {
   place: 'Professional architectural photograph of a property for sale. ',
 };
 const COMPOSE = ' Composition for a sales advertisement: the subject is large, sharp and centered slightly above the middle, with a clean, calm, uncluttered background area along the bottom quarter of the image.';
+// Slugs de la démo homepage avec photo "avant" → img2img SD 1.5 pour conserver la tenue
+const IMGPAIRS_PROMPTS = {
+  fashionposter: 'Professional fashion advertising poster, beautiful Black African woman wearing a traditional wax print dress with bold geometric patterns in orange blue and white colors, full body shot, fashion studio with clean neutral background, editorial lighting, magazine style, high end fashion photography, vertical 4:5 format, sharp, no text',
+  lookbook: 'fashion lookbook page, outfit on neutral textured background, editorial lighting, magazine style, generous margins',
+  hairshowcase: 'Beautiful Black African woman with long braided hair, professional hair salon poster, studio lighting, shiny healthy hair, neutral grey background, fashion portrait, close-up shot',
+  splashshot: 'product advertising, splash effect, clean gradient background, studio lighting, premium feel',
+  productglow: 'product floating on dark background, glowing halo, studio light, premium luxury advertisement',
+  menuhero: 'African grilled chicken with rice and tomato salad on a white plate, professional food photography close-up, warm lighting, dark blurred restaurant background, menu poster style, appetizing',
+  coverdrop: 'album cover art, centered portrait, strong contrast, clean background, music release single cover',
+  skincareglow: 'skincare product advertisement, clean white background, soft diffused light, premium cosmetics packaging',
+};
+// Commandes avec personne : prompts forcés pour des personnes africaines et afro-américaines
+const PERSON_PROMPTS = {
+  lookbook: 'Beautiful Black African woman wearing a stylish modern fashion outfit, full body lookbook editorial, neutral textured studio background, editorial magazine lighting, high fashion pose, professional photography, sharp, no text',
+  streetfit: 'Stylish young Black African man wearing trendy streetwear outfit, colorful bold clothing, urban fashion editorial, clean studio background, confident pose, professional advertising photography, sharp, no text',
+  makeuplook: 'Beautiful Black African woman with stunning professional makeup, close-up beauty portrait, flawless dark skin glowing, editorial beauty lighting, luxury cosmetics advertisement, sharp, no text',
+  barbershop: 'Handsome Black African man with a fresh professional haircut, barbershop portrait, clean short fade hairstyle, confident expression, dark studio background with dramatic lighting, professional barbershop advertisement, sharp, no text',
+  mannequinstudio: 'Beautiful Black African woman wearing elegant fashion outfit, fashion model pose in luxury studio, clean white background, dramatic professional lighting, full body fashion editorial, sharp, no text',
+  summerstyle: 'Beautiful Black African woman in stylish summer outfit, vibrant colorful African wax print clothing, outdoor summer editorial, warm natural lighting, joyful confident pose, fashion advertising, sharp, no text',
+  modestfashion: 'Elegant Black African woman wearing beautiful modest fashion outfit, long flowing dress with African print patterns, graceful pose, luxury studio background, editorial fashion photography, professional lighting, sharp, no text',
+  tailoratelier: 'Skilled Black African tailor working in a professional atelier, measuring fabric with tape, elegant workshop setting with fabrics and sewing tools, fashion craftsmanship advertisement, warm studio lighting, sharp, no text',
+  coupleoutfits: 'Stylish Black African couple wearing matching elegant outfits, man in tailored suit and woman in beautiful dress with African prints, professional fashion editorial, clean studio background, sharp, no text',
+  mensuit: 'Handsome Black African man wearing a sharp well-fitted tailored suit, professional business portrait, confident pose, clean neutral studio background, luxury fashion advertising, sharp, no text',
+  braidstyle: 'Beautiful Black African woman with stunning long braided hairstyle, salon professional portrait, shiny healthy braids, elegant makeup, grey studio background, hair salon advertising poster, sharp, no text',
+  naturalhair: 'Beautiful Black African woman with gorgeous natural afro hair, large voluminous afro crown, radiant smile, clean light studio background, natural hair salon advertising, professional portrait, sharp, no text',
+  massagetime: 'Relaxed Black African woman receiving a professional luxury spa massage, clean elegant spa setting, warm candles and flowers, premium wellness advertising, professional photography, sharp, no text',
+  lashextension: 'Beautiful Black African woman showing perfect eyelash extensions, close-up beauty portrait, dark glowing skin, dramatic eye makeup, professional beauty studio lighting, luxury lash salon advertisement, sharp, no text',
+  facialcare: 'Beautiful Black African woman with glowing healthy dark skin applying luxury facial cream, clean bathroom setting with premium skincare products, beauty advertising, soft studio lighting, sharp, no text',
+  bridalmakeup: 'Beautiful Black African bride with stunning traditional bridal makeup, elaborate headpiece, elegant bridal gown, professional bridal beauty portrait, warm romantic lighting, sharp, no text',
+  hennahands: 'Beautiful dark-skinned Black African woman hands with intricate traditional henna design, elegant jewelry, close-up detail shot, clean light background, cultural fashion advertisement, sharp, no text',
+};
 function prompt(c) {
   let s = (c.scene && c.scene.en) || c.en.prompt;
   s = s.replace(/(?:with )?the (?:product|products|dish|dishes|person|people|property)?\(?s?\)?\s*(?:in|from) the attached photo(?: of the [a-z ]+)?/gi, 'a generic subject')
@@ -51,14 +85,61 @@ async function cf(p) {
   if (!r.ok || !j.success || !j.result || !j.result.image) { const e = (j.errors && j.errors[0]) || {}; const err = new Error(`${r.status} ${e.code || ''} ${e.message || ''}`); err.status = r.status; throw err; }
   return Buffer.from(j.result.image, 'base64');
 }
-const PY = "import sys\nfrom PIL import Image\nsrc,out,ratio=sys.argv[1:4]\nw,h=map(float,ratio.split(':'))\nim=Image.open(src).convert('RGB')\nW,H=im.size;t=w/h\nif W/H>t:\n nw=int(H*t);im=im.crop(((W-nw)//2,0,(W-nw)//2+nw,H))\nelse:\n nh=int(W/t);im=im.crop((0,(H-nh)//2,W,(H-nh)//2+nh))\nk=1000/max(im.size)\nim=im.resize((max(1,int(im.size[0]*k)),max(1,int(im.size[1]*k))),Image.LANCZOS) if k<1 else im\nim.save(out,'WEBP',quality=84)\n";
+// img2img SD 1.5 : part de la vraie photo pour conserver le sujet (tenue, produit) tout en recontextualisant
+async function cfImg2Img(avantPath, promptText, ratio) {
+  const [rw, rh] = ratio.split(':').map(Number);
+  // SD 1.5 travaille en 512x512 ; on crop au bon ratio puis on redimensionne
+  const size = 512;
+  const raw = await sharp(avantPath)
+    .resize(rw >= rh ? size : Math.round(size * rw / rh), rh >= rw ? size : Math.round(size * rh / rw), { fit: 'cover', position: 'centre' })
+    .resize(size, size, { fit: 'fill' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const floats = Array.from(raw.data).map(v => v / 255);
+  const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACC}/ai/run/@cf/runwayml/stable-diffusion-v1-5-img2img`,
+    { method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: promptText, image: floats, strength: 0.62, num_steps: 20, guidance: 7.5 }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.success || !j.result || !j.result.image) { const e = (j.errors && j.errors[0]) || {}; const err = new Error(`SD15i2i ${r.status} ${e.code || ''} ${e.message || ''}`); err.status = r.status; throw err; }
+  const out = j.result.image; // tableau de floats RGB 512×512×3
+  const uint8 = Buffer.from(out.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255)));
+  return await sharp(uint8, { raw: { width: size, height: size, channels: 3 } }).png().toBuffer();
+}
+async function cropAndSave(imgBuf, outPath, ratio) {
+  const [rw, rh] = ratio.split(':').map(Number);
+  const meta = await sharp(imgBuf).metadata();
+  const W = meta.width, H = meta.height, target = rw / rh;
+  let left = 0, top = 0, cw = W, ch = H;
+  if (W / H > target) { cw = Math.round(H * target); left = Math.round((W - cw) / 2); }
+  else { ch = Math.round(W / target); top = Math.round((H - ch) / 2); }
+  const k = 1000 / Math.max(cw, ch);
+  const w2 = k < 1 ? Math.round(cw * k) : cw, h2 = k < 1 ? Math.round(ch * k) : ch;
+  await sharp(imgBuf).extract({ left, top, width: cw, height: ch }).resize(w2, h2, { kernel: 'lanczos3' }).webp({ quality: 84 }).toFile(outPath);
+}
 let done = 0;
 for (const c of list) {
   try {
-    const img = await cf(prompt(c));
-    const tmp = path.join(BASE, `.${c.slug}.tmp`); fs.writeFileSync(tmp, img);
-    execFileSync('python3', ['-c', PY, tmp, path.join(BASE, `${c.slug}-apres.webp`), c.ratio]); fs.unlinkSync(tmp);
-    state[c.slug] = 1; fs.writeFileSync(stateFile, JSON.stringify(state)); engines[c.slug] = 'FLUX'; done++; console.log('ok', c.slug);
+    const avantPath = path.join(CUR, `${c.slug}-avant.webp`);
+    const useI2I = IMGPAIRS_PROMPTS[c.slug] && fs.existsSync(avantPath);
+    let img, engine;
+    if (useI2I) {
+      try {
+        img = await cfImg2Img(avantPath, IMGPAIRS_PROMPTS[c.slug], c.ratio);
+        engine = 'SD15i2i';
+      } catch (e2) {
+        if (e2.status === 403 || /5018|not allowed/i.test(e2.message)) {
+          console.log(`img2img non disponible pour ${c.slug}, bascule sur FLUX`);
+          img = await cf(PERSON_PROMPTS[c.slug] || prompt(c)); engine = 'FLUX';
+        } else throw e2;
+      }
+    } else if (PERSON_PROMPTS[c.slug]) {
+      // Commande avec personne : utiliser le prompt africain forcé
+      img = await cf(PERSON_PROMPTS[c.slug]); engine = 'FLUX';
+    } else {
+      img = await cf(prompt(c)); engine = 'FLUX';
+    }
+    await cropAndSave(img, path.join(BASE, `${c.slug}-apres.webp`), c.ratio);
+    state[c.slug] = 1; fs.writeFileSync(stateFile, JSON.stringify(state));
+    engines[c.slug] = engine; done++;
+    console.log('ok', c.slug, `(${engine})`);
   } catch (e) {
     console.error('échec', c.slug, e.message);
     if (e.status === 429 || /4006|neurons|allocation|limit/i.test(e.message)) { console.error('Quota du jour atteint : on s\'arrête, reprise demain.'); break; }

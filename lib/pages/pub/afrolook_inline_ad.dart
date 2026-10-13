@@ -1499,6 +1499,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                           const SizedBox(height: 8),
                           Row(
                             children: [
+                              if (ad.actionUrl?.isNotEmpty == true || ad.actionButtonText?.isNotEmpty == true) ...[
                               GestureDetector(
                                 onTap: () async {
                                   await _recordClick(ad);
@@ -1524,6 +1525,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                                 ),
                               ),
                               const SizedBox(width: 8),
+                              ],
                               GestureDetector(
                                 onTap: () => _showPremiumModal(context),
                                 child: const Row(

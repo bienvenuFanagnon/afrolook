@@ -94,8 +94,13 @@ async function statsWrite(b, req) {
     u[`dev.${['m', 'd', 't'].includes(b.d) ? b.d : 'x'}`] = inc;
     if (b.r) u[`ref.${key(b.r)}`] = inc;
     if (b.s) u.sessions = inc;
-    if (b.tz) u[`tz.${key(b.tz)}`] = inc; // fuseau horaire du navigateur : indique la région sans stocker d'adresse IP
+    if (b.tz) u[`tz.${key(b.tz)}`] = inc;
     if (b.ret) u.returning = inc;
+    // Visiteur unique : première page de la session + UID anonyme fourni
+    // On stocke l'UID comme clé d'un sous-map (présence = 1 visiteur distinct) dans le doc journalier
+    if (b.uid && /^u[a-z0-9]{14,18}$/.test(String(b.uid))) {
+      u[`uids.${String(b.uid).slice(0, 20)}`] = 1;
+    }
   } else if (t === 'copy') {
     u.copies = inc;
     const slug = key(b.s || b.n);
@@ -236,7 +241,7 @@ async function adminData(daysIn) {
     users: us.docs.map((d) => { const x = d.data(); return { email: x.email, name: x.name || '', credits: x.credits || 0, at: ts(x.createdAt), seen: ts(x.lastSeenAt) }; }),
     ads: await adminAds(),
     orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
-    stats: st.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id)),
+    stats: st.docs.map((d) => { const x = d.data(); return { id: d.id, ...x, visitors: Object.keys(x.uids || {}).length }; }).sort((a, b) => a.id.localeCompare(b.id)),
     studioUsers: accCount.data().count,
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
   };
@@ -303,7 +308,7 @@ exports.slashatlasApi = onRequest(
         await studio.payWebhook(body(req));
         return res.status(200).send('OK');
       }
-      if (/\/(me|referrals|generate|edit|pay\/start|pay\/card|pay\/status)$/.test(path)) {
+      if (/\/(me|referrals|generate|edit|history|regen|pay\/start|pay\/card|pay\/status)$/.test(path)) {
         if (limited('g' + ipKey, (path.endsWith('/generate') || path.endsWith('/edit')) ? 30 : 60, 600000)) return res.status(429).json({ error: 'rate' });
         const u = await whoIs(req);
         if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
@@ -311,6 +316,8 @@ exports.slashatlasApi = onRequest(
         if (path.endsWith('/referrals')) return res.status(200).json(await studio.referrals(u));
         if (path.endsWith('/generate')) return res.status(200).json(await studio.generate(u, body(req)));
         if (path.endsWith('/edit')) return res.status(200).json(await studio.edit(u, body(req)));
+        if (path.endsWith('/history')) return res.status(200).json(await studio.history(u));
+        if (path.endsWith('/regen')) return res.status(200).json(await studio.regen(u, body(req)));
         if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req), { ip, ua: req.get('user-agent') }));
         if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
         return res.status(200).json(await studio.payStatus(u, body(req)));

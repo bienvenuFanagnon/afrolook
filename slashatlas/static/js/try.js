@@ -271,7 +271,7 @@
     });
   }
   function bar() {
-    return '<div class="sbar"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
   }
   function tabs() {
     if (!root.dataset.vurl) return '';
@@ -300,8 +300,20 @@
         (state.versions.length > 1 ? '<div class="vers">' + state.versions.map(function (v, i) { return '<button type="button" data-v="' + i + '" aria-pressed="' + (i === state.cur) + '">' + T.version + ' ' + (i + 1) + '</button>'; }).join('') + '</div>' : '') +
         '<div class="acts big"><a class="btn pri big" href="' + state.result.url + '" download="slashatlas-' + slug + '-v' + (state.cur + 1) + '.' + state.result.ext + '">' + T.download + '</a><button class="btn gl big" type="button" id="s-share">' + T.share + '</button><button class="btn gl big" type="button" id="s-again">' + T.again + '</button></div>' + sharePanel() +
         '<div class="sedit"><b>' + T.editTitle + '</b><textarea id="s-edit" rows="2" maxlength="300" placeholder="' + esc(T.editPh) + '">' + esc(state.instruction) + '</textarea><small class="hint">' + T.editHint + '</small><button class="btn pri big' + (state.busy ? ' loading' : '') + '" type="button" id="s-editgo"' + (state.busy ? ' disabled' : '') + '>' + (state.busy ? T.editing : T.editBtn) + '</button></div>' +
-        (root.dataset.wa ? '<p class="wastudio"><span>' + T.waStudio + '</span> <a href="' + esc(root.dataset.wa) + '" target="_blank" rel="noopener" data-wa="studio">' + T.waJoin + '</a></p>' : '') + '<small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '');
+        (root.dataset.wa ? '<p class="wastudio"><span>' + T.waStudio + '</span> <a href="' + esc(root.dataset.wa) + '" target="_blank" rel="noopener" data-wa="studio">' + T.waJoin + '</a></p>' : '') + '<small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '') +
+      histSection();
     bind();
+    if (state.user && location.hash === '#account') {
+      var acc = document.getElementById('account');
+      if (acc) { acc.scrollIntoView({ behavior: 'smooth', block: 'start' }); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+    }
+    var hw = root.querySelector('.shist-wrap');
+    if (hw) {
+      hw.addEventListener('toggle', function () {
+        hist.open = hw.open;
+        if (hw.open && !hist.items.length && !hist.busy) loadHistory(); else renderHist();
+      });
+    }
   }
   function msg(t, ok) { var m = $('#s-msg') || $('#auth-msg'); if (m) { m.textContent = t || ''; m.className = 'fmsg' + (ok ? ' ok' : ''); } }
 
@@ -395,13 +407,16 @@
     if (state.busy || !state.photos.length) return;
     state.busy = true; state.result = null; state.versions = []; render(); msg('');
     var genPos = normUrl(state.qr.raw) && state.qr.pos !== 'none' ? state.qr.pos : '';
-    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: saleOn() ? '' : genPos, sale: saleOn() || undefined, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
+    var body = { slug: slug, lang: L, product: state.product, multi: state.multi, texts: brandTexts(), qrpos: saleOn() ? '' : genPos, sale: saleOn() || undefined, saleOpts: saleOn() ? saleOpts() : undefined, photos: state.photos.map(function (p) { return { mime: p.mime, data: p.data }; }) };
     window.slashAuth.call('generate', body).then(function (r) {
       state.busy = false;
       if (r.status === 200) {
         newVersion(r.data.id, r.data.mime, r.data.image).then(function (v) {
           v.genPos = genPos; state.result = v; state.versions = [v]; state.cur = 0; state.instruction = '';
           state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
+          // Sauvegarde locale de l'image et refresh de l'historique
+          if (v.blob) idb.save(r.data.id, v.blob).catch(function () {});
+          setTimeout(loadHistory, 800);
         });
       } else {
         if (r.data && r.data.error === 'insufficient_credits') { render(); openBuy('serveur'); return; }
@@ -539,6 +554,86 @@
   function savedRef() { try { var o = JSON.parse(localStorage.getItem('sa_ref') || 'null'); return o && Date.now() - o.t < 60 * 864e5 ? o.c : ''; } catch (e) { return ''; } }
   function refUrl() { return L === 'en' ? '/en/referral/' : '/parrainage/'; }
 
+  // ── IndexedDB : cache local des images générées ──
+  var idb = (function () {
+    var DB = 'sa_studio', ST = 'imgs', _db = null;
+    function open() {
+      if (_db) return Promise.resolve(_db);
+      return new Promise(function (res, rej) {
+        var r = indexedDB.open(DB, 1);
+        r.onupgradeneeded = function (e) { e.target.result.createObjectStore(ST); };
+        r.onsuccess = function (e) { _db = e.target.result; res(_db); };
+        r.onerror = function () { rej(r.error); };
+      });
+    }
+    return {
+      save: function (id, blob) { return open().then(function (db) { return new Promise(function (res) { var tx = db.transaction(ST, 'readwrite'); tx.objectStore(ST).put(blob, id); tx.oncomplete = res; tx.onerror = res; }); }).catch(function () {}); },
+      get: function (id) { return open().then(function (db) { return new Promise(function (res) { var r = db.transaction(ST).objectStore(ST).get(id); r.onsuccess = function () { res(r.result || null); }; r.onerror = function () { res(null); }; }); }).catch(function () { return null; }); },
+    };
+  })();
+
+  // ── historique des créations ──
+  var hist = { items: [], busy: false, open: false };
+  function relDate(ms) {
+    if (!ms) return '';
+    var d = new Date(ms), now = new Date(), diff = Math.floor((now - d) / 864e5);
+    if (diff === 0) return L === 'en' ? 'Today' : 'Aujourd\'hui';
+    if (diff === 1) return L === 'en' ? 'Yesterday' : 'Hier';
+    if (diff < 7) return diff + (L === 'en' ? ' days ago' : ' j');
+    try { return d.toLocaleDateString(L === 'en' ? 'en' : 'fr', { day: 'numeric', month: 'short' }); } catch (e) { return d.toLocaleDateString(); }
+  }
+  function loadHistory() {
+    if (hist.busy || !state.user) return;
+    hist.busy = true;
+    window.slashAuth.call('history', {}).then(function (r) {
+      hist.busy = false;
+      if (r.status === 200 && Array.isArray(r.data)) { hist.items = r.data; renderHist(); }
+    }).catch(function () { hist.busy = false; });
+  }
+  function renderHist() {
+    var el = document.getElementById('s-hist');
+    if (!el) return;
+    var TH = L === 'en' ? { title: 'My creations', empty: 'No image generated yet.', get: 'Recover', loading: 'Loading…', dl: 'Download' }
+      : { title: 'Mes créations', empty: 'Aucune image générée pour le moment.', get: 'Récupérer', loading: 'Chargement…', dl: 'Télécharger' };
+    if (!hist.items.length) { el.innerHTML = '<p class="hint" style="margin:0">' + TH.empty + '</p>'; return; }
+    var cmds = data.commands;
+    el.innerHTML = hist.items.map(function (item) {
+      var cmd = cmds[item.slug] || {}; var label = (cmd.code || item.slug) + (cmd.title ? ' · ' + cmd.title : '');
+      return '<div class="shistrow" data-hid="' + item.id + '"><div class="shinfo"><b>' + esc(label) + '</b><small>' + relDate(item.ts) + (item.product ? ' · ' + esc(item.product.slice(0, 30)) : '') + '</small></div><button class="btn gl sm shget" type="button" data-hid="' + item.id + '" data-hmime="image/jpeg">' + TH.get + '</button></div>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('.shget'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.dataset.hid;
+        btn.disabled = true; btn.textContent = TH.loading;
+        idb.get(id).then(function (blob) {
+          if (blob) return blob;
+          return window.slashAuth.call('regen', { id: id }).then(function (r) {
+            if (r.status !== 200) throw new Error('not_found');
+            var b64 = r.data.image, mime = r.data.mime || 'image/jpeg';
+            var bytes = atob(b64), arr = new Uint8Array(bytes.length);
+            for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+            var bl = new Blob([arr], { type: mime });
+            idb.save(id, bl).catch(function () {});
+            return bl;
+          });
+        }).then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var ext = blob.type.includes('png') ? 'png' : 'jpg';
+          var item = hist.items.filter(function (x) { return x.id === id; })[0] || {};
+          var row = el.querySelector('.shistrow[data-hid="' + id + '"]');
+          if (row) {
+            row.innerHTML = '<img src="' + url + '" class="shthumb" alt=""><div class="shinfo"><b>' + esc((data.commands[item.slug] || {}).code || item.slug) + '</b><small>' + relDate(item.ts) + '</small></div><a class="btn pri sm" href="' + url + '" download="slashatlas-' + (item.slug || 'image') + '.' + ext + '">' + TH.dl + '</a>';
+          }
+        }).catch(function () { btn.disabled = false; btn.textContent = TH.get; });
+      });
+    });
+  }
+  function histSection() {
+    if (!state.user || !state.meLoaded) return '';
+    var TH = L === 'en' ? { title: 'My creations' } : { title: 'Mes créations' };
+    return '<details class="shist-wrap"' + (hist.open ? ' open' : '') + '><summary>' + TH.title + (hist.items.length ? ' (' + hist.items.length + ')' : '') + '</summary><div id="s-hist" class="shist">' + (hist.busy ? '<span class="spin" aria-label="…"></span>' : '') + '</div></details>';
+  }
+
   // ── démarrage ──
   saleLoad();
   import('/js/auth.js');
@@ -548,7 +643,7 @@
     if (!u) { state.checking = false; state.credits = 0; state.result = null; render(); return; }
     window.slashAuth.call('me', { ref: savedRef() }).then(function (r) {
       state.checking = false;
-      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); }
+      if (r.status === 200) { state.meLoaded = true; state.credits = r.data.credits; setAdFree(r.data.adFreeUntil || 0); render(); msg(r.data.created ? T.welcome : T.back, true); setTimeout(function () { msg(''); }, 2500); resumePending(); maybePass(); loadHistory(); }
       else { render(); msg(errText(r.data && r.data.error)); }
     });
   });

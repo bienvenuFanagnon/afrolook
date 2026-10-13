@@ -37,7 +37,9 @@
   var n = parseInt(sstore('sa_n') || '0', 10) + 1; sstore('sa_n', String(n));
   var returning = store('sa_seen') === '1'; store('sa_seen', '1');
   var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
-  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz });
+  // Identifiant de visiteur anonyme (UUID persistant dans localStorage, jamais partagé cross-site)
+  var uid = ''; try { uid = store('sa_uid') || ''; if (!uid) { uid = 'u' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10); store('sa_uid', uid); } } catch (e) {}
+  track('pv', { n: n, r: n === 1 ? refClass() : 'internal', ret: returning ? 1 : 0, tz: tz, uid: n === 1 ? uid : '' });
   // page de détails d'une commande : visite comptée (une fois par visite et par commande), pour savoir quelles commandes attirent
   if (page === 'cmd') { var cc = document.getElementById('cmd-cnt'), sl = cc && cc.dataset.slug; if (sl && !sstore('sa_v_' + sl)) { sstore('sa_v_' + sl, '1'); track('view', { s: sl }); } }
 
@@ -45,7 +47,26 @@
   (function () {
     var btns = $$('[data-signin]'); if (!btns.length) return;
     var named = ''; try { named = localStorage.getItem('sa_u') || ''; } catch (e) {}
-    if (named) btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); });
+    function applyUser(n) {
+      if (!n) return;
+      named = n;
+      btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); if (b.dataset.inHref) b.href = b.dataset.inHref; });
+    }
+    applyUser(named);
+    // Charger auth.js en arrière-plan pour mettre à jour le bouton si la session Firebase est active
+    // (cas où localStorage a été effacé mais la session Firebase persiste)
+    if (!named) {
+      setTimeout(function () {
+        import('/js/auth.js').then(function () {
+          document.addEventListener('sa:auth', function h(ev) {
+            document.removeEventListener('sa:auth', h);
+            if (ev.detail && ev.detail.user) {
+              try { applyUser(localStorage.getItem('sa_u') || ''); } catch (e) {}
+            }
+          });
+        }).catch(function () {});
+      }, 300);
+    }
     btns.forEach(function (b) {
       b.addEventListener('click', function (e) {
         if (named) return; // déjà connecté : le lien mène au Studio
@@ -426,7 +447,7 @@
 // (ou que la ligne a le focus). Sur téléphone, le défilement tactile habituel reste inchangé.
 (function () {
   var rails = document.querySelectorAll('.rail'); if (!rails.length) return;
-  var fine = window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  var fine = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
   var fr = document.body.dataset.lang !== 'en';
   Array.prototype.forEach.call(rails, function (r) {
     var wrap = document.createElement('div'); wrap.className = 'railwrap'; r.parentNode.insertBefore(wrap, r); wrap.appendChild(r);
@@ -446,7 +467,8 @@
     }
     r.addEventListener('scroll', sync, { passive: true }); window.addEventListener('resize', sync);
     if ('MutationObserver' in window) new MutationObserver(sync).observe(r, { attributes: true, attributeFilter: ['hidden'] });
-    sync(); setTimeout(sync, 400); window.addEventListener('load', sync);
+    if ('ResizeObserver' in window) new ResizeObserver(sync).observe(r);
+    sync(); setTimeout(sync, 400); setTimeout(sync, 1200); window.addEventListener('load', sync);
   });
   document.addEventListener('keydown', function (e) {
     if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -454,4 +476,23 @@
     var target = null; Array.prototype.forEach.call(rails, function (r) { if (!r.hidden && r.scrollWidth > r.clientWidth + 4 && (r === document.activeElement || r.contains(document.activeElement) || r.matches(':hover'))) target = r; });
     if (!target) return; e.preventDefault(); var c = target.querySelector('.rc,.vexc,.card'); var w = (c ? c.getBoundingClientRect().width : 240) + 12; target.scrollBy({ left: (e.key === 'ArrowRight' ? 1 : -1) * w * 1.5, behavior: 'smooth' });
   });
+})();
+
+// Hero : rotation fluide des propositions de la deuxième ligne du titre
+(function () {
+  var el = document.querySelector('.hrot');
+  if (!el) return;
+  var texts; try { texts = JSON.parse(el.dataset.hrot); } catch (e) { return; }
+  if (!texts || texts.length < 2) return;
+  var i = 0;
+  setInterval(function () {
+    el.classList.add('hout');
+    setTimeout(function () {
+      i = (i + 1) % texts.length;
+      el.classList.remove('hout');
+      el.classList.add('hin');
+      el.textContent = texts[i];
+      requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.remove('hin'); }); });
+    }, 390);
+  }, 3800);
 })();

@@ -1,4 +1,5 @@
 // afrolookAdminPubPage.dart — dashboard admin v2
+import 'package:afrotok/pages/pub/ad_route_picker.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
@@ -365,6 +366,38 @@ class _AdvertisementManagementPageState
         ],
       ),
     );
+  }
+
+  Future<void> _editAdCta(Advertisement ad) async {
+    final result = await showAdRoutePicker(
+      context,
+      currentUrl: ad.actionUrl,
+      currentLabel: ad.actionButtonText,
+    );
+    if (result == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('Advertisements')
+          .doc(ad.id)
+          .update({
+        'actionType': result['actionType'],
+        'actionUrl': result['actionUrl'],
+        'actionButtonText': result['actionButtonText'],
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Bouton d\'action mis à jour'),
+          backgroundColor: _colors.primary,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: _colors.danger,
+        ));
+      }
+    }
   }
 
   void _showRejectionDialog(Advertisement ad) {
@@ -1685,6 +1718,30 @@ class _AdvertisementManagementPageState
                                     : '—',
                                 highlight: true),
                             _dpRow('CTA', ad.actionButtonText ?? '—'),
+                            if (authProvider.loginUserData.role ==
+                                UserRole.ADM.name) ...[
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _editAdCta(ad),
+                                  icon: const Icon(Icons.route, size: 14),
+                                  label: const Text('Modifier CTA',
+                                      style: TextStyle(fontSize: 12)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white70,
+                                    side: BorderSide(
+                                        color: Colors.white24, width: 1),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                            ],
                             _dpRow(
                                 'Statut', _statusLabel(effectiveStatus)),
                             if (ad.rejectionReason?.isNotEmpty == true) ...[
