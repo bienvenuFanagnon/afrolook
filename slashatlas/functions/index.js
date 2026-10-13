@@ -104,7 +104,7 @@ async function publicCount(slug, field) {
 async function statsWrite(b, req) {
   // Les clés pointées doivent passer par update() pour créer des maps imbriquées.
   if (BOT.test(req.get('user-agent') || '')) return;
-  const t = clean(b.t, 8);
+  const t = clean(b.t, 12);
   const inc = FieldValue.increment(1);
   const u = {};
   if (t === 'pv') {

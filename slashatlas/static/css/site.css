@@ -745,6 +745,7 @@ textarea.film-input{resize:vertical;min-height:110px}
 /* ── Publicité Afrolook ─────────────────────────────────────────────── */
 .afl-banner{position:relative;display:flex;text-decoration:none;border-radius:14px;overflow:hidden;background:#090909;border:1px solid rgba(255,184,48,.18);transition:border-color .2s,transform .2s;width:100%}
 .afl-spon{position:absolute;top:5px;right:8px;font:500 8.5px/1 var(--mono);color:rgba(255,255,255,.38);letter-spacing:.03em;pointer-events:none;z-index:1}
+.afl-store{display:block;font:500 9.5px/1.2 var(--mono);color:rgba(255,255,255,.52);margin-bottom:6px}
 .afl-banner:hover{border-color:rgba(255,184,48,.42);transform:translateY(-2px)}
 .afl-badge{display:inline-block;background:rgba(255,184,48,.12);color:#ffb830;border-radius:999px;padding:2px 8px;font:600 10px var(--mono);letter-spacing:.04em;margin-bottom:6px}
 .afl-badge-sm{font-size:9.5px;padding:2px 6px}

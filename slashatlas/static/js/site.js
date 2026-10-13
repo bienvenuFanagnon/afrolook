@@ -192,6 +192,8 @@
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
       var v = q.value.trim().toLowerCase(), c = 0, shown = 0;
+      var filtering = !!(cat || v);
+      $$('#list .card-ad').forEach(function (a) { a.hidden = filtering; });
       list.forEach(function (card) {
         var hit = (!cat || card.dataset.cat === cat) && (!v || card.dataset.search.indexOf(v) > -1);
         if (hit) { c++; if (shown < limit) { shown++; card.hidden = false; } else card.hidden = true; } else card.hidden = true;

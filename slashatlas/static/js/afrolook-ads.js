@@ -139,6 +139,10 @@
   function pickPhoto() { return PHOTOS[Math.floor(Math.random() * PHOTOS.length)]; }
   function storeUrl() { return IOS ? STORE_IOS : STORE_AND; }
   function ctaTxt(isFr) { return isFr ? 'Télécharger Afrolook' : 'Download Afrolook'; }
+  function storeLbl(isFr) {
+    if (IOS) return isFr ? 'Disponible sur l’App Store' : 'Available on the App Store';
+    return isFr ? 'Disponible sur Google Play' : 'Available on Google Play';
+  }
   function track(fmt, type) { try { window.saTrack && window.saTrack('afl_' + type, { fmt: fmt }); } catch (e) {} }
 
   function buildRect(isFr) {
@@ -149,6 +153,7 @@
       '<div class="afl-r-body">' +
         '<span class="afl-badge">Afrolook</span>' +
         '<p class="afl-msg">' + msg + '</p>' +
+        '<span class="afl-store">' + storeLbl(isFr) + '</span>' +
         '<span class="afl-cta">' + ctaTxt(isFr) + '</span>' +
       '</div>' +
     '</a>';
@@ -162,9 +167,23 @@
       '<div class="afl-lb-body">' +
         '<span class="afl-badge">Afrolook</span>' +
         '<p class="afl-msg">' + msg + '</p>' +
+        '<span class="afl-store">' + storeLbl(isFr) + '</span>' +
       '</div>' +
       '<span class="afl-cta afl-cta-lb">' + ctaTxt(isFr) + '</span>' +
     '</a>';
+  }
+
+  function buildNativeCard(isFr) {
+    var url = storeUrl(), photo = pickPhoto(), msg = nextMsg(isFr);
+    return '<a class="cl" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' +
+      '<div class="poster img" style="--ar:4/5"><img src="' + photo + '" alt="" loading="lazy" decoding="async"><span class="tag">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span></div>' +
+    '</a>' +
+    '<div class="cb">' +
+      '<div class="code">Afrolook</div>' +
+      '<h3><a href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + msg + '</a></h3>' +
+      '<div class="meta"><span>' + storeLbl(isFr) + '</span></div>' +
+      '<div class="acts"><a class="btn pri sm" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + ctaTxt(isFr) + '</a></div>' +
+    '</div>';
   }
 
   function buildLoad(isFr) {
@@ -193,6 +212,7 @@
   window.saAfrolookAds = {
     fill: function (el) {
       var fmt = el.dataset.ad;
+      if (fmt === 'native') { renderIn(el, buildNativeCard); el.removeAttribute('aria-hidden'); return; }
       renderIn(el, fmt === 'lb' ? buildLb : buildRect);
     }
   };
