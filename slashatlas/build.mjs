@@ -246,18 +246,18 @@ const alt2 = (fr, en) => ({ fr, en });
 // ───────── pages ─────────
 const HOME = {
   fr: {
-    h1: ['Créez. Publiez.', 'Votre contenu IA est prêt.'],
-    hrot: ['Votre contenu IA est prêt.', 'Affiches pro en 30 secondes.', 'Films narrés de 2 à 3 minutes.', 'Vidéos pub motion design.', 'Pour Instagram, TikTok et WhatsApp.', 'Zéro logiciel, zéro expérience.'],
-    sub: 'Affiches, films narrés et vidéos motion design : l\'arsenal créatif IA pour vos réseaux sociaux, votre boutique ou votre marque.',
-    steps: [['Créez', 'une affiche ou un film IA'], ['Publiez', 'sur vos réseaux en un clic'], ['Vendez', 'votre produit ou service']],
+    h1: ['Copiez. Collez.', 'Votre visuel pro est prêt.'],
+    hrot: ['Votre visuel pro est prêt.', 'Affiches pro en 30 secondes.', 'Films narrés de 2 à 3 minutes.', 'Vidéos pub motion design.', 'Pour Instagram, TikTok et WhatsApp.', 'Zéro logiciel, zéro expérience.'],
+    sub: 'Copiez une commande gratuite, collez-la dans votre outil IA et obtenez un visuel pro pour vos réseaux, votre boutique ou votre marque.',
+    steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
   },
   en: {
-    h1: ['Create. Publish.', 'Your AI content is ready.'],
-    hrot: ['Your AI content is ready.', 'Pro posters in 30 seconds.', 'Narrated films in 2–3 minutes.', 'Motion design video ads.', 'For Instagram, TikTok and WhatsApp.', 'Zero software, zero experience.'],
-    sub: 'Posters, narrated films and motion design videos: the AI creative toolkit for your social media, your shop or your brand.',
-    steps: [['Create', 'a poster or an AI film'], ['Publish', 'on your networks in one click'], ['Sell', 'your product or service']],
+    h1: ['Copy. Paste.', 'Your pro visual is ready.'],
+    hrot: ['Your pro visual is ready.', 'Pro posters in 30 seconds.', 'Narrated films in 2–3 minutes.', 'Motion design video ads.', 'For Instagram, TikTok and WhatsApp.', 'Zero software, zero experience.'],
+    sub: 'Copy a free command, paste it into your AI tool and get a pro visual for your social media, your shop or your brand.',
+    steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
   },

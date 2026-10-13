@@ -505,6 +505,31 @@
   });
 })();
 
+// Filtres catégories (.chips2) : drag-to-scroll + boutons prev/next sur desktop
+(function () {
+  var c2 = document.querySelector('.chips2'); if (!c2) return;
+  var fine = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
+  var fr = document.body && document.body.dataset.lang !== 'en';
+  // Drag-to-scroll souris (tous écrans)
+  var down = false, sx = 0, sl = 0, moved = 0;
+  c2.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse' || e.button !== 0) return; down = true; sx = e.clientX; sl = c2.scrollLeft; moved = 0; try { c2.setPointerCapture(e.pointerId); } catch (x) {} });
+  c2.addEventListener('pointermove', function (e) { if (!down) return; var dx = e.clientX - sx; moved = Math.max(moved, Math.abs(dx)); if (moved > 4) { c2.scrollLeft = sl - dx; } });
+  c2.addEventListener('pointerup', function () { down = false; });
+  c2.addEventListener('click', function (e) { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, { capture: true });
+  // Boutons prev/next sur desktop
+  if (!fine) return;
+  var wrap = document.createElement('div'); wrap.className = 'railwrap'; c2.parentNode.insertBefore(wrap, c2); wrap.appendChild(c2);
+  var prev = document.createElement('button'); prev.type = 'button'; prev.className = 'rnav prev'; prev.setAttribute('aria-label', fr ? 'Précédent' : 'Previous'); prev.textContent = '‹';
+  var next = document.createElement('button'); next.type = 'button'; next.className = 'rnav next'; next.setAttribute('aria-label', fr ? 'Suivant' : 'Next'); next.textContent = '›';
+  wrap.appendChild(prev); wrap.appendChild(next);
+  function sync2() { prev.disabled = c2.scrollLeft <= 2; next.disabled = c2.scrollLeft >= c2.scrollWidth - c2.clientWidth - 2; }
+  prev.addEventListener('click', function () { c2.scrollBy({ left: -300, behavior: 'smooth' }); });
+  next.addEventListener('click', function () { c2.scrollBy({ left: 300, behavior: 'smooth' }); });
+  c2.addEventListener('scroll', sync2, { passive: true }); window.addEventListener('resize', sync2);
+  if ('ResizeObserver' in window) new ResizeObserver(sync2).observe(c2);
+  sync2(); setTimeout(sync2, 400);
+})();
+
 // Hero : rotation fluide des propositions de la deuxième ligne du titre
 (function () {
   var el = document.querySelector('.hrot');
