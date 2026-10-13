@@ -50,6 +50,7 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var st = { model: 'auto', style: 'auto', ratio: '9:16', photos: [], f: { brand: '', hook: '', l1: '', l2: '', l3: '', price: '', oldPrice: '', offer: '', cta: '', contact: '' }, qr: '', voice: true, gender: 'f', music: '', sfx: true, cutout: 'smart', vt: {}, vtServer: false, about: '', busy: false, ai: false, open: false, edited: false, result: null, list: null, listLoaded: false, step: 0 };
   var api = null, el = null, stepTimer = null;
+  var _persoTracked = false; // track ouverture Personnaliser une seule fois
 
   function lines() { return [st.f.l1, st.f.l2, st.f.l3].map(function (x) { return x.trim(); }).filter(Boolean); }
   function autoVoice() {
@@ -105,9 +106,9 @@
   function syncVoice() { var segs = voiceSegs(); Array.prototype.forEach.call(el.querySelectorAll('[data-vt]'), function (t) { if (t !== document.activeElement && segs[t.dataset.vt] != null) t.value = segs[t.dataset.vt]; }); }
   function touched() { st.edited = st.edited || !!st.result; if (st.vtServer) { st.vt = {}; st.vtServer = false; } }
   function bind() {
-    Array.prototype.forEach.call(el.querySelectorAll('[data-model]'), function (b) { b.addEventListener('click', function () { st.model = b.dataset.model; draw(); }); });
-    Array.prototype.forEach.call(el.querySelectorAll('[data-style]'), function (b) { b.addEventListener('click', function () { st.style = b.dataset.style; draw(); }); });
-    Array.prototype.forEach.call(el.querySelectorAll('[data-ratio]'), function (b) { b.addEventListener('click', function () { st.ratio = b.dataset.ratio; draw(); }); });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-model]'), function (b) { b.addEventListener('click', function () { st.model = b.dataset.model; if (window.saTrack) window.saTrack('video_model', { f: 'video', v: b.dataset.model }); draw(); }); });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-style]'), function (b) { b.addEventListener('click', function () { st.style = b.dataset.style; if (window.saTrack) window.saTrack('video_style', { f: 'video', v: b.dataset.style }); draw(); }); });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-ratio]'), function (b) { b.addEventListener('click', function () { st.ratio = b.dataset.ratio; if (window.saTrack) window.saTrack('video_ratio', { f: 'video', v: b.dataset.ratio }); draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-music]'), function (b) { b.addEventListener('click', function () { st.music = b.dataset.music; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-cutout]'), function (b) { b.addEventListener('click', function () { st.cutout = b.dataset.cutout; draw(); }); });
     Array.prototype.forEach.call(el.querySelectorAll('[data-voice]'), function (b) { b.addEventListener('click', function () { var v = b.dataset.voice; st.voice = v !== 'off'; if (st.voice) st.gender = v; draw(); }); });
@@ -119,7 +120,8 @@
     var q = el.querySelector('#v-qr'); if (q) q.addEventListener('input', function () { st.qr = q.value; });
     var a = el.querySelector('#v-about'); if (a) a.addEventListener('input', function () { st.about = a.value; });
     var ai = el.querySelector('#v-ai'); if (ai) ai.addEventListener('click', writeWithAi);
-    var go = el.querySelector('#v-go'); if (go) go.addEventListener('click', function () { if (api.credits < cost()) api.openBuy('video'); else create(); });
+    var go = el.querySelector('#v-go'); if (go) go.addEventListener('click', function () { if (api.credits < cost()) { if (window.saTrack) window.saTrack('video_nocredit', { f: 'video' }); api.openBuy('video'); } else { if (window.saTrack) window.saTrack('video_start', { f: 'video', model: st.model, style: st.style, ratio: st.ratio }); create(); } });
+    var det = el.querySelector('.vperso'); if (det && !_persoTracked) { det.addEventListener('toggle', function () { if (det.open) { _persoTracked = true; if (window.saTrack) window.saTrack('video_perso_open', { f: 'video' }); } }, { once: true }); }
     var sh = el.querySelector('#v-share'); if (sh) sh.addEventListener('click', share);
     var ag = el.querySelector('#v-again'); if (ag) ag.addEventListener('click', modify);
     Array.prototype.forEach.call(el.querySelectorAll('[data-open]'), function (b) { b.addEventListener('click', function () { openSaved(b.dataset.open, b); }); });
@@ -155,6 +157,7 @@
         api.setCredits(r.data.credits); var used = r.data.used || {};
         return api.blob('video/file', { id: r.data.id }).then(function (b) {
           st.result = { id: r.data.id, url: URL.createObjectURL(b), blob: b, used: used, canShare: !!(navigator.canShare && navigator.canShare({ files: [new File([b], 'v.mp4', { type: 'video/mp4' })] })) };
+          if (window.saTrack) window.saTrack('video_done', { f: 'video', style: used.style || st.style, model: used.model || st.model, ratio: st.ratio });
           done(); loadList(); window.scrollTo({ top: el.querySelector('.vres').offsetTop - 70, behavior: 'smooth' });
         });
       }
@@ -170,7 +173,7 @@
     }
     st.edited = true; st.forceOpen = true; st.result = null; draw(); var p = el.querySelector('.vperso'); if (p) window.scrollTo({ top: p.offsetTop - 80, behavior: 'smooth' });
   }
-  function share() { var b = st.result && st.result.blob; if (!b) return; try { navigator.share({ files: [new File([b], 'slashatlas-video.mp4', { type: 'video/mp4' })], text: T.shareText }).catch(function () {}); } catch (e) { /* partage annulé */ } }
+  function share() { if (window.saTrack) window.saTrack('video_share', { f: 'video' }); var b = st.result && st.result.blob; if (!b) return; try { navigator.share({ files: [new File([b], 'slashatlas-video.mp4', { type: 'video/mp4' })], text: T.shareText }).catch(function () {}); } catch (e) { /* partage annulé */ } }
   function openSaved(id, btn) { btn.disabled = true; api.blob('video/file', { id: id }).then(function (b) { st.result = { id: id, url: URL.createObjectURL(b), blob: b, used: null, canShare: !!(navigator.canShare && navigator.canShare({ files: [new File([b], 'v.mp4', { type: 'video/mp4' })] })) }; draw(); var r = el.querySelector('.vres'); if (r) window.scrollTo({ top: r.offsetTop - 70, behavior: 'smooth' }); }).catch(function () { btn.disabled = false; msg(T.e.no_video); }); }
   function loadList() { api.call('video/list').then(function (r) { if (r.status === 200) { st.list = r.data.videos; if (!st.busy) draw(); } }).catch(function () {}); }
 

@@ -273,6 +273,23 @@
   function bar() {
     return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
   }
+  function studioNav() {
+    var isVideo = state.mode === 'video';
+    var hasVurl = !!root.dataset.vurl;
+    var genPath = L === 'en' ? '/en/generate/' : '/generer/';
+    var filmPath = L === 'en' ? '/en/film-studio/' : '/studio-film/';
+    var imgItem = hasVurl
+      ? '<button class="stool' + (!isVideo ? ' on' : '') + '" type="button" data-mode="image"><span class="stool-ic">🖼</span><b>Image</b><small>' + (L === 'en' ? 'Posters' : 'Affiches') + '</small></button>'
+      : '<a class="stool on" href="' + genPath + '"><span class="stool-ic">🖼</span><b>Image</b><small>' + (L === 'en' ? 'Posters' : 'Affiches') + '</small></a>';
+    var vidItem = hasVurl
+      ? '<button class="stool' + (isVideo ? ' on' : '') + '" type="button" data-mode="video"><span class="stool-ic">🎬</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></button>'
+      : '<a class="stool" href="' + genPath + '?mode=video"><span class="stool-ic">🎬</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></a>';
+    var filmItem = '<a class="stool" href="' + filmPath + '"><span class="stool-ic">🎭</span><b>Film</b><small>' + (L === 'en' ? 'Scenario' : 'Scénario') + '</small></a>';
+    var histCount = hist.items.length ? hist.items.length + (L === 'en' ? ' items' : '') : (L === 'en' ? 'My images' : 'Mes images');
+    if (hist.items.length && L !== 'en') histCount = hist.items.length + ' créations';
+    var histItem = '<button class="stool" type="button" id="s-hist-btn"><span class="stool-ic">🕐</span><b>' + (L === 'en' ? 'History' : 'Historique') + '</b><small>' + histCount + '</small></button>';
+    return '<nav class="stools">' + imgItem + vidItem + filmItem + histItem + '</nav>';
+  }
   function tabs() {
     if (!root.dataset.vurl) return '';
     return '<div class="stabs" role="tablist"><button type="button" role="tab" data-mode="image" aria-selected="' + (state.mode !== 'video') + '">' + T.tabImage + '</button><button type="button" role="tab" data-mode="video" aria-selected="' + (state.mode === 'video') + '">' + T.tabVideo + ' <i>' + T.tabNew + '</i></button></div>';
@@ -288,8 +305,8 @@
     var addBtn = state.photos.length < 3 ? '<label class="addph"><input id="s-file" type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple hidden><span>+</span><small>' + T.add + '</small></label>' : '';
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < 1 ? T.buy : T.genCost;
-    if (state.mode === 'video') { root.innerHTML = bar() + tabs() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
-    root.innerHTML = bar() + (state.credits < 1 ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') + tabs() +
+    if (state.mode === 'video') { root.innerHTML = bar() + studioNav() + tabs() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
+    root.innerHTML = bar() + studioNav() + (state.credits < 1 ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') + tabs() +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
@@ -360,6 +377,15 @@
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
     var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy('corriger'); else editImage(); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; ensureQr(state.result).then(render); }); });
+    var hb = $('#s-hist-btn');
+    if (hb) hb.addEventListener('click', function () {
+      var hw = root.querySelector('.shist-wrap');
+      if (!hw) return;
+      if (!hw.open) hw.open = true;
+      hist.open = true;
+      if (!hist.items.length && !hist.busy) loadHistory(); else renderHist();
+      setTimeout(function () { hw.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+    });
   }
 
   // ── onglet vidéo : module chargé à la demande ──
@@ -587,7 +613,7 @@
     hist.busy = true;
     window.slashAuth.call('history', {}).then(function (r) {
       hist.busy = false;
-      if (r.status === 200 && Array.isArray(r.data)) { hist.items = r.data; renderHist(); }
+      if (r.status === 200 && Array.isArray(r.data)) { hist.items = r.data; if (hist.items.length && !hist.open) { hist.open = true; render(); } renderHist(); }
     }).catch(function () { hist.busy = false; });
   }
   function renderHist() {

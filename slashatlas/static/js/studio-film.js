@@ -122,6 +122,7 @@
     fetch('/api/config').then(function (r) { return r.json(); }).then(function (d) { filmCfg = d; cb(filmCfg); }).catch(function () { cb(null); });
   }
   function openFilmBuy(method) {
+    if (window.saTrack) window.saTrack('film_buy_open', { f: 'film', m: method });
     closeCredModal();
     loadFilmCfg(function (cfg) {
       if (!cfg) return;
@@ -191,7 +192,7 @@
           tries++;
           window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
             if (s.status !== 200) return;
-            if (s.data.status === 'paid') { clearInterval(ptimer); bmsg(TB.paid, true); setTimeout(closeM, 1200); }
+            if (s.data.status === 'paid') { clearInterval(ptimer); bmsg(TB.paid, true); if (window.saTrack) window.saTrack('film_pay_done', { f: 'film', m: sel.method }); setTimeout(closeM, 1200); }
             else if (s.data.status === 'failed') { clearInterval(ptimer); busyB(btn, false); bmsg(TB.payFailed); }
           });
           if (tries > 60) { clearInterval(ptimer); busyB(btn, false); bmsg(TB.payFailed); }
@@ -205,6 +206,7 @@
         if (sel.op.otp && !otp) return bmsg(TB.e.otp_required);
         if (!sel.terms) { flagT(); return bmsg(TB.e.terms_required); }
         busyB(btn, true); bmsg(TB.paying, true);
+        if (window.saTrack) window.saTrack('film_pay_start', { f: 'film', m: 'mm', pack: sel.pack });
         window.slashAuth.call('pay/start', { packId: sel.pack, operator: sel.op.code, phone: phone, otp: otp, terms: cfg.termsVersion }).then(function (r) {
           if (r.status !== 200) { busyB(btn, false); return bmsg(errT(r.data && r.data.error)); }
           if (r.data.paymentUrl) { var a = document.createElement('a'); a.href = r.data.paymentUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = TB.openPay; a.className = 'btn gl'; var mEl = modal.querySelector('#bf-msg'); if (mEl) mEl.after(a); }
@@ -218,6 +220,7 @@
         if (!sel.terms) { flagT(); return bmsg(TB.e.terms_required); }
         if (!body.firstName || !body.lastName || !body.city || !body.zip || body.phone.replace(/\D/g, '').length < 8) return bmsg(TB.e.bad_card_info);
         busyB(btn, true); bmsg(TB.paying, true);
+        if (window.saTrack) window.saTrack('film_pay_start', { f: 'film', m: 'card', pack: sel.pack });
         window.slashAuth.call('pay/card', body).then(function (r) {
           if (r.status !== 200) { busyB(btn, false); return bmsg(errT(r.data && r.data.error)); }
           try { localStorage.setItem('sa_pending', r.data.orderId); } catch (e) {}
@@ -247,6 +250,7 @@
   }
 
   function showDone(videoUrl, episodeNumber) {
+    if (window.saTrack) window.saTrack('film_done', { f: 'film', ep: episodeNumber || 0 });
     var res = $('#film-result');
     if (!res) return;
     var epBadge = episodeNumber ? '<span class="film-ep-badge">' + T.episodeBadge + ' ' + episodeNumber + '</span>' : '';
@@ -359,6 +363,7 @@
       sub.disabled = true;
       sub.textContent = T.creating;
       showProgress(0);
+      if (window.saTrack) window.saTrack('film_start', { f: 'film', dur: (document.querySelector('input[name="dur"]:checked') || {}).value || '2', genre: ($('#film-genre') || {}).value || '' });
 
       var dur = document.querySelector('input[name="dur"]:checked');
       var wmEl = document.getElementById('film-watermark');
@@ -378,6 +383,7 @@
         if (r.status === 402) {
           sub.disabled = false;
           sub.textContent = isFr ? 'Créer mon film' : 'Create my film';
+          if (window.saTrack) window.saTrack('film_nocredit', { f: 'film' });
           openCredModal();
           return;
         }

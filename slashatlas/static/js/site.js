@@ -350,7 +350,18 @@
         var s = document.createElement('script'); s.async = true; s.crossOrigin = 'anonymous';
         s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.client); document.head.appendChild(s);
         var p = document.querySelector('[data-adprefs]'); if (p) { p.hidden = false; p.addEventListener('click', function (e) { e.preventDefault(); try { window.googlefc = window.googlefc || {}; googlefc.callbackQueue = googlefc.callbackQueue || []; googlefc.callbackQueue.push(googlefc.showRevocationMessage); } catch (x) {} }); }
-        io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); window.saTrack && window.saTrack('adview', { n: en.target.dataset.ad }); } }); }, { threshold: 0.5 }) : null;
+        var _adTimers = {};
+        io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+          es.forEach(function (en) {
+            var k = en.target.dataset.ad;
+            if (en.isIntersecting) {
+              window.saTrack && window.saTrack('adview', { n: k, p: window.location.pathname });
+              _adTimers[k] = _adTimers[k] || setTimeout(function () { window.saTrack && window.saTrack('ad_engaged', { n: k, p: window.location.pathname }); }, 3000);
+            } else {
+              clearTimeout(_adTimers[k]); delete _adTimers[k];
+            }
+          });
+        }, { threshold: 0.5 }) : null;
         return a;
       }).catch(function () { return null; }));
     }
