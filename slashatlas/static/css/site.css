@@ -609,6 +609,18 @@ textarea.film-input{resize:vertical;min-height:110px}
 .film-bal-sep{opacity:.4}
 .film-bal-lbl{color:var(--mut)}
 .film-submit{margin-top:4px;width:100%}
+/* Transactions */
+#txn-modal .sheet{gap:10px}
+.txn-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.txn-row:last-of-type{border-bottom:none}
+.txn-date{color:var(--mut);font-size:12px;white-space:nowrap}
+.txn-pack b{display:block;font-size:14px}
+.txn-pack small{color:var(--mut)}
+.txn-amt{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt)}
+.txn-ok{color:#4caf92;font-size:12px;font-weight:600}
+.txn-err{color:#e07070;font-size:12px;font-weight:600}
+.txn-mut{color:var(--mut);font-size:12px}
+.txn-more{margin-top:10px;width:100%}
 .film-progress{margin-top:24px}
 .film-progress-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
 .film-ps{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mut)}

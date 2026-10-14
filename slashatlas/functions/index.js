@@ -396,7 +396,15 @@ exports.slashatlasApi = onRequest(
         }
         if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req), { ip, ua: req.get('user-agent') }));
         if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
+        if (path.endsWith('/my-orders')) return res.status(200).json(await studio.myOrders(u, body(req)));
         return res.status(200).json(await studio.payStatus(u, body(req)));
+      }
+      if (path.endsWith('/admin/orders')) {
+        if (limited('ao' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        return res.status(200).json(await studio.adminOrders(body(req)));
       }
       if (/\/admin\/(grant|ads)$/.test(path)) {
         if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });

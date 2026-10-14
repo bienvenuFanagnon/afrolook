@@ -630,6 +630,44 @@ async function grant(email, n, note) {
   return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
 }
 
+async function myOrders(u, b) {
+  const PAGE = 20;
+  let q = db().collection('StudioOrders').where('uid', '==', u.uid).orderBy('createdAt', 'desc').limit(PAGE + 1);
+  if (b && b.cursor) {
+    const cur = await db().collection('StudioOrders').doc(clean(b.cursor, 40)).get();
+    if (cur.exists) q = q.startAfter(cur);
+  }
+  const snap = await q.get();
+  const hasMore = snap.docs.length > PAGE;
+  const docs = snap.docs.slice(0, PAGE);
+  return {
+    orders: docs.map((d) => {
+      const o = d.data();
+      return { id: d.id, credits: o.credits || 0, days: o.days || 0, amount: o.total || o.price || 0, currency: o.currency || 'XOF', operator: o.operator || '', status: o.status || 'pending', createdAt: o.createdAt ? o.createdAt.toMillis() : null };
+    }),
+    nextCursor: hasMore ? docs[docs.length - 1].id : null,
+  };
+}
+
+async function adminOrders(b) {
+  const PAGE = 20;
+  let q = db().collection('StudioOrders').orderBy('createdAt', 'desc').limit(PAGE + 1);
+  if (b && b.cursor) {
+    const cur = await db().collection('StudioOrders').doc(clean(b.cursor, 40)).get();
+    if (cur.exists) q = q.startAfter(cur);
+  }
+  const snap = await q.get();
+  const hasMore = snap.docs.length > PAGE;
+  const docs = snap.docs.slice(0, PAGE);
+  return {
+    orders: docs.map((d) => {
+      const o = d.data();
+      return { id: d.id, email: o.email || '', credits: o.credits || 0, days: o.days || 0, amount: o.total || o.price || 0, currency: o.currency || 'XOF', operator: o.operator || '', status: o.status || 'pending', createdAt: o.createdAt ? o.createdAt.toMillis() : null, phone: o.phone || '' };
+    }),
+    nextCursor: hasMore ? docs[docs.length - 1].id : null,
+  };
+}
+
 async function getBrandProfile(u) {
   const doc = await db().collection('StudioUsers').doc(u.uid).get();
   const d = doc.exists ? doc.data() : {};
@@ -642,4 +680,4 @@ async function saveBrandProfile(u, b) {
   return profile;
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile };
+module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders };

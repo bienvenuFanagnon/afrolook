@@ -275,7 +275,55 @@
     });
   }
   function bar() {
-    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a><button class="btn gl sm" type="button" id="s-txn">' + (L === 'en' ? 'My purchases' : 'Mes achats') + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+  }
+
+  // ── Historique des transactions ───────────────────────────────────────────
+  var txnCursor = null, txnLoading = false;
+  function openTransactions() {
+    var old = document.getElementById('txn-modal');
+    if (old) { old.remove(); document.body.style.overflow = ''; return; }
+    var m = document.createElement('div');
+    m.id = 'txn-modal'; m.className = 'smodal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+    m.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + (L === 'en' ? 'Close' : 'Fermer') + '">×</button><h2>' + (L === 'en' ? 'My purchases' : 'Mes achats') + '</h2><div id="txn-list"><p class="hint">…</p></div></div>';
+    document.body.appendChild(m); document.body.style.overflow = 'hidden';
+    m.querySelector('.x').onclick = function () { m.remove(); document.body.style.overflow = ''; };
+    m.onclick = function (e) { if (e.target === m) { m.remove(); document.body.style.overflow = ''; } };
+    txnCursor = null; txnLoading = false;
+    loadTxns(null);
+  }
+  function loadTxns(cursor) {
+    if (txnLoading) return;
+    txnLoading = true;
+    var listEl = document.getElementById('txn-list');
+    if (!listEl) { txnLoading = false; return; }
+    if (!cursor) listEl.innerHTML = '<p class="hint">…</p>';
+    var isFr = L !== 'en';
+    function fmtD(ts) { return ts ? new Date(ts).toLocaleString(isFr ? 'fr-FR' : 'en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
+    function fmtN(n) { return String(n || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+    var ST_LBL = { paid: isFr ? 'Payé' : 'Paid', failed: isFr ? 'Échoué' : 'Failed', created: isFr ? 'En attente' : 'Pending', pending: isFr ? 'En attente' : 'Pending' };
+    var ST_CLS = { paid: 'txn-ok', failed: 'txn-err', created: 'txn-mut', pending: 'txn-mut' };
+    window.slashAuth.call('my-orders', { cursor: cursor || null }).then(function (r) {
+      txnLoading = false;
+      if (!r || r.status !== 200) return;
+      var orders = (r.data && r.data.orders) || [];
+      txnCursor = r.data && r.data.nextCursor;
+      var rows = orders.map(function (o) {
+        var lbl = o.days ? (o.days + (isFr ? ' j sans pub' : 'd no-ads')) : (o.credits + ' cr.');
+        return '<div class="txn-row"><span class="txn-date">' + fmtD(o.createdAt) + '</span><span class="txn-pack"><b>' + lbl + '</b><small>' + esc(o.operator) + '</small></span><span class="txn-amt">' + fmtN(o.amount) + ' ' + (o.currency || 'XOF') + '</span><span class="' + (ST_CLS[o.status] || 'txn-mut') + '">' + (ST_LBL[o.status] || o.status) + '</span></div>';
+      }).join('');
+      var moreBtn = txnCursor ? '<button class="btn gl sm txn-more" type="button">' + (isFr ? 'Charger plus' : 'Load more') + '</button>' : '';
+      var listEl2 = document.getElementById('txn-list');
+      if (!listEl2) return;
+      if (cursor) {
+        var mb = listEl2.querySelector('.txn-more'); if (mb) mb.outerHTML = rows + moreBtn;
+      } else {
+        listEl2.innerHTML = rows || ('<p class="hint">' + (isFr ? 'Aucune transaction.' : 'No transactions yet.') + '</p>');
+        if (moreBtn) listEl2.insertAdjacentHTML('beforeend', moreBtn);
+      }
+      var mb2 = listEl2 && listEl2.querySelector('.txn-more');
+      if (mb2) mb2.onclick = function () { loadTxns(txnCursor); };
+    }).catch(function () { txnLoading = false; });
   }
   function studioNav() {
     var isVideo = state.mode === 'video';
@@ -382,6 +430,7 @@
     Array.prototype.forEach.call(root.querySelectorAll('[data-net]'), function (a) { a.addEventListener('click', function () { try { window.saTrack && window.saTrack('share', { n: a.dataset.net }); } catch (e) {} }); });
     var ag = $('#s-again'); if (ag) ag.addEventListener('click', function () { if (state.credits < 1) openBuy('refaire'); else generate(); });
     var by = $('#s-buy'); if (by) by.addEventListener('click', openBuy);
+    var txnBtn2 = $('#s-txn'); if (txnBtn2) txnBtn2.addEventListener('click', openTransactions);
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
     var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < 1) openBuy('corriger'); else editImage(); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; ensureQr(state.result).then(render); }); });
