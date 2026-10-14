@@ -183,7 +183,7 @@
       '</div>' +
     '</a>' +
     '<div class="cb">' +
-      '<div class="code">Afrolook</div>' +
+      '<div class="code">Afrolook <span class="afl-native-spon">' + (isFr ? 'Sponsorisé' : 'Sponsored') + '</span></div>' +
       '<h3><a href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + msg + '</a></h3>' +
       '<div class="meta"><span>' + storeLbl(isFr) + '</span></div>' +
       '<div class="acts"><a class="btn afl-btn-dl sm" href="' + url + '" target="_blank" rel="noopener sponsored" data-afl="native">' + ctaTxt(isFr) + '</a></div>' +
