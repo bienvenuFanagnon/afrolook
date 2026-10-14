@@ -76,3 +76,75 @@ export const translatePostDescription = onCall(
     }
   }
 );
+
+interface TranslateCommentData {
+  commentId: string;
+  text: string;
+  targetLang: string;
+  replyId?: string;
+}
+
+/**
+ * Traduit un commentaire (ou une réponse) vers `targetLang` via Google Cloud
+ * Translation API, avec mise en cache dans Firestore :
+ * - Commentaire principal : `PostComments/{commentId}.translations.{targetLang}`
+ * - Réponse : `PostComments/{commentId}.replyTranslations.{replyId}.{targetLang}`
+ */
+export const translateComment = onCall(
+  {timeoutSeconds: 30, region: "us-central1"},
+  async (request) => {
+    const data = request.data as TranslateCommentData;
+    const {commentId, text, targetLang, replyId} = data;
+
+    if (!commentId || !text || !targetLang) {
+      throw new HttpsError(
+        "invalid-argument",
+        "commentId, text et targetLang sont requis"
+      );
+    }
+
+    const commentRef = getFirestore().collection("PostComments").doc(commentId);
+    const cacheKey = replyId
+      ? `replyTranslations.${replyId}.${targetLang}`
+      : `translations.${targetLang}`;
+
+    try {
+      const commentDoc = await commentRef.get();
+      const commentData = commentDoc.exists ? commentDoc.data() : undefined;
+
+      // 1. Vérifier le cache Firestore
+      const cached = replyId
+        ? commentData?.replyTranslations?.[replyId]?.[targetLang]
+        : commentData?.translations?.[targetLang];
+      if (cached) {
+        return {translatedText: cached as string, cached: true};
+      }
+
+      // 2. Appel à l'API Google Cloud Translation
+      let translatedText: string;
+      try {
+        const [result] = await translateClient.translate(text, targetLang);
+        translatedText = result;
+      } catch (apiError) {
+        console.error("Erreur Google Cloud Translation API:", apiError);
+        throw new HttpsError(
+          "internal",
+          "Le service de traduction est momentanément indisponible"
+        );
+      }
+
+      // 3. Mise en cache (merge-safe)
+      try {
+        await commentRef.update({[cacheKey]: translatedText});
+      } catch (writeError) {
+        console.error("Erreur écriture cache traduction commentaire:", writeError);
+      }
+
+      return {translatedText, cached: false};
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      console.error("Erreur translateComment:", error);
+      throw new HttpsError("internal", "Erreur lors de la traduction");
+    }
+  }
+);

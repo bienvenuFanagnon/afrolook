@@ -533,19 +533,24 @@ class TutoSceneCard extends StatelessWidget {
       ],
     );
 
-    return Container(
-      margin: fullScreen ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      padding: EdgeInsets.fromLTRB(16, fullScreen ? 50 : 14, 16, fullScreen ? 24 : 16),
-      decoration: BoxDecoration(
-        borderRadius: fullScreen ? null : BorderRadius.circular(22),
-        border: fullScreen ? null : Border.all(color: gold.withOpacity(0.25)),
-        gradient: RadialGradient(
-          center: const Alignment(-0.8, -0.9),
-          radius: 1.3,
-          colors: [c.isDark ? const Color(0x331FAA59) : const Color(0x261FAA59), c.isDark ? const Color(0xFF070B09) : c.background],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Container(
+          margin: fullScreen ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          padding: EdgeInsets.fromLTRB(16, fullScreen ? 50 : 14, 16, fullScreen ? 24 : 16),
+          decoration: BoxDecoration(
+            borderRadius: fullScreen ? null : BorderRadius.circular(22),
+            border: fullScreen ? null : Border.all(color: gold.withOpacity(0.25)),
+            gradient: RadialGradient(
+              center: const Alignment(-0.8, -0.9),
+              radius: 1.3,
+              colors: [c.isDark ? const Color(0x331FAA59) : const Color(0x261FAA59), c.isDark ? const Color(0xFF070B09) : c.background],
+            ),
+          ),
+          child: fullScreen ? Center(child: SingleChildScrollView(child: content)) : content,
         ),
       ),
-      child: fullScreen ? Center(child: SingleChildScrollView(child: content)) : content,
     );
   }
 }

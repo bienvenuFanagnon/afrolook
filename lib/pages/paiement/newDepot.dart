@@ -817,7 +817,8 @@ class _DepositScreenState extends State<DepositScreen> {
     final colors = AppColors.of(context);
     final t = AppLocalizations.of(context);
 
-    if (kIsAppleStore) {
+    final _depositUser = Provider.of<UserAuthProvider>(context).loginUserData;
+    if (kIsAppleStore && !PaymentRegion.canUseMobileMoney(_depositUser)) {
       return Scaffold(
         backgroundColor: colors.background,
         appBar: AppBar(
@@ -869,7 +870,7 @@ class _DepositScreenState extends State<DepositScreen> {
     }
 
     // Android hors Afrique (ou pays inconnu) : pas de Mobile Money, seulement Google Play.
-    if (PaymentRegion.isAndroid && !PaymentRegion.canUseMobileMoney(Provider.of<UserAuthProvider>(context).loginUserData)) {
+    if (PaymentRegion.isAndroid && !PaymentRegion.canUseMobileMoney(_depositUser)) {
       return Scaffold(
         backgroundColor: colors.background,
         appBar: AppBar(

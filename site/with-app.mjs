@@ -2,8 +2,9 @@
 // Préalable : flutter build web --release --base-href /app/
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const here = path.dirname(new URL(import.meta.url).pathname);
+const here = path.dirname(fileURLToPath(import.meta.url));
 const src = path.join(here, '..', 'build', 'web');
 const out = path.join(here, 'dist', 'app');
 const index = path.join(src, 'index.html');

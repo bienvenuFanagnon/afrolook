@@ -89,12 +89,17 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    if (kIsAppleStore) return _buildAppleStoreScreen(context, colors);
-
-    // Android : Google Play pour tout le monde ; Mobile Money seulement dans un pays africain (pays inconnu = Google Play seul).
     final loginUser = Provider.of<UserAuthProvider>(context).loginUserData;
-    final showMethodToggle = PaymentRegion.isAndroid && PaymentRegion.canUseMobileMoney(loginUser);
-    if (PaymentRegion.isAndroid && !showMethodToggle) return const PlayCoinStoreView();
+    final canMobileMoney = PaymentRegion.canUseMobileMoney(loginUser);
+
+    // iOS : Mobile Money si africain (sauf compte de test) ; sinon App Store.
+    if (kIsAppleStore && !canMobileMoney) return _buildAppleStoreScreen(context, colors);
+
+    // Android sans Mobile Money (pays non africain ou inconnu) → Google Play.
+    if (PaymentRegion.isAndroid && !canMobileMoney) return const PlayCoinStoreView();
+
+    // Android africain + toggle Google Play sélectionné.
+    final showMethodToggle = PaymentRegion.isAndroid && canMobileMoney;
     if (showMethodToggle && _useGooglePlay) return _buildPlayWithToggle(context, colors);
 
     final coinProvider = Provider.of<CoinGiftUserProvider>(context);

@@ -31,8 +31,24 @@ class PaymentRegion {
     return code != null && africanCountries.contains(code);
   }
 
-  /// Sur Android : Mobile Money proposé seulement aux utilisateurs d'un pays africain.
-  static bool canUseMobileMoney(UserData? user) => !kIsAppleStore && isAfrican(user);
+  /// Email du compte de test Apple (reviewer) — jamais de Mobile Money pour lui.
+  static const Set<String> _reviewTestEmails = {
+    'jorbinbienvenu@gmail.com',
+    'techbienos@gmail.com',
+  };
+
+  static bool isReviewTestAccount(UserData? user) =>
+      _reviewTestEmails.contains(user?.email?.toLowerCase());
+
+  /// Mobile Money disponible si :
+  ///   - pas le web
+  ///   - pays africain
+  ///   - pas le compte de test Apple reviewer
+  static bool canUseMobileMoney(UserData? user) {
+    if (kIsWeb) return false;
+    if (isReviewTestAccount(user)) return false;
+    return isAfrican(user);
+  }
 
   /// Google Play Billing : Android uniquement (le web et iOS n'en ont pas).
   static bool get isAndroid => !kIsWeb && Platform.isAndroid;

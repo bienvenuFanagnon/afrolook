@@ -1,5 +1,5 @@
 import "./shared/globalOptions"; // doit rester la première ligne : options communes à toutes les fonctions
-export { translatePostDescription } from "./translatePost";
+export { translatePostDescription, translateComment } from "./translatePost";
 export * from "./posts/scoreEngine";
 export * from "./posts/viewEarnings";
 export * from "./payments/cinetpay";

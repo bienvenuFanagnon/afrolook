@@ -455,12 +455,17 @@ class _MonetizationTutorialPageState extends State<MonetizationTutorialPage> wit
         fit: StackFit.expand,
         children: [
           _aurora(),
-          SafeArea(
-            child: Column(
-              children: [
-                _topBar(),
-                Expanded(child: _stage()),
-              ],
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    _topBar(),
+                    Expanded(child: _stage()),
+                  ],
+                ),
+              ),
             ),
           ),
           if (_flying) _flyingCoin(),

@@ -1,11 +1,12 @@
 // Génère le site statique dans dist/ : node build.mjs
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { CARDS, PACKS, EARN, NATIONAL_DAYS, AFRICA, svgIcon } from './src/data.mjs';
 import { T } from './src/i18n.mjs';
 
-const root = path.dirname(new URL(import.meta.url).pathname);
+const root = path.dirname(fileURLToPath(import.meta.url));
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
 const MONEY = /commission|\d+(,\d+)? ?%|RPM|FCFA|minimum|\$|part du créateur|palier|taux de change|encaiss|parrain/i;
 // Page publique : les règles de fonctionnement, sans les montants ni les parts (ils restent dans l'application).

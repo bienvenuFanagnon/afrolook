@@ -41,6 +41,7 @@ import 'stickers/sticker_picker_sheet.dart';
 import 'stickers/sticker_recents_bar.dart';
 import 'stickers/sticker_widgets.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
+import 'userPosts/postWidgets/translatable_comment.dart';
 
 class PostComments extends StatefulWidget {
   final Post post;
@@ -86,6 +87,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   final Map<String, bool> _commentExpanded = {};
   final Map<String, bool> _replyExpanded = {};
   final Map<String, bool> _showAllReplies = {};
+  final Map<String, String?> _translatedComments = {};
+  final Map<String, String?> _translatedReplies = {};
 
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
@@ -1265,7 +1268,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               const SizedBox(height: 3),
               if (pcm.media != null) _buildCommentMedia(pcm.media!),
               if ((pcm.message ?? '').isNotEmpty || pcm.media == null)
-                _buildMentionText(pcm.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+                _buildMentionText(_translatedComments[pcm.id!] ?? pcm.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+              if ((pcm.message ?? '').trim().isNotEmpty)
+                TranslatableComment(
+                  commentId: pcm.id!,
+                  text: pcm.message!,
+                  targetLang: Localizations.localeOf(context).languageCode,
+                  onToggle: (t) => setState(() => _translatedComments[pcm.id!] = t),
+                ),
               _buildCoinsEarned(pcm.coinsEarned),
               _buildStickerGifts(pcm.id),
               if (needsExpandButton)
@@ -1470,7 +1480,15 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                 // Sticker d'une réponse : plus petit que dans un commentaire
                 if (rpc.media != null) _buildCommentMedia(rpc.media!, maxWidth: 72),
                 if ((rpc.message ?? '').isNotEmpty || rpc.media == null)
-                  _buildMentionText(rpc.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+                  _buildMentionText(_translatedReplies['${pcm.id}_${rpc.id}'] ?? rpc.message ?? '', isExpanded: isExpanded, maxLinesReduced: 2),
+                if ((rpc.message ?? '').trim().isNotEmpty)
+                  TranslatableComment(
+                    commentId: pcm.id!,
+                    text: rpc.message!,
+                    targetLang: Localizations.localeOf(context).languageCode,
+                    replyId: rpc.id,
+                    onToggle: (t) => setState(() => _translatedReplies['${pcm.id}_${rpc.id}'] = t),
+                  ),
                 _buildCoinsEarned(pcm.replyCoins[rpc.id] ?? 0),
                 _buildStickerGifts(pcm.id, replyId: rpc.id),
                 if (needsExpandButton)
