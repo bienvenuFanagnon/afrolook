@@ -778,8 +778,8 @@ textarea.film-input{resize:vertical;min-height:110px}
 .afl-l-img{position:relative}
 .afl-app-logo{position:absolute;bottom:7px;left:7px;width:28px;height:28px;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,.5);object-fit:cover;pointer-events:none;z-index:2}
 .afl-app-logo-sm{width:22px;height:22px;border-radius:5px;bottom:5px;left:5px}
-/* pub native : réserve sa place même avant chargement */
-.card.card-ad{aspect-ratio:4/5;transition:opacity .2s}
+/* pub native : invisible si vide, transition douce */
+.card.card-ad{transition:opacity .2s}
 .card.card-ad:empty{opacity:0;pointer-events:none}
 /* toast copie */
 #afl-copy-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(calc(100% + 24px));width:min(360px,calc(100vw - 32px));z-index:1000;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);transition:transform .32s cubic-bezier(.34,1.4,.64,1);pointer-events:none}
