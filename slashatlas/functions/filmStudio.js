@@ -374,14 +374,35 @@ async function processFilm(jobId, params, seriesData) {
     const renderToken = crypto.randomBytes(16).toString('hex');
     await jobRef.update({ status: 'pending_render', script, renderToken, updatedAt: FieldValue.serverTimestamp() });
 
-    // Étape 2 : Déclencher le rendu (fire-and-forget vers slashatlasFilm)
+    // Étape 2 : Déclencher le rendu vers slashatlasFilm
     const renderUrl = getRenderUrl();
-    fetch(renderUrl, {
-      method: 'POST',
-      signal: AbortSignal.timeout(8000),
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId, token: renderToken }),
-    }).catch((e) => console.log('trigger film render', e.message));
+    let triggerOk = false;
+    try {
+      const resp = await fetch(renderUrl, {
+        method: 'POST',
+        signal: AbortSignal.timeout(10000),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, token: renderToken }),
+      });
+      triggerOk = resp.ok;
+      if (!resp.ok) console.error('trigger film render http', resp.status);
+    } catch (e) {
+      console.error('trigger film render', e.message);
+    }
+    if (!triggerOk) {
+      // Le rendu n'a pas pu être déclenché : rembourser immédiatement
+      await jobRef.update({ status: 'error', error: 'render_trigger_failed', updatedAt: FieldValue.serverTimestamp() });
+      const snap = await jobRef.get();
+      if (snap.exists) {
+        const { uid, cost } = snap.data();
+        if (uid && cost) {
+          const { addCredits, logGenError } = require('./studio');
+          await addCredits(uid, cost, 'film_refund_' + jobId).catch(() => {});
+          await logGenError('film', 'render_trigger_failed', uid, { jobId });
+        }
+      }
+      return;
+    }
 
   } catch (e) {
     console.error('processFilm step error', jobId, e.message);
