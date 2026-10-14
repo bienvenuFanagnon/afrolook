@@ -86,7 +86,12 @@ async function popular(l) {
     const q = await getFirestore().collection('SlashAtlasCounts').orderBy('score', 'desc').limit(150).get();
     const rows = q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0, tries: d.data().tries || 0, views: d.data().views || 0 })).filter((r) => CMDS.commands[r.slug]);
     const totDoc = await getFirestore().collection('SlashAtlasGlobals').doc('totals').get().catch(() => null);
-    const totalCopies = totDoc && totDoc.exists ? (totDoc.data().totalCopies || 0) : rows.reduce((s, r) => s + r.copies, 0);
+    const sumFromCounts = q.docs.reduce((s, d) => s + (d.data().copies || 0), 0);
+    const fromGlobal = totDoc && totDoc.exists ? (totDoc.data().totalCopies || 0) : 0;
+    const totalCopies = Math.max(fromGlobal, sumFromCounts);
+    if (sumFromCounts > fromGlobal) {
+      getFirestore().collection('SlashAtlasGlobals').doc('totals').set({ totalCopies: sumFromCounts }, { merge: true }).catch(() => {});
+    }
     popCache = { at: Date.now(), rows, totalCopies };
   }
   const counts = {};
