@@ -621,6 +621,7 @@ textarea.film-input{resize:vertical;min-height:110px}
 .txn-err{color:#e07070;font-size:12px;font-weight:600}
 .txn-mut{color:var(--mut);font-size:12px}
 .txn-more{margin-top:10px;width:100%}
+.film-gen-ad{margin-top:24px;text-align:center}
 .film-progress{margin-top:24px}
 .film-progress-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
 .film-ps{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mut)}

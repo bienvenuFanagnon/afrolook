@@ -293,6 +293,8 @@
     var res = $('#film-result');
     if (!res) return;
     res.hidden = false;
+    var genAd = document.getElementById('film-gen-ad');
+    if (genAd && genAd.hidden) { genAd.hidden = false; if (window.saAds) window.saAds.late(); }
     var labels = [T.steps[0], T.steps[1], T.steps[2]];
     var html = '<div class="film-progress"><div class="film-progress-steps">';
     for (var i = 0; i < 3; i++) {
@@ -308,6 +310,8 @@
 
   function showDone(videoUrl, episodeNumber) {
     if (window.saTrack) window.saTrack('film_done', { f: 'film', ep: episodeNumber || 0 });
+    var genAd = document.getElementById('film-gen-ad');
+    if (genAd) genAd.hidden = true;
     var res = $('#film-result');
     if (!res) return;
     var epBadge = episodeNumber ? '<span class="film-ep-badge">' + T.episodeBadge + ' ' + episodeNumber + '</span>' : '';
@@ -318,6 +322,8 @@
 
   function errText(code) { return (T.e && T.e[code]) || T.err; }
   function showErr(msg) {
+    var genAd = document.getElementById('film-gen-ad');
+    if (genAd) genAd.hidden = true;
     var msg2 = $('#film-msg');
     if (msg2) { msg2.textContent = (msg ? errText(msg) : T.err); msg2.className = 'fmsg'; }
     var sub = $('#film-submit');
