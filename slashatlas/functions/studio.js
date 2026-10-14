@@ -14,7 +14,8 @@ const SECRETS = [GEMINI_API_KEY, FEEXPAY_API_KEY];
 const db = () => getFirestore();
 const FEEXPAY_SHOP = 'crZfM9il1xK9uJ6';
 const FEEXPAY_API = 'https://api-v2.feexpay.me/api/transactions/public';
-const IMAGE_MODEL = 'gemini-3.1-flash-image';
+// Modèles image en ordre de priorité : si le premier retourne 404/503, on passe au suivant
+const IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
 
 // Un crédit = une génération (ou une correction). Prix en FCFA, hors frais de paiement (ajoutés au client).
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
@@ -291,21 +292,31 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
 
 async function callGemini(parts, ratio) {
   const body = { contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: ratio } } };
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 100000);
-  try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent`, {
-      method: 'POST', signal: ctl.signal,
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY.value() },
-      body: JSON.stringify(body),
-    });
-    const j = await r.json();
-    if (j.error) { console.error('gemini', j.error.code, String(j.error.message).slice(0, 200)); throw fail(502, j.error.code === 402 || j.error.code === 429 ? 'busy' : 'gemini_error'); }
-    const part = (j.candidates?.[0]?.content?.parts || []).find((p) => p.inlineData || p.inline_data);
-    const d = part && (part.inlineData || part.inline_data);
-    if (!d) { console.error('gemini sans image', JSON.stringify(j.promptFeedback || j.candidates?.[0]?.finishReason || '')); throw fail(422, 'refused'); }
-    return { data: d.data, mime: d.mimeType || d.mime_type || 'image/png' };
-  } finally { clearTimeout(timer); }
+  let lastErr = null;
+  for (const model of IMAGE_MODELS) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 100000);
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST', signal: ctl.signal,
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY.value() },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json();
+      if (j.error) {
+        const code = j.error.code;
+        console.error('gemini', model, code, String(j.error.message).slice(0, 200));
+        // 404 = modèle introuvable → essayer le suivant
+        if (code === 404) { lastErr = fail(502, 'gemini_unavailable'); continue; }
+        throw fail(502, code === 402 || code === 429 ? 'busy' : 'gemini_error');
+      }
+      const part = (j.candidates?.[0]?.content?.parts || []).find((p) => p.inlineData || p.inline_data);
+      const d = part && (part.inlineData || part.inline_data);
+      if (!d) { console.error('gemini sans image', model, JSON.stringify(j.promptFeedback || j.candidates?.[0]?.finishReason || '')); throw fail(422, 'refused'); }
+      return { data: d.data, mime: d.mimeType || d.mime_type || 'image/png' };
+    } finally { clearTimeout(timer); }
+  }
+  throw lastErr || fail(502, 'gemini_unavailable');
 }
 
 async function generate(u, b) {
