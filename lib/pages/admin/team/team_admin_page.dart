@@ -86,8 +86,10 @@ class _ProfilesTabState extends State<_ProfilesTab> {
     _load();
   }
 
+  String? _error;
+
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
       final res = await FirebaseFunctions.instance.httpsCallable('getTeamProfiles').call();
       final data = Map<String, dynamic>.from(res.data);
@@ -97,9 +99,9 @@ class _ProfilesTabState extends State<_ProfilesTab> {
             (data['profiles'] as List).map((p) => Map<String, dynamic>.from(p)));
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
@@ -199,6 +201,16 @@ class _ProfilesTabState extends State<_ProfilesTab> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     if (_loading) return Center(child: CircularProgressIndicator(color: colors.primary));
+    if (_error != null) return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+        const SizedBox(height: 12),
+        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+        const SizedBox(height: 16),
+        ElevatedButton(onPressed: _load, child: const Text('Réessayer')),
+      ]),
+    ));
 
     return Column(children: [
       Padding(
@@ -278,8 +290,10 @@ class _MembersTabState extends State<_MembersTab> {
     _load();
   }
 
+  String? _error;
+
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
       final results = await Future.wait([
         FirebaseFunctions.instance.httpsCallable('getTeamMembers').call(),
@@ -295,9 +309,9 @@ class _MembersTabState extends State<_MembersTab> {
             (pData['profiles'] as List).map((p) => Map<String, dynamic>.from(p)));
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
@@ -410,6 +424,16 @@ class _MembersTabState extends State<_MembersTab> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     if (_loading) return Center(child: CircularProgressIndicator(color: colors.primary));
+    if (_error != null) return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+        const SizedBox(height: 12),
+        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+        const SizedBox(height: 16),
+        ElevatedButton(onPressed: _load, child: const Text('Réessayer')),
+      ]),
+    ));
 
     return Column(children: [
       Padding(

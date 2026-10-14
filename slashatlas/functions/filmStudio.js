@@ -17,7 +17,7 @@ function calcCost(duration, watermark, customAudio) {
     - (watermark ? WATERMARK_DISCOUNT : 0)
     - (customAudio ? CUSTOM_AUDIO_DISCOUNT : 0));
 }
-const SCRIPT_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+const SCRIPT_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 const GEMINI_API_KEY = studio.GEMINI_API_KEY;
 
 function clamp(s, n) { return clean(s, n); }
@@ -198,7 +198,7 @@ async function generateScript(params, seriesData, prevEpisodes) {
     });
     if (!r.ok) {
       console.error('gemini script', model, r.status);
-      if (r.status === 404) { lastErr = new Error('gemini_unavailable'); continue; }
+      if (r.status === 404 || r.status === 429 || r.status === 503) { lastErr = new Error('gemini_unavailable'); continue; }
       throw new Error('gemini_' + r.status);
     }
     const d = await r.json();
