@@ -9,7 +9,7 @@ const { db, bump, clean, spendCredits } = studio;
 const FILM_COST = { 2: 10, 3: 15 };
 const WATERMARK_DISCOUNT = 1;  // -1 crédit si mention "afrolook.com" dans la vidéo
 const CUSTOM_AUDIO_DISCOUNT = 2; // -2 crédits si l'utilisateur importe son propre audio
-const FILM_LIMITS = { userPerDay: 3, globalPerDay: 30 };
+const FILM_LIMITS = { userPerDay: 999, globalPerDay: 500 };
 
 function calcCost(duration, watermark, customAudio) {
   const base = FILM_COST[[2, 3].includes(+duration) ? +duration : 2];
@@ -17,7 +17,7 @@ function calcCost(duration, watermark, customAudio) {
     - (watermark ? WATERMARK_DISCOUNT : 0)
     - (customAudio ? CUSTOM_AUDIO_DISCOUNT : 0));
 }
-const SCRIPT_MODEL = 'gemini-2.5-flash';
+const SCRIPT_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 const GEMINI_API_KEY = studio.GEMINI_API_KEY;
 
 function clamp(s, n) { return clean(s, n); }
@@ -184,22 +184,30 @@ async function generateScript(params, seriesData, prevEpisodes) {
   const prompt = isSerie
     ? buildEpisodePrompt(params, seriesData, prevEpisodes || [], lang)
     : buildPrompt(params, lang);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${SCRIPT_MODEL}:generateContent`;
   const body = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.8, maxOutputTokens: 4096 },
   };
-  const r = await fetch(url, {
-    method: 'POST', signal: AbortSignal.timeout(45000),
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY.value() },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error('gemini_' + r.status);
-  const d = await r.json();
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('no_json');
-  return JSON.parse(match[0]);
+  let lastErr = null;
+  for (const model of SCRIPT_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const r = await fetch(url, {
+      method: 'POST', signal: AbortSignal.timeout(45000),
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY.value() },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      console.error('gemini script', model, r.status);
+      if (r.status === 404) { lastErr = new Error('gemini_unavailable'); continue; }
+      throw new Error('gemini_' + r.status);
+    }
+    const d = await r.json();
+    const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('no_json');
+    return JSON.parse(match[0]);
+  }
+  throw lastErr || new Error('gemini_unavailable');
 }
 
 async function dailyCount(col, key) {

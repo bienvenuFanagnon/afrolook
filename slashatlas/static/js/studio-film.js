@@ -14,6 +14,18 @@
       download: 'Télécharger la vidéo',
       err: 'Une erreur est survenue. Vos crédits n\'ont pas été débités.',
       errCred: 'Crédits insuffisants.',
+      e: {
+        rate_user: 'Vous avez atteint le nombre maximum de films pour aujourd\'hui. Revenez demain.',
+        rate_global: 'Le service est saturé pour aujourd\'hui. Réessayez demain.',
+        gemini_unavailable: 'Le service de génération d\'images est temporairement indisponible. Réessayez dans quelques minutes.',
+        gemini_error: 'La génération a échoué. Vos crédits n\'ont pas été débités. Réessayez.',
+        gemini_404: 'Le modèle d\'IA est indisponible. Réessayez dans quelques instants.',
+        busy: 'Service très sollicité. Réessayez dans un instant.',
+        no_credits: 'Crédits insuffisants pour créer ce film.',
+        missing_fields: 'Veuillez remplir tous les champs obligatoires.',
+        no_json: 'Erreur de génération du scénario. Réessayez.',
+        server: 'Erreur du service. Réessayez.',
+      },
       credLink: 'Recharger',
       wait: 'La vidéo prend 3 à 6 minutes. Ne fermez pas cette page.',
       steps: ['Scénario', 'Images & voix', 'Assemblage'],
@@ -39,6 +51,18 @@
       download: 'Download the video',
       err: 'An error occurred. Your credits were not deducted.',
       errCred: 'Not enough credits.',
+      e: {
+        rate_user: 'You have reached the maximum number of films for today. Come back tomorrow.',
+        rate_global: 'The service is fully booked for today. Try again tomorrow.',
+        gemini_unavailable: 'The image generation service is temporarily unavailable. Try again in a few minutes.',
+        gemini_error: 'Generation failed. Your credits were not deducted. Please try again.',
+        gemini_404: 'The AI model is currently unavailable. Try again in a moment.',
+        busy: 'The service is very busy. Try again in a moment.',
+        no_credits: 'Not enough credits to create this film.',
+        missing_fields: 'Please fill in all required fields.',
+        no_json: 'Script generation error. Please try again.',
+        server: 'Service error. Please try again.',
+      },
       credLink: 'Top up',
       wait: 'The video takes 3 to 6 minutes. Do not close this page.',
       steps: ['Script', 'Images & voice', 'Assembly'],
@@ -292,9 +316,10 @@
     if (currentSeriesId) loadSeriesList();
   }
 
+  function errText(code) { return (T.e && T.e[code]) || T.err; }
   function showErr(msg) {
     var msg2 = $('#film-msg');
-    if (msg2) { msg2.textContent = msg || T.err; msg2.className = 'fmsg'; }
+    if (msg2) { msg2.textContent = (msg ? errText(msg) : T.err); msg2.className = 'fmsg'; }
     var sub = $('#film-submit');
     if (sub) { sub.disabled = false; sub.textContent = isFr ? 'Réessayer' : 'Retry'; }
   }
