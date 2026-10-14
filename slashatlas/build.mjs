@@ -252,7 +252,7 @@ const HOME = {
     steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
-    statPv: 'créateurs actifs', statCp: 'commandes lancées',
+    statPv: 'créateurs actifs', statCp: 'commandes copiées',
   },
   en: {
     h1: ['Copy. Paste.', 'Your pro visual is ready.'],
@@ -261,7 +261,7 @@ const HOME = {
     steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
-    statPv: 'active creators', statCp: 'commands launched',
+    statPv: 'active creators', statCp: 'commands copied',
   },
 };
 const ICON = {

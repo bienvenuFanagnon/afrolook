@@ -69,7 +69,7 @@ function body(req) {
 }
 
 const CMDS = require('./commands.json');
-let popCache = { at: 0, rows: [] };
+let popCache = { at: 0, rows: [], totalCopies: 0 };
 let pvCache = { at: 0, pv: 0 };
 /** Vues totales des 90 derniers jours — cache 1 h. */
 async function cachedTotalPv() {
@@ -84,7 +84,10 @@ async function cachedTotalPv() {
 async function popular(l) {
   if (Date.now() - popCache.at > 900000) {
     const q = await getFirestore().collection('SlashAtlasCounts').orderBy('score', 'desc').limit(150).get();
-    popCache = { at: Date.now(), rows: q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0, tries: d.data().tries || 0, views: d.data().views || 0 })).filter((r) => CMDS.commands[r.slug]) };
+    const rows = q.docs.map((d) => ({ slug: d.id, copies: d.data().copies || 0, tries: d.data().tries || 0, views: d.data().views || 0 })).filter((r) => CMDS.commands[r.slug]);
+    const totDoc = await getFirestore().collection('SlashAtlasGlobals').doc('totals').get().catch(() => null);
+    const totalCopies = totDoc && totDoc.exists ? (totDoc.data().totalCopies || 0) : rows.reduce((s, r) => s + r.copies, 0);
+    popCache = { at: Date.now(), rows, totalCopies };
   }
   const counts = {};
   popCache.rows.forEach((r) => { counts[r.slug] = [r.copies, r.tries, r.views]; });
@@ -92,7 +95,7 @@ async function popular(l) {
     const c = CMDS.commands[r.slug];
     return { slug: r.slug, copies: r.copies, tries: r.tries, views: r.views, catId: c.cat, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
   });
-  const globalCopies = popCache.rows.reduce((s, r) => s + r.copies, 0);
+  const globalCopies = popCache.totalCopies;
   const globalPv = await cachedTotalPv().catch(() => 0);
   return { counts, top, globalCopies, globalPv };
 }
@@ -100,6 +103,9 @@ async function popular(l) {
 async function publicCount(slug, field) {
   if (!CMDS.commands[slug]) return;
   try { await getFirestore().collection('SlashAtlasCounts').doc(slug).set({ [field]: FieldValue.increment(1), score: FieldValue.increment(field === 'tries' ? 10 : field === 'views' ? 0.2 : 1), at: FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { console.error('count', e.message); }
+  if (field === 'copies') {
+    getFirestore().collection('SlashAtlasGlobals').doc('totals').set({ totalCopies: FieldValue.increment(1) }, { merge: true }).catch((e) => console.error('gtotal', e.message));
+  }
 }
 async function statsWrite(b, req) {
   // Les clés pointées doivent passer par update() pour créer des maps imbriquées.
