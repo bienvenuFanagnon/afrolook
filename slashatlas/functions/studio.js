@@ -217,15 +217,17 @@ async function addAdFree(uid, days, ref, meta = {}) {
     return { applied: true, until };
   });
 }
-async function spendCredits(uid, n, ref) {
+async function spendCredits(uid, n, ref, ledgerId) {
   const user = db().collection('StudioUsers').doc(uid);
-  const ledger = db().collection('StudioLedger').doc(`generation_${ref}`);
+  const docId = ledgerId ? `generation_${ledgerId}` : `generation_${ref}`;
+  const ledger = db().collection('StudioLedger').doc(docId);
   await db().runTransaction(async (tx) => {
     const s = await tx.get(user);
     if (!s.exists || (s.data().credits || 0) < n) throw fail(402, 'insufficient_credits');
     tx.update(user, { credits: FieldValue.increment(-n) });
     tx.set(ledger, { uid, delta: -n, type: 'generation', ref, at: FieldValue.serverTimestamp() });
   });
+  return true;
 }
 
 // ───────── génération ─────────
@@ -668,6 +670,78 @@ async function adminOrders(b) {
   };
 }
 
+/** Profil complet d'un utilisateur pour l'admin : solde, ledger, commandes, générations, films. */
+async function adminUserDetail(emailOrUid) {
+  const iso = (v) => (v && v.toDate ? v.toDate().toISOString() : v);
+  let uid = null;
+  let userDoc = null;
+
+  // Chercher par email ou uid
+  const q = await db().collection('StudioUsers').where('email', '==', clean(emailOrUid, 160).toLowerCase()).limit(1).get();
+  if (!q.empty) {
+    uid = q.docs[0].id;
+    userDoc = q.docs[0];
+  } else {
+    // Essayer comme uid direct
+    const d = await db().collection('StudioUsers').doc(clean(emailOrUid, 128)).get();
+    if (d.exists) { uid = d.id; userDoc = d; }
+  }
+  if (!uid) throw fail(404, 'no_user');
+
+  const u = userDoc.data();
+  const result = {
+    uid,
+    email: u.email || '',
+    credits: u.credits || 0,
+    adFreeUntil: iso(u.adFreeUntil) || null,
+    createdAt: iso(u.createdAt) || null,
+    ledger: [],
+    orders: [],
+    generations: [],
+    films: [],
+    videos: [],
+  };
+
+  // Ledger complet (toutes opérations : débits, crédits, remboursements)
+  const ledgerSnap = await db().collection('StudioLedger').where('uid', '==', uid).get();
+  result.ledger = ledgerSnap.docs.map((d) => {
+    const x = d.data();
+    return { id: d.id, type: x.type, delta: x.delta || 0, ref: x.ref || '', note: x.note || x.reason || '', at: iso(x.at) };
+  }).sort((a, b) => (b.at || '') > (a.at || '') ? 1 : -1);
+
+  // Commandes (achats Mobile Money)
+  const ordersSnap = await db().collection('StudioOrders').where('uid', '==', uid).limit(50).get();
+  result.orders = ordersSnap.docs.map((d) => {
+    const o = d.data();
+    return { id: d.id, credits: o.credits || 0, days: o.days || 0, amount: o.total || o.price || 0, currency: o.currency || 'XOF', operator: o.operator || '', status: o.status, phone: o.phone || '', createdAt: iso(o.createdAt) };
+  }).sort((a, b) => (b.createdAt || '') > (a.createdAt || '') ? 1 : -1);
+
+  // Générations (images/visuels)
+  const genSnap = await db().collection('StudioGenerations').where('uid', '==', uid).orderBy('createdAt', 'desc').limit(50).get();
+  result.generations = genSnap.docs.map((d) => {
+    const g = d.data();
+    return { id: d.id, type: g.type || 'image', status: g.status, instruction: (g.instruction || '').slice(0, 80), at: iso(g.createdAt) };
+  });
+
+  // Vidéos
+  const vidSnap = await db().collection('StudioVideos').where('uid', '==', uid).limit(20).get();
+  result.videos = vidSnap.docs.map((d) => {
+    const v = d.data();
+    return { id: d.id, status: v.status, at: iso(v.createdAt), error: v.error || '' };
+  });
+
+  // Films (si collection existe)
+  try {
+    const filmSnap = await db().collection('FilmJobs').where('uid', '==', uid).limit(30).get();
+    result.films = filmSnap.docs.map((d) => {
+      const f = d.data();
+      return { id: d.id, title: f.title || '', duration: f.duration, lang: f.lang, cost: f.cost, status: f.status, error: f.error || '', videoUrl: f.videoUrl || null, at: iso(f.createdAt) };
+    }).sort((a, b) => (b.at || '') > (a.at || '') ? 1 : -1);
+  } catch (_) { /* collection inexistante */ }
+
+  return result;
+}
+
 async function getBrandProfile(u) {
   const doc = await db().collection('StudioUsers').doc(u.uid).get();
   const d = doc.exists ? doc.data() : {};
@@ -680,4 +754,4 @@ async function saveBrandProfile(u, b) {
   return profile;
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders };
+module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail };

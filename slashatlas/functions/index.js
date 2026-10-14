@@ -406,6 +406,15 @@ exports.slashatlasApi = onRequest(
         if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
         return res.status(200).json(await studio.adminOrders(body(req)));
       }
+      if (path.endsWith('/admin/user-detail')) {
+        if (limited('aud' + ipKey, 20, 60000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        const b = body(req);
+        if (!b.q) return res.status(400).json({ error: 'missing_q' });
+        return res.status(200).json(await studio.adminUserDetail(b.q));
+      }
       if (/\/admin\/(grant|ads)$/.test(path)) {
         if (limited('a' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
         const u = await whoIs(req);

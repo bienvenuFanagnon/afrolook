@@ -272,9 +272,11 @@ async function createFilm(u, params) {
   const globalCount = await dailyCount('FilmGlobalStats', 'count');
   if (globalCount >= FILM_LIMITS.globalPerDay) return { status: 429, error: 'rate_global' };
 
-  // Vérification et débit des crédits
-  const ok = await spendCredits(u.uid, cost, 'film_' + duration + 'min');
-  if (!ok) return { status: 402, error: 'no_credits' };
+  // Créer la référence du job avant le débit pour garantir un ID unique dans le ledger
+  const jobRef = db().collection('FilmJobs').doc();
+
+  // Vérification et débit des crédits (ledgerId = jobRef.id → une entrée unique par film)
+  await spendCredits(u.uid, cost, 'film_' + duration + 'min', jobRef.id);
 
   // Série : créer ou récupérer
   let seriesData = null;
@@ -284,9 +286,6 @@ async function createFilm(u, params) {
     if (params.seriesId && !seriesData) return { status: 404, error: 'series_not_found' };
     episodeNumber = (seriesData.episodeCount || 0) + 1;
   }
-
-  // Création du job Firestore
-  const jobRef = db().collection('FilmJobs').doc();
   const jobData = {
     uid: u.uid,
     email: u.email,

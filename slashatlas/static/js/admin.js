@@ -54,6 +54,7 @@
     var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div class="tw"><table><thead><tr><th>Date</th><th>E-mail</th><th>Pack</th><th>Total</th><th>Moyen</th><th>Statut</th><th>CGV</th><th></th></tr></thead><tbody>' + ((d.orders || []).map(function (x) { return '<tr><td>' + fmt(x.at) + '</td><td>' + esc(x.email) + '</td><td>' + esc(x.credits) + ' cr.</td><td>' + fmtN(x.total) + '</td><td>' + esc(x.operator) + '</td><td>' + esc(x.status) + '</td><td>' + esc(x.terms || '—') + '</td><td><button class="btn gl sm" type="button" data-ev="' + esc(x.id) + '">Preuves</button></td></tr>'; }).join('') || '<tr><td colspan="8">Aucune commande.</td></tr>') + '</tbody></table></div><p class="hint">« Preuves » télécharge le dossier de litige.</p></div>' +
       '<div class="adm-card" id="adm-allords"><h3>Toutes les transactions <small id="adm-ords-count" style="font-weight:400;font-size:13px;margin-left:6px;color:var(--mut)"></small></h3><button class="btn gl sm" type="button" id="adm-load-ords">Charger les transactions</button><div id="adm-ords-tbl" style="margin-top:12px"></div></div>';
     var usr = '<div class="adm-card"><h3>Offrir ou retirer des crédits</h3><form class="adm-form" id="grant-f"><input id="g-email" type="email" required placeholder="E-mail du compte Studio" autocomplete="off"><input id="g-n" type="number" required min="-500" max="500" step="1" placeholder="Crédits (ex. 5 ou -5)"><input id="g-note" type="text" maxlength="120" placeholder="Motif (ex. geste commercial)"><button class="btn pri sm" type="submit">Appliquer</button></form><p class="fmsg" id="g-msg" role="status" aria-live="polite"></p></div>' +
+      '<div class="adm-card" id="adm-usr-search"><h3>Profil utilisateur</h3><form class="adm-form" id="usr-search-f"><input id="usr-q" type="text" placeholder="E-mail ou UID" autocomplete="off" style="flex:1"><button class="btn gl sm" type="submit">Rechercher</button></form><div id="usr-detail"></div></div>' +
       '<div class="adm-card"><h3>Derniers comptes Studio (' + (d.studioUsers || 0) + ')</h3><div class="tw"><table><thead><tr><th>E-mail</th><th>Nom</th><th>Crédits</th><th>Inscrit</th><th>Dernière visite</th></tr></thead><tbody>' + ((d.users || []).map(function (x) { return '<tr><td>' + esc(x.email) + '</td><td>' + esc(x.name) + '</td><td>' + esc(x.credits) + '</td><td>' + fmt(x.at) + '</td><td>' + fmt(x.seen) + '</td></tr>'; }).join('') || '<tr><td colspan="5">Aucun compte.</td></tr>') + '</tbody></table></div></div>';
     var A = d.ads || {}, adv = '<div class="adm-card"><h3>Publicité Google AdSense</h3><p class="hint">Quand elle est activée, les blocs apparaissent sur l\'accueil, le tutoriel, les packs et, sous le bouton « Copier » (le bloc « rectangle »), seulement après la copie d\'une commande (jamais sur « Générer ici »). Les détenteurs du pass sans pub n\'en voient aucun. Aucun redéploiement nécessaire.</p><form class="adm-form" id="ads-f"><label class="chk"><input type="checkbox" id="a-on"' + (A.enabled ? ' checked' : '') + '> Publicité AdSense activée</label><label class="chk"><input type="checkbox" id="a-afl"' + (A.afrolook ? ' checked' : '') + '> Publicité Afrolook activée (remplace AdSense si aucun bloc configuré)</label><input id="a-client" placeholder="ID éditeur : ca-pub-1234567890123456" value="' + esc(A.client) + '"><input id="a-lb" placeholder="ID du bloc « bandeau » (chiffres)" value="' + esc((A.slots || {}).lb) + '"><input id="a-rect" placeholder="ID du bloc « rectangle » (chiffres)" value="' + esc((A.slots || {}).rect) + '"><button class="btn pri sm" type="submit">Enregistrer</button></form><p class="fmsg" id="a-msg" role="status" aria-live="polite"></p></div>' +
       '<div class="adm-card"><h3>Avant d\'activer</h3><ul class="adm-list"><li>Compte AdSense créé et site ajouté (domaine propre, par exemple slashatlas.com).</li><li>Site en ligne et indexable (<code>indexable: true</code> dans la configuration) avec le contenu complet.</li><li>Le fichier <a href="/ads.txt" target="_blank" rel="noopener">/ads.txt</a> s\'affiche quand la publicité est active.</li><li>Dans AdSense, « Confidentialité et messagerie » : message de consentement européen activé et publié.</li><li>Créer deux blocs adaptatifs (bandeau, rectangle) et coller leurs identifiants ci-dessus.</li></ul></div>';
@@ -115,6 +116,43 @@
         if (r.status === 200) { m.textContent = 'Fait. Nouveau solde : ' + r.data.credits + ' crédits.'; m.className = 'fmsg ok'; $('#g-n').value = ''; }
         else { m.textContent = r.data && r.data.error === 'no_user' ? 'Aucun compte Studio avec cet e-mail.' : 'Échec (' + (r.data && r.data.error) + ').'; m.className = 'fmsg'; }
       });
+    });
+    var usf = $('#usr-search-f'); if (usf) usf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var q = ($('#usr-q') || {}).value || ''; if (!q) return;
+      var det = $('#usr-detail'); if (!det) return;
+      det.innerHTML = '<p class="hint">Chargement…</p>';
+      window.slashAuth.call('admin/user-detail', { q: q }).then(function (r) {
+        if (r.status !== 200) { det.innerHTML = '<p class="hint">' + esc((r.data && r.data.error) || 'Erreur') + '</p>'; return; }
+        var u = r.data;
+        var ldgHtml = (u.ledger || []).map(function (l) {
+          var sign = l.delta > 0 ? '<span class="txn-ok">+' + l.delta + '</span>' : '<span class="txn-err">' + l.delta + '</span>';
+          var badge = { purchase: '💳 Achat', grant: '🎁 Don', refund: '↩ Remboursement', generation: '🖼 Génération', adfree: '🔕 Sans-pub' }[l.type] || l.type;
+          return '<tr><td class="txn-date">' + fmt(l.at ? new Date(l.at).getTime() : null) + '</td><td>' + sign + '</td><td>' + esc(badge) + '</td><td class="txn-mut">' + esc(l.ref) + '</td><td class="txn-mut">' + esc(l.note) + '</td></tr>';
+        }).join('') || '<tr><td colspan="5">Aucune entrée.</td></tr>';
+        var ordsHtml = (u.orders || []).map(function (o) {
+          return '<tr><td class="txn-date">' + fmt(o.createdAt ? new Date(o.createdAt).getTime() : null) + '</td><td>' + esc(o.credits) + ' cr.</td><td>' + fmtN(o.amount) + ' ' + esc(o.currency) + '</td><td>' + esc(o.operator) + '</td><td>' + esc(o.phone) + '</td><td>' + esc(o.status) + '</td></tr>';
+        }).join('') || '<tr><td colspan="6">Aucune commande.</td></tr>';
+        var genHtml = (u.generations || []).slice(0, 10).map(function (g) {
+          return '<tr><td class="txn-date">' + fmt(g.at ? new Date(g.at).getTime() : null) + '</td><td>' + esc(g.type) + '</td><td>' + esc(g.status) + '</td><td class="txn-mut">' + esc(g.instruction) + '</td></tr>';
+        }).join('') || '<tr><td colspan="4">Aucune génération.</td></tr>';
+        var filmHtml = (u.films || []).map(function (f) {
+          return '<tr><td class="txn-date">' + fmt(f.at ? new Date(f.at).getTime() : null) + '</td><td>' + esc(f.title) + '</td><td>' + esc(f.duration) + 'min / ' + esc(f.lang) + '</td><td>' + esc(f.cost) + ' cr.</td><td>' + esc(f.status) + '</td><td>' + esc(f.error) + '</td></tr>';
+        }).join('') || '<tr><td colspan="6">Aucun film.</td></tr>';
+        det.innerHTML =
+          '<div style="margin-top:12px;padding:10px 0;border-top:1px solid var(--sep)">' +
+          '<b>' + esc(u.email) + '</b> &nbsp;<span class="hint">uid: ' + esc(u.uid) + '</span><br>' +
+          '<span style="font-size:22px;font-weight:700;margin-top:4px;display:inline-block">' + (u.credits || 0) + ' crédits</span>' +
+          (u.adFreeUntil ? ' &nbsp;<span class="hint">Sans-pub jusqu\'au ' + fmt(new Date(u.adFreeUntil).getTime()) + '</span>' : '') +
+          '</div>' +
+          '<h4 style="margin:14px 0 6px">Ledger — toutes opérations (' + (u.ledger || []).length + ')</h4>' +
+          '<div class="tw"><table><thead><tr><th>Date</th><th>Δ</th><th>Type</th><th>Réf.</th><th>Note</th></tr></thead><tbody>' + ldgHtml + '</tbody></table></div>' +
+          '<h4 style="margin:14px 0 6px">Achats (' + (u.orders || []).length + ')</h4>' +
+          '<div class="tw"><table><thead><tr><th>Date</th><th>Crédits</th><th>Montant</th><th>Opérateur</th><th>Tél.</th><th>Statut</th></tr></thead><tbody>' + ordsHtml + '</tbody></table></div>' +
+          '<h4 style="margin:14px 0 6px">Générations (' + (u.generations || []).length + ')</h4>' +
+          '<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Statut</th><th>Instruction</th></tr></thead><tbody>' + genHtml + '</tbody></table></div>' +
+          (u.films && u.films.length ? '<h4 style="margin:14px 0 6px">Films (' + u.films.length + ')</h4><div class="tw"><table><thead><tr><th>Date</th><th>Titre</th><th>Durée/Langue</th><th>Coût</th><th>Statut</th><th>Erreur</th></tr></thead><tbody>' + filmHtml + '</tbody></table></div>' : '');
+      }).catch(function () { det.innerHTML = '<p class="hint">Erreur réseau.</p>'; });
     });
     var af = $('#ads-f'); if (af) af.addEventListener('submit', function (e) {
       e.preventDefault(); var m = $('#a-msg'); m.textContent = '…'; m.className = 'fmsg';
