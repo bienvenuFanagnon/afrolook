@@ -381,9 +381,15 @@
   Array.prototype.forEach.call(document.querySelectorAll('.rtab'), function (t) { t.addEventListener('click', function () { showRail(t.dataset.rail); }); });
   function sortList(counts) {
     var list = document.getElementById('list'); if (!list) return;
+    var adCard = list.querySelector('.card-ad');
+    if (adCard) adCard.remove();
     var items = Array.prototype.slice.call(list.children);
-    if (items.filter(function (c) { return score(c.dataset.slug) >= MIN; }).length < 3) return;
+    if (items.filter(function (c) { return score(c.dataset.slug) >= MIN; }).length < 3) {
+      if (adCard) { var ref8 = list.children[8]; if (ref8) list.insertBefore(adCard, ref8); else list.appendChild(adCard); }
+      return;
+    }
     items.map(function (c, i) { return [c, i]; }).sort(function (a, b) { return score(b[0].dataset.slug) - score(a[0].dataset.slug) || a[1] - b[1]; }).forEach(function (x) { list.appendChild(x[0]); });
+    if (adCard) { var ref9 = list.children[8]; if (ref9) list.insertBefore(adCard, ref9); else list.appendChild(adCard); }
     if (window.saReorder) window.saReorder();
   }
   function animStat(el, n) {
