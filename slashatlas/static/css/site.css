@@ -233,7 +233,7 @@ body[data-page=home] .tuto .lead,body[data-page=home] .tuto .d,body[data-page=ho
 
 /* vraies images générées */
 .poster.img{background:#0b0b0d;padding:0}
-.poster.img>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 35%}
+.poster.img>img:not(.afl-app-logo){position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 35%}
 .poster.img .tag{z-index:1}.poster.img .shape{display:none}
 .poster .ai{position:absolute;right:8px;top:8px;z-index:1;font:600 9.5px var(--mono);letter-spacing:.04em;color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:3px 8px;backdrop-filter:blur(6px)}
 .card .poster .ai{display:none}
@@ -776,9 +776,11 @@ textarea.film-input{resize:vertical;min-height:110px}
 .afl-btn-dl:hover{background:#e6a620;color:#000}
 /* logo appli Afrolook dans les pubs */
 .afl-l-img{position:relative}
-.afl-app-logo{position:absolute;bottom:7px;left:7px;width:28px;height:28px;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,.5);object-fit:cover;pointer-events:none;z-index:1}
+.afl-app-logo{position:absolute;bottom:7px;left:7px;width:28px;height:28px;border-radius:7px;box-shadow:0 2px 8px rgba(0,0,0,.5);object-fit:cover;pointer-events:none;z-index:2}
 .afl-app-logo-sm{width:22px;height:22px;border-radius:5px;bottom:5px;left:5px}
-.poster.img .afl-app-logo{bottom:8px;left:8px}
+/* pub native : réserve sa place même avant chargement */
+.card.card-ad{aspect-ratio:4/5;transition:opacity .2s}
+.card.card-ad:empty{opacity:0;pointer-events:none}
 /* toast copie */
 #afl-copy-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(calc(100% + 24px));width:min(360px,calc(100vw - 32px));z-index:1000;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);transition:transform .32s cubic-bezier(.34,1.4,.64,1);pointer-events:none}
 #afl-copy-toast.on{transform:translateX(-50%) translateY(0);pointer-events:auto}

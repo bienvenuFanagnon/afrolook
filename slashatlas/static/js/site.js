@@ -455,6 +455,7 @@
       if (!id) {
         // Pas de slot AdSense : utiliser la pub Afrolook si activée
         if (a.afrolook && window.saAfrolookAds) { el.dataset.filled = '1'; window.saAfrolookAds.fill(el); }
+        else { el.hidden = true; }
         return;
       }
       el.dataset.filled = '1';

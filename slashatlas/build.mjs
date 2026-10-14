@@ -417,7 +417,7 @@ ${videoBlock(l)}
 function cmdsPage(l) {
   const t = T[l].cmds, p = P[l];
   const chips = [`<button class="chip" data-cat="" aria-pressed="true" type="button">${t.all}</button>`, ...CATEGORIES.map((c) => `<button class="chip" data-cat="${c.id}" aria-pressed="false" type="button">${c[l]}</button>`)].join('');
-  const nativeAdSlot = `<article class="card card-ad" data-ad="native" hidden aria-hidden="true"></article>`;
+  const nativeAdSlot = `<article class="card card-ad" data-ad="native" aria-hidden="true"></article>`;
   const body = `<div class="wrap"><h1 class="big sm">${t.h}</h1><div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}"></div><div class="chips2">${chips}</div>${ad('lb', l)}<div class="grid" id="list">${COMMANDS.slice(0, 8).map((c) => card(c, l)).join('')}${nativeAdSlot}${COMMANDS.slice(8).map((c) => card(c, l)).join('')}</div><p class="none" id="none" hidden>${t.none}</p><div class="cta center"><button class="btn gl" id="more" type="button" hidden></button></div>${band(l)}</div>`;
   emit(l, 'cmds', p.cmds, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.cmds, P.en.cmds) });
   if (l === 'fr') pages.push({ fr: P.fr.cmds, en: P.en.cmds });
