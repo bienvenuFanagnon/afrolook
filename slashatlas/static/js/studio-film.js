@@ -61,6 +61,32 @@
   var pollTimer = null;
   var currentSeriesId = null; // série sélectionnée pour le prochain épisode
   var uploadedAudioPath = null; // chemin Firebase Storage de l'audio importé
+  var userBalance = null;
+
+  function refreshBalance(onDone) {
+    if (!window.slashAuth) { if (onDone) onDone(); return; }
+    window.slashAuth.call('me').then(function (r) {
+      if (r && r.status === 200 && r.data) {
+        userBalance = r.data.credits || 0;
+        var balEl = document.getElementById('film-bal');
+        if (balEl) balEl.textContent = String(userBalance);
+        checkBalWarning();
+      }
+      if (onDone) onDone();
+    }).catch(function () { if (onDone) onDone(); });
+  }
+
+  function checkBalWarning() {
+    var cost = recalcCost();
+    var warn = document.getElementById('film-cred-warn');
+    if (!warn || userBalance === null) return;
+    if (userBalance < cost) {
+      warn.textContent = (isFr ? 'Solde insuffisant. ' : 'Insufficient balance. ') + (isFr ? 'Rechargez avant de créer.' : 'Top up before creating.');
+      warn.hidden = false;
+    } else {
+      warn.hidden = true;
+    }
+  }
 
   // ── Calcul dynamique du coût ──────────────────────────────────────────────────
   var FILM_COST = { 2: 10, 3: 15 };
@@ -78,6 +104,8 @@
     if (costEl) costEl.textContent = String(cost);
     return cost;
   }
+
+  function recalcCostAndWarn() { recalcCost(); checkBalWarning(); }
 
   // ── Modal crédits insuffisants ────────────────────────────────────────────────
   var credModal = null;
@@ -192,7 +220,12 @@
           tries++;
           window.slashAuth.call('pay/status', { orderId: orderId }).then(function (s) {
             if (s.status !== 200) return;
-            if (s.data.status === 'paid') { clearInterval(ptimer); bmsg(TB.paid, true); if (window.saTrack) window.saTrack('film_pay_done', { f: 'film', m: sel.method }); setTimeout(closeM, 1200); }
+            if (s.data.status === 'paid') {
+              clearInterval(ptimer);
+              bmsg(TB.paid, true);
+              if (window.saTrack) window.saTrack('film_pay_done', { f: 'film', m: sel.method });
+              refreshBalance(function () { setTimeout(closeM, 1200); });
+            }
             else if (s.data.status === 'failed') { clearInterval(ptimer); busyB(btn, false); bmsg(TB.payFailed); }
           });
           if (tries > 60) { clearInterval(ptimer); busyB(btn, false); bmsg(TB.payFailed); }
@@ -298,8 +331,8 @@
   // ── Watermark + dur toggles ───────────────────────────────────────────────────
   var wmChk = $('#film-watermark');
   if (wmChk) {
-    wmChk.addEventListener('change', recalcCost);
-    document.querySelectorAll('input[name="dur"]').forEach(function (r) { r.addEventListener('change', recalcCost); });
+    wmChk.addEventListener('change', recalcCostAndWarn);
+    document.querySelectorAll('input[name="dur"]').forEach(function (r) { r.addEventListener('change', recalcCostAndWarn); });
     recalcCost();
   }
 
@@ -314,7 +347,7 @@
         var nameEl = document.getElementById('film-audio-name');
         if (nameEl) nameEl.textContent = '';
       }
-      recalcCost();
+      recalcCostAndWarn();
     });
   }
 
@@ -528,6 +561,6 @@
     if (wall) wall.hidden = !!u;
     if (frm) frm.hidden = !u;
     if (seriesSection) seriesSection.hidden = !u;
-    if (u) loadSeriesList();
+    if (u) { loadSeriesList(); refreshBalance(); }
   });
 })();

@@ -604,8 +604,10 @@ textarea.film-input{resize:vertical;min-height:110px}
 .film-audio-pick{font-size:13px;padding:7px 14px;cursor:pointer}
 .film-audio-name{font-size:12px;color:var(--mut);word-break:break-all}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.film-cost-row{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mut);padding:2px 0}
+.film-cost-row{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--mut);padding:2px 0;flex-wrap:wrap}
 .film-cost-row b{color:var(--txt);font-size:16px}
+.film-bal-sep{opacity:.4}
+.film-bal-lbl{color:var(--mut)}
 .film-submit{margin-top:4px;width:100%}
 .film-progress{margin-top:24px}
 .film-progress-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}

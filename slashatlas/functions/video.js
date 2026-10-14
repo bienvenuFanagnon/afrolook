@@ -625,7 +625,11 @@ async function ttsToken() {
 }
 function trimPcm(pcm) { let a = 0, b = pcm.length - 1; const th = 400; while (a < b && Math.abs(pcm[a]) < th) a++; while (b > a && Math.abs(pcm[b]) < th) b--; return pcm.slice(Math.max(0, a - 1200), Math.min(pcm.length, b + 2400)); }
 async function tts(text, lang, gender, maxSec) {
-  const token = await ttsToken(); const code = lang === 'en' ? 'en-US' : 'fr-FR'; const name = VOICES[lang === 'en' ? 'en' : 'fr'][gender === 'm' ? 'm' : 'f'];
+  const token = await ttsToken();
+  const langCodes = { fr: 'fr-FR', en: 'en-US', sw: 'sw-KE' };
+  const code = langCodes[lang] || 'fr-FR';
+  const voiceKey = lang === 'en' ? 'en' : 'fr';
+  const name = VOICES[voiceKey][gender === 'm' ? 'm' : 'f'];
   const clean = String(text).replace(/[\[\]<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 420);
   let rate = 1.0, out = null;
   for (let i = 0; i < 3; i++) {

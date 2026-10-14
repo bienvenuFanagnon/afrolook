@@ -23,13 +23,22 @@ const GEMINI_API_KEY = studio.GEMINI_API_KEY;
 function clamp(s, n) { return clean(s, n); }
 
 // ── Prompt film simple ──────────────────────────────────────────────────────
+const LANG_NAMES = { fr: 'français', en: 'English', ewe: 'éwé', ha: 'haoussa', yo: 'yoruba', wo: 'wolof', bm: 'bambara/dioula', mos: 'mooré', fon: 'fon', sw: 'swahili' };
+
 function buildPrompt(params, lang) {
   const { title, synopsis, genre, duration } = params;
   const nScenes = duration === 3 ? 8 : 6;
   const sceneDur = duration === 3 ? 22 : 20;
-  const isFr = lang === 'fr';
+  const isFr = lang === 'fr' || !['fr', 'en'].includes(lang);
+  const isAfricanLang = !['fr', 'en'].includes(lang);
+  const langName = LANG_NAMES[lang] || lang;
+  const voiceInstr = isAfricanLang
+    ? `- voice : texte de la voix off en ${langName} (lu en ${Math.round(sceneDur * 0.4)} mots max, naturel, narratif) — écrire directement en ${langName}, pas en français`
+    : null;
 
   if (isFr) {
+    const voiceLine = voiceInstr || `- voice : texte de la voix off en français (lu en ${Math.round(sceneDur * 0.4)} mots max, naturel, narratif)`;
+    const actionLang = isAfricanLang ? langName : 'français';
     return `Tu es un scénariste professionnel. Écris le scénario d'un ${genre} intitulé "${title}".
 
 Synopsis : ${synopsis}
@@ -38,14 +47,14 @@ Le scénario doit avoir exactement ${nScenes} scènes de ${sceneDur} secondes ch
 
 Pour chaque scène, fournis :
 - setting : description du décor en anglais (30 mots max, pour la génération d'image FLUX : style illustratif, lumière douce, couleurs vives)
-- action : ce que font les personnages (en français, 1-2 phrases)
-- voice : texte de la voix off en français (lu en ${Math.round(sceneDur * 0.4)} mots max, naturel, narratif)
+- action : ce que font les personnages (en ${actionLang}, 1-2 phrases)
+${voiceLine}
 
 Réponds UNIQUEMENT en JSON valide :
 {
   "title": "${title}",
   "genre": "${genre}",
-  "lang": "fr",
+  "lang": "${lang}",
   "scenes": [
     { "id": 1, "setting": "...", "action": "...", "voice": "..." },
     ...
@@ -250,7 +259,7 @@ async function createFilm(u, params) {
   const title = clamp(params.title || '', 80);
   const synopsis = clamp(params.synopsis || '', 3000); // jusqu'à 3000 chars (~500 mots)
   const genre = ['film', 'serie', 'animation', 'conte'].includes(params.genre) ? params.genre : 'film';
-  const lang = ['fr', 'en'].includes(params.lang) ? params.lang : 'fr';
+  const lang = ['fr', 'en', 'ewe', 'ha', 'yo', 'wo', 'bm', 'mos', 'fon', 'sw'].includes(params.lang) ? params.lang : 'fr';
   const watermark = params.watermark !== false; // true par défaut → -1 crédit
   const customAudioPath = clamp(params.customAudioPath || '', 500) || null;
   const cost = calcCost(duration, watermark, !!customAudioPath);
