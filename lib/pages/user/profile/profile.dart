@@ -16,6 +16,8 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../admin/admin_dashboard_page.dart';
+import '../../admin/team/team_admin_page.dart';
+import '../../team/team_hub_page.dart';
 import '../official_account/request_official_account_page.dart';
 import '../../../models/official_account/official_account_enums.dart';
 import '../../../models/official_account/official_account_request.dart';
@@ -57,6 +59,16 @@ class _UserProfilState extends State<UserProfil> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadOfficialRequest());
+  }
+
+  Future<bool> _checkTeamMember(String uid) async {
+    if (uid.isEmpty) return false;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('TeamMembers').doc(uid).get();
+      return doc.exists;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _loadOfficialRequest() async {
@@ -616,8 +628,80 @@ class _UserProfilState extends State<UserProfil> {
                           ),
                         ),
                       ),
+                      SizedBox(height: 10),
+                      // Gestion équipe (admin seulement)
+                      GestureDetector(
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const TeamAdminPage())),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFF534AB7).withOpacity(0.5)),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.group_outlined, color: Color(0xFF534AB7), size: 20),
+                              SizedBox(width: 10),
+                              Text('Gestion d\'équipe',
+                                  style: TextStyle(
+                                      color: Color(0xFF534AB7),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                              Spacer(),
+                              Icon(Icons.arrow_forward_ios_rounded,
+                                  color: Color(0xFF534AB7), size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
                       SizedBox(height: 15),
                     ],
+
+                    // Hub Équipe (membres non-admin)
+                    if (authProvider.loginUserData.role != UserRole.ADM.name)
+                      FutureBuilder<bool>(
+                        future: _checkTeamMember(authProvider.loginUserData.id ?? ''),
+                        builder: (ctx, snap) {
+                          if (snap.data != true) return const SizedBox.shrink();
+                          return Column(children: [
+                            GestureDetector(
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const TeamHubPage())),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF1FAA59), Color(0xFF0D7A3E)],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.dashboard_rounded, color: Colors.white, size: 20),
+                                    SizedBox(width: 10),
+                                    Text('Hub Équipe',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14)),
+                                    Spacer(),
+                                    Icon(Icons.arrow_forward_ios_rounded,
+                                        color: Colors.white54, size: 14),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 15),
+                          ]);
+                        },
+                      ),
 
                   ],
                 ),

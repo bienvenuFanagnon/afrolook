@@ -452,6 +452,15 @@ exports.slashatlasApi = onRequest(
         if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
         return res.status(200).json(await adminUsageStats());
       }
+      if (path.endsWith('/admin/gen-errors')) {
+        if (limited('age' + ipKey, 20, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        const snap = await db.collection('GenErrors').orderBy('at', 'desc').limit(200).get();
+        const errors = snap.docs.map((d) => { const x = d.data(); return { id: d.id, type: x.type, code: x.code, uid: x.uid, at: ts(x.at) }; });
+        return res.status(200).json({ errors });
+      }
       if (path.endsWith('/studio-film/upload-url')) {
         // Génère une URL signée pour que le frontend uploade un audio directement vers Firebase Storage
         if (limited('sfau' + ipKey, 10, 300000)) return res.status(429).json({ error: 'rate' });

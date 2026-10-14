@@ -69,10 +69,30 @@
     var proPv = 0; r.forEach(function (x) { var p = x.pages || {}; proPv += (p['_pro_'] || 0) + (p['_en_pro_'] || 0); });
     var np = sum(r, 'nopub'), wl = r.reduce(function (n, x) { return n + ((x.signupKind || {}).waitlist || 0); }, 0);
     var nopub = '<div class="kpis">' + kpi(np, 'Clics vers « Sans pub »', pv ? (100 * np / pv).toFixed(1).replace('.', ',') + ' % des vues' : '') + kpi(proPv, 'Vues de la page « Sans pub »') + kpi(wl, 'Inscrits à l\'offre sans pub', proPv ? (100 * wl / proPv).toFixed(1).replace('.', ',') + ' % des vues de la page' : '') + '</div>' + list('Clics « Sans pub » depuis quelle page', mapPairs(r, 'nopub_from', function (p) { var q = p.replace(/^_|_$/g, '').replace(/_/g, '/'); return q === '' ? 'accueil' : q === 'en' ? 'accueil (EN)' : q; }));
-    var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (bientôt)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['tools', 'Outils', tools]];
+    var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (bientôt)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['errors', 'Erreurs', '<div class="adm-card"><h3>Erreurs de génération</h3><p class="hint">Les 200 dernières erreurs lors des générations image, film et motion.</p><button class="btn gl sm" type="button" id="load-gen-errors">Charger les erreurs</button><div id="gen-errors-tbl" style="margin-top:12px"></div></div>'], ['tools', 'Outils', tools]];
     var tabNav = '<div class="seg adm-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '"' + (t[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
     root.innerHTML = head + tabNav + TABS.filter(function (t) { return t[0] === tab; }).map(function (t) { return t[2]; }).join('');
     if (tab === 'tools') { var _rb = document.getElementById('refresh-usage'); if (_rb) _rb.addEventListener('click', loadUsageStats); loadUsageStats(); }
+    if (tab === 'errors') {
+      var _lge = document.getElementById('load-gen-errors');
+      if (_lge) {
+        function loadGenErrors() {
+          _lge.disabled = true; _lge.textContent = 'Chargement…';
+          window.slashAuth.call('admin/gen-errors', {}).then(function (res) {
+            _lge.disabled = false; _lge.textContent = 'Actualiser';
+            var tbl = document.getElementById('gen-errors-tbl');
+            if (!tbl) return;
+            if (res.status !== 200) { tbl.innerHTML = '<p class="hint">Erreur ' + res.status + '</p>'; return; }
+            var errs = (res.data && res.data.errors) || [];
+            if (!errs.length) { tbl.innerHTML = '<p class="hint">Aucune erreur enregistrée.</p>'; return; }
+            var rows = errs.map(function (e) { return '<tr><td>' + esc(e.at || '—') + '</td><td>' + esc(e.type || '') + '</td><td style="max-width:320px;word-break:break-all">' + esc(e.code || '') + '</td><td>' + esc(e.uid || '') + '</td></tr>'; }).join('');
+            tbl.innerHTML = '<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Erreur</th><th>UID</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+          }).catch(function () { _lge.disabled = false; _lge.textContent = 'Réessayer'; });
+        }
+        _lge.addEventListener('click', loadGenErrors);
+        loadGenErrors();
+      }
+    }
     // Transactions paginées
     var _aob = document.getElementById('adm-load-ords');
     if (_aob) {

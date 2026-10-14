@@ -390,8 +390,9 @@ async function processFilm(jobId, params, seriesData) {
     if (snap.exists) {
       const { uid, cost } = snap.data();
       if (uid && cost) {
-        const { addCredits } = require('./studio');
+        const { addCredits, logGenError } = require('./studio');
         await addCredits(uid, cost, 'film_refund_' + jobId).catch(() => {});
+        await logGenError('film', e.message, uid, { jobId });
       }
     }
   }

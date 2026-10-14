@@ -56,3 +56,4 @@ export * from "./quiz/quizAdmin";
 export * from "./etude/etude";
 export * from "./site/contact";
 export * from "./posts/linkPreview";
+export * from "./team/teamHub";

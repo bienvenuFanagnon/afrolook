@@ -14,8 +14,8 @@ const SECRETS = [GEMINI_API_KEY, FEEXPAY_API_KEY];
 const db = () => getFirestore();
 const FEEXPAY_SHOP = 'crZfM9il1xK9uJ6';
 const FEEXPAY_API = 'https://api-v2.feexpay.me/api/transactions/public';
-// Modèles image en ordre de priorité : si le premier retourne 404/503, on passe au suivant
-const IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
+// Modèles image en ordre de priorité : si le premier retourne 404/429/503, on passe au suivant
+const IMAGE_MODELS = ['gemini-2.0-flash-preview-image-generation', 'gemini-2.0-flash-exp'];
 
 // Un crédit = une génération (ou une correction). Prix en FCFA, hors frais de paiement (ajoutés au client).
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
@@ -290,6 +290,33 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
   return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${stagingClause ? ' ' + stagingClause : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
 }
 
+async function callCloudflareFallback(parts, ratio) {
+  const token = (process.env.CF_API_TOKEN || '').replace(/^﻿/, '').trim();
+  const account = (process.env.CF_ACCOUNT_ID || '').replace(/^﻿/, '').trim();
+  if (!token || !account) throw fail(502, 'gemini_unavailable');
+  const textPart = parts.find((p) => p.text);
+  if (!textPart) throw fail(502, 'gemini_unavailable');
+  const dims = ratio === '9:16' ? { width: 576, height: 1024 }
+    : ratio === '16:9' ? { width: 1024, height: 576 }
+    : ratio === '4:3' ? { width: 1024, height: 768 }
+    : { width: 1024, height: 1024 };
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 60000);
+  try {
+    const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/@cf/black-forest-labs/flux-1-schnell`, {
+      method: 'POST', signal: ctl.signal,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: textPart.text, ...dims }),
+    });
+    if (!r.ok) { const t = await r.text().catch(() => ''); console.error('cf-ai', r.status, t.slice(0, 200)); throw fail(502, 'gemini_unavailable'); }
+    const j = await r.json();
+    const img = j?.result?.image;
+    if (!img) throw fail(502, 'gemini_unavailable');
+    console.log('cf-ai fallback ok', ratio);
+    return { data: img, mime: 'image/jpeg' };
+  } finally { clearTimeout(timer); }
+}
+
 async function callGemini(parts, ratio) {
   const body = { contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: ratio } } };
   let lastErr = null;
@@ -306,9 +333,9 @@ async function callGemini(parts, ratio) {
       if (j.error) {
         const code = j.error.code;
         console.error('gemini', model, code, String(j.error.message).slice(0, 200));
-        // 404 = modèle introuvable → essayer le suivant
-        if (code === 404) { lastErr = fail(502, 'gemini_unavailable'); continue; }
-        throw fail(502, code === 402 || code === 429 ? 'busy' : 'gemini_error');
+        // 404 = modèle introuvable, 429 = quota dépassé, 503 = indispo → essayer le suivant
+        if (code === 404 || code === 429 || code === 503) { lastErr = fail(502, code === 429 ? 'busy' : 'gemini_unavailable'); continue; }
+        throw fail(502, 'gemini_error');
       }
       const part = (j.candidates?.[0]?.content?.parts || []).find((p) => p.inlineData || p.inline_data);
       const d = part && (part.inlineData || part.inline_data);
@@ -316,7 +343,8 @@ async function callGemini(parts, ratio) {
       return { data: d.data, mime: d.mimeType || d.mime_type || 'image/png' };
     } finally { clearTimeout(timer); }
   }
-  throw lastErr || fail(502, 'gemini_unavailable');
+  // Dernier recours : Cloudflare Workers AI (Flux-1-Schnell, text-to-image)
+  return callCloudflareFallback(parts, ratio).catch(() => { throw lastErr || fail(502, 'gemini_unavailable'); });
 }
 
 async function generate(u, b) {
@@ -403,6 +431,7 @@ async function runJob(u, parts, ratio, meta) {
     await addCredits(u.uid, GEN_COST, 'refund', id, { reason: e.code || 'error' });
     await gref.update({ status: 'failed', error: e.code || 'error' });
     await bump({ genfails: 1 });
+    await logGenError('image', e.code || e.message, u.uid, { slug: meta.slug });
     throw e;
   }
 }
@@ -765,4 +794,16 @@ async function saveBrandProfile(u, b) {
   return profile;
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail };
+async function logGenError(type, code, uid, extra) {
+  try {
+    await db().collection('GenErrors').add({
+      type: String(type || 'unknown').slice(0, 20),
+      code: String(code || 'unknown').slice(0, 120),
+      uid: uid || null,
+      at: FieldValue.serverTimestamp(),
+      ...(extra && typeof extra === 'object' ? extra : {}),
+    });
+  } catch (_) { /* silencieux */ }
+}
+
+module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };

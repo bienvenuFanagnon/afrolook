@@ -169,6 +169,7 @@ async function render(u, b) {
     await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
     await vref.update({ status: 'failed', error: (e && e.code) || 'error' });
     await bump({ videofails: 1 });
+    await studio.logGenError('motion', (e && e.code) || (e && e.message) || 'error', u.uid, { style: b.style });
     throw e && e.status ? e : fail(500, e && e.code === 'too_long' ? 'too_long' : e && e.code === 'tts' ? 'voice_error' : 'render_failed');
   } finally { if (out) { try { fs.rmSync(out.dir, { recursive: true, force: true }); } catch (e) { /* temporaire */ } } }
 }
