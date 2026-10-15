@@ -1,0 +1,643 @@
+<title>PronoFlash IA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Concept : maquette de revue (onglets) qui contient un faux site en mode sombre, bascule téléphone / ordinateur */
+:root{
+  --bg:#080D18; --s1:#0F1626; --s2:#141D31; --line:#22304D;
+  --flash:#FFD60A; --ok:#2BD576; --ko:#FF5A5F; --cy:#38D6F5; --afl:#1FAA59;
+  --tx:#EEF2FF; --mut:#8E9AB8;
+  --ink:#080D18;
+  --f-d:'Barlow Condensed','Arial Narrow',Impact,sans-serif;
+  --f-b:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 var(--f-b);
+  padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:var(--f-d);font-weight:700;letter-spacing:.2px;text-wrap:balance}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--flash);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- barre de la maquette ---------- */
+.mq{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:rgba(8,13,24,.94);backdrop-filter:blur(8px);
+  margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.mq-in{max-width:1240px;margin:auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.mq-t{font-family:var(--f-d);font-weight:800;font-size:20px;white-space:nowrap}
+.mq-t b{color:var(--flash)}
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:1px solid transparent;border-radius:8px;padding:7px 12px;color:var(--mut);white-space:nowrap;font-weight:500;font-size:14px}
+.tab[aria-selected=true]{background:var(--s2);border-color:var(--line);color:var(--tx)}
+.tab:hover{color:var(--tx)}
+.panel{max-width:1240px;margin:22px auto 0}
+.panel[hidden]{display:none}
+
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--s1)}
+.seg button{background:none;border:0;padding:7px 14px;color:var(--mut);font-size:13px;font-weight:500}
+.seg button[aria-pressed=true]{background:var(--flash);color:var(--ink);font-weight:600}
+.chk{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);cursor:pointer}
+.chk input{accent-color:var(--flash);width:16px;height:16px}
+.note{font-size:13px;color:var(--mut)}
+
+/* ---------- le faux site ---------- */
+.frame{container:site/inline-size;margin-inline:auto;width:100%;max-width:1200px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg);transition:max-width .25s}
+.frame[data-dev=phone]{max-width:390px}
+.hdr{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--s1)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--f-d);font-weight:800;font-size:24px;letter-spacing:.3px;text-decoration:none;white-space:nowrap}
+.bolt{width:28px;height:28px;border-radius:7px;background:var(--flash);color:var(--ink);display:grid;place-items:center;font-size:17px;font-weight:800;transform:skew(-6deg)}
+.logo em{font-style:normal;color:var(--flash)}
+.logo small{font-size:13px;font-weight:700;background:var(--s2);border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--cy);margin-left:2px;letter-spacing:.5px}
+.hnav{display:none;gap:4px;margin-left:12px}
+.hnav a{padding:6px 12px;border-radius:7px;color:var(--mut);text-decoration:none;font-weight:500;font-size:14px}
+.hnav a.on{color:var(--tx);background:var(--s2)}
+.hnav a i{font-style:normal;font-size:10px;margin-left:5px;color:var(--cy);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+.hsp{flex:1}
+.lang{font-size:12px;font-weight:600;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:none}
+.lang b{color:var(--tx)}
+
+.sport{display:flex;gap:6px;padding:12px 16px 0;overflow-x:auto;scrollbar-width:none}
+.sport::-webkit-scrollbar{display:none}
+.sp{display:flex;gap:6px;align-items:center;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--s1);font-size:14px;font-weight:600;white-space:nowrap}
+.sp.on{background:var(--flash);border-color:var(--flash);color:var(--ink)}
+.sp.off{color:var(--mut);font-weight:500}
+.sp.off i{font-style:normal;font-size:10px;color:var(--cy)}
+.days{display:flex;gap:6px;padding:12px 16px 0;overflow-x:auto;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.dy{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px;font-weight:500;white-space:nowrap}
+.dy.on{color:var(--tx);background:var(--s2);border-color:#35487a}
+.lgs{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none}
+.lgs::-webkit-scrollbar{display:none}
+.lg{padding:4px 10px;border-radius:6px;background:var(--s1);border:1px solid var(--line);color:var(--mut);font-size:12px;white-space:nowrap}
+.lg.on{color:var(--cy);border-color:var(--cy)}
+
+.main{display:grid;gap:16px;padding:16px}
+.col{min-width:0;display:flex;flex-direction:column;gap:10px}
+.side{display:none;flex-direction:column;gap:14px}
+.sticky{position:sticky;top:64px;display:flex;flex-direction:column;gap:14px}
+
+.hero{display:flex;flex-direction:column;gap:6px;padding:4px 0 2px}
+.hero h1{font-size:30px;line-height:1.05;font-weight:800;text-transform:uppercase}
+.hero h1 b{color:var(--flash)}
+.hero p{color:var(--mut);font-size:14px;max-width:62ch}
+
+.top3{display:grid;gap:8px;grid-template-columns:1fr}
+.t3{border:1px solid #4a4210;background:linear-gradient(135deg,#1c1a08,var(--s1));border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none}
+.t3 small{color:var(--mut);font-size:11px;display:block}
+.t3 b{font-family:var(--f-d);font-size:19px;font-weight:700;display:block;line-height:1.15}
+.t3 .pk{color:var(--flash);font-family:var(--f-d);font-weight:700;font-size:17px;text-align:right}
+.t3 .pk span{display:block;color:var(--ok);font-size:13px}
+.lbl{font-family:var(--f-d);font-weight:700;font-size:15px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:8px}
+.lbl::before{content:"";width:18px;height:3px;background:var(--flash);border-radius:2px}
+
+/* carte de match */
+.mc{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:12px;text-decoration:none;position:relative}
+.mc:hover{border-color:#35487a}
+.mc .hd{grid-column:1/-1;display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+.mc .hd b{color:var(--tx);font-family:var(--f-d);font-size:16px;font-weight:700;margin-right:8px}
+.tm{display:flex;flex-direction:column;gap:7px;grid-column:1/-1}
+.tr{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px}
+.tr .fm{margin-left:auto;display:none;gap:3px}
+.fm i{font-style:normal;width:17px;height:17px;border-radius:4px;font-size:10px;font-weight:700;display:grid;place-items:center;color:var(--ink)}
+.fm .V{background:var(--ok)}.fm .N{background:#9aa6c4}.fm .D{background:var(--ko)}
+.cr{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none;letter-spacing:.3px;border:2px solid rgba(255,255,255,.15)}
+.pr{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:9px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.pk1{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;display:block}
+.pk1 + b{font-family:var(--f-d);font-weight:800;font-size:23px;color:var(--flash);line-height:1.05;display:block}
+.cf{text-align:right;font-family:var(--f-d);font-weight:800;font-size:26px;color:var(--ok);line-height:1}
+.cf small{display:block;font-family:var(--f-b);font-size:10px;font-weight:500;color:var(--mut);text-transform:uppercase;letter-spacing:.8px}
+.bars{grid-column:1/-1;display:flex;height:7px;border-radius:4px;overflow:hidden;gap:2px}
+.bars i{display:block}
+.bl{grid-column:1/-1;display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.sc{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.sc span{font-size:11px;color:var(--cy);border:1px solid #1c4a58;background:#0b1e27;border-radius:6px;padding:2px 8px}
+
+/* publicités */
+.ad{border:1px dashed #3a4a73;border-radius:10px;background:repeating-linear-gradient(135deg,#0d1424 0 10px,#0f1729 10px 20px);color:var(--mut);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font-size:11px;position:relative;padding:6px}
+.ad b{font-size:12px;color:#b7c2e0;font-weight:600}
+.ad::before{content:"PUB";position:absolute;top:4px;left:7px;font-size:9px;letter-spacing:1px;color:#6c7aa0}
+.ad.ban{min-height:50px}
+.ad.nat{min-height:84px;flex-direction:row;gap:12px}
+.ad.rect{min-height:250px}
+.ad.tall{min-height:420px}
+.ad.dk{display:none}
+.hideads .ad:not(.afl),.hideads .afl,.hideads .stk,.hideads .sbar{display:none!important}
+.hl .ad,.hl .afl{box-shadow:0 0 0 2px var(--flash)}
+.tagp{position:absolute;top:-8px;right:10px;background:var(--flash);color:var(--ink);font-weight:700;font-size:10px;border-radius:5px;padding:1px 6px;display:none;z-index:2}
+.hl .tagp{display:block}
+
+.afl{display:grid;grid-template-columns:76px 1fr;border:1px solid #17673a;border-radius:12px;overflow:hidden;background:linear-gradient(120deg,#0b2417,#0F1626);text-decoration:none;position:relative}
+.afl .im{background-size:cover;background-position:center;min-height:96px}
+.afl .bd{padding:10px 12px;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.afl .bg{font-size:10px;font-weight:700;letter-spacing:1px;background:var(--afl);color:#fff;border-radius:4px;padding:1px 6px;display:flex;gap:5px;align-items:center}
+.afl .bg img{width:12px;height:12px;border-radius:3px}
+.afl p{font-family:var(--f-d);font-weight:700;font-size:19px;line-height:1.1}
+.afl .cta{font-size:12px;font-weight:600;background:var(--afl);color:#fff;border-radius:7px;padding:5px 11px}
+.afl .sp2{position:absolute;top:5px;right:8px;font-size:9px;color:#6fae8a}
+
+.stk{position:sticky;bottom:0;z-index:5;display:flex;justify-content:center;padding:6px;background:linear-gradient(transparent,var(--bg) 40%)}
+.stk .ad{width:320px;max-width:100%;height:50px;min-height:50px;padding-right:30px}
+.stk button{position:absolute;right:calc(50% - 158px);top:10px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--s2);font-size:11px;line-height:1;z-index:3}
+.sbar{position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:max(70px,env(safe-area-inset-bottom,0px));width:min(300px,calc(100vw - 24px));z-index:40;border:1px dashed #3a4a73;background:var(--s2);border-radius:12px;padding:10px 32px 10px 12px;font-size:12px;color:#b7c2e0;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+.sbar b{display:block;color:var(--tx);font-size:13px}
+.sbar button{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--s1);font-size:11px}
+
+.box{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:14px}
+.bil{display:flex;align-items:center;gap:14px}
+.bil .big{font-family:var(--f-d);font-weight:800;font-size:46px;color:var(--ok);line-height:1;white-space:nowrap}
+.bil p{font-size:13px;color:var(--mut)}
+.bil a{color:var(--cy);font-size:13px}
+
+.ftr{border-top:1px solid var(--line);background:var(--s1);padding:18px 16px;display:flex;flex-direction:column;gap:10px;font-size:12px;color:var(--mut)}
+.ftr nav{display:flex;flex-wrap:wrap;gap:6px 14px}
+.ftr .r18{display:flex;gap:8px;align-items:center;color:var(--tx);font-weight:600;font-size:13px}
+.ftr .r18 b{border:2px solid var(--ko);color:var(--ko);border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-size:11px}
+
+@container site (min-width:560px){
+  .top3{grid-template-columns:repeat(3,1fr)}
+  .tr .fm{display:flex}
+  .mc{grid-template-columns:1fr 1fr;gap:8px 22px;align-items:center}
+  .mc .hd{grid-column:1/-1}
+  .tm{grid-column:1;grid-row:2/6;display:flex;flex-direction:column;gap:12px;align-self:center}
+  .tr{font-size:17px}
+  .pr{grid-column:2;border-top:0;padding-top:0}
+  .bars,.bl,.sc{grid-column:2}
+  .afl{grid-template-columns:120px 1fr}
+  .stk{display:none}
+}
+@container site (min-width:860px){
+  .main{grid-template-columns:minmax(0,1fr) 320px;gap:22px;padding:20px}
+  .side{display:flex}
+  .hnav{display:flex}
+  .ad.dk{display:flex}
+  .ad.ban{min-height:90px}
+  .ad.mo{display:none}
+  .hero h1{font-size:40px}
+}
+
+/* fiche match */
+.vd{background:linear-gradient(160deg,#241f06,var(--s1) 60%);border:1px solid #5a4e0a;border-radius:14px;padding:18px;display:grid;gap:14px}
+.vd .tt{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font-family:var(--f-d);font-weight:700;font-size:26px;text-align:center}
+.vd .tt .cr{width:44px;height:44px;font-size:14px}
+.vd .tt span.vs{color:var(--mut);font-size:16px}
+.vd .meta{text-align:center;color:var(--mut);font-size:13px}
+.vd .big{text-align:center}
+.vd .big small{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
+.vd .big b{font-family:var(--f-d);font-weight:800;font-size:46px;line-height:1.05;color:var(--flash)}
+.gauge{height:10px;background:#1a2440;border-radius:6px;overflow:hidden}
+.gauge i{display:block;height:100%;width:68%;background:linear-gradient(90deg,#1c9d56,var(--ok))}
+.gl{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+.gl b{color:var(--ok);font-family:var(--f-d);font-size:20px}
+.pb{display:grid;gap:8px}
+.pb .row{display:grid;grid-template-columns:78px 1fr 40px;gap:10px;align-items:center;font-size:13px}
+.pb .tk{height:9px;background:#1a2440;border-radius:5px;overflow:hidden}
+.pb .tk i{display:block;height:100%;border-radius:5px}
+.pb .row b{text-align:right;font-family:var(--f-d);font-size:17px}
+.an p{color:#d3daf0;max-width:68ch;margin-top:8px}
+.ai{display:inline-flex;gap:6px;align-items:center;font-size:11px;color:var(--cy);border:1px solid #1c4a58;border-radius:6px;padding:2px 8px;background:#0b1e27}
+.kp{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.kp li{display:flex;gap:10px;background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
+.kp li::before{content:"⚡";color:var(--flash)}
+.h2h{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.h2h td,.h2h th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
+.h2h th{color:var(--mut);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+.h2h td:last-child{text-align:right;font-family:var(--f-d);font-weight:700;font-size:16px}
+.sh{display:flex;gap:8px;flex-wrap:wrap}
+.sh a{font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;text-decoration:none;border:1px solid var(--line);background:var(--s2)}
+.sh a.wa{background:#12391f;border-color:#1d6b38;color:#9ff0bd}
+.vote{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.vote button{background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:10px 6px;font-family:var(--f-d);font-weight:700;font-size:18px}
+.vote button small{display:block;font-family:var(--f-b);font-weight:400;font-size:11px;color:var(--mut)}
+.vote button:hover{border-color:var(--flash)}
+
+/* bilan */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi small{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);display:block}
+.kpi b{font-family:var(--f-d);font-size:36px;font-weight:800;line-height:1.1}
+.kpi b.g{color:var(--ok)} .kpi b.y{color:var(--flash)} .kpi b.r{color:var(--ko)}
+.hb{display:grid;gap:9px;margin-top:10px}
+.hb .row{display:grid;grid-template-columns:minmax(90px,150px) 1fr 74px;gap:10px;align-items:center;font-size:13px}
+.hb .tk{height:10px;background:#1a2440;border-radius:5px;overflow:hidden}
+.hb .tk i{display:block;height:100%;background:var(--ok);border-radius:5px}
+.hb .row span:last-child{text-align:right;color:var(--mut);font-size:12px}
+.res{display:grid;gap:6px;margin-top:8px}
+.res div{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;background:var(--s2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px}
+.res .ok{color:var(--ok)}.res .ko{color:var(--ko)}
+.res em{font-style:normal;color:var(--mut);font-size:12px}
+.spark{width:100%;height:auto;display:block}
+
+/* onglets de revue */
+.card{background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:18px}
+.grid2{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.rev h2{font-size:30px;font-weight:800;line-height:1.1;margin-bottom:6px}
+.rev h3{font-size:21px;margin-bottom:8px}
+.rev p,.rev li{color:#c9d2ec;font-size:14.5px}
+.rev ul{margin:8px 0 0;padding-left:18px;display:grid;gap:6px}
+.lead{max-width:70ch;color:var(--mut);margin-bottom:16px}
+.pill{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;border:1px solid var(--line);background:var(--s2);color:var(--mut);white-space:nowrap}
+.pill.g{color:var(--ok);border-color:#1c6a42;background:#0c2418}
+.pill.y{color:var(--flash);border-color:#5a4e0a;background:#211c05}
+.pill.r{color:var(--ko);border-color:#6b2a2d;background:#26100f}
+.pill.c{color:var(--cy);border-color:#1c4a58;background:#0b1e27}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+table.t th,table.t td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--s1);font-weight:500}
+table.t tr:last-child td{border-bottom:0}
+table.t td:first-child{font-weight:600;color:var(--tx)}
+.wire{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;align-items:start}
+.ph{border:1px solid var(--line);border-radius:22px;background:var(--bg);padding:12px;display:grid;gap:7px;max-width:330px;margin-inline:auto;width:100%}
+.ph .w{background:var(--s2);border-radius:7px;height:18px}
+.ph .wc{background:var(--s1);border:1px solid var(--line);border-radius:8px;height:62px}
+.ph .sl{border:1px dashed var(--flash);border-radius:7px;background:rgba(255,214,10,.07);color:var(--flash);font-size:11px;font-weight:600;padding:5px 8px;display:flex;justify-content:space-between;gap:6px}
+.ph .sl.af{border-color:var(--afl);background:rgba(31,170,89,.1);color:#74e0a1}
+.leg{font-size:12.5px;color:var(--mut);margin-top:10px}
+
+.sim{display:grid;gap:12px;margin-top:10px}
+.sim label{display:grid;grid-template-columns:minmax(130px,200px) 1fr 78px;gap:10px;align-items:center;font-size:13px;color:#c9d2ec}
+.sim input[type=range]{accent-color:var(--flash);width:100%;min-width:0}
+.sim output{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.sim .res2{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:6px}
+
+.dom{font-family:var(--f-d);font-weight:800;font-size:clamp(34px,8vw,64px);line-height:1;letter-spacing:.3px}
+.dom b{color:var(--flash)}
+.logos{display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.ok-l{list-style:none;padding:0!important}
+.ok-l li{display:flex;gap:9px}
+.ok-l li::before{content:"✓";color:var(--ok);font-weight:700}
+
+.val{display:grid;gap:8px;margin-top:10px}
+.val label{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:start;background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer}
+.val input{accent-color:var(--flash);width:18px;height:18px;margin-top:2px}
+.val small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+textarea{width:100%;min-height:210px;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:12px;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
+.btn{background:var(--flash);color:var(--ink);border:0;border-radius:9px;padding:9px 18px;font-weight:700}
+.btn.sec{background:var(--s2);color:var(--tx);border:1px solid var(--line)}
+.ex{font-size:12px;color:var(--mut);padding:6px 16px 0}
+@media (prefers-reduced-motion:reduce){.frame{transition:none}}
+</style>
+
+<div class="mq"><div class="mq-in">
+  <div class="mq-t">Pronoflash <b>IA</b> · maquette</div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+</div></div>
+
+<!-- ============ ACCUEIL ============ -->
+<section class="panel" id="p-accueil" role="tabpanel">
+  <div class="tools">
+    <div class="seg" id="dev1" role="group" aria-label="Aperçu"><button data-d="phone" aria-pressed="false">Téléphone</button><button data-d="desk" aria-pressed="true">Ordinateur</button></div>
+    <label class="chk"><input type="checkbox" id="hl"> Repérer les pubs</label>
+    <label class="chk"><input type="checkbox" id="noad"> Voir sans pubs</label>
+    <span class="note">Données d'exemple. Les cadres hachurés sont les emplacements Adsterra / Monetag.</span>
+  </div>
+  <div class="frame" id="fr1" data-dev="desk"><div id="site-home"></div></div>
+</section>
+
+<!-- ============ FICHE MATCH ============ -->
+<section class="panel" id="p-fiche" role="tabpanel" hidden>
+  <div class="tools">
+    <div class="seg" id="dev2" role="group" aria-label="Aperçu"><button data-d="phone" aria-pressed="false">Téléphone</button><button data-d="desk" aria-pressed="true">Ordinateur</button></div>
+    <span class="note">Adresse : /football/ligue-1/psg-marseille-2026-10-18 · page HTML complète, lisible par Google sans JavaScript.</span>
+  </div>
+  <div class="frame" id="fr2" data-dev="desk"><div id="site-fiche"></div></div>
+</section>
+
+<!-- ============ BILAN ============ -->
+<section class="panel" id="p-bilan" role="tabpanel" hidden>
+  <div class="tools"><span class="note">Adresse : /bilan · calculé automatiquement par syncResults. Chiffres d'exemple.</span></div>
+  <div class="frame" data-dev="desk"><div id="site-bilan"></div></div>
+</section>
+
+<!-- ============ PUBLICITÉS ============ -->
+<section class="panel rev" id="p-pubs" role="tabpanel" hidden></section>
+
+<!-- ============ ANALYSE ============ -->
+<section class="panel rev" id="p-analyse" role="tabpanel" hidden></section>
+
+<!-- ============ NOM ============ -->
+<section class="panel rev" id="p-nom" role="tabpanel" hidden></section>
+
+<!-- ============ VALIDER ============ -->
+<section class="panel rev" id="p-valider" role="tabpanel" hidden></section>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+
+/* ---------- données d'exemple ---------- */
+var CL={AHL:['Al Ahly','#c4161c'],WAC:['Wydad AC','#b3122a'],TPM:['TP Mazembe','#1a1a1a'],SUN:['Mamelodi Sundowns','#d9a400'],
+ PSG:['Paris SG','#1b3a8a'],OM:['Marseille','#1798d4'],LIV:['Liverpool','#c8102e'],ARS:['Arsenal','#d1141f'],
+ RMA:['Real Madrid','#7b6cc9'],BAR:['Barcelone','#a50044'],INT:['Inter','#0a3c8c'],JUV:['Juventus','#3a3a3a'],
+ ESP:['Espérance de Tunis','#c8102e'],RSB:['RS Berkane','#e8590c'],LYO:['Lyon','#1d4ed8'],MON:['Monaco','#d8232a'],
+ MCI:['Man City','#6cabdd'],CHE:['Chelsea','#1c3fa8'],MIL:['Milan','#c00000'],NAP:['Naples','#2b8bd4']};
+var M=[
+ {t:'15:00',lg:'Ligue des champions CAF',h:'TPM',a:'SUN',fh:'NDVND',fa:'VVVNV',pk:'Double chance X2',cf:66,p:[20,27,53],s:['−3,5 buts · 78 %','Les 2 marquent · 39 %']},
+ {t:'17:00',lg:'Ligue des champions CAF',h:'AHL',a:'WAC',fh:'VVNVV',fa:'NVVDV',pk:'1 · Al Ahly',cf:58,p:[58,24,18],s:['+1,5 buts · 76 %','Les 2 marquent · 44 %']},
+ {t:'18:00',lg:'Coupe de la CAF',h:'RSB',a:'ESP',fh:'VVVNV',fa:'DNVVN',pk:'1N · Berkane',cf:71,p:[49,28,23],s:['−3,5 buts · 83 %','Les 2 marquent · 41 %']},
+ {t:'17:00',lg:'Premier League',h:'LIV',a:'ARS',fh:'VNVVD',fa:'VVVNV',pk:'Les 2 marquent',cf:63,p:[39,27,34],s:['+2,5 buts · 61 %','1N2 · très ouvert']},
+ {t:'21:00',lg:'LaLiga',h:'RMA',a:'BAR',fh:'VVVVN',fa:'VNVVV',pk:'+2,5 buts',cf:67,p:[41,25,34],s:['Les 2 marquent · 64 %','Score probable 2-2']},
+ {t:'20:45',lg:'Ligue 1',h:'PSG',a:'OM',fh:'VVVNV',fa:'VDVNV',pk:'1 · Paris SG',cf:68,p:[62,22,16],s:['+2,5 buts · 64 %','Les 2 marquent · 55 %'],f:1},
+ {t:'19:00',lg:'Ligue 1',h:'LYO',a:'MON',fh:'NVDVV',fa:'VVNVD',pk:'12 · Pas de nul',cf:74,p:[38,26,36],s:['+1,5 buts · 79 %','Les 2 marquent · 58 %']},
+ {t:'20:45',lg:'Serie A',h:'INT',a:'JUV',fh:'VVNVV',fa:'NVVNV',pk:'1N · Inter',cf:72,p:[46,30,24],s:['−3,5 buts · 80 %','Les 2 marquent · 47 %']},
+ {t:'18:30',lg:'Premier League',h:'MCI',a:'CHE',fh:'VVVDV',fa:'NVDVN',pk:'1 · Man City',cf:61,p:[61,21,18],s:['+2,5 buts · 63 %','Les 2 marquent · 52 %']},
+ {t:'20:45',lg:'Serie A',h:'NAP',a:'MIL',fh:'VNVVD',fa:'VNNVV',pk:'−2,5 buts',cf:59,p:[40,31,29],s:['Les 2 marquent · 46 %','Score probable 1-1']}
+];
+var ini=function(k){return CL[k][0].split(' ').map(function(w){return w[0]}).join('').slice(0,3).toUpperCase()};
+var cr=function(k){return '<span class="cr" style="background:'+CL[k][1]+'">'+(k.length<=3?k:ini(k))+'</span>'};
+var form=function(f){return '<span class="fm">'+f.split('').map(function(c){return '<i class="'+c+'">'+c+'</i>'}).join('')+'</span>'};
+var AFL_FR=['Débats foot sur Afrolook : donne ton avis sur le match','Partage tes pronos entre amis sur Afrolook','Tes likes deviennent des pièces sur Afrolook'];
+var UTM=function(slot){return 'utm_source=pronoflashia&utm_campaign='+slot};
+
+function matchCard(m){
+ var p=m.p;
+ return '<a class="mc" href="#fiche" data-go="fiche">'+
+  '<div class="hd"><span><b class="num">'+m.t+'</b>'+m.lg+'</span><span>Aujourd\'hui</span></div>'+
+  '<div class="tm"><div class="tr">'+cr(m.h)+CL[m.h][0]+form(m.fh)+'</div><div class="tr">'+cr(m.a)+CL[m.a][0]+form(m.fa)+'</div></div>'+
+  '<div class="pr"><div><span class="pk1">Pronostic</span><b>'+m.pk+'</b></div><div class="cf num">'+m.cf+' %<small>confiance</small></div></div>'+
+  '<div class="bars"><i style="flex:'+p[0]+';background:var(--flash)"></i><i style="flex:'+p[1]+';background:#6b7899"></i><i style="flex:'+p[2]+';background:var(--cy)"></i></div>'+
+  '<div class="bl num"><span>1 · '+p[0]+' %</span><span>N · '+p[1]+' %</span><span>2 · '+p[2]+' %</span></div>'+
+  '<div class="sc">'+m.s.map(function(x){return '<span>'+x+'</span>'}).join('')+'</div></a>';
+}
+function ad(cls,label,size,extra){return '<div class="ad '+cls+'"><span class="tagp">'+(extra||'')+'</span><b>'+label+'</b><span>'+size+'</span></div>'}
+function afl(img,msg,slot,sp){
+ return '<a class="afl" href="#" data-noop="1" title="https://play.google.com/store/apps/details?id=com.afrotok.afrotok&'+UTM(slot)+'"><span class="sp2">Sponsorisé</span><div class="im" style="background-image:url(img/'+img+')"></div><div class="bd"><span class="bg"><img src="img/afrolook.png" alt="">AFROLOOK</span><p>'+msg+'</p><span class="cta">Télécharger gratuitement</span></div></a>';
+}
+function header(on){
+ return '<div class="hdr"><a class="logo" href="#accueil" data-go="accueil"><span class="bolt">⚡</span><span>Prono<em>Flash</em><small>IA</small></span></a>'+
+ '<nav class="hnav"><a class="'+(on==='f'?'on':'')+'" href="#accueil" data-go="accueil">Football</a><a href="#">Basket<i>bientôt</i></a><a class="'+(on==='b'?'on':'')+'" href="#bilan" data-go="bilan">Bilan</a><a href="#">À propos</a></nav>'+
+ '<span class="hsp"></span><button class="lang" type="button"><b>FR</b> · EN</button></div>';
+}
+function footer(){
+ return '<div class="ftr"><div class="r18"><b>18+</b> Jouez de façon responsable</div><p>Pronostics fournis à titre d\'information. Aucun gain n\'est garanti. Les pronostics sont calculés par un modèle statistique et rédigés par une IA.</p>'+
+ '<nav><a href="#">À propos</a><a href="#">Contact</a><a href="#">Confidentialité</a><a href="#">Conditions</a><a href="#">Cookies</a><a href="#">Mentions légales</a><a href="#">Jeu responsable</a><a href="#">Préférences publicitaires</a></nav><p>© 2026 PronoFlash IA · pronoflashia.com</p></div>';
+}
+function sbar(){return '<div class="sbar" id="sbar" hidden><button type="button" aria-label="Fermer">✕</button><b>Social Bar · Adsterra</b>Apparaît une seule fois par visite, après 20 secondes, et se ferme d\'un geste.</div>'}
+
+/* ---------- accueil ---------- */
+function home(){
+ var cards='';
+ M.forEach(function(m,i){
+   cards+=matchCard(m);
+   if(i===3) cards+=ad('nat','Native · Sponsorisé','Adsterra · 1 toutes les 4 cartes','Native');
+   if(i===7) cards+=afl('afl1.jpg',AFL_FR[0],'liste','');
+   if(i===5) cards+=ad('nat','Native · Sponsorisé','Adsterra','Native');
+ });
+ var top=M.slice().sort(function(a,b){return b.cf-a.cf}).slice(0,3).map(function(m){
+   return '<a class="t3" href="#fiche" data-go="fiche"><div><small>'+m.t+' · '+m.lg+'</small><b>'+CL[m.h][0]+' – '+CL[m.a][0]+'</b></div><div class="pk">'+m.pk+'<span class="num">'+m.cf+' %</span></div></a>';
+ }).join('');
+ return header('f')+
+ '<div class="sport"><span class="sp on">⚽ Football</span><span class="sp off">🏀 Basketball <i>bientôt</i></span><span class="sp off">🎾 Tennis <i>bientôt</i></span></div>'+
+ '<div class="days"><button class="dy on">Aujourd\'hui</button><button class="dy">Demain</button><button class="dy">Sam. 17</button><button class="dy">Dim. 18</button><button class="dy">Lun. 19</button><button class="dy">Cette semaine</button></div>'+
+ '<div class="lgs"><span class="lg on">Tous</span><span class="lg">🌍 Ligue des champions CAF</span><span class="lg">Coupe de la CAF</span><span class="lg">Ligue 1</span><span class="lg">Premier League</span><span class="lg">LaLiga</span><span class="lg">Serie A</span></div>'+
+ '<div class="ex">Heures affichées dans ton fuseau : Abidjan (UTC+0)</div>'+
+ '<div class="main"><div class="col">'+
+  '<div class="hero"><h1>Les pronos foot du jour, <b>gratuits</b></h1><p>Un calcul statistique, un texte rédigé par l\'IA. Pas de compte, pas de clic pour voir le pronostic.</p></div>'+
+  '<div style="position:relative">'+ad('ban dk','Bannière haut','728×90','Haut')+ad('ban mo','Bannière haut','320×50','Haut')+'</div>'+
+  '<div class="lbl">Flash du jour · les 3 plus sûrs</div><div class="top3">'+top+'</div>'+
+  '<div class="lbl" style="margin-top:6px">Tous les matchs · jeudi 15 octobre</div>'+
+  cards+
+  '<div class="box bil" style="margin-top:4px"><div class="big num">64 %</div><div><p>de réussite sur les 30 derniers jours, 214 pronostics.</p><a href="#bilan" data-go="bilan">Voir le bilan complet →</a></div></div>'+
+ '</div><aside class="side"><div class="sticky">'+
+   '<div class="box bil"><div class="big num">64 %</div><div><p>réussite sur 30 jours</p><a href="#bilan" data-go="bilan">Bilan complet →</a></div></div>'+
+   ad('rect','Pavé 300×250','Adsterra','Colonne')+
+   afl('afl4.jpg','Tu penses quoi des matchs du jour ? Débats sur Afrolook','colonne','')+
+   ad('tall','Skyscraper 300×600','Adsterra · collant','Collant')+
+ '</div></aside></div>'+
+ '<div class="stk"><button type="button" aria-label="Fermer la bannière" id="stkx">✕</button>'+ad('ban','Bannière collante','320×50 · fermable','Bas')+'</div>'+
+ footer();
+}
+
+/* ---------- fiche ---------- */
+function fiche(){
+ var bar=function(l,v,c){return '<div class="row"><span>'+l+'</span><div class="tk"><i style="width:'+v+'%;background:'+c+'"></i></div><b class="num">'+v+' %</b></div>'};
+ return header('f')+
+ '<div class="ex" style="padding-top:12px"><a href="#accueil" data-go="accueil" style="color:var(--cy)">Football</a> › Ligue 1 › Paris SG – Marseille</div>'+
+ '<div class="main"><div class="col">'+
+  '<div class="vd"><div class="tt">'+cr('PSG')+'<span>Paris SG</span><span class="vs">contre</span><span>Marseille</span>'+cr('OM')+'</div>'+
+   '<div class="meta">Ligue 1 · 10e journée · dimanche 18 octobre 2026 · 20:45 (Abidjan)</div>'+
+   '<div class="big"><small>Notre pronostic</small><b>1 · Victoire de Paris</b></div>'+
+   '<div><div class="gauge"><i></i></div><div class="gl" style="margin-top:6px"><span>Niveau de confiance</span><b class="num">68 %</b></div></div></div>'+
+  '<div style="position:relative">'+ad('ban dk','Bannière sous le verdict','728×90','Verdict')+ad('ban mo','Bannière sous le verdict','320×100','Verdict')+'</div>'+
+  '<div class="box"><div class="lbl">Probabilités calculées</div><div class="pb" style="margin-top:12px">'+bar('Paris (1)',62,'var(--flash)')+bar('Nul (N)',22,'#6b7899')+bar('Marseille (2)',16,'var(--cy)')+bar('+2,5 buts',64,'var(--cy)')+bar('Les 2 marquent',55,'var(--cy)')+'</div><p class="note" style="margin-top:12px">Score le plus probable : <b style="color:var(--tx)">2-1</b></p></div>'+
+  '<div class="box an"><div class="lbl">Analyse</div><div style="margin-top:8px"><span class="ai">✦ Rédigée par l\'IA à partir des chiffres ci-dessus</span></div>'+
+   '<p>Paris reste sur quatre victoires en cinq matchs à domicile et marque en moyenne 2,4 buts au Parc. Marseille voyage bien, mais encaisse dès qu\'il subit un pressing haut. Le calcul donne un net avantage à l\'équipe de la capitale, avec un match qui devrait rester ouvert : les deux équipes ont marqué dans trois de leurs quatre dernières rencontres directes.</p>'+
+   '<ul class="kp"><li>Paris : 4 victoires sur ses 5 derniers matchs, 11 buts marqués</li><li>Marseille : 2 buts encaissés en moyenne à l\'extérieur</li><li>Face-à-face : 3 victoires parisiennes sur les 5 dernières confrontations</li></ul></div>'+
+  ad('nat','Native · Sponsorisé','Adsterra · après l\'analyse','Native')+
+  '<div class="box"><div class="lbl">Face-à-face</div><table class="h2h"><tr><th>Date</th><th>Rencontre</th><th>Score</th></tr><tr><td>Mars 2026</td><td>Marseille – Paris SG</td><td>1-2</td></tr><tr><td>Oct. 2025</td><td>Paris SG – Marseille</td><td>3-1</td></tr><tr><td>Avr. 2025</td><td>Marseille – Paris SG</td><td>2-2</td></tr><tr><td>Nov. 2024</td><td>Paris SG – Marseille</td><td>3-0</td></tr></table></div>'+
+  afl('afl1.jpg','Tu penses quoi de PSG – OM ? Débats sur Afrolook','fiche','')+
+  '<div class="box"><div class="lbl">Et toi, ton pronostic ?</div><div class="vote"><button type="button">1<small>Paris</small></button><button type="button">N<small>Nul</small></button><button type="button">2<small>Marseille</small></button></div><p class="note" style="margin-top:10px">Vote anonyme, sans compte. Résultat affiché après ton vote, avec un lien vers le débat sur Afrolook.</p></div>'+
+  '<div class="sh"><a class="wa" href="#" data-noop="1">Partager sur WhatsApp</a><a href="#" data-noop="1">Copier le lien</a><a href="#" data-noop="1">Telegram</a></div>'+
+ '</div><aside class="side"><div class="sticky">'+
+   ad('rect','Pavé 300×250','Adsterra','Colonne')+
+   '<div class="box"><div class="lbl">Autres matchs</div><div style="display:grid;gap:8px;margin-top:10px">'+M.slice(0,4).map(function(m){return '<a href="#fiche" data-go="fiche" style="text-decoration:none;font-size:13px;border-bottom:1px solid var(--line);padding-bottom:8px"><b style="font-family:var(--f-d);font-size:16px">'+CL[m.h][0]+' – '+CL[m.a][0]+'</b><br><span style="color:var(--flash)">'+m.pk+'</span> <span class="note">· '+m.cf+' %</span></a>'}).join('')+'</div></div>'+
+   ad('tall','Skyscraper 300×600','Adsterra · collant','Collant')+
+ '</div></aside></div>'+
+ '<div class="stk">'+ad('ban','Bannière collante','320×50 · fermable','Bas')+'</div>'+footer();
+}
+
+/* ---------- bilan ---------- */
+function bilan(){
+ var pts=[58,61,66,59,64,67,62,64], W=560,H=140, x=function(i){return 30+i*(W-60)/7}, y=function(v){return H-20-(v-50)/(75-50)*(H-40)};
+ var path=pts.map(function(v,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)}).join(' ');
+ var svg='<svg class="spark" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Taux de réussite par semaine">'+
+  [50,60,70].map(function(v){return '<line x1="30" x2="'+(W-30)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#22304D" stroke-width="1"/><text x="2" y="'+(y(v)+4)+'" fill="#8E9AB8" font-size="11" font-family="Inter">'+v+'%</text>'}).join('')+
+  '<path d="'+path+' L'+x(7)+' '+(H-20)+' L'+x(0)+' '+(H-20)+' Z" fill="rgba(43,213,118,.12)"/><path d="'+path+'" fill="none" stroke="#2BD576" stroke-width="2.5" stroke-linejoin="round"/>'+
+  pts.map(function(v,i){return '<circle cx="'+x(i)+'" cy="'+y(v)+'" r="'+(i===7?5:3)+'" fill="'+(i===7?'#2BD576':'#0F1626')+'" stroke="#2BD576" stroke-width="2"/>'}).join('')+
+  pts.map(function(v,i){return '<text x="'+x(i)+'" y="'+(H-4)+'" text-anchor="middle" fill="#8E9AB8" font-size="11" font-family="Inter">S'+(36+i)+'</text>'}).join('')+
+  '<text x="'+x(7)+'" y="'+(y(64)-10)+'" text-anchor="middle" fill="#2BD576" font-size="13" font-weight="700" font-family="Inter">64%</text></svg>';
+ var row=function(l,v,n){return '<div class="row"><span>'+l+'</span><div class="tk"><i style="width:'+v+'%"></i></div><span class="num">'+v+' % · '+n+'</span></div>'};
+ var r=function(ok,t,s){return '<div><span class="'+(ok?'ok':'ko')+'">'+(ok?'✅':'❌')+'</span><span>'+t+'<br><em>Pronostic : '+s[0]+'</em></span><b class="num" style="font-family:var(--f-d);font-size:17px">'+s[1]+'</b></div>'};
+ return header('b')+
+ '<div class="main"><div class="col">'+
+  '<div class="hero"><h1>Le <b>bilan</b> en toute transparence</h1><p>Chaque pronostic est enregistré avant le coup d\'envoi, puis marqué ✅ ou ❌ automatiquement. Les ratés restent affichés.</p></div>'+
+  '<div class="kpis"><div class="kpi"><small>Réussite 30 jours</small><b class="g num">64 %</b></div><div class="kpi"><small>Pronostics</small><b class="num">214</b></div><div class="kpi"><small>Réussis</small><b class="g num">137</b></div><div class="kpi"><small>Ratés</small><b class="r num">77</b></div></div>'+
+  '<div class="box"><div class="lbl">Réussite par semaine</div>'+svg+'</div>'+
+  '<div style="position:relative">'+ad('ban dk','Bannière','728×90')+ad('ban mo','Bannière','320×50')+'</div>'+
+  '<div class="box"><div class="lbl">Par niveau de confiance</div><div class="hb">'+row('50 à 59 %',54,'61')+row('60 à 69 %',63,'92')+row('70 % et plus',74,'61')+'</div><p class="note" style="margin-top:10px">Plus la confiance annoncée est haute, plus le taux réel monte. C\'est la preuve que le modèle est calibré.</p></div>'+
+  '<div class="box"><div class="lbl">Par championnat</div><div class="hb">'+row('Ligue 1',66,'41')+row('Premier League',62,'38')+row('LaLiga',61,'33')+row('Serie A',67,'30')+row('Ligue des champions CAF',58,'24')+row('Coupe de la CAF',60,'18')+'</div></div>'+
+  '<div class="box"><div class="lbl">Derniers résultats</div><div class="res">'+
+   r(1,'Lyon 2-1 Monaco',['12 · Pas de nul','2-1'])+r(1,'Inter 1-0 Juventus',['1N · Inter','1-0'])+r(0,'Liverpool 1-1 Arsenal',['Les 2 marquent','1-1'])+r(1,'Al Ahly 2-0 Wydad AC',['1 · Al Ahly','2-0'])+r(0,'Real Madrid 0-2 Barcelone',['+2,5 buts','0-2'])+'</div></div>'+
+ '</div><aside class="side"><div class="sticky">'+ad('rect','Pavé 300×250','Adsterra')+afl('afl4.jpg','Partage tes pronos entre amis sur Afrolook','bilan','')+'</div></aside></div>'+
+ footer();
+}
+
+/* ---------- pages de revue ---------- */
+var PUBS=
+'<h2>Plus de publicités, sans gêner</h2><p class="lead">Dix emplacements, mais jamais plus d\'une publicité visible à la fois sur un écran de téléphone. Aucune ne cache le pronostic, aucune ne redirige, aucune ne fait de bruit.</p>'+
+'<div class="grid2" style="margin-bottom:18px"><div class="card"><h3>Sur un téléphone, de haut en bas</h3><div class="wire" style="grid-template-columns:1fr"><div class="ph"><div class="w" style="width:55%"></div><div class="sl"><span>① Bannière haut</span><span>320×50</span></div><div class="wc"></div><div class="wc"></div><div class="wc"></div><div class="sl"><span>② Native Sponsorisé</span><span>toutes les 4 cartes</span></div><div class="wc"></div><div class="wc"></div><div class="sl af"><span>③ Carte Afrolook</span><span>toutes les 8</span></div><div class="wc"></div><div class="sl"><span>④ Bannière collante ✕</span><span>320×50</span></div></div></div></div>'+
+'<div class="card"><h3>Dans une fiche match</h3><div class="wire" style="grid-template-columns:1fr"><div class="ph"><div class="wc" style="height:92px;border-color:#5a4e0a;background:#211c05"></div><div class="sl"><span>⑤ Bannière sous le verdict</span><span>320×100</span></div><div class="wc"></div><div class="wc" style="height:90px"></div><div class="sl"><span>⑥ Native après l\'analyse</span><span>Sponsorisé</span></div><div class="wc"></div><div class="sl af"><span>⑦ Afrolook : « Tu penses quoi de PSG – OM ? »</span></div><div class="wc"></div><div class="sl"><span>④ Bannière collante ✕</span><span>320×50</span></div></div></div><p class="leg">Sur ordinateur : ⑧ pavé 300×250 puis ⑨ 300×600 collant dans la colonne de droite. ⑩ Social Bar : une fois par visite, après 20 secondes.</p></div></div>'+
+'<div class="tw"><table class="t"><thead><tr><th>Emplacement</th><th>Où</th><th>Format</th><th>Fréquence et règle</th></tr></thead><tbody>'+
+'<tr><td>① Bannière haut</td><td>Sous l\'en-tête</td><td>728×90 · 320×50</td><td>Toujours sous le titre, jamais avant le contenu</td></tr>'+
+'<tr><td>② Native</td><td>Dans la liste</td><td>Native Adsterra</td><td>1 pub toutes les 4 cartes, étiquette « Sponsorisé »</td></tr>'+
+'<tr><td>③ Carte Afrolook</td><td>Liste, fiche, colonne</td><td>Maison</td><td>1 encart toutes les 8 cartes ; part réglable dans l\'admin</td></tr>'+
+'<tr><td>④ Collante bas</td><td>Téléphone</td><td>320×50</td><td>Fermable ✕, reste fermée pendant la visite</td></tr>'+
+'<tr><td>⑤⑥ Fiche match</td><td>Sous le verdict, après l\'analyse</td><td>300×250 · 320×100 · native</td><td>2 publicités par fiche, jamais collées</td></tr>'+
+'<tr><td>⑧⑨ Colonne</td><td>Ordinateur</td><td>300×250 puis 300×600</td><td>Le grand format reste collé au défilement</td></tr>'+
+'<tr><td>⑩ Social Bar</td><td>Bas de l\'écran</td><td>Adsterra</td><td>1 fois par visite, après 20 s, fermable</td></tr>'+
+'<tr><td>Pop-under</td><td>Désactivé</td><td>Adsterra</td><td>Coupé au lancement ; plus tard 1 fois par 24 h si l\'admin l\'active</td></tr>'+
+'</tbody></table></div>'+
+'<div class="grid2" style="margin-top:18px"><div class="card"><h3>Remplissage en cascade</h3><p>Si Adsterra ne renvoie rien, on essaie Monetag. Si Monetag ne renvoie rien non plus, un encart Afrolook prend la place. Jamais de vide.</p><div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap"><span class="pill y">Adsterra</span>→<span class="pill c">Monetag</span>→<span class="pill g">Afrolook</span></div></div>'+
+'<div class="card"><h3>Règles qui protègent le revenu</h3><ul><li>Espace réservé pour chaque emplacement : la page ne saute pas.</li><li>Scripts publicitaires chargés après le contenu, au moment où l\'emplacement approche de l\'écran.</li><li>Pas de rafraîchissement automatique des bannières, mal vu par les réseaux.</li><li>Tout est réglable dans l\'admin sans republier. Rien ne s\'affiche tant que l\'admin n\'a pas activé la publicité.</li></ul></div></div>'+
+'<h3 style="margin-top:22px">Encarts Afrolook</h3><p class="lead" style="margin-bottom:12px">Même principe que SlashAtlas : le lien magasin change selon l\'appareil (Android ou iPhone), le message tourne, chaque clic porte un paramètre utm_campaign pour mesurer l\'emplacement.</p>'+
+'<div class="grid2">'+afl('afl1.jpg','Débats foot sur Afrolook : donne ton avis sur le match','liste','')+afl('afl4.jpg','Partage tes pronos entre amis sur Afrolook','fiche','')+afl('afl1.jpg','Tes likes deviennent des pièces sur Afrolook','colonne','')+'</div>';
+
+var ANALYSE=
+'<h2>Mon analyse du cahier des charges</h2><p class="lead">Le cahier des charges tient la route. Voici ce que je garde, ce que je change et ce qui peut faire échouer le projet si on ne le traite pas dès le départ.</p>'+
+'<div class="grid2">'+
+'<div class="card"><h3>À garder tel quel</h3><ul class="ok-l"><li>Pronostic visible tout de suite : c\'est la raison pour laquelle on revient sur le site.</li><li>Le calcul statistique donne les chiffres, l\'IA ne fait que rédiger. Une IA qui invente des probabilités détruit la confiance.</li><li>Une page HTML par match : c\'est la source de trafic gratuite (Google), donc de revenus.</li><li>Bilan public automatique, ratés compris.</li><li>Mesure sans cookie et projet Firebase séparé.</li></ul></div>'+
+'<div class="card"><h3>Ce que je change ou ajoute</h3><ul>'+
+'<li><b>Heure locale du visiteur.</b> Les horaires s\'affichent dans son fuseau (Abidjan, Douala, Paris…). Indispensable avec un public réparti sur plusieurs pays.</li>'+
+'<li><b>Bouton WhatsApp sur chaque match.</b> En Afrique francophone, c\'est le canal de diffusion n°1. Chaque partage ramène des visiteurs gratuits.</li>'+
+'<li><b>« Flash du jour » : les 3 pronostics les plus confiants</b> en haut de l\'accueil. C\'est le titre qu\'on partage et ce qui donne l\'habitude de revenir chaque jour.</li>'+
+'<li><b>Vote anonyme 1 / N / 2</b> sur chaque match, avec lien vers le débat sur Afrolook. Les visiteurs participent sans compte et alimentent l\'application.</li>'+
+'<li><b>Site léger</b> (moins de 150 Ko hors publicités) : une partie du public est en 3G.</li>'+
+'<li><b>Installation sur l\'écran d\'accueil (PWA)</b> pour revenir sans passer par Google.</li></ul></div>'+
+'<div class="card"><h3>Risques à traiter</h3><ul>'+
+'<li><span class="pill r">Revenus</span> Le revenu dépend du trafic, et les CPM d\'Afrique francophone sont bas. Sans un flux régulier de visiteurs, la monétisation reste modeste. Voir le simulateur ci-dessous.</li>'+
+'<li><span class="pill r">Politique pub</span> Un site de pronostics touche aux jeux d\'argent. À vérifier avec Adsterra et Monetag avant de bâtir le plan : certains réseaux limitent ces contenus ou ces pays. L\'affiliation aux sites de paris n\'est pas nécessaire au lancement.</li>'+
+'<li><span class="pill y">Crédibilité</span> Sur le 1N2, un bon modèle reste proche de 50 à 55 %. Le bilan doit afficher les vrais chiffres. Une promesse du genre « 90 % de réussite » sera démentie par le site lui-même.</li>'+
+'<li><span class="pill y">Données</span> Le football africain est moins bien couvert par les API (statistiques, cotes). Pour ces matchs, la confiance sera plus basse et indiquée comme telle.</li>'+
+'<li><span class="pill y">Quota API</span> L\'offre gratuite des API sportives est limitée à quelques dizaines ou centaines de requêtes par jour. Le coût d\'un forfait payant est à valider avant l\'étape 2.</li>'+
+'<li><span class="pill c">Technique</span> Quota CPU de Firebase : fixer maxInstances sur chaque fonction.</li></ul></div>'+
+'<div class="card"><h3>Ordre de lancement que je recommande</h3><ul>'+
+'<li>Étapes 1 à 5 comme prévu, avec 2 championnats, dont la Ligue des champions CAF.</li>'+
+'<li>Publier 2 à 3 semaines de pronostics et de bilan avant de demander Adsterra : les réseaux regardent le contenu réel.</li>'+
+'<li>Pendant ce temps, lancer la chaîne WhatsApp / Telegram « Pronos du jour » avec le Flash du jour.</li>'+
+'<li>Ouvrir d\'abord les emplacements ①②③④ ; ajouter la Social Bar quand le trafic est stable.</li></ul></div></div>'+
+'<div class="card" style="margin-top:14px"><h3>Simulateur de revenus</h3><p class="note">Les valeurs ci-dessous sont des hypothèses à remplacer par les chiffres réels d\'Adsterra une fois le site ouvert. Ce n\'est pas une prévision.</p>'+
+'<div class="sim"><label for="s-v">Visites par jour<input id="s-v" type="range" min="500" max="50000" step="500" value="5000"><output id="o-v"></output></label>'+
+'<label for="s-p">Pages par visite<input id="s-p" type="range" min="1" max="6" step="0.5" value="2.5"><output id="o-p"></output></label>'+
+'<label for="s-i">Pubs vues par page<input id="s-i" type="range" min="1" max="8" step="1" value="4"><output id="o-i"></output></label>'+
+'<label for="s-c">CPM moyen ($ / 1000)<input id="s-c" type="range" min="0.1" max="3" step="0.1" value="0.5"><output id="o-c"></output></label></div>'+
+'<div class="sim"><div class="res2"><div class="kpi"><small>Affichages / jour</small><b class="num" id="r-imp">0</b></div><div class="kpi"><small>Revenu / jour</small><b class="y num" id="r-day">0</b></div><div class="kpi"><small>Revenu / mois</small><b class="g num" id="r-mo">0</b></div></div></div></div>';
+
+var NOM=
+'<h2>Nom et domaine</h2><p class="lead">Le nom est choisi. Il est court, il se prononce facilement et dit ce que fait le site : des pronostics (prono), rapides (flash), faits par une IA.</p>'+
+'<div class="card"><div class="dom">pronoflash<b>ia</b>.com</div><div class="logos"><a class="logo" href="#" data-noop="1" style="font-size:40px"><span class="bolt" style="width:46px;height:46px;font-size:28px;border-radius:11px">⚡</span><span>Prono<em>Flash</em><small style="font-size:18px">IA</small></span></a><span class="bolt" style="width:64px;height:64px;font-size:38px;border-radius:15px">⚡</span><span class="note">Logo texte + icône carrée pour l\'onglet et l\'écran d\'accueil.</span></div></div>'+
+'<div class="grid2" style="margin-top:14px"><div class="card"><h3>Disponibilité</h3><ul class="ok-l"><li>pronoflashia.com : non enregistré (contrôle RDAP du 15/10/2026).</li><li>pronoflash.com : non enregistré. À acheter aussi, avec redirection vers le site.</li><li>pronoflashia.net : non enregistré.</li><li>pronoflash.fr : déjà pris, d\'après le cahier des charges.</li></ul><p class="note" style="margin-top:10px">Un domaine peut être pris par quelqu\'un d\'autre à tout moment : l\'achat est à faire par toi, rapidement.</p></div>'+
+'<div class="card"><h3>Pourquoi ce nom fonctionne</h3><ul><li>« Prono » est le mot que tout le monde tape sur Google dans le public visé.</li><li>« Flash » annonce la rapidité et se marie avec l\'éclair du logo, jaune comme le pronostic.</li><li>« IA » rassure sur la méthode et sert d\'argument de partage.</li><li>Aucun logo officiel de club ou de ligue n\'est utilisé.</li></ul></div></div>';
+
+var DEC=[
+ ['d1','Mise à jour chaque jour (et pas chaque semaine), avec enregistrement des résultats','Cahier des charges § 2.2'],
+ ['d2','Pronostic calculé par un modèle statistique ; l\'IA rédige seulement le texte','Cahier des charges § 2.2'],
+ ['d3','Une page HTML par match, lisible par Google','Cahier des charges § 2.2'],
+ ['d4','Page Bilan publique avec le taux de réussite automatique','Cahier des charges § 2.2'],
+ ['d5','API-Football comme source des matchs (coût à valider) ; football-data.org en plan B','Cahier des charges § 2.2'],
+ ['d6','Projet Firebase séparé d\'Afrolook et de SlashAtlas','Cahier des charges § 2.2'],
+ ['d7','Emplacements et fréquences des publicités, pop-under coupé au lancement','Onglet Publicités'],
+ ['d8','Français d\'abord, anglais (/en/) ensuite','Cahier des charges § 2.2'],
+ ['d9','Affiliation aux sites de paris','Je recommande : non au lancement'],
+ ['d10','Chaîne WhatsApp / Telegram « Pronos du jour »','Je recommande : oui'],
+ ['d11','Flash du jour : les 3 pronostics les plus confiants en tête d\'accueil','Ajout proposé'],
+ ['d12','Bouton de partage WhatsApp et heure locale du visiteur sur chaque match','Ajout proposé'],
+ ['d13','Vote anonyme 1 / N / 2 avec lien vers les débats Afrolook','Ajout proposé'],
+ ['d14','Installation sur l\'écran d\'accueil (PWA)','Ajout proposé']
+];
+var VAL='<h2>Valider</h2><p class="lead">Coche ce que tu acceptes. Le résumé se met à jour en dessous : copie-le et renvoie-le moi pour que je passe à l\'étape 1.</p><div class="card"><div class="val" id="val">'+
+ DEC.map(function(d){return '<label for="'+d[0]+'"><input type="checkbox" id="'+d[0]+'"><span>'+d[1]+'<small>'+d[2]+'</small></span></label>'}).join('')+
+ '</div></div><div class="card" style="margin-top:14px"><h3>Résumé à renvoyer</h3><textarea id="sum" readonly aria-label="Résumé"></textarea><div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="cp" type="button">Copier le résumé</button><span class="note" id="cpm"></span></div></div>';
+
+/* ---------- montage ---------- */
+$('#site-home').innerHTML=home()+sbar();
+$('#site-fiche').innerHTML=fiche();
+$('#site-bilan').innerHTML=bilan();
+$('#p-pubs').innerHTML=PUBS;
+$('#p-analyse').innerHTML=ANALYSE;
+$('#p-nom').innerHTML=NOM;
+$('#p-valider').innerHTML=VAL;
+
+/* onglets */
+var TABS=[['accueil','Accueil'],['fiche','Fiche match'],['bilan','Bilan'],['pubs','Publicités'],['analyse','Analyse'],['nom','Nom & domaine'],['valider','Valider']];
+var tabs=$('#tabs');
+tabs.innerHTML=TABS.map(function(t){return '<button class="tab" role="tab" data-t="'+t[0]+'" aria-selected="false">'+t[1]+'</button>'}).join('');
+function show(id){
+ if(!TABS.some(function(t){return t[0]===id})) id='accueil';
+ TABS.forEach(function(t){
+   $('#p-'+t[0]).hidden=t[0]!==id;
+   $('[data-t="'+t[0]+'"]').setAttribute('aria-selected',String(t[0]===id));
+ });
+ $('#sbar').hidden=true; if(id==='accueil') armSocial();
+ window.scrollTo(0,0);
+ try{history.replaceState(null,'','#'+id)}catch(e){}
+}
+tabs.addEventListener('click',function(e){var b=e.target.closest('.tab'); if(b) show(b.dataset.t)});
+document.addEventListener('click',function(e){
+ var g=e.target.closest('[data-go]'); if(g){e.preventDefault(); show(g.dataset.go); return}
+ var n=e.target.closest('[data-noop]'); if(n) e.preventDefault();
+});
+
+/* bascule téléphone / ordinateur */
+function devSwitch(segId,frId,other){
+ var seg=$(segId),fr=$(frId);
+ seg.addEventListener('click',function(e){
+   var b=e.target.closest('button'); if(!b) return;
+   [['#dev1','#fr1'],['#dev2','#fr2']].forEach(function(p){
+     $(p[1]).dataset.dev=b.dataset.d;
+     $$('button',$(p[0])).forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.d===b.dataset.d))});
+   });
+ });
+}
+devSwitch('#dev1','#fr1'); devSwitch('#dev2','#fr2');
+if(window.innerWidth<700){ $$('.frame').forEach(function(f){f.dataset.dev='phone'}); $$('.seg button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.d==='phone'))}) }
+
+/* options pub */
+$('#hl').addEventListener('change',function(){document.body.classList.toggle('hl',this.checked)});
+$('#noad').addEventListener('change',function(){document.body.classList.toggle('hideads',this.checked)});
+document.addEventListener('click',function(e){
+ if(e.target.id==='stkx'){e.target.closest('.stk').hidden=true}
+ if(e.target.closest('#sbar button')){$('#sbar').hidden=true}
+});
+
+/* Social Bar : une fois, après un délai (6 s dans la maquette au lieu de 20 s) */
+var sbDone=false,sbT=null;
+function armSocial(){
+ if(sbDone) return; clearTimeout(sbT);
+ sbT=setTimeout(function(){ if(!$('#p-accueil').hidden && !document.body.classList.contains('hideads')){ $('#sbar').hidden=false; sbDone=true } },6000);
+}
+
+/* simulateur */
+function sim(){
+ var v=+$('#s-v').value,p=+$('#s-p').value,i=+$('#s-i').value,c=+$('#s-c').value;
+ var imp=v*p*i, day=imp/1000*c;
+ var f=function(n){return Math.round(n).toLocaleString('fr-FR')};
+ $('#o-v').textContent=f(v); $('#o-p').textContent=p.toString().replace('.',','); $('#o-i').textContent=i; $('#o-c').textContent=c.toFixed(1).replace('.',',')+' $';
+ $('#r-imp').textContent=f(imp); $('#r-day').textContent=f(day)+' $'; $('#r-mo').textContent=f(day*30)+' $';
+}
+['s-v','s-p','s-i','s-c'].forEach(function(id){$('#'+id).addEventListener('input',sim)}); sim();
+
+/* validation */
+var KEY='pronoflash-valid';
+function saved(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
+function summary(){
+ var st={},s=saved(); DEC.forEach(function(d){var el=$('#'+d[0]); st[d[0]]=el.checked});
+ var yes=DEC.filter(function(d){return st[d[0]]}), no=DEC.filter(function(d){return !st[d[0]]});
+ var t='PRONOFLASH IA · VALIDATION\n\nJ\'accepte :\n'+(yes.length?yes.map(function(d){return '- '+d[1]}).join('\n'):'- (rien pour l\'instant)')+
+  '\n\nJe n\'accepte pas encore / à discuter :\n'+(no.length?no.map(function(d){return '- '+d[1]}).join('\n'):'- (rien)')+
+  '\n\nNom : PronoFlash IA · Domaine : pronoflashia.com (+ pronoflash.com en redirection)\n';
+ $('#sum').value=t;
+ try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
+}
+var sv=saved(); DEC.forEach(function(d){ $('#'+d[0]).checked=sv[d[0]]===true; $('#'+d[0]).addEventListener('change',summary) });
+summary();
+$('#cp').addEventListener('click',function(){
+ var ta=$('#sum'),m=$('#cpm');
+ var fb=function(){ta.focus();ta.select();m.textContent='Texte sélectionné : copie-le avec ton clavier.'};
+ try{ navigator.clipboard.writeText(ta.value).then(function(){m.textContent='Résumé copié.'},fb) }catch(e){fb()}
+});
+
+window.addEventListener('hashchange',function(){var x=(location.hash||'').slice(1); if(x) show(x)});
+var h=(location.hash||'').slice(1); show(h||'accueil');
+})();
+</script>
