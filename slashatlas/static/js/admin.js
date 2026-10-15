@@ -85,8 +85,12 @@
             if (res.status !== 200) { tbl.innerHTML = '<p class="hint">Erreur ' + res.status + '</p>'; return; }
             var errs = (res.data && res.data.errors) || [];
             if (!errs.length) { tbl.innerHTML = '<p class="hint">Aucune erreur enregistrée.</p>'; return; }
-            var rows = errs.map(function (e) { return '<tr><td>' + esc(e.at || '—') + '</td><td>' + esc(e.type || '') + '</td><td style="max-width:320px;word-break:break-all">' + esc(e.code || '') + '</td><td>' + esc(e.uid || '') + '</td></tr>'; }).join('');
-            tbl.innerHTML = '<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Erreur</th><th>UID</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+            var rows = errs.map(function (e) {
+              var genreLabel = e.genre ? ('<span style="background:#2a3a2a;color:#7ec87e;border-radius:3px;padding:1px 6px;font-size:11px">' + esc(e.genre) + '</span> ') : '';
+              var desc = e.desc || e.code || '';
+              return '<tr><td>' + esc(e.at || '—') + '</td><td>' + esc(e.type || '') + '</td><td>' + genreLabel + '</td><td style="max-width:340px;word-break:break-word">' + esc(desc) + '</td><td>' + esc(e.uid || '') + '</td></tr>';
+            }).join('');
+            tbl.innerHTML = '<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Genre</th><th>Description</th><th>UID</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
           }).catch(function () { _lge.disabled = false; _lge.textContent = 'Réessayer'; });
         }
         _lge.addEventListener('click', loadGenErrors);

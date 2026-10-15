@@ -120,6 +120,7 @@ input[type=email],input[type=text],input[type=search]{font-size:15px}
 .fmsg{flex-basis:100%;margin:0;font-size:13px;color:var(--ok);min-height:1em}.fmsg.err{color:#ff6b6b}
 .ft{display:flex;flex-wrap:wrap;gap:6px 18px;padding:24px 18px calc(28px + env(safe-area-inset-bottom,0px));color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:40px;max-width:1160px;margin-inline:auto}
 .ft a:hover{color:var(--txt)}
+.ft-build{width:100%;opacity:.4;font-size:11px;letter-spacing:.02em}
 /* Fiche */
 .crumb{color:var(--faint);font-size:12.5px;margin-bottom:14px}.crumb b{color:var(--mut)}.crumb a:hover{color:var(--txt)}
 .fiche{display:grid;gap:20px}

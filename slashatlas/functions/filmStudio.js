@@ -17,8 +17,37 @@ function calcCost(duration, watermark, customAudio) {
     - (watermark ? WATERMARK_DISCOUNT : 0)
     - (customAudio ? CUSTOM_AUDIO_DISCOUNT : 0));
 }
-const SCRIPT_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+const SCRIPT_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 const GEMINI_API_KEY = studio.GEMINI_API_KEY;
+const CF_TEXT_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
+
+async function generateScriptCF(prompt) {
+  const token = (process.env.CF_API_TOKEN || '').replace(/^﻿/, '').trim();
+  const account = (process.env.CF_ACCOUNT_ID || '').replace(/^﻿/, '').trim();
+  if (!token || !account) throw new Error('cf_not_configured');
+  let lastErr = null;
+  for (const model of CF_TEXT_MODELS) {
+    const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/${model}`, {
+      method: 'POST', signal: AbortSignal.timeout(60000),
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], max_tokens: 2048, response_format: { type: 'json_object' } }),
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      console.error('cf text', model, r.status, t.slice(0, 200));
+      lastErr = new Error('cf_' + r.status); continue;
+    }
+    const d = await r.json();
+    // Format OpenAI-compatible : choices[0].message.content
+    const text = d?.result?.choices?.[0]?.message?.content || '';
+    if (!text) { lastErr = new Error('cf_empty'); continue; }
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) { lastErr = new Error('cf_nojson'); continue; }
+    console.log('cf text fallback ok', model);
+    return JSON.parse(match[0]);
+  }
+  throw lastErr || new Error('cf_failed');
+}
 
 function clamp(s, n) { return clean(s, n); }
 
@@ -46,7 +75,7 @@ Synopsis : ${synopsis}
 Le scénario doit avoir exactement ${nScenes} scènes de ${sceneDur} secondes chacune (durée totale : ${duration} minutes).
 
 Pour chaque scène, fournis :
-- setting : description du décor en anglais (30 mots max, pour la génération d'image FLUX : style illustratif, lumière douce, couleurs vives)
+- setting : décor en anglais (40 mots max, pour la génération d'image par IA : lieu, ambiance visuelle, style cinématographique, composition)
 - action : ce que font les personnages (en ${actionLang}, 1-2 phrases)
 ${voiceLine}
 
@@ -70,7 +99,7 @@ Synopsis: ${synopsis}
 The script must have exactly ${nScenes} scenes of ${sceneDur} seconds each (total duration: ${duration} minutes).
 
 For each scene, provide:
-- setting: scene description in English (30 words max, for FLUX image generation: illustrative style, soft light, vivid colors)
+- setting: scene description in English (40 words max, for AI image generation: location, visual atmosphere, cinematic style, composition)
 - action: what the characters do (1-2 sentences)
 - voice: voice-over text in English (read in ${Math.round(sceneDur * 0.4)} words max, natural, narrative)
 
@@ -123,7 +152,7 @@ L'épisode doit s'inscrire dans la continuité de la série, en respectant les p
 Le scénario doit avoir exactement ${nScenes} scènes de ${sceneDur} secondes chacune (durée totale : ${duration} minutes).
 
 Pour chaque scène, fournis :
-- setting : description du décor en anglais (30 mots max, style illustratif, lumière douce, couleurs vives)
+- setting : décor en anglais (40 mots max, pour la génération d'image par IA : lieu, ambiance visuelle, style cinématographique)
 - action : ce que font les personnages (en français, 1-2 phrases)
 - voice : texte de la voix off en français (lu en ${Math.round(sceneDur * 0.4)} mots max, naturel, narratif)
 - summary_fr : résumé de la scène en 1 phrase (pour le contexte des futurs épisodes)
@@ -158,7 +187,7 @@ The episode must fit into the series continuity, respecting established characte
 The script must have exactly ${nScenes} scenes of ${sceneDur} seconds each (total duration: ${duration} minutes).
 
 For each scene, provide:
-- setting: scene description in English (30 words max, illustrative style, soft light, vivid colors)
+- setting: scene description in English (40 words max, for AI image generation: location, visual atmosphere, cinematic style)
 - action: what the characters do (1-2 sentences)
 - voice: voice-over text in English (read in ${Math.round(sceneDur * 0.4)} words max, natural, narrative)
 - summary_fr: one-sentence scene summary (for future episode context)
@@ -178,12 +207,194 @@ Reply ONLY with valid JSON:
 }`;
 }
 
+// ── Prompt animation 2D ────────────────────────────────────────────────────
+function buildAnimationPrompt(params, lang) {
+  const { title, synopsis, duration } = params;
+  const nScenes = duration === 3 ? 8 : 6;
+  const sceneDur = duration === 3 ? 22 : 20;
+  const wordMax = Math.round(sceneDur * 0.4);
+  const isFr = lang === 'fr' || !['fr', 'en'].includes(lang);
+
+  if (isFr) {
+    return `Tu es un scénariste d'animation africaine. Écris le scénario de "${title}".
+
+Synopsis : ${synopsis}
+
+Règles : ${nScenes} scènes de ${sceneDur}s chacune. Voix off max ${wordMax} mots. 1 à 3 personnages par scène.
+
+Décors disponibles : savane, village, ville, cuisine, marche, foret, mer
+Types de personnages : adulte-femme, adulte-homme, enfant-fille, enfant-garcon, ancien
+Directions : E (vers la droite), W (vers la gauche), S (face caméra)
+États : idle, walk, run, talk, wave, sit, sleep, dance, point
+Positions : left, center-left, center, center-right, right
+
+IMPORTANT : Varie les décors, les états et les positions. Fais marcher les personnages (walk+E ou walk+W) et parler (talk) sur les scènes clés.
+
+Réponds UNIQUEMENT en JSON valide :
+{
+  "title": "${title}",
+  "genre": "animation",
+  "lang": "${lang}",
+  "scenes": [
+    {
+      "id": 1,
+      "bg": "savane",
+      "voice": "texte de la voix off",
+      "chars": [
+        { "type": "adulte-femme", "dir": "E", "state": "walk", "pos": "center-left", "scale": 1.0 }
+      ]
+    }
+  ]
+}`;
+  }
+
+  return `You are an African 2D animation screenwriter. Write the script for "${title}".
+
+Synopsis: ${synopsis}
+
+Rules: ${nScenes} scenes of ${sceneDur}s each. Voice-over max ${wordMax} words. 1 to 3 characters per scene.
+
+Available backgrounds: savane, village, ville, cuisine, marche, foret, mer
+Character types: adulte-femme, adulte-homme, enfant-fille, enfant-garcon, ancien
+Directions: E (rightward), W (leftward), S (facing camera)
+States: idle, walk, run, talk, wave, sit, sleep, dance, point
+Positions: left, center-left, center, center-right, right
+
+IMPORTANT: Vary backgrounds, states and positions. Have characters walk (walk+E or walk+W) and talk (state: talk) on key scenes.
+
+Reply ONLY with valid JSON:
+{
+  "title": "${title}",
+  "genre": "animation",
+  "lang": "en",
+  "scenes": [
+    {
+      "id": 1,
+      "bg": "savane",
+      "voice": "voice-over text",
+      "chars": [
+        { "type": "adulte-femme", "dir": "E", "state": "walk", "pos": "center-left", "scale": 1.0 }
+      ]
+    }
+  ]
+}`;
+}
+
+// ── Prompt animation 2D pour les épisodes de série ─────────────────────────
+function buildAnimationEpisodePrompt(params, seriesData, prevEpisodes, lang) {
+  const { title, duration } = params;
+  const nScenes = duration === 3 ? 8 : 6;
+  const sceneDur = duration === 3 ? 22 : 20;
+  const wordMax = Math.round(sceneDur * 0.4);
+  const epNum = (seriesData.episodeCount || 0) + 1;
+  const isFr = lang === 'fr' || !['fr', 'en'].includes(lang);
+
+  const prevContext = prevEpisodes.length
+    ? prevEpisodes.map((e) => isFr
+        ? `  - Épisode ${e.episodeNumber} : "${e.title}" — ${e.summary || ''}`
+        : `  - Episode ${e.episodeNumber}: "${e.title}" — ${e.summary || ''}`)
+      .join('\n')
+    : (isFr ? '  (premier épisode)' : '  (first episode)');
+
+  const charContext = (seriesData.characters || []).length
+    ? (isFr ? '\nPersonnages récurrents :\n' : '\nRecurring characters:\n') +
+      seriesData.characters.map((c) => `  - ${c}`).join('\n')
+    : '';
+
+  if (isFr) {
+    return `Tu es un scénariste d'animation africaine qui travaille sur une série.
+
+Série : "${seriesData.title}"
+Synopsis général : ${seriesData.synopsis}
+${charContext}
+
+Épisodes précédents :
+${prevContext}
+
+Écris le scénario animé de l'épisode ${epNum} intitulé "${title}".
+
+Règles : ${nScenes} scènes de ${sceneDur}s chacune. Voix off max ${wordMax} mots. 1 à 3 personnages par scène.
+Respecte les personnages et l'univers établis dans la série.
+
+Décors disponibles : savane, village, ville, cuisine, marche, foret, mer
+Types de personnages : adulte-femme, adulte-homme, enfant-fille, enfant-garcon, ancien
+Directions : E (vers la droite), W (vers la gauche), S (face caméra)
+États : idle, walk, run, talk, wave, sit, sleep, dance, point
+Positions : left, center-left, center, center-right, right
+
+IMPORTANT : Varie les décors, les états et les positions. Fais marcher les personnages et les faire parler (talk) sur les scènes clés.
+
+Réponds UNIQUEMENT en JSON valide :
+{
+  "title": "${title}",
+  "episode": ${epNum},
+  "genre": "serie",
+  "lang": "${lang}",
+  "characters": ["liste des personnages de cet épisode"],
+  "episode_summary": "résumé en 2-3 phrases",
+  "scenes": [
+    {
+      "id": 1,
+      "bg": "savane",
+      "voice": "texte de la voix off",
+      "chars": [
+        { "type": "adulte-femme", "dir": "E", "state": "walk", "pos": "center-left", "scale": 1.0 }
+      ]
+    }
+  ]
+}`;
+  }
+
+  return `You are an African 2D animation screenwriter working on a series.
+
+Series: "${seriesData.title}"
+Overall synopsis: ${seriesData.synopsis}
+${charContext}
+
+Previous episodes:
+${prevContext}
+
+Write the animated script for episode ${epNum} titled "${title}".
+
+Rules: ${nScenes} scenes of ${sceneDur}s each. Voice-over max ${wordMax} words. 1 to 3 characters per scene.
+Respect the established characters and universe of the series.
+
+Available backgrounds: savane, village, ville, cuisine, marche, foret, mer
+Character types: adulte-femme, adulte-homme, enfant-fille, enfant-garcon, ancien
+Directions: E (rightward), W (leftward), S (facing camera)
+States: idle, walk, run, talk, wave, sit, sleep, dance, point
+Positions: left, center-left, center, center-right, right
+
+IMPORTANT: Vary backgrounds, states and positions. Have characters walk and talk (state: talk) on key scenes.
+
+Reply ONLY with valid JSON:
+{
+  "title": "${title}",
+  "episode": ${epNum},
+  "genre": "serie",
+  "lang": "en",
+  "characters": ["list of characters in this episode"],
+  "episode_summary": "2-3 sentence episode summary",
+  "scenes": [
+    {
+      "id": 1,
+      "bg": "savane",
+      "voice": "voice-over text",
+      "chars": [
+        { "type": "adulte-femme", "dir": "E", "state": "walk", "pos": "center-left", "scale": 1.0 }
+      ]
+    }
+  ]
+}`;
+}
+
 async function generateScript(params, seriesData, prevEpisodes) {
   const lang = params.lang || 'fr';
   const isSerie = params.genre === 'serie' && seriesData;
+  // Tous les genres (film, serie, conte, animation) utilisent le renderer animation 2.5D
   const prompt = isSerie
-    ? buildEpisodePrompt(params, seriesData, prevEpisodes || [], lang)
-    : buildPrompt(params, lang);
+    ? buildAnimationEpisodePrompt(params, seriesData, prevEpisodes || [], lang)
+    : buildAnimationPrompt(params, lang);
   const body = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.8, maxOutputTokens: 4096 },
@@ -197,15 +408,24 @@ async function generateScript(params, seriesData, prevEpisodes) {
       body: JSON.stringify(body),
     });
     if (!r.ok) {
-      console.error('gemini script', model, r.status);
-      if (r.status === 404 || r.status === 429 || r.status === 503) { lastErr = new Error('gemini_unavailable'); continue; }
-      throw new Error('gemini_' + r.status);
+      const errBody = await r.text().catch(() => '');
+      console.error('gemini script', model, r.status, errBody.slice(0, 200));
+      lastErr = new Error('script_' + model + '_' + r.status);
+      continue;
     }
     const d = await r.json();
     const text = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) { lastErr = new Error('script_' + model + '_empty'); continue; }
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('no_json');
+    if (!match) { lastErr = new Error('script_' + model + '_nojson'); continue; }
     return JSON.parse(match[0]);
+  }
+  // Fallback Cloudflare Workers AI si tous les modèles Gemini échouent
+  try {
+    console.log('gemini tous échoués, fallback CF Workers AI');
+    return await generateScriptCF(prompt);
+  } catch (cfErr) {
+    console.error('cf fallback error', cfErr.message);
   }
   throw lastErr || new Error('gemini_unavailable');
 }
@@ -234,8 +454,8 @@ async function getOrCreateSeries(uid, params) {
   const ref = db().collection('FilmSeries').doc();
   const data = {
     uid,
-    title: clamp(params.title || '', 80),
-    synopsis: clamp(params.synopsis || '', 3000),
+    title: clamp(params.seriesTitle || params.title || '', 80),
+    synopsis: clamp(params.seriesSynopsis || params.synopsis || '', 3000),
     genre: 'serie',
     lang: params.lang || 'fr',
     duration: [2, 3].includes(+params.duration) ? +params.duration : 2,
@@ -329,8 +549,8 @@ async function createFilm(u, params) {
 }
 
 function getRenderUrl() {
-  const project = process.env.GCLOUD_PROJECT || 'slashatlas-studio';
-  return `https://europe-west1-${project}.cloudfunctions.net/slashatlasFilm`;
+  // URL Cloud Run Gen 2 — stable pour ce projet (europe-west1)
+  return process.env.FILM_RENDER_URL || 'https://slashatlasfilm-jpbacdkvra-ew.a.run.app';
 }
 
 async function processFilm(jobId, params, seriesData) {
@@ -397,8 +617,9 @@ async function processFilm(jobId, params, seriesData) {
         const { uid, cost } = snap.data();
         if (uid && cost) {
           const { addCredits, logGenError } = require('./studio');
-          await addCredits(uid, cost, 'film_refund_' + jobId).catch(() => {});
-          await logGenError('film', 'render_trigger_failed', uid, { jobId });
+          await addCredits(uid, cost, 'refund', 'film_' + jobId, { reason: 'render_trigger_failed' })
+            .catch((err) => console.error('film refund failed', jobId, err.message));
+          await logGenError('film', 'render_trigger_failed', uid, { jobId, genre: params.genre, desc: 'Impossible de déclencher le rendu vidéo (timeout ou URL invalide)' });
         }
       }
       return;
@@ -412,8 +633,10 @@ async function processFilm(jobId, params, seriesData) {
       const { uid, cost } = snap.data();
       if (uid && cost) {
         const { addCredits, logGenError } = require('./studio');
-        await addCredits(uid, cost, 'film_refund_' + jobId).catch(() => {});
-        await logGenError('film', e.message, uid, { jobId });
+        const refResult = await addCredits(uid, cost, 'refund', 'film_' + jobId, { reason: e.message })
+          .catch((err) => { console.error('film refund failed', jobId, err.message); return null; });
+        console.log('film refund', jobId, refResult ? (refResult.applied ? 'ok' : 'already_done') : 'error');
+        await logGenError('film', e.message, uid, { jobId, genre: params.genre, desc: e.message });
       }
     }
   }

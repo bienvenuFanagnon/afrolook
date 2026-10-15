@@ -87,6 +87,27 @@
   var uploadedAudioPath = null; // chemin Firebase Storage de l'audio importé
   var userBalance = null;
 
+  function updateSerieMode() {
+    var genreEl = $('#film-genre');
+    var serieFields = document.getElementById('film-serie-fields');
+    var titleLabel = document.getElementById('film-title-label');
+    var synopsisLabel = document.getElementById('film-synopsis-label');
+    var isNewSerie = genreEl && genreEl.value === 'serie' && !currentSeriesId;
+    if (serieFields) serieFields.hidden = !isNewSerie;
+    if (titleLabel) titleLabel.textContent = isNewSerie
+      ? (isFr ? 'Titre de l\'épisode 1' : 'Episode 1 title')
+      : (isFr ? 'Titre de votre film ou série' : 'Title of your film or series');
+    if (synopsisLabel) synopsisLabel.textContent = isNewSerie
+      ? (isFr ? 'Synopsis de l\'épisode 1' : 'Episode 1 synopsis')
+      : (isFr ? 'Description de l\'histoire' : 'Story description');
+    if (!isNewSerie) {
+      var stEl = document.getElementById('film-series-title');
+      var ssEl = document.getElementById('film-series-synopsis');
+      if (stEl) stEl.value = '';
+      if (ssEl) ssEl.value = '';
+    }
+  }
+
   function refreshBalance(onDone) {
     if (!window.slashAuth) { if (onDone) onDone(); return; }
     window.slashAuth.call('me').then(function (r) {
@@ -367,6 +388,10 @@
     recalcCost();
   }
 
+  // ── Mise à jour du mode série (champs série/épisode) ─────────────────────────
+  var genreChgEl = $('#film-genre');
+  if (genreChgEl) genreChgEl.addEventListener('change', updateSerieMode);
+
   // ── Toggle audio : affiche/masque le sélecteur de fichier ────────────────────
   var audioToggleEl = document.getElementById('film-audio-toggle');
   var audioWrapEl = document.getElementById('film-audio-wrap');
@@ -439,6 +464,13 @@
         duration: dur ? +dur.value : 2,
         watermark: wmEl ? wmEl.checked : true,
       };
+      var serieFieldsEl = document.getElementById('film-serie-fields');
+      if (serieFieldsEl && !serieFieldsEl.hidden) {
+        var stEl = document.getElementById('film-series-title');
+        var ssEl = document.getElementById('film-series-synopsis');
+        if (stEl && stEl.value.trim()) payload.seriesTitle = stEl.value.trim();
+        if (ssEl && ssEl.value.trim()) payload.seriesSynopsis = ssEl.value.trim();
+      }
       if (uploadedAudioPath) payload.customAudioPath = uploadedAudioPath;
       if (currentSeriesId) payload.seriesId = currentSeriesId;
 
@@ -534,6 +566,7 @@
     // Mettre à jour le label du bouton
     var sub = $('#film-submit');
     if (sub) sub.textContent = isFr ? 'Générer l\'épisode suivant' : 'Generate next episode';
+    updateSerieMode();
   }
 
   // Bouton reset série
@@ -547,6 +580,7 @@
       document.querySelectorAll('.film-series-card').forEach(function (c) { c.classList.remove('selected'); });
       var sub = $('#film-submit');
       if (sub) sub.textContent = isFr ? 'Créer mon film' : 'Create my film';
+      updateSerieMode();
     });
   }
 
@@ -566,6 +600,7 @@
       if (synopsisEl) synopsisEl.value = btn.dataset.synopsis;
       if (genreEl) genreEl.value = btn.dataset.genre;
       if (durEl) durEl.checked = true;
+      updateSerieMode();
       document.querySelectorAll('.film-idea-card').forEach(function (b) { b.classList.remove('selected'); });
       btn.classList.add('selected');
       // Reset badge série si on clique une idée

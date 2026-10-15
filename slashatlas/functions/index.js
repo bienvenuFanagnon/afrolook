@@ -22,6 +22,7 @@ const db = getFirestore();
 
 const CF_API_TOKEN = defineSecret('CF_API_TOKEN');
 const CF_ACCOUNT_ID = defineSecret('CF_ACCOUNT_ID');
+const MINIMAX_API_KEY = defineSecret('MINIMAX_API_KEY');
 
 const ORIGINS = [
   /^https:\/\/slashatlas(-studio)?(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)$/,
@@ -541,10 +542,10 @@ exports.slashatlasVideo = onRequest(
   },
 );
 
-// Rendu des films & séries : function dédiée (4 Go, 2 CPU, 9 minutes).
+// Rendu des films & séries : function dédiée (4 Go, 2 CPU, 60 minutes max).
 // Appelée en fire-and-forget par filmStudio.processFilm() via HTTP.
 exports.slashatlasFilm = onRequest(
-  { region: 'europe-west1', invoker: 'public', memory: '4GiB', cpu: 2, concurrency: 1, maxInstances: 4, timeoutSeconds: 540, secrets: [CF_API_TOKEN, CF_ACCOUNT_ID] },
+  { region: 'europe-west1', invoker: 'public', memory: '4GiB', cpu: 2, concurrency: 1, maxInstances: 4, timeoutSeconds: 3600, secrets: [CF_API_TOKEN, CF_ACCOUNT_ID, MINIMAX_API_KEY] },
   async (req, res) => {
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
@@ -554,12 +555,10 @@ exports.slashatlasFilm = onRequest(
     // Vérification du token interne (évite les appels non autorisés)
     const snap = await db.collection('FilmJobs').doc(String(jobId)).get();
     if (!snap.exists || snap.data().renderToken !== token) return res.status(403).json({ error: 'forbidden' });
-    try {
-      await filmRenderer.renderFilm(String(jobId), process.env.CF_ACCOUNT_ID, process.env.CF_API_TOKEN);
-      return res.status(200).json({ ok: true });
-    } catch (e) {
-      console.error('slashatlasFilm', jobId, e);
-      return res.status(500).json({ error: 'render_failed' });
-    }
+    // Répondre immédiatement pour libérer l'appelant (timeout 10s dans filmStudio)
+    res.status(200).json({ ok: true });
+    // Lancer le rendu en arrière-plan sans bloquer la réponse
+    filmRenderer.renderFilm(String(jobId), process.env.CF_ACCOUNT_ID, process.env.CF_API_TOKEN, process.env.MINIMAX_API_KEY)
+      .catch((e) => { console.error('slashatlasFilm bg render', jobId, e.message); });
   },
 );

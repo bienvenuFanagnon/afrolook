@@ -15,7 +15,7 @@ const db = () => getFirestore();
 const FEEXPAY_SHOP = 'crZfM9il1xK9uJ6';
 const FEEXPAY_API = 'https://api-v2.feexpay.me/api/transactions/public';
 // Modèles image en ordre de priorité : si le premier retourne 404/429/503, on passe au suivant
-const IMAGE_MODELS = ['gemini-2.0-flash-preview-image-generation', 'gemini-2.0-flash-exp'];
+const IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-3-pro-image', 'gemini-2.5-flash-image'];
 
 // Un crédit = une génération (ou une correction). Prix en FCFA, hors frais de paiement (ajoutés au client).
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.

@@ -626,9 +626,12 @@ async function ttsToken() {
 function trimPcm(pcm) { let a = 0, b = pcm.length - 1; const th = 400; while (a < b && Math.abs(pcm[a]) < th) a++; while (b > a && Math.abs(pcm[b]) < th) b--; return pcm.slice(Math.max(0, a - 1200), Math.min(pcm.length, b + 2400)); }
 async function tts(text, lang, gender, maxSec) {
   const token = await ttsToken();
+  // Langues africaines sans voix Chirp dédiée → anglais (plus neutre que français pour prononcer ces langues)
+  const africanLangs = new Set(['ee', 'yo', 'ha', 'ig', 'tw', 'ak', 'sn', 'zu', 'xh', 'wo', 'bm', 'ff', 'ln', 'lg', 'rw', 'ny', 'mg']);
   const langCodes = { fr: 'fr-FR', en: 'en-US', sw: 'sw-KE' };
-  const code = langCodes[lang] || 'fr-FR';
-  const voiceKey = lang === 'en' ? 'en' : 'fr';
+  const useEn = africanLangs.has(lang);
+  const code = useEn ? 'en-US' : (langCodes[lang] || 'fr-FR');
+  const voiceKey = (lang === 'en' || useEn) ? 'en' : 'fr';
   const name = VOICES[voiceKey][gender === 'm' ? 'm' : 'f'];
   const clean = String(text).replace(/[\[\]<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 420);
   let rate = 1.0, out = null;
