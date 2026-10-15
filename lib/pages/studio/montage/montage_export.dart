@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -9,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -62,6 +62,23 @@ class MontageExport {
   static Future<File> assetToFile(String asset, String ext) async {
     final data = await rootBundle.load(asset);
     return tempFile(data.buffer.asUint8List(), ext);
+  }
+
+  /// Enregistre le montage (image ou vidéo) dans la galerie du téléphone, album « Afrolook ».
+  static Future<bool> saveToGallery(File f, {required bool video}) async {
+    try {
+      if (!await Gal.hasAccess(toAlbum: true)) {
+        if (!await Gal.requestAccess(toAlbum: true)) return false;
+      }
+      if (video) {
+        await Gal.putVideo(f.path, album: 'Afrolook');
+      } else {
+        await Gal.putImage(f.path, album: 'Afrolook');
+      }
+      return true;
+    } on GalException {
+      return false;
+    }
   }
 
   /// Image fixe prête à publier (1080 px de large).

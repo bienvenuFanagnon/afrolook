@@ -258,16 +258,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       }
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
-      Navigator.pop(
-        context,
-        StudioResult(
-          type: video ? StudioContentType.video : StudioContentType.image,
-          mediaFile: file,
-          textContent: _caption(),
-          templateId: 'montage_${tp.id}',
-          forChronique: widget.forChronique,
-        ),
-      );
+      setState(() => _frozenT = null);
+      await _afterCreate(file, video);
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
@@ -280,6 +272,54 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           _frozenT = null;
         });
       }
+    }
+  }
+
+  /// Montage prêt : publier, l'enregistrer dans la galerie, les deux, ou continuer à le modifier.
+  Future<void> _afterCreate(File file, bool video) async {
+    var saved = false;
+    while (mounted) {
+      final choice = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: _c.surface,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 14, 8, 8),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(video ? 'Ta vidéo est prête 🎬' : 'Ton image est prête ✨', style: TextStyle(color: _c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
+              if (saved)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text('✅ Enregistrée dans ta galerie (album Afrolook)', style: TextStyle(color: _c.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                ),
+              const SizedBox(height: 6),
+              _sheetTile(ctx, Icons.send_rounded, widget.forChronique ? 'Publier en chronique' : 'Publier en post', 'publish'),
+              if (!saved) _sheetTile(ctx, Icons.download_rounded, 'Enregistrer dans ma galerie', 'save'),
+              if (!saved) _sheetTile(ctx, Icons.download_done_rounded, 'Enregistrer et publier', 'both'),
+              _sheetTile(ctx, Icons.edit_rounded, 'Continuer à modifier', 'edit'),
+            ]),
+          ),
+        ),
+      );
+      if (!mounted || choice == null || choice == 'edit') return;
+      if (choice == 'save' || choice == 'both') {
+        saved = await MontageExport.saveToGallery(file, video: video);
+        if (!mounted) return;
+        if (!saved) _say('Impossible d’enregistrer : autorise l’accès aux photos dans les réglages du téléphone.');
+        if (choice == 'save') continue;
+      }
+      Navigator.pop(
+        context,
+        StudioResult(
+          type: video ? StudioContentType.video : StudioContentType.image,
+          mediaFile: file,
+          textContent: _caption(),
+          templateId: 'montage_${tp.id}',
+          forChronique: widget.forChronique,
+        ),
+      );
+      return;
     }
   }
 
@@ -306,7 +346,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             child: FilledButton(
               onPressed: _busy ? null : _publish,
               style: FilledButton.styleFrom(backgroundColor: _c.primary),
-              child: Text(s.exportsVideo ? 'Publier 🎬' : 'Publier'),
+              child: Text(s.exportsVideo ? 'Terminer 🎬' : 'Terminer'),
             ),
           ),
         ],
@@ -361,7 +401,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                       s.animated = v;
                       _syncAnim();
                     }),
-            activeColor: _c.primary,
+            activeThumbColor: _c.primary,
             title: Text('Animé (vidéo)', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
             subtitle: Text(
               s.useVideo ? 'Ta vidéo garde l’effet animé.' : (s.animated ? 'Publié en vidéo avec l’effet animé.' : 'Publié en image fixe.'),
