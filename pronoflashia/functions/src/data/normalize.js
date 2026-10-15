@@ -160,3 +160,27 @@ module.exports = {
   statutOf, slugify, shortName, roundNumber, normalizeFixture, normalizeStatistics, normalizeOdds,
   recentEntry, goalStats, formString, countAverages, leagueGoalAverages,
 };
+
+/** Couleurs d'écusson déterministes à partir du nom (pas de logo officiel). */
+function teamColors(name) {
+  let h = 0;
+  for (const c of String(name || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const hue = h % 360;
+  const hsl = (hh, s, l) => {
+    const a = (s * Math.min(l, 100 - l)) / 10000;
+    const f = (n) => { const k = (n + hh / 30) % 12; const c = l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); return Math.round(255 * c).toString(16).padStart(2, '0'); };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+  return [hsl(hue, 62, 38), hsl((hue + 28) % 360, 70, 26)];
+}
+
+/** Initiales d'un écusson : 3 lettres au plus. */
+function initials(name) {
+  const w = String(name || '').replace(/[^A-Za-zÀ-ÿ0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+  if (!w.length) return '?';
+  if (w.length === 1) return w[0].slice(0, 3).toUpperCase();
+  return w.slice(0, 3).map((x) => x[0]).join('').toUpperCase();
+}
+
+module.exports.teamColors = teamColors;
+module.exports.initials = initials;
