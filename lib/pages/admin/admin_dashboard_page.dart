@@ -31,6 +31,7 @@ import 'quiz_admin_page.dart';
 import 'stickers/admin_stickers_page.dart';
 import 'pseudo_migration_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
+import '../studio/artist_marketplace.dart';
 
 /// Tableau de bord admin unique (fusion de l'ancien « Tableau de bord » et de l'« ADMIN HUB » / AppData).
 /// Les données se chargent à l'ouverture de la page et via le bouton « Actualiser » uniquement,
@@ -567,6 +568,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.live_tv_rounded, 'Canaux', c.info, 0, const AdminCanauxPage()),
       _Module(Icons.emoji_emotions_rounded, 'Stickers', c.warning, _stickersPending, const AdminStickersPage()),
       _Module(Icons.tag_rounded, 'Noms de canaux', c.primary, 0, const PseudoMigrationPage(canaux: true)),
+      _Module(Icons.library_music_rounded, 'Sons artistes', const Color(0xFF9B59B6), 0, const AdminArtistSoundsPage()),
     ];
     return GridView.count(
       crossAxisCount: 3,

@@ -15,8 +15,11 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
+import '../studio/studio_entry_page.dart';
+import '../studio/studio_models.dart';
 
-enum ChroniqueType { TEXT, IMAGE, VIDEO }
+enum ChroniqueType { TEXT, IMAGE, VIDEO, AUDIO }
+
 class Chronique {
   String? id;
   String userId;
@@ -25,7 +28,9 @@ class Chronique {
   ChroniqueType type;
   String? textContent;
   String? mediaUrl;
+  String? coverImageUrl; // Pochette pour audio, image de fond pour texte
   String? backgroundColor;
+  String? templateId; // Template Studio utilisé
   int duration; // en secondes
   int viewCount;
   int likeCount;
@@ -37,9 +42,10 @@ class Chronique {
   Timestamp expiresAt;
   double? fileSize; // en MB
   int commentCount = 0;
-  // Ajouter ces nouveaux champs
-  List<String> likes; // Liste des utilisateurs qui ont liké
-  int totalReactions; // Somme des likes + loves
+  List<String> likes;
+  int totalReactions;
+  int? audioStartMs; // début du clip audio (trim)
+  int? audioEndMs;   // fin du clip audio (trim)
 
   Chronique({
     this.id,
@@ -49,7 +55,9 @@ class Chronique {
     required this.type,
     this.textContent,
     this.mediaUrl,
+    this.coverImageUrl,
     this.backgroundColor,
+    this.templateId,
     this.duration = 0,
     this.viewCount = 0,
     this.likeCount = 0,
@@ -61,8 +69,10 @@ class Chronique {
     required this.createdAt,
     required this.expiresAt,
     this.fileSize,
-    this.likes = const [], // Initialiser la nouvelle liste
-    this.totalReactions = 0, // Initialiser le total
+    this.likes = const [],
+    this.totalReactions = 0,
+    this.audioStartMs,
+    this.audioEndMs,
   });
 
   // Convertir en Map pour Firestore
@@ -74,7 +84,9 @@ class Chronique {
       'type': type.toString(),
       'textContent': textContent,
       'mediaUrl': mediaUrl,
+      'coverImageUrl': coverImageUrl,
       'backgroundColor': backgroundColor,
+      'templateId': templateId,
       'duration': duration,
       'viewCount': viewCount,
       'likeCount': likeCount,
@@ -86,8 +98,10 @@ class Chronique {
       'expiresAt': expiresAt,
       'fileSize': fileSize,
       'commentCount': commentCount,
-      'likes': likes, // Ajouter le nouveau champ
-      'totalReactions': totalReactions, // Ajouter le nouveau champ
+      'likes': likes,
+      'totalReactions': totalReactions,
+      'audioStartMs': audioStartMs,
+      'audioEndMs': audioEndMs,
     };
   }
 
@@ -101,7 +115,9 @@ class Chronique {
       type: _stringToChroniqueType(map['type']),
       textContent: map['textContent'],
       mediaUrl: map['mediaUrl'],
+      coverImageUrl: map['coverImageUrl'],
       backgroundColor: map['backgroundColor'],
+      templateId: map['templateId'],
       duration: map['duration'] ?? 0,
       viewCount: map['viewCount'] ?? 0,
       likeCount: map['likeCount'] ?? 0,
@@ -113,8 +129,10 @@ class Chronique {
       expiresAt: map['expiresAt'] ?? Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
       fileSize: map['fileSize'],
       commentCount: map['commentCount'] ?? 0,
-      likes: List<String>.from(map['likes'] ?? []), // Récupérer le nouveau champ
-      totalReactions: map['totalReactions'] ?? 0, // Récupérer le nouveau champ
+      likes: List<String>.from(map['likes'] ?? []),
+      totalReactions: map['totalReactions'] ?? 0,
+      audioStartMs: map['audioStartMs'],
+      audioEndMs: map['audioEndMs'],
     );
   }
 
@@ -126,6 +144,8 @@ class Chronique {
         return ChroniqueType.IMAGE;
       case 'ChroniqueType.VIDEO':
         return ChroniqueType.VIDEO;
+      case 'ChroniqueType.AUDIO':
+        return ChroniqueType.AUDIO;
       default:
         return ChroniqueType.TEXT;
     }
@@ -221,6 +241,10 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   ChroniqueType _selectedType = ChroniqueType.TEXT;
   Color _selectedColor = const Color(0xFF1A1A2E);
   File? _selectedMedia;
+  File? _coverImageFile; // Pochette audio ou image de fond texte (depuis Studio)
+  String? _templateId;   // Template Studio utilisé
+  int? _audioStartMs;    // trim audio — début
+  int? _audioEndMs;      // trim audio — fin
   VideoPlayerController? _videoController;
   bool _isUploading = false;
   double _uploadProgress = 0.0;
@@ -355,9 +379,60 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
       case ChroniqueType.VIDEO:
         return _selectedMedia != null &&
             (_textController.text.trim().isEmpty || _textController.text.trim().length <= 100);
-      default:
-        return false;
+      case ChroniqueType.AUDIO:
+        return _selectedMedia != null;
     }
+  }
+
+  Future<void> _openStudio() async {
+    final result = await Navigator.push<StudioResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const StudioEntryPage(forChronique: true),
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() {
+      switch (result.type) {
+        case StudioContentType.text:
+          _selectedType = ChroniqueType.TEXT;
+          _textController.text = result.textContent ?? '';
+          if (result.backgroundColor != null) {
+            final hex = result.backgroundColor!.replaceAll('#', '');
+            _selectedColor = Color(int.parse('FF$hex', radix: 16));
+          }
+          break;
+        case StudioContentType.image:
+          _selectedType = ChroniqueType.IMAGE;
+          _selectedMedia = result.mediaFile;
+          _textController.text = result.textContent ?? '';
+          _videoController?.dispose();
+          _videoController = null;
+          break;
+        case StudioContentType.video:
+          _selectedType = ChroniqueType.VIDEO;
+          _selectedMedia = result.mediaFile;
+          _textController.text = result.textContent ?? '';
+          if (result.mediaFile != null) {
+            _videoController?.dispose();
+            _videoController = VideoPlayerController.file(result.mediaFile!)
+              ..initialize().then((_) => setState(() {}));
+          }
+          break;
+        case StudioContentType.audio:
+          _selectedType = ChroniqueType.AUDIO;
+          _selectedMedia = result.mediaFile;
+          _coverImageFile = result.coverImageFile;
+          _textController.text = result.textContent ?? '';
+          _audioStartMs = result.audioStartMs;
+          _audioEndMs = result.audioEndMs;
+          _videoController?.dispose();
+          _videoController = null;
+          break;
+      }
+      _templateId = result.templateId;
+    });
   }
 
   Future<void> _publishChronique() async {
@@ -433,7 +508,11 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         type: _selectedType,
         textContent: _textController.text.trim(),
         mediaFile: _selectedMedia,
+        coverImageFile: _coverImageFile,
         backgroundColor: _selectedType == ChroniqueType.TEXT ? _selectedColor.value.toRadixString(16) : null,
+        templateId: _templateId,
+        audioStartMs: _audioStartMs,
+        audioEndMs: _audioEndMs,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
@@ -489,8 +568,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         return '📷 ${_textController.text}';
       case ChroniqueType.VIDEO:
         return '🎥 ${_textController.text}';
-      default:
-        return 'Nouvelle chronique';
+      case ChroniqueType.AUDIO:
+        return '🎙️ ${_textController.text}';
     }
   }
 
@@ -515,6 +594,31 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          GestureDetector(
+            onTap: _openStudio,
+            child: Container(
+              margin: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: colors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: colors.primary.withOpacity(0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, size: 13, color: colors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Studio',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -527,7 +631,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
 
             // Contenu selon le type
             if (_selectedType == ChroniqueType.TEXT) _buildTextContent(colors),
-            if (_selectedType != ChroniqueType.TEXT) _buildMediaContent(colors),
+            if (_selectedType == ChroniqueType.IMAGE || _selectedType == ChroniqueType.VIDEO) _buildMediaContent(colors),
+            if (_selectedType == ChroniqueType.AUDIO) _buildAudioContent(colors),
 
             const SizedBox(height: 24),
 
@@ -555,6 +660,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           _buildTypeTab(ChroniqueType.TEXT, Icons.notes_rounded, 'Texte', colors),
           _buildTypeTab(ChroniqueType.IMAGE, Icons.image_rounded, 'Image', colors),
           _buildTypeTab(ChroniqueType.VIDEO, Icons.videocam_rounded, 'Vidéo', colors),
+          _buildTypeTab(ChroniqueType.AUDIO, Icons.mic_rounded, 'Audio', colors),
         ],
       ),
     );
@@ -830,6 +936,125 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAudioContent(AppColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Carte aperçu audio
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.border),
+          ),
+          child: _selectedMedia == null
+              ? GestureDetector(
+                  onTap: _openStudio,
+                  child: Column(
+                    children: [
+                      Icon(Icons.mic_none_rounded, size: 48, color: colors.textPrimary.withOpacity(0.3)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Utiliser le Studio pour ajouter un audio',
+                        style: TextStyle(color: colors.textPrimary.withOpacity(0.5), fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: colors.primary.withOpacity(0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.auto_awesome, size: 14, color: colors.primary),
+                            const SizedBox(width: 6),
+                            Text('Ouvrir le Studio', style: TextStyle(color: colors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Row(
+                  children: [
+                    // Pochette
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: colors.surfaceVariant,
+                        border: Border.all(color: colors.border),
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      child: _coverImageFile != null
+                          ? Image.file(_coverImageFile!, fit: BoxFit.cover)
+                          : Icon(Icons.music_note, color: colors.primary, size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _textController.text.isEmpty ? 'Audio sans titre' : _textController.text,
+                            style: TextStyle(fontWeight: FontWeight.w700, color: colors.textPrimary),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _selectedMedia!.path.split('/').last,
+                            style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() {
+                        _selectedMedia = null;
+                        _coverImageFile = null;
+                        _textController.clear();
+                      }),
+                      icon: Icon(Icons.close, color: colors.textSecondary, size: 18),
+                    ),
+                  ],
+                ),
+        ),
+
+        if (_selectedMedia != null) ...[
+          const SizedBox(height: 14),
+          Container(
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.border),
+            ),
+            child: TextField(
+              controller: _textController,
+              maxLines: 1,
+              maxLength: 60,
+              onChanged: (_) => setState(() {}),
+              style: TextStyle(color: colors.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Titre du son (optionnel)',
+                hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                counterStyle: TextStyle(color: colors.textPrimary.withOpacity(0.4), fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

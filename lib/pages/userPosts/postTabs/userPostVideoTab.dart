@@ -59,7 +59,9 @@ import '../../user/userPubs/user_my_advertisements_page.dart';
 class UserPubVideo extends StatefulWidget {
   final Canal? canal;
   final String? defiPostId;
-  const UserPubVideo({super.key, required this.canal, this.defiPostId});
+  final File? initialVideo;
+  final String? initialDescription;
+  const UserPubVideo({super.key, required this.canal, this.defiPostId, this.initialVideo, this.initialDescription});
 
   @override
   State<UserPubVideo> createState() => _UserPubVideoState();
@@ -177,6 +179,14 @@ class _UserPubVideoState extends State<UserPubVideo> {
     _selectedCountries.clear();
 
     if (widget.defiPostId != null) _selectedPostType = 'LOOKS';
+
+    // Vidéo déjà prête (montage du Studio) : même traitement que si elle venait de la galerie
+    if (widget.initialVideo != null) {
+      _descriptionController.text = widget.initialDescription ?? '';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _getVideo(preset: XFile(widget.initialVideo!.path));
+      });
+    }
   }
 
   @override
@@ -1310,7 +1320,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     }
   }
 
-  Future<void> _getVideo() async {
+  Future<void> _getVideo({XFile? preset}) async {
     if (_isPickingVideo) {
       printVm("⏳ Sélection déjà en cours, ignorée");
       return;
@@ -1346,7 +1356,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
         },
       );
 
-      final video = await picker.pickVideo(source: ImageSource.gallery);
+      final video = preset ?? await picker.pickVideo(source: ImageSource.gallery);
 
       if (video == null) {
         if (Navigator.canPop(context)) Navigator.pop(context);

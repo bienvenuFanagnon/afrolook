@@ -4,6 +4,7 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../pages/chronique/chroniqueform.dart';
 class ChroniqueProvider with ChangeNotifier {
@@ -18,26 +19,42 @@ class ChroniqueProvider with ChangeNotifier {
     required ChroniqueType type,
     String? textContent,
     File? mediaFile,
+    File? coverImageFile,
     String? backgroundColor,
+    String? templateId,
+    int? audioStartMs,
+    int? audioEndMs,
     required Function(double) onProgress,
   }) async {
     try {
       String? mediaUrl;
+      String? coverImageUrl;
       double? fileSize;
       int duration = 0;
 
-      // Upload du média si nécessaire
+      // Upload du média principal si nécessaire
       if (mediaFile != null) {
-        mediaUrl = await _uploadMedia(mediaFile, onProgress);
+        mediaUrl = await _uploadMedia(mediaFile, (p) => onProgress(p * 0.8));
         fileSize = await _getFileSize(mediaFile);
 
         if (type == ChroniqueType.VIDEO) {
           duration = await _getVideoDuration(mediaFile);
         } else if (type == ChroniqueType.IMAGE) {
           duration = 5;
+        } else if (type == ChroniqueType.AUDIO) {
+          duration = await _getAudioDuration(mediaFile);
         }
       } else if (type == ChroniqueType.TEXT) {
         duration = 10;
+      }
+
+      // Upload de la pochette/cover si fournie
+      if (coverImageFile != null) {
+        coverImageUrl = await _uploadMedia(
+          coverImageFile,
+          (p) => onProgress(0.8 + p * 0.2),
+          folder: 'chronique_covers',
+        );
       }
 
       final chronique = Chronique(
@@ -47,7 +64,9 @@ class ChroniqueProvider with ChangeNotifier {
         type: type,
         textContent: textContent,
         mediaUrl: mediaUrl,
+        coverImageUrl: coverImageUrl,
         backgroundColor: backgroundColor,
+        templateId: templateId,
         duration: duration,
         viewCount: 0,
         likeCount: 0,
@@ -58,6 +77,10 @@ class ChroniqueProvider with ChangeNotifier {
         createdAt: Timestamp.now(),
         expiresAt: Timestamp.fromDate(DateTime.now().add(Duration(hours: 24))),
         fileSize: fileSize,
+        likes: [],
+        totalReactions: 0,
+        audioStartMs: audioStartMs,
+        audioEndMs: audioEndMs,
       );
 
       await _firestore.collection('chroniques').add(chronique.toMap());
@@ -85,20 +108,24 @@ class ChroniqueProvider with ChangeNotifier {
     }
   }
 
-  Future<String> _uploadMedia(File file, Function(double) onProgress) async {
+  Future<String> _uploadMedia(
+    File file,
+    Function(double) onProgress, {
+    String folder = 'chroniques',
+  }) async {
     try {
-      String fileName = 'chroniques/${DateTime.now().millisecondsSinceEpoch}';
-      Reference storageRef = _storage.ref().child(fileName);
-      UploadTask uploadTask = storageRef.putFile(file);
+      final ext = file.path.split('.').last.toLowerCase();
+      final fileName = '$folder/${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final storageRef = _storage.ref().child(fileName);
+      final uploadTask = storageRef.putFile(file);
 
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
         onProgress(progress);
       });
 
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
     } catch (error) {
       throw Exception('Erreur upload média: $error');
     }
@@ -110,8 +137,25 @@ class ChroniqueProvider with ChangeNotifier {
   }
 
   Future<int> _getVideoDuration(File file) async {
-    // Pour une implémentation réelle, utilisez video_player
-    return 10;
+    try {
+      final controller = VideoPlayerController.file(file);
+      await controller.initialize();
+      final duration = controller.value.duration.inSeconds;
+      await controller.dispose();
+      return duration;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<int> _getAudioDuration(File file) async {
+    // Estimation par taille : ~128kbps → 16 Ko/s
+    try {
+      final sizeKb = (await file.stat()).size / 1024;
+      return (sizeKb / 16).round().clamp(1, 300);
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<void> _updateUserChroniqueCount(String userId) async {

@@ -535,6 +535,21 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
             ),
           ],
         );
+
+      case ChroniqueType.AUDIO:
+        return Container(
+          color: colors.shimmerBase,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.music_note, color: colors.accent, size: 28),
+                const SizedBox(height: 4),
+                Icon(Icons.mic, color: colors.accent, size: 14),
+              ],
+            ),
+          ),
+        );
     }
   }
 

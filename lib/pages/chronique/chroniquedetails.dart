@@ -75,6 +75,7 @@ import '../../providers/chroniqueProvider.dart';
 import '../component/showUserDetails.dart';
 import 'chroniqueform.dart';
 // pages/chronique/chronique_detail_page.dart
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -99,6 +100,7 @@ import '../postComments.dart';
 import '../user/otherUser/otherUser.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'chroniqueform.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class ChroniqueDetailPage extends StatefulWidget {
   final String initialChroniqueId;
@@ -124,6 +126,15 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   int _currentPage = 0;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
+  AudioPlayer? _audioPlayer;
+  bool _isAudioPlaying = false;
+  Duration _audioPosition = Duration.zero;
+  Duration _audioDuration = Duration.zero;
+
+  // ── Story auto-avance ──────────────────────────────────────────────────────
+  Timer? _storyTimer;
+  double _storyProgress = 0.0; // 0.0 → 1.0 pour la slide courante
+  static const int _timerIntervalMs = 50; // résolution 50ms
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _messageScrollController = ScrollController();
   UserData? _chroniqueOwner;
@@ -386,9 +397,34 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
     // Réinitialiser le flag AVANT de disposer pour éviter que le widget tente
     // de rendre un VideoPlayer avec un controller déjà libéré.
-    setState(() => _isVideoInitialized = false);
+    setState(() { _isVideoInitialized = false; _isAudioPlaying = false; });
     _videoController?.dispose();
     _videoController = null;
+    await _audioPlayer?.stop();
+    await _audioPlayer?.dispose();
+    _audioPlayer = null;
+    _audioPosition = Duration.zero;
+    _audioDuration = Duration.zero;
+
+    if (currentChronique.type == ChroniqueType.AUDIO && currentChronique.mediaUrl != null) {
+      final player = AudioPlayer();
+      _audioPlayer = player;
+      player.onDurationChanged.listen((d) { if (mounted) setState(() => _audioDuration = d); });
+      player.onPositionChanged.listen((p) {
+        if (!mounted) return;
+        final startMs = currentChronique.audioStartMs ?? 0;
+        final endMs = currentChronique.audioEndMs ?? _audioDuration.inMilliseconds;
+        if (endMs > 0 && p.inMilliseconds >= endMs) player.seek(Duration(milliseconds: startMs));
+        setState(() => _audioPosition = p);
+      });
+      player.onPlayerStateChanged.listen((s) {
+        if (mounted) setState(() => _isAudioPlaying = s == PlayerState.playing);
+      });
+      await player.setSourceUrl(currentChronique.mediaUrl!);
+      final startMs = currentChronique.audioStartMs ?? 0;
+      if (startMs > 0) await player.seek(Duration(milliseconds: startMs));
+      await player.resume();
+    }
 
     if (currentChronique.type == ChroniqueType.VIDEO && currentChronique.mediaUrl != null) {
       final ctrl = await MediaCacheService.videoController(currentChronique.mediaUrl!);
@@ -403,10 +439,64 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
     _markAsViewed(currentChronique);
     _updateCurrentLikeStatus(currentChronique);
+    _startStoryTimer(currentChronique);
+  }
+
+  // ── Timer story ────────────────────────────────────────────────────────────
+
+  void _startStoryTimer(Chronique chronique) {
+    _stopStoryTimer();
+    _storyProgress = 0.0;
+
+    // Durée de la slide en millisecondes selon le type
+    final int durationMs;
+    switch (chronique.type) {
+      case ChroniqueType.TEXT:
+        final charCount = (chronique.textContent ?? '').length;
+        durationMs = (charCount * 60 + 3000).clamp(4000, 12000);
+        break;
+      case ChroniqueType.IMAGE:
+        durationMs = 5000;
+        break;
+      case ChroniqueType.VIDEO:
+        durationMs = (chronique.duration * 1000).clamp(3000, 60000);
+        break;
+      case ChroniqueType.AUDIO:
+        final start = chronique.audioStartMs ?? 0;
+        final end = chronique.audioEndMs ?? (chronique.duration * 1000);
+        durationMs = (end - start).clamp(3000, 60000);
+        break;
+    }
+
+    final steps = durationMs ~/ _timerIntervalMs;
+    final increment = 1.0 / steps;
+
+    _storyTimer = Timer.periodic(Duration(milliseconds: _timerIntervalMs), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() => _storyProgress = (_storyProgress + increment).clamp(0.0, 1.0));
+      if (_storyProgress >= 1.0) {
+        t.cancel();
+        _goToNextStory();
+      }
+    });
+  }
+
+  void _stopStoryTimer() {
+    _storyTimer?.cancel();
+    _storyTimer = null;
+  }
+
+  void _goToNextStory() {
+    if (!mounted) return;
+    final nextVirtual = _pageController.page!.round() + 1;
+    if (nextVirtual < _displayItems.length) {
+      _pageController.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeInOut);
+    } else {
+      Navigator.of(context).maybePop();
+    }
   }
 
   void _markAsViewed(Chronique chronique) {
-
     if (!chronique.viewers.contains(authProvider.loginUserData.id!)) {
       chroniqueProvider.markAsViewed(chronique.id!, authProvider.loginUserData.id!);
     }
@@ -1711,25 +1801,47 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   }
 
   Widget _buildProgressIndicator() {
-    if (_allChroniques.length <= 1) return SizedBox();
+    if (_allChroniques.isEmpty) return const SizedBox();
+    // Limite le nombre de segments affichés (évite une barre illisible)
+    const int maxSegments = 15;
+    final total = _allChroniques.length.clamp(1, maxSegments);
+    final page = _currentPage.clamp(0, total - 1);
+
     return Positioned(
-      top: 50,
-      left: 16,
-      right: 16,
+      top: 8,
+      left: 10,
+      right: 10,
       child: Row(
-        children: _allChroniques.map((chronique) {
-          int index = _allChroniques.indexOf(chronique);
+        children: List.generate(total, (i) {
+          double fillValue;
+          if (i < page) {
+            fillValue = 1.0; // passé — plein
+          } else if (i == page) {
+            fillValue = _storyProgress; // courant — animé
+          } else {
+            fillValue = 0.0; // futur — vide
+          }
           return Expanded(
             child: Container(
               height: 3,
-              margin: EdgeInsets.symmetric(horizontal: 2),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                color: _currentPage == index ? Color(0xFFFFD700) : Colors.grey.withOpacity(0.5),
+                color: Colors.white24,
                 borderRadius: BorderRadius.circular(2),
+              ),
+              child: FractionallySizedBox(
+                widthFactor: fillValue,
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
             ),
           );
-        }).toList(),
+        }),
       ),
     );
   }
@@ -1738,7 +1850,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     final likesCount = chronique.likeCount ?? 0;
 
     return Positioned(
-      top: 60,
+      top: 20,
       left: 16,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1986,7 +2098,136 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             ],
           ),
         );
+
+      case ChroniqueType.AUDIO:
+        return _buildAudioContent(chronique);
     }
+  }
+
+  Widget _buildAudioContent(Chronique chronique) {
+    final startMs = chronique.audioStartMs ?? 0;
+    final endMs = chronique.audioEndMs ?? _audioDuration.inMilliseconds;
+    final clipDurationMs = (endMs > startMs) ? (endMs - startMs) : _audioDuration.inMilliseconds;
+    final relativePos = (_audioPosition.inMilliseconds - startMs).clamp(0, clipDurationMs).toDouble();
+    final progress = clipDurationMs > 0 ? (relativePos / clipDurationMs).clamp(0.0, 1.0) : 0.0;
+
+    String fmtMs(int ms) {
+      final s = (ms / 1000).round();
+      return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Pochette
+          if (chronique.coverImageUrl != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: chronique.coverImageUrl!,
+                width: 160,
+                height: 160,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(width: 160, height: 160, color: Colors.white10),
+              ),
+            )
+          else
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white10,
+              ),
+              child: const Icon(Icons.music_note, color: Colors.white38, size: 56),
+            ),
+
+          const SizedBox(height: 20),
+
+          // Titre
+          if (chronique.textContent != null && chronique.textContent!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                chronique.textContent!,
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+          const SizedBox(height: 16),
+
+          // Barre de progression
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              children: [
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 3,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                    activeTrackColor: const Color(0xFFFFD700),
+                    inactiveTrackColor: Colors.white24,
+                    thumbColor: Colors.white,
+                    overlayColor: Colors.white24,
+                  ),
+                  child: Slider(
+                    value: progress,
+                    min: 0,
+                    max: 1,
+                    onChanged: (v) {
+                      final ms = startMs + (v * clipDurationMs).round();
+                      _audioPlayer?.seek(Duration(milliseconds: ms));
+                    },
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(fmtMs(relativePos.round()), style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                    Text(fmtMs(clipDurationMs), style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Bouton play/pause
+          GestureDetector(
+            onTap: () async {
+              if (_isAudioPlaying) {
+                await _audioPlayer?.pause();
+              } else {
+                await _audioPlayer?.resume();
+              }
+            },
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFFFD700),
+              ),
+              child: Icon(
+                _isAudioPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.black,
+                size: 28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getTimeLeft(Timestamp expiresAt) {
@@ -1998,8 +2239,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
   @override
   void dispose() {
+    _stopStoryTimer();
     _pageController.dispose();
     _videoController?.dispose();
+    _audioPlayer?.stop();
+    _audioPlayer?.dispose();
     _adVideoController?.dispose();
     _messageController.dispose();
     _messageScrollController.dispose();

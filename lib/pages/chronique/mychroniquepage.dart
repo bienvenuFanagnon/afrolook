@@ -217,6 +217,22 @@ class _MyChroniquesPageState extends State<MyChroniquesPage> {
             Center(child: Icon(Icons.play_circle_filled, color: Color(0xFFFFD700), size: 40)),
           ],
         );
+      case ChroniqueType.AUDIO:
+        return Stack(
+          children: [
+            Container(color: Colors.grey[900]),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.music_note, color: Color(0xFFFFD700), size: 32),
+                  SizedBox(height: 4),
+                  Icon(Icons.mic, color: Color(0xFFFFD700), size: 16),
+                ],
+              ),
+            ),
+          ],
+        );
     }
   }
 

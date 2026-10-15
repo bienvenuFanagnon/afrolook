@@ -302,6 +302,25 @@ class ReglesConfidentialitePage extends StatelessWidget {
           ),
           _section(
             colors,
+            icon: Icons.library_music_rounded,
+            title: 'Marketplace des sons artistes',
+            items: [
+              _rule('Soumettre un son',
+                  'Tout créateur peut soumettre un son original (musique, beat, sample, jingle…) depuis Studio → Sons artistes. Chaque son est examiné par l\'équipe Afrolook avant d\'être rendu disponible dans le feed. Les sons en attente ou refusés ne sont pas visibles par les autres utilisateurs.'),
+              _rule('Rémunération du créateur',
+                  'Chaque fois qu\'un utilisateur utilise ton son dans un post audio, tu gagnes 3 pièces (pièces gagnées, convertibles). Ces pièces s\'accumulent et sont visibles dans « Mes sons ». Il n\'y a pas de limite au nombre d\'utilisations d\'un même son.'),
+              _rule('Utiliser un son dans un post',
+                  'Lors de la publication d\'un post audio, tu peux sélectionner un son validé du marketplace. Le son est associé à ton post à titre indicatif ; tu restes libre de publier le tien. Utiliser un son du marketplace génère automatiquement la rémunération de l\'artiste — aucune action supplémentaire n\'est requise.'),
+              _rule('Contenus autorisés',
+                  'Ne soumettre que des sons dont tu détiens les droits : créations originales, samples libres de droits ou utilisations autorisées. Toute soumission de contenu protégé par le droit d\'auteur sans autorisation est interdite et entraîne le retrait du son et des sanctions sur le compte.'),
+              _rule('Validation et refus',
+                  'L\'équipe Afrolook peut refuser un son qui ne respecte pas les règles (contenu inapproprié, violation de droits, qualité insuffisante). Le motif du refus est communiqué à l\'artiste. Un son refusé peut être corrigé et re-soumis.'),
+              _rule('Suppression d\'un son',
+                  'Un son validé peut être retiré à tout moment par Afrolook si un signalement est justifié ou si ses règles d\'utilisation évoluent. L\'artiste est informé du retrait. Les pièces déjà gagnées ne sont pas remises en cause.'),
+            ],
+          ),
+          _section(
+            colors,
             icon: Icons.gavel,
             title: 'Règles d\'utilisation',
             items: [
@@ -384,7 +403,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
           const SizedBox(height: 16),
           Center(
             child: Text(
-              'Dernière mise à jour : 29 septembre 2026\nCes règles peuvent évoluer. Consulte cette page régulièrement.',
+              'Dernière mise à jour : 15 octobre 2026\nCes règles peuvent évoluer. Consulte cette page régulièrement.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textSecondary,

@@ -87,6 +87,7 @@ import '../../widgets/feed/sections/ad_free_day_card.dart';
 import '../../widgets/feed/sections/quiz_feed_card.dart';
 import '../../widgets/feed/sections/contes_feed_card.dart';
 import '../../widgets/feed/sections/etude_feed_card.dart';
+import '../studio/artist_marketplace.dart';
 
 
 // Constantes de couleur
@@ -3503,12 +3504,18 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       return const SizedBox.shrink();
     }
 
-    return ChroniqueSectionComponent(
-      videoThumbnails: _videoThumbnails,
-      userVerificationStatus: _userVerificationStatus,
-      userDataCache: _userDataCache,
-      isLoadingChroniques: _isLoadingChroniques,
-      groupedChroniques: _groupChroniquesByUser(_chroniques),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ChroniqueSectionComponent(
+          videoThumbnails: _videoThumbnails,
+          userVerificationStatus: _userVerificationStatus,
+          userDataCache: _userDataCache,
+          isLoadingChroniques: _isLoadingChroniques,
+          groupedChroniques: _groupChroniquesByUser(_chroniques),
+        ),
+        const ArtistSoundsFeedWidget(),
+      ],
     );
   }
 

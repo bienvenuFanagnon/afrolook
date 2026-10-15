@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -12,13 +14,15 @@ import 'package:afrotok/pages/userPosts/postTabs/userPostTextTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostVideoTab.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../studio/studio_entry_page.dart';
+import '../studio/studio_models.dart';
 
 import '../../../theme/app_colors.dart';
 import '../../../constant/logo.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
-import '../component/consoleWidget.dart';
 import '../cards/card_post_tab.dart';
 
 class UserPostForm extends StatefulWidget {
@@ -52,6 +56,13 @@ class _UserPostFormState extends State<UserPostForm> {
 
   int _selectedMediaIndex = 2; // Défaut: Image
 
+  // Studio : résultat stocké pour pré-remplir l'onglet Image
+  List<Uint8List>? _studioInitialImages;
+  String? _studioInitialDescription;
+  int _studioImageKey = 0; // Force rebuild de l'ImageTab quand un résultat Studio arrive
+  File? _studioInitialVideo;
+  int _studioVideoKey = 0;
+
   static const List<_MediaType> _mediaTypes = [
     _MediaType(icon: Icons.audiotrack, label: 'Audio'),
     _MediaType(icon: Icons.text_fields, label: 'Texte'),
@@ -61,6 +72,44 @@ class _UserPostFormState extends State<UserPostForm> {
   ];
 
   bool get _isCanal => widget.canal != null;
+
+  Future<void> _openStudio() async {
+    final result = await Navigator.push<StudioResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const StudioEntryPage(forChronique: false),
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    switch (result.type) {
+      case StudioContentType.image:
+        if (result.mediaFile != null) {
+          final bytes = await result.mediaFile!.readAsBytes();
+          setState(() {
+            _studioInitialImages = [bytes];
+            _studioInitialDescription = result.textContent;
+            _studioImageKey++;
+            _selectedMediaIndex = 2; // onglet Image
+          });
+        }
+        break;
+      case StudioContentType.text:
+        setState(() => _selectedMediaIndex = 1);
+        break;
+      case StudioContentType.audio:
+        setState(() => _selectedMediaIndex = 0);
+        break;
+      case StudioContentType.video:
+        setState(() {
+          _studioInitialVideo = result.mediaFile;
+          _studioInitialDescription = result.textContent;
+          _studioVideoKey++;
+          _selectedMediaIndex = 3;
+        });
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +151,26 @@ class _UserPostFormState extends State<UserPostForm> {
           )),
         centerTitle: true,
         actions: [
+          GestureDetector(
+            onTap: _openStudio,
+            child: Container(
+              margin: const EdgeInsets.only(right: 8, top: 10, bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: _primaryColor.withOpacity(0.4)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, size: 13, color: Color(0xFFE21221)),
+                  SizedBox(width: 4),
+                  Text('Studio', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFE21221))),
+                ],
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Logo(),
@@ -129,8 +198,20 @@ class _UserPostFormState extends State<UserPostForm> {
                   children: [
                     UserPostLookAudioTab(canal: widget.canal, defiPostId: widget.defiPostId),
                     UserPubText(canal: widget.canal, defiPostId: widget.defiPostId),
-                    UserPostLookImageTab(canal: widget.canal, defiPostId: widget.defiPostId),
-                    UserPubVideo(canal: widget.canal, defiPostId: widget.defiPostId),
+                    UserPostLookImageTab(
+                      key: ValueKey('img_$_studioImageKey'),
+                      canal: widget.canal,
+                      defiPostId: widget.defiPostId,
+                      initialImages: _studioInitialImages,
+                      initialDescription: _studioInitialDescription,
+                    ),
+                    UserPubVideo(
+                      key: ValueKey('vid_$_studioVideoKey'),
+                      canal: widget.canal,
+                      defiPostId: widget.defiPostId,
+                      initialVideo: _studioInitialVideo,
+                      initialDescription: _studioInitialDescription,
+                    ),
                     UserPostCardTab(canal: widget.canal, defiPostId: widget.defiPostId),
                   ],
                 ),

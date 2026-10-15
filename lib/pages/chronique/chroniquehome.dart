@@ -666,6 +666,40 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
             ),
           ],
         );
+
+      case ChroniqueType.AUDIO:
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (chronique.coverImageUrl != null)
+              CachedNetworkImage(
+                imageUrl: chronique.coverImageUrl!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                placeholder: (_, __) => Container(color: Colors.grey[900]),
+              )
+            else
+              Container(
+                color: const Color(0xFF1a0a2a),
+                child: const Center(child: Icon(Icons.music_note, color: Colors.white38, size: 40)),
+              ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                ),
+              ),
+            ),
+            const Positioned(
+              bottom: 8,
+              right: 8,
+              child: Icon(Icons.mic, color: Color(0xFFFFD700), size: 18),
+            ),
+          ],
+        );
     }
   }
 

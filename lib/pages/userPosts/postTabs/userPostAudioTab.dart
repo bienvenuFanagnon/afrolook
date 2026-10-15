@@ -58,8 +58,9 @@ import '../../pub/rewarded_ad_widget.dart';
 import '../../../widgets/hashtag_suggestion_bar.dart';
 
 import '../../user/userAbonnementPage.dart';
-
 import '../../widgetGlobal.dart';
+import '../../studio/artist_marketplace.dart';
+import '../../../services/artist_sound_usage_service.dart';
 
 class UserPostLookAudioTab extends StatefulWidget {
   final Canal? canal;
@@ -102,6 +103,9 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
 
   final AudioRecorder _audioRecorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  // Son artiste du marketplace (optionnel)
+  ArtistSound? _selectedArtistSound;
 
   // Fichier audio sélectionné/enregistré
   File? _audioFile;
@@ -1451,6 +1455,98 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     );
   }
 
+  Future<void> _openArtistSoundPicker() async {
+    final selected = await showModalBottomSheet<ArtistSound>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _c.background,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollCtrl) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text('Sons des artistes', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('artist_sounds')
+                    .where('status', isEqualTo: 'validated')
+                    .orderBy('validatedAt', descending: true)
+                    .limit(30)
+                    .snapshots(),
+                builder: (_, snap) {
+                  if (!snap.hasData) return Center(child: CircularProgressIndicator(color: _c.primary));
+                  final docs = snap.data!.docs;
+                  if (docs.isEmpty) return Center(child: Text('Aucun son disponible.', style: TextStyle(color: _c.textSecondary)));
+                  return ListView.separated(
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: docs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final s = ArtistSound.fromMap(docs[i].data() as Map<String, dynamic>, docs[i].id);
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: s.coverImageUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(s.coverImageUrl!, width: 44, height: 44, fit: BoxFit.cover),
+                              )
+                            : Container(width: 44, height: 44, decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.music_note, color: _c.textSecondary)),
+                        title: Text(s.title, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                        subtitle: Text('@${s.userPseudo}${s.genre != null ? ' · ${s.genre}' : ''}', style: TextStyle(color: _c.textSecondary, fontSize: 11)),
+                        onTap: () => Navigator.pop(ctx, s),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) setState(() => _selectedArtistSound = selected);
+  }
+
+  Widget _buildArtistSoundPicker() {
+    return GestureDetector(
+      onTap: _openArtistSoundPicker,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+        decoration: BoxDecoration(
+          color: _c.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _selectedArtistSound != null ? _c.primary : _c.border),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.library_music, color: _selectedArtistSound != null ? _c.primary : _c.textSecondary, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _selectedArtistSound != null
+                  ? Text('🎵 ${_selectedArtistSound!.title} · @${_selectedArtistSound!.userPseudo}',
+                      style: TextStyle(color: _c.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                      overflow: TextOverflow.ellipsis)
+                  : Text('Utiliser un son artiste (optionnel)', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+            ),
+            if (_selectedArtistSound != null)
+              GestureDetector(
+                onTap: () => setState(() => _selectedArtistSound = null),
+                child: Icon(Icons.close, size: 18, color: _c.textSecondary),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCharacterCounter() {
     final textLength = _descriptionController.text.length;
     final isPremium = AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement);
@@ -1736,6 +1832,14 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       }
       await PostCooldownService.markPosted();
 
+      // Débit pièces artiste si un son marketplace a été utilisé
+      if (_selectedArtistSound != null) {
+        ArtistSoundUsageService.recordUsage(
+          soundId: _selectedArtistSound!.id,
+          artistId: _selectedArtistSound!.userId,
+        ).catchError((_) {}); // silencieux : ne bloque pas la publication
+      }
+
       // Nettoyage
       _descriptionController.clear();
       if (_audioFile != null) {
@@ -1750,6 +1854,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         _coverImageName = null;
         _selectedCountries.clear();
         _selectAllCountries = true;
+        _selectedArtistSound = null;
       });
 
       // Notifications
@@ -2064,6 +2169,8 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                         _buildAudioSection(),
                         SizedBox(height: 20),
                         _buildCoverImageSection(),
+                        SizedBox(height: 12),
+                        _buildArtistSoundPicker(),
                         SizedBox(height: 20),
 
                         // Description
