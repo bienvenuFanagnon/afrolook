@@ -285,6 +285,13 @@ textarea{width:100%;min-height:210px;background:var(--bg);color:var(--tx);border
 .btn.sec{background:var(--s2);color:var(--tx);border:1px solid var(--line)}
 .ex{font-size:12px;color:var(--mut);padding:6px 16px 0}
 
+
+.frs{display:grid;gap:6px;margin-top:10px}
+.fr{display:grid;grid-template-columns:1fr auto auto 30px;gap:10px;align-items:center;background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13.5px}
+.fr b{font-family:var(--f-d);font-size:20px}
+.fr .add{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;text-decoration:none;color:var(--flash);font-weight:700}
+.fr .add:hover{border-color:var(--flash)}
+@media (max-width:420px){.fr{grid-template-columns:1fr auto 30px}.fr .pill{display:none}}
 /* coupon */
 .mk{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .mk::-webkit-scrollbar{display:none}
@@ -476,6 +483,7 @@ function fiche(){
    '<div class="big"><small>Notre pronostic</small><b>1 · Victoire de Paris</b></div>'+
    '<div><div class="gauge"><i></i></div><div class="gl" style="margin-top:6px"><span>Niveau de confiance</span><b class="num">68 %</b></div></div></div>'+
   '<div style="position:relative">'+ad('ban dk','Bannière sous le verdict','728×90','Verdict')+ad('ban mo','Bannière sous le verdict','320×100','Verdict')+'</div>'+
+  '<div class="box"><div class="lbl">Tous les paris du match</div><p class="note" style="margin:8px 0 10px">Les paris que proposent les plateformes, pas seulement le résultat et les buts. Chaque ligne affiche notre probabilité et la fiabilité de la donnée.</p><div id="fimk"></div></div>'+
   '<div class="box"><div class="lbl">Probabilités calculées</div><div class="pb" style="margin-top:12px">'+bar('Paris (1)',62,'var(--flash)')+bar('Nul (N)',22,'#6b7899')+bar('Marseille (2)',16,'var(--cy)')+bar('+2,5 buts',64,'var(--cy)')+bar('Les 2 marquent',55,'var(--cy)')+'</div><p class="note" style="margin-top:12px">Score le plus probable : <b style="color:var(--tx)">2-1</b></p></div>'+
   '<div class="box"><div class="lbl">Analyse poussée par type de pari</div><p class="note" style="margin:8px 0 6px">Moyennes sur les 10 derniers matchs, domicile pour Paris, extérieur pour Marseille. Données d\'exemple.</p><div class="tw"><table class="t" style="min-width:560px"><thead><tr><th>Pari</th><th>Paris</th><th>Marseille</th><th>Attendu</th><th>Notre calcul</th><th>Données</th></tr></thead><tbody>'+
    '<tr><td>Buts</td><td class="num">2,4</td><td class="num">1,3</td><td class="num">2,9</td><td>+1,5 : <b>87 %</b> · +2,5 : <b>64 %</b></td><td><span class="pill g">Fiables</span></td></tr>'+
@@ -572,6 +580,23 @@ var ANALYSE=
 '<li>Publier 2 à 3 semaines de pronostics et de bilan avant de demander Adsterra : les réseaux regardent le contenu réel.</li>'+
 '<li>Pendant ce temps, lancer la chaîne WhatsApp / Telegram « Pronos du jour » avec le Flash du jour.</li>'+
 '<li>Ouvrir d\'abord les emplacements ①②③④ ; ajouter la Social Bar quand le trafic est stable.</li></ul></div></div>'+
+
+'<div class="card" style="margin-top:14px"><h3>Tous les types de paris couverts</h3><p class="note" style="margin-bottom:10px">Beaucoup de paris sûrs passent inaperçus : double chance, remboursé si nul, handicap +1,5, mi-temps, corners, cartons. Ils sont souvent plus probables que le « bon vieux » résultat sec. Le site les calcule tous, avec la même méthode et un niveau de fiabilité affiché.</p>'+
+'<div class="tw"><table class="t" style="min-width:760px"><thead><tr><th>Catégorie</th><th>Exemples de paris</th><th>Méthode de calcul</th><th>Données</th><th>Fiabilité</th><th>Phase</th></tr></thead><tbody>'+
+'<tr><td>Résultat</td><td>1N2, double chance, remboursé si nul</td><td>Matrice de scores (Poisson corrigée)</td><td>Résultats, cotes</td><td><span class="pill g">Haute</span></td><td>1</td></tr>'+
+'<tr><td>Buts</td><td>+/− buts, les 2 marquent, buts par équipe, cage inviolée</td><td>Même matrice de scores</td><td>Résultats</td><td><span class="pill g">Haute</span></td><td>1</td></tr>'+
+'<tr><td>Handicap</td><td>Handicap européen et asiatique, marge de victoire</td><td>Même matrice de scores</td><td>Résultats</td><td><span class="pill g">Haute</span></td><td>1</td></tr>'+
+'<tr><td>Mi-temps</td><td>Résultat et buts en 1re mi-temps, mi-temps / fin de match</td><td>Modèle par mi-temps</td><td>Buts par période</td><td><span class="pill y">Moyenne</span></td><td>2</td></tr>'+
+'<tr><td>Corners</td><td>Total, par équipe, plus que l\'adversaire</td><td>Loi de comptage (attaque, défense, domicile)</td><td>Statistiques de match</td><td><span class="pill g">Haute</span></td><td>2</td></tr>'+
+'<tr><td>Tirs</td><td>Tirs et tirs cadrés, total ou par équipe</td><td>Loi de comptage</td><td>Statistiques de match</td><td><span class="pill g">Haute</span></td><td>2</td></tr>'+
+'<tr><td>Cartons et fautes</td><td>Cartons, fautes, hors-jeux</td><td>Loi de comptage + effet arbitre</td><td>Statistiques + arbitre</td><td><span class="pill y">Moyenne</span></td><td>2</td></tr>'+
+'<tr><td>Score</td><td>Score exact, victoire sans encaisser, écart de buts</td><td>Matrice de scores</td><td>Résultats</td><td><span class="pill y">Moyenne</span> <span class="pill r">Faible</span> pour le score exact</td><td>1</td></tr>'+
+'<tr><td>Joueurs</td><td>Buteur, tirs cadrés d\'un joueur, joueur averti</td><td>Taux par joueur selon temps de jeu</td><td>Statistiques joueurs + compositions (≈ 1 h avant)</td><td><span class="pill y">Moyenne</span> <span class="pill r">Faible</span> pour le buteur</td><td>3</td></tr>'+
+'<tr><td>Spéciaux</td><td>Premier but, minute du but, penalty, carton rouge</td><td>Taux de référence</td><td>Historique</td><td><span class="pill r">Faible</span></td><td>3</td></tr>'+
+'<tr><td>Touches (rentrées)</td><td>Total et par équipe</td><td>Loi de comptage</td><td>Rarement fournies par les API</td><td><span class="pill r">Limitée</span></td><td>3, si une source existe</td></tr>'+
+'</tbody></table></div>'+
+'<ul style="margin-top:12px"><li><b>Même match, plusieurs paris :</b> la matrice de scores permet de calculer exactement la probabilité d\'un coupon dans un même match (par exemple « Paris ou nul » et « +1,5 buts »), corrélation comprise. C\'est ce qui sépare un vrai calcul d\'une simple multiplication.</li>'+
+'<li><b>Aucune promesse :</b> certains paris du catalogue sont probables mais rarement rentables chez les plateformes, qui en tiennent compte dans leurs cotes. Le site aide à choisir et à préparer, jamais à garantir un gain.</li></ul></div>'+
 '<div class="card" style="margin-top:14px"><h3>Simulateur de revenus</h3><p class="note">Les valeurs ci-dessous sont des hypothèses à remplacer par les chiffres réels d\'Adsterra une fois le site ouvert. Ce n\'est pas une prévision.</p>'+
 '<div class="sim"><label for="s-v">Visites par jour<input id="s-v" type="range" min="500" max="50000" step="500" value="5000"><output id="o-v"></output></label>'+
 '<label for="s-p">Pages par visite<input id="s-p" type="range" min="1" max="6" step="0.5" value="2.5"><output id="o-p"></output></label>'+
@@ -600,6 +625,7 @@ var DEC=[
  ['d12','Bouton de partage WhatsApp et heure locale du visiteur sur chaque match','Ajout proposé'],
  ['d13','Vote anonyme 1 / N / 2 avec lien vers les débats Afrolook','Ajout proposé'],
  ['d14','Installation sur l\'écran d\'accueil (PWA)','Ajout proposé'],
+ ['d16','Couvrir tous les types de paris (mi-temps, handicap, corners, tirs, cartons, joueurs…), par phases','Onglet Analyse'],
  ['d15','Générateur de coupons : 2 à 5 sélections, tous types de pari, sans mise ni cote','Onglet Coupon']
 ];
 var VAL='<h2>Valider</h2><p class="lead">Coche ce que tu acceptes. Le résumé se met à jour en dessous : copie-le et renvoie-le moi pour que je passe à l\'étape 1.</p><div class="card"><div class="val" id="val">'+
@@ -616,16 +642,44 @@ $('#p-nom').innerHTML=NOM;
 $('#p-valider').innerHTML=VAL;
 
 
+
+/* ---------- catalogue de tous les paris (fiche) ---------- */
+var FM={
+ 'Résultat':[['Paris gagne',62,'H'],['Nul',22,'H'],['Marseille gagne',16,'H'],['Paris ou nul (1N)',84,'H'],['Paris ou Marseille (12)',78,'H'],['Marseille ou nul (N2)',38,'H'],['Paris, remboursé si nul',79,'H']],
+ 'Buts':[['+0,5 but',97,'H'],['+1,5 buts',87,'H'],['+2,5 buts',64,'H'],['+3,5 buts',38,'H'],['−3,5 buts',62,'H'],['Les 2 marquent',55,'H'],['Marseille marque au moins 1 but',74,'H'],['Paris +1,5 buts (équipe)',61,'H'],['Paris garde sa cage inviolée',33,'M']],
+ 'Mi-temps':[['+0,5 but en 1re mi-temps',77,'M'],['+1,5 buts en 1re mi-temps',41,'M'],['Paris mène à la mi-temps',46,'M'],['Nul à la mi-temps',38,'M'],['Plus de buts en 2e mi-temps',49,'M'],['Paris mène à la mi-temps et gagne',41,'M']],
+ 'Handicap':[['Marseille +2,5',85,'H'],['Marseille +1,5',62,'H'],['Paris −0,5 (victoire)',62,'H'],['Paris −1,5',38,'M'],['Paris −2,5',15,'M']],
+ 'Score':[['Paris gagne sans encaisser',29,'M'],['Paris gagne de 2 buts ou plus',38,'M'],['Score exact 2-1',13,'F'],['Score exact 1-0',11,'F'],['Score exact 2-0',10,'F']],
+ 'Corners':[['+7,5 corners',77,'H'],['+9,5 corners',52,'H'],['Paris +4,5 corners',68,'H'],['Marseille +3,5 corners',62,'H'],['Paris plus de corners que Marseille',72,'H']],
+ 'Tirs':[['+8,5 tirs cadrés',71,'H'],['Paris +4,5 tirs cadrés',68,'H'],['Marseille +2,5 tirs cadrés',66,'H'],['+22,5 tirs au total',64,'M']],
+ 'Cartons & fautes':[['+2,5 cartons',71,'M'],['+4,5 cartons',33,'M'],['Marseille plus de cartons que Paris',58,'M'],['+23,5 fautes',60,'M'],['+3,5 hors-jeux',57,'M'],['Un carton rouge',9,'F']],
+ 'Joueurs':[['Le meilleur buteur de Paris marque',47,'F'],['Le meilleur buteur de Marseille marque',33,'F'],['L\'avant-centre de Paris tire +0,5 fois cadré',78,'M'],['Un joueur de Marseille est averti',64,'M']],
+ 'Spéciaux':[['Paris marque en premier',58,'M'],['Premier but avant la 30e minute',44,'M'],['Penalty dans le match',24,'F']]
+};
+var FMK='Résultat', FMS=false;
+var fiab={H:['Haute','g'],M:['Moyenne','y'],F:['Faible','r']};
+function fiMk(){
+ var keys=Object.keys(FM);
+ var rows=FM[FMK].filter(function(r){return !FMS||r[2]!=='F'}).map(function(r){var c=lvl(r[1]),f=fiab[r[2]];
+   return '<div class="fr"><span>'+r[0]+'</span><b class="num" style="color:var(--'+(c==='s'?'ok':c==='e'?'flash':'ko')+')">'+r[1]+' %</b><span class="pill '+f[1]+'">'+f[0]+'</span><a class="add" href="#coupon" data-go="coupon" aria-label="Ajouter au coupon">＋</a></div>'}).join('');
+ $('#fimk').innerHTML='<div class="mk">'+keys.map(function(k){return '<button type="button" data-fk="'+k+'" aria-pressed="'+(k===FMK)+'">'+k+'</button>'}).join('')+'</div>'+
+  '<div class="frs">'+(rows||'<p class="note">Aucun pari à fiabilité suffisante dans cette catégorie.</p>')+'</div>'+
+  '<label class="chk" style="margin-top:10px"><input type="checkbox" id="fimf"'+(FMS?' checked':'')+'> Masquer les paris à fiabilité faible</label>'+
+  '<p class="note" style="margin-top:8px">Fiabilité : Haute = beaucoup de données et un modèle éprouvé. Faible = événement rare ou peu de données, donné à titre indicatif et jamais utilisé dans les coupons proposés par l\'IA.</p>';
+}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-fk]'); if(!b) return; FMK=b.dataset.fk; fiMk()});
+document.addEventListener('change',function(e){if(e.target.id==='fimf'){FMS=e.target.checked; fiMk()}});
+
 /* ---------- coupon ---------- */
 var CP=[
- {id:'psg',m:'Paris SG – Marseille',lg:'Ligue 1',t:'20:45',o:[['Résultat','Paris ou nul',84],['Résultat','Paris gagne',62],['Buts','+1,5 buts',87],['Buts','+2,5 buts',64],['Buts','Les 2 marquent',55],['Corners','+7,5 corners',77],['Corners','+9,5 corners',52],['Tirs','Paris +4,5 tirs cadrés',68],['Cartons','+2,5 cartons',71],['Touches','+34,5 touches',63]]},
- {id:'ahl',m:'Al Ahly – Wydad AC',lg:'Ligue des champions CAF',t:'17:00',o:[['Résultat','Al Ahly ou nul',82],['Buts','+0,5 but',93],['Buts','−3,5 buts',86],['Corners','+6,5 corners',79],['Corners','Al Ahly +4,5 corners',61],['Tirs','+7,5 tirs cadrés',66],['Cartons','+3,5 cartons',64]]},
- {id:'liv',m:'Liverpool – Arsenal',lg:'Premier League',t:'17:00',o:[['Résultat','Liverpool ou nul',68],['Buts','+1,5 buts',85],['Buts','Les 2 marquent',63],['Corners','+8,5 corners',74],['Corners','+10,5 corners',49],['Tirs','+8,5 tirs cadrés',72],['Cartons','+2,5 cartons',69],['Touches','+36,5 touches',66]]},
- {id:'rma',m:'Real Madrid – Barcelone',lg:'LaLiga',t:'21:00',o:[['Résultat','Real ou nul',66],['Buts','+1,5 buts',88],['Buts','+2,5 buts',67],['Corners','+8,5 corners',73],['Tirs','+9,5 tirs cadrés',70],['Cartons','+3,5 cartons',62]]},
- {id:'int',m:'Inter – Juventus',lg:'Serie A',t:'20:45',o:[['Résultat','Inter ou nul',72],['Buts','−3,5 buts',80],['Buts','−2,5 buts',58],['Corners','+7,5 corners',71],['Tirs','Inter +4,5 tirs cadrés',65],['Cartons','+3,5 cartons',67]]},
- {id:'mci',m:'Man City – Chelsea',lg:'Premier League',t:'18:30',o:[['Résultat','City ou nul',81],['Buts','+1,5 buts',86],['Corners','City +6,5 corners',64],['Corners','+9,5 corners',58],['Tirs','City +6,5 tirs cadrés',61],['Touches','+35,5 touches',62]]}
+ {id:'psg',m:'Paris SG – Marseille',lg:'Ligue 1',t:'20:45',o:[['Résultat','Paris ou nul',84],['Résultat','Paris gagne',62],['Buts','+1,5 buts',87],['Buts','+2,5 buts',64],['Buts','Les 2 marquent',55],['Corners','+7,5 corners',77],['Corners','+9,5 corners',52],['Tirs','Paris +4,5 tirs cadrés',68],['Cartons','+2,5 cartons',71],['Touches','+34,5 touches',63],['Mi-temps','+0,5 but en 1re mi-temps',77],['Handicap','Marseille +2,5',85],['Résultat','Paris, remboursé si nul',79]]},
+ {id:'ahl',m:'Al Ahly – Wydad AC',lg:'Ligue des champions CAF',t:'17:00',o:[['Résultat','Al Ahly ou nul',82],['Buts','+0,5 but',93],['Buts','−3,5 buts',86],['Corners','+6,5 corners',79],['Corners','Al Ahly +4,5 corners',61],['Tirs','+7,5 tirs cadrés',66],['Cartons','+3,5 cartons',64],['Mi-temps','+0,5 but en 1re mi-temps',69],['Handicap','Wydad +2,5',88],['Résultat','Al Ahly, remboursé si nul',77]]},
+ {id:'liv',m:'Liverpool – Arsenal',lg:'Premier League',t:'17:00',o:[['Résultat','Liverpool ou nul',68],['Buts','+1,5 buts',85],['Buts','Les 2 marquent',63],['Corners','+8,5 corners',74],['Corners','+10,5 corners',49],['Tirs','+8,5 tirs cadrés',72],['Cartons','+2,5 cartons',69],['Touches','+36,5 touches',66],['Mi-temps','+0,5 but en 1re mi-temps',76],['Handicap','Arsenal +1,5',64],['Résultat','Liverpool, remboursé si nul',60]]},
+ {id:'rma',m:'Real Madrid – Barcelone',lg:'LaLiga',t:'21:00',o:[['Résultat','Real ou nul',66],['Buts','+1,5 buts',88],['Buts','+2,5 buts',67],['Corners','+8,5 corners',73],['Tirs','+9,5 tirs cadrés',70],['Cartons','+3,5 cartons',62],['Mi-temps','+0,5 but en 1re mi-temps',78],['Handicap','Barcelone +1,5',65]]},
+ {id:'int',m:'Inter – Juventus',lg:'Serie A',t:'20:45',o:[['Résultat','Inter ou nul',72],['Buts','−3,5 buts',80],['Buts','−2,5 buts',58],['Corners','+7,5 corners',71],['Tirs','Inter +4,5 tirs cadrés',65],['Cartons','+3,5 cartons',67],['Mi-temps','−1,5 buts en 1re mi-temps',73],['Handicap','Juventus +1,5',66]]},
+ {id:'mci',m:'Man City – Chelsea',lg:'Premier League',t:'18:30',o:[['Résultat','City ou nul',81],['Buts','+1,5 buts',86],['Corners','City +6,5 corners',64],['Corners','+9,5 corners',58],['Tirs','City +6,5 tirs cadrés',61],['Touches','+35,5 touches',62],['Mi-temps','+0,5 but en 1re mi-temps',79],['Handicap','Chelsea +1,5',69],['Résultat','City, remboursé si nul',72]]}
 ];
-var MKS=['Tous','Résultat','Buts','Corners','Tirs','Cartons','Touches'];
+var MKS=['Tous','Résultat','Buts','Mi-temps','Handicap','Corners','Tirs','Cartons','Touches'];
 var cpMk='Tous', cpSel=[]; /* {id, i} : une sélection par match */
 var lvl=function(p){return p>=75?'s':p>=60?'e':'r'};
 var lvlTxt={s:'Sûr',e:'Équilibré',r:'Risqué'};
@@ -717,6 +771,7 @@ $('#site-coupon').innerHTML=coupon();
 cpSel=[{id:'psg',i:5},{id:'ahl',i:3},{id:'liv',i:7}];
 cpRender();
 
+fiMk();
 /* onglets */
 var TABS=[['accueil','Accueil'],['fiche','Fiche match'],['bilan','Bilan'],['coupon','Coupon'],['pubs','Publicités'],['analyse','Analyse'],['nom','Nom & domaine'],['valider','Valider']];
 var tabs=$('#tabs');
