@@ -292,6 +292,50 @@ textarea{width:100%;min-height:210px;background:var(--bg);color:var(--tx);border
 .fr .add{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;text-decoration:none;color:var(--flash);font-weight:700}
 .fr .add:hover{border-color:var(--flash)}
 @media (max-width:420px){.fr{grid-template-columns:1fr auto 30px}.fr .pill{display:none}}
+
+.det{display:flex;justify-content:space-between;align-items:center;gap:12px;text-decoration:none;background:linear-gradient(120deg,#241f06,var(--s1));border:1px solid #5a4e0a;border-radius:12px;padding:12px 16px}
+.det b{font-family:var(--f-d);font-size:21px;color:var(--flash);display:block}
+.det span{font-size:12.5px;color:var(--mut)}
+.det i{font-style:normal;font-size:24px;color:var(--flash)}
+.dh{display:grid;gap:10px}
+.dh h1{font-size:30px;line-height:1.05;font-weight:800;text-transform:uppercase}
+.dh h1 b{color:var(--flash)}
+.strip{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;background:var(--s1);border:1px solid #5a4e0a;border-radius:12px;padding:12px 14px}
+.strip .k{display:block;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.strip b{font-family:var(--f-d);font-size:22px}
+.strip .y{color:var(--flash)} .strip .g{color:var(--ok)}
+.toc-m{position:sticky;top:60px;z-index:5;background:rgba(8,13,24,.95);padding:6px 0}
+.toc a,.toc-m button{display:block;text-decoration:none}
+.toc a{padding:7px 10px;border-radius:8px;font-size:13.5px;color:var(--mut)}
+.toc a:hover{background:var(--s2);color:var(--tx)}
+.dsec{scroll-margin-top:110px}
+.cmp{display:grid;grid-template-columns:48px 1fr 48px;gap:8px;align-items:center;font-size:13px;margin-top:9px}
+.cmp .n{grid-column:1/-1;text-align:center;color:var(--mut);font-size:12px;margin-bottom:-4px}
+.cmp b{font-family:var(--f-d);font-size:18px}
+.cmp b:last-child{text-align:right}
+.cmp .dual{display:grid;grid-template-columns:1fr 1fr;gap:3px;height:9px}
+.cmp .dual span{background:#1a2440;border-radius:5px;overflow:hidden;display:flex}
+.cmp .dual span:first-child{justify-content:flex-end}
+.cmp .dual i{display:block;height:100%}
+.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.fl{display:grid;gap:5px;margin-top:8px}
+.fl div{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;font-size:13px;background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.fl i{font-style:normal;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:700;display:grid;place-items:center;color:var(--ink)}
+.fl i.V{background:var(--ok)}.fl i.N{background:#9aa6c4}.fl i.D{background:var(--ko)}
+.fl em{font-style:normal;color:var(--mut);font-size:11.5px}
+.min{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:130px;margin-top:10px}
+.min div{display:grid;grid-template-rows:1fr auto;height:100%;gap:4px;text-align:center;font-size:11px;color:var(--mut)}
+.min .pair{display:flex;gap:3px;align-items:flex-end;justify-content:center}
+.min .pair i{display:block;width:40%;max-width:18px;border-radius:4px 4px 0 0;background:var(--flash)}
+.min .pair i+i{background:var(--cy)}
+.lg2{display:flex;gap:14px;font-size:12px;color:var(--mut);margin-top:8px;flex-wrap:wrap}
+.lg2 i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.ck{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:7px}
+.ck li{display:flex;gap:10px;font-size:14px;color:#d3daf0}
+.ck li::before{content:"☐";color:var(--flash)}
+.cal td:nth-child(2),.cal td:nth-child(3){font-family:var(--f-d);font-size:17px;font-weight:700}
+@container site (min-width:860px){.toc-m{display:none}}
+@container site (max-width:859px){.toc{display:none}}
 /* coupon */
 .mk{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .mk::-webkit-scrollbar{display:none}
@@ -354,9 +398,15 @@ textarea{width:100%;min-height:210px;background:var(--bg);color:var(--tx);border
 <section class="panel" id="p-fiche" role="tabpanel" hidden>
   <div class="tools">
     <div class="seg" id="dev2" role="group" aria-label="Aperçu"><button data-d="phone" aria-pressed="false">Téléphone</button><button data-d="desk" aria-pressed="true">Ordinateur</button></div>
-    <span class="note">Adresse : /football/ligue-1/psg-marseille-2026-10-18 · page HTML complète, lisible par Google sans JavaScript.</span>
+    <span class="note">Adresse : /football/ligue-1/psg-marseille-2026-10-18 · résumé du pronostic, page HTML complète, lisible par Google sans JavaScript.</span>
   </div>
   <div class="frame" id="fr2" data-dev="desk"><div id="site-fiche"></div></div>
+</section>
+
+<!-- ============ DETAILS ============ -->
+<section class="panel" id="p-details" role="tabpanel" hidden>
+  <div class="tools"><div class="seg" id="dev3" role="group" aria-label="Aperçu"><button data-d="phone" aria-pressed="false">Téléphone</button><button data-d="desk" aria-pressed="true">Ordinateur</button></div><span class="note">Adresse : /football/ligue-1/psg-marseille-2026-10-18/analyse · accessible depuis « Voir l'analyse complète ».</span></div>
+  <div class="frame" id="fr3" data-dev="desk"><div id="site-details"></div></div>
 </section>
 
 <!-- ============ BILAN ============ -->
@@ -483,17 +533,8 @@ function fiche(){
    '<div class="big"><small>Notre pronostic</small><b>1 · Victoire de Paris</b></div>'+
    '<div><div class="gauge"><i></i></div><div class="gl" style="margin-top:6px"><span>Niveau de confiance</span><b class="num">68 %</b></div></div></div>'+
   '<div style="position:relative">'+ad('ban dk','Bannière sous le verdict','728×90','Verdict')+ad('ban mo','Bannière sous le verdict','320×100','Verdict')+'</div>'+
-  '<div class="box"><div class="lbl">Tous les paris du match</div><p class="note" style="margin:8px 0 10px">Les paris que proposent les plateformes, pas seulement le résultat et les buts. Chaque ligne affiche notre probabilité et la fiabilité de la donnée.</p><div id="fimk"></div></div>'+
+  '<a class="det" href="#details" data-go="details"><div><b>Voir l\'analyse complète</b><span>42 paris calculés · forme · compositions · arbitre · face-à-face · coupons prêts à l\'emploi</span></div><i>→</i></a>'+
   '<div class="box"><div class="lbl">Probabilités calculées</div><div class="pb" style="margin-top:12px">'+bar('Paris (1)',62,'var(--flash)')+bar('Nul (N)',22,'#6b7899')+bar('Marseille (2)',16,'var(--cy)')+bar('+2,5 buts',64,'var(--cy)')+bar('Les 2 marquent',55,'var(--cy)')+'</div><p class="note" style="margin-top:12px">Score le plus probable : <b style="color:var(--tx)">2-1</b></p></div>'+
-  '<div class="box"><div class="lbl">Analyse poussée par type de pari</div><p class="note" style="margin:8px 0 6px">Moyennes sur les 10 derniers matchs, domicile pour Paris, extérieur pour Marseille. Données d\'exemple.</p><div class="tw"><table class="t" style="min-width:560px"><thead><tr><th>Pari</th><th>Paris</th><th>Marseille</th><th>Attendu</th><th>Notre calcul</th><th>Données</th></tr></thead><tbody>'+
-   '<tr><td>Buts</td><td class="num">2,4</td><td class="num">1,3</td><td class="num">2,9</td><td>+1,5 : <b>87 %</b> · +2,5 : <b>64 %</b></td><td><span class="pill g">Fiables</span></td></tr>'+
-   '<tr><td>Corners</td><td class="num">6,2</td><td class="num">4,4</td><td class="num">10,3</td><td>+7,5 : <b>77 %</b> · +9,5 : <b>52 %</b></td><td><span class="pill g">Fiables</span></td></tr>'+
-   '<tr><td>Tirs cadrés</td><td class="num">6,1</td><td class="num">3,8</td><td class="num">9,6</td><td>Paris +4,5 : <b>68 %</b></td><td><span class="pill g">Fiables</span></td></tr>'+
-   '<tr><td>Cartons</td><td class="num">1,9</td><td class="num">2,6</td><td class="num">4,3</td><td>+2,5 : <b>71 %</b></td><td><span class="pill y">Arbitre inconnu</span></td></tr>'+
-   '<tr><td>Touches</td><td class="num">17,8</td><td class="num">16,1</td><td class="num">34,6</td><td>+34,5 : <b>63 %</b></td><td><span class="pill r">Données limitées</span></td></tr></tbody></table></div>'+
-   '<div class="lbl" style="margin-top:16px">Séries et points d\'attention</div><ul class="kp"><li>Paris a marqué dans ses 9 derniers matchs à domicile.</li><li>Marseille a encaissé 2 buts ou plus dans 4 de ses 5 derniers déplacements.</li><li>Marseille jouait en coupe d\'Europe 3 jours plus tôt : risque de fatigue, favorable aux corners et tirs de Paris.</li></ul>'+
-   '<div class="lbl" style="margin-top:16px">Pour bâtir un coupon avec ce match</div><div style="display:grid;gap:8px;margin-top:8px"><div class="wr"><div class="i"><span>✅</span><span><b>Options solides :</b> Paris ou nul (84 %), +1,5 buts (87 %), +7,5 corners (77 %).</span></div><div><span>⚠️</span><span><b>À éviter ou à limiter :</b> +9,5 corners (52 %), Les 2 marquent (55 %). Trop proches du pile ou face.</span></div></div></div>'+
-   '<p class="note" style="margin-top:12px">Analyse d\'aide à la décision. Elle ne garantit aucun résultat : on n\'engage rien et aucun gain n\'est promis. 18+.</p></div>'+
   '<div class="box an"><div class="lbl">Analyse</div><div style="margin-top:8px"><span class="ai">✦ Rédigée par l\'IA à partir des chiffres ci-dessus</span></div>'+
    '<p>Paris reste sur quatre victoires en cinq matchs à domicile et marque en moyenne 2,4 buts au Parc. Marseille voyage bien, mais encaisse dès qu\'il subit un pressing haut. Le calcul donne un net avantage à l\'équipe de la capitale, avec un match qui devrait rester ouvert : les deux équipes ont marqué dans trois de leurs quatre dernières rencontres directes.</p>'+
    '<ul class="kp"><li>Paris : 4 victoires sur ses 5 derniers matchs, 11 buts marqués</li><li>Marseille : 2 buts encaissés en moyenne à l\'extérieur</li><li>Face-à-face : 3 victoires parisiennes sur les 5 dernières confrontations</li></ul></div>'+
@@ -550,6 +591,7 @@ var PUBS=
 '<tr><td>⑤⑥ Fiche match</td><td>Sous le verdict, après l\'analyse</td><td>300×250 · 320×100 · native</td><td>2 publicités par fiche, jamais collées</td></tr>'+
 '<tr><td>⑧⑨ Colonne</td><td>Ordinateur</td><td>300×250 puis 300×600</td><td>Le grand format reste collé au défilement</td></tr>'+
 '<tr><td>⑩ Social Bar</td><td>Bas de l\'écran</td><td>Adsterra</td><td>1 fois par visite, après 20 s, fermable</td></tr>'+
+'<tr><td>⑪ Page analyse complète</td><td>Entre les sections, sommaire collant</td><td>728×90 · 320×100 · native · 300×250 · 300×600</td><td>1 pub toutes les 2 sections, jamais dans une section ; pas de pub dans la liste des paris</td></tr>'+
 '<tr><td>Pop-under</td><td>Désactivé</td><td>Adsterra</td><td>Coupé au lancement ; plus tard 1 fois par 24 h si l\'admin l\'active</td></tr>'+
 '</tbody></table></div>'+
 '<div class="grid2" style="margin-top:18px"><div class="card"><h3>Remplissage en cascade</h3><p>Si Adsterra ne renvoie rien, on essaie Monetag. Si Monetag ne renvoie rien non plus, un encart Afrolook prend la place. Jamais de vide.</p><div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap"><span class="pill y">Adsterra</span>→<span class="pill c">Monetag</span>→<span class="pill g">Afrolook</span></div></div>'+
@@ -625,6 +667,7 @@ var DEC=[
  ['d12','Bouton de partage WhatsApp et heure locale du visiteur sur chaque match','Ajout proposé'],
  ['d13','Vote anonyme 1 / N / 2 avec lien vers les débats Afrolook','Ajout proposé'],
  ['d14','Installation sur l\'écran d\'accueil (PWA)','Ajout proposé'],
+ ['d17','Page « Analyse complète » d\'un match (compositions, arbitre, comparatif, résultats réels, coupons prêts)','Nouvelle page'],
  ['d16','Couvrir tous les types de paris (mi-temps, handicap, corners, tirs, cartons, joueurs…), par phases','Onglet Analyse'],
  ['d15','Générateur de coupons : 2 à 5 sélections, tous types de pari, sans mise ni cote','Onglet Coupon']
 ];
@@ -669,6 +712,55 @@ function fiMk(){
 }
 document.addEventListener('click',function(e){var b=e.target.closest('[data-fk]'); if(!b) return; FMK=b.dataset.fk; fiMk()});
 document.addEventListener('change',function(e){if(e.target.id==='fimf'){FMS=e.target.checked; fiMk()}});
+
+
+/* ---------- page « analyse complète » ---------- */
+function dsec(id,title,body){return '<div class="box dsec" id="d-'+id+'"><div class="lbl">'+title+'</div>'+body+'</div>'}
+function cmpRow(n,a,b,max,fa,fb){var w=function(v){return Math.round(v/max*100)};
+ return '<div class="cmp"><span class="n">'+n+'</span><b class="num">'+(fa||a)+'</b><div class="dual"><span><i style="width:'+w(a)+'%;background:var(--flash)"></i></span><span><i style="width:'+w(b)+'%;background:var(--cy)"></i></span></div><b class="num">'+(fb||b)+'</b></div>'}
+function fl(rows){return '<div class="fl">'+rows.map(function(r){return '<div><i class="'+r[0]+'">'+r[0]+'</i><span>'+r[1]+'</span><em>'+r[2]+'</em></div>'}).join('')+'</div>'}
+var TOC=[['resume','Résumé'],['paris','Tous les paris'],['stats','Comparatif'],['forme','Forme et séries'],['compos','Compositions'],['contexte','Arbitre et contexte'],['h2h','Face-à-face'],['fiab','Nos résultats'],['coupon','Coupons prêts'],['avant','Avant de valider']];
+function details(){
+ var toc=TOC.map(function(t){return '<a href="#" data-to="d-'+t[0]+'">'+t[1]+'</a>'}).join('');
+ var mins=[[12,10,'0-15'],[15,14,'16-30'],[17,13,'31-45'],[16,17,'46-60'],[18,21,'61-75'],[22,25,'76-90']].map(function(m){return '<div><div class="pair"><i style="height:'+m[0]*4.2+'px"></i><i style="height:'+m[1]*4.2+'px"></i></div><span>'+m[2]+'</span></div>'}).join('');
+ var calib=[['Double chance','80 %','81 %','40'],['Buts +1,5','86 %','87 %','52'],['Corners +7,5','76 %','73 %','38'],['Cartons +2,5','70 %','66 %','35'],['Handicap +1,5','64 %','62 %','29']].map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td class="num">'+r[3]+'</td></tr>'}).join('');
+ return header('f')+
+ '<div class="ex" style="padding-top:12px"><a href="#accueil" data-go="accueil" style="color:var(--cy)">Football</a> › Ligue 1 › <a href="#fiche" data-go="fiche" style="color:var(--cy)">Paris SG – Marseille</a> › Analyse complète</div>'+
+ '<div class="main"><div class="col">'+
+  '<div class="toc-m"><div class="mk">'+TOC.map(function(t){return '<button type="button" data-to="d-'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div></div>'+
+  '<div class="dh dsec" id="d-resume"><h1>Paris SG – Marseille : <b>l\'analyse complète</b></h1><div class="strip"><div><span class="k">Pronostic</span><b class="y">1 · Paris</b></div><div><span class="k">Confiance</span><b class="g num">68 %</b></div><div><span class="k">Score probable</span><b class="num">2-1</b></div><div><span class="k">Coup d\'envoi</span><b class="num">dim. 18 oct. · 20:45</b></div></div>'+
+  '<p class="note">Tout ce qu\'il faut pour préparer ton coupon avec ce match. Les chiffres sont recalculés quand les compositions sont publiées, environ 1 h avant le coup d\'envoi. Données d\'exemple.</p></div>'+
+  '<div style="position:relative">'+ad('ban dk','Bannière · après le résumé','728×90','Haut')+ad('ban mo','Bannière · après le résumé','320×100','Haut')+'</div>'+
+  dsec('paris','Tous les paris du match','<p class="note" style="margin:8px 0 10px">Les paris que proposent les plateformes, pas seulement le résultat et les buts. Chaque ligne affiche notre probabilité et la fiabilité de la donnée.</p><div id="fimk"></div>')+
+  ad('nat','Native · Sponsorisé','Adsterra · entre deux sections','Native')+
+  dsec('stats','Comparatif des deux équipes','<p class="note" style="margin:8px 0 2px">Moyennes sur les 10 derniers matchs, domicile pour Paris, extérieur pour Marseille. <b style="color:var(--flash)">Paris</b> à gauche, <b style="color:var(--cy)">Marseille</b> à droite.</p>'+
+   cmpRow('Buts marqués',2.4,1.3,3,'2,4','1,3')+cmpRow('Buts encaissés',0.8,1.6,3,'0,8','1,6')+cmpRow('Tirs cadrés',6.1,3.8,8,'6,1','3,8')+cmpRow('Corners',6.2,4.4,8,'6,2','4,4')+cmpRow('Possession (%)',61,52,70)+cmpRow('Fautes',11.2,12.9,16,'11,2','12,9')+cmpRow('Cartons',1.9,2.6,4,'1,9','2,6')+cmpRow('Points sur les 5 derniers',13,10,15)+
+   '<div class="tw" style="margin-top:14px"><table class="t" style="min-width:560px"><thead><tr><th>Pari</th><th>Paris</th><th>Marseille</th><th>Attendu</th><th>Notre calcul</th></tr></thead><tbody><tr><td>Buts</td><td class="num">2,4</td><td class="num">1,3</td><td class="num">2,9</td><td>+1,5 : <b>87 %</b> · +2,5 : <b>64 %</b></td></tr><tr><td>Corners</td><td class="num">6,2</td><td class="num">4,4</td><td class="num">10,3</td><td>+7,5 : <b>77 %</b> · +9,5 : <b>52 %</b></td></tr><tr><td>Tirs cadrés</td><td class="num">6,1</td><td class="num">3,8</td><td class="num">9,6</td><td>Paris +4,5 : <b>68 %</b></td></tr><tr><td>Cartons</td><td class="num">1,9</td><td class="num">2,6</td><td class="num">4,3</td><td>+2,5 : <b>71 %</b></td></tr></tbody></table></div>')+
+  dsec('forme','Forme et séries','<div class="two"><div><b style="font-family:var(--f-d);font-size:18px">Paris SG · 5 derniers</b>'+fl([['V','Nantes 0-3 Paris','ext.'],['V','Paris 2-1 Lens','dom.'],['N','Paris 1-1 Lyon','dom.'],['V','Rennes 1-2 Paris','ext.'],['V','Paris 3-0 Brest','dom.']])+'</div><div><b style="font-family:var(--f-d);font-size:18px">Marseille · 5 derniers</b>'+fl([['V','Marseille 2-0 Toulouse','dom.'],['D','Lille 2-1 Marseille','ext.'],['V','Marseille 3-1 Nice','dom.'],['N','Monaco 2-2 Marseille','ext.'],['V','Marseille 1-0 Metz','dom.']])+'</div></div>'+
+   '<ul class="kp"><li>Paris a marqué dans ses 9 derniers matchs à domicile.</li><li>Marseille a encaissé 2 buts ou plus dans 4 de ses 5 derniers déplacements.</li></ul>'+
+   '<div class="lbl" style="margin-top:16px">Quand tombent les buts</div><div class="min">'+mins+'</div><div class="lg2"><span><i style="background:var(--flash)"></i>Buts marqués par Paris (%)</span><span><i style="background:var(--cy)"></i>Buts encaissés par Marseille (%)</span></div><p class="note" style="margin-top:8px">Marseille encaisse 46 % de ses buts après la 60e minute : intéressant pour « but en 2e mi-temps » et « +1,5 buts ».</p>')+
+  ad('nat','Native · Sponsorisé','Adsterra','Native')+
+  dsec('compos','Compositions probables et absences','<div class="two" style="margin-top:8px"><div class="wr"><div class="i"><span>🟡</span><span><b>Paris :</b> onze type annoncé, un doute sur l\'attaquant n°1 (gêne musculaire).</span></div><div><span>🔴</span><span>Absent : un défenseur central (blessé, retour dans 2 semaines).</span></div></div><div class="wr"><div class="i"><span>🟡</span><span><b>Marseille :</b> milieu récupérateur incertain.</span></div><div><span>🔴</span><span>Absent : le gardien remplaçant (suspendu). Titulaire en place.</span></div></div></div><p class="note" style="margin-top:10px">Les compositions officielles sont publiées environ 1 h avant le coup d\'envoi. Les paris sur les joueurs ne sont calculés qu\'à ce moment-là.</p>')+
+  dsec('contexte','Arbitre et contexte','<div class="kpis" style="margin-top:10px"><div class="kpi"><small>Arbitre</small><b style="font-size:20px">À confirmer</b></div><div class="kpi"><small>Cartons / match (arbitre)</small><b class="y num">4,6</b></div><div class="kpi"><small>Repos Paris</small><b class="num">6 jours</b></div><div class="kpi"><small>Repos Marseille</small><b class="num">3 jours</b></div><div class="kpi"><small>Météo</small><b style="font-size:20px">14 °C · pluie légère</b></div></div><ul class="kp"><li>Classique à fort enjeu : Paris 1er, Marseille 3e au classement. Les cartons montent souvent dans ce genre de match.</li><li>Marseille a joué en coupe d\'Europe il y a 3 jours : fatigue possible, favorable aux corners et tirs de Paris.</li></ul>')+
+  afl('afl1.jpg','Tu penses quoi de PSG – OM ? Débats sur Afrolook','details','')+
+  dsec('h2h','Face-à-face','<table class="h2h"><tr><th>Date</th><th>Rencontre</th><th>Score</th></tr><tr><td>Mars 2026</td><td>Marseille – Paris SG</td><td>1-2</td></tr><tr><td>Oct. 2025</td><td>Paris SG – Marseille</td><td>3-1</td></tr><tr><td>Avr. 2025</td><td>Marseille – Paris SG</td><td>2-2</td></tr><tr><td>Nov. 2024</td><td>Paris SG – Marseille</td><td>3-0</td></tr></table><p class="note" style="margin-top:8px">Les deux équipes ont marqué dans 3 des 4 dernières confrontations. +2,5 buts dans 4 sur 4.</p>')+
+  dsec('fiab','Nos résultats sur ce type de match','<p class="note" style="margin:8px 0 8px">Ce que nos pronostics ont donné sur les matchs de Ligue 1 des 90 derniers jours. L\'écart entre « annoncé » et « réel » montre si le modèle est fiable.</p><div class="tw"><table class="t cal" style="min-width:420px"><thead><tr><th>Pari</th><th>Annoncé</th><th>Réel</th><th>Matchs</th></tr></thead><tbody>'+calib+'</tbody></table></div>')+
+  '<div style="position:relative">'+ad('ban dk','Bannière','728×90','Bas')+ad('ban mo','Bannière','320×100','Bas')+'</div>'+
+  dsec('coupon','Coupons prêts avec ce match','<div class="sg" style="margin-top:8px">'+
+   [['Prudent','psg:+1,5 buts|mci:City ou nul'],['Équilibré','psg:+7,5 corners|liv:+1,5 buts|int:Inter ou nul'],['Audacieux','psg:Paris ou nul|ahl:+6,5 corners|liv:+1,5 buts|rma:+8,5 corners|int:Inter ou nul']].map(function(c){
+     var parts=c[1].split('|'),pp=1,lab=[];parts.forEach(function(x){var a=x.split(':'),m=CP.filter(function(q){return q.id===a[0]})[0],k=-1;m.o.forEach(function(o,i){if(o[1]===a[1])k=i});pp*=m.o[k][2]/100;lab.push(m.o[k][1])});
+     return '<button type="button" data-load="'+c[1]+'"><b>'+c[0]+' · '+parts.length+' sélections</b><span>'+lab.join(' · ')+'</span><em class="num">'+Math.round(pp*100)+' %</em></button>'}).join('')+'</div><p class="note" style="margin-top:8px">Un clic charge le coupon dans l\'onglet Coupon, où tu peux le modifier.</p>')+
+  dsec('avant','Avant de valider ton coupon','<ul class="ck"><li>Vérifie les compositions 1 h avant le coup d\'envoi : une absence change les chiffres.</li><li>Garde les paris au-dessus de 60 % : un seul maillon faible tire tout le coupon vers le bas.</li><li>Varie les types de pari (buts, corners, handicap…) pour ne pas dépendre d\'un seul scénario.</li><li>Reste à 2 ou 3 sélections : au-delà, la probabilité chute vite.</li><li>Ne joue que ce que tu peux te permettre de perdre. 18+ · Jeu responsable.</li></ul>')+
+  '<div class="box"><div class="lbl">Et toi, ton pronostic ?</div><div class="vote"><button type="button">1<small>Paris</small></button><button type="button">N<small>Nul</small></button><button type="button">2<small>Marseille</small></button></div></div>'+
+  '<div class="sh"><a class="wa" href="#" data-noop="1">Partager l\'analyse sur WhatsApp</a><a href="#" data-noop="1">Copier le lien</a></div>'+
+  '<p class="note">Analyse d\'aide à la préparation. On n\'engage rien : aucun gain n\'est garanti ni promis, et PronoFlash IA ne prend aucun pari.</p>'+
+ '</div><aside class="side"><div class="sticky">'+
+  '<div class="box toc"><div class="lbl">Sommaire</div><div style="margin-top:8px">'+toc+'</div></div>'+
+  ad('rect','Pavé 300×250','Adsterra','Colonne')+
+  ad('tall','Skyscraper 300×600','Adsterra · collant','Collant')+
+ '</div></aside></div>'+
+ '<div class="stk">'+ad('ban','Bannière collante','320×50 · fermable','Bas')+'</div>'+footer();
+}
 
 /* ---------- coupon ---------- */
 var CP=[
@@ -771,9 +863,10 @@ $('#site-coupon').innerHTML=coupon();
 cpSel=[{id:'psg',i:5},{id:'ahl',i:3},{id:'liv',i:7}];
 cpRender();
 
+$('#site-details').innerHTML=details();
 fiMk();
 /* onglets */
-var TABS=[['accueil','Accueil'],['fiche','Fiche match'],['bilan','Bilan'],['coupon','Coupon'],['pubs','Publicités'],['analyse','Analyse'],['nom','Nom & domaine'],['valider','Valider']];
+var TABS=[['accueil','Accueil'],['fiche','Fiche match'],['details','Analyse complète'],['bilan','Bilan'],['coupon','Coupon'],['pubs','Publicités'],['analyse','Analyse'],['nom','Nom & domaine'],['valider','Valider']];
 var tabs=$('#tabs');
 tabs.innerHTML=TABS.map(function(t){return '<button class="tab" role="tab" data-t="'+t[0]+'" aria-selected="false">'+t[1]+'</button>'}).join('');
 function show(id){
@@ -789,6 +882,8 @@ function show(id){
 tabs.addEventListener('click',function(e){var b=e.target.closest('.tab'); if(b) show(b.dataset.t)});
 document.addEventListener('click',function(e){
  var g=e.target.closest('[data-go]'); if(g){e.preventDefault(); show(g.dataset.go); return}
+ var tt=e.target.closest('[data-to]'); if(tt){e.preventDefault(); var el=document.getElementById(tt.dataset.to); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return}
+ var ld=e.target.closest('[data-load]'); if(ld){e.preventDefault(); cpSel=[]; ld.dataset.load.split('|').forEach(function(x){var a=x.split(':'),m=CP.filter(function(q){return q.id===a[0]})[0]; m.o.forEach(function(o,i){if(o[1]===a[1]) cpSel.push({id:a[0],i:i})})}); cpRender(); show('coupon'); return}
  var n=e.target.closest('[data-noop]'); if(n) e.preventDefault();
 });
 
@@ -797,13 +892,13 @@ function devSwitch(segId,frId,other){
  var seg=$(segId),fr=$(frId);
  seg.addEventListener('click',function(e){
    var b=e.target.closest('button'); if(!b) return;
-   [['#dev1','#fr1'],['#dev2','#fr2']].forEach(function(p){
+   [['#dev1','#fr1'],['#dev2','#fr2'],['#dev3','#fr3']].forEach(function(p){
      $(p[1]).dataset.dev=b.dataset.d;
      $$('button',$(p[0])).forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.d===b.dataset.d))});
    });
  });
 }
-devSwitch('#dev1','#fr1'); devSwitch('#dev2','#fr2');
+devSwitch('#dev1','#fr1'); devSwitch('#dev2','#fr2'); devSwitch('#dev3','#fr3');
 if(window.innerWidth<700){ $$('.frame').forEach(function(f){f.dataset.dev='phone'}); $$('.seg button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.d==='phone'))}) }
 
 /* options pub */
