@@ -138,6 +138,18 @@ const kMontageSampleVideo = 'assets/videos/intro_video.mp4';
 Color _a(int r, int g, int b, double o) => Color.fromRGBO(r, g, b, o);
 final int _nextYear = DateTime.now().year + 1;
 
+/// « Ma vidéo avec ce son » : aucun habillage, la vidéo de la personne et la musique seule (son d'origine coupé par défaut).
+/// Volontairement absent de la galerie : on y arrive depuis la page Musique ou la page d'un titre.
+const kPlainTemplateId = 'plain';
+final MontageTemplate kPlainTemplate = MontageTemplate(
+  id: kPlainTemplateId,
+  cat: MontageCat.insta,
+  name: 'Ma vidéo avec ce son',
+  sample: _p4,
+  tint: const [Color(0x00000000), Color(0x00000000)],
+  accent: const Color(0xFFFFFFFF),
+);
+
 final List<MontageTemplate> kMontageTemplates = [
   // ── Situations ──
   MontageTemplate(id: 'fauche', cat: MontageCat.situations, name: 'Fauché(e) — fin de mois', sample: _p7, saturation: .55,

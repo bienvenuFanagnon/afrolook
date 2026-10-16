@@ -36,6 +36,8 @@ import '../postDetails.dart';
 import '../userPosts/userPostForm.dart';
 import '../../services/offline_music_service.dart';
 import 'artist_sound_common.dart';
+import 'montage/montage_catalog.dart';
+import 'montage/montage_editor_page.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
 import 'sound_countries.dart';
@@ -667,10 +669,18 @@ class _SoundCard extends StatelessWidget {
 Future<void> startPostWithSound(BuildContext context, ArtistSound s) => startPostWithMusic(context, MontageMusic.artist(s));
 
 /// Même chemin pour une musique gratuite d'Afrolook ou un son d'artiste.
-Future<void> startPostWithMusic(BuildContext context, MontageMusic music) async {
+///
+/// [ownVideo] : « Ma vidéo avec ce son » — directement la vidéo de la personne et la musique, sans modèle ni habillage ;
+/// le son d'origine de la vidéo est coupé (seule la musique est jouée), la personne peut le garder dans l'éditeur.
+Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool ownVideo = false}) async {
   await SoundPreview.stop();
   if (!context.mounted) return;
-  final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageGalleryPage(presetMusic: music)));
+  final r = await Navigator.push<StudioResult>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ownVideo ? MontageEditorPage(template: kPlainTemplate, presetMusic: music) : MontageGalleryPage(presetMusic: music),
+    ),
+  );
   if (r == null || !context.mounted) return;
   await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
 }
@@ -968,9 +978,19 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           ),
         ),
         const SizedBox(height: 8),
+        SizedBox(
+          height: 46,
+          child: OutlinedButton.icon(
+            onPressed: () => startPostWithMusic(context, MontageMusic.artist(s), ownVideo: true),
+            icon: Icon(Icons.videocam_rounded, color: c.primary),
+            label: Text('Ma vidéo avec ce son (sans habillage)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+            style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
           s.isFree
-              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté.'
+              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Avec « Ma vidéo », le son d’origine de ta vidéo est coupé : seule la musique est jouée.'
               : 'Tu choisis un modèle : le prix (${s.unitPrice} pièces, dont ${s.unitShare} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
           textAlign: TextAlign.center,
           style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),

@@ -229,6 +229,22 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     await OfflineMusic.remove(it.id);
   }
 
+  void _createOwnVideo(_Item it) async {
+    final music = it.sound != null ? MontageMusic.artist(it.sound!) : (it.track != null ? MontageMusic.free(it.track!) : null);
+    if (music != null) return startPostWithMusic(context, music, ownVideo: true);
+    try {
+      final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(it.id).get();
+      if (!mounted) return;
+      if (!d.exists || d.data()!['status'] != 'validated') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre n’est plus disponible.')));
+        return;
+      }
+      startPostWithMusic(context, MontageMusic.artist(ArtistSound.fromMap(d.data()!, d.id)), ownVideo: true);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chargement impossible. Vérifie ta connexion.')));
+    }
+  }
+
   void _create(_Item it) async {
     if (it.sound == null && it.track == null) {
       // titre de la bibliothèque : on charge le document du son
@@ -504,6 +520,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                   color: c.surface,
                   onSelected: (v) {
                     if (v == 'create') _create(it);
+                    if (v == 'video') _createOwnVideo(it);
                     if (v == 'open') _open(it);
                     if (v == 'buy' && it.sound != null) buyTrack(context, it.sound!);
                     if (v == 'download') _download(it);
@@ -512,6 +529,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(value: 'create', child: Text(it.sound != null && it.paid ? '🎬 Créer un post (${it.sound!.unitPrice} 🪙)' : '🎬 Créer un post avec ce son')),
+                    PopupMenuItem(value: 'video', child: Text(it.sound != null && it.paid ? '🎥 Ma vidéo avec ce son (${it.sound!.unitPrice} 🪙)' : '🎥 Ma vidéo avec ce son')),
                     if (it.sound != null && it.sound!.forSale && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) PopupMenuItem(value: 'buy', child: Text('🛒 Acheter le titre · ${it.sound!.saleCoins} 🪙')),
                     if (_canDownload(it))
                       PopupMenuItem(value: OfflineMusic.has(it.id) ? 'undownload' : 'download', child: Text(OfflineMusic.has(it.id) ? '🗑️ Retirer du téléphone' : '⬇️ Télécharger (écouter sans internet)')),

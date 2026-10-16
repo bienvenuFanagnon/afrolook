@@ -71,7 +71,7 @@ Décision : un titre payant n'est **jamais** téléchargeable en fichier libre. 
 ## 6. Du fil à la vidéo
 
 Déjà en place : carte musique dans le fil (lecture immédiate, bouton « Créer un post avec ce son »), modèles du Studio avec le son déjà choisi, annonce du prix et du solde avant, rien débité si le montage échoue, lien du post au son vérifié par le serveur.
-À ajouter : mode « vidéo avec musique seule » (le son d'origine est déjà coupé par défaut : option `keepAudio` désactivée) ; boutons « Télécharger » et « Écouter hors de l'application » sur la page du titre.
+**Fait (phase 5)** : « 🎥 Ma vidéo avec ce son » — chemin direct, sans modèle ni habillage (`kPlainTemplate`, absent de la galerie) : la personne choisit sa vidéo (ou sa photo) et la musique est ajoutée. **Le son d'origine de la vidéo est coupé par défaut** (seule la musique est jouée, vérifié côté serveur : `keepAudio` faux = aucune piste d'origine) ; un interrupteur « Garder le son de ma vidéo » permet de le mélanger. Accès : menu d'un titre de la page Musique, page du titre, carte du fil (icône caméra), et bouton « 🎬 Ma vidéo » du bandeau de la galerie des modèles. Le prix d'un son payant est annoncé avant (solde, part de l'artiste) et débité seulement si le montage réussit. Le résultat s'enregistre dans la galerie (album Afrolook) ou se publie. « Télécharger » et « Écouter hors de l'application » : faits en phase 3 (téléchargement protégé dans Afrolook ; lecture en arrière-plan).
 
 ## 7. Pays, abonnements, facturation
 
@@ -122,7 +122,7 @@ Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite 
   - Interface : menu « Télécharger (écouter sans internet) » / « Retirer du téléphone » dans la page Musique, bouton sur la page du titre, pastille « téléchargé ».
   - **Pas fait** (à décider) : attestation d'appareil (Play Integrity / App Attest), marque sonore invisible par acheteur, blocage de la capture audio par d'autres applications Android (`allowAudioPlaybackCapture="false"` couperait aussi le son des enregistrements d'écran de toute l'application, donc non activé), détection root/jailbreak.
 - **Phase 4 (pays, abonnements, pubs)** : faite (voir § 7 et § 8). Serveur testé en réel : gratuit 1 pays, Premium 20, Gold tous, titre d'un autre refusé, codes invalides ignorés, écriture directe du champ refusée par les règles. Côté application : analysée, pas essayée sur un téléphone.
-- Phase 5 : à faire.
+- **Phase 5 (« Ma vidéo avec ce son », son d'origine coupé, export)** : faite côté application (analysée et testée par widget, pas essayée sur un téléphone) ; le montage serveur existait déjà et n'a pas changé.
 
 ## 10. Feuille de route
 

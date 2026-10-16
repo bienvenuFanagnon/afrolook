@@ -37,7 +37,10 @@ class MontageEditorPage extends StatefulWidget {
 }
 
 class _MontageEditorPageState extends State<MontageEditorPage> with SingleTickerProviderStateMixin {
-  late final MontageState s = MontageState(widget.template)..post = !widget.forChronique;
+  late final MontageState s = MontageState(widget.template)
+    ..post = !widget.forChronique
+    // Sans habillage : on ne garde que la vidéo (le filigrane « Créé sur Afrolook » reste, comme partout)
+    ..hidden.addAll(widget.template.id == kPlainTemplateId ? MontageLayer.values : const []);
   late final AnimationController _anim = AnimationController(vsync: this, duration: kMontageLoop);
   final _keys = MontageKeys();
   final _picker = ImagePicker();
@@ -75,6 +78,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     _comments.text = s.commentsLabel();
     _followers.text = s.followersLabel(real) ?? '';
     ArtistSoundPricing.load();
+    // « Ma vidéo avec ce son » : on propose tout de suite de choisir la vidéo
+    if (tp.id == kPlainTemplateId) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickMedia() : null);
     final preset = widget.presetMusic;
     if (preset != null) {
       s.music = preset;
@@ -782,7 +787,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           onChanged: (v) => setState(() => s.keepVideoAudio = v),
           activeThumbColor: _c.primary,
           title: Text('Garder le son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
-          subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Seule la musique est gardée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+          subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Le son de ta vidéo est coupé : seule la musique est jouée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
         ),
       if (m != null)
         Padding(

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'artist_marketplace.dart';
 import 'artist_sound_common.dart';
+import 'montage/montage_music.dart';
 import 'sound_countries.dart';
 import '../music/music_page.dart';
 
@@ -187,7 +188,11 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
               style: OutlinedButton.styleFrom(side: BorderSide(color: c.border), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: Text('Voir', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
             ),
-            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Ma vidéo avec ce son (son d’origine coupé)',
+              onPressed: () => startPostWithMusic(context, MontageMusic.artist(s), ownVideo: true),
+              icon: Icon(Icons.videocam_rounded, color: c.primary),
+            ),
             IconButton(
               tooltip: 'Toute la musique',
               onPressed: () async {
