@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Les titres téléchargés (chiffrés) ne sont jamais sauvegardés : ils restent sur l'appareil. -->
+<full-backup-content>
+    <exclude domain="file" path="afrolook_m" />
+</full-backup-content>

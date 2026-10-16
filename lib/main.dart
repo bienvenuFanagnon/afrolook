@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:just_audio_background/just_audio_background.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
@@ -132,6 +133,19 @@ Future<void> main() async {
     }
     originalOnError?.call(details);
   };
+
+  // Lecture de la musique quand l'écran est éteint ou l'application fermée (notification + écran verrouillé)
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    try {
+      await JustAudioBackground.init(
+        androidNotificationChannelId: 'com.afrotok.afrotok.music',
+        androidNotificationChannelName: 'Afrolook Musique',
+        androidNotificationOngoing: true,
+      );
+    } catch (e) {
+      printVm("Erreur initialisation lecture en arrière-plan : $e");
+    }
+  }
 
   // Initialisation caméras (mobile uniquement — sur web, permission demandée à l'usage)
   if (!kIsWeb) {

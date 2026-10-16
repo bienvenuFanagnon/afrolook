@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
@@ -98,6 +99,70 @@ export const musicStreamUrl = onCall({ timeoutSeconds: 30, memory: "256MiB" }, a
 
   const url = await tempListenUrl(path);
   return { url, expiresInSec: 600 };
+});
+
+/**
+ * Licence de lecture hors ligne (« télécharger » façon YouTube) : le fichier n'est jamais remis tel quel à la personne, l'application le chiffre
+ * dans son espace privé avec la clé de la licence. La licence est liée à la personne et à l'appareil, dure 30 jours, se renouvelle toute seule
+ * quand l'appareil est en ligne, et disparaît si le titre est retiré, suspendu ou si la personne n'y a plus droit.
+ * Limites : 3 appareils par personne et par titre, 20 téléchargements par jour, 30 jours de validité.
+ */
+const LICENSE_DAYS = 30;
+const MAX_DEVICES = 3;
+const DOWNLOADS_PER_DAY = 20;
+
+export const musicLicense = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const d = (request.data ?? {}) as { soundId?: unknown; deviceId?: unknown; renew?: unknown };
+  if (!okId(d.soundId)) throw new HttpsError("invalid-argument", "Titre invalide.");
+  if (!okId(d.deviceId)) throw new HttpsError("invalid-argument", "Appareil invalide.");
+  const soundId = d.soundId;
+  const deviceId = d.deviceId;
+  const renew = d.renew === true;
+
+  const [sound, lib] = await Promise.all([db.collection("artist_sounds").doc(soundId).get(), db.collection("MusicLibrary").doc(`${uid}_${soundId}`).get()]);
+  if (!sound.exists) throw new HttpsError("not-found", "Titre introuvable.");
+  const own = sound.get("userId") === uid;
+  if (!own && sound.get("status") !== "validated") throw new HttpsError("failed-precondition", "RETIRE");
+  const free = sound.get("pricing") === "free";
+  if (!own && !free && !lib.exists) throw new HttpsError("permission-denied", "ACHAT_REQUIS");
+  const path = (sound.get("audioPath") as string | undefined) ?? storagePathFromUrl(String(sound.get("audioUrl") ?? ""));
+  if (!path) throw new HttpsError("not-found", "Fichier introuvable.");
+
+  const licRef = db.collection("MusicLicenses").doc(`${uid}_${soundId}_${deviceId}`);
+  const limRef = db.collection("MusicStreamLimits").doc(`${uid}_dl_${day()}`);
+  const now = Date.now();
+  const expiresAt = now + LICENSE_DAYS * 24 * 3600 * 1000;
+
+  const out = await db.runTransaction(async (tx) => {
+    const lic = await tx.get(licRef);
+    // Appareils déjà autorisés pour ce titre
+    const others = await tx.get(db.collection("MusicLicenses").where("uid", "==", uid).where("soundId", "==", soundId));
+    const active = others.docs.filter((x) => x.id !== licRef.id && x.get("revoked") !== true && num(x.get("expiresAt")) > now);
+    if (!lic.exists && active.length >= MAX_DEVICES) throw new HttpsError("resource-exhausted", "APPAREILS", { max: MAX_DEVICES });
+
+    // Un renouvellement ne consomme pas le quota de téléchargements ; un nouveau téléchargement oui
+    const fresh = !renew || !lic.exists || lic.get("revoked") === true;
+    if (fresh) {
+      const l = await tx.get(limRef);
+      const n = num(l.get("n"));
+      if (n >= DOWNLOADS_PER_DAY) throw new HttpsError("resource-exhausted", "LIMITE_JOUR");
+      tx.set(limRef, { uid, n: n + 1, day: day(), updatedAt: now }, { merge: true });
+    }
+    const key = fresh || !lic.get("key") ? randomBytes(32).toString("base64") : String(lic.get("key"));
+    tx.set(licRef, { uid, soundId, deviceId, key, expiresAt, revoked: false, createdAt: lic.exists ? lic.get("createdAt") ?? now : now, renewedAt: now }, { merge: true });
+    return { key };
+  });
+
+  const title = String(sound.get("title") ?? "Titre").slice(0, 60);
+  const base = {
+    key: out.key, expiresAt, title, artist: sound.get("userPseudo") ? String(sound.get("userPseudo")).slice(0, 40) : null, coverImageUrl: sound.get("coverImageUrl") ?? null,
+  };
+  // Un simple renouvellement ne renvoie pas le fichier
+  if (renew) return base;
+  const url = await tempListenUrl(path);
+  return { ...base, url, expiresInSec: 600 };
 });
 
 /** Supprime les copies d'écoute de plus de 10 minutes (le nom du fichier commence par l'heure de création). */

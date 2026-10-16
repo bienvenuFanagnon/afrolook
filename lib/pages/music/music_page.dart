@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/offline_music_service.dart';
 import '../../theme/app_colors.dart';
 import '../studio/artist_marketplace.dart';
 import '../studio/artist_sound_common.dart';
@@ -98,6 +99,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     MusicFavorites.start();
+    OfflineMusic.refresh();
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
@@ -115,7 +117,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     _d?.cancel();
     _tabs.dispose();
     _search.dispose();
-    SoundPreview.stop();
+    // La musique continue quand on quitte la page (notification et écran verrouillé), sauf si on la met en pause.
     super.dispose();
   }
 
@@ -132,6 +134,17 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       if (SoundPreview.playing.value == key) return;
     }
     setState(() => _loadingKey = key);
+    // Titre téléchargé : lu depuis l'espace privé (fonctionne sans internet)
+    if (it.kind == _Kind.artist && OfflineMusic.has(it.id)) {
+      final err = await OfflineMusic.play(it.id, title: it.title, key: key);
+      if (!mounted) return;
+      setState(() {
+        _loadingKey = null;
+        _pos = Duration.zero;
+      });
+      if (err != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      return;
+    }
     String? url = it.previewUrl;
     var full = false;
     if (url == null && it.track != null) url = await MontageMusicPlayer.urlOf(MontageMusic.free(it.track!));
@@ -153,6 +166,64 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     if (!mounted) return;
     setState(() => _loadingKey = null);
     if (!ok) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce titre. Vérifie ta connexion.')));
+  }
+
+  /// Droit de télécharger : titre acheté, gratuit d'un artiste, ou à soi.
+  bool _canDownload(_Item it) {
+    if (!OfflineMusic.supported || it.kind != _Kind.artist) return false;
+    final own = it.sound?.userId == FirebaseAuth.instance.currentUser?.uid;
+    return it.owned || own || (it.sound?.isFree ?? false);
+  }
+
+  Future<void> _download(_Item it) async {
+    final c = AppColors.of(context);
+    final progress = ValueNotifier<double>(0);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Téléchargement…', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+        content: ValueListenableBuilder<double>(
+          valueListenable: progress,
+          builder: (_, v, __) => Column(mainAxisSize: MainAxisSize.min, children: [
+            LinearProgressIndicator(value: v <= 0 ? null : v, color: c.primary, backgroundColor: c.border),
+            const SizedBox(height: 10),
+            Text('« ${it.title} » sera rangé de façon sécurisée dans Afrolook.', style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+          ]),
+        ),
+      ),
+    );
+    final r = await OfflineMusic.download(it.id, onProgress: (v) => progress.value = v);
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    progress.dispose();
+    if (r.ok) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Titre disponible hors ligne dans Afrolook ✅')));
+    } else if (r.needsPurchase && it.sound != null) {
+      buyTrack(context, it.sound!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.message ?? 'Téléchargement impossible.')));
+    }
+  }
+
+  Future<void> _removeDownload(_Item it) async {
+    final c = AppColors.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Retirer du téléphone ?', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+        content: Text('« ${it.title} » restera dans ta bibliothèque, tu pourras le retélécharger.', style: TextStyle(color: c.textSecondary, fontSize: 13.5)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler', style: TextStyle(color: c.textSecondary))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Retirer', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (SoundPreview.now.value?.key == it.playKey) await SoundPreview.stop();
+    await OfflineMusic.remove(it.id);
   }
 
   void _create(_Item it) async {
@@ -353,6 +424,13 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
 
   Widget _row(AppColors c, _Item it) {
     final playing = SoundPreview.playing;
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: OfflineMusic.ids,
+      builder: (_, offline, __) => _rowBody(c, it, playing, offline.contains(it.id) && it.kind == _Kind.artist),
+    );
+  }
+
+  Widget _rowBody(AppColors c, _Item it, ValueNotifier<String?> playing, bool downloaded) {
     return ValueListenableBuilder<String?>(
       valueListenable: playing,
       builder: (_, now, __) {
@@ -379,6 +457,10 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                     const SizedBox(height: 2),
                     Row(children: [
                       _badge(it),
+                      if (downloaded) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.download_done_rounded, size: 15, color: c.primary),
+                      ],
                       const SizedBox(width: 6),
                       Expanded(child: Text(it.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12))),
                     ]),
@@ -404,11 +486,15 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                     if (v == 'create') _create(it);
                     if (v == 'open') _open(it);
                     if (v == 'buy' && it.sound != null) buyTrack(context, it.sound!);
+                    if (v == 'download') _download(it);
+                    if (v == 'undownload') _removeDownload(it);
                     if (v == 'report' && it.sound != null) reportArtistSound(context, it.sound!.id, it.title);
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(value: 'create', child: Text(it.sound != null && it.paid ? '🎬 Créer un post (${it.sound!.unitPrice} 🪙)' : '🎬 Créer un post avec ce son')),
                     if (it.sound != null && it.sound!.forSale && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) PopupMenuItem(value: 'buy', child: Text('🛒 Acheter le titre · ${it.sound!.saleCoins} 🪙')),
+                    if (_canDownload(it))
+                      PopupMenuItem(value: OfflineMusic.has(it.id) ? 'undownload' : 'download', child: Text(OfflineMusic.has(it.id) ? '🗑️ Retirer du téléphone' : '⬇️ Télécharger (écouter sans internet)')),
                     if (it.kind == _Kind.artist) const PopupMenuItem(value: 'open', child: Text('📄 Voir le titre et ses posts')),
                     if (it.sound != null && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) const PopupMenuItem(value: 'report', child: Text('🚩 Signaler')),
                   ],

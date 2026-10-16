@@ -95,7 +95,7 @@ AdMob d'abord, pub Afrolook en repli (règle appliquée partout). Emplacements :
 | Payer deux fois / jamais | Un document `ArtistSoundUses/{uid}_{jobId}` par montage ; débit seulement après montage réussi | fait, testé |
 | Supprimer le son d'un autre | `artistSoundDelete` : propriétaire ou admin ; l'artiste retape le titre exact | fait, testé |
 | Abus de signalements | Un par personne et par son ; 3 = suspension (réversible par l'admin) ; l'artiste ne peut pas signaler son propre son | fait, testé |
-| Fuite d'un titre acheté | Téléchargement caché et chiffré dans l'application (§ 5), licence de 30 jours, 3 appareils, appareil authentique exigé, marque sonore invisible par acheteur, liens signés de 5 minutes | à faire (phases 2–3) |
+| Fuite d'un titre acheté | Téléchargement caché et chiffré dans l'application (§ 5), licence de 30 jours, 3 appareils, 20 téléchargements/jour, liens d'écoute de 10 minutes | fait (phases 2–3) ; reste à faire : appareil authentique (Play Integrity / App Attest) et marque sonore invisible par acheteur |
 | Copie par enregistrement d'écran/micro | Aucune protection technique complète possible : dissuader, retrouver, retirer | limite assumée |
 | Droits d'auteur : artiste qui dépose un titre qu'il ne possède pas | Case de certification obligatoire, sanction du compte, retrait immédiat sur plainte, preuve demandée au vrai auteur | fait (certification), procédure à documenter |
 | Mineurs, contenu choquant | Écoute avant validation ; motif « choquant » dans le signalement | fait |
@@ -110,7 +110,13 @@ Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite 
   - `musicBuy` (transaction unique, idempotente), `musicStreamUrl` (titre gratuit, acheté ou à soi ; 300 écoutes complètes par jour).
   - Lien d'écoute : copie temporaire du fichier dans `artist_sound_tmp/` (dossier fermé aux téléphones) avec un jeton, supprimée par la tâche `cleanupTempListen` toutes les 10 minutes. Les liens signés Google ne sont pas utilisés : le compte de service du projet n'a pas le droit de signer (non modifié).
   - Le lien d'écoute de l'administrateur (avant validation) utilise le même mécanisme : il ne fonctionnait pas avant cette correction.
-- Phases 3 à 5 : à faire.
+- **Phase 3 (lecture en arrière-plan + téléchargement protégé)** : faite côté serveur (testé en réel) et côté application (analysée et testée en logique ; **pas encore essayée sur un téléphone**, il faut un nouveau build Android/iOS).
+  - Lecture en arrière-plan : `just_audio` + `just_audio_background` (un seul lecteur dans l'application). Android : service média + notification avec pochette et commandes, activité `AudioServiceFragmentActivity`, permissions `FOREGROUND_SERVICE(_MEDIA_PLAYBACK)`. iPhone : `UIBackgroundModes: audio`. La musique continue quand on quitte la page Musique.
+  - `musicLicense({soundId, deviceId, renew?})` : titre gratuit, acheté ou à soi ; titre retiré/suspendu = `RETIRE` ; **3 appareils maximum** par titre (`APPAREILS`), **20 téléchargements par jour** (`LIMITE_JOUR`, un renouvellement n'est pas compté), licence de **30 jours**, clé AES-256 aléatoire propre à la personne, au titre et à l'appareil. Collection `MusicLicenses` fermée à tous les téléphones (elle contient les clés).
+  - Application (`lib/services/offline_music_service.dart`) : téléchargement par le lien d'écoute temporaire, chiffrement **AES-256-GCM** (authentifié : un fichier modifié est refusé), rangé dans `<Application Support>/afrolook_m/<nom sans rapport>.bin`, clé dans Keystore/Keychain (iPhone : « cet appareil seulement »), jamais dans la galerie, les fichiers ni les récents ; exclu des sauvegardes Android (`backup_rules.xml`, `data_extraction_rules.xml`). Lecture : déchiffrement en mémoire (source audio personnalisée), renouvellement automatique dans les 7 derniers jours de licence, effacement si le droit sur le titre a disparu, message clair si la licence a expiré hors ligne.
+  - Interface : menu « Télécharger (écouter sans internet) » / « Retirer du téléphone » dans la page Musique, bouton sur la page du titre, pastille « téléchargé ».
+  - **Pas fait** (à décider) : attestation d'appareil (Play Integrity / App Attest), marque sonore invisible par acheteur, blocage de la capture audio par d'autres applications Android (`allowAudioPlaybackCapture="false"` couperait aussi le son des enregistrements d'écran de toute l'application, donc non activé), détection root/jailbreak.
+- Phases 4 et 5 : à faire.
 
 ## 10. Feuille de route
 

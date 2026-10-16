@@ -34,6 +34,7 @@ import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../userPosts/userPostForm.dart';
+import '../../services/offline_music_service.dart';
 import 'artist_sound_common.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
@@ -704,6 +705,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   @override
   void initState() {
     super.initState();
+    OfflineMusic.refresh();
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
@@ -737,6 +739,18 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
       await SoundPreview.resume();
       if (SoundPreview.playing.value == key) return;
     }
+    if (_full && OfflineMusic.has(s.id)) {
+      setState(() => _loadingFull = true);
+      final err = await OfflineMusic.play(s.id, title: s.title, key: key);
+      if (!mounted) return;
+      setState(() {
+        _loadingFull = false;
+        _pos = Duration.zero;
+        _dur = Duration(milliseconds: s.durationMs > 0 ? s.durationMs : 30000);
+      });
+      if (err != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      return;
+    }
     String? url = s.previewUrl;
     if (_full) {
       setState(() => _loadingFull = true);
@@ -750,6 +764,18 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     });
     final ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: s.title, subtitle: _full ? 'Titre complet' : 'Extrait de 30 s', coverUrl: s.coverImageUrl));
     if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
+  }
+
+  double? _dl; // avancement du téléchargement (null = pas en cours)
+
+  Future<void> _download() async {
+    setState(() => _dl = 0);
+    final r = await OfflineMusic.download(widget.sound.id, onProgress: (v) {
+      if (mounted) setState(() => _dl = v);
+    });
+    if (!mounted) return;
+    setState(() => _dl = null);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.ok ? 'Titre disponible hors ligne dans Afrolook ✅' : (r.message ?? 'Téléchargement impossible.'))));
   }
 
   Future<void> _buy() async {
@@ -834,6 +860,27 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
               Align(alignment: Alignment.centerRight, child: Text(_full ? 'Durée : $total' : 'Morceau complet : $total', style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
           ]),
         ),
+        if (_full && OfflineMusic.supported)
+          ValueListenableBuilder<Set<String>>(
+            valueListenable: OfflineMusic.ids,
+            builder: (_, ids, __) {
+              final has = ids.contains(s.id);
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: _dl != null ? null : (has ? () async => await OfflineMusic.remove(s.id) : _download),
+                    icon: _dl != null
+                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, value: _dl! > 0 ? _dl : null, color: c.primary))
+                        : Icon(has ? Icons.download_done_rounded : Icons.download_rounded, color: c.primary),
+                    label: Text(has ? 'Disponible hors ligne · Retirer du téléphone' : 'Télécharger pour écouter sans internet', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ),
+              );
+            },
+          ),
         const SizedBox(height: 14),
         // Achat du titre complet
         if (s.forSale && !_own && !_owned)

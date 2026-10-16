@@ -231,6 +231,8 @@ dependencies:
   qr_flutter: ^4.1.0
   gal: ^2.3.3
   screen_protector: ^1.5.3
+  just_audio: ^0.9.46
+  just_audio_background: ^0.0.1-beta.17
 #  ffmpeg_kit_flutter_new: ^4.2.1
 
 
