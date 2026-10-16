@@ -11,6 +11,7 @@ const { legalPage } = require('./legal');
 const C = require('./components');
 const { T, pathFor, parsePath } = require('./i18n');
 const { rateByKey, summarize } = require('../engine/bilan');
+const learn = require('../engine/learn');
 const { dayStr, addDays } = require('../jobs/helpers');
 const { esc } = require('../util/format');
 
@@ -124,7 +125,9 @@ async function bilanPage(db, rc) {
   const recent = await D.recentResults(db, rc.now, 10);
   const leagues = Object.entries(s30.parLigue).map(([id, v]) => ({ nom: C.leagueName(rc, id), taux: v.taux, n: v.n })).sort((a, b) => b.n - a.n);
   const familles = Object.values(s30.parFamille).filter((f) => f.n >= 10).sort((a, b) => b.n - a.n);
-  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles }), cc(600, 1800));
+  const s90 = summarize((await D.bilanDays(db, rc.now, 90)).map((d) => d.delta).filter(Boolean));
+  const learning = Object.assign(learn.describe(learn.buildCalibration(s90)), { suivis: s90.n, seuil: learn.MIN_TOTAL });
+  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning }), cc(600, 1800));
 }
 
 /** Sitemap bilingue : chaque adresse française et anglaise, avec ses alternatives hreflang. */

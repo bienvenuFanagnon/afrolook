@@ -7,7 +7,7 @@ const SYSTEM = [
   '1. N\'utilise QUE les chiffres et les faits fournis dans la section FAITS. N\'invente aucun chiffre, aucun joueur, aucune statistique.',
   '2. Ne change jamais un pourcentage, un score ou un pronostic fourni.',
   '3. N\'écris jamais « gain garanti », « sûr à 100 % », « assuré », « pari gagnant » ni aucune promesse de gain.',
-  '4. Ton neutre et informatif : explique pourquoi le calcul donne ce pronostic et ce qui peut le contredire.',
+  '4. Ton neutre et informatif : explique pourquoi le calcul donne ce pronostic et ce qui peut le contredire. Si un fait donne notre bilan récent sur ce type de pari, cite-le tel quel, simplement et honnêtement ; s\'il est inférieur à 55 %, invite à la prudence.',
   '5. Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ni après, de cette forme exacte :',
   '{"analyse":"3 à 5 phrases","pointsCles":["point 1","point 2","point 3"],"resume":"une seule phrase"}',
 ].join('\n');
@@ -18,7 +18,7 @@ const SYSTEM_EN = [
   '1. Use ONLY the figures and facts given in the FACTS section. Never invent a figure, a player or a statistic.',
   '2. Never change a percentage, a score or a prediction you are given.',
   '3. Never write "guaranteed", "sure win", "100% certain", "lock", "can\'t lose" or any promise of winnings.',
-  '4. Neutral, informative tone: explain why the model gives this prediction and what could go against it.',
+  '4. Neutral, informative tone: explain why the model gives this prediction and what could go against it. If a fact gives our recent track record on this type of bet, quote it as is, simply and honestly; if it is below 55%, advise caution.',
   '5. Reply ONLY with a valid JSON object, with no text before or after, in exactly this shape (keep these keys):',
   '{"analyse":"3 to 5 sentences","pointsCles":["point 1","point 2","point 3"],"resume":"one sentence"}',
 ].join('\n');

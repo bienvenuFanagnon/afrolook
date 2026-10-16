@@ -162,11 +162,24 @@ const VIEWS = {
   },
 
   async bilan() {
+    const pk = (k) => String(k).replace(/(\d)_(\d)/g, '$1.$2').replace(/_/g, ':');
+    const sgn = (x) => (x > 0 ? '+' : '') + x;
+    const diagCard = (g) => {
+      if (!g) return '';
+      if (!g.actif) return `<div class="card"><h3>Auto-diagnostic de l'IA</h3><p class="note">En observation : <b>${nf(g.suivis)}</b> pronostic(s) terminé(s) sur ${g.seuil} nécessaires. À partir de ${g.seuil}, l'IA compare ses probabilités aux résultats réels et se corrige toute seule (par pari, par famille de paris et sur le niveau de buts).</p></div>`;
+      const fam = g.familles.map((f) => `<tr><td>${esc(f.nom.replace(/_/g, ' '))}</td><td class="num">${f.n}</td><td class="num">${sgn(f.ecart)} pts</td><td>${f.ecart < 0 ? 'surestimait : probabilités baissées' : 'sous-estimait : probabilités relevées'}</td></tr>`).join('');
+      const par = g.paris.map((f) => `<tr><td>${esc(pk(f.cle))}</td><td class="num">${f.n}</td><td class="num">${sgn(f.ecart)} pts</td><td class="num">annoncé ${f.brut} % · réel ${f.reel} %</td></tr>`).join('');
+      return `<div class="card"><h3>Auto-diagnostic de l'IA</h3><p class="note">Elle apprend de ses <b>${nf(g.n)}</b> derniers pronostics terminés (90 jours). Chaque correction est plafonnée et prudente : peu de données = presque pas de changement. Écart global moyen : <b>${sgn(g.global)} pt</b>.</p>` +
+        (g.buts ? `<p>Niveau de buts corrigé : <b>${sgn(g.buts.domicile)} %</b> à domicile, <b>${sgn(g.buts.exterieur)} %</b> à l'extérieur (sur ${nf(g.buts.n)} matchs).</p>` : '<p class="note">Niveau de buts : aucune correction nécessaire.</p>') +
+        (fam ? `<h4 style="margin:12px 0 4px">Familles de paris corrigées</h4><div class="tw"><table><thead><tr><th>Famille</th><th>Paris</th><th>Écart</th><th>Effet</th></tr></thead><tbody>${fam}</tbody></table></div>` : '<p class="note">Aucune famille de paris ne s\'écarte de plus de 3 points : les probabilités sont bien calibrées.</p>') +
+        (par ? `<h4 style="margin:12px 0 4px">Paris les plus corrigés</h4><div class="tw"><table><thead><tr><th>Pari</th><th>Paris</th><th>Écart</th><th>Détail</th></tr></thead><tbody>${par}</tbody></table></div>` : '') + '</div>';
+    };
     const n = VIEWS._bd || 30;
     const d = await api('bilan', { days: n });
     const row = (k, v, sub) => `<div class="bar"><span>${esc(k)}</span><span class="t"><i style="width:${v || 0}%"></i></span><b>${v == null ? '–' : v + ' %'}</b></div>${sub ? `<div class="note" style="text-align:right">${sub}</div>` : ''}`;
     return `<h2>Bilan</h2><div class="row">${[7, 30, 90].map((x) => `<button class="btn ${x === n ? '' : 'sec'} sm" data-bd="${x}">${x} j</button>`).join('')}</div>
     <div class="kpis">${kpi(d.taux == null ? '–' : d.taux + ' %', 'Réussite (pronostic principal)')}${kpi(nf(d.n), 'Pronostics')}${kpi(nf(d.ok), 'Réussis')}${kpi(nf(d.ko), 'Ratés')}</div>
+    ${diagCard(d.diagnostic)}
     <div class="grid"><div class="card"><h3>Par championnat</h3>${Object.entries(d.parLigue || {}).map(([k, v]) => row(k, v.taux, v.n + ' pronostics')).join('') || '<p class="note">Pas de données.</p>'}</div><div class="card"><h3>Par niveau de confiance</h3>${(d.parConfiance || []).map((r) => row(`${r.k} à ${+r.k + 9} %`, r.taux, r.n + ' pronostics')).join('') || '<p class="note">Pas de données.</p>'}</div><div class="card"><h3>Par type de pari (réel · annoncé)</h3>${Object.values(d.parFamille || {}).map((r) => row(r.k.replace(/_/g, ' '), r.taux, `annoncé ${r.annonce} % · ${nf(r.n)} paris`)).join('') || '<p class="note">Pas de données.</p>'}</div></div>`;
   },
 
