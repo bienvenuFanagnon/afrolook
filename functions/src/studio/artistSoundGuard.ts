@@ -11,7 +11,7 @@ import { promises as fs } from "fs";
 import ffmpegPath from "ffmpeg-static";
 import { db } from "../shared/firebase";
 import { BER_SAME, BER_SIMILAR, bestMatch, fingerprint, fromBase64, toBase64 } from "./audioFingerprint";
-import { storagePathFromUrl } from "./artistSounds";
+import { normalizedCountries, storagePathFromUrl, tempListenUrl } from "./artistSounds";
 
 /**
  * Protection des sons d'artistes.
@@ -152,6 +152,7 @@ export async function processArtistSound(id: string, data: FirebaseFirestore.Doc
       audioPath: path, previewUrl, previewStart: start, durationMs: Math.round(info.duration * 1000), audioSha256: sha,
       duplicates: dups, processed: true, processedAt: Date.now(),
       audioUrl: FieldValue.delete(), // l'ancien lien public n'existe plus
+      availableCountries: await normalizedCountries(uid, data["availableCountries"]), // grille des posts (1 / 20 / tous)
     };
     if (same) {
       update["status"] = "refused";
@@ -210,7 +211,7 @@ export const artistSoundAdminUrl = onCall({ timeoutSeconds: 30, memory: "256MiB"
   if (!snap.exists) throw new HttpsError("not-found", "Son introuvable.");
   const path = (snap.get("audioPath") as string | undefined) ?? storagePathFromUrl(String(snap.get("audioUrl") ?? ""));
   if (!path) throw new HttpsError("not-found", "Fichier introuvable.");
-  const [url] = await bucket().file(path).getSignedUrl({ action: "read", expires: Date.now() + 15 * 60 * 1000 });
+  const url = await tempListenUrl(path);
   return { url };
 });
 
@@ -267,4 +268,18 @@ export const artistSoundLinkPost = onCall({ timeoutSeconds: 30, memory: "256MiB"
     tx.update(soundRef, { postCount: FieldValue.increment(1) });
     return { ok: true, soundId };
   });
+});
+
+/** Change les pays d'un titre (l'artiste, selon son abonnement : 1 pays, 20 pour Premium, tous pour Gold). */
+export const artistSoundCountries = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const { soundId, countries } = (request.data ?? {}) as { soundId?: string; countries?: unknown };
+  if (!soundId || !/^[A-Za-z0-9_-]{4,64}$/.test(soundId)) throw new HttpsError("invalid-argument", "Son invalide.");
+  const ref = db.collection("artist_sounds").doc(soundId);
+  const snap = await ref.get();
+  if (!snap.exists || snap.get("userId") !== uid) throw new HttpsError("permission-denied", "Ce n'est pas ton son.");
+  const list = await normalizedCountries(uid, countries);
+  await ref.update({ availableCountries: list });
+  return { ok: true, countries: list };
 });

@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../artist_marketplace.dart';
 import '../artist_sound_common.dart';
+import '../sound_countries.dart';
 
 const _c = AppColors.dark;
 
@@ -62,6 +63,7 @@ class MontageMusic {
         subtitle = 'Musique Afrolook · gratuite',
         url = null,
         artistId = null,
+        useCoins = 0,
         paid = false,
         coverUrl = null;
 
@@ -72,6 +74,7 @@ class MontageMusic {
         subtitle = '@${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}',
         url = s.previewUrl, // extrait de 30 s : l'original n'est jamais exposé
         artistId = s.userId,
+        useCoins = s.unitPrice,
         paid = !s.isFree,
         coverUrl = s.coverImageUrl;
 
@@ -85,6 +88,10 @@ class MontageMusic {
 
   /// Son d'artiste payant (la personne paie, l'artiste gagne).
   final bool paid;
+
+  /// Prix d'utilisation dans le Studio (pièces) et part de l'artiste (60 %).
+  final int useCoins;
+  int get shareCoins => (useCoins * 60) ~/ 100;
 
   bool get isArtist => type == 'artist';
 }
@@ -281,10 +288,15 @@ class _MusicSheetState extends State<_MusicSheet> {
           .collection('artist_sounds')
           .where('status', isEqualTo: 'validated')
           .orderBy('validatedAt', descending: true)
-          .limit(50)
+          .limit(100)
           .snapshots(),
       builder: (_, snap) {
-        final docs = snap.data?.docs ?? const [];
+        final docs = SoundCountries.forViewer<ArtistSound>(
+          [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+          countries: (s) => s.availableCountries,
+          owner: (s) => s.userId,
+          viewerCountry: SoundCountries.viewerCountry(context),
+        );
         return ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(12, 8, 12, 24), children: [
           _ArtistCta(onTap: () {
             Navigator.pop(context);
@@ -297,9 +309,8 @@ class _MusicSheetState extends State<_MusicSheet> {
               padding: const EdgeInsets.all(20),
               child: Text('Aucun son d’artiste pour l’instant. Les premiers artistes arrivent bientôt !', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary)),
             ),
-          for (final d in docs)
+          for (final s in docs)
             Builder(builder: (_) {
-              final s = ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id);
               return _row(
                 MontageMusic.artist(s),
                 onReport: s.userId == FirebaseAuth.instance.currentUser?.uid ? null : () => reportArtistSound(context, s.id, s.title),
@@ -312,7 +323,7 @@ class _MusicSheetState extends State<_MusicSheet> {
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(color: s.isFree ? const Color(0x332ECC71) : const Color(0x33FFD400), borderRadius: BorderRadius.circular(99)),
-                  child: Text(s.isFree ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
+                  child: Text(s.isFree ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
                 ),
               );
             }),
@@ -345,7 +356,7 @@ class _ArtistCta extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Tu es artiste ? Propose ton son', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
               const SizedBox(height: 2),
-              Text('Gratuit ou payant, c’est toi qui choisis. Payant : tu gagnes ${ArtistSoundPricing.share} pièces par utilisation.',
+              Text('Gratuit ou payant, c’est toi qui choisis. Payant : tu touches 60 % de chaque utilisation et vente.',
                   style: const TextStyle(color: Colors.white, fontSize: 12)),
             ]),
           ),

@@ -37,7 +37,10 @@ class MontageEditorPage extends StatefulWidget {
 }
 
 class _MontageEditorPageState extends State<MontageEditorPage> with SingleTickerProviderStateMixin {
-  late final MontageState s = MontageState(widget.template)..post = !widget.forChronique;
+  late final MontageState s = MontageState(widget.template)
+    ..post = !widget.forChronique
+    // Sans habillage : on ne garde que la vidéo (le filigrane « Créé sur Afrolook » reste, comme partout)
+    ..hidden.addAll(widget.template.id == kPlainTemplateId ? MontageLayer.values : const []);
   late final AnimationController _anim = AnimationController(vsync: this, duration: kMontageLoop);
   final _keys = MontageKeys();
   final _picker = ImagePicker();
@@ -75,6 +78,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     _comments.text = s.commentsLabel();
     _followers.text = s.followersLabel(real) ?? '';
     ArtistSoundPricing.load();
+    // « Ma vidéo avec ce son » : on propose tout de suite de choisir la vidéo
+    if (tp.id == kPlainTemplateId) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickMedia() : null);
     final preset = widget.presetMusic;
     if (preset != null) {
       s.music = preset;
@@ -304,7 +309,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final user = context.read<UserAuthProvider>().loginUserData;
     if (m == null || !m.isArtist || !m.paid || m.artistId == user.id) return true;
     await ArtistSoundPricing.load();
-    final price = ArtistSoundPricing.price;
+    final price = m.useCoins;
     final balance = user.giftCoinsBalance ?? 0;
     if (!mounted) return false;
     if (balance < price) {
@@ -337,7 +342,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           Text('« ${m.title} »', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
           Text('Prix : $price pièces', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
-          Text('${ArtistSoundPricing.share} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.', style: TextStyle(color: _c.textSecondary, height: 1.35)),
+          Text('${m.shareCoins} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.', style: TextStyle(color: _c.textSecondary, height: 1.35)),
           const SizedBox(height: 8),
           Text('Ton solde : $balance pièces → ${balance - price} après.', style: TextStyle(color: _c.textSecondary)),
           const SizedBox(height: 8),
@@ -405,7 +410,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
       if (e is FirebaseFunctionsException && e.code == 'resource-exhausted') {
-        _say('Solde insuffisant : il te faut ${ArtistSoundPricing.price} pièces pour ce son. Recharge ou choisis une musique gratuite.');
+        _say('Solde insuffisant : il te faut ${s.music?.useCoins ?? 0} pièces pour ce son. Recharge ou choisis une musique gratuite.');
       } else {
         _say(e is FirebaseFunctionsException ? (e.message ?? 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
       }
@@ -719,7 +724,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                 Text(
                   m == null
                       ? 'Touche pour ajouter une musique'
-                      : (m.isArtist ? '${m.subtitle} · 🪙 ${ArtistSoundPricing.price} pièces' : m.subtitle),
+                      : (m.isArtist ? '${m.subtitle} · 🪙 ${m.useCoins} pièces' : m.subtitle),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: _c.textSecondary, fontSize: 12),
@@ -782,7 +787,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           onChanged: (v) => setState(() => s.keepVideoAudio = v),
           activeThumbColor: _c.primary,
           title: Text('Garder le son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
-          subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Seule la musique est gardée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+          subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Le son de ta vidéo est coupé : seule la musique est jouée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
         ),
       if (m != null)
         Padding(

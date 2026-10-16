@@ -71,14 +71,25 @@ Décision : un titre payant n'est **jamais** téléchargeable en fichier libre. 
 ## 6. Du fil à la vidéo
 
 Déjà en place : carte musique dans le fil (lecture immédiate, bouton « Créer un post avec ce son »), modèles du Studio avec le son déjà choisi, annonce du prix et du solde avant, rien débité si le montage échoue, lien du post au son vérifié par le serveur.
-À ajouter : mode « vidéo avec musique seule » (le son d'origine est déjà coupé par défaut : option `keepAudio` désactivée) ; boutons « Télécharger » et « Écouter hors de l'application » sur la page du titre.
+**Fait (phase 5)** : « 🎥 Ma vidéo avec ce son » — chemin direct, sans modèle ni habillage (`kPlainTemplate`, absent de la galerie) : la personne choisit sa vidéo (ou sa photo) et la musique est ajoutée. **Le son d'origine de la vidéo est coupé par défaut** (seule la musique est jouée, vérifié côté serveur : `keepAudio` faux = aucune piste d'origine) ; un interrupteur « Garder le son de ma vidéo » permet de le mélanger. Accès : menu d'un titre de la page Musique, page du titre, carte du fil (icône caméra), et bouton « 🎬 Ma vidéo » du bandeau de la galerie des modèles. Le prix d'un son payant est annoncé avant (solde, part de l'artiste) et débité seulement si le montage réussit. Le résultat s'enregistre dans la galerie (album Afrolook) ou se publie. « Télécharger » et « Écouter hors de l'application » : faits en phase 3 (téléchargement protégé dans Afrolook ; lecture en arrière-plan).
 
 ## 7. Pays, abonnements, facturation
 
-Même grille que les posts : Gratuit 1 pays, Premium jusqu'à 20 pays, Gold tous les pays (règle déjà utilisée dans l'onglet Audio). Décision à prendre : les pays en plus coûtent-ils des pièces ? Classement du flux : pays de la personne, puis abonnements, puis le reste mélangé. Gold et Premium : à décider (écoute gratuite de tout ou seulement sans pub).
+**Fait (phase 4)** : le champ `availableCountries` d'un titre suit la grille des posts, **appliquée par le serveur** : Gratuit 1 pays, Premium 20, Gold et administrateur tous (« ALL »). Les pays en plus **ne coûtent pas de pièces** (comme les posts). Un gratuit qui demande « tous » reçoit son pays ; des codes invalides sont ignorés ; sans choix valide, le pays du profil. L'artiste choisit les pays au dépôt (carte « Pays où ton titre est proposé ») et peut les changer plus tard depuis « Mes sons » (fonction `artistSoundCountries`). Un titre n'est proposé qu'aux personnes de ces pays (page Musique, carte du fil, choix de musique du Studio) ; ceux visés pour le pays de la personne passent devant. Ne sont pas filtrés : son propre titre, les titres de sa bibliothèque, un titre ouvert par lien. Les anciens titres (sans liste) restent pour tous. Le filtre se fait dans l'application sur les 150 titres les plus récents ; au-delà de ~500 titres, passer à une requête `array-contains-any` avec un index. Gold et Premium : écoute libre inchangée, les titres payants restent payants ; Gold ne voit aucune pub.
+
+Ancienne version du plan : même grille que les posts : Gratuit 1 pays, Premium jusqu'à 20 pays, Gold tous les pays (règle déjà utilisée dans l'onglet Audio). Décision à prendre : les pays en plus coûtent-ils des pièces ? Classement du flux : pays de la personne, puis abonnements, puis le reste mélangé. Gold et Premium : à décider (écoute gratuite de tout ou seulement sans pub).
 
 ## 8. Publicité
 
+**Fait** (tous passent par `AdSlot` / `AdGate` : AdMob d'abord, pub Afrolook en repli, rien si aucune pub, jamais pour Gold, nouveaux comptes épargnés) :
+- **Pub native** tous les 6 titres des listes et **bannière** sous la liste (écran d'au moins 700 px) : emplacements AdMob **dédiés à la page Musique** (`musicNative`, `musicBanner`). Tant qu'aucun identifiant dédié n'est saisi dans `AppConfig/ads` → `units.<android|ios>.musicBanner` / `musicNative`, ce sont les emplacements habituels (bannière, natif) qui servent ; une fois créés dans AdMob et saisis, la console AdMob donne le revenu de la page Musique à part. Interrupteurs : `musicBanner`, `musicNative`.
+- **Revenu estimé** : les événements « paid » d'AdMob de ces deux emplacements sont envoyés par groupes à `musicAdPaid` (50 par appel, 300 par personne et par jour) et cumulés par jour dans `MusicAdStats/{aaaammjj}` (`impr_banner`, `impr_native`, `micros_<DEVISE>_<emplacement>` = millionièmes). Lisible par l'administrateur seulement, **indicatif** : le chiffre officiel reste celui de la console AdMob.
+- **Pub plein écran entre deux écoutes** (`MusicAds.beforeTrack`) : seulement au lancement d'un titre choisi par la personne (jamais pendant l'écoute), tous les 5 titres (`musicInterstitialEvery`), 3 par jour au plus (`musicInterstitialMaxPerDay`), mêmes écarts minimum et délai de début de session que dans le fil. Interrupteur `musicInterstitial`.
+- **Titre payant écouté en entier contre une pub récompensée** (`musicAdListen`) : bouton « Écouter en entier (une pub) » (menu d'un titre, page du titre) pour un titre payant non acheté. La pub est comptée par le serveur (même réserve `AdRewards` que la page Récompenses et les Contes, avec la vérification AdMob quand elle est active) ; elle ouvre **une seule** écoute complète en ligne (valable 30 minutes pour la demander, lien de 10 minutes), 5 par jour au plus. Elle n'ouvre ni le téléchargement hors ligne, ni la bibliothèque : pour garder le titre il faut l'acheter. Interrupteur `musicRewarded`.
+
+**Pas fait** : un écran d'administration pour lire `MusicAdStats` (lecture dans la console Firebase pour l'instant).
+
+Plan d'origine :
 AdMob d'abord, pub Afrolook en repli (règle appliquée partout). Emplacements : native entre titres (tous les 6), bannière sous le lecteur, interstitiel rare entre deux écoutes (jamais pendant un titre, au plus un par 5 titres et 5 minutes), pub récompensée pour écouter un titre payant en entier une fois. Gold sans pub ; nouveaux comptes épargnés (règles `AdGate`).
 
 ## 9. Sécurité : analyse
@@ -95,12 +106,29 @@ AdMob d'abord, pub Afrolook en repli (règle appliquée partout). Emplacements :
 | Payer deux fois / jamais | Un document `ArtistSoundUses/{uid}_{jobId}` par montage ; débit seulement après montage réussi | fait, testé |
 | Supprimer le son d'un autre | `artistSoundDelete` : propriétaire ou admin ; l'artiste retape le titre exact | fait, testé |
 | Abus de signalements | Un par personne et par son ; 3 = suspension (réversible par l'admin) ; l'artiste ne peut pas signaler son propre son | fait, testé |
-| Fuite d'un titre acheté | Téléchargement caché et chiffré dans l'application (§ 5), licence de 30 jours, 3 appareils, appareil authentique exigé, marque sonore invisible par acheteur, liens signés de 5 minutes | à faire (phases 2–3) |
+| Fuite d'un titre acheté | Téléchargement caché et chiffré dans l'application (§ 5), licence de 30 jours, 3 appareils, 20 téléchargements/jour, liens d'écoute de 10 minutes | fait (phases 2–3) ; reste à faire : appareil authentique (Play Integrity / App Attest) et marque sonore invisible par acheteur |
 | Copie par enregistrement d'écran/micro | Aucune protection technique complète possible : dissuader, retrouver, retirer | limite assumée |
 | Droits d'auteur : artiste qui dépose un titre qu'il ne possède pas | Case de certification obligatoire, sanction du compte, retrait immédiat sur plainte, preuve demandée au vrai auteur | fait (certification), procédure à documenter |
 | Mineurs, contenu choquant | Écoute avant validation ; motif « choquant » dans le signalement | fait |
 
 Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite ~3000) ; au-delà, passer à un index (hachage par segments). L'analyse tourne en tâche serveur (1 Gio, 3 instances maximum).
+
+## 9 bis. État des phases
+
+- **Phase 1 (page Musique, favoris, crédit sur les posts)** : faite.
+- **Phase 2 (prix par titre, achat, bibliothèque, écoute complète)** : faite et testée sur le serveur.
+  - Prix d'utilisation 2–20 pièces et prix de vente 50–500 pièces fixés par l'artiste (règles Firestore) ; l'artiste touche 60 %.
+  - `musicBuy` (transaction unique, idempotente), `musicStreamUrl` (titre gratuit, acheté ou à soi ; 300 écoutes complètes par jour).
+  - Lien d'écoute : copie temporaire du fichier dans `artist_sound_tmp/` (dossier fermé aux téléphones) avec un jeton, supprimée par la tâche `cleanupTempListen` toutes les 10 minutes. Les liens signés Google ne sont pas utilisés : le compte de service du projet n'a pas le droit de signer (non modifié).
+  - Le lien d'écoute de l'administrateur (avant validation) utilise le même mécanisme : il ne fonctionnait pas avant cette correction.
+- **Phase 3 (lecture en arrière-plan + téléchargement protégé)** : faite côté serveur (testé en réel) et côté application (analysée et testée en logique ; **pas encore essayée sur un téléphone**, il faut un nouveau build Android/iOS).
+  - Lecture en arrière-plan : `just_audio` + `just_audio_background` (un seul lecteur dans l'application). Android : service média + notification avec pochette et commandes, activité `AudioServiceFragmentActivity`, permissions `FOREGROUND_SERVICE(_MEDIA_PLAYBACK)`. iPhone : `UIBackgroundModes: audio`. La musique continue quand on quitte la page Musique.
+  - `musicLicense({soundId, deviceId, renew?})` : titre gratuit, acheté ou à soi ; titre retiré/suspendu = `RETIRE` ; **3 appareils maximum** par titre (`APPAREILS`), **20 téléchargements par jour** (`LIMITE_JOUR`, un renouvellement n'est pas compté), licence de **30 jours**, clé AES-256 aléatoire propre à la personne, au titre et à l'appareil. Collection `MusicLicenses` fermée à tous les téléphones (elle contient les clés).
+  - Application (`lib/services/offline_music_service.dart`) : téléchargement par le lien d'écoute temporaire, chiffrement **AES-256-GCM** (authentifié : un fichier modifié est refusé), rangé dans `<Application Support>/afrolook_m/<nom sans rapport>.bin`, clé dans Keystore/Keychain (iPhone : « cet appareil seulement »), jamais dans la galerie, les fichiers ni les récents ; exclu des sauvegardes Android (`backup_rules.xml`, `data_extraction_rules.xml`). Lecture : déchiffrement en mémoire (source audio personnalisée), renouvellement automatique dans les 7 derniers jours de licence, effacement si le droit sur le titre a disparu, message clair si la licence a expiré hors ligne.
+  - Interface : menu « Télécharger (écouter sans internet) » / « Retirer du téléphone » dans la page Musique, bouton sur la page du titre, pastille « téléchargé ».
+  - **Pas fait** (à décider) : attestation d'appareil (Play Integrity / App Attest), marque sonore invisible par acheteur, blocage de la capture audio par d'autres applications Android (`allowAudioPlaybackCapture="false"` couperait aussi le son des enregistrements d'écran de toute l'application, donc non activé), détection root/jailbreak.
+- **Phase 4 (pays, abonnements, pubs)** : faite (voir § 7 et § 8). Serveur testé en réel : gratuit 1 pays, Premium 20, Gold tous, titre d'un autre refusé, codes invalides ignorés, écriture directe du champ refusée par les règles. Côté application : analysée, pas essayée sur un téléphone.
+- **Phase 5 (« Ma vidéo avec ce son », son d'origine coupé, export)** : faite côté application (analysée et testée par widget, pas essayée sur un téléphone) ; le montage serveur existait déjà et n'a pas changé.
 
 ## 10. Feuille de route
 

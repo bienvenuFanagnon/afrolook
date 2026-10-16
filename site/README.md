@@ -1,6 +1,6 @@
 # Site vitrine afrolookmedia.com
 
-Site statique (FR + EN) : accueil, rémunération, Studio Cartes, fêtes nationales par pays (62 pays), contact, téléchargement,
+Site statique (FR + EN) : accueil, rémunération, Studio Cartes, Musique (`/musique/`, `/en/music/` : textes dans `src/i18n.mjs` clé `music`), fêtes nationales par pays (62 pays), contact, téléchargement,
 règles, confidentialité, suppression de compte. Aucune dépendance à l'exécution ; le seul paquet npm (`qrcode`) sert à la génération.
 
 ## Fabriquer et vérifier
@@ -52,6 +52,7 @@ firebase hosting:channel:deploy apercu --only vitrine --expires 14d --project af
 firebase deploy --only hosting:vitrine --project afrolooki                               # mise en ligne
 ```
 Sans changement de l'application, `node build.mjs` seul vide `dist/` : toujours enchaîner `with-app.mjs`, sinon `/app/` disparaît.
+Sans `build/web` : récupérer l'application web actuellement en ligne (API Hosting : liste des fichiers de la version publiée, puis téléchargement des `/app/…`), la remettre dans `dist/app/` (sans `app-ads*.txt`), puis comparer la liste des fichiers avec la version en ligne avant de déployer (c'est ce qui a été fait pour la page Musique, le 16 octobre 2026).
 Les liens du site vers l'application web pointent vers `/app/` (`appWebUrl` dans `src/config.json`) ; les e-mails de l'app aussi (`APP_WEB_URL_AFRO`).
 Si Cloudflare met des pages en cache, purger le cache après la mise en ligne.
 

@@ -6,6 +6,7 @@ import 'ad_config.dart';
 import 'ad_gate.dart';
 import 'admob_service.dart';
 import 'admob_widgets.dart';
+import 'music_ads.dart';
 
 /// Emplacement publicitaire : pub Afrolook ou pub AdMob, jamais les deux.
 ///
@@ -30,6 +31,10 @@ enum AdSlotKind {
   groupFeed,
   /// Groupe gratuit : bannière adaptative fixe au-dessus de la saisie.
   groupBanner,
+  /// Page Musique : bannière sous la liste (emplacement AdMob dédié).
+  musicBanner,
+  /// Page Musique : pub native entre les titres (emplacement AdMob dédié).
+  musicList,
 }
 
 class AdSlot extends StatefulWidget {
@@ -71,12 +76,17 @@ class _AdSlotState extends State<AdSlot> {
         return c.groupsNative;
       case AdSlotKind.groupBanner:
         return c.groupsBanner;
+      case AdSlotKind.musicBanner:
+        return c.musicBanner;
+      case AdSlotKind.musicList:
+        return c.musicNative;
     }
   }
 
   String get _type => (widget.kind == AdSlotKind.detail ||
           widget.kind == AdSlotKind.detailMrec ||
-          widget.kind == AdSlotKind.groupBanner)
+          widget.kind == AdSlotKind.groupBanner ||
+          widget.kind == AdSlotKind.musicBanner)
       ? 'banner'
       : 'native';
 
@@ -118,6 +128,10 @@ class _AdSlotState extends State<AdSlot> {
                 return AdmobBannerWidget(onFailed: _onAdmobFailed);
               case AdSlotKind.detailMrec:
                 return AdmobBannerWidget(mrec: true, onFailed: _onAdmobFailed);
+              case AdSlotKind.musicBanner:
+                return AdmobBannerWidget(unitKey: 'musicBanner', onPaid: MusicAds.paid('banner'), onFailed: _onAdmobFailed);
+              case AdSlotKind.musicList:
+                return AdmobNativeWidget(small: true, unitKey: 'musicNative', onPaid: MusicAds.paid('native'), onFailed: _onAdmobFailed);
               case AdSlotKind.feed:
                 return AdmobNativeWidget(onFailed: _onAdmobFailed);
               case AdSlotKind.comments:

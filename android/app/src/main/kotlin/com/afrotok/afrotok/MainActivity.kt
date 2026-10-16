@@ -5,9 +5,9 @@ import android.os.Bundle
 import android.content.Intent
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.android.FlutterFragmentActivity
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
-class MainActivity : FlutterFragmentActivity() {
+class MainActivity : AudioServiceFragmentActivity() {
     private val CHANNEL = "app.web.deeplynks"
     private var initialLink: String? = null
 

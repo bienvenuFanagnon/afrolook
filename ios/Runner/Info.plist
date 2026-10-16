@@ -351,6 +351,7 @@
     <string>Afrolook utilise votre identifiant publicitaire pour afficher des publicités pertinentes et mesurer leur efficacité.</string>
     <key>UIBackgroundModes</key>
     <array>
+       <string>audio</string>
        <string>fetch</string>
        <string>processing</string>
        <string>remote-notification</string>

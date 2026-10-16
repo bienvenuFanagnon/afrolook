@@ -1,8 +1,12 @@
+// ignore_for_file: experimental_member_use
 // Éléments communs aux pages des sons d'artistes : prix, lecture d'un extrait, signalement.
 
 import 'dart:async';
 
-import 'package:audioplayers/audioplayers.dart';
+import 'dart:typed_data';
+
+import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +36,22 @@ class ArtistSoundPricing {
   static String fcfaOf(int coins) => '${(coins / 25 * 10).toStringAsFixed(coins % 5 == 0 ? 0 : 1)} FCFA';
 }
 
+/// Lien d'écoute du titre complet (gratuit, acheté ou à soi) : le serveur le délivre pour ~10 minutes ; mis en mémoire 8 minutes.
+final Map<String, ({String url, DateTime at})> _fullUrls = {};
+
+Future<String?> fetchFullListenUrl(String soundId) async {
+  final hit = _fullUrls[soundId];
+  if (hit != null && DateTime.now().difference(hit.at).inMinutes < 8) return hit.url;
+  try {
+    final r = await FirebaseFunctions.instance.httpsCallable('musicStreamUrl').call({'soundId': soundId});
+    final url = (r.data as Map)['url'] as String?;
+    if (url != null) _fullUrls[soundId] = (url: url, at: DateTime.now());
+    return url;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Lecteur d'extrait (un seul à la fois dans l'app) : l'extrait public de 30 s, jamais l'original.
 /// Ce qui est lu (affiché dans le lecteur réduit de la page Musique).
 class NowPlaying {
@@ -44,37 +64,63 @@ class NowPlaying {
 
 class SoundPreview {
   SoundPreview._();
+  // Un seul lecteur dans toute l'application (just_audio_background n'en admet qu'un) : il continue quand l'écran est éteint
+  // ou l'application fermée, avec les commandes de la notification et de l'écran verrouillé.
   static final AudioPlayer _player = AudioPlayer();
   static final ValueNotifier<String?> playing = ValueNotifier<String?>(null);
 
   /// Dernier titre lancé (reste renseigné en pause, pour reprendre depuis le lecteur réduit).
   static final ValueNotifier<NowPlaying?> now = ValueNotifier<NowPlaying?>(null);
   static bool _wired = false;
+  static String? _key; // son en cours (avec ou sans fiche d'affichage)
 
   static void _wire() {
     if (_wired) return;
     _wired = true;
-    _player.onPlayerComplete.listen((_) => playing.value = null);
+    _player.playerStateStream.listen((st) {
+      final key = _key;
+      if (st.processingState == ProcessingState.completed) {
+        playing.value = null;
+      } else if (key != null) {
+        playing.value = st.playing ? key : null;
+      }
+    });
   }
 
-  static Stream<Duration> get position => _player.onPositionChanged;
-  static Stream<Duration> get duration => _player.onDurationChanged;
+  static Stream<Duration> get position => _player.positionStream;
+  static Stream<Duration> get duration => _player.durationStream.where((d) => d != null).map((d) => d!);
 
-  /// Joue [url] ; [key] identifie le son (pour afficher le bon bouton lecture/pause).
-  static Future<bool> play(String key, String url, {bool loop = false, NowPlaying? meta}) async {
+  static MediaItem _item(String key, NowPlaying? meta) => MediaItem(
+        id: key,
+        title: meta?.title ?? 'Afrolook Musique',
+        artist: meta?.subtitle ?? 'Afrolook',
+        artUri: (meta?.coverUrl != null && meta!.coverUrl!.isNotEmpty) ? Uri.tryParse(meta.coverUrl!) : null,
+      );
+
+  static Future<bool> _start(String key, AudioSource source, bool loop, NowPlaying? meta) async {
     _wire();
     try {
       await _player.stop();
-      await _player.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.release);
-      await _player.play(UrlSource(url));
-      playing.value = key;
+      _key = key;
       if (meta != null) now.value = meta;
+      await _player.setLoopMode(loop ? LoopMode.one : LoopMode.off);
+      await _player.setAudioSource(source);
+      unawaited(_player.play());
+      playing.value = key;
       return true;
     } catch (_) {
       playing.value = null;
       return false;
     }
   }
+
+  /// Joue [url] ; [key] identifie le son (pour afficher le bon bouton lecture/pause).
+  static Future<bool> play(String key, String url, {bool loop = false, NowPlaying? meta}) =>
+      _start(key, AudioSource.uri(Uri.parse(url), tag: _item(key, meta)), loop, meta);
+
+  /// Joue un titre déchiffré en mémoire (téléchargement protégé) : rien n'est écrit en clair sur l'appareil.
+  static Future<bool> playBytes(String key, Uint8List bytes, {NowPlaying? meta}) =>
+      _start(key, _BytesSource(bytes, _item(key, meta)), false, meta);
 
   static Future<void> seek(Duration d) async {
     try {
@@ -90,11 +136,11 @@ class SoundPreview {
   }
 
   static Future<void> resume() async {
-    final n = now.value;
-    if (n == null) return;
+    final k = _key;
+    if (k == null) return;
     try {
-      await _player.resume();
-      playing.value = n.key;
+      playing.value = k;
+      unawaited(_player.play());
     } catch (_) {}
   }
 
@@ -103,6 +149,25 @@ class SoundPreview {
     try {
       await _player.stop();
     } catch (_) {}
+  }
+}
+
+/// Source audio servie depuis la mémoire (octets déjà déchiffrés), avec lecture par morceaux demandée par le lecteur.
+class _BytesSource extends StreamAudioSource {
+  _BytesSource(this._bytes, MediaItem tag) : super(tag: tag);
+  final Uint8List _bytes;
+
+  @override
+  Future<StreamAudioResponse> request([int? start, int? end]) async {
+    final s = start ?? 0;
+    final e = end ?? _bytes.length;
+    return StreamAudioResponse(
+      sourceLength: _bytes.length,
+      contentLength: e - s,
+      offset: s,
+      stream: Stream.value(_bytes.sublist(s, e)),
+      contentType: 'audio/mp4',
+    );
   }
 }
 

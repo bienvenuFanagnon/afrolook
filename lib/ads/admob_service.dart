@@ -153,6 +153,40 @@ class AdmobService {
     await ad.show();
   }
 
+  /// Pub plein écran entre deux écoutes de la page Musique : attend sa fermeture avant de rendre la main.
+  /// Mêmes garde-fous que dans le fil (pas pendant les premières minutes, écart minimum, plafond par jour).
+  static Future<bool> showInterstitialAndWait(UserData? user, {required int maxPerDay}) async {
+    final c = AdConfig.current;
+    if (!c.interstitialEnabled || !AdGate.canShowType(user, 'interstitial')) return false;
+    if (DateTime.now().difference(AdGate.sessionStart).inMinutes < c.interstitialWarmupMinutes) return false;
+    final last = _lastInterstitial;
+    if (last != null && DateTime.now().difference(last).inMinutes < c.interstitialMinGapMinutes) return false;
+    if (!await _underDailyCap('ad_inter_music', maxPerDay)) return false;
+    final ad = _interstitial;
+    if (ad == null) {
+      _loadInterstitial();
+      return false;
+    }
+    _interstitial = null;
+    final done = Completer<bool>();
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (a) {
+        a.dispose();
+        _loadInterstitial();
+        if (!done.isCompleted) done.complete(true);
+      },
+      onAdFailedToShowFullScreenContent: (a, _) {
+        a.dispose();
+        _loadInterstitial();
+        if (!done.isCompleted) done.complete(false);
+      },
+    );
+    _lastInterstitial = DateTime.now();
+    await _countToday('ad_inter_music');
+    await ad.show();
+    return done.future;
+  }
+
   /// Affiche tout de suite une pub plein écran (appel explicite d'une page), sans les plafonds du fil.
   static Future<bool> showInterstitialNow({VoidCallback? onDismissed, VoidCallback? onFailed}) async {
     final ad = _interstitial;

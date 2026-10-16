@@ -34,11 +34,18 @@ import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../userPosts/userPostForm.dart';
+import '../../services/offline_music_service.dart';
 import 'artist_sound_common.dart';
+import 'montage/montage_catalog.dart';
+import 'montage/montage_editor_page.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
+import '../../ads/music_ads.dart';
+import 'sound_countries.dart';
 import 'studio_models.dart';
 import '../music/music_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../coins/coin_recharge_screen.dart';
 
 export 'artist_sound_common.dart' show ArtistSoundPricing;
 
@@ -64,8 +71,12 @@ class ArtistSound {
   final int totalEarningsCoins;
   final int reportCount;
   final int postCount;
+  final int useCoins; // prix d'utilisation dans le Studio (2 à 20), 0 = prix par défaut
+  final int saleCoins; // prix de vente du titre complet (50 à 500), 0 = pas en vente
+  final int saleCount;
   final Object? processed; // true | 'error' | null (analyse du serveur)
   final List<Map<String, dynamic>> duplicates;
+  final List<String> availableCountries; // pays où le titre est proposé ('ALL' = tous ; vide = ancien titre, pour tous)
   final Timestamp createdAt;
   final Timestamp? validatedAt;
 
@@ -89,13 +100,28 @@ class ArtistSound {
     required this.totalEarningsCoins,
     this.reportCount = 0,
     this.postCount = 0,
+    this.useCoins = 0,
+    this.saleCoins = 0,
+    this.saleCount = 0,
     this.processed,
     this.duplicates = const [],
+    this.availableCountries = const [],
     required this.createdAt,
     this.validatedAt,
   });
 
   bool get isFree => pricing == 'free';
+
+  /// Prix d'utilisation dans le Studio (ce que paie la personne).
+  int get unitPrice => useCoins >= 2 && useCoins <= 20 ? useCoins : ArtistSoundPricing.price;
+
+  /// Ce que touche l'artiste à chaque utilisation : 60 %.
+  int get unitShare => (unitPrice * 60) ~/ 100;
+
+  bool get forSale => !isFree && saleCoins >= 50;
+
+  /// Ce que touche l'artiste sur une vente : 60 %.
+  int get saleShare => (saleCoins * 60) ~/ 100;
 
   factory ArtistSound.fromMap(Map<String, dynamic> map, String id) {
     return ArtistSound(
@@ -119,8 +145,12 @@ class ArtistSound {
       totalEarningsCoins: (map['totalEarningsCoins'] as num?)?.toInt() ?? 0,
       reportCount: (map['reportCount'] as num?)?.toInt() ?? 0,
       postCount: (map['postCount'] as num?)?.toInt() ?? 0,
+      useCoins: (map['useCoins'] as num?)?.toInt() ?? 0,
+      saleCoins: (map['saleCoins'] as num?)?.toInt() ?? 0,
+      saleCount: (map['saleCount'] as num?)?.toInt() ?? 0,
       processed: map['processed'],
       duplicates: [for (final d in (map['duplicates'] as List? ?? const [])) Map<String, dynamic>.from(d as Map)],
+      availableCountries: [for (final x in (map['availableCountries'] as List? ?? const [])) '$x'],
       createdAt: map['createdAt'] ?? Timestamp.now(),
       validatedAt: map['validatedAt'],
     );
@@ -139,7 +169,7 @@ Widget _pricingBadge(ArtistSound s, AppColors c) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
     decoration: BoxDecoration(color: color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
-    child: Text(free ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+    child: Text(free ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
   );
 }
 
@@ -175,7 +205,11 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
   bool _isSubmitting = false;
   bool _rights = false;
   String _pricing = 'paid';
+  int _useCoins = 5;
+  bool _sell = false;
+  int _saleCoins = 100;
   double _progress = 0;
+  List<String> _countries = [];
 
   final _picker = ImagePicker();
 
@@ -185,6 +219,8 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
+    final home = SoundCountries.homeOf(Provider.of<UserAuthProvider>(context, listen: false).loginUserData);
+    _countries = home != null ? [home] : ['ALL'];
   }
 
   @override
@@ -255,6 +291,9 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
         'audioPath': audioPath,
         if (coverUrl != null) 'coverImageUrl': coverUrl,
         'pricing': _pricing,
+        if (_pricing == 'paid') 'useCoins': _useCoins,
+        'saleCoins': _pricing == 'paid' && _sell ? _saleCoins : 0,
+        'availableCountries': _countries,
         'fileSizeMb': sizeMb,
         'status': 'pending_review',
         'usageCount': 0,
@@ -352,10 +391,44 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 Text('UTILISATION DANS LE STUDIO', style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1)),
                 const SizedBox(height: 8),
                 _pricingOption(c, 'paid', '🪙 Payant',
-                    'La personne qui utilise ton son paie ${ArtistSoundPricing.price} pièces. Tu gagnes ${ArtistSoundPricing.share} pièces à chaque utilisation '
-                        '(≈ ${ArtistSoundPricing.fcfaOf(ArtistSoundPricing.share)}), convertibles en argent.'),
+                    'Tu fixes tes prix. Tu touches 60 % de chaque utilisation et de chaque vente, en pièces gagnées convertibles en argent.'),
+                if (_pricing == 'paid') ...[
+                  const SizedBox(height: 10),
+                  _priceBox(
+                    c,
+                    title: 'Prix d’utilisation dans le Studio',
+                    value: _useCoins,
+                    min: 2,
+                    max: 20,
+                    step: 1,
+                    onChanged: (v) => setState(() => _useCoins = v),
+                    hint: 'Tu gagnes ${(_useCoins * 60) ~/ 100} pièces (≈ ${ArtistSoundPricing.fcfaOf((_useCoins * 60) ~/ 100)}) à chaque utilisation.',
+                  ),
+                  const SizedBox(height: 10),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _sell,
+                    onChanged: (v) => setState(() => _sell = v),
+                    activeThumbColor: c.primary,
+                    title: Text('Vendre aussi le titre complet', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+                    subtitle: Text('Les gens l’achètent pour l’écouter en entier dans leur bibliothèque, sans pouvoir l’exporter.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                  ),
+                  if (_sell)
+                    _priceBox(
+                      c,
+                      title: 'Prix de vente du titre',
+                      value: _saleCoins,
+                      min: 50,
+                      max: 500,
+                      step: 10,
+                      onChanged: (v) => setState(() => _saleCoins = v),
+                      hint: 'Tu gagnes ${(_saleCoins * 60) ~/ 100} pièces (≈ ${ArtistSoundPricing.fcfaOf((_saleCoins * 60) ~/ 100)}) à chaque vente.',
+                    ),
+                ],
                 const SizedBox(height: 8),
-                _pricingOption(c, 'free', '🎁 Gratuit', 'Tout le monde peut l’utiliser sans payer. Tu ne gagnes pas de pièces, mais ton nom circule et ton son se fait connaître.'),
+                _pricingOption(c, 'free', '🎁 Gratuit', 'Tout le monde peut l’écouter en entier et l’utiliser sans payer. Tu ne gagnes pas de pièces, mais ton nom circule et ton son se fait connaître.'),
+                const SizedBox(height: 14),
+                _countryCard(c),
                 const SizedBox(height: 14),
                 CheckboxListTile(
                   value: _rights,
@@ -377,6 +450,51 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 ),
               ]),
             ),
+    );
+  }
+
+  Widget _countryCard(AppColors c) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () async {
+        final r = await SoundCountries.pick(context, initial: _countries);
+        if (r != null && mounted) setState(() => _countries = r);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+        child: Row(children: [
+          Icon(Icons.public_rounded, color: c.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Pays où ton titre est proposé', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+              const SizedBox(height: 3),
+              Text(SoundCountries.summary(_countries), style: TextStyle(color: c.primary, fontSize: 13, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 3),
+              Text('Gratuit : 1 pays · Premium : 20 · Gold : tous. Aucune pièce en plus.', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+        ]),
+      ),
+    );
+  }
+
+  /// Réglage d'un prix : − / + autour de la valeur (bornes imposées aussi par les règles du serveur).
+  Widget _priceBox(AppColors c, {required String title, required int value, required int min, required int max, required int step, required ValueChanged<int> onChanged, required String hint}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+        Row(children: [
+          IconButton(onPressed: value > min ? () => onChanged((value - step).clamp(min, max)) : null, icon: const Icon(Icons.remove_circle_outline_rounded)),
+          Expanded(child: Center(child: Text('🪙 $value', style: TextStyle(color: c.primary, fontSize: 24, fontWeight: FontWeight.w900)))),
+          IconButton(onPressed: value < max ? () => onChanged((value + step).clamp(min, max)) : null, icon: const Icon(Icons.add_circle_outline_rounded)),
+        ]),
+        Text('$min à $max pièces · $hint', style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
+      ]),
     );
   }
 
@@ -448,11 +566,16 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
           .collection('artist_sounds')
           .where('status', isEqualTo: 'validated')
           .orderBy('validatedAt', descending: true)
-          .limit(20)
+          .limit(40)
           .snapshots(),
       builder: (_, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
-        final docs = snap.data!.docs;
+        final docs = SoundCountries.forViewer<ArtistSound>(
+          [for (final d in snap.data!.docs) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+          countries: (s) => s.availableCountries,
+          owner: (s) => s.userId,
+          viewerCountry: SoundCountries.viewerCountry(context),
+        );
         void openMine() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage()));
         if (docs.isEmpty) {
           // Aucun son encore validé : on invite les artistes à déposer le leur
@@ -492,7 +615,7 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: docs.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _SoundCard(sound: ArtistSound.fromMap(docs[i].data() as Map<String, dynamic>, docs[i].id), colors: c),
+              itemBuilder: (_, i) => _SoundCard(sound: docs[i], colors: c),
             ),
           ),
         ]);
@@ -547,10 +670,18 @@ class _SoundCard extends StatelessWidget {
 Future<void> startPostWithSound(BuildContext context, ArtistSound s) => startPostWithMusic(context, MontageMusic.artist(s));
 
 /// Même chemin pour une musique gratuite d'Afrolook ou un son d'artiste.
-Future<void> startPostWithMusic(BuildContext context, MontageMusic music) async {
+///
+/// [ownVideo] : « Ma vidéo avec ce son » — directement la vidéo de la personne et la musique, sans modèle ni habillage ;
+/// le son d'origine de la vidéo est coupé (seule la musique est jouée), la personne peut le garder dans l'éditeur.
+Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool ownVideo = false}) async {
   await SoundPreview.stop();
   if (!context.mounted) return;
-  final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageGalleryPage(presetMusic: music)));
+  final r = await Navigator.push<StudioResult>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ownVideo ? MontageEditorPage(template: kPlainTemplate, presetMusic: music) : MontageGalleryPage(presetMusic: music),
+    ),
+  );
   if (r == null || !context.mounted) return;
   await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
 }
@@ -616,10 +747,20 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   Duration _pos = Duration.zero;
   Duration _dur = const Duration(seconds: 30);
   late final key = 'detail_${widget.sound.id}';
+  bool _owned = false;
+  bool _buying = false;
+  bool _loadingFull = false;
+  bool _adGranted = false; // écoute complète ouverte une fois par une pub récompensée
+
+  bool get _own => widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
+
+  /// Écoute en entier : titre gratuit, acheté, ou à soi. Sinon, extrait de 30 s.
+  bool get _full => widget.sound.isFree || _own || _owned || _adGranted;
 
   @override
   void initState() {
     super.initState();
+    OfflineMusic.refresh();
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
@@ -627,8 +768,14 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
       if (mounted && SoundPreview.playing.value == key) setState(() => _pos = p);
     });
     SoundPreview.duration.listen((d) {
-      if (mounted && d.inMilliseconds > 0) setState(() => _dur = d);
+      if (mounted && d.inMilliseconds > 0 && SoundPreview.playing.value == key) setState(() => _dur = d);
     });
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && !_own) {
+      FirebaseFirestore.instance.collection('MusicLibrary').doc('${uid}_${widget.sound.id}').get().then((d) {
+        if (mounted && d.exists) setState(() => _owned = true);
+      }).catchError((_) {});
+    }
   }
 
   @override
@@ -637,11 +784,89 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     super.dispose();
   }
 
+  Future<void> _toggle() async {
+    final s = widget.sound;
+    if (SoundPreview.playing.value == key) {
+      await SoundPreview.pause();
+      return;
+    }
+    if (SoundPreview.now.value?.key == key) {
+      await SoundPreview.resume();
+      if (SoundPreview.playing.value == key) return;
+    }
+    if (_full && OfflineMusic.has(s.id)) {
+      setState(() => _loadingFull = true);
+      final err = await OfflineMusic.play(s.id, title: s.title, key: key);
+      if (!mounted) return;
+      setState(() {
+        _loadingFull = false;
+        _pos = Duration.zero;
+        _dur = Duration(milliseconds: s.durationMs > 0 ? s.durationMs : 30000);
+      });
+      if (err != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      return;
+    }
+    String? url = s.previewUrl;
+    if (_full) {
+      setState(() => _loadingFull = true);
+      url = await fetchFullListenUrl(s.id) ?? s.previewUrl;
+      if (mounted) setState(() => _loadingFull = false);
+    }
+    if (url == null || !mounted) return;
+    setState(() {
+      _pos = Duration.zero;
+      _dur = Duration(milliseconds: s.durationMs > 0 && _full ? s.durationMs : 30000);
+    });
+    final ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: s.title, subtitle: _full ? 'Titre complet' : 'Extrait de 30 s', coverUrl: s.coverImageUrl));
+    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
+  }
+
+  double? _dl; // avancement du téléchargement (null = pas en cours)
+
+  Future<void> _download() async {
+    setState(() => _dl = 0);
+    final r = await OfflineMusic.download(widget.sound.id, onProgress: (v) {
+      if (mounted) setState(() => _dl = v);
+    });
+    if (!mounted) return;
+    setState(() => _dl = null);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.ok ? 'Titre disponible hors ligne dans Afrolook ✅' : (r.message ?? 'Téléchargement impossible.'))));
+  }
+
+  Future<void> _listenWithAd() async {
+    setState(() => _loadingFull = true);
+    final r = await MusicAds.listenWithAd(widget.sound.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+    if (!mounted) return;
+    if (r.outcome != MusicAdOutcome.ok || r.url == null) {
+      setState(() => _loadingFull = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicAds.message(r.outcome))));
+      return;
+    }
+    final s = widget.sound;
+    setState(() {
+      _adGranted = true;
+      _loadingFull = false;
+      _pos = Duration.zero;
+      _dur = Duration(milliseconds: s.durationMs > 0 ? s.durationMs : 30000);
+    });
+    final ok = await SoundPreview.play(key, r.url!, meta: NowPlaying(key: key, title: s.title, subtitle: 'Titre complet · écoute avec pub', coverUrl: s.coverImageUrl));
+    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
+  }
+
+  Future<void> _buy() async {
+    setState(() => _buying = true);
+    final ok = await buyTrack(context, widget.sound);
+    if (!mounted) return;
+    setState(() {
+      _buying = false;
+      if (ok) _owned = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final s = widget.sound;
-    final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
     final total = _fmtDuration(s.durationMs);
     return Scaffold(
       backgroundColor: c.background,
@@ -650,7 +875,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: c.textPrimary),
         actions: [
-          if (s.userId != me)
+          if (!_own)
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, color: c.textPrimary),
               color: c.surface,
@@ -666,17 +891,35 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         const SizedBox(height: 4),
         Text('par @${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13)),
         const SizedBox(height: 12),
-        Center(child: _pricingBadge(s, c)),
+        Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+          _pricingBadge(s, c),
+          if (_owned)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: c.primary.withValues(alpha: .15), borderRadius: BorderRadius.circular(99)),
+              child: Text('✓ Dans ta bibliothèque', style: TextStyle(color: c.primary, fontSize: 11, fontWeight: FontWeight.w800)),
+            ),
+        ]),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.fromLTRB(8, 10, 14, 12),
           decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
           child: Column(children: [
             Row(children: [
-              SoundPlayButton(soundKey: key, url: s.previewUrl, size: 46),
+              ValueListenableBuilder<String?>(
+                valueListenable: SoundPreview.playing,
+                builder: (_, now, __) => IconButton(
+                  iconSize: 46,
+                  padding: EdgeInsets.zero,
+                  onPressed: s.previewUrl == null || _loadingFull ? null : _toggle,
+                  icon: _loadingFull
+                      ? SizedBox(width: 30, height: 30, child: CircularProgressIndicator(strokeWidth: 2.5, color: c.primary))
+                      : Icon(now == key ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: c.primary),
+                ),
+              ),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Extrait gratuit de 30 secondes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text(_full ? 'Titre complet' : 'Extrait gratuit de 30 secondes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
                   Slider(
                     value: _pos.inMilliseconds.clamp(0, _dur.inMilliseconds).toDouble(),
                     max: _dur.inMilliseconds.toDouble(),
@@ -689,10 +932,68 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
               ),
             ]),
             if (total.isNotEmpty)
-              Align(alignment: Alignment.centerRight, child: Text('Morceau complet : $total', style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+              Align(alignment: Alignment.centerRight, child: Text(_full ? 'Durée : $total' : 'Morceau complet : $total', style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
           ]),
         ),
-        const SizedBox(height: 16),
+        if (_full && OfflineMusic.supported)
+          ValueListenableBuilder<Set<String>>(
+            valueListenable: OfflineMusic.ids,
+            builder: (_, ids, __) {
+              final has = ids.contains(s.id);
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: _dl != null ? null : (has ? () async => await OfflineMusic.remove(s.id) : _download),
+                    icon: _dl != null
+                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, value: _dl! > 0 ? _dl : null, color: c.primary))
+                        : Icon(has ? Icons.download_done_rounded : Icons.download_rounded, color: c.primary),
+                    label: Text(has ? 'Disponible hors ligne · Retirer du téléphone' : 'Télécharger pour écouter sans internet', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ),
+              );
+            },
+          ),
+        const SizedBox(height: 14),
+        // Écoute complète unique contre une pub récompensée
+        if (!s.isFree && !_own && !_owned && !_adGranted && MusicAds.canOfferRewarded(Provider.of<UserAuthProvider>(context, listen: false).loginUserData))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SizedBox(
+              height: 46,
+              child: OutlinedButton.icon(
+                onPressed: _loadingFull ? null : _listenWithAd,
+                icon: Icon(Icons.ondemand_video_rounded, color: c.primary),
+                label: Text('Écouter en entier avec une pub (une fois)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+                style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              ),
+            ),
+          ),
+        // Achat du titre complet
+        if (s.forSale && !_own && !_owned)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: c.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(14), border: Border.all(color: c.primary.withValues(alpha: .35))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Écoute le titre en entier', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+              const SizedBox(height: 4),
+              Text('Il reste dans ta bibliothèque, lisible dans Afrolook. L’artiste touche ${s.saleShare} pièces sur ton achat.', style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35)),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton.icon(
+                  onPressed: _buying ? null : _buy,
+                  icon: _buying ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.library_add_rounded),
+                  label: Text('Acheter · ${s.saleCoins} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+              ),
+            ]),
+          ),
+        const SizedBox(height: 14),
         if (s.description != null && s.description!.isNotEmpty) ...[
           Text(s.description!, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
           const SizedBox(height: 16),
@@ -700,7 +1001,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         Row(children: [
           Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
           const SizedBox(width: 10),
-          Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${ArtistSoundPricing.price} pièces', c: c)),
+          Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${s.unitPrice} pièces', c: c)),
         ]),
         const SizedBox(height: 16),
         SizedBox(
@@ -708,15 +1009,25 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           child: FilledButton.icon(
             onPressed: () => startPostWithSound(context, s),
             icon: const Icon(Icons.add_circle_rounded),
-            label: Text(s.isFree ? 'Créer un post avec ce son' : 'Créer un post avec ce son · ${ArtistSoundPricing.price} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
+            label: Text(s.isFree ? 'Créer un post avec ce son' : 'Créer un post avec ce son · ${s.unitPrice} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
             style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 46,
+          child: OutlinedButton.icon(
+            onPressed: () => startPostWithMusic(context, MontageMusic.artist(s), ownVideo: true),
+            icon: Icon(Icons.videocam_rounded, color: c.primary),
+            label: Text('Ma vidéo avec ce son (sans habillage)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+            style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           s.isFree
-              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Le morceau complet reste protégé.'
-              : 'Tu choisis un modèle : le prix (${ArtistSoundPricing.price} pièces, dont ${ArtistSoundPricing.share} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
+              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Avec « Ma vidéo », le son d’origine de ta vidéo est coupé : seule la musique est jouée.'
+              : 'Tu choisis un modèle : le prix (${s.unitPrice} pièces, dont ${s.unitShare} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
           textAlign: TextAlign.center,
           style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
         ),
@@ -725,6 +1036,67 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
       ]),
     );
   }
+}
+
+/// Achat d'un titre : annonce le prix, la part de l'artiste et le solde ; recharge proposée si le solde est insuffisant.
+/// Renvoie true si le titre est maintenant dans la bibliothèque.
+Future<bool> buyTrack(BuildContext context, ArtistSound s) async {
+  final c = AppColors.of(context);
+  final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+  final balance = me.giftCoinsBalance ?? 0;
+  final price = s.saleCoins;
+  if (balance < price) {
+    final recharge = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Solde insuffisant', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text('« ${s.title} » coûte $price pièces et tu en as $balance. Recharge tes pièces pour l’acheter.', style: TextStyle(color: c.textSecondary, height: 1.4)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Plus tard', style: TextStyle(color: c.textSecondary))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Recharger mes pièces')),
+        ],
+      ),
+    );
+    if (recharge == true && context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+    return false;
+  }
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: c.surface,
+      title: Text('Acheter ce titre ?', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('« ${s.title} »', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        Text('Prix : $price pièces', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+        Text('${s.saleShare} pièces vont directement à l’artiste.', style: TextStyle(color: c.textSecondary, height: 1.35)),
+        const SizedBox(height: 8),
+        Text('Ton solde : $balance pièces → ${balance - price} après.', style: TextStyle(color: c.textSecondary)),
+        const SizedBox(height: 8),
+        Text('Le titre reste dans ta bibliothèque et se lit dans Afrolook. Achat définitif.', style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler', style: TextStyle(color: c.textSecondary))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Acheter ($price 🪙)')),
+      ],
+    ),
+  );
+  if (ok != true || !context.mounted) return false;
+  String msg;
+  var done = false;
+  try {
+    final r = await FirebaseFunctions.instance.httpsCallable('musicBuy').call({'soundId': s.id});
+    final d = Map<String, dynamic>.from(r.data as Map);
+    done = true;
+    msg = d['already'] == true ? 'Ce titre est déjà dans ta bibliothèque.' : '✅ Ajouté à ta bibliothèque. Merci de soutenir l’artiste !';
+  } on FirebaseFunctionsException catch (e) {
+    msg = e.code == 'resource-exhausted' ? 'Solde insuffisant.' : (e.message ?? 'Achat impossible.');
+  } catch (_) {
+    msg = 'Achat impossible. Vérifie ta connexion.';
+  }
+  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  return done;
 }
 
 class _Stat extends StatelessWidget {
@@ -839,7 +1211,7 @@ class MyArtistSoundsPage extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Comment tu es payé', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
         const SizedBox(height: 8),
-        line('• Son payant : à chaque utilisation dans le Studio, tu gagnes ${ArtistSoundPricing.share} pièces (la personne en paie ${ArtistSoundPricing.price}).'),
+        line('• Tu touches 60 % : à chaque utilisation dans le Studio (tu fixes le prix, 2 à 20 pièces) et à chaque vente du titre complet (50 à 500 pièces).'),
         line('• Les pièces arrivent tout de suite dans ton solde de pièces (Monétisation → Mes pièces). Ce sont des pièces gagnées : tu peux les convertir en argent '
             '(25 pièces = 10 FCFA) et les retirer, ou les dépenser dans l’app.'),
         line('• Son gratuit : pas de gain. Et si tu utilises ton propre son, c’est gratuit pour toi mais il ne te rapporte rien non plus.'),
@@ -979,6 +1351,21 @@ class _MySoundTile extends StatelessWidget {
             child: Text('Un morceau très proche existe déjà : l’équipe va vérifier que tu en es bien l’auteur.', style: TextStyle(color: Colors.orange, fontSize: 11.5)),
           ),
         const SizedBox(height: 6),
+        if (sound.status != 'refused')
+          Row(children: [
+            Expanded(child: Text(SoundCountries.summary(sound.availableCountries), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textSecondary, fontSize: 11.5))),
+            TextButton.icon(
+              onPressed: () async {
+                final r = await SoundCountries.pick(context, initial: sound.availableCountries);
+                if (r == null || !context.mounted) return;
+                final msg = await SoundCountries.save(sound.id, r);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+              },
+              icon: Icon(Icons.public_rounded, size: 17, color: colors.primary),
+              label: Text('Pays', style: TextStyle(color: colors.primary, fontSize: 12)),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            ),
+          ]),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
