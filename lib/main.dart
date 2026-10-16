@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
@@ -136,14 +137,20 @@ Future<void> main() async {
 
   // Lecture de la musique quand l'écran est éteint ou l'application fermée (notification + écran verrouillé)
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    // just_audio_background remplace la plateforme audio AVANT de finir son initialisation : si celle-ci échoue ou traîne
+    // (service Android absent, build sans les éléments natifs…), le lecteur resterait bloqué pour toujours. On garde donc la
+    // plateforme d'origine et on la remet en place en cas d'échec : la musique joue alors normalement, sans notification.
+    final audioPlatform = JustAudioPlatform.instance;
     try {
       await JustAudioBackground.init(
         androidNotificationChannelId: 'com.afrotok.afrotok.music',
         androidNotificationChannelName: 'Afrolook Musique',
+        androidNotificationIcon: 'drawable/notification_icon',
         androidNotificationOngoing: true,
-      );
+      ).timeout(const Duration(seconds: 6));
     } catch (e) {
-      printVm("Erreur initialisation lecture en arrière-plan : $e");
+      JustAudioPlatform.instance = audioPlatform;
+      printVm("Lecture en arrière-plan indisponible (lecture simple conservée) : $e");
     }
   }
 

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
 import '../artist_marketplace.dart';
+import '../../../utils/media_cdn.dart';
 import '../artist_sound_common.dart';
 import '../sound_countries.dart';
 
@@ -109,7 +110,7 @@ class MontageMusicPlayer {
     final key = 'free:${m.id}';
     if (_urls[key] != null) return _urls[key];
     try {
-      final u = await FirebaseStorage.instance.ref('studio_music/${m.id}.m4a').getDownloadURL();
+      final u = MediaCdn.url(await FirebaseStorage.instance.ref('studio_music/${m.id}.m4a').getDownloadURL());
       _urls[key] = u;
       return u;
     } catch (_) {

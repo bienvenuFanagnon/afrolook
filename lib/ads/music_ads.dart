@@ -29,12 +29,15 @@ class MusicAds {
   /// À appeler juste avant de lancer un titre choisi par la personne. Tous les N titres (réglage), si les garde-fous le permettent,
   /// une pub plein écran passe puis la lecture démarre. Les comptes sans pub (Gold, nouveaux comptes…) ne voient rien.
   static Future<void> beforeTrack(UserData? user) async {
-    final c = AdConfig.current;
-    if (!c.musicInterstitial || !AdGate.canShowType(user, 'interstitial')) return;
-    _starts++;
-    AdmobService.warmUpInterstitial(user);
-    if (_starts % c.musicInterstitialEvery != 0) return;
-    await AdmobService.showInterstitialAndWait(user, maxPerDay: c.musicInterstitialMaxPerDay);
+    // Une pub ne doit JAMAIS empêcher ni retarder la musique : toute erreur est ignorée et l'attente est limitée.
+    try {
+      final c = AdConfig.current;
+      if (!c.musicInterstitial || !AdGate.canShowType(user, 'interstitial')) return;
+      _starts++;
+      AdmobService.warmUpInterstitial(user);
+      if (_starts % c.musicInterstitialEvery != 0) return;
+      await AdmobService.showInterstitialAndWait(user, maxPerDay: c.musicInterstitialMaxPerDay).timeout(const Duration(seconds: 45), onTimeout: () => false);
+    } catch (_) {}
   }
 
   // ── Titre payant écouté en entier contre une pub récompensée ──
