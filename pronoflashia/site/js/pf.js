@@ -161,7 +161,7 @@
     var wd = +el.getAttribute('data-w'), ht = +el.getAttribute('data-h'); var mobile = el.getAttribute('data-v') === 'mo';
     var nets = (e && e.reseaux || []).filter(function (r) { return (mobile && r.codeMobile ? r.codeMobile : r.code); });
     var afl = c && c.afrolook; var aflFirst = afl && afl.actif && Math.random() * 100 < (afl.part || 0);
-    function afrolook() { if (afl && !afl.actif) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, 0)); el.style.width = '100%'; }
+    function afrolook() { if ((afl && !afl.actif) || el.getAttribute('data-nofb')) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, 0)); el.style.width = '100%'; }
     if (!adsAllowed() || !nets.length || aflFirst) return afrolook();
     var k = 0;
     (function next() {
@@ -267,18 +267,42 @@
     var mq = w.matchMedia ? w.matchMedia('(min-width:900px)') : null;
     var placePanel = function () { if (!panel) return; if (mq && !mq.matches) root.appendChild(panel); else { var side = $('.side .sticky'); if (side) side.insertBefore(panel, side.firstChild); } };
     if (mq && mq.addEventListener) mq.addEventListener('change', placePanel); placePanel();
+    /* La liste est un squelette construit une seule fois (un conteneur par match) : seuls les contenus changent à chaque clic.
+       Les bannières insérées entre les conteneurs ne sont donc jamais rechargées (pas d'affichages publicitaires en double). */
+    var matchBlock = function (m) {
+      var opts = m.marches.filter(function (x) { return fam === L.all ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
+      if (!opts.length) return '';
+      return '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '" style="color:var(--cy)">' + L.analysis + '</a></span></div><div class="opts">' +
+        opts.slice(0, fam === L.all ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + L.pct + '</b></button>'; }).join('') + '</div></div>';
+    };
     var render = function () {
-      var html = '<div class="mk" id="pf-fk" style="margin-top:8px">' + FAMS.map(function (f) { return '<button type="button" data-fk="' + esc(f) + '" aria-pressed="' + (f === fam) + '">' + esc(f) + '</button>'; }).join('') + '</div>';
-      pool.forEach(function (m) {
-        var opts = m.marches.filter(function (x) { return fam === L.all ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
-        if (!opts.length) return;
-        html += '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '" style="color:var(--cy)">' + L.analysis + '</a></span></div><div class="opts">' +
-          opts.slice(0, fam === L.all ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + L.pct + '</b></button>'; }).join('') + '</div></div>';
-      });
-      var pk = $('#pf-picker'); if (!pk) { pk = d.createElement('div'); pk.id = 'pf-picker'; root.insertBefore(pk, root.firstChild); }
-      pk.innerHTML = '<div class="lbl" style="margin-top:6px">' + L.choose + '</div>' + html;
+      var pk = $('#pf-picker');
+      if (!pk) {
+        pk = d.createElement('div'); pk.id = 'pf-picker';
+        pk.innerHTML = '<div class="lbl" style="margin-top:6px">' + L.choose + '</div><div class="mk" id="pf-fk" style="margin-top:8px"></div>' + pool.map(function (m) { return '<div class="cmb" data-m="' + esc(m.id) + '"></div>'; }).join('');
+        root.insertBefore(pk, root.firstChild);
+      }
+      $('#pf-fk', pk).innerHTML = FAMS.map(function (f) { return '<button type="button" data-fk="' + esc(f) + '" aria-pressed="' + (f === fam) + '">' + esc(f) + '</button>'; }).join('');
+      var blocks = $$('.cmb', pk);
+      pool.forEach(function (m, i) { blocks[i].innerHTML = matchBlock(m); });
       if (panel) panel.innerHTML = panelHtml();
       chrome();
+    };
+    /* bannières dans la liste : jusqu'à 4, après le 2e match puis tous les N (réglage « Bannières dans la liste du coupon » de l'admin) */
+    var insertPickerAds = function () {
+      if (!w.PF || !w.PF.ads) return;
+      getCfg().then(function (c) {
+        var e = c && c.actif && c.emplacements && c.emplacements.coupon_liste; if (!e || !e.actif) return;
+        var every = Math.max(2, e.every || 3), blocks = $$('#pf-picker .cmb'), put = 0;
+        blocks.forEach(function (b, i) {
+          var n = i + 1; if (put >= 4 || n < 2 || (n - 2) % every !== 0 || n >= blocks.length) return;
+          var mk = function (v, wd, ht) { var x = d.createElement('div'); x.className = 'ad ad-end ' + v; x.setAttribute('data-ad', 'coupon_liste'); x.setAttribute('data-v', v); x.setAttribute('data-w', wd); x.setAttribute('data-h', ht); x.style.minHeight = ht + 'px'; if (put > 0) x.setAttribute('data-nofb', '1'); return x; };
+          b.parentNode.insertBefore(mk('mo', 320, 100), b.nextSibling);
+          b.parentNode.insertBefore(mk('dk', 728, 90), b.nextSibling);
+          put++;
+        });
+        loadAds(false);
+      });
     };
     var panelHtml = function () {
       var n = sel.length, r = calc(), pc = Math.round(r.prob * 100), risk = PFc.riskLevel ? PFc.riskLevel(r.prob, LANG) : { label: '' };
@@ -308,5 +332,6 @@
     });
     w.addEventListener('hashchange', function () { if (applyHash()) render(); });
     render();
+    insertPickerAds();
   }
 })();

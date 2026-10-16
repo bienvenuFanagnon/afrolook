@@ -179,3 +179,16 @@ test('partout où un pronostic est affiché, on peut ouvrir le détail du match'
   const en = (await route(db, '/en' + href.replace('/football/', '/football/'), NOW)).body;
   assert.match(en, /<span class="more sm">See more details /);
 });
+
+test('page coupon : bannières fixes (haut, après les coupons proposés, avant l\'avertissement) et emplacement « liste du coupon » éteint par défaut', async () => {
+  const db = await withAds({ actif: true, afrolook: { actif: false }, emplacements: { haut: slot({ dk: [728, 90], mo: [320, 50] }), fin: slot({ dk: [728, 90], mo: [320, 100] }), fiche_native: slot({}) } });
+  const html = (await route(db, '/coupon', NOW)).body;
+  assert.match(html, /data-ad="haut"/); assert.match(html, /data-ad="fin"/); assert.match(html, /data-ad="fiche_native"/);
+  assert.ok(html.indexOf('data-ad="haut"') < html.indexOf('data-ad="fin"') && html.indexOf('data-ad="fin"') < html.indexOf('id="pf-coupon"'), 'ordre : haut, puis coupons proposés, puis bannière, puis liste');
+  assert.ok(html.indexOf('id="pf-coupon"') < html.indexOf('data-ad="fiche_native"'), 'une annonce après la liste');
+  const { mergeAds } = require('../src/render/config');
+  const a = mergeAds({}).emplacements.coupon_liste;
+  assert.equal(a.actif, false); assert.equal(a.every, 3);
+  const { sanitizeAds } = require('../src/http/admin');
+  assert.equal(sanitizeAds({ emplacements: { coupon_liste: { actif: true, every: 4 } } }).emplacements.coupon_liste.every, 4);
+});
