@@ -156,3 +156,26 @@ test('Flash du jour : chaque carte a son bouton « Voir plus de détails »', as
   for (const c of cards) assert.match(c, /<span class="more">Voir plus de détails <i aria-hidden="true">›<\/i><\/span>/);
   assert.match((await route(db, '/en', NOW)).body, /<a class="t3"[\s\S]*?<span class="more">See more details/);
 });
+
+test('partout où un pronostic est affiché, on peut ouvrir le détail du match', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  const home = (await route(db, '/', NOW)).body;
+  const href = /href="(\/football\/[a-z0-9-]+\/[a-z0-9-]+)"/.exec(home)[1];
+  // fiche : « Autres matchs » = cartes cliquables avec bouton
+  const fiche = (await route(db, href, NOW)).body;
+  const om = fiche.match(/<a class="om" href="\/football\/[^"]+"><b>[^<]+<\/b><span class="pk">[^<]*<\/span><span class="more sm">Voir plus de détails <i aria-hidden="true">›<\/i><\/span><\/a>/g) || [];
+  assert.ok(om.length >= 1, 'autres matchs cliquables');
+  // coupons proposés : un lien vers l'analyse de chaque match
+  const coupon = (await route(db, '/coupon', NOW)).body;
+  const sgi = coupon.match(/<div class="sgi">[\s\S]*?<\/div><\/div>/g) || [];
+  assert.ok(sgi.length >= 1);
+  for (const c of sgi) assert.match(c, /<div class="sgd"><small>Voir plus de détails\s?:<\/small><a href="\/football\/[^"]+\/analyse">/);
+  // bilan : résultats récents liés, avec chevron
+  const bilan = (await route(db, '/bilan', NOW)).body;
+  if (/class="rl"/.test(bilan)) assert.match(bilan, /<a href="\/football\/[^"]+"><span>[^<]*<\/span>[\s\S]*?<i class="chev"/);
+  // données de la fiche pour le compositeur de coupon : chemin de l'analyse
+  assert.match(fiche, /"u":"\/football\/[^"]+\/analyse"/);
+  // anglais
+  const en = (await route(db, '/en' + href.replace('/football/', '/football/'), NOW)).body;
+  assert.match(en, /<span class="more sm">See more details /);
+});

@@ -23,7 +23,7 @@
     msg: ['Football debates on Afrolook: share your take on the match', 'Share your tips with friends on Afrolook', 'Your likes turn into coins on Afrolook', 'Post videos? Afrolook pays you for your views', 'Afrolook: the African creators network'],
     sponsored: 'Sponsored', aflCta: 'Download for free', adTitle: 'Advertisement', copied: 'Link copied', all: 'All',
     myCoupon: 'My slip', sel: function (n) { return n > 1 ? 'selections' : 'selection'; }, view: 'View', max5: 'A slip holds 5 selections at most',
-    analysis: 'analysis', choose: 'Pick your bets', remove: 'Remove',
+    analysis: 'See details ›', choose: 'Pick your bets', remove: 'Remove',
     empty: 'Pick 2 to 5 bets. You can take several in the same match: the calculation accounts for it.',
     replace: function (a, b) { return 'Replace “' + a + '” with “' + b + '”'; }, moves: function (a, b) { return 'The slip goes from ' + a + '% to ' + b + '%'; },
     share: function (pc) { return 'My PronoFlash IA slip (' + pc + '% chance that everything wins):'; },
@@ -36,7 +36,7 @@
     msg: ['Débats foot sur Afrolook : donne ton avis sur le match', 'Partage tes pronos entre amis sur Afrolook', 'Tes likes deviennent des pièces sur Afrolook', 'Tu postes des vidéos ? Afrolook te paie tes vues', 'Afrolook : le réseau africain des créateurs'],
     sponsored: 'Sponsorisé', aflCta: 'Télécharger gratuitement', adTitle: 'Publicité', copied: 'Lien copié', all: 'Tous',
     myCoupon: 'Mon coupon', sel: function (n) { return n > 1 ? 'sélections' : 'sélection'; }, view: 'Voir', max5: 'Un coupon contient 5 sélections au plus',
-    analysis: 'analyse', choose: 'Choisis tes paris', remove: 'Retirer',
+    analysis: 'Voir détails ›', choose: 'Choisis tes paris', remove: 'Retirer',
     empty: 'Choisis 2 à 5 paris. Tu peux en prendre plusieurs dans un même match : le calcul en tient compte.',
     replace: function (a, b) { return 'Remplacer « ' + a + ' » par « ' + b + ' »'; }, moves: function (a, b) { return 'Le coupon passe de ' + a + ' % à ' + b + ' %'; },
     share: function (pc) { return 'Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :'; },
@@ -231,7 +231,7 @@
   function toggle(m, k, info) {
     var i = -1; sel.forEach(function (s, j) { if (s.m === m && s.k === k) i = j; });
     if (i >= 0) sel.splice(i, 1);
-    else { if (sel.length >= 5) return false; sel.push({ m: m, k: k, l: info.l, f: info.f, p: info.p, r: info.r, n: info.n, x: info.x }); }
+    else { if (sel.length >= 5) return false; sel.push({ m: m, k: k, l: info.l, f: info.f, p: info.p, r: info.r, n: info.n, u: info.u, x: info.x }); }
     saveSel(); send({ t: 'coupon_add', n: pageType() }); return true;
   }
   /* boutons « ＋ » des pages match et analyse */
@@ -240,7 +240,7 @@
     d.addEventListener('click', function (e) {
       var b = e.target.closest('[data-add]'); if (!b) return;
       var p = b.getAttribute('data-add').split('|'); var x = by[p[1]]; if (!x) return;
-      if (!toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: mdata.nom, x: mdata.matrice })) b.title = L.max5;
+      if (!toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: mdata.nom, u: mdata.u, x: mdata.matrice })) b.title = L.max5;
     });
   }
   chrome();
@@ -256,7 +256,7 @@
       var hash = decodeURIComponent((location.hash || '').slice(1));
       if (!hash || !/\|/.test(hash)) return false;
       var nsel = [];
-      hash.split(',').forEach(function (h) { var p = h.split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m && m.marches.filter(function (y) { return y.k === p[1]; })[0]; if (x) nsel.push({ m: m.id, k: x.k, l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, x: m.matrice }); });
+      hash.split(',').forEach(function (h) { var p = h.split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m && m.marches.filter(function (y) { return y.k === p[1]; })[0]; if (x) nsel.push({ m: m.id, k: x.k, l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, u: m.slug, x: m.matrice }); });
       if (!nsel.length) return false;
       sel = nsel.slice(0, 5); store.set('pf_coupon', sel); return true;
     };
@@ -281,7 +281,7 @@
     var panelHtml = function () {
       var n = sel.length, r = calc(), pc = Math.round(r.prob * 100), risk = PFc.riskLevel ? PFc.riskLevel(r.prob, LANG) : { label: '' };
       var col = r.prob >= .55 ? 'var(--ok)' : r.prob >= .35 ? 'var(--flash)' : r.prob >= .2 ? '#ff9f43' : 'var(--ko)';
-      var rows = sel.map(function (s) { return '<div class="sel"><small>' + esc(s.n) + ' · ' + esc(s.f) + '</small><span>' + esc(s.l) + '</span><b class="num">' + s.p + L.pct + '</b><button type="button" data-rm="' + esc(s.m) + '|' + esc(s.k) + '" aria-label="' + L.remove + '">✕</button></div>'; }).join('') || '<p class="note" style="margin-top:8px">' + L.empty + '</p>';
+      var rows = sel.map(function (s) { return '<div class="sel"><small>' + (/^\/[a-z0-9\/_-]+$/i.test(s.u || '') ? '<a href="' + esc(s.u) + '" style="color:var(--cy)">' + esc(s.n) + ' ›</a>' : esc(s.n)) + ' · ' + esc(s.f) + '</small><span>' + esc(s.l) + '</span><b class="num">' + s.p + L.pct + '</b><button type="button" data-rm="' + esc(s.m) + '|' + esc(s.k) + '" aria-label="' + L.remove + '">✕</button></div>'; }).join('') || '<p class="note" style="margin-top:8px">' + L.empty + '</p>';
       var warns = (PFc.warnings ? PFc.warnings(selForCalc(), r, LANG) : []).map(function (x) { return '<div class="' + (x.type === 'info' ? 'i' : '') + '"><span>' + (x.type === 'info' ? 'ℹ️' : '⚠️') + '</span><span>' + esc(x.text) + '</span></div>'; }).join('');
       var swap = '';
       if (n >= 2 && PFc.weakestSwap) {
@@ -298,10 +298,10 @@
     d.addEventListener('click', function (e) {
       var t = e.target.closest('[data-fk],[data-pk],[data-rm],[data-clr],[data-swap]'); if (!t || !(root.contains(t) || (panel && panel.contains(t)))) return;
       if (t.getAttribute('data-fk')) fam = t.getAttribute('data-fk');
-      else if (t.getAttribute('data-pk')) { var p = t.getAttribute('data-pk').split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m.marches.filter(function (y) { return y.k === p[1]; })[0]; toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, x: m.matrice }); }
+      else if (t.getAttribute('data-pk')) { var p = t.getAttribute('data-pk').split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m.marches.filter(function (y) { return y.k === p[1]; })[0]; toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, u: m.slug, x: m.matrice }); }
       else if (t.getAttribute('data-rm')) { var q = t.getAttribute('data-rm').split('|'); sel = sel.filter(function (s) { return !(s.m === q[0] && s.k === q[1]); }); saveSel(); }
       else if (t.getAttribute('data-clr')) { sel = []; saveSel(); }
-      else if (t.getAttribute('data-swap')) { var sp = t.getAttribute('data-swap').split('|'); var mm = pool.filter(function (y) { return y.id === sp[0]; })[0]; var nx = mm && mm.marches.filter(function (y) { return y.k === sp[2]; })[0]; if (nx) { sel = sel.filter(function (s) { return !(s.m === sp[0] && s.k === sp[1]); }); sel.push({ m: mm.id, k: nx.k, l: nx.l, f: nx.f, p: nx.p, r: nx.r, n: mm.nom, x: mm.matrice }); saveSel(); } }
+      else if (t.getAttribute('data-swap')) { var sp = t.getAttribute('data-swap').split('|'); var mm = pool.filter(function (y) { return y.id === sp[0]; })[0]; var nx = mm && mm.marches.filter(function (y) { return y.k === sp[2]; })[0]; if (nx) { sel = sel.filter(function (s) { return !(s.m === sp[0] && s.k === sp[1]); }); sel.push({ m: mm.id, k: nx.k, l: nx.l, f: nx.f, p: nx.p, r: nx.r, n: mm.nom, u: mm.slug, x: mm.matrice }); saveSel(); } }
       render();
     });
     w.addEventListener('hashchange', function () { if (applyHash()) render(); });

@@ -109,7 +109,7 @@ function sportsEvent(rc, m) {
 function matchJson(rc, m) {
   const p = m.prono;
   return {
-    id: m.id, nom: titleOf(m), ligue: leagueName(rc, m), t: m.coupDEnvoi,
+    id: m.id, nom: titleOf(m), ligue: leagueName(rc, m), t: m.coupDEnvoi, u: rc.u('analysis', m),
     marches: p.marches.map((x) => ({ k: x.cle, l: betLabel(rc, m, x), f: famLabel(rc, x.famille), p: x.pct, r: x.fiabilite[0] })), matrice: p.matrice,
   };
 }
@@ -176,7 +176,7 @@ function match(rc, { m, same, h2h }) {
   const others = same.filter((x) => x.id !== m.id).slice(0, 4);
   const side = sideColumn(rc, {
     afl: 'fiche',
-    extra: others.length ? `<div class="box"><div class="lbl">${t.otherMatches}</div><div style="display:grid;gap:8px;margin-top:10px">${others.map((x) => `<a href="${rc.u('match', x)}" style="text-decoration:none;font-size:13px;border-bottom:1px solid var(--line);padding-bottom:8px"><b style="font-family:var(--fd);font-size:16px">${esc(titleOf(x))}</b><br><span style="color:var(--flash)">${esc(x.prono ? pickLabel(rc, x) : t.inPrep)}</span></a>`).join('')}</div></div>` : '',
+    extra: others.length ? `<div class="box"><div class="lbl">${t.otherMatches}</div><div class="oml">${others.map((x) => `<a class="om" href="${rc.u('match', x)}"><b>${esc(titleOf(x))}</b><span class="pk">${esc(x.prono ? pickLabel(rc, x) : t.inPrep)}</span><span class="more sm">${t.moreDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div></div>` : '',
   });
   const wa = `https://wa.me/?text=${encodeURIComponent(`${t.waMatch(titre, p ? `${pickLabel(rc, m)} (${pct(rc, p.principal.confiance)})` : t.prediction)} ${C.url(rc, path)}`)}`;
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › ${esc(titre)}</nav>` +
@@ -223,7 +223,9 @@ function suggestions(rc, pool, withNames) {
     const pr = coupon.couponProbability(sel.map((s) => ({ matchId: s.matchId, key: s.key, pct: s.pct })), null).prob;
     const lab = (s) => { const m = byId[s.matchId]; const l = betLabel(rc, m, { cle: s.key, libelle: s.libelle }); return withNames ? `${titleOf(m)}${colon(rc)} ${l}` : l; };
     const hash = esc(sel.map((s) => s.matchId + '|' + s.key).join(','));
-    return `<a href="${rc.u('coupon')}#${hash}" data-sug="${hash}"><b>${nom} · ${sel.length} ${t.selections}</b><span>${esc(sel.map(lab).join(' · '))}</span><em class="num">${pct(rc, Math.round(pr * 100))}</em></a>`;
+    const ids = [...new Set(sel.map((x) => x.matchId))];
+    const details = ids.map((id) => `<a href="${rc.u('analysis', byId[id])}">${esc(titleOf(byId[id]))} <i aria-hidden="true">›</i></a>`).join('');
+    return `<div class="sgi"><a href="${rc.u('coupon')}#${hash}" data-sug="${hash}"><b>${nom} · ${sel.length} ${t.selections}</b><span>${esc(sel.map(lab).join(' · '))}</span><em class="num">${pct(rc, Math.round(pr * 100))}</em></a><div class="sgd"><small>${t.moreDetails}${colon(rc)}</small>${details}</div></div>`;
   }).join('');
 }
 
@@ -300,7 +302,7 @@ function bilan(rc, { s30, weeks, recent, leagues, familles }) {
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em></a>`).join('')}</div></div>` : '') +
+    (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };
 }
