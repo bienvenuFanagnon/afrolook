@@ -4,6 +4,7 @@
 const coupon = require('../shared/coupon');
 const { pathFor } = require('../render/i18n');
 const { pickLabel } = require('../render/components');
+const { isFragile } = require('../engine/fragility');
 
 const NB = ' ';
 const pc = (lang, v) => (lang === 'en' ? `${v}%` : `${v}${NB}%`);
@@ -23,7 +24,7 @@ function matin(coupons, lang) {
 
 /** Midi : le pronostic le plus confiant parmi les matchs à venir. */
 function midi(matches, lang) {
-  const top = matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.principal && !m.prono.principal.basseConfiance)
+  const top = matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.principal && !m.prono.principal.basseConfiance && !isFragile(m))
     .sort((a, b) => b.prono.principal.confiance - a.prono.principal.confiance)[0];
   if (!top) return null;
   const pick = pickLabel({ lang }, top);
@@ -35,7 +36,7 @@ function midi(matches, lang) {
 
 /** Soir : un coupon construit avec les matchs qui restent à jouer. */
 function soir(matches, lang) {
-  const live = matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
+  const live = matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches && !isFragile(m));
   const poolMap = {};
   for (const m of live) poolMap[m.id] = m.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite }));
   const sel = coupon.suggest(poolMap, 3);

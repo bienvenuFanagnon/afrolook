@@ -5,6 +5,7 @@ const N = require('../data/normalize');
 const { predictMatch, MODEL_VERSION } = require('../engine/model');
 const { buildCalibration, trackRecord } = require('../engine/learn');
 const { predictLambdas, describeTeam } = require('../engine/ratings');
+const { assess: assessFragility } = require('../engine/fragility');
 const { generateText } = require('../ai/generate');
 const { summarize } = require('../engine/bilan');
 const { dayStr, addDays } = require('./helpers');
@@ -187,7 +188,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
     source: pred.source, texte: texts.fr ? texts.fr.texte : null, sourceTexte: texts.fr ? texts.fr.sourceTexte : null,
     texteEn: texts.en ? texts.en.texte : null, sourceTexteEn: texts.en ? texts.en.sourceTexte : null,
     calculeLe: now.toISOString(), version: MODEL_VERSION, formeDom: base.formeDom, formeExt: base.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),
-    echantillon: Math.min(gsH.all.games, gsA.all.games), visible: !masque, masque, aRecalculer: false,
+    echantillon: Math.min(gsH.all.games, gsA.all.games), fragile: assessFragility({ echantillon: Math.min(gsH.all.games, gsA.all.games), equipeInconnue: ratingsOn && !lamNotes }), visible: !masque, masque, aRecalculer: false,
   };
   await db.collection('matches').doc(match.id).set({ prono, cotes: cotes || null, h2h: h2h || null }, { merge: true });
   return gen;

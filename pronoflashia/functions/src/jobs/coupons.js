@@ -5,6 +5,7 @@
 
 const coupon = require('../shared/coupon');
 const { dayStr } = require('./helpers');
+const { isFragile } = require('../engine/fragility');
 
 const COL = 'coupons_flash';
 const TIERS = [{ n: 2, nom: 'prudent' }, { n: 3, nom: 'equilibre' }, { n: 5, nom: 'audacieux' }];
@@ -24,7 +25,7 @@ async function archiveCoupons(db, now) {
   if (existing.every((d) => d.exists)) return 0;
   const snap = await db.collection('matches').where('jour', '==', jour).get();
   const list = snap.docs.map((d) => d.data())
-    .filter((m) => m.statut === 'prevu' && m.coupDEnvoi > now.toISOString() && m.prono && m.prono.visible !== false && m.prono.marches);
+    .filter((m) => m.statut === 'prevu' && m.coupDEnvoi > now.toISOString() && m.prono && m.prono.visible !== false && m.prono.marches && !isFragile(m));
   if (list.length < 2) return 0;
   const byId = {};
   const poolMap = {};

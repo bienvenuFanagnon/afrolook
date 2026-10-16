@@ -80,6 +80,7 @@ function predictLambdas(R, home, away) {
  * prev : matchs de la saison précédente (peut être vide), cur : matchs de la saison en cours, tous au format { t, h, a, gh, ga }.
  * Renvoie { n, gain, rps } : gain > 0 si les notes expliquent mieux les buts réels (moyenne par match du logarithme de la vraisemblance),
  * rps = écart moyen du score de probabilité (négatif = notes meilleures). Chaque match est jugé avec le seul passé.
+ * opts.collect : tableau optionnel qui reçoit, pour chaque match jugé, { pmax, hit, nmin } (calibration du pronostic 1N2).
  */
 function backtest(prev, cur, opts = {}) {
   const all = prev.concat(cur).sort((a, b) => a.t - b.t);
@@ -104,6 +105,7 @@ function backtest(prev, cur, opts = {}) {
       if (rat) {
         const g1 = goalStats(rh), g2 = goalStats(ra);
         const old = expectedGoals({ home: g1.home, all: g1.all }, { away: g2.away, all: g2.all }, { avgHome: lgH / lgN, avgAway: lgA / lgN });
+        if (opts.collect) { const r = result1x2(scoreMatrix(rat.lamHome, rat.lamAway)); const pr = [r.p1, r.pN, r.p2]; const top = pr.indexOf(Math.max(...pr)); opts.collect.push({ pmax: pr[top], hit: top === (m.gh > m.ga ? 0 : m.gh === m.ga ? 1 : 2) ? 1 : 0, nmin: Math.min(rh.length, ra.length) }); }
         gain += logPmf(m.gh, rat.lamHome) + logPmf(m.ga, rat.lamAway) - logPmf(m.gh, old.lamHome) - logPmf(m.ga, old.lamAway);
         rps += rpsOf(rat.lamHome, rat.lamAway, m.gh, m.ga) - rpsOf(old.lamHome, old.lamAway, m.gh, m.ga);
         n++;

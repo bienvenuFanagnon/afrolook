@@ -9,6 +9,7 @@ const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 const { summarizeCoupons } = require('../jobs/coupons');
+const { isFragile } = require('../engine/fragility');
 
 const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
@@ -22,7 +23,7 @@ const titleOf = (m) => `${m.domicile.nomCourt} – ${m.exterieur.nomCourt}`;
 
 /** Les 3 pronostics les plus confiants parmi les matchs à venir (hors confiance basse). */
 function topFlash(matches) {
-  return matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && !m.prono.principal.basseConfiance)
+  return matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && !m.prono.principal.basseConfiance && !isFragile(m))
     .sort((a, b) => b.prono.principal.confiance - a.prono.principal.confiance).slice(0, 3);
 }
 
@@ -239,7 +240,7 @@ function match(rc, { m, same, h2h, news }) {
   const wa = `https://wa.me/?text=${encodeURIComponent(`${t.waMatch(titre, p ? `${pickLabel(rc, m)} (${pct(rc, p.principal.confiance)})` : t.prediction)} ${C.url(rc, path)}`)}`;
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › ${esc(titre)}</nav>` +
     `<div class="layout"><div class="col"><div class="vd"><h1>${crest(m.domicile, true)}<span>${esc(m.domicile.nom)}</span><span class="vs">${t.vs}</span><span>${esc(m.exterieur.nom)}</span>${crest(m.exterieur, true)}</h1>` +
-    `<div class="meta">${esc(lgName)}${m.journee ? ` · ${esc(t.matchday(m.journee))}` : ''} · ${esc(dateLongue(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</div>${result}${verdict}</div>` +
+    `<div class="meta">${esc(lgName)}${m.journee ? ` · ${esc(t.matchday(m.journee))}` : ''} · ${esc(dateLongue(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</div>${result}${verdict}${p && p.fragile ? `<p class="note frag">⚠ ${t.fragileNote}</p>` : ''}</div>` +
     `<div class="follow" data-follow="${esc(m.domicile.teamId)}|${esc(m.exterieur.teamId)}" data-names="${esc(m.domicile.nomCourt)}|${esc(m.exterieur.nomCourt)}" hidden><small>${t.followLbl}</small></div>` +
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
@@ -275,7 +276,7 @@ function suggestions(rc, pool, withNames) {
   const t = rc.t;
   const poolMap = {};
   const byId = {};
-  for (const x of pool) { byId[x.id] = x; poolMap[x.id] = x.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite })); }
+  for (const x of pool) { if (isFragile(x)) continue; byId[x.id] = x; poolMap[x.id] = x.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite })); }
   return [[2, t.prudent], [3, t.balanced], [5, t.bold]].map(([n, nom]) => {
     const sel = coupon.suggest(poolMap, n);
     if (sel.length < 2) return '';

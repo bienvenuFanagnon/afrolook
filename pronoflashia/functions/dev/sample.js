@@ -33,11 +33,11 @@ function makeApi(mockNow) {
   // historique : 14 matchs terminés par championnat espacés de 3 jours avant le début de la fenêtre
   for (const lg of LEAGUES) {
     const ids = lg.teams.map((t) => t[0]);
-    for (let r = 0; r < 12; r++) {
+    for (let r = 0; r < 22; r++) {
       for (let i = 0; i < ids.length; i += 2) {
         const h = ids[(i + r) % ids.length], a = ids[(i + 1 + r * 2) % ids.length];
         if (h === a) continue;
-        const d = new Date(state.now.getTime() - (40 - r * 3) * 864e5 + i * 3600e3);
+        const d = new Date(state.now.getTime() - (70 - r * 3) * 864e5 + i * 3600e3);
         state.fixtures.set(nextId, mk(lg, nextId, h, a, d)); nextId++;
       }
     }
