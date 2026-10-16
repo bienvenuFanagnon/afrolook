@@ -1,6 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
+import { randomUUID } from "crypto";
 import { db } from "../shared/firebase";
 import { num, recordAppCommission } from "../payments/coinShares";
 
@@ -12,6 +13,15 @@ import { num, recordAppCommission } from "../payments/coinShares";
  * payant = la personne paie, l'artiste gagne sa part. Un artiste qui utilise son propre son ne paie rien (et ne gagne rien).
  * Le paiement n'a lieu qu'après un montage réussi, une seule fois par montage (ArtistSoundUses/{uid}_{jobId}).
  */
+export const MIN_USE = 2;
+export const MAX_USE = 20;
+export const MIN_SALE = 50;
+export const MAX_SALE = 500;
+export const ARTIST_PERCENT = 60;
+
+/** Part de l'artiste : 60 % du prix, arrondie vers le bas (5 pièces → 3). */
+export const artistShare = (price: number) => Math.floor((price * ARTIST_PERCENT) / 100);
+
 let cache: { at: number; price: number; share: number } | null = null;
 
 export async function artistSoundConfig() {
@@ -58,13 +68,16 @@ export async function prepareArtistSound(uid: string, soundId: string): Promise<
   const cfg = await artistSoundConfig();
   const own = artistId === uid;
   const pricing: "free" | "paid" = d["pricing"] === "free" ? "free" : "paid";
-  const price = own || pricing === "free" ? 0 : cfg.price;
+  // Prix d'utilisation choisi par l'artiste (2 à 20 pièces) ; à défaut, le prix du réglage. L'artiste touche 60 %.
+  const useCoins = Math.round(num(d["useCoins"]));
+  const unit = useCoins >= MIN_USE && useCoins <= MAX_USE ? useCoins : cfg.price;
+  const price = own || pricing === "free" ? 0 : unit;
   if (price > 0) {
     const user = await db.collection("Users").doc(uid).get();
     const balance = num(user.data()?.["giftCoinsBalance"]);
     if (balance < price) throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins: price, balance });
   }
-  return { id: soundId, artistId, title: String(d["title"] ?? "Son"), storagePath, audioUrl, pricing, price, share: price > 0 ? cfg.share : 0 };
+  return { id: soundId, artistId, title: String(d["title"] ?? "Son"), storagePath, audioUrl, pricing, price, share: price > 0 ? artistShare(price) : 0 };
 }
 
 /** Télécharge le son (Storage du projet si possible, sinon l'URL publique) dans [dest]. */
@@ -133,4 +146,19 @@ export async function chargeArtistSound(uid: string, info: ArtistSoundInfo, jobI
     tx.set(useRef, { uid, soundId: info.id, artistId: info.artistId, jobId, price, createdAt: now });
     return price;
   });
+}
+
+/**
+ * Lien d'écoute temporaire d'un original : copie dans `artist_sound_tmp/` (dossier fermé aux téléphones, règles Storage)
+ * avec un jeton aléatoire ; la copie est supprimée par la tâche `cleanupTempListen` au bout de 10 minutes.
+ * (Les liens signés par Google exigent un droit de signature que le compte de service du projet n'a pas.)
+ */
+export async function tempListenUrl(path: string): Promise<string> {
+  const bucket = getStorage().bucket();
+  const token = randomUUID();
+  const dest = `artist_sound_tmp/${Date.now()}_${randomUUID()}.m4a`;
+  const copy = bucket.file(dest);
+  await bucket.file(path).copy(copy);
+  await copy.setMetadata({ contentType: "audio/mp4", metadata: { firebaseStorageDownloadTokens: token } });
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(dest)}?alt=media&token=${token}`;
 }

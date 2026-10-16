@@ -204,7 +204,7 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
       decoration: BoxDecoration(color: color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
-      child: Text(free ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+      child: Text(free ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
     );
   }
 }

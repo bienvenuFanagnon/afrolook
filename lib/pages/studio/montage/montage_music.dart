@@ -62,6 +62,7 @@ class MontageMusic {
         subtitle = 'Musique Afrolook · gratuite',
         url = null,
         artistId = null,
+        useCoins = 0,
         paid = false,
         coverUrl = null;
 
@@ -72,6 +73,7 @@ class MontageMusic {
         subtitle = '@${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}',
         url = s.previewUrl, // extrait de 30 s : l'original n'est jamais exposé
         artistId = s.userId,
+        useCoins = s.unitPrice,
         paid = !s.isFree,
         coverUrl = s.coverImageUrl;
 
@@ -85,6 +87,10 @@ class MontageMusic {
 
   /// Son d'artiste payant (la personne paie, l'artiste gagne).
   final bool paid;
+
+  /// Prix d'utilisation dans le Studio (pièces) et part de l'artiste (60 %).
+  final int useCoins;
+  int get shareCoins => (useCoins * 60) ~/ 100;
 
   bool get isArtist => type == 'artist';
 }
@@ -312,7 +318,7 @@ class _MusicSheetState extends State<_MusicSheet> {
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(color: s.isFree ? const Color(0x332ECC71) : const Color(0x33FFD400), borderRadius: BorderRadius.circular(99)),
-                  child: Text(s.isFree ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
+                  child: Text(s.isFree ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
                 ),
               );
             }),
@@ -345,7 +351,7 @@ class _ArtistCta extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Tu es artiste ? Propose ton son', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
               const SizedBox(height: 2),
-              Text('Gratuit ou payant, c’est toi qui choisis. Payant : tu gagnes ${ArtistSoundPricing.share} pièces par utilisation.',
+              Text('Gratuit ou payant, c’est toi qui choisis. Payant : tu touches 60 % de chaque utilisation et vente.',
                   style: const TextStyle(color: Colors.white, fontSize: 12)),
             ]),
           ),

@@ -39,6 +39,8 @@ import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
 import 'studio_models.dart';
 import '../music/music_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../coins/coin_recharge_screen.dart';
 
 export 'artist_sound_common.dart' show ArtistSoundPricing;
 
@@ -64,6 +66,9 @@ class ArtistSound {
   final int totalEarningsCoins;
   final int reportCount;
   final int postCount;
+  final int useCoins; // prix d'utilisation dans le Studio (2 à 20), 0 = prix par défaut
+  final int saleCoins; // prix de vente du titre complet (50 à 500), 0 = pas en vente
+  final int saleCount;
   final Object? processed; // true | 'error' | null (analyse du serveur)
   final List<Map<String, dynamic>> duplicates;
   final Timestamp createdAt;
@@ -89,6 +94,9 @@ class ArtistSound {
     required this.totalEarningsCoins,
     this.reportCount = 0,
     this.postCount = 0,
+    this.useCoins = 0,
+    this.saleCoins = 0,
+    this.saleCount = 0,
     this.processed,
     this.duplicates = const [],
     required this.createdAt,
@@ -96,6 +104,17 @@ class ArtistSound {
   });
 
   bool get isFree => pricing == 'free';
+
+  /// Prix d'utilisation dans le Studio (ce que paie la personne).
+  int get unitPrice => useCoins >= 2 && useCoins <= 20 ? useCoins : ArtistSoundPricing.price;
+
+  /// Ce que touche l'artiste à chaque utilisation : 60 %.
+  int get unitShare => (unitPrice * 60) ~/ 100;
+
+  bool get forSale => !isFree && saleCoins >= 50;
+
+  /// Ce que touche l'artiste sur une vente : 60 %.
+  int get saleShare => (saleCoins * 60) ~/ 100;
 
   factory ArtistSound.fromMap(Map<String, dynamic> map, String id) {
     return ArtistSound(
@@ -119,6 +138,9 @@ class ArtistSound {
       totalEarningsCoins: (map['totalEarningsCoins'] as num?)?.toInt() ?? 0,
       reportCount: (map['reportCount'] as num?)?.toInt() ?? 0,
       postCount: (map['postCount'] as num?)?.toInt() ?? 0,
+      useCoins: (map['useCoins'] as num?)?.toInt() ?? 0,
+      saleCoins: (map['saleCoins'] as num?)?.toInt() ?? 0,
+      saleCount: (map['saleCount'] as num?)?.toInt() ?? 0,
       processed: map['processed'],
       duplicates: [for (final d in (map['duplicates'] as List? ?? const [])) Map<String, dynamic>.from(d as Map)],
       createdAt: map['createdAt'] ?? Timestamp.now(),
@@ -139,7 +161,7 @@ Widget _pricingBadge(ArtistSound s, AppColors c) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
     decoration: BoxDecoration(color: color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
-    child: Text(free ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+    child: Text(free ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
   );
 }
 
@@ -175,6 +197,9 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
   bool _isSubmitting = false;
   bool _rights = false;
   String _pricing = 'paid';
+  int _useCoins = 5;
+  bool _sell = false;
+  int _saleCoins = 100;
   double _progress = 0;
 
   final _picker = ImagePicker();
@@ -255,6 +280,8 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
         'audioPath': audioPath,
         if (coverUrl != null) 'coverImageUrl': coverUrl,
         'pricing': _pricing,
+        if (_pricing == 'paid') 'useCoins': _useCoins,
+        'saleCoins': _pricing == 'paid' && _sell ? _saleCoins : 0,
         'fileSizeMb': sizeMb,
         'status': 'pending_review',
         'usageCount': 0,
@@ -352,10 +379,42 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 Text('UTILISATION DANS LE STUDIO', style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1)),
                 const SizedBox(height: 8),
                 _pricingOption(c, 'paid', '🪙 Payant',
-                    'La personne qui utilise ton son paie ${ArtistSoundPricing.price} pièces. Tu gagnes ${ArtistSoundPricing.share} pièces à chaque utilisation '
-                        '(≈ ${ArtistSoundPricing.fcfaOf(ArtistSoundPricing.share)}), convertibles en argent.'),
+                    'Tu fixes tes prix. Tu touches 60 % de chaque utilisation et de chaque vente, en pièces gagnées convertibles en argent.'),
+                if (_pricing == 'paid') ...[
+                  const SizedBox(height: 10),
+                  _priceBox(
+                    c,
+                    title: 'Prix d’utilisation dans le Studio',
+                    value: _useCoins,
+                    min: 2,
+                    max: 20,
+                    step: 1,
+                    onChanged: (v) => setState(() => _useCoins = v),
+                    hint: 'Tu gagnes ${(_useCoins * 60) ~/ 100} pièces (≈ ${ArtistSoundPricing.fcfaOf((_useCoins * 60) ~/ 100)}) à chaque utilisation.',
+                  ),
+                  const SizedBox(height: 10),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _sell,
+                    onChanged: (v) => setState(() => _sell = v),
+                    activeThumbColor: c.primary,
+                    title: Text('Vendre aussi le titre complet', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+                    subtitle: Text('Les gens l’achètent pour l’écouter en entier dans leur bibliothèque, sans pouvoir l’exporter.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                  ),
+                  if (_sell)
+                    _priceBox(
+                      c,
+                      title: 'Prix de vente du titre',
+                      value: _saleCoins,
+                      min: 50,
+                      max: 500,
+                      step: 10,
+                      onChanged: (v) => setState(() => _saleCoins = v),
+                      hint: 'Tu gagnes ${(_saleCoins * 60) ~/ 100} pièces (≈ ${ArtistSoundPricing.fcfaOf((_saleCoins * 60) ~/ 100)}) à chaque vente.',
+                    ),
+                ],
                 const SizedBox(height: 8),
-                _pricingOption(c, 'free', '🎁 Gratuit', 'Tout le monde peut l’utiliser sans payer. Tu ne gagnes pas de pièces, mais ton nom circule et ton son se fait connaître.'),
+                _pricingOption(c, 'free', '🎁 Gratuit', 'Tout le monde peut l’écouter en entier et l’utiliser sans payer. Tu ne gagnes pas de pièces, mais ton nom circule et ton son se fait connaître.'),
                 const SizedBox(height: 14),
                 CheckboxListTile(
                   value: _rights,
@@ -377,6 +436,23 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 ),
               ]),
             ),
+    );
+  }
+
+  /// Réglage d'un prix : − / + autour de la valeur (bornes imposées aussi par les règles du serveur).
+  Widget _priceBox(AppColors c, {required String title, required int value, required int min, required int max, required int step, required ValueChanged<int> onChanged, required String hint}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+        Row(children: [
+          IconButton(onPressed: value > min ? () => onChanged((value - step).clamp(min, max)) : null, icon: const Icon(Icons.remove_circle_outline_rounded)),
+          Expanded(child: Center(child: Text('🪙 $value', style: TextStyle(color: c.primary, fontSize: 24, fontWeight: FontWeight.w900)))),
+          IconButton(onPressed: value < max ? () => onChanged((value + step).clamp(min, max)) : null, icon: const Icon(Icons.add_circle_outline_rounded)),
+        ]),
+        Text('$min à $max pièces · $hint', style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
+      ]),
     );
   }
 
@@ -616,6 +692,14 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   Duration _pos = Duration.zero;
   Duration _dur = const Duration(seconds: 30);
   late final key = 'detail_${widget.sound.id}';
+  bool _owned = false;
+  bool _buying = false;
+  bool _loadingFull = false;
+
+  bool get _own => widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
+
+  /// Écoute en entier : titre gratuit, acheté, ou à soi. Sinon, extrait de 30 s.
+  bool get _full => widget.sound.isFree || _own || _owned;
 
   @override
   void initState() {
@@ -627,8 +711,14 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
       if (mounted && SoundPreview.playing.value == key) setState(() => _pos = p);
     });
     SoundPreview.duration.listen((d) {
-      if (mounted && d.inMilliseconds > 0) setState(() => _dur = d);
+      if (mounted && d.inMilliseconds > 0 && SoundPreview.playing.value == key) setState(() => _dur = d);
     });
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && !_own) {
+      FirebaseFirestore.instance.collection('MusicLibrary').doc('${uid}_${widget.sound.id}').get().then((d) {
+        if (mounted && d.exists) setState(() => _owned = true);
+      }).catchError((_) {});
+    }
   }
 
   @override
@@ -637,11 +727,45 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     super.dispose();
   }
 
+  Future<void> _toggle() async {
+    final s = widget.sound;
+    if (SoundPreview.playing.value == key) {
+      await SoundPreview.pause();
+      return;
+    }
+    if (SoundPreview.now.value?.key == key) {
+      await SoundPreview.resume();
+      if (SoundPreview.playing.value == key) return;
+    }
+    String? url = s.previewUrl;
+    if (_full) {
+      setState(() => _loadingFull = true);
+      url = await fetchFullListenUrl(s.id) ?? s.previewUrl;
+      if (mounted) setState(() => _loadingFull = false);
+    }
+    if (url == null || !mounted) return;
+    setState(() {
+      _pos = Duration.zero;
+      _dur = Duration(milliseconds: s.durationMs > 0 && _full ? s.durationMs : 30000);
+    });
+    final ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: s.title, subtitle: _full ? 'Titre complet' : 'Extrait de 30 s', coverUrl: s.coverImageUrl));
+    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
+  }
+
+  Future<void> _buy() async {
+    setState(() => _buying = true);
+    final ok = await buyTrack(context, widget.sound);
+    if (!mounted) return;
+    setState(() {
+      _buying = false;
+      if (ok) _owned = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final s = widget.sound;
-    final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
     final total = _fmtDuration(s.durationMs);
     return Scaffold(
       backgroundColor: c.background,
@@ -650,7 +774,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: c.textPrimary),
         actions: [
-          if (s.userId != me)
+          if (!_own)
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, color: c.textPrimary),
               color: c.surface,
@@ -666,17 +790,35 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         const SizedBox(height: 4),
         Text('par @${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13)),
         const SizedBox(height: 12),
-        Center(child: _pricingBadge(s, c)),
+        Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+          _pricingBadge(s, c),
+          if (_owned)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: c.primary.withValues(alpha: .15), borderRadius: BorderRadius.circular(99)),
+              child: Text('✓ Dans ta bibliothèque', style: TextStyle(color: c.primary, fontSize: 11, fontWeight: FontWeight.w800)),
+            ),
+        ]),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.fromLTRB(8, 10, 14, 12),
           decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
           child: Column(children: [
             Row(children: [
-              SoundPlayButton(soundKey: key, url: s.previewUrl, size: 46),
+              ValueListenableBuilder<String?>(
+                valueListenable: SoundPreview.playing,
+                builder: (_, now, __) => IconButton(
+                  iconSize: 46,
+                  padding: EdgeInsets.zero,
+                  onPressed: s.previewUrl == null || _loadingFull ? null : _toggle,
+                  icon: _loadingFull
+                      ? SizedBox(width: 30, height: 30, child: CircularProgressIndicator(strokeWidth: 2.5, color: c.primary))
+                      : Icon(now == key ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: c.primary),
+                ),
+              ),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Extrait gratuit de 30 secondes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text(_full ? 'Titre complet' : 'Extrait gratuit de 30 secondes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
                   Slider(
                     value: _pos.inMilliseconds.clamp(0, _dur.inMilliseconds).toDouble(),
                     max: _dur.inMilliseconds.toDouble(),
@@ -689,10 +831,33 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
               ),
             ]),
             if (total.isNotEmpty)
-              Align(alignment: Alignment.centerRight, child: Text('Morceau complet : $total', style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+              Align(alignment: Alignment.centerRight, child: Text(_full ? 'Durée : $total' : 'Morceau complet : $total', style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
           ]),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
+        // Achat du titre complet
+        if (s.forSale && !_own && !_owned)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: c.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(14), border: Border.all(color: c.primary.withValues(alpha: .35))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Écoute le titre en entier', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+              const SizedBox(height: 4),
+              Text('Il reste dans ta bibliothèque, lisible dans Afrolook. L’artiste touche ${s.saleShare} pièces sur ton achat.', style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35)),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton.icon(
+                  onPressed: _buying ? null : _buy,
+                  icon: _buying ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.library_add_rounded),
+                  label: Text('Acheter · ${s.saleCoins} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+              ),
+            ]),
+          ),
+        const SizedBox(height: 14),
         if (s.description != null && s.description!.isNotEmpty) ...[
           Text(s.description!, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
           const SizedBox(height: 16),
@@ -700,7 +865,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         Row(children: [
           Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
           const SizedBox(width: 10),
-          Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${ArtistSoundPricing.price} pièces', c: c)),
+          Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${s.unitPrice} pièces', c: c)),
         ]),
         const SizedBox(height: 16),
         SizedBox(
@@ -708,15 +873,15 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           child: FilledButton.icon(
             onPressed: () => startPostWithSound(context, s),
             icon: const Icon(Icons.add_circle_rounded),
-            label: Text(s.isFree ? 'Créer un post avec ce son' : 'Créer un post avec ce son · ${ArtistSoundPricing.price} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
+            label: Text(s.isFree ? 'Créer un post avec ce son' : 'Créer un post avec ce son · ${s.unitPrice} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
             style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           ),
         ),
         const SizedBox(height: 8),
         Text(
           s.isFree
-              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Le morceau complet reste protégé.'
-              : 'Tu choisis un modèle : le prix (${ArtistSoundPricing.price} pièces, dont ${ArtistSoundPricing.share} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
+              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté.'
+              : 'Tu choisis un modèle : le prix (${s.unitPrice} pièces, dont ${s.unitShare} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
           textAlign: TextAlign.center,
           style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
         ),
@@ -725,6 +890,67 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
       ]),
     );
   }
+}
+
+/// Achat d'un titre : annonce le prix, la part de l'artiste et le solde ; recharge proposée si le solde est insuffisant.
+/// Renvoie true si le titre est maintenant dans la bibliothèque.
+Future<bool> buyTrack(BuildContext context, ArtistSound s) async {
+  final c = AppColors.of(context);
+  final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+  final balance = me.giftCoinsBalance ?? 0;
+  final price = s.saleCoins;
+  if (balance < price) {
+    final recharge = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Solde insuffisant', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text('« ${s.title} » coûte $price pièces et tu en as $balance. Recharge tes pièces pour l’acheter.', style: TextStyle(color: c.textSecondary, height: 1.4)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Plus tard', style: TextStyle(color: c.textSecondary))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Recharger mes pièces')),
+        ],
+      ),
+    );
+    if (recharge == true && context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+    return false;
+  }
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: c.surface,
+      title: Text('Acheter ce titre ?', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('« ${s.title} »', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        Text('Prix : $price pièces', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+        Text('${s.saleShare} pièces vont directement à l’artiste.', style: TextStyle(color: c.textSecondary, height: 1.35)),
+        const SizedBox(height: 8),
+        Text('Ton solde : $balance pièces → ${balance - price} après.', style: TextStyle(color: c.textSecondary)),
+        const SizedBox(height: 8),
+        Text('Le titre reste dans ta bibliothèque et se lit dans Afrolook. Achat définitif.', style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler', style: TextStyle(color: c.textSecondary))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Acheter ($price 🪙)')),
+      ],
+    ),
+  );
+  if (ok != true || !context.mounted) return false;
+  String msg;
+  var done = false;
+  try {
+    final r = await FirebaseFunctions.instance.httpsCallable('musicBuy').call({'soundId': s.id});
+    final d = Map<String, dynamic>.from(r.data as Map);
+    done = true;
+    msg = d['already'] == true ? 'Ce titre est déjà dans ta bibliothèque.' : '✅ Ajouté à ta bibliothèque. Merci de soutenir l’artiste !';
+  } on FirebaseFunctionsException catch (e) {
+    msg = e.code == 'resource-exhausted' ? 'Solde insuffisant.' : (e.message ?? 'Achat impossible.');
+  } catch (_) {
+    msg = 'Achat impossible. Vérifie ta connexion.';
+  }
+  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  return done;
 }
 
 class _Stat extends StatelessWidget {
@@ -839,7 +1065,7 @@ class MyArtistSoundsPage extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Comment tu es payé', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
         const SizedBox(height: 8),
-        line('• Son payant : à chaque utilisation dans le Studio, tu gagnes ${ArtistSoundPricing.share} pièces (la personne en paie ${ArtistSoundPricing.price}).'),
+        line('• Tu touches 60 % : à chaque utilisation dans le Studio (tu fixes le prix, 2 à 20 pièces) et à chaque vente du titre complet (50 à 500 pièces).'),
         line('• Les pièces arrivent tout de suite dans ton solde de pièces (Monétisation → Mes pièces). Ce sont des pièces gagnées : tu peux les convertir en argent '
             '(25 pièces = 10 FCFA) et les retirer, ou les dépenser dans l’app.'),
         line('• Son gratuit : pas de gain. Et si tu utilises ton propre son, c’est gratuit pour toi mais il ne te rapporte rien non plus.'),

@@ -32,6 +32,22 @@ class ArtistSoundPricing {
   static String fcfaOf(int coins) => '${(coins / 25 * 10).toStringAsFixed(coins % 5 == 0 ? 0 : 1)} FCFA';
 }
 
+/// Lien d'écoute du titre complet (gratuit, acheté ou à soi) : le serveur le délivre pour ~10 minutes ; mis en mémoire 8 minutes.
+final Map<String, ({String url, DateTime at})> _fullUrls = {};
+
+Future<String?> fetchFullListenUrl(String soundId) async {
+  final hit = _fullUrls[soundId];
+  if (hit != null && DateTime.now().difference(hit.at).inMinutes < 8) return hit.url;
+  try {
+    final r = await FirebaseFunctions.instance.httpsCallable('musicStreamUrl').call({'soundId': soundId});
+    final url = (r.data as Map)['url'] as String?;
+    if (url != null) _fullUrls[soundId] = (url: url, at: DateTime.now());
+    return url;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Lecteur d'extrait (un seul à la fois dans l'app) : l'extrait public de 30 s, jamais l'original.
 /// Ce qui est lu (affiché dans le lecteur réduit de la page Musique).
 class NowPlaying {

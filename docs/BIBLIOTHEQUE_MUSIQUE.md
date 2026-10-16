@@ -102,6 +102,16 @@ AdMob d'abord, pub Afrolook en repli (règle appliquée partout). Emplacements :
 
 Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite ~3000) ; au-delà, passer à un index (hachage par segments). L'analyse tourne en tâche serveur (1 Gio, 3 instances maximum).
 
+## 9 bis. État des phases
+
+- **Phase 1 (page Musique, favoris, crédit sur les posts)** : faite.
+- **Phase 2 (prix par titre, achat, bibliothèque, écoute complète)** : faite et testée sur le serveur.
+  - Prix d'utilisation 2–20 pièces et prix de vente 50–500 pièces fixés par l'artiste (règles Firestore) ; l'artiste touche 60 %.
+  - `musicBuy` (transaction unique, idempotente), `musicStreamUrl` (titre gratuit, acheté ou à soi ; 300 écoutes complètes par jour).
+  - Lien d'écoute : copie temporaire du fichier dans `artist_sound_tmp/` (dossier fermé aux téléphones) avec un jeton, supprimée par la tâche `cleanupTempListen` toutes les 10 minutes. Les liens signés Google ne sont pas utilisés : le compte de service du projet n'a pas le droit de signer (non modifié).
+  - Le lien d'écoute de l'administrateur (avant validation) utilise le même mécanisme : il ne fonctionnait pas avant cette correction.
+- Phases 3 à 5 : à faire.
+
 ## 10. Feuille de route
 
 1. Page Musique + favoris gratuits (1 semaine).

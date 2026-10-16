@@ -28,6 +28,7 @@ class _Item {
         coverUrl = null,
         previewUrl = null,
         paid = false,
+        owned = false,
         track = t,
         sound = null;
 
@@ -40,8 +41,23 @@ class _Item {
         coverUrl = s.coverImageUrl,
         previewUrl = s.previewUrl,
         paid = !s.isFree,
+        owned = false,
         track = null,
         sound = s;
+
+  /// Titre acheté (bibliothèque) : on garde l'essentiel du document MusicLibrary ; le titre complet se charge à la demande.
+  _Item.library(Map<String, dynamic> d)
+      : kind = _Kind.artist,
+        id = '${d['soundId']}',
+        title = '${d['title'] ?? 'Titre'}',
+        subtitle = (d['genre'] ?? '').toString().isNotEmpty ? '${d['genre']}' : 'Acheté',
+        emoji = '🎤',
+        coverUrl = d['coverImageUrl'] as String?,
+        previewUrl = null,
+        paid = true,
+        owned = true,
+        track = null,
+        sound = null;
 
   final _Kind kind;
   final String id;
@@ -51,6 +67,7 @@ class _Item {
   final String? coverUrl;
   final String? previewUrl;
   final bool paid;
+  final bool owned;
   final StudioTrack? track;
   final ArtistSound? sound;
 
@@ -67,7 +84,7 @@ class MusicPage extends StatefulWidget {
 }
 
 class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 4, vsync: this);
+  late final TabController _tabs = TabController(length: 5, vsync: this);
   final _search = TextEditingController();
   bool _searching = false;
   String _q = '';
@@ -116,24 +133,53 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     }
     setState(() => _loadingKey = key);
     String? url = it.previewUrl;
+    var full = false;
     if (url == null && it.track != null) url = await MontageMusicPlayer.urlOf(MontageMusic.free(it.track!));
+    // Titre complet : acheté, gratuit d'un artiste, ou à soi ; sinon extrait de 30 s
+    final own = it.sound?.userId == FirebaseAuth.instance.currentUser?.uid;
+    if (it.kind == _Kind.artist && (it.owned || (it.sound != null && (it.sound!.isFree || own)))) {
+      final f = await fetchFullListenUrl(it.id);
+      if (f != null) {
+        url = f;
+        full = true;
+      }
+    }
     if (!mounted) return;
     var ok = false;
     if (url != null) {
       setState(() => _pos = Duration.zero);
-      ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: it.title, subtitle: it.subtitle, coverUrl: it.coverUrl));
+      ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: it.title, subtitle: full ? 'Titre complet' : (it.kind == _Kind.artist ? 'Extrait de 30 s' : it.subtitle), coverUrl: it.coverUrl));
     }
     if (!mounted) return;
     setState(() => _loadingKey = null);
     if (!ok) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce titre. Vérifie ta connexion.')));
   }
 
-  void _create(_Item it) {
+  void _create(_Item it) async {
+    if (it.sound == null && it.track == null) {
+      // titre de la bibliothèque : on charge le document du son
+      try {
+        final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(it.id).get();
+        if (!mounted) return;
+        if (!d.exists || d.data()!['status'] != 'validated') {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre n’est plus disponible.')));
+          return;
+        }
+        startPostWithMusic(context, MontageMusic.artist(ArtistSound.fromMap(d.data()!, d.id)));
+      } catch (_) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chargement impossible. Vérifie ta connexion.')));
+      }
+      return;
+    }
     final music = it.sound != null ? MontageMusic.artist(it.sound!) : MontageMusic.free(it.track!);
     startPostWithMusic(context, music);
   }
 
   void _open(_Item it) async {
+    if (it.sound == null && it.track == null) {
+      openArtistSoundById(context, it.id);
+      return;
+    }
     if (it.sound == null) {
       _play(it);
       return;
@@ -190,7 +236,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           unselectedLabelColor: c.textSecondary,
           indicatorColor: c.primary,
           labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-          tabs: const [Tab(text: 'Pour toi'), Tab(text: 'Gratuites'), Tab(text: 'Artistes'), Tab(text: 'Favoris')],
+          tabs: const [Tab(text: 'Pour toi'), Tab(text: 'Gratuites'), Tab(text: 'Artistes'), Tab(text: 'Ma bibliothèque'), Tab(text: 'Favoris')],
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -201,7 +247,13 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
             for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id),
           ].where((s) => s.previewUrl != null).map(_Item.artist).toList();
           final free = kStudioTracks.map(_Item.free).toList();
-          return ValueListenableBuilder<Set<String>>(
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
+            builder: (_, libSnap) {
+              final libDocs = [for (final d in libSnap.data?.docs ?? const <QueryDocumentSnapshot>[]) d.data() as Map<String, dynamic>]
+                ..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));
+              final library = libDocs.map(_Item.library).toList();
+              return ValueListenableBuilder<Set<String>>(
             valueListenable: MusicFavorites.keys,
             builder: (_, favs, __) {
               final all = [...sounds, ...free];
@@ -210,8 +262,11 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                 _forYou(c, sounds, free, loading),
                 _list(c, [...free, ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.'),
                 _list(c, sounds.where(_match).toList(), loading ? '' : 'Aucun son d’artiste pour l’instant.', loading: loading, artistsCta: true),
+                _list(c, library.where(_match).toList(), 'Achète un titre : il reste ici, lisible en entier dans Afrolook.'),
                 _list(c, favItems.where(_match).toList(), 'Touche le ♡ d’un titre pour le retrouver ici.'),
               ]);
+            },
+          );
             },
           );
         },
@@ -348,11 +403,13 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                   onSelected: (v) {
                     if (v == 'create') _create(it);
                     if (v == 'open') _open(it);
+                    if (v == 'buy' && it.sound != null) buyTrack(context, it.sound!);
                     if (v == 'report' && it.sound != null) reportArtistSound(context, it.sound!.id, it.title);
                   },
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'create', child: Text(it.paid ? '🎬 Créer un post (${ArtistSoundPricing.price} 🪙)' : '🎬 Créer un post avec ce son')),
-                    if (it.sound != null) const PopupMenuItem(value: 'open', child: Text('📄 Voir le titre et ses posts')),
+                    PopupMenuItem(value: 'create', child: Text(it.sound != null && it.paid ? '🎬 Créer un post (${it.sound!.unitPrice} 🪙)' : '🎬 Créer un post avec ce son')),
+                    if (it.sound != null && it.sound!.forSale && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) PopupMenuItem(value: 'buy', child: Text('🛒 Acheter le titre · ${it.sound!.saleCoins} 🪙')),
+                    if (it.kind == _Kind.artist) const PopupMenuItem(value: 'open', child: Text('📄 Voir le titre et ses posts')),
                     if (it.sound != null && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) const PopupMenuItem(value: 'report', child: Text('🚩 Signaler')),
                   ],
                 ),
@@ -388,11 +445,11 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
   }
 
   Widget _badge(_Item it) {
-    final color = it.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFB400);
+    final color = it.isFree || it.owned ? const Color(0xFF2ECC71) : const Color(0xFFFFB400);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
       decoration: BoxDecoration(color: color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
-      child: Text(it.isFree ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+      child: Text(it.owned ? '✓ Acheté' : (it.isFree ? 'Gratuit' : '🪙 ${it.sound?.unitPrice ?? ArtistSoundPricing.price}'), style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
     );
   }
 

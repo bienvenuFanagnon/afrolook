@@ -304,7 +304,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final user = context.read<UserAuthProvider>().loginUserData;
     if (m == null || !m.isArtist || !m.paid || m.artistId == user.id) return true;
     await ArtistSoundPricing.load();
-    final price = ArtistSoundPricing.price;
+    final price = m.useCoins;
     final balance = user.giftCoinsBalance ?? 0;
     if (!mounted) return false;
     if (balance < price) {
@@ -337,7 +337,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           Text('« ${m.title} »', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
           Text('Prix : $price pièces', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
-          Text('${ArtistSoundPricing.share} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.', style: TextStyle(color: _c.textSecondary, height: 1.35)),
+          Text('${m.shareCoins} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.', style: TextStyle(color: _c.textSecondary, height: 1.35)),
           const SizedBox(height: 8),
           Text('Ton solde : $balance pièces → ${balance - price} après.', style: TextStyle(color: _c.textSecondary)),
           const SizedBox(height: 8),
@@ -405,7 +405,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
       if (e is FirebaseFunctionsException && e.code == 'resource-exhausted') {
-        _say('Solde insuffisant : il te faut ${ArtistSoundPricing.price} pièces pour ce son. Recharge ou choisis une musique gratuite.');
+        _say('Solde insuffisant : il te faut ${s.music?.useCoins ?? 0} pièces pour ce son. Recharge ou choisis une musique gratuite.');
       } else {
         _say(e is FirebaseFunctionsException ? (e.message ?? 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
       }
@@ -719,7 +719,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                 Text(
                   m == null
                       ? 'Touche pour ajouter une musique'
-                      : (m.isArtist ? '${m.subtitle} · 🪙 ${ArtistSoundPricing.price} pièces' : m.subtitle),
+                      : (m.isArtist ? '${m.subtitle} · 🪙 ${m.useCoins} pièces' : m.subtitle),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: _c.textSecondary, fontSize: 12),

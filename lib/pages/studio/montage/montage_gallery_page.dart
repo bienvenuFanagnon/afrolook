@@ -109,7 +109,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
         const Text('🎵', style: TextStyle(fontSize: 20)),
         const SizedBox(width: 10),
         Expanded(
-          child: Text('Choisis un modèle pour « ${m.title} »${m.paid ? ' · ${ArtistSoundPricing.price} pièces' : ' · gratuit'}',
+          child: Text('Choisis un modèle pour « ${m.title} »${m.paid ? ' · ${m.useCoins} pièces' : ' · gratuit'}',
               maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
         ),
       ]),

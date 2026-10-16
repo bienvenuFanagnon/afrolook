@@ -11,7 +11,7 @@ import { promises as fs } from "fs";
 import ffmpegPath from "ffmpeg-static";
 import { db } from "../shared/firebase";
 import { BER_SAME, BER_SIMILAR, bestMatch, fingerprint, fromBase64, toBase64 } from "./audioFingerprint";
-import { storagePathFromUrl } from "./artistSounds";
+import { storagePathFromUrl, tempListenUrl } from "./artistSounds";
 
 /**
  * Protection des sons d'artistes.
@@ -210,7 +210,7 @@ export const artistSoundAdminUrl = onCall({ timeoutSeconds: 30, memory: "256MiB"
   if (!snap.exists) throw new HttpsError("not-found", "Son introuvable.");
   const path = (snap.get("audioPath") as string | undefined) ?? storagePathFromUrl(String(snap.get("audioUrl") ?? ""));
   if (!path) throw new HttpsError("not-found", "Fichier introuvable.");
-  const [url] = await bucket().file(path).getSignedUrl({ action: "read", expires: Date.now() + 15 * 60 * 1000 });
+  const url = await tempListenUrl(path);
   return { url };
 });
 
