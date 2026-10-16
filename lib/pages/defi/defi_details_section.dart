@@ -11,6 +11,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../ads/ad_slot.dart';
 
 const Color _yellow = Color(0xFFFF9500);
 const Color _yellowBg = Color(0x22FF9500);
@@ -527,7 +528,7 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
               if (showAd)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: AfrolookInlineAd(key: ValueKey('ad_defi_$i')),
+                  child: AdSlot(key: ValueKey('ad_defi_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd()),
                 ),
             ],
           );

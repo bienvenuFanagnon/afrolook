@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_slot.dart';
 import 'afrolook_inline_ad.dart';
 
 /// Délégue à AfrolookInlineAd qui gère déjà la condition Premium/Admin
@@ -9,6 +10,6 @@ class ConditionalAdBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AfrolookInlineAd();
+    return AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd());
   }
 }

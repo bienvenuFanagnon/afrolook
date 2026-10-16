@@ -17,6 +17,8 @@ import 'montage_canvas.dart';
 import 'montage_catalog.dart';
 import 'montage_export.dart';
 import 'montage_fx.dart';
+import '../artist_sound_common.dart';
+import '../../coins/coin_recharge_screen.dart';
 import 'montage_music.dart';
 import 'montage_state.dart';
 
@@ -102,6 +104,12 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     setState(() => _musicPlaying = false);
     final pick = await showMontageMusicPicker(context, current: s.music, onArtistCta: () => openArtistSpace(context));
     if (!mounted || pick == null) return;
+    // Son payant : on informe tout de suite (prix, solde) ; refus ou solde insuffisant = on garde la musique d'avant
+    if (pick.music != null && !await _confirmArtistCost(pick.music)) {
+      await _playMusic();
+      return;
+    }
+    if (!mounted) return;
     setState(() {
       s.music = pick.music;
       s.musicStartMs = 0;
@@ -272,27 +280,55 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     await WidgetsBinding.instance.endOfFrame;
   }
 
-  /// Son d'artiste payant : on prévient avant de lancer le montage (débité seulement s'il réussit).
-  Future<bool> _confirmArtistCost() async {
-    final m = s.music;
-    final me = context.read<UserAuthProvider>().loginUserData.id;
-    if (m == null || !m.isArtist || m.artistId == me) return true;
+  /// Son d'artiste payant : on informe avant (prix, part de l'artiste, solde) et on bloque si le solde est insuffisant.
+  /// Rien n'est débité ici : le serveur débite seulement quand le montage est réussi.
+  Future<bool> _confirmArtistCost([MontageMusic? music]) async {
+    final m = music ?? s.music;
+    final user = context.read<UserAuthProvider>().loginUserData;
+    if (m == null || !m.isArtist || !m.paid || m.artistId == user.id) return true;
+    await ArtistSoundPricing.load();
+    final price = ArtistSoundPricing.price;
+    final balance = user.giftCoinsBalance ?? 0;
+    if (!mounted) return false;
+    if (balance < price) {
+      final recharge = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: _c.surface,
+          title: Text('Solde insuffisant', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+          content: Text(
+            '« ${m.title} » coûte $price pièces et tu en as $balance. Recharge tes pièces, ou choisis une musique gratuite (les musiques Afrolook et les sons gratuits des artistes ne coûtent rien).',
+            style: TextStyle(color: _c.textSecondary, height: 1.4),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Plus tard', style: TextStyle(color: _c.textSecondary))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: _c.primary), child: const Text('Recharger mes pièces')),
+          ],
+        ),
+      );
+      if (recharge == true && mounted) {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
+      }
+      return false;
+    }
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _c.surface,
-        title: Text('Son d’artiste', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
-        content: Text(
-          '« ${m.title} » coûte ${ArtistSoundPricing.price} pièces. ${ArtistSoundPricing.share} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.\n\nTu n’es débité(e) que si ta vidéo est bien créée.',
-          style: TextStyle(color: _c.textSecondary, height: 1.4),
-        ),
+        title: Text('Son d’artiste payant', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('« ${m.title} »', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          Text('Prix : $price pièces', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+          Text('${ArtistSoundPricing.share} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.', style: TextStyle(color: _c.textSecondary, height: 1.35)),
+          const SizedBox(height: 8),
+          Text('Ton solde : $balance pièces → ${balance - price} après.', style: TextStyle(color: _c.textSecondary)),
+          const SizedBox(height: 8),
+          Text('Tu n’es débité(e) que si ta vidéo est bien créée.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+        ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler', style: TextStyle(color: _c.textSecondary))),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: _c.primary),
-            child: Text('Utiliser (${ArtistSoundPricing.price} 🪙)'),
-          ),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: _c.primary), child: Text('Utiliser ($price 🪙)')),
         ],
       ),
     );
@@ -459,6 +495,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                   media: _mediaWidget(),
                   secondMedia: _secondWidget(),
                   pseudo: pseudo,
+                  avatarUrl: me.imageUrl,
                   followers: me.followersCount,
                 ),
               ),

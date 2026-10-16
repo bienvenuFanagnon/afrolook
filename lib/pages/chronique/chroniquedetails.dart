@@ -1,6 +1,8 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
 import '../pub/ad_actions.dart';
+import '../../ads/ad_gate.dart';
+import '../../ads/admob_widgets.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
@@ -101,6 +103,13 @@ import '../user/otherUser/otherUser.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'chroniqueform.dart';
 import 'package:audioplayers/audioplayers.dart';
+
+/// Emplacement AdMob entre deux chroniques (grand format 300×250). [fallback] : pub Afrolook montrée si AdMob ne charge pas.
+class _AdmobSlot {
+  const _AdmobSlot(this.ordinal, this.fallback);
+  final int ordinal;
+  final Advertisement? fallback;
+}
 
 class ChroniqueDetailPage extends StatefulWidget {
   final String initialChroniqueId;
@@ -444,6 +453,15 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
   // ── Timer story ────────────────────────────────────────────────────────────
 
+  /// Durée d'une pub = celle d'une chronique : 5 s pour une image / un bloc AdMob, durée de la vidéo (3 à 60 s) pour une vidéo.
+  static const int _adImageMs = 5000;
+
+  void _startAdTimer(int durationMs) {
+    _stopStoryTimer();
+    _storyProgress = 0.0;
+    _runTimer(durationMs.clamp(3000, 60000));
+  }
+
   void _startStoryTimer(Chronique chronique) {
     _stopStoryTimer();
     _storyProgress = 0.0;
@@ -468,6 +486,10 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         break;
     }
 
+    _runTimer(durationMs);
+  }
+
+  void _runTimer(int durationMs) {
     final steps = durationMs ~/ _timerIntervalMs;
     final increment = 1.0 / steps;
 
@@ -1124,6 +1146,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       preloaded.setLooping(true);
       preloaded.play();
       if (mounted) setState(() { _adVideoController = preloaded; _adVideoInitialized = true; });
+      _syncAdTimerWithVideo(ad);
     } else {
       final url = VideoPreloadManager.urlResolver != null
           ? VideoPreloadManager.urlResolver!(post.url_media!)
@@ -1139,8 +1162,17 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         controller.setLooping(true);
         controller.play();
         setState(() { _adVideoController = controller; _adVideoInitialized = true; });
+        _syncAdTimerWithVideo(ad);
       } catch (_) {}
     }
+  }
+
+  /// Une pub vidéo dure comme sa vidéo (3 à 60 s, comme une chronique vidéo).
+  void _syncAdTimerWithVideo(Advertisement ad) {
+    final c = _adVideoController;
+    if (!mounted || c == null || _currentAdId != ad.id || !_isShowingAd) return;
+    final ms = c.value.duration.inMilliseconds;
+    if (ms > 0) _startAdTimer(ms);
   }
 
   void _stopAdVideo() {
@@ -1178,15 +1210,26 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   /// Liste mixte Chronique + Advertisement pour le PageView.
   /// Pub après la 1ère, 3ème, 6ème, 9ème chronique… (positions 1,3,6,9 en base-1).
   /// S'arrête quand toutes les pubs sont affichées — pas de cycle.
+  ///
+  /// AdMob d'abord : à chaque emplacement (après la 1re, puis toutes les 3 chroniques) on met un bloc AdMob si
+  /// AdMob peut s'afficher pour ce compte ; sinon, la pub Afrolook suivante (sans cycle). Si le bloc AdMob ne
+  /// charge pas, la slide montre une pub Afrolook de repli, ou passe toute seule à la suite.
   List<dynamic> get _displayItems {
     final ads = _shuffledAds.isNotEmpty ? _shuffledAds : _activeAds;
-    if (ads.isEmpty) return _allChroniques;
+    final user = authProvider.loginUserData;
+    final admob = AdGate.canShowType(user, 'banner');
+    if (ads.isEmpty && !admob) return _allChroniques;
     final result = <dynamic>[];
     int adCursor = 0;
+    int slotOrdinal = 0;
     for (int i = 0; i < _allChroniques.length; i++) {
       result.add(_allChroniques[i]);
       final isAdSlot = i == 0 || (i >= 2 && (i - 2) % 3 == 0);
-      if (isAdSlot && adCursor < ads.length) {
+      if (!isAdSlot) continue;
+      if (admob) {
+        result.add(_AdmobSlot(slotOrdinal, ads.isEmpty ? null : ads[slotOrdinal % ads.length]));
+        slotOrdinal++;
+      } else if (adCursor < ads.length) {
         result.add(ads[adCursor++]);
       }
     }
@@ -1203,7 +1246,52 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
   bool _isVirtualAd(int virtualIndex) {
     if (virtualIndex < 0 || virtualIndex >= _displayItems.length) return false;
-    return _displayItems[virtualIndex] is Advertisement;
+    final it = _displayItems[virtualIndex];
+    return it is Advertisement || it is _AdmobSlot;
+  }
+
+  /// Slides AdMob dont le chargement a échoué (par ordinal) : elles montrent la pub de repli ou sont sautées.
+  final Set<int> _admobFailed = {};
+
+  Widget _buildAdmobSlide(_AdmobSlot slot) {
+    if (_admobFailed.contains(slot.ordinal)) {
+      if (slot.fallback != null) return _buildAdSlide(slot.fallback!);
+      return const ColoredBox(color: Colors.black);
+    }
+    return Container(
+      color: Colors.black,
+      child: Stack(fit: StackFit.expand, children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF14110A), Color(0xFF000000)]),
+          ),
+        ),
+        Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(99)),
+              child: const Text('Publicité', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .8)),
+            ),
+            const SizedBox(height: 10),
+            AdmobBannerWidget(
+              key: ValueKey('chronique_admob_${slot.ordinal}'),
+              mrec: true,
+              onFailed: () {
+                if (!mounted || _admobFailed.contains(slot.ordinal)) return;
+                setState(() => _admobFailed.add(slot.ordinal));
+                // Pas de pub de repli : on passe à la chronique suivante tout de suite ; sinon la pub Afrolook dure comme une pub normale
+                if (slot.fallback == null) {
+                  _goToNextStory();
+                } else {
+                  _startAdTimer(_adImageMs);
+                }
+              },
+            ),
+          ]),
+        ),
+      ]),
+    );
   }
 
   int _chroniqueToVirtual(int chroniqueIndex) {
@@ -1700,8 +1788,17 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                 if (_isVirtualAd(virtualIndex)) {
                   // Page pub : on ne touche pas à _currentPage (garder le dernier index chronique valide)
                   _videoController?.pause();
+                  _audioPlayer?.pause();
                   final item = _displayItems[virtualIndex];
-                  if (item is Advertisement) {
+                  // La pub avance toute seule, comme une chronique (5 s ; une vidéo : sa durée, voir _initializeAdVideo)
+                  _startAdTimer(_adImageMs);
+                  if (item is _AdmobSlot) {
+                    _stopAdVideo();
+                    setState(() {
+                      _isShowingAd = true;
+                      _currentDisplayAd = null;
+                    });
+                  } else if (item is Advertisement) {
                     _initializeAdVideo(item);
                     final adPost = _adPosts[item.id ?? ''];
                     final uid = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
@@ -1732,6 +1829,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               },
               itemBuilder: (context, index) {
                 final item = _displayItems[index];
+                if (item is _AdmobSlot) {
+                  return _buildAdmobSlide(item);
+                }
                 if (item is Advertisement) {
                   return _buildAdSlide(item);
                 }
@@ -1752,6 +1852,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             ),
             _buildHeader(currentChronique),
             _buildProgressIndicator(),
+            if (_isShowingAd) _buildAdProgress(),
             if (!_isShowingAd) ...[
               _buildUserProfile(currentChronique),
               _buildBottomBar(currentChronique),
@@ -1800,6 +1901,30 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     );
   }
 
+  /// Pendant une pub : fine barre dorée « Publicité » qui se remplit pendant la durée de la pub.
+  Widget _buildAdProgress() {
+    return Positioned(
+      top: 18,
+      left: 12,
+      right: 12,
+      child: Row(children: [
+        const Text('Publicité', style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w700)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: _storyProgress,
+              minHeight: 2.5,
+              backgroundColor: Colors.white24,
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _buildProgressIndicator() {
     if (_allChroniques.isEmpty) return const SizedBox();
     // Limite le nombre de segments affichés (évite une barre illisible)
@@ -1814,8 +1939,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       child: Row(
         children: List.generate(total, (i) {
           double fillValue;
-          if (i < page) {
-            fillValue = 1.0; // passé — plein
+          if (i < page || (_isShowingAd && i == page)) {
+            fillValue = 1.0; // passé — plein (pendant une pub, la chronique d'avant est terminée)
           } else if (i == page) {
             fillValue = _storyProgress; // courant — animé
           } else {

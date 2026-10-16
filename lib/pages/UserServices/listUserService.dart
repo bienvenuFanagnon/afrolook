@@ -16,6 +16,7 @@ import '../pub/afrolook_inline_ad.dart';
 import 'newUserService.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../ads/ad_slot.dart';
 
 class UserServiceListPage extends StatefulWidget {
   @override
@@ -536,10 +537,10 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             ),
 
             // Pub Afrolook : dans le défilement, elle disparaît avec la page
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: AfrolookInlineAd(),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: AdSlot(key: const ValueKey('services_list_ad'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd()),
               ),
             ),
 

@@ -68,6 +68,7 @@ import 'video_preload_manager.dart';
 import '../../services/media_cache_service.dart';
 import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
+import '../../ads/ad_slot.dart';
 
 
 class MediaPlaybackManager {
@@ -2935,7 +2936,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                       if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
                       if (!widget.suppressInlineAd && _shouldShowAd) ...[
                         const SizedBox(height: 12),
-                        const AfrolookInlineAd(),
+                        AdSlot(key: ValueKey('video_inline_ad_${widget.post.id}'), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd()),
                       ],
                       const SizedBox(height: 12),
                     ],

@@ -4,12 +4,25 @@ service firebase.storage {
     // Règle générale : tout fichier, sauf les dossiers ci-dessous qui ont leurs propres règles (propriétaire et
     // poids maximum) ou sont écrits uniquement par les Cloud Functions / l'administration.
     match /{folder}/{allPaths=**} {
-      allow read: if request.auth != null;
+      // Originaux des sons d'artistes : jamais lisibles depuis un téléphone (le serveur les lit ; extrait public de 30 s à part)
+      allow read: if request.auth != null && folder != 'artist_sound_uploads';
       allow write: if request.auth != null
-          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds']);
+          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds', 'artist_sound_uploads', 'artist_sound_previews']);
     }
     match /{rootFile} {
       allow read, write: if request.auth != null;
+    }
+
+    // Sons d'artistes : l'artiste dépose son original (audio, 50 Mo maximum) dans son dossier ; il ne peut pas le relire ni
+    // le réécrire, personne d'autre non plus : seul le serveur le lit (extrait public, Studio, lien signé pour l'admin).
+    match /artist_sound_uploads/{uid}/{file} {
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 50 * 1024 * 1024
+                    && request.resource.contentType.matches('audio/.*|application/octet-stream');
+    }
+    // Extraits publics de 30 s : écrits uniquement par le serveur
+    match /artist_sound_previews/{file} {
+      allow read: if request.auth != null;
     }
 
     // Stickers du catalogue : écrits uniquement par les Cloud Functions et l'administration (jamais par l'app)

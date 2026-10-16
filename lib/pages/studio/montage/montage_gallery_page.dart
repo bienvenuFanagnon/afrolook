@@ -26,6 +26,7 @@ class MontageGalleryPage extends StatefulWidget {
 class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTickerProviderStateMixin {
   late final AnimationController _anim = AnimationController(vsync: this, duration: kMontageLoop)..repeat();
   int _followers = 0;
+  String? _avatar;
   late final Map<String, MontageState> _states = {for (final t in kMontageTemplates) t.id: MontageState(t)..post = false};
 
   @override
@@ -61,6 +62,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     final me = context.read<UserAuthProvider>().loginUserData;
     final pseudo = me.pseudo ?? '';
     _followers = me.followersCount;
+    _avatar = me.imageUrl;
     return DefaultTabController(
       length: MontageCat.values.length,
       child: Scaffold(
@@ -110,6 +112,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                     media: Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 400),
                     secondMedia: t.dualSample != null ? Image.asset(t.dualSample!, fit: BoxFit.cover, cacheWidth: 300) : null,
                     pseudo: pseudo,
+                    avatarUrl: _avatar,
                     followers: _followers,
                   ),
                 ),
