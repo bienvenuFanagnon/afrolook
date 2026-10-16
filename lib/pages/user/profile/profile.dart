@@ -35,6 +35,8 @@ import 'adminprofil.dart';
 import '../account_deletion_page.dart';
 import '../../../l10n/tr.dart';
 import '../../studio/artist_marketplace.dart';
+import '../../../services/currency_service.dart';
+import '../currency_picker_page.dart';
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
 
@@ -723,6 +725,32 @@ class _UserProfilState extends State<UserProfil> {
                           ),
                           const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
                         ]),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+
+                    // Devise d'affichage des montants (les gains restent en FCFA)
+                    Consumer<CurrencyService>(
+                      builder: (context, cur, _) => GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CurrencyPickerPage())),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFF0F6B38), Color(0xFF1FAA59)]),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.currency_exchange_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                  '${context.tr('Devise d\'affichage')} : ${cur.currency}${cur.override == null ? ' (${context.tr('auto')})' : ''}',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
+                          ]),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 15),

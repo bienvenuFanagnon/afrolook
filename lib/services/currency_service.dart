@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/tr.dart';
 
@@ -94,15 +96,86 @@ class CurrencyService extends ChangeNotifier {
   /// Pays du téléphone (utilisé avant la connexion).
   static String? deviceCountry() => PlatformDispatcher.instance.locale.countryCode;
 
-  /// Choisit la devise à partir du pays (profil, sinon téléphone).
+  /// Devise choisie par la personne (null = automatique, selon son pays). Elle ne change que l'affichage : les gains restent en FCFA.
+  String? _override;
+  String? _autoCountry;
+  String? get override => _override;
+
+  /// Devise liée au pays (sans le choix de la personne).
+  String get automaticCurrency => (_autoCountry == null || _autoCountry!.isEmpty || _autoCountry == 'MANUAL') ? currencyFor(deviceCountry()) : currencyFor(_autoCountry);
+
+  /// Choisit la devise à partir du pays (profil, sinon téléphone), sauf si la personne en a choisi une.
   void setCountry(String? countryCode) {
-    final cc = (countryCode == null || countryCode.isEmpty) ? deviceCountry() : countryCode;
-    final next = cc == null ? 'XOF' : currencyFor(cc);
+    _autoCountry = countryCode;
+    _apply();
+  }
+
+  void _apply() {
+    // « MANUAL » : pays choisi à la main sans code ; on retombe sur le pays du téléphone plutôt que sur le dollar
+    final cc = (_autoCountry == null || _autoCountry!.isEmpty || _autoCountry == 'MANUAL') ? deviceCountry() : _autoCountry;
+    final auto = cc == null ? 'XOF' : currencyFor(cc);
+    final next = (_override != null && _rates.containsKey(_override)) ? _override! : auto;
     if (next != _currency) {
       _currency = next;
       notifyListeners();
     }
   }
+
+  static const _prefKey = 'display_currency';
+
+  /// Relit le choix gardé sur le téléphone (au démarrage) ; [serverValue] = choix enregistré sur le compte, qui le remplace.
+  Future<void> loadOverride({String? serverValue}) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final v = (serverValue != null && serverValue.isNotEmpty) ? serverValue : sp.getString(_prefKey);
+      if (serverValue != null && serverValue.isNotEmpty) await sp.setString(_prefKey, serverValue);
+      _override = (v != null && currencies.contains(v)) ? v : null;
+    } catch (_) {}
+    _apply();
+  }
+
+  /// Change la devise d'affichage ([code] null = automatique). Gardé sur le téléphone et sur le compte.
+  Future<void> setOverride(String? code) async {
+    _override = (code != null && currencies.contains(code)) ? code : null;
+    _apply();
+    notifyListeners();
+    try {
+      final sp = await SharedPreferences.getInstance();
+      if (_override == null) {
+        await sp.remove(_prefKey);
+      } else {
+        await sp.setString(_prefKey, _override!);
+      }
+    } catch (_) {}
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('Users').doc(uid).update({'displayCurrency': _override ?? FieldValue.delete()});
+      }
+    } catch (_) {/* le choix reste valable sur ce téléphone */}
+  }
+
+  /// Devises proposées (toutes celles pour lesquelles on a un taux), la devise du pays d'abord.
+  List<String> get currencies {
+    final list = _fallback.keys.where((c) => c != 'XAF').toList()..sort();
+    // XOF et XAF s'affichent tous deux « FCFA » : on propose les deux
+    list.add('XAF');
+    return list;
+  }
+
+  static const _names = {
+    'XOF': 'Franc CFA (Afrique de l\'Ouest)', 'XAF': 'Franc CFA (Afrique centrale)', 'EUR': 'Euro', 'USD': 'Dollar américain',
+    'GBP': 'Livre sterling', 'CHF': 'Franc suisse', 'CAD': 'Dollar canadien', 'NGN': 'Naira nigérian', 'GHS': 'Cedi ghanéen',
+    'KES': 'Shilling kényan', 'ZAR': 'Rand sud-africain', 'MAD': 'Dirham marocain', 'DZD': 'Dinar algérien', 'TND': 'Dinar tunisien',
+    'EGP': 'Livre égyptienne', 'GNF': 'Franc guinéen', 'CDF': 'Franc congolais', 'RWF': 'Franc rwandais', 'UGX': 'Shilling ougandais',
+    'TZS': 'Shilling tanzanien', 'ETB': 'Birr éthiopien', 'MGA': 'Ariary malgache', 'MRU': 'Ouguiya mauritanien', 'CVE': 'Escudo cap-verdien',
+    'BIF': 'Franc burundais', 'DJF': 'Franc djiboutien', 'KMF': 'Franc comorien', 'AOA': 'Kwanza angolais', 'MZN': 'Metical mozambicain',
+    'ZMW': 'Kwacha zambien', 'BRL': 'Réal brésilien', 'MXN': 'Peso mexicain', 'AED': 'Dirham des Émirats', 'SAR': 'Riyal saoudien',
+    'INR': 'Roupie indienne', 'CNY': 'Yuan chinois', 'JPY': 'Yen japonais', 'TRY': 'Livre turque', 'RUB': 'Rouble russe',
+  };
+
+  /// Nom lisible d'une devise (le code seul si on n'a pas de nom).
+  static String nameOf(String code) => _names[code] ?? code;
 
   /// Écoute les taux du jour (à appeler une fois au démarrage).
   void listenRates() {

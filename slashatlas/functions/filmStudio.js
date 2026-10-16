@@ -6,14 +6,14 @@ const { getStorage } = require('firebase-admin/storage');
 const studio = require('./studio');
 const { db, bump, clean, spendCredits } = studio;
 
-const FILM_COST = { 2: 10, 3: 15 };
-const WATERMARK_DISCOUNT = 1;  // -1 crédit si mention "afrolook.com" dans la vidéo
-const CUSTOM_AUDIO_DISCOUNT = 2; // -2 crédits si l'utilisateur importe son propre audio
+const FILM_COST = { 2: 100, 3: 150 }; // échelle ×10 (voir studio.js)
+const WATERMARK_DISCOUNT = 10;  // -10 crédits si mention "afrolook.com" dans la vidéo
+const CUSTOM_AUDIO_DISCOUNT = 20; // -20 crédits si l'utilisateur importe son propre audio
 const FILM_LIMITS = { userPerDay: 999, globalPerDay: 500 };
 
 function calcCost(duration, watermark, customAudio) {
   const base = FILM_COST[[2, 3].includes(+duration) ? +duration : 2];
-  return Math.max(1, base
+  return Math.max(10, base
     - (watermark ? WATERMARK_DISCOUNT : 0)
     - (customAudio ? CUSTOM_AUDIO_DISCOUNT : 0));
 }
@@ -488,7 +488,7 @@ async function createFilm(u, params) {
   const synopsis = clamp(params.synopsis || '', 3000); // jusqu'à 3000 chars (~500 mots)
   const genre = ['film', 'serie', 'animation', 'conte'].includes(params.genre) ? params.genre : 'film';
   const lang = ['fr', 'en', 'ewe', 'ha', 'yo', 'wo', 'bm', 'mos', 'fon', 'sw'].includes(params.lang) ? params.lang : 'fr';
-  const watermark = params.watermark !== false; // true par défaut → -1 crédit
+  const watermark = params.watermark !== false; // true par défaut → -10 crédits
   const customAudioPath = clamp(params.customAudioPath || '', 500) || null;
   const cost = calcCost(duration, watermark, !!customAudioPath);
 

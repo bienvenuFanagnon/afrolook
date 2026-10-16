@@ -17,26 +17,28 @@ const FEEXPAY_API = 'https://api-v2.feexpay.me/api/transactions/public';
 // Modèles image en ordre de priorité : si le premier retourne 404/429/503, on passe au suivant
 const IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-3-pro-image', 'gemini-2.5-flash-image'];
 
-// Un crédit = une génération (ou une correction). Prix en FCFA, hors frais de paiement (ajoutés au client).
+// Échelle des crédits (depuis le 16 octobre 2026) : tous les montants en crédits sont ×10 par rapport à l'ancienne échelle, aux MÊMES tarifs en FCFA
+// (pour que les chiffres parlent plus : 60 crédits au lieu de 6, 10 crédits par image au lieu de 1). 10 crédits = une génération (ou une correction).
+// Prix en FCFA, hors frais de paiement (ajoutés au client).
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
-const GEN_COST = 1;
+const GEN_COST = 10;
 // Vidéo pub (montage maison : photos + animations + musique + voix Google). Coût de revient réel ≈ 0,02 $ (calcul + voix + stockage), soit moins de 15 FCFA : la marge est très large.
-const VIDEO_COST = { base: 4, voice: 0, cutout: 0 }; // prix unique : détourage IA, texte écrit par l'IA, voix off et musique sont compris (coût réel ≈ 0,02 à 0,25 $ selon le nombre de photos détourées par l'IA)
+const VIDEO_COST = { base: 40, voice: 0, cutout: 0 }; // prix unique : détourage IA, texte écrit par l'IA, voix off et musique sont compris (coût réel ≈ 0,02 à 0,25 $ selon le nombre de photos détourées par l'IA)
 const VIDEO_LIMITS = { userPerDay: 8, globalPerDay: 150 };
 const PACKS = [
-  { id: 'p6', credits: 6, xof: 500, usd: 0.85 }, // petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
-  { id: 'p20', credits: 20, xof: 1500, usd: 2.5 },
-  { id: 'p55', credits: 55, xof: 3900, usd: 6.5, tag: 'popular' },
-  { id: 'p160', credits: 160, xof: 11000, usd: 18.5 },
+  { id: 'p6', credits: 60, xof: 500, usd: 0.85 }, // petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
+  { id: 'p20', credits: 200, xof: 1500, usd: 2.5 },
+  { id: 'p55', credits: 550, xof: 3900, usd: 6.5, tag: 'popular' },
+  { id: 'p160', credits: 1600, xof: 11000, usd: 18.5 },
 ];
 // Pass « sans pub » : 30 jours sans publicité sur tout le site. Prix affiché en dollars (usd), payé en FCFA par mobile money (xof) ou en dollars par carte ; frais de paiement en plus, comme pour les crédits.
 const PASS = { id: 'nopub', days: 30, xof: 1000, usd: 1.7, pass: true };
 const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PASS : null);
 // Parrainage : le parrain gagne des CRÉDITS (jamais d'argent) quand un filleul achète des crédits par mobile money.
 // Calcul de rentabilité : un crédit nous coûte ≈ 40 FCFA (Gemini) et se vend 69 à 83 FCFA ; les frais de paiement sont payés par le client.
-// Commission ≈ 15 % en crédits (p6 : 1, p20 : 3, p55 : 8, p160 : 24) → marge brute après commission, si tous les crédits sont utilisés :
+// Commission ≈ 15 % en crédits (p6 : 10, p20 : 30, p55 : 80, p160 : 240, échelle ×10) → marge brute après commission, si tous les crédits sont utilisés :
 // p6 ≈ 49 %, p20 ≈ 39 %, p55 ≈ 35 %, p160 ≈ 33 %. Aucune récompense à l'inscription (pas de faux comptes rentables), commission à chaque rechargement du filleul, sans limite de durée (chaque achat reste rentable, voir marges ci-dessus).
-const REF = { credits: { p6: 1, p20: 3, p55: 8, p160: 24 }, months: 0, listMax: 50 }; // months: 0 = pas de limite de durée
+const REF = { credits: { p6: 10, p20: 30, p55: 80, p160: 240 }, months: 0, listMax: 50 }; // months: 0 = pas de limite de durée
 const REF_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newRefCode = () => Array.from(crypto.randomBytes(7), (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join('');
 // Plafonds de sécurité (par jour, UTC)
@@ -65,8 +67,10 @@ const OPERATORS = [
   { code: 'orange_ml', label: 'Orange', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
   { code: 'mobicash_ml', label: 'Mobicash', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
 ];
-// Carte bancaire (FeexPay) : désactivée tant que le KYB carte de la boutique n'est pas validé. Frais à renseigner (en %) après confirmation de FeexPay.
-const CARD = { enabled: false, currency: 'USD', payin: 0, payout: 0 }; // la carte se paie en dollars (pack.usd) ; à confirmer avec FeexPay lors de l'activation du KYC carte
+// Carte bancaire (FeexPay) : KYB carte validé le 16 octobre 2026. La carte se paie en dollars (pack.usd).
+// Frais : commission 3,9 % (internationale) + 3 % de conversion, soit ≈ 6,9 %, entièrement à la charge de l'acheteur : on envoie
+// prix ÷ (1 − taux) pour que, une fois les frais retirés, il reste le prix du pack (voir quoteCard). À ajuster si FeexPay change sa grille.
+const CARD = { enabled: true, currency: 'USD', feePct: 6.9 };
 // Limites de sécurité carte (risque de rétrofacturation) : petits paquets seulement, quelques achats par compte, par IP, par mois et par jour.
 const CARD_LIMITS = { packs: ['p20', 'p55', 'nopub'], userPerDay: 2, ipPerDay: 3, userMonthXof: 20000, globalPerDay: 30 };
 const TERMS_VERSION = COMMANDS.termsVersion;
@@ -88,6 +92,11 @@ function quoteUsd(price, payin, payout) {
   const send = r2(price * (1 + payout / 100));
   const total = r2(send * (1 + payin / 100));
   return { send, total, fee: r2(total - price) };
+}
+/** Montant à faire payer par carte : le client paie tous les frais (prix ÷ (1 − taux)), arrondi au centime supérieur. */
+function quoteCard(price, feePct = CARD.feePct) {
+  const total = Math.ceil((price / (1 - feePct / 100)) * 100) / 100;
+  return { send: total, total, fee: Math.round((total - price) * 100) / 100 };
 }
 const opByCode = Object.fromEntries(OPERATORS.map((o) => [o.code, o]));
 
@@ -530,7 +539,7 @@ async function payCard(u, b, ctx) {
   const country = String(b.country || '').toUpperCase();
   let phone = String(b.phone || '').replace(/[^0-9]/g, '');
   if (!first || !last || !city || !zip || !/^[A-Z]{2}$/.test(country) || phone.length < 8 || phone.length > 15) throw fail(400, 'bad_card_info');
-  const q = quoteUsd(pack.usd, CARD.payin, CARD.payout);
+  const q = quoteCard(pack.usd);
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
   await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits || 0, days: pack.days || 0, price: pack.xof, priceUsd: pack.usd, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
@@ -600,7 +609,7 @@ function publicConfig() {
     video: { base: VIDEO_COST.base, voice: VIDEO_COST.voice, cutout: VIDEO_COST.cutout, userPerDay: VIDEO_LIMITS.userPerDay },
     packs: [...PACKS, PASS],
     currency: 'XOF',
-    card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout, packs: CARD_LIMITS.packs },
+    card: { enabled: CARD.enabled, currency: CARD.currency, feePct: CARD.feePct, packs: CARD_LIMITS.packs },
     referral: { credits: REF.credits, months: REF.months },
     termsVersion: TERMS_VERSION,
     operators: OPERATORS.map(({ code, label, country, dial, payin, payout, redirect, otp }) => ({ code, label, country, dial, payin, payout, redirect: !!redirect, otp: !!otp })),
@@ -666,7 +675,7 @@ async function grant(email, n, note) {
   const q = await db().collection('StudioUsers').where('email', '==', clean(email, 160).toLowerCase()).limit(1).get();
   if (q.empty) throw fail(404, 'no_user');
   n = Math.trunc(Number(n));
-  if (!n || Math.abs(n) > 500) throw fail(400, 'bad_amount');
+  if (!n || Math.abs(n) > 5000) throw fail(400, 'bad_amount');
   const ref = crypto.randomBytes(6).toString('hex');
   await addCredits(q.docs[0].id, n, 'grant', ref, { note: clean(note, 120) });
   return { uid: q.docs[0].id, credits: ((await q.docs[0].ref.get()).data().credits) || 0 };
@@ -806,4 +815,4 @@ async function logGenError(type, code, uid, extra) {
   } catch (_) { /* silencieux */ }
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
+module.exports = { quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
