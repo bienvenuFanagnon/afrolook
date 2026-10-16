@@ -58,3 +58,4 @@ export * from "./site/contact";
 export * from "./posts/linkPreview";
 export * from "./team/teamHub";
 export { renderStudioMontage } from "./studio/renderMontage";
+export { onArtistSoundCreated, artistSoundDelete, artistSoundAdminUrl, artistSoundReport } from "./studio/artistSoundGuard";

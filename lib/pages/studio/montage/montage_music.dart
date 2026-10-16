@@ -6,11 +6,13 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
 import '../artist_marketplace.dart';
+import '../artist_sound_common.dart';
 
 const _c = AppColors.dark;
 
@@ -60,6 +62,7 @@ class MontageMusic {
         subtitle = 'Musique Afrolook · gratuite',
         url = null,
         artistId = null,
+        paid = false,
         coverUrl = null;
 
   MontageMusic.artist(ArtistSound s)
@@ -67,8 +70,9 @@ class MontageMusic {
         id = s.id,
         title = s.title,
         subtitle = '@${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}',
-        url = s.audioUrl,
+        url = s.previewUrl, // extrait de 30 s : l'original n'est jamais exposé
         artistId = s.userId,
+        paid = !s.isFree,
         coverUrl = s.coverImageUrl;
 
   final String type;
@@ -79,27 +83,10 @@ class MontageMusic {
   final String? artistId;
   final String? coverUrl;
 
+  /// Son d'artiste payant (la personne paie, l'artiste gagne).
+  final bool paid;
+
   bool get isArtist => type == 'artist';
-}
-
-/// Prix d'un son d'artiste (AppConfig/studio, lu une fois) : ce que paie la personne et ce que touche l'artiste.
-class ArtistSoundPricing {
-  ArtistSoundPricing._();
-  static int price = 5;
-  static int share = 3;
-  static bool _loaded = false;
-
-  static Future<void> load() async {
-    if (_loaded) return;
-    try {
-      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('studio').get()).data() ?? {};
-      final p = (d['artistSoundPrice'] as num?)?.round();
-      final s = (d['artistSoundShare'] as num?)?.round();
-      if (p != null && p > 0) price = p;
-      if (s != null && s >= 0) share = s.clamp(0, price);
-      _loaded = true;
-    } catch (_) {}
-  }
 }
 
 /// Lecture d'aperçu (une seule à la fois dans l'app).
@@ -111,6 +98,7 @@ class MontageMusicPlayer {
 
   static Future<String?> urlOf(MontageMusic m) async {
     if (m.url != null) return m.url;
+    if (m.isArtist) return null;
     final key = 'free:${m.id}';
     if (_urls[key] != null) return _urls[key];
     try {
@@ -256,7 +244,7 @@ class _MusicSheetState extends State<_MusicSheet> {
         child: Text(e, style: const TextStyle(fontSize: 22)),
       );
 
-  Widget _row(MontageMusic m, {required Widget leading, Widget? trailing}) {
+  Widget _row(MontageMusic m, {required Widget leading, Widget? trailing, VoidCallback? onReport}) {
     final key = '${m.type}:${m.id}';
     final selected = widget.current?.type == m.type && widget.current?.id == m.id;
     return Container(
@@ -273,6 +261,8 @@ class _MusicSheetState extends State<_MusicSheet> {
         subtitle: Text(m.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           if (trailing != null) trailing,
+          if (onReport != null)
+            IconButton(tooltip: 'Signaler ce son', visualDensity: VisualDensity.compact, onPressed: onReport, icon: Icon(Icons.flag_outlined, size: 19, color: _c.textSecondary)),
           IconButton(
             onPressed: () => _toggle(m),
             icon: _loading == key
@@ -312,6 +302,7 @@ class _MusicSheetState extends State<_MusicSheet> {
               final s = ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id);
               return _row(
                 MontageMusic.artist(s),
+                onReport: s.userId == FirebaseAuth.instance.currentUser?.uid ? null : () => reportArtistSound(context, s.id, s.title),
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: s.coverImageUrl != null
@@ -320,8 +311,8 @@ class _MusicSheetState extends State<_MusicSheet> {
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(color: const Color(0x33FFD400), borderRadius: BorderRadius.circular(99)),
-                  child: Text('🪙 ${ArtistSoundPricing.price}', style: const TextStyle(color: Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
+                  decoration: BoxDecoration(color: s.isFree ? const Color(0x332ECC71) : const Color(0x33FFD400), borderRadius: BorderRadius.circular(99)),
+                  child: Text(s.isFree ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
                 ),
               );
             }),
@@ -354,7 +345,7 @@ class _ArtistCta extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Tu es artiste ? Propose ton son', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
               const SizedBox(height: 2),
-              Text('Tu gagnes ${ArtistSoundPricing.share} pièces à chaque utilisation dans le Studio.',
+              Text('Gratuit ou payant, c’est toi qui choisis. Payant : tu gagnes ${ArtistSoundPricing.share} pièces par utilisation.',
                   style: const TextStyle(color: Colors.white, fontSize: 12)),
             ]),
           ),

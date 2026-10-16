@@ -9,8 +9,7 @@ import 'admob_widgets.dart';
 
 /// Emplacement publicitaire : pub Afrolook ou pub AdMob, jamais les deux.
 ///
-/// - Pub Afrolook disponible ET AdMob possible : alternance (1 emplacement sur [AdConfig.admobEvery] à AdMob),
-///   sauf si [AdSlot.admobFirst] : AdMob est alors prioritaire (modules Quiz / Étude).
+/// - AdMob possible : AdMob, toujours en priorité (fil, détails, commentaires, listes, chroniques…).
 /// - Une seule des deux disponible : celle-là.
 /// - AdMob ne charge pas : repli sur la pub Afrolook ; sinon rien (aucun trou dans la page).
 /// - Aucun utilisateur Gold (admin excepté) ne voit de pub (voir [AdGate.userSeesAds]).
@@ -86,9 +85,10 @@ class _AdSlotState extends State<AdSlot> {
     if (!AdGate.userSeesAds(user)) return _Mode.none;
     final ownAvailable = auth.advertisements.isNotEmpty;
     final admobOk = !_admobFailed && _kindEnabled() && AdGate.canShowType(user, _type);
-    if (!admobOk) return ownAvailable ? _Mode.own : _Mode.none;
-    if (!ownAvailable || widget.admobFirst) return _Mode.admob;
-    return AdGate.nextSlotIsAdmob() ? _Mode.admob : _Mode.own;
+    // AdMob d'abord, partout : la pub Afrolook ne passe que si AdMob n'est pas disponible
+    // (désactivé, pas encore chargé, comptes neufs, pas de bloc d'annonce) ou ne charge pas.
+    if (admobOk) return _Mode.admob;
+    return ownAvailable ? _Mode.own : _Mode.none;
   }
 
   void _onAdmobFailed() {

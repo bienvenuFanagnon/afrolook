@@ -28,6 +28,7 @@ class MontageCanvas extends StatelessWidget {
     required this.media,
     this.secondMedia,
     this.pseudo = '',
+    this.avatarUrl,
     this.followers = 0,
     this.keys,
   });
@@ -44,6 +45,9 @@ class MontageCanvas extends StatelessWidget {
   /// 2e photo : moitié droite (Fiancé·e) ou rond (Nouveau parent).
   final Widget? secondMedia;
   final String pseudo;
+
+  /// Photo de profil du créateur (affichée dans un rond doré avant son @pseudo).
+  final String? avatarUrl;
 
   /// Vrai nombre d'abonnés de la personne (affiché si elle n'a pas écrit le sien).
   final int followers;
@@ -251,7 +255,7 @@ class MontageCanvas extends StatelessWidget {
           bottom: 6 * cq,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: (_hasStats(s, followers) ? 42 : 86) * cq),
-            child: _PseudoCapsule(pseudo: pseudo, cq: cq),
+            child: _PseudoCapsule(pseudo: pseudo, cq: cq, avatarUrl: avatarUrl),
           ),
         ),
       if (_hasStats(s, followers)) Positioned(right: 5 * cq, bottom: 6 * cq, child: _StatsCapsule(state: s, followers: followers, cq: cq)),
@@ -311,9 +315,10 @@ class _StatsCapsule extends StatelessWidget {
 }
 
 class _PseudoCapsule extends StatelessWidget {
-  const _PseudoCapsule({required this.pseudo, required this.cq});
+  const _PseudoCapsule({required this.pseudo, required this.cq, this.avatarUrl});
   final String pseudo;
   final double cq;
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -326,14 +331,42 @@ class _PseudoCapsule extends StatelessWidget {
       if (i > 0) spans.add(TextSpan(text: '.', style: base.copyWith(color: gold)));
       spans.add(TextSpan(text: parts[i]));
     }
+    final hasAvatar = avatarUrl != null && avatarUrl!.isNotEmpty;
+    final d = 7.2 * cq;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 3.2 * cq, vertical: 1.3 * cq),
+      padding: EdgeInsets.fromLTRB(hasAvatar ? .7 * cq : 3.2 * cq, hasAvatar ? .7 * cq : 1.3 * cq, 3.4 * cq, hasAvatar ? .7 * cq : 1.3 * cq),
       decoration: BoxDecoration(
         color: const Color(0x9E000000),
         borderRadius: BorderRadius.circular(99),
         border: Border.all(color: const Color(0x80FFD400)),
       ),
-      child: Text.rich(TextSpan(style: base, children: spans), maxLines: 1, overflow: TextOverflow.ellipsis),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (hasAvatar) ...[
+          // Rond doré autour de la photo, comme un statut : le créateur se reconnaît tout de suite
+          Container(
+            width: d,
+            height: d,
+            padding: EdgeInsets.all(.35 * cq),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: [Color(0xFFFFE58A), Color(0xFFFFB400), Color(0xFFFF7A00)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            ),
+            child: ClipOval(
+              child: DecoratedBox(
+                decoration: const BoxDecoration(color: Color(0xFF222222)),
+                child: Image.network(
+                  avatarUrl!,
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) => Icon(Icons.person_rounded, size: 4.4 * cq, color: Colors.white70),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 1.8 * cq),
+        ],
+        Flexible(child: Text.rich(TextSpan(style: base, children: spans), maxLines: 1, overflow: TextOverflow.ellipsis)),
+      ]),
     );
   }
 }

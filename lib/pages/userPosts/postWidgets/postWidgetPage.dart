@@ -80,6 +80,7 @@ import '../../../services/streak_service.dart';
 import '../../../providers/streakProvider.dart';
 import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
+import '../../../ads/ad_slot.dart';
 
 
 
@@ -1072,7 +1073,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       if (!widget.isAdContext && !widget.suppressInlineAd &&
                           _shouldShowAd && widget.post.isAdvertisement != true) ...[
                         const SizedBox(height: 12),
-                        const AfrolookInlineAd(),
+                        AdSlot(key: ValueKey('post_inline_ad_${widget.post.id}'), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd()),
                         const SizedBox(height: 8),
                       ],
                       if (_showRewardedAd)

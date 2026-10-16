@@ -8,7 +8,8 @@ import { num, recordAppCommission } from "../payments/coinShares";
  * Sons des artistes utilisés dans le Studio (montages « prêts à poster »).
  * La personne qui utilise un son paie [price] pièces ; l'artiste reçoit [share] pièces gagnées (convertibles),
  * le reste va à Afrolook. Réglages : AppConfig/studio { artistSoundPrice, artistSoundShare } (relus toutes les 60 s).
- * Un artiste qui utilise son propre son ne paie rien.
+ * Le son est gratuit ou payant, au choix de l'artiste (`pricing`) : gratuit = personne ne paie et l'artiste ne gagne rien ;
+ * payant = la personne paie, l'artiste gagne sa part. Un artiste qui utilise son propre son ne paie rien (et ne gagne rien).
  * Le paiement n'a lieu qu'après un montage réussi, une seule fois par montage (ArtistSoundUses/{uid}_{jobId}).
  */
 let cache: { at: number; price: number; share: number } | null = null;
@@ -28,6 +29,7 @@ export type ArtistSoundInfo = {
   title: string;
   storagePath: string | null;
   audioUrl: string;
+  pricing: "free" | "paid";
   price: number;
   share: number;
 };
@@ -50,17 +52,19 @@ export async function prepareArtistSound(uid: string, soundId: string): Promise<
   if (!snap.exists || snap.get("status") !== "validated") throw new HttpsError("failed-precondition", "Ce son n'est plus disponible.");
   const d = snap.data()!;
   const audioUrl = String(d["audioUrl"] ?? "");
-  if (!audioUrl) throw new HttpsError("failed-precondition", "Ce son n'est plus disponible.");
+  const storagePath = (d["audioPath"] as string | undefined) ?? storagePathFromUrl(audioUrl);
+  if (!storagePath && !audioUrl) throw new HttpsError("failed-precondition", "Ce son n'est plus disponible.");
   const artistId = String(d["userId"] ?? "");
   const cfg = await artistSoundConfig();
   const own = artistId === uid;
-  const price = own ? 0 : cfg.price;
+  const pricing: "free" | "paid" = d["pricing"] === "free" ? "free" : "paid";
+  const price = own || pricing === "free" ? 0 : cfg.price;
   if (price > 0) {
     const user = await db.collection("Users").doc(uid).get();
     const balance = num(user.data()?.["giftCoinsBalance"]);
     if (balance < price) throw new HttpsError("resource-exhausted", "Solde de pièces insuffisant.", { coins: price, balance });
   }
-  return { id: soundId, artistId, title: String(d["title"] ?? "Son"), storagePath: storagePathFromUrl(audioUrl), audioUrl, price, share: own ? 0 : cfg.share };
+  return { id: soundId, artistId, title: String(d["title"] ?? "Son"), storagePath, audioUrl, pricing, price, share: price > 0 ? cfg.share : 0 };
 }
 
 /** Télécharge le son (Storage du projet si possible, sinon l'URL publique) dans [dest]. */
@@ -75,6 +79,7 @@ export async function downloadArtistSound(info: ArtistSoundInfo, dest: string, m
       return;
     }
   }
+  if (!info.audioUrl) throw new HttpsError("unavailable", "Son introuvable.");
   const r = await fetch(info.audioUrl);
   if (!r.ok) throw new HttpsError("unavailable", "Son introuvable.");
   const buf = Buffer.from(await r.arrayBuffer());

@@ -2371,10 +2371,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   ),
                 ),
                 SliverToBoxAdapter(child: _buildGiftersSection()),
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: AfrolookInlineAd(compact: true),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: AdSlot(key: const ValueKey('comments_ad_top'), kind: AdSlotKind.comments, own: () => const AfrolookInlineAd(compact: true)),
                   ),
                 ),
                 if (!_isLoading && comments.isEmpty)
