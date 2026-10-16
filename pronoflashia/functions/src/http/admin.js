@@ -8,6 +8,7 @@ const { slugify } = require('../data/normalize');
 const { mergeSite, mergeAds, SLOTS } = require('../render/config');
 const { dayStr, addDays } = require('../jobs/helpers');
 const { SCHEDULE, nextRun } = require('../jobs/schedule');
+const adsterra = require('../data/adsterra');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
@@ -299,12 +300,27 @@ function createAdmin(deps) {
       Object.assign({ id: 'gemini', nom: 'Google Gemini', role: 'IA de secours si Workers AI échoue', configure: !!sec.gemini, suivi: true, secret: 'GEMINI_API_KEY' }, G && { dernierSucces: G.dernierSucces, derniereErreur: G.derniereErreur, derniereErreurLe: G.derniereErreurLe, appelsJour: G.appelsJour, erreursJour: G.erreursJour, historique: hist(G) }),
       { id: 'firebaseAuth', nom: 'Connexion Google (Firebase Authentication)', role: 'Accès à cette administration', configure: true, dernierSucces: now.toISOString() },
       { id: 'stats', nom: 'Mesure d\'audience', role: 'Compteurs sans cookie, visiteurs uniques', configure: !!sec.statsSalt, secret: 'STATS_SALT', dernierSucces: today ? now.toISOString() : null, appelsJour: (today && today.pv) || 0, unite: 'pages vues aujourd\'hui' },
-      { id: 'adsterra', nom: 'Adsterra', role: 'Publicités (réseau principal)', configure: netCodes('adsterra'), actif: !!ads.actif, appelsJour: pubVues('adsterra'), unite: 'pubs affichées aujourd\'hui' },
+      { id: 'adsterra', nom: 'Adsterra', role: 'Publicités (réseau principal) ; statistiques de revenus ' + (sec.adsterraApi ? 'connectées' : 'non connectées (ADSTERRA_API_TOKEN)'), configure: netCodes('adsterra'), actif: !!ads.actif, appelsJour: pubVues('adsterra'), unite: 'pubs affichées aujourd\'hui' },
       { id: 'monetag', nom: 'Monetag', role: 'Publicités (réseau de secours)', configure: netCodes('monetag'), actif: !!ads.actif, appelsJour: pubVues('monetag'), unite: 'pubs affichées aujourd\'hui' },
       { id: 'afrolook', nom: 'Encarts Afrolook', role: 'Promotion de l\'application', configure: true, actif: !!ads.afrolook.actif, appelsJour: (today && today.aflImps) || 0, clicsJour: (today && today.clicsAfrolook) || 0, unite: 'affichages aujourd\'hui' },
     ];
     for (const t of tools) t.etat = etat(t);
     return { outils: tools, jour };
+  };
+
+  /** Revenus Adsterra des 14 derniers jours : par jour et par emplacement (lecture seule via l'API éditeur). */
+  A.revenus = async () => {
+    const api = deps.adsterraFactory ? deps.adsterraFactory() : null;
+    if (!api) return { connecte: false };
+    const fin = dayStr(nowD()), debut = dayStr(addDays(nowD(), -13));
+    let byDate, byPlacement, placements;
+    try {
+      [byDate, byPlacement, placements] = await Promise.all([api.stats({ start: debut, finish: fin, groupBy: 'date' }), api.stats({ start: debut, finish: fin, groupBy: 'placement' }), api.placements()]);
+    } catch (e) { throw new HttpError(502, e.message); }
+    const names = new Map(placements.map((p) => [String(p.id), p.title || p.alias || String(p.id)]));
+    const jours = byDate.map((r) => adsterra.normalizeRow(r, 'date')).sort((a, b) => (a.cle < b.cle ? -1 : 1));
+    const emplacements = byPlacement.map((r) => adsterra.normalizeRow(r, 'placement')).map((r) => Object.assign(r, { nom: names.get(r.cle) || r.cle })).sort((a, b) => b.revenu - a.revenu);
+    return { connecte: true, periode: { debut, fin }, jours, emplacements, totaux: adsterra.totals(jours) };
   };
 
   /** Fonctionnement : chaque tâche automatique, sa cadence, son dernier passage et le prochain. */

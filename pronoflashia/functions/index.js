@@ -14,6 +14,7 @@ const { runJob } = require('./src/jobs/helpers');
 const { syncFixtures } = require('./src/jobs/syncFixtures');
 const { buildPredictions } = require('./src/jobs/buildPredictions');
 const { submitNewUrls } = require('./src/jobs/indexNow');
+const { createClient: createAdsterra } = require('./src/data/adsterra');
 const { syncResults } = require('./src/jobs/syncResults');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
 const { aiHealthCheck } = require('./src/jobs/aiHealth');
@@ -29,6 +30,7 @@ const db = getFirestore();
 
 const API_FOOTBALL_KEY = defineString('API_FOOTBALL_KEY', { default: '' });
 const FOOTBALL_DATA_TOKEN = defineString('FOOTBALL_DATA_TOKEN', { default: '' });
+const ADSTERRA_API_TOKEN = defineString('ADSTERRA_API_TOKEN', { default: '' });
 const CF_API_TOKEN = defineString('CF_API_TOKEN', { default: '' });
 const CF_ACCOUNT_ID = defineString('CF_ACCOUNT_ID', { default: '' });
 const GEMINI_API_KEY = defineString('GEMINI_API_KEY', { default: '' });
@@ -40,7 +42,7 @@ const FOOTBALL_SOURCE = defineString('FOOTBALL_SOURCE', { default: '' });
 
 const REGION = 'europe-west1';
 const val = (p) => { try { return p.value(); } catch { return ''; } };
-const secrets = () => ({ source: val(FOOTBALL_SOURCE), footballData: val(FOOTBALL_DATA_TOKEN), apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
+const secrets = () => ({ adsterra: val(ADSTERRA_API_TOKEN), source: val(FOOTBALL_SOURCE), footballData: val(FOOTBALL_DATA_TOKEN), apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
 const cron = (nom) => SCHEDULE.find((x) => x.nom === nom).cron;
 const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
 
@@ -80,8 +82,9 @@ const admin = createAdmin({
   get bootstrap() { return ADMIN_EMAILS.value().split(',').map((x) => x.trim()).filter(Boolean); },
   tasks: TASKS,
   apiFactory: () => makeApi(secrets()),
+  adsterraFactory: () => { const t = secrets().adsterra; return t ? createAdsterra({ token: t }) : null; },
   // présence des secrets (jamais leur valeur) pour l'écran « Connexions »
-  secretsStatus: () => { const s = secrets(); let salt = ''; try { salt = STATS_SALT.value(); } catch { /* non défini */ } return { source: sourceOf(s), footballData: !!s.footballData, apiFootball: !!s.apiFootball, cfToken: !!s.cfToken, cfAccount: !!s.cfAccount, gemini: !!s.gemini, statsSalt: !!salt }; },
+  secretsStatus: () => { const s = secrets(); let salt = ''; try { salt = STATS_SALT.value(); } catch { /* non défini */ } return { adsterraApi: !!s.adsterra, source: sourceOf(s), footballData: !!s.footballData, apiFootball: !!s.apiFootball, cfToken: !!s.cfToken, cfAccount: !!s.cfAccount, gemini: !!s.gemini, statsSalt: !!salt }; },
   clearCache: D.clearCache,
 });
 
