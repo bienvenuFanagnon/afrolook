@@ -12,6 +12,7 @@ import 'studio_image_editor.dart';
 import 'studio_video_editor.dart';
 import 'studio_audio_editor.dart';
 import 'montage/montage_gallery_page.dart';
+import 'montage/montage_music.dart';
 
 const _c = AppColors.dark;
 
@@ -66,7 +67,9 @@ class StudioEntryPage extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               _TemplatesBanner(onTap: () => _openTemplates(context)),
-              const SizedBox(height: 18),
+              const SizedBox(height: 10),
+              _ArtistStrip(onTap: () => openArtistSpace(context)),
+              const SizedBox(height: 16),
               Text(
                 'Ou crée librement',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _c.textSecondary),
@@ -169,6 +172,38 @@ class StudioEntryPage extends StatelessWidget {
   }
 }
 
+/// Accès visible à l'espace artiste : déposer ses sons et gagner des pièces à chaque utilisation dans le Studio.
+class _ArtistStrip extends StatelessWidget {
+  const _ArtistStrip({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFE91E63)]),
+        ),
+        child: const Row(children: [
+          Text('🎤', style: TextStyle(fontSize: 24)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Tu es artiste ? Propose ton son', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+              SizedBox(height: 2),
+              Text('Gagne des pièces à chaque fois qu’il est utilisé dans le Studio.', style: TextStyle(color: Color(0xE6FFFFFF), fontSize: 11.5)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: Colors.white),
+        ]),
+      ),
+    );
+  }
+}
+
 class _TemplatesBanner extends StatelessWidget {
   const _TemplatesBanner({required this.onTap});
   final VoidCallback onTap;
@@ -208,7 +243,7 @@ class _TemplatesBanner extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('✨ Templates prêts à poster', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
               SizedBox(height: 3),
-              Text('28 modèles déjà remplis : situations, émotions, pays, fêtes. Photo ou vidéo, animés.',
+              Text('53 modèles déjà remplis, avec musique : émotions, Insta, situations, pays, fêtes. Photo ou vidéo.',
                   style: TextStyle(color: Color(0xDDFFFFFF), fontSize: 12, height: 1.3)),
             ]),
           ),

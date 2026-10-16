@@ -1,34 +1,16 @@
 // lib/services/artist_sound_usage_service.dart
 //
-// Débit de pièces artiste : 3 pièces créditées à l'artiste à chaque utilisation
-// de son son dans un post. La transaction est atomique (Firestore batch).
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Les artistes sont payés par le serveur, jamais par le téléphone : quand un son d'artiste est utilisé dans un
+// montage du Studio, la fonction renderStudioMontage débite la personne et crédite l'artiste (Users.giftCoinsBalance)
+// dans une seule transaction, une fois le montage réussi.
+//
+// L'ancien crédit direct depuis l'app écrivait dans une collection inexistante (`users`) et aurait permis à
+// n'importe quel téléphone de créditer un compte : il est retiré. Dans l'onglet Audio des posts, le son choisi
+// n'est pas mis dans le post ; aucune somme n'est donc prélevée ni versée.
 
 class ArtistSoundUsageService {
-  static final _db = FirebaseFirestore.instance;
-
-  // Appeler juste après la publication d'un post qui utilise un son artiste.
-  // soundId    : id du document dans artist_sounds/
-  // artistId   : userId de l'artiste (champ userId dans artist_sounds)
   static Future<void> recordUsage({
     required String soundId,
     required String artistId,
-  }) async {
-    final batch = _db.batch();
-
-    final soundRef = _db.collection('artist_sounds').doc(soundId);
-    batch.update(soundRef, {
-      'usageCount': FieldValue.increment(1),
-      'totalEarningsCoins': FieldValue.increment(3),
-    });
-
-    // Crédite 3 pièces retrait (giftCoinsBalance) à l'artiste
-    final userRef = _db.collection('users').doc(artistId);
-    batch.update(userRef, {
-      'giftCoinsBalance': FieldValue.increment(3),
-    });
-
-    await batch.commit();
-  }
+  }) async {}
 }

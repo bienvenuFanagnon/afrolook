@@ -34,6 +34,7 @@ import '../userPubs/user_profile_boost_page.dart';
 import 'adminprofil.dart';
 import '../account_deletion_page.dart';
 import '../../../l10n/tr.dart';
+import '../../studio/artist_marketplace.dart';
 class UserProfil extends StatefulWidget {
   const UserProfil({super.key});
 
@@ -702,6 +703,29 @@ class _UserProfilState extends State<UserProfil> {
                           ]);
                         },
                       ),
+
+                    // Espace artiste : déposer ses sons pour le Studio et suivre ses gains
+                    GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFE91E63)]),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(context.tr('Espace artiste : mes sons et mes gains'),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
 
                   ],
                 ),

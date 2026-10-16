@@ -10,6 +10,7 @@ import 'montage_canvas.dart';
 import 'montage_catalog.dart';
 import 'montage_editor_page.dart';
 import 'montage_fx.dart';
+import 'montage_music.dart';
 import 'montage_state.dart';
 
 const _c = AppColors.dark;
@@ -24,6 +25,7 @@ class MontageGalleryPage extends StatefulWidget {
 
 class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTickerProviderStateMixin {
   late final AnimationController _anim = AnimationController(vsync: this, duration: kMontageLoop)..repeat();
+  int _followers = 0;
   late final Map<String, MontageState> _states = {for (final t in kMontageTemplates) t.id: MontageState(t)..post = false};
 
   @override
@@ -56,7 +58,9 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
+    final me = context.read<UserAuthProvider>().loginUserData;
+    final pseudo = me.pseudo ?? '';
+    _followers = me.followersCount;
     return DefaultTabController(
       length: MontageCat.values.length,
       child: Scaffold(
@@ -89,7 +93,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
       final cols = c.maxWidth > 700 ? 4 : (c.maxWidth > 480 ? 3 : 2);
       return GridView.builder(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: cols, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: .48),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: cols, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: .45),
         itemCount: list.length,
         itemBuilder: (_, i) {
           final t = list[i];
@@ -106,6 +110,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                     media: Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 400),
                     secondMedia: t.dualSample != null ? Image.asset(t.dualSample!, fit: BoxFit.cover, cacheWidth: 300) : null,
                     pseudo: pseudo,
+                    followers: _followers,
                   ),
                 ),
                 Expanded(
@@ -123,6 +128,13 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: _c.textSecondary, fontSize: 10.5),
                       ),
+                      if (studioTrack(t.music) != null)
+                        Text(
+                          '🎵 ${studioTrack(t.music)!.title}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: _c.accent, fontSize: 10.5, fontWeight: FontWeight.w600),
+                        ),
                     ]),
                   ),
                 ),

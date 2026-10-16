@@ -28,6 +28,7 @@ class MontageCanvas extends StatelessWidget {
     required this.media,
     this.secondMedia,
     this.pseudo = '',
+    this.followers = 0,
     this.keys,
   });
 
@@ -43,6 +44,9 @@ class MontageCanvas extends StatelessWidget {
   /// 2e photo : moitié droite (Fiancé·e) ou rond (Nouveau parent).
   final Widget? secondMedia;
   final String pseudo;
+
+  /// Vrai nombre d'abonnés de la personne (affiché si elle n'a pas écrit le sien).
+  final int followers;
   final MontageKeys? keys;
 
   Widget _rb(GlobalKey? k, Widget child) => k == null ? child : RepaintBoundary(key: k, child: child);
@@ -242,7 +246,15 @@ class MontageCanvas extends StatelessWidget {
       ),
       if (tp.pos == MontagePos.center) Positioned(left: 7 * cq, right: 7 * cq, top: 0, bottom: 0, child: Center(child: block)),
       if (s.shows(MontageLayer.pseudo) && pseudo.isNotEmpty)
-        Positioned(left: 7 * cq, bottom: 6 * cq, child: _PseudoCapsule(pseudo: pseudo, cq: cq)),
+        Positioned(
+          left: 7 * cq,
+          bottom: 6 * cq,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: (_hasStats(s, followers) ? 42 : 86) * cq),
+            child: _PseudoCapsule(pseudo: pseudo, cq: cq),
+          ),
+        ),
+      if (_hasStats(s, followers)) Positioned(right: 5 * cq, bottom: 6 * cq, child: _StatsCapsule(state: s, followers: followers, cq: cq)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,
@@ -250,6 +262,51 @@ class MontageCanvas extends StatelessWidget {
         child: Text('Créé sur Afrolook', style: TextStyle(fontFamily: 'NunitoBold', fontSize: 2.3 * cq, color: const Color.fromRGBO(255, 255, 255, .45))),
       ),
     ]);
+  }
+}
+
+bool _hasStats(MontageState s, int followers) => s.shows(MontageLayer.stats) || (s.shows(MontageLayer.followers) && s.followersLabel(followers) != null);
+
+/// J'aime, commentaires et abonnés (comme sur les cartes) : chiffres modifiables, chaque groupe retirable.
+class _StatsCapsule extends StatelessWidget {
+  const _StatsCapsule({required this.state, required this.followers, required this.cq});
+  final MontageState state;
+  final int followers;
+  final double cq;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = state;
+    final style = TextStyle(fontFamily: 'NunitoBold', fontSize: 3.3 * cq, color: Colors.white);
+    final f = s.shows(MontageLayer.followers) ? s.followersLabel(followers) : null;
+    Widget item(IconData icon, String v, Color color) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 3.9 * cq, color: color),
+          SizedBox(width: .9 * cq),
+          Text(v, style: style),
+        ]);
+    final items = <Widget>[
+      if (s.shows(MontageLayer.stats)) ...[
+        item(Icons.favorite_rounded, s.likesLabel(), const Color(0xFFFF4D6D)),
+        item(Icons.chat_bubble_rounded, s.commentsLabel(), Colors.white),
+      ],
+      if (f != null) item(Icons.people_alt_rounded, f, const Color(0xFFFFD400)),
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Container(
+      constraints: BoxConstraints(maxWidth: 48 * cq),
+      padding: EdgeInsets.symmetric(horizontal: 2.6 * cq, vertical: 1.3 * cq),
+      decoration: BoxDecoration(
+        color: const Color(0x9E000000),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: const Color(0x38FFFFFF)),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          for (var i = 0; i < items.length; i++) ...[if (i > 0) SizedBox(width: 2.4 * cq), items[i]],
+        ]),
+      ),
+    );
   }
 }
 
