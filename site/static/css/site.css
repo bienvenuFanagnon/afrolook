@@ -313,10 +313,12 @@ body{overflow-x:clip}
 .hero h1{font-size:clamp(34px,5vw,62px)}
 .hero h1 em{display:block}
 .pillars{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px}
+.pil:nth-child(3){grid-column:1/-1}
 .pil{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:18px;background:var(--surface);border:1px solid var(--line);text-decoration:none;box-shadow:0 10px 24px -18px rgba(8,30,15,.5);transition:transform .15s}
 .pil:hover{transform:translateY(-2px)}
 .pil i{flex:none;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--green-bright),#B6E04A);color:#06210F;display:flex;align-items:center;justify-content:center}
-.pil:last-child i{background:linear-gradient(135deg,var(--yellow),#FF9F43)}
+.pil:nth-child(2) i{background:linear-gradient(135deg,var(--yellow),#FF9F43)}
+.pil:nth-child(3) i{background:linear-gradient(135deg,#FF6FA5,#B565F0);color:#fff}
 .pil i svg{width:22px;height:22px}
 .pil b{display:block;font-family:var(--display);font-size:17px;line-height:1.1}
 .pil small{display:block;color:var(--muted);font-size:13px;margin-top:3px;line-height:1.3}
