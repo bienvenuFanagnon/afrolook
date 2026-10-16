@@ -153,6 +153,9 @@ async function buildSample(now = new Date()) {
     const t = new Date(start.getTime() + step * 864e5);
     api.state.now = t;
     await runJob(db, 'syncResults', (r) => syncResults({ db, api, now: t, maxStats: 80 }, r), () => t);
+    // chaque matin, les coupons du jour sont enregistrés (puis réglés au passage suivant) : l'historique des coupons se construit comme en vrai
+    const matin = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), 7, 0));
+    await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: prov, now: matin, maxMatches: 200, maxExternal: 4 }, r), () => matin);
   }
   api.state.now = now;
   await runJob(db, 'syncResults', (r) => syncResults({ db, api, now, maxStats: 80 }, r), () => now);

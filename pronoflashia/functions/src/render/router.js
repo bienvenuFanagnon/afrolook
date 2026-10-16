@@ -67,7 +67,7 @@ async function route(db, urlPath, now = new Date()) {
   switch (r.name) {
     case 'home': {
       const matches = await homeMatches(db, rc);
-      return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now) }), cc(300, 600));
+      return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now), coupons: await D.couponHistory(db, now, 30) }), cc(300, 600));
     }
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
     case 'bilan': return bilanPage(db, rc);
@@ -127,7 +127,7 @@ async function bilanPage(db, rc) {
   const familles = Object.values(s30.parFamille).filter((f) => f.n >= 10).sort((a, b) => b.n - a.n);
   const s90 = summarize((await D.bilanDays(db, rc.now, 90)).map((d) => d.delta).filter(Boolean));
   const learning = Object.assign(learn.describe(learn.buildCalibration(s90)), { suivis: s90.n, seuil: learn.MIN_TOTAL });
-  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning }), cc(600, 1800));
+  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons: await D.couponHistory(db, rc.now, 30) }), cc(600, 1800));
 }
 
 /** Sitemap bilingue : chaque adresse française et anglaise, avec ses alternatives hreflang. */

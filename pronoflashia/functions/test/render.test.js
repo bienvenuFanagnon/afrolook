@@ -235,3 +235,30 @@ test('sitemap bilingue avec alternatives', async () => {
   assert.match(sm, /<loc>https:\/\/pronoflashia\.web\.app\/bilan<\/loc><xhtml:link rel="alternate" hreflang="fr" href="https:\/\/pronoflashia\.web\.app\/bilan"\/><xhtml:link rel="alternate" hreflang="en" href="https:\/\/pronoflashia\.web\.app\/en\/track-record"\/>/);
   assert.match(sm, /\/analysis<\/loc>/);
 });
+
+test('coupons archivés : gagnants récents sur l\'accueil avec le taux global, historique complet (perdus compris) sur le bilan', async () => {
+  const h = await get('/');
+  assert.match(h.body, /Nos derniers coupons gagnants/);
+  assert.match(h.body, /coupons? gagnés? sur \d+ réglés?/);
+  assert.match(h.body, /Voir tout l'historique/);
+  assert.ok(!/class="ac ac-perdu"/.test(h.body.split('Nos derniers coupons gagnants')[1].split('Coupons flash')[0]), 'aucun coupon perdu dans le bloc des exploits');
+  const b = await get('/bilan');
+  assert.match(b.body, /id="coupons"/);
+  assert.match(b.body, /Historique des coupons flash/);
+  assert.match(b.body, /ac ac-gagne/);
+  assert.match(b.body, /ac ac-perdu/);
+  assert.match(b.body, /ac ac-ouvert/);
+  assert.match(b.body, /annoncé \d+\s%/);
+  const en = await get('/en/track-record');
+  assert.match(en.body, /Flash slip history/);
+  assert.match((await get('/en/')).body, /Our latest winning slips/);
+});
+
+test('coupons archivés : aucun bloc d\'exploits sans coupon gagné récent', async () => {
+  const d2 = await buildSample(NOW);
+  for (const c of d2.all('coupons_flash')) { c.statut = c.statut === 'gagne' ? 'perdu' : c.statut; await d2.seed('coupons_flash', c.id, Object.assign({}, c, { _id: undefined })); }
+  D.clearCache();
+  const r = await route(d2, '/', NOW);
+  assert.ok(!r.body.includes('Nos derniers coupons gagnants'));
+  assert.match((await route(d2, '/bilan', NOW)).body, /Historique des coupons flash/);
+});

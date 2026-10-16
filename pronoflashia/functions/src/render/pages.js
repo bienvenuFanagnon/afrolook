@@ -8,6 +8,7 @@ const labels = require('../shared/labels');
 const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
+const { summarizeCoupons } = require('../jobs/coupons');
 
 const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
@@ -52,12 +53,12 @@ function flashCoupons(rc, pool) {
   return `<div class="lbl" style="margin-top:6px">${t.flashCoupons}</div><div class="box"><p class="note" style="margin:0 0 8px">${t.flashCouponsP}</p><div class="sg">${sugg}</div><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a></div>`;
 }
 
-function home(rc, { matches, bilan, pool: couponPool }) {
+function home(rc, { matches, bilan, pool: couponPool, coupons }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${exploitsBox(rc, coupons)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
@@ -301,7 +302,48 @@ function learningBox(rc, L) {
     (lines.length ? `<ul class="ck">${lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(t.learnNone)}</p>`) + '</div>';
 }
 
-function bilan(rc, { s30, weeks, recent, leagues, familles, learning }) {
+const LEVEL_KEY = { prudent: 'prudent', equilibre: 'balanced', audacieux: 'bold' };
+const STATUS_ICON = { gagne: '✅', perdu: '❌', ouvert: '•', annule: '↺' };
+
+/** Un coupon archivé : niveau, probabilité annoncée, sélections avec leur résultat. */
+function archivedCoupon(rc, c) {
+  const t = rc.t;
+  const stLabel = { gagne: t.couponWon, perdu: t.couponLost, ouvert: t.couponOpen, annule: t.couponVoid }[c.statut];
+  const lines = c.selections.map((s) => {
+    const m = { domicile: { nomCourt: s.dom }, exterieur: { nomCourt: s.ext } };
+    const icon = s.ok === true ? '✅' : s.ok === false ? '❌' : '•';
+    return `<li><span aria-hidden="true">${icon}</span><a href="${rc.u('match', s)}"><b>${esc(s.titre)}</b><em>${esc(betLabel(rc, m, { cle: s.key, libelle: s.libelle }))}</em></a></li>`;
+  }).join('');
+  return `<div class="ac ac-${c.statut}"><div class="ac-h"><b>${esc(t[LEVEL_KEY[c.nom]] || c.nom)} · ${c.selections.length} ${t.selections}</b><span class="pill ${c.statut === 'gagne' ? 'g' : c.statut === 'perdu' ? 'r' : ''}">${STATUS_ICON[c.statut]} ${esc(stLabel)}</span></div>` +
+    `<small>${esc(t.couponOf(dateCourte(c.jour + 'T12:00:00Z', rc.lang)))} · ${esc(t.couponProb(Math.round(c.prob * 100)))}</small><ul class="al">${lines}</ul></div>`;
+}
+
+/** Accueil : derniers coupons gagnants, uniquement s'il y en a eu récemment, avec le taux global à côté. */
+function exploitsBox(rc, coupons) {
+  if (!coupons || !coupons.length) return '';
+  const t = rc.t;
+  const since = new Date(new Date(rc.now).getTime() - 14 * 864e5).toISOString().slice(0, 10);
+  const wins = coupons.filter((c) => c.statut === 'gagne' && c.jour >= since).slice(0, 3);
+  if (!wins.length) return '';
+  const s = summarizeCoupons(coupons);
+  return `<div class="lbl" style="margin-top:6px">${t.exploitTitle}</div><div class="box"><div class="acs">${wins.map((c) => archivedCoupon(rc, c)).join('')}</div>` +
+    `<p class="note" style="margin:10px 0 8px">${esc(t.exploitP(s.gagnes, s.n, s.taux, 30))}</p><a class="more-btn" href="${rc.u('bilan')}#coupons">${t.exploitBtn} <i aria-hidden="true">→</i></a></div>`;
+}
+
+/** Bilan : résultats par niveau puis tous les coupons récents, gagnés ou perdus. */
+function couponHistoryBox(rc, coupons) {
+  if (!coupons || !coupons.length) return '';
+  const t = rc.t;
+  const s = summarizeCoupons(coupons);
+  const tiers = ['prudent', 'equilibre', 'audacieux'].filter((k) => s.parNiveau[k] && s.parNiveau[k].n).map((k) => {
+    const v = s.parNiveau[k];
+    return `<div class="tr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux}\u00a0%</span></div><small>${esc(t.couponTierRow(v.gagnes, v.n, v.taux, v.annonce))}</small></div>`;
+  }).join('');
+  return `<div class="box" id="coupons"><div class="lbl">${t.couponHistTitle}</div><p class="note" style="margin:8px 0">${t.couponHistP}</p>` +
+    (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
+}
+
+function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons }) {
   const t = rc.t;
   const W = 560, H = 140;
   const pts = weeks.map((w) => w.taux);
@@ -325,7 +367,7 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning }) {
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    learningBox(rc, learning) +
+    couponHistoryBox(rc, coupons) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };

@@ -71,6 +71,10 @@ Une clé laissée vide (Gemini, API-Football) désactive simplement la source co
 - **Bing, Yandex, Seznam, Naver (IndexNow)** : automatique. Chaque nouvelle page de match et d'analyse (français et anglais) est signalée une seule fois à la publication, par la tâche `buildPredictions`. La clé est générée toute seule et publiée à `/{clé}.txt`. Compte-rendu dans l'onglet « IA et tâches » (infos `indexNow`).
 - **Google** n'accepte pas IndexNow : il découvre les pages par le sitemap. À faire une fois dans Search Console : ajouter la propriété « Préfixe d'URL » `https://pronoflashia.web.app`, choisir la vérification par **balise HTML**, coller la balise (ou seulement la valeur de `content`) dans Réglages → « Code de vérification Google Search Console », enregistrer, cliquer sur « Valider », puis ouvrir « Sitemaps » et ajouter `sitemap.xml`. Ensuite, Google revient tout seul ; le `lastmod` du sitemap lui indique les pages mises à jour.
 
+## Coupons flash archivés (preuves de fiabilité)
+
+Chaque jour, `buildPredictions` enregistre une seule fois trois coupons (2, 3 et 5 sélections) dans `coupons_flash/{jour}_{n}`, avant les coups d'envoi : ils ne sont jamais modifiés. `syncResults` les règle (perdu dès une sélection ratée, gagné si toutes réussissent, annulé si une sélection n'est pas évaluable). L'accueil n'affiche « Nos derniers coupons gagnants » que s'il y en a eu dans les 14 derniers jours, avec le taux global à côté ; la page Bilan publie tout l'historique, gagnants et perdus, avec la probabilité annoncée contre le taux réel.
+
 ## Source des données de football
 
 - **Démarrage gratuit : football-data.org** (`FOOTBALL_DATA_TOKEN`). Calendriers, scores et mi-temps de 12 championnats (Premier League, Liga, Serie A, Bundesliga, Ligue 1, Ligue des champions, Eredivisie, Primeira Liga, Championship, Brasileirão, Copa Libertadores, Coupe du monde), 10 appels par minute, gérés automatiquement. Sans statistiques de match ni cotes : pas de pronostics corners, tirs, cartons, et pas de recalage sur les cotes. Aucun championnat africain.

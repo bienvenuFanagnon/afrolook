@@ -11,6 +11,7 @@ const { assertQuota, COUNT_KINDS } = require('./syncFixtures');
 const { dateLongue, heure, fr } = require('../util/format');
 const labels = require('../shared/labels');
 const { recordAiCalls, recordApiQuota } = require('./connexions');
+const { archiveCoupons } = require('./coupons');
 
 const COUNT_LABELS = { corners: 'Corners', shotsOnTarget: 'Tirs cadrés', shots: 'Tirs', cards: 'Cartons', fouls: 'Fautes', offsides: 'Hors-jeux' };
 
@@ -205,7 +206,11 @@ async function buildPredictions(opts, report) {
     return age > (sameDay ? refreshHours : 24);
   }).sort((a, b) => (a.coupDEnvoi < b.coupDEnvoi ? -1 : 1)).slice(0, maxMatches);
   report.infos.aCalculer = todo.length;
-  if (!todo.length) return;
+  // coupons flash du jour : enregistrés une fois, avant les coups d'envoi (jamais modifiés ensuite)
+  const archive = async () => {
+    try { const n = await archiveCoupons(db, now); if (n) report.infos.couponsArchives = n; } catch (e) { report.erreurs.push(`coupons : ${e.message}`); }
+  };
+  if (!todo.length) { await archive(); return; }
 
   const calibration = await loadCalibration(db, now);
   const leagues = new Map();
@@ -233,6 +238,7 @@ async function buildPredictions(opts, report) {
   } finally {
     await recordApiQuota(db, api, now, report);
   }
+  await archive();
 }
 
 module.exports = { buildPredictions, buildComparatif, buildFacts, loadCalibration, bumpAiStatus, textStillValid };
