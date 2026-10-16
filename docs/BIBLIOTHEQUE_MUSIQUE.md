@@ -75,10 +75,15 @@ Déjà en place : carte musique dans le fil (lecture immédiate, bouton « Crée
 
 ## 7. Pays, abonnements, facturation
 
-Même grille que les posts : Gratuit 1 pays, Premium jusqu'à 20 pays, Gold tous les pays (règle déjà utilisée dans l'onglet Audio). Décision à prendre : les pays en plus coûtent-ils des pièces ? Classement du flux : pays de la personne, puis abonnements, puis le reste mélangé. Gold et Premium : à décider (écoute gratuite de tout ou seulement sans pub).
+**Fait (phase 4)** : le champ `availableCountries` d'un titre suit la grille des posts, **appliquée par le serveur** : Gratuit 1 pays, Premium 20, Gold et administrateur tous (« ALL »). Les pays en plus **ne coûtent pas de pièces** (comme les posts). Un gratuit qui demande « tous » reçoit son pays ; des codes invalides sont ignorés ; sans choix valide, le pays du profil. L'artiste choisit les pays au dépôt (carte « Pays où ton titre est proposé ») et peut les changer plus tard depuis « Mes sons » (fonction `artistSoundCountries`). Un titre n'est proposé qu'aux personnes de ces pays (page Musique, carte du fil, choix de musique du Studio) ; ceux visés pour le pays de la personne passent devant. Ne sont pas filtrés : son propre titre, les titres de sa bibliothèque, un titre ouvert par lien. Les anciens titres (sans liste) restent pour tous. Le filtre se fait dans l'application sur les 150 titres les plus récents ; au-delà de ~500 titres, passer à une requête `array-contains-any` avec un index. Gold et Premium : écoute libre inchangée, les titres payants restent payants ; Gold ne voit aucune pub.
+
+Ancienne version du plan : même grille que les posts : Gratuit 1 pays, Premium jusqu'à 20 pays, Gold tous les pays (règle déjà utilisée dans l'onglet Audio). Décision à prendre : les pays en plus coûtent-ils des pièces ? Classement du flux : pays de la personne, puis abonnements, puis le reste mélangé. Gold et Premium : à décider (écoute gratuite de tout ou seulement sans pub).
 
 ## 8. Publicité
 
+**Fait (phase 4)** : pub native tous les 6 titres dans les listes de la page Musique et bannière sous la liste (écran d'au moins 700 px de haut), via `AdSlot` : AdMob d'abord, pub Afrolook en repli, rien si aucune pub, jamais pour Gold. **Pas fait** : pub plein écran entre deux écoutes et pub récompensée pour écouter un titre payant en entier (à décider).
+
+Plan d'origine :
 AdMob d'abord, pub Afrolook en repli (règle appliquée partout). Emplacements : native entre titres (tous les 6), bannière sous le lecteur, interstitiel rare entre deux écoutes (jamais pendant un titre, au plus un par 5 titres et 5 minutes), pub récompensée pour écouter un titre payant en entier une fois. Gold sans pub ; nouveaux comptes épargnés (règles `AdGate`).
 
 ## 9. Sécurité : analyse
@@ -116,7 +121,8 @@ Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite 
   - Application (`lib/services/offline_music_service.dart`) : téléchargement par le lien d'écoute temporaire, chiffrement **AES-256-GCM** (authentifié : un fichier modifié est refusé), rangé dans `<Application Support>/afrolook_m/<nom sans rapport>.bin`, clé dans Keystore/Keychain (iPhone : « cet appareil seulement »), jamais dans la galerie, les fichiers ni les récents ; exclu des sauvegardes Android (`backup_rules.xml`, `data_extraction_rules.xml`). Lecture : déchiffrement en mémoire (source audio personnalisée), renouvellement automatique dans les 7 derniers jours de licence, effacement si le droit sur le titre a disparu, message clair si la licence a expiré hors ligne.
   - Interface : menu « Télécharger (écouter sans internet) » / « Retirer du téléphone » dans la page Musique, bouton sur la page du titre, pastille « téléchargé ».
   - **Pas fait** (à décider) : attestation d'appareil (Play Integrity / App Attest), marque sonore invisible par acheteur, blocage de la capture audio par d'autres applications Android (`allowAudioPlaybackCapture="false"` couperait aussi le son des enregistrements d'écran de toute l'application, donc non activé), détection root/jailbreak.
-- Phases 4 et 5 : à faire.
+- **Phase 4 (pays, abonnements, pubs)** : faite (voir § 7 et § 8). Serveur testé en réel : gratuit 1 pays, Premium 20, Gold tous, titre d'un autre refusé, codes invalides ignorés, écriture directe du champ refusée par les règles. Côté application : analysée, pas essayée sur un téléphone.
+- Phase 5 : à faire.
 
 ## 10. Feuille de route
 

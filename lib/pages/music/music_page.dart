@@ -1,6 +1,6 @@
 // Page Musique d'Afrolook : écouter, aimer et utiliser les musiques gratuites d'Afrolook et les sons des artistes.
 // Onglets : Pour toi · Gratuites · Artistes · Favoris. Lecteur réduit en bas. Thèmes clair et sombre (AppColors).
-// À venir (phases suivantes) : achat et bibliothèque, lecture en arrière-plan, téléchargement protégé.
+// Phases faites : achat et bibliothèque, lecture en arrière-plan, téléchargement protégé, pays des titres, pubs.
 
 import 'dart:async';
 import 'dart:math';
@@ -10,10 +10,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_slot.dart';
 import '../../services/offline_music_service.dart';
+import '../pub/afrolook_inline_ad.dart';
 import '../../theme/app_colors.dart';
 import '../studio/artist_marketplace.dart';
 import '../studio/artist_sound_common.dart';
+import '../studio/sound_countries.dart';
 import '../studio/montage/montage_music.dart';
 import 'music_favorites.dart';
 
@@ -311,12 +314,16 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(80).snapshots(),
+        stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).snapshots(),
         builder: (_, snap) {
           final loading = !snap.hasData && !snap.hasError;
-          final sounds = [
-            for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id),
-          ].where((s) => s.previewUrl != null).map(_Item.artist).toList();
+          // Titres proposés dans le pays de la personne (ou à tous) ; ceux visés pour son pays passent devant
+          final sounds = SoundCountries.forViewer<ArtistSound>(
+            [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)].where((s) => s.previewUrl != null),
+            countries: (s) => s.availableCountries,
+            owner: (s) => s.userId,
+            viewerCountry: SoundCountries.viewerCountry(context),
+          ).map(_Item.artist).toList();
           final free = kStudioTracks.map(_Item.free).toList();
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
@@ -342,7 +349,12 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           );
         },
       ),
-      bottomNavigationBar: _miniPlayer(c),
+      bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
+        // Bannière sous la liste, seulement sur un écran assez haut
+        if (MediaQuery.of(context).size.height >= 700)
+          AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
+        if (_miniPlayer(c) != null) _miniPlayer(c)!,
+      ]),
     );
   }
 
@@ -393,7 +405,15 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       if (loading) Padding(padding: const EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: c.primary))),
       if (!loading && items.isEmpty)
         Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary)))),
-      for (final it in items) _row(c, it),
+      for (var i = 0; i < items.length; i++) ...[
+        _row(c, items[i]),
+        // Pub native tous les 6 titres (AdMob d'abord, pub Afrolook en repli ; aucune place vide, jamais pour Gold)
+        if ((i + 1) % 6 == 0 && i != items.length - 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: AdSlot(key: ValueKey('music_ad_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
+          ),
+      ],
     ]);
   }
 

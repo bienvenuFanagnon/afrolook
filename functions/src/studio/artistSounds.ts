@@ -162,3 +162,35 @@ export async function tempListenUrl(path: string): Promise<string> {
   await copy.setMetadata({ contentType: "audio/mp4", metadata: { firebaseStorageDownloadTokens: token } });
   return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(dest)}?alt=media&token=${token}`;
 }
+
+/**
+ * Pays où un titre est proposé : même grille que les posts. Gratuit = 1 pays, Premium = 20, Gold et admin = tous (« ALL »).
+ * Les pays en plus ne coûtent pas de pièces. Sans choix valide : le pays du profil, sinon tous.
+ */
+export const COUNTRIES_FREE = 1;
+export const COUNTRIES_PREMIUM = 20;
+
+export function countryLimitOf(u: FirebaseFirestore.DocumentData, now = Date.now()): number {
+  if (u["role"] === "ADM") return 999;
+  const ab = (u["abonnement"] ?? {}) as { type?: string; dateFin?: string; estActif?: boolean };
+  const end = ab.dateFin ? Date.parse(ab.dateFin) : NaN;
+  const active = ab.estActif !== false && Number.isFinite(end) && end > now;
+  if (active && ab.type === "gold") return 999;
+  if (active && ab.type === "premium") return COUNTRIES_PREMIUM;
+  return COUNTRIES_FREE;
+}
+
+export function cleanCountries(input: unknown, limit: number, home: string | null): string[] {
+  const raw = Array.isArray(input) ? input : [];
+  const list = [...new Set(raw.map((x) => String(x).trim().toUpperCase()).filter((x) => x === "ALL" || /^[A-Z]{2}$/.test(x)))];
+  if (list.includes("ALL")) return limit >= 999 ? ["ALL"] : home ? [home] : ["ALL"];
+  const out = list.slice(0, Math.max(1, limit));
+  return out.length ? out : home ? [home] : ["ALL"];
+}
+
+export async function normalizedCountries(uid: string, input: unknown): Promise<string[]> {
+  const u = (await db.collection("Users").doc(uid).get()).data() ?? {};
+  const c = (u["countryData"] ?? {}) as { countryCode?: unknown };
+  const home = typeof c.countryCode === "string" && c.countryCode.length === 2 ? c.countryCode.toUpperCase() : null;
+  return cleanCountries(input, countryLimitOf(u), home);
+}

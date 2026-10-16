@@ -38,6 +38,7 @@ import '../../services/offline_music_service.dart';
 import 'artist_sound_common.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
+import 'sound_countries.dart';
 import 'studio_models.dart';
 import '../music/music_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -72,6 +73,7 @@ class ArtistSound {
   final int saleCount;
   final Object? processed; // true | 'error' | null (analyse du serveur)
   final List<Map<String, dynamic>> duplicates;
+  final List<String> availableCountries; // pays où le titre est proposé ('ALL' = tous ; vide = ancien titre, pour tous)
   final Timestamp createdAt;
   final Timestamp? validatedAt;
 
@@ -100,6 +102,7 @@ class ArtistSound {
     this.saleCount = 0,
     this.processed,
     this.duplicates = const [],
+    this.availableCountries = const [],
     required this.createdAt,
     this.validatedAt,
   });
@@ -144,6 +147,7 @@ class ArtistSound {
       saleCount: (map['saleCount'] as num?)?.toInt() ?? 0,
       processed: map['processed'],
       duplicates: [for (final d in (map['duplicates'] as List? ?? const [])) Map<String, dynamic>.from(d as Map)],
+      availableCountries: [for (final x in (map['availableCountries'] as List? ?? const [])) '$x'],
       createdAt: map['createdAt'] ?? Timestamp.now(),
       validatedAt: map['validatedAt'],
     );
@@ -202,6 +206,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
   bool _sell = false;
   int _saleCoins = 100;
   double _progress = 0;
+  List<String> _countries = [];
 
   final _picker = ImagePicker();
 
@@ -211,6 +216,8 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
+    final home = SoundCountries.homeOf(Provider.of<UserAuthProvider>(context, listen: false).loginUserData);
+    _countries = home != null ? [home] : ['ALL'];
   }
 
   @override
@@ -283,6 +290,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
         'pricing': _pricing,
         if (_pricing == 'paid') 'useCoins': _useCoins,
         'saleCoins': _pricing == 'paid' && _sell ? _saleCoins : 0,
+        'availableCountries': _countries,
         'fileSizeMb': sizeMb,
         'status': 'pending_review',
         'usageCount': 0,
@@ -417,6 +425,8 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 const SizedBox(height: 8),
                 _pricingOption(c, 'free', '🎁 Gratuit', 'Tout le monde peut l’écouter en entier et l’utiliser sans payer. Tu ne gagnes pas de pièces, mais ton nom circule et ton son se fait connaître.'),
                 const SizedBox(height: 14),
+                _countryCard(c),
+                const SizedBox(height: 14),
                 CheckboxListTile(
                   value: _rights,
                   onChanged: (v) => setState(() => _rights = v == true),
@@ -437,6 +447,34 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 ),
               ]),
             ),
+    );
+  }
+
+  Widget _countryCard(AppColors c) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () async {
+        final r = await SoundCountries.pick(context, initial: _countries);
+        if (r != null && mounted) setState(() => _countries = r);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+        child: Row(children: [
+          Icon(Icons.public_rounded, color: c.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Pays où ton titre est proposé', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+              const SizedBox(height: 3),
+              Text(SoundCountries.summary(_countries), style: TextStyle(color: c.primary, fontSize: 13, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 3),
+              Text('Gratuit : 1 pays · Premium : 20 · Gold : tous. Aucune pièce en plus.', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+        ]),
+      ),
     );
   }
 
@@ -525,11 +563,16 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
           .collection('artist_sounds')
           .where('status', isEqualTo: 'validated')
           .orderBy('validatedAt', descending: true)
-          .limit(20)
+          .limit(40)
           .snapshots(),
       builder: (_, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
-        final docs = snap.data!.docs;
+        final docs = SoundCountries.forViewer<ArtistSound>(
+          [for (final d in snap.data!.docs) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+          countries: (s) => s.availableCountries,
+          owner: (s) => s.userId,
+          viewerCountry: SoundCountries.viewerCountry(context),
+        );
         void openMine() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage()));
         if (docs.isEmpty) {
           // Aucun son encore validé : on invite les artistes à déposer le leur
@@ -569,7 +612,7 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: docs.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _SoundCard(sound: ArtistSound.fromMap(docs[i].data() as Map<String, dynamic>, docs[i].id), colors: c),
+              itemBuilder: (_, i) => _SoundCard(sound: docs[i], colors: c),
             ),
           ),
         ]);
@@ -1252,6 +1295,21 @@ class _MySoundTile extends StatelessWidget {
             child: Text('Un morceau très proche existe déjà : l’équipe va vérifier que tu en es bien l’auteur.', style: TextStyle(color: Colors.orange, fontSize: 11.5)),
           ),
         const SizedBox(height: 6),
+        if (sound.status != 'refused')
+          Row(children: [
+            Expanded(child: Text(SoundCountries.summary(sound.availableCountries), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textSecondary, fontSize: 11.5))),
+            TextButton.icon(
+              onPressed: () async {
+                final r = await SoundCountries.pick(context, initial: sound.availableCountries);
+                if (r == null || !context.mounted) return;
+                final msg = await SoundCountries.save(sound.id, r);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+              },
+              icon: Icon(Icons.public_rounded, size: 17, color: colors.primary),
+              label: Text('Pays', style: TextStyle(color: colors.primary, fontSize: 12)),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            ),
+          ]),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(

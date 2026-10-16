@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../artist_marketplace.dart';
 import '../artist_sound_common.dart';
+import '../sound_countries.dart';
 
 const _c = AppColors.dark;
 
@@ -287,10 +288,15 @@ class _MusicSheetState extends State<_MusicSheet> {
           .collection('artist_sounds')
           .where('status', isEqualTo: 'validated')
           .orderBy('validatedAt', descending: true)
-          .limit(50)
+          .limit(100)
           .snapshots(),
       builder: (_, snap) {
-        final docs = snap.data?.docs ?? const [];
+        final docs = SoundCountries.forViewer<ArtistSound>(
+          [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+          countries: (s) => s.availableCountries,
+          owner: (s) => s.userId,
+          viewerCountry: SoundCountries.viewerCountry(context),
+        );
         return ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(12, 8, 12, 24), children: [
           _ArtistCta(onTap: () {
             Navigator.pop(context);
@@ -303,9 +309,8 @@ class _MusicSheetState extends State<_MusicSheet> {
               padding: const EdgeInsets.all(20),
               child: Text('Aucun son d’artiste pour l’instant. Les premiers artistes arrivent bientôt !', textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary)),
             ),
-          for (final d in docs)
+          for (final s in docs)
             Builder(builder: (_) {
-              final s = ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id);
               return _row(
                 MontageMusic.artist(s),
                 onReport: s.userId == FirebaseAuth.instance.currentUser?.uid ? null : () => reportArtistSound(context, s.id, s.title),

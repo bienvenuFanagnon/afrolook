@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'artist_marketplace.dart';
 import 'artist_sound_common.dart';
+import 'sound_countries.dart';
 import '../music/music_page.dart';
 
 class FeedSoundCard extends StatefulWidget {
@@ -30,7 +31,7 @@ class FeedSoundCard extends StatefulWidget {
         .collection('artist_sounds')
         .where('status', isEqualTo: 'validated')
         .orderBy('validatedAt', descending: true)
-        .limit(30)
+        .limit(60)
         .get()
         .then((s) => [for (final d in s.docs) ArtistSound.fromMap(d.data(), d.id)].where((x) => x.previewUrl != null).toList())
         .catchError((_) => <ArtistSound>[]);
@@ -55,7 +56,10 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
-    FeedSoundCard._sounds().then((list) {
+    final cc = SoundCountries.viewerCountry(context);
+    FeedSoundCard._sounds().then((all) {
+      // titres proposés dans le pays de la personne (ou à tous), ceux de son pays d'abord
+      final list = SoundCountries.forViewer<ArtistSound>(all, countries: (x) => x.availableCountries, owner: (x) => x.userId, viewerCountry: cc);
       if (!mounted || list.isEmpty) return;
       setState(() => _sound = list[widget.slot % list.length]);
     });

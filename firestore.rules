@@ -323,6 +323,8 @@ service cloud.firestore {
           && request.resource.data.get('useCoins', 5) is int && request.resource.data.get('useCoins', 5) >= 2 && request.resource.data.get('useCoins', 5) <= 20
           && request.resource.data.get('saleCoins', 0) is int
           && (request.resource.data.get('saleCoins', 0) == 0 || (request.resource.data.get('saleCoins', 0) >= 50 && request.resource.data.get('saleCoins', 0) <= 500))
+          && request.resource.data.get('availableCountries', []) is list
+          && request.resource.data.get('availableCountries', []).size() <= 250
           && request.resource.data.audioPath.matches('artist_sound_uploads/' + uid() + '/.*')
           && !('audioUrl' in request.resource.data)
           && !('previewUrl' in request.resource.data)
