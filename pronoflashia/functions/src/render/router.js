@@ -67,7 +67,7 @@ async function route(db, urlPath, now = new Date()) {
   switch (r.name) {
     case 'home': {
       const matches = await homeMatches(db, rc);
-      return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now), coupons: await D.couponHistory(db, now, 30) }), cc(300, 600));
+      return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now), coupons: await D.couponHistory(db, now, 30), news: await D.news(db, now) }), cc(300, 600));
     }
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
     case 'bilan': return bilanPage(db, rc);
@@ -97,7 +97,7 @@ async function route(db, urlPath, now = new Date()) {
       const cache = m.statut === 'termine' ? cc(3600, 86400) : cc(300, 900);
       if (r.name === 'match') {
         const same = await D.matchesByDay(db, m.jour);
-        return page(rc, P.match(rc, { m, same, h2h: m.h2h }), cache);
+        return page(rc, P.match(rc, { m, same, h2h: m.h2h, news: await D.news(db, now) }), cache);
       }
       if (!m.prono || !m.prono.marches) return redirect(rc.u('match', m));
       const [formH, formA, days, pool] = await Promise.all([D.teamRecent(db, m.domicile.teamId), D.teamRecent(db, m.exterieur.teamId), D.bilanDays(db, now, 90), D.pool(db, now)]);

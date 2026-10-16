@@ -100,10 +100,10 @@ test('syncFixtures : matchs, équipes, historique de saison, compte-rendu', asyn
   assert.ok(db.read('leagues', '61').avg.avgHome > 0);
   const job = db.read('jobs', '_dernier_syncFixtures');
   assert.equal(job.ok, true); assert.equal(job.traites, 1);
-  assert.equal(api.calls.filter((c) => c[0] === 'fixtures').length, 2); // matchs à venir + saison
+  assert.equal(api.calls.filter((c) => c[0] === 'fixtures').length, 3); // matchs à venir + saison + saison précédente (historique des notes d'équipes)
   // deuxième passage dans la journée : l'historique n'est pas redemandé
   await runJob(db, 'syncFixtures', (rep) => syncFixtures({ db, api, now: new Date(NOW.getTime() + 3600e3) }, rep));
-  assert.equal(api.calls.filter((c) => c[0] === 'fixtures').length, 3);
+  assert.equal(api.calls.filter((c) => c[0] === 'fixtures').length, 4);
 });
 
 test('syncFixtures : un changement d\'horaire force le recalcul du pronostic', async () => {
@@ -240,8 +240,10 @@ test('syncFixtures : source à requête unique → un seul appel par championnat
   const base = mockApi({ upcoming: UPCOMING });
   const api = Object.assign({}, base, { singleCall: true, async fixtures(p) { base.calls.push(['fixtures', p]); return seasonFixtures().concat(UPCOMING); } });
   const rep = await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: NOW }, r), () => NOW);
-  assert.equal(base.calls.filter((c) => c[0] === 'fixtures').length, 1);
+  // un appel pour le calendrier ET l'historique de la saison, plus un appel pour la saison précédente (une seule fois, gardée ensuite)
+  assert.equal(base.calls.filter((c) => c[0] === 'fixtures').length, 2);
   assert.deepEqual(base.calls[0][1], { league: 61, season: 2026 });
+  assert.deepEqual(base.calls[1][1], { league: 61, season: 2025 });
   assert.equal(rep.traites, 1, rep.erreurs.join());
   assert.equal(db.read('matches', '61_1001').slug, 'paris-sg-marseille-2026-10-18');
   assert.ok(db.read('team_form', '85').recent.length >= 8);
@@ -375,7 +377,8 @@ test('planning : prochain passage des tâches', () => {
   assert.equal(nextRun('*/30 12-23,0-2 * * *', new Date('2026-10-16T02:31:00Z')).toISOString(), '2026-10-16T12:00:00.000Z');
   assert.equal(nextRun('*/30 * * * *', from).toISOString(), '2026-10-16T05:30:00.000Z');
   assert.equal(nextRun('0 3 * * 1', from).toISOString(), '2026-10-19T03:00:00.000Z');
-  assert.equal(SCHEDULE.length, 5);
+  assert.equal(nextRun('40 */2 * * *', from).toISOString(), '2026-10-16T06:40:00.000Z');
+  assert.equal(SCHEDULE.length, 7);
 });
 
 test('connexions : appels, neurons, quota API-Football, historique', async () => {
@@ -405,4 +408,40 @@ test('buildPredictions : consommation de l\'IA enregistrée (neurons du jour)', 
   assert.equal(db.read('connexions', 'workersAi').neuronsJour, 160, 'deux analyses (fr + en)');
   assert.equal(db.read('ai_status', 'current').neuronsAujourdhui, 160);
   assert.ok(db.read('connexions', 'apiFootball'), 'quota API-Football relevé en fin de tâche');
+});
+
+test('notes d\'équipes : calculées par syncFixtures (saison précédente comprise), utilisées par buildPredictions, coupées si le jugement les contredit', async () => {
+  const { db, api } = await setup();
+  const R = db.read('league_ratings', '61');
+  assert.ok(R && Object.keys(R.A).length === 4, 'notes des 4 équipes');
+  assert.ok(R.c > 0 && R.H > 0);
+  assert.ok(db.read('league_history', '61').saison === 2025);
+  assert.equal(typeof db.read('leagues', '61').ratings.actif, 'boolean');
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: NOW }, r));
+  const m = db.read('matches', '61_1001');
+  assert.equal(m.prono.moteur, 'notes');
+  assert.ok(m.prono.notes.dom && typeof m.prono.notes.dom.attaque === 'number');
+  assert.ok(m.prono.lamHome > 0.2 && m.prono.lamHome < 4.5);
+  // le jugement sur matchs passés contredit les notes : retour à l'ancien calcul, sans rien casser
+  await db.seed('leagues', '61', Object.assign(db.read('leagues', '61'), { ratings: { n: 300, gain: -0.05, rps: 0.01, actif: false } }));
+  await db.seed('matches', '61_1001', Object.assign(db.read('matches', '61_1001'), { prono: Object.assign(db.read('matches', '61_1001').prono, { aRecalculer: true }) }));
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: NOW }, r));
+  assert.equal(db.read('matches', '61_1001').prono.moteur, 'base');
+  assert.equal(db.read('matches', '61_1001').prono.notes, null);
+});
+
+test('notes d\'équipes : saison précédente inaccessible (offre gratuite) → notes sur la saison en cours, nouvel essai seulement après une semaine', async () => {
+  const db = new FakeDb();
+  await db.seed('leagues', '61', LEAGUE);
+  const base = mockApi({ upcoming: UPCOMING });
+  let denied = 0;
+  const api = Object.assign({}, base, { async fixtures(p) { base.calls.push(['fixtures', p]); if (p.season === 2025) { denied++; throw new Error('403 saison non incluse'); } return p.from ? UPCOMING : seasonFixtures(); } });
+  const rep = await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: NOW }, r), () => NOW);
+  assert.equal(rep.erreurs.length, 0, rep.erreurs.join());
+  assert.ok(db.read('league_ratings', '61'), 'notes quand même');
+  assert.match(db.read('league_history', '61').erreur, /403/);
+  await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: new Date(NOW.getTime() + 24 * 3600e3), forceSeason: true }, r));
+  assert.equal(denied, 1, 'pas de nouvel essai avant une semaine');
+  await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: new Date(NOW.getTime() + 8 * 864e5), forceSeason: true }, r));
+  assert.equal(denied, 2);
 });

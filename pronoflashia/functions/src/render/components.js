@@ -86,7 +86,7 @@ function matchCard(rc, m) {
   return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.prediction}</span><b>${esc(pickLabel(rc, m))}</b></div><div class="cf num${low}">${pct(rc, p.principal.confiance)}<small>${t.confidence}</small></div></div>` +
     `<div class="bars" role="img" aria-label="${esc(t.probsAria)}"><i style="flex:${pr['1']};background:var(--flash)"></i><i style="flex:${pr.N};background:#6b7899"></i><i style="flex:${pr['2']};background:var(--cy)"></i></div>` +
     `<div class="bl num"><span>1 · ${pct(rc, pr['1'])}</span><span>${t.draw} · ${pct(rc, pr.N)}</span><span>2 · ${pct(rc, pr['2'])}</span></div>` +
-    `<div class="sc">${sec}</div><span class="more">${t.moreDetails} <i aria-hidden="true">›</i></span></a>`;
+    `<div class="sc">${p.fragile ? `<span class="pill y">⚠ ${t.fragileLbl}</span>` : ''}${sec}</div><span class="more">${t.moreDetails} <i aria-hidden="true">›</i></span></a>`;
 }
 
 /**
@@ -167,7 +167,7 @@ function header(rc, active, alternates) {
   const switchHref = (alternates && alternates[other]) || (other === 'en' ? '/en' : '/');
   return `<header class="hdr"><div class="wrap"><a class="logo" href="${rc.u('home')}" aria-label="${esc(t.homeAria)}"><span class="bolt" aria-hidden="true">⚡</span><span>Prono<em>Flash</em><small>IA</small></span></a>` +
     `<nav class="nav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}>${t.navAbout}</a></nav>` +
-    `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div>` +
+    `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><button type="button" class="bell" id="pf-bell" aria-pressed="false" aria-label="${esc(t.bellOff)}" title="${esc(t.bellOff)}" hidden>🔔</button><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div>` +
     // téléphone : le menu principal est masqué sous 900 px, cette barre prend le relais, toujours visible sous l'en-tête
     `<nav class="mnav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}><i aria-hidden="true">${t.navIcons.football}</i>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}><i aria-hidden="true">${t.navIcons.coupon}</i>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}><i aria-hidden="true">${t.navIcons.bilan}</i>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}><i aria-hidden="true">${t.navIcons.about}</i>${t.navAbout}</a></nav></header>`;
 }
@@ -204,7 +204,7 @@ function footer(rc) {
 /** Colonne de droite (ordinateur) : bilan, pavé, Afrolook, grand format collant. */
 function sideColumn(rc, { bilan, afl = 'colonne', extra = '' } = {}) {
   const t = rc.t;
-  const bil = bilan && bilan.taux != null ? `<div class="box bil"><div class="big num">${pct(rc, bilan.taux)}</div><div><p>${t.bilanSide(bilan.n)}</p><a href="${rc.u('bilan')}">${t.seeBilan}</a></div></div>` : '';
+  const bil = bilan && bilan.taux != null && bilan.n >= 30 && bilan.taux >= 55 ? `<div class="box bil"><div class="big num">${pct(rc, bilan.taux)}</div><div><p>${t.bilanSide(bilan.n)}</p><a href="${rc.u('bilan')}">${t.seeBilan}</a></div></div>` : '';
   return `<aside class="side"><div class="sticky">${bil}${extra}${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, afl, 1)}${adSlot(rc, 'colonne_tall', { cls: 'ad-tall', variant: 'dk' })}</div></aside>`;
 }
 
@@ -222,7 +222,7 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
   const gsc = rc.site.googleVerification && /^[A-Za-z0-9_-]{10,100}$/.test(rc.site.googleVerification) ? `<meta name="google-site-verification" content="${esc(rc.site.googleVerification)}">` : '';
   const alt = alternates && !noindex ? `<link rel="alternate" hreflang="fr" href="${esc(url(rc, alternates.fr))}"><link rel="alternate" hreflang="en" href="${esc(url(rc, alternates.en))}"><link rel="alternate" hreflang="x-default" href="${esc(url(rc, alternates.fr))}">` : '';
   return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${tt}</title><meta name="description" content="${d}">` +
-    `<link rel="canonical" href="${esc(canonical)}">${alt}${robots}<meta name="theme-color" content="#080D18"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest">` +
+    `<link rel="canonical" href="${esc(canonical)}">${alt}${robots}<meta name="theme-color" content="#080D18"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="PronoFlash">` +
     `<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(rc.site.nom)}"><meta property="og:title" content="${tt}"><meta property="og:description" content="${d}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(url(rc, ogImage || '/og.png'))}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(rc.site.nom)}"><meta property="og:locale" content="${t.ogLocale}"><meta name="twitter:card" content="summary_large_image">` +
     `${verif}${gsc}<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/inter-400-700.woff2" as="font" type="font/woff2" crossorigin>` +
     `<style>${rc.css}</style>${head}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}</head>` +

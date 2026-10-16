@@ -16,6 +16,10 @@ const { buildPredictions } = require('./src/jobs/buildPredictions');
 const { submitNewUrls } = require('./src/jobs/indexNow');
 const { createClient: createAdsterra } = require('./src/data/adsterra');
 const { syncResults } = require('./src/jobs/syncResults');
+const { syncNews } = require('./src/jobs/syncNews');
+const { sendPush } = require('./src/jobs/sendPush');
+const { handlePush } = require('./src/http/push');
+const { ensureVapid } = require('./src/push/keys');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
 const { aiHealthCheck } = require('./src/jobs/aiHealth');
 const { route } = require('./src/render/router');
@@ -46,6 +50,22 @@ const secrets = () => ({ adsterra: val(ADSTERRA_API_TOKEN), source: val(FOOTBALL
 const cron = (nom) => SCHEDULE.find((x) => x.nom === nom).cron;
 const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
 
+/** Envoi de notifications : web-push chargé à la demande, clés VAPID créées automatiquement au premier usage. */
+let webpushReady = null;
+async function pushSender() {
+  if (!webpushReady) {
+    webpushReady = (async () => {
+      const webpush = require('web-push');
+      const k = await ensureVapid(db, webpush);
+      const { site } = await D.loadConfig(db);
+      webpush.setVapidDetails(site.origine || 'https://pronoflashia.web.app', k.publicKey, k.privateKey);
+      return webpush;
+    })().catch((e) => { webpushReady = null; throw e; });
+  }
+  const webpush = await webpushReady;
+  return (sub, p) => webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify({ t: p.titre, b: p.corps, u: p.url, g: p.tag }), { TTL: 6 * 3600, urgency: 'normal' });
+}
+
 /** Les tâches, réutilisées par le planificateur et par le bouton « Relancer » de l'admin. */
 const TASKS = {
   syncFixtures: (o = {}) => runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
@@ -61,6 +81,8 @@ const TASKS = {
     } catch (e) { r.erreurs.push(`IndexNow : ${e.message}`); }
   }),
   syncResults: (o = {}) => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
+  sendPush: () => runJob(db, 'sendPush', async (r) => sendPush({ db, send: await pushSender(), budgetMs: 420000 }, r)),
+  syncNews: () => runJob(db, 'syncNews', (r) => syncNews({ db }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
   aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: makeProviders(secrets()) }, r)),
 };
@@ -71,6 +93,10 @@ exports.syncFixtures = onSchedule(sched(cron('syncFixtures')), async () => { awa
 exports.buildPredictions = onSchedule(sched(cron('buildPredictions')), async () => { await TASKS.buildPredictions(); });
 // Résultats : toutes les 30 minutes pendant les heures de match.
 exports.syncResults = onSchedule(sched(cron('syncResults')), async () => { await TASKS.syncResults(); });
+// Actualités : flux des sites de football, toutes les 2 heures.
+exports.syncNews = onSchedule(sched(cron('syncNews'), { memory: '256MiB', timeoutSeconds: 120 }), async () => { await TASKS.syncNews(); });
+// Notifications : toutes les 15 minutes, décide seule quoi envoyer (voir sendPush).
+exports.sendPush = onSchedule(sched(cron('sendPush'), { memory: '512MiB', timeoutSeconds: 540 }), async () => { await TASKS.sendPush(); });
 // Bilan hebdomadaire figé chaque lundi.
 exports.weeklyReport = onSchedule(sched(cron('weeklyReport'), { memory: '256MiB' }), async () => { await TASKS.weeklyReport(); });
 // Test de l'IA toutes les 30 minutes.
@@ -107,6 +133,11 @@ exports.pfWeb = onRequest({ region: REGION, invoker: 'public', memory: '512MiB',
       if (req.method !== 'POST') return void res.status(405).end();
       await handleEvent({ body: bodyOf(req), ua: req.get('user-agent') || '', ip: clientIp(req), headers: req.headers }, { db, increment: (n) => FieldValue.increment(n), salt: STATS_SALT.value() });
       return void res.status(204).end();
+    }
+    if (path.startsWith('/api/push/')) {
+      const r = await handlePush({ method: req.method, path, body: bodyOf(req), ip: clientIp(req) }, { db, publicKey: async () => (await ensureVapid(db, require('web-push'))).publicKey });
+      res.set('Cache-Control', r.cache || 'no-store');
+      return void res.status(r.status).json(r.json);
     }
     if (path === '/api/config') {
       const cfg = await D.loadConfig(db);

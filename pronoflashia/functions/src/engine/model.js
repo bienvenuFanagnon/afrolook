@@ -30,12 +30,15 @@ function round100(values) {
  *   referee?: { cards:{avg,games} , fouls:{avg,games} },
  *   odds?: { home, draw, away, over25? },     // cotes décimales (sert seulement à recaler les chiffres)
  *   calibration?: objet de learn.buildCalibration (bilan réel), baseRates?
+ *   ratings?: { lamHome, lamAway }   // buts attendus par les notes d'équipes (engine/ratings.js) ; remplacent le calcul de base quand ils existent
  * }
  */
 function predictMatch(input) {
   const { home, away } = input;
   const league = input.league || {};
-  const model = expectedGoals(input.stats.home, input.stats.away, league);
+  // Notes d'équipes (moteur principal, validé sur des matchs passés) ; à défaut, ancien calcul sur les buts récents.
+  const model = input.ratings || expectedGoals(input.stats.home, input.stats.away, league);
+  const moteur = input.ratings ? 'notes' : 'base';
   let lamHome = model.lamHome;
   let lamAway = model.lamAway;
   let source = 'stats';
@@ -108,6 +111,7 @@ function predictMatch(input) {
     lamBrutHome: Math.round(lamBrutHome * 1000) / 1000,
     lamBrutAway: Math.round(lamBrutAway * 1000) / 1000,
     calibre: !!cal,
+    moteur,
     probas: { '1': p1, N: pN, '2': p2 },
     plus25: cal && byKey('buts:over:2.5') ? byKey('buts:over:2.5').pct : Math.round(sumWhere(matrix, (i, j) => i + j > 2.5) * 100),
     bttsOui: cal && byKey('buts:btts:oui') ? byKey('buts:btts:oui').pct : Math.round(sumWhere(matrix, (i, j) => i > 0 && j > 0) * 100),

@@ -33,11 +33,11 @@ function makeApi(mockNow) {
   // historique : 14 matchs terminés par championnat espacés de 3 jours avant le début de la fenêtre
   for (const lg of LEAGUES) {
     const ids = lg.teams.map((t) => t[0]);
-    for (let r = 0; r < 12; r++) {
+    for (let r = 0; r < 22; r++) {
       for (let i = 0; i < ids.length; i += 2) {
         const h = ids[(i + r) % ids.length], a = ids[(i + 1 + r * 2) % ids.length];
         if (h === a) continue;
-        const d = new Date(state.now.getTime() - (40 - r * 3) * 864e5 + i * 3600e3);
+        const d = new Date(state.now.getTime() - (70 - r * 3) * 864e5 + i * 3600e3);
         state.fixtures.set(nextId, mk(lg, nextId, h, a, d)); nextId++;
       }
     }
@@ -161,8 +161,31 @@ async function buildSample(now = new Date()) {
   await runJob(db, 'syncResults', (r) => syncResults({ db, api, now, maxStats: 80 }, r), () => now);
   await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now, days: 7, forceSeason: true }, r), () => now);
   await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: prov, now, maxMatches: 200, maxExternal: 6 }, r), () => now);
+  await seedNews(db, now);
   await db.seed('config', 'site', { email: 'contact@pronoflashia.com', editeur: 'À renseigner', statutJuridique: 'À renseigner', adresse: 'À renseigner' });
   return db;
+}
+
+/** Actualités fictives : titres d'exemple rattachés aux équipes des prochains matchs (aperçu seulement). */
+async function seedNews(db, now) {
+  const up = db.all('matches').filter((m) => m.statut === 'prevu').sort((a, b) => (a.coupDEnvoi < b.coupDEnvoi ? -1 : 1)).slice(0, 4);
+  const T = (m, i) => (i ? m.exterieur : m.domicile);
+  const src = [['Africa Top Sports', 'fr'], ['Afrik-Foot', 'fr'], ['Foot Mercato', 'fr'], ['Africanews', 'en']];
+  const titres = [
+    (m) => `${T(m, 0).nomCourt} : le groupe retenu pour recevoir ${T(m, 1).nomCourt}`,
+    (m) => `${T(m, 1).nomCourt} : le point sur l'infirmerie avant le déplacement`,
+    (m) => `Avant ${T(m, 0).nomCourt} - ${T(m, 1).nomCourt} : chaîne et heure du match`,
+    (m) => `${T(m, 1).nomCourt} reaches the next round after a tense night`,
+  ];
+  let n = 0;
+  for (const m of up) {
+    for (let k = 0; k < 2; k++) {
+      const [source, lang] = src[(n + k) % 4];
+      const id = `n${n}`;
+      await db.seed('news', id, { id, titre: lang === 'en' ? titres[3](m) : titres[(n + k) % 3](m), lien: `https://exemple.invalid/${id}`, source, sourceId: 'x', lang, image: n % 3 === 2 ? null : (n % 2 ? '/img/afl4.jpg' : '/img/afl1.jpg'), video: n % 4 === 1, date: new Date(now.getTime() - (n * 45 + 20) * 60e3).toISOString(), teamIds: [String(T(m, k).teamId)] });
+      n++;
+    }
+  }
 }
 
 /** Statistiques de visite fictives (aperçu de l'administration) : 14 jours, 4 semaines, état de l'IA. */

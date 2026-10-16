@@ -9,6 +9,7 @@ const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 const { summarizeCoupons } = require('../jobs/coupons');
+const { isFragile } = require('../engine/fragility');
 
 const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
@@ -22,7 +23,7 @@ const titleOf = (m) => `${m.domicile.nomCourt} – ${m.exterieur.nomCourt}`;
 
 /** Les 3 pronostics les plus confiants parmi les matchs à venir (hors confiance basse). */
 function topFlash(matches) {
-  return matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && !m.prono.principal.basseConfiance)
+  return matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && !m.prono.principal.basseConfiance && !isFragile(m))
     .sort((a, b) => b.prono.principal.confiance - a.prono.principal.confiance).slice(0, 3);
 }
 
@@ -33,11 +34,23 @@ function flashBlock(rc, matches) {
 }
 
 /** Liste de cartes groupées par jour quand elle couvre plusieurs jours. */
-function groupedCards(rc, matches) {
+function groupedCards(rc, matches, insert) {
   const multi = new Set(matches.map((m) => m.jour)).size > 1;
   // l'intitulé du jour voyage avec sa première carte : les pubs s'insèrent entre les cartes, jamais entre un titre et son match
   const cards = matches.map((m, i) => (multi && (i === 0 || matches[i - 1].jour !== m.jour) ? `<h2 class="dayh">${esc(dateLongue(m.jour + 'T12:00:00Z', rc.lang))}</h2>` : '') + matchCard(rc, m));
+  if (insert) cards.splice(Math.min(4, cards.length), 0, insert);
   return listWithAds(rc, cards);
+}
+
+/** Un bilan n'est mis en avant que s'il est bon : assez de pronostics et un taux qui rassure. La page Bilan, elle, reste toujours complète. */
+const BILAN_MIN_N = 30, BILAN_MIN_RATE = 55;
+const bilanGood = (b) => !!(b && b.taux != null && b.n >= BILAN_MIN_N && b.taux >= BILAN_MIN_RATE);
+
+/** En-tête de l'accueil : le bilan en grand, pour donner confiance dès l'arrivée. */
+function bilanHero(rc, b) {
+  if (!bilanGood(b)) return '';
+  const t = rc.t;
+  return `<a class="bhero" href="${rc.u('bilan')}"><span class="big num">${pct(rc, b.taux)}</span><span class="bht"><b>${t.bilanHeroT}</b><small>${esc(t.bilanBox(b.taux, b.n))}</small></span><i aria-hidden="true">→</i></a>`;
 }
 
 const bilanBox = (rc, b) => (b && b.taux != null ? `<div class="box bil"><div class="big num">${pct(rc, b.taux)}</div><div><p>${rc.t.bilanBox(b.taux, b.n)}</p><a href="${rc.u('bilan')}">${rc.t.seeBilan}</a></div></div>` : '');
@@ -45,6 +58,41 @@ const emptyDay = (rc) => `<div class="box"><p><b>${rc.t.emptyDayB}</b></p><p cla
 
 /** Accueil : pronos du jour (ou des prochains jours s'il n'y a rien aujourd'hui). */
 /** Coupons flash : les coupons prêts à l'emploi, mis en avant sur l'accueil. */
+/** Titres d'actualité de la langue de la page d'abord, puis de l'autre langue ; jamais deux articles du même titre. */
+function pickNews(rc, items, n, teamIds) {
+  let list = items || [];
+  if (teamIds) list = list.filter((x) => (x.teamIds || []).some((id) => teamIds.includes(id)));
+  const seen = new Set();
+  list = list.filter((x) => { const k = x.titre.toLowerCase().slice(0, 60); if (seen.has(k)) return false; seen.add(k); return true; });
+  const same = list.filter((x) => x.lang === rc.lang), other = list.filter((x) => x.lang !== rc.lang);
+  return same.concat(other).slice(0, n);
+}
+
+const newsLink = (rc, x) => {
+  const thumb = x.image ? `<span class="nwi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="72" height="72" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
+  return `<a class="nw${x.image ? ' has' : ''}" href="${esc(x.lien)}" target="_blank" rel="nofollow noopener noreferrer">${thumb}<span class="nwt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></span></a>`;
+};
+
+function timeAgo(rc, iso) {
+  const h = Math.max(0, Math.round((new Date(rc.now).getTime() - new Date(iso).getTime()) / 3600e3));
+  return h < 1 ? rc.t.newsNow : h < 24 ? rc.t.newsHours(h) : rc.t.newsDays(Math.round(h / 24));
+}
+
+/** Accueil : une ligne de cartes à balayer (≈ 90 px de haut) insérée entre les pronostics, liens vers les sites d'origine. */
+function newsStrip(rc, items) {
+  const list = pickNews(rc, items, 8);
+  if (list.length < 3) return '';
+  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nws" role="list">${list.map((x) => `<div role="listitem">${newsLink(rc, x)}</div>`).join('')}</div></div>`;
+}
+
+/** Fiche d'un match : jusqu'à 3 titres qui parlent d'une des deux équipes. */
+function matchNews(rc, items, m) {
+  const ids = [m.domicile.teamId, m.exterieur.teamId].filter((x) => x != null).map(String);
+  const list = pickNews(rc, items, 3, ids);
+  if (!list.length) return '';
+  return `<div class="box"><div class="lbl">${rc.t.newsTeams}</div><div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p></div>`;
+}
+
 function flashCoupons(rc, pool) {
   if (!pool || pool.length < 2) return '';
   const sugg = suggestions(rc, pool, true);
@@ -53,13 +101,14 @@ function flashCoupons(rc, pool) {
   return `<div class="lbl" style="margin-top:6px">${t.flashCoupons}</div><div class="box"><p class="note" style="margin:0 0 8px">${t.flashCouponsP}</p><div class="sg">${sugg}</div><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a></div>`;
 }
 
-function home(rc, { matches, bilan, pool: couponPool, coupons }) {
+function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${exploitsBox(rc, coupons)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
-    `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
+    // la bannière du haut passe juste après le bilan : elle reste dans le premier écran du téléphone ; d'autres emplacements coupent les longs blocs qui suivent
+    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}${flashCoupons(rc, couponPool)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, newsStrip(rc, news)) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
     ld: { '@context': 'https://schema.org', '@type': 'WebSite', name: rc.site.nom, url: C.url(rc, rc.u('home')), inLanguage: rc.lang },
@@ -160,7 +209,7 @@ function h2hTable(rc, h2h) {
 }
 
 /** Fiche match : verdict visible tout de suite, résumé du pronostic. */
-function match(rc, { m, same, h2h }) {
+function match(rc, { m, same, h2h, news }) {
   const t = rc.t;
   const p = m.prono;
   const path = rc.u('match', m);
@@ -191,11 +240,12 @@ function match(rc, { m, same, h2h }) {
   const wa = `https://wa.me/?text=${encodeURIComponent(`${t.waMatch(titre, p ? `${pickLabel(rc, m)} (${pct(rc, p.principal.confiance)})` : t.prediction)} ${C.url(rc, path)}`)}`;
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › ${esc(titre)}</nav>` +
     `<div class="layout"><div class="col"><div class="vd"><h1>${crest(m.domicile, true)}<span>${esc(m.domicile.nom)}</span><span class="vs">${t.vs}</span><span>${esc(m.exterieur.nom)}</span>${crest(m.exterieur, true)}</h1>` +
-    `<div class="meta">${esc(lgName)}${m.journee ? ` · ${esc(t.matchday(m.journee))}` : ''} · ${esc(dateLongue(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</div>${result}${verdict}</div>` +
+    `<div class="meta">${esc(lgName)}${m.journee ? ` · ${esc(t.matchday(m.journee))}` : ''} · ${esc(dateLongue(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</div>${result}${verdict}${p && p.fragile ? `<p class="note frag">⚠ ${t.fragileNote}</p>` : ''}</div>` +
+    `<div class="follow" data-follow="${esc(m.domicile.teamId)}|${esc(m.exterieur.teamId)}" data-names="${esc(m.domicile.nomCourt)}|${esc(m.exterieur.nomCourt)}" hidden><small>${t.followLbl}</small></div>` +
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
     (p && p.visible !== false ? `<div class="box"><div class="lbl">${t.probsTitle}</div><div class="pb">${probRows(rc, p)}</div><p class="note" style="margin-top:12px">${t.likelyScore}${colon(rc)} <b style="color:var(--tx)">${esc(p.scoreProbable)}</b></p></div>` : '') +
-    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${partnerCard(rc, 'fiche')}` +
+    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${matchNews(rc, news, m)}${partnerCard(rc, 'fiche')}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.shareWa}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.matchDisclaimer}</p></div>${side}</div></div>` +
     (p ? jsonScript('pf-match', matchJson(rc, m)) : '');
@@ -226,7 +276,7 @@ function suggestions(rc, pool, withNames) {
   const t = rc.t;
   const poolMap = {};
   const byId = {};
-  for (const x of pool) { byId[x.id] = x; poolMap[x.id] = x.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite })); }
+  for (const x of pool) { if (isFragile(x)) continue; byId[x.id] = x; poolMap[x.id] = x.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite })); }
   return [[2, t.prudent], [3, t.balanced], [5, t.bold]].map(([n, nom]) => {
     const sel = coupon.suggest(poolMap, n);
     if (sel.length < 2) return '';
@@ -265,6 +315,9 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
   const calHtml = cal.length ? `<div class="tw"><table class="t"><thead><tr><th>${t.bet}</th><th>${t.announced}</th><th>${t.real}</th><th>${t.matches}</th></tr></thead><tbody>${cal.map((x) => { const r = rates[x.cle.replace(/[.:]/g, '_')]; return `<tr><td>${esc(betLabel(rc, m, x))}</td><td class="num">${pct(rc, r.annonce)}</td><td class="num">${pct(rc, r.reel)}</td><td class="num">${r.n}</td></tr>`; }).join('')}</tbody></table></div>`
     : `<p class="note" style="margin-top:8px">${t.notEnough} <a href="${rc.u('bilan')}" style="color:var(--cy)">${t.navBilan}</a>.</p>`;
   const sec = (id, title, inner) => `<div class="box dsec" id="d-${id}"><div class="lbl">${title}</div>${inner}</div>`;
+  // ce que l'IA a appris de chaque équipe (notes), seulement si le calcul les a utilisées pour ce match
+  const teamNotes = (name, d) => (d ? `<div><b style="font-family:var(--fd);font-size:18px">${esc(name)}</b><ul class="ck"><li>${esc(t.notesAtk(d.attaque))}</li><li>${esc(t.notesDef(d.defense))}</li>${t.notesEvol(d.evolAttaque, d.evolDefense) ? `<li>${esc(t.notesEvol(d.evolAttaque, d.evolDefense))}</li>` : ''}</ul></div>` : '');
+  const notesHtml = p.notes && (p.notes.dom || p.notes.ext) ? sec('notes', t.notesTitle, `<p class="note" style="margin:8px 0">${t.notesP}</p><div class="two">${teamNotes(m.domicile.nomCourt, p.notes.dom)}${teamNotes(m.exterieur.nomCourt, p.notes.ext)}</div>`) : '';
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › <a href="${rc.u('match', m)}">${esc(titre)}</a> › ${t.fullAnalysis}</nav>` +
     `<div class="layout"><div class="col"><div class="tocm" aria-label="${esc(t.toc)}">${tocm}</div>` +
     `<div class="dh dsec" id="d-resume"><h1>${t.detH1(esc(titre))}</h1><div class="strip"><div><span class="k">${t.prediction}</span><b style="color:var(--flash)">${esc(pickLabel(rc, m))}</b></div><div><span class="k">${t.confidence}</span><b class="num" style="color:var(--ok)">${pct(rc, p.principal.confiance)}</b></div><div><span class="k">${t.likely}</span><b class="num">${esc(p.scoreProbable)}</b></div><div><span class="k">${t.kickoff}</span><b class="num">${esc(dateCourte(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</b></div></div>` +
@@ -273,6 +326,7 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
     sec('paris', t.allBets, `<p class="note" style="margin:8px 0 10px">${t.allBetsP}</p><div class="mk" id="pf-fams" hidden></div>${famHtml}<p class="note" style="margin-top:10px">${t.reliabilityNote}</p>`) +
     adSlot(rc, 'fiche_native', { cls: 'ad-nat' }) +
     (p.comparatif && p.comparatif.length ? sec('stats', t.compare, `<p class="note" style="margin:8px 0 2px">${t.compareP(esc(m.domicile.nomCourt), esc(m.exterieur.nomCourt))}</p>${p.comparatif.map((r) => cmpRow(rc, r)).join('')}`) : '') +
+    notesHtml +
     sec('forme', t.form, `<div class="two"><div><b style="font-family:var(--fd);font-size:18px">${esc(m.domicile.nomCourt)} · ${t.last5}</b>${formList(rc, formH)}</div><div><b style="font-family:var(--fd);font-size:18px">${esc(m.exterieur.nomCourt)} · ${t.last5}</b>${formList(rc, formA)}</div></div>`) +
     aflCard(rc, 'details', 0) +
     (h2h && h2h.length ? sec('h2h', t.h2h, h2hTable(rc, h2h)) : '') +
@@ -367,9 +421,9 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons })
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    couponHistoryBox(rc, coupons) + learningBox(rc, learning) +
+    couponHistoryBox(rc, coupons) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
-    `</div>${sideColumn(rc, {})}</div></div>`;
+    `${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };
 }
 

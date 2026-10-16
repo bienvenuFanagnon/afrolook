@@ -153,7 +153,7 @@ test('CSS en ligne et script versionné ; aucune ressource externe', async () =>
   const r = (await get('/')).body;
   assert.ok(r.includes('<style>') && r.includes('--flash:#FFD60A'));
   assert.match(r, new RegExp(`/js/pf\\.js\\?v=${VERSION}`));
-  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
+  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/<a class="nw(?: has)?" href="[^"]*"/g, '').replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
   assert.ok(r.length < 120000, `HTML léger (${r.length} octets)`);
 });
 
@@ -237,6 +237,12 @@ test('sitemap bilingue avec alternatives', async () => {
 });
 
 test('coupons archivés : gagnants récents sur l\'accueil avec le taux global, historique complet (perdus compris) sur le bilan', async () => {
+  // le jeu d'exemple est aléatoire : on y ajoute un coupon perdu pour vérifier qu'il figure dans l'historique et jamais dans les exploits
+  const won = db.all('coupons_flash').find((c) => c.statut === 'gagne');
+  const lost = Object.assign({}, won, { id: '2026-10-13_3', jour: '2026-10-13', statut: 'perdu', selections: won.selections.map((s, i) => Object.assign({}, s, { ok: i !== 0 })) });
+  delete lost._id;
+  await db.seed('coupons_flash', lost.id, lost);
+  D.clearCache();
   const h = await get('/');
   assert.match(h.body, /Nos derniers coupons gagnants/);
   assert.match(h.body, /coupons? gagnés? sur \d+ réglés?/);
@@ -261,4 +267,79 @@ test('coupons archivés : aucun bloc d\'exploits sans coupon gagné récent', as
   const r = await route(d2, '/', NOW);
   assert.ok(!r.body.includes('Nos derniers coupons gagnants'));
   assert.match((await route(d2, '/bilan', NOW)).body, /Historique des coupons flash/);
+});
+
+test('PWA : manifeste, icône iOS et couleur du thème dans l\'en-tête, script d\'invitation chargé', async () => {
+  const r = await get('/');
+  assert.match(r.body, /<link rel="manifest" href="\/manifest\.webmanifest">/);
+  assert.match(r.body, /<link rel="apple-touch-icon" href="\/img\/apple-touch-icon\.png">/);
+  assert.match(r.body, /<script src="\/js\/pf\.js/);
+});
+
+test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fiche du match, liens vers les sites d\'origine', async () => {
+  const h = await get('/');
+  assert.match(h.body, /Actus foot/);
+  assert.match(h.body, /class="nw" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
+  assert.ok((h.body.match(/class="nw"/g) || []).length <= 8);
+  const first = db.all('news')[0];
+  const m = db.all('matches').find((x) => [x.domicile.teamId, x.exterieur.teamId].map(String).includes(first.teamIds[0]));
+  const page = await get(`/football/${m.leagueSlug}/${m.slug}`);
+  assert.match(page.body, /Actus des deux équipes/);
+  assert.ok(page.body.includes(first.titre.replace(/'/g, '&#39;')));
+  assert.match((await get('/en/')).body, /Football news/);
+});
+
+test('actualités : coupées dans l\'admin ou trop peu de titres → aucun bloc', async () => {
+  const d2 = await buildSample(NOW);
+  await d2.seed('config', 'news', { actif: false });
+  D.clearCache();
+  assert.ok(!(await route(d2, '/', NOW)).body.includes('Actus foot'));
+});
+
+test('accueil : bilan en tête seulement s\'il est bon, actualités au milieu des pronostics (pas avant le premier match)', async () => {
+  // le jeu d'exemple n'a que 28 pronostics terminés : on ajoute une semaine plus ancienne pour passer le seuil de 30
+  await db.seed('bilan_days', '2026-10-10', { jour: '2026-10-10', delta: Object.assign({}, db.all('bilan_days')[0].delta, { matches: 20, principal: { n: 20, ok: 14 } }) });
+  D.clearCache();
+  const h = (await get('/')).body;
+  assert.match(h, /class="bhero"/);
+  assert.ok(h.indexOf('class="bhero"') < h.indexOf('Flash du jour') || h.indexOf('class="bhero"') < h.indexOf('class="lbl"'), 'bilan avant le reste');
+  const firstCard = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
+  const news = h.indexOf('class="nwb"');
+  assert.ok(news > firstCard && firstCard > 0, 'actualités après le début de la liste des matchs');
+  assert.ok((h.match(/class="mc|class="match/g) || []).length >= 0);
+  // images et aperçus vidéo
+  assert.match(h, /class="nwi"><img src="\/img\/afl[14]\.jpg"/);
+  assert.match(h, /class="nwi vid"/);
+  assert.match(h, /referrerpolicy="no-referrer"/);
+  // bilan mauvais : ni en-tête, ni colonne, mais la page Bilan reste complète
+  const d2 = await buildSample(NOW);
+  const old = d2.all('bilan_days');
+  for (const b of old) { const delta = b.delta; delta.principal.ok = 0; await d2.seed('bilan_days', b._id, { jour: b.jour, delta }); }
+  await d2.seed('bilan_days', '2026-10-10', { jour: '2026-10-10', delta: Object.assign({}, d2.all('bilan_days')[0].delta, { matches: 20, principal: { n: 20, ok: 2 } }) });
+  D.clearCache();
+  const bad = (await route(d2, '/', NOW)).body;
+  assert.ok(!bad.includes('class="bhero"'), 'bilan faible non mis en avant');
+  assert.ok(!bad.includes('class="box bil"'));
+  assert.match((await route(d2, '/bilan', NOW)).body, /Réussite 30 jours/);
+});
+
+test('actualités : images coupées dans l\'admin → cartes sans miniature', async () => {
+  const d2 = await buildSample(NOW);
+  await d2.seed('config', 'news', { actif: true, images: false });
+  D.clearCache();
+  const h = (await route(d2, '/', NOW)).body;
+  assert.match(h, /class="nwb"/);
+  assert.ok(!h.includes('class="nwi'));
+});
+
+test('analyse : « Ce que l\'IA sait de ces équipes » (notes d\'équipes) en français et en anglais, sans aucune promesse', async () => {
+  const withNotes = db.all('matches').find((m) => m.prono && m.prono.notes && m.prono.notes.dom && m.prono.notes.ext);
+  assert.ok(withNotes, 'le jeu d\'exemple calcule les notes d\'équipes');
+  const r = await get(`/football/${withNotes.leagueSlug}/${withNotes.slug}/analyse`);
+  assert.match(r.body, /Ce que l'IA sait de ces équipes/);
+  assert.match(r.body, /Attaque : /);
+  assert.match(r.body, /Défense : /);
+  const en = await get(`/en/football/${withNotes.leagueSlug}/${withNotes.slug}/analysis`);
+  assert.match(en.body, /What the AI knows about these teams/);
+  assert.match(en.body, /Attack: /);
 });
