@@ -513,6 +513,8 @@ async function payStart(u, b, ctx) {
 
 
 async function cardGuard(u, pack, ctx) {
+  const ud = (await db().collection('StudioUsers').doc(u.uid).get()).data() || {};
+  if (ud.cardBlocked) throw fail(403, 'card_blocked'); // contestation de paiement antérieure : mobile money seulement
   if (!CARD_LIMITS.packs.includes(pack.id)) throw fail(400, 'card_pack_limited');
   const since = (ms) => new Date(Date.now() - ms);
   const col = db().collection('StudioOrders');
@@ -559,6 +561,20 @@ async function payCard(u, b, ctx) {
   return { orderId, reference, total: q.total, paymentUrl: url };
 }
 
+/** Garde, parmi la réponse de FeexPay, les champs utiles au suivi (montants, frais, moyen, devise…) : jamais de numéro de carte ni de donnée personnelle. */
+function feexSnapshot(data) {
+  const out = {};
+  if (!data || typeof data !== 'object') return out;
+  for (const [k, v] of Object.entries(data)) {
+    if (Object.keys(out).length >= 14) break;
+    if (!/amount|fee|charge|commission|net|total|currency|method|type|operator|network|card|brand|country|status|reason|message|code/i.test(k)) continue;
+    if (/number|pan|cvv|cvc|holder|name|email|phone|address/i.test(k)) continue;
+    if (typeof v === 'number' || typeof v === 'boolean') out[k] = v;
+    else if (typeof v === 'string') out[k] = v.slice(0, 80);
+  }
+  return out;
+}
+
 /** Vérifie la commande auprès de FeexPay et crédite le compte, une seule fois. */
 async function settle(orderId) {
   const oref = db().collection('StudioOrders').doc(orderId);
@@ -570,6 +586,8 @@ async function settle(orderId) {
   if (!o.reference) return { status: 'pending' };
   const r = await feexRequest(`${FEEXPAY_API}/single/status/${encodeURIComponent(o.reference)}`, 'GET');
   const st = String((r.data && r.data.status) || '').toUpperCase();
+  // Journal de chaque vérification : statut brut, raison, champs financiers de FeexPay (voir « Preuves » dans l'admin)
+  await oref.update({ lastStatus: st || null, lastReason: String((r.data && (r.data.reason || r.data.message)) || '').slice(0, 200), lastCheckAt: FieldValue.serverTimestamp(), checks: FieldValue.increment(1), fx: feexSnapshot(r.data) }).catch(() => {});
   if (st === 'SUCCESSFUL' || st === 'SUCCESS') {
     let adFreeUntil = 0;
     if (o.days) adFreeUntil = (await addAdFree(o.uid, o.days, orderId, { price: o.price, currency: o.currency, operator: o.operator })).until;
@@ -581,7 +599,7 @@ async function settle(orderId) {
     await stat.update({ orders: FieldValue.increment(1), revenueXof: FieldValue.increment(o.price), [`orders_paid_op.${o.operator}`]: FieldValue.increment(1), ...(o.days ? { adfree_orders: FieldValue.increment(1) } : {}) });
     return { status: 'paid', credits: o.credits || 0, adFreeUntil };
   }
-  if (st === 'FAILED') { await oref.update({ status: 'failed', failure: String(r.data.reason || '').slice(0, 200) }); await bump({ orders_failed: 1 }); return { status: 'failed' }; }
+  if (st === 'FAILED' || st === 'CANCELLED' || st === 'CANCELED' || st === 'EXPIRED') { await oref.update({ status: 'failed', failure: String((r.data && (r.data.reason || r.data.message)) || st).slice(0, 200) }); await bump({ orders_failed: 1 }); return { status: 'failed' }; }
   return { status: 'pending' };
 }
 
@@ -631,6 +649,35 @@ async function evidence(orderId) {
   const us = await db().collection('StudioUsers').doc(o.uid).get();
   if (us.exists) { const x = us.data(); out.user = { uid: o.uid, email: x.email, name: x.name, createdAt: iso(x.createdAt), credits: x.credits }; }
   return out;
+}
+
+/**
+ * Contestation de paiement (rétrofacturation) signalée par FeexPay : l'administrateur la déclare sur la commande.
+ * La commande passe en « chargeback », les crédits achetés sont retirés (le solde peut devenir négatif : le compte ne peut plus rien générer
+ * tant qu'il n'est pas redevenu positif), le pass sans pub est coupé, et le compte ne peut plus payer par carte (mobile money seulement).
+ */
+async function adminChargeback(b, by) {
+  const orderId = clean(b && b.orderId, 40);
+  const oref = db().collection('StudioOrders').doc(orderId);
+  const s = await oref.get();
+  if (!s.exists) throw fail(404, 'no_order');
+  const o = s.data();
+  if (o.status === 'chargeback') return { ok: true, already: true };
+  if (o.status !== 'paid') throw fail(400, 'not_paid');
+  const note = clean(b && b.note, 200);
+  const uref = db().collection('StudioUsers').doc(o.uid);
+  const ledger = db().collection('StudioLedger').doc(`chargeback_${orderId}`);
+  await db().runTransaction(async (tx) => {
+    const l = await tx.get(ledger); if (l.exists) return;
+    const upd = { cardBlocked: true, cardBlockedAt: FieldValue.serverTimestamp() };
+    if (o.credits) upd.credits = FieldValue.increment(-o.credits);
+    if (o.days) upd.adFreeUntil = 0;
+    tx.update(uref, upd);
+    tx.set(ledger, { uid: o.uid, delta: -(o.credits || 0), type: 'chargeback', ref: orderId, note, by: clean(by, 120), at: FieldValue.serverTimestamp(), creditScale: 10 });
+    tx.update(oref, { status: 'chargeback', chargebackAt: FieldValue.serverTimestamp(), chargebackNote: note });
+  });
+  await bump({ chargebacks: 1, chargeback_xof: o.price || 0 });
+  return { ok: true };
 }
 
 /** Historique des générations d'un utilisateur (30 dernières, status=done, hors modifications). */
@@ -713,7 +760,7 @@ async function adminOrders(b) {
   return {
     orders: docs.map((d) => {
       const o = d.data();
-      return { id: d.id, email: o.email || '', credits: o.credits || 0, days: o.days || 0, amount: o.total || o.price || 0, currency: o.currency || 'XOF', operator: o.operator || '', status: o.status || 'pending', createdAt: o.createdAt ? o.createdAt.toMillis() : null, phone: o.phone || '' };
+      return { id: d.id, email: o.email || '', credits: o.credits || 0, days: o.days || 0, amount: o.total || o.price || 0, currency: o.currency || 'XOF', operator: o.operator || '', status: o.status || 'pending', createdAt: o.createdAt ? o.createdAt.toMillis() : null, phone: o.phone || '', provider: o.provider || '', failure: o.failure || '', lastStatus: o.lastStatus || '', reference: o.reference || '' };
     }),
     nextCursor: hasMore ? docs[docs.length - 1].id : null,
   };
@@ -815,4 +862,4 @@ async function logGenError(type, code, uid, extra) {
   } catch (_) { /* silencieux */ }
 }
 
-module.exports = { quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
+module.exports = { adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };

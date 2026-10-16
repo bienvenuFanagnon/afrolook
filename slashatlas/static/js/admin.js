@@ -4,6 +4,9 @@
   var $ = function (s) { return document.querySelector(s); };
   var days = 14, root = $('#adm'), tab = 'over'; try { tab = sessionStorage.getItem('sa_admtab') || 'over'; } catch (e) {}
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var payStt = function (o) { var extra = o.status === 'paid' ? '' : (o.failure || o.lastStatus || ''); return esc(o.status === 'chargeback' ? 'contesté' : o.status) + (extra ? ' <small title="' + esc(extra) + '">(' + esc(String(extra).slice(0, 40)) + ')</small>' : ''); };
+    var payMoyen = function (o) { return o.provider === 'feexpay_card' || o.operator === 'card' ? '💳 carte' : esc(o.operator); };
+    var cbBtn = function (o) { return (o.status === 'paid' && (o.provider === 'feexpay_card' || o.operator === 'card')) ? ' <button class="btn gl sm" type="button" data-cb="' + esc(o.id) + '">Contestation</button>' : ''; };
   var sum = function (rows, k) { return rows.reduce(function (n, r) { return n + (r[k] || 0); }, 0); };
   function merge(rows, k) { var o = {}; rows.forEach(function (r) { var m = r[k] || {}; Object.keys(m).forEach(function (a) { o[a] = (o[a] || 0) + m[a]; }); }); return Object.keys(o).map(function (a) { return [a, o[a]]; }).sort(function (a, b) { return b[1] - a[1]; }); }
   function list(title, pairs, unit) {
@@ -51,7 +54,7 @@
     var tbl = '<div class="adm-card"><h3>Par jour</h3><div class="tw"><table><thead><tr><th>Jour</th><th>Visiteurs uniques</th><th>Vues</th><th></th><th>Visites</th><th>Copies</th><th>Tests</th><th>Inscrits</th></tr></thead><tbody>' + r.slice().reverse().map(function (x) { return '<tr><td>' + x.id.slice(5) + '</td><td>' + (x.visitors || 0) + '</td><td>' + (x.pv || 0) + '</td><td><span class="bt"><i style="width:' + Math.round(100 * (x.pv || 0) / maxPv) + '%"></i></span></td><td>' + (x.sessions || 0) + '</td><td>' + (x.copies || 0) + '</td><td>' + (x.tests || 0) + '</td><td>' + (x.signups || 0) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
     var cols = '<div class="adm-grid">' + list('Pages les plus vues', merge(r, 'pages')) + list('Commandes visitées (page de détails)', merge(r, 'view')) + list('Commandes copiées', merge(r, 'cmd')) + list('Commandes à générer (clics)', merge(r, 'try')) + list('Commandes générées', merge(r, 'gen')) + list('Installation de l\'app (écran d\'accueil)', merge(r, 'pwa')) + list('Outils ouverts', merge(r, 'tool')) + list('Sources', merge(r, 'ref')) + list('Langues', merge(r, 'lang')) + list('Appareils', merge(r, 'dev').map(function (p) { return [{ m: 'mobile', d: 'ordinateur', t: 'tablette' }[p[0]] || p[0], p[1]]; })) + '</div>';
     var subs = '<div class="adm-card"><h3>Dernières inscriptions (' + d.subscribers.total + ')</h3><div class="tw"><table><thead><tr><th>E-mail</th><th>Type</th><th>Langue</th><th>Page</th><th>Note</th><th>Date</th></tr></thead><tbody>' + (d.subscribers.items.map(function (x) { return '<tr><td>' + esc(x.email) + '</td><td>' + esc((x.kinds || []).join(', ')) + '</td><td>' + esc(x.lang) + '</td><td>' + esc(x.page) + '</td><td>' + esc(x.note) + '</td><td>' + fmt(x.at) + '</td></tr>'; }).join('') || '<tr><td colspan="6">Aucune inscription.</td></tr>') + '</tbody></table></div><button class="btn gl sm" type="button" id="csv-s">Exporter en CSV</button></div>';
-    var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div class="tw"><table><thead><tr><th>Date</th><th>E-mail</th><th>Pack</th><th>Total</th><th>Moyen</th><th>Statut</th><th>CGV</th><th></th></tr></thead><tbody>' + ((d.orders || []).map(function (x) { return '<tr><td>' + fmt(x.at) + '</td><td>' + esc(x.email) + '</td><td>' + esc(x.credits) + ' cr.</td><td>' + fmtN(x.total) + '</td><td>' + esc(x.operator) + '</td><td>' + esc(x.status) + '</td><td>' + esc(x.terms || '—') + '</td><td><button class="btn gl sm" type="button" data-ev="' + esc(x.id) + '">Preuves</button></td></tr>'; }).join('') || '<tr><td colspan="8">Aucune commande.</td></tr>') + '</tbody></table></div><p class="hint">« Preuves » télécharge le dossier de litige.</p></div>' +
+var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div class="tw"><table><thead><tr><th>Date</th><th>E-mail</th><th>Pack</th><th>Total</th><th>Moyen</th><th>Statut</th><th>CGV</th><th></th></tr></thead><tbody>' + ((d.orders || []).map(function (x) { return '<tr><td>' + fmt(x.at) + '</td><td>' + esc(x.email) + '</td><td>' + esc(x.credits) + ' cr.</td><td>' + fmtN(x.total) + '</td><td>' + esc(x.operator) + '</td><td>' + esc(x.status) + '</td><td>' + esc(x.terms || '—') + '</td><td><button class="btn gl sm" type="button" data-ev="' + esc(x.id) + '">Preuves</button></td></tr>'; }).join('') || '<tr><td colspan="8">Aucune commande.</td></tr>') + '</tbody></table></div><p class="hint">« Preuves » télécharge le dossier de litige.</p></div>' +
       '<div class="adm-card" id="adm-allords"><h3>Toutes les transactions <small id="adm-ords-count" style="font-weight:400;font-size:13px;margin-left:6px;color:var(--mut)"></small></h3><button class="btn gl sm" type="button" id="adm-load-ords">Charger les transactions</button><div id="adm-ords-tbl" style="margin-top:12px"></div></div>';
     var usr = '<div class="adm-card"><h3>Offrir ou retirer des crédits</h3><form class="adm-form" id="grant-f"><input id="g-email" type="email" required placeholder="E-mail du compte Studio" autocomplete="off"><input id="g-n" type="number" required min="-500" max="500" step="1" placeholder="Crédits (ex. 5 ou -5)"><input id="g-note" type="text" maxlength="120" placeholder="Motif (ex. geste commercial)"><button class="btn pri sm" type="submit">Appliquer</button></form><p class="fmsg" id="g-msg" role="status" aria-live="polite"></p></div>' +
       '<div class="adm-card" id="adm-usr-search"><h3>Profil utilisateur</h3><form class="adm-form" id="usr-search-f"><input id="usr-q" type="text" placeholder="E-mail ou UID" autocomplete="off" style="flex:1"><button class="btn gl sm" type="submit">Rechercher</button></form><div id="usr-detail"></div></div>' +
@@ -113,7 +116,7 @@
           var tbl = document.getElementById('adm-ords-tbl');
           if (tbl) {
             var rows = orders.map(function (o) {
-              return '<tr><td>' + fmt(o.createdAt) + '</td><td>' + esc(o.email) + '</td><td>' + (o.days ? o.days + 'j' : o.credits + ' cr.') + '</td><td>' + fmtN(o.amount) + '</td><td>' + esc(o.operator) + '</td><td>' + esc(o.phone) + '</td><td>' + esc(o.status) + '</td><td><button class="btn gl sm" type="button" data-ev="' + esc(o.id) + '">Preuves</button></td></tr>';
+              return '<tr><td>' + fmt(o.createdAt) + '</td><td>' + esc(o.email) + '</td><td>' + (o.days ? o.days + 'j' : o.credits + ' cr.') + '</td><td>' + fmtN(o.amount) + '</td><td>' + payMoyen(o) + '</td><td>' + esc(o.phone) + '</td><td>' + payStt(o) + '</td><td><button class="btn gl sm" type="button" data-ev="' + esc(o.id) + '">Preuves</button>' + cbBtn(o) + '</td></tr>';
             }).join('');
             if (!cursor) {
               tbl.innerHTML = '<div class="tw"><table><thead><tr><th>Date</th><th>E-mail</th><th>Pack</th><th>Total</th><th>Opérateur</th><th>Téléphone</th><th>Statut</th><th></th></tr></thead><tbody id="adm-ords-body">' + rows + '</tbody></table></div>';
@@ -262,3 +265,17 @@
     load();
   });
 })();
+
+// Contestation de paiement par carte (rétrofacturation) : à déclarer quand FeexPay signale un litige sur la commande.
+document.addEventListener('click', function (e) {
+  var b = e.target && e.target.closest ? e.target.closest('[data-cb]') : null;
+  if (!b || !window.slashAuth) return;
+  var id = b.getAttribute('data-cb');
+  if (!window.confirm('Déclarer une contestation sur la commande ' + id + ' ?\n\nLes crédits achetés seront retirés, le pass sans pub coupé et le paiement par carte bloqué pour ce compte.')) return;
+  var note = window.prompt('Note (numéro du litige, motif…) :', '') || '';
+  b.disabled = true;
+  window.slashAuth.call('admin/chargeback', { orderId: id, note: note }).then(function (r) {
+    window.alert(r.status === 200 ? 'Contestation enregistrée.' : 'Erreur : ' + ((r.data && r.data.error) || r.status));
+    if (r.status === 200) location.reload(); else b.disabled = false;
+  }).catch(function () { b.disabled = false; });
+});
