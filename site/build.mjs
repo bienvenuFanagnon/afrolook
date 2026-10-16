@@ -155,7 +155,7 @@ function homePage(lang) {
   <span class="eyebrow">${h.eyebrow}</span>
   <h1>${h.h1a || h.h1a} <em>${h.h1b}</em></h1>
   <p class="lead">${h.lead}</p>
-  <div class="pillars"><a class="pil" href="${P[lang].earn}"><i>${svgIcon('coin')}</i><span><b>${h.pil1[0]}</b><small>${h.pil1[1]}</small></span></a><a class="pil" href="${P[lang].cards}"><i>${svgIcon('sparkle')}</i><span><b>${h.pil2[0]}</b><small>${h.pil2[1]}</small></span></a></div>
+  <div class="pillars"><a class="pil" href="${P[lang].earn}"><i>${svgIcon('coin')}</i><span><b>${h.pil1[0]}</b><small>${h.pil1[1]}</small></span></a><a class="pil" href="${P[lang].cards}"><i>${svgIcon('sparkle')}</i><span><b>${h.pil2[0]}</b><small>${h.pil2[1]}</small></span></a><a class="pil" href="${P[lang].music}"><i>${svgIcon('music')}</i><span><b>${h.pil3[0]}</b><small>${h.pil3[1]}</small></span></a></div>
   <div class="cta">${storeBtns(t)}</div>
   <p class="note">${h.note}</p>
  </div>
@@ -181,6 +181,15 @@ function homePage(lang) {
  <a class="big2" href="${P[lang].cards}"><span class="tagx">${h.b2[0]}</span><h2>${h.b2[1]}</h2><p>${h.b2[2]}</p><span class="more">${h.b2[3]} →</span><div class="mi"><img src="${card('neon')}" width="130" height="163" alt="" loading="lazy"><img src="${card('tarot')}" width="130" height="163" alt="" loading="lazy"><img src="${card('film')}" width="130" height="163" alt="" loading="lazy"></div></a>
 </div></section>
 
+<section class="musicteaser" id="musique" style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap">
+ <div class="twocol"><div><span class="kicker">${t.music.teaserK}</span><h2 class="h2">${t.music.teaserH}</h2><p class="sub">${t.music.teaserP}</p>
+  <div class="cta" style="margin-top:22px"><a class="btn btn-primary" href="${P[lang].music}">${t.music.teaserCta}</a></div></div>
+  <div class="grp">${t.music.three.map((f) => `<div class="way">${svgIcon(f[0])}<div><b>${f[1]}</b><span style="margin:0;display:block">${f[2]}</span></div></div>`).join('')}</div></div>
+ <div style="margin-top:56px"><span class="kicker">${t.music.gainK}</span><h2 class="h2" style="font-size:clamp(26px,3.6vw,40px)">${t.music.gainH}</h2><p class="sub">${t.music.gainP}</p>
+  <div class="feats three">${t.music.gainEx.map((x) => `<article class="feat">${svgIcon('coin')}<h3>${x[0]}</h3><p>${x[1]}</p></article>`).join('')}</div>
+  <p class="fine" style="text-align:left;margin-top:14px">${t.music.gainNote}</p></div>
+</div></section>
+
 <section class="earn" id="gagner"><div class="wrap"><span class="kicker">${h.earnK}</span><h2 class="h2">${h.earnH}</h2><p class="sub">${h.earnSub}</p>${waysHtml(lang)}<p class="fine" style="text-align:left;margin-top:18px">${h.earnFine}</p></div></section>
 
 <section id="retrait"><div class="wrap"><span class="kicker">${h.flowK}</span><h2 class="h2">${h.flowH}</h2><p class="sub">${h.flowSub(coins, fcfa, eur)}</p>
@@ -193,9 +202,6 @@ function homePage(lang) {
  <div class="bul">${h.bul.map((b) => `<span>${b}</span>`).join('')}</div>
  <div class="cta" style="margin-top:30px"><a class="btn btn-primary" href="${P[lang].download}">${h.studioCta}</a><a class="btn btn-line" style="background:transparent;color:inherit;border-color:#2a3a30" href="${P[lang].cards}">${h.allStyles}</a></div>
 </div>${showcase(lang)}</div></section>
-
-<section class="musicteaser" id="musique" style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${t.music.teaserK}</span><h2 class="h2">${t.music.teaserH}</h2><p class="sub">${t.music.teaserP}</p><div class="cta" style="margin-top:22px"><a class="btn btn-primary" href="${P[lang].music}">${t.music.teaserCta}</a></div></div>
- <div class="grp">${t.music.three.map((f) => `<div class="way">${svgIcon(f[0])}<div><b>${f[1]}</b><span style="margin:0;display:block">${f[2]}</span></div></div>`).join('')}</div></div></section>
 
 <section id="fonctionnalites"><div class="wrap"><span class="kicker">${h.featK}</span><h2 class="h2">${h.featH}</h2><p class="sub">${h.featSub}</p>
  <div class="feats three">${h.feats.map((f) => `<article class="feat">${svgIcon(f[0])}<h3>${f[1]}</h3><p>${f[2]}</p></article>`).join('')}</div></div></section>
@@ -229,7 +235,7 @@ function musicPage(lang) {
   const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].music, t.nav.music]])}<h1>${m.h1}</h1><p>${m.lead}</p><div class="cta" style="margin-top:24px">${storeBtns(t)}</div><p class="fine" style="text-align:left;margin-top:14px">${m.note}</p></div></section>
 <section style="padding-block:40px"><div class="wrap"><div class="feats three">${m.three.map((f) => `<article class="feat">${svgIcon(f[0])}<h3>${f[1]}</h3><p>${f[2]}</p></article>`).join('')}</div></div></section>
 <section><div class="wrap twocol"><div><span class="kicker">${m.listenK}</span><h2 class="h2">${m.listenH}</h2></div><div class="grp">${list(m.listen)}</div></div></section>
-<section style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${m.artistK}</span><h2 class="h2">${m.artistH}</h2><p class="sub">${m.artistSub}</p><p class="fine" style="text-align:left">${m.ranges}</p></div>
+<section style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${m.artistK}</span><h2 class="h2">${m.artistH}</h2><p class="sub">${m.artistSub}</p><p class="fine" style="text-align:left">${m.ranges}</p><div class="feats three" style="margin-top:22px">${m.gainEx.map((x) => `<article class="feat">${svgIcon('coin')}<h3>${x[0]}</h3><p>${x[1]}</p></article>`).join('')}</div><p class="fine" style="text-align:left;margin-top:12px">${m.gainNote}</p></div>
 <div class="grp">${m.steps.map((s, i) => `<div class="way">${svgIcon('music')}<div><b>${i + 1}. ${s[0]}</b><span style="margin:0;display:block">${s[1]}</span></div></div>`).join('')}</div></div></section>
 <section><div class="wrap twocol"><div><span class="kicker">${m.protectK}</span><h2 class="h2">${m.protectH}</h2></div><div class="grp">${list(m.protect)}</div></div></section>
 <section style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${m.tplK}</span><h2 class="h2">${m.tplH}</h2><p class="sub">${m.tplSub}</p></div><div class="grp">${list(m.tpl)}</div></div></section>
@@ -241,7 +247,7 @@ function earnPage(lang) {
   const t = T[lang], e = t.earn, h = t.home, [coins, fcfa] = fmt(lang, cfg.example), eur = cfg.example.eur;
   const alt = { fr: P.fr.earn, en: P.en.earn };
   const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].earn, t.nav.earn]])}<h1>${e.h1}</h1><p>${e.lead}</p><div class="cta" style="margin-top:24px">${storeBtns(t)}</div></div></section>
-<section class="earn" style="padding-block:56px"><div class="wrap">${waysHtml(lang)}<p class="fine" style="text-align:left;margin-top:18px">${h.earnFine}</p></div></section>
+<section class="earn" style="padding-block:56px"><div class="wrap">${waysHtml(lang)}<p class="fine" style="text-align:left;margin-top:18px">${h.earnFine}</p><p style="margin-top:18px"><a class="btn btn-line" href="${P[lang].music}">${T[lang].music.gainK} →</a></p></div></section>
 <section><div class="wrap twocol"><div><span class="kicker">${e.example}</span><h2 class="h2">${coins} ${h.coins}</h2><p class="sub">${h.flowSub(coins, fcfa, eur)}</p><div class="pay">${h.pay.map((x) => `<span>${x}</span>`).join('')}</div><p class="fine" style="text-align:left">${h.fine}</p></div>
 <div class="grp"><h3>${e.rules}</h3><p>${e.rulesText}</p><p><a class="btn btn-line" href="${P[lang].download}">${e.rulesCta}</a></p></div></div></section>
 <section style="padding-top:0"><div class="wrap"><span class="kicker">${h.faqK}</span><h2 class="h2">${h.faqH}</h2>${faqHtml(lang)}</div></section>`;
