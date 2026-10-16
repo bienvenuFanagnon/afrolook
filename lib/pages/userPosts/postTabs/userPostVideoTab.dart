@@ -55,6 +55,7 @@ import '../../user/userAbonnementPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../user/userPubs/user_my_advertisements_page.dart';
+import '../../studio/studio_sound_link.dart';
 
 class UserPubVideo extends StatefulWidget {
   final Canal? canal;
@@ -1708,6 +1709,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
           }
         } else {
           await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+          StudioSoundLink.linkIfPending(postId); // post fait avec un son d'artiste : lien vérifié par le serveur
         }
         if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
           FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({

@@ -5726,6 +5726,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "Posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "artistSoundId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

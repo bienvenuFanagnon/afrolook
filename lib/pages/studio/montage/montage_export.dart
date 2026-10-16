@@ -97,10 +97,12 @@ class MontageExport {
     required void Function(String step) onStep,
     required int maxSeconds,
     void Function(int coins)? onPaid,
+    void Function(String jobId)? onJob,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Connecte-toi pour créer une vidéo.');
     final jobId = const Uuid().v4().replaceAll('-', '').substring(0, 20);
+    onJob?.call(jobId);
     final dir = FirebaseStorage.instance.ref('studio_uploads/$uid/$jobId');
     final uploads = <Future<void>>[];
     void up(String name, Uint8List bytes, String type) => uploads.add(dir.child(name).putData(bytes, SettableMetadata(contentType: type)).then((_) {}));

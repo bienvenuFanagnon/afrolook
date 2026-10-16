@@ -29,9 +29,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
+import '../postDetails.dart';
+import '../userPosts/userPostForm.dart';
 import 'artist_sound_common.dart';
+import 'montage/montage_gallery_page.dart';
+import 'montage/montage_music.dart';
+import 'studio_models.dart';
 
 export 'artist_sound_common.dart' show ArtistSoundPricing;
 
@@ -56,6 +62,7 @@ class ArtistSound {
   final int usageCount;
   final int totalEarningsCoins;
   final int reportCount;
+  final int postCount;
   final Object? processed; // true | 'error' | null (analyse du serveur)
   final List<Map<String, dynamic>> duplicates;
   final Timestamp createdAt;
@@ -80,6 +87,7 @@ class ArtistSound {
     required this.usageCount,
     required this.totalEarningsCoins,
     this.reportCount = 0,
+    this.postCount = 0,
     this.processed,
     this.duplicates = const [],
     required this.createdAt,
@@ -109,6 +117,7 @@ class ArtistSound {
       usageCount: (map['usageCount'] as num?)?.toInt() ?? 0,
       totalEarningsCoins: (map['totalEarningsCoins'] as num?)?.toInt() ?? 0,
       reportCount: (map['reportCount'] as num?)?.toInt() ?? 0,
+      postCount: (map['postCount'] as num?)?.toInt() ?? 0,
       processed: map['processed'],
       duplicates: [for (final d in (map['duplicates'] as List? ?? const [])) Map<String, dynamic>.from(d as Map)],
       createdAt: map['createdAt'] ?? Timestamp.now(),
@@ -530,6 +539,15 @@ class _SoundCard extends StatelessWidget {
   }
 }
 
+/// « Créer un post avec ce son » : modèles du Studio avec le son déjà choisi (payant : prix et solde annoncés), puis page de publication.
+Future<void> startPostWithSound(BuildContext context, ArtistSound s) async {
+  await SoundPreview.stop();
+  if (!context.mounted) return;
+  final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageGalleryPage(presetMusic: MontageMusic.artist(s))));
+  if (r == null || !context.mounted) return;
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
+}
+
 // ─── Page détail d'un son (extrait gratuit) ──────────────────────────────────
 
 class ArtistSoundDetailPage extends StatefulWidget {
@@ -626,20 +644,30 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           const SizedBox(height: 16),
         ],
         Row(children: [
-          Expanded(child: _Stat(label: 'Utilisations', value: '${s.usageCount}', c: c)),
+          Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
           const SizedBox(width: 10),
           Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${ArtistSoundPricing.price} pièces', c: c)),
         ]),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: c.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(12)),
-          child: Text(
-            'Pour utiliser ce son : Studio → modèles prêts à poster → choisis un modèle → Musique → Artistes. '
-            'Le morceau complet n’est jamais téléchargeable ici : il reste protégé.',
-            style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4),
+        SizedBox(
+          height: 50,
+          child: FilledButton.icon(
+            onPressed: () => startPostWithSound(context, s),
+            icon: const Icon(Icons.add_circle_rounded),
+            label: Text(s.isFree ? 'Créer un post avec ce son' : 'Créer un post avec ce son · ${ArtistSoundPricing.price} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
+            style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           ),
         ),
+        const SizedBox(height: 8),
+        Text(
+          s.isFree
+              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Le morceau complet reste protégé.'
+              : 'Tu choisis un modèle : le prix (${ArtistSoundPricing.price} pièces, dont ${ArtistSoundPricing.share} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
+        ),
+        const SizedBox(height: 22),
+        SoundPostsSection(soundId: s.id, colors: c),
       ]),
     );
   }
@@ -1212,6 +1240,119 @@ class _ReportsList extends StatelessWidget {
             ),
         ]);
       },
+    );
+  }
+}
+
+
+// ─── Posts faits avec un son (5 par 5) ───────────────────────────────────────
+
+class SoundPostsSection extends StatefulWidget {
+  const SoundPostsSection({super.key, required this.soundId, required this.colors});
+  final String soundId;
+  final AppColors colors;
+
+  @override
+  State<SoundPostsSection> createState() => _SoundPostsSectionState();
+}
+
+class _SoundPostsSectionState extends State<SoundPostsSection> {
+  static const _page = 5;
+  final List<Post> _posts = [];
+  DocumentSnapshot? _last;
+  bool _loading = false;
+  bool _more = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_loading || !_more) return;
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      var q = FirebaseFirestore.instance.collection('Posts').where('artistSoundId', isEqualTo: widget.soundId).orderBy('created_at', descending: true).limit(_page);
+      if (_last != null) q = q.startAfterDocument(_last!);
+      final snap = await q.get();
+      for (final d in snap.docs) {
+        final p = Post.fromJson(d.data());
+        p.id = d.id;
+        _posts.add(p);
+      }
+      if (snap.docs.isNotEmpty) _last = snap.docs.last;
+      _more = snap.docs.length == _page;
+    } catch (_) {
+      _failed = true;
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.colors;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('POSTS FAITS AVEC CE SON', style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.1)),
+      const SizedBox(height: 10),
+      if (_posts.isEmpty && !_loading && !_failed)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+          child: Text('Aucun post pour l’instant. Sois le premier à utiliser ce son !', style: TextStyle(color: c.textSecondary, fontSize: 13)),
+        ),
+      if (_failed) Text('Chargement impossible. Réessaie dans un instant.', style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+      for (final p in _posts) _tile(p, c),
+      if (_loading) Padding(padding: const EdgeInsets.all(16), child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: c.primary)))),
+      if (_more && !_loading && _posts.isNotEmpty)
+        Center(child: TextButton(onPressed: _load, child: Text('Voir $_page de plus', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)))),
+    ]);
+  }
+
+  Widget _tile(Post p, AppColors c) {
+    final thumb = (p.images != null && p.images!.isNotEmpty) ? p.images!.first : (p.thumbnail ?? (p.dataType == PostDataType.IMAGE.name ? p.url_media : null));
+    final isVideo = p.dataType == PostDataType.VIDEO.name;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          await SoundPreview.stop();
+          if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: p)));
+        },
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+          child: Row(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: Stack(fit: StackFit.expand, children: [
+                  thumb != null && thumb.isNotEmpty
+                      ? CachedNetworkImage(imageUrl: thumb, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: c.border))
+                      : Container(color: c.border, child: Icon(Icons.music_note_rounded, color: c.textSecondary)),
+                  if (isVideo) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 26)),
+                ]),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text((p.description ?? '').trim().isEmpty ? 'Sans texte' : p.description!.trim(), maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text('❤️ ${p.loves ?? 0}  ·  💬 ${p.comments ?? 0}  ·  👁 ${p.vues ?? 0}', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              ]),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+          ]),
+        ),
+      ),
     );
   }
 }

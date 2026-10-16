@@ -24,12 +24,16 @@ import '../../../constant/logo.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../cards/card_post_tab.dart';
+import '../studio/studio_sound_link.dart';
 
 class UserPostForm extends StatefulWidget {
   final Canal? canal;
   final String? defiPostId;
 
-  const UserPostForm({super.key, this.canal, this.defiPostId});
+  /// Montage déjà fait dans le Studio (ex. « Créer un post avec ce son ») : il pré-remplit le post à l'ouverture.
+  final StudioResult? initialStudio;
+
+  const UserPostForm({super.key, this.canal, this.defiPostId, this.initialStudio});
 
   @override
   State<UserPostForm> createState() => _UserPostFormState();
@@ -44,6 +48,14 @@ class _UserPostFormState extends State<UserPostForm> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
     });
+    final pre = widget.initialStudio;
+    if (pre != null) WidgetsBinding.instance.addPostFrameCallback((_) => _applyStudioResult(pre));
+  }
+
+  @override
+  void dispose() {
+    StudioSoundLink.clear(); // un montage abandonné ne doit pas se lier à un autre post
+    super.dispose();
   }
   late UserAuthProvider authProvider =
       Provider.of<UserAuthProvider>(context, listen: false);
@@ -81,7 +93,13 @@ class _UserPostFormState extends State<UserPostForm> {
       ),
     );
     if (result == null || !mounted) return;
+    await _applyStudioResult(result);
+  }
 
+  Future<void> _applyStudioResult(StudioResult result) async {
+    if (!mounted) return;
+    // Montage fait avec un son d'artiste : le post sera relié au son une fois publié (vérifié par le serveur)
+    StudioSoundLink.set(result.artistSoundId != null ? result.soundJobId : null);
     switch (result.type) {
       case StudioContentType.image:
         if (result.mediaFile != null) {

@@ -240,3 +240,31 @@ export const artistSoundReport = onCall({ timeoutSeconds: 30, memory: "256MiB" }
     return { ok: true, suspended: upd["status"] === "suspended" };
   });
 });
+
+/**
+ * Relie un post à un son d'artiste utilisé dans son montage : le serveur vérifie que la personne a bien fait ce montage
+ * (ArtistSoundUses/{uid}_{jobId} écrit par renderStudioMontage) et que le post est le sien. Un téléphone ne peut pas
+ * écrire `artistSoundId` lui-même (règles Firestore), donc la liste « posts faits avec ce son » ne se falsifie pas.
+ */
+export const artistSoundLinkPost = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const { postId, jobId } = (request.data ?? {}) as { postId?: string; jobId?: string };
+  if (!postId || !jobId || !/^[A-Za-z0-9_-]{8,40}$/.test(jobId) || postId.includes("/")) throw new HttpsError("invalid-argument", "Données invalides.");
+  const useRef = db.collection("ArtistSoundUses").doc(`${uid}_${jobId}`);
+  const postRef = db.collection("Posts").doc(postId);
+  return db.runTransaction(async (tx) => {
+    const [use, post] = await Promise.all([tx.get(useRef), tx.get(postRef)]);
+    if (!use.exists) throw new HttpsError("failed-precondition", "Montage introuvable.");
+    if (!post.exists || post.get("user_id") !== uid) throw new HttpsError("permission-denied", "Ce post n'est pas à toi.");
+    if (use.get("postId")) return { ok: true, already: true };
+    const soundId = String(use.get("soundId") ?? "");
+    const soundRef = db.collection("artist_sounds").doc(soundId);
+    const sound = await tx.get(soundRef);
+    if (!sound.exists) throw new HttpsError("not-found", "Son introuvable.");
+    tx.update(postRef, { artistSoundId: soundId, artistSoundTitle: String(sound.get("title") ?? "") });
+    tx.update(useRef, { postId });
+    tx.update(soundRef, { postCount: FieldValue.increment(1) });
+    return { ok: true, soundId };
+  });
+});

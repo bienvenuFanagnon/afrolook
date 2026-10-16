@@ -16,6 +16,8 @@ class StudioResult {
   final bool forChronique;      // true = chronique 9/16, false = post
   final int? audioStartMs;      // début du clip (trim), en millisecondes
   final int? audioEndMs;        // fin du clip (trim), en millisecondes
+  final String? artistSoundId;  // son d'artiste utilisé dans le montage (lie le post au son)
+  final String? soundJobId;     // identifiant du montage côté serveur (preuve de l'utilisation)
 
   const StudioResult({
     required this.type,
@@ -27,6 +29,8 @@ class StudioResult {
     this.forChronique = false,
     this.audioStartMs,
     this.audioEndMs,
+    this.artistSoundId,
+    this.soundJobId,
   });
 }
 
