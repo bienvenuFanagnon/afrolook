@@ -24,7 +24,7 @@ const PAGES = {
 <h2>Ce que le site ne fait pas</h2>
 <p>PronoFlash IA ne prend aucun pari, n'affiche aucune cote, ne vend aucun pronostic et ne promet aucun gain. Un pronostic est une probabilité, pas une certitude. Voir la page <a href="/jeu-responsable">jeu responsable</a>.</p>
 <h2>Données</h2>
-<p>Les calendriers, résultats et statistiques de matchs proviennent d'API-Football (api-sports.io). Les noms des équipes sont affichés en texte ; les écussons sont générés et ne reproduisent aucun logo officiel.</p>`),
+<p>Les calendriers, résultats et statistiques de matchs proviennent d'API-Football (api-sports.io). Les noms des équipes sont affichés en texte, avec leur logo fourni par le fournisseur de données (à défaut, un écusson généré). Les logos et noms des clubs appartiennent à leurs propriétaires respectifs et ne sont utilisés qu'à titre d'illustration ; aucun partenariat ni parrainage n'est suggéré.</p>`),
   }),
 
   contact: (rc) => ({
@@ -132,7 +132,7 @@ const PAGES_EN = {
 <h2>What the site does not do</h2>
 <p>PronoFlash IA takes no bets, shows no odds, sells no tips and promises no winnings. A prediction is a probability, not a certainty. See <a href="/en/responsible-gambling">responsible gambling</a>.</p>
 <h2>Data</h2>
-<p>Fixtures, results and match statistics come from API-Football (api-sports.io). Team names are shown as text; crests are generated and do not reproduce any official logo.</p>`),
+<p>Fixtures, results and match statistics come from API-Football (api-sports.io). Team names are shown as text, with the logo supplied by the data provider (a generated crest otherwise). Club logos and names belong to their respective owners and are used for illustration only; no partnership or sponsorship is implied.</p>`),
   }),
   contact: (rc) => ({
     title: 'Contact · PronoFlash IA',

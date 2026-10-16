@@ -51,7 +51,10 @@ const famLabel = (rc, f) => labels.familyLabel(f, rc.lang);
 
 function crest(team, big) {
   const c = team.couleurs || ['#1b3a8a', '#0a1f4d'];
-  return `<span class="cr${big ? ' lgx' : ''}" style="background:linear-gradient(135deg,${esc(c[0])},${esc(c[1])})" aria-hidden="true">${esc(team.initiales || '?')}</span>`;
+  const size = big ? 46 : 26;
+  // le logo recouvre les initiales ; s'il ne charge pas, l'image vide disparaît et l'écusson généré reste visible
+  const img = team.logo ? `<img src="${esc(team.logo)}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '';
+  return `<span class="cr${big ? ' lgx' : ''}" style="background:linear-gradient(135deg,${esc(c[0])},${esc(c[1])})" aria-hidden="true">${esc(team.initiales || '?')}${img}</span>`;
 }
 
 /** Heure en UTC côté serveur ; le navigateur la convertit dans le fuseau du visiteur. */
@@ -110,20 +113,31 @@ function aflCard(rc, slot, i = 0) {
   return `<a class="afl" href="${esc(`${STORE_ANDROID}&${utm}`)}" target="_blank" rel="noopener sponsored" data-afl="${esc(slot)}" data-i="${i}"><span class="sp2">${rc.t.sponsored}</span><div class="im" style="background-image:url(${photo})"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12" loading="lazy">AFROLOOK</span><p>${esc(msg)}</p><span class="cta">${rc.t.aflCta}</span></div></a>`;
 }
 
-/** Insère les publicités dans une liste de cartes : native toutes les N cartes, Afrolook toutes les M. */
+/**
+ * Insère les publicités dans une liste de cartes (identique sur téléphone et ordinateur).
+ * Un encart Afrolook après la 2e carte (visible sans défiler loin), une annonce « native » après la 3e puis toutes les N cartes,
+ * un encart Afrolook toutes les M cartes ensuite. Jamais deux pubs d'affilée, jamais une pub après la dernière carte.
+ */
 function listWithAds(rc, cards) {
   const nat = rc.ads.emplacements.native || {};
   const afl = rc.ads.afrolook || {};
+  const natOn = slotOn(rc.ads, 'native') && nat.every;
+  const aflOn = afl.actif && afl.every;
   const out = [];
   let a = 0;
+  let nextNat = 3, nextAfl = 2;
   cards.forEach((c, i) => {
     out.push(c);
     const n = i + 1;
-    if (slotOn(rc.ads, 'native') && nat.every && n % nat.every === 0 && n < cards.length) out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }));
-    if (afl.actif && afl.every && n % afl.every === 0 && n < cards.length) out.push(aflCard(rc, 'liste', a++));
+    if (n >= cards.length) return;
+    if (natOn && n === nextNat) { out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })); nextNat += nat.every; if (nextAfl === n) nextAfl = n + 1; return; }
+    if (aflOn && n === nextAfl) { out.push(aflCard(rc, 'liste', a++)); nextAfl += afl.every; }
   });
   return out.join('');
 }
+
+/** Fin de liste : bannière puis, sur téléphone, un encart Afrolook (la colonne de droite n'existe que sur ordinateur). */
+const listEnd = (rc, slot) => adResponsive(rc, 'fin', 'ad-end') + (rc.ads.afrolook && rc.ads.afrolook.actif ? `<div class="mob-only">${aflCard(rc, slot || 'fin', 1)}</div>` : '');
 
 function header(rc, active, alternates) {
   const t = rc.t;
@@ -196,5 +210,5 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, listWithAds, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, adResponsive, aflCard, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

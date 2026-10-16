@@ -153,7 +153,7 @@ test('CSS en ligne et script versionné ; aucune ressource externe', async () =>
   const r = (await get('/')).body;
   assert.ok(r.includes('<style>') && r.includes('--flash:#FFD60A'));
   assert.match(r, new RegExp(`/js/pf\\.js\\?v=${VERSION}`));
-  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me)[^"]*/g, '')), 'aucune ressource externe chargée');
+  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
   assert.ok(r.length < 120000, `HTML léger (${r.length} octets)`);
 });
 

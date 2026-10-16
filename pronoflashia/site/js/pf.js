@@ -193,6 +193,10 @@
     });
   }
 
+  /* ---------- paris avancés : l'annonce du haut du bloc ne se charge qu'à l'ouverture ---------- */
+  var adv = $('#pf-adv');
+  if (adv) adv.addEventListener('toggle', function () { if (adv.open) loadAds(false); });
+
   /* ---------- clics de partage ---------- */
   $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = L.copied; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
   $$('a.wa').forEach(function (a) { a.addEventListener('click', function () { send({ t: 'wa', n: pageType() }); }); });
@@ -201,7 +205,7 @@
   var fams = $('#pf-fams');
   if (fams) {
     var secs = $$('.fam'); fams.innerHTML = '<button type="button" aria-pressed="true" data-f="">' + esc(L.all) + '</button>' + secs.map(function (s) { return '<button type="button" aria-pressed="false" data-f="' + esc(s.getAttribute('data-fam')) + '">' + esc(s.getAttribute('data-fam')) + '</button>'; }).join(''); fams.hidden = false;
-    fams.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; $$('button', fams).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); secs.forEach(function (s) { s.hidden = !!b.getAttribute('data-f') && s.getAttribute('data-fam') !== b.getAttribute('data-f'); }); });
+    fams.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; $$('button', fams).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); secs.forEach(function (s) { s.hidden = !!b.getAttribute('data-f') && s.getAttribute('data-fam') !== b.getAttribute('data-f'); }); var shown = secs.filter(function (s) { return !s.hidden; }); if (adv && !adv.open && shown.length && shown.every(function (s) { return adv.contains(s); })) adv.open = true; });
   }
 
   /* ---------- coupon ---------- */

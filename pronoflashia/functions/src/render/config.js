@@ -25,6 +25,8 @@ const SLOTS = {
   native: { actif: false, every: 4 },
   verdict: { actif: false, dk: [728, 90], mo: [320, 100] },
   fiche_native: { actif: false },
+  avance: { actif: false, dk: [300, 250], mo: [300, 250] }, // avant les paris avancés (fiche d'analyse) : l'emplacement le plus regardé, à réserver à la meilleure annonce
+  fin: { actif: false, dk: [728, 90], mo: [320, 100] }, // fin de liste de matchs
   colonne_rect: { actif: false, dk: [300, 250] },
   colonne_tall: { actif: false, dk: [300, 600] },
   collante: { actif: false, mo: [320, 50] },
@@ -34,7 +36,7 @@ const SLOTS = {
 
 const DEFAULT_ADS = {
   actif: false, // interrupteur général : rien ne s'affiche tant qu'il est coupé
-  afrolook: { actif: true, every: 8, part: 25 }, // encarts maison ; part = % des emplacements où Afrolook passe en premier
+  afrolook: { actif: true, every: 6, part: 25 }, // encarts maison ; part = % des emplacements où Afrolook passe en premier
   emplacements: SLOTS,
   adsTxt: '',
   verifications: [], // balises meta de vérification de propriété demandées par les réseaux

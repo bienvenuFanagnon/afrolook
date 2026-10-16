@@ -9,7 +9,7 @@ const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 
-const { matchCard, crest, adSlot, adResponsive, aflCard, listWithAds, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
+const { matchCard, crest, adSlot, adResponsive, aflCard, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
 const FAMILLES_ORDRE = ['Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Score', 'Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux'];
 const lvlClass = (p) => (p >= 75 ? 's' : p >= 60 ? 'e' : 'r');
@@ -33,9 +33,10 @@ function flashBlock(rc, matches) {
 
 /** Liste de cartes groupées par jour quand elle couvre plusieurs jours. */
 function groupedCards(rc, matches) {
-  const days = [...new Set(matches.map((m) => m.jour))];
-  if (days.length <= 1) return listWithAds(rc, matches.map((m) => matchCard(rc, m)));
-  return days.map((d) => `<h2 class="dayh">${esc(dateLongue(d + 'T12:00:00Z', rc.lang))}</h2>${matches.filter((m) => m.jour === d).map((m) => matchCard(rc, m)).join('')}`).join('');
+  const multi = new Set(matches.map((m) => m.jour)).size > 1;
+  // l'intitulé du jour voyage avec sa première carte : les pubs s'insèrent entre les cartes, jamais entre un titre et son match
+  const cards = matches.map((m, i) => (multi && (i === 0 || matches[i - 1].jour !== m.jour) ? `<h2 class="dayh">${esc(dateLongue(m.jour + 'T12:00:00Z', rc.lang))}</h2>` : '') + matchCard(rc, m));
+  return listWithAds(rc, cards);
 }
 
 const bilanBox = (rc, b) => (b && b.taux != null ? `<div class="box bil"><div class="big num">${pct(rc, b.taux)}</div><div><p>${rc.t.bilanBox(b.taux, b.n)}</p><a href="${rc.u('bilan')}">${rc.t.seeBilan}</a></div></div>` : '');
@@ -47,7 +48,7 @@ function home(rc, { matches, bilan }) {
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) : emptyDay(rc)}` +
+    `${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
@@ -62,7 +63,7 @@ function day(rc, { jour, matches, bilan }) {
   const slug = rc.dayAliases[jour] || jour;
   const date = dateLongue(jour + 'T12:00:00Z', rc.lang);
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, jour)}${C.leagueRail(rc, null)}<div class="layout"><div class="col"><div class="hero"><h1>${t.dayH1(esc(label))}</h1><p>${esc(t.dayP(date, matches.length))}</p></div>` +
-    `${adResponsive(rc, 'haut', 'ad-top')}${matches.length ? listWithAds(rc, matches.map((m) => matchCard(rc, m))) : emptyDay(rc)}</div>${sideColumn(rc, { bilan })}</div></div>`;
+    `${adResponsive(rc, 'haut', 'ad-top')}${matches.length ? listWithAds(rc, matches.map((m) => matchCard(rc, m))) + listEnd(rc, 'jour-fin') : emptyDay(rc)}</div>${sideColumn(rc, { bilan })}</div></div>`;
   return { title: t.dayTitle(label, date), description: t.dayDesc(date, matches.length), path: rc.u('day', slug), alternates: alts(rc, 'day', slug), body, active: 'football' };
 }
 
@@ -214,7 +215,14 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
   const byFam = {};
   for (const x of p.marches) (byFam[x.famille] = byFam[x.famille] || []).push(x);
   const fams = FAMILLES_ORDRE.filter((f) => byFam[f]);
-  const famHtml = fams.map((f) => `<section class="fam" data-fam="${esc(famLabel(rc, f))}"><h3>${esc(famLabel(rc, f))}</h3>${byFam[f].sort((a, b) => b.pct - a.pct).map((x) => { const rate = rates && rates[x.cle.replace(/[.:]/g, '_')]; return `<div class="fr"><span>${esc(betLabel(rc, m, x))}${rate ? ` <small class="note">${esc(t.realOn(rate.reel, rate.n))}</small>` : ''}</span><b class="num ${lvlClass(x.pct)}">${pct(rc, x.pct)}</b><span class="pill ${FIAB_CLS[x.fiabilite]}">${t.fiab[x.fiabilite]}</span>${addBtn(rc, m, x)}</div>`; }).join('')}</section>`).join('');
+  const famSection = (f) => `<section class="fam" data-fam="${esc(famLabel(rc, f))}"><h3>${esc(famLabel(rc, f))}</h3>${byFam[f].sort((a, b) => b.pct - a.pct).map((x) => { const rate = rates && rates[x.cle.replace(/[.:]/g, '_')]; return `<div class="fr"><span>${esc(betLabel(rc, m, x))}${rate ? ` <small class="note">${esc(t.realOn(rate.reel, rate.n))}</small>` : ''}</span><b class="num ${lvlClass(x.pct)}">${pct(rc, x.pct)}</b><span class="pill ${FIAB_CLS[x.fiabilite]}">${t.fiab[x.fiabilite]}</span>${addBtn(rc, m, x)}</div>`; }).join('')}</section>`;
+  // résultat et buts d'abord ; le reste (mi-temps, handicap, score, corners, tirs, cartons, spéciaux) derrière « Voir les paris avancés »,
+  // avec en tête l'annonce la plus rémunératrice. Le contenu reste dans la page (balise details) : lisible sans JavaScript et par les moteurs.
+  const MAIN_FAMS = ['Résultat', 'Buts'];
+  const mainHtml = fams.filter((f) => MAIN_FAMS.includes(f)).map(famSection).join('');
+  const advFams = fams.filter((f) => !MAIN_FAMS.includes(f));
+  const advHtml = advFams.length ? `<details class="adv" id="pf-adv"><summary><b>${t.advSummary}</b><small>${t.advHint}</small></summary>${adResponsive(rc, 'avance', 'ad-avance')}${advFams.map(famSection).join('')}</details>` : '';
+  const famHtml = mainHtml + advHtml;
   const toc = Object.entries(t.tocItems);
   const tocLinks = toc.map(([id, l]) => `<a href="#d-${id}">${l}</a>`).join('');
   const tocm = toc.map(([id, l]) => `<a class="chip" href="#d-${id}">${l}</a>`).join('');

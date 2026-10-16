@@ -135,3 +135,28 @@ test('football-data : lancement manuel — attente de débit trop longue → err
   assert.deepEqual(waits, []);
   assert.equal(api.singleCall, true);
 });
+
+test('logos des clubs : conservés depuis le fournisseur, limités aux hôtes connus, affichés avec repli sur l\'écusson généré', async () => {
+  const { safeLogo } = require('../src/data/normalize');
+  const { crest } = require('../src/render/components');
+  assert.equal(safeLogo('https://crests.football-data.org/546.png'), 'https://crests.football-data.org/546.png');
+  assert.equal(safeLogo('https://media.api-sports.io/football/teams/85.png'), 'https://media.api-sports.io/football/teams/85.png');
+  assert.equal(safeLogo('http://crests.football-data.org/546.png'), null);
+  assert.equal(safeLogo('https://evil.example/x.png'), null);
+  assert.equal(safeLogo('javascript:alert(1)'), null);
+  assert.equal(safeLogo(null), null);
+  const withLogo = crest({ initiales: 'LE', couleurs: ['#111', '#222'], logo: 'https://crests.football-data.org/546.png' });
+  assert.match(withLogo, /<img src="https:\/\/crests\.football-data\.org\/546\.png" alt="" width="26" height="26" loading="lazy"/);
+  assert.match(withLogo, />LE<img/);
+  assert.doesNotMatch(crest({ initiales: 'LE' }), /<img/);
+  // le logo passe de l'API jusqu'à la base
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { syncLeagueFixtures } = require('../src/jobs/syncFixtures');
+  const { toFixture } = require('../src/data/footballData');
+  const db = new FakeDb();
+  const raw = [toFixture(Object.assign({}, MATCH, { status: 'TIMED', homeTeam: Object.assign({}, MATCH.homeTeam, { crest: 'https://crests.football-data.org/546.png' }) }))];
+  await syncLeagueFixtures({ db, api: {}, league: { apiId: 2015, slug: 'ligue-1', nom: 'Ligue 1' }, now: new Date('2026-10-09T08:00:00Z'), days: 7, preloaded: raw });
+  assert.equal(db.read('teams', '546').logo, 'https://crests.football-data.org/546.png');
+  assert.equal(db.read('matches', '2015_559669').domicile.logo, 'https://crests.football-data.org/546.png');
+  assert.equal(db.read('matches', '2015_559669').exterieur.logo, null);
+});

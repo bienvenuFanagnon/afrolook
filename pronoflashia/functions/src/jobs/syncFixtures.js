@@ -16,7 +16,7 @@ function assertQuota(api, reserve) {
 async function upsertTeam(db, t) {
   if (!t || !t.apiId) return null;
   const short = N.shortName(t.nom);
-  const doc = { apiId: t.apiId, nom: t.nom, nomCourt: short, couleurs: N.teamColors(t.nom), initiales: N.initials(short) };
+  const doc = { apiId: t.apiId, nom: t.nom, nomCourt: short, couleurs: N.teamColors(t.nom), initiales: N.initials(short), logo: N.safeLogo(t.logo) };
   await db.collection('teams').doc(String(t.apiId)).set(doc, { merge: true });
   return doc;
 }
@@ -38,8 +38,8 @@ async function syncLeagueFixtures({ db, api, league, now, days, preloaded }) {
     const doc = {
       id, apiId: fx.apiId, sport: league.sport || 'football', leagueId: String(league.apiId), leagueSlug: league.slug, leagueNom: league.nom, pays: league.pays || null,
       saison: fx.saison, journee: fx.journee, round: fx.round, coupDEnvoi: fx.coupDEnvoi, jour, statut: fx.statut, arbitre: fx.arbitre, lieu: fx.lieu,
-      domicile: { teamId: String(fx.domicile.apiId), apiId: fx.domicile.apiId, nom: fx.domicile.nom, nomCourt: home.nomCourt, couleurs: home.couleurs, initiales: home.initiales },
-      exterieur: { teamId: String(fx.exterieur.apiId), apiId: fx.exterieur.apiId, nom: fx.exterieur.nom, nomCourt: away.nomCourt, couleurs: away.couleurs, initiales: away.initiales },
+      domicile: { teamId: String(fx.domicile.apiId), apiId: fx.domicile.apiId, nom: fx.domicile.nom, nomCourt: home.nomCourt, couleurs: home.couleurs, initiales: home.initiales, logo: home.logo },
+      exterieur: { teamId: String(fx.exterieur.apiId), apiId: fx.exterieur.apiId, nom: fx.exterieur.nom, nomCourt: away.nomCourt, couleurs: away.couleurs, initiales: away.initiales, logo: away.logo },
       slug: `${N.slugify(home.nomCourt)}-${N.slugify(away.nomCourt)}-${jour}`,
       majLe: now.toISOString(),
     };

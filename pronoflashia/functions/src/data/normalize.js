@@ -158,10 +158,16 @@ function leagueGoalAverages(fixtures) {
   };
 }
 
-module.exports = {
+module.exports = { safeLogo,
   statutOf, slugify, shortName, roundNumber, normalizeFixture, normalizeStatistics, normalizeOdds,
   recentEntry, goalStats, formString, countAverages, leagueGoalAverages,
 };
+
+/** Adresse de logo acceptée : https et hôtes des fournisseurs de données seulement (jamais d'adresse arbitraire dans les pages). */
+const LOGO_HOSTS = /^(crests\.football-data\.org|media(-\d)?\.api-sports\.io|upload\.wikimedia\.org)$/;
+function safeLogo(u) {
+  try { const x = new URL(String(u)); return x.protocol === 'https:' && LOGO_HOSTS.test(x.hostname) ? x.href : null; } catch { return null; }
+}
 
 /** Couleurs d'écusson déterministes à partir du nom (pas de logo officiel). */
 function teamColors(name) {

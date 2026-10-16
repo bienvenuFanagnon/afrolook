@@ -80,6 +80,8 @@ img{max-width:100%}
 .fm .V{background:var(--ok)}.fm .N{background:#9aa6c4}.fm .D{background:var(--ko)}
 .cr{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none;letter-spacing:.3px;border:2px solid rgba(255,255,255,.15)}
 .cr.lgx{width:46px;height:46px;font-size:14px}
+.cr{position:relative;overflow:hidden}
+.cr img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:3px;background:#fff;border-radius:50%}
 .pr{border-top:1px dashed var(--line);padding-top:9px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
 .pk1{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;display:block}
 .pk1+b{font-family:var(--fd);font-weight:800;font-size:23px;color:var(--flash);line-height:1.05;display:block}
@@ -102,6 +104,14 @@ img{max-width:100%}
 .ad iframe{border:0;max-width:100%;display:block}
 .ad-top{min-height:50px}.ad-nat{min-height:100px}.ad-rect{min-height:250px;width:300px;margin:0 auto}.ad-tall{min-height:600px;width:300px}.ad-verdict{min-height:100px}
 .ad.dk{display:none}
+.ad-end{margin:14px 0 6px;min-height:50px}.ad-avance{margin:10px auto 12px;min-height:250px}
+.adv{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--s1);padding:0 12px 12px}
+.adv>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px;padding:14px 4px;color:var(--tx)}
+.adv>summary::-webkit-details-marker{display:none}
+.adv>summary b{font-family:var(--fd);font-size:20px;letter-spacing:.3px}
+.adv>summary b::before{content:'＋ ';color:var(--flash)}
+.adv[open]>summary b::before{content:'－ '}
+.adv>summary small{color:var(--mut);font-size:12.5px}
 .stk{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;padding:4px 4px max(4px,env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(8,13,24,.96) 40%);pointer-events:none}
 .stk>*{pointer-events:auto}
 .stk .ad{width:320px;height:50px;min-height:50px}
