@@ -94,7 +94,12 @@ async function runTeams(db, send, now, jour, subs, report, deadline) {
     for (const s of targets) {
       const ref = db.collection('push_subs').doc(s.id);
       const cur = await ref.get();
-      if (cur.exists) { const c = cur.data(); await ref.set(Object.assign({}, c, { equipesJour: jour, equipesN: (c.equipesJour === jour ? c.equipesN || 0 : 0) + 1 })); }
+      if (!cur.exists) continue;
+      const c = cur.data();
+      const n = (c.equipesJour === jour ? c.equipesN || 0 : 0) + 1;
+      await ref.set(Object.assign({}, c, { equipesJour: jour, equipesN: n }));
+      // la liste en mémoire sert aux matchs suivants de ce même passage : le plafond doit y apparaître aussi
+      s.equipesJour = jour; s.equipesN = n;
     }
     await db.collection('push_log').doc(`eq_${m.id}`).set({ id: `eq_${m.id}`, slot: 'equipe', jour, au: now.toISOString(), match: m.id, abonnes: targets.length, ...r });
     sent += r.envoyes;

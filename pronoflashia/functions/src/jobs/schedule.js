@@ -7,6 +7,7 @@ const SCHEDULE = [
   { nom: 'syncResults', cron: '*/30 12-23,0-2 * * *', frequence: 'Toutes les 30 min, de 12:00 à 02:30 UTC', role: 'Enregistre les scores finaux et les statistiques de match, marque chaque pari réussi ou raté, alimente le bilan.' },
   { nom: 'aiHealthCheck', cron: '*/30 * * * *', frequence: 'Toutes les 30 min', role: 'Envoie un petit message de test à chaque IA et met à jour le voyant de l\'admin.' },
   { nom: 'syncNews', cron: '40 */2 * * *', frequence: 'Toutes les 2 heures à :40', role: 'Lit les flux des sites de football (titre, site, lien), repère les équipes citées et alimente la bande « Actus foot ». Aucun texte d\'article n\'est conservé.' },
+  { nom: 'sendPush', cron: '*/15 6-22 * * *', frequence: 'Toutes les 15 min, de 06:00 à 22:45 UTC', role: 'Notifications : coupons du jour (≈ 07:30 UTC), pronostic le plus confiant (≈ 12:30), coupon du soir (≈ 16:30), chacun une seule fois par jour ; alerte environ une heure avant les matchs des équipes suivies (2 par jour et par abonné au plus).' },
   { nom: 'weeklyReport', cron: '0 3 * * 1', frequence: 'Chaque lundi à 03:00 UTC', role: 'Fige le bilan de la semaine passée : visites, pays, pronostics, taux de réussite.' },
 ];
 

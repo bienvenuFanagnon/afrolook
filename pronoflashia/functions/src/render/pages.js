@@ -239,6 +239,7 @@ function match(rc, { m, same, h2h, news }) {
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › ${esc(titre)}</nav>` +
     `<div class="layout"><div class="col"><div class="vd"><h1>${crest(m.domicile, true)}<span>${esc(m.domicile.nom)}</span><span class="vs">${t.vs}</span><span>${esc(m.exterieur.nom)}</span>${crest(m.exterieur, true)}</h1>` +
     `<div class="meta">${esc(lgName)}${m.journee ? ` · ${esc(t.matchday(m.journee))}` : ''} · ${esc(dateLongue(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</div>${result}${verdict}</div>` +
+    `<div class="follow" data-follow="${esc(m.domicile.teamId)}|${esc(m.exterieur.teamId)}" data-names="${esc(m.domicile.nomCourt)}|${esc(m.exterieur.nomCourt)}" hidden><small>${t.followLbl}</small></div>` +
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
     (p && p.visible !== false ? `<div class="box"><div class="lbl">${t.probsTitle}</div><div class="pb">${probRows(rc, p)}</div><p class="note" style="margin-top:12px">${t.likelyScore}${colon(rc)} <b style="color:var(--tx)">${esc(p.scoreProbable)}</b></p></div>` : '') +

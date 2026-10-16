@@ -66,6 +66,7 @@ async function handleEvent(req, deps) {
   else if (t === 'ptn_imp') { u.ptnImps = inc; u[`ptn.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'ptn_click') { u.clicsPartenaire = inc; u[`ptnClics.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'pwa') { const n = { vu: 'pwaVus', clic: 'pwaClics', ok: 'pwaInstalles', ios: 'pwaIos' }[b.n]; if (!n) return false; u[n] = inc; }
+  else if (t === 'push') { const n = { vu: 'pushVus', on: 'pushOn', off: 'pushOff', equipe: 'pushEquipes' }[b.n]; if (!n) return false; u[n] = inc; }
   else if (t === 'afl_click') { u.clicsAfrolook = inc; u[`aflClics.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'adview') { u.pubVues = inc; u[`pub.${key(b.n || 'x')}`] = inc; }
   else if (t === 'wa') { u.partagesWa = inc; u[`wa.${key(b.n || 'x')}`] = inc; }

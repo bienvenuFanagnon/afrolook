@@ -29,6 +29,10 @@
     share: function (pc) { return 'My PronoFlash IA slip (' + pc + '% chance that everything wins):'; },
     probAll: 'Probability that everything wins', out100: function (pc) { return 'Out of 100 identical slips, about ' + pc + ' would win'; },
     wa: 'Share on WhatsApp', clear: 'Clear',
+    followOn: function (n) { return '🔔 ' + n + ' followed'; }, followOff: function (n) { return '🔔 Follow ' + n; },
+    pushT: "Get today's slips as notifications", pushS: 'One in the morning, one at noon, one in the evening. Turn them off any time.', pushBtn: 'Turn on',
+    pushOkT: 'Notifications on: slips of the day, morning, noon and evening.', pushOffT: 'Notifications turned off.', pushBlocked: 'Notifications are blocked in your browser settings.', pushErr: 'Could not turn notifications on. Try again later.',
+    teamOn: function (n) { return 'You will get an alert before ' + n + ' play.'; }, teamOff: function (n) { return 'Alerts for ' + n + ' turned off.'; },
     pwaT: 'Install PronoFlash IA on your phone', pwaS: 'One tap access, nothing to download from a store', pwaBtn: 'Install', pwaClose: 'Not now',
     pwaIosBtn: 'How?', pwaIos: 'Tap the Share button <b>⎙</b>, then “Add to Home Screen”.',
     disclaimer: 'PronoFlash IA takes no bets, shows no odds and promises no winnings. 18+ · Play responsibly.', pct: '%'
@@ -44,6 +48,10 @@
     share: function (pc) { return 'Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :'; },
     probAll: 'Probabilité que tout passe', out100: function (pc) { return 'Sur 100 coupons identiques, environ ' + pc + ' passeraient'; },
     wa: 'Partager sur WhatsApp', clear: 'Vider',
+    followOn: function (n) { return '🔔 ' + n + ' suivi'; }, followOff: function (n) { return '🔔 Suivre ' + n; },
+    pushT: 'Reçois les coupons du jour en notification', pushS: 'Un le matin, un à midi, un le soir. Tu peux couper quand tu veux.', pushBtn: 'Activer',
+    pushOkT: 'Notifications activées : coupons du jour, matin, midi et soir.', pushOffT: 'Notifications coupées.', pushBlocked: 'Les notifications sont bloquées dans les réglages de ton navigateur.', pushErr: "Impossible d'activer les notifications. Réessaie plus tard.",
+    teamOn: function (n) { return 'Tu recevras une alerte avant les matchs de ' + n + '.'; }, teamOff: function (n) { return 'Alertes coupées pour ' + n + '.'; },
     pwaT: 'Installe PronoFlash IA sur ton téléphone', pwaS: 'Accès en un clic, rien à télécharger sur un store', pwaBtn: 'Installer', pwaClose: 'Plus tard',
     pwaIosBtn: 'Comment ?', pwaIos: 'Touche le bouton Partager <b>⎙</b>, puis « Sur l\'écran d\'accueil ».',
     disclaimer: 'PronoFlash IA ne prend aucun pari, n\'affiche aucune cote et ne promet aucun gain. 18+ · Jouez de façon responsable.', pct: ' %'
@@ -385,5 +393,91 @@
     w.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; setTimeout(show, 4000); });
     w.addEventListener('appinstalled', function () { send({ t: 'pwa', n: 'ok' }); st.ok = 1; store.set('pf_pwa', st); close(false); });
     if (iosSafari) setTimeout(show, 6000);
+  })();
+  /* ---------- notifications (coupons du jour, alertes des équipes suivies) ---------- */
+  (function push() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in w) || !('Notification' in w)) return;
+    var bell = $('#pf-bell');
+    var st = store.get('pf_push') || {};
+    var teams = store.get('pf_teams') || [];
+    var key = null;
+    function toast(text) {
+      var t = d.createElement('div'); t.className = 'ptoast'; t.setAttribute('role', 'status'); t.textContent = text; d.body.appendChild(t);
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 4500);
+    }
+    function post(path, body) { return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
+    function u8(b64) { var p = '='.repeat((4 - b64.length % 4) % 4), s2 = (b64 + p).replace(/-/g, '+').replace(/_/g, '/'), r = atob(s2), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
+    function current() { return navigator.serviceWorker.ready.then(function (r) { return r.pushManager.getSubscription(); }); }
+    function paint(on) {
+      if (bell) { bell.hidden = false; bell.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+      $$('.follow').forEach(function (f) { f.hidden = !on && Notification.permission === 'denied'; });
+      $$('.follow button').forEach(function (b) { var on2 = teams.indexOf(b.getAttribute('data-t')) >= 0; b.setAttribute('aria-pressed', on && on2 ? 'true' : 'false'); b.textContent = (on && on2 ? L.followOn : L.followOff)(b.getAttribute('data-n')); });
+    }
+    function enable() {
+      if (Notification.permission === 'denied') { toast(L.pushBlocked); return Promise.resolve(false); }
+      return Notification.requestPermission().then(function (perm) {
+        if (perm !== 'granted') { if (perm === 'denied') toast(L.pushBlocked); return false; }
+        return (key ? Promise.resolve(key) : fetch('/api/push/key').then(function (r) { return r.json(); }).then(function (j) { key = j.publicKey; return key; })).then(function (k) {
+          return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(k) }); });
+        }).then(function (sub) { return post('/api/push/subscribe', { subscription: sub.toJSON(), lang: LANG, equipes: teams }); })
+          .then(function (j) { if (j && j.erreur) throw new Error(j.erreur); send({ t: 'push', n: 'on' }); st.on = 1; store.set('pf_push', st); return true; });
+      }).catch(function () { toast(L.pushErr); return false; });
+    }
+    function disable() {
+      return current().then(function (sub) {
+        if (!sub) return;
+        var ep = sub.endpoint;
+        return sub.unsubscribe().then(function () { return post('/api/push/unsubscribe', { endpoint: ep }); });
+      }).then(function () { send({ t: 'push', n: 'off' }); st.on = 0; store.set('pf_push', st); });
+    }
+    function toggle() {
+      return current().then(function (sub) {
+        if (sub) return disable().then(function () { paint(false); toast(L.pushOffT); });
+        return enable().then(function (ok) { paint(ok); if (ok) toast(L.pushOkT); });
+      });
+    }
+    if (bell) bell.addEventListener('click', toggle);
+
+    /* équipes suivies (fiche d'un match) */
+    $$('.follow').forEach(function (f) {
+      var ids = f.getAttribute('data-follow').split('|'), names = f.getAttribute('data-names').split('|');
+      ids.forEach(function (id, i) { var b = d.createElement('button'); b.type = 'button'; b.setAttribute('data-t', id); b.setAttribute('data-n', names[i]); b.setAttribute('aria-pressed', 'false'); f.appendChild(b); });
+      f.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-t]'); if (!b) return;
+        var id = b.getAttribute('data-t'), name = b.getAttribute('data-n'), has = teams.indexOf(id) >= 0;
+        current().then(function (sub) {
+          if (has && sub) {
+            teams = teams.filter(function (x) { return x !== id; }); store.set('pf_teams', teams);
+            return post('/api/push/equipe', { endpoint: sub.endpoint, equipe: id, action: 'remove' }).then(function () { paint(true); toast(L.teamOff(name)); });
+          }
+          if (teams.indexOf(id) < 0) teams.push(id);
+          store.set('pf_teams', teams);
+          if (sub) return post('/api/push/equipe', { endpoint: sub.endpoint, equipe: id, action: 'add' }).then(function () { send({ t: 'push', n: 'equipe' }); paint(true); toast(L.teamOn(name)); });
+          return enable().then(function (ok) { paint(ok); if (ok) toast(L.teamOn(name)); else { teams = teams.filter(function (x) { return x !== id; }); store.set('pf_teams', teams); } });
+        });
+      });
+    });
+
+    current().then(function (sub) {
+      paint(!!sub);
+      if (!sub) st.on = 0;
+      /* invitation : une seule fois par quinzaine, jamais pendant l'invitation d'installation ni le bandeau de consentement, jamais avant la 2e visite */
+      var visits = (store.get('pf_visits') || 0);
+      if (!store.sget('pf_vs')) { store.sset('pf_vs', '1'); visits++; store.set('pf_visits', visits); }
+      var standalone = (w.matchMedia && w.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+      if (sub || Notification.permission !== 'default' || (st.no && Date.now() - st.no < 14 * 864e5) || (visits < 2 && !standalone)) return;
+      setTimeout(function () {
+        var busy = $('.pwa') && !$('.pwa').hidden, cmpOn = cmp && !cmp.hidden;
+        if (busy || cmpOn) return;
+        var box = d.createElement('div'); box.className = 'pwa'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', L.pushT);
+        box.innerHTML = '<span class="bellbig" aria-hidden="true" style="font-size:34px;text-align:center;grid-row:span 2">🔔</span><b>' + L.pushT + '</b><small>' + L.pushS + '</small><button class="btn" type="button" data-i="1">' + L.pushBtn + '</button><button class="pwa-x" type="button" aria-label="' + esc(L.pwaClose) + '" data-x="1">✕</button>';
+        d.body.appendChild(box);
+        send({ t: 'push', n: 'vu' });
+        box.addEventListener('click', function (e) {
+          if (e.target.closest('[data-x]')) { box.hidden = true; st.no = Date.now(); store.set('pf_push', st); return; }
+          if (e.target.closest('[data-i]')) { box.hidden = true; enable().then(function (ok) { paint(ok); if (ok) toast(L.pushOkT); else { st.no = Date.now(); store.set('pf_push', st); } }); }
+        });
+      }, 9000);
+    });
   })();
 })();

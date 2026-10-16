@@ -376,7 +376,7 @@ test('planning : prochain passage des tâches', () => {
   assert.equal(nextRun('*/30 * * * *', from).toISOString(), '2026-10-16T05:30:00.000Z');
   assert.equal(nextRun('0 3 * * 1', from).toISOString(), '2026-10-19T03:00:00.000Z');
   assert.equal(nextRun('40 */2 * * *', from).toISOString(), '2026-10-16T06:40:00.000Z');
-  assert.equal(SCHEDULE.length, 6);
+  assert.equal(SCHEDULE.length, 7);
 });
 
 test('connexions : appels, neurons, quota API-Football, historique', async () => {

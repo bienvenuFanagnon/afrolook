@@ -419,3 +419,13 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .bht{display:grid;gap:2px;flex:1;min-width:0}.bht b{font-family:var(--fd);font-size:18px}.bht small{color:var(--mut);font-size:12.5px;line-height:1.3}
 .bhero i{font-style:normal;color:var(--flash);font-size:22px}
 .bhero:hover{border-color:var(--ok)}
+
+.bell{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--s2);font-size:17px;line-height:1;display:grid;place-items:center;cursor:pointer;filter:grayscale(1) opacity(.75)}
+.bell[hidden]{display:none}
+.bell[aria-pressed=true]{filter:none;border-color:var(--flash);background:#211c05}
+.follow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0 10px}
+.follow[hidden]{display:none}
+.follow small{color:var(--mut);font-size:12.5px}
+.follow button{border:1px solid var(--line);background:var(--s2);color:var(--tx);border-radius:999px;padding:6px 13px;font-size:13px;cursor:pointer}
+.follow button[aria-pressed=true]{border-color:var(--flash);background:#211c05;color:var(--flash)}
+.ptoast{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:75;max-width:420px;margin:0 auto;background:var(--s2);border:1px solid var(--flash);border-radius:12px;padding:11px 14px;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.55)}

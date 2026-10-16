@@ -13,7 +13,7 @@ const learn = require('../engine/learn');
 const { SOURCES } = require('../news/sources');
 const { loadNewsConfig, isOn } = require('../jobs/syncNews');
 
-const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'weeklyReport', 'aiHealthCheck'];
+const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'sendPush', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
 const NETWORKS = ['adsterra', 'monetag'];
 
@@ -137,7 +137,7 @@ function createAdmin(deps) {
     const today = dayStr(nowD());
     const at = (n) => rows.filter((r) => r.jour >= dayStr(addDays(nowD(), -(n - 1)))).reduce((a, r) => ({ visites: a.visites + r.visites, visiteurs: a.visiteurs + r.visiteurs, pv: a.pv + r.pv }), { visites: 0, visiteurs: 0, pv: 0 });
     return {
-      jours: rows, aujourdhui: at(1), sept: at(7), periode: { visites: sum('visites'), visiteurs: rows.reduce((s, r) => s + r.visiteurs, 0), pv: sum('pv'), clicsAfrolook: sum('clicsAfrolook'), aflImps: sum('aflImps'), pubVues: sum('pubVues'), couponAjouts: sum('couponAjouts'), partagesWa: sum('partagesWa'), pwaVus: sum('pwaVus'), pwaClics: sum('pwaClics'), pwaInstalles: sum('pwaInstalles') },
+      jours: rows, aujourdhui: at(1), sept: at(7), periode: { visites: sum('visites'), visiteurs: rows.reduce((s, r) => s + r.visiteurs, 0), pv: sum('pv'), clicsAfrolook: sum('clicsAfrolook'), aflImps: sum('aflImps'), pubVues: sum('pubVues'), couponAjouts: sum('couponAjouts'), partagesWa: sum('partagesWa'), pwaVus: sum('pwaVus'), pwaClics: sum('pwaClics'), pwaInstalles: sum('pwaInstalles'), pushOn: sum('pushOn'), pushOff: sum('pushOff') },
       pays: topList(sumMap(docs, 'pays'), 15), paysSource: sumMap(docs, 'paysSource'), pages: topList(sumMap(docs, 'pages'), 10), sources: topList(sumMap(docs, 'sources'), 10), langues: sumMap(docs, 'langues'),
       appareils: sumMap(docs, 'appareils'), heures: sumMap(docs, 'heures'), pub: topList(sumMap(docs, 'pub'), 15), afl: topList(sumMap(docs, 'afl'), 10), aflClics: topList(sumMap(docs, 'aflClics'), 10),
       matchsTop: matchsTop.map((t) => ({ k: t.k, nom: names[t.k] || t.k, v: t.v })), jour: today,
@@ -247,6 +247,22 @@ function createAdmin(deps) {
     await db.collection('config').doc('news').set({ actif: b.actif !== false, images: b.images !== false, sources }, { merge: true });
     await log(by, 'actus-save', { actif: b.actif !== false, images: b.images !== false, sources });
     if (deps.clearCache) deps.clearCache();
+    return { ok: true };
+  };
+
+  /** Notifications : interrupteur, nombre d'abonnés, derniers envois. */
+  A.push = async () => {
+    const cfg = (await db.collection('config').doc('push').get()).data() || {};
+    const col = db.collection('push_subs');
+    let abonnes;
+    try { abonnes = col.count ? (await col.count().get()).data().count : (await col.get()).size; } catch { abonnes = (await col.get()).size; }
+    const logs = (await db.collection('push_log').orderBy('au', 'desc').limit(12).get()).docs.map((d) => d.data());
+    return { actif: cfg.actif !== false, abonnes, envois: logs };
+  };
+
+  A['push-save'] = async (b, by) => {
+    await db.collection('config').doc('push').set({ actif: b.actif !== false }, { merge: true });
+    await log(by, 'push-save', { actif: b.actif !== false });
     return { ok: true };
   };
 

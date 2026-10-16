@@ -170,7 +170,7 @@ test('planning : tâches, cadence, prochain passage', async () => {
   const { db, call } = setup();
   await db.seed('jobs', '_dernier_syncFixtures', { ok: true, debut: '2026-10-16T05:00:00Z', traites: 70 });
   const r = (await call('planning', {})).json;
-  assert.equal(r.taches.length, 6);
+  assert.equal(r.taches.length, 7);
   const sf = r.taches.find((x) => x.nom === 'syncFixtures');
   assert.equal(sf.prochain, '2026-10-17T05:00:00.000Z');
   assert.equal(sf.dernier.traites, 70);
