@@ -86,6 +86,10 @@ Une clé laissée vide (Gemini, API-Football) désactive simplement la source co
 - La fiche d'analyse affiche « Ce que l'IA sait de ces équipes » (attaque, défense, évolution sur 60 jours). Les textes de l'IA peuvent citer ces notes quand l'écart à la moyenne est net.
 - Avec l'offre gratuite de football-data.org, la saison précédente peut être refusée : les notes se calculent alors sur la saison en cours seulement (gain plus faible, mesuré à +0,02 par match), avec un nouvel essai chaque semaine.
 
+## Matchs à « données limitées » (et ce qu'on ne sait pas prédire)
+
+Test sur 3 090 matchs réels : le calcul est bien calibré (52,1 % de réussite du pronostic 1N2 pour 51,8 % annoncés) et **aucun signal statistique n'annonce les surprises** (désaccord entre modèles, probabilité de nul, niveau des équipes : rien de significatif). Le site n'affiche donc pas d'« indice de surprise » inventé. Deux limites réelles sont signalées : début de saison (moins de 8 matchs joués par une équipe ; signal faible, retenu par prudence) et équipe inconnue du moteur de notes. Ces matchs portent la pastille « Données limitées » et sont écartés des coupons du jour archivés, des coupons proposés, des « 3 pronostics les plus confiants » et des notifications. Les probabilités annoncées au-dessus de 70 % sont un peu trop optimistes (−4 points mesurés) : la calibration par le bilan réel (`learn.js`) les corrige au fil du temps. Détail : `node scripts/backtest.js 2023-24 --calibration`.
+
 ## Coupons flash archivés (preuves de fiabilité)
 
 Chaque jour, `buildPredictions` enregistre une seule fois trois coupons (2, 3 et 5 sélections) dans `coupons_flash/{jour}_{n}`, avant les coups d'envoi : ils ne sont jamais modifiés. `syncResults` les règle (perdu dès une sélection ratée, gagné si toutes réussissent, annulé si une sélection n'est pas évaluable). L'accueil n'affiche « Nos derniers coupons gagnants » que s'il y en a eu dans les 14 derniers jours, avec le taux global à côté ; la page Bilan publie tout l'historique, gagnants et perdus, avec la probabilité annoncée contre le taux réel.

@@ -2,8 +2,10 @@
 // Pronostic « à données limitées » : un drapeau honnête, pas un détecteur de surprises.
 // Mesuré sur 3 090 matchs réels (5 championnats, 2 saisons, walk-forward) : le calcul est bien calibré (52,1 % de réussite du pronostic
 // pour 51,8 % annoncés) et aucun signal statistique n'annonce les surprises (désaccord entre modèles, probabilité de nul, niveau des équipes :
-// rien de significatif). Seul un début de saison (moins de 8 matchs joués par une équipe) montre un recul net : −3,9 points de réussite
-// (292 matchs). Ces matchs sont signalés et écartés des coupons proposés ; les autres limites (blessés, changement d'entraîneur) viendront de l'actualité.
+// rien de significatif). Seul un début de saison (moins de 8 matchs joués par une équipe) montre un recul : −3,9 points de réussite sur les
+// deux saisons réunies (292 matchs, mais −0,7 sur 2023-24 seule) : signal FAIBLE (environ 1,3 écart-type), retenu par prudence (peu de matchs,
+// plus d'incertitude). Ces matchs sont signalés et écartés des coupons proposés ; les autres limites (blessés, changement d'entraîneur)
+// viendront de l'actualité. Reproductible : node scripts/backtest.js 2023-24 --calibration
 
 const MIN_SAMPLE = 8;
 
