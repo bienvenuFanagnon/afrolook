@@ -31,22 +31,13 @@ class PaymentRegion {
     return code != null && africanCountries.contains(code);
   }
 
-  /// Email du compte de test Apple (reviewer) — jamais de Mobile Money pour lui.
-  static const Set<String> _reviewTestEmails = {
-    'jorbinbienvenu@gmail.com',
-    'techbienos@gmail.com',
-  };
-
-  static bool isReviewTestAccount(UserData? user) =>
-      _reviewTestEmails.contains(user?.email?.toLowerCase());
-
   /// Mobile Money disponible si :
   ///   - pas le web
+  ///   - pas sur iPhone : les pièces sont un contenu numérique, Apple impose son paiement (règle 3.1.1),
+  ///     pour tout le monde, comptes de test compris (aucune fonction cachée aux relecteurs)
   ///   - pays africain
-  ///   - pas le compte de test Apple reviewer
   static bool canUseMobileMoney(UserData? user) {
-    if (kIsWeb) return false;
-    if (isReviewTestAccount(user)) return false;
+    if (kIsWeb || kIsAppleStore) return false;
     return isAfrican(user);
   }
 
