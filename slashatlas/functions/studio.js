@@ -65,8 +65,10 @@ const OPERATORS = [
   { code: 'orange_ml', label: 'Orange', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
   { code: 'mobicash_ml', label: 'Mobicash', country: 'Mali', dial: '223', payin: 3.2, payout: 3.2 },
 ];
-// Carte bancaire (FeexPay) : désactivée tant que le KYB carte de la boutique n'est pas validé. Frais à renseigner (en %) après confirmation de FeexPay.
-const CARD = { enabled: false, currency: 'USD', payin: 0, payout: 0 }; // la carte se paie en dollars (pack.usd) ; à confirmer avec FeexPay lors de l'activation du KYC carte
+// Carte bancaire (FeexPay) : KYB carte validé le 17 octobre 2026. La carte se paie en dollars (pack.usd).
+// Frais : commission 3,9 % (internationale) + 3 % de conversion, soit ≈ 6,9 %, entièrement à la charge de l'acheteur : on envoie
+// prix ÷ (1 − taux) pour que, une fois les frais retirés, il reste le prix du pack (voir quoteCard). À ajuster si FeexPay change sa grille.
+const CARD = { enabled: true, currency: 'USD', feePct: 6.9 };
 // Limites de sécurité carte (risque de rétrofacturation) : petits paquets seulement, quelques achats par compte, par IP, par mois et par jour.
 const CARD_LIMITS = { packs: ['p20', 'p55', 'nopub'], userPerDay: 2, ipPerDay: 3, userMonthXof: 20000, globalPerDay: 30 };
 const TERMS_VERSION = COMMANDS.termsVersion;
@@ -88,6 +90,11 @@ function quoteUsd(price, payin, payout) {
   const send = r2(price * (1 + payout / 100));
   const total = r2(send * (1 + payin / 100));
   return { send, total, fee: r2(total - price) };
+}
+/** Montant à faire payer par carte : le client paie tous les frais (prix ÷ (1 − taux)), arrondi au centime supérieur. */
+function quoteCard(price, feePct = CARD.feePct) {
+  const total = Math.ceil((price / (1 - feePct / 100)) * 100) / 100;
+  return { send: total, total, fee: Math.round((total - price) * 100) / 100 };
 }
 const opByCode = Object.fromEntries(OPERATORS.map((o) => [o.code, o]));
 
@@ -530,7 +537,7 @@ async function payCard(u, b, ctx) {
   const country = String(b.country || '').toUpperCase();
   let phone = String(b.phone || '').replace(/[^0-9]/g, '');
   if (!first || !last || !city || !zip || !/^[A-Z]{2}$/.test(country) || phone.length < 8 || phone.length > 15) throw fail(400, 'bad_card_info');
-  const q = quoteUsd(pack.usd, CARD.payin, CARD.payout);
+  const q = quoteCard(pack.usd);
   const orderId = crypto.randomBytes(8).toString('hex');
   const oref = db().collection('StudioOrders').doc(orderId);
   await oref.set({ uid: u.uid, packId: pack.id, credits: pack.credits || 0, days: pack.days || 0, price: pack.xof, priceUsd: pack.usd, amount: q.send, total: q.total, currency: CARD.currency, provider: 'feexpay_card', operator: 'card', email: u.email || '', ipHash: ipH, terms, status: 'created', createdAt: FieldValue.serverTimestamp() });
@@ -600,7 +607,7 @@ function publicConfig() {
     video: { base: VIDEO_COST.base, voice: VIDEO_COST.voice, cutout: VIDEO_COST.cutout, userPerDay: VIDEO_LIMITS.userPerDay },
     packs: [...PACKS, PASS],
     currency: 'XOF',
-    card: { enabled: CARD.enabled, payin: CARD.payin, payout: CARD.payout, packs: CARD_LIMITS.packs },
+    card: { enabled: CARD.enabled, currency: CARD.currency, feePct: CARD.feePct, packs: CARD_LIMITS.packs },
     referral: { credits: REF.credits, months: REF.months },
     termsVersion: TERMS_VERSION,
     operators: OPERATORS.map(({ code, label, country, dial, payin, payout, redirect, otp }) => ({ code, label, country, dial, payin, payout, redirect: !!redirect, otp: !!otp })),
@@ -806,4 +813,4 @@ async function logGenError(type, code, uid, extra) {
   } catch (_) { /* silencieux */ }
 }
 
-module.exports = { referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
+module.exports = { quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };

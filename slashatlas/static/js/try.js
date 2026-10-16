@@ -526,7 +526,8 @@
   }
 
   // ── achat de crédits (mobile money) ──
-  function quoteUsd(price, payin, payout) { var r2 = function (n) { return Math.round(n * 100) / 100; }, send = r2(price * (1 + payout / 100)), total = r2(send * (1 + payin / 100)); return { send: send, total: total, fee: r2(total - price) }; }
+  // même calcul que le serveur (quoteCard) : l'acheteur paie les frais de carte, prix ÷ (1 − taux)
+  function quoteUsd(price, feePct) { var total = Math.ceil(price / (1 - (feePct || 0) / 100) * 100) / 100; return { send: total, total: total, fee: Math.round((total - price) * 100) / 100 }; }
   function quote(price, payin, payout) { var send = Math.ceil(price * (1 + payout / 100)), total = Math.ceil(send * (1 + payin / 100)); return { send: send, total: total, fee: total - price }; }
   function openBuy(from) {
     var cfg = state.cfg; if (!cfg) return;
@@ -563,8 +564,8 @@
       }
       modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' + (pk.days ? '' : '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refShort + '</b><i>' + T.refGo + ' ›</i></a>') +
         '<div class="packs">' + cfg.packs.slice().sort(function (x, y) { return (x.days ? 1 : 0) - (y.days ? 1 : 0); }).map(function (p) { return '<button type="button" class="pack' + (p.days ? ' passtile' : '') + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + (p.days ? '<b>' + p.days + ' ' + T.passUnit + '</b><span>' + T.passTag + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>' : '<b>' + p.credits + '</b><span>' + T.credits + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>') + '</button>'; }).join('') + '</div>' + tabs + form +
-        '<p class="hint soft">' + T.feeNote + '</p><label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span><b class="ttag">' + T.termsTag + '</b>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
-        '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo + ' ' + usd(pk.usd) : T.pay + ' ' + fmt(pk.xof) + ' FCFA') + '</button><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p>' + (CONTACT ? '<p class="hint soft">' + T.help + ' <a href="mailto:' + CONTACT + '">' + CONTACT + '</a></p>' : '') + '</div>';
+        '<p class="hint soft">' + (isCard ? T.feeLineCard.replace('{p}', usd(pk.usd)).replace('{f}', usd(quoteUsd(pk.usd, cfg.card && cfg.card.feePct).fee)) : T.feeNote) + '</p><label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span><b class="ttag">' + T.termsTag + '</b>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
+        '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo + ' ' + usd(quoteUsd(pk.usd, cfg.card && cfg.card.feePct).total) : T.pay + ' ' + fmt(pk.xof) + ' FCFA') + '</button><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p>' + (CONTACT ? '<p class="hint soft">' + T.help + ' <a href="mailto:' + CONTACT + '">' + CONTACT + '</a></p>' : '') + '</div>';
       $('.x', modal).onclick = close;
       Array.prototype.forEach.call(modal.querySelectorAll('.pack'), function (b) { b.onclick = function () { sel.pack = b.dataset.p; draw(); }; });
       Array.prototype.forEach.call(modal.querySelectorAll('[data-m]'), function (b) { b.onclick = function () { sel.method = b.dataset.m; draw(); }; });

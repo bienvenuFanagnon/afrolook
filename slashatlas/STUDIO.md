@@ -14,14 +14,18 @@ Projet Firebase : `slashatlas-studio` (Firestore et fonctions en `europe-west1`)
 ## Conditions générales, litiges et limites carte
 - Texte : `src/terms.mjs` (FR/EN, `TERMS_VERSION`). Pages `/conditions/` et `/en/terms/`. Identité de l'éditeur : `src/config.json` → `legal` (name, form, registration, address, email, phone). À remplir, puis faire relire par un juriste.
 - Tout achat exige la case « conditions » cochée ; le serveur refuse sans `terms` = version courante (`terms_required`) et enregistre sur la commande `terms:{version, at, ip, ua}` + e-mail. Si le texte change : changer `TERMS_VERSION` (les clients rechargent la config).
-- Carte (désactivée tant que `CARD.enabled=false`) : packs p20/p55 seulement, 2 achats/jour/compte, 3/jour/IP, 20 000 FCFA/30 jours/compte, 30/jour au total (`CARD_LIMITS` dans `functions/studio.js`).
+- Carte (activée) : packs p20/p55 seulement, 2 achats/jour/compte, 3/jour/IP, 20 000 FCFA/30 jours/compte, 30/jour au total (`CARD_LIMITS` dans `functions/studio.js`).
 - Admin → « Dernières commandes » → bouton **Preuves** : télécharge le dossier de litige (commande, acceptation des conditions, crédits, images). Conservation des commandes : 18 mois.
 
 ## Hub d'administration (`/admin/`, compte autorisé uniquement)
 Onglets : Vue d'ensemble (audience) · Studio (KPI, commandes + bouton Preuves, offrir/retirer des crédits, comptes, demandes « carte ») · Inscrits (CSV) · Publicité (réglages + affichages) · Outils (liens console, FeexPay, AdSense…). Les actions d'administration sont journalisées dans `SlashAtlasAdminLog`.
 
-## Carte bancaire : mode « bientôt »
-`CARD.enabled=false` : l'onglet « Carte bancaire » affiche « bientôt » ; chaque clic enregistre une statistique `cardwish` (et le pack visé) visible dans l'onglet Studio. Les frais carte seront payés par l'acheteur comme pour le mobile money (renseigner `CARD.payin`/`payout` puis `enabled=true` quand FeexPay valide le KYB carte).
+## Carte bancaire (FeexPay) : activée le 17 octobre 2026
+Le dossier « Card KYC » est validé par FeexPay : `CARD.enabled = true` dans `functions/studio.js`. L'onglet « Carte bancaire » s'affiche tout seul (le serveur l'annonce dans `publicConfig`).
+- **Prix** : la carte se paie en dollars (`pack.usd`). Les frais (commission 3,9 % internationale + 3 % de conversion ≈ **6,9 %**, `CARD.feePct`) sont payés par l'acheteur : montant envoyé à FeexPay = `prix ÷ (1 − 0,069)` arrondi au centime supérieur (`quoteCard`, même calcul côté navigateur dans `try.js`). Pack de 20 crédits : 2,50 $ → 2,69 $ ; pack de 55 : 6,50 $ → 6,99 $ ; pass sans pub : 1,70 $ → 1,83 $.
+- **À vérifier au premier vrai paiement** : que le montant reçu par FeexPay correspond bien au prix du pack une fois leurs frais retirés (sinon ajuster `CARD.feePct`, ou voir avec FeexPay si les frais s'ajoutent au montant envoyé).
+- **Limites** (risque de rétrofacturation, 70 $ par litige, seuil 1 %) : `CARD_LIMITS` — packs de 20 et 55 crédits et pass seulement, 2 achats par jour et par compte, 3 par IP, 20 000 FCFA par mois et par compte, 30 par jour au total. Les achats par carte ne donnent pas de commission de parrainage.
+- **Éteindre en urgence** : `CARD.enabled = false`, puis `firebase deploy --only functions:slashatlas:slashatlasApi --project slashatlas-studio`.
 
 ## Publicité (Google AdSense)
 - Réglée depuis l'admin → Publicité (activer, ID éditeur `ca-pub-…`, ID des blocs `lb` et `rect`) : stocké dans `SlashAtlasSettings/ads`, lu via `/api/config` (cache 1 min). Aucun redéploiement.
