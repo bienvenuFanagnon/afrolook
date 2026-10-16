@@ -30,7 +30,7 @@
       wait: 'La vidéo prend 3 à 6 minutes. Ne fermez pas cette page.',
       steps: ['Scénario', 'Images & voix', 'Assemblage'],
       credModalH: 'Crédits insuffisants',
-      credModalP: 'Il vous faut au moins 10 crédits pour créer un film de 2 min. Rechargez facilement via mobile money ou carte bancaire.',
+      credModalP: 'Il vous faut au moins 100 crédits pour créer un film de 2 min. Rechargez facilement via mobile money ou carte bancaire.',
       credMomo: '📱 Mobile Money',
       credCard: '💳 Carte bancaire',
       credClose: 'Fermer',
@@ -67,7 +67,7 @@
       wait: 'The video takes 3 to 6 minutes. Do not close this page.',
       steps: ['Script', 'Images & voice', 'Assembly'],
       credModalH: 'Not enough credits',
-      credModalP: 'You need at least 10 credits to create a 2-min film. Top up via mobile money or bank card.',
+      credModalP: 'You need at least 100 credits to create a 2-min film. Top up via mobile money or bank card.',
       credMomo: '📱 Mobile Money',
       credCard: '💳 Bank card',
       credClose: 'Close',
@@ -134,17 +134,17 @@
   }
 
   // ── Calcul dynamique du coût ──────────────────────────────────────────────────
-  var FILM_COST = { 2: 10, 3: 15 };
+  var FILM_COST = { 2: 100, 3: 150 };
   function recalcCost() {
     var durEl = document.querySelector('input[name="dur"]:checked');
     var dur = durEl ? +durEl.value : 2;
     var wm = $('#film-watermark') ? $('#film-watermark').checked : true;
     var audioToggle = document.getElementById('film-audio-toggle');
     var hasAudio = !!(uploadedAudioPath && audioToggle && audioToggle.checked);
-    var cost = FILM_COST[dur] || 10;
-    if (wm) cost -= 1;
-    if (hasAudio) cost -= 2;
-    cost = Math.max(1, cost);
+    var cost = FILM_COST[dur] || 100;
+    if (wm) cost -= 10;
+    if (hasAudio) cost -= 20;
+    cost = Math.max(10, cost);
     var costEl = $('#film-cost-val');
     if (costEl) costEl.textContent = String(cost);
     return cost;
@@ -202,8 +202,8 @@
       var L = isFr ? 'fr' : 'en';
       var TL = isFr ? '/conditions/' : '/en/terms/';
       var TB = {
-        fr: { buyTitle: 'Acheter des crédits', buySub: '1 crédit = 1 génération. Les crédits n\'expirent pas.', mm: 'Mobile money', cardTab: 'Carte bancaire', soon: 'bientôt', cardSoon: 'Le paiement par carte arrive bientôt. Merci, nous avons noté votre demande.', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.', pay: 'Payer', cardGo: 'Payer par carte', cardInfo: 'Vous serez redirigé vers la page de paiement sécurisée FeexPay (3D Secure).', firstName: 'Prénom', lastName: 'Nom', city: 'Ville', zip: 'Code postal', countryCard: 'Pays', phoneCard: 'Téléphone (avec indicatif)', feeNote: 'Des frais d\'opérateur peuvent s\'appliquer.', credits: 'crédits', popular: 'Populaire', validate: 'Validez {a} sur votre téléphone (frais d\'opérateur inclus).', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l\'opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer', termsTag: 'À cocher pour payer', termsAccept: 'J\'ai lu et j\'accepte les ', termsLink: 'conditions générales', termsNote: ' Je demande l\'exécution immédiate du service et je reconnais perdre mon droit de rétractation pour les crédits utilisés.', cardPackOnly: 'Par carte : packs de 20 et 55 crédits.', e: { bad_phone: 'Numéro invalide.', otp_required: 'Code OTP requis.', terms_required: 'Cochez l\'acceptation des conditions générales.', bad_card_info: 'Complétez tous les champs.', server: 'Erreur du service, réessayez.', payment_refused: 'Le paiement n\'a pas pu démarrer. Vérifiez le numéro et l\'opérateur.' } },
-        en: { buyTitle: 'Buy credits', buySub: '1 credit = 1 generation. Credits do not expire.', mm: 'Mobile money', cardTab: 'Bank card', soon: 'soon', cardSoon: 'Card payment is coming soon. Thanks, we noted your request.', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.', pay: 'Pay', cardGo: 'Pay by card', cardInfo: 'You will be redirected to FeexPay\'s secure payment page (3D Secure).', firstName: 'First name', lastName: 'Last name', city: 'City', zip: 'Postal code', countryCard: 'Country', phoneCard: 'Phone (with country code)', feeNote: 'Operator fees may apply.', credits: 'credits', popular: 'Popular', validate: 'Confirm {a} on your phone (operator fees included).', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator\'s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close', termsTag: 'Tick to pay', termsAccept: 'I have read and accept the ', termsLink: 'terms and conditions', termsNote: ' I request immediate performance of the service and acknowledge that I lose my right of withdrawal for credits already used.', cardPackOnly: 'By card: 20 and 55 credit packs.', e: { bad_phone: 'Invalid number.', otp_required: 'OTP code required.', terms_required: 'Please tick the box to accept the terms.', bad_card_info: 'Please fill in every field.', server: 'Service error, please try again.', payment_refused: 'The payment could not start. Check the number and operator.' } },
+        fr: { buyTitle: 'Acheter des crédits', buySub: '10 crédits = 1 génération. Les crédits n\'expirent pas.', mm: 'Mobile money', cardTab: 'Carte bancaire', soon: 'bientôt', cardSoon: 'Le paiement par carte arrive bientôt. Merci, nous avons noté votre demande.', country: 'Pays', operator: 'Opérateur', phone: 'Numéro mobile money', otp: 'Code OTP', otpHint: 'Orange Burkina : composez #144*4*6*montant# puis saisissez le code reçu.', pay: 'Payer', cardGo: 'Payer par carte', cardInfo: 'Vous serez redirigé vers la page de paiement sécurisée FeexPay (3D Secure).', firstName: 'Prénom', lastName: 'Nom', city: 'Ville', zip: 'Code postal', countryCard: 'Pays', phoneCard: 'Téléphone (avec indicatif)', feeNote: 'Des frais d\'opérateur peuvent s\'appliquer.', credits: 'crédits', popular: 'Populaire', validate: 'Validez {a} sur votre téléphone (frais d\'opérateur inclus).', paying: 'Validez le paiement sur votre téléphone…', waitPay: 'En attente de la confirmation de l\'opérateur', paid: 'Paiement reçu, crédits ajoutés', payFailed: 'Paiement refusé ou annulé. Réessayez.', openPay: 'Ouvrir la page de paiement', close: 'Fermer', termsTag: 'À cocher pour payer', termsAccept: 'J\'ai lu et j\'accepte les ', termsLink: 'conditions générales', termsNote: ' Je demande l\'exécution immédiate du service et je reconnais perdre mon droit de rétractation pour les crédits utilisés.', cardPackOnly: 'Par carte : packs de 200 et 550 crédits.', e: { bad_phone: 'Numéro invalide.', otp_required: 'Code OTP requis.', terms_required: 'Cochez l\'acceptation des conditions générales.', bad_card_info: 'Complétez tous les champs.', server: 'Erreur du service, réessayez.', payment_refused: 'Le paiement n\'a pas pu démarrer. Vérifiez le numéro et l\'opérateur.' } },
+        en: { buyTitle: 'Buy credits', buySub: '10 credits = 1 generation. Credits do not expire.', mm: 'Mobile money', cardTab: 'Bank card', soon: 'soon', cardSoon: 'Card payment is coming soon. Thanks, we noted your request.', country: 'Country', operator: 'Operator', phone: 'Mobile money number', otp: 'OTP code', otpHint: 'Orange Burkina: dial #144*4*6*amount# then enter the code you receive.', pay: 'Pay', cardGo: 'Pay by card', cardInfo: 'You will be redirected to FeexPay\'s secure payment page (3D Secure).', firstName: 'First name', lastName: 'Last name', city: 'City', zip: 'Postal code', countryCard: 'Country', phoneCard: 'Phone (with country code)', feeNote: 'Operator fees may apply.', credits: 'credits', popular: 'Popular', validate: 'Confirm {a} on your phone (operator fees included).', paying: 'Confirm the payment on your phone…', waitPay: 'Waiting for the operator\'s confirmation', paid: 'Payment received, credits added', payFailed: 'Payment declined or cancelled. Please try again.', openPay: 'Open the payment page', close: 'Close', termsTag: 'Tick to pay', termsAccept: 'I have read and accept the ', termsLink: 'terms and conditions', termsNote: ' I request immediate performance of the service and acknowledge that I lose my right of withdrawal for credits already used.', cardPackOnly: 'By card: 200 and 550 credit packs.', e: { bad_phone: 'Invalid number.', otp_required: 'OTP code required.', terms_required: 'Please tick the box to accept the terms.', bad_card_info: 'Please fill in every field.', server: 'Service error, please try again.', payment_refused: 'The payment could not start. Check the number and operator.' } },
       }[L];
       var countries = []; cfg.operators.forEach(function (o) { if (countries.indexOf(o.country) < 0) countries.push(o.country); });
       var sel = { pack: (cfg.packs.filter(function (p) { return p.tag; })[0] || cfg.packs[0]).id, country: countries[0], op: null, method: method || 'mm', terms: false };

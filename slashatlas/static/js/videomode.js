@@ -59,7 +59,7 @@
       offer: [f.offer.trim(), f.price.trim() ? (en ? 'Only ' + f.price.trim() + '.' : 'Seulement ' + f.price.trim() + '.') : ''].filter(Boolean).join('. '), cta: [f.cta.trim(), f.contact.trim()].filter(Boolean).join('. ') };
   }
   function voiceSegs() { var a = autoVoice(), o = {}; Object.keys(a).forEach(function (k) { o[k] = st.vt[k] != null ? st.vt[k] : a[k]; }); return o; }
-  function cost() { var v = (api.cfg && api.cfg.video) || { base: 4 }; return v.base || 4; }
+  function cost() { var v = (api.cfg && api.cfg.video) || { base: 40 }; return v.base || 40; }
   function field(k) { var max = k === 'hook' ? 60 : k === 'price' || k === 'oldPrice' ? 24 : k === 'offer' ? 16 : k === 'cta' ? 30 : k === 'brand' || k === 'contact' ? 40 : 48; return '<label>' + esc(T[k][0]) + '<input type="text" data-f="' + k + '" maxlength="' + max + '" placeholder="' + esc(T[k][1]) + '" value="' + esc(st.f[k]) + '" autocomplete="off"></label>'; }
   function seg(attr, cur, items) { return '<div class="vseg" role="group">' + items.map(function (it) { return '<button type="button" data-' + attr + '="' + it[0] + '" aria-pressed="' + (cur === it[0]) + '"><b>' + esc(it[1]) + '</b>' + (it[2] ? '<small>' + esc(it[2]) + '</small>' : '') + '</button>'; }).join('') + '</div>'; }
   function ready() { return st.photos.length && !st.busy; }
