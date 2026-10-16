@@ -9,7 +9,7 @@ const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 
-const { matchCard, crest, adSlot, adResponsive, aflCard, listWithAds, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
+const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
 const FAMILLES_ORDRE = ['Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Score', 'Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux'];
 const lvlClass = (p) => (p >= 75 ? 's' : p >= 60 ? 'e' : 'r');
@@ -28,26 +28,36 @@ function topFlash(matches) {
 function flashBlock(rc, matches) {
   const top = topFlash(matches);
   if (!top.length) return '';
-  return `<div class="lbl">${rc.t.flash}</div><div class="top3">${top.map((m) => `<a class="t3" href="${rc.u('match', m)}"><div><small>${timeEl(rc, m.coupDEnvoi)} · ${esc(leagueName(rc, m))}</small><b>${esc(titleOf(m))}</b></div><div class="pk">${esc(pickLabel(rc, m))}<span class="num">${pct(rc, m.prono.principal.confiance)}</span></div></a>`).join('')}</div>`;
+  return `<div class="lbl">${rc.t.flash}</div><div class="top3">${top.map((m) => `<a class="t3" href="${rc.u('match', m)}"><div><small>${timeEl(rc, m.coupDEnvoi)} · ${esc(leagueName(rc, m))}</small><b>${esc(titleOf(m))}</b></div><div class="pk">${esc(pickLabel(rc, m))}<span class="num">${pct(rc, m.prono.principal.confiance)}</span></div><span class="more">${rc.t.moreDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div>`;
 }
 
 /** Liste de cartes groupées par jour quand elle couvre plusieurs jours. */
 function groupedCards(rc, matches) {
-  const days = [...new Set(matches.map((m) => m.jour))];
-  if (days.length <= 1) return listWithAds(rc, matches.map((m) => matchCard(rc, m)));
-  return days.map((d) => `<h2 class="dayh">${esc(dateLongue(d + 'T12:00:00Z', rc.lang))}</h2>${matches.filter((m) => m.jour === d).map((m) => matchCard(rc, m)).join('')}`).join('');
+  const multi = new Set(matches.map((m) => m.jour)).size > 1;
+  // l'intitulé du jour voyage avec sa première carte : les pubs s'insèrent entre les cartes, jamais entre un titre et son match
+  const cards = matches.map((m, i) => (multi && (i === 0 || matches[i - 1].jour !== m.jour) ? `<h2 class="dayh">${esc(dateLongue(m.jour + 'T12:00:00Z', rc.lang))}</h2>` : '') + matchCard(rc, m));
+  return listWithAds(rc, cards);
 }
 
 const bilanBox = (rc, b) => (b && b.taux != null ? `<div class="box bil"><div class="big num">${pct(rc, b.taux)}</div><div><p>${rc.t.bilanBox(b.taux, b.n)}</p><a href="${rc.u('bilan')}">${rc.t.seeBilan}</a></div></div>` : '');
 const emptyDay = (rc) => `<div class="box"><p><b>${rc.t.emptyDayB}</b></p><p class="note" style="margin-top:6px">${rc.t.emptyDayP}</p></div>`;
 
 /** Accueil : pronos du jour (ou des prochains jours s'il n'y a rien aujourd'hui). */
-function home(rc, { matches, bilan }) {
+/** Coupons flash : les coupons prêts à l'emploi, mis en avant sur l'accueil. */
+function flashCoupons(rc, pool) {
+  if (!pool || pool.length < 2) return '';
+  const sugg = suggestions(rc, pool, true);
+  if (!sugg) return '';
+  const t = rc.t;
+  return `<div class="lbl" style="margin-top:6px">${t.flashCoupons}</div><div class="box"><p class="note" style="margin:0 0 8px">${t.flashCouponsP}</p><div class="sg">${sugg}</div><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a></div>`;
+}
+
+function home(rc, { matches, bilan, pool: couponPool }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) : emptyDay(rc)}` +
+    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
@@ -62,7 +72,7 @@ function day(rc, { jour, matches, bilan }) {
   const slug = rc.dayAliases[jour] || jour;
   const date = dateLongue(jour + 'T12:00:00Z', rc.lang);
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, jour)}${C.leagueRail(rc, null)}<div class="layout"><div class="col"><div class="hero"><h1>${t.dayH1(esc(label))}</h1><p>${esc(t.dayP(date, matches.length))}</p></div>` +
-    `${adResponsive(rc, 'haut', 'ad-top')}${matches.length ? listWithAds(rc, matches.map((m) => matchCard(rc, m))) : emptyDay(rc)}</div>${sideColumn(rc, { bilan })}</div></div>`;
+    `${adResponsive(rc, 'haut', 'ad-top')}${matches.length ? listWithAds(rc, matches.map((m) => matchCard(rc, m))) + listEnd(rc, 'jour-fin') : emptyDay(rc)}</div>${sideColumn(rc, { bilan })}</div></div>`;
   return { title: t.dayTitle(label, date), description: t.dayDesc(date, matches.length), path: rc.u('day', slug), alternates: alts(rc, 'day', slug), body, active: 'football' };
 }
 
@@ -108,13 +118,28 @@ function sportsEvent(rc, m) {
 function matchJson(rc, m) {
   const p = m.prono;
   return {
-    id: m.id, nom: titleOf(m), ligue: leagueName(rc, m), t: m.coupDEnvoi,
+    id: m.id, nom: titleOf(m), ligue: leagueName(rc, m), t: m.coupDEnvoi, u: rc.u('analysis', m),
     marches: p.marches.map((x) => ({ k: x.cle, l: betLabel(rc, m, x), f: famLabel(rc, x.famille), p: x.pct, r: x.fiabilite[0] })), matrice: p.matrice,
   };
 }
 const jsonScript = (id, obj) => `<script type="application/json" id="${id}">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 
 const addBtn = (rc, m, mk) => `<button type="button" class="add" data-add="${esc(m.id)}|${esc(mk.cle)}" aria-pressed="false" aria-label="${esc(rc.t.addAria(betLabel(rc, m, mk)))}">＋</button>`;
+
+/**
+ * Plus de pronostics sur un match : les meilleurs paris de chaque famille (jusqu'à n), hors pronostic principal,
+ * fiabilité moyenne ou haute et probabilité utile (ni douteuse, ni évidente). Classés par groupe d'affichage.
+ */
+const GROUPS = [['gMain', ['Résultat', 'Buts']], ['gHalf', ['Mi-temps', 'Handicap', 'Score']], ['gOther', ['Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux']]];
+function moreMarkets(p, n = 3) {
+  const main = p.principal && p.principal.cle;
+  const byFam = {};
+  for (const x of p.marches || []) {
+    if (x.cle === main || x.fiabilite === 'faible' || x.pct < 55 || x.pct >= coupon.MAX_USEFUL_PCT) continue;
+    (byFam[x.famille] = byFam[x.famille] || []).push(x);
+  }
+  return GROUPS.map(([key, fams]) => ({ key, items: fams.filter((f) => byFam[f]).flatMap((f) => byFam[f].sort((a, b) => b.pct - a.pct).slice(0, n)) })).filter((g) => g.items.length);
+}
 
 /** Marchés solides à proposer d'un clic. */
 function solidMarkets(p, n = 3) {
@@ -149,11 +174,18 @@ function match(rc, { m, same, h2h }) {
   const analyse = tx ? `<div class="box an"><div class="lbl">${t.analysis}</div><span class="ai">${textSource(rc, p) === 'secours' ? t.aiFallback : t.aiBadge}</span><p>${esc(tx.analyse)}</p><ul class="kp">${tx.pointsCles.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
   const h2hHtml = h2h && h2h.length ? `<div class="box"><div class="lbl">${t.h2h}</div>${h2hTable(rc, h2h)}</div>` : '';
   const solid = p ? solidMarkets(p) : [];
-  const addBox = solid.length ? `<div class="box"><div class="lbl">${t.addToCoupon}</div><div class="opts">${solid.map((x) => `<div class="op ${lvlClass(x.pct)}"><span>${esc(betLabel(rc, m, x))}<small>${esc(famLabel(rc, x.famille))}</small></span><b class="num">${pct(rc, x.pct)}</b>${addBtn(rc, m, x)}</div>`).join('')}</div></div>` : '';
+  const moreGroups = p && p.visible !== false ? moreMarkets(p) : [];
+  const opt = (x) => `<div class="op ${lvlClass(x.pct)}"><span>${esc(betLabel(rc, m, x))}<small>${esc(famLabel(rc, x.famille))}</small></span><b class="num">${pct(rc, x.pct)}</b>${addBtn(rc, m, x)}</div>`;
+  // les groupes sont séparés par des annonces : native après le premier, bannière après le deuxième
+  const between = [adSlot(rc, 'native', { cls: 'ad-nat' }), adResponsive(rc, 'fin', 'ad-end')];
+  const morePronos = moreGroups.length ? `<div class="box moreb"><div class="lbl">${t.morePronos}</div><p class="note" style="margin:6px 0 4px">${t.morePronosP}</p>` +
+    moreGroups.map((g, i) => `<h3 class="gh">${t[g.key]}</h3><div class="opts">${g.items.map(opt).join('')}</div>${i < moreGroups.length - 1 ? between[i] || '' : ''}`).join('') +
+    `<a class="more-btn" href="${rc.u('analysis', m)}">${t.moreAnalysisBtn} <i aria-hidden="true">→</i></a></div>` : '';
+  const addBox = morePronos;
   const others = same.filter((x) => x.id !== m.id).slice(0, 4);
   const side = sideColumn(rc, {
     afl: 'fiche',
-    extra: others.length ? `<div class="box"><div class="lbl">${t.otherMatches}</div><div style="display:grid;gap:8px;margin-top:10px">${others.map((x) => `<a href="${rc.u('match', x)}" style="text-decoration:none;font-size:13px;border-bottom:1px solid var(--line);padding-bottom:8px"><b style="font-family:var(--fd);font-size:16px">${esc(titleOf(x))}</b><br><span style="color:var(--flash)">${esc(x.prono ? pickLabel(rc, x) : t.inPrep)}</span></a>`).join('')}</div></div>` : '',
+    extra: others.length ? `<div class="box"><div class="lbl">${t.otherMatches}</div><div class="oml">${others.map((x) => `<a class="om" href="${rc.u('match', x)}"><b>${esc(titleOf(x))}</b><span class="pk">${esc(x.prono ? pickLabel(rc, x) : t.inPrep)}</span><span class="more sm">${t.moreDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div></div>` : '',
   });
   const wa = `https://wa.me/?text=${encodeURIComponent(`${t.waMatch(titre, p ? `${pickLabel(rc, m)} (${pct(rc, p.principal.confiance)})` : t.prediction)} ${C.url(rc, path)}`)}`;
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › ${esc(titre)}</nav>` +
@@ -162,7 +194,7 @@ function match(rc, { m, same, h2h }) {
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
     (p && p.visible !== false ? `<div class="box"><div class="lbl">${t.probsTitle}</div><div class="pb">${probRows(rc, p)}</div><p class="note" style="margin-top:12px">${t.likelyScore}${colon(rc)} <b style="color:var(--tx)">${esc(p.scoreProbable)}</b></p></div>` : '') +
-    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}` +
+    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${partnerCard(rc, 'fiche')}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.shareWa}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.matchDisclaimer}</p></div>${side}</div></div>` +
     (p ? jsonScript('pf-match', matchJson(rc, m)) : '');
@@ -200,7 +232,9 @@ function suggestions(rc, pool, withNames) {
     const pr = coupon.couponProbability(sel.map((s) => ({ matchId: s.matchId, key: s.key, pct: s.pct })), null).prob;
     const lab = (s) => { const m = byId[s.matchId]; const l = betLabel(rc, m, { cle: s.key, libelle: s.libelle }); return withNames ? `${titleOf(m)}${colon(rc)} ${l}` : l; };
     const hash = esc(sel.map((s) => s.matchId + '|' + s.key).join(','));
-    return `<a href="${rc.u('coupon')}#${hash}" data-sug="${hash}"><b>${nom} · ${sel.length} ${t.selections}</b><span>${esc(sel.map(lab).join(' · '))}</span><em class="num">${pct(rc, Math.round(pr * 100))}</em></a>`;
+    const ids = [...new Set(sel.map((x) => x.matchId))];
+    const details = ids.map((id) => `<a href="${rc.u('analysis', byId[id])}">${esc(titleOf(byId[id]))} <i aria-hidden="true">›</i></a>`).join('');
+    return `<div class="sgi"><a href="${rc.u('coupon')}#${hash}" data-sug="${hash}"><b>${nom} · ${sel.length} ${t.selections}</b><span>${esc(sel.map(lab).join(' · '))}</span><em class="num">${pct(rc, Math.round(pr * 100))}</em></a><div class="sgd"><small>${t.moreDetails}${colon(rc)}</small>${details}</div></div>`;
   }).join('');
 }
 
@@ -214,7 +248,14 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
   const byFam = {};
   for (const x of p.marches) (byFam[x.famille] = byFam[x.famille] || []).push(x);
   const fams = FAMILLES_ORDRE.filter((f) => byFam[f]);
-  const famHtml = fams.map((f) => `<section class="fam" data-fam="${esc(famLabel(rc, f))}"><h3>${esc(famLabel(rc, f))}</h3>${byFam[f].sort((a, b) => b.pct - a.pct).map((x) => { const rate = rates && rates[x.cle.replace(/[.:]/g, '_')]; return `<div class="fr"><span>${esc(betLabel(rc, m, x))}${rate ? ` <small class="note">${esc(t.realOn(rate.reel, rate.n))}</small>` : ''}</span><b class="num ${lvlClass(x.pct)}">${pct(rc, x.pct)}</b><span class="pill ${FIAB_CLS[x.fiabilite]}">${t.fiab[x.fiabilite]}</span>${addBtn(rc, m, x)}</div>`; }).join('')}</section>`).join('');
+  const famSection = (f) => `<section class="fam" data-fam="${esc(famLabel(rc, f))}"><h3>${esc(famLabel(rc, f))}</h3>${byFam[f].sort((a, b) => b.pct - a.pct).map((x) => { const rate = rates && rates[x.cle.replace(/[.:]/g, '_')]; return `<div class="fr"><span>${esc(betLabel(rc, m, x))}${rate ? ` <small class="note">${esc(t.realOn(rate.reel, rate.n))}</small>` : ''}</span><b class="num ${lvlClass(x.pct)}">${pct(rc, x.pct)}</b><span class="pill ${FIAB_CLS[x.fiabilite]}">${t.fiab[x.fiabilite]}</span>${addBtn(rc, m, x)}</div>`; }).join('')}</section>`;
+  // résultat et buts d'abord ; le reste (mi-temps, handicap, score, corners, tirs, cartons, spéciaux) derrière « Voir les paris avancés »,
+  // avec en tête l'annonce la plus rémunératrice. Le contenu reste dans la page (balise details) : lisible sans JavaScript et par les moteurs.
+  const MAIN_FAMS = ['Résultat', 'Buts'];
+  const mainHtml = fams.filter((f) => MAIN_FAMS.includes(f)).map(famSection).join('');
+  const advFams = fams.filter((f) => !MAIN_FAMS.includes(f));
+  const advHtml = advFams.length ? `<details class="adv" id="pf-adv"><summary><b>${t.advSummary}</b><small>${t.advHint}</small></summary>${adResponsive(rc, 'avance', 'ad-avance')}${advFams.map(famSection).join('')}</details>` : '';
+  const famHtml = mainHtml + advHtml;
   const toc = Object.entries(t.tocItems);
   const tocLinks = toc.map(([id, l]) => `<a href="#d-${id}">${l}</a>`).join('');
   const tocm = toc.map(([id, l]) => `<a class="chip" href="#d-${id}">${l}</a>`).join('');
@@ -236,7 +277,7 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
     (h2h && h2h.length ? sec('h2h', t.h2h, h2hTable(rc, h2h)) : '') +
     sec('fiab', t.ourResults, `<p class="note" style="margin:8px 0">${t.ourResultsP}</p>${calHtml}`) +
     `${adResponsive(rc, 'haut', 'ad-top')}` +
-    (sugg ? sec('coupon', t.readyCoupons, `<div class="sg">${sugg}</div><p class="note" style="margin-top:8px">${t.readyCouponsP}</p>`) : '') +
+    (sugg ? sec('coupon', t.readyCoupons, `<div class="sg">${sugg}</div><p class="note" style="margin-top:8px">${t.readyCouponsP}</p><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a>`) : '') +
     sec('avant', t.beforeValidate, `<ul class="ck">${t.checklist.map((x) => `<li>${esc(x)}</li>`).join('')}<li>${esc(t.checklistLast)} <a href="${rc.u('legal', 'jeu-responsable')}" style="color:var(--cy)">${t.responsible}</a>.</li></ul>`) +
     `<div class="sh"><a class="wa" href="https://wa.me/?text=${encodeURIComponent(`${t.waAnalysis(titre)} ${C.url(rc, path)}`)}" target="_blank" rel="noopener">${t.shareAnalysis}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.detDisclaimer}</p></div>` +
@@ -270,7 +311,7 @@ function bilan(rc, { s30, weeks, recent, leagues, familles }) {
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em></a>`).join('')}</div></div>` : '') +
+    (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };
 }
@@ -286,7 +327,8 @@ function couponPage(rc, { pool }) {
   }));
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.couponH1}</h1><p>${t.couponP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}` +
     `<div class="box"><div class="lbl">${t.proposed}</div><div class="sg">${sugg || `<p class="note">${t.proposedEmpty}</p>`}</div><p class="note" style="margin-top:8px">${t.neverWeak}</p></div>` +
-    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div><p class="note">${t.couponDisclaimer}</p></div>` +
+    `${adResponsive(rc, 'fin', 'ad-end')}${channelBanner(rc, 'coupon')}` +
+    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}<p class="note">${t.couponDisclaimer}</p></div>` +
     `<aside class="side"><div class="sticky"><div class="cp" id="pf-cpanel"></div>${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, 'coupon', 0)}</div></aside></div></div>${jsonScript('pf-pool', data)}`;
   return { title: t.couponTitle, description: t.couponDesc, path: rc.u('coupon'), alternates: alts(rc, 'coupon'), body, active: 'coupon' };
 }
@@ -308,4 +350,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };

@@ -4,8 +4,9 @@
 
 const DEFAULT_SITE = {
   nom: 'PronoFlash IA',
-  domaine: 'pronoflashia.com',
-  origine: 'https://pronoflashia.com',
+  // Adresse provisoire ; à remplacer par pronoflashia.com (Réglages de l'admin) quand le nom de domaine est acheté.
+  domaine: 'pronoflashia.web.app',
+  origine: 'https://pronoflashia.web.app',
   email: '',
   editeur: '',
   adresse: '',
@@ -13,6 +14,7 @@ const DEFAULT_SITE = {
   loi: '',
   hebergeur: 'Google Cloud (Firebase Hosting), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande',
   indexable: true,
+  googleVerification: '', // code de vérification de propriété Google Search Console (balise HTML)
   analyticsGa: '',
   whatsapp: '',
   telegram: '',
@@ -23,6 +25,11 @@ const SLOTS = {
   native: { actif: false, every: 4 },
   verdict: { actif: false, dk: [728, 90], mo: [320, 100] },
   fiche_native: { actif: false },
+  avance: { actif: false, dk: [300, 250], mo: [300, 250] }, // avant les paris avancés (fiche d'analyse) : l'emplacement le plus regardé, à réserver à la meilleure annonce
+  fin: { actif: false, dk: [728, 90], mo: [320, 100] }, // fin de liste de matchs
+  coupon_liste: { actif: false, every: 3, dk: [728, 90], mo: [320, 100] }, // bannières dans la liste de la page coupon (jusqu'à 4, insérées par le navigateur)
+  // Offre partenaire (Smartlink) : carte clairement étiquetée « Sponsorisé », jamais déguisée en contenu ; lien ouvert par un clic volontaire
+  smartlink: { actif: false, every: 8, url: '', titre: '', bouton: '' },
   colonne_rect: { actif: false, dk: [300, 250] },
   colonne_tall: { actif: false, dk: [300, 600] },
   collante: { actif: false, mo: [320, 50] },
@@ -32,7 +39,7 @@ const SLOTS = {
 
 const DEFAULT_ADS = {
   actif: false, // interrupteur général : rien ne s'affiche tant qu'il est coupé
-  afrolook: { actif: true, every: 8, part: 25 }, // encarts maison ; part = % des emplacements où Afrolook passe en premier
+  afrolook: { actif: true, every: 6, part: 25 }, // encarts maison ; part = % des emplacements où Afrolook passe en premier
   emplacements: SLOTS,
   adsTxt: '',
   verifications: [], // balises meta de vérification de propriété demandées par les réseaux

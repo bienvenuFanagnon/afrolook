@@ -22,8 +22,8 @@
     cmp: '<p><b>Advertising</b><br>This site is free thanks to advertising. Our partners\' ads may use cookies to choose and measure ads. You can accept or refuse; the predictions stay the same. <a href="/en/privacy" style="color:var(--cy)">Learn more</a></p><div class="row"><button class="btn" type="button" data-c="1">Accept</button><button class="btn sec" type="button" data-c="0">Refuse</button></div>',
     msg: ['Football debates on Afrolook: share your take on the match', 'Share your tips with friends on Afrolook', 'Your likes turn into coins on Afrolook', 'Post videos? Afrolook pays you for your views', 'Afrolook: the African creators network'],
     sponsored: 'Sponsored', aflCta: 'Download for free', adTitle: 'Advertisement', copied: 'Link copied', all: 'All',
-    myCoupon: 'My slip', sel: function (n) { return n > 1 ? 'selections' : 'selection'; }, view: 'View', max5: 'A slip holds 5 selections at most',
-    analysis: 'analysis', choose: 'Pick your bets', remove: 'Remove',
+    myCoupon: 'My slip', sel: function (n) { return n > 1 ? 'selections' : 'selection'; }, view: 'View my slip', clearAria: 'Clear my slip', max5: 'A slip holds 5 selections at most',
+    analysis: 'See details ›', choose: 'Pick your bets', remove: 'Remove',
     empty: 'Pick 2 to 5 bets. You can take several in the same match: the calculation accounts for it.',
     replace: function (a, b) { return 'Replace “' + a + '” with “' + b + '”'; }, moves: function (a, b) { return 'The slip goes from ' + a + '% to ' + b + '%'; },
     share: function (pc) { return 'My PronoFlash IA slip (' + pc + '% chance that everything wins):'; },
@@ -35,8 +35,8 @@
     cmp: '<p><b>Publicités</b><br>Ce site est gratuit grâce à la publicité. Les publicités de nos partenaires peuvent utiliser des cookies pour choisir et mesurer les annonces. Tu peux accepter ou refuser ; les pronostics restent les mêmes. <a href="/confidentialite" style="color:var(--cy)">En savoir plus</a></p><div class="row"><button class="btn" type="button" data-c="1">Accepter</button><button class="btn sec" type="button" data-c="0">Refuser</button></div>',
     msg: ['Débats foot sur Afrolook : donne ton avis sur le match', 'Partage tes pronos entre amis sur Afrolook', 'Tes likes deviennent des pièces sur Afrolook', 'Tu postes des vidéos ? Afrolook te paie tes vues', 'Afrolook : le réseau africain des créateurs'],
     sponsored: 'Sponsorisé', aflCta: 'Télécharger gratuitement', adTitle: 'Publicité', copied: 'Lien copié', all: 'Tous',
-    myCoupon: 'Mon coupon', sel: function (n) { return n > 1 ? 'sélections' : 'sélection'; }, view: 'Voir', max5: 'Un coupon contient 5 sélections au plus',
-    analysis: 'analyse', choose: 'Choisis tes paris', remove: 'Retirer',
+    myCoupon: 'Mon coupon', sel: function (n) { return n > 1 ? 'sélections' : 'sélection'; }, view: 'Voir mon coupon', clearAria: 'Vider mon coupon', max5: 'Un coupon contient 5 sélections au plus',
+    analysis: 'Voir détails ›', choose: 'Choisis tes paris', remove: 'Retirer',
     empty: 'Choisis 2 à 5 paris. Tu peux en prendre plusieurs dans un même match : le calcul en tient compte.',
     replace: function (a, b) { return 'Remplacer « ' + a + ' » par « ' + b + ' »'; }, moves: function (a, b) { return 'Le coupon passe de ' + a + ' % à ' + b + ' %'; },
     share: function (pc) { return 'Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :'; },
@@ -59,7 +59,9 @@
   var NON_UE = /^Europe\/(Moscow|Istanbul|Minsk|Kiev|Kyiv|Chisinau|Belgrade|Skopje|Sarajevo|Tirane|Podgorica|Zurich|Simferopol|Volgograd|Samara|Kaliningrad|Saratov|Astrakhan|Ulyanovsk|Kirov)$/;
   var needsConsent = /^Europe\//.test(tz) && !NON_UE.test(tz);
   var consent = store.get('pf_consent');
-  var adsAllowed = function () { return !needsConsent || !!(consent && consent.ads === true); };
+  /* navigateur de l'administrateur : pubs tierces masquées (aucun affichage ni clic de soi-même, que les réseaux sanctionnent) */
+  var ownerBrowser = store.get('pf_noads') === 1;
+  var adsAllowed = function () { return !ownerBrowser && (!needsConsent || !!(consent && consent.ads === true)); };
   var cmp = $('#pf-cmp');
   function showCmp(force) {
     if (!cmp) return;
@@ -123,6 +125,14 @@
     a.addEventListener('click', function () { send({ t: 'afl_click', fmt: slot }); });
   }
   $$('a.afl').forEach(aflInit);
+  /* canal WhatsApp : clics comptés */
+  $$('a[data-chn]').forEach(function (a) { a.addEventListener('click', function () { send({ t: 'chan_click', n: a.getAttribute('data-chn') || 'x' }); }); });
+  /* offre partenaire (Smartlink) : mesure des affichages et des clics */
+  $$('a.ptn').forEach(function (a) {
+    var slot = a.getAttribute('data-ptn') || 'x', seen = false;
+    if ('IntersectionObserver' in w) new IntersectionObserver(function (es, o) { es.forEach(function (e) { if (e.isIntersecting && !seen) { seen = true; send({ t: 'ptn_imp', fmt: slot }); o.disconnect(); } }); }).observe(a);
+    a.addEventListener('click', function () { send({ t: 'ptn_click', fmt: slot }); });
+  });
   function aflNode(slot, i) {
     var a = d.createElement('a'); a.className = 'afl'; a.target = '_blank'; a.rel = 'noopener sponsored'; a.setAttribute('data-afl', slot); a.setAttribute('data-i', String(i || 0));
     a.href = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok&utm_source=pronoflashia&utm_campaign=' + encodeURIComponent(slot);
@@ -153,8 +163,8 @@
     var wd = +el.getAttribute('data-w'), ht = +el.getAttribute('data-h'); var mobile = el.getAttribute('data-v') === 'mo';
     var nets = (e && e.reseaux || []).filter(function (r) { return (mobile && r.codeMobile ? r.codeMobile : r.code); });
     var afl = c && c.afrolook; var aflFirst = afl && afl.actif && Math.random() * 100 < (afl.part || 0);
-    function afrolook() { if (afl && !afl.actif) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, 0)); el.style.width = '100%'; }
-    if (!adsAllowed() || !nets.length || aflFirst) return afrolook();
+    function afrolook() { if ((afl && !afl.actif) || el.getAttribute('data-nofb')) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, parseInt(el.getAttribute('data-k'), 10) || 0)); el.style.width = '100%'; }
+    if (!c || !c.actif || !adsAllowed() || !nets.length || aflFirst) return afrolook();
     var k = 0;
     (function next() {
       if (k >= nets.length) return afrolook();
@@ -169,7 +179,7 @@
     var slots = $$('.ad[data-ad]').filter(function (s) { return s.offsetParent !== null && (retry || !s.getAttribute('data-done')); });
     if (!slots.length) return;
     getCfg().then(function (c) {
-      cfg = c; if (!c || !c.actif) { slots.forEach(function (s) { s.hidden = true; }); return; }
+      cfg = c; if (!c) { slots.forEach(function (s) { s.hidden = true; }); return; }
       if (!('IntersectionObserver' in w)) { slots.forEach(function (s) { fill(s, c); }); return; }
       var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); fill(en.target, c); } }); }, { rootMargin: '300px' });
       slots.forEach(function (s) { if (retry) { s.removeAttribute('data-done'); s.innerHTML = ''; s.style.minHeight = (s.getAttribute('data-h') || 0) + 'px'; s.style.width = ''; } io.observe(s); });
@@ -193,6 +203,10 @@
     });
   }
 
+  /* ---------- paris avancés : l'annonce du haut du bloc ne se charge qu'à l'ouverture ---------- */
+  var adv = $('#pf-adv');
+  if (adv) adv.addEventListener('toggle', function () { if (adv.open) loadAds(false); });
+
   /* ---------- clics de partage ---------- */
   $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = L.copied; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
   $$('a.wa').forEach(function (a) { a.addEventListener('click', function () { send({ t: 'wa', n: pageType() }); }); });
@@ -201,7 +215,7 @@
   var fams = $('#pf-fams');
   if (fams) {
     var secs = $$('.fam'); fams.innerHTML = '<button type="button" aria-pressed="true" data-f="">' + esc(L.all) + '</button>' + secs.map(function (s) { return '<button type="button" aria-pressed="false" data-f="' + esc(s.getAttribute('data-fam')) + '">' + esc(s.getAttribute('data-fam')) + '</button>'; }).join(''); fams.hidden = false;
-    fams.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; $$('button', fams).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); secs.forEach(function (s) { s.hidden = !!b.getAttribute('data-f') && s.getAttribute('data-fam') !== b.getAttribute('data-f'); }); });
+    fams.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; $$('button', fams).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); secs.forEach(function (s) { s.hidden = !!b.getAttribute('data-f') && s.getAttribute('data-fam') !== b.getAttribute('data-f'); }); var shown = secs.filter(function (s) { return !s.hidden; }); if (adv && !adv.open && shown.length && shown.every(function (s) { return adv.contains(s); })) adv.open = true; });
   }
 
   /* ---------- coupon ---------- */
@@ -215,13 +229,13 @@
   function chrome() {
     var n = sel.length; var cpn = $('#pf-cpn'), bar = $('#pf-cbar');
     if (cpn) { cpn.hidden = !n || path === couponPath; cpn.textContent = L.myCoupon + ' (' + n + ')'; }
-    if (bar) { if (!n || path === couponPath) bar.hidden = true; else { var r = calc(); bar.hidden = false; bar.innerHTML = '<span>' + L.myCoupon + ' · <b class="num">' + n + '</b> ' + L.sel(n) + (n > 1 ? ' · <b class="num">' + Math.round(r.prob * 100) + L.pct + '</b>' : '') + '</span><a href="' + esc(couponPath) + '">' + L.view + '</a>'; } }
+    if (bar) { if (!n || path === couponPath) bar.hidden = true; else { var r = calc(); bar.hidden = false; bar.innerHTML = '<span><b class="num">' + n + '</b> ' + L.sel(n) + (n > 1 ? ' · <b class="num">' + Math.round(r.prob * 100) + L.pct + '</b>' : '') + '</span><button type="button" class="bclr" data-bclr="1" aria-label="' + L.clearAria + '" title="' + L.clearAria + '">✕</button><a href="' + esc(couponPath) + '">' + L.view + '</a>'; } }
     $$('[data-add]').forEach(function (b) { var p = b.getAttribute('data-add').split('|'); b.setAttribute('aria-pressed', String(sel.some(function (s) { return s.m === p[0] && s.k === p[1]; }))); });
   }
   function toggle(m, k, info) {
     var i = -1; sel.forEach(function (s, j) { if (s.m === m && s.k === k) i = j; });
     if (i >= 0) sel.splice(i, 1);
-    else { if (sel.length >= 5) return false; sel.push({ m: m, k: k, l: info.l, f: info.f, p: info.p, r: info.r, n: info.n, x: info.x }); }
+    else { if (sel.length >= 5) return false; sel.push({ m: m, k: k, l: info.l, f: info.f, p: info.p, r: info.r, n: info.n, u: info.u, x: info.x }); }
     saveSel(); send({ t: 'coupon_add', n: pageType() }); return true;
   }
   /* boutons « ＋ » des pages match et analyse */
@@ -230,10 +244,12 @@
     d.addEventListener('click', function (e) {
       var b = e.target.closest('[data-add]'); if (!b) return;
       var p = b.getAttribute('data-add').split('|'); var x = by[p[1]]; if (!x) return;
-      if (!toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: mdata.nom, x: mdata.matrice })) b.title = L.max5;
+      if (!toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: mdata.nom, u: mdata.u, x: mdata.matrice })) b.title = L.max5;
     });
   }
   chrome();
+  /* vider le coupon depuis la barre du bas (sur toutes les pages) */
+  d.addEventListener('click', function (e) { var c = e.target.closest('[data-bclr]'); if (!c) return; sel = []; saveSel(); });
 
   var root = $('#pf-coupon'), pool = null;
   if (root) {
@@ -246,7 +262,7 @@
       var hash = decodeURIComponent((location.hash || '').slice(1));
       if (!hash || !/\|/.test(hash)) return false;
       var nsel = [];
-      hash.split(',').forEach(function (h) { var p = h.split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m && m.marches.filter(function (y) { return y.k === p[1]; })[0]; if (x) nsel.push({ m: m.id, k: x.k, l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, x: m.matrice }); });
+      hash.split(',').forEach(function (h) { var p = h.split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m && m.marches.filter(function (y) { return y.k === p[1]; })[0]; if (x) nsel.push({ m: m.id, k: x.k, l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, u: m.slug, x: m.matrice }); });
       if (!nsel.length) return false;
       sel = nsel.slice(0, 5); store.set('pf_coupon', sel); return true;
     };
@@ -255,23 +271,50 @@
     var mq = w.matchMedia ? w.matchMedia('(min-width:900px)') : null;
     var placePanel = function () { if (!panel) return; if (mq && !mq.matches) root.appendChild(panel); else { var side = $('.side .sticky'); if (side) side.insertBefore(panel, side.firstChild); } };
     if (mq && mq.addEventListener) mq.addEventListener('change', placePanel); placePanel();
+    /* La liste est un squelette construit une seule fois (un conteneur par match) : seuls les contenus changent à chaque clic.
+       Les bannières insérées entre les conteneurs ne sont donc jamais rechargées (pas d'affichages publicitaires en double). */
+    var matchBlock = function (m) {
+      var opts = m.marches.filter(function (x) { return fam === L.all ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
+      if (!opts.length) return '';
+      return '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '" style="color:var(--cy)">' + L.analysis + '</a></span></div><div class="opts">' +
+        opts.slice(0, fam === L.all ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + L.pct + '</b></button>'; }).join('') + '</div></div>';
+    };
     var render = function () {
-      var html = '<div class="mk" id="pf-fk" style="margin-top:8px">' + FAMS.map(function (f) { return '<button type="button" data-fk="' + esc(f) + '" aria-pressed="' + (f === fam) + '">' + esc(f) + '</button>'; }).join('') + '</div>';
-      pool.forEach(function (m) {
-        var opts = m.marches.filter(function (x) { return fam === L.all ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
-        if (!opts.length) return;
-        html += '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '" style="color:var(--cy)">' + L.analysis + '</a></span></div><div class="opts">' +
-          opts.slice(0, fam === L.all ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + L.pct + '</b></button>'; }).join('') + '</div></div>';
-      });
-      var pk = $('#pf-picker'); if (!pk) { pk = d.createElement('div'); pk.id = 'pf-picker'; root.insertBefore(pk, root.firstChild); }
-      pk.innerHTML = '<div class="lbl" style="margin-top:6px">' + L.choose + '</div>' + html;
+      var pk = $('#pf-picker');
+      if (!pk) {
+        pk = d.createElement('div'); pk.id = 'pf-picker';
+        pk.innerHTML = '<div class="lbl" style="margin-top:6px">' + L.choose + '</div><div class="mk" id="pf-fk" style="margin-top:8px"></div>' + pool.map(function (m) { return '<div class="cmb" data-m="' + esc(m.id) + '"></div>'; }).join('');
+        root.insertBefore(pk, root.firstChild);
+      }
+      $('#pf-fk', pk).innerHTML = FAMS.map(function (f) { return '<button type="button" data-fk="' + esc(f) + '" aria-pressed="' + (f === fam) + '">' + esc(f) + '</button>'; }).join('');
+      var blocks = $$('.cmb', pk);
+      pool.forEach(function (m, i) { blocks[i].innerHTML = matchBlock(m); });
       if (panel) panel.innerHTML = panelHtml();
       chrome();
+    };
+    /* Pubs dans la liste « Choisis tes paris » : une après chaque 3e match (3, 6, 9…), cinq au plus. Elles prennent les codes de l'emplacement
+       « Bannières dans la liste du coupon » ; s'il n'est pas réglé, ceux d'un autre emplacement actif (haut, fin, native) ; à défaut, un encart Afrolook.
+       Le squelette de la liste ne change jamais : les pubs ne se rechargent pas aux clics. */
+    var insertPickerAds = function () {
+      getCfg().then(function (c) {
+        if (!c) return;
+        var E = c.emplacements || {}, id = 'coupon_liste';
+        if (c.actif) { ['coupon_liste', 'haut', 'fin', 'native'].some(function (k) { var e = E[k]; if (e && e.actif && (e.reseaux || []).length) { id = k; return true; } return false; }); }
+        var every = Math.max(2, (E.coupon_liste && E.coupon_liste.every) || 3), blocks = $$('#pf-picker .cmb'), put = 0;
+        blocks.forEach(function (b, i) {
+          var n = i + 1; if (put >= 5 || n % every !== 0 || n >= blocks.length) return;
+          var mk = function (v, wd, ht) { var x = d.createElement('div'); x.className = 'ad ad-end ' + v; x.setAttribute('data-ad', id); x.setAttribute('data-v', v); x.setAttribute('data-w', wd); x.setAttribute('data-h', ht); x.setAttribute('data-k', String(put)); x.style.minHeight = ht + 'px'; return x; };
+          b.parentNode.insertBefore(mk('mo', 320, 100), b.nextSibling);
+          b.parentNode.insertBefore(mk('dk', 728, 90), b.nextSibling);
+          put++;
+        });
+        loadAds(false);
+      });
     };
     var panelHtml = function () {
       var n = sel.length, r = calc(), pc = Math.round(r.prob * 100), risk = PFc.riskLevel ? PFc.riskLevel(r.prob, LANG) : { label: '' };
       var col = r.prob >= .55 ? 'var(--ok)' : r.prob >= .35 ? 'var(--flash)' : r.prob >= .2 ? '#ff9f43' : 'var(--ko)';
-      var rows = sel.map(function (s) { return '<div class="sel"><small>' + esc(s.n) + ' · ' + esc(s.f) + '</small><span>' + esc(s.l) + '</span><b class="num">' + s.p + L.pct + '</b><button type="button" data-rm="' + esc(s.m) + '|' + esc(s.k) + '" aria-label="' + L.remove + '">✕</button></div>'; }).join('') || '<p class="note" style="margin-top:8px">' + L.empty + '</p>';
+      var rows = sel.map(function (s) { return '<div class="sel"><small>' + (/^\/[a-z0-9\/_-]+$/i.test(s.u || '') ? '<a href="' + esc(s.u) + '" style="color:var(--cy)">' + esc(s.n) + ' ›</a>' : esc(s.n)) + ' · ' + esc(s.f) + '</small><span>' + esc(s.l) + '</span><b class="num">' + s.p + L.pct + '</b><button type="button" data-rm="' + esc(s.m) + '|' + esc(s.k) + '" aria-label="' + L.remove + '">✕</button></div>'; }).join('') || '<p class="note" style="margin-top:8px">' + L.empty + '</p>';
       var warns = (PFc.warnings ? PFc.warnings(selForCalc(), r, LANG) : []).map(function (x) { return '<div class="' + (x.type === 'info' ? 'i' : '') + '"><span>' + (x.type === 'info' ? 'ℹ️' : '⚠️') + '</span><span>' + esc(x.text) + '</span></div>'; }).join('');
       var swap = '';
       if (n >= 2 && PFc.weakestSwap) {
@@ -288,13 +331,14 @@
     d.addEventListener('click', function (e) {
       var t = e.target.closest('[data-fk],[data-pk],[data-rm],[data-clr],[data-swap]'); if (!t || !(root.contains(t) || (panel && panel.contains(t)))) return;
       if (t.getAttribute('data-fk')) fam = t.getAttribute('data-fk');
-      else if (t.getAttribute('data-pk')) { var p = t.getAttribute('data-pk').split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m.marches.filter(function (y) { return y.k === p[1]; })[0]; toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, x: m.matrice }); }
+      else if (t.getAttribute('data-pk')) { var p = t.getAttribute('data-pk').split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m.marches.filter(function (y) { return y.k === p[1]; })[0]; toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, u: m.slug, x: m.matrice }); }
       else if (t.getAttribute('data-rm')) { var q = t.getAttribute('data-rm').split('|'); sel = sel.filter(function (s) { return !(s.m === q[0] && s.k === q[1]); }); saveSel(); }
       else if (t.getAttribute('data-clr')) { sel = []; saveSel(); }
-      else if (t.getAttribute('data-swap')) { var sp = t.getAttribute('data-swap').split('|'); var mm = pool.filter(function (y) { return y.id === sp[0]; })[0]; var nx = mm && mm.marches.filter(function (y) { return y.k === sp[2]; })[0]; if (nx) { sel = sel.filter(function (s) { return !(s.m === sp[0] && s.k === sp[1]); }); sel.push({ m: mm.id, k: nx.k, l: nx.l, f: nx.f, p: nx.p, r: nx.r, n: mm.nom, x: mm.matrice }); saveSel(); } }
+      else if (t.getAttribute('data-swap')) { var sp = t.getAttribute('data-swap').split('|'); var mm = pool.filter(function (y) { return y.id === sp[0]; })[0]; var nx = mm && mm.marches.filter(function (y) { return y.k === sp[2]; })[0]; if (nx) { sel = sel.filter(function (s) { return !(s.m === sp[0] && s.k === sp[1]); }); sel.push({ m: mm.id, k: nx.k, l: nx.l, f: nx.f, p: nx.p, r: nx.r, n: mm.nom, u: mm.slug, x: mm.matrice }); saveSel(); } }
       render();
     });
     w.addEventListener('hashchange', function () { if (applyHash()) render(); });
     render();
+    insertPickerAds();
   }
 })();

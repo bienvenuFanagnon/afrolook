@@ -89,7 +89,14 @@ class FakeDb {
       commit: async () => { for (const o of ops) await o(); },
     };
   }
-  async runTransaction(fn) {
+  // Firestore rejoue une transaction en conflit : ici on les exécute l'une après l'autre, ce qui donne le même résultat
+  runTransaction(fn) {
+    const run = () => this._transaction(fn);
+    const p = (this._txQueue || Promise.resolve()).then(run, run);
+    this._txQueue = p.catch(() => {});
+    return p;
+  }
+  async _transaction(fn) {
     const writes = [];
     const tx = { get: (ref) => ref.get(), set: (ref, data, opts) => { writes.push(() => ref.set(data, opts)); return tx; }, update: (ref, data) => { writes.push(() => ref.update(data)); return tx; } };
     const r = await fn(tx);

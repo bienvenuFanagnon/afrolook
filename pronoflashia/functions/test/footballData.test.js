@@ -88,3 +88,96 @@ test('choix de la source de données', () => {
   assert.throws(() => makeApi({}), /manquant/);
   assert.throws(() => makeApi({ source: 'football-data', apiFootball: 'b' }), /FOOTBALL_DATA_TOKEN/);
 });
+
+test('premier passage : les championnats par défaut sont ajoutés une seule fois, avec la saison en cours', async () => {
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { seedDefaultLeagues } = require('../src/jobs/syncFixtures');
+  const { DEFAULT_LEAGUES } = require('../src/data/footballData');
+  const db = new FakeDb();
+  const api = { defaultLeagues: DEFAULT_LEAGUES, leagues: async ({ id }) => [{ league: { id }, seasons: [{ year: 2025, current: false }, { year: 2026, current: true }] }] };
+  const report = { erreurs: [], infos: {} };
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date('2026-10-16T05:00:00Z') }, report), 6);
+  const l = db.read('leagues', '2015');
+  assert.equal(l.saison, 2026); assert.equal(l.suivi, true); assert.equal(l.slug, 'ligue-1'); assert.equal(l.noms.en, 'Ligue 1');
+  assert.equal(db.read('leagues', '2014').noms.en, 'La Liga');
+  assert.equal(report.infos.championnatsInitialises, 6);
+  // une fois les championnats en place (ou retirés par l'admin), rien n'est rajouté
+  db.read('leagues', '2015').suivi = false;
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date() }, { erreurs: [], infos: {} }), 0);
+  // source sans championnats par défaut (API-Football) : rien
+  assert.equal(await seedDefaultLeagues({ db: new FakeDb(), api: {}, now: new Date() }, { erreurs: [], infos: {} }), 0);
+});
+
+test('premier passage : les championnats par défaut sont ajoutés une seule fois, avec la saison en cours', async () => {
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { seedDefaultLeagues } = require('../src/jobs/syncFixtures');
+  const { DEFAULT_LEAGUES } = require('../src/data/footballData');
+  const db = new FakeDb();
+  const api = { defaultLeagues: DEFAULT_LEAGUES, leagues: async ({ id }) => [{ league: { id }, seasons: [{ year: 2025, current: false }, { year: 2026, current: true }] }] };
+  const report = { erreurs: [], infos: {} };
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date('2026-10-16T05:00:00Z') }, report), 6);
+  const l = db.read('leagues', '2015');
+  assert.equal(l.saison, 2026); assert.equal(l.suivi, true); assert.equal(l.slug, 'ligue-1'); assert.equal(l.noms.en, 'Ligue 1');
+  assert.equal(db.read('leagues', '2014').noms.en, 'La Liga');
+  assert.equal(report.infos.championnatsInitialises, 6);
+  // une fois les championnats en place (ou retirés par l'admin), rien n'est rajouté
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date() }, { erreurs: [], infos: {} }), 0);
+  // source sans championnats par défaut (API-Football) : rien
+  assert.equal(await seedDefaultLeagues({ db: new FakeDb(), api: {}, now: new Date() }, { erreurs: [], infos: {} }), 0);
+});
+
+test('football-data : lancement manuel — attente de débit trop longue → erreur claire au lieu d\'un blocage de 60 s', async () => {
+  const waits = [];
+  const fetchImpl = async () => reply({ matches: [] }, 200, { 'x-requests-available-minute': '0', 'x-requestcounter-reset': '45' });
+  const api = createClient({ key: 'k', fetchImpl, maxWaitMs: 20000, sleep: async (ms) => { waits.push(ms); } });
+  await api.fixtures({ league: 1, season: 2026 });
+  await assert.rejects(() => api.fixtures({ league: 1, season: 2026 }), /Limite de débit.*réessayez dans une minute/);
+  assert.deepEqual(waits, []);
+  assert.equal(api.singleCall, true);
+});
+
+test('logos des clubs : conservés depuis le fournisseur, limités aux hôtes connus, affichés avec repli sur l\'écusson généré', async () => {
+  const { safeLogo } = require('../src/data/normalize');
+  const { crest } = require('../src/render/components');
+  assert.equal(safeLogo('https://crests.football-data.org/546.png'), 'https://crests.football-data.org/546.png');
+  assert.equal(safeLogo('https://media.api-sports.io/football/teams/85.png'), 'https://media.api-sports.io/football/teams/85.png');
+  assert.equal(safeLogo('http://crests.football-data.org/546.png'), null);
+  assert.equal(safeLogo('https://evil.example/x.png'), null);
+  assert.equal(safeLogo('javascript:alert(1)'), null);
+  assert.equal(safeLogo(null), null);
+  const withLogo = crest({ initiales: 'LE', couleurs: ['#111', '#222'], logo: 'https://crests.football-data.org/546.png' });
+  assert.match(withLogo, /<img src="https:\/\/crests\.football-data\.org\/546\.png" alt="" width="26" height="26" loading="lazy"/);
+  assert.match(withLogo, />LE<img/);
+  assert.doesNotMatch(crest({ initiales: 'LE' }), /<img/);
+  // le logo passe de l'API jusqu'à la base
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { syncLeagueFixtures } = require('../src/jobs/syncFixtures');
+  const { toFixture } = require('../src/data/footballData');
+  const db = new FakeDb();
+  const raw = [toFixture(Object.assign({}, MATCH, { status: 'TIMED', homeTeam: Object.assign({}, MATCH.homeTeam, { crest: 'https://crests.football-data.org/546.png' }) }))];
+  await syncLeagueFixtures({ db, api: {}, league: { apiId: 2015, slug: 'ligue-1', nom: 'Ligue 1' }, now: new Date('2026-10-09T08:00:00Z'), days: 7, preloaded: raw });
+  assert.equal(db.read('teams', '546').logo, 'https://crests.football-data.org/546.png');
+  assert.equal(db.read('matches', '2015_559669').domicile.logo, 'https://crests.football-data.org/546.png');
+  assert.equal(db.read('matches', '2015_559669').exterieur.logo, null);
+});
+
+test('changement de saison automatique : relu une fois par semaine, corrige la saison, ne bloque jamais la synchronisation', async () => {
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { refreshSeason } = require('../src/jobs/syncFixtures');
+  const db = new FakeDb();
+  await db.seed('leagues', '2015', { apiId: 2015, nom: 'Ligue 1', saison: 2026, suivi: true });
+  let calls = 0;
+  const api = { leagues: async () => { calls++; return [{ seasons: [{ year: 2026, current: false }, { year: 2027, current: true }] }]; } };
+  const league = db.read('leagues', '2015');
+  assert.equal(await refreshSeason({ db, api, league, now: new Date('2027-08-20T05:00:00Z') }), true);
+  assert.equal(db.read('leagues', '2015').saison, 2027); assert.equal(league.saison, 2027);
+  // déjà vérifiée il y a moins d'une semaine : aucun appel
+  assert.equal(await refreshSeason({ db, api, league: db.read('leagues', '2015'), now: new Date('2027-08-22T05:00:00Z') }), false);
+  assert.equal(calls, 1);
+  // une semaine plus tard : relue, saison inchangée
+  assert.equal(await refreshSeason({ db, api, league: db.read('leagues', '2015'), now: new Date('2027-08-28T05:00:00Z') }), false);
+  assert.equal(calls, 2);
+  // erreur du fournisseur ou fournisseur sans cette fonction : ignoré
+  assert.equal(await refreshSeason({ db, api: { leagues: async () => { throw new Error('429'); } }, league: { apiId: 2015, saison: 2027 }, now: new Date('2028-01-01T00:00:00Z') }), false);
+  assert.equal(await refreshSeason({ db, api: {}, league: { apiId: 1 }, now: new Date() }), false);
+});

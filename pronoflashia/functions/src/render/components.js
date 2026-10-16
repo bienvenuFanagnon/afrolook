@@ -51,7 +51,10 @@ const famLabel = (rc, f) => labels.familyLabel(f, rc.lang);
 
 function crest(team, big) {
   const c = team.couleurs || ['#1b3a8a', '#0a1f4d'];
-  return `<span class="cr${big ? ' lgx' : ''}" style="background:linear-gradient(135deg,${esc(c[0])},${esc(c[1])})" aria-hidden="true">${esc(team.initiales || '?')}</span>`;
+  const size = big ? 46 : 26;
+  // le logo recouvre les initiales ; s'il ne charge pas, l'image vide disparaît et l'écusson généré reste visible
+  const img = team.logo ? `<img src="${esc(team.logo)}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : '';
+  return `<span class="cr${big ? ' lgx' : ''}" style="background:linear-gradient(135deg,${esc(c[0])},${esc(c[1])})" aria-hidden="true">${esc(team.initiales || '?')}${img}</span>`;
 }
 
 /** Heure en UTC côté serveur ; le navigateur la convertit dans le fuseau du visiteur. */
@@ -74,7 +77,7 @@ function matchCard(rc, m) {
   if (m.statut === 'termine' && m.resultat) {
     const r = m.resultat;
     const mark = r.reussi === true ? '<span class="badge-ok">✅</span>' : r.reussi === false ? '<span class="badge-ko">❌</span>' : '';
-    return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.finalScore}</span><b>${r.scoreDom} - ${r.scoreExt}</b></div><div class="res">${mark}</div></div>${p ? `<div class="sc"><span>${t.ourPrediction}${colon(rc)} ${esc(pickLabel(rc, m))}</span></div>` : ''}</a>`;
+    return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.finalScore}</span><b>${r.scoreDom} - ${r.scoreExt}</b></div><div class="res">${mark}</div></div>${p ? `<div class="sc"><span>${t.ourPrediction}${colon(rc)} ${esc(pickLabel(rc, m))}</span></div>` : ''}<span class="more off">${t.moreDetailsDone} <i aria-hidden="true">›</i></span></a>`;
   }
   if (!p || p.visible === false) return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.prediction}</span><b>${t.inPrep}</b></div></div></a>`;
   const pr = p.probas;
@@ -83,7 +86,7 @@ function matchCard(rc, m) {
   return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.prediction}</span><b>${esc(pickLabel(rc, m))}</b></div><div class="cf num${low}">${pct(rc, p.principal.confiance)}<small>${t.confidence}</small></div></div>` +
     `<div class="bars" role="img" aria-label="${esc(t.probsAria)}"><i style="flex:${pr['1']};background:var(--flash)"></i><i style="flex:${pr.N};background:#6b7899"></i><i style="flex:${pr['2']};background:var(--cy)"></i></div>` +
     `<div class="bl num"><span>1 · ${pct(rc, pr['1'])}</span><span>${t.draw} · ${pct(rc, pr.N)}</span><span>2 · ${pct(rc, pr['2'])}</span></div>` +
-    `<div class="sc">${sec}</div></a>`;
+    `<div class="sc">${sec}</div><span class="more">${t.moreDetails} <i aria-hidden="true">›</i></span></a>`;
 }
 
 /**
@@ -110,20 +113,52 @@ function aflCard(rc, slot, i = 0) {
   return `<a class="afl" href="${esc(`${STORE_ANDROID}&${utm}`)}" target="_blank" rel="noopener sponsored" data-afl="${esc(slot)}" data-i="${i}"><span class="sp2">${rc.t.sponsored}</span><div class="im" style="background-image:url(${photo})"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12" loading="lazy">AFROLOOK</span><p>${esc(msg)}</p><span class="cta">${rc.t.aflCta}</span></div></a>`;
 }
 
-/** Insère les publicités dans une liste de cartes : native toutes les N cartes, Afrolook toutes les M. */
+/** Bannière du canal WhatsApp : n'apparaît que si l'adresse du canal est renseignée dans l'admin (Réglages). */
+const CHANNEL_RE = /^https:\/\/(www\.)?(whatsapp\.com|wa\.me|chat\.whatsapp\.com)\/[^\s"'<>]{2,300}$/i;
+function channelBanner(rc, slot) {
+  const u = rc.site.whatsapp;
+  if (!u || !CHANNEL_RE.test(u)) return '';
+  const t = rc.t;
+  return `<div class="chn"><div class="chn-t"><b><i aria-hidden="true">📲</i> ${t.chanTitle}</b><span>${t.chanText}</span></div><a class="chn-b" href="${esc(u)}" target="_blank" rel="noopener" data-chn="${esc(slot)}">${t.chanBtn}</a></div>`;
+}
+
+/** Offre partenaire (Smartlink) : carte étiquetée « Sponsorisé » et « Offre partenaire », sans photo ni texte qui imite un contenu du site. */
+function partnerCard(rc, slot) {
+  if (!slotOn(rc.ads, 'smartlink')) return '';
+  const e = rc.ads.emplacements.smartlink || {};
+  if (!e.url) return '';
+  const t = rc.t;
+  return `<a class="ptn" href="${esc(e.url)}" target="_blank" rel="sponsored nofollow noopener" data-ptn="${esc(slot)}"><span class="sp2">${t.sponsored}</span><div class="bd"><span class="bg">${t.ptnLabel}</span><p>${esc(e.titre || t.ptnTitle)}</p><span class="cta">${esc(e.bouton || t.ptnBtn)} <i aria-hidden="true">›</i></span></div></a>`;
+}
+
+/**
+ * Insère les publicités dans une liste de cartes (identique sur téléphone et ordinateur).
+ * Un encart Afrolook après la 2e carte (visible sans défiler loin), une annonce « native » après la 3e puis toutes les N cartes,
+ * un encart Afrolook toutes les M cartes ensuite. Jamais deux pubs d'affilée, jamais une pub après la dernière carte.
+ */
 function listWithAds(rc, cards) {
   const nat = rc.ads.emplacements.native || {};
   const afl = rc.ads.afrolook || {};
+  const natOn = slotOn(rc.ads, 'native') && nat.every;
+  const aflOn = afl.actif && afl.every;
   const out = [];
   let a = 0;
+  const ptn = rc.ads.emplacements.smartlink || {};
+  const ptnOn = slotOn(rc.ads, 'smartlink') && ptn.url && ptn.every;
+  let nextNat = 3, nextAfl = 2, nextPtn = 5;
   cards.forEach((c, i) => {
     out.push(c);
     const n = i + 1;
-    if (slotOn(rc.ads, 'native') && nat.every && n % nat.every === 0 && n < cards.length) out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }));
-    if (afl.actif && afl.every && n % afl.every === 0 && n < cards.length) out.push(aflCard(rc, 'liste', a++));
+    if (n >= cards.length) return;
+    if (natOn && n === nextNat) { out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })); nextNat += nat.every; if (nextAfl === n) nextAfl = n + 1; if (nextPtn === n) nextPtn = n + 1; return; }
+    if (aflOn && n === nextAfl) { out.push(aflCard(rc, 'liste', a++)); nextAfl += afl.every; if (nextPtn === n) nextPtn = n + 1; return; }
+    if (ptnOn && n === nextPtn) { out.push(partnerCard(rc, 'liste')); nextPtn += ptn.every; }
   });
   return out.join('');
 }
+
+/** Fin de liste : bannière puis, sur téléphone, un encart Afrolook (la colonne de droite n'existe que sur ordinateur). */
+const listEnd = (rc, slot) => adResponsive(rc, 'fin', 'ad-end') + (rc.ads.afrolook && rc.ads.afrolook.actif ? `<div class="mob-only">${aflCard(rc, slot || 'fin', 1)}</div>` : '');
 
 function header(rc, active, alternates) {
   const t = rc.t;
@@ -132,7 +167,9 @@ function header(rc, active, alternates) {
   const switchHref = (alternates && alternates[other]) || (other === 'en' ? '/en' : '/');
   return `<header class="hdr"><div class="wrap"><a class="logo" href="${rc.u('home')}" aria-label="${esc(t.homeAria)}"><span class="bolt" aria-hidden="true">⚡</span><span>Prono<em>Flash</em><small>IA</small></span></a>` +
     `<nav class="nav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}>${t.navAbout}</a></nav>` +
-    `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div></header>`;
+    `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div>` +
+    // téléphone : le menu principal est masqué sous 900 px, cette barre prend le relais, toujours visible sous l'en-tête
+    `<nav class="mnav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}><i aria-hidden="true">${t.navIcons.football}</i>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}><i aria-hidden="true">${t.navIcons.coupon}</i>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}><i aria-hidden="true">${t.navIcons.bilan}</i>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}><i aria-hidden="true">${t.navIcons.about}</i>${t.navAbout}</a></nav></header>`;
 }
 
 function sportTabs(rc) {
@@ -161,7 +198,7 @@ function footer(rc) {
   const legal = Object.entries(t.footerLegal).map(([slug, lab]) => `<a href="${rc.u('legal', slug)}">${lab}</a>`).join('');
   return `<footer class="ftr"><div class="wrap" style="display:grid;gap:10px"><div class="r18"><b>18+</b>${t.footer18}</div><p>${t.footerInfo}</p>` +
     `<nav aria-label="${esc(t.footerNav)}">${legal}<button type="button" id="pf-prefs">${t.adPrefs}</button></nav>` +
-    `<p>© ${rc.now.getUTCFullYear()} ${esc(rc.site.nom)} · ${esc(rc.site.domaine)}</p></div></footer>`;
+    `<p class="cpy">© ${rc.now.getUTCFullYear()} ${esc(rc.site.nom)} · ${esc(rc.site.domaine)}<a class="adm" href="/admin" rel="nofollow noopener">Hub</a></p></div></footer>`;
 }
 
 /** Colonne de droite (ordinateur) : bilan, pavé, Afrolook, grand format collant. */
@@ -182,18 +219,19 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
   const robots = noindex || !rc.site.indexable ? '<meta name="robots" content="noindex,nofollow">' : '<meta name="robots" content="index,follow,max-image-preview:large">';
   const hasStk = slotOn(rc.ads, 'collante');
   const verif = (rc.ads.verifications || []).map((v) => (/^<meta /i.test(v) ? v : '')).join('');
+  const gsc = rc.site.googleVerification && /^[A-Za-z0-9_-]{10,100}$/.test(rc.site.googleVerification) ? `<meta name="google-site-verification" content="${esc(rc.site.googleVerification)}">` : '';
   const alt = alternates && !noindex ? `<link rel="alternate" hreflang="fr" href="${esc(url(rc, alternates.fr))}"><link rel="alternate" hreflang="en" href="${esc(url(rc, alternates.en))}"><link rel="alternate" hreflang="x-default" href="${esc(url(rc, alternates.fr))}">` : '';
   return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${tt}</title><meta name="description" content="${d}">` +
     `<link rel="canonical" href="${esc(canonical)}">${alt}${robots}<meta name="theme-color" content="#080D18"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest">` +
-    `<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(rc.site.nom)}"><meta property="og:title" content="${tt}"><meta property="og:description" content="${d}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(url(rc, ogImage || '/og.png'))}"><meta property="og:locale" content="${t.ogLocale}"><meta name="twitter:card" content="summary_large_image">` +
-    `${verif}<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/inter-400-700.woff2" as="font" type="font/woff2" crossorigin>` +
+    `<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(rc.site.nom)}"><meta property="og:title" content="${tt}"><meta property="og:description" content="${d}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(url(rc, ogImage || '/og.png'))}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(rc.site.nom)}"><meta property="og:locale" content="${t.ogLocale}"><meta name="twitter:card" content="summary_large_image">` +
+    `${verif}${gsc}<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/inter-400-700.woff2" as="font" type="font/woff2" crossorigin>` +
     `<style>${rc.css}</style>${head}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}</head>` +
-    `<body class="${hasStk ? 'hasstk ' : ''}${bodyClass}"><a class="skip" href="#main">${t.skip}</a>${header(rc, active, alternates)}<main id="main">${body}</main>${footer(rc)}${stickyBar(rc)}` +
+    `<body class="${hasStk ? 'hasstk ' : ''}${bodyClass}"><a class="skip" href="#main">${t.skip}</a>${header(rc, active, alternates)}<main id="main">${body}</main><div class="wrap">${channelBanner(rc, 'pied')}</div>${footer(rc)}${stickyBar(rc)}` +
     `<div class="cbar" id="pf-cbar" hidden></div><div class="cmp-b" id="pf-cmp" role="dialog" aria-label="${esc(t.adPrefs)}" hidden></div><div class="sbar" id="pf-sbar" hidden><button type="button" aria-label="${esc(t.close)}">✕</button></div>` +
     `<script>window.PF={lang:"${rc.lang}",ads:${rc.ads.actif ? 1 : 0},coupon:"${rc.u('coupon')}"};</script><script src="/js/goalmarkets.js?v=${rc.version}" defer></script><script src="/js/coupon.js?v=${rc.version}" defer></script><script src="/js/pf.js?v=${rc.version}" defer></script></body></html>`;
 }
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, listWithAds, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, adResponsive, aflCard, partnerCard, channelBanner, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

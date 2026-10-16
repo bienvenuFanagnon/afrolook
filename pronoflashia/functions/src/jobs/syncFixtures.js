@@ -16,14 +16,14 @@ function assertQuota(api, reserve) {
 async function upsertTeam(db, t) {
   if (!t || !t.apiId) return null;
   const short = N.shortName(t.nom);
-  const doc = { apiId: t.apiId, nom: t.nom, nomCourt: short, couleurs: N.teamColors(t.nom), initiales: N.initials(short) };
+  const doc = { apiId: t.apiId, nom: t.nom, nomCourt: short, couleurs: N.teamColors(t.nom), initiales: N.initials(short), logo: N.safeLogo(t.logo) };
   await db.collection('teams').doc(String(t.apiId)).set(doc, { merge: true });
   return doc;
 }
 
 /** Matchs à venir d'un championnat. Renvoie le nombre de matchs écrits. */
-async function syncLeagueFixtures({ db, api, league, now, days }) {
-  const fixtures = await api.fixtures({ league: league.apiId, season: league.saison, from: dayStr(now), to: dayStr(addDays(now, days)) });
+async function syncLeagueFixtures({ db, api, league, now, days, preloaded }) {
+  const fixtures = preloaded || await api.fixtures({ league: league.apiId, season: league.saison, from: dayStr(now), to: dayStr(addDays(now, days)) });
   let n = 0;
   for (const raw of fixtures) {
     const fx = N.normalizeFixture(raw);
@@ -38,8 +38,8 @@ async function syncLeagueFixtures({ db, api, league, now, days }) {
     const doc = {
       id, apiId: fx.apiId, sport: league.sport || 'football', leagueId: String(league.apiId), leagueSlug: league.slug, leagueNom: league.nom, pays: league.pays || null,
       saison: fx.saison, journee: fx.journee, round: fx.round, coupDEnvoi: fx.coupDEnvoi, jour, statut: fx.statut, arbitre: fx.arbitre, lieu: fx.lieu,
-      domicile: { teamId: String(fx.domicile.apiId), apiId: fx.domicile.apiId, nom: fx.domicile.nom, nomCourt: home.nomCourt, couleurs: home.couleurs, initiales: home.initiales },
-      exterieur: { teamId: String(fx.exterieur.apiId), apiId: fx.exterieur.apiId, nom: fx.exterieur.nom, nomCourt: away.nomCourt, couleurs: away.couleurs, initiales: away.initiales },
+      domicile: { teamId: String(fx.domicile.apiId), apiId: fx.domicile.apiId, nom: fx.domicile.nom, nomCourt: home.nomCourt, couleurs: home.couleurs, initiales: home.initiales, logo: home.logo },
+      exterieur: { teamId: String(fx.exterieur.apiId), apiId: fx.exterieur.apiId, nom: fx.exterieur.nom, nomCourt: away.nomCourt, couleurs: away.couleurs, initiales: away.initiales, logo: away.logo },
       slug: `${N.slugify(home.nomCourt)}-${N.slugify(away.nomCourt)}-${jour}`,
       majLe: now.toISOString(),
     };
@@ -55,8 +55,8 @@ async function syncLeagueFixtures({ db, api, league, now, days }) {
  * Historique de la saison d'un championnat : buts (tous les matchs terminés) → team_form/{équipe} et moyennes de la ligue.
  * Une seule requête par championnat. Les statistiques de comptage déjà enregistrées sont conservées.
  */
-async function syncLeagueSeason({ db, api, league, now }) {
-  const fixtures = (await api.fixtures({ league: league.apiId, season: league.saison })).map(N.normalizeFixture);
+async function syncLeagueSeason({ db, api, league, now, preloaded }) {
+  const fixtures = (preloaded || await api.fixtures({ league: league.apiId, season: league.saison })).map(N.normalizeFixture);
   const done = fixtures.filter((f) => f.statut === 'termine' && f.score && f.domicile.apiId && f.exterieur.apiId);
   const byTeam = new Map();
   const push = (teamId, entry) => { if (!byTeam.has(teamId)) byTeam.set(teamId, []); byTeam.get(teamId).push(entry); };
@@ -93,6 +93,45 @@ async function syncLeagueSeason({ db, api, league, now }) {
 }
 
 /**
+ * Première utilisation : si aucun championnat n'est enregistré et que la source en propose par défaut (offre gratuite),
+ * on les ajoute avec la saison en cours. L'admin peut ensuite les modifier, en retirer ou en ajouter.
+ */
+async function seedDefaultLeagues({ db, api, now }, report) {
+  if (!api.defaultLeagues || !api.defaultLeagues.length) return 0;
+  const existing = await db.collection('leagues').get();
+  if (existing.docs.length) return 0;
+  let n = 0;
+  for (const l of api.defaultLeagues) {
+    // saison européenne : elle commence l'été (juillet ou après) ; aucun appel à l'API pour rester dans la limite de débit
+    const saison = now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+    await db.collection('leagues').doc(String(l.apiId)).set(Object.assign({}, l, { saison, suivi: true, sport: 'football' }));
+    n++;
+  }
+  report.infos.championnatsInitialises = n;
+  return n;
+}
+
+/**
+ * Changement de saison automatique : une fois par semaine, la saison en cours du championnat est relue chez le fournisseur
+ * (les championnats européens changent de saison chaque été). Une erreur ici n'empêche jamais la synchronisation.
+ */
+async function refreshSeason({ db, api, league, now }) {
+  if (typeof api.leagues !== 'function') return false;
+  const last = league.saisonVerifieLe ? new Date(league.saisonVerifieLe) : null;
+  if (last && now - last < 7 * 864e5) return false;
+  try {
+    const r = await api.leagues({ id: league.apiId });
+    const seasons = (r[0] && r[0].seasons) || [];
+    const cur = seasons.find((x) => x.current);
+    const upd = { saisonVerifieLe: now.toISOString() };
+    let changed = false;
+    if (cur && cur.year && cur.year !== league.saison) { upd.saison = cur.year; changed = true; league.saison = cur.year; }
+    await db.collection('leagues').doc(String(league.apiId)).set(upd, { merge: true });
+    return changed;
+  } catch { return false; }
+}
+
+/**
  * Tâche complète. opts : { db, api, now, days, reserve, forceSeason }.
  * report : objet du compte-rendu (traites, erreurs, infos).
  */
@@ -101,11 +140,22 @@ async function syncFixtures(opts, report) {
   const now = opts.now || new Date();
   const days = opts.days || 7;
   const reserve = opts.reserve == null ? 40 : opts.reserve;
+  await seedDefaultLeagues({ db, api, now }, report);
   const leagues = (await db.collection('leagues').where('suivi', '==', true).get()).docs.map((d) => d.data());
   report.infos.championnats = leagues.length;
   for (const league of leagues) {
+    if (await refreshSeason({ db, api, league, now })) report.infos[`nouvelleSaison_${league.slug}`] = league.saison;
     try {
       assertQuota(api, reserve);
+      if (api.singleCall) {
+        // une seule requête : la saison entière (matchs terminés pour l'historique, matchs à venir pour le calendrier)
+        const all = await api.fixtures({ league: league.apiId, season: league.saison });
+        const from = `${dayStr(now)}T00:00:00.000Z`, to = `${dayStr(addDays(now, days))}T23:59:59.999Z`;
+        const upcoming = all.filter((raw) => { const d = N.normalizeFixture(raw).coupDEnvoi; return d >= from && d <= to; });
+        report.traites += await syncLeagueFixtures({ db, api, league, now, days, preloaded: upcoming });
+        report.infos[`saison_${league.slug}`] = await syncLeagueSeason({ db, api, league, now, preloaded: all });
+        continue;
+      }
       report.traites += await syncLeagueFixtures({ db, api, league, now, days });
       const last = league.formMajLe ? new Date(league.formMajLe) : null;
       if (opts.forceSeason || !last || now - last > 20 * 3600e3) {
@@ -121,4 +171,4 @@ async function syncFixtures(opts, report) {
   await recordApiQuota(db, api, now, report);
 }
 
-module.exports = { syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };
+module.exports = { refreshSeason, seedDefaultLeagues, syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };

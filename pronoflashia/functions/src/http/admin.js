@@ -8,9 +8,10 @@ const { slugify } = require('../data/normalize');
 const { mergeSite, mergeAds, SLOTS } = require('../render/config');
 const { dayStr, addDays } = require('../jobs/helpers');
 const { SCHEDULE, nextRun } = require('../jobs/schedule');
+const adsterra = require('../data/adsterra');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'weeklyReport', 'aiHealthCheck'];
-const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram'];
+const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
 const NETWORKS = ['adsterra', 'monetag'];
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -47,6 +48,16 @@ function sanitizeSite(inp) {
     out[k] = k === 'indexable' ? !!inp[k] : str(inp[k], 300);
   }
   if (out.origine && !/^https:\/\/[a-z0-9.-]+$/i.test(out.origine)) throw new HttpError(400, 'Origine invalide (https://domaine).');
+  if (out.googleVerification !== undefined) {
+    // on accepte la balise entière collée depuis Search Console ou seulement la valeur de content="…"
+    const m = /content\s*=\s*["']([^"']+)["']/i.exec(out.googleVerification);
+    const v = (m ? m[1] : out.googleVerification).trim();
+    if (v && !/^[A-Za-z0-9_-]{10,100}$/.test(v)) throw new HttpError(400, 'Code de vérification Google invalide.');
+    out.googleVerification = v;
+  }
+  for (const k of ['whatsapp', 'telegram']) {
+    if (out[k] && !/^https:\/\/[^\s"'<>]{4,300}$/i.test(out[k])) throw new HttpError(400, `Adresse du canal ${k === 'whatsapp' ? 'WhatsApp' : 'Telegram'} invalide (https://…).`);
+  }
   if (out.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.email)) throw new HttpError(400, 'Adresse e-mail invalide.');
   return out;
 }
@@ -65,6 +76,13 @@ function sanitizeAds(inp) {
       if (e.every !== undefined) o.every = Math.min(12, Math.max(2, parseInt(e.every, 10) || 4));
       if (e.delaiSec !== undefined) o.delaiSec = Math.min(120, Math.max(5, parseInt(e.delaiSec, 10) || 20));
       if (e.parJours !== undefined) o.parJours = Math.min(30, Math.max(1, parseInt(e.parJours, 10) || 1));
+      if (e.url !== undefined) {
+        const u = String(e.url || '').trim();
+        if (u && !/^https:\/\/[^\s"'<>]{4,480}$/i.test(u)) throw new HttpError(400, 'Adresse du lien partenaire invalide (https://… sans espace).');
+        o.url = u;
+      }
+      if (e.titre !== undefined) o.titre = str(e.titre, 90);
+      if (e.bouton !== undefined) o.bouton = str(e.bouton, 30);
       if (Array.isArray(e.reseaux)) o.reseaux = e.reseaux.filter((r) => NETWORKS.includes(r.reseau) && String(r.code || '').trim()).slice(0, 3).map((r) => ({ reseau: r.reseau, code: sanitizeCode(r.code), codeMobile: sanitizeCode(r.codeMobile) }));
       out.emplacements[id] = o;
     }
@@ -146,7 +164,7 @@ function createAdmin(deps) {
     if (!TASKS.includes(b.nom)) throw new HttpError(400, 'Tâche inconnue.');
     if (!deps.tasks || !deps.tasks[b.nom]) throw new HttpError(501, 'Tâche indisponible.');
     await log(by, 'tache-lancer', { nom: b.nom });
-    const rapport = await deps.tasks[b.nom]();
+    const rapport = await deps.tasks[b.nom]({ manuel: true });
     return { ok: true, rapport };
   };
 
@@ -292,12 +310,27 @@ function createAdmin(deps) {
       Object.assign({ id: 'gemini', nom: 'Google Gemini', role: 'IA de secours si Workers AI échoue', configure: !!sec.gemini, suivi: true, secret: 'GEMINI_API_KEY' }, G && { dernierSucces: G.dernierSucces, derniereErreur: G.derniereErreur, derniereErreurLe: G.derniereErreurLe, appelsJour: G.appelsJour, erreursJour: G.erreursJour, historique: hist(G) }),
       { id: 'firebaseAuth', nom: 'Connexion Google (Firebase Authentication)', role: 'Accès à cette administration', configure: true, dernierSucces: now.toISOString() },
       { id: 'stats', nom: 'Mesure d\'audience', role: 'Compteurs sans cookie, visiteurs uniques', configure: !!sec.statsSalt, secret: 'STATS_SALT', dernierSucces: today ? now.toISOString() : null, appelsJour: (today && today.pv) || 0, unite: 'pages vues aujourd\'hui' },
-      { id: 'adsterra', nom: 'Adsterra', role: 'Publicités (réseau principal)', configure: netCodes('adsterra'), actif: !!ads.actif, appelsJour: pubVues('adsterra'), unite: 'pubs affichées aujourd\'hui' },
+      { id: 'adsterra', nom: 'Adsterra', role: 'Publicités (réseau principal) ; statistiques de revenus ' + (sec.adsterraApi ? 'connectées' : 'non connectées (ADSTERRA_API_TOKEN)'), configure: netCodes('adsterra'), actif: !!ads.actif, appelsJour: pubVues('adsterra'), unite: 'pubs affichées aujourd\'hui' },
       { id: 'monetag', nom: 'Monetag', role: 'Publicités (réseau de secours)', configure: netCodes('monetag'), actif: !!ads.actif, appelsJour: pubVues('monetag'), unite: 'pubs affichées aujourd\'hui' },
       { id: 'afrolook', nom: 'Encarts Afrolook', role: 'Promotion de l\'application', configure: true, actif: !!ads.afrolook.actif, appelsJour: (today && today.aflImps) || 0, clicsJour: (today && today.clicsAfrolook) || 0, unite: 'affichages aujourd\'hui' },
     ];
     for (const t of tools) t.etat = etat(t);
     return { outils: tools, jour };
+  };
+
+  /** Revenus Adsterra des 14 derniers jours : par jour et par emplacement (lecture seule via l'API éditeur). */
+  A.revenus = async () => {
+    const api = deps.adsterraFactory ? deps.adsterraFactory() : null;
+    if (!api) return { connecte: false };
+    const fin = dayStr(nowD()), debut = dayStr(addDays(nowD(), -13));
+    let byDate, byPlacement, placements;
+    try {
+      [byDate, byPlacement, placements] = await Promise.all([api.stats({ start: debut, finish: fin, groupBy: 'date' }), api.stats({ start: debut, finish: fin, groupBy: 'placement' }), api.placements()]);
+    } catch (e) { throw new HttpError(502, e.message); }
+    const names = new Map(placements.map((p) => [String(p.id), p.title || p.alias || String(p.id)]));
+    const jours = byDate.map((r) => adsterra.normalizeRow(r, 'date')).sort((a, b) => (a.cle < b.cle ? -1 : 1));
+    const emplacements = byPlacement.map((r) => adsterra.normalizeRow(r, 'placement')).map((r) => Object.assign(r, { nom: names.get(r.cle) || r.cle })).sort((a, b) => b.revenu - a.revenu);
+    return { connecte: true, periode: { debut, fin }, jours, emplacements, totaux: adsterra.totals(jours) };
   };
 
   /** Fonctionnement : chaque tâche automatique, sa cadence, son dernier passage et le prochain. */
