@@ -59,7 +59,9 @@
   var NON_UE = /^Europe\/(Moscow|Istanbul|Minsk|Kiev|Kyiv|Chisinau|Belgrade|Skopje|Sarajevo|Tirane|Podgorica|Zurich|Simferopol|Volgograd|Samara|Kaliningrad|Saratov|Astrakhan|Ulyanovsk|Kirov)$/;
   var needsConsent = /^Europe\//.test(tz) && !NON_UE.test(tz);
   var consent = store.get('pf_consent');
-  var adsAllowed = function () { return !needsConsent || !!(consent && consent.ads === true); };
+  /* navigateur de l'administrateur : pubs tierces masquées (aucun affichage ni clic de soi-même, que les réseaux sanctionnent) */
+  var ownerBrowser = store.get('pf_noads') === 1;
+  var adsAllowed = function () { return !ownerBrowser && (!needsConsent || !!(consent && consent.ads === true)); };
   var cmp = $('#pf-cmp');
   function showCmp(force) {
     if (!cmp) return;

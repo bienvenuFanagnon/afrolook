@@ -47,6 +47,8 @@ async function start() {
     return;
   }
   $('#login').hidden = true; $('#app').hidden = false;
+  // l'administrateur ne doit jamais voir (ni cliquer) les pubs tierces de son propre site : les réseaux sanctionnent les clics sur ses propres pubs
+  try { if (localStorage.getItem('pf_noads') === null) localStorage.setItem('pf_noads', '1'); } catch { /* stockage bloqué */ }
   if (DEV) $('#btn-out').hidden = true;
   renderTabs(); show(tab);
 }
@@ -175,7 +177,7 @@ const VIEWS = {
     const slot = ([id, nom, sub]) => { const e = a.emplacements[id]; const r = (e.reseaux || []); const code = (net, k) => ((r.find((x) => x.reseau === net) || {})[k] || ''); return `<div class="slot" data-slot="${id}"><label class="c"><input type="checkbox" data-f="actif" ${e.actif ? 'checked' : ''}><b>${esc(nom)}</b> <span class="note">${esc(sub)}</span></label>
       ${e.every !== undefined ? `<label class="f">Fréquence (une toutes les N cartes)<input type="number" data-f="every" min="2" max="12" value="${e.every}" style="width:100px"></label>` : ''}${e.delaiSec !== undefined ? `<label class="f">Délai avant affichage (secondes)<input type="number" data-f="delaiSec" min="5" max="120" value="${e.delaiSec}" style="width:100px"></label>` : ''}${e.parJours !== undefined ? `<label class="f">Au plus une fois tous les N jours<input type="number" data-f="parJours" min="1" max="30" value="${e.parJours}" style="width:100px"></label>` : ''}
       ${id === 'smartlink' ? `<label class="f">Adresse du Smartlink (https://…)<input data-f="url" value="${esc(e.url || '')}" placeholder="https://…" style="width:100%"></label><label class="f">Titre affiché (facultatif)<input data-f="titre" value="${esc(e.titre || '')}" maxlength="90" placeholder="Découvrez l'offre de notre partenaire" style="width:100%"></label><label class="f">Texte du bouton (facultatif)<input data-f="bouton" value="${esc(e.bouton || '')}" maxlength="30" placeholder="Voir l'offre" style="width:220px"></label>` : ['adsterra', 'monetag'].map((net) => `<label class="f">Code ${net === 'adsterra' ? 'Adsterra (réseau principal)' : 'Monetag (secours)'}<textarea data-net="${net}" data-k="code" placeholder="Colle ici le code fourni par le réseau">${esc(code(net, 'code'))}</textarea></label><label class="f">Code ${net} pour téléphone (facultatif)<textarea data-net="${net}" data-k="codeMobile" style="min-height:50px">${esc(code(net, 'codeMobile'))}</textarea></label>`).join('')}</div>`; };
-    return `<h2>Publicités</h2><div class="card" id="rev-card"><h3>Revenus Adsterra · 14 derniers jours</h3><p class="note">Chargement…</p></div><p class="note">Rien ne s'affiche tant que l'interrupteur général est coupé. Si un réseau ne renvoie rien, le suivant est essayé (Adsterra → Monetag), puis un encart Afrolook : jamais de vide. Aucune republication nécessaire.</p>
+    return `<h2>Publicités</h2><div class="card" id="rev-card"><h3>Revenus Adsterra · 14 derniers jours</h3><p class="note">Chargement…</p></div><div class="card"><label class="c"><input type="checkbox" id="noads">Masquer les pubs tierces dans ce navigateur (recommandé pour l'administrateur)</label><p class="note">Les réseaux comme Adsterra sanctionnent les clics et affichages que le propriétaire génère sur son propre site : ne cliquez jamais sur vos pubs. Cette case est propre à ce navigateur ; les encarts Afrolook restent visibles.</p></div><p class="note">Rien ne s'affiche tant que l'interrupteur général est coupé. Si un réseau ne renvoie rien, le suivant est essayé (Adsterra → Monetag), puis un encart Afrolook : jamais de vide. Aucune republication nécessaire.</p>
     <div class="card"><label class="c"><input type="checkbox" id="ads-on" ${a.actif ? 'checked' : ''}><b>Publicités activées (interrupteur général)</b></label>
     <h3 style="margin-top:14px">Encarts Afrolook</h3><label class="c"><input type="checkbox" id="afl-on" ${a.afrolook.actif ? 'checked' : ''}>Encarts Afrolook activés</label><div class="row"><label class="f" style="margin:0">Un encart toutes les N cartes<input type="number" id="afl-every" min="3" max="30" value="${a.afrolook.every}" style="width:100px"></label><label class="f" style="margin:0">Part d'Afrolook (%) : emplacements où Afrolook passe en premier<input type="number" id="afl-part" min="0" max="100" value="${a.afrolook.part}" style="width:100px"></label></div></div>
     <div class="card"><h3>Emplacements</h3>${SL.map(slot).join('')}</div>
@@ -240,6 +242,11 @@ const AFTER = {
           (r.jours.length ? `<div class="tw"><table><thead><tr><th>Jour</th><th>Impressions</th><th>Clics</th><th>Revenus</th></tr></thead><tbody>${r.jours.map((j) => `<tr><td>${esc(j.cle)}</td><td class="num">${nf(j.impressions)}</td><td class="num">${nf(j.clics)}</td><td class="num">${usd(j.revenu)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="note">Aucune donnée pour le moment : les statistiques apparaissent quand les premières pubs sont affichées (les chiffres Adsterra peuvent avoir quelques heures de retard).</p>') +
           (r.emplacements.length ? `<h3 style="margin-top:14px">Par emplacement</h3><div class="tw"><table><thead><tr><th>Emplacement</th><th>Impressions</th><th>Revenus</th></tr></thead><tbody>${r.emplacements.map((e) => `<tr><td>${esc(e.nom)}</td><td class="num">${nf(e.impressions)}</td><td class="num">${usd(e.revenu)}</td></tr>`).join('')}</tbody></table></div>` : '');
       } catch (e) { box.innerHTML = `<h3>Revenus Adsterra</h3><p class="msg err">${esc(e.message)}</p>`; }
+    })();
+    (() => {
+      const c = $('#noads'); if (!c) return;
+      try { c.checked = localStorage.getItem('pf_noads') === '1'; } catch { /* stockage bloqué */ }
+      c.addEventListener('change', () => { try { if (c.checked) localStorage.setItem('pf_noads', '1'); else localStorage.removeItem('pf_noads'); } catch { /* stockage bloqué */ } });
     })();
     $('#ads-save').addEventListener('click', async () => {
       const emplacements = {};
