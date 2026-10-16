@@ -3,7 +3,7 @@
 
 const { buildPrompt } = require('./prompt');
 const { validateOutput } = require('./validate');
-const { fallbackText } = require('./fallback');
+const { fallbackText, fallbackTextEn } = require('./fallback');
 
 /**
  * providers : [{ name, call(messages) }] dans l'ordre d'essai.
@@ -11,7 +11,8 @@ const { fallbackText } = require('./fallback');
  * Une sortie invalide est redemandée une fois au même fournisseur avant de passer au suivant.
  */
 async function generateText(ctx, providers, opts = {}) {
-  const { messages, faits } = buildPrompt(ctx);
+  const lang = opts.lang === 'en' ? 'en' : 'fr';
+  const { messages, faits } = buildPrompt(ctx, lang);
   const erreurs = [];
   const retries = opts.retries == null ? 1 : opts.retries;
   for (const p of providers) {
@@ -19,7 +20,7 @@ async function generateText(ctx, providers, opts = {}) {
       const t0 = Date.now();
       try {
         const raw = await p.call(messages);
-        const v = validateOutput(raw, faits);
+        const v = validateOutput(raw, faits, lang);
         if (v.ok) return { texte: v.value, sourceTexte: p.name, latencyMs: Date.now() - t0, erreurs };
         erreurs.push({ provider: p.name, type: 'sortie_invalide', detail: v.errors.join(' ') });
       } catch (e) {
@@ -28,7 +29,7 @@ async function generateText(ctx, providers, opts = {}) {
       }
     }
   }
-  return { texte: fallbackText(ctx), sourceTexte: 'secours', latencyMs: 0, erreurs };
+  return { texte: lang === 'en' ? fallbackTextEn(ctx) : fallbackText(ctx), sourceTexte: 'secours', latencyMs: 0, erreurs };
 }
 
 module.exports = { generateText };

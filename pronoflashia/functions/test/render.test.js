@@ -156,3 +156,82 @@ test('CSS en ligne et script versionné ; aucune ressource externe', async () =>
   assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me)[^"]*/g, '')), 'aucune ressource externe chargée');
   assert.ok(r.length < 120000, `HTML léger (${r.length} octets)`);
 });
+
+/* ---------- version anglaise ---------- */
+const enMatchPath = async () => {
+  const r = await get('/en/football/today');
+  return /href="(\/en\/football\/[a-z0-9-]+\/[a-z0-9-]+)"/.exec(r.body)[1];
+};
+
+test('anglais : accueil en anglais, hreflang croisés, bouton de langue', async () => {
+  const r = await get('/en');
+  assert.equal(r.status, 200);
+  assert.match(r.body, /<html lang="en">/);
+  assert.match(r.body, /Today's football tips/);
+  assert.match(r.body, /<link rel="canonical" href="https:\/\/pronoflashia\.com\/en">/);
+  assert.match(r.body, /hreflang="fr" href="https:\/\/pronoflashia\.com\/"/);
+  assert.match(r.body, /hreflang="en" href="https:\/\/pronoflashia\.com\/en"/);
+  assert.match(r.body, /hreflang="x-default"/);
+  assert.match(r.body, /class="lang" href="\/" hreflang="fr"/);
+  assert.ok(!/Pronostic|Aujourd'hui|réussite|Jouez de façon/.test(r.body.replace(/<style>[\s\S]*?<\/style>/, '')), 'aucun texte français d\'interface');
+  assert.match(r.body, /CAF Champions League/, 'nom de championnat traduit');
+  assert.match(r.body, /og:locale" content="en_GB"/);
+  const fr = await get('/');
+  assert.match(fr.body, /class="lang" href="\/en" hreflang="en"/);
+});
+
+test('anglais : fiche match, pronostic, paris et analyse en anglais', async () => {
+  const p = await enMatchPath();
+  const r = await get(p);
+  assert.equal(r.status, 200);
+  assert.match(r.body, /Our prediction/);
+  assert.match(r.body, /The model|Calculated probabilities/, 'analyse anglaise');
+  assert.ok(!/ gagne|Victoire|Match nul|buts</.test(r.body.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<style>[\s\S]*?<\/style>/, '')), 'aucun libellé français');
+  assert.match(r.body, new RegExp(`href="${p}/analysis"`));
+  const frPath = p.replace(/^\/en/, '');
+  assert.match(r.body, new RegExp(`hreflang="fr" href="https://pronoflashia\\.com${frPath}"`));
+  const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(r.body)[1]);
+  assert.equal(ld.inLanguage, 'en');
+  const data = JSON.parse(/<script type="application\/json" id="pf-match">(.*?)<\/script>/s.exec(r.body)[1]);
+  assert.ok(data.marches.some((x) => / to win$/.test(x.l)), 'libellés anglais pour le coupon');
+  assert.ok(data.marches.every((x) => !/é/.test(x.f)), 'familles en anglais');
+});
+
+test('anglais : analyse complète, bilan, coupon, pages légales et 404', async () => {
+  const p = await enMatchPath();
+  const d = await get(p + '/analysis');
+  assert.equal(d.status, 200);
+  assert.match(d.body, /data-fam="Goals"/);
+  assert.match(d.body, /Every bet for this match/);
+  assert.equal((await get(p + '/analyse')).status, 404, 'segment français refusé sous /en');
+  const b = await get('/en/track-record');
+  assert.equal(b.status, 200); assert.match(b.body, /30-day success rate/);
+  const c = await get('/en/coupon');
+  assert.match(c.body, /Cautious · 2 selections/);
+  assert.match(c.body, /href="\/en\/coupon#/);
+  for (const s of ['about', 'contact', 'privacy', 'terms', 'cookies', 'legal-notice', 'responsible-gambling']) {
+    const r = await get('/en/' + s); assert.equal(r.status, 200, s); assert.match(r.body, /<html lang="en">/);
+  }
+  assert.match((await get('/en/privacy')).body, /hreflang="fr" href="https:\/\/pronoflashia\.com\/confidentialite"/);
+  assert.equal((await get('/en/bilan')).status, 404);
+  assert.equal((await get('/en/football')).status, 301);
+  assert.equal((await get('/en/football')).headers.Location, '/en/football/today');
+  const nf = await get('/en/nothing');
+  assert.equal(nf.status, 404); assert.match(nf.body, /Page <b>not found<\/b>/);
+});
+
+test('anglais : jours et championnats', async () => {
+  const r = await get('/en/football/tomorrow');
+  assert.equal(r.status, 200); assert.match(r.body, /Football tips <b>for tomorrow<\/b>/);
+  assert.match(r.body, /hreflang="fr" href="https:\/\/pronoflashia\.com\/football\/demain"/);
+  const l = await get('/en/football/ligue-des-champions-caf');
+  assert.equal(l.status, 200); assert.match(l.body, /<b>CAF Champions League<\/b> predictions/);
+});
+
+test('sitemap bilingue avec alternatives', async () => {
+  const sm = (await get('/sitemap.xml')).body;
+  assert.match(sm, /xmlns:xhtml/);
+  assert.match(sm, /<loc>https:\/\/pronoflashia\.com\/en\/track-record<\/loc>/);
+  assert.match(sm, /<loc>https:\/\/pronoflashia\.com\/bilan<\/loc><xhtml:link rel="alternate" hreflang="fr" href="https:\/\/pronoflashia\.com\/bilan"\/><xhtml:link rel="alternate" hreflang="en" href="https:\/\/pronoflashia\.com\/en\/track-record"\/>/);
+  assert.match(sm, /\/analysis<\/loc>/);
+});

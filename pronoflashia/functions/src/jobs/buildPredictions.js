@@ -8,6 +8,7 @@ const { summarize } = require('../engine/bilan');
 const { dayStr, addDays } = require('./helpers');
 const { assertQuota, COUNT_KINDS } = require('./syncFixtures');
 const { dateLongue, heure, fr } = require('../util/format');
+const labels = require('../shared/labels');
 
 const COUNT_LABELS = { corners: 'Corners', shotsOnTarget: 'Tirs cadrés', shots: 'Tirs', cards: 'Cartons', fouls: 'Fautes', offsides: 'Hors-jeux' };
 
@@ -36,20 +37,37 @@ function buildComparatif(recentH, recentA, gsH, gsA) {
   return rows.filter((r) => r.dom != null && r.ext != null);
 }
 
-/** Lignes de faits envoyées à l'IA (tous les chiffres qu'elle a le droit de citer). */
-function buildFacts(match, gsH, gsA, h2h) {
+/** Lignes de faits envoyées à l'IA (tous les chiffres qu'elle a le droit de citer), en français ou en anglais. */
+function buildFacts(match, gsH, gsA, h2h, lang) {
+  const en = lang === 'en';
   const D = match.domicile.nomCourt, E = match.exterieur.nomCourt;
+  const f1 = (x) => fr(x, 1, lang);
   const extras = [];
-  if (gsH.home.games) extras.push(`${D} marque ${fr(gsH.home.gf / gsH.home.games, 1)} buts par match à domicile et en encaisse ${fr(gsH.home.ga / gsH.home.games, 1)}.`);
-  if (gsA.away.games) extras.push(`${E} marque ${fr(gsA.away.gf / gsA.away.games, 1)} buts par match à l'extérieur et en encaisse ${fr(gsA.away.ga / gsA.away.games, 1)}.`);
+  if (gsH.home.games) extras.push(en ? `${D} score ${f1(gsH.home.gf / gsH.home.games)} goals per game at home and concede ${f1(gsH.home.ga / gsH.home.games)}.` : `${D} marque ${f1(gsH.home.gf / gsH.home.games)} buts par match à domicile et en encaisse ${f1(gsH.home.ga / gsH.home.games)}.`);
+  if (gsA.away.games) extras.push(en ? `${E} score ${f1(gsA.away.gf / gsA.away.games)} goals per game away and concede ${f1(gsA.away.ga / gsA.away.games)}.` : `${E} marque ${f1(gsA.away.gf / gsA.away.games)} buts par match à l'extérieur et en encaisse ${f1(gsA.away.ga / gsA.away.games)}.`);
   const lines = [];
   if (h2h && h2h.length) {
     const dw = h2h.filter((x) => (x.domId === match.domicile.apiId ? x.sd > x.se : x.se > x.sd)).length;
     const ew = h2h.filter((x) => (x.domId === match.exterieur.apiId ? x.sd > x.se : x.se > x.sd)).length;
     const nul = h2h.length - dw - ew;
-    lines.push(`Sur les ${h2h.length} dernières confrontations : ${dw} victoire${dw > 1 ? 's' : ''} de ${D}, ${nul} nul${nul > 1 ? 's' : ''}, ${ew} victoire${ew > 1 ? 's' : ''} de ${E}.`);
+    lines.push(en
+      ? `In the last ${h2h.length} meetings: ${dw} win${dw === 1 ? '' : 's'} for ${D}, ${nul} draw${nul === 1 ? '' : 's'}, ${ew} win${ew === 1 ? '' : 's'} for ${E}.`
+      : `Sur les ${h2h.length} dernières confrontations : ${dw} victoire${dw > 1 ? 's' : ''} de ${D}, ${nul} nul${nul > 1 ? 's' : ''}, ${ew} victoire${ew > 1 ? 's' : ''} de ${E}.`);
   }
   return { extras, h2h: lines };
+}
+
+/**
+ * Le texte déjà rédigé peut-il être gardé ? Oui si le pronostic n'a pas vraiment bougé (même pari, écarts de 3 points au plus)
+ * et si ce n'était pas un texte de secours. Économise le quota de l'IA lors des recalculs horaires.
+ */
+function textStillValid(prev, pred, key) {
+  if (!prev || !prev[key] || !prev.principal || !prev.probas) return false;
+  if ((key === 'texte' ? prev.sourceTexte : prev.sourceTexteEn) === 'secours') return false;
+  if (prev.version !== MODEL_VERSION || prev.principal.cle !== pred.principal.cle) return false;
+  const near = (a, b) => Math.abs((a || 0) - (b || 0)) <= 3;
+  return near(prev.probas['1'], pred.probas['1']) && near(prev.probas.N, pred.probas.N) && near(prev.probas['2'], pred.probas['2'])
+    && near(prev.principal.confiance, pred.principal.confiance) && near(prev.plus25, pred.plus25) && near(prev.bttsOui, pred.bttsOui) && prev.scoreProbable === pred.scoreProbable;
 }
 
 async function fetchOdds(api, match) {
@@ -81,7 +99,7 @@ async function bumpAiStatus(db, now, { fournisseur, secours, erreurs, latencyMs 
   await ref.set(upd, { merge: true });
 }
 
-async function buildOne({ db, api, providers, now, match, league, formCache, calibration, quotaReserve, maxExternal }) {
+async function buildOne({ db, api, providers, now, match, league, formCache, calibration, quotaReserve, maxExternal, langs }) {
   const form = async (teamId) => {
     if (!formCache.has(teamId)) { const d = await db.collection('team_form').doc(String(teamId)).get(); formCache.set(teamId, (d.exists && d.data().recent) || []); }
     return formCache.get(teamId);
@@ -111,23 +129,35 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
     counts, odds: cotes || undefined, calibration,
   });
 
-  const facts = buildFacts(match, gsH, gsA, h2h);
-  const ctx = {
-    competition: match.leagueNom, dateTexte: `${dateLongue(match.coupDEnvoi)} à ${heure(match.coupDEnvoi)} (heure UTC)`,
-    domicile: match.domicile.nomCourt, exterieur: match.exterieur.nomCourt,
-    formeDom: N.formString(recentH), formeExt: N.formString(recentA),
-    probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui, scoreProbable: pred.scoreProbable, principal: pred.principal,
-    extras: facts.extras, h2h: facts.h2h,
+  const H = match.domicile.nomCourt, A = match.exterieur.nomCourt;
+  const base = {
+    competition: match.leagueNom, domicile: H, exterieur: A, formeDom: N.formString(recentH), formeExt: N.formString(recentA),
+    probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui, scoreProbable: pred.scoreProbable,
   };
-  const gen = await generateText(ctx, providers);
-  await bumpAiStatus(db, now, { fournisseur: gen.sourceTexte, secours: gen.sourceTexte === 'secours', erreurs: gen.erreurs, latencyMs: gen.latencyMs });
+  const prev = match.prono || null;
+  const texts = {};
+  for (const lang of langs) {
+    const key = lang === 'en' ? 'texteEn' : 'texte';
+    if (textStillValid(prev, pred, key)) { texts[lang] = { texte: prev[key], sourceTexte: lang === 'en' ? prev.sourceTexteEn : prev.sourceTexte, reutilise: true }; continue; }
+    const facts = buildFacts(match, gsH, gsA, h2h, lang);
+    const ctx = Object.assign({}, base, {
+      dateTexte: lang === 'en' ? `${dateLongue(match.coupDEnvoi, 'en')} at ${heure(match.coupDEnvoi)} (UTC)` : `${dateLongue(match.coupDEnvoi)} à ${heure(match.coupDEnvoi)} (heure UTC)`,
+      principal: { libelle: lang === 'en' ? labels.principalLabel(pred.principal.cle, H, A, 'en') : pred.principal.libelle, confiance: pred.principal.confiance },
+      extras: facts.extras, h2h: facts.h2h,
+    });
+    const gen = await generateText(ctx, providers, { lang });
+    await bumpAiStatus(db, now, { fournisseur: gen.sourceTexte, secours: gen.sourceTexte === 'secours', erreurs: gen.erreurs, latencyMs: gen.latencyMs });
+    texts[lang] = gen;
+  }
+  const gen = texts.fr || texts.en;
 
   const masque = !!(match.prono && match.prono.masque);
   const prono = {
     principal: pred.principal, secondaires: pred.secondaires, probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui,
     scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway,
-    source: pred.source, texte: gen.texte, sourceTexte: gen.sourceTexte, calculeLe: now.toISOString(), version: MODEL_VERSION,
-    formeDom: ctx.formeDom, formeExt: ctx.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),
+    source: pred.source, texte: texts.fr ? texts.fr.texte : null, sourceTexte: texts.fr ? texts.fr.sourceTexte : null,
+    texteEn: texts.en ? texts.en.texte : null, sourceTexteEn: texts.en ? texts.en.sourceTexte : null,
+    calculeLe: now.toISOString(), version: MODEL_VERSION, formeDom: base.formeDom, formeExt: base.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),
     echantillon: Math.min(gsH.all.games, gsA.all.games), visible: !masque, masque, aRecalculer: false,
   };
   await db.collection('matches').doc(match.id).set({ prono, cotes: cotes || null, h2h: h2h || null }, { merge: true });
@@ -144,6 +174,8 @@ async function buildPredictions(opts, report) {
   const refreshHours = opts.refreshHours || 3;
   const quotaReserve = opts.quotaReserve == null ? 40 : opts.quotaReserve;
   const maxExternal = opts.maxExternal == null ? 2 : opts.maxExternal;
+  // langues des analyses rédigées (l'anglais double les appels à l'IA lors d'un premier calcul)
+  const langs = opts.langs || ['fr', 'en'];
 
   const snap = await db.collection('matches').where('coupDEnvoi', '>=', now.toISOString()).where('coupDEnvoi', '<=', addDays(now, 7).toISOString()).get();
   const rows = snap.docs.map((d) => d.data()).filter((m) => m.statut === 'prevu');
@@ -163,7 +195,8 @@ async function buildPredictions(opts, report) {
   for (const m of todo) {
     try {
       if (!leagues.has(m.leagueId)) { const d = await db.collection('leagues').doc(m.leagueId).get(); leagues.set(m.leagueId, d.exists ? d.data() : null); }
-      const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal });
+      const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal, langs });
+      if (gen.reutilise) report.infos.textesReutilises = (report.infos.textesReutilises || 0) + 1;
       report.traites++;
       report.infos[gen.sourceTexte] = (report.infos[gen.sourceTexte] || 0) + 1;
     } catch (e) {
@@ -172,4 +205,4 @@ async function buildPredictions(opts, report) {
   }
 }
 
-module.exports = { buildPredictions, buildComparatif, buildFacts, loadCalibration, bumpAiStatus };
+module.exports = { buildPredictions, buildComparatif, buildFacts, loadCalibration, bumpAiStatus, textStillValid };

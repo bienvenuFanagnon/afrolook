@@ -13,8 +13,8 @@ const LEAGUES = [
   { apiId: 39, nom: 'Premier League', slug: 'premier-league', pays: 'Angleterre', ordre: 4, teams: [[40, 'Liverpool', 1.9], [42, 'Arsenal', 1.85], [50, 'Manchester City', 2.1], [49, 'Chelsea', 1.5]] },
   { apiId: 140, nom: 'LaLiga', slug: 'laliga', pays: 'Espagne', ordre: 5, teams: [[541, 'Real Madrid', 2.05], [529, 'Barcelona', 2.0], [530, 'Atletico Madrid', 1.6], [536, 'Sevilla', 1.2]] },
   { apiId: 135, nom: 'Serie A', slug: 'serie-a', pays: 'Italie', ordre: 6, teams: [[505, 'Inter', 1.8], [496, 'Juventus', 1.5], [489, 'AC Milan', 1.5], [492, 'Napoli', 1.6]] },
-  { apiId: 12, nom: 'Ligue des champions CAF', slug: 'ligue-des-champions-caf', pays: 'Afrique', ordre: 1, teams: [[1066, 'Al Ahly', 1.8], [1070, 'Wydad Casablanca', 1.5], [1071, 'TP Mazembe', 1.3], [1072, 'Mamelodi Sundowns', 1.6], [1073, 'Esperance Sportive De Tunis', 1.45], [1074, 'RS Berkane', 1.35]] },
-  { apiId: 20, nom: 'Coupe de la CAF', slug: 'coupe-de-la-caf', pays: 'Afrique', ordre: 2, teams: [[1080, 'Zamalek SC', 1.4], [1081, 'USM Alger', 1.3], [1082, 'Enyimba', 1.1], [1083, 'Raja Casablanca', 1.5]] },
+  { apiId: 12, nom: 'Ligue des champions CAF', en: 'CAF Champions League', slug: 'ligue-des-champions-caf', pays: 'Afrique', ordre: 1, teams: [[1066, 'Al Ahly', 1.8], [1070, 'Wydad Casablanca', 1.5], [1071, 'TP Mazembe', 1.3], [1072, 'Mamelodi Sundowns', 1.6], [1073, 'Esperance Sportive De Tunis', 1.45], [1074, 'RS Berkane', 1.35]] },
+  { apiId: 20, nom: 'Coupe de la CAF', en: 'CAF Confederation Cup', slug: 'coupe-de-la-caf', pays: 'Afrique', ordre: 2, teams: [[1080, 'Zamalek SC', 1.4], [1081, 'USM Alger', 1.3], [1082, 'Enyimba', 1.1], [1083, 'Raja Casablanca', 1.5]] },
 ];
 
 function rng(seed) {
@@ -108,6 +108,11 @@ const demoProvider = {
   async call(messages) {
     const lines = messages[1].content.split('\n').filter((l) => l.startsWith('- ')).map((l) => l.slice(2));
     const get = (re) => lines.find((l) => re.test(l));
+    if (/^You are an English/.test(messages[0].content)) {
+      const sel = get(/^Selected prediction/);
+      const analyse = [get(/^Calculated probabilities/), ...lines.filter((l) => /per game|meetings/.test(l)), 'A prediction is only a probability: a single goal can change everything.'].filter(Boolean).slice(0, 6).join(' ');
+      return JSON.stringify({ analyse, pointsCles: [sel, get(/^Calculated probabilities/), get(/^Over 2\.5/)], resume: sel });
+    }
     const forme = lines.filter((l) => /^Forme récente/.test(l));
     void forme;
     const analyse = [get(/^Probabilités calculées/), ...lines.filter((l) => /par match à domicile|par match à l'extérieur|confrontations/.test(l)), 'Un pronostic reste une probabilité : un seul but peut tout changer.'].filter(Boolean).slice(0, 6).join(' ');
@@ -118,7 +123,7 @@ const demoProvider = {
 /** Construit la base d'exemple à l'instant `now`. */
 async function buildSample(now = new Date()) {
   const db = new FakeDb();
-  for (const lg of LEAGUES) await db.seed('leagues', String(lg.apiId), { apiId: lg.apiId, nom: lg.nom, slug: lg.slug, pays: lg.pays, saison: 2026, suivi: true, sport: 'football', ordre: lg.ordre });
+  for (const lg of LEAGUES) await db.seed('leagues', String(lg.apiId), { apiId: lg.apiId, nom: lg.nom, noms: { fr: lg.nom, en: lg.en || lg.nom }, slug: lg.slug, pays: lg.pays, saison: 2026, suivi: true, sport: 'football', ordre: lg.ordre });
   const api = makeApi(now);
   const start = new Date(now.getTime() - 3 * 864e5);
   const prov = [demoProvider];

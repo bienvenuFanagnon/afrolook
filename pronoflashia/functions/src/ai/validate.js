@@ -10,17 +10,27 @@ const FORBIDDEN = [
 const NEGATABLE = /(?<!\p{L})(?:garanti[es]?|assuré[es]?)(?!\p{L})/giu;
 const NEGATION = /(?<!\p{L})(?:pas|aucun|aucune|rien|jamais|ne)(?!\p{L})|n'/iu;
 
-/** Vrai si le texte contient un « garanti » ou « assuré » non précédé d'une négation dans la même phrase. */
-function hasUnnegatedPromise(text) {
-  for (const m of text.matchAll(NEGATABLE)) {
+/** Vrai si le texte contient un « garanti » / « guaranteed »… non précédé d'une négation dans la même phrase. */
+function hasUnnegatedPromise(text, lang) {
+  const words = lang === 'en' ? NEGATABLE_EN : NEGATABLE;
+  const neg = lang === 'en' ? NEGATION_EN : NEGATION;
+  for (const m of text.matchAll(words)) {
     const start = Math.max(text.lastIndexOf('.', m.index), text.lastIndexOf('!', m.index), 0);
     const before = text.slice(start, m.index);
-    if (!NEGATION.test(before)) return true;
+    if (!neg.test(before)) return true;
   }
   return false;
 }
+// Anglais : promesses interdites, mots niables, négations.
+const FORBIDDEN_EN = [
+  /sure\s+(?:win|thing|bet)/i, /100\s?%\s+(?:sure|certain|guaranteed)/i, /can'?t\s+lose/i, /cannot\s+lose/i, /easy\s+money/i, /\block\s+of\s+the/i,
+  /guaranteed\s+(?:win|profit|winnings|money)/i, /\b(?:place|make)\s+(?:a|your)\s+bet\b/i, /\bbet\s+(?:now|big)\b/i,
+];
+const NEGATABLE_EN = /(?<!\p{L})(?:guarantee[sd]?|certain(?:ty)?|assured)(?!\p{L})/giu;
+const NEGATION_EN = /(?<!\p{L})(?:not|no|nothing|never|nor|without|isn'?t|aren'?t|cannot|can'?t)(?!\p{L})|n't/iu;
+
 const FR_WORDS = /(?<!\p{L})(?:le|la|les|un|une|des|de|du|et|en|à|au|aux|est|sont|avec|pour|sur|dans|qui|que|ne|pas|plus|se|son|sa|ses|ont|a|match|équipe|buts?)(?!\p{L})/giu;
-const EN_WORDS = /(?<!\p{L})(?:the|and|with|their|have|has|are|is|will|this|that|from|against|goals?|team)(?!\p{L})/giu;
+const EN_WORDS = /(?<!\p{L})(?:the|and|with|their|have|has|are|is|will|this|that|from|against|goals?|team|of|to|in|a|an|at|for|by|win|draw|match)(?!\p{L})/giu;
 
 /** Extrait le premier objet JSON d'un texte (tolère les balises ```json). */
 function extractJson(raw) {
@@ -68,7 +78,8 @@ const sentences = (t) => String(t).split(/(?<=[.!?…])\s+/).filter((x) => x.tri
  * Renvoie { ok, value?, errors[] }. value = { analyse, pointsCles[3], resume }.
  * faits : lignes de faits envoyées à l'IA (pour contrôler les chiffres).
  */
-function validateOutput(raw, faits) {
+function validateOutput(raw, faits, lang) {
+  const en = lang === 'en';
   const errors = [];
   const j = extractJson(raw);
   if (!j || typeof j !== 'object') return { ok: false, errors: ['json_invalide'] };
@@ -83,9 +94,9 @@ function validateOutput(raw, faits) {
   if (pts.some((p) => p.length > 180)) errors.push('point_trop_long');
   const all = [analyse, resume, ...pts].join(' ');
   const fr = (all.match(FR_WORDS) || []).length;
-  const en = (all.match(EN_WORDS) || []).length;
-  if (fr < 8 || en > fr / 2) errors.push('pas_en_francais');
-  if (FORBIDDEN.some((re) => re.test(all)) || hasUnnegatedPromise(all)) errors.push('promesse_interdite');
+  const nEn = (all.match(EN_WORDS) || []).length;
+  if (en ? nEn < 8 || fr > nEn / 2 : fr < 8 || nEn > fr / 2) errors.push(en ? 'not_english' : 'pas_en_francais');
+  if ((en ? FORBIDDEN_EN : FORBIDDEN).some((re) => re.test(all)) || hasUnnegatedPromise(all, lang)) errors.push('promesse_interdite');
   const badNums = checkNumbers(all, allowedNumbers(faits));
   if (badNums.length) errors.push('chiffre_invente:' + badNums.slice(0, 3).join(','));
   if (errors.length) return { ok: false, errors };

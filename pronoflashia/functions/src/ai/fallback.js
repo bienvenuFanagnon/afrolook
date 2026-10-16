@@ -41,4 +41,30 @@ function fallbackText(ctx) {
   };
 }
 
-module.exports = { fallbackText };
+/** Version anglaise du texte de secours. */
+function fallbackTextEn(ctx) {
+  const D = ctx.domicile;
+  const E = ctx.exterieur;
+  const p = ctx.probas;
+  const homeFav = p['1'] >= p['2'];
+  const fav = homeFav ? D : E;
+  const fd = formWords(ctx.formeDom);
+  const fe = formWords(ctx.formeExt);
+  const s = [];
+  s.push(`The model gives ${fav} a ${Math.max(p['1'], p['2'])}% chance of winning, against ${p.N}% for a draw and ${homeFav ? p['2'] : p['1']}% for the other side.`);
+  if (fd && fe) s.push(`${D} have won ${fd.v} of their last ${fd.len} matches, while ${E} have won ${fe.v} of their last ${fe.len}.`);
+  s.push(`The model sees a ${ctx.plus25}% chance of over 2.5 goals and a ${ctx.bttsOui}% chance that both teams score.`);
+  s.push(`The most likely score is ${ctx.scoreProbable}.`);
+  s.push(`The selected prediction is ${ctx.principal.libelle}, with a confidence of ${ctx.principal.confiance}%. A prediction is a probability and no result is guaranteed.`);
+  return {
+    analyse: s.join(' '),
+    pointsCles: [
+      `Prediction: ${ctx.principal.libelle} (confidence ${ctx.principal.confiance}%)`,
+      `Probabilities: ${D} ${p['1']}%, draw ${p.N}%, ${E} ${p['2']}%`,
+      `Goals: over 2.5 goals at ${ctx.plus25}%, both teams to score at ${ctx.bttsOui}%`,
+    ],
+    resume: `${ctx.principal.libelle}: ${D} vs ${E}, confidence ${ctx.principal.confiance}%.`,
+  };
+}
+
+module.exports = { fallbackText, fallbackTextEn };
