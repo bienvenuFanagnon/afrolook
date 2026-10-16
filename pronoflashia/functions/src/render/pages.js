@@ -85,12 +85,23 @@ function newsStrip(rc, items) {
   return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nws" role="list">${list.map((x) => `<div role="listitem">${newsLink(rc, x)}</div>`).join('')}</div></div>`;
 }
 
-/** Fiche d'un match : jusqu'à 3 titres qui parlent d'une des deux équipes. */
+/** Fiche d'un match : infos lues par l'IA (avec source) puis jusqu'à 3 titres qui parlent d'une des deux équipes. */
 function matchNews(rc, items, m) {
   const ids = [m.domicile.teamId, m.exterieur.teamId].filter((x) => x != null).map(String);
   const list = pickNews(rc, items, 3, ids);
-  if (!list.length) return '';
-  return `<div class="box"><div class="lbl">${rc.t.newsTeams}</div><div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p></div>`;
+  const facts = (m.prono && m.prono.actu && m.prono.actu.faits) || [];
+  if (!list.length && !facts.length) return '';
+  const factsHtml = facts.length ? `<ul class="fk">${facts.map((f) => `<li>${esc(rc.t.fact(f))}<a href="${esc(f.lien)}" target="_blank" rel="nofollow noopener noreferrer">${esc(f.source)}</a></li>`).join('')}</ul><p class="note" style="margin:6px 0 10px">${rc.t.newsFactsNote}</p>` : '';
+  return `<div class="box"><div class="lbl">${facts.length ? rc.t.newsFacts : rc.t.newsTeams}</div>${factsHtml}${list.length ? `<div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p>` : ''}</div>`;
+}
+
+/** Bilan : réussite selon les signaux affichés (seulement quand il y a assez de pronostics concernés). */
+function signalBox(rc, parSignal) {
+  const sg = parSignal || {};
+  const rows = ['aucun', 'actu', 'limite'].filter((k) => sg[k] && sg[k].n >= 1);
+  if (!rows.length || !((sg.actu && sg.actu.n >= 10) || (sg.limite && sg.limite.n >= 10))) return '';
+  const t = rc.t;
+  return `<div class="box"><div class="lbl">${t.sigTitle}</div><p class="note" style="margin:8px 0">${t.sigP}</p><div class="hb">${rows.map((k) => `<div class="row"><span>${esc(t.sigLabel[k])}</span><div class="tk"><i style="width:${sg[k].taux == null ? 0 : sg[k].taux}%"></i></div><span class="num">${sg[k].taux == null ? '–' : pct(rc, sg[k].taux)} · ${sg[k].n}</span></div>`).join('')}</div></div>`;
 }
 
 function flashCoupons(rc, pool) {
@@ -397,7 +408,7 @@ function couponHistoryBox(rc, coupons) {
     (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
 }
 
-function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons }) {
+function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, signaux }) {
   const t = rc.t;
   const W = 560, H = 140;
   const pts = weeks.map((w) => w.taux);
@@ -421,7 +432,7 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons })
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    couponHistoryBox(rc, coupons) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
+    couponHistoryBox(rc, coupons) + signalBox(rc, signaux) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };

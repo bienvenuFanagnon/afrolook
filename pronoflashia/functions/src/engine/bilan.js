@@ -23,7 +23,13 @@ function matchDelta(match) {
     parFamille: {},
     parBin: {},
     parCle: {},
+    // signaux affichés sur le pronostic : le bilan dira un jour, avec nos propres résultats, s'ils annoncent vraiment des pronostics moins fiables
+    parSignal: {},
   };
+  const signaux = [];
+  if (match.prono.actu && match.prono.actu.faits && match.prono.actu.faits.length) signaux.push('actu');
+  if (match.prono.fragile) signaux.push('limite');
+  for (const sg of signaux.length ? signaux : ['aucun']) d.parSignal[sg] = { n: 1, ok, sum: pr.confiance };
   for (const m of match.prono.marches || []) {
     if (m.fiabilite === 'faible') continue;
     const r = res.marches && res.marches[m.cle];
@@ -72,6 +78,7 @@ function mergeDelta(a, b) {
     parFamille: mergeMap(a.parFamille, b.parFamille),
     parBin: mergeMap(a.parBin, b.parBin),
     parCle: mergeMap(a.parCle, b.parCle),
+    parSignal: mergeMap(a.parSignal, b.parSignal),
     buts: mergeButs(a.buts, b.buts),
   };
 }
@@ -87,7 +94,7 @@ const pct = (ok, n) => (n > 0 ? Math.round((ok / n) * 100) : null);
 /** Résumé pour la page Bilan et pour la calibration, à partir d'une liste de jours. */
 function summarize(days) {
   const t = days.reduce((acc, d) => mergeDelta(acc, d), null);
-  if (!t) return { matches: 0, n: 0, ok: 0, taux: null, parLigue: {}, parConfiance: [], parFamille: {}, bins: [], cal: null };
+  if (!t) return { matches: 0, n: 0, ok: 0, taux: null, parLigue: {}, parConfiance: [], parFamille: {}, parSignal: {}, bins: [], cal: null };
   // annonce = probabilité affichée au public ; brut = probabilité du modèle avant correction
   const rows = (map) => Object.entries(map).map(([k, v]) => ({ k, n: v.n, ok: v.ok, taux: pct(v.ok, v.n), annonce: v.n ? Math.round((v.aff == null ? v.sum : v.aff) / v.n) : null, brut: v.n ? v.sum / v.n : null }));
   return {
@@ -99,6 +106,7 @@ function summarize(days) {
     parLigue: Object.fromEntries(Object.entries(t.parLigue).map(([k, v]) => [k, { n: v.n, ok: v.ok, taux: pct(v.ok, v.n) }])),
     parConfiance: rows(t.parConfiance).sort((a, b) => a.k - b.k),
     parFamille: Object.fromEntries(rows(t.parFamille).map((r) => [r.k, r])),
+    parSignal: Object.fromEntries(rows(t.parSignal || {}).map((r) => [r.k, { n: r.n, ok: r.ok, taux: r.taux, annonce: r.annonce }])),
     // tranches de 5 points : probabilité annoncée contre taux réel, sert à calibrer
     bins: rows(t.parBin).map((r) => ({ from: +r.k, to: +r.k + 5, annonce: r.annonce, reel: r.taux, n: r.n })).sort((a, b) => a.from - b.from),
     // données d'apprentissage (probabilités brutes contre issues réelles), lues par engine/learn.js

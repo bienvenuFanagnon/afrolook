@@ -82,7 +82,7 @@ const TASKS = {
   }),
   syncResults: (o = {}) => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
   sendPush: () => runJob(db, 'sendPush', async (r) => sendPush({ db, send: await pushSender(), budgetMs: 420000 }, r)),
-  syncNews: () => runJob(db, 'syncNews', (r) => syncNews({ db }, r)),
+  syncNews: () => runJob(db, 'syncNews', (r) => syncNews({ db, providers: makeProviders(secrets()) }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
   aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: makeProviders(secrets()) }, r)),
 };

@@ -3,7 +3,8 @@
 // `actif` : état de départ (modifiable dans l'admin). `filtre` : flux généraliste dont on ne garde que les titres de football.
 // Les flux marqués actif: false ont refusé nos robots lors des essais : à tester depuis le serveur, puis à activer si ça passe.
 
-const FOOT_FR = /\b(foot|football|ligue|CAN|CAF|FIFA|UEFA|coupe|mondial|éliminatoires|championnat|Lions|Éléphants|Aigles|Pharaons|Super Eagles|Black Stars)\b/i;
+// bornes Unicode : le \b de JavaScript ne reconnaît pas les mots qui commencent ou finissent par une lettre accentuée (« Éléphants »)
+const FOOT_FR = /(?<![\p{L}\p{N}])(?:foot|football|ligue|CAN|CAF|FIFA|UEFA|coupe|mondial|éliminatoires|championnat|Lions|Éléphants|Aigles|Pharaons|Super Eagles|Black Stars)(?![\p{L}\p{N}])/iu;
 const FOOT_EN = /\b(football|soccer|AFCON|CAF|FIFA|UEFA|league|cup|Premier League|World Cup|qualifier)/i;
 
 const SOURCES = [

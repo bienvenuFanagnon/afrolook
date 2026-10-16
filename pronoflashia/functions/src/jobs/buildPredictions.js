@@ -42,7 +42,7 @@ function buildComparatif(recentH, recentA, gsH, gsA) {
 }
 
 /** Lignes de faits envoyées à l'IA (tous les chiffres qu'elle a le droit de citer), en français ou en anglais. */
-function buildFacts(match, gsH, gsA, h2h, lang, bilan, notes) {
+function buildFacts(match, gsH, gsA, h2h, lang, bilan, notes, actu) {
   const en = lang === 'en';
   const D = match.domicile.nomCourt, E = match.exterieur.nomCourt;
   const f1 = (x) => fr(x, 1, lang);
@@ -70,7 +70,30 @@ function buildFacts(match, gsH, gsA, h2h, lang, bilan, notes) {
     if (Math.abs(d.attaque) >= 15) extras.push(en ? `Our team ratings put ${team}'s attack ${Math.abs(d.attaque)}% ${d.attaque > 0 ? 'above' : 'below'} the league average.` : `Nos notes d'équipes placent l'attaque de ${team} ${Math.abs(d.attaque)} % ${d.attaque > 0 ? 'au-dessus' : 'en dessous'} de la moyenne du championnat.`);
     if (Math.abs(d.defense) >= 15) extras.push(en ? `${team}'s defence concedes ${Math.abs(d.defense)}% ${d.defense > 0 ? 'more' : 'fewer'} goals than the league average, according to our ratings.` : `Selon nos notes, la défense de ${team} encaisse ${Math.abs(d.defense)} % ${d.defense > 0 ? 'de buts en plus' : 'de buts en moins'} que la moyenne du championnat.`);
   }
+  // actualité récente lue par l'IA (toujours avec sa source ; « à confirmer » quand le texte source hésite)
+  for (const f of (actu && actu.faits) || []) {
+    const who = f.joueur ? (en ? ` of ${f.joueur}` : ` de ${f.joueur}`) : '';
+    const label = en
+      ? { absence: `absence${who} reported for ${f.equipe}`, suspension: `suspension${who} reported for ${f.equipe}`, retour: `return${who} reported for ${f.equipe}`, entraineur: `coaching change reported at ${f.equipe}` }[f.type]
+      : { absence: `absence${who} signalée côté ${f.equipe}`, suspension: `suspension${who} signalée côté ${f.equipe}`, retour: `retour${who} signalé côté ${f.equipe}`, entraineur: `changement d'entraîneur signalé chez ${f.equipe}` }[f.type];
+    if (label) extras.push(en ? `Recent news (${f.source}): ${label}${f.certitude === 'rumeur' ? ', to be confirmed' : ''}.` : `Actualité récente (${f.source}) : ${label}${f.certitude === 'rumeur' ? ', à confirmer' : ''}.`);
+  }
   return { extras, h2h: lines };
+}
+
+/** Faits d'actualité des 72 dernières heures qui concernent l'une des deux équipes (sans doublon, 4 au plus, les plus récents d'abord). */
+function actuOf(articles, match) {
+  const ids = [String(match.domicile.teamId), String(match.exterieur.teamId)];
+  const seen = new Set();
+  const out = [];
+  for (const n of articles.filter((a) => a.fait && ids.includes(a.fait.equipeId)).sort((a, b) => (a.date < b.date ? 1 : -1))) {
+    const k = `${n.fait.equipeId}|${n.fait.type}|${n.fait.joueur || ''}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ equipeId: n.fait.equipeId, equipe: n.fait.equipe, type: n.fait.type, joueur: n.fait.joueur || null, certitude: n.fait.certitude, source: n.source, lien: n.lien, date: n.date });
+    if (out.length >= 4) break;
+  }
+  return out.length ? { faits: out } : null;
 }
 
 /**
@@ -133,6 +156,9 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   const R = formCache.get(rkey);
   const ratingsOn = !!(R && !(league && league.ratings && league.ratings.actif === false));
   const lamNotes = ratingsOn ? predictLambdas(R, String(match.domicile.teamId), String(match.exterieur.teamId)) : null;
+  // actualité des 72 dernières heures (lue par syncNews) : informe, ne modifie aucune probabilité
+  if (!formCache.has('news72')) { const snap = await db.collection('news').where('date', '>=', new Date(now.getTime() - 72 * 3600e3).toISOString()).get(); formCache.set('news72', snap.docs.map((d) => d.data()).filter((n) => n.fait)); }
+  const actu = actuOf(formCache.get('news72'), match);
   const notes = ratingsOn ? { dom: describeTeam(R, String(match.domicile.teamId)), ext: describeTeam(R, String(match.exterieur.teamId)) } : null;
   const lgAvg = (league && league.avg) || {};
   const counts = {};
@@ -168,7 +194,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
     if (textStillValid(prev, pred, key)) { texts[lang] = { texte: prev[key], sourceTexte: lang === 'en' ? prev.sourceTexteEn : prev.sourceTexte, reutilise: true }; return; }
     const libelle = lang === 'en' ? labels.principalLabel(pred.principal.cle, H, A, 'en') : pred.principal.libelle;
     const tr = trackRecord(calibration, pred.principal.cle);
-    const facts = buildFacts(match, gsH, gsA, h2h, lang, tr && { libelle, n: tr.n, reel: tr.reel }, lamNotes ? notes : null);
+    const facts = buildFacts(match, gsH, gsA, h2h, lang, tr && { libelle, n: tr.n, reel: tr.reel }, lamNotes ? notes : null, actu);
     const ctx = Object.assign({}, base, {
       dateTexte: lang === 'en' ? `${dateLongue(match.coupDEnvoi, 'en')} at ${heure(match.coupDEnvoi)} (UTC)` : `${dateLongue(match.coupDEnvoi)} à ${heure(match.coupDEnvoi)} (heure UTC)`,
       principal: { libelle, confiance: pred.principal.confiance },
@@ -184,7 +210,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   const masque = !!(match.prono && match.prono.masque);
   const prono = {
     principal: pred.principal, secondaires: pred.secondaires, probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui,
-    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre, moteur: pred.moteur, notes: lamNotes ? notes : null,
+    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre, moteur: pred.moteur, notes: lamNotes ? notes : null, actu,
     source: pred.source, texte: texts.fr ? texts.fr.texte : null, sourceTexte: texts.fr ? texts.fr.sourceTexte : null,
     texteEn: texts.en ? texts.en.texte : null, sourceTexteEn: texts.en ? texts.en.sourceTexte : null,
     calculeLe: now.toISOString(), version: MODEL_VERSION, formeDom: base.formeDom, formeExt: base.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),
@@ -256,4 +282,4 @@ async function buildPredictions(opts, report) {
   await archive();
 }
 
-module.exports = { buildPredictions, buildComparatif, buildFacts, loadCalibration, bumpAiStatus, textStillValid };
+module.exports = { actuOf, buildPredictions, buildComparatif, buildFacts, loadCalibration, bumpAiStatus, textStillValid };
