@@ -104,6 +104,12 @@ img{max-width:100%}
 .ad iframe{border:0;max-width:100%;display:block}
 .ad-top{min-height:50px}.ad-nat{min-height:100px}.ad-rect{min-height:250px;width:300px;margin:0 auto}.ad-tall{min-height:600px;width:300px}.ad-verdict{min-height:100px}
 .ad.dk{display:none}
+.ptn{position:relative;display:block;text-decoration:none;color:var(--tx);border:1px dashed #3a4a70;border-radius:14px;background:var(--s1);padding:14px 16px;margin:10px 0}
+.ptn .sp2{position:absolute;top:8px;right:12px;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}
+.ptn .bg{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--cy);margin-bottom:4px}
+.ptn p{font-family:var(--fd);font-size:19px;line-height:1.25;margin:2px 0 10px}
+.ptn .cta{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--cy);color:var(--cy);border-radius:9px;padding:8px 14px;font-weight:700;font-size:13.5px}
+.ptn:hover .cta{background:var(--cy);color:var(--ink)}
 .mc .more{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px 14px;border-radius:10px;background:var(--flash);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:.2px}
 .mc .more i{font-style:normal;font-size:18px;line-height:1}
 .mc .more.off{background:transparent;color:var(--mut);border:1px solid var(--line);font-weight:600}

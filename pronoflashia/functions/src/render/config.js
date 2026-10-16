@@ -26,7 +26,9 @@ const SLOTS = {
   verdict: { actif: false, dk: [728, 90], mo: [320, 100] },
   fiche_native: { actif: false },
   avance: { actif: false, dk: [300, 250], mo: [300, 250] }, // avant les paris avancés (fiche d'analyse) : l'emplacement le plus regardé, à réserver à la meilleure annonce
-  fin: { actif: false, dk: [728, 90], mo: [320, 100] }, // fin de liste de matchs
+  fin: { actif: false, dk: [728, 90], mo: [320, 100] },
+  // Offre partenaire (Smartlink) : carte clairement étiquetée « Sponsorisé », jamais déguisée en contenu ; lien ouvert par un clic volontaire
+  smartlink: { actif: false, every: 8, url: '', titre: '', bouton: '' }, // fin de liste de matchs
   colonne_rect: { actif: false, dk: [300, 250] },
   colonne_tall: { actif: false, dk: [300, 600] },
   collante: { actif: false, mo: [320, 50] },

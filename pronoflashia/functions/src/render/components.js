@@ -113,6 +113,15 @@ function aflCard(rc, slot, i = 0) {
   return `<a class="afl" href="${esc(`${STORE_ANDROID}&${utm}`)}" target="_blank" rel="noopener sponsored" data-afl="${esc(slot)}" data-i="${i}"><span class="sp2">${rc.t.sponsored}</span><div class="im" style="background-image:url(${photo})"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12" loading="lazy">AFROLOOK</span><p>${esc(msg)}</p><span class="cta">${rc.t.aflCta}</span></div></a>`;
 }
 
+/** Offre partenaire (Smartlink) : carte étiquetée « Sponsorisé » et « Offre partenaire », sans photo ni texte qui imite un contenu du site. */
+function partnerCard(rc, slot) {
+  if (!slotOn(rc.ads, 'smartlink')) return '';
+  const e = rc.ads.emplacements.smartlink || {};
+  if (!e.url) return '';
+  const t = rc.t;
+  return `<a class="ptn" href="${esc(e.url)}" target="_blank" rel="sponsored nofollow noopener" data-ptn="${esc(slot)}"><span class="sp2">${t.sponsored}</span><div class="bd"><span class="bg">${t.ptnLabel}</span><p>${esc(e.titre || t.ptnTitle)}</p><span class="cta">${esc(e.bouton || t.ptnBtn)} <i aria-hidden="true">›</i></span></div></a>`;
+}
+
 /**
  * Insère les publicités dans une liste de cartes (identique sur téléphone et ordinateur).
  * Un encart Afrolook après la 2e carte (visible sans défiler loin), une annonce « native » après la 3e puis toutes les N cartes,
@@ -125,13 +134,16 @@ function listWithAds(rc, cards) {
   const aflOn = afl.actif && afl.every;
   const out = [];
   let a = 0;
-  let nextNat = 3, nextAfl = 2;
+  const ptn = rc.ads.emplacements.smartlink || {};
+  const ptnOn = slotOn(rc.ads, 'smartlink') && ptn.url && ptn.every;
+  let nextNat = 3, nextAfl = 2, nextPtn = 5;
   cards.forEach((c, i) => {
     out.push(c);
     const n = i + 1;
     if (n >= cards.length) return;
-    if (natOn && n === nextNat) { out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })); nextNat += nat.every; if (nextAfl === n) nextAfl = n + 1; return; }
-    if (aflOn && n === nextAfl) { out.push(aflCard(rc, 'liste', a++)); nextAfl += afl.every; }
+    if (natOn && n === nextNat) { out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })); nextNat += nat.every; if (nextAfl === n) nextAfl = n + 1; if (nextPtn === n) nextPtn = n + 1; return; }
+    if (aflOn && n === nextAfl) { out.push(aflCard(rc, 'liste', a++)); nextAfl += afl.every; if (nextPtn === n) nextPtn = n + 1; return; }
+    if (ptnOn && n === nextPtn) { out.push(partnerCard(rc, 'liste')); nextPtn += ptn.every; }
   });
   return out.join('');
 }
@@ -200,7 +212,7 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
   const alt = alternates && !noindex ? `<link rel="alternate" hreflang="fr" href="${esc(url(rc, alternates.fr))}"><link rel="alternate" hreflang="en" href="${esc(url(rc, alternates.en))}"><link rel="alternate" hreflang="x-default" href="${esc(url(rc, alternates.fr))}">` : '';
   return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${tt}</title><meta name="description" content="${d}">` +
     `<link rel="canonical" href="${esc(canonical)}">${alt}${robots}<meta name="theme-color" content="#080D18"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest">` +
-    `<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(rc.site.nom)}"><meta property="og:title" content="${tt}"><meta property="og:description" content="${d}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(url(rc, ogImage || '/og.png'))}"><meta property="og:locale" content="${t.ogLocale}"><meta name="twitter:card" content="summary_large_image">` +
+    `<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(rc.site.nom)}"><meta property="og:title" content="${tt}"><meta property="og:description" content="${d}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(url(rc, ogImage || '/og.png'))}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(rc.site.nom)}"><meta property="og:locale" content="${t.ogLocale}"><meta name="twitter:card" content="summary_large_image">` +
     `${verif}${gsc}<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/inter-400-700.woff2" as="font" type="font/woff2" crossorigin>` +
     `<style>${rc.css}</style>${head}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}</head>` +
     `<body class="${hasStk ? 'hasstk ' : ''}${bodyClass}"><a class="skip" href="#main">${t.skip}</a>${header(rc, active, alternates)}<main id="main">${body}</main>${footer(rc)}${stickyBar(rc)}` +
@@ -210,5 +222,5 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, adResponsive, aflCard, partnerCard, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

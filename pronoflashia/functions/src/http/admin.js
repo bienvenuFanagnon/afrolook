@@ -73,6 +73,13 @@ function sanitizeAds(inp) {
       if (e.every !== undefined) o.every = Math.min(12, Math.max(2, parseInt(e.every, 10) || 4));
       if (e.delaiSec !== undefined) o.delaiSec = Math.min(120, Math.max(5, parseInt(e.delaiSec, 10) || 20));
       if (e.parJours !== undefined) o.parJours = Math.min(30, Math.max(1, parseInt(e.parJours, 10) || 1));
+      if (e.url !== undefined) {
+        const u = String(e.url || '').trim();
+        if (u && !/^https:\/\/[^\s"'<>]{4,480}$/i.test(u)) throw new HttpError(400, 'Adresse du lien partenaire invalide (https://… sans espace).');
+        o.url = u;
+      }
+      if (e.titre !== undefined) o.titre = str(e.titre, 90);
+      if (e.bouton !== undefined) o.bouton = str(e.bouton, 30);
       if (Array.isArray(e.reseaux)) o.reseaux = e.reseaux.filter((r) => NETWORKS.includes(r.reseau) && String(r.code || '').trim()).slice(0, 3).map((r) => ({ reseau: r.reseau, code: sanitizeCode(r.code), codeMobile: sanitizeCode(r.codeMobile) }));
       out.emplacements[id] = o;
     }

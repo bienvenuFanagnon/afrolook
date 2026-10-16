@@ -9,7 +9,7 @@ const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 
-const { matchCard, crest, adSlot, adResponsive, aflCard, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
+const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
 const FAMILLES_ORDRE = ['Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Score', 'Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux'];
 const lvlClass = (p) => (p >= 75 ? 's' : p >= 60 ? 'e' : 'r');
@@ -185,7 +185,7 @@ function match(rc, { m, same, h2h }) {
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
     (p && p.visible !== false ? `<div class="box"><div class="lbl">${t.probsTitle}</div><div class="pb">${probRows(rc, p)}</div><p class="note" style="margin-top:12px">${t.likelyScore}${colon(rc)} <b style="color:var(--tx)">${esc(p.scoreProbable)}</b></p></div>` : '') +
-    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}` +
+    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${partnerCard(rc, 'fiche')}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.shareWa}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.matchDisclaimer}</p></div>${side}</div></div>` +
     (p ? jsonScript('pf-match', matchJson(rc, m)) : '');

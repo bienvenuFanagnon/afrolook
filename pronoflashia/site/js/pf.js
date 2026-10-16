@@ -123,6 +123,12 @@
     a.addEventListener('click', function () { send({ t: 'afl_click', fmt: slot }); });
   }
   $$('a.afl').forEach(aflInit);
+  /* offre partenaire (Smartlink) : mesure des affichages et des clics */
+  $$('a.ptn').forEach(function (a) {
+    var slot = a.getAttribute('data-ptn') || 'x', seen = false;
+    if ('IntersectionObserver' in w) new IntersectionObserver(function (es, o) { es.forEach(function (e) { if (e.isIntersecting && !seen) { seen = true; send({ t: 'ptn_imp', fmt: slot }); o.disconnect(); } }); }).observe(a);
+    a.addEventListener('click', function () { send({ t: 'ptn_click', fmt: slot }); });
+  });
   function aflNode(slot, i) {
     var a = d.createElement('a'); a.className = 'afl'; a.target = '_blank'; a.rel = 'noopener sponsored'; a.setAttribute('data-afl', slot); a.setAttribute('data-i', String(i || 0));
     a.href = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok&utm_source=pronoflashia&utm_campaign=' + encodeURIComponent(slot);

@@ -100,3 +100,50 @@ test('fiche du match : plus de pronostics par groupe, annonces entre les groupes
   const g = moreMarkets(prono);
   assert.deepEqual(g.map((x) => [x.key, x.items.map((i) => i.cle)]), [['gMain', ['b']], ['gOther', ['f']]]);
 });
+
+test('offre partenaire (Smartlink) : carte étiquetée « Sponsorisé », lien sponsorisé, éteinte par défaut, sans adresse rien n\'est affiché', async () => {
+  const url = 'https://partner.example/4/abc123';
+  const db = await withAds({ actif: true, afrolook: { actif: false }, emplacements: { smartlink: { actif: true, every: 8, url, titre: '', bouton: '' } } });
+  const html = (await route(db, '/', NOW)).body;
+  const m = /<a class="ptn" href="([^"]+)" target="_blank" rel="([^"]+)" data-ptn="liste"><span class="sp2">Sponsorisé<\/span><div class="bd"><span class="bg">Offre partenaire<\/span><p>Découvrez l&#39;offre de notre partenaire<\/p><span class="cta">Voir l&#39;offre/.exec(html);
+  assert.ok(m, 'carte partenaire dans la liste');
+  assert.equal(m[1], url); assert.match(m[2], /sponsored/); assert.match(m[2], /nofollow/); assert.match(m[2], /noopener/);
+  // 5e position : après 4 cartes et la native éventuelle, jamais collée à une autre pub
+  const idx = html.indexOf('class="ptn"');
+  assert.ok((html.slice(0, idx).match(/class="mc"/g) || []).length >= 4);
+  // anglais, titre et bouton personnalisés
+  await db.seed('config', 'ads', { actif: true, afrolook: { actif: false }, emplacements: { smartlink: { actif: true, every: 8, url, titre: 'Bonus de bienvenue', bouton: 'Découvrir' } } }); D.clearCache();
+  assert.match((await route(db, '/', NOW)).body, /<p>Bonus de bienvenue<\/p><span class="cta">Découvrir/);
+  await db.seed('config', 'ads', { actif: true, afrolook: { actif: false }, emplacements: { smartlink: { actif: true, every: 8, url } } }); D.clearCache();
+  assert.match((await route(db, '/en', NOW)).body, /<span class="bg">Partner offer<\/span><p>Discover our partner&#39;s offer<\/p>/);
+  // fiche du match
+  const href = /href="(\/football\/[a-z0-9-]+\/[a-z0-9-]+)"/.exec((await route(db, '/', NOW)).body)[1];
+  assert.match((await route(db, href, NOW)).body, /data-ptn="fiche"/);
+  // éteinte, ou sans adresse, ou interrupteur général coupé : rien
+  for (const ads of [{ actif: true, emplacements: { smartlink: { actif: false, url } } }, { actif: true, emplacements: { smartlink: { actif: true, url: '' } } }, { actif: false, emplacements: { smartlink: { actif: true, url } } }]) {
+    await db.seed('config', 'ads', Object.assign({ afrolook: { actif: false } }, ads)); D.clearCache();
+    assert.doesNotMatch((await route(db, '/', NOW)).body, /class="ptn"/);
+  }
+});
+
+test('offre partenaire : l\'admin n\'accepte qu\'une adresse https, titre et bouton plafonnés', () => {
+  const { sanitizeAds } = require('../src/http/admin');
+  const ok = sanitizeAds({ emplacements: { smartlink: { actif: true, every: 8, url: ' https://partner.example/4/abc ', titre: 'x'.repeat(200), bouton: 'y'.repeat(80) } } }).emplacements.smartlink;
+  assert.equal(ok.url, 'https://partner.example/4/abc'); assert.equal(ok.titre.length, 90); assert.equal(ok.bouton.length, 30);
+  for (const bad of ['http://partner.example/x', 'javascript:alert(1)', 'https://a b.example', 'https://x.example/"><script>']) {
+    assert.throws(() => sanitizeAds({ emplacements: { smartlink: { actif: true, url: bad } } }), /invalide/, bad);
+  }
+  assert.equal(sanitizeAds({ emplacements: { smartlink: { actif: false, url: '' } } }).emplacements.smartlink.url, '');
+});
+
+test('mesure de l\'offre partenaire : affichages et clics comptés', async () => {
+  const { handleEvent } = require('../src/http/track');
+  const { FakeDb } = require('./helpers/fakeDb');
+  const db = new FakeDb();
+  const mk = () => ({ db, increment: (n) => ({ __inc: n }), now: NOW, salt: 's' });
+  const req = (body) => ({ body, ua: 'Mozilla/5.0 (iPhone)', ip: '1.2.3.4', headers: {} });
+  assert.equal(await handleEvent(req({ t: 'ptn_imp', fmt: 'liste' }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'ptn_click', fmt: 'liste' }), mk()), true);
+  const d = db.read('stats_days', '2026-10-16');
+  assert.equal(d.ptnImps, 1); assert.equal(d.clicsPartenaire, 1); assert.equal(d.ptn.liste, 1); assert.equal(d.ptnClics.liste, 1);
+});
