@@ -303,6 +303,8 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .cbar[hidden]{display:none}
 .cbar b{font-family:var(--fd);font-size:20px;color:var(--flash)}
 .cbar>span{min-width:0;font-size:14px;line-height:1.25}
+.cbar .bclr{flex:none;margin-left:auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:14px;line-height:1;padding:0}
+.cbar .bclr:hover{color:var(--tx);border-color:var(--mut)}
 .cbar a{white-space:nowrap;flex:none;background:var(--flash);color:var(--ink);font-weight:700;border-radius:8px;padding:7px 14px;text-decoration:none}
 .btn{background:var(--flash);color:var(--ink);border:0;border-radius:9px;padding:9px 18px;font-weight:700;text-decoration:none;display:inline-block}
 .btn.sec{background:var(--s2);color:var(--tx);border:1px solid var(--line)}

@@ -22,7 +22,7 @@
     cmp: '<p><b>Advertising</b><br>This site is free thanks to advertising. Our partners\' ads may use cookies to choose and measure ads. You can accept or refuse; the predictions stay the same. <a href="/en/privacy" style="color:var(--cy)">Learn more</a></p><div class="row"><button class="btn" type="button" data-c="1">Accept</button><button class="btn sec" type="button" data-c="0">Refuse</button></div>',
     msg: ['Football debates on Afrolook: share your take on the match', 'Share your tips with friends on Afrolook', 'Your likes turn into coins on Afrolook', 'Post videos? Afrolook pays you for your views', 'Afrolook: the African creators network'],
     sponsored: 'Sponsored', aflCta: 'Download for free', adTitle: 'Advertisement', copied: 'Link copied', all: 'All',
-    myCoupon: 'My slip', sel: function (n) { return n > 1 ? 'selections' : 'selection'; }, view: 'View my slip', max5: 'A slip holds 5 selections at most',
+    myCoupon: 'My slip', sel: function (n) { return n > 1 ? 'selections' : 'selection'; }, view: 'View my slip', clearAria: 'Clear my slip', max5: 'A slip holds 5 selections at most',
     analysis: 'See details ›', choose: 'Pick your bets', remove: 'Remove',
     empty: 'Pick 2 to 5 bets. You can take several in the same match: the calculation accounts for it.',
     replace: function (a, b) { return 'Replace “' + a + '” with “' + b + '”'; }, moves: function (a, b) { return 'The slip goes from ' + a + '% to ' + b + '%'; },
@@ -35,7 +35,7 @@
     cmp: '<p><b>Publicités</b><br>Ce site est gratuit grâce à la publicité. Les publicités de nos partenaires peuvent utiliser des cookies pour choisir et mesurer les annonces. Tu peux accepter ou refuser ; les pronostics restent les mêmes. <a href="/confidentialite" style="color:var(--cy)">En savoir plus</a></p><div class="row"><button class="btn" type="button" data-c="1">Accepter</button><button class="btn sec" type="button" data-c="0">Refuser</button></div>',
     msg: ['Débats foot sur Afrolook : donne ton avis sur le match', 'Partage tes pronos entre amis sur Afrolook', 'Tes likes deviennent des pièces sur Afrolook', 'Tu postes des vidéos ? Afrolook te paie tes vues', 'Afrolook : le réseau africain des créateurs'],
     sponsored: 'Sponsorisé', aflCta: 'Télécharger gratuitement', adTitle: 'Publicité', copied: 'Lien copié', all: 'Tous',
-    myCoupon: 'Mon coupon', sel: function (n) { return n > 1 ? 'sélections' : 'sélection'; }, view: 'Voir mon coupon', max5: 'Un coupon contient 5 sélections au plus',
+    myCoupon: 'Mon coupon', sel: function (n) { return n > 1 ? 'sélections' : 'sélection'; }, view: 'Voir mon coupon', clearAria: 'Vider mon coupon', max5: 'Un coupon contient 5 sélections au plus',
     analysis: 'Voir détails ›', choose: 'Choisis tes paris', remove: 'Retirer',
     empty: 'Choisis 2 à 5 paris. Tu peux en prendre plusieurs dans un même match : le calcul en tient compte.',
     replace: function (a, b) { return 'Remplacer « ' + a + ' » par « ' + b + ' »'; }, moves: function (a, b) { return 'Le coupon passe de ' + a + ' % à ' + b + ' %'; },
@@ -227,7 +227,7 @@
   function chrome() {
     var n = sel.length; var cpn = $('#pf-cpn'), bar = $('#pf-cbar');
     if (cpn) { cpn.hidden = !n || path === couponPath; cpn.textContent = L.myCoupon + ' (' + n + ')'; }
-    if (bar) { if (!n || path === couponPath) bar.hidden = true; else { var r = calc(); bar.hidden = false; bar.innerHTML = '<span><b class="num">' + n + '</b> ' + L.sel(n) + (n > 1 ? ' · <b class="num">' + Math.round(r.prob * 100) + L.pct + '</b>' : '') + '</span><a href="' + esc(couponPath) + '">' + L.view + '</a>'; } }
+    if (bar) { if (!n || path === couponPath) bar.hidden = true; else { var r = calc(); bar.hidden = false; bar.innerHTML = '<span><b class="num">' + n + '</b> ' + L.sel(n) + (n > 1 ? ' · <b class="num">' + Math.round(r.prob * 100) + L.pct + '</b>' : '') + '</span><button type="button" class="bclr" data-bclr="1" aria-label="' + L.clearAria + '" title="' + L.clearAria + '">✕</button><a href="' + esc(couponPath) + '">' + L.view + '</a>'; } }
     $$('[data-add]').forEach(function (b) { var p = b.getAttribute('data-add').split('|'); b.setAttribute('aria-pressed', String(sel.some(function (s) { return s.m === p[0] && s.k === p[1]; }))); });
   }
   function toggle(m, k, info) {
@@ -246,6 +246,8 @@
     });
   }
   chrome();
+  /* vider le coupon depuis la barre du bas (sur toutes les pages) */
+  d.addEventListener('click', function (e) { var c = e.target.closest('[data-bclr]'); if (!c) return; sel = []; saveSel(); });
 
   var root = $('#pf-coupon'), pool = null;
   if (root) {
