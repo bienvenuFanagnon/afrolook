@@ -31,8 +31,8 @@ const deFr = (n) => (/^[AEIOUYÉÈÎÂÔ]/i.test(n) ? `l'${n}` : /^(Les |États)
 
 // ───────── chemins ─────────
 const P = {
-  fr: { home: '/', earn: '/gagner/', cards: '/cartes/', holidays: '/fetes/', contact: '/contact/', download: '/telecharger/', del: '/supprimer-mon-compte/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/fetes/${c.slugFr}/` },
-  en: { home: '/en/', earn: '/en/earn/', cards: '/en/cards/', holidays: '/en/holidays/', contact: '/en/contact/', download: '/en/download/', del: '/en/delete-account/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/en/holidays/${c.slugEn}/` },
+  fr: { home: '/', earn: '/gagner/', cards: '/cartes/', music: '/musique/', holidays: '/fetes/', contact: '/contact/', download: '/telecharger/', del: '/supprimer-mon-compte/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/fetes/${c.slugFr}/` },
+  en: { home: '/en/', earn: '/en/earn/', cards: '/en/cards/', music: '/en/music/', holidays: '/en/holidays/', contact: '/en/contact/', download: '/en/download/', del: '/en/delete-account/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/en/holidays/${c.slugEn}/` },
 };
 const abs = (p) => cfg.domain + p;
 const sitemap = []; // { loc, alts: {fr, en} }
@@ -46,7 +46,7 @@ const cardMeta = (c, lang) => ({ id: c.id, name: c[lang][0], sub: c[lang][1] });
 
 function header(lang, key, alt) {
   const t = T[lang], p = P[lang];
-  const links = [[p.earn, t.nav.earn, 'earn'], [p.cards, t.nav.cards, 'cards'], [p.holidays, t.nav.holidays, 'holidays'], [p.contact, t.nav.contact, 'contact']];
+  const links = [[p.earn, t.nav.earn, 'earn'], [p.cards, t.nav.cards, 'cards'], [p.music, t.nav.music, 'music'], [p.holidays, t.nav.holidays, 'holidays'], [p.contact, t.nav.contact, 'contact']];
   const nav = links.map(([h, l, k]) => `<a href="${h}"${key === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   const other = lang === 'fr' ? 'en' : 'fr';
   const sw = `<span class="lang-sw" aria-label="Langue"><${lang === 'fr' ? 'span aria-current="true"' : `a href="${alt.fr}" hreflang="fr" lang="fr"`}>FR</${lang === 'fr' ? 'span' : 'a'}><${lang === 'en' ? 'span aria-current="true"' : `a href="${alt.en}" hreflang="en" lang="en"`}>EN</${lang === 'en' ? 'span' : 'a'}></span>`;
@@ -66,7 +66,7 @@ function footer(lang) {
   return `<footer><div class="tri" style="position:absolute;left:0;right:0;top:0"></div><div class="wrap">
 <div class="cols">
  <div><a class="brand" href="${p.home}" style="color:#fff"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a><p class="about">${f.about}</p></div>
- <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
+ <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
  <div><h4>${f.help}</h4><ul><li><a href="${p.home}#faq">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
  <div><h4>${f.legal}</h4><ul><li><a href="${p.rules}" hreflang="fr">${f.rules}</a></li><li><a href="${p.privacy}" hreflang="fr">${f.privacy}</a></li></ul></div>
 </div>
@@ -194,6 +194,9 @@ function homePage(lang) {
  <div class="cta" style="margin-top:30px"><a class="btn btn-primary" href="${P[lang].download}">${h.studioCta}</a><a class="btn btn-line" style="background:transparent;color:inherit;border-color:#2a3a30" href="${P[lang].cards}">${h.allStyles}</a></div>
 </div>${showcase(lang)}</div></section>
 
+<section class="musicteaser" id="musique" style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${t.music.teaserK}</span><h2 class="h2">${t.music.teaserH}</h2><p class="sub">${t.music.teaserP}</p><div class="cta" style="margin-top:22px"><a class="btn btn-primary" href="${P[lang].music}">${t.music.teaserCta}</a></div></div>
+ <div class="grp">${t.music.three.map((f) => `<div class="way">${svgIcon(f[0])}<div><b>${f[1]}</b><span style="margin:0;display:block">${f[2]}</span></div></div>`).join('')}</div></div></section>
+
 <section id="fonctionnalites"><div class="wrap"><span class="kicker">${h.featK}</span><h2 class="h2">${h.featH}</h2><p class="sub">${h.featSub}</p>
  <div class="feats three">${h.feats.map((f) => `<article class="feat">${svgIcon(f[0])}<h3>${f[1]}</h3><p>${f[2]}</p></article>`).join('')}</div></div></section>
 
@@ -215,6 +218,23 @@ function homePage(lang) {
 <section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">${lang === 'fr' ? 'Une question, une idée, un partenariat ?' : 'A question, an idea, a partnership?'}</h2>
  <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock(lang)}</div>${contactForm(lang)}</div></div></section>`;
   emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body, jsonld: [mailtoOrg, appLd(lang), faqLd(lang)] });
+}
+
+function musicPage(lang) {
+  const t = T[lang], m = t.music;
+  const alt = { fr: P.fr.music, en: P.en.music };
+  const faq = `<div class="faq">${m.faq.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</div>`;
+  const faqJson = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: m.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
+  const list = (items) => items.map((x) => `<div class="way">${svgIcon('music')}<div><span style="margin:0">${x}</span></div></div>`).join('');
+  const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].music, t.nav.music]])}<h1>${m.h1}</h1><p>${m.lead}</p><div class="cta" style="margin-top:24px">${storeBtns(t)}</div><p class="fine" style="text-align:left;margin-top:14px">${m.note}</p></div></section>
+<section style="padding-block:40px"><div class="wrap"><div class="feats three">${m.three.map((f) => `<article class="feat">${svgIcon(f[0])}<h3>${f[1]}</h3><p>${f[2]}</p></article>`).join('')}</div></div></section>
+<section><div class="wrap twocol"><div><span class="kicker">${m.listenK}</span><h2 class="h2">${m.listenH}</h2></div><div class="grp">${list(m.listen)}</div></div></section>
+<section style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${m.artistK}</span><h2 class="h2">${m.artistH}</h2><p class="sub">${m.artistSub}</p><p class="fine" style="text-align:left">${m.ranges}</p></div>
+<div class="grp">${m.steps.map((s, i) => `<div class="way">${svgIcon('music')}<div><b>${i + 1}. ${s[0]}</b><span style="margin:0;display:block">${s[1]}</span></div></div>`).join('')}</div></div></section>
+<section><div class="wrap twocol"><div><span class="kicker">${m.protectK}</span><h2 class="h2">${m.protectH}</h2></div><div class="grp">${list(m.protect)}</div></div></section>
+<section style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${m.tplK}</span><h2 class="h2">${m.tplH}</h2><p class="sub">${m.tplSub}</p></div><div class="grp">${list(m.tpl)}</div></div></section>
+<section><div class="wrap"><span class="kicker">FAQ</span><h2 class="h2">${m.faqH}</h2>${faq}<div class="cta" style="margin-top:28px">${storeBtns(t)}</div></div></section>`;
+  emit(lang, 'music', P[lang].music, { alt, title: m.title, desc: m.desc, body, jsonld: [faqJson, appLd(lang)] });
 }
 
 function earnPage(lang) {
@@ -311,7 +331,7 @@ fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 
 for (const lang of ['fr', 'en']) {
-  homePage(lang); earnPage(lang); cardsPage(lang); holidaysIndex(lang); contactPage(lang); downloadPage(lang); deletePage(lang);
+  homePage(lang); earnPage(lang); cardsPage(lang); musicPage(lang); holidaysIndex(lang); contactPage(lang); downloadPage(lang); deletePage(lang);
   for (const k of COUNTRIES) holidayPage(lang, k);
 }
 legalPages(); notFound();
