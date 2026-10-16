@@ -262,3 +262,10 @@ test('coupons archivés : aucun bloc d\'exploits sans coupon gagné récent', as
   assert.ok(!r.body.includes('Nos derniers coupons gagnants'));
   assert.match((await route(d2, '/bilan', NOW)).body, /Historique des coupons flash/);
 });
+
+test('PWA : manifeste, icône iOS et couleur du thème dans l\'en-tête, script d\'invitation chargé', async () => {
+  const r = await get('/');
+  assert.match(r.body, /<link rel="manifest" href="\/manifest\.webmanifest">/);
+  assert.match(r.body, /<link rel="apple-touch-icon" href="\/img\/apple-touch-icon\.png">/);
+  assert.match(r.body, /<script src="\/js\/pf\.js/);
+});

@@ -29,6 +29,8 @@
     share: function (pc) { return 'My PronoFlash IA slip (' + pc + '% chance that everything wins):'; },
     probAll: 'Probability that everything wins', out100: function (pc) { return 'Out of 100 identical slips, about ' + pc + ' would win'; },
     wa: 'Share on WhatsApp', clear: 'Clear',
+    pwaT: 'Install PronoFlash IA on your phone', pwaS: 'One tap access, nothing to download from a store', pwaBtn: 'Install', pwaClose: 'Not now',
+    pwaIosBtn: 'How?', pwaIos: 'Tap the Share button <b>⎙</b>, then “Add to Home Screen”.',
     disclaimer: 'PronoFlash IA takes no bets, shows no odds and promises no winnings. 18+ · Play responsibly.', pct: '%'
   } : {
     tzTitle: 'Heure locale', tzYou: 'ton fuseau', tzNote: 'Heures affichées dans ton fuseau horaire : ',
@@ -42,6 +44,8 @@
     share: function (pc) { return 'Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :'; },
     probAll: 'Probabilité que tout passe', out100: function (pc) { return 'Sur 100 coupons identiques, environ ' + pc + ' passeraient'; },
     wa: 'Partager sur WhatsApp', clear: 'Vider',
+    pwaT: 'Installe PronoFlash IA sur ton téléphone', pwaS: 'Accès en un clic, rien à télécharger sur un store', pwaBtn: 'Installer', pwaClose: 'Plus tard',
+    pwaIosBtn: 'Comment ?', pwaIos: 'Touche le bouton Partager <b>⎙</b>, puis « Sur l\'écran d\'accueil ».',
     disclaimer: 'PronoFlash IA ne prend aucun pari, n\'affiche aucune cote et ne promet aucun gain. 18+ · Jouez de façon responsable.', pct: ' %'
   };
   var couponPath = (w.PF && w.PF.coupon) || (EN ? '/en/coupon' : '/coupon');
@@ -341,4 +345,42 @@
     render();
     insertPickerAds();
   }
+  /* ---------- application installable (PWA) ---------- */
+  if ('serviceWorker' in navigator) { w.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () { /* pas grave : le site marche sans */ }); }); }
+  (function pwa() {
+    var standalone = (w.matchMedia && w.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    var mobile = /Android|iPhone|iPad|iPod/.test(UA);
+    var inApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|Snapchat|; wv\)/.test(UA);
+    var st = store.get('pf_pwa') || {};
+    if (standalone || !mobile || inApp || st.ok) return;
+    if (st.no && Date.now() - st.no < 14 * 864e5) return;
+    var deferred = null, box = null, shown = false;
+    var iosSafari = IOS && /Safari/.test(UA) && !/CriOS|FxiOS|EdgiOS/.test(UA);
+    function close(remember) { if (box) box.hidden = true; if (remember) { st.no = Date.now(); store.set('pf_pwa', st); } }
+    function show() {
+      if (shown || (!deferred && !iosSafari)) return;
+      shown = true;
+      box = d.createElement('div'); box.className = 'pwa'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', L.pwaT);
+      box.innerHTML = '<img src="/img/icon-192.png" alt="" width="44" height="44"><b>' + L.pwaT + '</b><small>' + L.pwaS + '</small>' +
+        '<button class="btn" type="button" data-i="1">' + (deferred ? L.pwaBtn : L.pwaIosBtn) + '</button><button class="pwa-x" type="button" aria-label="' + esc(L.pwaClose) + '" data-x="1">✕</button>';
+      d.body.appendChild(box);
+      send({ t: 'pwa', n: deferred ? 'vu' : 'ios' });
+      box.addEventListener('click', function (e) {
+        var t = e.target;
+        if (t.closest('[data-x]')) { close(true); return; }
+        if (!t.closest('[data-i]')) return;
+        send({ t: 'pwa', n: 'clic' });
+        if (deferred) {
+          var p = deferred; deferred = null;
+          p.prompt();
+          if (p.userChoice) p.userChoice.then(function (c) { if (c && c.outcome === 'accepted') { st.ok = 1; store.set('pf_pwa', st); close(false); } else close(true); });
+        } else if (!$('.pwa-how', box)) {
+          var how = d.createElement('div'); how.className = 'pwa-how'; how.innerHTML = L.pwaIos; box.appendChild(how);
+        }
+      });
+    }
+    w.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; setTimeout(show, 4000); });
+    w.addEventListener('appinstalled', function () { send({ t: 'pwa', n: 'ok' }); st.ok = 1; store.set('pf_pwa', st); close(false); });
+    if (iosSafari) setTimeout(show, 6000);
+  })();
 })();

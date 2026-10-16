@@ -14,7 +14,7 @@ const { publicAds } = require('../functions/src/render/config');
 const D = require('../functions/src/render/data');
 
 const SITE = path.join(__dirname, '../site');
-const TYPES = { '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
+const TYPES = { '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.html': 'text/html; charset=utf-8' };
 const port = parseInt(process.argv[2] || process.env.PORT || '5173', 10);
 
 (async () => {
@@ -35,7 +35,8 @@ const port = parseInt(process.argv[2] || process.env.PORT || '5173', 10);
       if (url.pathname.startsWith('/api/admin/')) { let b = ''; req.on('data', (c) => (b += c)); req.on('end', async () => { let body = {}; try { body = JSON.parse(b || '{}'); } catch (e) { /* vide */ } const r = await admin.handle({ action: url.pathname.slice(11), body, authorization: req.headers.authorization }); res.writeHead(r.status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(r.json)); }); return; }
       if (url.pathname === '/admin') { res.writeHead(200, { 'Content-Type': 'text/html' }); fs.createReadStream(path.join(SITE, 'admin/index.html')).pipe(res); return; }
       if (url.pathname === '/api/config') { const cfg = await D.loadConfig(db); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ads: publicAds(cfg.ads), ...publicAds(cfg.ads) })); return; }
-      const file = path.join(SITE, url.pathname);
+      let file = path.join(SITE, url.pathname);
+      if (!path.extname(file) && fs.existsSync(file + '.html')) file += '.html'; // URL propres, comme l'hébergement
       if (file.startsWith(SITE) && fs.existsSync(file) && fs.statSync(file).isFile()) { res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' }); fs.createReadStream(file).pipe(res); return; }
       const r = await route(db, url.pathname, now);
       res.writeHead(r.status, r.headers); res.end(r.body);

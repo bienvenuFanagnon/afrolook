@@ -135,7 +135,7 @@ function createAdmin(deps) {
     const today = dayStr(nowD());
     const at = (n) => rows.filter((r) => r.jour >= dayStr(addDays(nowD(), -(n - 1)))).reduce((a, r) => ({ visites: a.visites + r.visites, visiteurs: a.visiteurs + r.visiteurs, pv: a.pv + r.pv }), { visites: 0, visiteurs: 0, pv: 0 });
     return {
-      jours: rows, aujourdhui: at(1), sept: at(7), periode: { visites: sum('visites'), visiteurs: rows.reduce((s, r) => s + r.visiteurs, 0), pv: sum('pv'), clicsAfrolook: sum('clicsAfrolook'), aflImps: sum('aflImps'), pubVues: sum('pubVues'), couponAjouts: sum('couponAjouts'), partagesWa: sum('partagesWa') },
+      jours: rows, aujourdhui: at(1), sept: at(7), periode: { visites: sum('visites'), visiteurs: rows.reduce((s, r) => s + r.visiteurs, 0), pv: sum('pv'), clicsAfrolook: sum('clicsAfrolook'), aflImps: sum('aflImps'), pubVues: sum('pubVues'), couponAjouts: sum('couponAjouts'), partagesWa: sum('partagesWa'), pwaVus: sum('pwaVus'), pwaClics: sum('pwaClics'), pwaInstalles: sum('pwaInstalles') },
       pays: topList(sumMap(docs, 'pays'), 15), paysSource: sumMap(docs, 'paysSource'), pages: topList(sumMap(docs, 'pages'), 10), sources: topList(sumMap(docs, 'sources'), 10), langues: sumMap(docs, 'langues'),
       appareils: sumMap(docs, 'appareils'), heures: sumMap(docs, 'heures'), pub: topList(sumMap(docs, 'pub'), 15), afl: topList(sumMap(docs, 'afl'), 10), aflClics: topList(sumMap(docs, 'aflClics'), 10),
       matchsTop: matchsTop.map((t) => ({ k: t.k, nom: names[t.k] || t.k, v: t.v })), jour: today,
