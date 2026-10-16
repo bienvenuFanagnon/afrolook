@@ -213,8 +213,17 @@ test('accueil : bloc « Coupons flash » avec liens vers le détail de chaque ma
   const html = (await route(db, '/', NOW)).body;
   assert.match(html, /<div class="lbl"[^>]*>Coupons flash<\/div>/);
   assert.ok((html.match(/<div class="sgi">/g) || []).length >= 1, 'au moins un coupon');
-  assert.match(html, /<a class="more-btn" href="\/coupon">Créer mon coupon /);
+  assert.match(html, /<a class="more-btn" href="\/coupon">Voir plus de coupons /);
   assert.ok(html.indexOf('Coupons flash') < html.indexOf('class="mc"'), 'avant la liste des matchs');
   const en = (await route(db, '/en', NOW)).body;
-  assert.match(en, /Flash slips/); assert.match(en, /<a class="more-btn" href="\/en\/coupon">Build my slip /);
+  assert.match(en, /Flash slips/); assert.match(en, /<a class="more-btn" href="\/en\/coupon">See more slips /);
+});
+
+test('« Voir plus de coupons » : sous les coupons flash de l\'accueil et sous les coupons prêts à l\'emploi de l\'analyse', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  const href = /href="(\/football\/[a-z0-9-]+\/[a-z0-9-]+)"/.exec((await route(db, '/', NOW)).body)[1];
+  const an = (await route(db, href + '/analyse', NOW)).body;
+  assert.match(an, /<div class="sg">[\s\S]*?<\/div><p class="note"[^>]*>[^<]*<\/p><a class="more-btn" href="\/coupon">Voir plus de coupons /);
+  const en = (await route(db, href.replace('/football/', '/en/football/') + '/analysis', NOW)).body;
+  assert.match(en, /<a class="more-btn" href="\/en\/coupon">See more slips /);
 });

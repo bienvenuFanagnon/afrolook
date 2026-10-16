@@ -277,7 +277,7 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
     (h2h && h2h.length ? sec('h2h', t.h2h, h2hTable(rc, h2h)) : '') +
     sec('fiab', t.ourResults, `<p class="note" style="margin:8px 0">${t.ourResultsP}</p>${calHtml}`) +
     `${adResponsive(rc, 'haut', 'ad-top')}` +
-    (sugg ? sec('coupon', t.readyCoupons, `<div class="sg">${sugg}</div><p class="note" style="margin-top:8px">${t.readyCouponsP}</p>`) : '') +
+    (sugg ? sec('coupon', t.readyCoupons, `<div class="sg">${sugg}</div><p class="note" style="margin-top:8px">${t.readyCouponsP}</p><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a>`) : '') +
     sec('avant', t.beforeValidate, `<ul class="ck">${t.checklist.map((x) => `<li>${esc(x)}</li>`).join('')}<li>${esc(t.checklistLast)} <a href="${rc.u('legal', 'jeu-responsable')}" style="color:var(--cy)">${t.responsible}</a>.</li></ul>`) +
     `<div class="sh"><a class="wa" href="https://wa.me/?text=${encodeURIComponent(`${t.waAnalysis(titre)} ${C.url(rc, path)}`)}" target="_blank" rel="noopener">${t.shareAnalysis}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.detDisclaimer}</p></div>` +
