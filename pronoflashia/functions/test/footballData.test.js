@@ -160,3 +160,24 @@ test('logos des clubs : conservés depuis le fournisseur, limités aux hôtes co
   assert.equal(db.read('matches', '2015_559669').domicile.logo, 'https://crests.football-data.org/546.png');
   assert.equal(db.read('matches', '2015_559669').exterieur.logo, null);
 });
+
+test('changement de saison automatique : relu une fois par semaine, corrige la saison, ne bloque jamais la synchronisation', async () => {
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { refreshSeason } = require('../src/jobs/syncFixtures');
+  const db = new FakeDb();
+  await db.seed('leagues', '2015', { apiId: 2015, nom: 'Ligue 1', saison: 2026, suivi: true });
+  let calls = 0;
+  const api = { leagues: async () => { calls++; return [{ seasons: [{ year: 2026, current: false }, { year: 2027, current: true }] }]; } };
+  const league = db.read('leagues', '2015');
+  assert.equal(await refreshSeason({ db, api, league, now: new Date('2027-08-20T05:00:00Z') }), true);
+  assert.equal(db.read('leagues', '2015').saison, 2027); assert.equal(league.saison, 2027);
+  // déjà vérifiée il y a moins d'une semaine : aucun appel
+  assert.equal(await refreshSeason({ db, api, league: db.read('leagues', '2015'), now: new Date('2027-08-22T05:00:00Z') }), false);
+  assert.equal(calls, 1);
+  // une semaine plus tard : relue, saison inchangée
+  assert.equal(await refreshSeason({ db, api, league: db.read('leagues', '2015'), now: new Date('2027-08-28T05:00:00Z') }), false);
+  assert.equal(calls, 2);
+  // erreur du fournisseur ou fournisseur sans cette fonction : ignoré
+  assert.equal(await refreshSeason({ db, api: { leagues: async () => { throw new Error('429'); } }, league: { apiId: 2015, saison: 2027 }, now: new Date('2028-01-01T00:00:00Z') }), false);
+  assert.equal(await refreshSeason({ db, api: {}, league: { apiId: 1 }, now: new Date() }), false);
+});

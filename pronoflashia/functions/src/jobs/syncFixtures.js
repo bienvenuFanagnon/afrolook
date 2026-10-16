@@ -112,6 +112,26 @@ async function seedDefaultLeagues({ db, api, now }, report) {
 }
 
 /**
+ * Changement de saison automatique : une fois par semaine, la saison en cours du championnat est relue chez le fournisseur
+ * (les championnats européens changent de saison chaque été). Une erreur ici n'empêche jamais la synchronisation.
+ */
+async function refreshSeason({ db, api, league, now }) {
+  if (typeof api.leagues !== 'function') return false;
+  const last = league.saisonVerifieLe ? new Date(league.saisonVerifieLe) : null;
+  if (last && now - last < 7 * 864e5) return false;
+  try {
+    const r = await api.leagues({ id: league.apiId });
+    const seasons = (r[0] && r[0].seasons) || [];
+    const cur = seasons.find((x) => x.current);
+    const upd = { saisonVerifieLe: now.toISOString() };
+    let changed = false;
+    if (cur && cur.year && cur.year !== league.saison) { upd.saison = cur.year; changed = true; league.saison = cur.year; }
+    await db.collection('leagues').doc(String(league.apiId)).set(upd, { merge: true });
+    return changed;
+  } catch { return false; }
+}
+
+/**
  * Tâche complète. opts : { db, api, now, days, reserve, forceSeason }.
  * report : objet du compte-rendu (traites, erreurs, infos).
  */
@@ -124,6 +144,7 @@ async function syncFixtures(opts, report) {
   const leagues = (await db.collection('leagues').where('suivi', '==', true).get()).docs.map((d) => d.data());
   report.infos.championnats = leagues.length;
   for (const league of leagues) {
+    if (await refreshSeason({ db, api, league, now })) report.infos[`nouvelleSaison_${league.slug}`] = league.saison;
     try {
       assertQuota(api, reserve);
       if (api.singleCall) {
@@ -150,4 +171,4 @@ async function syncFixtures(opts, report) {
   await recordApiQuota(db, api, now, report);
 }
 
-module.exports = { seedDefaultLeagues, syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };
+module.exports = { refreshSeason, seedDefaultLeagues, syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };
