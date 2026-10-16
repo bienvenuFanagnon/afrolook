@@ -61,10 +61,14 @@ const echoProvider = (name = 'workers-ai') => ({
   async call(messages) {
     const lines = messages[1].content.split('\n').filter((l) => l.startsWith('- ')).map((l) => l.slice(2));
     const pick = (re) => lines.find((l) => re.test(l));
+    const en = /^You are an English/.test(messages[0].content);
+    const probs = pick(en ? /^Calculated probabilities/ : /^Probabilités/);
+    const goals = pick(en ? /^Over 2\.5/ : /^Plus de 2,5/);
+    const sel = pick(en ? /^Selected prediction/ : /^Pronostic retenu/);
     return JSON.stringify({
-      analyse: lines.filter((l) => !/^Match :/.test(l)).slice(0, 5).join(' '),
-      pointsCles: [pick(/^Probabilités/), pick(/^Plus de 2,5/), pick(/^Pronostic retenu/)],
-      resume: pick(/^Pronostic retenu/),
+      analyse: [probs, ...lines.filter((l) => /par match|per game|confrontations|meetings/.test(l)), sel].filter(Boolean).slice(0, 5).join(' '),
+      pointsCles: [probs, goals, sel],
+      resume: sel,
     });
   },
 });
@@ -136,8 +140,10 @@ test('buildPredictions : pronostic complet, texte de l\'IA, état de l\'IA, pas 
   assert.match(p.formeDom, /^[VND]{1,5}$/);
   assert.ok(p.comparatif.some((c) => c.cle === 'buts_marques'));
   assert.ok(db.read('matches', '61_1001').h2h.length === 2);
+  assert.equal(p.sourceTexteEn, 'workers-ai');
+  assert.ok(/per game|probabilities/.test(p.texteEn.analyse), 'analyse anglaise');
   const ai = db.read('ai_status', 'current');
-  assert.equal(ai.generesAujourdhui, 1); assert.equal(ai.fournisseur, 'workers-ai'); assert.equal(ai.secoursAujourdhui, 0);
+  assert.equal(ai.generesAujourdhui, 2, 'un texte français + un texte anglais'); assert.equal(ai.fournisseur, 'workers-ai'); assert.equal(ai.secoursAujourdhui, 0);
   const calls = api.calls.length;
   const rep2 = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: new Date(NOW.getTime() + 600e3) }, r));
   assert.equal(rep2.traites, 0);
@@ -153,7 +159,9 @@ test('buildPredictions : IA en panne → texte de secours, le match a quand mêm
   assert.equal(p.sourceTexte, 'secours');
   assert.ok(p.texte.analyse.length > 100);
   const ai = db.read('ai_status', 'current');
-  assert.equal(ai.secoursAujourdhui, 1);
+  assert.equal(ai.secoursAujourdhui, 2);
+  assert.equal(p.sourceTexteEn, 'secours');
+  assert.match(p.texteEn.analyse, /The model gives/);
   assert.match(ai.derniereErreur, /indisponible/);
 });
 
@@ -270,4 +278,69 @@ test('buildPredictions : quota presque épuisé → pas de requêtes facultative
   assert.equal(rep.traites, 1);
   assert.ok(!api.calls.some((c) => c[0] === 'odds' || c[0] === 'h2h'));
   assert.equal(db.read('matches', '61_1001').prono.source, 'stats');
+});
+
+test('buildPredictions : recalcul sans changement notable → textes réutilisés, aucun appel à l\'IA', async () => {
+  const { db, api } = await setup();
+  let calls = 0;
+  const prov = { name: 'workers-ai', call: async (m) => { calls++; return echoProvider().call(m); } };
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [prov], now: NOW }, r));
+  assert.equal(calls, 2);
+  const cur = db.read('matches', '61_1001'); cur.prono.aRecalculer = true; await db.seed('matches', '61_1001', cur);
+  const rep = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [prov], now: new Date(NOW.getTime() + 3600e3) }, r));
+  assert.equal(rep.traites, 1);
+  assert.equal(calls, 2, 'aucun nouvel appel');
+  assert.equal(db.read('matches', '61_1001').prono.texteEn.analyse, cur.prono.texteEn.analyse);
+  // un texte de secours est toujours retenté
+  const c2 = db.read('matches', '61_1001'); c2.prono.sourceTexteEn = 'secours'; c2.prono.aRecalculer = true; await db.seed('matches', '61_1001', c2);
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [prov], now: new Date(NOW.getTime() + 7200e3) }, r));
+  assert.equal(calls, 3, 'seul le texte anglais est redemandé');
+});
+
+test('buildPredictions : langues réglables (français seul)', async () => {
+  const { db, api } = await setup();
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: NOW, langs: ['fr'] }, r));
+  const p = db.read('matches', '61_1001').prono;
+  assert.ok(p.texte && p.texteEn === null);
+});
+
+test('planning : prochain passage des tâches', () => {
+  const { nextRun, SCHEDULE } = require('../src/jobs/schedule');
+  const from = new Date('2026-10-16T05:10:00Z'); // vendredi
+  assert.equal(nextRun('0 5 * * *', from).toISOString(), '2026-10-17T05:00:00.000Z');
+  assert.equal(nextRun('20 6-23,0-2 * * *', from).toISOString(), '2026-10-16T06:20:00.000Z');
+  assert.equal(nextRun('20 6-23,0-2 * * *', new Date('2026-10-16T02:30:00Z')).toISOString(), '2026-10-16T06:20:00.000Z');
+  assert.equal(nextRun('*/30 12-23,0-2 * * *', new Date('2026-10-16T02:31:00Z')).toISOString(), '2026-10-16T12:00:00.000Z');
+  assert.equal(nextRun('*/30 * * * *', from).toISOString(), '2026-10-16T05:30:00.000Z');
+  assert.equal(nextRun('0 3 * * 1', from).toISOString(), '2026-10-19T03:00:00.000Z');
+  assert.equal(SCHEDULE.length, 5);
+});
+
+test('connexions : appels, neurons, quota API-Football, historique', async () => {
+  const { recordUse, recordAiCalls, recordApiQuota } = require('../src/jobs/connexions');
+  const db = new FakeDb();
+  await recordAiCalls(db, NOW, [{ provider: 'workers-ai', ok: true, neurons: 80.5, ms: 5000 }, { provider: 'workers-ai', ok: false, neurons: 0, erreur: '429 quota' }, { provider: 'gemini', ok: true, neurons: 0, ms: 3000 }]);
+  const w = db.read('connexions', 'workersAi');
+  assert.equal(w.appelsJour, 2); assert.equal(w.erreursJour, 1); assert.equal(w.neuronsJour, 80.5);
+  assert.match(w.derniereErreur, /quota/); assert.ok(w.dernierSucces);
+  assert.equal(db.read('connexions', 'gemini').appelsJour, 1);
+  await recordApiQuota(db, { quota: { calls: 12, dayRemaining: 7300, dayLimit: 7500 } }, NOW, { erreurs: [] });
+  const a = db.read('connexions', 'apiFootball');
+  assert.equal(a.quotaRestant, 7300); assert.equal(a.quotaLimite, 7500); assert.equal(a.appelsJour, 12);
+  // jour suivant : compteurs du jour remis à zéro, historique conservé
+  await recordUse(db, 'workersAi', new Date(NOW.getTime() + 864e5), { appels: 1, neurons: 10, ok: true });
+  const w2 = db.read('connexions', 'workersAi');
+  assert.equal(w2.appelsJour, 1); assert.equal(w2.neuronsJour, 10);
+  assert.equal(Object.keys(w2.historique).length, 2);
+  await recordUse(db, 'inconnu', NOW, { appels: 1 });
+  assert.equal(db.read('connexions', 'inconnu'), null);
+});
+
+test('buildPredictions : consommation de l\'IA enregistrée (neurons du jour)', async () => {
+  const { db, api } = await setup();
+  const prov = Object.assign(echoProvider(), { lastUsage: () => ({ neurons: 80 }) });
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [prov], now: NOW }, r));
+  assert.equal(db.read('connexions', 'workersAi').neuronsJour, 160, 'deux analyses (fr + en)');
+  assert.equal(db.read('ai_status', 'current').neuronsAujourdhui, 160);
+  assert.ok(db.read('connexions', 'apiFootball'), 'quota API-Football relevé en fin de tâche');
 });

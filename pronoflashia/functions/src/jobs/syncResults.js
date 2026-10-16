@@ -5,6 +5,7 @@ const N = require('../data/normalize');
 const { evaluateMarket, evaluateAll } = require('../engine/evaluate');
 const { matchDelta, mergeDelta } = require('../engine/bilan');
 const { addDays } = require('./helpers');
+const { recordApiQuota } = require('./connexions');
 
 const STAT_KINDS = ['corners', 'shots', 'shotsOnTarget', 'fouls', 'cards', 'offsides'];
 
@@ -111,6 +112,7 @@ async function syncResults(opts, report) {
     try { await finalize({ db, api, match: m, fx, now, statsBudget }); report.traites++; } catch (e) { report.erreurs.push(`${m.slug} : ${e.message}`); }
   }
   report.infos.quotaRestant = api.quota.dayRemaining;
+  await recordApiQuota(db, api, now, report);
 }
 
 module.exports = { syncResults, finalize };

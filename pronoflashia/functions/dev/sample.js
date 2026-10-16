@@ -13,8 +13,8 @@ const LEAGUES = [
   { apiId: 39, nom: 'Premier League', slug: 'premier-league', pays: 'Angleterre', ordre: 4, teams: [[40, 'Liverpool', 1.9], [42, 'Arsenal', 1.85], [50, 'Manchester City', 2.1], [49, 'Chelsea', 1.5]] },
   { apiId: 140, nom: 'LaLiga', slug: 'laliga', pays: 'Espagne', ordre: 5, teams: [[541, 'Real Madrid', 2.05], [529, 'Barcelona', 2.0], [530, 'Atletico Madrid', 1.6], [536, 'Sevilla', 1.2]] },
   { apiId: 135, nom: 'Serie A', slug: 'serie-a', pays: 'Italie', ordre: 6, teams: [[505, 'Inter', 1.8], [496, 'Juventus', 1.5], [489, 'AC Milan', 1.5], [492, 'Napoli', 1.6]] },
-  { apiId: 12, nom: 'Ligue des champions CAF', slug: 'ligue-des-champions-caf', pays: 'Afrique', ordre: 1, teams: [[1066, 'Al Ahly', 1.8], [1070, 'Wydad Casablanca', 1.5], [1071, 'TP Mazembe', 1.3], [1072, 'Mamelodi Sundowns', 1.6], [1073, 'Esperance Sportive De Tunis', 1.45], [1074, 'RS Berkane', 1.35]] },
-  { apiId: 20, nom: 'Coupe de la CAF', slug: 'coupe-de-la-caf', pays: 'Afrique', ordre: 2, teams: [[1080, 'Zamalek SC', 1.4], [1081, 'USM Alger', 1.3], [1082, 'Enyimba', 1.1], [1083, 'Raja Casablanca', 1.5]] },
+  { apiId: 12, nom: 'Ligue des champions CAF', en: 'CAF Champions League', slug: 'ligue-des-champions-caf', pays: 'Afrique', ordre: 1, teams: [[1066, 'Al Ahly', 1.8], [1070, 'Wydad Casablanca', 1.5], [1071, 'TP Mazembe', 1.3], [1072, 'Mamelodi Sundowns', 1.6], [1073, 'Esperance Sportive De Tunis', 1.45], [1074, 'RS Berkane', 1.35]] },
+  { apiId: 20, nom: 'Coupe de la CAF', en: 'CAF Confederation Cup', slug: 'coupe-de-la-caf', pays: 'Afrique', ordre: 2, teams: [[1080, 'Zamalek SC', 1.4], [1081, 'USM Alger', 1.3], [1082, 'Enyimba', 1.1], [1083, 'Raja Casablanca', 1.5]] },
 ];
 
 function rng(seed) {
@@ -108,6 +108,11 @@ const demoProvider = {
   async call(messages) {
     const lines = messages[1].content.split('\n').filter((l) => l.startsWith('- ')).map((l) => l.slice(2));
     const get = (re) => lines.find((l) => re.test(l));
+    if (/^You are an English/.test(messages[0].content)) {
+      const sel = get(/^Selected prediction/);
+      const analyse = [get(/^Calculated probabilities/), ...lines.filter((l) => /per game|meetings/.test(l)), 'A prediction is only a probability: a single goal can change everything.'].filter(Boolean).slice(0, 6).join(' ');
+      return JSON.stringify({ analyse, pointsCles: [sel, get(/^Calculated probabilities/), get(/^Over 2\.5/)], resume: sel });
+    }
     const forme = lines.filter((l) => /^Forme récente/.test(l));
     void forme;
     const analyse = [get(/^Probabilités calculées/), ...lines.filter((l) => /par match à domicile|par match à l'extérieur|confrontations/.test(l)), 'Un pronostic reste une probabilité : un seul but peut tout changer.'].filter(Boolean).slice(0, 6).join(' ');
@@ -118,7 +123,7 @@ const demoProvider = {
 /** Construit la base d'exemple à l'instant `now`. */
 async function buildSample(now = new Date()) {
   const db = new FakeDb();
-  for (const lg of LEAGUES) await db.seed('leagues', String(lg.apiId), { apiId: lg.apiId, nom: lg.nom, slug: lg.slug, pays: lg.pays, saison: 2026, suivi: true, sport: 'football', ordre: lg.ordre });
+  for (const lg of LEAGUES) await db.seed('leagues', String(lg.apiId), { apiId: lg.apiId, nom: lg.nom, noms: { fr: lg.nom, en: lg.en || lg.nom }, slug: lg.slug, pays: lg.pays, saison: 2026, suivi: true, sport: 'football', ordre: lg.ordre });
   const api = makeApi(now);
   const start = new Date(now.getTime() - 3 * 864e5);
   const prov = [demoProvider];
@@ -176,6 +181,11 @@ async function seedStats(db, now) {
   await db.seed('stats_weeks', '2026-W41', { semaine: '2026-W41', du: '2026-10-05', au: '2026-10-11', visites: 2400, visiteurs: 2050, pagesVues: 7600, clicsAfrolook: 38, pays: [{ k: 'CI', v: 900 }, { k: 'FR', v: 400 }, { k: 'SN', v: 300 }], matchsTop: [{ k: 'Paris SG – Marseille', v: 540 }], pronostics: 68, reussis: 44, rates: 24, tauxReussite: 65, ia: { pannes: 0, controles: 336 } });
   await db.seed('stats_weeks', '2026-W40', { semaine: '2026-W40', du: '2026-09-28', au: '2026-10-04', visites: 2000, visiteurs: 1700, pagesVues: 6700, clicsAfrolook: 30, pays: [{ k: 'CI', v: 760 }], matchsTop: [], pronostics: 61, reussis: 40, rates: 21, tauxReussite: 66, ia: { pannes: 2, controles: 336 } });
   await db.seed('ai_status', 'current', { etat: 'ok', fournisseur: 'workers-ai', dernierTestOk: now.toISOString(), dernierTestLe: now.toISOString(), latenceMs: 1840, generesAujourdhui: 70, secoursAujourdhui: 2, quotaUtilise: 68, derniereErreur: 'gemini : 429', derniereErreurLe: now.toISOString() });
+  const hist = {};
+  for (let i = 13; i >= 0; i--) { const j = new Date(now.getTime() - i * 864e5).toISOString().slice(0, 10); hist[j] = { appels: 60 + Math.round(r() * 80), erreurs: Math.round(r() * 3), neurons: Math.round(4000 + r() * 6000) }; }
+  const j0 = now.toISOString().slice(0, 10);
+  await db.seed('connexions', 'workersAi', { jour: j0, appelsJour: hist[j0].appels, erreursJour: hist[j0].erreurs, neuronsJour: 8350, dernierSucces: now.toISOString(), latenceMs: 6100, historique: hist });
+  await db.seed('connexions', 'apiFootball', { jour: j0, appelsJour: 46, erreursJour: 0, quotaRestant: 7454, quotaLimite: 7500, dernierSucces: now.toISOString(), historique: Object.fromEntries(Object.keys(hist).map((k) => [k, { appels: 30 + Math.round(r() * 30), erreurs: 0, neurons: 0 }])) });
   for (let i = 0; i < 6; i++) await db.seed('ai_status_log', `l${i}`, { le: new Date(now.getTime() - i * 1800e3).toISOString(), etat: 'ok', fournisseur: 'workers-ai', latenceMs: 1500 + i * 90 });
 }
 

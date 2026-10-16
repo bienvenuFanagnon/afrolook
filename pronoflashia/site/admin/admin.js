@@ -51,7 +51,7 @@ async function start() {
   renderTabs(); show(tab);
 }
 
-const TABS = [['vue', "Vue d'ensemble"], ['semaines', 'Semaines'], ['ia', 'IA et tâches'], ['pronos', 'Pronostics'], ['bilan', 'Bilan'], ['pubs', 'Publicités'], ['reglages', 'Réglages'], ['journal', 'Journal']];
+const TABS = [['vue', "Vue d'ensemble"], ['connexions', 'Connexions'], ['fonctionnement', 'Fonctionnement'], ['semaines', 'Semaines'], ['ia', 'IA et tâches'], ['pronos', 'Pronostics'], ['bilan', 'Bilan'], ['pubs', 'Publicités'], ['reglages', 'Réglages'], ['journal', 'Journal']];
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([k, l]) => `<button class="tab" role="tab" data-t="${k}" aria-selected="${k === tab}">${l}</button>`).join('');
   $('#tabs').onclick = (e) => { const b = e.target.closest('.tab'); if (b) show(b.dataset.t); };
@@ -80,7 +80,45 @@ const msg = (id, text, err) => { const el = $(id); if (el) { el.textContent = te
 
 /* ---------- vues ---------- */
 let days = 14;
+const ETATS = { ok: ['ok', 'En service'], attention: ['lent', 'Quota bientôt atteint'], panne: ['panne', 'En erreur'], non_configure: ['', 'Non configuré'], inactif: ['', 'Coupé'], jamais: ['lent', 'Jamais utilisé'] };
+const until = (iso) => { if (!iso) return ''; const m = Math.round((new Date(iso) - Date.now()) / 60000); if (m < 1) return 'imminent'; if (m < 60) return `dans ${m} min`; const h = Math.floor(m / 60); return h < 48 ? `dans ${h} h ${String(m % 60).padStart(2, '0')}` : `dans ${Math.round(h / 24)} jours`; };
+function miniBars(hist, key) {
+  if (!hist || !hist.length) return '';
+  const max = Math.max(...hist.map((h) => h[key] || 0), 1);
+  return `<div style="display:flex;gap:3px;align-items:flex-end;height:38px;margin-top:10px" title="14 derniers jours">${hist.map((h) => `<i title="${esc(h.jour)} : ${nf(h[key])}" style="flex:1;display:block;background:var(--cy);border-radius:2px;height:${Math.max(2, Math.round((36 * (h[key] || 0)) / max))}px"></i>`).join('')}</div><div class="note">${key === 'neurons' ? 'neurons' : 'appels'} sur les 14 derniers jours</div>`;
+}
+
 const VIEWS = {
+  async connexions() {
+    const d = await api('connexions');
+    const card = (t) => {
+      const e = ETATS[t.etat] || ['', t.etat];
+      const q = t.quota;
+      const qp = q && q.limite ? Math.min(100, Math.round((100 * q.utilise) / q.limite)) : null;
+      return `<div class="card" style="margin-top:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3 style="margin:0">${esc(t.nom)}</h3><span class="note">${esc(t.role)}</span></div><span class="pill ${t.etat === 'ok' ? 'g' : t.etat === 'panne' ? 'r' : t.etat === 'attention' || t.etat === 'jamais' ? 'y' : ''}" style="white-space:nowrap">${e[0] ? `<span class="dot ${e[0]}" style="width:9px;height:9px;margin-right:5px;vertical-align:0"></span>` : ''}${e[1]}</span></div>
+        ${q ? `<div style="margin-top:12px"><div class="bar" style="grid-template-columns:1fr auto"><span class="t"><i style="width:${qp == null ? 0 : qp}%;background:${qp >= 80 ? 'var(--ko)' : qp >= 50 ? 'var(--flash)' : 'var(--ok)'}"></i></span><b>${qp == null ? '–' : qp + ' %'}</b></div><div class="note">${nf(q.utilise)} / ${nf(q.limite)} ${esc(q.unite)} aujourd'hui</div></div>` : ''}
+        <div class="row" style="gap:16px;margin-top:10px">${t.appelsJour != null ? `<span><b>${nf(t.appelsJour)}</b> <span class="note">${esc(t.unite || "appels aujourd'hui")}</span></span>` : ''}${t.erreursJour ? `<span class="err"><b>${nf(t.erreursJour)}</b> erreur(s)</span>` : ''}${t.clicsJour != null ? `<span><b>${nf(t.clicsJour)}</b> <span class="note">clics</span></span>` : ''}${t.latenceMs ? `<span class="note">${nf(t.latenceMs)} ms</span>` : ''}</div>
+        <p class="note" style="margin-top:8px">Dernière réussite : ${fdate(t.dernierSucces)}</p>${t.derniereErreur ? `<div class="warn" style="margin-top:6px">${fdate(t.derniereErreurLe)} : ${esc(t.derniereErreur)}</div>` : ''}
+        ${!t.configure && t.secret ? `<p class="note" style="margin-top:8px">À configurer : <code>firebase functions:secrets:set ${esc(t.secret.split(' ')[0])}</code>${t.secret.includes('+') ? ' et <code>' + esc(t.secret.split('+ ')[1]) + '</code>' : ''}, puis redéployer.</p>` : ''}
+        ${!t.configure && !t.secret && /Adsterra|Monetag/.test(t.nom) ? '<p class="note" style="margin-top:8px">Coller les codes du réseau dans l\'onglet Publicités.</p>' : ''}
+        ${miniBars(t.historique, t.id === 'workersAi' ? 'neurons' : 'appels')}</div>`;
+    };
+    return `<h2>Outils connectés</h2><p class="note">État en direct de chaque service utilisé par le site. Les clés secrètes ne sont jamais affichées : seule leur présence est vérifiée.</p><div class="grid" style="margin-top:14px">${d.outils.map(card).join('')}</div>`;
+  },
+
+  async fonctionnement() {
+    const d = await api('planning');
+    const local = (iso) => (iso ? new Date(iso).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '–');
+    return `<h2>Fonctionnement</h2>
+    <div class="card"><h3>Comment un pronostic est produit</h3><ol class="note" style="font-size:13.5px;line-height:1.7;padding-left:18px;margin:0">
+      <li><b style="color:var(--tx)">Les données arrivent</b> : chaque matin, API-Football fournit les matchs des 7 prochains jours et les résultats de la saison.</li>
+      <li><b style="color:var(--tx)">Le calcul fait le pronostic</b> : un modèle statistique (buts attendus, loi de Poisson corrigée, cotes à moins de 48 h) donne la probabilité de plus de 100 paris par match et choisit le pronostic principal. L'IA ne touche jamais aux chiffres.</li>
+      <li><b style="color:var(--tx)">L'IA rédige</b> : Workers AI reçoit les chiffres et écrit l'analyse en français et en anglais. Un contrôle refuse tout chiffre inventé, toute promesse de gain ou toute erreur de langue ; ensuite Gemini, puis un texte de secours.</li>
+      <li><b style="color:var(--tx)">Publication</b> : le pronostic est enregistré et visible sur le site en moins de 5 minutes.</li>
+      <li><b style="color:var(--tx)">Après le match</b> : le score est relevé, chaque pari est marqué ✅ ou ❌ et le bilan se met à jour tout seul.</li></ol></div>
+    <h3 style="margin-top:18px">Tâches automatiques</h3><p class="note">Heures affichées dans ton fuseau horaire. Les tâches tournent dans Firebase (Cloud Functions), sans serveur à gérer.</p>
+    <div class="tw"><table><thead><tr><th>Tâche</th><th>Cadence</th><th>Rôle</th><th>Dernier passage</th><th>Prochain passage</th><th></th></tr></thead><tbody>${d.taches.map((x) => `<tr><td><b>${esc(x.nom)}</b></td><td>${esc(x.frequence)}<br><code class="note">${esc(x.cron)}</code></td><td class="note" style="max-width:360px">${esc(x.role)}</td><td>${x.dernier ? `${local(x.dernier.debut)}<br>${x.dernier.ok ? '<span class="pill g">OK</span>' : '<span class="pill r">erreur</span>'} <span class="note">${nf(x.dernier.traites)} traité(s)</span>` : '<span class="note">jamais</span>'}</td><td>${local(x.prochain)}<br><span class="note">${until(x.prochain)}</span></td><td><button class="btn sec sm" data-run="${esc(x.nom)}">Lancer maintenant</button></td></tr>`).join('')}</tbody></table></div><p class="msg" id="m-run"></p>`;
+  },
   async vue() {
     const d = await api('overview', { days });
     const p = d.periode;
@@ -88,7 +126,7 @@ const VIEWS = {
     const paysNote = sources.entete ? '' : '<p class="note">Pays déduits du fuseau horaire du navigateur (aucun en-tête de pays fourni par l\'infrastructure). Un VPN ou un appareil réglé sur un autre fuseau fausse un peu.</p>';
     return `<h2>Vue d'ensemble</h2><div class="row"><span class="note">Période :</span>${[7, 14, 30, 90].map((n) => `<button class="btn ${n === days ? '' : 'sec'} sm" data-days="${n}">${n} j</button>`).join('')}</div>
     <div class="kpis">${kpi(nf(d.aujourdhui.visiteurs), "Visiteurs aujourd'hui", nf(d.aujourdhui.pv) + ' pages vues')}${kpi(nf(d.sept.visiteurs), 'Visiteurs 7 jours', nf(d.sept.pv) + ' pages vues')}${kpi(nf(p.visiteurs), `Visiteurs ${days} jours`, 'somme des visiteurs uniques de chaque jour')}${kpi(nf(p.visites), 'Visites', 'une visite = un passage')}${kpi(nf(p.pv), 'Pages vues')}${kpi(nf(p.clicsAfrolook), 'Clics Afrolook', nf(p.aflImps) + ' affichages')}${kpi(nf(p.pubVues), 'Pubs affichées', 'réseaux publicitaires')}${kpi(nf(p.couponAjouts), 'Ajouts au coupon')}${kpi(nf(p.partagesWa), 'Partages WhatsApp')}</div>
-    <div class="grid"><div class="card"><h3>Visiteurs par pays</h3>${bars(d.pays, country)}${paysNote}</div><div class="card"><h3>Pages les plus vues</h3>${bars(d.pages)}</div><div class="card"><h3>Matchs les plus vus</h3>${bars(d.matchsTop.map((m) => ({ k: m.nom, v: m.v })))}</div><div class="card"><h3>Sources</h3>${bars(d.sources)}</div><div class="card"><h3>Appareils</h3>${bars(Object.entries(d.appareils).map(([k, v]) => ({ k: { m: 'Téléphone', d: 'Ordinateur', t: 'Tablette', x: 'Autre' }[k] || k, v })))}</div><div class="card"><h3>Heures de pointe (UTC)</h3>${bars(Object.entries(d.heures).map(([k, v]) => ({ k: k.padStart(2, '0') + ' h', v })).sort((a, b) => b.v - a.v))}</div><div class="card"><h3>Publicités affichées par emplacement</h3>${bars(d.pub)}</div><div class="card"><h3>Encarts Afrolook (affichages / clics)</h3>${bars(d.afl)}<div style="height:8px"></div>${bars(d.aflClics)}</div></div>
+    <div class="grid"><div class="card"><h3>Visiteurs par pays</h3>${bars(d.pays, country)}${paysNote}</div><div class="card"><h3>Pages les plus vues</h3>${bars(d.pages)}</div><div class="card"><h3>Matchs les plus vus</h3>${bars(d.matchsTop.map((m) => ({ k: m.nom, v: m.v })))}</div><div class="card"><h3>Sources</h3>${bars(d.sources)}</div><div class="card"><h3>Langue des pages vues</h3>${bars(Object.entries(d.langues || {}).map(([k, v]) => ({ k: { fr: 'Français', en: 'English' }[k] || k, v })))}</div><div class="card"><h3>Appareils</h3>${bars(Object.entries(d.appareils).map(([k, v]) => ({ k: { m: 'Téléphone', d: 'Ordinateur', t: 'Tablette', x: 'Autre' }[k] || k, v })))}</div><div class="card"><h3>Heures de pointe (UTC)</h3>${bars(Object.entries(d.heures).map(([k, v]) => ({ k: k.padStart(2, '0') + ' h', v })).sort((a, b) => b.v - a.v))}</div><div class="card"><h3>Publicités affichées par emplacement</h3>${bars(d.pub)}</div><div class="card"><h3>Encarts Afrolook (affichages / clics)</h3>${bars(d.afl)}<div style="height:8px"></div>${bars(d.aflClics)}</div></div>
     <div class="card"><h3>Par jour</h3><div class="tw"><table><thead><tr><th>Jour</th><th>Visiteurs</th><th>Visites</th><th>Pages vues</th></tr></thead><tbody>${d.jours.slice().reverse().map((r) => `<tr><td>${r.jour}</td><td>${nf(r.visiteurs)}</td><td>${nf(r.visites)}</td><td>${nf(r.pv)}</td></tr>`).join('') || '<tr><td colspan="4">Aucune donnée.</td></tr>'}</tbody></table></div></div>`;
   },
 
@@ -153,7 +191,7 @@ const VIEWS = {
     const fld = (k, label, ph) => `<label class="f">${label}<input data-site="${k}" value="${esc(s[k])}" placeholder="${esc(ph || '')}"></label>`;
     return `<h2>Réglages</h2>${c.legalIncomplet.length ? `<div class="warn">Pages légales incomplètes : ${c.legalIncomplet.map((k) => esc(k)).join(', ')}. Les réseaux publicitaires exigent des mentions légales renseignées.</div>` : ''}
     <div class="card"><h3>Informations légales et contact</h3><div class="grid">${fld('editeur', 'Éditeur (nom ou raison sociale)')}${fld('statutJuridique', 'Statut juridique')}${fld('adresse', 'Adresse')}${fld('email', 'Adresse e-mail de contact public')}${fld('loi', 'Pays dont le droit s\'applique')}${fld('hebergeur', 'Hébergeur')}${fld('whatsapp', 'Lien canal WhatsApp (facultatif)')}${fld('telegram', 'Lien canal Telegram (facultatif)')}</div><label class="c"><input type="checkbox" id="site-idx" ${s.indexable ? 'checked' : ''}>Site indexable par les moteurs de recherche (décocher pendant les tests)</label><div class="row"><button class="btn" id="site-save">Enregistrer</button><span class="msg" id="m-site"></span></div></div>
-    <div class="card"><h3>Championnats suivis</h3><div class="tw"><table><thead><tr><th>Championnat</th><th>Pays</th><th>Saison</th><th>Ordre</th><th>Suivi</th></tr></thead><tbody>${l.ligues.map((x) => `<tr><td>${esc(x.nom)} <span class="note">#${x.apiId}</span></td><td>${esc(x.pays || '')}</td><td><input type="number" data-lg="${x.apiId}" data-k="saison" value="${x.saison}" style="width:80px"></td><td><input type="number" data-lg="${x.apiId}" data-k="ordre" value="${x.ordre}" style="width:70px"></td><td><input type="checkbox" data-lg="${x.apiId}" data-k="suivi" ${x.suivi ? 'checked' : ''}></td></tr>`).join('') || '<tr><td colspan="5">Aucun championnat.</td></tr>'}</tbody></table></div><div class="row"><button class="btn sec sm" id="lg-save">Enregistrer les championnats</button><input type="number" id="lg-new" placeholder="Identifiant API-Football" style="width:200px"><button class="btn sm" id="lg-add">Ajouter</button><span class="msg" id="m-lg"></span></div><p class="note">L'ajout vérifie l'identifiant auprès d'API-Football (nom, pays, saison en cours). Exemples : 61 Ligue 1, 39 Premier League, 12 Ligue des champions CAF.</p></div>
+    <div class="card"><h3>Championnats suivis</h3><div class="tw"><table><thead><tr><th>Championnat</th><th>Nom FR</th><th>Name EN</th><th>Pays</th><th>Saison</th><th>Ordre</th><th>Suivi</th></tr></thead><tbody>${l.ligues.map((x) => `<tr><td>${esc(x.nom)} <span class="note">#${x.apiId}</span></td><td><input type="text" data-lg="${x.apiId}" data-k="nomfr" value="${esc((x.noms && x.noms.fr) || '')}" placeholder="${esc(x.nom)}" style="width:150px"></td><td><input type="text" data-lg="${x.apiId}" data-k="nomen" value="${esc((x.noms && x.noms.en) || '')}" placeholder="${esc(x.nom)}" style="width:150px"></td><td>${esc(x.pays || '')}</td><td><input type="number" data-lg="${x.apiId}" data-k="saison" value="${x.saison}" style="width:80px"></td><td><input type="number" data-lg="${x.apiId}" data-k="ordre" value="${x.ordre}" style="width:70px"></td><td><input type="checkbox" data-lg="${x.apiId}" data-k="suivi" ${x.suivi ? 'checked' : ''}></td></tr>`).join('') || '<tr><td colspan="7">Aucun championnat.</td></tr>'}</tbody></table></div><div class="row"><button class="btn sec sm" id="lg-save">Enregistrer les championnats</button><input type="number" id="lg-new" placeholder="Identifiant API-Football" style="width:200px"><button class="btn sm" id="lg-add">Ajouter</button><span class="msg" id="m-lg"></span></div><p class="note">L'ajout vérifie l'identifiant auprès d'API-Football (nom, pays, saison en cours). Exemples : 61 Ligue 1, 39 Premier League, 12 Ligue des champions CAF.</p></div>
     <div class="card"><h3>Administrateurs</h3><div class="tw"><table><thead><tr><th>Adresse Google</th><th></th></tr></thead><tbody>${ad.bootstrap.map((e) => `<tr><td>${esc(e)} <span class="pill">propriétaire</span></td><td></td></tr>`).join('')}${ad.admins.map((x) => `<tr><td>${esc(x.email)}</td><td><button class="btn sec sm" data-adrm="${esc(x.email)}">Retirer</button></td></tr>`).join('')}</tbody></table></div><div class="row"><input type="email" id="ad-new" placeholder="adresse@gmail.com" style="width:260px"><button class="btn sm" id="ad-add">Ajouter</button><span class="msg" id="m-ad"></span></div></div>`;
   },
 
@@ -165,6 +203,7 @@ const VIEWS = {
 
 /* ---------- actions après affichage ---------- */
 const AFTER = {
+  fonctionnement() { AFTER.ia(); },
   vue() { document.querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { days = +b.dataset.days; show('vue'); })); },
   semaines() {
     $('#csv-w').addEventListener('click', async () => {
@@ -175,7 +214,7 @@ const AFTER = {
   ia() {
     document.querySelectorAll('[data-run]').forEach((b) => b.addEventListener('click', async () => {
       b.disabled = true; msg('#m-run', 'Tâche en cours…');
-      try { await api('tache-lancer', { nom: b.dataset.run }); msg('#m-run', 'Tâche terminée.'); show('ia'); } catch (e) { msg('#m-run', e.message, true); b.disabled = false; }
+      try { const r = await api('tache-lancer', { nom: b.dataset.run }); const cur = tab; await show(cur); msg('#m-run', `Tâche « ${b.dataset.run} » terminée : ${nf(r.rapport && r.rapport.traites)} traité(s).`); } catch (e) { msg('#m-run', e.message, true); b.disabled = false; }
     }));
   },
   pronos() {
@@ -212,7 +251,7 @@ const AFTER = {
     });
     $('#lg-save').addEventListener('click', async () => {
       const by = {};
-      document.querySelectorAll('[data-lg]').forEach((i) => { (by[i.dataset.lg] = by[i.dataset.lg] || {})[i.dataset.k] = i.type === 'checkbox' ? i.checked : +i.value; });
+      document.querySelectorAll('[data-lg]').forEach((i) => { const o = (by[i.dataset.lg] = by[i.dataset.lg] || {}); const k = i.dataset.k; if (k === 'nomfr' || k === 'nomen') { o.noms = o.noms || {}; o.noms[k === 'nomfr' ? 'fr' : 'en'] = i.value; } else o[k] = i.type === 'checkbox' ? i.checked : +i.value; });
       try { for (const [id, v] of Object.entries(by)) await api('ligue-maj', { apiId: id, ...v }); msg('#m-lg', 'Enregistré.'); } catch (e) { msg('#m-lg', e.message, true); }
     });
     $('#lg-add').addEventListener('click', async () => { try { const r = await api('ligue-ajouter', { apiId: $('#lg-new').value }); msg('#m-lg', `Ajouté : ${r.ligue.nom}`); show('reglages'); } catch (e) { msg('#m-lg', e.message, true); } });

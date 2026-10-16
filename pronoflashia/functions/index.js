@@ -21,6 +21,7 @@ const D = require('./src/render/data');
 const { publicAds } = require('./src/render/config');
 const { handleEvent } = require('./src/http/track');
 const { createAdmin } = require('./src/http/admin');
+const { SCHEDULE } = require('./src/jobs/schedule');
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -35,7 +36,9 @@ const ADMIN_EMAILS = defineString('ADMIN_EMAILS', { default: '' });
 
 const REGION = 'europe-west1';
 const SECRETS = [API_FOOTBALL_KEY, CF_API_TOKEN, CF_ACCOUNT_ID, GEMINI_API_KEY];
-const secrets = () => ({ apiFootball: API_FOOTBALL_KEY.value(), cfToken: CF_API_TOKEN.value(), cfAccount: CF_ACCOUNT_ID.value(), gemini: GEMINI_API_KEY.value() });
+const val = (p) => { try { return p.value(); } catch { return ''; } };
+const secrets = () => ({ apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
+const cron = (nom) => SCHEDULE.find((x) => x.nom === nom).cron;
 const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, secrets: SECRETS, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
 
 /** Les tâches, réutilisées par le planificateur et par le bouton « Relancer » de l'admin. */
@@ -48,15 +51,15 @@ const TASKS = {
 };
 
 // Matchs et statistiques : chaque jour à 05:00 UTC, avec l'historique de saison une fois par jour.
-exports.syncFixtures = onSchedule(sched('0 5 * * *'), async () => { await TASKS.syncFixtures(); await TASKS.buildPredictions(); });
+exports.syncFixtures = onSchedule(sched(cron('syncFixtures')), async () => { await TASKS.syncFixtures(); await TASKS.buildPredictions(); });
 // Pronostics : à 20 minutes après chaque heure (les cotes et compositions évoluent), de 05:20 à 02:20 UTC.
-exports.buildPredictions = onSchedule(sched('20 6-23,0-2 * * *'), async () => { await TASKS.buildPredictions(); });
+exports.buildPredictions = onSchedule(sched(cron('buildPredictions')), async () => { await TASKS.buildPredictions(); });
 // Résultats : toutes les 30 minutes pendant les heures de match.
-exports.syncResults = onSchedule(sched('*/30 12-23,0-2 * * *'), async () => { await TASKS.syncResults(); });
+exports.syncResults = onSchedule(sched(cron('syncResults')), async () => { await TASKS.syncResults(); });
 // Bilan hebdomadaire figé chaque lundi.
-exports.weeklyReport = onSchedule(sched('0 3 * * 1', { memory: '256MiB' }), async () => { await TASKS.weeklyReport(); });
+exports.weeklyReport = onSchedule(sched(cron('weeklyReport'), { memory: '256MiB' }), async () => { await TASKS.weeklyReport(); });
 // Test de l'IA toutes les 30 minutes.
-exports.aiHealthCheck = onSchedule(sched('*/30 * * * *', { memory: '256MiB', timeoutSeconds: 120 }), async () => { await TASKS.aiHealthCheck(); });
+exports.aiHealthCheck = onSchedule(sched(cron('aiHealthCheck'), { memory: '256MiB', timeoutSeconds: 120 }), async () => { await TASKS.aiHealthCheck(); });
 
 const admin = createAdmin({
   db,
@@ -64,6 +67,8 @@ const admin = createAdmin({
   get bootstrap() { return ADMIN_EMAILS.value().split(',').map((x) => x.trim()).filter(Boolean); },
   tasks: TASKS,
   apiFactory: () => makeApi(secrets()),
+  // présence des secrets (jamais leur valeur) pour l'écran « Connexions »
+  secretsStatus: () => { const s = secrets(); let salt = ''; try { salt = STATS_SALT.value(); } catch { /* non défini */ } return { apiFootball: !!s.apiFootball, cfToken: !!s.cfToken, cfAccount: !!s.cfAccount, gemini: !!s.gemini, statsSalt: !!salt }; },
   clearCache: D.clearCache,
 });
 

@@ -3,6 +3,7 @@
 
 const N = require('../data/normalize');
 const { dayStr, addDays } = require('./helpers');
+const { recordApiQuota } = require('./connexions');
 
 const COUNT_KINDS = ['corners', 'shotsOnTarget', 'shots', 'cards', 'fouls', 'offsides'];
 
@@ -117,6 +118,7 @@ async function syncFixtures(opts, report) {
     }
   }
   report.infos.quotaRestant = api.quota.dayRemaining;
+  await recordApiQuota(db, api, now, report);
 }
 
 module.exports = { syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };

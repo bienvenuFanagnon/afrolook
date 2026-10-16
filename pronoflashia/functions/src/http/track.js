@@ -57,6 +57,7 @@ async function handleEvent(req, deps) {
     u[`paysSource.${country.source}`] = inc;
     u[`appareils.${['m', 'd', 't'].includes(b.d) ? b.d : 'x'}`] = inc;
     u[`sources.${SOURCES.includes(b.r) ? b.r : 'autre'}`] = inc;
+    u[`langues.${b.l === 'en' ? 'en' : 'fr'}`] = inc;
     u[`heures.${now.getUTCHours()}`] = inc;
     if (b.m) u[`matchs.${key(b.m)}`] = inc;
     if (b.s) u.visites = inc;

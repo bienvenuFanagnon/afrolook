@@ -24,7 +24,7 @@ const port = parseInt(process.argv[2] || process.env.PORT || '5173', 10);
   await seedStats(db, now);
   const okProvider = { name: 'workers-ai', call: async () => '{"ok":true}' };
   const noop = (name) => () => runJob(db, name, async (r) => { r.traites = 0; });
-  const admin = createAdmin({ db, verifyToken: async (t) => { if (t !== 'dev') throw new Error('non'); return { email: 'dev@local', email_verified: true }; }, bootstrap: ['dev@local'], clearCache: D.clearCache,
+  const admin = createAdmin({ db, verifyToken: async (t) => { if (t !== 'dev') throw new Error('non'); return { email: 'dev@local', email_verified: true }; }, bootstrap: ['dev@local'], clearCache: D.clearCache, secretsStatus: () => ({ apiFootball: true, cfToken: true, cfAccount: true, gemini: false, statsSalt: true }),
     tasks: { aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: [okProvider] }, r)), syncFixtures: noop('syncFixtures'), buildPredictions: noop('buildPredictions'), syncResults: noop('syncResults'), weeklyReport: noop('weeklyReport') } });
   const events = [];
   http.createServer(async (req, res) => {

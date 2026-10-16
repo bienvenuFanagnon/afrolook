@@ -142,3 +142,50 @@ test('Workers AI : les deux formats de réponse (response et choices) sont lus',
   const c = cloudflareProvider({ accountId: 'A', token: 'T', fetchImpl: mk({ choices: [{ message: { content: null } }] }) });
   await assert.rejects(() => c.call([]), /réponse vide/);
 });
+
+/* ---------- anglais ---------- */
+const ctxEn = {
+  competition: 'Ligue 1', dateTexte: 'Sunday 18 October 2026 at 20:45 (UTC)', domicile: 'Paris SG', exterieur: 'Marseille',
+  formeDom: 'VVNVV', formeExt: 'NVVDV', probas: { '1': 62, N: 21, '2': 17 }, plus25: 62, bttsOui: 58, scoreProbable: '2-1',
+  principal: { libelle: '1 · Paris SG', confiance: 68 }, extras: ['Paris SG score 2.4 goals per game at home and concede 0.8.'], h2h: [],
+};
+const GOOD_EN = {
+  analyse: 'Paris SG have won four of their last five matches and score 2.4 goals per game at home. Marseille have been less consistent, with a defeat in their recent run. The model gives Paris SG a 62% chance of winning, against 21% for a draw. The most likely score is 2-1 and both teams score in 58% of the simulations. Nothing is guaranteed: a single goal can change everything.',
+  pointsCles: ['Paris SG: 4 wins in 5', 'Marseille: inconsistent form', 'Both teams to score: 58%'],
+  resume: 'Paris SG are favourites at 62%, with a most likely score of 2-1.',
+};
+
+test('anglais : prompt en anglais, forme traduite (W/D/L)', () => {
+  const { messages, faits } = buildPrompt(ctxEn, 'en');
+  assert.match(messages[0].content, /Use ONLY the figures/);
+  assert.ok(faits.some((f) => /oldest to latest\): WWDWW\./.test(f)));
+  assert.ok(faits.some((f) => /Recent form of Marseille: DWWLW\./.test(f)));
+  assert.match(messages[1].content, /Selected prediction: 1 · Paris SG, confidence 68%\./);
+});
+
+test('anglais : sortie valide acceptée ; français, promesse et chiffre inventé refusés', () => {
+  const { faits } = buildPrompt(ctxEn, 'en');
+  const ok = validateOutput(JSON.stringify(GOOD_EN), faits, 'en');
+  assert.ok(ok.ok, ok.errors.join());
+  assert.ok(validateOutput(JSON.stringify(GOOD), buildPrompt(ctx).faits, 'en').errors.includes('not_english'));
+  const sure = { ...GOOD_EN, analyse: GOOD_EN.analyse + ' This is a sure win for Paris.' };
+  assert.ok(validateOutput(sure, faits, 'en').errors.includes('promesse_interdite'));
+  const guar = { ...GOOD_EN, analyse: GOOD_EN.analyse.replace('Nothing is guaranteed', 'A win is guaranteed') };
+  assert.ok(validateOutput(guar, faits, 'en').errors.includes('promesse_interdite'));
+  const inv = { ...GOOD_EN, analyse: GOOD_EN.analyse.replace('62%', '77%') };
+  assert.ok(validateOutput(inv, faits, 'en').errors.some((e) => e.startsWith('chiffre_invente')));
+  // le français reste validé comme avant
+  assert.ok(validateOutput(JSON.stringify(GOOD), buildPrompt(ctx).faits).ok);
+});
+
+test('anglais : texte de secours valide, chaîne en anglais', async () => {
+  const { faits } = buildPrompt(ctxEn, 'en');
+  const { fallbackTextEn } = require('../src/ai/fallback');
+  const v = validateOutput(fallbackTextEn(ctxEn), faits, 'en');
+  assert.ok(v.ok, v.errors.join());
+  const r = await generateText(ctxEn, [{ name: 'x', call: async () => { throw new Error('panne'); } }], { lang: 'en' });
+  assert.equal(r.sourceTexte, 'secours');
+  assert.match(r.texte.analyse, /The model gives Paris SG a 62% chance/);
+  const ok = await generateText(ctxEn, [{ name: 'workers-ai', call: async () => JSON.stringify(GOOD_EN) }], { lang: 'en' });
+  assert.equal(ok.sourceTexte, 'workers-ai');
+});
