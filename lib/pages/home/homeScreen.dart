@@ -1001,6 +1001,8 @@ class _MyHomePageState extends State<MyHomePage>
     GooglePlayIapService.instance.start();
     // Devise d'affichage : pays du profil (sinon celui du téléphone)
     CurrencyService.instance.setCountry(authProvider.loginUserData.countryData?['countryCode']);
+    // Devise choisie par la personne (compte, sinon ce téléphone)
+    CurrencyService.instance.loadOverride(serverValue: authProvider.loginUserData.displayCurrency);
     // Utilisateurs bloqués : leurs contenus sont masqués immédiatement dans le fil.
     BlockService.instance.start();
     _headerCtrl = AnimationController(

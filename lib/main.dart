@@ -231,6 +231,7 @@ Future<void> main() async {
   // Devise d'affichage : pays du téléphone jusqu'à la connexion, taux du jour en direct
   CurrencyService.instance
     ..setCountry(null)
+    ..loadOverride()
     ..listenRates();
 
   runApp(const MyApp());
