@@ -256,13 +256,30 @@ test('buildPredictions : budget de temps (lancement manuel) → s\'arrête et si
   const api2 = mockApi({ upcoming: later });
   await runJob(db, 'syncFixtures', (rep) => syncFixtures({ db, api: api2, now: NOW }, rep), () => NOW);
   const slow = { name: 'workers-ai', call: async (m) => { await new Promise((r) => setTimeout(r, 30)); return echoProvider().call(m); } };
-  const rep = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [slow], now: NOW, budgetMs: 40 }, r));
+  const rep = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [slow], now: NOW, budgetMs: 40, concurrency: 1 }, r));
   assert.ok(rep.traites >= 1 && rep.traites < 3, `traités : ${rep.traites}`);
   assert.equal(rep.infos.reste, 3 - rep.traites);
   // sans budget (planificateur) : tout est calculé
   const rep2 = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: NOW }, r));
   assert.equal(rep2.infos.reste, undefined);
   assert.ok(db.all('matches').every((m) => m.prono && m.prono.principal));
+});
+
+test('buildPredictions : matchs et langues traités en parallèle, compteurs de l\'IA exacts, bien plus rapide que séquentiel', async () => {
+  const { db, api } = await setup();
+  const more = [raw(1002, 80, 91, '2026-10-18T20:00:00+00:00', 'NS'), raw(1003, 91, 80, '2026-10-19T20:00:00+00:00', 'NS'), raw(1004, 81, 80, '2026-10-19T18:00:00+00:00', 'NS')];
+  await runJob(db, 'syncFixtures', (rep) => syncFixtures({ db, api: mockApi({ upcoming: more }), now: NOW }, rep), () => NOW);
+  const slow = { name: 'workers-ai', call: async (m) => { await new Promise((r) => setTimeout(r, 60)); return echoProvider().call(m); } };
+  const t0 = Date.now();
+  const rep = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [slow], now: NOW }, r));
+  const ms = Date.now() - t0;
+  assert.equal(rep.traites, 4, rep.erreurs.join());
+  // 4 matchs × 2 langues × 60 ms = 480 ms en séquence ; en parallèle, nettement moins
+  assert.ok(ms < 300, `durée ${ms} ms`);
+  const st = db.read('ai_status', 'current');
+  assert.equal(st.generesAujourdhui, 8); assert.equal(st.quotaUtilise, 8);
+  assert.equal(db.read('connexions', 'workersAi').appelsJour, 8);
+  assert.ok(db.all('matches').every((m) => m.prono && m.prono.texte && m.prono.texteEn));
 });
 
 test('aiHealthCheck : ok, lent, panne', async () => {

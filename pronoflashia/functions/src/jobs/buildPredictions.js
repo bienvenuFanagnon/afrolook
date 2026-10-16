@@ -86,19 +86,22 @@ async function fetchH2h(api, match) {
 /** Compteurs de l'état de l'IA pour la journée. */
 async function bumpAiStatus(db, now, { fournisseur, secours, erreurs, latencyMs, neurons }) {
   const ref = db.collection('ai_status').doc('current');
-  const cur = (await ref.get()).data() || {};
   const jour = dayStr(now);
-  const base = cur.jour === jour ? cur : { generesAujourdhui: 0, secoursAujourdhui: 0, quotaUtilise: 0 };
-  const upd = {
-    jour,
-    generesAujourdhui: (base.generesAujourdhui || 0) + 1,
-    secoursAujourdhui: (base.secoursAujourdhui || 0) + (secours ? 1 : 0),
-    quotaUtilise: (base.quotaUtilise || 0) + (fournisseur === 'workers-ai' ? 1 : 0),
-    neuronsAujourdhui: Math.round(((base.neuronsAujourdhui || 0) + (neurons || 0)) * 100) / 100,
-  };
-  if (!secours) { upd.fournisseur = fournisseur; upd.dernierSucces = now.toISOString(); if (latencyMs) upd.latenceMs = latencyMs; }
-  if (erreurs.length) { upd.derniereErreur = `${erreurs[erreurs.length - 1].provider} : ${erreurs[erreurs.length - 1].detail}`.slice(0, 300); upd.derniereErreurLe = now.toISOString(); }
-  await ref.set(upd, { merge: true });
+  // lecture puis écriture dans une transaction : plusieurs analyses se terminent en même temps
+  await db.runTransaction(async (tx) => {
+    const cur = (await tx.get(ref)).data() || {};
+    const base = cur.jour === jour ? cur : { generesAujourdhui: 0, secoursAujourdhui: 0, quotaUtilise: 0 };
+    const upd = {
+      jour,
+      generesAujourdhui: (base.generesAujourdhui || 0) + 1,
+      secoursAujourdhui: (base.secoursAujourdhui || 0) + (secours ? 1 : 0),
+      quotaUtilise: (base.quotaUtilise || 0) + (fournisseur === 'workers-ai' ? 1 : 0),
+      neuronsAujourdhui: Math.round(((base.neuronsAujourdhui || 0) + (neurons || 0)) * 100) / 100,
+    };
+    if (!secours) { upd.fournisseur = fournisseur; upd.dernierSucces = now.toISOString(); if (latencyMs) upd.latenceMs = latencyMs; }
+    if (erreurs.length) { upd.derniereErreur = `${erreurs[erreurs.length - 1].provider} : ${erreurs[erreurs.length - 1].detail}`.slice(0, 300); upd.derniereErreurLe = now.toISOString(); }
+    tx.set(ref, Object.assign({}, cur, upd));
+  });
 }
 
 async function buildOne({ db, api, providers, now, match, league, formCache, calibration, quotaReserve, maxExternal, langs }) {
@@ -138,9 +141,9 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   };
   const prev = match.prono || null;
   const texts = {};
-  for (const lang of langs) {
+  await Promise.all(langs.map(async (lang) => {
     const key = lang === 'en' ? 'texteEn' : 'texte';
-    if (textStillValid(prev, pred, key)) { texts[lang] = { texte: prev[key], sourceTexte: lang === 'en' ? prev.sourceTexteEn : prev.sourceTexte, reutilise: true }; continue; }
+    if (textStillValid(prev, pred, key)) { texts[lang] = { texte: prev[key], sourceTexte: lang === 'en' ? prev.sourceTexteEn : prev.sourceTexte, reutilise: true }; return; }
     const facts = buildFacts(match, gsH, gsA, h2h, lang);
     const ctx = Object.assign({}, base, {
       dateTexte: lang === 'en' ? `${dateLongue(match.coupDEnvoi, 'en')} at ${heure(match.coupDEnvoi)} (UTC)` : `${dateLongue(match.coupDEnvoi)} à ${heure(match.coupDEnvoi)} (heure UTC)`,
@@ -151,7 +154,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
     await bumpAiStatus(db, now, { fournisseur: gen.sourceTexte, secours: gen.sourceTexte === 'secours', erreurs: gen.erreurs, latencyMs: gen.latencyMs, neurons: (gen.appels || []).reduce((n, a) => n + (a.neurons || 0), 0) });
     await recordAiCalls(db, now, gen.appels);
     texts[lang] = gen;
-  }
+  }));
   const gen = texts.fr || texts.en;
 
   const masque = !!(match.prono && match.prono.masque);
@@ -173,7 +176,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
 async function buildPredictions(opts, report) {
   const { db, api, providers } = opts;
   const now = opts.now || new Date();
-  const maxMatches = opts.maxMatches || 40;
+  const maxMatches = opts.maxMatches || 80;
   const refreshHours = opts.refreshHours || 3;
   const quotaReserve = opts.quotaReserve == null ? 40 : opts.quotaReserve;
   const maxExternal = opts.maxExternal == null ? 2 : opts.maxExternal;
@@ -181,6 +184,7 @@ async function buildPredictions(opts, report) {
   const langs = opts.langs || ['fr', 'en'];
   // lancement manuel depuis l'admin : le site coupe les requêtes à 60 s, on s'arrête avant et on garde le reste pour le passage suivant
   const budgetMs = opts.budgetMs || null;
+  const concurrency = opts.concurrency || 4;
   const t0 = Date.now();
 
   const snap = await db.collection('matches').where('coupDEnvoi', '>=', now.toISOString()).where('coupDEnvoi', '<=', addDays(now, 7).toISOString()).get();
@@ -199,19 +203,25 @@ async function buildPredictions(opts, report) {
   const leagues = new Map();
   const formCache = new Map();
   try {
-    for (let i = 0; i < todo.length; i++) {
-      const m = todo[i];
-      if (budgetMs && Date.now() - t0 > budgetMs) { report.infos.reste = todo.length - i; break; }
-      try {
-        if (!leagues.has(m.leagueId)) { const d = await db.collection('leagues').doc(m.leagueId).get(); leagues.set(m.leagueId, d.exists ? d.data() : null); }
-        const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal, langs });
-        if (gen.reutilise) report.infos.textesReutilises = (report.infos.textesReutilises || 0) + 1;
-        report.traites++;
-        report.infos[gen.sourceTexte] = (report.infos[gen.sourceTexte] || 0) + 1;
-      } catch (e) {
-        report.erreurs.push(`${m.slug} : ${e.message}`);
+    // quelques matchs à la fois (chacun attend l'IA surtout) : le budget de temps est contrôlé avant chaque nouveau match
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const i = next++;
+        const m = todo[i];
+        if (budgetMs && Date.now() - t0 > budgetMs) { report.infos.reste = (report.infos.reste || 0) + 1; continue; }
+        try {
+          if (!leagues.has(m.leagueId)) { const d = await db.collection('leagues').doc(m.leagueId).get(); leagues.set(m.leagueId, d.exists ? d.data() : null); }
+          const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal, langs });
+          if (gen.reutilise) report.infos.textesReutilises = (report.infos.textesReutilises || 0) + 1;
+          report.traites++;
+          report.infos[gen.sourceTexte] = (report.infos[gen.sourceTexte] || 0) + 1;
+        } catch (e) {
+          report.erreurs.push(`${m.slug} : ${e.message}`);
+        }
       }
-    }
+    };
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, todo.length)) }, worker));
   } finally {
     await recordApiQuota(db, api, now, report);
   }

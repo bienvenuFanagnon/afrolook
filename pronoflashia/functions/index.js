@@ -51,7 +51,7 @@ const TASKS = {
   syncFixtures: (o = {}) => runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
   buildPredictions: (o = {}) => runJob(db, 'buildPredictions', async (r) => {
     const s = secrets();
-    await buildPredictions({ db, api: makeApi(s, o.manuel ? { maxWaitMs: 5000 } : {}), providers: makeProviders(s), budgetMs: o.manuel ? 40000 : null }, r);
+    await buildPredictions({ db, api: makeApi(s, o.manuel ? { maxWaitMs: 5000 } : {}), providers: makeProviders(s), budgetMs: o.manuel ? 40000 : 420000 }, r);
     // référencement automatique : les pages nouvelles sont signalées une fois (IndexNow) ; une erreur ici ne fait pas échouer la tâche
     try {
       const { site } = await D.loadConfig(db);
