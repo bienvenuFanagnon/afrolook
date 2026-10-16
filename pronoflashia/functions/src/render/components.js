@@ -113,6 +113,15 @@ function aflCard(rc, slot, i = 0) {
   return `<a class="afl" href="${esc(`${STORE_ANDROID}&${utm}`)}" target="_blank" rel="noopener sponsored" data-afl="${esc(slot)}" data-i="${i}"><span class="sp2">${rc.t.sponsored}</span><div class="im" style="background-image:url(${photo})"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12" loading="lazy">AFROLOOK</span><p>${esc(msg)}</p><span class="cta">${rc.t.aflCta}</span></div></a>`;
 }
 
+/** Bannière du canal WhatsApp : n'apparaît que si l'adresse du canal est renseignée dans l'admin (Réglages). */
+const CHANNEL_RE = /^https:\/\/(www\.)?(whatsapp\.com|wa\.me|chat\.whatsapp\.com)\/[^\s"'<>]{2,300}$/i;
+function channelBanner(rc, slot) {
+  const u = rc.site.whatsapp;
+  if (!u || !CHANNEL_RE.test(u)) return '';
+  const t = rc.t;
+  return `<div class="chn"><div class="chn-t"><b><i aria-hidden="true">📲</i> ${t.chanTitle}</b><span>${t.chanText}</span></div><a class="chn-b" href="${esc(u)}" target="_blank" rel="noopener" data-chn="${esc(slot)}">${t.chanBtn}</a></div>`;
+}
+
 /** Offre partenaire (Smartlink) : carte étiquetée « Sponsorisé » et « Offre partenaire », sans photo ni texte qui imite un contenu du site. */
 function partnerCard(rc, slot) {
   if (!slotOn(rc.ads, 'smartlink')) return '';
@@ -217,12 +226,12 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
     `<meta property="og:type" content="website"><meta property="og:site_name" content="${esc(rc.site.nom)}"><meta property="og:title" content="${tt}"><meta property="og:description" content="${d}"><meta property="og:url" content="${esc(canonical)}"><meta property="og:image" content="${esc(url(rc, ogImage || '/og.png'))}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(rc.site.nom)}"><meta property="og:locale" content="${t.ogLocale}"><meta name="twitter:card" content="summary_large_image">` +
     `${verif}${gsc}<link rel="preload" href="/fonts/barlow-condensed-800.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/inter-400-700.woff2" as="font" type="font/woff2" crossorigin>` +
     `<style>${rc.css}</style>${head}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}</head>` +
-    `<body class="${hasStk ? 'hasstk ' : ''}${bodyClass}"><a class="skip" href="#main">${t.skip}</a>${header(rc, active, alternates)}<main id="main">${body}</main>${footer(rc)}${stickyBar(rc)}` +
+    `<body class="${hasStk ? 'hasstk ' : ''}${bodyClass}"><a class="skip" href="#main">${t.skip}</a>${header(rc, active, alternates)}<main id="main">${body}</main><div class="wrap">${channelBanner(rc, 'pied')}</div>${footer(rc)}${stickyBar(rc)}` +
     `<div class="cbar" id="pf-cbar" hidden></div><div class="cmp-b" id="pf-cmp" role="dialog" aria-label="${esc(t.adPrefs)}" hidden></div><div class="sbar" id="pf-sbar" hidden><button type="button" aria-label="${esc(t.close)}">✕</button></div>` +
     `<script>window.PF={lang:"${rc.lang}",ads:${rc.ads.actif ? 1 : 0},coupon:"${rc.u('coupon')}"};</script><script src="/js/goalmarkets.js?v=${rc.version}" defer></script><script src="/js/coupon.js?v=${rc.version}" defer></script><script src="/js/pf.js?v=${rc.version}" defer></script></body></html>`;
 }
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, partnerCard, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, adResponsive, aflCard, partnerCard, channelBanner, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

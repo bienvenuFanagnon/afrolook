@@ -55,6 +55,9 @@ function sanitizeSite(inp) {
     if (v && !/^[A-Za-z0-9_-]{10,100}$/.test(v)) throw new HttpError(400, 'Code de vérification Google invalide.');
     out.googleVerification = v;
   }
+  for (const k of ['whatsapp', 'telegram']) {
+    if (out[k] && !/^https:\/\/[^\s"'<>]{4,300}$/i.test(out[k])) throw new HttpError(400, `Adresse du canal ${k === 'whatsapp' ? 'WhatsApp' : 'Telegram'} invalide (https://…).`);
+  }
   if (out.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.email)) throw new HttpError(400, 'Adresse e-mail invalide.');
   return out;
 }

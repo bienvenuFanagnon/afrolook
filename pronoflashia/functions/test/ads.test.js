@@ -227,3 +227,37 @@ test('« Voir plus de coupons » : sous les coupons flash de l\'accueil et sous 
   const en = (await route(db, href.replace('/football/', '/en/football/') + '/analysis', NOW)).body;
   assert.match(en, /<a class="more-btn" href="\/en\/coupon">See more slips /);
 });
+
+test('bannière du canal WhatsApp : seulement si l\'adresse est renseignée, sur l\'accueil, le coupon et au pied de chaque page', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  for (const p of ['/', '/coupon', '/bilan']) assert.doesNotMatch((await route(db, p, NOW)).body, /class="chn"/, `pas de bannière sans adresse sur ${p}`);
+  const url = 'https://whatsapp.com/channel/0029VaAbCdEf12345';
+  await db.seed('config', 'site', { whatsapp: url }); D.clearCache();
+  const home = (await route(db, '/', NOW)).body;
+  assert.match(home, /<div class="chn"><div class="chn-t"><b><i aria-hidden="true">📲<\/i> Suis notre canal WhatsApp<\/b>/);
+  assert.match(home, new RegExp(`<a class="chn-b" href="${url.replace(/[.]/g, '\\.')}" target="_blank" rel="noopener" data-chn="accueil">Suivre le canal</a>`));
+  assert.match(home, /data-chn="pied"/, 'aussi au pied de la page');
+  assert.match((await route(db, '/coupon', NOW)).body, /data-chn="coupon"/);
+  assert.match((await route(db, '/bilan', NOW)).body, /data-chn="pied"/);
+  assert.match((await route(db, '/en', NOW)).body, /Follow our WhatsApp channel[\s\S]*?Follow the channel/);
+  // adresse non reconnue : rien d'affiché
+  await db.seed('config', 'site', { whatsapp: 'javascript:alert(1)' }); D.clearCache();
+  assert.doesNotMatch((await route(db, '/', NOW)).body, /class="chn"/);
+  await db.seed('config', 'site', { whatsapp: 'https://evil.example/x' }); D.clearCache();
+  assert.doesNotMatch((await route(db, '/', NOW)).body, /class="chn"/);
+});
+
+test('canal WhatsApp : l\'admin n\'accepte qu\'une adresse https ; les clics sont comptés', async () => {
+  const { sanitizeSite } = require('../src/http/admin');
+  assert.equal(sanitizeSite({ whatsapp: 'https://whatsapp.com/channel/abc123' }).whatsapp, 'https://whatsapp.com/channel/abc123');
+  assert.equal(sanitizeSite({ whatsapp: '' }).whatsapp, '');
+  for (const bad of ['http://whatsapp.com/channel/x', 'javascript:alert(1)', 'https://a b.example']) assert.throws(() => sanitizeSite({ whatsapp: bad }), /invalide/, bad);
+  assert.throws(() => sanitizeSite({ telegram: 'ftp://t.me/x' }), /invalide/);
+  const { handleEvent } = require('../src/http/track');
+  const { FakeDb } = require('./helpers/fakeDb');
+  const db = new FakeDb();
+  const mk = () => ({ db, increment: (n) => ({ __inc: n }), now: NOW, salt: 's' });
+  assert.equal(await handleEvent({ body: { t: 'chan_click', n: 'accueil' }, ua: 'Mozilla/5.0 (iPhone)', ip: '9.9.9.9', headers: {} }, mk()), true);
+  const d = db.read('stats_days', '2026-10-16');
+  assert.equal(d.clicsCanal, 1); assert.equal(d.canal.accueil, 1);
+});

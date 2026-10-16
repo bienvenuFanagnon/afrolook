@@ -62,6 +62,7 @@ async function handleEvent(req, deps) {
     if (b.m) u[`matchs.${key(b.m)}`] = inc;
     if (b.s) u.visites = inc;
   } else if (t === 'afl_imp') { u.aflImps = inc; u[`afl.${key(b.fmt || 'x')}`] = inc; }
+  else if (t === 'chan_click') { u.clicsCanal = inc; u[`canal.${key(b.n || 'x')}`] = inc; }
   else if (t === 'ptn_imp') { u.ptnImps = inc; u[`ptn.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'ptn_click') { u.clicsPartenaire = inc; u[`ptnClics.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'afl_click') { u.clicsAfrolook = inc; u[`aflClics.${key(b.fmt || 'x')}`] = inc; }

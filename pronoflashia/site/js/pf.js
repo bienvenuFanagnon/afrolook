@@ -125,6 +125,8 @@
     a.addEventListener('click', function () { send({ t: 'afl_click', fmt: slot }); });
   }
   $$('a.afl').forEach(aflInit);
+  /* canal WhatsApp : clics comptés */
+  $$('a[data-chn]').forEach(function (a) { a.addEventListener('click', function () { send({ t: 'chan_click', n: a.getAttribute('data-chn') || 'x' }); }); });
   /* offre partenaire (Smartlink) : mesure des affichages et des clics */
   $$('a.ptn').forEach(function (a) {
     var slot = a.getAttribute('data-ptn') || 'x', seen = false;
@@ -161,8 +163,8 @@
     var wd = +el.getAttribute('data-w'), ht = +el.getAttribute('data-h'); var mobile = el.getAttribute('data-v') === 'mo';
     var nets = (e && e.reseaux || []).filter(function (r) { return (mobile && r.codeMobile ? r.codeMobile : r.code); });
     var afl = c && c.afrolook; var aflFirst = afl && afl.actif && Math.random() * 100 < (afl.part || 0);
-    function afrolook() { if ((afl && !afl.actif) || el.getAttribute('data-nofb')) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, 0)); el.style.width = '100%'; }
-    if (!adsAllowed() || !nets.length || aflFirst) return afrolook();
+    function afrolook() { if ((afl && !afl.actif) || el.getAttribute('data-nofb')) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, parseInt(el.getAttribute('data-k'), 10) || 0)); el.style.width = '100%'; }
+    if (!c || !c.actif || !adsAllowed() || !nets.length || aflFirst) return afrolook();
     var k = 0;
     (function next() {
       if (k >= nets.length) return afrolook();
@@ -177,7 +179,7 @@
     var slots = $$('.ad[data-ad]').filter(function (s) { return s.offsetParent !== null && (retry || !s.getAttribute('data-done')); });
     if (!slots.length) return;
     getCfg().then(function (c) {
-      cfg = c; if (!c || !c.actif) { slots.forEach(function (s) { s.hidden = true; }); return; }
+      cfg = c; if (!c) { slots.forEach(function (s) { s.hidden = true; }); return; }
       if (!('IntersectionObserver' in w)) { slots.forEach(function (s) { fill(s, c); }); return; }
       var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); fill(en.target, c); } }); }, { rootMargin: '300px' });
       slots.forEach(function (s) { if (retry) { s.removeAttribute('data-done'); s.innerHTML = ''; s.style.minHeight = (s.getAttribute('data-h') || 0) + 'px'; s.style.width = ''; } io.observe(s); });
@@ -290,15 +292,18 @@
       if (panel) panel.innerHTML = panelHtml();
       chrome();
     };
-    /* bannières dans la liste : jusqu'à 4, après le 2e match puis tous les N (réglage « Bannières dans la liste du coupon » de l'admin) */
+    /* Pubs dans la liste « Choisis tes paris » : une après chaque 3e match (3, 6, 9…), cinq au plus. Elles prennent les codes de l'emplacement
+       « Bannières dans la liste du coupon » ; s'il n'est pas réglé, ceux d'un autre emplacement actif (haut, fin, native) ; à défaut, un encart Afrolook.
+       Le squelette de la liste ne change jamais : les pubs ne se rechargent pas aux clics. */
     var insertPickerAds = function () {
-      if (!w.PF || !w.PF.ads) return;
       getCfg().then(function (c) {
-        var e = c && c.actif && c.emplacements && c.emplacements.coupon_liste; if (!e || !e.actif) return;
-        var every = Math.max(2, e.every || 3), blocks = $$('#pf-picker .cmb'), put = 0;
+        if (!c) return;
+        var E = c.emplacements || {}, id = 'coupon_liste';
+        if (c.actif) { ['coupon_liste', 'haut', 'fin', 'native'].some(function (k) { var e = E[k]; if (e && e.actif && (e.reseaux || []).length) { id = k; return true; } return false; }); }
+        var every = Math.max(2, (E.coupon_liste && E.coupon_liste.every) || 3), blocks = $$('#pf-picker .cmb'), put = 0;
         blocks.forEach(function (b, i) {
-          var n = i + 1; if (put >= 4 || n < 2 || (n - 2) % every !== 0 || n >= blocks.length) return;
-          var mk = function (v, wd, ht) { var x = d.createElement('div'); x.className = 'ad ad-end ' + v; x.setAttribute('data-ad', 'coupon_liste'); x.setAttribute('data-v', v); x.setAttribute('data-w', wd); x.setAttribute('data-h', ht); x.style.minHeight = ht + 'px'; if (put > 0) x.setAttribute('data-nofb', '1'); return x; };
+          var n = i + 1; if (put >= 5 || n % every !== 0 || n >= blocks.length) return;
+          var mk = function (v, wd, ht) { var x = d.createElement('div'); x.className = 'ad ad-end ' + v; x.setAttribute('data-ad', id); x.setAttribute('data-v', v); x.setAttribute('data-w', wd); x.setAttribute('data-h', ht); x.setAttribute('data-k', String(put)); x.style.minHeight = ht + 'px'; return x; };
           b.parentNode.insertBefore(mk('mo', 320, 100), b.nextSibling);
           b.parentNode.insertBefore(mk('dk', 728, 90), b.nextSibling);
           put++;

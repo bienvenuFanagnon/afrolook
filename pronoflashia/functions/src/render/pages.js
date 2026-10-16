@@ -9,7 +9,7 @@ const { esc, fr, dateLongue, dateCourte } = require('../util/format');
 const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 
-const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
+const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
 const FAMILLES_ORDRE = ['Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Score', 'Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux'];
 const lvlClass = (p) => (p >= 75 ? 's' : p >= 60 ? 'e' : 'r');
@@ -57,7 +57,7 @@ function home(rc, { matches, bilan, pool: couponPool }) {
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
@@ -327,7 +327,7 @@ function couponPage(rc, { pool }) {
   }));
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.couponH1}</h1><p>${t.couponP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}` +
     `<div class="box"><div class="lbl">${t.proposed}</div><div class="sg">${sugg || `<p class="note">${t.proposedEmpty}</p>`}</div><p class="note" style="margin-top:8px">${t.neverWeak}</p></div>` +
-    `${adResponsive(rc, 'fin', 'ad-end')}` +
+    `${adResponsive(rc, 'fin', 'ad-end')}${channelBanner(rc, 'coupon')}` +
     `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}<p class="note">${t.couponDisclaimer}</p></div>` +
     `<aside class="side"><div class="sticky"><div class="cp" id="pf-cpanel"></div>${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, 'coupon', 0)}</div></aside></div></div>${jsonScript('pf-pool', data)}`;
   return { title: t.couponTitle, description: t.couponDesc, path: rc.u('coupon'), alternates: alts(rc, 'coupon'), body, active: 'coupon' };
