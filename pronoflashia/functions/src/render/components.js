@@ -72,7 +72,7 @@ function aflCard(rc, slot, i = 0) {
   const msg = AFL_MSGS[i % AFL_MSGS.length];
   const photo = AFL_PHOTOS[i % AFL_PHOTOS.length];
   const utm = `utm_source=pronoflashia&utm_campaign=${encodeURIComponent(slot)}`;
-  return `<a class="afl" href="${STORE_ANDROID}&amp;${utm}" target="_blank" rel="noopener sponsored" data-afl="${esc(slot)}" data-i="${i}"><span class="sp2">Sponsorisé</span><div class="im" style="background-image:url(${photo})"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12" loading="lazy">AFROLOOK</span><p>${esc(msg)}</p><span class="cta">Télécharger gratuitement</span></div></a>`;
+  return `<a class="afl" href="${esc(`${STORE_ANDROID}&${utm}`)}" target="_blank" rel="noopener sponsored" data-afl="${esc(slot)}" data-i="${i}"><span class="sp2">Sponsorisé</span><div class="im" style="background-image:url(${photo})"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12" loading="lazy">AFROLOOK</span><p>${esc(msg)}</p><span class="cta">Télécharger gratuitement</span></div></a>`;
 }
 
 /** Insère les publicités dans une liste de cartes : native toutes les N cartes, Afrolook toutes les M. */

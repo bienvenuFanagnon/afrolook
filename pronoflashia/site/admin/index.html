@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Administration · PronoFlash IA</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:'Barlow Condensed';font-weight:700;src:url(/fonts/barlow-condensed-700.woff2) format('woff2');font-display:swap}
+@font-face{font-family:'Inter';font-weight:400 700;src:url(/fonts/inter-400-700.woff2) format('woff2');font-display:swap}
+:root{--bg:#080D18;--s1:#0F1626;--s2:#141D31;--line:#22304D;--flash:#FFD60A;--ok:#2BD576;--ko:#FF5A5F;--cy:#38D6F5;--tx:#EEF2FF;--mut:#8E9AB8;--ink:#080D18;--fd:'Barlow Condensed','Arial Narrow',sans-serif;--fb:'Inter',system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 var(--fb)}
+h1,h2,h3{font-family:var(--fd);margin:0;letter-spacing:.2px}h2{font-size:24px}h3{font-size:18px;margin-bottom:8px}
+a{color:var(--cy)}button,input,select,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:var(--s1);border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;padding:8px 16px;flex-wrap:wrap}
+.top .logo{font-family:var(--fd);font-weight:700;font-size:22px;color:var(--tx);text-decoration:none}.top .logo b{color:var(--flash)}
+.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none}
+.tab{background:none;border:1px solid transparent;border-radius:8px;padding:6px 12px;color:var(--mut);white-space:nowrap;cursor:pointer}
+.tab[aria-selected=true]{background:var(--s2);border-color:var(--line);color:var(--tx)}
+.wrap{max-width:1200px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px}
+.kpi{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.kpi b{font-family:var(--fd);font-size:32px;display:block;line-height:1.1}.kpi span{color:var(--mut);font-size:12px}.kpi small{display:block;color:var(--mut);font-size:11px}
+.bar{display:grid;grid-template-columns:minmax(80px,150px) 1fr 54px;gap:8px;align-items:center;margin-top:6px;font-size:13px}.bar .t{height:9px;background:#1a2440;border-radius:5px;overflow:hidden}.bar .t i{display:block;height:100%;background:var(--flash);border-radius:5px}.bar b{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px}table{width:100%;border-collapse:collapse;min-width:560px;font-size:13px}th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);font-weight:500;background:var(--s1)}tr:last-child td{border-bottom:0}
+.btn{background:var(--flash);color:var(--ink);border:0;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer}.btn.sec{background:var(--s2);color:var(--tx);border:1px solid var(--line)}.btn.sm{padding:4px 10px;font-size:12px}.btn[disabled]{opacity:.5}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:100%}textarea{width:100%;min-height:80px;font:12px ui-monospace,Menlo,monospace}
+label.f{display:grid;gap:4px;margin-top:10px;font-size:12px;color:var(--mut)}label.f input,label.f textarea,label.f select{color:var(--tx)}
+label.c{display:flex;gap:8px;align-items:center;margin-top:8px}label.c input{width:16px;height:16px;accent-color:var(--flash)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.pill{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;border:1px solid var(--line);background:var(--s2);color:var(--mut)}.pill.g{color:var(--ok);border-color:#1c6a42}.pill.y{color:var(--flash);border-color:#5a4e0a}.pill.r{color:var(--ko);border-color:#6b2a2d}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:8px;vertical-align:-2px}.dot.ok{background:var(--ok)}.dot.lent{background:#ff9f43}.dot.panne{background:var(--ko)}
+.note{color:var(--mut);font-size:12px}.warn{background:#26180a;border:1px solid #5a3a10;color:#ffcf85;border-radius:8px;padding:8px 10px;margin-top:10px}.err{color:var(--ko)}
+#login{max-width:420px;margin:12vh auto;text-align:center;padding:0 16px}#login p{color:var(--mut)}
+.msg{min-height:20px;margin-top:8px;font-size:13px}
+.slot{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px;background:var(--s2)}
+[hidden]{display:none!important}
+</style></head>
+<body>
+<div id="login"><h1 style="font-size:38px"><span style="color:var(--flash)">⚡</span> Administration</h1><p>PronoFlash IA · accès réservé aux administrateurs.</p><button class="btn" id="btn-login" type="button">Se connecter avec Google</button><p class="msg err" id="login-msg" role="status"></p></div>
+<div id="app" hidden>
+  <div class="top"><a class="logo" href="/">Prono<b>Flash</b> · admin</a><div class="tabs" id="tabs" role="tablist"></div><span class="note" id="who"></span><button class="btn sec sm" id="btn-out" type="button">Déconnexion</button></div>
+  <div class="wrap" id="main"></div>
+</div>
+<script type="module" src="/admin/admin.js"></script>
+</body></html>

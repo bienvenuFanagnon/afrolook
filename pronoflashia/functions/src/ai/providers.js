@@ -41,7 +41,9 @@ function cloudflareProvider({ accountId, token, model, fetchImpl }) {
         throw new ProviderError(`workers-ai ${r.status}${quota ? ' quota' : ''}`, r.status, quota);
       }
       const res = r.json.result;
-      const out = res && (res.response != null ? res.response : res);
+      // Selon le modèle, la réponse est { response } (format Cloudflare) ou { choices: [{ message: { content } }] } (format OpenAI).
+      const choice = res && res.choices && res.choices[0] && res.choices[0].message;
+      const out = choice ? choice.content : res && (res.response != null ? res.response : null);
       if (out == null) throw new ProviderError('workers-ai réponse vide', r.status, false);
       return typeof out === 'string' ? out : JSON.stringify(out);
     },

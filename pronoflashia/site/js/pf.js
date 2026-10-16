@@ -142,7 +142,7 @@
       cfg = c; if (!c || !c.actif) { slots.forEach(function (s) { s.hidden = true; }); return; }
       if (!('IntersectionObserver' in w)) { slots.forEach(function (s) { fill(s, c); }); return; }
       var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); fill(en.target, c); } }); }, { rootMargin: '300px' });
-      slots.forEach(function (s) { if (retry) { s.removeAttribute('data-done'); s.innerHTML = ''; } io.observe(s); });
+      slots.forEach(function (s) { if (retry) { s.removeAttribute('data-done'); s.innerHTML = ''; s.style.minHeight = (s.getAttribute('data-h') || 0) + 'px'; s.style.width = ''; } io.observe(s); });
     });
   }
   /* bannière collante : fermable, reste fermée pendant la visite */
@@ -209,9 +209,16 @@
   if (root) {
     try { pool = JSON.parse($('#pf-pool').textContent); } catch (e) { pool = []; }
     var fam = 'Tous'; var FAMS = ['Tous', 'Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Corners', 'Tirs', 'Cartons & fautes', 'Spéciaux'];
-    /* un lien de coupon proposé (#id|clé,id|clé) charge ses sélections */
-    var hash = decodeURIComponent((location.hash || '').slice(1));
-    if (hash && /\|/.test(hash)) { var nsel = []; hash.split(',').forEach(function (h) { var p = h.split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m && m.marches.filter(function (y) { return y.k === p[1]; })[0]; if (x) nsel.push({ m: m.id, k: x.k, l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, x: m.matrice }); }); if (nsel.length) { sel = nsel.slice(0, 5); store.set('pf_coupon', sel); } }
+    /* un lien de coupon proposé (#id|clé,id|clé) charge ses sélections, au chargement et à chaque changement de lien */
+    var applyHash = function () {
+      var hash = decodeURIComponent((location.hash || '').slice(1));
+      if (!hash || !/\|/.test(hash)) return false;
+      var nsel = [];
+      hash.split(',').forEach(function (h) { var p = h.split('|'); var m = pool.filter(function (x) { return x.id === p[0]; })[0]; var x = m && m.marches.filter(function (y) { return y.k === p[1]; })[0]; if (x) nsel.push({ m: m.id, k: x.k, l: x.l, f: x.f, p: x.p, r: x.r, n: m.nom, x: m.matrice }); });
+      if (!nsel.length) return false;
+      sel = nsel.slice(0, 5); store.set('pf_coupon', sel); return true;
+    };
+    applyHash();
     var panel = $('#pf-cpanel');
     var mq = w.matchMedia ? w.matchMedia('(min-width:900px)') : null;
     var placePanel = function () { if (!panel) return; if (mq && !mq.matches) root.appendChild(panel); else { var side = $('.side .sticky'); if (side) side.insertBefore(panel, side.firstChild); } };
@@ -219,7 +226,7 @@
     var render = function () {
       var html = '<div class="mk" id="pf-fk" style="margin-top:8px">' + FAMS.map(function (f) { return '<button type="button" data-fk="' + esc(f) + '" aria-pressed="' + (f === fam) + '">' + esc(f) + '</button>'; }).join('') + '</div>';
       pool.forEach(function (m) {
-        var opts = m.marches.filter(function (x) { return fam === 'Tous' || x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
+        var opts = m.marches.filter(function (x) { return fam === 'Tous' ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
         if (!opts.length) return;
         html += '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '/analyse" style="color:var(--cy)">analyse</a></span></div><div class="opts">' +
           opts.slice(0, fam === 'Tous' ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + ' %</b></button>'; }).join('') + '</div></div>';
@@ -255,6 +262,7 @@
       else if (t.getAttribute('data-swap')) { var sp = t.getAttribute('data-swap').split('|'); var mm = pool.filter(function (y) { return y.id === sp[0]; })[0]; var nx = mm && mm.marches.filter(function (y) { return y.k === sp[2]; })[0]; if (nx) { sel = sel.filter(function (s) { return !(s.m === sp[0] && s.k === sp[1]); }); sel.push({ m: mm.id, k: nx.k, l: nx.l, f: nx.f, p: nx.p, r: nx.r, n: mm.nom, x: mm.matrice }); saveSel(); } }
       render();
     });
+    w.addEventListener('hashchange', function () { if (applyHash()) render(); });
     render();
   }
 })();

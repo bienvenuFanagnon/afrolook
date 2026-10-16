@@ -132,3 +132,13 @@ test('« garanti » : refusé en promesse, accepté en avertissement', () => {
   assert.equal(hasUnnegatedPromise('Aucun résultat n\'est assuré.'), false);
   assert.equal(hasUnnegatedPromise('Le match est serré. Paris est garanti de gagner.'), true);
 });
+
+test('Workers AI : les deux formats de réponse (response et choices) sont lus', async () => {
+  const mk = (result) => async () => ({ status: 200, ok: true, text: async () => JSON.stringify({ success: true, result }) });
+  const a = cloudflareProvider({ accountId: 'A', token: 'T', fetchImpl: mk({ response: '{"x":1}' }) });
+  assert.equal(await a.call([]), '{"x":1}');
+  const b = cloudflareProvider({ accountId: 'A', token: 'T', fetchImpl: mk({ choices: [{ message: { role: 'assistant', content: '{"y":2}' } }] }) });
+  assert.equal(await b.call([]), '{"y":2}');
+  const c = cloudflareProvider({ accountId: 'A', token: 'T', fetchImpl: mk({ choices: [{ message: { content: null } }] }) });
+  await assert.rejects(() => c.call([]), /réponse vide/);
+});

@@ -8,6 +8,10 @@
 })(typeof self !== 'undefined' ? self : this, function (goal) {
   'use strict';
 
+  /** Paris trop faciles pour être utiles dans un coupon proposé : toujours probables, jamais informatifs. */
+  const MAX_USEFUL_PCT = 88;
+  const TRIVIAL = /^(?:buts:over:0\.5|buts:under:4\.5|hand:(?:home|away):\+2\.5)$/;
+  const useful = (o) => o.fiabilite !== 'faible' && o.pct < MAX_USEFUL_PCT && !TRIVIAL.test(o.key);
   const MAX_SELECTIONS = 5;
   const MIN_SELECTIONS = 2;
 
@@ -74,7 +78,7 @@
   function weakestSwap(selections, pool) {
     if (selections.length < 2) return null;
     const weak = selections.slice().sort((a, b) => a.pct - b.pct)[0];
-    const opts = (pool[weak.matchId] || []).filter((o) => o.key !== weak.key && o.pct > weak.pct && o.pct < 96 && o.fiabilite !== 'faible');
+    const opts = (pool[weak.matchId] || []).filter((o) => o.key !== weak.key && o.pct > weak.pct && useful(o));
     if (!opts.length) return null;
     opts.sort((a, b) => b.pct - a.pct);
     return { weak, better: opts[0] };
@@ -86,9 +90,9 @@
    * Les marchés à fiabilité faible ne sont jamais proposés.
    */
   function suggest(pool, n, opts) {
-    const minPct = (opts && opts.minPct) || 55;
+    const minPct = (opts && opts.minPct) || 60;
     const ranked = Object.keys(pool).map((id) => {
-      const ok = pool[id].filter((o) => o.fiabilite !== 'faible' && o.pct >= minPct && o.pct < 96);
+      const ok = pool[id].filter((o) => useful(o) && o.pct >= minPct);
       return { id, best: ok.reduce((a, b) => (a && a.pct >= b.pct ? a : b), null), ok };
     }).filter((x) => x.best).sort((a, b) => b.best.pct - a.best.pct);
     const used = new Set();
@@ -103,5 +107,5 @@
     return out;
   }
 
-  return { MAX_SELECTIONS, MIN_SELECTIONS, couponProbability, riskLevel, pickLevel, warnings, weakestSwap, suggest };
+  return { MAX_USEFUL_PCT, MAX_SELECTIONS, MIN_SELECTIONS, couponProbability, riskLevel, pickLevel, warnings, weakestSwap, suggest };
 });

@@ -157,4 +157,26 @@ async function buildSample(now = new Date()) {
   return db;
 }
 
-module.exports = { buildSample, LEAGUES, demoProvider };
+/** Statistiques de visite fictives (aperçu de l'administration) : 14 jours, 4 semaines, état de l'IA. */
+async function seedStats(db, now) {
+  const r = rng(42);
+  for (let i = 13; i >= 0; i--) {
+    const jour = new Date(now.getTime() - i * 864e5).toISOString().slice(0, 10);
+    const k = 0.6 + r() * 0.8 + (13 - i) * 0.05;
+    const n = (x) => Math.round(x * k);
+    await db.seed('stats_days', jour, {
+      jour, visites: n(420), pv: n(1350), hllEst: { 0: n(24), 1: n(26), 2: n(22), 3: n(25), 4: n(23), 5: n(27), 6: n(21), 7: n(24), 8: n(25), 9: n(22), 10: n(26), 11: n(23), 12: n(24), 13: n(22), 14: n(25), 15: n(23) },
+      pages: { accueil: n(380), match: n(520), analyse: n(240), jour: n(110), ligue: n(40), coupon: n(45), bilan: n(15) },
+      pays: { CI: n(150), FR: n(70), SN: n(55), CM: n(48), BE: n(20), MA: n(18), '??': n(6) }, paysSource: { fuseau: n(360), inconnu: n(6) },
+      appareils: { m: n(330), d: n(70), t: n(10) }, sources: { moteur: n(190), direct: n(110), social: n(80), afrolook: n(25), interne: n(15) },
+      heures: { 8: n(30), 12: n(60), 15: n(70), 18: n(90), 19: n(110), 20: n(120), 21: n(80) }, pub: { 'haut_adsterra': n(400), 'native_adsterra': n(250), collante_adsterra: n(300) },
+      afl: { liste: n(90), fiche: n(60), colonne: n(40) }, aflClics: { liste: n(4), fiche: n(3) }, aflImps: n(190), clicsAfrolook: n(7), pubVues: n(950), couponAjouts: n(60), partagesWa: n(35), matchs: { '61_100005': n(120), '12_100020': n(90) },
+    });
+  }
+  await db.seed('stats_weeks', '2026-W41', { semaine: '2026-W41', du: '2026-10-05', au: '2026-10-11', visites: 2400, visiteurs: 2050, pagesVues: 7600, clicsAfrolook: 38, pays: [{ k: 'CI', v: 900 }, { k: 'FR', v: 400 }, { k: 'SN', v: 300 }], matchsTop: [{ k: 'Paris SG – Marseille', v: 540 }], pronostics: 68, reussis: 44, rates: 24, tauxReussite: 65, ia: { pannes: 0, controles: 336 } });
+  await db.seed('stats_weeks', '2026-W40', { semaine: '2026-W40', du: '2026-09-28', au: '2026-10-04', visites: 2000, visiteurs: 1700, pagesVues: 6700, clicsAfrolook: 30, pays: [{ k: 'CI', v: 760 }], matchsTop: [], pronostics: 61, reussis: 40, rates: 21, tauxReussite: 66, ia: { pannes: 2, controles: 336 } });
+  await db.seed('ai_status', 'current', { etat: 'ok', fournisseur: 'workers-ai', dernierTestOk: now.toISOString(), dernierTestLe: now.toISOString(), latenceMs: 1840, generesAujourdhui: 70, secoursAujourdhui: 2, quotaUtilise: 68, derniereErreur: 'gemini : 429', derniereErreurLe: now.toISOString() });
+  for (let i = 0; i < 6; i++) await db.seed('ai_status_log', `l${i}`, { le: new Date(now.getTime() - i * 1800e3).toISOString(), etat: 'ok', fournisseur: 'workers-ai', latenceMs: 1500 + i * 90 });
+}
+
+module.exports = { buildSample, seedStats, LEAGUES, demoProvider };
