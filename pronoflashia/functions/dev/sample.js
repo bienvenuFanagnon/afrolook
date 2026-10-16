@@ -177,6 +177,14 @@ async function seedNews(db, now) {
     (m) => `Avant ${T(m, 0).nomCourt} - ${T(m, 1).nomCourt} : chaîne et heure du match`,
     (m) => `${T(m, 1).nomCourt} reaches the next round after a tense night`,
   ];
+  // une info lue par l'IA sur le premier match (aperçu seulement)
+  if (up[0]) {
+    const m = up[0];
+    await db.seed('matches', m.id, Object.assign({}, m, { _id: undefined, prono: Object.assign({}, m.prono, { actu: { faits: [
+      { equipeId: String(m.domicile.teamId), equipe: m.domicile.nomCourt, type: 'absence', joueur: 'Jean Dupont', certitude: 'confirme', source: 'Foot Mercato', lien: 'https://exemple.invalid/fait1', date: now.toISOString() },
+      { equipeId: String(m.exterieur.teamId), equipe: m.exterieur.nomCourt, type: 'entraineur', joueur: null, certitude: 'rumeur', source: 'Afrik-Foot', lien: 'https://exemple.invalid/fait2', date: now.toISOString() },
+    ] } }) }));
+  }
   let n = 0;
   for (const m of up) {
     for (let k = 0; k < 2; k++) {
