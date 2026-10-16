@@ -152,6 +152,21 @@ class HomeConstPostPage extends StatefulWidget {
 
 class _HomeConstPostPageState extends State<HomeConstPostPage>
     with WidgetsBindingObserver, TickerProviderStateMixin {
+  /// Graine de la session : la musique n'apparaît pas aux mêmes endroits du fil à chaque ouverture.
+  final int _musicSeed = Random().nextInt(1 << 20);
+
+  /// Numéros de posts après lesquels revient la musique : une première fois entre le 5e et le 9e post, puis tous les 11 à 19 posts.
+  late final List<int> _musicPositions = () {
+    final r = Random(_musicSeed);
+    var p = 5 + r.nextInt(5);
+    final out = <int>[];
+    while (p <= 600) {
+      out.add(p);
+      p += 11 + r.nextInt(9);
+    }
+    return out;
+  }();
+
   // Providers
   late UserAuthProvider authProvider;
   late UserShopAuthProvider authProviderShop;
@@ -3515,7 +3530,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           isLoadingChroniques: _isLoadingChroniques,
           groupedChroniques: _groupChroniquesByUser(_chroniques),
         ),
-        const ArtistSoundsFeedWidget(),
       ],
     );
   }
@@ -3874,10 +3888,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       }
 
-      // Musique : une carte avec lecture immédiate après le 4e post, puis toutes les 14 publications
-      if ((postNumber == 4 || (postNumber > 4 && (postNumber - 4) % 14 == 0)) && (i - _lastInsertedAt) >= 3) {
-        final soundSlot = postNumber == 4 ? 0 : (postNumber - 4) ~/ 14;
-        contentWidgets.add(FeedSoundCard(key: ValueKey('feed_sound_$soundSlot'), slot: soundSlot));
+      // Musique : revient de temps en temps, à des endroits différents d'une session à l'autre (jamais figée en haut),
+      // sous trois présentations qui alternent : l'affiche plein cadre, « Musiques du moment » et « Top titres ».
+      final musicIdx = _musicPositions.indexOf(postNumber);
+      if (musicIdx >= 0 && (i - _lastInsertedAt) >= 3) {
+        final kind = (musicIdx + _musicSeed) % 3;
+        contentWidgets.add(kind == 0
+            ? FeedSoundCard(key: ValueKey('feed_sound_$musicIdx'), slot: musicIdx)
+            : kind == 1
+                ? FeedSoundCarousel(key: ValueKey('feed_sound_row_$musicIdx'), slot: musicIdx)
+                : FeedSoundList(key: ValueKey('feed_sound_list_$musicIdx'), slot: musicIdx));
         _lastInsertedAt = i;
       }
 
