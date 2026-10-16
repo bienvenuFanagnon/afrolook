@@ -314,6 +314,9 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
   const calHtml = cal.length ? `<div class="tw"><table class="t"><thead><tr><th>${t.bet}</th><th>${t.announced}</th><th>${t.real}</th><th>${t.matches}</th></tr></thead><tbody>${cal.map((x) => { const r = rates[x.cle.replace(/[.:]/g, '_')]; return `<tr><td>${esc(betLabel(rc, m, x))}</td><td class="num">${pct(rc, r.annonce)}</td><td class="num">${pct(rc, r.reel)}</td><td class="num">${r.n}</td></tr>`; }).join('')}</tbody></table></div>`
     : `<p class="note" style="margin-top:8px">${t.notEnough} <a href="${rc.u('bilan')}" style="color:var(--cy)">${t.navBilan}</a>.</p>`;
   const sec = (id, title, inner) => `<div class="box dsec" id="d-${id}"><div class="lbl">${title}</div>${inner}</div>`;
+  // ce que l'IA a appris de chaque équipe (notes), seulement si le calcul les a utilisées pour ce match
+  const teamNotes = (name, d) => (d ? `<div><b style="font-family:var(--fd);font-size:18px">${esc(name)}</b><ul class="ck"><li>${esc(t.notesAtk(d.attaque))}</li><li>${esc(t.notesDef(d.defense))}</li>${t.notesEvol(d.evolAttaque, d.evolDefense) ? `<li>${esc(t.notesEvol(d.evolAttaque, d.evolDefense))}</li>` : ''}</ul></div>` : '');
+  const notesHtml = p.notes && (p.notes.dom || p.notes.ext) ? sec('notes', t.notesTitle, `<p class="note" style="margin:8px 0">${t.notesP}</p><div class="two">${teamNotes(m.domicile.nomCourt, p.notes.dom)}${teamNotes(m.exterieur.nomCourt, p.notes.ext)}</div>`) : '';
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('day', 'aujourdhui')}">Football</a> › <a href="${rc.u('league', m.leagueSlug)}">${esc(lgName)}</a> › <a href="${rc.u('match', m)}">${esc(titre)}</a> › ${t.fullAnalysis}</nav>` +
     `<div class="layout"><div class="col"><div class="tocm" aria-label="${esc(t.toc)}">${tocm}</div>` +
     `<div class="dh dsec" id="d-resume"><h1>${t.detH1(esc(titre))}</h1><div class="strip"><div><span class="k">${t.prediction}</span><b style="color:var(--flash)">${esc(pickLabel(rc, m))}</b></div><div><span class="k">${t.confidence}</span><b class="num" style="color:var(--ok)">${pct(rc, p.principal.confiance)}</b></div><div><span class="k">${t.likely}</span><b class="num">${esc(p.scoreProbable)}</b></div><div><span class="k">${t.kickoff}</span><b class="num">${esc(dateCourte(m.coupDEnvoi, rc.lang))} · ${timeEl(rc, m.coupDEnvoi)}</b></div></div>` +
@@ -322,6 +325,7 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
     sec('paris', t.allBets, `<p class="note" style="margin:8px 0 10px">${t.allBetsP}</p><div class="mk" id="pf-fams" hidden></div>${famHtml}<p class="note" style="margin-top:10px">${t.reliabilityNote}</p>`) +
     adSlot(rc, 'fiche_native', { cls: 'ad-nat' }) +
     (p.comparatif && p.comparatif.length ? sec('stats', t.compare, `<p class="note" style="margin:8px 0 2px">${t.compareP(esc(m.domicile.nomCourt), esc(m.exterieur.nomCourt))}</p>${p.comparatif.map((r) => cmpRow(rc, r)).join('')}`) : '') +
+    notesHtml +
     sec('forme', t.form, `<div class="two"><div><b style="font-family:var(--fd);font-size:18px">${esc(m.domicile.nomCourt)} · ${t.last5}</b>${formList(rc, formH)}</div><div><b style="font-family:var(--fd);font-size:18px">${esc(m.exterieur.nomCourt)} · ${t.last5}</b>${formList(rc, formA)}</div></div>`) +
     aflCard(rc, 'details', 0) +
     (h2h && h2h.length ? sec('h2h', t.h2h, h2hTable(rc, h2h)) : '') +

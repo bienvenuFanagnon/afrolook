@@ -4,6 +4,7 @@
 const N = require('../data/normalize');
 const { predictMatch, MODEL_VERSION } = require('../engine/model');
 const { buildCalibration, trackRecord } = require('../engine/learn');
+const { predictLambdas, describeTeam } = require('../engine/ratings');
 const { generateText } = require('../ai/generate');
 const { summarize } = require('../engine/bilan');
 const { dayStr, addDays } = require('./helpers');
@@ -40,7 +41,7 @@ function buildComparatif(recentH, recentA, gsH, gsA) {
 }
 
 /** Lignes de faits envoyées à l'IA (tous les chiffres qu'elle a le droit de citer), en français ou en anglais. */
-function buildFacts(match, gsH, gsA, h2h, lang, bilan) {
+function buildFacts(match, gsH, gsA, h2h, lang, bilan, notes) {
   const en = lang === 'en';
   const D = match.domicile.nomCourt, E = match.exterieur.nomCourt;
   const f1 = (x) => fr(x, 1, lang);
@@ -61,6 +62,12 @@ function buildFacts(match, gsH, gsA, h2h, lang, bilan) {
     extras.push(en
       ? `Our recent track record on this type of bet (${bilan.libelle}): ${bilan.reel}% successful over ${bilan.n} predictions.`
       : `Notre bilan récent sur ce type de pari (${bilan.libelle}) : ${bilan.reel} % de réussite sur ${bilan.n} pronostics.`);
+  }
+  // notes d'équipes : ce que l'IA a appris de chaque club (seulement quand l'écart à la moyenne de la ligue est net)
+  for (const [team, d] of [[D, notes && notes.dom], [E, notes && notes.ext]]) {
+    if (!d) continue;
+    if (Math.abs(d.attaque) >= 15) extras.push(en ? `Our team ratings put ${team}'s attack ${Math.abs(d.attaque)}% ${d.attaque > 0 ? 'above' : 'below'} the league average.` : `Nos notes d'équipes placent l'attaque de ${team} ${Math.abs(d.attaque)} % ${d.attaque > 0 ? 'au-dessus' : 'en dessous'} de la moyenne du championnat.`);
+    if (Math.abs(d.defense) >= 15) extras.push(en ? `${team}'s defence concedes ${Math.abs(d.defense)}% ${d.defense > 0 ? 'more' : 'fewer'} goals than the league average, according to our ratings.` : `Selon nos notes, la défense de ${team} encaisse ${Math.abs(d.defense)} % ${d.defense > 0 ? 'de buts en plus' : 'de buts en moins'} que la moyenne du championnat.`);
   }
   return { extras, h2h: lines };
 }
@@ -119,6 +126,13 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   const recentH = await form(match.domicile.teamId);
   const recentA = await form(match.exterieur.teamId);
   const gsH = N.goalStats(recentH), gsA = N.goalStats(recentA);
+  // notes d'équipes du championnat (recalculées chaque jour par syncFixtures), utilisées sauf si leur jugement sur matchs passés les contredit
+  const rkey = `notes:${match.leagueId}`;
+  if (!formCache.has(rkey)) { const d = await db.collection('league_ratings').doc(String(match.leagueId)).get(); formCache.set(rkey, d.exists ? d.data() : null); }
+  const R = formCache.get(rkey);
+  const ratingsOn = !!(R && !(league && league.ratings && league.ratings.actif === false));
+  const lamNotes = ratingsOn ? predictLambdas(R, String(match.domicile.teamId), String(match.exterieur.teamId)) : null;
+  const notes = ratingsOn ? { dom: describeTeam(R, String(match.domicile.teamId)), ext: describeTeam(R, String(match.exterieur.teamId)) } : null;
   const lgAvg = (league && league.avg) || {};
   const counts = {};
   for (const kind of COUNT_KINDS) {
@@ -138,7 +152,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
     home: match.domicile, away: match.exterieur,
     stats: { home: { home: gsH.home, all: gsH.all }, away: { away: gsA.away, all: gsA.all } },
     league: { avgHome: lgAvg.avgHome || 1.45, avgAway: lgAvg.avgAway || 1.15, counts: lgAvg.counts || {} },
-    counts, odds: cotes || undefined, calibration,
+    counts, odds: cotes || undefined, calibration, ratings: lamNotes || undefined,
   });
 
   const H = match.domicile.nomCourt, A = match.exterieur.nomCourt;
@@ -153,7 +167,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
     if (textStillValid(prev, pred, key)) { texts[lang] = { texte: prev[key], sourceTexte: lang === 'en' ? prev.sourceTexteEn : prev.sourceTexte, reutilise: true }; return; }
     const libelle = lang === 'en' ? labels.principalLabel(pred.principal.cle, H, A, 'en') : pred.principal.libelle;
     const tr = trackRecord(calibration, pred.principal.cle);
-    const facts = buildFacts(match, gsH, gsA, h2h, lang, tr && { libelle, n: tr.n, reel: tr.reel });
+    const facts = buildFacts(match, gsH, gsA, h2h, lang, tr && { libelle, n: tr.n, reel: tr.reel }, lamNotes ? notes : null);
     const ctx = Object.assign({}, base, {
       dateTexte: lang === 'en' ? `${dateLongue(match.coupDEnvoi, 'en')} at ${heure(match.coupDEnvoi)} (UTC)` : `${dateLongue(match.coupDEnvoi)} à ${heure(match.coupDEnvoi)} (heure UTC)`,
       principal: { libelle, confiance: pred.principal.confiance },
@@ -169,7 +183,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   const masque = !!(match.prono && match.prono.masque);
   const prono = {
     principal: pred.principal, secondaires: pred.secondaires, probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui,
-    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre,
+    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre, moteur: pred.moteur, notes: lamNotes ? notes : null,
     source: pred.source, texte: texts.fr ? texts.fr.texte : null, sourceTexte: texts.fr ? texts.fr.sourceTexte : null,
     texteEn: texts.en ? texts.en.texte : null, sourceTexteEn: texts.en ? texts.en.sourceTexte : null,
     calculeLe: now.toISOString(), version: MODEL_VERSION, formeDom: base.formeDom, formeExt: base.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),

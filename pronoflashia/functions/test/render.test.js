@@ -237,6 +237,12 @@ test('sitemap bilingue avec alternatives', async () => {
 });
 
 test('coupons archivés : gagnants récents sur l\'accueil avec le taux global, historique complet (perdus compris) sur le bilan', async () => {
+  // le jeu d'exemple est aléatoire : on y ajoute un coupon perdu pour vérifier qu'il figure dans l'historique et jamais dans les exploits
+  const won = db.all('coupons_flash').find((c) => c.statut === 'gagne');
+  const lost = Object.assign({}, won, { id: '2026-10-13_3', jour: '2026-10-13', statut: 'perdu', selections: won.selections.map((s, i) => Object.assign({}, s, { ok: i !== 0 })) });
+  delete lost._id;
+  await db.seed('coupons_flash', lost.id, lost);
+  D.clearCache();
   const h = await get('/');
   assert.match(h.body, /Nos derniers coupons gagnants/);
   assert.match(h.body, /coupons? gagnés? sur \d+ réglés?/);
@@ -324,4 +330,16 @@ test('actualités : images coupées dans l\'admin → cartes sans miniature', as
   const h = (await route(d2, '/', NOW)).body;
   assert.match(h, /class="nwb"/);
   assert.ok(!h.includes('class="nwi'));
+});
+
+test('analyse : « Ce que l\'IA sait de ces équipes » (notes d\'équipes) en français et en anglais, sans aucune promesse', async () => {
+  const withNotes = db.all('matches').find((m) => m.prono && m.prono.notes && m.prono.notes.dom && m.prono.notes.ext);
+  assert.ok(withNotes, 'le jeu d\'exemple calcule les notes d\'équipes');
+  const r = await get(`/football/${withNotes.leagueSlug}/${withNotes.slug}/analyse`);
+  assert.match(r.body, /Ce que l'IA sait de ces équipes/);
+  assert.match(r.body, /Attaque : /);
+  assert.match(r.body, /Défense : /);
+  const en = await get(`/en/football/${withNotes.leagueSlug}/${withNotes.slug}/analysis`);
+  assert.match(en.body, /What the AI knows about these teams/);
+  assert.match(en.body, /Attack: /);
 });
