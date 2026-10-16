@@ -86,7 +86,7 @@ const clientIp = (req) => String(req.get('x-forwarded-for') || req.ip || '').spl
  * Point d'entrée web : Hosting y envoie /api/** et toutes les pages qui ne sont pas des fichiers statiques.
  * Les pages sont mises en cache par le CDN (Cache-Control s-maxage) : la fonction ne tourne qu'à la première demande.
  */
-exports.pfWeb = onRequest({ region: REGION, memory: '512MiB', timeoutSeconds: 300, maxInstances: 10, concurrency: 40 }, async (req, res) => {
+exports.pfWeb = onRequest({ region: REGION, invoker: 'public', memory: '512MiB', timeoutSeconds: 300, maxInstances: 10, concurrency: 40 }, async (req, res) => {
   const path = req.path || '/';
   try {
     if (path === '/api/event') {
