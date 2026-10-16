@@ -16,6 +16,7 @@ const { buildPredictions } = require('./src/jobs/buildPredictions');
 const { submitNewUrls } = require('./src/jobs/indexNow');
 const { createClient: createAdsterra } = require('./src/data/adsterra');
 const { syncResults } = require('./src/jobs/syncResults');
+const { syncNews } = require('./src/jobs/syncNews');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
 const { aiHealthCheck } = require('./src/jobs/aiHealth');
 const { route } = require('./src/render/router');
@@ -61,6 +62,7 @@ const TASKS = {
     } catch (e) { r.erreurs.push(`IndexNow : ${e.message}`); }
   }),
   syncResults: (o = {}) => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
+  syncNews: () => runJob(db, 'syncNews', (r) => syncNews({ db }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
   aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: makeProviders(secrets()) }, r)),
 };
@@ -71,6 +73,8 @@ exports.syncFixtures = onSchedule(sched(cron('syncFixtures')), async () => { awa
 exports.buildPredictions = onSchedule(sched(cron('buildPredictions')), async () => { await TASKS.buildPredictions(); });
 // Résultats : toutes les 30 minutes pendant les heures de match.
 exports.syncResults = onSchedule(sched(cron('syncResults')), async () => { await TASKS.syncResults(); });
+// Actualités : flux des sites de football, toutes les 2 heures.
+exports.syncNews = onSchedule(sched(cron('syncNews'), { memory: '256MiB', timeoutSeconds: 120 }), async () => { await TASKS.syncNews(); });
 // Bilan hebdomadaire figé chaque lundi.
 exports.weeklyReport = onSchedule(sched(cron('weeklyReport'), { memory: '256MiB' }), async () => { await TASKS.weeklyReport(); });
 // Test de l'IA toutes les 30 minutes.

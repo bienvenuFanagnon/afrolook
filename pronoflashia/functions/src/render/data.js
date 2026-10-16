@@ -88,10 +88,20 @@ async function couponHistory(db, now, days = 30) {
   });
 }
 
+/** Actualités des dernières 48 h, les plus récentes d'abord (réglage config/news : interrupteur général). */
+async function news(db, now) {
+  return cached(`news:${now.toISOString().slice(0, 15)}`, 300e3, async () => {
+    const cfg = await db.collection('config').doc('news').get();
+    if (cfg.exists && cfg.data().actif === false) return [];
+    const snap = await db.collection('news').where('date', '>=', new Date(now.getTime() - 48 * 3600e3).toISOString()).get();
+    return snap.docs.map((d) => d.data()).sort((a, b) => (a.date < b.date ? 1 : -1));
+  });
+}
+
 /** Tous les matchs à venir avec pronostic (pour le compositeur de coupon et les coupons proposés). */
 async function pool(db, now, hours = 96) {
   const list = await matchesBetween(db, now.toISOString(), new Date(now.getTime() + hours * 3600e3).toISOString());
   return list.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
 }
 
-module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, pool };
+module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, pool };

@@ -45,6 +45,38 @@ const emptyDay = (rc) => `<div class="box"><p><b>${rc.t.emptyDayB}</b></p><p cla
 
 /** Accueil : pronos du jour (ou des prochains jours s'il n'y a rien aujourd'hui). */
 /** Coupons flash : les coupons prêts à l'emploi, mis en avant sur l'accueil. */
+/** Titres d'actualité de la langue de la page d'abord, puis de l'autre langue ; jamais deux articles du même titre. */
+function pickNews(rc, items, n, teamIds) {
+  let list = items || [];
+  if (teamIds) list = list.filter((x) => (x.teamIds || []).some((id) => teamIds.includes(id)));
+  const seen = new Set();
+  list = list.filter((x) => { const k = x.titre.toLowerCase().slice(0, 60); if (seen.has(k)) return false; seen.add(k); return true; });
+  const same = list.filter((x) => x.lang === rc.lang), other = list.filter((x) => x.lang !== rc.lang);
+  return same.concat(other).slice(0, n);
+}
+
+const newsLink = (rc, x) => `<a class="nw" href="${esc(x.lien)}" target="_blank" rel="nofollow noopener noreferrer"><small>${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></a>`;
+
+function timeAgo(rc, iso) {
+  const h = Math.max(0, Math.round((new Date(rc.now).getTime() - new Date(iso).getTime()) / 3600e3));
+  return h < 1 ? rc.t.newsNow : h < 24 ? rc.t.newsHours(h) : rc.t.newsDays(Math.round(h / 24));
+}
+
+/** Accueil : une seule ligne de cartes à balayer (≈ 90 px de haut), liens vers les sites d'origine. */
+function newsStrip(rc, items) {
+  const list = pickNews(rc, items, 8);
+  if (list.length < 3) return '';
+  return `<div class="lbl" style="margin-top:6px">${rc.t.newsTitle}</div><div class="nws" role="list">${list.map((x) => `<div role="listitem">${newsLink(rc, x)}</div>`).join('')}</div>`;
+}
+
+/** Fiche d'un match : jusqu'à 3 titres qui parlent d'une des deux équipes. */
+function matchNews(rc, items, m) {
+  const ids = [m.domicile.teamId, m.exterieur.teamId].filter((x) => x != null).map(String);
+  const list = pickNews(rc, items, 3, ids);
+  if (!list.length) return '';
+  return `<div class="box"><div class="lbl">${rc.t.newsTeams}</div><div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p></div>`;
+}
+
 function flashCoupons(rc, pool) {
   if (!pool || pool.length < 2) return '';
   const sugg = suggestions(rc, pool, true);
@@ -53,12 +85,12 @@ function flashCoupons(rc, pool) {
   return `<div class="lbl" style="margin-top:6px">${t.flashCoupons}</div><div class="box"><p class="note" style="margin:0 0 8px">${t.flashCouponsP}</p><div class="sg">${sugg}</div><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a></div>`;
 }
 
-function home(rc, { matches, bilan, pool: couponPool, coupons }) {
+function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${exploitsBox(rc, coupons)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${exploitsBox(rc, coupons)}${flashCoupons(rc, couponPool)}${newsStrip(rc, news)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
@@ -160,7 +192,7 @@ function h2hTable(rc, h2h) {
 }
 
 /** Fiche match : verdict visible tout de suite, résumé du pronostic. */
-function match(rc, { m, same, h2h }) {
+function match(rc, { m, same, h2h, news }) {
   const t = rc.t;
   const p = m.prono;
   const path = rc.u('match', m);
@@ -195,7 +227,7 @@ function match(rc, { m, same, h2h }) {
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
     (p && p.visible !== false ? `<div class="box"><div class="lbl">${t.probsTitle}</div><div class="pb">${probRows(rc, p)}</div><p class="note" style="margin-top:12px">${t.likelyScore}${colon(rc)} <b style="color:var(--tx)">${esc(p.scoreProbable)}</b></p></div>` : '') +
-    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${partnerCard(rc, 'fiche')}` +
+    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${matchNews(rc, news, m)}${partnerCard(rc, 'fiche')}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.shareWa}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.matchDisclaimer}</p></div>${side}</div></div>` +
     (p ? jsonScript('pf-match', matchJson(rc, m)) : '');

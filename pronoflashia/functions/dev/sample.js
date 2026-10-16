@@ -161,8 +161,31 @@ async function buildSample(now = new Date()) {
   await runJob(db, 'syncResults', (r) => syncResults({ db, api, now, maxStats: 80 }, r), () => now);
   await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now, days: 7, forceSeason: true }, r), () => now);
   await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: prov, now, maxMatches: 200, maxExternal: 6 }, r), () => now);
+  await seedNews(db, now);
   await db.seed('config', 'site', { email: 'contact@pronoflashia.com', editeur: 'À renseigner', statutJuridique: 'À renseigner', adresse: 'À renseigner' });
   return db;
+}
+
+/** Actualités fictives : titres d'exemple rattachés aux équipes des prochains matchs (aperçu seulement). */
+async function seedNews(db, now) {
+  const up = db.all('matches').filter((m) => m.statut === 'prevu').sort((a, b) => (a.coupDEnvoi < b.coupDEnvoi ? -1 : 1)).slice(0, 4);
+  const T = (m, i) => (i ? m.exterieur : m.domicile);
+  const src = [['Africa Top Sports', 'fr'], ['Afrik-Foot', 'fr'], ['Foot Mercato', 'fr'], ['Africanews', 'en']];
+  const titres = [
+    (m) => `${T(m, 0).nomCourt} : le groupe retenu pour recevoir ${T(m, 1).nomCourt}`,
+    (m) => `${T(m, 1).nomCourt} : le point sur l'infirmerie avant le déplacement`,
+    (m) => `Avant ${T(m, 0).nomCourt} - ${T(m, 1).nomCourt} : chaîne et heure du match`,
+    (m) => `${T(m, 1).nomCourt} reaches the next round after a tense night`,
+  ];
+  let n = 0;
+  for (const m of up) {
+    for (let k = 0; k < 2; k++) {
+      const [source, lang] = src[(n + k) % 4];
+      const id = `n${n}`;
+      await db.seed('news', id, { id, titre: lang === 'en' ? titres[3](m) : titres[(n + k) % 3](m), lien: `https://exemple.invalid/${id}`, source, sourceId: 'x', lang, date: new Date(now.getTime() - (n * 45 + 20) * 60e3).toISOString(), teamIds: [String(T(m, k).teamId)] });
+      n++;
+    }
+  }
 }
 
 /** Statistiques de visite fictives (aperçu de l'administration) : 14 jours, 4 semaines, état de l'IA. */

@@ -1,0 +1,90 @@
+'use strict';
+// syncNews : lit les flux RSS des sites de football, garde titre / site / date / lien, repère les équipes citées.
+// Aucun texte d'article n'est conservé. Chaque source est suivie à part : une source en panne ne bloque pas les autres.
+
+const crypto = require('crypto');
+const { SOURCES } = require('../news/sources');
+const { fetchFeed } = require('../news/rss');
+const { teamsInTitle } = require('../news/match');
+
+const KEEP_HOURS = 96;
+const MAX_PER_SOURCE = 25;
+
+const idOf = (lien) => crypto.createHash('sha1').update(lien).digest('hex').slice(0, 20);
+
+/** Réglages : config/news { actif, sources: { id: true|false } } ; par défaut tout ce qui est marqué actif. */
+async function loadNewsConfig(db) {
+  const d = await db.collection('config').doc('news').get();
+  const c = d.exists ? d.data() : {};
+  return { actif: c.actif !== false, sources: c.sources || {} };
+}
+const isOn = (cfg, s) => (cfg.sources[s.id] === undefined ? s.actif : !!cfg.sources[s.id]);
+
+/** Équipes des matchs d'hier à dans 4 jours : celles dont on cherche les nouvelles. */
+async function teamsToWatch(db, now) {
+  const from = new Date(now.getTime() - 864e5).toISOString(), to = new Date(now.getTime() + 4 * 864e5).toISOString();
+  const snap = await db.collection('matches').where('coupDEnvoi', '>=', from).where('coupDEnvoi', '<=', to).get();
+  const map = new Map();
+  for (const d of snap.docs) {
+    const m = d.data();
+    for (const t of [m.domicile, m.exterieur]) {
+      if (!t || t.teamId == null) continue;
+      const e = map.get(String(t.teamId)) || { id: String(t.teamId), noms: [] };
+      for (const n of [t.nomCourt, t.nom]) if (n && !e.noms.includes(n)) e.noms.push(n);
+      map.set(String(t.teamId), e);
+    }
+  }
+  return [...map.values()];
+}
+
+/**
+ * opts : { db, now, fetchImpl, sources }
+ * Écrit news/{id} pour chaque nouvel article et news_sources/{id} pour l'état de chaque source.
+ */
+async function syncNews(opts, report) {
+  const { db } = opts;
+  const now = opts.now || new Date();
+  const cfg = await loadNewsConfig(db);
+  if (!cfg.actif) { report.infos.actif = false; return; }
+  const sources = (opts.sources || SOURCES).filter((s) => isOn(cfg, s));
+  const teams = await teamsToWatch(db, now);
+  const cutoff = new Date(now.getTime() - KEEP_HOURS * 3600e3).toISOString();
+  const known = new Set((await db.collection('news').where('date', '>=', cutoff).get()).docs.map((d) => d.id));
+  let nouveaux = 0;
+  const pannes = [];
+
+  await Promise.all(sources.map(async (s) => {
+    const st = { id: s.id, nom: s.nom, essaiLe: now.toISOString() };
+    try {
+      const items = await fetchFeed(s.url, opts.fetchImpl);
+      const recent = items.filter((x) => x.date >= cutoff && x.date <= new Date(now.getTime() + 3600e3).toISOString())
+        .filter((x) => !s.filtre || s.filtre.test(x.titre)).slice(0, MAX_PER_SOURCE);
+      let n = 0;
+      for (const x of recent) {
+        const id = idOf(x.lien);
+        if (known.has(id)) continue;
+        known.add(id);
+        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, teamIds: teamsInTitle(x.titre, teams) });
+        n++;
+      }
+      nouveaux += n;
+      Object.assign(st, { ok: true, articles: recent.length, nouveaux: n, reussiLe: now.toISOString(), erreur: null });
+    } catch (e) {
+      Object.assign(st, { ok: false, erreur: String(e.message || e).slice(0, 160) });
+      pannes.push(`${s.nom} : ${st.erreur}`);
+    }
+    await db.collection('news_sources').doc(s.id).set(st, { merge: true });
+  }));
+
+  // nettoyage : les articles de plus de KEEP_HOURS heures ne servent plus
+  const old = await db.collection('news').where('date', '<', cutoff).limit(200).get();
+  for (const d of old.docs) await db.collection('news').doc(d.id).delete();
+  // une source en panne n'est pas une erreur de la tâche (suivie dans l'admin) ; toutes en panne, si
+  if (pannes.length) report.infos.pannes = pannes;
+  if (sources.length && pannes.length === sources.length) report.erreurs.push(`Aucune source d'actualités n'a répondu : ${pannes[0]}`);
+  report.traites = nouveaux;
+  report.infos.sources = sources.length;
+  report.infos.supprimes = old.docs.length;
+}
+
+module.exports = { syncNews, loadNewsConfig, isOn, idOf, KEEP_HOURS };

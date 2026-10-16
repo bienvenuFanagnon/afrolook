@@ -153,7 +153,7 @@ test('CSS en ligne et script versionné ; aucune ressource externe', async () =>
   const r = (await get('/')).body;
   assert.ok(r.includes('<style>') && r.includes('--flash:#FFD60A'));
   assert.match(r, new RegExp(`/js/pf\\.js\\?v=${VERSION}`));
-  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
+  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/<a class="nw" href="[^"]*"/g, '').replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
   assert.ok(r.length < 120000, `HTML léger (${r.length} octets)`);
 });
 
@@ -268,4 +268,24 @@ test('PWA : manifeste, icône iOS et couleur du thème dans l\'en-tête, script 
   assert.match(r.body, /<link rel="manifest" href="\/manifest\.webmanifest">/);
   assert.match(r.body, /<link rel="apple-touch-icon" href="\/img\/apple-touch-icon\.png">/);
   assert.match(r.body, /<script src="\/js\/pf\.js/);
+});
+
+test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fiche du match, liens vers les sites d\'origine', async () => {
+  const h = await get('/');
+  assert.match(h.body, /Actus foot/);
+  assert.match(h.body, /class="nw" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
+  assert.ok((h.body.match(/class="nw"/g) || []).length <= 8);
+  const first = db.all('news')[0];
+  const m = db.all('matches').find((x) => [x.domicile.teamId, x.exterieur.teamId].map(String).includes(first.teamIds[0]));
+  const page = await get(`/football/${m.leagueSlug}/${m.slug}`);
+  assert.match(page.body, /Actus des deux équipes/);
+  assert.ok(page.body.includes(first.titre.replace(/'/g, '&#39;')));
+  assert.match((await get('/en/')).body, /Football news/);
+});
+
+test('actualités : coupées dans l\'admin ou trop peu de titres → aucun bloc', async () => {
+  const d2 = await buildSample(NOW);
+  await d2.seed('config', 'news', { actif: false });
+  D.clearCache();
+  assert.ok(!(await route(d2, '/', NOW)).body.includes('Actus foot'));
 });
