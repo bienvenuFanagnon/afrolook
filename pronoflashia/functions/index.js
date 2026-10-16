@@ -4,7 +4,7 @@
 
 const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { defineSecret, defineString } = require('firebase-functions/params');
+const { defineString } = require('firebase-functions/params');
 const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
@@ -26,23 +26,22 @@ const { SCHEDULE } = require('./src/jobs/schedule');
 if (!getApps().length) initializeApp();
 const db = getFirestore();
 
-const API_FOOTBALL_KEY = defineSecret('API_FOOTBALL_KEY');
-const FOOTBALL_DATA_TOKEN = defineSecret('FOOTBALL_DATA_TOKEN');
-const CF_API_TOKEN = defineSecret('CF_API_TOKEN');
-const CF_ACCOUNT_ID = defineSecret('CF_ACCOUNT_ID');
-const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
-const STATS_SALT = defineSecret('STATS_SALT');
+const API_FOOTBALL_KEY = defineString('API_FOOTBALL_KEY', { default: '' });
+const FOOTBALL_DATA_TOKEN = defineString('FOOTBALL_DATA_TOKEN', { default: '' });
+const CF_API_TOKEN = defineString('CF_API_TOKEN', { default: '' });
+const CF_ACCOUNT_ID = defineString('CF_ACCOUNT_ID', { default: '' });
+const GEMINI_API_KEY = defineString('GEMINI_API_KEY', { default: '' });
+const STATS_SALT = defineString('STATS_SALT', { default: '' });
 // Adresses Google autorisées dès le départ (le premier administrateur) ; les autres sont gérées dans l'admin.
 const ADMIN_EMAILS = defineString('ADMIN_EMAILS', { default: '' });
 // Source des données de football : « football-data » (gratuit) ou « api-football » (payant). Vide : football-data si son jeton existe.
 const FOOTBALL_SOURCE = defineString('FOOTBALL_SOURCE', { default: '' });
 
 const REGION = 'europe-west1';
-const SECRETS = [API_FOOTBALL_KEY, FOOTBALL_DATA_TOKEN, CF_API_TOKEN, CF_ACCOUNT_ID, GEMINI_API_KEY];
 const val = (p) => { try { return p.value(); } catch { return ''; } };
 const secrets = () => ({ source: val(FOOTBALL_SOURCE), footballData: val(FOOTBALL_DATA_TOKEN), apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
 const cron = (nom) => SCHEDULE.find((x) => x.nom === nom).cron;
-const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, secrets: SECRETS, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
+const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
 
 /** Les tâches, réutilisées par le planificateur et par le bouton « Relancer » de l'admin. */
 const TASKS = {
@@ -87,7 +86,7 @@ const clientIp = (req) => String(req.get('x-forwarded-for') || req.ip || '').spl
  * Point d'entrée web : Hosting y envoie /api/** et toutes les pages qui ne sont pas des fichiers statiques.
  * Les pages sont mises en cache par le CDN (Cache-Control s-maxage) : la fonction ne tourne qu'à la première demande.
  */
-exports.pfWeb = onRequest({ region: REGION, memory: '512MiB', timeoutSeconds: 300, maxInstances: 10, concurrency: 40, secrets: [...SECRETS, STATS_SALT] }, async (req, res) => {
+exports.pfWeb = onRequest({ region: REGION, memory: '512MiB', timeoutSeconds: 300, maxInstances: 10, concurrency: 40 }, async (req, res) => {
   const path = req.path || '/';
   try {
     if (path === '/api/event') {

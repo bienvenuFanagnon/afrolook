@@ -38,16 +38,7 @@ cd pronoflashia/functions && npm test           # 75 tests : calcul, IA, API, t�
 
 1. **Créer le projet Firebase** (plan Blaze), séparé d'Afrolook et de SlashAtlas. Activer Firestore (région `europe-west1`) et Authentication (fournisseur Google).
 2. Mettre l'identifiant du projet dans `.firebaserc`.
-3. **Secrets** (jamais dans le dépôt) :
-   ```bash
-   firebase functions:secrets:set FOOTBALL_DATA_TOKEN  # jeton football-data.org (offre gratuite)
-   firebase functions:secrets:set API_FOOTBALL_KEY     # clé API-Football (source payante, facultative au départ)
-   firebase functions:secrets:set CF_API_TOKEN         # jeton Cloudflare Workers AI
-   firebase functions:secrets:set CF_ACCOUNT_ID        # identifiant du compte Cloudflare
-   firebase functions:secrets:set GEMINI_API_KEY       # facultatif, IA de secours
-   firebase functions:secrets:set STATS_SALT           # une longue chaîne aléatoire (mesure des visiteurs)
-   ```
-   et le paramètre `ADMIN_EMAILS` (adresse Google du premier administrateur) à la première publication.
+3. **Clés** : dans `functions/.env` (modèle `functions/.env.example`, jamais dans le dépôt) : jeton football-data.org, clé API-Football (facultative au départ), jeton et identifiant Cloudflare, clé Gemini (facultative), `STATS_SALT` (longue chaîne aléatoire) et `ADMIN_EMAILS` (adresse Google du premier administrateur).
 4. Renseigner `site/admin/firebase-config.js` (configuration web du projet : Paramètres du projet → Application web).
 5. Déployer : `node scripts/build-site.js && firebase deploy --only firestore,functions,hosting`.
 6. Dans la console Firestore : stratégie **TTL** sur le champ `expireAt` de la collection `ai_status_log`.
@@ -57,23 +48,20 @@ cd pronoflashia/functions && npm test           # 75 tests : calcul, IA, API, t�
 
 ## Premier déploiement depuis Google Cloud Shell (sans rien installer)
 
-Projet Firebase : `pronoflashia` (forfait Blaze). Depuis la console Firebase, ouvrir Cloud Shell (icône `>_` en haut à droite de console.cloud.google.com), puis :
+Projet Firebase : `pronoflashia` (forfait Blaze). Les clés sont lues dans `functions/.env` (ignoré par git, jamais commité ; modèle : `functions/.env.example`). Attention : ces valeurs deviennent des variables d'environnement des fonctions, visibles par les membres du projet dans la console Google Cloud. Les renouveler régulièrement et ne jamais les mettre dans le dépôt.
+
+Dans Cloud Shell (icône `>_` de console.cloud.google.com, connecté au compte propriétaire du projet) :
 
 ```bash
 git clone https://github.com/bienvenufanagnon/afrolook.git && cd afrolook && git checkout refonte_claude && cd pronoflashia
 (cd functions && npm ci)
 firebase use pronoflashia
-# secrets : chaque commande demande la valeur à coller (rien n'est écrit dans le dépôt)
-firebase functions:secrets:set FOOTBALL_DATA_TOKEN # jeton football-data.org (offre gratuite, pour démarrer)
-firebase functions:secrets:set API_FOOTBALL_KEY    # clé API-Football (peut rester celle de l'offre gratuite tant qu'on n'utilise pas cette source)
-firebase functions:secrets:set CF_API_TOKEN
-firebase functions:secrets:set CF_ACCOUNT_ID
-firebase functions:secrets:set GEMINI_API_KEY      # sans clé Gemini : coller le mot « aucune »
-firebase functions:secrets:set STATS_SALT          # une longue chaîne aléatoire
+cp functions/.env.example functions/.env
+nano functions/.env        # remplir les valeurs ; STATS_SALT : une longue chaîne aléatoire (openssl rand -hex 24)
 node scripts/build-site.js && firebase deploy --only firestore,functions,hosting
 ```
 
-À la première publication, Firebase demande la valeur de `ADMIN_EMAILS` (adresse Google du premier administrateur). Adresse provisoire : `https://pronoflashia.web.app`. Tant que le nom de domaine n'est pas acheté, mettre `indexable` à faux dans l'admin (Réglages) pour que Google n'indexe pas l'adresse provisoire.
+Une clé laissée vide (Gemini, API-Football) désactive simplement la source concernée. Adresse provisoire : `https://pronoflashia.web.app`. Tant que le nom de domaine n'est pas acheté, mettre `indexable` à faux dans l'admin (Réglages) pour que Google n'indexe pas l'adresse provisoire.
 
 ## Source des données de football
 
