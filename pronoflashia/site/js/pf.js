@@ -345,6 +345,9 @@
     render();
     insertPickerAds();
   }
+  /* miniature d'actualité qui ne charge pas : on la retire, le titre reste */
+  d.addEventListener('error', function (e) { var t = e.target; if (t && t.tagName === 'IMG' && t.closest && t.closest('.nwi')) t.closest('.nwi').style.display = 'none'; }, true);
+
   /* ---------- application installable (PWA) ---------- */
   if ('serviceWorker' in navigator) { w.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () { /* pas grave : le site marche sans */ }); }); }
   (function pwa() {

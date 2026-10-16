@@ -204,7 +204,7 @@ function footer(rc) {
 /** Colonne de droite (ordinateur) : bilan, pavé, Afrolook, grand format collant. */
 function sideColumn(rc, { bilan, afl = 'colonne', extra = '' } = {}) {
   const t = rc.t;
-  const bil = bilan && bilan.taux != null ? `<div class="box bil"><div class="big num">${pct(rc, bilan.taux)}</div><div><p>${t.bilanSide(bilan.n)}</p><a href="${rc.u('bilan')}">${t.seeBilan}</a></div></div>` : '';
+  const bil = bilan && bilan.taux != null && bilan.n >= 30 && bilan.taux >= 55 ? `<div class="box bil"><div class="big num">${pct(rc, bilan.taux)}</div><div><p>${t.bilanSide(bilan.n)}</p><a href="${rc.u('bilan')}">${t.seeBilan}</a></div></div>` : '';
   return `<aside class="side"><div class="sticky">${bil}${extra}${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, afl, 1)}${adSlot(rc, 'colonne_tall', { cls: 'ad-tall', variant: 'dk' })}</div></aside>`;
 }
 

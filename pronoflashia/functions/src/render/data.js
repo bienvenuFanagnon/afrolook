@@ -92,9 +92,10 @@ async function couponHistory(db, now, days = 30) {
 async function news(db, now) {
   return cached(`news:${now.toISOString().slice(0, 15)}`, 300e3, async () => {
     const cfg = await db.collection('config').doc('news').get();
-    if (cfg.exists && cfg.data().actif === false) return [];
+    const c = cfg.exists ? cfg.data() : {};
+    if (c.actif === false) return [];
     const snap = await db.collection('news').where('date', '>=', new Date(now.getTime() - 48 * 3600e3).toISOString()).get();
-    return snap.docs.map((d) => d.data()).sort((a, b) => (a.date < b.date ? 1 : -1));
+    return snap.docs.map((d) => (c.images === false ? Object.assign({}, d.data(), { image: null }) : d.data())).sort((a, b) => (a.date < b.date ? 1 : -1));
   });
 }
 

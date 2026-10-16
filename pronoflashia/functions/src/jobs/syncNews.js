@@ -16,7 +16,7 @@ const idOf = (lien) => crypto.createHash('sha1').update(lien).digest('hex').slic
 async function loadNewsConfig(db) {
   const d = await db.collection('config').doc('news').get();
   const c = d.exists ? d.data() : {};
-  return { actif: c.actif !== false, sources: c.sources || {} };
+  return { actif: c.actif !== false, images: c.images !== false, sources: c.sources || {} };
 }
 const isOn = (cfg, s) => (cfg.sources[s.id] === undefined ? s.actif : !!cfg.sources[s.id]);
 
@@ -64,7 +64,7 @@ async function syncNews(opts, report) {
         const id = idOf(x.lien);
         if (known.has(id)) continue;
         known.add(id);
-        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, teamIds: teamsInTitle(x.titre, teams) });
+        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, image: x.image || null, video: !!x.video, teamIds: teamsInTitle(x.titre, teams) });
         n++;
       }
       nouveaux += n;

@@ -153,7 +153,7 @@ test('CSS en ligne et script versionné ; aucune ressource externe', async () =>
   const r = (await get('/')).body;
   assert.ok(r.includes('<style>') && r.includes('--flash:#FFD60A'));
   assert.match(r, new RegExp(`/js/pf\\.js\\?v=${VERSION}`));
-  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/<a class="nw" href="[^"]*"/g, '').replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
+  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/<a class="nw(?: has)?" href="[^"]*"/g, '').replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
   assert.ok(r.length < 120000, `HTML léger (${r.length} octets)`);
 });
 
@@ -288,4 +288,40 @@ test('actualités : coupées dans l\'admin ou trop peu de titres → aucun bloc'
   await d2.seed('config', 'news', { actif: false });
   D.clearCache();
   assert.ok(!(await route(d2, '/', NOW)).body.includes('Actus foot'));
+});
+
+test('accueil : bilan en tête seulement s\'il est bon, actualités au milieu des pronostics (pas avant le premier match)', async () => {
+  // le jeu d'exemple n'a que 28 pronostics terminés : on ajoute une semaine plus ancienne pour passer le seuil de 30
+  await db.seed('bilan_days', '2026-10-10', { jour: '2026-10-10', delta: Object.assign({}, db.all('bilan_days')[0].delta, { matches: 20, principal: { n: 20, ok: 14 } }) });
+  D.clearCache();
+  const h = (await get('/')).body;
+  assert.match(h, /class="bhero"/);
+  assert.ok(h.indexOf('class="bhero"') < h.indexOf('Flash du jour') || h.indexOf('class="bhero"') < h.indexOf('class="lbl"'), 'bilan avant le reste');
+  const firstCard = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
+  const news = h.indexOf('class="nwb"');
+  assert.ok(news > firstCard && firstCard > 0, 'actualités après le début de la liste des matchs');
+  assert.ok((h.match(/class="mc|class="match/g) || []).length >= 0);
+  // images et aperçus vidéo
+  assert.match(h, /class="nwi"><img src="\/img\/afl[14]\.jpg"/);
+  assert.match(h, /class="nwi vid"/);
+  assert.match(h, /referrerpolicy="no-referrer"/);
+  // bilan mauvais : ni en-tête, ni colonne, mais la page Bilan reste complète
+  const d2 = await buildSample(NOW);
+  const old = d2.all('bilan_days');
+  for (const b of old) { const delta = b.delta; delta.principal.ok = 0; await d2.seed('bilan_days', b._id, { jour: b.jour, delta }); }
+  await d2.seed('bilan_days', '2026-10-10', { jour: '2026-10-10', delta: Object.assign({}, d2.all('bilan_days')[0].delta, { matches: 20, principal: { n: 20, ok: 2 } }) });
+  D.clearCache();
+  const bad = (await route(d2, '/', NOW)).body;
+  assert.ok(!bad.includes('class="bhero"'), 'bilan faible non mis en avant');
+  assert.ok(!bad.includes('class="box bil"'));
+  assert.match((await route(d2, '/bilan', NOW)).body, /Réussite 30 jours/);
+});
+
+test('actualités : images coupées dans l\'admin → cartes sans miniature', async () => {
+  const d2 = await buildSample(NOW);
+  await d2.seed('config', 'news', { actif: true, images: false });
+  D.clearCache();
+  const h = (await route(d2, '/', NOW)).body;
+  assert.match(h, /class="nwb"/);
+  assert.ok(!h.includes('class="nwi'));
 });

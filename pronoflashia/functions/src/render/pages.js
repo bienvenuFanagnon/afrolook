@@ -33,11 +33,23 @@ function flashBlock(rc, matches) {
 }
 
 /** Liste de cartes groupées par jour quand elle couvre plusieurs jours. */
-function groupedCards(rc, matches) {
+function groupedCards(rc, matches, insert) {
   const multi = new Set(matches.map((m) => m.jour)).size > 1;
   // l'intitulé du jour voyage avec sa première carte : les pubs s'insèrent entre les cartes, jamais entre un titre et son match
   const cards = matches.map((m, i) => (multi && (i === 0 || matches[i - 1].jour !== m.jour) ? `<h2 class="dayh">${esc(dateLongue(m.jour + 'T12:00:00Z', rc.lang))}</h2>` : '') + matchCard(rc, m));
+  if (insert) cards.splice(Math.min(4, cards.length), 0, insert);
   return listWithAds(rc, cards);
+}
+
+/** Un bilan n'est mis en avant que s'il est bon : assez de pronostics et un taux qui rassure. La page Bilan, elle, reste toujours complète. */
+const BILAN_MIN_N = 30, BILAN_MIN_RATE = 55;
+const bilanGood = (b) => !!(b && b.taux != null && b.n >= BILAN_MIN_N && b.taux >= BILAN_MIN_RATE);
+
+/** En-tête de l'accueil : le bilan en grand, pour donner confiance dès l'arrivée. */
+function bilanHero(rc, b) {
+  if (!bilanGood(b)) return '';
+  const t = rc.t;
+  return `<a class="bhero" href="${rc.u('bilan')}"><span class="big num">${pct(rc, b.taux)}</span><span class="bht"><b>${t.bilanHeroT}</b><small>${esc(t.bilanBox(b.taux, b.n))}</small></span><i aria-hidden="true">→</i></a>`;
 }
 
 const bilanBox = (rc, b) => (b && b.taux != null ? `<div class="box bil"><div class="big num">${pct(rc, b.taux)}</div><div><p>${rc.t.bilanBox(b.taux, b.n)}</p><a href="${rc.u('bilan')}">${rc.t.seeBilan}</a></div></div>` : '');
@@ -55,18 +67,21 @@ function pickNews(rc, items, n, teamIds) {
   return same.concat(other).slice(0, n);
 }
 
-const newsLink = (rc, x) => `<a class="nw" href="${esc(x.lien)}" target="_blank" rel="nofollow noopener noreferrer"><small>${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></a>`;
+const newsLink = (rc, x) => {
+  const thumb = x.image ? `<span class="nwi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="72" height="72" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
+  return `<a class="nw${x.image ? ' has' : ''}" href="${esc(x.lien)}" target="_blank" rel="nofollow noopener noreferrer">${thumb}<span class="nwt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></span></a>`;
+};
 
 function timeAgo(rc, iso) {
   const h = Math.max(0, Math.round((new Date(rc.now).getTime() - new Date(iso).getTime()) / 3600e3));
   return h < 1 ? rc.t.newsNow : h < 24 ? rc.t.newsHours(h) : rc.t.newsDays(Math.round(h / 24));
 }
 
-/** Accueil : une seule ligne de cartes à balayer (≈ 90 px de haut), liens vers les sites d'origine. */
+/** Accueil : une ligne de cartes à balayer (≈ 90 px de haut) insérée entre les pronostics, liens vers les sites d'origine. */
 function newsStrip(rc, items) {
   const list = pickNews(rc, items, 8);
   if (list.length < 3) return '';
-  return `<div class="lbl" style="margin-top:6px">${rc.t.newsTitle}</div><div class="nws" role="list">${list.map((x) => `<div role="listitem">${newsLink(rc, x)}</div>`).join('')}</div>`;
+  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nws" role="list">${list.map((x) => `<div role="listitem">${newsLink(rc, x)}</div>`).join('')}</div></div>`;
 }
 
 /** Fiche d'un match : jusqu'à 3 titres qui parlent d'une des deux équipes. */
@@ -90,8 +105,8 @@ function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${exploitsBox(rc, coupons)}${flashCoupons(rc, couponPool)}${newsStrip(rc, news)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
-    `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
+    `${bilanHero(rc, bilan)}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, newsStrip(rc, news)) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
     ld: { '@context': 'https://schema.org', '@type': 'WebSite', name: rc.site.nom, url: C.url(rc, rc.u('home')), inLanguage: rc.lang },
