@@ -105,7 +105,8 @@ function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${bilanHero(rc, bilan)}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, newsStrip(rc, news)) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    // la bannière du haut passe juste après le bilan : elle reste dans le premier écran du téléphone ; d'autres emplacements coupent les longs blocs qui suivent
+    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}${flashCoupons(rc, couponPool)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, newsStrip(rc, news)) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
@@ -415,9 +416,9 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons })
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    couponHistoryBox(rc, coupons) + learningBox(rc, learning) +
+    couponHistoryBox(rc, coupons) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
-    `</div>${sideColumn(rc, {})}</div></div>`;
+    `${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };
 }
 

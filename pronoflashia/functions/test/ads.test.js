@@ -20,7 +20,7 @@ const sequence = (html) => [...html.matchAll(/<(a class="mc"|a class="afl"|div c
 test('liste : Afrolook après la 2e carte, native après la 3e puis toutes les N, jamais deux pubs d\'affilée ni après la dernière carte', async () => {
   const db = await withAds({ actif: true, afrolook: { actif: true, every: 6, part: 0 }, emplacements: { native: slot({ every: 4 }), fin: slot({ dk: [728, 90], mo: [320, 100] }) } });
   const full = sequence((await route(db, '/', NOW)).body);
-  const seq = full.slice(0, full.indexOf('fin')); // la liste elle-même, avant la bannière et l'encart de fin
+  const seq = full.slice(full.indexOf('carte'), full.indexOf('fin')); // la liste elle-même : après les blocs du haut (pub, encart Afrolook), avant la bannière et l'encart de fin
   assert.equal(seq.slice(0, 5).join(','), 'carte,carte,afl,carte,native');
   for (let i = 1; i < seq.length; i++) assert.ok(seq[i] === 'carte' || seq[i - 1] === 'carte', `deux pubs d'affilée : ${seq.join(',')}`);
   const cards = seq.filter((x) => x === 'carte').length;
@@ -260,4 +260,16 @@ test('canal WhatsApp : l\'admin n\'accepte qu\'une adresse https ; les clics son
   assert.equal(await handleEvent({ body: { t: 'chan_click', n: 'accueil' }, ua: 'Mozilla/5.0 (iPhone)', ip: '9.9.9.9', headers: {} }, mk()), true);
   const d = db.read('stats_days', '2026-10-16');
   assert.equal(d.clicsCanal, 1); assert.equal(d.canal.accueil, 1);
+});
+
+test('accueil téléphone : la bannière du haut reste dans le premier écran, une pub coupe les longs blocs du haut, la page Bilan a aussi ses pubs', async () => {
+  const db = await withAds({ actif: true, afrolook: { actif: true, every: 6, part: 0 }, emplacements: { haut: slot({ dk: [728, 90], mo: [320, 50] }), native: slot({ every: 4 }), fin: slot({ dk: [728, 90], mo: [320, 100] }) } });
+  const h = (await route(db, '/', NOW)).body;
+  const iHaut = h.indexOf('data-ad="haut"'), iExploit = h.indexOf('Nos derniers coupons gagnants'), iFlash = h.indexOf('Flash du jour'), iCoupons = h.indexOf('Coupons flash');
+  assert.ok(iHaut > 0 && (iExploit < 0 || iHaut < iExploit), 'bannière du haut avant les coupons gagnants');
+  const nativeTop = h.indexOf('data-ad="native"');
+  assert.ok(nativeTop > iFlash && nativeTop < iCoupons, 'une pub entre le flash du jour et les coupons flash');
+  const b = (await route(db, '/bilan', NOW)).body;
+  assert.ok((b.match(/data-ad="/g) || []).length >= 3, 'haut, milieu et fin sur la page Bilan');
+  assert.match(b, /data-ad="fin"/);
 });
