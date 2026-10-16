@@ -25,9 +25,12 @@ import 'montage_state.dart';
 const _c = AppColors.dark;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic});
   final MontageTemplate template;
   final bool forChronique;
+
+  /// Son choisi avant d'arriver ici (« Créer un post avec ce son ») : il remplace la musique du template.
+  final MontageMusic? presetMusic;
 
   @override
   State<MontageEditorPage> createState() => _MontageEditorPageState();
@@ -39,6 +42,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   final _keys = MontageKeys();
   final _picker = ImagePicker();
   VideoPlayerController? _video;
+  String? _lastJobId;
   double? _frozenT;
   bool _busy = false;
 
@@ -71,7 +75,20 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     _comments.text = s.commentsLabel();
     _followers.text = s.followersLabel(real) ?? '';
     ArtistSoundPricing.load();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _playMusic());
+    final preset = widget.presetMusic;
+    if (preset != null) {
+      s.music = preset;
+      // Son payant : on informe tout de suite (prix, solde) ; refus ou solde insuffisant = musique du template
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!await _confirmArtistCost(preset)) {
+          final def = studioTrack(tp.music);
+          if (mounted) setState(() => s.music = def == null ? null : MontageMusic.free(def));
+        }
+        _playMusic();
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _playMusic());
+    }
   }
 
   // ── Musique ──
@@ -373,6 +390,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           setT: _setT,
           onStep: (v) => step.value = v,
           maxSeconds: widget.forChronique ? 30 : 60,
+          onJob: (id) => _lastJobId = id,
           onPaid: (coins) => _say('🎤 $coins pièces utilisées pour le son de l’artiste. Merci de soutenir les artistes !'),
         );
       } else {
@@ -444,6 +462,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           textContent: _caption(),
           templateId: 'montage_${tp.id}',
           forChronique: widget.forChronique,
+          artistSoundId: s.music?.isArtist == true && video ? s.music!.id : null,
+          soundJobId: s.music?.isArtist == true && video ? _lastJobId : null,
         ),
       );
       return;

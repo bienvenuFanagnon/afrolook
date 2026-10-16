@@ -10,14 +10,18 @@ import 'montage_canvas.dart';
 import 'montage_catalog.dart';
 import 'montage_editor_page.dart';
 import 'montage_fx.dart';
+import '../artist_sound_common.dart';
 import 'montage_music.dart';
 import 'montage_state.dart';
 
 const _c = AppColors.dark;
 
 class MontageGalleryPage extends StatefulWidget {
-  const MontageGalleryPage({super.key, this.forChronique = false});
+  const MontageGalleryPage({super.key, this.forChronique = false, this.presetMusic});
   final bool forChronique;
+
+  /// Son choisi avant d'arriver ici : chaque modèle s'ouvre avec ce son (payant : prix et solde annoncés dans l'éditeur).
+  final MontageMusic? presetMusic;
 
   @override
   State<MontageGalleryPage> createState() => _MontageGalleryPageState();
@@ -47,7 +51,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     _anim.stop();
     final r = await Navigator.push<StudioResult>(
       context,
-      MaterialPageRoute(builder: (_) => MontageEditorPage(template: t, forChronique: widget.forChronique)),
+      MaterialPageRoute(builder: (_) => MontageEditorPage(template: t, forChronique: widget.forChronique, presetMusic: widget.presetMusic)),
     );
     if (!mounted) return;
     if (r != null) {
@@ -72,7 +76,11 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
           foregroundColor: _c.textPrimary,
           elevation: 0,
           title: const Text('Templates prêts à poster', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-          bottom: TabBar(
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(widget.presetMusic == null ? 48 : 88),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (widget.presetMusic != null) _presetBanner(widget.presetMusic!),
+              TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             labelColor: _c.accent,
@@ -80,12 +88,31 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
             indicatorColor: _c.accent,
             labelStyle: const TextStyle(fontWeight: FontWeight.w800),
             tabs: [for (final cat in MontageCat.values) Tab(text: cat.label)],
+              ),
+            ]),
           ),
         ),
         body: TabBarView(children: [
           for (final cat in MontageCat.values) _grid(cat, pseudo),
         ]),
       ),
+    );
+  }
+
+  /// Rappel du son choisi : la personne n'a plus qu'à choisir un modèle.
+  Widget _presetBanner(MontageMusic m) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: _c.primary.withValues(alpha: .16), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.primary.withValues(alpha: .5))),
+      child: Row(children: [
+        const Text('🎵', style: TextStyle(fontSize: 20)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text('Choisis un modèle pour « ${m.title} »${m.paid ? ' · ${ArtistSoundPricing.price} pièces' : ' · gratuit'}',
+              maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ),
+      ]),
     );
   }
 

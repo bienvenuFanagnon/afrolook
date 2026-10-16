@@ -88,6 +88,7 @@ import '../../widgets/feed/sections/quiz_feed_card.dart';
 import '../../widgets/feed/sections/contes_feed_card.dart';
 import '../../widgets/feed/sections/etude_feed_card.dart';
 import '../studio/artist_marketplace.dart';
+import '../studio/feed_sound_card.dart';
 
 
 // Constantes de couleur
@@ -3871,6 +3872,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           contentWidgets.add(_buildUnifiedAdSlot(key: 'ad_slot_$slotN'));
           _lastInsertedAt = i;
         }
+      }
+
+      // Musique : une carte avec lecture immédiate après le 4e post, puis toutes les 14 publications
+      if ((postNumber == 4 || (postNumber > 4 && (postNumber - 4) % 14 == 0)) && (i - _lastInsertedAt) >= 3) {
+        final soundSlot = postNumber == 4 ? 0 : (postNumber - 4) ~/ 14;
+        contentWidgets.add(FeedSoundCard(key: ValueKey('feed_sound_$soundSlot'), slot: soundSlot));
+        _lastInsertedAt = i;
       }
 
       // Contenu découverte toutes les 16 posts — ignoré si trop proche d'un insert.

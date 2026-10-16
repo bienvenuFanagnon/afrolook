@@ -1565,6 +1565,8 @@ class Post {
   String? description;
   String? isPostLink;
   String? thumbnail;
+  String? artistSoundId; // son d'artiste du montage (écrit par le serveur uniquement : jamais dans toJson)
+  String? artistSoundTitle;
   String? contact_whatsapp;
   int? nombreCollaborateur;
   double? publiCashTotal;
@@ -1788,6 +1790,8 @@ class Post {
     url_media = json['url_media'];
     contact_whatsapp = json['contact_whatsapp'] ?? "";
     thumbnail = json['thumbnail'] ?? "";
+    artistSoundId = json['artistSoundId'] as String?;
+    artistSoundTitle = json['artistSoundTitle'] as String?;
     typeTabbar = json['typeTabbar'] ?? "";
     isPostLink = json['isPostLink'] ?? "NON";
     colorSecondaire = json['colorSecondaire'];

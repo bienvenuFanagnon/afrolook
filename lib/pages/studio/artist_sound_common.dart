@@ -33,10 +33,22 @@ class ArtistSoundPricing {
 }
 
 /// Lecteur d'extrait (un seul à la fois dans l'app) : l'extrait public de 30 s, jamais l'original.
+/// Ce qui est lu (affiché dans le lecteur réduit de la page Musique).
+class NowPlaying {
+  const NowPlaying({required this.key, required this.title, this.subtitle, this.coverUrl});
+  final String key;
+  final String title;
+  final String? subtitle;
+  final String? coverUrl;
+}
+
 class SoundPreview {
   SoundPreview._();
   static final AudioPlayer _player = AudioPlayer();
   static final ValueNotifier<String?> playing = ValueNotifier<String?>(null);
+
+  /// Dernier titre lancé (reste renseigné en pause, pour reprendre depuis le lecteur réduit).
+  static final ValueNotifier<NowPlaying?> now = ValueNotifier<NowPlaying?>(null);
   static bool _wired = false;
 
   static void _wire() {
@@ -49,13 +61,14 @@ class SoundPreview {
   static Stream<Duration> get duration => _player.onDurationChanged;
 
   /// Joue [url] ; [key] identifie le son (pour afficher le bon bouton lecture/pause).
-  static Future<bool> play(String key, String url, {bool loop = false}) async {
+  static Future<bool> play(String key, String url, {bool loop = false, NowPlaying? meta}) async {
     _wire();
     try {
       await _player.stop();
       await _player.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.release);
       await _player.play(UrlSource(url));
       playing.value = key;
+      if (meta != null) now.value = meta;
       return true;
     } catch (_) {
       playing.value = null;
@@ -66,6 +79,22 @@ class SoundPreview {
   static Future<void> seek(Duration d) async {
     try {
       await _player.seek(d);
+    } catch (_) {}
+  }
+
+  static Future<void> pause() async {
+    playing.value = null;
+    try {
+      await _player.pause();
+    } catch (_) {}
+  }
+
+  static Future<void> resume() async {
+    final n = now.value;
+    if (n == null) return;
+    try {
+      await _player.resume();
+      playing.value = n.key;
     } catch (_) {}
   }
 
