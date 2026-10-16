@@ -9,6 +9,7 @@ const { mergeSite, mergeAds, SLOTS } = require('../render/config');
 const { dayStr, addDays } = require('../jobs/helpers');
 const { SCHEDULE, nextRun } = require('../jobs/schedule');
 const adsterra = require('../data/adsterra');
+const learn = require('../engine/learn');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
@@ -199,8 +200,15 @@ function createAdmin(deps) {
 
   A.bilan = async (b) => {
     const days = [7, 30, 90].includes(+b.days) ? +b.days : 30;
-    const snap = await db.collection('bilan_days').where('jour', '>=', dayStr(addDays(nowD(), -days))).get();
-    return Object.assign({ jours: days }, summarize(snap.docs.map((d) => d.data().delta).filter(Boolean)));
+    // l'apprentissage se fait toujours sur 90 jours, quelle que soit la période affichée
+    const snap = await db.collection('bilan_days').where('jour', '>=', dayStr(addDays(nowD(), -90))).get();
+    const all = snap.docs.map((d) => d.data()).filter((x) => x.delta);
+    const sum90 = summarize(all.map((x) => x.delta));
+    const diagnostic = Object.assign(learn.describe(learn.buildCalibration(sum90)), { suivis: sum90.n, seuil: learn.MIN_TOTAL });
+    const from = dayStr(addDays(nowD(), -days));
+    const out = summarize(all.filter((x) => x.jour >= from).map((x) => x.delta));
+    delete out.cal;
+    return Object.assign({ jours: days, diagnostic }, out);
   };
 
   A.config = async () => {

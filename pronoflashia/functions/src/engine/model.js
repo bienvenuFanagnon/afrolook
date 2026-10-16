@@ -5,9 +5,11 @@
 const { expectedGoals, fitToMarket, impliedFromOdds, result1x2, sumWhere } = require('./poisson');
 const { expectedCount, refereeFactor } = require('./counts');
 const { buildMarkets } = require('./markets');
-const { pickMarkets, makeCalibrator } = require('./pick');
+const { pickMarkets } = require('./pick');
+const { makeCalibration } = require('./learn');
 
-const MODEL_VERSION = 'pf-1';
+// pf-2 : probabilités corrigées par le bilan réel (engine/learn.js), valeurs brutes conservées
+const MODEL_VERSION = 'pf-2';
 
 /** Arrondit trois pourcentages pour que leur somme fasse 100 (plus grand reste). */
 function round100(values) {
@@ -27,7 +29,7 @@ function round100(values) {
  *   counts?: { corners: { home:{for:{avg,n}, against:{avg,n}}, away:{...} }, ... },   // moyennes par équipe
  *   referee?: { cards:{avg,games} , fouls:{avg,games} },
  *   odds?: { home, draw, away, over25? },     // cotes décimales (sert seulement à recaler les chiffres)
- *   calibration?: bins du bilan, baseRates?
+ *   calibration?: objet de learn.buildCalibration (bilan réel), baseRates?
  * }
  */
 function predictMatch(input) {
@@ -55,6 +57,13 @@ function predictMatch(input) {
     }
   }
 
+  // Apprentissage : le niveau de buts (domicile / extérieur) est corrigé par l'écart constaté entre buts prévus et buts réels.
+  // Les estimations brutes sont conservées : c'est contre elles que le bilan mesure l'écart, jamais contre les valeurs corrigées.
+  const cal = makeCalibration(input.calibration);
+  const lamBrutHome = lamHome;
+  const lamBrutAway = lamAway;
+  if (cal && cal.goalScale) { lamHome *= cal.goalScale.home; lamAway *= cal.goalScale.away; }
+
   // Moyennes attendues pour les marchés de comptage
   const counts = {};
   for (const [kind, c] of Object.entries(input.counts || {})) {
@@ -75,22 +84,33 @@ function predictMatch(input) {
   const built = buildMarkets({ home, away, lamHome, lamAway, sampleGames: games || null, counts, baseRates: input.baseRates });
   const { matrix, marches } = built;
   const r = result1x2(matrix);
-  const [p1, pN, p2] = round100([r.p1, r.pN, r.p2]);
+  // probabilité brute gardée sur chaque pari (pctBrut) ; pct devient la probabilité corrigée par le bilan, affichée partout
+  for (const m of marches) m.pctBrut = m.pct;
+  if (cal) for (const m of marches) m.pct = cal.market(m.cle, m.famille, m.pctBrut);
+  const byKey = (k) => marches.find((m) => m.cle === k);
+  let [p1, pN, p2] = round100([r.p1, r.pN, r.p2]);
+  const c1 = byKey('res:1'), cN = byKey('res:N'), c2 = byKey('res:2');
+  if (cal && c1 && cN && c2) {
+    const tot = c1.pct + cN.pct + c2.pct;
+    [p1, pN, p2] = round100([c1.pct / tot, cN.pct / tot, c2.pct / tot]);
+  }
 
   let best = { p: -1, i: 0, j: 0 };
   for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) if (matrix[i][j] > best.p) best = { p: matrix[i][j], i, j };
 
-  const calibrate = makeCalibrator(input.calibration);
-  const { principal, secondaires } = pickMarkets(marches, home, away, calibrate);
+  const { principal, secondaires } = pickMarkets(marches, home, away);
 
   return {
     version: MODEL_VERSION,
     source,
     lamHome: Math.round(lamHome * 100) / 100,
     lamAway: Math.round(lamAway * 100) / 100,
+    lamBrutHome: Math.round(lamBrutHome * 1000) / 1000,
+    lamBrutAway: Math.round(lamBrutAway * 1000) / 1000,
+    calibre: !!cal,
     probas: { '1': p1, N: pN, '2': p2 },
-    plus25: Math.round(sumWhere(matrix, (i, j) => i + j > 2.5) * 100),
-    bttsOui: Math.round(sumWhere(matrix, (i, j) => i > 0 && j > 0) * 100),
+    plus25: cal && byKey('buts:over:2.5') ? byKey('buts:over:2.5').pct : Math.round(sumWhere(matrix, (i, j) => i + j > 2.5) * 100),
+    bttsOui: cal && byKey('buts:btts:oui') ? byKey('buts:btts:oui').pct : Math.round(sumWhere(matrix, (i, j) => i > 0 && j > 0) * 100),
     scoreProbable: `${best.i}-${best.j}`,
     principal,
     secondaires,

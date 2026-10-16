@@ -287,7 +287,21 @@ function details(rc, { m, formH, formA, h2h, rates, pool }) {
 }
 
 /** Bilan public : taux de réussite automatique. */
-function bilan(rc, { s30, weeks, recent, leagues, familles }) {
+const { safeKey: learnKey } = require('../engine/learn');
+
+/** Bloc « Ce que l'IA a appris » : corrections actuelles du moteur, en langage simple. */
+function learningBox(rc, L) {
+  if (!L) return '';
+  const t = rc.t;
+  if (!L.actif) return `<div class="box"><div class="lbl">${t.learnTitle}</div><p class="note" style="margin-top:8px">${esc(t.learnWait(L.suivis || 0, L.seuil))}</p></div>`;
+  const famName = (k) => FAMILLES_ORDRE.find((f) => learnKey(f) === k) || String(k).replace(/_/g, ' ');
+  const lines = L.familles.map((f) => t.learnFam(famLabel(rc, famName(f.nom)), f.ecart));
+  if (L.buts) lines.push(t.learnGoals(L.buts.domicile, L.buts.exterieur));
+  return `<div class="box"><div class="lbl">${t.learnTitle}</div><p class="note" style="margin:8px 0">${t.learnIntro}</p>` +
+    (lines.length ? `<ul class="ck">${lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(t.learnNone)}</p>`) + '</div>';
+}
+
+function bilan(rc, { s30, weeks, recent, leagues, familles, learning }) {
   const t = rc.t;
   const W = 560, H = 140;
   const pts = weeks.map((w) => w.taux);
@@ -311,6 +325,7 @@ function bilan(rc, { s30, weeks, recent, leagues, familles }) {
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
+    learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };

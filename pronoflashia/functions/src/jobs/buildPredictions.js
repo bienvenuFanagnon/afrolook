@@ -3,6 +3,7 @@
 
 const N = require('../data/normalize');
 const { predictMatch, MODEL_VERSION } = require('../engine/model');
+const { buildCalibration, trackRecord } = require('../engine/learn');
 const { generateText } = require('../ai/generate');
 const { summarize } = require('../engine/bilan');
 const { dayStr, addDays } = require('./helpers');
@@ -18,8 +19,7 @@ async function loadCalibration(db, now) {
   const since = dayStr(addDays(now, -90));
   const snap = await db.collection('bilan_days').where('jour', '>=', since).get();
   const days = snap.docs.map((d) => d.data().delta).filter(Boolean);
-  const s = summarize(days);
-  return s.n >= 60 ? s.bins : null;
+  return buildCalibration(summarize(days));
 }
 
 /** Tableau comparatif affiché sur la page « analyse complète ». */
@@ -39,7 +39,7 @@ function buildComparatif(recentH, recentA, gsH, gsA) {
 }
 
 /** Lignes de faits envoyées à l'IA (tous les chiffres qu'elle a le droit de citer), en français ou en anglais. */
-function buildFacts(match, gsH, gsA, h2h, lang) {
+function buildFacts(match, gsH, gsA, h2h, lang, bilan) {
   const en = lang === 'en';
   const D = match.domicile.nomCourt, E = match.exterieur.nomCourt;
   const f1 = (x) => fr(x, 1, lang);
@@ -54,6 +54,12 @@ function buildFacts(match, gsH, gsA, h2h, lang) {
     lines.push(en
       ? `In the last ${h2h.length} meetings: ${dw} win${dw === 1 ? '' : 's'} for ${D}, ${nul} draw${nul === 1 ? '' : 's'}, ${ew} win${ew === 1 ? '' : 's'} for ${E}.`
       : `Sur les ${h2h.length} dernières confrontations : ${dw} victoire${dw > 1 ? 's' : ''} de ${D}, ${nul} nul${nul > 1 ? 's' : ''}, ${ew} victoire${ew > 1 ? 's' : ''} de ${E}.`);
+  }
+  // bilan réel de ce type de pari : l'IA doit pouvoir le citer (et inviter à la prudence s'il est faible)
+  if (bilan && bilan.n >= 15) {
+    extras.push(en
+      ? `Our recent track record on this type of bet (${bilan.libelle}): ${bilan.reel}% successful over ${bilan.n} predictions.`
+      : `Notre bilan récent sur ce type de pari (${bilan.libelle}) : ${bilan.reel} % de réussite sur ${bilan.n} pronostics.`);
   }
   return { extras, h2h: lines };
 }
@@ -144,10 +150,12 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   await Promise.all(langs.map(async (lang) => {
     const key = lang === 'en' ? 'texteEn' : 'texte';
     if (textStillValid(prev, pred, key)) { texts[lang] = { texte: prev[key], sourceTexte: lang === 'en' ? prev.sourceTexteEn : prev.sourceTexte, reutilise: true }; return; }
-    const facts = buildFacts(match, gsH, gsA, h2h, lang);
+    const libelle = lang === 'en' ? labels.principalLabel(pred.principal.cle, H, A, 'en') : pred.principal.libelle;
+    const tr = trackRecord(calibration, pred.principal.cle);
+    const facts = buildFacts(match, gsH, gsA, h2h, lang, tr && { libelle, n: tr.n, reel: tr.reel });
     const ctx = Object.assign({}, base, {
       dateTexte: lang === 'en' ? `${dateLongue(match.coupDEnvoi, 'en')} at ${heure(match.coupDEnvoi)} (UTC)` : `${dateLongue(match.coupDEnvoi)} à ${heure(match.coupDEnvoi)} (heure UTC)`,
-      principal: { libelle: lang === 'en' ? labels.principalLabel(pred.principal.cle, H, A, 'en') : pred.principal.libelle, confiance: pred.principal.confiance },
+      principal: { libelle, confiance: pred.principal.confiance },
       extras: facts.extras, h2h: facts.h2h,
     });
     const gen = await generateText(ctx, providers, { lang });
@@ -160,7 +168,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   const masque = !!(match.prono && match.prono.masque);
   const prono = {
     principal: pred.principal, secondaires: pred.secondaires, probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui,
-    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway,
+    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre,
     source: pred.source, texte: texts.fr ? texts.fr.texte : null, sourceTexte: texts.fr ? texts.fr.sourceTexte : null,
     texteEn: texts.en ? texts.en.texte : null, sourceTexteEn: texts.en ? texts.en.sourceTexte : null,
     calculeLe: now.toISOString(), version: MODEL_VERSION, formeDom: base.formeDom, formeExt: base.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),

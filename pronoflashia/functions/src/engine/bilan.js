@@ -29,26 +29,34 @@ function matchDelta(match) {
     const r = res.marches && res.marches[m.cle];
     if (r === undefined) continue;
     const o = r ? 1 : 0;
+    // brut = probabilité du modèle avant correction (sert à calibrer sans s'auto-renforcer) ; pct = probabilité affichée au public
+    const brut = m.pctBrut != null ? m.pctBrut : m.pct;
     const f = safeKey(m.famille);
-    d.parFamille[f] = add(d.parFamille[f], 1, o, m.pct);
-    const b = binOf(m.pct);
-    d.parBin[b] = add(d.parBin[b], 1, o, m.pct);
+    d.parFamille[f] = add(d.parFamille[f], 1, o, brut, m.pct);
+    const b = binOf(brut);
+    d.parBin[b] = add(d.parBin[b], 1, o, brut, m.pct);
     const k = safeKey(m.cle);
-    d.parCle[k] = add(d.parCle[k], 1, o, m.pct);
+    d.parCle[k] = add(d.parCle[k], 1, o, brut, m.pct);
+  }
+  // buts prévus (estimation brute du modèle) contre buts réels : sert à corriger l'avantage du terrain et le niveau de buts
+  const pr0 = match.prono;
+  if (pr0.lamBrutHome != null && pr0.lamBrutAway != null && res.scoreDom != null && res.scoreExt != null) {
+    d.buts = { n: 1, pd: pr0.lamBrutHome, pe: pr0.lamBrutAway, rd: res.scoreDom, re: res.scoreExt };
   }
   // le pronostic principal compte aussi dans « par pari » : on le retrouve dans parCle s'il fait partie des marchés
   return d;
 }
 
-function add(prev, n, ok, pct) {
-  const p = prev || { n: 0, ok: 0, sum: 0 };
-  return { n: p.n + n, ok: p.ok + ok, sum: p.sum + pct };
+/** Compteur : sum = somme des probabilités brutes, aff = somme des probabilités affichées (par défaut les mêmes). */
+function add(prev, n, ok, pct, aff) {
+  const p = prev || { n: 0, ok: 0, sum: 0, aff: 0 };
+  return { n: p.n + n, ok: p.ok + ok, sum: p.sum + pct, aff: (p.aff || 0) + (aff == null ? pct : aff) };
 }
 
 /** Additionne deux sous-objets {clé: {n, ok, sum}}. */
 function mergeMap(a, b) {
   const out = Object.assign({}, a);
-  for (const [k, v] of Object.entries(b || {})) out[k] = add(out[k], v.n, v.ok, v.sum || 0);
+  for (const [k, v] of Object.entries(b || {})) out[k] = add(out[k], v.n, v.ok, v.sum || 0, v.aff == null ? v.sum || 0 : v.aff);
   return out;
 }
 
@@ -64,7 +72,14 @@ function mergeDelta(a, b) {
     parFamille: mergeMap(a.parFamille, b.parFamille),
     parBin: mergeMap(a.parBin, b.parBin),
     parCle: mergeMap(a.parCle, b.parCle),
+    buts: mergeButs(a.buts, b.buts),
   };
+}
+
+function mergeButs(a, b) {
+  if (!a) return b || undefined;
+  if (!b) return a;
+  return { n: a.n + b.n, pd: a.pd + b.pd, pe: a.pe + b.pe, rd: a.rd + b.rd, re: a.re + b.re };
 }
 
 const pct = (ok, n) => (n > 0 ? Math.round((ok / n) * 100) : null);
@@ -72,8 +87,9 @@ const pct = (ok, n) => (n > 0 ? Math.round((ok / n) * 100) : null);
 /** Résumé pour la page Bilan et pour la calibration, à partir d'une liste de jours. */
 function summarize(days) {
   const t = days.reduce((acc, d) => mergeDelta(acc, d), null);
-  if (!t) return { matches: 0, n: 0, ok: 0, taux: null, parLigue: {}, parConfiance: [], parFamille: {}, bins: [] };
-  const rows = (map) => Object.entries(map).map(([k, v]) => ({ k, n: v.n, ok: v.ok, taux: pct(v.ok, v.n), annonce: v.n ? Math.round(v.sum / v.n) : null }));
+  if (!t) return { matches: 0, n: 0, ok: 0, taux: null, parLigue: {}, parConfiance: [], parFamille: {}, bins: [], cal: null };
+  // annonce = probabilité affichée au public ; brut = probabilité du modèle avant correction
+  const rows = (map) => Object.entries(map).map(([k, v]) => ({ k, n: v.n, ok: v.ok, taux: pct(v.ok, v.n), annonce: v.n ? Math.round((v.aff == null ? v.sum : v.aff) / v.n) : null, brut: v.n ? v.sum / v.n : null }));
   return {
     matches: t.matches,
     n: t.principal.n,
@@ -85,6 +101,13 @@ function summarize(days) {
     parFamille: Object.fromEntries(rows(t.parFamille).map((r) => [r.k, r])),
     // tranches de 5 points : probabilité annoncée contre taux réel, sert à calibrer
     bins: rows(t.parBin).map((r) => ({ from: +r.k, to: +r.k + 5, annonce: r.annonce, reel: r.taux, n: r.n })).sort((a, b) => a.from - b.from),
+    // données d'apprentissage (probabilités brutes contre issues réelles), lues par engine/learn.js
+    cal: {
+      bins: Object.entries(t.parBin).map(([k, v]) => ({ from: +k, to: +k + 5, n: v.n, ok: v.ok, brut: v.sum / v.n })).sort((a, b) => a.from - b.from),
+      familles: Object.fromEntries(Object.entries(t.parFamille).map(([k, v]) => [k, { n: v.n, ok: v.ok, brut: v.sum / v.n }])),
+      cles: Object.fromEntries(Object.entries(t.parCle).map(([k, v]) => [k, { n: v.n, ok: v.ok, brut: v.sum / v.n }])),
+      buts: t.buts || null,
+    },
   };
 }
 
@@ -93,7 +116,7 @@ function rateByKey(days, minN = 15) {
   const t = days.reduce((acc, d) => mergeDelta(acc, d), null);
   const out = {};
   if (!t) return out;
-  for (const [k, v] of Object.entries(t.parCle)) if (v.n >= minN) out[k] = { n: v.n, annonce: Math.round(v.sum / v.n), reel: pct(v.ok, v.n) };
+  for (const [k, v] of Object.entries(t.parCle)) if (v.n >= minN) out[k] = { n: v.n, annonce: Math.round((v.aff == null ? v.sum : v.aff) / v.n), reel: pct(v.ok, v.n) };
   return out;
 }
 
