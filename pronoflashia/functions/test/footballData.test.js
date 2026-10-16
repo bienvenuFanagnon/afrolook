@@ -88,3 +88,40 @@ test('choix de la source de données', () => {
   assert.throws(() => makeApi({}), /manquant/);
   assert.throws(() => makeApi({ source: 'football-data', apiFootball: 'b' }), /FOOTBALL_DATA_TOKEN/);
 });
+
+test('premier passage : les championnats par défaut sont ajoutés une seule fois, avec la saison en cours', async () => {
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { seedDefaultLeagues } = require('../src/jobs/syncFixtures');
+  const { DEFAULT_LEAGUES } = require('../src/data/footballData');
+  const db = new FakeDb();
+  const api = { defaultLeagues: DEFAULT_LEAGUES, leagues: async ({ id }) => [{ league: { id }, seasons: [{ year: 2025, current: false }, { year: 2026, current: true }] }] };
+  const report = { erreurs: [], infos: {} };
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date('2026-10-16T05:00:00Z') }, report), 6);
+  const l = db.read('leagues', '2015');
+  assert.equal(l.saison, 2026); assert.equal(l.suivi, true); assert.equal(l.slug, 'ligue-1'); assert.equal(l.noms.en, 'Ligue 1');
+  assert.equal(db.read('leagues', '2014').noms.en, 'La Liga');
+  assert.equal(report.infos.championnatsInitialises, 6);
+  // une fois les championnats en place (ou retirés par l'admin), rien n'est rajouté
+  db.read('leagues', '2015').suivi = false;
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date() }, { erreurs: [], infos: {} }), 0);
+  // source sans championnats par défaut (API-Football) : rien
+  assert.equal(await seedDefaultLeagues({ db: new FakeDb(), api: {}, now: new Date() }, { erreurs: [], infos: {} }), 0);
+});
+
+test('premier passage : les championnats par défaut sont ajoutés une seule fois, avec la saison en cours', async () => {
+  const { FakeDb } = require('./helpers/fakeDb');
+  const { seedDefaultLeagues } = require('../src/jobs/syncFixtures');
+  const { DEFAULT_LEAGUES } = require('../src/data/footballData');
+  const db = new FakeDb();
+  const api = { defaultLeagues: DEFAULT_LEAGUES, leagues: async ({ id }) => [{ league: { id }, seasons: [{ year: 2025, current: false }, { year: 2026, current: true }] }] };
+  const report = { erreurs: [], infos: {} };
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date('2026-10-16T05:00:00Z') }, report), 6);
+  const l = db.read('leagues', '2015');
+  assert.equal(l.saison, 2026); assert.equal(l.suivi, true); assert.equal(l.slug, 'ligue-1'); assert.equal(l.noms.en, 'Ligue 1');
+  assert.equal(db.read('leagues', '2014').noms.en, 'La Liga');
+  assert.equal(report.infos.championnatsInitialises, 6);
+  // une fois les championnats en place (ou retirés par l'admin), rien n'est rajouté
+  assert.equal(await seedDefaultLeagues({ db, api, now: new Date() }, { erreurs: [], infos: {} }), 0);
+  // source sans championnats par défaut (API-Football) : rien
+  assert.equal(await seedDefaultLeagues({ db: new FakeDb(), api: {}, now: new Date() }, { erreurs: [], infos: {} }), 0);
+});

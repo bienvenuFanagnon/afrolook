@@ -15,6 +15,16 @@ const STATUS = {
   FINISHED: 'FT', AWARDED: 'AWD', POSTPONED: 'PST', CANCELLED: 'CANC', SUSPENDED: 'SUSP',
 };
 
+/** Championnats ajoutés automatiquement au premier passage (offre gratuite) ; modifiables ensuite dans l'admin. */
+const DEFAULT_LEAGUES = [
+  { apiId: 2001, nom: 'UEFA Champions League', pays: 'Europe', slug: 'ligue-des-champions', noms: { fr: 'Ligue des champions', en: 'Champions League' }, ordre: 1 },
+  { apiId: 2015, nom: 'Ligue 1', pays: 'France', slug: 'ligue-1', noms: { fr: 'Ligue 1', en: 'Ligue 1' }, ordre: 2 },
+  { apiId: 2021, nom: 'Premier League', pays: 'England', slug: 'premier-league', noms: { fr: 'Premier League', en: 'Premier League' }, ordre: 3 },
+  { apiId: 2014, nom: 'Primera Division', pays: 'Spain', slug: 'la-liga', noms: { fr: 'Liga espagnole', en: 'La Liga' }, ordre: 4 },
+  { apiId: 2019, nom: 'Serie A', pays: 'Italy', slug: 'serie-a', noms: { fr: 'Serie A', en: 'Serie A' }, ordre: 5 },
+  { apiId: 2002, nom: 'Bundesliga', pays: 'Germany', slug: 'bundesliga', noms: { fr: 'Bundesliga', en: 'Bundesliga' }, ordre: 6 },
+];
+
 /** Un match football-data.org → forme d'un élément de la réponse /fixtures d'API-Football. */
 function toFixture(m) {
   const sc = m.score || {};
@@ -66,6 +76,7 @@ function createClient({ key, fetchImpl, base, onQuota, sleep }) {
 
   return {
     quota,
+    defaultLeagues: DEFAULT_LEAGUES,
     sansStats: true, // pas de statistiques de match ni de cotes avec cette offre
     get,
     /** Matchs d'un championnat : entre deux dates (10 jours au plus) ou toute une saison. */
@@ -96,4 +107,4 @@ function createClient({ key, fetchImpl, base, onQuota, sleep }) {
   };
 }
 
-module.exports = { BASE, ApiError, createClient, toFixture, STATUS };
+module.exports = { BASE, ApiError, createClient, toFixture, STATUS, DEFAULT_LEAGUES };

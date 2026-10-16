@@ -93,6 +93,30 @@ async function syncLeagueSeason({ db, api, league, now }) {
 }
 
 /**
+ * Première utilisation : si aucun championnat n'est enregistré et que la source en propose par défaut (offre gratuite),
+ * on les ajoute avec la saison en cours. L'admin peut ensuite les modifier, en retirer ou en ajouter.
+ */
+async function seedDefaultLeagues({ db, api, now }, report) {
+  if (!api.defaultLeagues || !api.defaultLeagues.length) return 0;
+  const existing = await db.collection('leagues').get();
+  if (existing.docs.length) return 0;
+  let n = 0;
+  for (const l of api.defaultLeagues) {
+    let saison = now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
+    try {
+      const r = await api.leagues({ id: l.apiId });
+      const seasons = (r[0] && r[0].seasons) || [];
+      const cur = seasons.find((x) => x.current);
+      if (cur) saison = cur.year;
+    } catch (e) { report.erreurs.push(`${l.nom} : saison par défaut utilisée (${e.message})`); }
+    await db.collection('leagues').doc(String(l.apiId)).set(Object.assign({}, l, { saison, suivi: true, sport: 'football' }));
+    n++;
+  }
+  report.infos.championnatsInitialises = n;
+  return n;
+}
+
+/**
  * Tâche complète. opts : { db, api, now, days, reserve, forceSeason }.
  * report : objet du compte-rendu (traites, erreurs, infos).
  */
@@ -101,6 +125,7 @@ async function syncFixtures(opts, report) {
   const now = opts.now || new Date();
   const days = opts.days || 7;
   const reserve = opts.reserve == null ? 40 : opts.reserve;
+  await seedDefaultLeagues({ db, api, now }, report);
   const leagues = (await db.collection('leagues').where('suivi', '==', true).get()).docs.map((d) => d.data());
   report.infos.championnats = leagues.length;
   for (const league of leagues) {
@@ -121,4 +146,4 @@ async function syncFixtures(opts, report) {
   await recordApiQuota(db, api, now, report);
 }
 
-module.exports = { syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };
+module.exports = { seedDefaultLeagues, syncFixtures, syncLeagueFixtures, syncLeagueSeason, upsertTeam, assertQuota, COUNT_KINDS };
