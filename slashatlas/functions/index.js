@@ -279,7 +279,7 @@ async function adminData(daysIn) {
     days,
     users: us.docs.map((d) => { const x = d.data(); return { email: x.email, name: x.name || '', credits: x.credits || 0, at: ts(x.createdAt), seen: ts(x.lastSeenAt) }; }),
     ads: await adminAds(),
-    orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
+    orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, failure: x.failure || '', lastStatus: x.lastStatus || '', terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
     stats: st.docs.map((d) => { const x = d.data(); return { id: d.id, ...x, visitors: Object.keys(x.uids || {}).length }; }).sort((a, b) => a.id.localeCompare(b.id)),
     studioUsers: accCount.data().count,
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
@@ -430,6 +430,16 @@ exports.slashatlasApi = onRequest(
         if (path.endsWith('/ads')) { const r = await saveAds(b, u); return res.status(r.error ? 400 : 200).json(r); }
         const r = await studio.grant(b.email, b.credits, b.note);
         await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'grant', to: clean(b.email, 160), credits: Math.trunc(Number(b.credits)) || 0, note: clean(b.note, 120) });
+        return res.status(200).json(r);
+      }
+      if (path.endsWith('/admin/chargeback')) {
+        if (limited('a' + ipKey, 20, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        const b = body(req);
+        const r = await studio.adminChargeback(b, u.email);
+        await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'chargeback', order: clean(b.orderId, 40), note: clean(b.note, 200) });
         return res.status(200).json(r);
       }
       if (path.endsWith('/admin/evidence')) {
