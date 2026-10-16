@@ -66,7 +66,7 @@ async function route(db, urlPath, now = new Date()) {
   switch (r.name) {
     case 'home': {
       const matches = await homeMatches(db, rc);
-      return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now) }), cc(300, 600));
+      return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now) }), cc(300, 600));
     }
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
     case 'bilan': return bilanPage(db, rc);

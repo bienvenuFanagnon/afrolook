@@ -192,3 +192,29 @@ test('page coupon : bannières fixes (haut, après les coupons proposés, avant 
   const { sanitizeAds } = require('../src/http/admin');
   assert.equal(sanitizeAds({ emplacements: { coupon_liste: { actif: true, every: 4 } } }).emplacements.coupon_liste.every, 4);
 });
+
+test('menu pour téléphone (Football, Coupon, Bilan, À propos) sur toutes les pages, page courante marquée, anglais compris', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  for (const [path, current, label] of [['/', 'football', 'Football'], ['/coupon', 'coupon', 'Coupon'], ['/bilan', 'bilan', 'Bilan']]) {
+    const html = (await route(db, path, NOW)).body;
+    const nav = /<nav class="mnav"[^>]*>([\s\S]*?)<\/nav>/.exec(html);
+    assert.ok(nav, `menu téléphone sur ${path}`);
+    const links = nav[1].match(/<a href="[^"]+"[^>]*>/g) || [];
+    assert.equal(links.length, 4);
+    assert.match(nav[1], new RegExp(`<a href="[^"]+" aria-current="page"><i aria-hidden="true">[^<]+</i>${label}</a>`), `page courante ${label}`);
+    assert.equal((nav[1].match(/aria-current/g) || []).length, 1);
+  }
+  const en = (await route(db, '/en/coupon', NOW)).body;
+  assert.match(en, /<nav class="mnav"[^>]*>[\s\S]*?Bet builder[\s\S]*?Track record[\s\S]*?About/);
+});
+
+test('accueil : bloc « Coupons flash » avec liens vers le détail de chaque match et vers le constructeur', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  const html = (await route(db, '/', NOW)).body;
+  assert.match(html, /<div class="lbl"[^>]*>Coupons flash<\/div>/);
+  assert.ok((html.match(/<div class="sgi">/g) || []).length >= 1, 'au moins un coupon');
+  assert.match(html, /<a class="more-btn" href="\/coupon">Créer mon coupon /);
+  assert.ok(html.indexOf('Coupons flash') < html.indexOf('class="mc"'), 'avant la liste des matchs');
+  const en = (await route(db, '/en', NOW)).body;
+  assert.match(en, /Flash slips/); assert.match(en, /<a class="more-btn" href="\/en\/coupon">Build my slip /);
+});

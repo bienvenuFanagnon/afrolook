@@ -158,7 +158,9 @@ function header(rc, active, alternates) {
   const switchHref = (alternates && alternates[other]) || (other === 'en' ? '/en' : '/');
   return `<header class="hdr"><div class="wrap"><a class="logo" href="${rc.u('home')}" aria-label="${esc(t.homeAria)}"><span class="bolt" aria-hidden="true">⚡</span><span>Prono<em>Flash</em><small>IA</small></span></a>` +
     `<nav class="nav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}>${t.navAbout}</a></nav>` +
-    `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div></header>`;
+    `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div>` +
+    // téléphone : le menu principal est masqué sous 900 px, cette barre prend le relais, toujours visible sous l'en-tête
+    `<nav class="mnav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}><i aria-hidden="true">${t.navIcons.football}</i>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}><i aria-hidden="true">${t.navIcons.coupon}</i>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}><i aria-hidden="true">${t.navIcons.bilan}</i>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}><i aria-hidden="true">${t.navIcons.about}</i>${t.navAbout}</a></nav></header>`;
 }
 
 function sportTabs(rc) {

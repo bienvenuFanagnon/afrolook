@@ -43,12 +43,21 @@ const bilanBox = (rc, b) => (b && b.taux != null ? `<div class="box bil"><div cl
 const emptyDay = (rc) => `<div class="box"><p><b>${rc.t.emptyDayB}</b></p><p class="note" style="margin-top:6px">${rc.t.emptyDayP}</p></div>`;
 
 /** Accueil : pronos du jour (ou des prochains jours s'il n'y a rien aujourd'hui). */
-function home(rc, { matches, bilan }) {
+/** Coupons flash : les coupons prêts à l'emploi, mis en avant sur l'accueil. */
+function flashCoupons(rc, pool) {
+  if (!pool || pool.length < 2) return '';
+  const sugg = suggestions(rc, pool, true);
+  if (!sugg) return '';
+  const t = rc.t;
+  return `<div class="lbl" style="margin-top:6px">${t.flashCoupons}</div><div class="box"><p class="note" style="margin:0 0 8px">${t.flashCouponsP}</p><div class="sg">${sugg}</div><a class="more-btn" href="${rc.u('coupon')}">${t.flashCouponsBtn} <i aria-hidden="true">→</i></a></div>`;
+}
+
+function home(rc, { matches, bilan, pool: couponPool }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    `${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `${adResponsive(rc, 'haut', 'ad-top')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `<div class="mob-only box">${bilanBox(rc, bilan)}</div></div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
