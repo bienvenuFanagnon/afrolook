@@ -104,6 +104,14 @@ img{max-width:100%}
 .ad iframe{border:0;max-width:100%;display:block}
 .ad-top{min-height:50px}.ad-nat{min-height:100px}.ad-rect{min-height:250px;width:300px;margin:0 auto}.ad-tall{min-height:600px;width:300px}.ad-verdict{min-height:100px}
 .ad.dk{display:none}
+.mc .more{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px 14px;border-radius:10px;background:var(--flash);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:.2px}
+.mc .more i{font-style:normal;font-size:18px;line-height:1}
+.mc .more.off{background:transparent;color:var(--mut);border:1px solid var(--line);font-weight:600}
+.mc:hover .more{filter:brightness(1.08)}
+.op b.num{white-space:nowrap}
+.moreb .gh{font-family:var(--fd);font-size:18px;margin:14px 0 8px;color:var(--tx)}
+.more-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;padding:13px 16px;border-radius:12px;background:var(--flash);color:var(--ink);font-weight:700;text-align:center;text-decoration:none}
+.more-btn i{font-style:normal;font-size:20px}
 .ad-end{margin:14px 0 6px;min-height:50px}.ad-avance{margin:10px auto 12px;min-height:250px}
 .adv{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--s1);padding:0 12px 12px}
 .adv>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px;padding:14px 4px;color:var(--tx)}

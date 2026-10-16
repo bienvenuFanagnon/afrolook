@@ -117,6 +117,21 @@ const jsonScript = (id, obj) => `<script type="application/json" id="${id}">${JS
 
 const addBtn = (rc, m, mk) => `<button type="button" class="add" data-add="${esc(m.id)}|${esc(mk.cle)}" aria-pressed="false" aria-label="${esc(rc.t.addAria(betLabel(rc, m, mk)))}">＋</button>`;
 
+/**
+ * Plus de pronostics sur un match : les meilleurs paris de chaque famille (jusqu'à n), hors pronostic principal,
+ * fiabilité moyenne ou haute et probabilité utile (ni douteuse, ni évidente). Classés par groupe d'affichage.
+ */
+const GROUPS = [['gMain', ['Résultat', 'Buts']], ['gHalf', ['Mi-temps', 'Handicap', 'Score']], ['gOther', ['Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux']]];
+function moreMarkets(p, n = 3) {
+  const main = p.principal && p.principal.cle;
+  const byFam = {};
+  for (const x of p.marches || []) {
+    if (x.cle === main || x.fiabilite === 'faible' || x.pct < 55 || x.pct >= coupon.MAX_USEFUL_PCT) continue;
+    (byFam[x.famille] = byFam[x.famille] || []).push(x);
+  }
+  return GROUPS.map(([key, fams]) => ({ key, items: fams.filter((f) => byFam[f]).flatMap((f) => byFam[f].sort((a, b) => b.pct - a.pct).slice(0, n)) })).filter((g) => g.items.length);
+}
+
 /** Marchés solides à proposer d'un clic. */
 function solidMarkets(p, n = 3) {
   const fam = new Set();
@@ -150,7 +165,14 @@ function match(rc, { m, same, h2h }) {
   const analyse = tx ? `<div class="box an"><div class="lbl">${t.analysis}</div><span class="ai">${textSource(rc, p) === 'secours' ? t.aiFallback : t.aiBadge}</span><p>${esc(tx.analyse)}</p><ul class="kp">${tx.pointsCles.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
   const h2hHtml = h2h && h2h.length ? `<div class="box"><div class="lbl">${t.h2h}</div>${h2hTable(rc, h2h)}</div>` : '';
   const solid = p ? solidMarkets(p) : [];
-  const addBox = solid.length ? `<div class="box"><div class="lbl">${t.addToCoupon}</div><div class="opts">${solid.map((x) => `<div class="op ${lvlClass(x.pct)}"><span>${esc(betLabel(rc, m, x))}<small>${esc(famLabel(rc, x.famille))}</small></span><b class="num">${pct(rc, x.pct)}</b>${addBtn(rc, m, x)}</div>`).join('')}</div></div>` : '';
+  const moreGroups = p && p.visible !== false ? moreMarkets(p) : [];
+  const opt = (x) => `<div class="op ${lvlClass(x.pct)}"><span>${esc(betLabel(rc, m, x))}<small>${esc(famLabel(rc, x.famille))}</small></span><b class="num">${pct(rc, x.pct)}</b>${addBtn(rc, m, x)}</div>`;
+  // les groupes sont séparés par des annonces : native après le premier, bannière après le deuxième
+  const between = [adSlot(rc, 'native', { cls: 'ad-nat' }), adResponsive(rc, 'fin', 'ad-end')];
+  const morePronos = moreGroups.length ? `<div class="box moreb"><div class="lbl">${t.morePronos}</div><p class="note" style="margin:6px 0 4px">${t.morePronosP}</p>` +
+    moreGroups.map((g, i) => `<h3 class="gh">${t[g.key]}</h3><div class="opts">${g.items.map(opt).join('')}</div>${i < moreGroups.length - 1 ? between[i] || '' : ''}`).join('') +
+    `<a class="more-btn" href="${rc.u('analysis', m)}">${t.moreAnalysisBtn} <i aria-hidden="true">→</i></a></div>` : '';
+  const addBox = morePronos;
   const others = same.filter((x) => x.id !== m.id).slice(0, 4);
   const side = sideColumn(rc, {
     afl: 'fiche',
@@ -316,4 +338,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };

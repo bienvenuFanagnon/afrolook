@@ -77,7 +77,7 @@ function matchCard(rc, m) {
   if (m.statut === 'termine' && m.resultat) {
     const r = m.resultat;
     const mark = r.reussi === true ? '<span class="badge-ok">✅</span>' : r.reussi === false ? '<span class="badge-ko">❌</span>' : '';
-    return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.finalScore}</span><b>${r.scoreDom} - ${r.scoreExt}</b></div><div class="res">${mark}</div></div>${p ? `<div class="sc"><span>${t.ourPrediction}${colon(rc)} ${esc(pickLabel(rc, m))}</span></div>` : ''}</a>`;
+    return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.finalScore}</span><b>${r.scoreDom} - ${r.scoreExt}</b></div><div class="res">${mark}</div></div>${p ? `<div class="sc"><span>${t.ourPrediction}${colon(rc)} ${esc(pickLabel(rc, m))}</span></div>` : ''}<span class="more off">${t.moreDetailsDone} <i aria-hidden="true">›</i></span></a>`;
   }
   if (!p || p.visible === false) return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.prediction}</span><b>${t.inPrep}</b></div></div></a>`;
   const pr = p.probas;
@@ -86,7 +86,7 @@ function matchCard(rc, m) {
   return `<a class="mc" href="${href}">${head}${teams}<div class="pr"><div><span class="pk1">${t.prediction}</span><b>${esc(pickLabel(rc, m))}</b></div><div class="cf num${low}">${pct(rc, p.principal.confiance)}<small>${t.confidence}</small></div></div>` +
     `<div class="bars" role="img" aria-label="${esc(t.probsAria)}"><i style="flex:${pr['1']};background:var(--flash)"></i><i style="flex:${pr.N};background:#6b7899"></i><i style="flex:${pr['2']};background:var(--cy)"></i></div>` +
     `<div class="bl num"><span>1 · ${pct(rc, pr['1'])}</span><span>${t.draw} · ${pct(rc, pr.N)}</span><span>2 · ${pct(rc, pr['2'])}</span></div>` +
-    `<div class="sc">${sec}</div></a>`;
+    `<div class="sc">${sec}</div><span class="more">${t.moreDetails} <i aria-hidden="true">›</i></span></a>`;
 }
 
 /**

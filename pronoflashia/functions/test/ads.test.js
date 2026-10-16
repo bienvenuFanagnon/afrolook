@@ -70,3 +70,33 @@ test('emplacements : « avance » et « fin » existent dans la configuration, �
   assert.equal(a.emplacements.avance.actif, false); assert.equal(a.emplacements.fin.actif, false);
   assert.equal(a.afrolook.every, 6);
 });
+
+test('carte de match : bouton « Voir plus de détails » (français et anglais), version discrète pour un match terminé', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  const fr = (await route(db, '/', NOW)).body;
+  assert.match(fr, /<span class="more">Voir plus de détails <i aria-hidden="true">›<\/i><\/span><\/a>/);
+  const en = (await route(db, '/en', NOW)).body;
+  assert.match(en, /<span class="more">See more details /);
+  const past = (await route(db, '/football/2026-10-12', NOW)).body;
+  if (/class="mc"/.test(past)) assert.match(past, /<span class="more off">Voir le détail du match/);
+});
+
+test('fiche du match : plus de pronostics par groupe, annonces entre les groupes, bouton vers l\'analyse complète', async () => {
+  const db = await withAds({ actif: true, afrolook: { actif: true, every: 6, part: 0 }, emplacements: { native: slot({ every: 4 }), fin: slot({ dk: [728, 90], mo: [320, 100] }) } });
+  const href = /href="(\/football\/[a-z0-9-]+\/[a-z0-9-]+)"/.exec((await route(db, '/', NOW)).body)[1];
+  const html = (await route(db, href, NOW)).body;
+  const block = /<div class="box moreb">([\s\S]*?)<a class="more-btn"/.exec(html);
+  assert.ok(block, 'bloc « Plus de pronostics »');
+  assert.match(block[1], /<h3 class="gh">Résultat et buts<\/h3>/);
+  assert.ok((block[1].match(/class="op /g) || []).length >= 6, 'au moins 6 pronostics supplémentaires');
+  assert.match(block[1], /data-ad="native"/); assert.match(block[1], /data-ad="fin"/);
+  assert.match(html, /class="more-btn" href="[^"]+\/analyse">Voir plus de détails : l'analyse complète/);
+  // le pronostic principal n'est pas répété, aucun pari trop évident ni peu fiable
+  const { moreMarkets } = require('../src/render/pages');
+  const prono = { principal: { cle: 'a' }, marches: [
+    { cle: 'a', famille: 'Résultat', pct: 70, fiabilite: 'haute' }, { cle: 'b', famille: 'Résultat', pct: 66, fiabilite: 'haute' },
+    { cle: 'c', famille: 'Buts', pct: 95, fiabilite: 'haute' }, { cle: 'd', famille: 'Buts', pct: 54, fiabilite: 'haute' },
+    { cle: 'e', famille: 'Corners', pct: 60, fiabilite: 'faible' }, { cle: 'f', famille: 'Corners', pct: 61, fiabilite: 'moyenne' } ] };
+  const g = moreMarkets(prono);
+  assert.deepEqual(g.map((x) => [x.key, x.items.map((i) => i.cle)]), [['gMain', ['b']], ['gOther', ['f']]]);
+});
