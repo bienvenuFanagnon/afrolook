@@ -50,12 +50,23 @@ Page « Musique » (menu principal et accès depuis le fil), thèmes clair et so
 5. **Favoris** : cœur sur n'importe quel titre (gratuit ou acheté).
 Page d'un titre : extrait de 30 s (déjà fait), prix d'utilisation et de vente, **Acheter**, **Créer un post**, posts faits avec ce son (5 par 5, déjà fait), **Signaler**.
 
-## 5. Lecture hors application
+## 5. Lecture hors application et téléchargement « façon YouTube »
 
-- Paquet `audio_service` + `just_audio` : service audio en avant-plan Android (notification avec pause/suivant/pochette), `UIBackgroundModes: audio` et session audio sur iPhone ; commandes sur l'écran verrouillé.
-- Hors ligne : téléchargement par `musicDownloadUrl` (lien signé de 5 minutes, limité à N appareils et M téléchargements par jour), fichier chiffré (AES) avec une clé liée au compte et à l'appareil, stocké dans le dossier privé de l'application, lu uniquement par Afrolook.
-- Export en fichier libre : uniquement si `allowFileExport` (choix de l'artiste) ; sinon lecture dans l'application seulement.
-- Nécessite une nouvelle version de l'application sur les stores (pas de simple mise à jour Shorebird : paquets natifs).
+Décision : un titre payant n'est **jamais** téléchargeable en fichier libre. « Télécharger » veut dire : disponible hors ligne **dans Afrolook**, invisible ailleurs, comme sur YouTube.
+
+**Lecture en arrière-plan** : `audio_service` + `just_audio` (service audio Android avec notification pause/suivant/pochette, `UIBackgroundModes: audio` et session audio sur iPhone, commandes sur l'écran verrouillé). Nécessite une nouvelle version des stores (paquets natifs, pas de simple mise à jour Shorebird).
+
+**Téléchargement protégé** :
+1. Le téléphone demande une licence à `musicLicense({soundId, deviceId, attestation})`. Le serveur vérifie : achat présent, compte valide, titre non suspendu, appareil authentique (Play Integrity sur Android, App Attest sur iPhone), moins de 3 appareils.
+2. Le serveur envoie le titre **chiffré** (AES-256-GCM par blocs, clé aléatoire propre au compte, à l'appareil et au titre) avec une marque sonore invisible propre à l'acheteur. La clé est rangée dans le coffre du téléphone (Keystore Android / Keychain iOS), jamais à côté du fichier.
+3. Le fichier est écrit dans le dossier **privé** de l'application (Android : stockage interne de l'appli, hors MediaStore ; iPhone : Application Support, exclu des sauvegardes iCloud), avec une extension sans rapport avec l'audio. Il n'apparaît ni dans les fichiers, ni dans la galerie, ni dans les récents, ni dans les sauvegardes.
+4. La lecture déchiffre en mémoire (source audio personnalisée) : aucun fichier en clair n'existe sur le téléphone. Android : la lecture est marquée non capturable par les autres applications (`ALLOW_CAPTURE_BY_NONE`).
+5. Licence de 30 jours : renouvelée automatiquement en ligne. Achat annulé, compte suspendu ou titre retiré = licence refusée, fichier effacé à la prochaine ouverture. Téléphone vendu ou perdu : l'appareil se retire depuis le compte.
+6. Écoute en ligne : liens signés de 5 minutes, par morceaux (Range), jamais de lien permanent.
+
+**Protections supplémentaires** : limite de téléchargements par jour ; détection d'un appareil modifié (root, jailbreak) avant licence ; marque sonore invisible par acheteur pour retrouver l'origine d'une fuite ; **crédit automatique** « Musique : titre, artiste » (avec lien vers la page du titre) sur chaque post fait avec un son, pour que l'artiste soit toujours cité ; procédure de plainte et retrait immédiat.
+
+**Limite assumée** : aucun système n'empêche d'enregistrer le son avec un autre appareil (micro). Le but est de rendre la copie pénible, de la tracer et de la retirer vite. Un son utilisé dans une vidéo publiée est mélangé dans la vidéo : c'est visible de tous comme n'importe quelle vidéo, d'où le crédit automatique.
 
 ## 6. Du fil à la vidéo
 
@@ -84,7 +95,7 @@ AdMob d'abord, pub Afrolook en repli (règle appliquée partout). Emplacements :
 | Payer deux fois / jamais | Un document `ArtistSoundUses/{uid}_{jobId}` par montage ; débit seulement après montage réussi | fait, testé |
 | Supprimer le son d'un autre | `artistSoundDelete` : propriétaire ou admin ; l'artiste retape le titre exact | fait, testé |
 | Abus de signalements | Un par personne et par son ; 3 = suspension (réversible par l'admin) ; l'artiste ne peut pas signaler son propre son | fait, testé |
-| Fuite d'un titre acheté | Liens signés courts, fichiers chiffrés liés à l'appareil, limite d'appareils et de téléchargements, marque sonore invisible par acheteur pour retrouver la source | à faire (phases 2–3) |
+| Fuite d'un titre acheté | Téléchargement caché et chiffré dans l'application (§ 5), licence de 30 jours, 3 appareils, appareil authentique exigé, marque sonore invisible par acheteur, liens signés de 5 minutes | à faire (phases 2–3) |
 | Copie par enregistrement d'écran/micro | Aucune protection technique complète possible : dissuader, retrouver, retirer | limite assumée |
 | Droits d'auteur : artiste qui dépose un titre qu'il ne possède pas | Case de certification obligatoire, sanction du compte, retrait immédiat sur plainte, preuve demandée au vrai auteur | fait (certification), procédure à documenter |
 | Mineurs, contenu choquant | Écoute avant validation ; motif « choquant » dans le signalement | fait |
@@ -100,10 +111,12 @@ Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite 
 5. Vidéo avec musique seule + export (1 semaine).
 Estimations de travail, à confirmer.
 
-## 11. Décisions à prendre
+## 11. Décisions prises
 
-1. Part de l'artiste sur une vente : 60 % ou plus ?
-2. Fourchettes de prix (vente 50–500 pièces, utilisation 2–20) ?
-3. Fichier libre pour les titres payants ou lecture dans l'application seulement ? (recommandé : lecture dans l'application)
-4. Gold/Premium : écoute gratuite de tout ou seulement sans pub ?
-5. Validation : équipe seule, ou aussi des artistes de confiance ? (recommandé : équipe seule au début)
+1. Artiste : 60 % de chaque vente et de chaque utilisation.
+2. Prix : vente de 50 à 500 pièces, utilisation de 2 à 20 pièces.
+3. Titres payants : lecture et téléchargement dans l'application seulement (voir § 5), jamais en fichier libre.
+4. Gold et Premium : sans pub ; un titre payant reste payant (proposition de l'équipe technique : l'artiste est toujours payé).
+5. Validation : l'équipe seule au début.
+
+Reste ouvert : les pays supplémentaires coûtent-ils des pièces (même grille que les posts : gratuit 1 pays, Premium 20, Gold tous) ?
