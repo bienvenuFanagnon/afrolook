@@ -84,7 +84,13 @@ export const musicStreamUrl = onCall({ timeoutSeconds: 30, memory: "256MiB" }, a
   const own = sound.get("userId") === uid;
   if (!own && sound.get("status") !== "validated") throw new HttpsError("failed-precondition", "Ce titre n'est plus disponible.");
   const free = sound.get("pricing") === "free";
-  if (!own && !free && !lib.exists) throw new HttpsError("permission-denied", "ACHAT_REQUIS");
+  // Titre payant non acheté : une écoute complète est possible une fois après une pub regardée (musicAdListen)
+  let adGrant: FirebaseFirestore.DocumentReference | null = null;
+  if (!own && !free && !lib.exists) {
+    const g = await db.collection("MusicAdListens").doc(`${uid}_${soundId}`).get();
+    if (!g.exists || g.get("used") === true || Date.now() - num(g.get("grantedAt")) > AD_GRANT_MS) throw new HttpsError("permission-denied", "ACHAT_REQUIS");
+    adGrant = g.ref;
+  }
   const path = (sound.get("audioPath") as string | undefined) ?? storagePathFromUrl(String(sound.get("audioUrl") ?? ""));
   if (!path) throw new HttpsError("not-found", "Fichier introuvable.");
 
@@ -98,7 +104,80 @@ export const musicStreamUrl = onCall({ timeoutSeconds: 30, memory: "256MiB" }, a
   });
 
   const url = await tempListenUrl(path);
-  return { url, expiresInSec: 600 };
+  if (adGrant) await adGrant.update({ used: true, usedAt: Date.now() });
+  return { url, expiresInSec: 600, viaAd: adGrant != null };
+});
+
+/**
+ * Écoute complète d'un titre payant contre une pub récompensée, une seule fois par titre et par jour.
+ * La pub vue est comptée par le serveur (réserve `AdRewards`, la même que la page Récompenses et les Contes) ;
+ * 5 écoutes de ce type au maximum par jour. Le titre n'est ni acheté, ni téléchargeable : seule l'écoute en ligne est ouverte.
+ */
+const AD_LISTENS_PER_DAY = 5;
+const AD_GRANT_MS = 30 * 60 * 1000;
+const dayCompact = () => new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
+export const musicAdListen = onCall({ timeoutSeconds: 20, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const soundId = (request.data as { soundId?: unknown })?.soundId;
+  if (!okId(soundId)) throw new HttpsError("invalid-argument", "Titre invalide.");
+
+  const soundRef = db.collection("artist_sounds").doc(soundId);
+  const libRef = db.collection("MusicLibrary").doc(`${uid}_${soundId}`);
+  const grantRef = db.collection("MusicAdListens").doc(`${uid}_${soundId}`);
+  const poolRef = db.collection("AdRewards").doc(`${uid}_${dayCompact()}`);
+  const limRef = db.collection("MusicStreamLimits").doc(`${uid}_adlisten_${day()}`);
+
+  return db.runTransaction(async (tx) => {
+    const [sound, lib, grant, pool, lim] = await Promise.all([tx.get(soundRef), tx.get(libRef), tx.get(grantRef), tx.get(poolRef), tx.get(limRef)]);
+    if (!sound.exists || sound.get("status") !== "validated") throw new HttpsError("failed-precondition", "RETIRE");
+    if (sound.get("pricing") === "free" || sound.get("userId") === uid || lib.exists) return { ok: true, already: true };
+    const now = Date.now();
+    // Une écoute déjà accordée et pas encore utilisée : pas de deuxième pub consommée
+    if (grant.exists && grant.get("used") !== true && now - num(grant.get("grantedAt")) <= AD_GRANT_MS) return { ok: true, already: true };
+    const n = num(lim.get("n"));
+    if (n >= AD_LISTENS_PER_DAY) throw new HttpsError("resource-exhausted", "LIMITE_JOUR");
+    const pending = num(pool.get("pending"));
+    if (pending < 1) throw new HttpsError("failed-precondition", "NO_ADS");
+    tx.set(poolRef, { pending: pending - 1 }, { merge: true });
+    tx.set(limRef, { uid, n: n + 1, day: day(), updatedAt: now }, { merge: true });
+    tx.set(grantRef, { uid, soundId, grantedAt: now, used: false });
+    tx.set(db.collection("AdRewardStats").doc(dayCompact()), { day: dayCompact(), adsSpent: FieldValue.increment(1), musicAdListens: FieldValue.increment(1) }, { merge: true });
+    return { ok: true };
+  });
+});
+
+/**
+ * Revenus estimés des pubs de la page Musique (bannière, pub dans les listes) : l'application envoie les événements « paid »
+ * d'AdMob, regroupés. Indicatif seulement (un téléphone modifié pourrait tricher) ; le revenu officiel est dans la console AdMob,
+ * emplacement par emplacement.
+ */
+export const musicAdPaid = onCall({ timeoutSeconds: 15, memory: "256MiB" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
+  const events = Array.isArray((request.data as { events?: unknown })?.events) ? ((request.data as { events: unknown[] }).events as Record<string, unknown>[]) : [];
+  const clean = events.slice(0, 50).filter((e) => (e.p === "banner" || e.p === "native") && /^[A-Z]{3}$/.test(String(e.c)) && Number.isFinite(Number(e.v)) && Number(e.v) >= 0 && Number(e.v) < 5e7);
+  if (!clean.length) return { ok: true, n: 0 };
+  const limRef = db.collection("MusicStreamLimits").doc(`${uid}_ads_${day()}`);
+  const stat = db.collection("MusicAdStats").doc(dayCompact());
+  await db.runTransaction(async (tx) => {
+    const l = await tx.get(limRef);
+    const n = num(l.get("n"));
+    if (n >= 300) return;
+    tx.set(limRef, { uid, n: n + clean.length, day: day(), updatedAt: Date.now() }, { merge: true });
+    // FieldValue.increment répété sur une même clé : regroupé avant l'écriture
+    const sum = new Map<string, number>();
+    for (const e of clean) {
+      sum.set(`impr_${e.p}`, (sum.get(`impr_${e.p}`) ?? 0) + 1);
+      const k = `micros_${e.c}_${e.p}`;
+      sum.set(k, (sum.get(k) ?? 0) + Math.round(Number(e.v)));
+    }
+    const grouped: Record<string, unknown> = { day: dayCompact() };
+    for (const [k, v] of sum) grouped[k] = FieldValue.increment(v);
+    tx.set(stat, grouped, { merge: true });
+  });
+  return { ok: true, n: clean.length };
 });
 
 /**

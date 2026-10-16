@@ -59,4 +59,4 @@ export * from "./posts/linkPreview";
 export * from "./team/teamHub";
 export { renderStudioMontage } from "./studio/renderMontage";
 export { artistSoundCountries, onArtistSoundCreated, artistSoundDelete, artistSoundAdminUrl, artistSoundReport, artistSoundLinkPost } from "./studio/artistSoundGuard";
-export { musicBuy, musicStreamUrl, musicLicense, cleanupTempListen } from "./studio/musicLibrary";
+export { musicBuy, musicStreamUrl, musicLicense, musicAdListen, musicAdPaid, cleanupTempListen } from "./studio/musicLibrary";

@@ -40,6 +40,7 @@ import 'montage/montage_catalog.dart';
 import 'montage/montage_editor_page.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
+import '../../ads/music_ads.dart';
 import 'sound_countries.dart';
 import 'studio_models.dart';
 import '../music/music_page.dart';
@@ -749,11 +750,12 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   bool _owned = false;
   bool _buying = false;
   bool _loadingFull = false;
+  bool _adGranted = false; // écoute complète ouverte une fois par une pub récompensée
 
   bool get _own => widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
 
   /// Écoute en entier : titre gratuit, acheté, ou à soi. Sinon, extrait de 30 s.
-  bool get _full => widget.sound.isFree || _own || _owned;
+  bool get _full => widget.sound.isFree || _own || _owned || _adGranted;
 
   @override
   void initState() {
@@ -829,6 +831,26 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     if (!mounted) return;
     setState(() => _dl = null);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(r.ok ? 'Titre disponible hors ligne dans Afrolook ✅' : (r.message ?? 'Téléchargement impossible.'))));
+  }
+
+  Future<void> _listenWithAd() async {
+    setState(() => _loadingFull = true);
+    final r = await MusicAds.listenWithAd(widget.sound.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+    if (!mounted) return;
+    if (r.outcome != MusicAdOutcome.ok || r.url == null) {
+      setState(() => _loadingFull = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicAds.message(r.outcome))));
+      return;
+    }
+    final s = widget.sound;
+    setState(() {
+      _adGranted = true;
+      _loadingFull = false;
+      _pos = Duration.zero;
+      _dur = Duration(milliseconds: s.durationMs > 0 ? s.durationMs : 30000);
+    });
+    final ok = await SoundPreview.play(key, r.url!, meta: NowPlaying(key: key, title: s.title, subtitle: 'Titre complet · écoute avec pub', coverUrl: s.coverImageUrl));
+    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
   }
 
   Future<void> _buy() async {
@@ -935,6 +957,20 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
             },
           ),
         const SizedBox(height: 14),
+        // Écoute complète unique contre une pub récompensée
+        if (!s.isFree && !_own && !_owned && !_adGranted && MusicAds.canOfferRewarded(Provider.of<UserAuthProvider>(context, listen: false).loginUserData))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SizedBox(
+              height: 46,
+              child: OutlinedButton.icon(
+                onPressed: _loadingFull ? null : _listenWithAd,
+                icon: Icon(Icons.ondemand_video_rounded, color: c.primary),
+                label: Text('Écouter en entier avec une pub (une fois)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+                style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              ),
+            ),
+          ),
         // Achat du titre complet
         if (s.forSale && !_own && !_owned)
           Container(

@@ -80,6 +80,16 @@ class AdConfig {
   bool get commentsNative => _b('commentsNative', true);
   bool get listsNative => _b('listsNative', true);
 
+  // Page Musique : emplacements AdMob dédiés (pour mesurer leur revenu à part dans la console AdMob)
+  bool get musicBanner => _b('musicBanner', true);
+  bool get musicNative => _b('musicNative', true);
+  /// Pub plein écran entre deux écoutes : tous les N titres lancés, 3 par jour au plus, jamais pendant un titre.
+  bool get musicInterstitial => _b('musicInterstitial', true);
+  int get musicInterstitialEvery => kDebugMode ? 2 : _i('musicInterstitialEvery', 5).clamp(2, 30);
+  int get musicInterstitialMaxPerDay => kDebugMode ? 99 : _i('musicInterstitialMaxPerDay', 3).clamp(0, 20);
+  /// Écouter un titre payant en entier contre une pub récompensée.
+  bool get musicRewarded => _b('musicRewarded', true);
+
   // Discussions et groupes (liste des conversations, fil des groupes, carte « pub bonus »)
   /// Pub native dans la liste des conversations : à la ligne N, puis toutes les N lignes.
   bool get chatListNative => _b('chatListNative', true);
@@ -112,6 +122,16 @@ class AdConfig {
   /// Identifiant d'emplacement : test en développement, sinon Firestore (`units.<plateforme>.<type>`),
   /// sinon (Android) ceux déjà créés. Vide = type indisponible.
   String unit(String type) {
+    // Emplacements dédiés à la page Musique (`musicBanner`, `musicNative`) : à défaut, ceux de la bannière / du natif habituels
+    if (type == 'musicBanner' || type == 'musicNative') {
+      final base = type == 'musicBanner' ? 'banner' : 'native';
+      final units = _d['units'];
+      if (!testMode && units is Map && units[platform] is Map) {
+        final v = (units[platform] as Map)[type];
+        if (v is String && v.isNotEmpty) return v;
+      }
+      return unit(base);
+    }
     if (testMode) return _testIds[platform]![type] ?? '';
     final units = _d['units'];
     if (units is Map && units[platform] is Map) {

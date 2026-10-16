@@ -10,7 +10,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
+
 import '../../ads/ad_slot.dart';
+import '../../ads/music_ads.dart';
+import '../../providers/authProvider.dart';
 import '../../services/offline_music_service.dart';
 import '../pub/afrolook_inline_ad.dart';
 import '../../theme/app_colors.dart';
@@ -137,6 +141,9 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       if (SoundPreview.playing.value == key) return;
     }
     setState(() => _loadingKey = key);
+    // Pub plein écran rare, seulement entre deux titres (jamais pendant l'écoute)
+    await MusicAds.beforeTrack(context.read<UserAuthProvider>().loginUserData);
+    if (!mounted) return;
     // Titre téléchargé : lu depuis l'espace privé (fonctionne sans internet)
     if (it.kind == _Kind.artist && OfflineMusic.has(it.id)) {
       final err = await OfflineMusic.play(it.id, title: it.title, key: key);
@@ -228,6 +235,46 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     if (SoundPreview.now.value?.key == it.playKey) await SoundPreview.stop();
     await OfflineMusic.remove(it.id);
   }
+
+  /// Titre payant pas encore acheté : l'écouter en entier, une fois, après une pub récompensée.
+  Future<void> _playWithAd(_Item it) async {
+    final c = AppColors.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Écouter en entier ?', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+        content: Text('Regarde une courte pub pour écouter « ${it.title} » en entier, une fois. Pour le garder dans ta bibliothèque et l’écouter quand tu veux, achète-le.',
+            style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Non merci', style: TextStyle(color: c.textSecondary))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Regarder la pub', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _loadingKey = it.playKey);
+    final r = await MusicAds.listenWithAd(it.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+    if (!mounted) return;
+    if (r.outcome != MusicAdOutcome.ok || r.url == null) {
+      setState(() => _loadingKey = null);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicAds.message(r.outcome))));
+      return;
+    }
+    setState(() => _pos = Duration.zero);
+    final played = await SoundPreview.play(it.playKey, r.url!, meta: NowPlaying(key: it.playKey, title: it.title, subtitle: 'Titre complet · écoute avec pub', coverUrl: it.coverUrl));
+    if (!mounted) return;
+    setState(() => _loadingKey = null);
+    if (!played) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce titre. Vérifie ta connexion.')));
+  }
+
+  bool _canListenWithAd(_Item it) =>
+      it.kind == _Kind.artist &&
+      it.sound != null &&
+      !it.sound!.isFree &&
+      !it.owned &&
+      it.sound!.userId != FirebaseAuth.instance.currentUser?.uid &&
+      MusicAds.canOfferRewarded(context.read<UserAuthProvider>().loginUserData);
 
   void _createOwnVideo(_Item it) async {
     final music = it.sound != null ? MontageMusic.artist(it.sound!) : (it.track != null ? MontageMusic.free(it.track!) : null);
@@ -368,7 +415,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
         // Bannière sous la liste, seulement sur un écran assez haut
         if (MediaQuery.of(context).size.height >= 700)
-          AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
+          AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.musicBanner, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
         if (_miniPlayer(c) != null) _miniPlayer(c)!,
       ]),
     );
@@ -427,7 +474,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
         if ((i + 1) % 6 == 0 && i != items.length - 1)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: AdSlot(key: ValueKey('music_ad_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
+            child: AdSlot(key: ValueKey('music_ad_$i'), kind: AdSlotKind.musicList, own: () => const AfrolookInlineAd(compact: true), admobFirst: true),
           ),
       ],
     ]);
@@ -521,6 +568,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                   onSelected: (v) {
                     if (v == 'create') _create(it);
                     if (v == 'video') _createOwnVideo(it);
+                    if (v == 'adlisten') _playWithAd(it);
                     if (v == 'open') _open(it);
                     if (v == 'buy' && it.sound != null) buyTrack(context, it.sound!);
                     if (v == 'download') _download(it);
@@ -531,6 +579,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                     PopupMenuItem(value: 'create', child: Text(it.sound != null && it.paid ? '🎬 Créer un post (${it.sound!.unitPrice} 🪙)' : '🎬 Créer un post avec ce son')),
                     PopupMenuItem(value: 'video', child: Text(it.sound != null && it.paid ? '🎥 Ma vidéo avec ce son (${it.sound!.unitPrice} 🪙)' : '🎥 Ma vidéo avec ce son')),
                     if (it.sound != null && it.sound!.forSale && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) PopupMenuItem(value: 'buy', child: Text('🛒 Acheter le titre · ${it.sound!.saleCoins} 🪙')),
+                    if (_canListenWithAd(it)) const PopupMenuItem(value: 'adlisten', child: Text('🎧 Écouter en entier (une pub)')),
                     if (_canDownload(it))
                       PopupMenuItem(value: OfflineMusic.has(it.id) ? 'undownload' : 'download', child: Text(OfflineMusic.has(it.id) ? '🗑️ Retirer du téléphone' : '⬇️ Télécharger (écouter sans internet)')),
                     if (it.kind == _Kind.artist) const PopupMenuItem(value: 'open', child: Text('📄 Voir le titre et ses posts')),
