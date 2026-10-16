@@ -1,0 +1,469 @@
+// Page Musique d'Afrolook : écouter, aimer et utiliser les musiques gratuites d'Afrolook et les sons des artistes.
+// Onglets : Pour toi · Gratuites · Artistes · Favoris. Lecteur réduit en bas. Thèmes clair et sombre (AppColors).
+// À venir (phases suivantes) : achat et bibliothèque, lecture en arrière-plan, téléchargement protégé.
+
+import 'dart:async';
+import 'dart:math';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+import '../../theme/app_colors.dart';
+import '../studio/artist_marketplace.dart';
+import '../studio/artist_sound_common.dart';
+import '../studio/montage/montage_music.dart';
+import 'music_favorites.dart';
+
+enum _Kind { free, artist }
+
+class _Item {
+  _Item.free(StudioTrack t)
+      : kind = _Kind.free,
+        id = t.id,
+        title = t.title,
+        subtitle = '${t.mood} · Musique Afrolook',
+        emoji = t.emoji,
+        coverUrl = null,
+        previewUrl = null,
+        paid = false,
+        track = t,
+        sound = null;
+
+  _Item.artist(ArtistSound s)
+      : kind = _Kind.artist,
+        id = s.id,
+        title = s.title,
+        subtitle = s.genre != null && s.genre!.isNotEmpty ? s.genre! : 'Artiste Afrolook',
+        emoji = '🎤',
+        coverUrl = s.coverImageUrl,
+        previewUrl = s.previewUrl,
+        paid = !s.isFree,
+        track = null,
+        sound = s;
+
+  final _Kind kind;
+  final String id;
+  final String title;
+  final String subtitle;
+  final String emoji;
+  final String? coverUrl;
+  final String? previewUrl;
+  final bool paid;
+  final StudioTrack? track;
+  final ArtistSound? sound;
+
+  String get kindName => kind == _Kind.free ? 'free' : 'artist';
+  String get playKey => 'music_$kindName:$id';
+  bool get isFree => !paid;
+}
+
+class MusicPage extends StatefulWidget {
+  const MusicPage({super.key});
+
+  @override
+  State<MusicPage> createState() => _MusicPageState();
+}
+
+class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMixin {
+  late final TabController _tabs = TabController(length: 4, vsync: this);
+  final _search = TextEditingController();
+  bool _searching = false;
+  String _q = '';
+  Duration _pos = Duration.zero;
+  Duration _dur = const Duration(seconds: 30);
+  StreamSubscription<Duration>? _p;
+  StreamSubscription<Duration>? _d;
+  String? _loadingKey;
+
+  @override
+  void initState() {
+    super.initState();
+    MusicFavorites.start();
+    ArtistSoundPricing.load().then((_) {
+      if (mounted) setState(() {});
+    });
+    _p = SoundPreview.position.listen((p) {
+      if (mounted && SoundPreview.playing.value != null) setState(() => _pos = p);
+    });
+    _d = SoundPreview.duration.listen((d) {
+      if (mounted && d.inMilliseconds > 0) setState(() => _dur = d);
+    });
+  }
+
+  @override
+  void dispose() {
+    _p?.cancel();
+    _d?.cancel();
+    _tabs.dispose();
+    _search.dispose();
+    SoundPreview.stop();
+    super.dispose();
+  }
+
+  // ── Lecture ──
+
+  Future<void> _play(_Item it) async {
+    final key = it.playKey;
+    if (SoundPreview.playing.value == key) {
+      await SoundPreview.pause();
+      return;
+    }
+    if (SoundPreview.now.value?.key == key) {
+      await SoundPreview.resume();
+      if (SoundPreview.playing.value == key) return;
+    }
+    setState(() => _loadingKey = key);
+    String? url = it.previewUrl;
+    if (url == null && it.track != null) url = await MontageMusicPlayer.urlOf(MontageMusic.free(it.track!));
+    if (!mounted) return;
+    var ok = false;
+    if (url != null) {
+      setState(() => _pos = Duration.zero);
+      ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: it.title, subtitle: it.subtitle, coverUrl: it.coverUrl));
+    }
+    if (!mounted) return;
+    setState(() => _loadingKey = null);
+    if (!ok) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce titre. Vérifie ta connexion.')));
+  }
+
+  void _create(_Item it) {
+    final music = it.sound != null ? MontageMusic.artist(it.sound!) : MontageMusic.free(it.track!);
+    startPostWithMusic(context, music);
+  }
+
+  void _open(_Item it) async {
+    if (it.sound == null) {
+      _play(it);
+      return;
+    }
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: it.sound!)));
+  }
+
+  bool _match(_Item it) {
+    if (_q.isEmpty) return true;
+    final q = _q.toLowerCase();
+    return it.title.toLowerCase().contains(q) || it.subtitle.toLowerCase().contains(q);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(
+        backgroundColor: c.background,
+        elevation: 0,
+        iconTheme: IconThemeData(color: c.textPrimary),
+        title: _searching
+            ? TextField(
+                controller: _search,
+                autofocus: true,
+                onChanged: (v) => setState(() => _q = v.trim()),
+                style: TextStyle(color: c.textPrimary),
+                decoration: InputDecoration(hintText: 'Titre, genre…', hintStyle: TextStyle(color: c.textSecondary), border: InputBorder.none),
+              )
+            : Text('Musique', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 24)),
+        actions: [
+          IconButton(
+            icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded, color: c.textPrimary),
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) {
+                _q = '';
+                _search.clear();
+              }
+            }),
+          ),
+          IconButton(
+            tooltip: 'Espace artiste',
+            icon: Icon(Icons.mic_rounded, color: c.primary),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabs,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          labelColor: c.primary,
+          unselectedLabelColor: c.textSecondary,
+          indicatorColor: c.primary,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800),
+          tabs: const [Tab(text: 'Pour toi'), Tab(text: 'Gratuites'), Tab(text: 'Artistes'), Tab(text: 'Favoris')],
+        ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(80).snapshots(),
+        builder: (_, snap) {
+          final loading = !snap.hasData && !snap.hasError;
+          final sounds = [
+            for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id),
+          ].where((s) => s.previewUrl != null).map(_Item.artist).toList();
+          final free = kStudioTracks.map(_Item.free).toList();
+          return ValueListenableBuilder<Set<String>>(
+            valueListenable: MusicFavorites.keys,
+            builder: (_, favs, __) {
+              final all = [...sounds, ...free];
+              final favItems = all.where((i) => favs.contains('${i.kindName}:${i.id}')).toList();
+              return TabBarView(controller: _tabs, children: [
+                _forYou(c, sounds, free, loading),
+                _list(c, [...free, ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.'),
+                _list(c, sounds.where(_match).toList(), loading ? '' : 'Aucun son d’artiste pour l’instant.', loading: loading, artistsCta: true),
+                _list(c, favItems.where(_match).toList(), 'Touche le ♡ d’un titre pour le retrouver ici.'),
+              ]);
+            },
+          );
+        },
+      ),
+      bottomNavigationBar: _miniPlayer(c),
+    );
+  }
+
+  // ── Onglets ──
+
+  Widget _forYou(AppColors c, List<_Item> sounds, List<_Item> free, bool loading) {
+    final all = [...sounds, ...free];
+    if (_q.isNotEmpty) return _list(c, all.where(_match).toList(), 'Aucun résultat.');
+    return ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 24), children: [
+      // Carte d'accueil : lecture au hasard
+      Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFE91E63), Color(0xFFFFB400)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        ),
+        child: Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Mix Afrolook', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 4),
+              Text('${all.length} titres : afrobeat, amapiano, calme, fête…', style: const TextStyle(color: Colors.white, fontSize: 13)),
+            ]),
+          ),
+          FilledButton.icon(
+            onPressed: all.isEmpty ? null : () => _play(all[Random().nextInt(all.length)]),
+            icon: const Icon(Icons.shuffle_rounded, size: 18),
+            label: const Text('Au hasard'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF6A1B9A)),
+          ),
+        ]),
+      ),
+      if (sounds.isNotEmpty) ...[
+        _section(c, '🎤 Nouveautés des artistes'),
+        for (final it in sounds.take(8)) _row(c, it),
+      ],
+      _section(c, '🎵 Musiques Afrolook'),
+      for (final it in free.take(8)) _row(c, it),
+      const SizedBox(height: 10),
+      Center(child: TextButton(onPressed: () => _tabs.animateTo(1), child: Text('Voir toutes les musiques gratuites', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800)))),
+      if (loading) Padding(padding: const EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: c.primary))),
+    ]);
+  }
+
+  Widget _list(AppColors c, List<_Item> items, String empty, {bool loading = false, bool artistsCta = false}) {
+    return ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 24), children: [
+      if (artistsCta) _artistCta(c),
+      if (loading) Padding(padding: const EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: c.primary))),
+      if (!loading && items.isEmpty)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary)))),
+      for (final it in items) _row(c, it),
+    ]);
+  }
+
+  Widget _artistCta(AppColors c) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+            child: Row(children: [
+              const Text('🎤', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Tu es artiste ? Propose ton son et gagne des pièces.', style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w700))),
+              Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+            ]),
+          ),
+        ),
+      );
+
+  Widget _section(AppColors c, String t) => Padding(
+        padding: const EdgeInsets.fromLTRB(2, 20, 2, 8),
+        child: Text(t, style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w900)),
+      );
+
+  // ── Ligne d'un titre ──
+
+  Widget _row(AppColors c, _Item it) {
+    final playing = SoundPreview.playing;
+    return ValueListenableBuilder<String?>(
+      valueListenable: playing,
+      builder: (_, now, __) {
+        final on = now == it.playKey;
+        final fav = MusicFavorites.isFav(it.kindName, it.id);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: on ? c.primary.withValues(alpha: .1) : c.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: on ? c.primary : c.border),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _open(it),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+              child: Row(children: [
+                _cover(c, it),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(it.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: on ? c.primary : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                    const SizedBox(height: 2),
+                    Row(children: [
+                      _badge(it),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(it.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12))),
+                    ]),
+                  ]),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: fav ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                  onPressed: () => MusicFavorites.toggle(it.kindName, it.id, title: it.title),
+                  icon: Icon(fav ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: fav ? const Color(0xFFFF4D6D) : c.textSecondary, size: 22),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _play(it),
+                  icon: _loadingKey == it.playKey
+                      ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: c.primary))
+                      : Icon(on ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: c.primary, size: 34),
+                ),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert_rounded, color: c.textSecondary, size: 20),
+                  color: c.surface,
+                  onSelected: (v) {
+                    if (v == 'create') _create(it);
+                    if (v == 'open') _open(it);
+                    if (v == 'report' && it.sound != null) reportArtistSound(context, it.sound!.id, it.title);
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'create', child: Text(it.paid ? '🎬 Créer un post (${ArtistSoundPricing.price} 🪙)' : '🎬 Créer un post avec ce son')),
+                    if (it.sound != null) const PopupMenuItem(value: 'open', child: Text('📄 Voir le titre et ses posts')),
+                    if (it.sound != null && it.sound!.userId != FirebaseAuth.instance.currentUser?.uid) const PopupMenuItem(value: 'report', child: Text('🚩 Signaler')),
+                  ],
+                ),
+              ]),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _cover(AppColors c, _Item it) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 54,
+        height: 54,
+        child: it.coverUrl != null
+            ? CachedNetworkImage(imageUrl: it.coverUrl!, fit: BoxFit.cover)
+            : Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: it.kind == _Kind.free ? const [Color(0xFF1FAA59), Color(0xFF0F6B38)] : const [Color(0xFF6A1B9A), Color(0xFFE91E63)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Text(it.emoji, style: const TextStyle(fontSize: 26)),
+              ),
+      ),
+    );
+  }
+
+  Widget _badge(_Item it) {
+    final color = it.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFB400);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      decoration: BoxDecoration(color: color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99)),
+      child: Text(it.isFree ? 'Gratuit' : '🪙 ${ArtistSoundPricing.price}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+    );
+  }
+
+  // ── Lecteur réduit ──
+
+  Widget? _miniPlayer(AppColors c) {
+    return ValueListenableBuilder<NowPlaying?>(
+      valueListenable: SoundPreview.now,
+      builder: (_, n, __) {
+        if (n == null) return const SizedBox.shrink();
+        return ValueListenableBuilder<String?>(
+          valueListenable: SoundPreview.playing,
+          builder: (_, playingKey, __) {
+            final on = playingKey == n.key;
+            return SafeArea(
+              top: false,
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.border),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .18), blurRadius: 14, offset: const Offset(0, 4))],
+                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 4, 4),
+                    child: Row(children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 42,
+                          height: 42,
+                          child: n.coverUrl != null
+                              ? CachedNetworkImage(imageUrl: n.coverUrl!, fit: BoxFit.cover)
+                              : Container(color: c.primary.withValues(alpha: .2), child: Icon(Icons.music_note_rounded, color: c.primary)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(n.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                          if (n.subtitle != null) Text(n.subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+                        ]),
+                      ),
+                      IconButton(
+                        onPressed: () => on ? SoundPreview.pause() : SoundPreview.resume(),
+                        icon: Icon(on ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: c.primary, size: 38),
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          await SoundPreview.stop();
+                          SoundPreview.now.value = null;
+                        },
+                        icon: Icon(Icons.close_rounded, color: c.textSecondary, size: 20),
+                      ),
+                    ]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(value: (_pos.inMilliseconds / _dur.inMilliseconds).clamp(0.0, 1.0), minHeight: 3, backgroundColor: c.border, valueColor: AlwaysStoppedAnimation<Color>(c.primary)),
+                    ),
+                  ),
+                ]),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

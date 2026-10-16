@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'artist_marketplace.dart';
 import 'artist_sound_common.dart';
+import '../music/music_page.dart';
 
 class FeedSoundCard extends StatefulWidget {
   const FeedSoundCard({super.key, required this.slot});
@@ -181,6 +182,15 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
               },
               style: OutlinedButton.styleFrom(side: BorderSide(color: c.border), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: Text('Voir', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Toute la musique',
+              onPressed: () async {
+                await SoundPreview.stop();
+                if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage()));
+              },
+              icon: Icon(Icons.library_music_rounded, color: c.primary),
             ),
           ]),
         ),

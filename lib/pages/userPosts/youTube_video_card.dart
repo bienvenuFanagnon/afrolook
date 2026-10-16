@@ -69,6 +69,7 @@ import '../../services/media_cache_service.dart';
 import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
 import '../../ads/ad_slot.dart';
+import '../studio/artist_marketplace.dart';
 
 
 class MediaPlaybackManager {
@@ -2883,6 +2884,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
+                  if (widget.post.artistSoundId != null && widget.post.artistSoundId!.isNotEmpty)
+                    PostSoundCredit(soundId: widget.post.artistSoundId!, title: widget.post.artistSoundTitle ?? ''),
                   const SizedBox(height: 12),
                   _buildPostActions(),
                   _buildCommentPreview(),
@@ -2930,6 +2933,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                         const SizedBox(height: 8),
                       ],
                       _buildVideoContent(),
+                      if (widget.post.artistSoundId != null && widget.post.artistSoundId!.isNotEmpty)
+                        PostSoundCredit(soundId: widget.post.artistSoundId!, title: widget.post.artistSoundTitle ?? ''),
                       const SizedBox(height: 10),
                       _buildPostActions(),
                       _buildCommentPreview(),

@@ -38,6 +38,7 @@ import 'artist_sound_common.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
 import 'studio_models.dart';
+import '../music/music_page.dart';
 
 export 'artist_sound_common.dart' show ArtistSoundPricing;
 
@@ -478,7 +479,10 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
             child: Row(children: [
               Expanded(child: Text('🎵 Musiques', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.textPrimary))),
-              TextButton(onPressed: openMine, child: Text('🎤 Proposer le mien', style: TextStyle(color: c.primary, fontWeight: FontWeight.w700, fontSize: 12.5))),
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage())),
+                child: Text('Tout voir', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5)),
+              ),
             ]),
           ),
           SizedBox(
@@ -540,12 +544,62 @@ class _SoundCard extends StatelessWidget {
 }
 
 /// « Créer un post avec ce son » : modèles du Studio avec le son déjà choisi (payant : prix et solde annoncés), puis page de publication.
-Future<void> startPostWithSound(BuildContext context, ArtistSound s) async {
+Future<void> startPostWithSound(BuildContext context, ArtistSound s) => startPostWithMusic(context, MontageMusic.artist(s));
+
+/// Même chemin pour une musique gratuite d'Afrolook ou un son d'artiste.
+Future<void> startPostWithMusic(BuildContext context, MontageMusic music) async {
   await SoundPreview.stop();
   if (!context.mounted) return;
-  final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageGalleryPage(presetMusic: MontageMusic.artist(s))));
+  final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageGalleryPage(presetMusic: music)));
   if (r == null || !context.mounted) return;
   await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
+}
+
+/// Ouvre la page d'un son à partir de son identifiant (puce « Musique : titre » sous un post).
+Future<void> openArtistSoundById(BuildContext context, String soundId) async {
+  try {
+    final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(soundId).get();
+    if (!context.mounted) return;
+    if (!d.exists || d.data()!['status'] != 'validated') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce son n’est plus disponible.')));
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: ArtistSound.fromMap(d.data()!, d.id))));
+  } catch (_) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chargement impossible. Vérifie ta connexion.')));
+  }
+}
+
+/// Crédit automatique sous un post fait avec le son d'un artiste : « 🎵 Musique : titre », qui mène à la page du titre.
+class PostSoundCredit extends StatelessWidget {
+  const PostSoundCredit({super.key, required this.soundId, required this.title});
+  final String soundId;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(99),
+          onTap: () => openArtistSoundById(context, soundId),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(color: c.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(99), border: Border.all(color: c.primary.withValues(alpha: .35))),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.music_note_rounded, size: 15, color: c.primary),
+              const SizedBox(width: 4),
+              Flexible(child: Text('Musique : ${title.isEmpty ? 'voir le titre' : title}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w800))),
+              Icon(Icons.chevron_right_rounded, size: 15, color: c.primary),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Page détail d'un son (extrait gratuit) ──────────────────────────────────

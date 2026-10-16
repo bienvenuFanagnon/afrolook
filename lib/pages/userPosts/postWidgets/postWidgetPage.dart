@@ -81,6 +81,7 @@ import '../../../providers/streakProvider.dart';
 import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
 import '../../../ads/ad_slot.dart';
+import '../../studio/artist_marketplace.dart';
 
 
 
@@ -1061,6 +1062,8 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       ],
                       if (isLocked && _showCanalLockCta) _buildSubscribeButton(),
                       if (!widget.isAdContext) ...[
+                        if (widget.post.artistSoundId != null && widget.post.artistSoundId!.isNotEmpty)
+                          PostSoundCredit(soundId: widget.post.artistSoundId!, title: widget.post.artistSoundTitle ?? ''),
                         const SizedBox(height: 10),
                         _buildPostActions(hasAccess),
                         _buildCommentPreview(hasAccess),

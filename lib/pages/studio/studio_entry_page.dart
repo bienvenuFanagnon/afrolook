@@ -13,6 +13,7 @@ import 'studio_video_editor.dart';
 import 'studio_audio_editor.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
+import '../music/music_page.dart';
 
 const _c = AppColors.dark;
 
@@ -69,6 +70,8 @@ class StudioEntryPage extends StatelessWidget {
               _TemplatesBanner(onTap: () => _openTemplates(context)),
               const SizedBox(height: 10),
               _ArtistStrip(onTap: () => openArtistSpace(context)),
+              const SizedBox(height: 10),
+              _MusicStrip(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage()))),
               const SizedBox(height: 16),
               Text(
                 'Ou crée librement',
@@ -169,6 +172,35 @@ class StudioEntryPage extends StatelessWidget {
     if (result != null && context.mounted) {
       Navigator.pop(context, result);
     }
+  }
+}
+
+/// Accès à la page Musique (écouter, aimer, créer avec un titre).
+class _MusicStrip extends StatelessWidget {
+  const _MusicStrip({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: _c.surface, border: Border.all(color: _c.border)),
+        child: Row(children: [
+          const Text('🎧', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Page Musique', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13.5)),
+              const SizedBox(height: 2),
+              Text('Écoute, mets en favoris et crée avec un titre.', style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: _c.textSecondary),
+        ]),
+      ),
+    );
   }
 }
 
