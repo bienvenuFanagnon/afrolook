@@ -54,11 +54,30 @@ cd pronoflashia/functions && npm test           # 75 tests : calcul, IA, API, t�
 8. Brancher le domaine `pronoflashia.com` dans Firebase Hosting, déclarer le site dans Search Console.
 9. Quand le site a 2 à 3 semaines de contenu : demander Adsterra et Monetag, coller les codes et les lignes ads.txt dans l'admin, puis activer l'interrupteur général des publicités.
 
+## Premier déploiement depuis Google Cloud Shell (sans rien installer)
+
+Projet Firebase : `pronoflashia` (forfait Blaze). Depuis la console Firebase, ouvrir Cloud Shell (icône `>_` en haut à droite de console.cloud.google.com), puis :
+
+```bash
+git clone https://github.com/bienvenufanagnon/afrolook.git && cd afrolook && git checkout refonte_claude && cd pronoflashia
+(cd functions && npm ci)
+firebase use pronoflashia
+# secrets : chaque commande demande la valeur à coller (rien n'est écrit dans le dépôt)
+firebase functions:secrets:set API_FOOTBALL_KEY
+firebase functions:secrets:set CF_API_TOKEN
+firebase functions:secrets:set CF_ACCOUNT_ID
+firebase functions:secrets:set GEMINI_API_KEY      # sans clé Gemini : coller le mot « aucune »
+firebase functions:secrets:set STATS_SALT          # une longue chaîne aléatoire
+node scripts/build-site.js && firebase deploy --only firestore,functions,hosting
+```
+
+À la première publication, Firebase demande la valeur de `ADMIN_EMAILS` (adresse Google du premier administrateur). Adresse provisoire : `https://pronoflashia.web.app`. Tant que le nom de domaine n'est pas acheté, mettre `indexable` à faux dans l'admin (Réglages) pour que Google n'indexe pas l'adresse provisoire.
+
 ## Points à vérifier avant le lancement
 
-- **Jeton Cloudflare** : celui fourni en octobre 2026 expire le **11 novembre 2026**. En créer un sans expiration ou prévoir le renouvellement, sinon l'IA bascule sur Gemini puis sur le texte de secours (le site continue de fonctionner, mais sans analyses rédigées). Le jeton a été partagé dans une conversation : le renouveler après la mise en place.
+- **Jeton Cloudflare** : le jeton actuel n'a pas de date de fin, mais il a été partagé dans une conversation : le renouveler une fois installé dans Firebase Secrets (`firebase functions:secrets:set CF_API_TOKEN`).
 - **Identifiants de championnats** d'API-Football : l'admin vérifie chaque identifiant à l'ajout.
-- **Offre API-Football** : une saison complète d'un championnat coûte 1 requête par jour, chaque match terminé 1 requête de statistiques, plus les cotes et confrontations. Le quota restant s'affiche dans l'admin. L'offre gratuite (quelques dizaines à centaines de requêtes par jour) ne suffira pas pour beaucoup de championnats.
+- **Offre API-Football** : l'offre gratuite n'a accès qu'aux saisons 2022 à 2024 (testé) ; il faut l'offre Pro pour la saison en cours. La clé a été partagée dans une conversation : la renouveler après installation. une saison complète d'un championnat coûte 1 requête par jour, chaque match terminé 1 requête de statistiques, plus les cotes et confrontations. Le quota restant s'affiche dans l'admin. L'offre gratuite (quelques dizaines à centaines de requêtes par jour) ne suffira pas pour beaucoup de championnats.
 - **Pays des visiteurs** : l'en-tête de pays de l'infrastructure n'est peut-être pas transmis par Hosting. Sinon le pays est déduit du fuseau horaire. L'admin indique la méthode utilisée (« Pays déduits du fuseau… »).
 - **Détection « pas d'annonce »** : le passage Adsterra → Monetag → Afrolook se base sur le contenu de l'iframe (`filled()` dans `site/js/pf.js`). À ajuster avec le comportement réel des réseaux.
 - **Textes légaux** (`functions/src/render/legal.js`) : à faire relire par un juriste. Ils affirment que le site ne reçoit aucune commission des bookmakers : à modifier si une affiliation est décidée.
