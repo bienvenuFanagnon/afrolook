@@ -6,6 +6,7 @@ const { evaluateMarket, evaluateAll } = require('../engine/evaluate');
 const { matchDelta, mergeDelta } = require('../engine/bilan');
 const { addDays } = require('./helpers');
 const { recordApiQuota } = require('./connexions');
+const { settleCoupons } = require('./coupons');
 
 const STAT_KINDS = ['corners', 'shots', 'shotsOnTarget', 'fouls', 'cards', 'offsides'];
 
@@ -111,6 +112,7 @@ async function syncResults(opts, report) {
     const fx = { apiId: m.apiId, score: { dom: m.resultat.scoreDom, ext: m.resultat.scoreExt }, miTemps: m.resultat.miTemps, coupDEnvoi: m.coupDEnvoi, domicile: m.domicile, exterieur: m.exterieur };
     try { await finalize({ db, api, match: m, fx, now, statsBudget }); report.traites++; } catch (e) { report.erreurs.push(`${m.slug} : ${e.message}`); }
   }
+  try { const n = await settleCoupons(db, now); if (n) report.infos.couponsRegles = n; } catch (e) { report.erreurs.push(`coupons : ${e.message}`); }
   report.infos.quotaRestant = api.quota.dayRemaining;
   await recordApiQuota(db, api, now, report);
 }

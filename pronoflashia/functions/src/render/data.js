@@ -80,10 +80,18 @@ async function teamRecent(db, teamId) {
   return (d.exists && d.data().recent) || [];
 }
 
+/** Coupons flash archivés depuis `days` jours (les plus récents d'abord). */
+async function couponHistory(db, now, days = 30) {
+  return cached(`coupons:${days}:${now.toISOString().slice(0, 13)}`, 300e3, async () => {
+    const snap = await db.collection('coupons_flash').where('jour', '>=', dayStr(addDays(now, -days))).get();
+    return snap.docs.map((d) => d.data()).sort((a, b) => (a.jour === b.jour ? b.n - a.n : a.jour < b.jour ? 1 : -1));
+  });
+}
+
 /** Tous les matchs à venir avec pronostic (pour le compositeur de coupon et les coupons proposés). */
 async function pool(db, now, hours = 96) {
   const list = await matchesBetween(db, now.toISOString(), new Date(now.getTime() + hours * 3600e3).toISOString());
   return list.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
 }
 
-module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, pool };
+module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, pool };
