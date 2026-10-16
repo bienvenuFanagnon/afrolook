@@ -271,6 +271,9 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .ftr nav{display:flex;flex-wrap:wrap;gap:6px 14px}
 .ftr .r18{display:flex;gap:8px;align-items:center;color:var(--tx);font-weight:600;font-size:13px}
 .ftr .r18 b{border:2px solid var(--ko);color:var(--ko);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;font-size:11px;flex:none}
+.ftr .cpy{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between}
+.ftr .adm{border:1px solid var(--line);border-radius:8px;padding:5px 12px;color:var(--mut);text-decoration:none;font-weight:600}
+.ftr .adm:hover{color:var(--tx);border-color:var(--mut)}
 .ftr button{background:none;border:0;color:var(--mut);text-decoration:underline;padding:0}
 
 /* consentement */

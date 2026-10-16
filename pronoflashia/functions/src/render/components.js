@@ -161,7 +161,7 @@ function footer(rc) {
   const legal = Object.entries(t.footerLegal).map(([slug, lab]) => `<a href="${rc.u('legal', slug)}">${lab}</a>`).join('');
   return `<footer class="ftr"><div class="wrap" style="display:grid;gap:10px"><div class="r18"><b>18+</b>${t.footer18}</div><p>${t.footerInfo}</p>` +
     `<nav aria-label="${esc(t.footerNav)}">${legal}<button type="button" id="pf-prefs">${t.adPrefs}</button></nav>` +
-    `<p>© ${rc.now.getUTCFullYear()} ${esc(rc.site.nom)} · ${esc(rc.site.domaine)}</p></div></footer>`;
+    `<p class="cpy">© ${rc.now.getUTCFullYear()} ${esc(rc.site.nom)} · ${esc(rc.site.domaine)}<a class="adm" href="/admin" rel="nofollow noopener">Admin</a></p></div></footer>`;
 }
 
 /** Colonne de droite (ordinateur) : bilan, pavé, Afrolook, grand format collant. */
