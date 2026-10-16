@@ -16,15 +16,44 @@
   var path = location.pathname.replace(/\/$/, '') || '/';
   var UA = navigator.userAgent || '';
   var IOS = /iPad|iPhone|iPod/.test(UA);
+  var EN = d.documentElement.lang === 'en', LANG = EN ? 'en' : 'fr', LOC = EN ? 'en-GB' : 'fr-FR';
+  var L = EN ? {
+    tzTitle: 'Local time', tzYou: 'your time zone', tzNote: 'Times shown in your time zone: ',
+    cmp: '<p><b>Advertising</b><br>This site is free thanks to advertising. Our partners\' ads may use cookies to choose and measure ads. You can accept or refuse; the predictions stay the same. <a href="/en/privacy" style="color:var(--cy)">Learn more</a></p><div class="row"><button class="btn" type="button" data-c="1">Accept</button><button class="btn sec" type="button" data-c="0">Refuse</button></div>',
+    msg: ['Football debates on Afrolook: share your take on the match', 'Share your tips with friends on Afrolook', 'Your likes turn into coins on Afrolook', 'Post videos? Afrolook pays you for your views', 'Afrolook: the African creators network'],
+    sponsored: 'Sponsored', aflCta: 'Download for free', adTitle: 'Advertisement', copied: 'Link copied', all: 'All',
+    myCoupon: 'My slip', sel: function (n) { return n > 1 ? 'selections' : 'selection'; }, view: 'View', max5: 'A slip holds 5 selections at most',
+    analysis: 'analysis', choose: 'Pick your bets', remove: 'Remove',
+    empty: 'Pick 2 to 5 bets. You can take several in the same match: the calculation accounts for it.',
+    replace: function (a, b) { return 'Replace “' + a + '” with “' + b + '”'; }, moves: function (a, b) { return 'The slip goes from ' + a + '% to ' + b + '%'; },
+    share: function (pc) { return 'My PronoFlash IA slip (' + pc + '% chance that everything wins):'; },
+    probAll: 'Probability that everything wins', out100: function (pc) { return 'Out of 100 identical slips, about ' + pc + ' would win'; },
+    wa: 'Share on WhatsApp', clear: 'Clear',
+    disclaimer: 'PronoFlash IA takes no bets, shows no odds and promises no winnings. 18+ · Play responsibly.', pct: '%'
+  } : {
+    tzTitle: 'Heure locale', tzYou: 'ton fuseau', tzNote: 'Heures affichées dans ton fuseau horaire : ',
+    cmp: '<p><b>Publicités</b><br>Ce site est gratuit grâce à la publicité. Les publicités de nos partenaires peuvent utiliser des cookies pour choisir et mesurer les annonces. Tu peux accepter ou refuser ; les pronostics restent les mêmes. <a href="/confidentialite" style="color:var(--cy)">En savoir plus</a></p><div class="row"><button class="btn" type="button" data-c="1">Accepter</button><button class="btn sec" type="button" data-c="0">Refuser</button></div>',
+    msg: ['Débats foot sur Afrolook : donne ton avis sur le match', 'Partage tes pronos entre amis sur Afrolook', 'Tes likes deviennent des pièces sur Afrolook', 'Tu postes des vidéos ? Afrolook te paie tes vues', 'Afrolook : le réseau africain des créateurs'],
+    sponsored: 'Sponsorisé', aflCta: 'Télécharger gratuitement', adTitle: 'Publicité', copied: 'Lien copié', all: 'Tous',
+    myCoupon: 'Mon coupon', sel: function (n) { return n > 1 ? 'sélections' : 'sélection'; }, view: 'Voir', max5: 'Un coupon contient 5 sélections au plus',
+    analysis: 'analyse', choose: 'Choisis tes paris', remove: 'Retirer',
+    empty: 'Choisis 2 à 5 paris. Tu peux en prendre plusieurs dans un même match : le calcul en tient compte.',
+    replace: function (a, b) { return 'Remplacer « ' + a + ' » par « ' + b + ' »'; }, moves: function (a, b) { return 'Le coupon passe de ' + a + ' % à ' + b + ' %'; },
+    share: function (pc) { return 'Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :'; },
+    probAll: 'Probabilité que tout passe', out100: function (pc) { return 'Sur 100 coupons identiques, environ ' + pc + ' passeraient'; },
+    wa: 'Partager sur WhatsApp', clear: 'Vider',
+    disclaimer: 'PronoFlash IA ne prend aucun pari, n\'affiche aucune cote et ne promet aucun gain. 18+ · Jouez de façon responsable.', pct: ' %'
+  };
+  var couponPath = (w.PF && w.PF.coupon) || (EN ? '/en/coupon' : '/coupon');
 
   /* ---------- heure locale ---------- */
   $$('time[data-t="hm"]').forEach(function (t) {
     var dt = new Date(t.getAttribute('datetime'));
     if (isNaN(dt)) return;
-    t.textContent = dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    t.title = 'Heure locale (' + (tz || 'ton fuseau') + ')';
+    t.textContent = dt.toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' });
+    t.title = L.tzTitle + ' (' + (tz || L.tzYou) + ')';
   });
-  $$('.tznote').forEach(function (n) { if (tz) n.textContent = 'Heures affichées dans ton fuseau horaire : ' + tz.replace(/_/g, ' ') + '.'; });
+  $$('.tznote').forEach(function (n) { if (tz) n.textContent = L.tzNote + tz.replace(/_/g, ' ') + '.'; });
 
   /* ---------- consentement (UE et Royaume-Uni) ---------- */
   var NON_UE = /^Europe\/(Moscow|Istanbul|Minsk|Kiev|Kyiv|Chisinau|Belgrade|Skopje|Sarajevo|Tirane|Podgorica|Zurich|Simferopol|Volgograd|Samara|Kaliningrad|Saratov|Astrakhan|Ulyanovsk|Kirov)$/;
@@ -34,7 +63,7 @@
   var cmp = $('#pf-cmp');
   function showCmp(force) {
     if (!cmp) return;
-    cmp.innerHTML = '<p><b>Publicités</b><br>Ce site est gratuit grâce à la publicité. Les publicités de nos partenaires peuvent utiliser des cookies pour choisir et mesurer les annonces. Tu peux accepter ou refuser ; les pronostics restent les mêmes. <a href="/confidentialite" style="color:var(--cy)">En savoir plus</a></p><div class="row"><button class="btn" type="button" data-c="1">Accepter</button><button class="btn sec" type="button" data-c="0">Refuser</button></div>';
+    cmp.innerHTML = L.cmp;
     cmp.hidden = false;
   }
   if (cmp) {
@@ -50,13 +79,14 @@
 
   /* ---------- mesure sans cookie ---------- */
   function pageType() {
-    if (path === '/') return 'accueil';
-    if (path === '/bilan') return 'bilan';
-    if (path === '/coupon') return 'coupon';
-    if (/^\/football\/[^/]+\/[^/]+\/analyse$/.test(path)) return 'analyse';
-    if (/^\/football\/[^/]+\/[^/]+$/.test(path)) return 'match';
-    if (/^\/football\/(aujourdhui|demain|\d{4}-\d{2}-\d{2})$/.test(path)) return 'jour';
-    if (/^\/football\/[^/]+$/.test(path)) return 'ligue';
+    var q = EN ? (path.replace(/^\/en(?=\/|$)/, '') || '/') : path;
+    if (q === '/') return 'accueil';
+    if (q === '/bilan' || q === '/track-record') return 'bilan';
+    if (q === '/coupon') return 'coupon';
+    if (/^\/football\/[^/]+\/[^/]+\/(analyse|analysis)$/.test(q)) return 'analyse';
+    if (/^\/football\/[^/]+\/[^/]+$/.test(q)) return 'match';
+    if (/^\/football\/(aujourdhui|demain|today|tomorrow|\d{4}-\d{2}-\d{2})$/.test(q)) return 'jour';
+    if (/^\/football\/[^/]+$/.test(q)) return 'ligue';
     return 'autre';
   }
   function source() {
@@ -79,10 +109,10 @@
   }
   var mj = $('#pf-match'); var mdata = null; try { mdata = mj ? JSON.parse(mj.textContent) : null; } catch (e) { mdata = null; }
   var first = !store.sget('pf_s'); store.sset('pf_s', '1');
-  send({ t: 'pv', p: pageType(), m: mdata ? mdata.id : undefined, d: /Mobi|Android|iPhone/.test(UA) ? 'm' : (/iPad|Tablet/.test(UA) ? 't' : 'd'), r: source(), s: first ? 1 : 0, l: 'fr' });
+  send({ t: 'pv', p: pageType(), m: mdata ? mdata.id : undefined, d: /Mobi|Android|iPhone/.test(UA) ? 'm' : (/iPad|Tablet/.test(UA) ? 't' : 'd'), r: source(), s: first ? 1 : 0, l: LANG });
 
   /* ---------- encarts Afrolook ---------- */
-  var MSG = ['Débats foot sur Afrolook : donne ton avis sur le match', 'Partage tes pronos entre amis sur Afrolook', 'Tes likes deviennent des pièces sur Afrolook', 'Tu postes des vidéos ? Afrolook te paie tes vues', 'Afrolook : le réseau africain des créateurs'];
+  var MSG = L.msg;
   var STORE_IOS = 'https://apps.apple.com/gh/app/afrolook/id6811423047';
   function aflInit(a) {
     var slot = a.getAttribute('data-afl') || 'x';
@@ -96,7 +126,7 @@
   function aflNode(slot, i) {
     var a = d.createElement('a'); a.className = 'afl'; a.target = '_blank'; a.rel = 'noopener sponsored'; a.setAttribute('data-afl', slot); a.setAttribute('data-i', String(i || 0));
     a.href = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok&utm_source=pronoflashia&utm_campaign=' + encodeURIComponent(slot);
-    a.innerHTML = '<span class="sp2">Sponsorisé</span><div class="im" style="background-image:url(/img/afl1.jpg)"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12">AFROLOOK</span><p></p><span class="cta">Télécharger gratuitement</span></div>';
+    a.innerHTML = '<span class="sp2">' + L.sponsored + '</span><div class="im" style="background-image:url(/img/afl1.jpg)"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12">AFROLOOK</span><p></p><span class="cta">' + L.aflCta + '</span></div>';
     aflInit(a); return a;
   }
 
@@ -111,7 +141,7 @@
     });
   }
   function frameFill(el, code, wd, ht) {
-    var f = d.createElement('iframe'); f.width = wd; f.height = ht; f.scrolling = 'no'; f.setAttribute('loading', 'lazy'); f.title = 'Publicité';
+    var f = d.createElement('iframe'); f.width = wd; f.height = ht; f.scrolling = 'no'; f.setAttribute('loading', 'lazy'); f.title = L.adTitle;
     f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body>' + code + '</body></html>';
     el.appendChild(f); return f;
   }
@@ -164,13 +194,13 @@
   }
 
   /* ---------- clics de partage ---------- */
-  $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = 'Lien copié'; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
+  $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = L.copied; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
   $$('a.wa').forEach(function (a) { a.addEventListener('click', function () { send({ t: 'wa', n: pageType() }); }); });
 
   /* ---------- liste « toutes les familles » de la page d'analyse ---------- */
   var fams = $('#pf-fams');
   if (fams) {
-    var secs = $$('.fam'); fams.innerHTML = '<button type="button" aria-pressed="true" data-f="">Tous</button>' + secs.map(function (s) { return '<button type="button" aria-pressed="false" data-f="' + esc(s.getAttribute('data-fam')) + '">' + esc(s.getAttribute('data-fam')) + '</button>'; }).join(''); fams.hidden = false;
+    var secs = $$('.fam'); fams.innerHTML = '<button type="button" aria-pressed="true" data-f="">' + esc(L.all) + '</button>' + secs.map(function (s) { return '<button type="button" aria-pressed="false" data-f="' + esc(s.getAttribute('data-fam')) + '">' + esc(s.getAttribute('data-fam')) + '</button>'; }).join(''); fams.hidden = false;
     fams.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; $$('button', fams).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); secs.forEach(function (s) { s.hidden = !!b.getAttribute('data-f') && s.getAttribute('data-fam') !== b.getAttribute('data-f'); }); });
   }
 
@@ -184,8 +214,8 @@
   function calc() { return PFc.couponProbability ? PFc.couponProbability(selForCalc(), matrices()) : { prob: 0, approx: false }; }
   function chrome() {
     var n = sel.length; var cpn = $('#pf-cpn'), bar = $('#pf-cbar');
-    if (cpn) { cpn.hidden = !n || path === '/coupon'; cpn.textContent = 'Mon coupon (' + n + ')'; }
-    if (bar) { if (!n || path === '/coupon') bar.hidden = true; else { var r = calc(); bar.hidden = false; bar.innerHTML = '<span>Mon coupon · <b class="num">' + n + '</b> sélection' + (n > 1 ? 's' : '') + (n > 1 ? ' · <b class="num">' + Math.round(r.prob * 100) + ' %</b>' : '') + '</span><a href="/coupon">Voir</a>'; } }
+    if (cpn) { cpn.hidden = !n || path === couponPath; cpn.textContent = L.myCoupon + ' (' + n + ')'; }
+    if (bar) { if (!n || path === couponPath) bar.hidden = true; else { var r = calc(); bar.hidden = false; bar.innerHTML = '<span>' + L.myCoupon + ' · <b class="num">' + n + '</b> ' + L.sel(n) + (n > 1 ? ' · <b class="num">' + Math.round(r.prob * 100) + L.pct + '</b>' : '') + '</span><a href="' + esc(couponPath) + '">' + L.view + '</a>'; } }
     $$('[data-add]').forEach(function (b) { var p = b.getAttribute('data-add').split('|'); b.setAttribute('aria-pressed', String(sel.some(function (s) { return s.m === p[0] && s.k === p[1]; }))); });
   }
   function toggle(m, k, info) {
@@ -200,7 +230,7 @@
     d.addEventListener('click', function (e) {
       var b = e.target.closest('[data-add]'); if (!b) return;
       var p = b.getAttribute('data-add').split('|'); var x = by[p[1]]; if (!x) return;
-      if (!toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: mdata.nom, x: mdata.matrice })) b.title = 'Un coupon contient 5 sélections au plus';
+      if (!toggle(p[0], p[1], { l: x.l, f: x.f, p: x.p, r: x.r, n: mdata.nom, x: mdata.matrice })) b.title = L.max5;
     });
   }
   chrome();
@@ -208,7 +238,9 @@
   var root = $('#pf-coupon'), pool = null;
   if (root) {
     try { pool = JSON.parse($('#pf-pool').textContent); } catch (e) { pool = []; }
-    var fam = 'Tous'; var FAMS = ['Tous', 'Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Corners', 'Tirs', 'Cartons & fautes', 'Spéciaux'];
+    /* familles tirées des données de la page (déjà dans la langue de la page), dans leur ordre d'apparition */
+    var fam = L.all; var FAMS = [L.all];
+    pool.forEach(function (m) { m.marches.forEach(function (x) { if (FAMS.indexOf(x.f) < 0) FAMS.push(x.f); }); });
     /* un lien de coupon proposé (#id|clé,id|clé) charge ses sélections, au chargement et à chaque changement de lien */
     var applyHash = function () {
       var hash = decodeURIComponent((location.hash || '').slice(1));
@@ -226,32 +258,32 @@
     var render = function () {
       var html = '<div class="mk" id="pf-fk" style="margin-top:8px">' + FAMS.map(function (f) { return '<button type="button" data-fk="' + esc(f) + '" aria-pressed="' + (f === fam) + '">' + esc(f) + '</button>'; }).join('') + '</div>';
       pool.forEach(function (m) {
-        var opts = m.marches.filter(function (x) { return fam === 'Tous' ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
+        var opts = m.marches.filter(function (x) { return fam === L.all ? x.p < 92 : x.f === fam; }).sort(function (a, b) { return b.p - a.p; });
         if (!opts.length) return;
-        html += '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '/analyse" style="color:var(--cy)">analyse</a></span></div><div class="opts">' +
-          opts.slice(0, fam === 'Tous' ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + ' %</b></button>'; }).join('') + '</div></div>';
+        html += '<div class="cm" style="margin-top:10px"><div class="hd"><b>' + esc(m.nom) + '</b><span>' + esc(new Date(m.t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(m.ligue) + ' · <a href="' + esc(m.slug) + '" style="color:var(--cy)">' + L.analysis + '</a></span></div><div class="opts">' +
+          opts.slice(0, fam === L.all ? 8 : 24).map(function (x) { var on = sel.some(function (s) { return s.m === m.id && s.k === x.k; }); return '<button type="button" class="op ' + level(x.p) + '" data-pk="' + esc(m.id) + '|' + esc(x.k) + '" aria-pressed="' + on + '"><span>' + esc(x.l) + '<small>' + esc(x.f) + '</small></span><b class="num">' + x.p + L.pct + '</b></button>'; }).join('') + '</div></div>';
       });
       var pk = $('#pf-picker'); if (!pk) { pk = d.createElement('div'); pk.id = 'pf-picker'; root.insertBefore(pk, root.firstChild); }
-      pk.innerHTML = '<div class="lbl" style="margin-top:6px">Choisis tes paris</div>' + html;
+      pk.innerHTML = '<div class="lbl" style="margin-top:6px">' + L.choose + '</div>' + html;
       if (panel) panel.innerHTML = panelHtml();
       chrome();
     };
     var panelHtml = function () {
-      var n = sel.length, r = calc(), pc = Math.round(r.prob * 100), risk = PFc.riskLevel ? PFc.riskLevel(r.prob) : { label: '' };
+      var n = sel.length, r = calc(), pc = Math.round(r.prob * 100), risk = PFc.riskLevel ? PFc.riskLevel(r.prob, LANG) : { label: '' };
       var col = r.prob >= .55 ? 'var(--ok)' : r.prob >= .35 ? 'var(--flash)' : r.prob >= .2 ? '#ff9f43' : 'var(--ko)';
-      var rows = sel.map(function (s) { return '<div class="sel"><small>' + esc(s.n) + ' · ' + esc(s.f) + '</small><span>' + esc(s.l) + '</span><b class="num">' + s.p + ' %</b><button type="button" data-rm="' + esc(s.m) + '|' + esc(s.k) + '" aria-label="Retirer">✕</button></div>'; }).join('') || '<p class="note" style="margin-top:8px">Choisis 2 à 5 paris. Tu peux en prendre plusieurs dans un même match : le calcul en tient compte.</p>';
-      var warns = (PFc.warnings ? PFc.warnings(selForCalc(), r) : []).map(function (x) { return '<div class="' + (x.type === 'info' ? 'i' : '') + '"><span>' + (x.type === 'info' ? 'ℹ️' : '⚠️') + '</span><span>' + esc(x.text) + '</span></div>'; }).join('');
+      var rows = sel.map(function (s) { return '<div class="sel"><small>' + esc(s.n) + ' · ' + esc(s.f) + '</small><span>' + esc(s.l) + '</span><b class="num">' + s.p + L.pct + '</b><button type="button" data-rm="' + esc(s.m) + '|' + esc(s.k) + '" aria-label="' + L.remove + '">✕</button></div>'; }).join('') || '<p class="note" style="margin-top:8px">' + L.empty + '</p>';
+      var warns = (PFc.warnings ? PFc.warnings(selForCalc(), r, LANG) : []).map(function (x) { return '<div class="' + (x.type === 'info' ? 'i' : '') + '"><span>' + (x.type === 'info' ? 'ℹ️' : '⚠️') + '</span><span>' + esc(x.text) + '</span></div>'; }).join('');
       var swap = '';
       if (n >= 2 && PFc.weakestSwap) {
         var poolMap = {}; pool.forEach(function (m) { poolMap[m.id] = m.marches.map(function (x) { return { key: x.k, libelle: x.l, famille: x.f, pct: x.p, fiabilite: x.r === 'h' ? 'haute' : x.r === 'm' ? 'moyenne' : 'faible' }; }); });
         var sw = PFc.weakestSwap(selForCalc(), poolMap);
-        if (sw) { var np = r.prob / (sw.weak.pct / 100) * (sw.better.pct / 100); swap = '<button type="button" class="op" data-swap="' + esc(sw.weak.matchId + '|' + sw.weak.key + '|' + sw.better.key) + '" style="margin-top:8px;width:100%"><span>Remplacer « ' + esc(sw.weak.key && sel.filter(function (s) { return s.k === sw.weak.key && s.m === sw.weak.matchId; })[0].l) + ' » par « ' + esc(sw.better.libelle) + ' »<small>Le coupon passe de ' + pc + ' % à ' + Math.round(np * 100) + ' %</small></span><b class="num" style="color:var(--ok)">+' + (Math.round(np * 100) - pc) + '</b></button>'; }
+        if (sw) { var np = r.prob / (sw.weak.pct / 100) * (sw.better.pct / 100); swap = '<button type="button" class="op" data-swap="' + esc(sw.weak.matchId + '|' + sw.weak.key + '|' + sw.better.key) + '" style="margin-top:8px;width:100%"><span>' + esc(L.replace(sel.filter(function (s) { return s.k === sw.weak.key && s.m === sw.weak.matchId; })[0].l, sw.better.libelle)) + '<small>' + L.moves(pc, Math.round(np * 100)) + '</small></span><b class="num" style="color:var(--ok)">+' + (Math.round(np * 100) - pc) + '</b></button>'; }
       }
-      var txt = encodeURIComponent('Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :\n' + sel.map(function (s) { return '• ' + s.n + ' : ' + s.l + ' (' + s.p + ' %)'; }).join('\n') + '\n' + location.origin + '/coupon');
-      return '<div class="box rk"><div class="lbl">Mon coupon · ' + n + '/5</div>' + rows +
-        (n ? '<div style="margin-top:10px"><small class="note">Probabilité que tout passe</small><div class="big num" style="color:' + col + '">' + pc + ' %</div><div class="meter"><i style="left:calc(' + Math.min(pc, 99) + '% - 2px)"></i></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--mut);margin-top:6px"><b style="color:' + col + '">' + esc(risk.label) + '</b><span>Sur 100 coupons identiques, environ ' + pc + ' passeraient</span></div></div>' : '') +
-        '<div class="wr">' + warns + '</div>' + swap + (n ? '<div class="sh" style="margin-top:10px"><a class="wa" href="https://wa.me/?text=' + txt + '" target="_blank" rel="noopener">Partager sur WhatsApp</a><button type="button" data-clr="1">Vider</button></div>' : '') + '</div>' +
-        '<p class="note">PronoFlash IA ne prend aucun pari, n\'affiche aucune cote et ne promet aucun gain. 18+ · Jouez de façon responsable.</p>';
+      var txt = encodeURIComponent(L.share(pc) + '\n' + sel.map(function (s) { return '• ' + s.n + (EN ? ': ' : ' : ') + s.l + ' (' + s.p + L.pct + ')'; }).join('\n') + '\n' + location.origin + couponPath);
+      return '<div class="box rk"><div class="lbl">' + L.myCoupon + ' · ' + n + '/5</div>' + rows +
+        (n ? '<div style="margin-top:10px"><small class="note">' + L.probAll + '</small><div class="big num" style="color:' + col + '">' + pc + L.pct + '</div><div class="meter"><i style="left:calc(' + Math.min(pc, 99) + '% - 2px)"></i></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--mut);margin-top:6px"><b style="color:' + col + '">' + esc(risk.label) + '</b><span>' + L.out100(pc) + '</span></div></div>' : '') +
+        '<div class="wr">' + warns + '</div>' + swap + (n ? '<div class="sh" style="margin-top:10px"><a class="wa" href="https://wa.me/?text=' + txt + '" target="_blank" rel="noopener">' + L.wa + '</a><button type="button" data-clr="1">' + L.clear + '</button></div>' : '') + '</div>' +
+        '<p class="note">' + L.disclaimer + '</p>';
     };
     d.addEventListener('click', function (e) {
       var t = e.target.closest('[data-fk],[data-pk],[data-rm],[data-clr],[data-swap]'); if (!t || !(root.contains(t) || (panel && panel.contains(t)))) return;

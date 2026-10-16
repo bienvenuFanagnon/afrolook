@@ -44,13 +44,37 @@
     return { prob, approx };
   }
 
-  /** Niveau de risque d'une probabilité de coupon (0 à 1). */
-  function riskLevel(prob) {
-    if (prob >= 0.55) return { id: 'prudent', label: 'Prudent' };
-    if (prob >= 0.35) return { id: 'equilibre', label: 'Équilibré' };
-    if (prob >= 0.2) return { id: 'risque', label: 'Risqué' };
-    return { id: 'tres_risque', label: 'Très risqué' };
+  const RISK = {
+    fr: { prudent: 'Prudent', equilibre: 'Équilibré', risque: 'Risqué', tres_risque: 'Très risqué' },
+    en: { prudent: 'Cautious', equilibre: 'Balanced', risque: 'Risky', tres_risque: 'Very risky' },
+  };
+
+  /** Niveau de risque d'une probabilité de coupon (0 à 1), libellé en français ou en anglais. */
+  function riskLevel(prob, lang) {
+    const id = prob >= 0.55 ? 'prudent' : prob >= 0.35 ? 'equilibre' : prob >= 0.2 ? 'risque' : 'tres_risque';
+    return { id, label: (RISK[lang] || RISK.fr)[id] };
   }
+
+  const WARN = {
+    fr: {
+      one: 'Ajoute au moins une deuxième sélection pour former un coupon.',
+      many: 'Chaque sélection ajoutée fait baisser la probabilité du coupon. Au-delà de 3, il passe vite sous la barre du « coup sûr ».',
+      weak: 'Une sélection sous 60 % tire tout le coupon vers le bas. Remplace-la par une option plus sûre du même match.',
+      low: 'Une sélection repose sur des données peu fiables : traite-la avec prudence.',
+      mix: 'Astuce : mélanger les types de pari (buts, corners, handicap…) évite qu\'un seul scénario fasse tout perdre.',
+      approx: 'Plusieurs paris du même match : la probabilité est une estimation, ces paris peuvent être liés.',
+      good: 'Bon équilibre : ce coupon passerait environ une fois sur deux ou plus.',
+    },
+    en: {
+      one: 'Add at least a second selection to build a slip.',
+      many: 'Every selection you add lowers the slip\'s probability. Beyond 3, it quickly drops below "safe" territory.',
+      weak: 'A selection under 60% drags the whole slip down. Swap it for a safer option from the same match.',
+      low: 'One selection relies on low-reliability data: handle it with care.',
+      mix: 'Tip: mixing bet types (goals, corners, handicap…) stops a single scenario from sinking everything.',
+      approx: 'Several bets from the same match: the probability is an estimate, these bets may be linked.',
+      good: 'Good balance: this slip would come in about one time in two or more.',
+    },
+  };
 
   /** Niveau d'une sélection seule : sûr, équilibré, risqué. */
   function pickLevel(pct) {
@@ -58,16 +82,17 @@
   }
 
   /** Avertissements à afficher sous le coupon (texte français prêt à l'emploi). */
-  function warnings(selections, result) {
+  function warnings(selections, result, lang) {
+    const W = WARN[lang] || WARN.fr;
     const out = [];
     const n = selections.length;
-    if (n === 1) out.push({ type: 'warn', text: 'Ajoute au moins une deuxième sélection pour former un coupon.' });
-    if (n >= 4) out.push({ type: 'warn', text: 'Chaque sélection ajoutée fait baisser la probabilité du coupon. Au-delà de 3, il passe vite sous la barre du « coup sûr ».' });
-    if (selections.some((s) => s.pct < 60)) out.push({ type: 'warn', text: 'Une sélection sous 60 % tire tout le coupon vers le bas. Remplace-la par une option plus sûre du même match.' });
-    if (selections.some((s) => s.fiabilite === 'faible')) out.push({ type: 'warn', text: 'Une sélection repose sur des données peu fiables : traite-la avec prudence.' });
-    if (n >= 2 && new Set(selections.map((s) => s.famille)).size === 1) out.push({ type: 'info', text: 'Astuce : mélanger les types de pari (buts, corners, handicap…) évite qu\'un seul scénario fasse tout perdre.' });
-    if (result && result.approx) out.push({ type: 'info', text: 'Plusieurs paris du même match : la probabilité est une estimation, ces paris peuvent être liés.' });
-    if (n >= 2 && result && result.prob >= 0.5) out.push({ type: 'info', text: 'Bon équilibre : ce coupon passerait environ une fois sur deux ou plus.' });
+    if (n === 1) out.push({ type: 'warn', text: W.one });
+    if (n >= 4) out.push({ type: 'warn', text: W.many });
+    if (selections.some((s) => s.pct < 60)) out.push({ type: 'warn', text: W.weak });
+    if (selections.some((s) => s.fiabilite === 'faible')) out.push({ type: 'warn', text: W.low });
+    if (n >= 2 && new Set(selections.map((s) => s.famille)).size === 1) out.push({ type: 'info', text: W.mix });
+    if (result && result.approx) out.push({ type: 'info', text: W.approx });
+    if (n >= 2 && result && result.prob >= 0.5) out.push({ type: 'info', text: W.good });
     return out;
   }
 

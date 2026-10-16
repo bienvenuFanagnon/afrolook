@@ -141,6 +141,8 @@ test('championnats : ajout vérifié auprès de l\'API, mise à jour du suivi', 
   assert.equal(db.read('leagues', '61').suivi, true);
   await call('ligue-maj', { apiId: 61, suivi: false });
   assert.equal(db.read('leagues', '61').suivi, false);
+  await call('ligue-maj', { apiId: 61, noms: { fr: 'Ligue 1', en: ' French Ligue 1 ', de: 'x' } });
+  assert.deepEqual(db.read('leagues', '61').noms, { fr: 'Ligue 1', en: 'French Ligue 1' });
   assert.equal((await call('ligue-maj', { apiId: 1 })).status, 404);
 });
 

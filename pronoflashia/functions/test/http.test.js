@@ -43,11 +43,11 @@ test('pays : en-tête de l\'infrastructure d\'abord, sinon fuseau horaire', () =
 
 test('page vue : compteurs du jour (pages, pays, appareil, source, heure, match)', async () => {
   const db = new FakeDb();
-  const ok = await handleEvent(req({ t: 'pv', p: 'match', m: '61_1001', d: 'm', r: 'moteur', s: 1, tz: 'Africa/Abidjan' }), mk(db));
+  const ok = await handleEvent(req({ t: 'pv', p: 'match', m: '61_1001', d: 'm', r: 'moteur', s: 1, l: 'en', tz: 'Africa/Abidjan' }), mk(db));
   assert.equal(ok, true);
   const d = db.read('stats_days', '2026-10-16');
   assert.equal(d.pv, 1); assert.equal(d.visites, 1);
-  assert.equal(d.pages.match, 1); assert.equal(d.pays.CI, 1); assert.equal(d.paysSource.fuseau, 1);
+  assert.equal(d.langues.en, 1); assert.equal(d.pages.match, 1); assert.equal(d.pays.CI, 1); assert.equal(d.paysSource.fuseau, 1);
   assert.equal(d.appareils.m, 1); assert.equal(d.sources.moteur, 1); assert.equal(d.heures['9'], 1); assert.equal(d.matchs['61_1001'], 1);
   assert.ok(d.hllEst && Object.keys(d.hllEst).length === 1);
   // deuxième page de la même visite : pas de nouvelle visite

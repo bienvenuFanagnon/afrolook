@@ -117,7 +117,7 @@ function createAdmin(deps) {
     const at = (n) => rows.filter((r) => r.jour >= dayStr(addDays(nowD(), -(n - 1)))).reduce((a, r) => ({ visites: a.visites + r.visites, visiteurs: a.visiteurs + r.visiteurs, pv: a.pv + r.pv }), { visites: 0, visiteurs: 0, pv: 0 });
     return {
       jours: rows, aujourdhui: at(1), sept: at(7), periode: { visites: sum('visites'), visiteurs: rows.reduce((s, r) => s + r.visiteurs, 0), pv: sum('pv'), clicsAfrolook: sum('clicsAfrolook'), aflImps: sum('aflImps'), pubVues: sum('pubVues'), couponAjouts: sum('couponAjouts'), partagesWa: sum('partagesWa') },
-      pays: topList(sumMap(docs, 'pays'), 15), paysSource: sumMap(docs, 'paysSource'), pages: topList(sumMap(docs, 'pages'), 10), sources: topList(sumMap(docs, 'sources'), 10),
+      pays: topList(sumMap(docs, 'pays'), 15), paysSource: sumMap(docs, 'paysSource'), pages: topList(sumMap(docs, 'pages'), 10), sources: topList(sumMap(docs, 'sources'), 10), langues: sumMap(docs, 'langues'),
       appareils: sumMap(docs, 'appareils'), heures: sumMap(docs, 'heures'), pub: topList(sumMap(docs, 'pub'), 15), afl: topList(sumMap(docs, 'afl'), 10), aflClics: topList(sumMap(docs, 'aflClics'), 10),
       matchsTop: matchsTop.map((t) => ({ k: t.k, nom: names[t.k] || t.k, v: t.v })), jour: today,
     };
@@ -231,6 +231,11 @@ function createAdmin(deps) {
     const upd = {};
     if (b.suivi !== undefined) upd.suivi = !!b.suivi;
     if (b.ordre !== undefined) upd.ordre = parseInt(b.ordre, 10) || 50;
+    if (b.noms && typeof b.noms === 'object') {
+      const noms = {};
+      for (const l of ['fr', 'en']) { const v = str(b.noms[l], 80); if (v) noms[l] = v; }
+      upd.noms = noms;
+    }
     if (b.saison !== undefined) upd.saison = parseInt(b.saison, 10) || d.data().saison;
     await db.collection('leagues').doc(id).set(upd, { merge: true });
     await log(by, 'ligue-maj', { apiId: id, ...upd });

@@ -44,3 +44,14 @@ test('pronostic principal : même libellé que le moteur en français, traduit e
   assert.equal(L.principalLabel('res:1N', 'Paris SG', 'Marseille', 'en'), '1X · Paris SG or draw');
   assert.equal(L.principalLabel('res:12', 'A', 'B', 'en'), '12 · No draw');
 });
+
+test('coupon : avertissements et niveaux de risque en anglais', () => {
+  const c = require('../src/shared/coupon');
+  assert.equal(c.riskLevel(0.6, 'en').label, 'Cautious');
+  assert.equal(c.riskLevel(0.1).label, 'Très risqué');
+  const sel = [{ pct: 55, famille: 'Goals', fiabilite: 'haute' }, { pct: 70, famille: 'Goals', fiabilite: 'faible' }, { pct: 80, famille: 'Goals' }, { pct: 80, famille: 'Goals' }];
+  const en = c.warnings(sel, { prob: 0.2, approx: true }, 'en').map((w) => w.text).join(' ');
+  assert.match(en, /lowers the slip/); assert.match(en, /under 60%/); assert.match(en, /low-reliability/); assert.match(en, /Tip: mixing/); assert.match(en, /may be linked/);
+  assert.ok(!/é/.test(en));
+  assert.match(c.warnings(sel.slice(0, 1), null).map((w) => w.text).join(' '), /deuxième sélection/);
+});
