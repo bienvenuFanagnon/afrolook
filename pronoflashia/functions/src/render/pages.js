@@ -10,6 +10,7 @@ const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 const { summarizeCoupons } = require('../jobs/coupons');
 const { isFragile } = require('../engine/fragility');
+const { unpack: unpackMatrix } = require('../engine/matrixStore');
 
 const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
@@ -180,7 +181,7 @@ function matchJson(rc, m) {
   const p = m.prono;
   return {
     id: m.id, nom: titleOf(m), ligue: leagueName(rc, m), t: m.coupDEnvoi, u: rc.u('analysis', m),
-    marches: p.marches.map((x) => ({ k: x.cle, l: betLabel(rc, m, x), f: famLabel(rc, x.famille), p: x.pct, r: x.fiabilite[0] })), matrice: p.matrice,
+    marches: p.marches.map((x) => ({ k: x.cle, l: betLabel(rc, m, x), f: famLabel(rc, x.famille), p: x.pct, r: x.fiabilite[0] })), matrice: unpackMatrix(p.matrice),
   };
 }
 const jsonScript = (id, obj) => `<script type="application/json" id="${id}">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
@@ -445,7 +446,7 @@ function couponPage(rc, { pool }) {
   const data = pool.slice(0, 16).map((m) => ({
     id: m.id, nom: titleOf(m), ligue: leagueName(rc, m), t: m.coupDEnvoi, slug: rc.u('analysis', m),
     marches: m.prono.marches.filter((x) => x.fiabilite !== 'faible' && x.pct >= 50 && x.pct < 97).map((x) => ({ k: x.cle, l: betLabel(rc, m, x), f: famLabel(rc, x.famille), p: x.pct, r: x.fiabilite[0] })),
-    matrice: m.prono.matrice,
+    matrice: unpackMatrix(m.prono.matrice),
   }));
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.couponH1}</h1><p>${t.couponP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}` +
     `<div class="box"><div class="lbl">${t.proposed}</div><div class="sg">${sugg || `<p class="note">${t.proposedEmpty}</p>`}</div><p class="note" style="margin-top:8px">${t.neverWeak}</p></div>` +

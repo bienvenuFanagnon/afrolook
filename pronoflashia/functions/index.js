@@ -31,6 +31,8 @@ const { SCHEDULE } = require('./src/jobs/schedule');
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
+// un champ « undefined » ne fait plus échouer toute l'écriture (il est simplement ignoré)
+db.settings({ ignoreUndefinedProperties: true });
 
 const API_FOOTBALL_KEY = defineString('API_FOOTBALL_KEY', { default: '' });
 const FOOTBALL_DATA_TOKEN = defineString('FOOTBALL_DATA_TOKEN', { default: '' });
