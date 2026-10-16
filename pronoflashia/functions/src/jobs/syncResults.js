@@ -28,7 +28,7 @@ async function appendTeamForm(db, teamId, fx, venue, statsMine, statsOpp, now) {
 async function finalize({ db, api, match, fx, now, statsBudget }) {
   let stats = null;
   let statsTentee = false;
-  if (statsBudget.left > 0) {
+  if (statsBudget.left > 0 && !api.sansStats) {
     statsBudget.left--;
     statsTentee = true;
     try {
@@ -44,7 +44,7 @@ async function finalize({ db, api, match, fx, now, statsBudget }) {
   const marches = match.prono ? evaluateAll(match.prono.marches, ctx) : {};
   const reussi = pr ? evaluateMarket(pr.cle, ctx) : null;
   // on attend les statistiques (3 tentatives au plus) avant de figer le bilan, pour ne pas fausser les marchés de comptage
-  const pret = !!stats || tentatives >= 3 || !match.prono;
+  const pret = !!stats || tentatives >= 3 || !match.prono || !!api.sansStats;
   const resultat = {
     scoreDom: fx.score.dom, scoreExt: fx.score.ext, miTemps: fx.miTemps, reussi, marches, stats,
     tentativesStats: tentatives, compte: !!prev.compte, termineLe: prev.termineLe || now.toISOString(),

@@ -9,7 +9,7 @@ const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 
-const { makeApi, makeProviders } = require('./src/deps');
+const { makeApi, makeProviders, sourceOf } = require('./src/deps');
 const { runJob } = require('./src/jobs/helpers');
 const { syncFixtures } = require('./src/jobs/syncFixtures');
 const { buildPredictions } = require('./src/jobs/buildPredictions');
@@ -27,17 +27,20 @@ if (!getApps().length) initializeApp();
 const db = getFirestore();
 
 const API_FOOTBALL_KEY = defineSecret('API_FOOTBALL_KEY');
+const FOOTBALL_DATA_TOKEN = defineSecret('FOOTBALL_DATA_TOKEN');
 const CF_API_TOKEN = defineSecret('CF_API_TOKEN');
 const CF_ACCOUNT_ID = defineSecret('CF_ACCOUNT_ID');
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 const STATS_SALT = defineSecret('STATS_SALT');
 // Adresses Google autorisées dès le départ (le premier administrateur) ; les autres sont gérées dans l'admin.
 const ADMIN_EMAILS = defineString('ADMIN_EMAILS', { default: '' });
+// Source des données de football : « football-data » (gratuit) ou « api-football » (payant). Vide : football-data si son jeton existe.
+const FOOTBALL_SOURCE = defineString('FOOTBALL_SOURCE', { default: '' });
 
 const REGION = 'europe-west1';
-const SECRETS = [API_FOOTBALL_KEY, CF_API_TOKEN, CF_ACCOUNT_ID, GEMINI_API_KEY];
+const SECRETS = [API_FOOTBALL_KEY, FOOTBALL_DATA_TOKEN, CF_API_TOKEN, CF_ACCOUNT_ID, GEMINI_API_KEY];
 const val = (p) => { try { return p.value(); } catch { return ''; } };
-const secrets = () => ({ apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
+const secrets = () => ({ source: val(FOOTBALL_SOURCE), footballData: val(FOOTBALL_DATA_TOKEN), apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
 const cron = (nom) => SCHEDULE.find((x) => x.nom === nom).cron;
 const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, secrets: SECRETS, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
 
@@ -68,7 +71,7 @@ const admin = createAdmin({
   tasks: TASKS,
   apiFactory: () => makeApi(secrets()),
   // présence des secrets (jamais leur valeur) pour l'écran « Connexions »
-  secretsStatus: () => { const s = secrets(); let salt = ''; try { salt = STATS_SALT.value(); } catch { /* non défini */ } return { apiFootball: !!s.apiFootball, cfToken: !!s.cfToken, cfAccount: !!s.cfAccount, gemini: !!s.gemini, statsSalt: !!salt }; },
+  secretsStatus: () => { const s = secrets(); let salt = ''; try { salt = STATS_SALT.value(); } catch { /* non défini */ } return { source: sourceOf(s), footballData: !!s.footballData, apiFootball: !!s.apiFootball, cfToken: !!s.cfToken, cfAccount: !!s.cfAccount, gemini: !!s.gemini, statsSalt: !!salt }; },
   clearCache: D.clearCache,
 });
 

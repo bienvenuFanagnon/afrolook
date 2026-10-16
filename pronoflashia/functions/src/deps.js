@@ -1,13 +1,27 @@
 'use strict';
 // Construction des dépendances réelles (API sportive, fournisseurs d'IA) à partir des secrets Firebase.
 
-const { createClient } = require('./data/apiFootball');
+const apiFootball = require('./data/apiFootball');
+const footballData = require('./data/footballData');
 const { cloudflareProvider, geminiProvider } = require('./ai/providers');
 
-/** s = { apiFootball, cfToken, cfAccount, gemini } : valeurs des secrets (peuvent être vides). */
+/**
+ * Source des données de football. s = { source, footballData, apiFootball, ... } : valeurs des secrets (peuvent être vides).
+ * « football-data » (offre gratuite : scores et calendriers) ou « api-football » (offre payante : statistiques, cotes, Afrique).
+ * Sans choix explicite : football-data.org si son jeton existe, sinon API-Football.
+ */
+function sourceOf(s) {
+  if (s.source === 'api-football' || s.source === 'football-data') return s.source;
+  return s.footballData ? 'football-data' : 'api-football';
+}
+
 function makeApi(s) {
+  if (sourceOf(s) === 'football-data') {
+    if (!s.footballData) throw new Error('Secret FOOTBALL_DATA_TOKEN manquant');
+    return footballData.createClient({ key: s.footballData });
+  }
   if (!s.apiFootball) throw new Error('Secret API_FOOTBALL_KEY manquant');
-  return createClient({ key: s.apiFootball });
+  return apiFootball.createClient({ key: s.apiFootball });
 }
 
 /** Ordre d'essai : Workers AI d'abord (quota gratuit), Gemini en secours. Un fournisseur sans clé est simplement ignoré. */
@@ -18,4 +32,4 @@ function makeProviders(s, models = {}) {
   return list;
 }
 
-module.exports = { makeApi, makeProviders };
+module.exports = { makeApi, makeProviders, sourceOf };

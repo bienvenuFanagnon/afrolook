@@ -40,7 +40,8 @@ cd pronoflashia/functions && npm test           # 75 tests : calcul, IA, API, t�
 2. Mettre l'identifiant du projet dans `.firebaserc`.
 3. **Secrets** (jamais dans le dépôt) :
    ```bash
-   firebase functions:secrets:set API_FOOTBALL_KEY     # clé API-Football
+   firebase functions:secrets:set FOOTBALL_DATA_TOKEN  # jeton football-data.org (offre gratuite)
+   firebase functions:secrets:set API_FOOTBALL_KEY     # clé API-Football (source payante, facultative au départ)
    firebase functions:secrets:set CF_API_TOKEN         # jeton Cloudflare Workers AI
    firebase functions:secrets:set CF_ACCOUNT_ID        # identifiant du compte Cloudflare
    firebase functions:secrets:set GEMINI_API_KEY       # facultatif, IA de secours
@@ -63,7 +64,8 @@ git clone https://github.com/bienvenufanagnon/afrolook.git && cd afrolook && git
 (cd functions && npm ci)
 firebase use pronoflashia
 # secrets : chaque commande demande la valeur à coller (rien n'est écrit dans le dépôt)
-firebase functions:secrets:set API_FOOTBALL_KEY
+firebase functions:secrets:set FOOTBALL_DATA_TOKEN # jeton football-data.org (offre gratuite, pour démarrer)
+firebase functions:secrets:set API_FOOTBALL_KEY    # clé API-Football (peut rester celle de l'offre gratuite tant qu'on n'utilise pas cette source)
 firebase functions:secrets:set CF_API_TOKEN
 firebase functions:secrets:set CF_ACCOUNT_ID
 firebase functions:secrets:set GEMINI_API_KEY      # sans clé Gemini : coller le mot « aucune »
@@ -72,6 +74,12 @@ node scripts/build-site.js && firebase deploy --only firestore,functions,hosting
 ```
 
 À la première publication, Firebase demande la valeur de `ADMIN_EMAILS` (adresse Google du premier administrateur). Adresse provisoire : `https://pronoflashia.web.app`. Tant que le nom de domaine n'est pas acheté, mettre `indexable` à faux dans l'admin (Réglages) pour que Google n'indexe pas l'adresse provisoire.
+
+## Source des données de football
+
+- **Démarrage gratuit : football-data.org** (`FOOTBALL_DATA_TOKEN`). Calendriers, scores et mi-temps de 12 championnats (Premier League, Liga, Serie A, Bundesliga, Ligue 1, Ligue des champions, Eredivisie, Primeira Liga, Championship, Brasileirão, Copa Libertadores, Coupe du monde), 10 appels par minute, gérés automatiquement. Sans statistiques de match ni cotes : pas de pronostics corners, tirs, cartons, et pas de recalage sur les cotes. Aucun championnat africain.
+- **Plus tard : API-Football Pro** (`API_FOOTBALL_KEY`) pour l'Afrique, les statistiques et les cotes. Choix de la source : paramètre `FOOTBALL_SOURCE` (`football-data` ou `api-football` ; vide = football-data si son jeton existe). Les identifiants de championnats diffèrent d'une source à l'autre : après un changement, rajouter les championnats dans l'admin (Réglages).
+- Identifiants football-data.org : 2015 Ligue 1, 2021 Premier League, 2014 Liga, 2019 Serie A, 2002 Bundesliga, 2001 Ligue des champions, 2003 Eredivisie, 2017 Primeira Liga, 2016 Championship.
 
 ## Points à vérifier avant le lancement
 

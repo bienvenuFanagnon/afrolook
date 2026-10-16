@@ -210,10 +210,10 @@ function createAdmin(deps) {
 
   A['ligue-ajouter'] = async (b, by) => {
     const apiId = parseInt(b.apiId, 10);
-    if (!apiId) throw new HttpError(400, 'Identifiant API-Football manquant.');
+    if (!apiId) throw new HttpError(400, 'Identifiant du championnat manquant.');
     if (!deps.apiFactory) throw new HttpError(501, 'API sportive non configurée.');
     const r = await deps.apiFactory().leagues({ id: apiId });
-    if (!r.length) throw new HttpError(404, 'Championnat introuvable chez API-Football.');
+    if (!r.length) throw new HttpError(404, 'Championnat introuvable chez le fournisseur de données (ou non inclus dans l\'offre).');
     const it = r[0];
     const seasons = it.seasons || [];
     const cur = seasons.find((s) => s.current) || seasons[seasons.length - 1];
@@ -285,7 +285,7 @@ function createAdmin(deps) {
     const A1 = fresh(api), W = fresh(wai), G = fresh(gem);
     const hist = (d) => Object.entries((d && d.historique) || {}).sort().slice(-14).map(([j, v]) => ({ jour: j, ...v }));
     const tools = [
-      Object.assign({ id: 'apiFootball', nom: 'API-Football', role: 'Matchs, résultats, statistiques et cotes', configure: !!sec.apiFootball, suivi: true, secret: 'API_FOOTBALL_KEY' }, A1 && { dernierSucces: A1.dernierSucces, derniereErreur: A1.derniereErreur, derniereErreurLe: A1.derniereErreurLe, appelsJour: A1.appelsJour, erreursJour: A1.erreursJour,
+      Object.assign(sec.source === 'football-data' ? { id: 'apiFootball', nom: 'football-data.org (offre gratuite)', role: 'Calendriers, scores et mi-temps (ni statistiques, ni cotes, ni championnats africains)', configure: !!sec.footballData, suivi: true, secret: 'FOOTBALL_DATA_TOKEN' } : { id: 'apiFootball', nom: 'API-Football', role: 'Matchs, résultats, statistiques et cotes', configure: !!sec.apiFootball, suivi: true, secret: 'API_FOOTBALL_KEY' }, A1 && { dernierSucces: A1.dernierSucces, derniereErreur: A1.derniereErreur, derniereErreurLe: A1.derniereErreurLe, appelsJour: A1.appelsJour, erreursJour: A1.erreursJour,
         quota: A1.quotaLimite ? { utilise: A1.quotaLimite - (A1.quotaRestant == null ? A1.quotaLimite : A1.quotaRestant), limite: A1.quotaLimite, unite: 'requêtes' } : null, historique: hist(A1) }),
       Object.assign({ id: 'workersAi', nom: 'Cloudflare Workers AI', role: 'Rédaction des analyses (français et anglais)', configure: !!(sec.cfToken && sec.cfAccount), suivi: true, secret: 'CF_API_TOKEN + CF_ACCOUNT_ID',
         quota: { utilise: Math.round((W && W.neuronsJour) || 0), limite: site.quotaNeurons || 10000, unite: 'neurons gratuits' } }, W && { dernierSucces: W.dernierSucces, derniereErreur: W.derniereErreur, derniereErreurLe: W.derniereErreurLe, appelsJour: W.appelsJour, erreursJour: W.erreursJour, latenceMs: W.latenceMs, historique: hist(W) }),

@@ -220,6 +220,20 @@ test('syncResults : statistiques indisponibles → on réessaie, bilan figé apr
   assert.equal(m.resultat.marches['corners:total:9.5'], undefined, 'pari de comptage non évalué sans statistiques');
 });
 
+test('syncResults : source sans statistiques (offre gratuite) → bilan figé dès le premier passage', async () => {
+  const { db, api } = await setup();
+  await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: NOW }, r));
+  const apiR = mockApi({ result: raw(1001, 85, 81, '2026-10-18T18:45:00+00:00', 'FT', [2, 1], [1, 0]), statsOk: false });
+  let statCalls = 0;
+  const origStats = apiR.fixtureStatistics;
+  apiR.fixtureStatistics = async (...a) => { statCalls++; return origStats(...a); };
+  apiR.sansStats = true;
+  await runJob(db, 'syncResults', (r) => syncResults({ db, api: apiR, now: new Date('2026-10-18T21:00:00Z') }, r));
+  assert.equal(statCalls, 0);
+  assert.equal(db.read('matches', '61_1001').resultat.compte, true);
+  assert.equal(db.read('bilan_days', '2026-10-18').delta.principal.n, 1);
+});
+
 test('aiHealthCheck : ok, lent, panne', async () => {
   const db = new FakeDb();
   const good = { name: 'workers-ai', call: async () => '{"ok":true}' };
