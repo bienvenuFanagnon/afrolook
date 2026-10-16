@@ -307,6 +307,23 @@ service cloud.firestore {
         && request.resource.data.version is int;
     }
 
+    // Sons des artistes (Studio) : l'artiste dépose son son en attente de validation ; seuls les admins valident,
+    // refusent ou modifient les compteurs. Les paiements des utilisations sont faits par la Cloud Function
+    // renderStudioMontage (jamais par le téléphone). Un son non validé n'est lisible que par son auteur et les admins.
+    match /artist_sounds/{soundId} {
+      allow read: if isAuth() && (resource.data.status == 'validated' || resource.data.userId == uid() || isAdmin());
+      allow create: if isAuth()
+          && request.resource.data.userId == uid()
+          && request.resource.data.status == 'pending_review'
+          && request.resource.data.usageCount == 0
+          && request.resource.data.totalEarningsCoins == 0
+          && request.resource.data.rightsCertified == true;
+      allow update, delete: if isAdmin();
+    }
+    match /ArtistSoundUses/{useId} {
+      allow read: if isAdmin();
+    }
+
     // ─────────────────────────────────────────────────────────────
     // TOUTES LES AUTRES COLLECTIONS — requièrent auth minimale
     // ATTENTION : les règles Firestore s'additionnent (une seule règle qui
@@ -318,12 +335,12 @@ service cloud.firestore {
       // Quiz : questions, parties et progression sont secrètes (lues seulement par les Cloud Functions ; le joueur lit
       // sa propre progression et son historique grâce aux règles dédiées plus haut)
       allow read: if isAuth()
-          && !(collection in ['ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers']);
+          && !(collection in ['ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers', 'artist_sounds', 'ArtistSoundUses']);
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
       // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
       // Follows : abonnements écrits uniquement par les Cloud Functions (followUser / unfollowUser)
       allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
-          && !(collection in ['ContesIndex', 'ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'CardUsage', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'EtudeCatalog', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers']);
+          && !(collection in ['ContesIndex', 'ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'CardUsage', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'EtudeCatalog', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers', 'artist_sounds', 'ArtistSoundUses']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app

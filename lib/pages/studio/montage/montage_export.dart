@@ -96,6 +96,7 @@ class MontageExport {
     required Future<void> Function(double t) setT,
     required void Function(String step) onStep,
     required int maxSeconds,
+    void Function(int coins)? onPaid,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Connecte-toi pour créer une vidéo.');
@@ -143,8 +144,14 @@ class MontageExport {
       'saturation': s.template.saturation,
       'brightness': s.template.brightness,
       'hasUnder': isVideo,
+      if (s.music != null) 'music': {'type': s.music!.type, 'id': s.music!.id, 'startMs': s.musicStartMs},
+      'keepAudio': s.keepVideoAudio,
+      if (!isVideo && s.music != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
     });
-    final url = (res.data as Map)['url'] as String;
+    final data = res.data as Map;
+    final url = data['url'] as String;
+    final paid = (data['paidCoins'] as num?)?.toInt() ?? 0;
+    if (paid > 0) onPaid?.call(paid);
 
     onStep('Téléchargement…');
     final r = await http.get(Uri.parse(url));

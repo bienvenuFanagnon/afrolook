@@ -127,6 +127,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
   final _genreCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   bool _isSubmitting = false;
+  bool _rights = false;
   double _progress = 0;
 
   final _picker = ImagePicker();
@@ -157,7 +158,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
   }
 
   Future<void> _submit() async {
-    if (_audioFile == null || _titleCtrl.text.trim().isEmpty) return;
+    if (!_isValid) return;
     setState(() { _isSubmitting = true; _progress = 0; });
 
     final auth = Provider.of<UserAuthProvider>(context, listen: false);
@@ -168,7 +169,8 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
       // Upload audio
       final ts = DateTime.now().millisecondsSinceEpoch;
       final ext = _audioFile!.path.split('.').last;
-      final audioRef = storage.ref('artist_sounds/$ts.$ext');
+      final uid = auth.loginUserData.id!;
+      final audioRef = storage.ref('artist_sounds/$uid/$ts.$ext');
       final uploadAudio = audioRef.putFile(_audioFile!);
       uploadAudio.snapshotEvents.listen((s) => setState(() => _progress = s.bytesTransferred / s.totalBytes * 0.8));
       final audioSnap = await uploadAudio;
@@ -177,7 +179,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
       // Upload cover si fournie
       String? coverUrl;
       if (_coverFile != null) {
-        final coverRef = storage.ref('artist_sound_covers/$ts.jpg');
+        final coverRef = storage.ref('artist_sound_covers/$uid/$ts.jpg');
         final uploadCover = coverRef.putFile(_coverFile!);
         uploadCover.snapshotEvents.listen((s) => setState(() => _progress = 0.8 + s.bytesTransferred / s.totalBytes * 0.2));
         final coverSnap = await uploadCover;
@@ -204,7 +206,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
         createdAt: Timestamp.now(),
       );
 
-      await firestore.collection('artist_sounds').add(sound.toMap());
+      await firestore.collection('artist_sounds').add({...sound.toMap(), 'rightsCertified': true});
 
       if (mounted) {
         _snack('Son soumis avec succès ! En attente de validation.');
@@ -222,7 +224,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  bool get _isValid => _audioFile != null && _titleCtrl.text.trim().isNotEmpty;
+  bool get _isValid => _audioFile != null && _titleCtrl.text.trim().isNotEmpty && _rights;
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +274,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Tu gagnes 3 pièces à chaque fois qu\'un utilisateur utilise ton son.',
+                            'Tu gagnes 3 pièces à chaque fois qu\'une personne utilise ton son dans le Studio (templates prêts à poster). Les pièces gagnées sont convertibles et retirables.',
                             style: TextStyle(color: c.textPrimary, fontSize: 13),
                           ),
                         ),
@@ -314,6 +316,19 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                   _buildField(c, _genreCtrl, 'Genre (Afrobeat, Coupé-décalé, Amapiano…)', maxLength: 30),
                   const SizedBox(height: 12),
                   _buildField(c, _descCtrl, 'Description (optionnel)', maxLines: 3, maxLength: 200),
+
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    value: _rights,
+                    onChanged: (v) => setState(() => _rights = v == true),
+                    activeColor: c.primary,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(
+                      'Je certifie être l\'auteur de ce son ou en détenir tous les droits, et j\'autorise Afrolook à le proposer dans le Studio.',
+                      style: TextStyle(color: c.textPrimary, fontSize: 12.5),
+                    ),
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -391,13 +406,42 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
       builder: (_, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
         final docs = snap.data!.docs;
-        if (docs.isEmpty) return const SizedBox.shrink();
+        void openMine() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage()));
+        if (docs.isEmpty) {
+          // Aucun son encore validé : on invite les artistes à déposer le leur
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: InkWell(
+              onTap: openMine,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFE91E63)]),
+                ),
+                child: const Row(children: [
+                  Text('🎤', style: TextStyle(fontSize: 24)),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Tu es artiste ? Dépose ton son : tu gagnes 3 pièces à chaque utilisation dans le Studio.',
+                        style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: Colors.white),
+                ]),
+              ),
+            ),
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text('🎵 Sons des artistes', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.textPrimary)),
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+              child: Row(children: [
+                Expanded(child: Text('🎵 Sons des artistes', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c.textPrimary))),
+                TextButton(onPressed: openMine, child: Text('🎤 Proposer le mien', style: TextStyle(color: c.primary, fontWeight: FontWeight.w700, fontSize: 12.5))),
+              ]),
             ),
             SizedBox(
               height: 120,
@@ -456,7 +500,7 @@ class _SoundCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(sound.title, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: colors.textPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    Text('3 pièces / use', style: TextStyle(fontSize: 9, color: colors.primary, fontWeight: FontWeight.w600)),
+                    Text('🎤 @${sound.userPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9, color: colors.primary, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),

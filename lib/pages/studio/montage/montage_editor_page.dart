@@ -17,6 +17,7 @@ import 'montage_canvas.dart';
 import 'montage_catalog.dart';
 import 'montage_export.dart';
 import 'montage_fx.dart';
+import 'montage_music.dart';
 import 'montage_state.dart';
 
 const _c = AppColors.dark;
@@ -44,6 +45,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   final _wish = TextEditingController();
   final _prenom = TextEditingController(text: 'Kofi');
   final _date = TextEditingController();
+  final _likes = TextEditingController();
+  final _comments = TextEditingController();
+  final _followers = TextEditingController();
+
+  /// Aperçu sonore dans l'éditeur (la musique reste dans le montage même coupée ici).
+  bool _musicPlaying = false;
+  int? _musicDurationMs;
 
   MontageTemplate get tp => widget.template;
 
@@ -56,13 +64,59 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       if (mounted) setState(_syncFields);
     });
     if (s.useVideo) _initVideo();
+    final real = context.read<UserAuthProvider>().loginUserData.followersCount;
+    _likes.text = s.likesLabel();
+    _comments.text = s.commentsLabel();
+    _followers.text = s.followersLabel(real) ?? '';
+    ArtistSoundPricing.load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _playMusic());
+  }
+
+  // ── Musique ──
+
+  Future<void> _playMusic() async {
+    final m = s.music;
+    if (m == null || !mounted) return;
+    final ok = await MontageMusicPlayer.play(m, startMs: s.musicStartMs);
+    if (!mounted) return;
+    setState(() => _musicPlaying = ok);
+    if (ok) {
+      final known = m.isArtist ? null : studioTrack(m.id)?.durationMs;
+      final d = known ?? (await MontageMusicPlayer.duration())?.inMilliseconds;
+      if (mounted) setState(() => _musicDurationMs = d);
+    }
+  }
+
+  Future<void> _toggleMusic() async {
+    if (_musicPlaying) {
+      await MontageMusicPlayer.stop();
+      if (mounted) setState(() => _musicPlaying = false);
+    } else {
+      await _playMusic();
+    }
+  }
+
+  Future<void> _chooseMusic() async {
+    await MontageMusicPlayer.stop();
+    if (!mounted) return;
+    setState(() => _musicPlaying = false);
+    final pick = await showMontageMusicPicker(context, current: s.music, onArtistCta: () => openArtistSpace(context));
+    if (!mounted || pick == null) return;
+    setState(() {
+      s.music = pick.music;
+      s.musicStartMs = 0;
+      _musicDurationMs = null;
+      if (pick.music == null) s.keepVideoAudio = false;
+    });
+    await _playMusic();
   }
 
   @override
   void dispose() {
     _anim.dispose();
     _video?.dispose();
-    for (final c in [_kick, _title, _wish, _prenom, _date]) {
+    MontageMusicPlayer.stop();
+    for (final c in [_kick, _title, _wish, _prenom, _date, _likes, _comments, _followers]) {
       c.dispose();
     }
     super.dispose();
@@ -218,9 +272,41 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     await WidgetsBinding.instance.endOfFrame;
   }
 
+  /// Son d'artiste payant : on prévient avant de lancer le montage (débité seulement s'il réussit).
+  Future<bool> _confirmArtistCost() async {
+    final m = s.music;
+    final me = context.read<UserAuthProvider>().loginUserData.id;
+    if (m == null || !m.isArtist || m.artistId == me) return true;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _c.surface,
+        title: Text('Son d’artiste', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(
+          '« ${m.title} » coûte ${ArtistSoundPricing.price} pièces. ${ArtistSoundPricing.share} pièces vont directement à l’artiste ${m.subtitle.split(' · ').first}.\n\nTu n’es débité(e) que si ta vidéo est bien créée.',
+          style: TextStyle(color: _c.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler', style: TextStyle(color: _c.textSecondary))),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: _c.primary),
+            child: Text('Utiliser (${ArtistSoundPricing.price} 🪙)'),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
   Future<void> _publish() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    if (!await _confirmArtistCost() || !mounted) return;
+    await MontageMusicPlayer.stop();
+    setState(() {
+      _busy = true;
+      _musicPlaying = false;
+    });
     final step = ValueNotifier<String>('Préparation…');
     final video = s.exportsVideo;
     showDialog<void>(
@@ -251,6 +337,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           setT: _setT,
           onStep: (v) => step.value = v,
           maxSeconds: widget.forChronique ? 30 : 60,
+          onPaid: (coins) => _say('🎤 $coins pièces utilisées pour le son de l’artiste. Merci de soutenir les artistes !'),
         );
       } else {
         await _setT(.3);
@@ -263,7 +350,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
-      _say(e is FirebaseFunctionsException ? (e.message ?? 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
+      if (e is FirebaseFunctionsException && e.code == 'resource-exhausted') {
+        _say('Solde insuffisant : il te faut ${ArtistSoundPricing.price} pièces pour ce son. Recharge ou choisis une musique gratuite.');
+      } else {
+        _say(e is FirebaseFunctionsException ? (e.message ?? 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
+      }
     } finally {
       step.dispose();
       if (mounted) {
@@ -331,7 +422,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
+    final me = context.read<UserAuthProvider>().loginUserData;
+    final pseudo = me.pseudo ?? '';
     final screenH = MediaQuery.sizeOf(context).height;
     return Scaffold(
       backgroundColor: _c.background,
@@ -367,6 +459,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                   media: _mediaWidget(),
                   secondMedia: _secondWidget(),
                   pseudo: pseudo,
+                  followers: me.followersCount,
                 ),
               ),
             ),
@@ -388,6 +481,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
         ]),
         const SizedBox(height: 14),
+        _musicSection(),
+        const SizedBox(height: 14),
         _label('Format'),
         _seg(['Chronique 9:16', 'Post 4:5'], s.post ? 1 : 0, (i) => setState(() => s.post = i == 1)),
         if (tp.fx != MontageFx.none) ...[
@@ -404,7 +499,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             activeThumbColor: _c.primary,
             title: Text('Animé (vidéo)', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
             subtitle: Text(
-              s.useVideo ? 'Ta vidéo garde l’effet animé.' : (s.animated ? 'Publié en vidéo avec l’effet animé.' : 'Publié en image fixe.'),
+              s.useVideo
+                  ? 'Ta vidéo garde l’effet animé.'
+                  : (s.animated ? 'L’effet bouge dans la vidéo.' : (s.music != null ? 'Effet figé (la musique fait quand même une vidéo).' : 'Publié en image fixe.')),
               style: TextStyle(color: _c.textSecondary, fontSize: 12),
             ),
           ),
@@ -495,6 +592,21 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             if (s.wish == null) _wish.text = resolveMontageTexts(s).wish;
           }),
         ],
+        if (s.shows(MontageLayer.stats) || s.shows(MontageLayer.followers)) ...[
+          const SizedBox(height: 16),
+          _label('Chiffres affichés (modifiables)'),
+          Row(children: [
+            if (s.shows(MontageLayer.stats)) ...[
+              Expanded(child: _field(_likes, '❤️ J’aime', (v) => s.likesText = v)),
+              const SizedBox(width: 8),
+              Expanded(child: _field(_comments, '💬 Comm.', (v) => s.commentsText = v)),
+            ],
+            if (s.shows(MontageLayer.stats) && s.shows(MontageLayer.followers)) const SizedBox(width: 8),
+            if (s.shows(MontageLayer.followers)) Expanded(child: _field(_followers, '👥 Abonnés', (v) => s.followersText = v)),
+          ]),
+          const SizedBox(height: 4),
+          Text('Écris 1400 ou 1,4k. Les abonnés partent de ton vrai nombre.', style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
+        ],
         const SizedBox(height: 16),
         _label('Éléments — touche pour retirer ou remettre'),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -515,14 +627,117 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         ]),
         const SizedBox(height: 8),
         Text('« Créé sur Afrolook » reste toujours, en petit, en bas à droite.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.border)),
-          child: Text('🎵 Son suggéré : ${tp.sound}', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
-        ),
       ],
     );
+  }
+
+  Widget _musicSection() {
+    final m = s.music;
+    final maxSec = widget.forChronique ? 30 : 60;
+    final durs = [10, 15, 30].where((d) => d <= maxSec).toList();
+    final dur = _musicDurationMs;
+    final clip = (s.useVideo ? maxSec : s.musicSeconds) * 1000;
+    final slideMax = m != null && dur != null && dur > clip + 1000 ? dur - clip : 0;
+    final canSlide = slideMax > 0;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _label('Musique'),
+      Container(
+        padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+        decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: m != null ? _c.primary : _c.border)),
+        child: Row(children: [
+          if (m != null)
+            IconButton(
+              onPressed: _toggleMusic,
+              icon: Icon(_musicPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: _c.primary, size: 34),
+            )
+          else
+            Padding(padding: const EdgeInsets.all(10), child: Icon(Icons.music_off_rounded, color: _c.textSecondary, size: 26)),
+          const SizedBox(width: 4),
+          Expanded(
+            child: InkWell(
+              onTap: _chooseMusic,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(m == null ? 'Sans musique' : '${studioTrack(m.id)?.emoji ?? '🎤'} ${m.title}',
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+                Text(
+                  m == null
+                      ? 'Touche pour ajouter une musique'
+                      : (m.isArtist ? '${m.subtitle} · 🪙 ${ArtistSoundPricing.price} pièces' : m.subtitle),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: _c.textSecondary, fontSize: 12),
+                ),
+              ]),
+            ),
+          ),
+          TextButton(onPressed: _chooseMusic, child: Text(m == null ? 'Ajouter' : 'Changer', style: TextStyle(color: _c.primary, fontWeight: FontWeight.w800))),
+          if (m != null)
+            IconButton(
+              tooltip: 'Retirer la musique',
+              onPressed: () async {
+                await MontageMusicPlayer.stop();
+                setState(() {
+                  s.music = null;
+                  s.keepVideoAudio = false;
+                  _musicPlaying = false;
+                });
+              },
+              icon: Icon(Icons.close_rounded, color: _c.textSecondary),
+            ),
+        ]),
+      ),
+      if (m != null && canSlide) ...[
+        const SizedBox(height: 6),
+        Row(children: [
+          Text('Début : ${_mmss(s.musicStartMs)}', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+          Expanded(
+            child: Slider(
+              value: s.musicStartMs.clamp(0, slideMax).toDouble(),
+              min: 0,
+              max: slideMax.toDouble(),
+              activeColor: _c.primary,
+              onChanged: (v) => setState(() => s.musicStartMs = v.round()),
+              onChangeEnd: (_) => _playMusic(),
+            ),
+          ),
+        ]),
+      ],
+      if (m != null && !s.useVideo) ...[
+        const SizedBox(height: 6),
+        Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          Text('Durée de la vidéo', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+          for (final d in durs)
+            ChoiceChip(
+              label: Text('$d s'),
+              selected: s.musicSeconds == d,
+              onSelected: (_) => setState(() => s.musicSeconds = d),
+              selectedColor: _c.primary.withValues(alpha: .25),
+              backgroundColor: _c.surface,
+              labelStyle: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12),
+              side: BorderSide(color: s.musicSeconds == d ? _c.primary : _c.border),
+            ),
+        ]),
+      ],
+      if (m != null && s.useVideo)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: s.keepVideoAudio,
+          onChanged: (v) => setState(() => s.keepVideoAudio = v),
+          activeThumbColor: _c.primary,
+          title: Text('Garder le son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+          subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Seule la musique est gardée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+        ),
+      if (m != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text('Avec une musique, ton montage est publié en vidéo.', style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
+        ),
+    ]);
+  }
+
+  String _mmss(int ms) {
+    final t = ms ~/ 1000;
+    return '${t ~/ 60}:${(t % 60).toString().padLeft(2, '0')}';
   }
 
   List<MontageLayer> _layers() => [
@@ -532,6 +747,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         if (tp.chip != null) MontageLayer.chip,
         MontageLayer.brand,
         MontageLayer.pseudo,
+        MontageLayer.stats,
+        MontageLayer.followers,
         if (tp.fx != MontageFx.none) MontageLayer.fx,
         if (tp.frame != MontageFrame.none) MontageLayer.frame,
         MontageLayer.tint,

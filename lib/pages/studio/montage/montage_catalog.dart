@@ -3,12 +3,13 @@
 
 import 'package:flutter/material.dart';
 
-enum MontageCat { situations, emotions, culture, fetes }
+enum MontageCat { situations, emotions, insta, culture, fetes }
 
 extension MontageCatX on MontageCat {
   String get label => switch (this) {
         MontageCat.situations => '😂 Situations',
         MontageCat.emotions => '💫 Émotions',
+        MontageCat.insta => '📸 Insta',
         MontageCat.culture => '🌍 Culture',
         MontageCat.fetes => '🎊 Fêtes',
       };
@@ -23,7 +24,7 @@ enum MontagePos { top, center, bottom }
 enum MontageFrame { none, wax, gold }
 
 /// Éléments que la personne peut retirer du montage. Le filigrane « Créé sur Afrolook » n'en fait pas partie : il reste toujours.
-enum MontageLayer { kick, title, wish, chip, brand, pseudo, fx, frame, tint, flag }
+enum MontageLayer { kick, title, wish, chip, brand, pseudo, stats, followers, fx, frame, tint, flag }
 
 extension MontageLayerX on MontageLayer {
   String get label => switch (this) {
@@ -33,6 +34,8 @@ extension MontageLayerX on MontageLayer {
         MontageLayer.chip => 'Badge',
         MontageLayer.brand => 'Logo Afrolook',
         MontageLayer.pseudo => '@pseudo',
+        MontageLayer.stats => 'J’aime · commentaires',
+        MontageLayer.followers => 'Abonnés',
         MontageLayer.fx => 'Effet animé',
         MontageLayer.frame => 'Cadre',
         MontageLayer.tint => 'Teinte',
@@ -98,7 +101,7 @@ class MontageTemplate {
     this.longTitle = false,
     required this.accent,
     this.chip,
-    required this.sound,
+    this.sound = '',
     this.texts = const [],
     this.country = false,
     this.defaultCountry = 'TG',
@@ -108,6 +111,18 @@ class MontageTemplate {
   });
 
   bool get usesPrenom => texts.any((t) => t.contains('{prenom}'));
+
+  /// Musique gratuite proposée d'office (modifiable ou retirable dans l'éditeur).
+  String? get music => kTemplateMusic[id];
+
+  /// Chiffres d'exemple affichés tant que la personne n'a pas écrit les siens (j'aime, commentaires).
+  (int, int) get sampleStats {
+    var h = 0;
+    for (final c in id.codeUnits) {
+      h = (h * 31 + c) & 0x7fffffff;
+    }
+    return (1200 + h % 8800, 60 + (h ~/ 7) % 840);
+  }
   bool get canUseVideo => dualSample == null;
 }
 
@@ -239,7 +254,125 @@ final List<MontageTemplate> kMontageTemplates = [
       tint: [_a(0, 0, 0, 0), _a(60, 0, 80, .62)], fx: MontageFx.confetti, kick: 'Aujourd’hui', title: 'Joyeux anniversaire 🎂', longTitle: true,
       accent: const Color(0xFFFFD400), chip: '🎁 Offre-moi un cadeau', sound: 'Joyeux anniversaire afro',
       texts: ['Joyeux anniversaire {prenom} ! Que Dieu te garde 🎂', 'Un an de plus, une bénédiction de plus 🎉', 'C’est mon anniversaire ! Vos vœux me font plaisir 🥳']),
+  MontageTemplate(id: 'diplome', cat: MontageCat.fetes, name: 'Diplômé(e)', sample: _p2,
+      tint: [_a(0, 0, 0, 0), _a(20, 20, 70, .74)], tintStops: const [.35, 1], fx: MontageFx.confetti, frame: MontageFrame.gold, kick: 'Promotion $_nextYear', title: 'Diplômé(e) 🎓', font: MontageFont.anton,
+      accent: const Color(0xFFFFD400), chip: '🎓 Mission accomplie',
+      texts: ['Des nuits blanches, des sacrifices… et enfin le diplôme 🎓', 'Merci à ma famille, cette réussite est aussi la vôtre ❤️', 'Diplômé(e) ! La suite s’annonce belle 🚀']),
+  MontageTemplate(id: 'nouveaujob', cat: MontageCat.fetes, name: 'Nouveau job', sample: _p4,
+      tint: [_a(0, 0, 0, 0), _a(0, 40, 60, .72)], tintStops: const [.35, 1], fx: MontageFx.rays, kick: 'Nouveau départ', title: 'Nouveau job 💼', font: MontageFont.anton,
+      accent: const Color(0xFF7FE7FF), chip: '💼 Premier jour',
+      texts: ['Nouveau poste, nouvelle aventure. Merci Seigneur 🙏', 'Le travail paie : je commence lundi 💼', 'Une porte s’est ouverte, je fonce 🚀']),
+  // ── Émotions (suite) ──
+  MontageTemplate(id: 'triste', cat: MontageCat.emotions, name: 'Triste', sample: _p1, saturation: .45, brightness: -.06,
+      tint: [_a(40, 60, 110, .4), _a(5, 10, 30, .78)], fx: MontageFx.rain, pos: MontagePos.center, kick: 'Humeur du jour', title: 'Triste 😢',
+      accent: const Color(0xFF9EC5FF),
+      texts: ['Certains jours sont plus lourds que d’autres 😢', 'Le cœur est fatigué, mais il tient bon 🌧️', 'Pas envie de parler aujourd’hui… 🤍']),
+  MontageTemplate(id: 'manque', cat: MontageCat.emotions, name: 'Tu me manques', sample: _p6, saturation: .7,
+      tint: [_a(255, 120, 160, .08), _a(60, 0, 40, .72)], fx: MontageFx.hearts, kick: 'Loin des yeux', title: 'Tu me manques 🥺', font: MontageFont.script,
+      accent: const Color(0xFFFFB3C7),
+      texts: ['Loin des yeux, jamais loin du cœur, {prenom} 🥺', 'La distance est longue, mais mon amour est plus fort ❤️', 'Je compte les jours avant de te revoir ⏳']),
+  MontageTemplate(id: 'gratitude', cat: MontageCat.emotions, name: 'Reconnaissant(e)', sample: _p5,
+      tint: [_a(255, 210, 120, .12), _a(90, 50, 0, .62)], fx: MontageFx.rays, kick: 'Merci', title: 'Reconnaissant(e) 🙏', longTitle: true,
+      accent: const Color(0xFFFFE08A),
+      texts: ['Merci pour la vie, la santé et ceux que j’aime 🙏', 'Je ne demande rien aujourd’hui, je dis juste merci ✨', 'Béni(e) au-delà de ce que je mérite 🤲🏾']),
+  MontageTemplate(id: 'beni', cat: MontageCat.emotions, name: 'Béni(e)', sample: _p3,
+      tint: [_a(255, 240, 200, .1), _a(70, 50, 10, .66)], fx: MontageFx.sparkle, frame: MontageFrame.gold, kick: 'Grâce à Dieu', title: 'Béni(e) ✨', font: MontageFont.script,
+      accent: const Color(0xFFFFE7A3),
+      texts: ['Tout ce que j’ai, je le dois à Dieu ✨', 'Béni(e) et reconnaissant(e), chaque jour 🙏', 'Ma foi est plus grande que mes peurs 🕊️']),
+  MontageTemplate(id: 'motive', cat: MontageCat.emotions, name: 'Motivé(e)', sample: _p2, saturation: 1.15,
+      tint: [_a(0, 0, 0, .1), _a(70, 20, 0, .6)], fx: MontageFx.fire, kick: 'Objectif', title: 'Motivé(e) 🚀', font: MontageFont.anton,
+      accent: const Color(0xFFFF8A3B), chip: '🎯 Objectif en vue',
+      texts: ['Je ne lâche rien, je vise plus haut 🚀', 'Chaque jour est une nouvelle chance d’avancer 💪', 'Ils doutent ? Parfait, je vais leur montrer 😤']),
+  MontageTemplate(id: 'fier', cat: MontageCat.emotions, name: 'Fier(e) de moi', sample: _p4,
+      tint: [_a(0, 0, 0, 0), _a(60, 0, 80, .66)], tintStops: const [.3, 1], fx: MontageFx.crown, kick: 'Je l’ai fait', title: 'Fier(e) de moi 🏆', longTitle: true, font: MontageFont.anton,
+      accent: const Color(0xFFFFD400),
+      texts: ['Je me regarde et je suis fier(e) du chemin parcouru 🏆', 'Personne n’y croyait. Moi si 💪', 'Petit à petit, j’ai construit mon rêve ✨']),
+  MontageTemplate(id: 'choque', cat: MontageCat.emotions, name: 'Choqué(e)', sample: _p7, saturation: .9,
+      tint: [_a(0, 0, 0, .25), _a(30, 0, 50, .72)], fx: MontageFx.storm, pos: MontagePos.center, kick: 'Breaking news', title: 'Choqué(e) 😱', font: MontageFont.anton,
+      accent: const Color(0xFFFFE600),
+      texts: ['Je viens d’apprendre la nouvelle… je suis sans voix 😱', 'Quelqu’un peut m’expliquer ce qui se passe ? 😳', 'Celle-là, je ne l’avais pas vue venir 🤯']),
+  MontageTemplate(id: 'colere', cat: MontageCat.emotions, name: 'En colère', sample: _p5, saturation: .85,
+      tint: [_a(120, 0, 0, .25), _a(40, 0, 0, .78)], fx: MontageFx.fire, kick: 'Attention', title: 'En colère 😡', font: MontageFont.anton,
+      accent: const Color(0xFFFF5A4E),
+      texts: ['Ne me cherchez pas aujourd’hui 😡', 'Ma patience a des limites, et on les a trouvées 😤', 'Je respire… je respire… 🔥']),
+  MontageTemplate(id: 'stresse', cat: MontageCat.emotions, name: 'Stressé(e)', sample: _p1, saturation: .6,
+      tint: [_a(50, 50, 70, .35), _a(15, 15, 30, .76)], fx: MontageFx.cloud, kick: 'Mode survie', title: 'Stressé(e) 😰',
+      accent: const Color(0xFFB8C4D9), chip: '📚 J-3 avant l’examen',
+      texts: ['Examens, travail, factures… respire 😰', 'Le stress passe, la réussite reste 💪', 'Priez pour moi, la semaine est chargée 🙏']),
+  MontageTemplate(id: 'nostalgie', cat: MontageCat.emotions, name: 'Nostalgique', sample: _p3, saturation: .5,
+      tint: [_a(160, 110, 60, .3), _a(50, 30, 10, .7)], fx: MontageFx.bokeh, kick: 'Souvenirs', title: 'Nostalgique 🕰️', font: MontageFont.script,
+      accent: const Color(0xFFF2D3A0),
+      texts: ['Ces moments-là ne reviendront pas, mais ils restent dans mon cœur 🕰️', 'Le bon vieux temps me manque 🥹', 'Si je pouvais revenir en arrière une seule journée… ✨']),
+  MontageTemplate(id: 'crush', cat: MontageCat.emotions, name: 'J’ai un crush', sample: _p6,
+      tint: [_a(255, 100, 160, .12), _a(110, 0, 70, .62)], fx: MontageFx.hearts, kick: 'Chut…', title: 'J’ai un crush 🙈', font: MontageFont.script,
+      accent: const Color(0xFFFFB3C7), chip: '🙈 Il/elle se reconnaîtra',
+      texts: ['Quelqu’un me fait sourire sans le savoir 🙈', 'Mon cœur bat plus vite quand tu passes 💓', 'Je ne dirai pas qui… mais il/elle se reconnaîtra 😏']),
+  MontageTemplate(id: 'pardon', cat: MontageCat.emotions, name: 'Pardon', sample: _p5, saturation: .7,
+      tint: [_a(200, 200, 255, .08), _a(30, 30, 60, .7)], fx: MontageFx.bokeh, pos: MontagePos.center, kick: 'Du fond du cœur', title: 'Pardon 🙏', font: MontageFont.script,
+      accent: const Color(0xFFD9E2FF),
+      texts: ['Je me suis trompé(e). Pardon du fond du cœur 🙏', 'Mon orgueil n’est rien à côté de notre amitié 🤍', 'Donne-moi une seconde chance, {prenom} 🕊️']),
+  MontageTemplate(id: 'hate', cat: MontageCat.emotions, name: 'Trop hâte', sample: _p3,
+      tint: [_a(255, 200, 0, .1), _a(90, 0, 90, .58)], fx: MontageFx.confetti, kick: 'Compte à rebours', title: 'Trop hâte 🤩', font: MontageFont.anton,
+      accent: const Color(0xFFFFD400), chip: '⏳ Bientôt',
+      texts: ['Plus que quelques jours et c’est le grand moment 🤩', 'Je ne tiens plus en place ! 🎉', 'Vous êtes prêts ? Moi, plus que jamais 🔥']),
+  MontageTemplate(id: 'trahi', cat: MontageCat.situations, name: 'Trahi(e)', sample: _p7, saturation: .45, brightness: -.05,
+      tint: [_a(30, 30, 60, .45), _a(5, 5, 20, .8)], fx: MontageFx.rain, kick: 'Leçon apprise', title: 'Trahi(e) 💔',
+      accent: const Color(0xFF9EC5FF),
+      texts: ['Ce ne sont pas mes ennemis qui m’ont blessé(e)… 💔', 'Leçon apprise : tout le monde n’est pas ton ami 🤐', 'Je pardonne, mais je n’oublie pas 🌧️']),
+  // ── Insta ──
+  MontageTemplate(id: 'ootd', cat: MontageCat.insta, name: 'Look du jour (OOTD)', sample: _p1,
+      tint: [_a(0, 0, 0, 0), _a(0, 0, 0, .62)], tintStops: const [.45, 1], fx: MontageFx.sparkle, frame: MontageFrame.gold, kick: 'Outfit of the day', title: 'Look du jour ✨', font: MontageFont.anton,
+      accent: const Color(0xFFFFD400), chip: '👗 #OOTD',
+      texts: ['Le style, c’est dire qui tu es sans parler ✨', 'Tenue validée ? Dites-moi en commentaire 👇🏾', 'Wax, confiance et bonne humeur 💃🏾']),
+  MontageTemplate(id: 'selfie', cat: MontageCat.insta, name: 'Selfie du jour', sample: _p3,
+      tint: [_a(255, 200, 220, .06), _a(80, 0, 60, .5)], tintStops: const [.5, 1], fx: MontageFx.sparkle, kick: 'Selfie time', title: 'Selfie du jour 🤳🏾', font: MontageFont.script,
+      accent: const Color(0xFFFFC6E0),
+      texts: ['Pas de filtre, juste moi 🤳🏾', 'Sourire du jour offert gratuitement 😁', 'Il fallait bien immortaliser cette mine 😌']),
+  MontageTemplate(id: 'tbt', cat: MontageCat.insta, name: 'Throwback (#TBT)', sample: _p4, saturation: .35,
+      tint: [_a(170, 120, 60, .35), _a(50, 30, 10, .66)], fx: MontageFx.bokeh, kick: 'Throwback Thursday', title: '#TBT 📼', font: MontageFont.anton,
+      accent: const Color(0xFFF2D3A0), chip: '📼 Souvenir',
+      texts: ['Retour en arrière : qui se souvient de ce moment ? 📼', 'Ancienne photo, souvenirs intacts ❤️', 'On était jeunes et insouciants 😂']),
+  MontageTemplate(id: 'weekend', cat: MontageCat.insta, name: 'Enfin le week-end', sample: kMontageSampleVideo, sampleIsVideo: true,
+      tint: [_a(80, 0, 120, .25), _a(20, 0, 40, .7)], fx: MontageFx.confetti, kick: 'Vendredi soir', title: 'Enfin le week-end 🎉', longTitle: true, font: MontageFont.anton,
+      accent: const Color(0xFFFF4FD8),
+      texts: ['Le week-end est là, les soucis restent au bureau 🎉', 'Programme : dormir, manger, danser, recommencer 😎', 'Qui sort ce soir ? 🪩']),
+  MontageTemplate(id: 'lundi', cat: MontageCat.insta, name: 'Lundi motivation', sample: _p2,
+      tint: [_a(0, 0, 0, 0), _a(0, 30, 60, .7)], tintStops: const [.3, 1], fx: MontageFx.speed, kick: 'Nouvelle semaine', title: 'Lundi motivation ☕', longTitle: true, font: MontageFont.anton,
+      accent: const Color(0xFF7FE7FF), chip: '☕ Café n°2',
+      texts: ['Nouvelle semaine, nouvelles opportunités ☕', 'Le lundi ne me fait pas peur 💪', 'Objectifs de la semaine : tout donner 🎯']),
+  MontageTemplate(id: 'vibe', cat: MontageCat.insta, name: 'Ma vibe du moment', sample: _p6,
+      tint: [_a(255, 140, 0, .1), _a(100, 0, 60, .58)], fx: MontageFx.rays, kick: 'Current mood', title: 'Ma vibe 🎧', font: MontageFont.script,
+      accent: const Color(0xFFFFB13B), chip: '🎧 En boucle',
+      texts: ['Casque sur les oreilles, le monde peut attendre 🎧', 'Cette musique décrit exactement mon humeur 🎶', 'Bonne vibe uniquement ✨']),
+  MontageTemplate(id: 'miam', cat: MontageCat.insta, name: 'Miam du jour', sample: _p4, saturation: 1.2,
+      tint: [_a(255, 160, 60, .1), _a(80, 30, 0, .6)], tintStops: const [.4, 1], fx: MontageFx.bokeh, kick: 'Au menu', title: 'Miam 😋', font: MontageFont.anton,
+      accent: const Color(0xFFFFC65C), chip: '🍽️ Fait maison',
+      texts: ['Garba, attiéké, alloco… qui a faim ? 😋', 'La cuisine de maman reste imbattable 🍲', 'Régime ? Demain. Aujourd’hui, on mange 😂']),
+  MontageTemplate(id: 'voyage', cat: MontageCat.insta, name: 'En voyage', sample: _p2,
+      tint: [_a(255, 170, 80, .2), _a(40, 20, 80, .55)], fx: MontageFx.sunset, pos: MontagePos.top, kick: 'Carnet de voyage', title: 'En voyage ✈️', font: MontageFont.script,
+      accent: const Color(0xFFFFD28A), chip: '📍 Nouvelle destination',
+      texts: ['Nouvelle ville, nouvelles histoires ✈️', 'Voyager, c’est la seule dépense qui rend plus riche 🌍', 'Devinez où je suis ? 📍']),
+  MontageTemplate(id: 'avis', cat: MontageCat.insta, name: 'Votre avis ?', sample: _p3,
+      tint: [_a(0, 0, 0, 0), _a(0, 0, 0, .7)], tintStops: const [.4, 1], fx: MontageFx.sparkle, pos: MontagePos.center, kick: 'Question du jour', title: 'Votre avis ? 🤔', font: MontageFont.anton,
+      accent: const Color(0xFFFFD400), chip: '💬 Réponds en commentaire',
+      texts: ['Cette tenue : 🔥 ou ❌ ? Répondez en commentaire 👇🏾', 'Coiffure longue ou courte ? Votez 👇🏾', 'Je garde ou je change ? Dites-moi 🤔']),
 ];
+
+/// Musique gratuite proposée par défaut pour chaque template (id de [kStudioTracks]).
+const Map<String, String> kTemplateMusic = {
+  'fauche': 'coupe_decale', 'amour': 'love_afro', 'boss': 'afro_trap', 'separation': 'piano_triste', 'celib': 'amapiano',
+  'goumin': 'tension', 'justebien': 'kora_calme', 'fiance': 'love_afro', 'parent': 'berceuse', 'trahi': 'piano_triste',
+  'enfeu': 'afrobeat', 'goodvibes': 'highlife', 'enforme': 'workout', 'humeur': 'coupe_decale', 'pasforme': 'nuit',
+  'epuise': 'nuit', 'zen': 'zen_kalimba', 'queen': 'afro_trap', 'triste': 'piano_triste', 'manque': 'love_afro',
+  'gratitude': 'kora_calme', 'beni': 'kora_calme', 'motive': 'workout', 'fier': 'afro_trap', 'choque': 'tension',
+  'colere': 'tension', 'stresse': 'tension', 'nostalgie': 'piano_triste', 'crush': 'love_afro', 'pardon': 'piano_triste',
+  'hate': 'coupe_decale',
+  'ootd': 'amapiano', 'selfie': 'amapiano', 'tbt': 'highlife', 'weekend': 'coupe_decale', 'lundi': 'workout',
+  'vibe': 'amapiano', 'miam': 'highlife', 'voyage': 'plage', 'avis': 'afrobeat',
+  'pays': 'highlife', 'marche': 'afrobeat', 'plage': 'plage', 'afrobeat': 'afrobeat', 'savane': 'kora_calme',
+  'indep': 'fanfare', 'nouvelan': 'fanfare', 'ramadan': 'oud', 'noel': 'noel', 'valentin': 'love_afro', 'anniv': 'highlife',
+  'diplome': 'fanfare', 'nouveaujob': 'afrobeat',
+};
 
 /// Pays africains : affichés en premier dans le sélecteur.
 const kAfricaCodes = {

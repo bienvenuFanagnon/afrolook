@@ -3,14 +3,17 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../cards/card_flags.dart';
+import '../../cards/card_models.dart' show compactCount;
 import 'montage_catalog.dart';
+import 'montage_music.dart';
 
 /// Tout ce que la personne a choisi ou modifié sur un template. Ce qui reste à null garde le contenu pré-rempli.
 class MontageState {
   MontageState(this.template)
       : country = template.defaultCountry,
         useVideo = template.sampleIsVideo,
-        animated = template.fx != MontageFx.none;
+        animated = template.fx != MontageFx.none,
+        music = studioTrack(template.music) == null ? null : MontageMusic.free(studioTrack(template.music)!);
 
   final MontageTemplate template;
 
@@ -35,13 +38,41 @@ class MontageState {
   String? wish;
   final Set<MontageLayer> hidden = {};
 
+  /// Musique (null = sans musique). Avec une musique, le montage est toujours une vidéo.
+  MontageMusic? music;
+  int musicStartMs = 0;
+
+  /// Durée de la vidéo quand la base est une photo et qu'il y a une musique (secondes).
+  int musicSeconds = 15;
+
+  /// Vidéo de la personne : garder son propre son sous la musique.
+  bool keepVideoAudio = false;
+
+  /// Chiffres affichés (null = exemple du template pour les j'aime/commentaires, vrai nombre d'abonnés).
+  String? likesText;
+  String? commentsText;
+  String? followersText;
+
+  String likesLabel() => montageCount(likesText) ?? compactCount(template.sampleStats.$1);
+  String commentsLabel() => montageCount(commentsText) ?? compactCount(template.sampleStats.$2);
+  String? followersLabel(int real) => montageCount(followersText) ?? (real > 0 ? compactCount(real) : null);
+
   bool shows(MontageLayer l) => !hidden.contains(l);
 
   bool get hasVideo => useVideo;
   bool get fxActive => template.fx != MontageFx.none && shows(MontageLayer.fx);
 
   /// Le résultat sera une vidéo (vidéo de base, ou effet animé gardé) ; sinon une image fixe.
-  bool get exportsVideo => hasVideo || (animated && fxActive);
+  bool get exportsVideo => hasVideo || (animated && fxActive) || music != null;
+}
+
+/// Chiffre écrit à la main : « 1400 » devient « 1,4k » ; un texte (« 12k », « 1,2 M ») reste tel quel ; vide = null.
+String? montageCount(String? v) {
+  final c = v?.trim();
+  if (c == null || c.isEmpty) return null;
+  final digits = c.replaceAll(RegExp(r'[\s\u00A0\u202F]'), '');
+  if (RegExp(r'^\d{1,12}$').hasMatch(digits)) return compactCount(int.parse(digits));
+  return c;
 }
 
 /// Textes du montage une fois le pays, le prénom et les choix appliqués.
