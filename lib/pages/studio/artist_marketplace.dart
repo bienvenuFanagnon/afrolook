@@ -41,6 +41,7 @@ import 'montage/montage_editor_page.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
 import '../../ads/music_ads.dart';
+import '../../utils/media_cdn.dart';
 import 'sound_countries.dart';
 import 'studio_models.dart';
 import '../music/music_page.dart';
@@ -128,15 +129,15 @@ class ArtistSound {
       id: id,
       userId: map['userId'] ?? '',
       userPseudo: map['userPseudo'] ?? '',
-      userImageUrl: map['userImageUrl'] ?? '',
+      userImageUrl: MediaCdn.url(map['userImageUrl'] as String?),
       title: map['title'] ?? '',
       genre: map['genre'],
       description: map['description'],
       audioPath: map['audioPath'],
       // anciens sons : pas d'extrait, on garde le lien d'origine pour l'écoute
-      previewUrl: map['previewUrl'] ?? map['audioUrl'],
+      previewUrl: (map['previewUrl'] ?? map['audioUrl']) == null ? null : MediaCdn.url((map['previewUrl'] ?? map['audioUrl']) as String),
       pricing: map['pricing'] == 'free' ? 'free' : 'paid',
-      coverImageUrl: map['coverImageUrl'],
+      coverImageUrl: map['coverImageUrl'] == null ? null : MediaCdn.url(map['coverImageUrl'] as String),
       durationMs: (map['durationMs'] as num?)?.toInt() ?? 0,
       fileSizeMb: (map['fileSizeMb'] as num?)?.toDouble(),
       status: map['status'] ?? 'pending_review',

@@ -16,6 +16,7 @@ import '../../ads/ad_slot.dart';
 import '../../ads/music_ads.dart';
 import '../../providers/authProvider.dart';
 import '../../services/offline_music_service.dart';
+import '../../utils/media_cdn.dart';
 import '../pub/afrolook_inline_ad.dart';
 import '../../theme/app_colors.dart';
 import '../studio/artist_marketplace.dart';
@@ -60,7 +61,7 @@ class _Item {
         title = '${d['title'] ?? 'Titre'}',
         subtitle = (d['genre'] ?? '').toString().isNotEmpty ? '${d['genre']}' : 'Acheté',
         emoji = '🎤',
-        coverUrl = d['coverImageUrl'] as String?,
+        coverUrl = d['coverImageUrl'] == null ? null : MediaCdn.url(d['coverImageUrl'] as String),
         previewUrl = null,
         paid = true,
         owned = true,
@@ -141,41 +142,61 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       if (SoundPreview.playing.value == key) return;
     }
     setState(() => _loadingKey = key);
-    // Pub plein écran rare, seulement entre deux titres (jamais pendant l'écoute)
-    await MusicAds.beforeTrack(context.read<UserAuthProvider>().loginUserData);
-    if (!mounted) return;
-    // Titre téléchargé : lu depuis l'espace privé (fonctionne sans internet)
-    if (it.kind == _Kind.artist && OfflineMusic.has(it.id)) {
-      final err = await OfflineMusic.play(it.id, title: it.title, key: key);
-      if (!mounted) return;
-      setState(() {
-        _loadingKey = null;
-        _pos = Duration.zero;
-      });
-      if (err != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-      return;
-    }
-    String? url = it.previewUrl;
-    var full = false;
-    if (url == null && it.track != null) url = await MontageMusicPlayer.urlOf(MontageMusic.free(it.track!));
-    // Titre complet : acheté, gratuit d'un artiste, ou à soi ; sinon extrait de 30 s
-    final own = it.sound?.userId == FirebaseAuth.instance.currentUser?.uid;
-    if (it.kind == _Kind.artist && (it.owned || (it.sound != null && (it.sound!.isFree || own)))) {
-      final f = await fetchFullListenUrl(it.id);
-      if (f != null) {
-        url = f;
-        full = true;
-      }
-    }
-    if (!mounted) return;
     var ok = false;
-    if (url != null) {
-      setState(() => _pos = Duration.zero);
-      ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: it.title, subtitle: full ? 'Titre complet' : (it.kind == _Kind.artist ? 'Extrait de 30 s' : it.subtitle), coverUrl: it.coverUrl));
+    String? error;
+    try {
+      // Pub plein écran rare, seulement entre deux titres : n'attend jamais plus de quelques secondes et n'empêche jamais la lecture
+      await MusicAds.beforeTrack(context.read<UserAuthProvider>().loginUserData);
+      if (!mounted) return;
+      if (it.kind == _Kind.artist && OfflineMusic.has(it.id)) {
+        // Titre téléchargé : lu depuis l'espace privé (fonctionne sans internet)
+        error = await OfflineMusic.play(it.id, title: it.title, key: key).timeout(const Duration(seconds: 20), onTimeout: () => 'Lecture trop longue à démarrer. Réessaie.');
+        ok = error == null;
+      } else {
+        String? url = it.previewUrl;
+        var full = false;
+        if (url == null && it.track != null) url = await MontageMusicPlayer.urlOf(MontageMusic.free(it.track!)).timeout(const Duration(seconds: 6), onTimeout: () => null);
+        // Titre complet : acheté, gratuit d'un artiste, ou à soi ; sinon l'extrait (déjà préchargé : départ immédiat)
+        final own = it.sound?.userId == FirebaseAuth.instance.currentUser?.uid;
+        if (it.kind == _Kind.artist && (it.owned || (it.sound != null && (it.sound!.isFree || own)))) {
+          final f = await fetchFullListenUrl(it.id).timeout(const Duration(seconds: 8), onTimeout: () => null);
+          if (f != null) {
+            url = f;
+            full = true;
+          }
+        }
+        if (!mounted) return;
+        if (url != null) {
+          setState(() => _pos = Duration.zero);
+          ok = await SoundPreview.play(key, url,
+              meta: NowPlaying(key: key, title: it.title, subtitle: full ? 'Titre complet' : (it.kind == _Kind.artist ? 'Extrait de 30 s' : it.subtitle), coverUrl: it.coverUrl));
+        }
+      }
+    } catch (_) {
+      ok = false;
+    } finally {
+      if (mounted) setState(() => _loadingKey = null);
     }
-    if (!mounted) return;
-    setState(() => _loadingKey = null);
-    if (!ok) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce titre. Vérifie ta connexion.')));
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error ?? 'Impossible de lire ce titre. Vérifie ta connexion et réessaie.')));
+    }
+  }
+
+  // Préchargement : les premiers extraits visibles sont téléchargés en arrière-plan, pour démarrer instantanément au toucher.
+  final Set<String> _warmed = {};
+  void _warm(Iterable<_Item> items) {
+    final fresh = <String>[];
+    for (final it in items.take(8)) {
+      final u = it.previewUrl;
+      if (u != null && _warmed.add(u)) fresh.add(u);
+    }
+    if (fresh.isNotEmpty) unawaited(MusicCache.warmAll(fresh));
+    for (final it in items.where((i) => i.track != null).take(4)) {
+      if (!_warmed.add('free:${it.id}')) continue;
+      MontageMusicPlayer.urlOf(MontageMusic.free(it.track!)).then((u) {
+        if (u != null) MusicCache.warm(u);
+      }).catchError((_) {});
+    }
   }
 
   /// Droit de télécharger : titre acheté, gratuit d'un artiste, ou à soi.
@@ -388,6 +409,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
             viewerCountry: SoundCountries.viewerCountry(context),
           ).map(_Item.artist).toList();
           final free = kStudioTracks.map(_Item.free).toList();
+          WidgetsBinding.instance.addPostFrameCallback((_) => _warm([...sounds, ...free]));
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
             builder: (_, libSnap) {

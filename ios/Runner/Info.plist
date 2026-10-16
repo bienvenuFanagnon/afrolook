@@ -349,6 +349,12 @@
     </array>
     <key>NSUserTrackingUsageDescription</key>
     <string>Afrolook utilise votre identifiant publicitaire pour afficher des publicités pertinentes et mesurer leur efficacité.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- relais local du lecteur de musique (lecture hors ligne chiffrée) : réseau local de l'appareil seulement -->
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
     <key>UIBackgroundModes</key>
     <array>
        <string>audio</string>

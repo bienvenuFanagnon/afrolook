@@ -19,6 +19,7 @@ import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/quiz/quiz_home_page.dart';
+import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/pages/quiz/quiz_etude_hub_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
@@ -591,6 +592,12 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFF2ECC71),
                       label: context.tr('Quiz & Étude'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage()))),
+                  // Musique : titres gratuits et d'artistes, bibliothèque, favoris, titres téléchargés
+                  _dItem(context, colors,
+                      icon: Icons.library_music_rounded,
+                      iconColor: const Color(0xFFE91E63),
+                      label: context.tr('Musique'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage()))),
 
                   // Récompenses : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
                   if (RewardsService.available(authProvider.loginUserData))
@@ -2356,6 +2363,16 @@ class _MyHomePageState extends State<MyHomePage>
                     wide: wide,
                     colors: colors,
                     iconColor: colors.primary,
+                  ),
+                  // Musique
+                  _sidebarItem(
+                    context: context,
+                    icon: Icons.library_music_rounded,
+                    label: context.tr('Musique'),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage())),
+                    wide: wide,
+                    colors: colors,
+                    iconColor: const Color(0xFFE91E63),
                   ),
                   // Lives
                   StreamBuilder<int>(
