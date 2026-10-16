@@ -15,10 +15,10 @@ function sourceOf(s) {
   return s.footballData ? 'football-data' : 'api-football';
 }
 
-function makeApi(s) {
+function makeApi(s, opts = {}) {
   if (sourceOf(s) === 'football-data') {
     if (!s.footballData) throw new Error('Secret FOOTBALL_DATA_TOKEN manquant');
-    return footballData.createClient({ key: s.footballData });
+    return footballData.createClient({ key: s.footballData, maxWaitMs: opts.maxWaitMs });
   }
   if (!s.apiFootball) throw new Error('Secret API_FOOTBALL_KEY manquant');
   return apiFootball.createClient({ key: s.apiFootball });

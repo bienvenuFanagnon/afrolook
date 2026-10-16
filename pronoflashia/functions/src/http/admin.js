@@ -153,7 +153,7 @@ function createAdmin(deps) {
     if (!TASKS.includes(b.nom)) throw new HttpError(400, 'Tâche inconnue.');
     if (!deps.tasks || !deps.tasks[b.nom]) throw new HttpError(501, 'Tâche indisponible.');
     await log(by, 'tache-lancer', { nom: b.nom });
-    const rapport = await deps.tasks[b.nom]();
+    const rapport = await deps.tasks[b.nom]({ manuel: true });
     return { ok: true, rapport };
   };
 

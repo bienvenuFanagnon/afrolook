@@ -22,8 +22,8 @@ async function upsertTeam(db, t) {
 }
 
 /** Matchs à venir d'un championnat. Renvoie le nombre de matchs écrits. */
-async function syncLeagueFixtures({ db, api, league, now, days }) {
-  const fixtures = await api.fixtures({ league: league.apiId, season: league.saison, from: dayStr(now), to: dayStr(addDays(now, days)) });
+async function syncLeagueFixtures({ db, api, league, now, days, preloaded }) {
+  const fixtures = preloaded || await api.fixtures({ league: league.apiId, season: league.saison, from: dayStr(now), to: dayStr(addDays(now, days)) });
   let n = 0;
   for (const raw of fixtures) {
     const fx = N.normalizeFixture(raw);
@@ -55,8 +55,8 @@ async function syncLeagueFixtures({ db, api, league, now, days }) {
  * Historique de la saison d'un championnat : buts (tous les matchs terminés) → team_form/{équipe} et moyennes de la ligue.
  * Une seule requête par championnat. Les statistiques de comptage déjà enregistrées sont conservées.
  */
-async function syncLeagueSeason({ db, api, league, now }) {
-  const fixtures = (await api.fixtures({ league: league.apiId, season: league.saison })).map(N.normalizeFixture);
+async function syncLeagueSeason({ db, api, league, now, preloaded }) {
+  const fixtures = (preloaded || await api.fixtures({ league: league.apiId, season: league.saison })).map(N.normalizeFixture);
   const done = fixtures.filter((f) => f.statut === 'termine' && f.score && f.domicile.apiId && f.exterieur.apiId);
   const byTeam = new Map();
   const push = (teamId, entry) => { if (!byTeam.has(teamId)) byTeam.set(teamId, []); byTeam.get(teamId).push(entry); };
@@ -102,13 +102,8 @@ async function seedDefaultLeagues({ db, api, now }, report) {
   if (existing.docs.length) return 0;
   let n = 0;
   for (const l of api.defaultLeagues) {
-    let saison = now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
-    try {
-      const r = await api.leagues({ id: l.apiId });
-      const seasons = (r[0] && r[0].seasons) || [];
-      const cur = seasons.find((x) => x.current);
-      if (cur) saison = cur.year;
-    } catch (e) { report.erreurs.push(`${l.nom} : saison par défaut utilisée (${e.message})`); }
+    // saison européenne : elle commence l'été (juillet ou après) ; aucun appel à l'API pour rester dans la limite de débit
+    const saison = now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
     await db.collection('leagues').doc(String(l.apiId)).set(Object.assign({}, l, { saison, suivi: true, sport: 'football' }));
     n++;
   }
@@ -131,6 +126,15 @@ async function syncFixtures(opts, report) {
   for (const league of leagues) {
     try {
       assertQuota(api, reserve);
+      if (api.singleCall) {
+        // une seule requête : la saison entière (matchs terminés pour l'historique, matchs à venir pour le calendrier)
+        const all = await api.fixtures({ league: league.apiId, season: league.saison });
+        const from = `${dayStr(now)}T00:00:00.000Z`, to = `${dayStr(addDays(now, days))}T23:59:59.999Z`;
+        const upcoming = all.filter((raw) => { const d = N.normalizeFixture(raw).coupDEnvoi; return d >= from && d <= to; });
+        report.traites += await syncLeagueFixtures({ db, api, league, now, days, preloaded: upcoming });
+        report.infos[`saison_${league.slug}`] = await syncLeagueSeason({ db, api, league, now, preloaded: all });
+        continue;
+      }
       report.traites += await syncLeagueFixtures({ db, api, league, now, days });
       const last = league.formMajLe ? new Date(league.formMajLe) : null;
       if (opts.forceSeason || !last || now - last > 20 * 3600e3) {

@@ -179,6 +179,9 @@ async function buildPredictions(opts, report) {
   const maxExternal = opts.maxExternal == null ? 2 : opts.maxExternal;
   // langues des analyses rédigées (l'anglais double les appels à l'IA lors d'un premier calcul)
   const langs = opts.langs || ['fr', 'en'];
+  // lancement manuel depuis l'admin : le site coupe les requêtes à 60 s, on s'arrête avant et on garde le reste pour le passage suivant
+  const budgetMs = opts.budgetMs || null;
+  const t0 = Date.now();
 
   const snap = await db.collection('matches').where('coupDEnvoi', '>=', now.toISOString()).where('coupDEnvoi', '<=', addDays(now, 7).toISOString()).get();
   const rows = snap.docs.map((d) => d.data()).filter((m) => m.statut === 'prevu');
@@ -196,7 +199,9 @@ async function buildPredictions(opts, report) {
   const leagues = new Map();
   const formCache = new Map();
   try {
-    for (const m of todo) {
+    for (let i = 0; i < todo.length; i++) {
+      const m = todo[i];
+      if (budgetMs && Date.now() - t0 > budgetMs) { report.infos.reste = todo.length - i; break; }
       try {
         if (!leagues.has(m.leagueId)) { const d = await db.collection('leagues').doc(m.leagueId).get(); leagues.set(m.leagueId, d.exists ? d.data() : null); }
         const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal, langs });

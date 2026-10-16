@@ -48,16 +48,24 @@ function toFixture(m) {
  * key : jeton personnel (Firebase Secrets). fetchImpl / sleep : injectables pour les tests.
  * onQuota reçoit l'état du quota après chaque appel.
  */
-function createClient({ key, fetchImpl, base, onQuota, sleep }) {
+function createClient({ key, fetchImpl, base, onQuota, sleep, maxWaitMs }) {
   const f = fetchImpl || fetch;
   const wait = sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
   // Pas de limite par jour : seulement par minute. dayRemaining/dayLimit restent nuls (l'admin affiche « inconnu » ou rien).
   const quota = { dayRemaining: null, dayLimit: null, minuteRemaining: null, calls: 0, source: 'football-data' };
   let resetSec = 60;
 
+  // Attente imposée par la limite de débit. Si elle dépasse maxWaitMs (lancement manuel depuis l'admin : le site coupe à 60 s), on renonce.
+  async function pause() {
+    const ms = Math.min(resetSec, 60) * 1000 + 500;
+    if (maxWaitMs != null && ms > maxWaitMs) throw new ApiError('Limite de débit de football-data.org atteinte (10 appels par minute) : réessayez dans une minute.', 429);
+    await wait(ms);
+    quota.minuteRemaining = null;
+  }
+
   async function get(path, params, retried) {
     // fenêtre épuisée : on attend la remise à zéro annoncée par le serveur (60 s au plus) plutôt que de provoquer un refus
-    if (quota.minuteRemaining != null && quota.minuteRemaining <= 0) { await wait(Math.min(resetSec, 60) * 1000 + 500); quota.minuteRemaining = null; }
+    if (quota.minuteRemaining != null && quota.minuteRemaining <= 0) await pause();
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(params || {})) if (v != null) qs.set(k, String(v));
     const res = await f(`${base || BASE}${path}${qs.toString() ? '?' + qs : ''}`, { headers: { 'X-Auth-Token': key } });
@@ -69,7 +77,7 @@ function createClient({ key, fetchImpl, base, onQuota, sleep }) {
     const text = await res.text();
     let json;
     try { json = JSON.parse(text); } catch { throw new ApiError(`Réponse non JSON (${res.status})`, res.status); }
-    if (res.status === 429 && !retried) { await wait(Math.min(resetSec, 60) * 1000 + 500); quota.minuteRemaining = null; return get(path, params, true); }
+    if (res.status === 429 && !retried) { await pause(); return get(path, params, true); }
     if (!res.ok) throw new ApiError(`football-data.org : ${json.message || res.status}`, res.status, json.message ? [json.message] : null);
     return json;
   }
@@ -77,6 +85,7 @@ function createClient({ key, fetchImpl, base, onQuota, sleep }) {
   return {
     quota,
     defaultLeagues: DEFAULT_LEAGUES,
+    singleCall: true, // une seule requête par championnat (la saison entière contient déjà les matchs à venir)
     sansStats: true, // pas de statistiques de match ni de cotes avec cette offre
     get,
     /** Matchs d'un championnat : entre deux dates (10 jours au plus) ou toute une saison. */

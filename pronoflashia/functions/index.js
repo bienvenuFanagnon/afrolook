@@ -46,10 +46,10 @@ const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC
 
 /** Les tâches, réutilisées par le planificateur et par le bouton « Relancer » de l'admin. */
 const TASKS = {
-  syncFixtures: () => runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api: makeApi(secrets()) }, r)),
-  buildPredictions: () => runJob(db, 'buildPredictions', async (r) => {
+  syncFixtures: (o = {}) => runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
+  buildPredictions: (o = {}) => runJob(db, 'buildPredictions', async (r) => {
     const s = secrets();
-    await buildPredictions({ db, api: makeApi(s), providers: makeProviders(s) }, r);
+    await buildPredictions({ db, api: makeApi(s, o.manuel ? { maxWaitMs: 5000 } : {}), providers: makeProviders(s), budgetMs: o.manuel ? 40000 : null }, r);
     // référencement automatique : les pages nouvelles sont signalées une fois (IndexNow) ; une erreur ici ne fait pas échouer la tâche
     try {
       const { site } = await D.loadConfig(db);
@@ -58,7 +58,7 @@ const TASKS = {
       if (ix.erreur) r.erreurs.push(ix.erreur);
     } catch (e) { r.erreurs.push(`IndexNow : ${e.message}`); }
   }),
-  syncResults: () => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets()) }, r)),
+  syncResults: (o = {}) => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
   aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: makeProviders(secrets()) }, r)),
 };

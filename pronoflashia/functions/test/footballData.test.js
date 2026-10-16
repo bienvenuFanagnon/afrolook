@@ -125,3 +125,13 @@ test('premier passage : les championnats par défaut sont ajoutés une seule foi
   // source sans championnats par défaut (API-Football) : rien
   assert.equal(await seedDefaultLeagues({ db: new FakeDb(), api: {}, now: new Date() }, { erreurs: [], infos: {} }), 0);
 });
+
+test('football-data : lancement manuel — attente de débit trop longue → erreur claire au lieu d\'un blocage de 60 s', async () => {
+  const waits = [];
+  const fetchImpl = async () => reply({ matches: [] }, 200, { 'x-requests-available-minute': '0', 'x-requestcounter-reset': '45' });
+  const api = createClient({ key: 'k', fetchImpl, maxWaitMs: 20000, sleep: async (ms) => { waits.push(ms); } });
+  await api.fixtures({ league: 1, season: 2026 });
+  await assert.rejects(() => api.fixtures({ league: 1, season: 2026 }), /Limite de débit.*réessayez dans une minute/);
+  assert.deepEqual(waits, []);
+  assert.equal(api.singleCall, true);
+});

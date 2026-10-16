@@ -234,6 +234,37 @@ test('syncResults : source sans statistiques (offre gratuite) → bilan figé d�
   assert.equal(db.read('bilan_days', '2026-10-18').delta.principal.n, 1);
 });
 
+test('syncFixtures : source à requête unique → un seul appel par championnat pour le calendrier ET l\'historique', async () => {
+  const db = new FakeDb();
+  await db.seed('leagues', '61', LEAGUE);
+  const base = mockApi({ upcoming: UPCOMING });
+  const api = Object.assign({}, base, { singleCall: true, async fixtures(p) { base.calls.push(['fixtures', p]); return seasonFixtures().concat(UPCOMING); } });
+  const rep = await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: NOW }, r), () => NOW);
+  assert.equal(base.calls.filter((c) => c[0] === 'fixtures').length, 1);
+  assert.deepEqual(base.calls[0][1], { league: 61, season: 2026 });
+  assert.equal(rep.traites, 1, rep.erreurs.join());
+  assert.equal(db.read('matches', '61_1001').slug, 'paris-sg-marseille-2026-10-18');
+  assert.ok(db.read('team_form', '85').recent.length >= 8);
+  assert.ok(db.read('leagues', '61').avg.avgHome > 0);
+  // les matchs terminés de la saison ne sont pas pris pour des matchs à venir
+  assert.equal(db.all('matches').length, 1);
+});
+
+test('buildPredictions : budget de temps (lancement manuel) → s\'arrête et signale ce qui reste', async () => {
+  const { db, api } = await setup();
+  const later = [raw(1002, 80, 91, '2026-10-18T20:00:00+00:00', 'NS'), raw(1003, 91, 80, '2026-10-19T20:00:00+00:00', 'NS')];
+  const api2 = mockApi({ upcoming: later });
+  await runJob(db, 'syncFixtures', (rep) => syncFixtures({ db, api: api2, now: NOW }, rep), () => NOW);
+  const slow = { name: 'workers-ai', call: async (m) => { await new Promise((r) => setTimeout(r, 30)); return echoProvider().call(m); } };
+  const rep = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [slow], now: NOW, budgetMs: 40 }, r));
+  assert.ok(rep.traites >= 1 && rep.traites < 3, `traités : ${rep.traites}`);
+  assert.equal(rep.infos.reste, 3 - rep.traites);
+  // sans budget (planificateur) : tout est calculé
+  const rep2 = await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: [echoProvider()], now: NOW }, r));
+  assert.equal(rep2.infos.reste, undefined);
+  assert.ok(db.all('matches').every((m) => m.prono && m.prono.principal));
+});
+
 test('aiHealthCheck : ok, lent, panne', async () => {
   const db = new FakeDb();
   const good = { name: 'workers-ai', call: async () => '{"ok":true}' };
