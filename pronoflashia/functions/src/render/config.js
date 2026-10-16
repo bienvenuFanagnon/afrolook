@@ -4,8 +4,9 @@
 
 const DEFAULT_SITE = {
   nom: 'PronoFlash IA',
-  domaine: 'pronoflashia.com',
-  origine: 'https://pronoflashia.com',
+  // Adresse provisoire ; à remplacer par pronoflashia.com (Réglages de l'admin) quand le nom de domaine est acheté.
+  domaine: 'pronoflashia.web.app',
+  origine: 'https://pronoflashia.web.app',
   email: '',
   editeur: '',
   adresse: '',
@@ -13,6 +14,7 @@ const DEFAULT_SITE = {
   loi: '',
   hebergeur: 'Google Cloud (Firebase Hosting), Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande',
   indexable: true,
+  googleVerification: '', // code de vérification de propriété Google Search Console (balise HTML)
   analyticsGa: '',
   whatsapp: '',
   telegram: '',

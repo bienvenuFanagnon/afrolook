@@ -5,6 +5,7 @@
 const fs = require('fs');
 const nodePath = require('path');
 const D = require('./data');
+const { KEY_RE } = require('../jobs/indexNow');
 const P = require('./pages');
 const { legalPage } = require('./legal');
 const C = require('./components');
@@ -41,6 +42,13 @@ async function route(db, urlPath, now = new Date()) {
   let path = String(urlPath || '/').split('?')[0].replace(/\/{2,}/g, '/');
   if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
   path = path.toLowerCase();
+
+  // fichier-clé IndexNow : /{clé}.txt répond avec la clé enregistrée (preuve de propriété du site)
+  const km = /^\/([a-f0-9]{32})\.txt$/.exec(path);
+  if (km && KEY_RE.test(km[1])) {
+    const seo = (await db.collection('config').doc('seo').get()).data() || {};
+    if (seo.indexNowKey === km[1]) return reply(200, km[1], 'text/plain; charset=utf-8', cc(3600));
+  }
 
   if (path === '/robots.txt' || path === '/ads.txt' || path === '/sitemap.xml') {
     const rc = await context(db, now);

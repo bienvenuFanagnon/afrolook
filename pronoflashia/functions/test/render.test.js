@@ -25,7 +25,7 @@ test('accueil : 200, pronostics visibles sans clic, titre et description, un seu
   assert.equal((r.body.match(/<h1/g) || []).length, 1);
   assert.match(r.body, /class="pk1">Pronostic/);
   assert.match(r.body, /class="cf num/);
-  assert.match(r.body, /<link rel="canonical" href="https:\/\/pronoflashia\.com\/">/);
+  assert.match(r.body, /<link rel="canonical" href="https:\/\/pronoflashia\.web\.app\/">/);
   assert.match(r.headers['Cache-Control'], /s-maxage=300/);
   assert.ok(r.body.includes('18+'), 'mention 18+ sur toutes les pages');
   assert.ok(r.body.includes('aucun gain') || r.body.includes("Aucun gain"), 'aucun gain garanti');
@@ -124,7 +124,7 @@ test('pages légales : champs à renseigner signalés tant que l\'admin n\'a pas
 
 test('robots, sitemap et ads.txt', async () => {
   const rb = await get('/robots.txt');
-  assert.match(rb.body, /Disallow: \/admin/); assert.match(rb.body, /Sitemap: https:\/\/pronoflashia\.com\/sitemap\.xml/);
+  assert.match(rb.body, /Disallow: \/admin/); assert.match(rb.body, /Sitemap: https:\/\/pronoflashia\.web\.app\/sitemap\.xml/);
   const sm = await get('/sitemap.xml');
   assert.match(sm.headers['Content-Type'], /xml/);
   assert.ok((sm.body.match(/<loc>/g) || []).length > 30);
@@ -168,9 +168,9 @@ test('anglais : accueil en anglais, hreflang croisés, bouton de langue', async 
   assert.equal(r.status, 200);
   assert.match(r.body, /<html lang="en">/);
   assert.match(r.body, /Today's football tips/);
-  assert.match(r.body, /<link rel="canonical" href="https:\/\/pronoflashia\.com\/en">/);
-  assert.match(r.body, /hreflang="fr" href="https:\/\/pronoflashia\.com\/"/);
-  assert.match(r.body, /hreflang="en" href="https:\/\/pronoflashia\.com\/en"/);
+  assert.match(r.body, /<link rel="canonical" href="https:\/\/pronoflashia\.web\.app\/en">/);
+  assert.match(r.body, /hreflang="fr" href="https:\/\/pronoflashia\.web\.app\/"/);
+  assert.match(r.body, /hreflang="en" href="https:\/\/pronoflashia\.web\.app\/en"/);
   assert.match(r.body, /hreflang="x-default"/);
   assert.match(r.body, /class="lang" href="\/" hreflang="fr"/);
   assert.ok(!/Pronostic|Aujourd'hui|réussite|Jouez de façon/.test(r.body.replace(/<style>[\s\S]*?<\/style>/, '')), 'aucun texte français d\'interface');
@@ -189,7 +189,7 @@ test('anglais : fiche match, pronostic, paris et analyse en anglais', async () =
   assert.ok(!/ gagne|Victoire|Match nul|buts</.test(r.body.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<style>[\s\S]*?<\/style>/, '')), 'aucun libellé français');
   assert.match(r.body, new RegExp(`href="${p}/analysis"`));
   const frPath = p.replace(/^\/en/, '');
-  assert.match(r.body, new RegExp(`hreflang="fr" href="https://pronoflashia\\.com${frPath}"`));
+  assert.match(r.body, new RegExp(`hreflang="fr" href="https://pronoflashia\\.web\\.app${frPath}"`));
   const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(r.body)[1]);
   assert.equal(ld.inLanguage, 'en');
   const data = JSON.parse(/<script type="application\/json" id="pf-match">(.*?)<\/script>/s.exec(r.body)[1]);
@@ -212,7 +212,7 @@ test('anglais : analyse complète, bilan, coupon, pages légales et 404', async 
   for (const s of ['about', 'contact', 'privacy', 'terms', 'cookies', 'legal-notice', 'responsible-gambling']) {
     const r = await get('/en/' + s); assert.equal(r.status, 200, s); assert.match(r.body, /<html lang="en">/);
   }
-  assert.match((await get('/en/privacy')).body, /hreflang="fr" href="https:\/\/pronoflashia\.com\/confidentialite"/);
+  assert.match((await get('/en/privacy')).body, /hreflang="fr" href="https:\/\/pronoflashia\.web\.app\/confidentialite"/);
   assert.equal((await get('/en/bilan')).status, 404);
   assert.equal((await get('/en/football')).status, 301);
   assert.equal((await get('/en/football')).headers.Location, '/en/football/today');
@@ -223,7 +223,7 @@ test('anglais : analyse complète, bilan, coupon, pages légales et 404', async 
 test('anglais : jours et championnats', async () => {
   const r = await get('/en/football/tomorrow');
   assert.equal(r.status, 200); assert.match(r.body, /Football tips <b>for tomorrow<\/b>/);
-  assert.match(r.body, /hreflang="fr" href="https:\/\/pronoflashia\.com\/football\/demain"/);
+  assert.match(r.body, /hreflang="fr" href="https:\/\/pronoflashia\.web\.app\/football\/demain"/);
   const l = await get('/en/football/ligue-des-champions-caf');
   assert.equal(l.status, 200); assert.match(l.body, /<b>CAF Champions League<\/b> predictions/);
 });
@@ -231,7 +231,7 @@ test('anglais : jours et championnats', async () => {
 test('sitemap bilingue avec alternatives', async () => {
   const sm = (await get('/sitemap.xml')).body;
   assert.match(sm, /xmlns:xhtml/);
-  assert.match(sm, /<loc>https:\/\/pronoflashia\.com\/en\/track-record<\/loc>/);
-  assert.match(sm, /<loc>https:\/\/pronoflashia\.com\/bilan<\/loc><xhtml:link rel="alternate" hreflang="fr" href="https:\/\/pronoflashia\.com\/bilan"\/><xhtml:link rel="alternate" hreflang="en" href="https:\/\/pronoflashia\.com\/en\/track-record"\/>/);
+  assert.match(sm, /<loc>https:\/\/pronoflashia\.web\.app\/en\/track-record<\/loc>/);
+  assert.match(sm, /<loc>https:\/\/pronoflashia\.web\.app\/bilan<\/loc><xhtml:link rel="alternate" hreflang="fr" href="https:\/\/pronoflashia\.web\.app\/bilan"\/><xhtml:link rel="alternate" hreflang="en" href="https:\/\/pronoflashia\.web\.app\/en\/track-record"\/>/);
   assert.match(sm, /\/analysis<\/loc>/);
 });

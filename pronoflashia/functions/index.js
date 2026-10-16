@@ -13,6 +13,7 @@ const { makeApi, makeProviders, sourceOf } = require('./src/deps');
 const { runJob } = require('./src/jobs/helpers');
 const { syncFixtures } = require('./src/jobs/syncFixtures');
 const { buildPredictions } = require('./src/jobs/buildPredictions');
+const { submitNewUrls } = require('./src/jobs/indexNow');
 const { syncResults } = require('./src/jobs/syncResults');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
 const { aiHealthCheck } = require('./src/jobs/aiHealth');
@@ -46,7 +47,17 @@ const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC
 /** Les tâches, réutilisées par le planificateur et par le bouton « Relancer » de l'admin. */
 const TASKS = {
   syncFixtures: () => runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api: makeApi(secrets()) }, r)),
-  buildPredictions: () => runJob(db, 'buildPredictions', async (r) => { const s = secrets(); await buildPredictions({ db, api: makeApi(s), providers: makeProviders(s) }, r); }),
+  buildPredictions: () => runJob(db, 'buildPredictions', async (r) => {
+    const s = secrets();
+    await buildPredictions({ db, api: makeApi(s), providers: makeProviders(s) }, r);
+    // référencement automatique : les pages nouvelles sont signalées une fois (IndexNow) ; une erreur ici ne fait pas échouer la tâche
+    try {
+      const { site } = await D.loadConfig(db);
+      const ix = await submitNewUrls({ db, site, now: new Date() });
+      r.infos.indexNow = ix;
+      if (ix.erreur) r.erreurs.push(ix.erreur);
+    } catch (e) { r.erreurs.push(`IndexNow : ${e.message}`); }
+  }),
   syncResults: () => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets()) }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
   aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: makeProviders(secrets()) }, r)),

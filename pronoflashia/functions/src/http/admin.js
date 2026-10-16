@@ -10,7 +10,7 @@ const { dayStr, addDays } = require('../jobs/helpers');
 const { SCHEDULE, nextRun } = require('../jobs/schedule');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'weeklyReport', 'aiHealthCheck'];
-const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram'];
+const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
 const NETWORKS = ['adsterra', 'monetag'];
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -47,6 +47,13 @@ function sanitizeSite(inp) {
     out[k] = k === 'indexable' ? !!inp[k] : str(inp[k], 300);
   }
   if (out.origine && !/^https:\/\/[a-z0-9.-]+$/i.test(out.origine)) throw new HttpError(400, 'Origine invalide (https://domaine).');
+  if (out.googleVerification !== undefined) {
+    // on accepte la balise entière collée depuis Search Console ou seulement la valeur de content="…"
+    const m = /content\s*=\s*["']([^"']+)["']/i.exec(out.googleVerification);
+    const v = (m ? m[1] : out.googleVerification).trim();
+    if (v && !/^[A-Za-z0-9_-]{10,100}$/.test(v)) throw new HttpError(400, 'Code de vérification Google invalide.');
+    out.googleVerification = v;
+  }
   if (out.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.email)) throw new HttpError(400, 'Adresse e-mail invalide.');
   return out;
 }
