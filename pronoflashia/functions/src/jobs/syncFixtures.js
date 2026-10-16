@@ -36,7 +36,7 @@ async function syncLeagueFixtures({ db, api, league, now, days }) {
     const jour = fx.coupDEnvoi.slice(0, 10);
     const doc = {
       id, apiId: fx.apiId, sport: league.sport || 'football', leagueId: String(league.apiId), leagueSlug: league.slug, leagueNom: league.nom, pays: league.pays || null,
-      saison: fx.saison, journee: fx.journee, round: fx.round, coupDEnvoi: fx.coupDEnvoi, jour, statut: fx.statut, arbitre: fx.arbitre,
+      saison: fx.saison, journee: fx.journee, round: fx.round, coupDEnvoi: fx.coupDEnvoi, jour, statut: fx.statut, arbitre: fx.arbitre, lieu: fx.lieu,
       domicile: { teamId: String(fx.domicile.apiId), apiId: fx.domicile.apiId, nom: fx.domicile.nom, nomCourt: home.nomCourt, couleurs: home.couleurs, initiales: home.initiales },
       exterieur: { teamId: String(fx.exterieur.apiId), apiId: fx.exterieur.apiId, nom: fx.exterieur.nom, nomCourt: away.nomCourt, couleurs: away.couleurs, initiales: away.initiales },
       slug: `${N.slugify(home.nomCourt)}-${N.slugify(away.nomCourt)}-${jour}`,

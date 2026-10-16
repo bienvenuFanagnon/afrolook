@@ -5,11 +5,14 @@
 
 const MIN_PCT = 55;
 
-/** Poids d'utilité par marché : 1 = pari informatif, moins de 1 = pari banal qui gonfle la probabilité sans apporter d'information. */
+/**
+ * Poids d'utilité par marché : 1 = pari informatif, moins de 1 = pari banal qui gonfle la probabilité sans apporter d'information.
+ * Les paris trop faciles (+1,5 buts, −3,5 buts…) restent dans le catalogue mais ne sont jamais le pronostic principal.
+ */
 const WEIGHTS = {
   'res:1': 1.15, 'res:2': 1.15, 'res:N': 0.9,
   'res:1N': 0.8, 'res:N2': 0.8, 'res:12': 0.85,
-  'buts:over:2.5': 0.95, 'buts:under:2.5': 0.95, 'buts:over:3.5': 1, 'buts:under:3.5': 0.8, 'buts:over:1.5': 0.75,
+  'buts:over:2.5': 0.95, 'buts:under:2.5': 0.95, 'buts:over:3.5': 1,
   'buts:btts:oui': 0.95, 'buts:btts:non': 0.9,
   'hand:home:-1.5': 1, 'hand:away:-1.5': 1,
 };

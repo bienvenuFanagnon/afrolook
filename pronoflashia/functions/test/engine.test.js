@@ -144,3 +144,28 @@ test('favori net : le pronostic principal est sa victoire, pas une double chance
   assert.equal(secondaires.length, 2);
   assert.ok(secondaires.every((s) => s.cle !== principal.cle));
 });
+
+test('coupons proposés : ni paris triviaux ni fiabilité faible, familles variées', () => {
+  const coupon = require('../src/shared/coupon');
+  const o = (key, famille, pct, fiabilite = 'haute') => ({ key, libelle: key, famille, pct, fiabilite });
+  const pool = {
+    a: [o('buts:over:0.5', 'Buts', 95), o('hand:away:+2.5', 'Handicap', 92), o('res:1N', 'Résultat', 84), o('buts:over:1.5', 'Buts', 80), o('spec:penalty', 'Spéciaux', 70, 'faible')],
+    b: [o('buts:under:4.5', 'Buts', 93), o('corners:total:7.5', 'Corners', 76), o('buts:over:1.5', 'Buts', 82)],
+    c: [o('res:12', 'Résultat', 79), o('cards:total:2.5', 'Cartons & fautes', 71, 'moyenne')],
+  };
+  const s3 = coupon.suggest(pool, 3);
+  assert.equal(s3.length, 3);
+  assert.ok(s3.every((x) => x.pct < 88 && x.fiabilite !== 'faible' && !/^buts:over:0\.5|buts:under:4\.5/.test(x.key)));
+  assert.equal(new Set(s3.map((x) => x.famille)).size, 3, 'familles variées');
+  const r = coupon.couponProbability(s3.map((x) => ({ matchId: x.matchId, key: x.key, pct: x.pct })), null);
+  assert.ok(r.prob > 0.3 && r.prob < 0.7);
+  // même match : calcul exact sur la matrice, différent du produit
+  const m = require('../src/engine/poisson').scoreMatrix(2.1, 1.0);
+  const j = coupon.couponProbability([{ matchId: 'x', key: 'res:1', pct: 62 }, { matchId: 'x', key: 'buts:over:2.5', pct: 62 }], { x: m });
+  assert.equal(j.approx, false);
+  assert.ok(Math.abs(j.prob - 0.62 * 0.62) > 0.03, 'corrélation prise en compte');
+  const k = coupon.couponProbability([{ matchId: 'x', key: 'res:1', pct: 62 }, { matchId: 'x', key: 'corners:total:8.5', pct: 60 }], { x: m });
+  assert.equal(k.approx, true);
+  assert.equal(coupon.riskLevel(0.6).id, 'prudent');
+  assert.equal(coupon.riskLevel(0.1).id, 'tres_risque');
+});

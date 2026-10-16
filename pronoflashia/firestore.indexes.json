@@ -1,0 +1,7 @@
+{
+  "indexes": [
+    { "collectionGroup": "matches", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "statut", "order": "ASCENDING" }, { "fieldPath": "coupDEnvoi", "order": "DESCENDING" }] },
+    { "collectionGroup": "matches", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "leagueId", "order": "ASCENDING" }, { "fieldPath": "statut", "order": "ASCENDING" }, { "fieldPath": "coupDEnvoi", "order": "DESCENDING" }] }
+  ],
+  "fieldOverrides": []
+}

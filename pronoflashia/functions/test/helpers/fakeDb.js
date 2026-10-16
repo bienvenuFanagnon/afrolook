@@ -33,7 +33,8 @@ class Doc {
       const parts = k.split('.');
       let o = cur;
       for (let i = 0; i < parts.length - 1; i++) { o[parts[i]] = o[parts[i]] || {}; o = o[parts[i]]; }
-      o[parts[parts.length - 1]] = v;
+      const last = parts[parts.length - 1];
+      o[last] = v && typeof v === 'object' && v.__inc != null ? (o[last] || 0) + v.__inc : v;
     }
     this.db.writes++;
   }

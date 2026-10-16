@@ -235,11 +235,11 @@ test('semaines ISO et rapport hebdomadaire', async () => {
   assert.equal(mondayOf(new Date('2026-10-15T10:00:00Z')).toISOString().slice(0, 10), '2026-10-12');
   const rep = buildWeekReport({
     week: '2026-W41', from: '2026-10-05',
-    statsDays: [{ visites: 100, visiteurs: 80, pv: 300, pays: { CI: 60, FR: 30 }, matchs: { a: 40, b: 10 }, clicsAfrolook: 5 }, { visites: 50, visiteurs: 40, pv: 120, pays: { CI: 20, SN: 10 }, matchs: { a: 5 } }, null],
+    statsDays: [{ visites: 100, hllEst: { 0: 50.2, 1: 29.9 }, pv: 300, pays: { CI: 60, FR: 30 }, matchs: { a: 40, b: 10 }, clicsAfrolook: 5 }, { visites: 50, visiteurs: 40, pv: 120, pays: { CI: 20, SN: 10 }, matchs: { a: 5 } }, null],
     bilanDays: [{ delta: { matches: 1, principal: { n: 1, ok: 1 }, parLigue: {}, parConfiance: {}, parFamille: {}, parBin: {}, parCle: {} } }],
     aiLog: [{ etat: 'ok' }, { etat: 'panne' }],
   });
-  assert.equal(rep.visites, 150); assert.equal(rep.pagesVues, 420); assert.equal(rep.au, '2026-10-11');
+  assert.equal(rep.visites, 150); assert.equal(rep.visiteurs, 120); assert.equal(rep.pagesVues, 420); assert.equal(rep.au, '2026-10-11');
   assert.deepEqual(rep.pays[0], { k: 'CI', v: 80 });
   assert.equal(rep.matchsTop[0].k, 'a');
   assert.equal(rep.tauxReussite, 100); assert.equal(rep.ia.pannes, 1);

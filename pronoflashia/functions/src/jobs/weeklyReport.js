@@ -3,6 +3,7 @@
 
 const { addDays, dayStr, isoWeek, mondayOf } = require('./helpers');
 const { summarize } = require('../engine/bilan');
+const { visitorsFromEstimates } = require('../http/hll');
 
 const sumMaps = (list, field) => {
   const out = {};
@@ -19,7 +20,7 @@ function buildWeekReport({ week, from, statsDays, bilanDays, aiLog }) {
   const pannes = (aiLog || []).filter((l) => l.etat === 'panne').length;
   return {
     semaine: week, du: from, au: dayStr(addDays(new Date(from), 6)),
-    visites: sum('visites'), visiteurs: sum('visiteurs'), pagesVues: sum('pv'), clicsAfrolook: sum('clicsAfrolook'),
+    visites: sum('visites'), visiteurs: jours.reduce((n, d) => n + (d.hllEst ? visitorsFromEstimates(d.hllEst) : d.visiteurs || 0), 0), pagesVues: sum('pv'), clicsAfrolook: sum('clicsAfrolook'),
     pays: top(sumMaps(jours, 'pays'), 10),
     matchsTop: top(sumMaps(jours, 'matchs'), 5),
     appareils: sumMaps(jours, 'appareils'),

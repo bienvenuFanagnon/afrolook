@@ -24,6 +24,7 @@ function shortName(name) {
   const n = String(name || '').trim();
   const map = { 'Paris Saint Germain': 'Paris SG', 'Paris Saint-Germain': 'Paris SG', 'Olympique De Marseille': 'Marseille', 'Olympique Marseille': 'Marseille', 'Olympique Lyonnais': 'Lyon', 'AS Monaco': 'Monaco', 'Manchester City': 'Man City', 'Manchester United': 'Man United' };
   if (map[n]) return map[n];
+  if (/^Esperance Sportive De Tunis$/i.test(n)) return 'Espérance de Tunis';
   const cleaned = n.replace(/^(FC|AS|AC|SC|RC|OGC|US|CF|RS|SK|FK|CD|UD)\s+/i, '').replace(/\s+(FC|CF|SC|AFC)$/i, '').trim();
   return cleaned.length >= 3 ? cleaned : n;
 }
@@ -52,6 +53,7 @@ function normalizeFixture(it) {
     statut: statutOf(f.status && f.status.short),
     statutApi: f.status && f.status.short,
     arbitre: f.referee || null,
+    lieu: f.venue && f.venue.name ? { nom: f.venue.name, ville: f.venue.city || null } : null,
     domicile: { apiId: t.home && t.home.id, nom: t.home && t.home.name, logo: (t.home && t.home.logo) || null },
     exterieur: { apiId: t.away && t.away.id, nom: t.away && t.away.name, logo: (t.away && t.away.logo) || null },
     score: g.home == null || g.away == null ? null : { dom: g.home, ext: g.away },
