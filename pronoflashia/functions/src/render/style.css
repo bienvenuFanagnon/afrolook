@@ -62,7 +62,7 @@ img{max-width:100%}
 
 /* flash du jour */
 .top3{display:grid;gap:8px}
-.t3{border:1px solid #4a4210;background:linear-gradient(135deg,#1c1a08,var(--s1));border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none}
+.t3{flex-wrap:wrap;border:1px solid #4a4210;background:linear-gradient(135deg,#1c1a08,var(--s1));border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none}
 .t3 small{color:var(--mut);font-size:11px;display:block}
 .t3 b{font-family:var(--fd);font-size:19px;line-height:1.15;display:block}
 .t3 .pk{color:var(--flash);font-family:var(--fd);font-weight:700;font-size:17px;text-align:right}
@@ -112,6 +112,9 @@ img{max-width:100%}
 .ptn:hover .cta{background:var(--cy);color:var(--ink)}
 .mc .more{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;padding:10px 14px;border-radius:10px;background:var(--flash);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:.2px}
 .mc .more i{font-style:normal;font-size:18px;line-height:1}
+.t3 .more{flex:1 0 100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;padding:9px 14px;border-radius:10px;background:var(--flash);color:var(--ink);font-weight:700;font-size:14px}
+.t3 .more i{font-style:normal;font-size:18px;line-height:1}
+.t3:hover .more{filter:brightness(1.08)}
 .mc .more.off{background:transparent;color:var(--mut);border:1px solid var(--line);font-weight:600}
 .mc:hover .more{filter:brightness(1.08)}
 .op b.num{white-space:nowrap}
@@ -311,6 +314,9 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 
 @media (min-width:600px){
   .top3{grid-template-columns:repeat(3,1fr)}
+  .t3{flex-direction:column;align-items:stretch;justify-content:flex-start}
+  .t3 .pk{text-align:left}.t3 .pk span{display:inline;margin-left:8px}
+  .t3 .more{flex:0 0 auto;margin-top:auto}
   .tr .fm{display:flex}
   .mc{grid-template-columns:1fr 1fr;gap:8px 22px;align-items:center}
   .mc .hd,.mc .bars,.mc .bl,.mc .sc,.mc .pr{grid-column:2}

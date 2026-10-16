@@ -147,3 +147,12 @@ test('mesure de l\'offre partenaire : affichages et clics comptés', async () =>
   const d = db.read('stats_days', '2026-10-16');
   assert.equal(d.ptnImps, 1); assert.equal(d.clicsPartenaire, 1); assert.equal(d.ptn.liste, 1); assert.equal(d.ptnClics.liste, 1);
 });
+
+test('Flash du jour : chaque carte a son bouton « Voir plus de détails »', async () => {
+  const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
+  const html = (await route(db, '/', NOW)).body;
+  const cards = html.match(/<a class="t3"[\s\S]*?<\/a>/g) || [];
+  assert.ok(cards.length >= 1 && cards.length <= 3, `${cards.length} cartes flash`);
+  for (const c of cards) assert.match(c, /<span class="more">Voir plus de détails <i aria-hidden="true">›<\/i><\/span>/);
+  assert.match((await route(db, '/en', NOW)).body, /<a class="t3"[\s\S]*?<span class="more">See more details/);
+});

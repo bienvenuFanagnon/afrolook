@@ -28,7 +28,7 @@ function topFlash(matches) {
 function flashBlock(rc, matches) {
   const top = topFlash(matches);
   if (!top.length) return '';
-  return `<div class="lbl">${rc.t.flash}</div><div class="top3">${top.map((m) => `<a class="t3" href="${rc.u('match', m)}"><div><small>${timeEl(rc, m.coupDEnvoi)} · ${esc(leagueName(rc, m))}</small><b>${esc(titleOf(m))}</b></div><div class="pk">${esc(pickLabel(rc, m))}<span class="num">${pct(rc, m.prono.principal.confiance)}</span></div></a>`).join('')}</div>`;
+  return `<div class="lbl">${rc.t.flash}</div><div class="top3">${top.map((m) => `<a class="t3" href="${rc.u('match', m)}"><div><small>${timeEl(rc, m.coupDEnvoi)} · ${esc(leagueName(rc, m))}</small><b>${esc(titleOf(m))}</b></div><div class="pk">${esc(pickLabel(rc, m))}<span class="num">${pct(rc, m.prono.principal.confiance)}</span></div><span class="more">${rc.t.moreDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div>`;
 }
 
 /** Liste de cartes groupées par jour quand elle couvre plusieurs jours. */
