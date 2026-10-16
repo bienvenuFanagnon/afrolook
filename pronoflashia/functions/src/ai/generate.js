@@ -14,22 +14,27 @@ async function generateText(ctx, providers, opts = {}) {
   const lang = opts.lang === 'en' ? 'en' : 'fr';
   const { messages, faits } = buildPrompt(ctx, lang);
   const erreurs = [];
+  // chaque appel réel (réussi ou non) : sert au suivi des connexions et des quotas dans l'admin
+  const appels = [];
   const retries = opts.retries == null ? 1 : opts.retries;
+  const usage = (p) => { const u = p.lastUsage ? p.lastUsage() : null; return u && typeof u.neurons === 'number' ? u.neurons : 0; };
   for (const p of providers) {
     for (let attempt = 0; attempt <= retries; attempt++) {
       const t0 = Date.now();
       try {
         const raw = await p.call(messages);
         const v = validateOutput(raw, faits, lang);
-        if (v.ok) return { texte: v.value, sourceTexte: p.name, latencyMs: Date.now() - t0, erreurs };
+        appels.push({ provider: p.name, ok: true, valide: v.ok, neurons: usage(p), ms: Date.now() - t0 });
+        if (v.ok) return { texte: v.value, sourceTexte: p.name, latencyMs: Date.now() - t0, erreurs, appels };
         erreurs.push({ provider: p.name, type: 'sortie_invalide', detail: v.errors.join(' ') });
       } catch (e) {
+        appels.push({ provider: p.name, ok: false, neurons: 0, ms: Date.now() - t0, erreur: String(e.message || e).slice(0, 200) });
         erreurs.push({ provider: p.name, type: 'appel', detail: String(e.message || e), status: e.status || null });
         if (e.retryable) break; // quota ou surcharge : on passe directement au suivant
       }
     }
   }
-  return { texte: lang === 'en' ? fallbackTextEn(ctx) : fallbackText(ctx), sourceTexte: 'secours', latencyMs: 0, erreurs };
+  return { texte: lang === 'en' ? fallbackTextEn(ctx) : fallbackText(ctx), sourceTexte: 'secours', latencyMs: 0, erreurs, appels };
 }
 
 module.exports = { generateText };

@@ -2,6 +2,8 @@
 // aiHealthCheck : petit appel de test à chaque fournisseur, état enregistré dans ai_status/current (+ historique court).
 
 const SLOW_MS = 8000;
+const { recordUse } = require('./connexions');
+const TOOL = { 'workers-ai': 'workersAi', gemini: 'gemini' };
 
 async function aiHealthCheck({ db, providers, now }, report) {
   const t = now || new Date();
@@ -17,9 +19,12 @@ async function aiHealthCheck({ db, providers, now }, report) {
       const out = await p.call(messages);
       const ok = /"ok"\s*:\s*true/.test(String(out));
       res[p.name] = { ok, latenceMs: Date.now() - t0, erreur: ok ? null : 'réponse inattendue' };
+      const u = p.lastUsage ? p.lastUsage() : null;
+      await recordUse(db, TOOL[p.name], t, { appels: 1, erreurs: ok ? 0 : 1, neurons: u && u.neurons ? u.neurons : 0, ok, erreur: ok ? null : 'réponse inattendue', latenceMs: res[p.name].latenceMs });
       if (ok && !actif) actif = p.name;
     } catch (e) {
       res[p.name] = { ok: false, latenceMs: Date.now() - t0, erreur: String(e.message || e).slice(0, 200) };
+      await recordUse(db, TOOL[p.name], t, { appels: 1, erreurs: 1, ok: false, erreur: res[p.name].erreur });
     }
   }
   const act = actif ? res[actif] : null;

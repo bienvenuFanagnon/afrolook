@@ -27,9 +27,13 @@ class ProviderError extends Error {
 /** Cloudflare Workers AI (premier choix : quota gratuit quotidien). */
 function cloudflareProvider({ accountId, token, model, fetchImpl }) {
   const m = model || DEFAULT_CF_MODEL;
+  let last = null;
   return {
     name: 'workers-ai',
+    /** Consommation du dernier appel : { neurons, tokens } (Cloudflare facture en « neurons »). */
+    lastUsage: () => last,
     async call(messages) {
+      last = null;
       const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${m}`;
       const r = await fetchJson(url, {
         method: 'POST',
@@ -41,6 +45,8 @@ function cloudflareProvider({ accountId, token, model, fetchImpl }) {
         throw new ProviderError(`workers-ai ${r.status}${quota ? ' quota' : ''}`, r.status, quota);
       }
       const res = r.json.result;
+      const u = res && res.usage;
+      if (u) last = { neurons: typeof u.neurons === 'number' ? u.neurons : null, tokens: u.total_tokens || null };
       // Selon le modèle, la réponse est { response } (format Cloudflare) ou { choices: [{ message: { content } }] } (format OpenAI).
       const choice = res && res.choices && res.choices[0] && res.choices[0].message;
       const out = choice ? choice.content : res && (res.response != null ? res.response : null);
@@ -55,6 +61,7 @@ function geminiProvider({ apiKey, models, fetchImpl }) {
   const list = models && models.length ? models : DEFAULT_GEMINI_MODELS;
   return {
     name: 'gemini',
+    lastUsage: () => null,
     async call(messages) {
       const system = messages.filter((x) => x.role === 'system').map((x) => x.content).join('\n');
       const user = messages.filter((x) => x.role !== 'system').map((x) => x.content).join('\n');

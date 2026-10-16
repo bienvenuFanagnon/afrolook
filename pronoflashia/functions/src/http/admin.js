@@ -7,6 +7,7 @@ const { visitorsFromEstimates } = require('./hll');
 const { slugify } = require('../data/normalize');
 const { mergeSite, mergeAds, SLOTS } = require('../render/config');
 const { dayStr, addDays } = require('../jobs/helpers');
+const { SCHEDULE, nextRun } = require('../jobs/schedule');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram'];
@@ -254,6 +255,56 @@ function createAdmin(deps) {
     await db.collection('admins').doc(email).delete();
     await log(by, 'admin-retirer', { email });
     return { ok: true };
+  };
+
+  /** État de chaque outil connecté : configuré, dernière réussite, dernière erreur, consommation du jour face au quota. */
+  A.connexions = async () => {
+    const now = nowD();
+    const jour = dayStr(now);
+    const get = async (col, id) => { const d = await db.collection(col).doc(id).get(); return d.exists ? d.data() : null; };
+    const [api, wai, gem, siteDoc, adsDoc, today] = await Promise.all([get('connexions', 'apiFootball'), get('connexions', 'workersAi'), get('connexions', 'gemini'), get('config', 'site'), get('config', 'ads'), get('stats_days', jour)]);
+    const site = mergeSite(siteDoc || {});
+    const ads = mergeAds(adsDoc || {});
+    const sec = deps.secretsStatus ? deps.secretsStatus() : {};
+    const fresh = (d) => (d && d.jour === jour ? d : d ? Object.assign({}, d, { appelsJour: 0, erreursJour: 0, neuronsJour: 0 }) : null);
+    const etat = (t) => {
+      if (!t.configure) return 'non_configure';
+      if (t.actif === false) return 'inactif';
+      if (t.derniereErreurLe && (!t.dernierSucces || t.derniereErreurLe > t.dernierSucces)) return 'panne';
+      if (t.quota && t.quota.limite && t.quota.utilise / t.quota.limite >= 0.8) return 'attention';
+      if (!t.dernierSucces && t.suivi) return 'jamais';
+      return 'ok';
+    };
+    const netCodes = (net) => Object.values(ads.emplacements).some((e) => (e.reseaux || []).some((r) => r.reseau === net && r.code));
+    const pubVues = (net) => Object.entries((today && today.pub) || {}).filter(([k]) => k.includes(net)).reduce((n, [, v]) => n + v, 0);
+    const A1 = fresh(api), W = fresh(wai), G = fresh(gem);
+    const hist = (d) => Object.entries((d && d.historique) || {}).sort().slice(-14).map(([j, v]) => ({ jour: j, ...v }));
+    const tools = [
+      Object.assign({ id: 'apiFootball', nom: 'API-Football', role: 'Matchs, résultats, statistiques et cotes', configure: !!sec.apiFootball, suivi: true, secret: 'API_FOOTBALL_KEY' }, A1 && { dernierSucces: A1.dernierSucces, derniereErreur: A1.derniereErreur, derniereErreurLe: A1.derniereErreurLe, appelsJour: A1.appelsJour, erreursJour: A1.erreursJour,
+        quota: A1.quotaLimite ? { utilise: A1.quotaLimite - (A1.quotaRestant == null ? A1.quotaLimite : A1.quotaRestant), limite: A1.quotaLimite, unite: 'requêtes' } : null, historique: hist(A1) }),
+      Object.assign({ id: 'workersAi', nom: 'Cloudflare Workers AI', role: 'Rédaction des analyses (français et anglais)', configure: !!(sec.cfToken && sec.cfAccount), suivi: true, secret: 'CF_API_TOKEN + CF_ACCOUNT_ID',
+        quota: { utilise: Math.round((W && W.neuronsJour) || 0), limite: site.quotaNeurons || 10000, unite: 'neurons gratuits' } }, W && { dernierSucces: W.dernierSucces, derniereErreur: W.derniereErreur, derniereErreurLe: W.derniereErreurLe, appelsJour: W.appelsJour, erreursJour: W.erreursJour, latenceMs: W.latenceMs, historique: hist(W) }),
+      Object.assign({ id: 'gemini', nom: 'Google Gemini', role: 'IA de secours si Workers AI échoue', configure: !!sec.gemini, suivi: true, secret: 'GEMINI_API_KEY' }, G && { dernierSucces: G.dernierSucces, derniereErreur: G.derniereErreur, derniereErreurLe: G.derniereErreurLe, appelsJour: G.appelsJour, erreursJour: G.erreursJour, historique: hist(G) }),
+      { id: 'firebaseAuth', nom: 'Connexion Google (Firebase Authentication)', role: 'Accès à cette administration', configure: true, dernierSucces: now.toISOString() },
+      { id: 'stats', nom: 'Mesure d\'audience', role: 'Compteurs sans cookie, visiteurs uniques', configure: !!sec.statsSalt, secret: 'STATS_SALT', dernierSucces: today ? now.toISOString() : null, appelsJour: (today && today.pv) || 0, unite: 'pages vues aujourd\'hui' },
+      { id: 'adsterra', nom: 'Adsterra', role: 'Publicités (réseau principal)', configure: netCodes('adsterra'), actif: !!ads.actif, appelsJour: pubVues('adsterra'), unite: 'pubs affichées aujourd\'hui' },
+      { id: 'monetag', nom: 'Monetag', role: 'Publicités (réseau de secours)', configure: netCodes('monetag'), actif: !!ads.actif, appelsJour: pubVues('monetag'), unite: 'pubs affichées aujourd\'hui' },
+      { id: 'afrolook', nom: 'Encarts Afrolook', role: 'Promotion de l\'application', configure: true, actif: !!ads.afrolook.actif, appelsJour: (today && today.aflImps) || 0, clicsJour: (today && today.clicsAfrolook) || 0, unite: 'affichages aujourd\'hui' },
+    ];
+    for (const t of tools) t.etat = etat(t);
+    return { outils: tools, jour };
+  };
+
+  /** Fonctionnement : chaque tâche automatique, sa cadence, son dernier passage et le prochain. */
+  A.planning = async () => {
+    const now = nowD();
+    const out = [];
+    for (const s of SCHEDULE) {
+      const d = await db.collection('jobs').doc(`_dernier_${s.nom}`).get();
+      const n = nextRun(s.cron, now);
+      out.push({ nom: s.nom, cron: s.cron, frequence: s.frequence, role: s.role, prochain: n ? n.toISOString() : null, dernier: d.exists ? d.data() : null });
+    }
+    return { taches: out, maintenant: now.toISOString() };
   };
 
   A.journal = async () => {

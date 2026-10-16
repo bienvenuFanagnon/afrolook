@@ -9,6 +9,7 @@ const { dayStr, addDays } = require('./helpers');
 const { assertQuota, COUNT_KINDS } = require('./syncFixtures');
 const { dateLongue, heure, fr } = require('../util/format');
 const labels = require('../shared/labels');
+const { recordAiCalls, recordApiQuota } = require('./connexions');
 
 const COUNT_LABELS = { corners: 'Corners', shotsOnTarget: 'Tirs cadrés', shots: 'Tirs', cards: 'Cartons', fouls: 'Fautes', offsides: 'Hors-jeux' };
 
@@ -83,7 +84,7 @@ async function fetchH2h(api, match) {
 }
 
 /** Compteurs de l'état de l'IA pour la journée. */
-async function bumpAiStatus(db, now, { fournisseur, secours, erreurs, latencyMs }) {
+async function bumpAiStatus(db, now, { fournisseur, secours, erreurs, latencyMs, neurons }) {
   const ref = db.collection('ai_status').doc('current');
   const cur = (await ref.get()).data() || {};
   const jour = dayStr(now);
@@ -93,6 +94,7 @@ async function bumpAiStatus(db, now, { fournisseur, secours, erreurs, latencyMs 
     generesAujourdhui: (base.generesAujourdhui || 0) + 1,
     secoursAujourdhui: (base.secoursAujourdhui || 0) + (secours ? 1 : 0),
     quotaUtilise: (base.quotaUtilise || 0) + (fournisseur === 'workers-ai' ? 1 : 0),
+    neuronsAujourdhui: Math.round(((base.neuronsAujourdhui || 0) + (neurons || 0)) * 100) / 100,
   };
   if (!secours) { upd.fournisseur = fournisseur; upd.dernierSucces = now.toISOString(); if (latencyMs) upd.latenceMs = latencyMs; }
   if (erreurs.length) { upd.derniereErreur = `${erreurs[erreurs.length - 1].provider} : ${erreurs[erreurs.length - 1].detail}`.slice(0, 300); upd.derniereErreurLe = now.toISOString(); }
@@ -146,7 +148,8 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
       extras: facts.extras, h2h: facts.h2h,
     });
     const gen = await generateText(ctx, providers, { lang });
-    await bumpAiStatus(db, now, { fournisseur: gen.sourceTexte, secours: gen.sourceTexte === 'secours', erreurs: gen.erreurs, latencyMs: gen.latencyMs });
+    await bumpAiStatus(db, now, { fournisseur: gen.sourceTexte, secours: gen.sourceTexte === 'secours', erreurs: gen.erreurs, latencyMs: gen.latencyMs, neurons: (gen.appels || []).reduce((n, a) => n + (a.neurons || 0), 0) });
+    await recordAiCalls(db, now, gen.appels);
     texts[lang] = gen;
   }
   const gen = texts.fr || texts.en;
@@ -192,16 +195,20 @@ async function buildPredictions(opts, report) {
   const calibration = await loadCalibration(db, now);
   const leagues = new Map();
   const formCache = new Map();
-  for (const m of todo) {
-    try {
-      if (!leagues.has(m.leagueId)) { const d = await db.collection('leagues').doc(m.leagueId).get(); leagues.set(m.leagueId, d.exists ? d.data() : null); }
-      const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal, langs });
-      if (gen.reutilise) report.infos.textesReutilises = (report.infos.textesReutilises || 0) + 1;
-      report.traites++;
-      report.infos[gen.sourceTexte] = (report.infos[gen.sourceTexte] || 0) + 1;
-    } catch (e) {
-      report.erreurs.push(`${m.slug} : ${e.message}`);
+  try {
+    for (const m of todo) {
+      try {
+        if (!leagues.has(m.leagueId)) { const d = await db.collection('leagues').doc(m.leagueId).get(); leagues.set(m.leagueId, d.exists ? d.data() : null); }
+        const gen = await buildOne({ db, api, providers, now, match: m, league: leagues.get(m.leagueId), formCache, calibration, quotaReserve, maxExternal, langs });
+        if (gen.reutilise) report.infos.textesReutilises = (report.infos.textesReutilises || 0) + 1;
+        report.traites++;
+        report.infos[gen.sourceTexte] = (report.infos[gen.sourceTexte] || 0) + 1;
+      } catch (e) {
+        report.erreurs.push(`${m.slug} : ${e.message}`);
+      }
     }
+  } finally {
+    await recordApiQuota(db, api, now, report);
   }
 }
 

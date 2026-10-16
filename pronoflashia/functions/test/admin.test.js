@@ -143,3 +143,34 @@ test('championnats : ajout vérifié auprès de l\'API, mise à jour du suivi', 
   assert.equal(db.read('leagues', '61').suivi, false);
   assert.equal((await call('ligue-maj', { apiId: 1 })).status, 404);
 });
+
+test('connexions : outils, état, quotas ; secrets jamais renvoyés', async () => {
+  const { db, call } = setup({ secretsStatus: () => ({ apiFootball: true, cfToken: true, cfAccount: true, gemini: false, statsSalt: true }) });
+  await db.seed('connexions', 'workersAi', { jour: '2026-10-16', appelsJour: 40, erreursJour: 1, neuronsJour: 8600, dernierSucces: '2026-10-16T11:00:00Z', historique: { '2026-10-16': { appels: 40, erreurs: 1, neurons: 8600 } } });
+  await db.seed('connexions', 'apiFootball', { jour: '2026-10-16', appelsJour: 30, quotaRestant: 7000, quotaLimite: 7500, dernierSucces: '2026-10-16T05:00:00Z', derniereErreur: 'quota', derniereErreurLe: '2026-10-16T06:00:00Z' });
+  await db.seed('config', 'ads', { actif: true, emplacements: { haut: { actif: true, reseaux: [{ reseau: 'adsterra', code: '<div>x</div>' }] } } });
+  await db.seed('stats_days', '2026-10-16', { pub: { haut_adsterra: 120 }, aflImps: 50, clicsAfrolook: 3, pv: 400 });
+  const r = await call('connexions', {});
+  assert.equal(r.status, 200);
+  const by = Object.fromEntries(r.json.outils.map((t) => [t.id, t]));
+  assert.equal(by.workersAi.etat, 'attention', '86 % du quota gratuit');
+  assert.equal(by.workersAi.quota.utilise, 8600); assert.equal(by.workersAi.quota.limite, 10000);
+  assert.equal(by.apiFootball.etat, 'panne', 'erreur plus récente que le dernier succès');
+  assert.equal(by.apiFootball.quota.utilise, 500);
+  assert.equal(by.gemini.etat, 'non_configure');
+  assert.equal(by.adsterra.etat, 'ok'); assert.equal(by.adsterra.appelsJour, 120);
+  assert.equal(by.monetag.etat, 'non_configure');
+  assert.equal(by.afrolook.clicsJour, 3);
+  assert.ok(!JSON.stringify(r.json).includes('cfat_'), 'aucune valeur de secret');
+});
+
+test('planning : tâches, cadence, prochain passage', async () => {
+  const { db, call } = setup();
+  await db.seed('jobs', '_dernier_syncFixtures', { ok: true, debut: '2026-10-16T05:00:00Z', traites: 70 });
+  const r = (await call('planning', {})).json;
+  assert.equal(r.taches.length, 5);
+  const sf = r.taches.find((x) => x.nom === 'syncFixtures');
+  assert.equal(sf.prochain, '2026-10-17T05:00:00.000Z');
+  assert.equal(sf.dernier.traites, 70);
+  assert.match(sf.role, /7 prochains jours/);
+});
