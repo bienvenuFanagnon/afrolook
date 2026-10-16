@@ -137,6 +137,7 @@ Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite 
 - **Jetons des musiques gratuites** : 14 des 17 fichiers `studio_music/*.m4a` n'avaient pas de jeton de téléchargement (l'application n'obtenait pas leur lien) : ajoutés, avec un en-tête de cache d'un an.
 - **Réseau local** : le lecteur relaie la lecture hors ligne chiffrée par un petit serveur local de l'appareil ; Android bloquait ce trafic (Android 9+) et iPhone aussi (ATS) : réglages `network_security_config.xml` (127.0.0.1 et localhost seulement) et `NSAllowsLocalNetworking`.
 - **Menu** : entrée « Musique » dans le menu latéral (et dans la barre latérale large).
+- **Musique dans le fil** (`lib/pages/studio/feed_sound_card.dart`) : le bandeau figé sous les chroniques est supprimé. Trois présentations alternent : **l'affiche** (pochette en plein cadre 4:5, voile dégradé, grand bouton de lecture avec cercle d'avancement, titre, genre · durée · nombre de posts, boutons « Créer un post », « Ma vidéo avec ce son », « Toute la musique »), **« Musiques du moment »** (rangée de pochettes verticales avec lecture sur chaque pochette) et **« Top titres »** (liste numérotée façon lecteur : pochette, titre, genre · durée, prix, lecture). Elles reviennent entre le 5ᵉ et le 9ᵉ post puis tous les 11 à 19 posts, à des endroits qui changent à chaque ouverture (graine par session, `_musicPositions` dans `HomeConstPost.dart`) ; chaque carte propose d'autres titres que la précédente, filtrés par pays. Les extraits sont préchargés.
 
 ## 10. Feuille de route
 
