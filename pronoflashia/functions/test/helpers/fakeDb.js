@@ -5,7 +5,7 @@ function deepMerge(a, b) {
   const out = Object.assign({}, a);
   for (const [k, v] of Object.entries(b)) {
     if (v && typeof v === 'object' && !Array.isArray(v) && a && a[k] && typeof a[k] === 'object' && !Array.isArray(a[k])) out[k] = deepMerge(a[k], v);
-    else out[k] = v;
+    else out[k] = v && typeof v === 'object' && v.__inc != null ? (typeof a[k] === 'number' ? a[k] : 0) + v.__inc : v; // FieldValue.increment
   }
   return out;
 }

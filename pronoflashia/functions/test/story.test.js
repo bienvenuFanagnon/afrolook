@@ -135,3 +135,87 @@ test('page « À propos » : aperçu riche pour WhatsApp (titre, description, im
     assert.equal(png.readUInt32BE(20), 630);
   }
 });
+
+test('lectures d\'une actu : une lecture et un clic comptés sur l\'actu et dans l\'historique ; id invalide, bot et « ne pas suivre » ignorés ; affichage dans les listes et sur la page', async () => {
+  const { handleEvent } = require('../src/http/track');
+  const db = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  const id = 'aabbccddeeff00112233';
+  await db.seed('news', id, { id, titre: 'Mbappé : une offre record', lien: 'https://exemple.fr/x', source: 'Foot Mercato', sourceId: 'fm', lang: 'fr', date: '2026-10-16T10:00:00.000Z', image: null, video: false, resume: 'Un extrait.', teamIds: [] });
+  await db.seed('news_stats', id, { id, titre: 'Mbappé : une offre record', source: 'Foot Mercato', date: '2026-10-16T10:00:00.000Z' });
+  const mk = () => ({ db, increment: (n) => ({ __inc: n }), now: NOW, salt: 's' });
+  const req = (body, extra) => Object.assign({ body, ua: 'Mozilla/5.0 (iPhone)', ip: '1.2.3.4', headers: {} }, extra);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'vue', id }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'vue', id }, { ip: '5.6.7.8' }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'clic', id }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'vue', id: 'pas-un-id' }), mk()), false);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'autre', id }), mk()), false);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'vue', id }, { ua: 'Googlebot/2.1' }), mk()), false);
+  assert.equal(await handleEvent(req({ t: 'news', n: 'vue', id }, { headers: { dnt: '1' } }), mk()), false);
+  assert.equal(db.read('news', id).vues, 2);
+  assert.equal(db.read('news', id).clics, 1);
+  assert.equal(db.read('news_stats', id).vues, 2);
+  assert.equal(db.read('news_stats', id).titre, 'Mbappé : une offre record', 'identité de l\'actu conservée');
+  const day = [...db.data.get('stats_days').values()].find((d) => d.actusLues);
+  assert.equal(day.actusLues, 2);
+  assert.equal(day.clicsActus, 1);
+  // une actu supprimée continue de compter dans l'historique, sans être recréée
+  assert.equal(await handleEvent(req({ t: 'news', n: 'vue', id: 'ffeeddccbbaa99887766' }), mk()), true);
+  assert.equal(db.read('news', 'ffeeddccbbaa99887766'), null);
+  assert.equal(db.read('news_stats', 'ffeeddccbbaa99887766').vues, 1);
+  // affichage : page de l'actu et accueil
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  const page = (await route(db, `/actus/info-${id}`, NOWS)).body;
+  assert.match(page, /data-news="aabbccddeeff00112233"/);
+  assert.match(page, /<span class="nvues" data-n="2" data-one="lecture" data-many="lectures">👁 2 lectures<\/span>/);
+  const zero = (await route(await buildSample(new Date('2026-10-16T08:00:00Z')), '/actus/info-n0', NOWS)).body;
+  assert.match(zero, /class="nvues" data-n="0"[^>]* hidden>/, 'aucune lecture : compteur caché jusqu\'à la première');
+  const n0 = db.read('news', 'n0');
+  await db.seed('news', 'n0', Object.assign({}, n0, { vues: 1250 }));
+  const home = (await route(db, '/', new Date('2026-10-16T12:30:00Z'))).body;
+  assert.match(home, new RegExp(`${n0.source} · [^<]*· 👁 1,2\u00a0k<`), 'compteur abrégé dans les listes');
+  assert.doesNotMatch(home, /· 👁 0/);
+  // admin : actus les plus lues
+  const { createAdmin } = require('../src/http/admin');
+  const admin = createAdmin({ db, verifyToken: async () => ({ email: 'a@x.fr', email_verified: true }), bootstrap: ['a@x.fr'], tasks: {}, now: () => NOWS });
+  const r = (await admin.handle({ action: 'actus', body: {}, authorization: 'Bearer t' })).json;
+  assert.deepEqual(r.lues.map((x) => [x.id, x.vues, x.clics]), [[id, 2, 1], ['ffeeddccbbaa99887766', 1, 0]]);
+  assert.equal(r.lues[1].titre, '(actu supprimée)');
+});
+
+test('page « Toutes les actus foot » : toutes les actus gardées (96 h), 20 par page, pages suivantes, français et anglais ; boutons vers cette page depuis l\'accueil, le coupon, le bilan, la fiche match et la page d\'une actu', async () => {
+  const db = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  for (let i = 0; i < 30; i++) {
+    const id = `old${String(i).padStart(17, '0')}`;
+    await db.seed('news', id, { id, titre: `Ancienne actu numéro ${i} sur le mercato`, lien: `https://exemple.fr/${id}`, source: 'Foot Mercato', sourceId: 'fm', lang: 'fr', date: new Date(NOWS.getTime() - (50 + i) * 36e5 / 2).toISOString(), image: null, video: false, resume: 'Extrait.', teamIds: [] });
+  }
+  const p1 = (await route(db, '/actualites', NOWS)).body;
+  assert.match(p1, /<h1>Toutes les actus foot<\/h1>/);
+  assert.equal((p1.match(/class="nbc"/g) || []).length, 20, '20 actus par page');
+  assert.match(p1, /href="\/actualites\/2" rel="next"/);
+  assert.doesNotMatch(p1, /rel="prev"/);
+  assert.match(p1, /noindex/);
+  assert.match(p1, /Ancienne actu numéro 0 /, 'les actus de plus de 48 h y sont aussi');
+  const p2 = (await route(db, '/actualites/2', NOWS)).body;
+  assert.match(p2, /Page 2 sur \d/);
+  assert.match(p2, /href="\/actualites" rel="prev"/);
+  assert.equal((await route(db, '/actualites/99', NOWS)).status, 200, 'page trop loin : dernière page');
+  const en = (await route(db, '/en/football-news', NOWS)).body;
+  assert.match(en, /<h1>All football news<\/h1>/);
+  assert.match(en, /hreflang|noindex/);
+  const sitemap = (await route(db, '/sitemap.xml', NOWS)).body;
+  assert.ok(!/actualites|football-news/.test(sitemap), 'liste non indexée');
+  // boutons vers la page
+  const btn = /<a class="more-btn" href="\/actualites">Voir toutes les actus foot/;
+  assert.match((await route(db, '/', NOWS)).body, btn);
+  const coupon = (await route(db, '/coupon', NOWS)).body;
+  assert.match(coupon, btn);
+  assert.match(coupon, /class="nwb"><div class="lbl">Actus foot/);
+  assert.match((await route(db, '/bilan', NOWS)).body, btn);
+  const home = (await route(db, '/', NOWS)).body;
+  const href = /href="(\/football\/[a-z0-9-]+\/[a-z0-9-]+)"/.exec(home)[1];
+  assert.match((await route(db, href, NOWS)).body, btn);
+  assert.match((await route(db, '/actus', NOWS)).body, btn);
+  assert.match((await route(db, '/actus/info-n0', NOWS)).body, btn);
+  assert.match((await route(db, '/en/coupon', NOWS)).body, /href="\/en\/football-news">See all football news/);
+});

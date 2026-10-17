@@ -71,6 +71,7 @@ async function route(db, urlPath, now = new Date()) {
       return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now), coupons: await D.couponHistory(db, now, 30), news: await D.news(db, now), recap: (await D.newsEnabled(db)) ? (await D.articles(db, 1))[0] || null : null }), cc(300, 600));
     }
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
+    case 'newsall': return page(rc, P.newsAll(rc, { items: await D.newsAll(db, now), page: r.arg }), cc(300, 600));
     case 'notifs': return page(rc, P.notifPage(rc), cc(3600, 86400));
     case 'news': return page(rc, P.newsIndex(rc, { articles: await D.articles(db, 30) }), cc(300, 600));
     case 'article': {
@@ -92,7 +93,7 @@ async function route(db, urlPath, now = new Date()) {
       return a ? page(rc, P.article(rc, { a }), cc(1800, 7200)) : notFound(rc);
     }
     case 'bilan': return bilanPage(db, rc);
-    case 'coupon': return page(rc, P.couponPage(rc, { pool: await D.pool(db, now) }), cc(300, 600));
+    case 'coupon': return page(rc, P.couponPage(rc, { pool: await D.pool(db, now), news: await D.news(db, now) }), cc(300, 600));
     case 'legal': {
       const lp = legalPage(rc, r.arg);
       if (r.arg === 'a-propos') {
@@ -157,7 +158,7 @@ async function bilanPage(db, rc) {
   const familles = Object.values(s30.parFamille).filter((f) => f.n >= 10).sort((a, b) => b.n - a.n);
   const s90 = summarize((await D.bilanDays(db, rc.now, 90)).map((d) => d.delta).filter(Boolean));
   const learning = Object.assign(learn.describe(learn.buildCalibration(s90)), { suivis: s90.n, seuil: learn.MIN_TOTAL });
-  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons: await D.couponHistory(db, rc.now, 30), signaux: s90.parSignal }), cc(600, 1800));
+  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons: await D.couponHistory(db, rc.now, 30), signaux: s90.parSignal, news: await D.news(db, rc.now) }), cc(600, 1800));
 }
 
 /** Sitemap bilingue : chaque adresse française et anglaise, avec ses alternatives hreflang. */

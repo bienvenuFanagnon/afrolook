@@ -75,6 +75,7 @@ async function syncNews(opts, report) {
         const teamIds = teamsInTitle(x.titre, teams);
         await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, image: x.image || null, video: !!x.video, videoId: x.videoId || null, resume: x.resume ? cleanExcerpt(x.resume) : '', teamIds });
         if (!x.image || (x.resume || '').length < 80) toPreview.push({ id, lien: x.lien, image: x.image || null, resume: x.resume || '' });
+        await db.collection('news_stats').doc(id).set({ id, titre: x.titre, source: s.nom, lien: x.lien, date: x.date }, { merge: true });
         if (teamIds.length) fresh.push({ id, titre: x.titre, resume: x.resume, lang: s.lang, teamIds });
         n++;
       }
@@ -118,6 +119,9 @@ async function syncNews(opts, report) {
   report.infos.faits = faits;
   report.infos.appelsIA = (opts.maxAiCalls == null ? MAX_AI_CALLS : opts.maxAiCalls) - aiLeft;
 
+  // l'historique des lectures est gardé 60 jours
+  const oldStats = await db.collection('news_stats').where('date', '<', new Date(now.getTime() - 60 * 864e5).toISOString()).limit(200).get();
+  for (const d of oldStats.docs) await db.collection('news_stats').doc(d.id).delete();
   // nettoyage : les articles de plus de KEEP_HOURS heures ne servent plus
   const old = await db.collection('news').where('date', '<', cutoff).limit(200).get();
   for (const d of old.docs) await db.collection('news').doc(d.id).delete();

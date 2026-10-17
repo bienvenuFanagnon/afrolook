@@ -71,11 +71,18 @@ function pickNews(rc, items, n, teamIds) {
 }
 
 /** Page de détail d'une actu sur notre site (/actus/info-{id}) : l'article d'origine y est cité, avec sa source et son lien. */
+/** Nombre de lectures d'une actu, abrégé (1 250 → 1,2 k) ; vide s'il n'y en a pas encore. */
+const readsTag = (rc, x) => {
+  const n = Number(x && x.vues) || 0;
+  if (n < 1) return '';
+  const v = n >= 1000 ? `${(Math.floor(n / 100) / 10).toString().replace('.', rc.lang === 'en' ? '.' : ',')}\u00a0k` : String(n);
+  return ` · 👁 ${v}`;
+};
 const storyPath = (rc, x) => rc.u('article', { slug: `info-${x.id}` });
 
 const newsLink = (rc, x) => {
   const thumb = x.image ? `<span class="nwi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="72" height="72" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
-  return `<a class="nw${x.image ? ' has' : ''}" href="${storyPath(rc, x)}">${thumb}<span class="nwt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></span></a>`;
+  return `<a class="nw${x.image ? ' has' : ''}" href="${storyPath(rc, x)}">${thumb}<span class="nwt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}${readsTag(rc, x)}</small><span>${esc(x.titre)}</span></span></a>`;
 };
 
 function timeAgo(rc, iso) {
@@ -92,20 +99,49 @@ function newsList(rc, list, recap) {
   if (!ext.length && !recap) return '';
   // deux éléments au plus : notre dernier « point foot » (s'il existe) puis une actu, sans pub entre eux
   const cards = (recap ? [recapCard(rc, recap)] : []).concat(ext.map((x) => newsLink(rc, x)));
-  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${cards.join('')}</div>${recap ? `<a class="more-btn" href="${rc.u('news')}">${rc.t.pfSeeAll} <i aria-hidden="true">→</i></a>` : ''}</div>`;
+  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${cards.join('')}</div>${recap ? `<a class="more-btn" href="${rc.u('news')}">${rc.t.pfSeeAll} <i aria-hidden="true">→</i></a>` : ''}${newsAllBtn(rc)}</div>`;
 }
+
+/** Bouton vers la page « Toutes les actus foot ». */
+const newsAllBtn = (rc) => `<a class="more-btn" href="${rc.u('newsall')}">${rc.t.newsAllBtn} <i aria-hidden="true">→</i></a>`;
 
 /** Une actu seule, juste après une pub de la liste des matchs. */
 const newsOne = (rc, x) => (x ? `<div class="nwv one">${newsLink(rc, x)}</div>` : '');
 
 /** Fin de l'accueil : les autres actus en grand format (grande image, titre large ; deux colonnes sur ordinateur). */
+/** Carte en grand format d'une actu (grande image, titre large). */
+const newsCard = (rc, x) => {
+  const img = x.image ? `<span class="nbi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="640" height="360" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
+  return `<a class="nbc" href="${storyPath(rc, x)}">${img}<span class="nbt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}${readsTag(rc, x)}</small><b>${esc(x.titre)}</b></span></a>`;
+};
 function newsBig(rc, list) {
   if (!list || !list.length) return '';
-  const card = (x) => {
-    const img = x.image ? `<span class="nbi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="640" height="360" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
-    return `<a class="nbc" href="${storyPath(rc, x)}">${img}<span class="nbt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><b>${esc(x.titre)}</b></span></a>`;
-  };
-  return `<div class="nwb nbig"><div class="lbl">${rc.t.newsMore}</div><div class="nbg">${list.map(card).join('')}</div></div>`;
+  return `<div class="nwb nbig"><div class="lbl">${rc.t.newsMore}</div><div class="nbg">${list.map((x) => newsCard(rc, x)).join('')}</div>${newsAllBtn(rc)}</div>`;
+}
+
+/** Bloc « Actus foot » des pages coupon et bilan : deux actus et le bouton vers la page de toutes les actus. */
+function newsStrip(rc, news) {
+  const list = pickNews(rc, news, 2);
+  return list.length ? `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${list.map((x) => newsLink(rc, x)).join('')}</div>${newsAllBtn(rc)}</div>` : '';
+}
+
+/** Page « Toutes les actus foot » : toutes les actus gardées, 20 par page, avec une pub au milieu. */
+const NEWS_PER_PAGE = 20;
+function newsAll(rc, { items, page }) {
+  const t = rc.t;
+  const list = pickNews(rc, items, 500);
+  const pages = Math.max(1, Math.ceil(list.length / NEWS_PER_PAGE));
+  const pg = Math.min(Math.max(1, page || 1), pages);
+  const part = list.slice((pg - 1) * NEWS_PER_PAGE, pg * NEWS_PER_PAGE);
+  const grid = (arr) => (arr.length ? `<div class="nbg">${arr.map((x) => newsCard(rc, x)).join('')}</div>` : '');
+  const pager = pages > 1
+    ? `<nav class="pgr" aria-label="${esc(t.naPage(pg, pages))}">${pg > 1 ? `<a class="btn sec" href="${rc.u('newsall', pg - 1)}" rel="prev">${t.naPrev}</a>` : '<span></span>'}<span class="note">${t.naPage(pg, pages)}</span>${pg < pages ? `<a class="btn sec" href="${rc.u('newsall', pg + 1)}" rel="next">${t.naNext}</a>` : '<span></span>'}</nav>`
+    : '';
+  const content = part.length
+    ? `<div class="nwb nbig">${grid(part.slice(0, 6))}</div>${part.length > 6 ? `${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}<div class="nwb nbig">${grid(part.slice(6))}</div>` : ''}${pager}`
+    : `<div class="box"><p>${t.naEmpty}</p></div>`;
+  const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('home')}">${esc(rc.site.nom)}</a> › ${t.newsTitle}</nav><div class="layout"><div class="col"><div class="hero"><h1>${t.naH1}</h1><p>${t.naP}</p><a class="more-btn" href="${rc.u('news')}" style="margin-top:10px">${t.naRecap} <i aria-hidden="true">→</i></a></div>${adResponsive(rc, 'haut', 'ad-top')}${content}${listEnd(rc, 'actus-liste-fin')}</div>${sideColumn(rc, {})}</div></div>`;
+  return { title: pg > 1 ? `${t.naTitle} · ${t.naPage(pg, pages)}` : t.naTitle, description: t.naDesc, path: rc.u('newsall', pg), alternates: alts(rc, 'newsall'), body, active: 'actus', noindex: true };
 }
 
 /** Fiche d'un match : infos lues par l'IA (avec source) puis jusqu'à 3 titres qui parlent d'une des deux équipes. */
@@ -115,7 +151,7 @@ function matchNews(rc, items, m) {
   const facts = (m.prono && m.prono.actu && m.prono.actu.faits) || [];
   if (!list.length && !facts.length) return '';
   const factsHtml = facts.length ? `<ul class="fk">${facts.map((f) => `<li>${esc(rc.t.fact(f))}<a href="${esc(f.lien)}" target="_blank" rel="nofollow noopener noreferrer">${esc(f.source)}</a></li>`).join('')}</ul><p class="note" style="margin:6px 0 10px">${rc.t.newsFactsNote}</p>` : '';
-  return `<div class="box"><div class="lbl">${facts.length ? rc.t.newsFacts : rc.t.newsTeams}</div>${factsHtml}${list.length ? `<div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p>` : ''}</div>`;
+  return `<div class="box"><div class="lbl">${facts.length ? rc.t.newsFacts : rc.t.newsTeams}</div>${factsHtml}${list.length ? `<div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p>${newsAllBtn(rc)}` : ''}</div>`;
 }
 
 /** Bilan : réussite selon les signaux affichés (seulement quand il y a assez de pronostics concernés). */
@@ -347,7 +383,7 @@ function newsIndex(rc, { articles }) {
   const list = articles.length
     ? articles.map((a, i) => recapCard(rc, a) + (i === 1 && articles.length > 3 ? adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) : '')).join('')
     : `<div class="box"><p>${t.pfEmpty}</p></div>`;
-  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.pfIndexH1}</h1><p>${t.pfIndexP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}<div class="rcl">${list}</div>${listEnd(rc, 'actus-fin')}</div>${sideColumn(rc, {})}</div></div>`;
+  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.pfIndexH1}</h1><p>${t.pfIndexP}</p>${newsAllBtn(rc)}</div>${adResponsive(rc, 'haut', 'ad-top')}<div class="rcl">${list}</div>${listEnd(rc, 'actus-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.pfIndexTitle, description: t.pfIndexDesc, path: rc.u('news'), alternates: alts(rc, 'news'), body, active: 'actus' };
 }
 
@@ -418,14 +454,14 @@ function story(rc, { n, matches, related, recap, flash }) {
   const ours = (matches || []).length
     ? `<div class="box"><div class="lbl">${t.stOurs}</div><p class="note" style="margin:8px 0">${t.stOursP}</p><div class="oml">${matches.map((m) => `<a class="om" href="${rc.u('match', m)}"><b>${esc(titleOf(m))}</b><span class="pk">${m.prono && m.prono.principal && m.prono.visible !== false ? `${esc(pickLabel(rc, m))} · ${pct(rc, m.prono.principal.confiance)}${isFragile(m) ? ` · ⚠ ${t.fragileLbl}` : ''}` : esc(t.inPrep)}</span><span class="more sm">${t.pfDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div>${notes(first)}</div>`
     : '';
-  const rel = (related || []).length ? `<div class="box"><div class="lbl">${t.stMore}</div><div class="nwl">${related.map((x) => newsLink(rc, x)).join('')}</div></div>` : '';
+  const rel = (related || []).length ? `<div class="box"><div class="lbl">${t.stMore}</div><div class="nwl">${related.map((x) => newsLink(rc, x)).join('')}</div>${newsAllBtn(rc)}</div>` : '';
   const more = !ours && (flash || []).length
     ? `<div class="box"><div class="lbl">${t.stFlash}</div><div class="oml">${flash.map((m) => `<a class="om" href="${rc.u('match', m)}"><b>${esc(titleOf(m))}</b><span class="pk">${esc(pickLabel(rc, m))} · ${pct(rc, m.prono.principal.confiance)}</span><span class="more sm">${t.pfDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div></div>`
     : '';
   const pf = recap ? `<div class="box"><div class="lbl">${t.pfTitle}</div>${recapCard(rc, recap)}<a class="more-btn" href="${rc.u('news')}">${t.pfSeeAll} <i aria-hidden="true">→</i></a></div>` : '';
   const wa = `https://wa.me/?text=${encodeURIComponent(`${n.titre} ${C.url(rc, path)}`)}`;
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('home')}">${esc(rc.site.nom)}</a> › <a href="${rc.u('news')}">${t.newsTitle}</a> › ${esc(n.source)}</nav>` +
-    `<div class="layout"><div class="col"><article class="art">${media}<h1>${esc(n.titre)}</h1><p class="meta">${esc(date)} · ${t.stSource} ${esc(n.source)}</p>${factHtml}${excerpt}${out}${essential}` +
+    `<div class="layout"><div class="col"><article class="art" data-news="${esc(n.id)}">${media}<h1>${esc(n.titre)}</h1><p class="meta">${esc(date)} · ${t.stSource} ${esc(n.source)} · <span class="nvues" data-n="${Number(n.vues) || 0}" data-one="${esc(t.stReads(1).replace(/^1 /, ''))}" data-many="${esc(t.stReads(2).replace(/^2 /, ''))}"${n.vues > 0 ? '' : ' hidden'}>👁 ${t.stReads(Number(n.vues) || 0)}</span></p>${factHtml}${excerpt}${out}${essential}` +
     `<p class="note">${t.stNote(esc(n.source))}</p>${adResponsive(rc, 'haut', 'ad-top')}${ours}${more}${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}${rel}${pf}${aflCard(rc, 'actu', 0)}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.pfShare}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div><p class="note">${t.pfDisclaimer}</p></article>${listEnd(rc, 'actu-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   // page d'accompagnement : utile aux lecteurs, mais l'article de référence est celui de la source : pas d'indexation
@@ -540,7 +576,7 @@ function couponHistoryBox(rc, coupons) {
     (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
 }
 
-function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, signaux }) {
+function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, signaux, news }) {
   const t = rc.t;
   const W = 560, H = 140;
   const pts = weeks.map((w) => w.taux);
@@ -566,12 +602,12 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, s
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
     couponHistoryBox(rc, coupons) + signalBox(rc, signaux) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
-    `${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
+    `${newsStrip(rc, news)}${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };
 }
 
 /** Page coupon : composition côté navigateur, avec coupons proposés rendus côté serveur. */
-function couponPage(rc, { pool }) {
+function couponPage(rc, { pool, news }) {
   const t = rc.t;
   const sugg = suggestions(rc, pool, true);
   const data = pool.slice(0, 16).map((m) => ({
@@ -582,7 +618,7 @@ function couponPage(rc, { pool }) {
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.couponH1}</h1><p>${t.couponP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}` +
     `<div class="box"><div class="lbl">${t.proposed}</div><div class="sg">${sugg || `<p class="note">${t.proposedEmpty}</p>`}</div><p class="note" style="margin-top:8px">${t.neverWeak}</p></div>` +
     `${adResponsive(rc, 'fin', 'ad-end')}${channelBanner(rc, 'coupon')}` +
-    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${C.shareBox(rc, 'coupon')}${C.mailBox(rc, 'coupon')}<p class="note">${t.couponDisclaimer}</p></div>` +
+    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${newsStrip(rc, news)}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${C.shareBox(rc, 'coupon')}${C.mailBox(rc, 'coupon')}<p class="note">${t.couponDisclaimer}</p></div>` +
     `<aside class="side"><div class="sticky"><div class="cp" id="pf-cpanel"></div>${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, 'coupon', 0)}</div></aside></div></div>${jsonScript('pf-pool', data)}`;
   return { title: t.couponTitle, description: t.couponDesc, path: rc.u('coupon'), alternates: alts(rc, 'coupon'), body, active: 'coupon' };
 }
@@ -604,4 +640,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { newsIndex, notifPage, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { newsIndex, newsAll, notifPage, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
