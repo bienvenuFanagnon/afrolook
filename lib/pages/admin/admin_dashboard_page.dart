@@ -26,6 +26,7 @@ import 'influencer_requests_page.dart';
 import 'moderation_reports_page.dart';
 import 'official_accounts_page.dart';
 import 'payment_methods_admin_page.dart';
+import 'payment_logs_admin_page.dart';
 import 'remuneration_admin_page.dart';
 import 'quiz_admin_page.dart';
 import 'stickers/admin_stickers_page.dart';
@@ -562,6 +563,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.favorite_rounded, 'Afrolove', const Color(0xFFD6204A), 0, AdminDatingProfilesPage()),
       _Module(Icons.mail_rounded, 'Emailing', c.textSecondary, 0, AdminEmailScreen()),
       _Module(Icons.payment_rounded, 'Moyens de paiement', c.primary, 0, const PaymentMethodsAdminPage()),
+      _Module(Icons.monitor_heart_rounded, 'Suivi des paiements', c.danger, 0, const PaymentLogsAdminPage()),
       _Module(Icons.groups_rounded, 'Groupe Afrolook', c.info, 0, const AfrolookGroupMigrationPage()),
       _Module(Icons.school_rounded, 'Tutoriels', c.supportAccent, 0, const TutoListPage(showAll: true)),
       _Module(Icons.alternate_email_rounded, 'Pseudos', c.info, 0, const PseudoMigrationPage()),

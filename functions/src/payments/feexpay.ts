@@ -2,6 +2,7 @@ import { onCall, HttpsError, onRequest } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import axios from "axios";
 import { db } from "../shared/firebase";
+import { logPayment } from "./paymentLog";
 import {
   generateFeexpayTransKeyAfrolook,
   generateDepositNumberAfrolook,
@@ -94,6 +95,7 @@ export const initiateAfrolookFeexpayPayment = onCall(
 
     } catch (error: any) {
       console.error("Erreur initiateAfrolookFeexpayPayment:", error);
+      if (!(error instanceof HttpsError)) await logPayment({ provider: "feexpay", step: "initiate", ok: false, uid: request.auth?.uid, message: error?.message });
       throw new HttpsError("internal", error.message);
     }
   }
@@ -173,6 +175,7 @@ export const executeAfrolookFeexpayPayment = onCall(
 
     } catch (error: any) {
       console.error("Erreur executeAfrolookFeexpayPayment:", error.response?.data || error.message);
+      await logPayment({ provider: "feexpay", step: "execute", ok: false, uid: request.auth?.uid, code: error.response?.status, message: error.response?.data?.message || error.message });
       throw new HttpsError("internal", error.response?.data?.message || error.message);
     }
   }
@@ -284,6 +287,7 @@ async function processSuccessfulFeexpayTransaction(
       ...extraData,
     });
   });
+  await logPayment({ provider: "feexpay", step: "credit", ok: true, uid: userId, amount: totalAmount, currency: "XOF", reference });
 }
 
 /**
@@ -335,6 +339,7 @@ export const afrolookFeexpayWebhook = onRequest(
 
       if (isFailed) {
         console.log(`Paiement échoué: ${reference}`);
+        await logPayment({ provider: "feexpay", step: "webhook", ok: false, reference, code: "FAILED", message: payload.reason || "Paiement refusé par l'opérateur" });
 
         const pendingQuery = await db.collection("pending_afrolook_feexpay_deposits")
           .where("reference", "==", reference)
@@ -391,6 +396,7 @@ export const afrolookFeexpayWebhook = onRequest(
 
     } catch (error: any) {
       console.error("Erreur webhook Afrolook FeexPay:", error);
+      await logPayment({ provider: "feexpay", step: "webhook", ok: false, message: error?.message });
       res.status(500).json({ error: "Erreur interne", message: error.message });
     }
   }
@@ -476,6 +482,7 @@ export const checkAfrolookFeexpayTransactionStatus = onCall(
 
         } else if (apiStatus === "FAILED") {
           console.log(`Paiement échoué: ${reference}`);
+          await logPayment({ provider: "feexpay", step: "check", ok: false, reference, code: "FAILED", message: response.data.reason || "Paiement refusé par l'opérateur" });
           await pendingDocRef.update({
             status: "failed",
             processedAt: FieldValue.serverTimestamp(),
@@ -488,6 +495,7 @@ export const checkAfrolookFeexpayTransactionStatus = onCall(
         }
       } catch (apiError) {
         console.error("Erreur API FeexPay:", apiError);
+        await logPayment({ provider: "feexpay", step: "check", ok: false, reference, message: (apiError as any)?.message || "API FeexPay injoignable" });
         return { status: "pending", success: false, pending: true, message: "Vérification en cours..." };
       }
 

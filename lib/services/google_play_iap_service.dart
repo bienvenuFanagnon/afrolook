@@ -1,3 +1,4 @@
+import 'payment_report.dart';
 import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -90,6 +91,7 @@ class GooglePlayIapService extends ChangeNotifier {
       );
     } on PlatformException catch (e) {
       debugPrint('GooglePlayIapService.buy: $e');
+      PaymentReport.send(provider: 'google_play', step: 'buy', code: e.code, message: e.message ?? e);
       _finishUi(const PlayIapEvent(PlayIapEventType.error,
           message: "L'achat n'a pas pu démarrer. Réessaie dans un instant."));
     }
@@ -102,10 +104,12 @@ class GooglePlayIapService extends ChangeNotifier {
           _events.add(const PlayIapEvent(PlayIapEventType.pending, message: 'Achat en attente de validation par Google Play.'));
           break;
         case PurchaseStatus.canceled:
+          PaymentReport.send(provider: 'google_play', step: 'purchase', code: 'canceled', message: 'Achat annulé par la personne', expected: true);
           await _complete(purchase);
           _finishUi(const PlayIapEvent(PlayIapEventType.canceled));
           break;
         case PurchaseStatus.error:
+          PaymentReport.send(provider: 'google_play', step: 'purchase', code: purchase.error?.code, message: purchase.error?.message ?? 'Achat en erreur');
           await _complete(purchase);
           _finishUi(const PlayIapEvent(PlayIapEventType.error, message: "L'achat n'a pas abouti. Tu n'as pas été débité."));
           break;
@@ -130,6 +134,7 @@ class GooglePlayIapService extends ChangeNotifier {
       onCoinsCredited?.call();
       _finishUi(PlayIapEvent(PlayIapEventType.success, coins: coins));
     } on FirebaseFunctionsException catch (e) {
+      if (!{'invalid-argument', 'failed-precondition', 'permission-denied'}.contains(e.code)) PaymentReport.send(provider: 'google_play', step: 'verify', code: e.code, message: e.message ?? e);
       const definitive = {'invalid-argument', 'failed-precondition', 'permission-denied'};
       if (definitive.contains(e.code)) {
         await _complete(purchase);
@@ -143,6 +148,7 @@ class GooglePlayIapService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('GooglePlayIapService._deliver: $e');
+      PaymentReport.send(provider: 'google_play', step: 'verify', code: 'client', message: e);
       _finishUi(const PlayIapEvent(PlayIapEventType.error,
           message: 'Paiement reçu, mais la validation a échoué. Tes pièces seront créditées automatiquement '
               "au prochain lancement de l'app."));

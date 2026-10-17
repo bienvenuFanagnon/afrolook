@@ -3,6 +3,7 @@ import { defineSecret } from "firebase-functions/params";
 import { FieldValue } from "firebase-admin/firestore";
 import { AppStoreServerAPIClient, Environment, APIException } from "@apple/app-store-server-library";
 import { db } from "../shared/firebase";
+import { withPaymentLog } from "./paymentLog";
 import { appAccountTokenFor, lockFieldsAfterChange } from "../shared/coin_locks";
 import { recordCoinSale } from "./coinPurchase";
 
@@ -90,7 +91,7 @@ async function fetchAppleTransaction(transactionId: string): Promise<AppleTransa
  */
 export const verifyApplePurchase = onCall(
   { secrets: [APPLE_IAP_PRIVATE_KEY, APPLE_IAP_KEY_ID, APPLE_IAP_ISSUER_ID], timeoutSeconds: 30, memory: "256MiB" },
-  async (request) => {
+  withPaymentLog("apple", async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentification requise.");
     const uid = request.auth.uid;
     const transactionId = String((request.data as { transactionId?: unknown })?.transactionId ?? "");
@@ -182,7 +183,7 @@ export const verifyApplePurchase = onCall(
       if (amountPaid !== null && currency) recordCoinSale(t, now, coins, amountPaid, currency, netEstimate ?? undefined);
       return { success: true, coins };
     });
-  }
+  })
 );
 
 /**

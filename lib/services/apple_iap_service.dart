@@ -1,3 +1,4 @@
+import 'payment_report.dart';
 import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -90,6 +91,7 @@ class AppleIapService extends ChangeNotifier {
       );
     } on PlatformException catch (e) {
       debugPrint('AppleIapService.buy: $e');
+      PaymentReport.send(provider: 'apple', step: 'buy', code: e.code, message: e.message ?? e);
       _finishUi(const AppleIapEvent(AppleIapEventType.error,
           message: "L'achat n'a pas pu démarrer. Réessaie dans un instant."));
     }
@@ -103,10 +105,12 @@ class AppleIapService extends ChangeNotifier {
               message: "Achat en attente de validation par Apple."));
           break;
         case PurchaseStatus.canceled:
+          PaymentReport.send(provider: 'apple', step: 'purchase', code: 'canceled', message: 'Achat annulé par la personne', expected: true);
           await _complete(purchase);
           _finishUi(const AppleIapEvent(AppleIapEventType.canceled));
           break;
         case PurchaseStatus.error:
+          PaymentReport.send(provider: 'apple', step: 'purchase', code: purchase.error?.code, message: purchase.error?.message ?? 'Achat en erreur');
           await _complete(purchase);
           _finishUi(const AppleIapEvent(AppleIapEventType.error,
               message: "L'achat n'a pas abouti. Tu n'as pas été débité."));
@@ -131,6 +135,7 @@ class AppleIapService extends ChangeNotifier {
       onCoinsCredited?.call();
       _finishUi(AppleIapEvent(AppleIapEventType.success, coins: coins));
     } on FirebaseFunctionsException catch (e) {
+      if (!{'invalid-argument', 'failed-precondition', 'permission-denied'}.contains(e.code)) PaymentReport.send(provider: 'apple', step: 'verify', code: e.code, message: e.message ?? e);
       const definitive = {'invalid-argument', 'failed-precondition', 'permission-denied'};
       if (definitive.contains(e.code)) {
         await _complete(purchase);
@@ -144,6 +149,7 @@ class AppleIapService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('AppleIapService._deliver: $e');
+      PaymentReport.send(provider: 'apple', step: 'verify', code: 'client', message: e);
       _finishUi(const AppleIapEvent(AppleIapEventType.error,
           message: "Paiement reçu, mais la validation a échoué. Tes pièces seront créditées automatiquement "
               "au prochain lancement de l'app."));
