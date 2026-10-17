@@ -267,14 +267,15 @@ test('accueil téléphone : la bannière du haut reste dans le premier écran, u
   const h = (await route(db, '/', NOW)).body;
   const iHaut = h.indexOf('data-ad="haut"'), iExploit = h.indexOf('Nos derniers coupons gagnants'), iFlash = h.indexOf('Flash du jour'), iCoupons = h.indexOf('Coupons flash');
   assert.ok(iHaut > 0 && (iExploit < 0 || iHaut < iExploit), 'bannière du haut avant les coupons gagnants');
-  // une seule pub native dans le haut de l'accueil, DANS la liste verticale d'actus (jamais deux pubs d'affilée), après le canal WhatsApp et avant le flash du jour
+  // une seule pub native dans le haut de l'accueil, DANS la liste verticale d'actus (jamais deux pubs d'affilée), après les coupons flash
   const nativeTop = h.indexOf('data-ad="native"');
   const nwv = h.indexOf('class="nwv"');
-  assert.ok(nwv > iHaut && nativeTop > nwv && nativeTop < iFlash, 'pub native dans la liste d\'actus, avant le flash du jour');
+  const iMatchs = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
+  assert.ok(nwv > iCoupons && nativeTop > nwv && nativeTop < iMatchs, 'pub native dans la liste d\'actus, après les coupons flash');
   const cardsBefore = (h.slice(nwv, nativeTop).match(/class="nw( has)?"/g) || []).length;
-  const cardsAfter = (h.slice(nativeTop, iFlash).match(/class="nw( has)?"/g) || []).length;
+  const cardsAfter = (h.slice(nativeTop, iMatchs).match(/class="nw( has)?"/g) || []).length;
   assert.ok(cardsBefore >= 1 && cardsAfter >= 1, 'la pub est entourée d\'actus');
-  assert.equal((h.slice(0, iFlash).match(/data-ad="native"/g) || []).length, 1, 'pas de deuxième pub native dans le haut de page');
+  assert.equal((h.slice(0, iMatchs).match(/data-ad="native"/g) || []).length, 1, 'pas de deuxième pub native dans le haut de page');
   const b = (await route(db, '/bilan', NOW)).body;
   assert.ok((b.match(/data-ad="/g) || []).length >= 3, 'haut, milieu et fin sur la page Bilan');
   assert.match(b, /data-ad="fin"/);

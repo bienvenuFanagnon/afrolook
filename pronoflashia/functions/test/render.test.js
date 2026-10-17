@@ -297,7 +297,7 @@ test('actualités : coupées dans l\'admin ou trop peu de titres → aucun bloc'
   assert.ok(!(await route(d2, '/', NOW)).body.includes('Actus foot'));
 });
 
-test('accueil : bilan en tête seulement s\'il est bon, actualités verticales juste après la pub du haut et le canal WhatsApp', async () => {
+test('accueil : bilan en tête seulement s\'il est bon, actualités verticales juste après les coupons flash', async () => {
   // le jeu d'exemple n'a que 28 pronostics terminés : on ajoute une semaine plus ancienne pour passer le seuil de 30
   await db.seed('bilan_days', '2026-10-10', { jour: '2026-10-10', delta: Object.assign({}, db.all('bilan_days')[0].delta, { matches: 20, principal: { n: 20, ok: 14 } }) });
   D.clearCache();
@@ -306,7 +306,7 @@ test('accueil : bilan en tête seulement s\'il est bon, actualités verticales j
   assert.ok(h.indexOf('class="bhero"') < h.indexOf('Flash du jour') || h.indexOf('class="bhero"') < h.indexOf('class="lbl"'), 'bilan avant le reste');
   const firstCard = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
   const news = h.indexOf('class="nwb"');
-  assert.ok(news > 0 && news < h.indexOf('Flash du jour') && news < firstCard, 'actualités en haut de page, avant le flash du jour et la liste des matchs');
+  assert.ok(news > h.indexOf('Coupons flash') && news < firstCard, 'actualités juste après les coupons flash, avant la liste des matchs');
   assert.ok((h.match(/class="mc|class="match/g) || []).length >= 0);
   // images et aperçus vidéo
   assert.match(h, /class="nwi"><img src="\/img\/afl[14]\.jpg"/);

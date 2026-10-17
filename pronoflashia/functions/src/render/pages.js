@@ -123,9 +123,9 @@ function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP} <a href="${rc.u('legal', 'a-propos')}" class="hmore">${t.heroMore} →</a></p></div>` +
-    // ordre : bilan (s'il est bon), pub du haut (dans le premier écran du téléphone), coupons gagnants, canal WhatsApp, actus verticales (avec une pub au milieu),
-    // puis le flash du jour et les coupons flash, puis les matchs
-    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${newsList(rc, news)}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    // ordre : bilan (s'il est bon), pub du haut (dans le premier écran du téléphone), coupons gagnants, canal WhatsApp, flash du jour, coupons flash,
+    // puis les actus verticales (avec une pub au milieu), puis les matchs
+    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}${newsList(rc, news)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',
