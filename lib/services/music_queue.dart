@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -126,6 +127,11 @@ class MusicQueue {
   /// Pub plein écran « entre deux titres » (branchée par l'interface, qui connaît l'utilisateur).
   static Future<void> Function()? interstitialHook;
 
+  /// Playlist en cours de lecture (ses écoutes sont comptées aussi pour elle), null hors playlist.
+  static String? _playlistId;
+  static String? get playlistId => _playlistId;
+  static String? _streamCountedKey; // titre dont l'écoute (30 s) est déjà comptée pour cette lecture
+
   static List<MusicTrack> _queue = const [];
   static int _index = -1;
   static int _gen = 0;
@@ -146,6 +152,7 @@ class MusicQueue {
     if (!_doneWired) {
       _doneWired = true;
       SoundPreview.completed.listen(_onCompleted);
+      SoundPreview.position.listen(_onPosition);
     }
     if (_wired) return;
     try {
@@ -173,8 +180,9 @@ class MusicQueue {
   // ── Lancer ──
 
   /// Lance [queue] au titre [index]. Les titres suivants de la liste sont ceux du « suivant » (ou de l'aléatoire).
-  static Future<bool> play(List<MusicTrack> queue, int index, {bool interstitial = true}) async {
+  static Future<bool> play(List<MusicTrack> queue, int index, {bool interstitial = true, String? playlistId}) async {
     start();
+    _playlistId = playlistId;
     if (queue.isEmpty || index < 0 || index >= queue.length) return false;
     _queue = List.unmodifiable(queue);
     _index = index;
@@ -195,10 +203,27 @@ class MusicQueue {
     return play([t], 0, interstitial: interstitial);
   }
 
+  // ── Écoutes (streams) : une écoute = 30 secondes de lecture, comptée une fois par lecture ; le serveur limite à 1 par 10 min et par titre ──
+
+  static void _onPosition(Duration p) {
+    if (p.inSeconds < 30) return;
+    final t = current.value;
+    if (t == null || !t.isArtist || t.isMine || _streamCountedKey == t.key) return;
+    if (SoundPreview.playing.value != t.key) return;
+    _countStream(t);
+  }
+
+  static void _countStream(MusicTrack t) {
+    _streamCountedKey = t.key;
+    if (FirebaseAuth.instance.currentUser == null) return;
+    unawaited(FirebaseFunctions.instance.httpsCallable('musicStream').call<dynamic>({'soundId': t.id, 'playlistId': _playlistId}).then<void>((_) {}, onError: (_) {}));
+  }
+
   static Future<bool> _startCurrent({required bool interstitial}) async {
     final t = _queue[_index];
     final gen = ++_gen;
     current.value = t;
+    _streamCountedKey = null;
     previewEnded.value = false;
     loading.value = true;
     var ok = false;
@@ -342,6 +367,7 @@ class MusicQueue {
   /// Ferme le lecteur : coupe le son et vide la file.
   static Future<void> close() async {
     _gen++;
+    _playlistId = null;
     _queue = const [];
     _index = -1;
     _history.clear();
@@ -362,6 +388,7 @@ class MusicQueue {
   static void _onCompleted(String key) {
     final t = current.value;
     if (t == null || t.key != key) return;
+    if (t.isArtist && !t.isMine && _streamCountedKey != t.key) _countStream(t); // l'extrait de 30 s est écouté en entier
     if (previewMode.value) {
       unawaited(_onPreviewEnded(t));
       return;
