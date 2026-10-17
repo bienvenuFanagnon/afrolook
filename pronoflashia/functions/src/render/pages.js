@@ -140,7 +140,7 @@ function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP} <a href="${rc.u('legal', 'a-propos')}" class="hmore">${t.heroMore} →</a></p></div>` +
     // ordre : bilan (s'il est bon), pub du haut (dans le premier écran du téléphone), coupons gagnants, canal WhatsApp, flash du jour, coupons flash,
     // puis les actus verticales (avec une pub au milieu), puis les matchs
-    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}${newsList(rc, newsTop)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, null, () => newsOne(rc, newsInList.shift())) + listEnd(rc, 'accueil-fin') + newsBig(rc, newsInList.splice(0).concat(allNews.slice(8, 16))) : emptyDay(rc)}` +
+    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}${newsList(rc, newsTop)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, null, () => newsOne(rc, newsInList.shift())) + newsBig(rc, newsInList.splice(0).concat(allNews.slice(8, 16))) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',

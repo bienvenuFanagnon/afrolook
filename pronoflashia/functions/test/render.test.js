@@ -378,6 +378,8 @@ test('accueil : actus réparties sans doublon — deux sous les coupons flash, u
   // fin de page : grand format
   const big = h.indexOf('class="nwb nbig"');
   assert.ok(big > h.lastIndexOf('class="mc"'), 'bloc en grand format après la liste des matchs');
+  const beforeBig = h.slice(Math.max(0, big - 400), big);
+  assert.ok(!/data-ad=|class="afl"/.test(beforeBig.slice(beforeBig.lastIndexOf('</a>'))), 'aucune pub juste avant le bloc d\'actus en grand format (les pubs de fin viennent après)');
   assert.match(h.slice(big), /class="nbc"[^>]*>[\s\S]*?class="nbi/);
   assert.match(h.slice(big), /Toutes les actus foot/);
   assert.ok((h.slice(big).match(/class="nbc"/g) || []).length >= 4);
