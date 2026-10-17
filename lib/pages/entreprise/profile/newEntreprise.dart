@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+﻿import '../../../services/media_shrink.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -212,7 +213,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                     'post_media/${Path.basename(File(imageProfile!.path).path)}');
 
                                 UploadTask uploadTask = storageReference
-                                    .putFile(File(imageProfile!.path)!);
+                                    .putFile(await MediaShrink.file(File(imageProfile!.path)!));
                                 await uploadTask.whenComplete(() async {
                                   await storageReference
                                       .getDownloadURL()

@@ -1,3 +1,4 @@
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -171,7 +172,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       String? imageUrl;
       if (_groupImageBytes != null) {
         final ref = FirebaseStorage.instance.ref().child('group_images/$groupId.jpg');
-        await ref.putData(_groupImageBytes!);
+        await ref.putData(await MediaShrink.bytes(_groupImageBytes!));
         imageUrl = await ref.getDownloadURL();
       }
 

@@ -1,3 +1,4 @@
+import '../../../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/language_selector.dart';
 import 'package:afrotok/services/auth/google_auth_service.dart';
 import 'package:afrotok/services/sessions/session_service.dart';
@@ -379,8 +380,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
       if (kIsWeb) {
         // Pour le web : upload avec les bytes
-        uploadTask = storageReference.putData(
-          _imageBytes!,
+        uploadTask = storageReference.putData(await MediaShrink.bytes(_imageBytes!),
           SettableMetadata(
             contentType: 'image/jpeg',
             customMetadata: {'pickedFileName': _imageFileName ?? 'web_image.jpg'},
@@ -388,8 +388,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         );
       } else {
         // Pour mobile : upload avec le fichier
-        uploadTask = storageReference.putFile(
-          _imageFile!,
+        uploadTask = storageReference.putFile(await MediaShrink.file(_imageFile!),
           SettableMetadata(contentType: 'image/jpeg'),
         );
       }

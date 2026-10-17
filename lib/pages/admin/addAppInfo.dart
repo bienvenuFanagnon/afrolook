@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/layout/centered_content.dart';
+﻿import '../../services/media_shrink.dart';
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -118,8 +119,7 @@ class _NewAppInfoState extends State<NewAppInfo> {
           .ref()
           .child('informations/$postId/$fileName');
 
-      final UploadTask uploadTask = storageRef.putFile(
-        imageFile,
+      final UploadTask uploadTask = storageRef.putFile(await MediaShrink.file(imageFile),
         SettableMetadata(
           contentType: 'image/jpeg',
         ),

@@ -1,3 +1,4 @@
+import '../../../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
@@ -296,15 +297,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (kIsWeb) {
         // Pour le web, utiliser les bytes
-        uploadTask = storageReference.putData(
-          _imageBytes!,
+        uploadTask = storageReference.putData(await MediaShrink.bytes(_imageBytes!),
           SettableMetadata(
             contentType: 'image/jpeg',
           ),
         );
       } else {
         // Pour mobile, utiliser le fichier
-        uploadTask = storageReference.putFile(_imageFile!);
+        uploadTask = storageReference.putFile(await MediaShrink.file(_imageFile!));
       }
 
       TaskSnapshot snapshot = await uploadTask;

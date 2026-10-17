@@ -1,5 +1,6 @@
 ﻿// lib/pages/creator/creator_register_page.dart
 
+import '../../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -78,7 +79,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
       try {
         final fileName = 'creator_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final ref = _storage.ref().child('creator_profiles').child(fileName);
-        await ref.putData(_selectedImageBytes!);
+        await ref.putData(await MediaShrink.bytes(_selectedImageBytes!));
         return await ref.getDownloadURL();
       } catch (e) {
         printVm('❌ Erreur upload image (web): $e');
@@ -89,7 +90,7 @@ class _CreatorRegisterPageState extends State<CreatorRegisterPage> {
       try {
         final fileName = 'creator_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final ref = _storage.ref().child('creator_profiles').child(fileName);
-        await ref.putFile(_selectedImageFile!);
+        await ref.putFile(await MediaShrink.file(_selectedImageFile!));
         return await ref.getDownloadURL();
       } catch (e) {
         printVm('❌ Erreur upload image (mobile): $e');

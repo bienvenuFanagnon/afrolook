@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/name_preview.dart';
@@ -661,7 +662,7 @@ class _NewCanalState extends State<NewCanal> {
           Reference storageReferenceProfile = FirebaseStorage.instance
               .ref()
               .child('canal_media/${Path.basename(File(imageProfile!.path).path)}');
-          UploadTask uploadTaskProfile = storageReferenceProfile.putFile(File(imageProfile!.path));
+          UploadTask uploadTaskProfile = storageReferenceProfile.putFile(await MediaShrink.file(File(imageProfile!.path)));
           await uploadTaskProfile.whenComplete(() async {
             await storageReferenceProfile.getDownloadURL().then((fileURL) {
               canal.urlImage = fileURL;
@@ -672,7 +673,7 @@ class _NewCanalState extends State<NewCanal> {
           Reference storageReferenceCouverture = FirebaseStorage.instance
               .ref()
               .child('canal_media/${Path.basename(File(imageCouverture!.path).path)}');
-          UploadTask uploadTaskCouverture = storageReferenceCouverture.putFile(File(imageCouverture!.path));
+          UploadTask uploadTaskCouverture = storageReferenceCouverture.putFile(await MediaShrink.file(File(imageCouverture!.path)));
           await uploadTaskCouverture.whenComplete(() async {
             await storageReferenceCouverture.getDownloadURL().then((fileURL) {
               canal.urlCouverture = fileURL;

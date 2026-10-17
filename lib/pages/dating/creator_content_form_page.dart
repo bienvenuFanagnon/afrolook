@@ -1,5 +1,6 @@
 ﻿// lib/pages/creator/creator_content_form_page.dart
 
+import '../../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -189,14 +190,14 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
       final fileName = 'creator_${DateTime.now().millisecondsSinceEpoch}.${_mediaType == MediaType.image ? 'jpg' : 'mp4'}';
       final path = 'creator_contents/${_mediaType == MediaType.image ? 'images' : 'videos'}/$fileName';
       final ref = _storage.ref().child(path);
-      await ref.putData(_selectedMediaBytes!);
+      await ref.putData(await MediaShrink.bytes(_selectedMediaBytes!));
       return await ref.getDownloadURL();
     } else {
       if (_selectedMediaFile == null) return null;
       final fileName = 'creator_${DateTime.now().millisecondsSinceEpoch}.${_mediaType == MediaType.image ? 'jpg' : 'mp4'}';
       final path = 'creator_contents/${_mediaType == MediaType.image ? 'images' : 'videos'}/$fileName';
       final ref = _storage.ref().child(path);
-      await ref.putFile(_selectedMediaFile!);
+      await ref.putFile(await MediaShrink.file(_selectedMediaFile!));
       return await ref.getDownloadURL();
     }
   }

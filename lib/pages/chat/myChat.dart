@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -848,7 +849,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final ext = file.name.split('.').last.toLowerCase();
       final ref = FirebaseStorage.instance.ref().child(
           'chat_images/${file.name}_${DateTime.now().millisecondsSinceEpoch}');
-      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'image/$ext'));
+      final snap = await ref.putData(await MediaShrink.bytes(bytes), SettableMetadata(contentType: 'image/$ext'));
       final fileURL = await snap.ref.getDownloadURL();
 
       final reply = ReplyMessage(
@@ -893,7 +894,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final Uint8List bytes = await file.readAsBytes();
       final ref = FirebaseStorage.instance.ref().child(
           'chat_videos/${file.name}_${DateTime.now().millisecondsSinceEpoch}');
-      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'video/mp4'));
+      final snap = await ref.putData(await MediaShrink.bytes(bytes), SettableMetadata(contentType: 'video/mp4'));
       final fileURL = await snap.ref.getDownloadURL();
 
       final reply = ReplyMessage(
@@ -1009,7 +1010,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       for (final img in _multiImages) {
         final ref = FirebaseStorage.instance.ref().child(
             'chat_images/${p.basename(img.path)}_${DateTime.now().millisecondsSinceEpoch}');
-        final snap = await ref.putFile(img);
+        final snap = await ref.putFile(await MediaShrink.file(img));
         urls.add(await snap.ref.getDownloadURL());
       }
 
@@ -1193,7 +1194,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           'chat_images/${p.basename(_image!.path)}_${DateTime.now().millisecondsSinceEpoch}'
       );
 
-      UploadTask uploadTask = storageReference.putFile(_image!);
+      UploadTask uploadTask = storageReference.putFile(await MediaShrink.file(_image!));
       TaskSnapshot snapshot = await uploadTask;
       String fileURL = await snapshot.ref.getDownloadURL();
 
@@ -1270,7 +1271,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           'chat_audio/audio_${DateTime.now().millisecondsSinceEpoch}.m4a'
       );
 
-      UploadTask uploadTask = storageReference.putFile(File(audioPath));
+      UploadTask uploadTask = storageReference.putFile(await MediaShrink.file(File(audioPath)));
       TaskSnapshot snapshot = await uploadTask;
       String fileURL = await snapshot.ref.getDownloadURL();
 

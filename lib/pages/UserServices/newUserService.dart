@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -271,8 +272,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
           .ref()
           .child('services/$serviceId/$fileName');
 
-      final UploadTask uploadTask = storageRef.putFile(
-        imageFile,
+      final UploadTask uploadTask = storageRef.putFile(await MediaShrink.file(imageFile),
         SettableMetadata(contentType: 'image/jpeg'),
       );
 

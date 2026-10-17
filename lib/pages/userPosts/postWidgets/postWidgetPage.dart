@@ -680,7 +680,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
     setState(() { _isPreviewPlaying = true; _showPreviewCta = false; });
     try {
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(_optimizeUrl(url)));
       _previewController = ctrl;
       await ctrl.initialize();
       if (!mounted) return;
@@ -3864,7 +3864,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         // On attend la fin de la génération avant de continuer
         await checkAndGenerateThumbnail(
           postId: widget.post.id!,
-          videoUrl: widget.post.url_media!,
+          videoUrl: _optimizeUrl(widget.post.url_media!),
           currentThumbnail: widget.post.thumbnail,
         );
       }

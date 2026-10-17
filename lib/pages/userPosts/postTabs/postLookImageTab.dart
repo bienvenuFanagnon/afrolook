@@ -1,4 +1,5 @@
 // Dart imports:
+import '../../../services/media_shrink.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -380,11 +381,11 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
         post.categorie = "CANAL";
       }
 
-      File file = await _convertUint8ListToFile(_imageBytes!);
+      File file = await _convertUint8ListToFile(await MediaShrink.imageBytes(_imageBytes!));
 
       final String uniqueFileName = Uuid().v4();
       Reference storageReference = FirebaseStorage.instance.ref().child('post_media/$uniqueFileName.jpg');
-      await storageReference.putFile(file);
+      await storageReference.putFile(await MediaShrink.file(file));
       String fileURL = await storageReference.getDownloadURL();
 
       final colorData = await extractColorsFromImageUrl(fileURL);

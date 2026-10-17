@@ -1,3 +1,4 @@
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'group_revenue_card.dart';
@@ -207,7 +208,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_covers/${widget.groupId}.jpg');
-      await ref.putData(bytes);
+      await ref.putData(await MediaShrink.bytes(bytes));
       final url = await ref.getDownloadURL();
 
       await FirebaseFirestore.instance

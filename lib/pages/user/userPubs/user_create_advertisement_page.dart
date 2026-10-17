@@ -1,5 +1,6 @@
 ﻿// user_create_advertisement_page.dart
 
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -355,9 +356,9 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       final ref = FirebaseStorage.instance.ref().child(fileName);
       UploadTask uploadTask;
       if (kIsWeb && _customThumbnailBytes != null) {
-        uploadTask = ref.putData(_customThumbnailBytes!, SettableMetadata(contentType: 'image/jpeg'));
+        uploadTask = ref.putData(await MediaShrink.bytes(_customThumbnailBytes!), SettableMetadata(contentType: 'image/jpeg'));
       } else if (_customThumbnailFile != null) {
-        uploadTask = ref.putFile(File(_customThumbnailFile!.path));
+        uploadTask = ref.putFile(await MediaShrink.file(File(_customThumbnailFile!.path)));
       } else {
         return null;
       }
@@ -476,15 +477,15 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
             final tempDir = await getTemporaryDirectory();
             final file = File('${tempDir.path}/${Uuid().v4()}.jpg');
             await file.writeAsBytes(img);
-            await ref.putFile(file);
+            await ref.putFile(await MediaShrink.file(file));
             mediaUrls.add(await ref.getDownloadURL());
           }
         } else {
           final videoFileName = 'ad_videos/${Uuid().v4()}.mp4';
           final videoRef = FirebaseStorage.instance.ref().child(videoFileName);
           UploadTask uploadTask = _videoFile != null
-              ? videoRef.putFile(File(_videoFile!.path))
-              : videoRef.putData(_videoBytes!);
+              ? videoRef.putFile(await MediaShrink.file(File(_videoFile!.path)))
+              : videoRef.putData(await MediaShrink.bytes(_videoBytes!));
           uploadTask.snapshotEvents.listen((snap) {
             if (mounted) setState(() => _uploadProgress = snap.bytesTransferred / snap.totalBytes);
           });
@@ -493,7 +494,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
             thumbnailUrl = await _uploadCustomThumbnail();
           } else if (_localThumbnailPath != null) {
             final thumbRef = FirebaseStorage.instance.ref().child('ad_thumbnails/${Uuid().v4()}.jpg');
-            await thumbRef.putFile(File(_localThumbnailPath!));
+            await thumbRef.putFile(await MediaShrink.file(File(_localThumbnailPath!)));
             thumbnailUrl = await thumbRef.getDownloadURL();
           }
         }

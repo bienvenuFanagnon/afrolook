@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 // lib/pages/dating/dating_chat_page.dart
 
@@ -262,9 +263,9 @@ class _DatingChatPageState extends State<DatingChatPage>
           'dating_chat_images/${now}.jpg');
 
       if (kIsWeb && _selectedImageBytes != null) {
-        await storageRef.putData(_selectedImageBytes!);
+        await storageRef.putData(await MediaShrink.bytes(_selectedImageBytes!));
       } else if (_selectedImageFile != null) {
-        await storageRef.putFile(_selectedImageFile!);
+        await storageRef.putFile(await MediaShrink.file(_selectedImageFile!));
       } else {
         throw Exception(AppLocalizations.of(context).datingNoImageSelected);
       }
@@ -312,7 +313,7 @@ class _DatingChatPageState extends State<DatingChatPage>
     try {
       final storageRef = FirebaseStorage.instance.ref().child(
           'dating_chat_audio/audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
-      await storageRef.putFile(File(audioPath));
+      await storageRef.putFile(await MediaShrink.file(File(audioPath)));
       final audioUrl = await storageRef.getDownloadURL();
 
       final now = DateTime.now().millisecondsSinceEpoch;

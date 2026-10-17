@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import '../../utils/count_format.dart';
 import 'dart:async';
 import 'dart:io';
@@ -428,7 +429,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
   Future<String?> _uploadFile(File file, String fileName, String folder) async {
     try {
       final Reference storageRef = _storage.ref().child('$folder/$fileName');
-      final UploadTask uploadTask = storageRef.putFile(file);
+      final UploadTask uploadTask = storageRef.putFile(await MediaShrink.file(file));
 
       final completer = Completer<TaskSnapshot>();
 

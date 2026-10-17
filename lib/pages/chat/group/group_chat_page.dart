@@ -1,3 +1,4 @@
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1076,7 +1077,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_images/${widget.groupId}/$msgId.jpg');
-      await ref.putData(bytes);
+      await ref.putData(await MediaShrink.bytes(bytes));
       final url = await ref.getDownloadURL();
 
       await _firestore.collection('GroupMessages').doc(msgId).set({
@@ -1157,7 +1158,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           final ref = FirebaseStorage.instance
               .ref()
               .child('group_images/${widget.groupId}/${msgId}_${e.key}.jpg');
-          await ref.putData(bytes);
+          await ref.putData(await MediaShrink.bytes(bytes));
           return await ref.getDownloadURL();
         }),
       );
@@ -1290,7 +1291,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_videos/${widget.groupId}/$msgId.mp4');
-      await ref.putData(bytes);
+      await ref.putData(await MediaShrink.bytes(bytes));
       final url = await ref.getDownloadURL();
 
       await _firestore.collection('GroupMessages').doc(msgId).set({

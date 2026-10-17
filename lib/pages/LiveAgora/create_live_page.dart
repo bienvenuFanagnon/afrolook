@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import '../../utils/platform_guard.dart';
 import 'dart:async';
@@ -1667,7 +1668,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('live_covers/${_auth.currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(_coverImageFile!);
+      await ref.putFile(await MediaShrink.file(_coverImageFile!));
       final url = await ref.getDownloadURL();
       if (mounted) setState(() => _coverImageUrl = url);
     } catch (_) {} finally {

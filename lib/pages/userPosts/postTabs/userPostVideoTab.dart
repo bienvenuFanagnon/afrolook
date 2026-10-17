@@ -1,3 +1,4 @@
+import '../../../services/media_shrink.dart';
 import '../../../services/template_link.dart';
 import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -392,9 +393,9 @@ class _UserPubVideoState extends State<UserPubVideo> {
       final ref = FirebaseStorage.instance.ref().child(fileName);
       UploadTask uploadTask;
       if (kIsWeb && _customThumbnailBytes != null) {
-        uploadTask = ref.putData(_customThumbnailBytes!, SettableMetadata(contentType: 'image/jpeg'));
+        uploadTask = ref.putData(await MediaShrink.bytes(_customThumbnailBytes!), SettableMetadata(contentType: 'image/jpeg'));
       } else if (_customThumbnailFile != null) {
-        uploadTask = ref.putFile(File(_customThumbnailFile!.path));
+        uploadTask = ref.putFile(await MediaShrink.file(File(_customThumbnailFile!.path)));
       } else {
         return null;
       }
@@ -1424,7 +1425,7 @@ class _UserPubVideoState extends State<UserPubVideo> {
     try {
       final fileName = 'thumbnails/thumb_${authProvider.loginUserData.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
-      final uploadTask = ref.putFile(thumbnailFile);
+      final uploadTask = ref.putFile(await MediaShrink.file(thumbnailFile));
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
@@ -1467,9 +1468,18 @@ class _UserPubVideoState extends State<UserPubVideo> {
       Reference storageReference = FirebaseStorage.instance.ref().child('post_videos/$fileName');
       UploadTask uploadTask;
       if (kIsWeb && _videoBytes != null) {
-        uploadTask = storageReference.putData(_videoBytes!, SettableMetadata(contentType: 'video/mp4', customMetadata: {'originalName': _videoFileName ?? 'web_video.mp4', 'uploadedBy': authProvider.loginUserData.id ?? 'unknown'}));
+        uploadTask = storageReference.putData(await MediaShrink.bytes(_videoBytes!), SettableMetadata(contentType: 'video/mp4', customMetadata: {'originalName': _videoFileName ?? 'web_video.mp4', 'uploadedBy': authProvider.loginUserData.id ?? 'unknown'}));
       } else if (_videoFile != null) {
-        uploadTask = storageReference.putFile(File(_videoFile!.path));
+        // Réduit la vidéo (720p) avant l'envoi : moins de stockage et surtout moins de données pour chaque spectateur
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            duration: Duration(seconds: 20),
+            content: Text("Optimisation de la vidéo avant l'envoi…", textAlign: TextAlign.center),
+          ));
+        }
+        final toSend = await MediaShrink.video(File(_videoFile!.path));
+        if (mounted) ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        uploadTask = storageReference.putFile(toSend);
       } else {
         throw Exception("Format de vidéo non supporté");
       }

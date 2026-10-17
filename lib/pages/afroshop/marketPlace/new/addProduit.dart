@@ -1,3 +1,4 @@
+import '../../../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -1349,7 +1350,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
         }
         final videoRef = FirebaseStorage.instance.ref()
             .child('videos_article/${Path.basename(_videoFile!.path)}');
-        await videoRef.putFile(File(_videoFile!.path));
+        await videoRef.putFile(await MediaShrink.file(File(_videoFile!.path)));
         final rawVideoUrl = await videoRef.getDownloadURL();
         annonceRegisterData.videoUrl = authProvider.convertToCdnUrl(rawVideoUrl, authProvider.appDefaultData);
         annonceRegisterData.videoDurationSec = _videoDurationSec;
@@ -1360,7 +1361,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
         Reference storageReference = FirebaseStorage.instance.ref().child(
             'images_article/${Path.basename(File(_image.path).path)}');
 
-        UploadTask uploadTask = storageReference.putFile(File(_image.path)!);
+        UploadTask uploadTask = storageReference.putFile(await MediaShrink.file(File(_image.path)!));
         await uploadTask.whenComplete(() async {
           await storageReference.getDownloadURL().then((fileURL) {
             final cdnUrl = authProvider.convertToCdnUrl(fileURL, authProvider.appDefaultData);

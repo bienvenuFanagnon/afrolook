@@ -1,5 +1,6 @@
 ﻿// providers/chronique_provider.dart
 
+import '../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -117,7 +118,7 @@ class ChroniqueProvider with ChangeNotifier {
       final ext = file.path.split('.').last.toLowerCase();
       final fileName = '$folder/${DateTime.now().millisecondsSinceEpoch}.$ext';
       final storageRef = _storage.ref().child(fileName);
-      final uploadTask = storageRef.putFile(file);
+      final uploadTask = storageRef.putFile(await MediaShrink.file(file));
 
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
         final progress = snapshot.bytesTransferred / snapshot.totalBytes;

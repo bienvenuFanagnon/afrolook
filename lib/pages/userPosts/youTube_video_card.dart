@@ -1,3 +1,4 @@
+import '../../services/media_shrink.dart';
 import '../../widgets/studio/post_template_try.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:flutter/services.dart';
@@ -610,7 +611,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       final fileName = 'thumbnails/thumb_${widget.post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
       final bytes = await XFile(thumbnailFile).readAsBytes();
-      final uploadTask = ref.putData(bytes);
+      final uploadTask = ref.putData(await MediaShrink.bytes(bytes));
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
