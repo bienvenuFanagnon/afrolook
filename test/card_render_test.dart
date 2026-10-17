@@ -242,7 +242,7 @@ void main() {
       for (final t in CardTemplateId.values) {
         final png = await render(tester, source(images: 1), withTemplate(st, t, images: (t == CardTemplateId.promo || t == CardTemplateId.birthday || t == CardTemplateId.wedding) ? 1 : 0));
         expect(png.length > 10000, true, reason: '${st.name} ${t.name}');
-        if (out != null && (t.isCreator || t == CardTemplateId.event)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
+        if (out != null && (t.isCreator || t == CardTemplateId.event || t == CardTemplateId.thanks)) File('$out/modele_${t.name}_${st.name}.png').writeAsBytesSync(png);
       }
     }
     for (final f in CardFormat.values) {
@@ -251,6 +251,21 @@ void main() {
       if (out != null) File('$out/modele_ad_wax_${f.name}.png').writeAsBytesSync(png);
     }
   }, timeout: const Timeout(Duration(minutes: 8)));
+
+  testWidgets('carte « Merci pour vos abonnés » : avec et sans photo, plusieurs styles et formats', (tester) async {
+    for (final st in [CardStyleId.neon, CardStyleId.wax, CardStyleId.kente, CardStyleId.glass, CardStyleId.magazine, CardStyleId.pro]) {
+      for (final images in [0, 1]) {
+        final png = await render(tester, source(images: 1), withTemplate(st, CardTemplateId.thanks, images: images));
+        expect(png.length > 10000, true, reason: '${st.name} $images');
+        if (out != null) File('$out/merci_${st.name}_$images.png').writeAsBytesSync(png);
+      }
+    }
+    for (final f in CardFormat.values) {
+      final png = await render(tester, source(images: 1), withTemplate(CardStyleId.neon, CardTemplateId.thanks, images: 1, format: f));
+      expect(png.length > 10000, true, reason: f.name);
+      if (out != null) File('$out/merci_neon_${f.name}.png').writeAsBytesSync(png);
+    }
+  }, timeout: const Timeout(Duration(minutes: 5)));
 
   test('chiffres courts : 1400 devient 1,4k', () {
     expect(compactCount(0, lang: 'fr'), '0');
@@ -280,6 +295,19 @@ void main() {
     final spec = withTemplate(CardStyleId.neon, CardTemplateId.birthday);
     expect(spec.templateSummary(), contains('Joyeux anniversaire'));
     expect(spec.linkFor(source()), source().link);
+  });
+
+  test('carte « Merci pour vos abonnés » : champs, sans lien, comptée comme un modèle à part', () {
+    final t = CardTemplateId.thanks;
+    expect(t.isThanks, true);
+    expect(t.isWish, false);
+    expect(t.hasLink, false); // pas de lien à saisir : le QR mène au profil de la personne
+    expect(t.fields.map((f) => f.key), containsAll(['heading', 'count', 'unit', 'message', 'from']));
+    expect(t.fields.first.main, true);
+    final spec = withTemplate(CardStyleId.neon, t);
+    expect(spec.field('count'), '10 000');
+    expect(spec.templateSummary(), startsWith('Merci à vous !'));
+    expect(spec.templateSummary(), contains('10 000'));
   });
 
   test('carte de visite : champs, QR vers le profil par défaut', () {

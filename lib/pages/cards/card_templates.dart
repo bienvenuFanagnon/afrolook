@@ -38,7 +38,9 @@ class _TemplateContent extends StatelessWidget {
     final t = spec.template!;
     final compact = spec.format == CardFormat.square && args.hasImage;
     final ink = _PosterInk.of(theme);
-    final body = t.isWish
+    final body = t.isThanks
+        ? _ThanksBody(args: args, ink: ink)
+        : t.isWish
         ? _WishBody(args: args, ink: ink)
         : t.isCreator
             ? _CreatorBody(args: args, ink: ink)
@@ -498,6 +500,107 @@ class _CreatorBody extends StatelessWidget {
                 Padding(padding: const EdgeInsets.only(top: 1), child: Icon(f.icon, size: 16, color: ink.accent)),
                 const SizedBox(width: 8),
                 Expanded(child: Text(spec.field(f.key), maxLines: 2, overflow: TextOverflow.ellipsis, style: body)),
+              ]),
+            ),
+        ]),
+      );
+    });
+  }
+}
+
+
+/// Carte de remerciement pour un cap d'abonnés : « Merci à vous ! », la photo ronde, le grand nombre (« 10 000 abonnés »),
+/// un message et la signature. Sans photo sur la carte, la photo de profil de la personne est utilisée.
+class _ThanksBody extends StatelessWidget {
+  const _ThanksBody({required this.args, required this.ink});
+  final _Args args;
+  final _PosterInk ink;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = args.spec, theme = args.theme, source = args.source;
+    final heading = spec.field('heading');
+    final count = spec.field('count');
+    final unit = spec.field('unit');
+    final message = spec.field('message');
+    final from = spec.field('from');
+    final photo = args.hasImage ? args.fit(0) : (source.avatar != null ? FitImage(image: source.avatar!) : null);
+    final headStyle = args.style(TextStyle(fontFamily: theme.headFont, color: ink.fg, fontWeight: FontWeight.w800));
+    final countStyle = args.style(TextStyle(fontFamily: theme.headFont, color: ink.accent, fontWeight: FontWeight.w900));
+    final bodyStyle = args.style(TextStyle(color: ink.fg.withOpacity(0.92), fontWeight: FontWeight.w500, fontStyle: FontStyle.italic));
+    return LayoutBuilder(builder: (context, box) {
+      final tall = box.maxHeight > 250;
+      return ClipRect(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.favorite_rounded, size: 18, color: ink.accent),
+            const SizedBox(width: 6),
+            Icon(Icons.auto_awesome_rounded, size: 14, color: ink.accent),
+          ]),
+          const SizedBox(height: 4),
+          if (heading.isNotEmpty)
+            SizedBox(
+              height: tall ? 46 : 34,
+              width: double.infinity,
+              child: _FitText(text: heading, style: headStyle, maxSize: 28, minSize: 14, align: TextAlign.center, glow: theme.glow),
+            ),
+          if (photo != null) ...[
+            const SizedBox(height: 6),
+            Expanded(
+              flex: 4,
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ink.accent.withOpacity(0.45), width: 2)),
+                    child: Container(
+                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ink.accent, width: 3)),
+                      clipBehavior: Clip.antiAlias,
+                      child: ClipOval(child: photo),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          // le grand nombre : c'est lui qui fait la carte
+          Expanded(
+            flex: photo != null ? 3 : 6,
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Expanded(
+                child: SizedBox(width: double.infinity, child: _FitText(text: count, style: countStyle, maxSize: 72, minSize: 24, align: TextAlign.center, glow: theme.glow)),
+              ),
+              if (unit.isNotEmpty)
+                Text(unit.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: ink.fg, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 3, fontFamily: theme.headFont)),
+            ]),
+          ),
+          if (message.isNotEmpty)
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Align(alignment: Alignment.center, child: _FitText(text: message, style: bodyStyle, maxSize: 15, minSize: 11, align: TextAlign.center)),
+              ),
+            )
+          else
+            const Spacer(),
+          if (from.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Container(width: 18, height: 2, color: ink.accent),
+                const SizedBox(width: 8),
+                Flexible(
+                    child: Text(from,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: ink.accent, fontSize: 14, fontWeight: FontWeight.w800, fontFamily: theme.headFont))),
+                const SizedBox(width: 8),
+                Container(width: 18, height: 2, color: ink.accent),
               ]),
             ),
         ]),

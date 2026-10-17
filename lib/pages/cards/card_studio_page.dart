@@ -1,3 +1,4 @@
+import '../../services/follower_milestone.dart';
 import '../../services/template_link.dart';
 import 'dart:typed_data';
 
@@ -85,6 +86,11 @@ class _CardStudioPageState extends State<CardStudioPage> {
       format: CardFormat.portrait,
       imageOrder: List<int>.generate(_source.images.length.clamp(0, 3), (i) => i),
     );
+    // Ouvert sur un modèle (puces « Ou commence par un modèle », « Essayer ce modèle ») : champs pré-remplis, onglet Modèle
+    if (widget.initialTemplate != null) {
+      _applyTemplate(widget.initialTemplate);
+      _tab = _tabs.indexOf('Modèle');
+    }
     _textCtl.text = _source.text;
     if (widget.defiPostId != null && widget.presetPostId != null) {
       _spec.voteText = tr('Vote pour moi');
@@ -749,6 +755,12 @@ class _CardStudioPageState extends State<CardStudioPage> {
       }
       // carte de visite : le nom de la personne est déjà connu
       if (t.isCreator && _source.pseudo.isNotEmpty) _spec.fields['name'] = _source.pseudo;
+      // remerciement : le nombre d'abonnés atteint (le dernier palier franchi) et la signature sont déjà connus
+      if (t.isThanks) {
+        final m = FollowerMilestone.reached(_source.followers);
+        if (m != null) _spec.fields['count'] = FollowerMilestone.format(m);
+        if (_source.pseudo.isNotEmpty) _spec.fields['from'] = '${tr('Avec tout mon cœur')}, ${_source.pseudo}';
+      }
     }
     _captureDone = false;
     _syncTemplateText();
