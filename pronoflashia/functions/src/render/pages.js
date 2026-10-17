@@ -79,11 +79,16 @@ function timeAgo(rc, iso) {
   return h < 1 ? rc.t.newsNow : h < 24 ? rc.t.newsHours(h) : rc.t.newsDays(Math.round(h / 24));
 }
 
-/** Accueil : une ligne de cartes à balayer (≈ 90 px de haut) insérée entre les pronostics, liens vers les sites d'origine. */
-function newsStrip(rc, items) {
-  const list = pickNews(rc, items, 8);
+/**
+ * Accueil : liste verticale d'actus (4 cartes avec miniature, hauteur contrôlée) avec une pub au milieu, juste après la pub du haut
+ * et le widget du canal WhatsApp. Chaque carte renvoie vers le site d'origine.
+ */
+function newsList(rc, items) {
+  const list = pickNews(rc, items, 4);
   if (list.length < 3) return '';
-  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nws" role="list">${list.map((x) => `<div role="listitem">${newsLink(rc, x)}</div>`).join('')}</div></div>`;
+  const cards = list.map((x) => newsLink(rc, x));
+  cards.splice(2, 0, adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }));
+  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${cards.join('')}</div></div>`;
 }
 
 /** Fiche d'un match : infos lues par l'IA (avec source) puis jusqu'à 3 titres qui parlent d'une des deux équipes. */
@@ -117,9 +122,10 @@ function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
-    `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP}</p></div>` +
-    // la bannière du haut passe juste après le bilan : elle reste dans le premier écran du téléphone ; d'autres emplacements coupent les longs blocs qui suivent
-    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}${flashCoupons(rc, couponPool)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, newsStrip(rc, news)) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
+    `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP} <a href="${rc.u('legal', 'a-propos')}" class="hmore">${t.heroMore} →</a></p></div>` +
+    // ordre : bilan (s'il est bon), pub du haut (dans le premier écran du téléphone), coupons gagnants, canal WhatsApp, actus verticales (avec une pub au milieu),
+    // puis le flash du jour et les coupons flash, puis les matchs
+    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${newsList(rc, news)}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool) + listEnd(rc, 'accueil-fin') : emptyDay(rc)}` +
     `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',

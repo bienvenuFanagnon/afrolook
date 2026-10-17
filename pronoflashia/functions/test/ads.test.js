@@ -193,9 +193,9 @@ test('page coupon : bannières fixes (haut, après les coupons proposés, avant 
   assert.equal(sanitizeAds({ emplacements: { coupon_liste: { actif: true, every: 4 } } }).emplacements.coupon_liste.every, 4);
 });
 
-test('menu pour téléphone (Football, Coupon, Bilan, À propos) sur toutes les pages, page courante marquée, anglais compris', async () => {
+test('menu pour téléphone (Pronostics, Coupon, Bilan, À propos) sur toutes les pages, page courante marquée, anglais compris', async () => {
   const db = await withAds({ actif: false, afrolook: { actif: false }, emplacements: {} });
-  for (const [path, current, label] of [['/', 'football', 'Football'], ['/coupon', 'coupon', 'Coupon'], ['/bilan', 'bilan', 'Bilan']]) {
+  for (const [path, current, label] of [['/', 'football', 'Pronostics'], ['/coupon', 'coupon', 'Coupon'], ['/bilan', 'bilan', 'Bilan']]) {
     const html = (await route(db, path, NOW)).body;
     const nav = /<nav class="mnav"[^>]*>([\s\S]*?)<\/nav>/.exec(html);
     assert.ok(nav, `menu téléphone sur ${path}`);
@@ -267,8 +267,14 @@ test('accueil téléphone : la bannière du haut reste dans le premier écran, u
   const h = (await route(db, '/', NOW)).body;
   const iHaut = h.indexOf('data-ad="haut"'), iExploit = h.indexOf('Nos derniers coupons gagnants'), iFlash = h.indexOf('Flash du jour'), iCoupons = h.indexOf('Coupons flash');
   assert.ok(iHaut > 0 && (iExploit < 0 || iHaut < iExploit), 'bannière du haut avant les coupons gagnants');
+  // une seule pub native dans le haut de l'accueil, DANS la liste verticale d'actus (jamais deux pubs d'affilée), après le canal WhatsApp et avant le flash du jour
   const nativeTop = h.indexOf('data-ad="native"');
-  assert.ok(nativeTop > iFlash && nativeTop < iCoupons, 'une pub entre le flash du jour et les coupons flash');
+  const nwv = h.indexOf('class="nwv"');
+  assert.ok(nwv > iHaut && nativeTop > nwv && nativeTop < iFlash, 'pub native dans la liste d\'actus, avant le flash du jour');
+  const cardsBefore = (h.slice(nwv, nativeTop).match(/class="nw( has)?"/g) || []).length;
+  const cardsAfter = (h.slice(nativeTop, iFlash).match(/class="nw( has)?"/g) || []).length;
+  assert.ok(cardsBefore >= 1 && cardsAfter >= 1, 'la pub est entourée d\'actus');
+  assert.equal((h.slice(0, iFlash).match(/data-ad="native"/g) || []).length, 1, 'pas de deuxième pub native dans le haut de page');
   const b = (await route(db, '/bilan', NOW)).body;
   assert.ok((b.match(/data-ad="/g) || []).length >= 3, 'haut, milieu et fin sur la page Bilan');
   assert.match(b, /data-ad="fin"/);
