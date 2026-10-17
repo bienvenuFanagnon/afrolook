@@ -566,3 +566,8 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .stess dd a{color:var(--cy)}
 .stess .chip{display:inline-block;margin:0 6px 6px 0;padding:3px 10px;border-radius:999px;background:var(--s2);border:1px solid var(--line);font-size:12.5px}
 .stess .chip.s{border-color:var(--flash);color:var(--flash)}
+
+/* page « Toutes les actus » */
+.pgr{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0}
+.pgr .btn{padding:10px 14px;font-size:14px}
+.hero .more-btn{display:inline-flex}

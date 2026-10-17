@@ -99,6 +99,17 @@ async function news(db, now) {
   });
 }
 
+/** Toutes les actus gardées (96 h), les plus récentes d'abord : page « Toutes les actus ». */
+async function newsAll(db, now) {
+  return cached(`newsall:${now.toISOString().slice(0, 15)}`, 300e3, async () => {
+    const cfg = await db.collection('config').doc('news').get();
+    const c = cfg.exists ? cfg.data() : {};
+    if (c.actif === false) return [];
+    const snap = await db.collection('news').where('date', '>=', new Date(now.getTime() - 96 * 3600e3).toISOString()).get();
+    return snap.docs.map((d) => (c.images === false ? Object.assign({}, d.data(), { image: null }) : d.data())).sort((a, b) => (a.date < b.date ? 1 : -1));
+  });
+}
+
 /** Une actu par identifiant (page de détail). */
 async function newsById(db, id) {
   const d = await db.collection('news').doc(String(id)).get();
@@ -132,4 +143,4 @@ async function pool(db, now, hours = 96) {
   return list.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
 }
 
-module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, newsById, newsEnabled, articles, articleBySlug, pool };
+module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, newsAll, newsById, newsEnabled, articles, articleBySlug, pool };

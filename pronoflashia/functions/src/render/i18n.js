@@ -20,6 +20,7 @@ function pathFor(lang, name, arg) {
     case 'bilan': return en ? '/en/track-record' : '/bilan';
     case 'coupon': return `${pre}/coupon`;
     case 'news': return en ? '/en/news' : '/actus';
+    case 'newsall': return `${en ? '/en/football-news' : '/actualites'}${arg && arg > 1 ? `/${arg}` : ''}`;
     case 'notifs': return en ? '/en/notifications' : '/notifications';
     case 'article': return `${en ? '/en/news' : '/actus'}/${arg.slug}`;
     case 'legal': return en ? `/en/${LEGAL_SLUGS[arg]}` : `/${arg}`;
@@ -43,6 +44,7 @@ function parsePath(path) {
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
     if (seg[0] === 'news') return { lang, name: 'news' };
     if (seg[0] === 'notifications') return { lang, name: 'notifs' };
+    if (seg[0] === 'football-news') return { lang, name: 'newsall', arg: 1 };
     if (LEGAL_FR[seg[0]]) return { lang, name: 'legal', arg: LEGAL_FR[seg[0]] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -52,11 +54,13 @@ function parsePath(path) {
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
     if (seg[0] === 'actus') return { lang, name: 'news' };
     if (seg[0] === 'notifications') return { lang, name: 'notifs' };
+    if (seg[0] === 'actualites') return { lang, name: 'newsall', arg: 1 };
     if (LEGAL_SLUGS[seg[0]]) return { lang, name: 'legal', arg: seg[0] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
   }
   if (seg[0] === (lang === 'en' ? 'news' : 'actus') && seg.length === 2 && /^[a-z0-9-]{3,80}$/.test(seg[1])) return { lang, name: 'article', arg: seg[1] };
+  if (seg[0] === (lang === 'en' ? 'football-news' : 'actualites') && seg.length === 2 && /^\d{1,3}$/.test(seg[1])) return { lang, name: 'newsall', arg: Math.max(1, Number(seg[1])) };
   if (seg[0] !== 'football') return { lang, name: 'unknown' };
   if (seg.length === 1) return { lang, name: 'football' };
   if (seg.length === 2) {
@@ -118,6 +122,8 @@ const T = {
     mlTitle: 'Coupons VIP par e-mail, toujours gratuits', mlP: "Bientôt : chaque matin, un récapitulatif complet dans ta boîte mail (les coupons du jour, les matchs à suivre et le point foot). Aucun paiement, aucun abonnement payant. Laisse ton adresse pour être prévenu(e) dès l'ouverture des envois.", mlEmail: 'Ton adresse e-mail', mlConsent: "J'accepte de recevoir par e-mail les coupons, pronostics et actus de PronoFlash IA. Je peux me désinscrire à tout moment. Mes données sont traitées selon la", mlPriv: 'politique de confidentialité', mlBtn: "Je m'inscris", mlOk: "Merci ! Ton adresse est enregistrée : on te prévient dès que les envois démarrent.", mlBad: 'Vérifie ton adresse e-mail et coche la case d\'accord.', mlErr: 'Inscription impossible pour le moment. Réessaie plus tard.',
     stCredit: (src) => `Image : ${src}`, stPlay: 'Lire la vidéo', stEssential: "L'essentiel", stPublished: 'Publié', stTopics: 'Sujets', stTopicNames: { star: 'Star du foot', club: 'Grand club', enfant: 'Relève des légendes', talent: 'Jeune talent', classico: 'Classico / derby', transfert: 'Mercato', record: 'Record', vie: 'Vie de star', scandale: 'Polémique' }, stEvery: 'Tout ce qui est publié ici vient du site cité : nous ne reprenons que le titre, un extrait, l\'image d\'aperçu et la vidéo qu\'il propose, avec le lien pour tout lire.', stMore: 'Plus d\'actus',
     abShareTitle: 'Partager cette page', abShareP: "Envoie la présentation de PronoFlash IA dans tes groupes et sur ton canal WhatsApp : le message contient l'essentiel du site et le lien affiche un aperçu avec le titre, la description et l'image.", abShareMsg: "⚡ PronoFlash IA : pronostics de foot gratuits, faits par une IA qui apprend chaque équipe.\n✅ Coupons du jour et analyse de chaque match\n📊 Bilan public : nos réussites ET nos ratés\n🔔 Alertes sur tes équipes et actus foot\n🚫 Aucun pari pris, aucun gain promis · 18+\n👉 Découvre le site :",
+    stReads: (n) => `${n} ${n > 1 ? 'lectures' : 'lecture'}`,
+    naTitle: 'Toutes les actus foot', naH1: 'Toutes les actus foot', naP: "Les dernières actualités du football relevées chez nos sources, des plus récentes aux plus anciennes : un clic ouvre notre page de l'actu, avec l'image, l'extrait et le lien vers l'article complet.", naDesc: "Toutes les actualités football du moment (mercato, stars, matchs, Afrique), avec la source et le lien de chaque article.", newsAllBtn: 'Voir toutes les actus foot', naPrev: '← Plus récentes', naNext: 'Plus anciennes →', naPage: (a, b) => `Page ${a} sur ${b}`, naEmpty: "Aucune actualité pour le moment : elles arrivent toutes les 2 heures.", naRecap: "Le point foot du soir",
     ibxTitle: 'Mes notifications', ibxH1: 'Mes notifications', ibxP: "Retrouve ici les notifications reçues sur cet appareil, lues ou non. Pas de compte à créer : la liste est liée à ce navigateur.", ibxLoading: 'Chargement…',
     bellOff: 'Recevoir les coupons du jour en notification', bellOn: 'Notifications activées : toucher pour voir tes notifications', followLbl: 'Alertes avant leurs matchs :', followOn: (n) => `🔔 ${n} suivi`, followOff: (n) => `🔔 Suivre ${n}`,
     notesTitle: "Ce que l'IA sait de ces équipes", notesP: "Notes calculées sur tous les matchs connus (saison précédente comprise), en comptant davantage les matchs récents et en tenant compte du niveau des adversaires. Elles sont jugées sur des matchs passés avant d'être utilisées dans le calcul.",
@@ -226,6 +232,8 @@ const T = {
     mlTitle: 'VIP slips by e-mail, always free', mlP: 'Coming soon: every morning, a full roundup in your inbox (the slips of the day, the matches to watch and the football roundup). No payment, no paid subscription. Leave your address to be told as soon as sending starts.', mlEmail: 'Your e-mail address', mlConsent: 'I agree to receive PronoFlash IA slips, predictions and news by e-mail. I can unsubscribe at any time. My data is handled according to the', mlPriv: 'privacy policy', mlBtn: 'Sign me up', mlOk: 'Thank you! Your address is saved: we will tell you as soon as sending starts.', mlBad: 'Check your e-mail address and tick the consent box.', mlErr: 'Sign-up is not possible right now. Try again later.',
     stCredit: (src) => `Image: ${src}`, stPlay: 'Play the video', stEssential: 'At a glance', stPublished: 'Published', stTopics: 'Topics', stTopicNames: { star: 'Football star', club: 'Big club', enfant: 'Next generation', talent: 'Young talent', classico: 'Classico / derby', transfert: 'Transfers', record: 'Record', vie: 'Star life', scandale: 'Controversy' }, stEvery: 'Everything shown here comes from the site quoted: we only reuse the headline, an excerpt, the preview image and the video it offers, with the link to read it all.', stMore: 'More news',
     abShareTitle: 'Share this page', abShareP: 'Send the PronoFlash IA presentation to your groups and WhatsApp channel: the message holds the essentials of the site and the link shows a preview with the title, the description and the image.', abShareMsg: "⚡ PronoFlash IA: free football predictions, made by an AI that learns every team.\n✅ Slips of the day and analysis of every match\n📊 Public track record: our hits AND our misses\n🔔 Alerts for your teams and football news\n🚫 No bets taken, no winnings promised · 18+\n👉 Discover the site:",
+    stReads: (n) => `${n} ${n > 1 ? 'views' : 'view'}`,
+    naTitle: 'All football news', naH1: 'All football news', naP: 'The latest football news spotted at our sources, newest first: a click opens our page for the story, with the image, the excerpt and the link to the full article.', naDesc: 'All the football news of the moment (transfers, stars, matches, Africa), with the source and the link of every article.', newsAllBtn: 'See all football news', naPrev: '← Newer', naNext: 'Older →', naPage: (a, b) => `Page ${a} of ${b}`, naEmpty: 'No news for now: new stories arrive every 2 hours.', naRecap: 'The evening roundup',
     ibxTitle: 'My notifications', ibxH1: 'My notifications', ibxP: 'Find here the notifications received on this device, read or not. No account needed: the list is tied to this browser.', ibxLoading: 'Loading…',
     bellOff: "Get today's slips as notifications", bellOn: 'Notifications on: tap to see your notifications', followLbl: 'Alerts before their matches:', followOn: (n) => `🔔 ${n} followed`, followOff: (n) => `🔔 Follow ${n}`,
     notesTitle: 'What the AI knows about these teams', notesP: 'Ratings computed on every known match (previous season included), giving more weight to recent matches and accounting for the strength of opponents. They are tested on past matches before being used in the calculation.',

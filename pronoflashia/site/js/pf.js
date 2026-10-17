@@ -235,6 +235,20 @@
 
   /* ---------- clics de partage ---------- */
   $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = L.copied; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
+  /* lectures d'une actu : une par visiteur et par session ; le compteur affiché inclut la lecture en cours */
+  (function newsReads() {
+    var art = $('[data-news]');
+    if (!art) return;
+    var nid = art.getAttribute('data-news'), k = 'pf_nv_' + nid, counted = !store.sget(k);
+    if (counted) { store.sset(k, '1'); send({ t: 'news', n: 'vue', id: nid }); }
+    var nv = $('.nvues', art);
+    if (nv) {
+      var c = (Number(nv.getAttribute('data-n')) || 0) + (counted && !DNT ? 1 : 0);
+      if (c > 0) { nv.textContent = '👁 ' + c.toLocaleString(LOC) + ' ' + nv.getAttribute(c > 1 ? 'data-many' : 'data-one'); nv.hidden = false; }
+    }
+    var out = $('.stout', art);
+    if (out) out.addEventListener('click', function () { send({ t: 'news', n: 'clic', id: nid }); });
+  })();
   /* vidéo d'une actu : le lecteur YouTube (mode sans cookie) ne se charge qu'au clic */
   $$('.stvid').forEach(function (b) {
     b.addEventListener('click', function () {

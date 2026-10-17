@@ -47,6 +47,7 @@ async function handleEvent(req, deps) {
   const inc = deps.increment(1);
   const u = {};
   const t = clean(b.t, 14);
+  let newsId = null, newsKind = null;
 
   if (t === 'pv') {
     const page = PAGES.includes(b.p) ? b.p : 'autre';
@@ -68,6 +69,13 @@ async function handleEvent(req, deps) {
   else if (t === 'pwa') { const n = { vu: 'pwaVus', clic: 'pwaClics', ok: 'pwaInstalles', ios: 'pwaIos' }[b.n]; if (!n) return false; u[n] = inc; }
   else if (t === 'push') { const n = { vu: 'pushVus', on: 'pushOn', off: 'pushOff', equipe: 'pushEquipes', mvu: 'pushModalVus', mno: 'pushModalNon' }[b.n]; if (!n) return false; u[n] = inc; }
   else if (t === 'mail') { if (b.n !== 'ok') return false; u.mailInscrits = inc; }
+  else if (t === 'news') {
+    // lecture (page de l'actu ouverte) ou clic vers l'article d'origine ; un compteur par actu, gardé 60 jours
+    const nid = String(b.id || '');
+    if (!/^[a-f0-9]{20}$/.test(nid) || !['vue', 'clic'].includes(b.n)) return false;
+    newsId = nid; newsKind = b.n;
+    if (b.n === 'vue') u.actusLues = inc; else u.clicsActus = inc;
+  }
   else if (t === 'afl_click') { u.clicsAfrolook = inc; u[`aflClics.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'adview') { u.pubVues = inc; u[`pub.${key(b.n || 'x')}`] = inc; }
   else if (t === 'wa') { u.partagesWa = inc; u[`wa.${key(b.n || 'x')}`] = inc; }
@@ -77,6 +85,12 @@ async function handleEvent(req, deps) {
   const ref = deps.db.collection('stats_days').doc(day);
   try { await ref.update(u); } catch (e) {
     if (e.code === 5 || /NOT_FOUND/.test(String(e))) { await ref.set({ jour: day }, { merge: true }); await ref.update(u); } else throw e;
+  }
+
+  if (newsId) {
+    const field = newsKind === 'vue' ? 'vues' : 'clics';
+    try { await deps.db.collection('news').doc(newsId).update({ [field]: deps.increment(1) }); } catch (e) { /* l'actu n'existe plus : seul l'historique compte */ }
+    await deps.db.collection('news_stats').doc(newsId).set({ id: newsId, [field]: deps.increment(1), majLe: now.toISOString() }, { merge: true });
   }
 
   // Visiteurs uniques : une fois par visite, empreinte salée → registre HyperLogLog (nombres seulement)
