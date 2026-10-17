@@ -29,7 +29,11 @@ import '../studio/montage/montage_music.dart';
 import 'music_favorites.dart';
 
 class MusicPage extends StatefulWidget {
-  const MusicPage({super.key});
+  const MusicPage({super.key, this.preview});
+
+  /// Aperçu avec des titres fournis d'avance (captures d'écran et tests) : aucune connexion à Firebase.
+  @visibleForTesting
+  final ({List<MusicTrack> sounds, List<MusicTrack> free})? preview;
 
   @override
   State<MusicPage> createState() => _MusicPageState();
@@ -46,11 +50,13 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     MusicQueue.start();
-    MusicFavorites.start();
-    OfflineMusic.refresh();
-    ArtistSoundPricing.load().then((_) {
-      if (mounted) setState(() {});
-    });
+    if (widget.preview == null) {
+      MusicFavorites.start();
+      OfflineMusic.refresh();
+      ArtistSoundPricing.load().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
     // Le lecteur flottant est masqué dans « Pour toi » (la carte « en lecture » le remplace), visible dans les autres onglets.
     _tabs.addListener(_syncOverlay);
     _syncOverlay();
@@ -269,46 +275,52 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           tabs: const [Tab(text: 'Pour toi'), Tab(text: 'Gratuites'), Tab(text: 'Artistes'), Tab(text: 'Ma bibliothèque'), Tab(text: 'Favoris')],
         ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).snapshots(),
-        builder: (_, snap) {
-          final loading = !snap.hasData && !snap.hasError;
-          // Titres proposés dans le pays de la personne (ou à tous) ; ceux visés pour son pays passent devant
-          final sounds = SoundCountries.forViewer<ArtistSound>(
-            [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)].where((s) => s.previewUrl != null),
-            countries: (s) => s.availableCountries,
-            owner: (s) => s.userId,
-            viewerCountry: SoundCountries.viewerCountry(context),
-          ).map((s) => MusicTrack.fromSound(s)).toList();
-          final free = kStudioTracks.map(MusicTrack.fromStudio).toList();
-          WidgetsBinding.instance.addPostFrameCallback((_) => MusicQueue.warmList([...sounds, ...free]));
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
-            builder: (_, libSnap) {
-              final libDocs = [for (final d in libSnap.data?.docs ?? const <QueryDocumentSnapshot>[]) d.data() as Map<String, dynamic>]
-                ..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));
-              final library = libDocs.map((d) => MusicTrack.fromLibrary(d, cover: d['coverImageUrl'] == null ? null : MediaCdn.url(d['coverImageUrl'] as String))).toList();
-              return ValueListenableBuilder<Set<String>>(
-                valueListenable: MusicFavorites.keys,
-                builder: (_, favs, __) {
-                  final all = [...sounds, ...free];
-                  final favItems = all.where((i) => favs.contains('${i.kind}:${i.id}')).toList();
-                  return TabBarView(controller: _tabs, children: [
-                    _forYou(c, sounds, free, loading),
-                    _list(c, [...free, ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.'),
-                    _list(c, sounds.where(_match).toList(), loading ? '' : 'Aucun son d’artiste pour l’instant.', loading: loading, artistsCta: true),
-                    _list(c, library.where(_match).toList(), 'Achète un titre : il reste ici, lisible en entier dans Afrolook.'),
-                    _list(c, favItems.where(_match).toList(), 'Touche le ♡ d’un titre pour le retrouver ici.'),
-                  ]);
-                },
-              );
-            },
-          );
-        },
-      ),
-      bottomNavigationBar: MediaQuery.of(context).size.height >= 700
+      body: widget.preview != null
+          ? _tabsView(c, widget.preview!.sounds, widget.preview!.free, const [], false)
+          : StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).snapshots(),
+              builder: (_, snap) {
+                final loading = !snap.hasData && !snap.hasError;
+                // Titres proposés dans le pays de la personne (ou à tous) ; ceux visés pour son pays passent devant
+                final sounds = SoundCountries.forViewer<ArtistSound>(
+                  [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)].where((s) => s.previewUrl != null),
+                  countries: (s) => s.availableCountries,
+                  owner: (s) => s.userId,
+                  viewerCountry: SoundCountries.viewerCountry(context),
+                ).map((s) => MusicTrack.fromSound(s)).toList();
+                final free = kStudioTracks.map(MusicTrack.fromStudio).toList();
+                WidgetsBinding.instance.addPostFrameCallback((_) => MusicQueue.warmList([...sounds, ...free]));
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                  builder: (_, libSnap) {
+                    final libDocs = [for (final d in libSnap.data?.docs ?? const <QueryDocumentSnapshot>[]) d.data() as Map<String, dynamic>]
+                      ..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));
+                    final library = libDocs.map((d) => MusicTrack.fromLibrary(d, cover: d['coverImageUrl'] == null ? null : MediaCdn.url(d['coverImageUrl'] as String))).toList();
+                    return _tabsView(c, sounds, free, library, loading);
+                  },
+                );
+              },
+            ),
+      bottomNavigationBar: widget.preview == null && MediaQuery.of(context).size.height >= 700
           ? AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.musicBanner, own: () => const AfrolookInlineAd(compact: true), admobFirst: true)
           : null,
+    );
+  }
+
+  Widget _tabsView(AppColors c, List<MusicTrack> sounds, List<MusicTrack> free, List<MusicTrack> library, bool loading) {
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: MusicFavorites.keys,
+      builder: (_, favs, __) {
+        final all = [...sounds, ...free];
+        final favItems = all.where((i) => favs.contains('${i.kind}:${i.id}')).toList();
+        return TabBarView(controller: _tabs, children: [
+          _forYou(c, sounds, free, loading),
+          _list(c, [...free, ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.'),
+          _list(c, sounds.where(_match).toList(), loading ? '' : 'Aucun son d’artiste pour l’instant.', loading: loading, artistsCta: true),
+          _list(c, library.where(_match).toList(), 'Achète un titre : il reste ici, lisible en entier dans Afrolook.'),
+          _list(c, favItems.where(_match).toList(), 'Touche le ♡ d’un titre pour le retrouver ici.'),
+        ]);
+      },
     );
   }
 
