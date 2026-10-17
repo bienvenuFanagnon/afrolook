@@ -571,3 +571,12 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .pgr{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0}
 .pgr .btn{padding:10px 14px;font-size:14px}
 .hero .more-btn{display:inline-flex}
+
+/* annonceurs */
+.advb p,.advc p{color:var(--mut);font-size:14px;line-height:1.5;margin:8px 0 12px}
+.advc .sh{margin-top:10px}
+.advc .btn{padding:12px 16px;text-decoration:none}
+.advc .wab{background:#12391f;border:1px solid #1d6b38;color:#9ff0bd}
+.advc .todo{color:#ffb74d}
+.fadv{margin:0;font-size:13.5px;color:var(--mut)}
+.fadv a{color:var(--flash);font-weight:600}

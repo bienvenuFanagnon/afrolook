@@ -133,6 +133,24 @@ function mailBox(rc, where) {
     `<button class="btn" type="submit">${t.mlBtn}</button><p class="mlm" role="status" aria-live="polite"></p></form></div>`;
 }
 
+/** Coordonnées pour les annonceurs : WhatsApp (numéro), e-mail pré-rempli, canal WhatsApp. Les liens sont comptés comme des clics « annonceurs ». */
+function contactBox(rc, subject) {
+  const t = rc.t, wa = rc.site.whatsappPub, ch = rc.site.whatsapp, mail = rc.site.email;
+  const okWa = wa && /^https:\/\/wa\.me\/\+?\d{6,16}/i.test(wa);
+  const okCh = ch && CHANNEL_RE.test(ch);
+  const okMail = mail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail);
+  const btns = (okWa ? `<a class="btn wab" href="${esc(wa)}" target="_blank" rel="noopener" data-chn="annonceurs">${t.advWa}</a>` : '') +
+    (okMail ? `<a class="btn" href="mailto:${esc(mail)}?subject=${encodeURIComponent(subject || t.advMailSubject)}" data-chn="annonceurs">${t.advMail}</a>` : '') +
+    (okCh ? `<a class="btn sec" href="${esc(ch)}" target="_blank" rel="noopener" data-chn="annonceurs-canal">${t.advChannel}</a>` : '');
+  return `<div class="box advc"><div class="lbl">${t.advContactTitle}</div>${btns ? `<div class="sh">${btns}</div>` : `<p><span class="todo">[${esc(t.advTodo)}]</span></p>`}${okMail ? `<p class="note">${esc(mail)}</p>` : ''}</div>`;
+}
+
+/** Information « vous voulez faire de la publicité ? » avec le bouton vers la page Annoncer. */
+function advBox(rc) {
+  const t = rc.t;
+  return `<div class="box advb"><div class="lbl">${t.advBoxTitle}</div><p>${t.advBoxP}</p><a class="more-btn" href="${rc.u('legal', 'annoncer')}">${t.advBoxBtn} <i aria-hidden="true">→</i></a></div>`;
+}
+
 function channelBanner(rc, slot) {
   const u = rc.site.whatsapp;
   if (!u || !CHANNEL_RE.test(u)) return '';
@@ -218,7 +236,7 @@ function leagueRail(rc, activeSlug) {
 function footer(rc) {
   const t = rc.t;
   const legal = Object.entries(t.footerLegal).map(([slug, lab]) => `<a href="${rc.u('legal', slug)}">${lab}</a>`).join('');
-  return `<footer class="ftr"><div class="wrap" style="display:grid;gap:10px"><div class="r18"><b>18+</b>${t.footer18}</div><p>${t.footerInfo}</p>` +
+  return `<footer class="ftr"><div class="wrap" style="display:grid;gap:10px"><div class="r18"><b>18+</b>${t.footer18}</div><p>${t.footerInfo}</p><p class="fadv">${t.advBoxTitle} <a href="${rc.u('legal', 'annoncer')}">${t.advBoxBtn} →</a></p>` +
     `<nav aria-label="${esc(t.footerNav)}"><a href="${rc.u('news')}">${t.pfTitle}</a>${legal}<button type="button" id="pf-prefs">${t.adPrefs}</button></nav>` +
     `<p class="cpy">© ${rc.now.getUTCFullYear()} ${esc(rc.site.nom)} · ${esc(rc.site.domaine)}<a class="adm" href="/admin" rel="nofollow noopener">Hub</a></p></div></footer>`;
 }
@@ -255,5 +273,5 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, partnerCard, channelBanner, shareBox, mailBox, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, adResponsive, aflCard, partnerCard, channelBanner, shareBox, mailBox, contactBox, advBox, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

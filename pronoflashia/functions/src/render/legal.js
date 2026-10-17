@@ -3,6 +3,7 @@
 // À faire relire par un juriste avant la mise en ligne.
 
 const { esc } = require('../util/format');
+const C = require('./components');
 
 /** Champ à compléter : affiché en évidence tant que l'éditeur ne l'a pas renseigné dans l'admin. */
 const field = (v, label) => (v ? esc(v) : `<span class="todo">[${esc(label)} à renseigner dans l'administration]</span>`);
@@ -39,7 +40,38 @@ const PAGES = {
     body: prose(`<h1>Contact</h1>
 <p>Pour une question, signaler une erreur dans un pronostic ou exercer tes droits sur tes données personnelles, écris à : <b>${field(rc.site.email, 'adresse e-mail de contact')}</b>.</p>
 <p>Nous ne répondons pas aux demandes de pronostics personnalisés ni de « tuyaux » : le site publie les mêmes pronostics pour tout le monde, gratuitement.</p>
+<h2>Publicité et partenariats</h2>
+<p>Vous êtes une marque, une entreprise, un commerçant, un créateur ou un particulier et vous voulez faire connaître votre produit ? Consultez la page <a href="${rc.u('legal', 'annoncer')}">Annoncer sur PronoFlash IA</a>, puis écrivez-nous ici.</p>
+${C.contactBox(rc)}
 <p>Éditeur : ${field(rc.site.editeur, 'nom de l\'éditeur')}.</p>`),
+  }),
+
+  annoncer: (rc) => ({
+    title: 'Annoncer sur PronoFlash IA : votre marque devant les fans de football',
+    description: "Marques, entreprises, commerçants, créateurs : faites connaître votre produit sur PronoFlash IA, site gratuit de pronostics football. Espaces publicitaires, partenariats et contenus sponsorisés.",
+    body: prose(`<h1>Annoncer sur PronoFlash IA</h1>
+<p>Vous êtes une <b>marque</b>, une <b>entreprise</b>, un <b>commerçant</b>, un <b>créateur</b> ou un <b>particulier</b> et vous voulez faire connaître un produit, un service ou une application ? PronoFlash IA met des espaces publicitaires à votre disposition, directement, sans intermédiaire.</p>
+<h2>Qui nous lit</h2>
+<p>PronoFlash IA est un site gratuit de pronostics de football, avec une place particulière pour le football africain. Nos visiteurs viennent chercher les pronostics du jour, des coupons, le bilan de l'IA et les actualités du football. Demandez-nous les chiffres de fréquentation du moment : nous vous les communiquons tels qu'ils sont, sans les arrondir en notre faveur.</p>
+<h2>Ce que nous proposons</h2>
+<ul>
+<li><b>Encart sponsor près du coupon du jour</b> : « offert par votre marque », avec votre logo, une phrase et un lien.</li>
+<li><b>Bannières</b> dans les pages les plus vues : accueil, matchs, coupon, bilan, actualités.</li>
+<li><b>Actualité ou article sponsorisé</b>, toujours clairement étiqueté « Sponsorisé ».</li>
+<li><b>Mention dans nos notifications</b> (sur demande, en nombre limité pour ne pas lasser nos visiteurs).</li>
+<li><b>Partenariat dans la durée</b> : plusieurs emplacements, sur plusieurs semaines.</li>
+</ul>
+<p>Les tarifs dépendent de l'emplacement et de la durée : écrivez-nous et nous vous répondons avec une proposition.</p>
+<h2>Nos règles</h2>
+<ul>
+<li>Toute publicité est identifiable comme telle (« Sponsorisé »).</li>
+<li>Nous refusons les jeux d'argent, paris et casinos (le site est réservé aux plus de 18 ans et ne fait la promotion d'aucun pari), les contenus pour adultes, les produits illégaux ou dangereux, les arnaques, les promesses de gains faciles et toute publicité qui cible des mineurs.</li>
+<li>Nos pronostics ne sont jamais influencés par un annonceur : ils sont calculés de la même façon pour tous et leur bilan est public.</li>
+<li>Nous nous réservons le droit de refuser ou de retirer une publicité.</li>
+</ul>
+<h2>Comment faire</h2>
+<p>Écrivez-nous avec : le nom de votre marque ou entreprise, le produit à présenter, les pays visés, la durée souhaitée, un budget approximatif et un lien ou un visuel.</p>
+${C.contactBox(rc)}`),
   }),
 
   confidentialite: (rc) => ({
@@ -160,7 +192,37 @@ const PAGES_EN = {
     body: prose(`<h1>Contact</h1>
 <p>For a question, to report an error in a prediction or to exercise your rights over your personal data, write to: <b>${fieldEn(rc.site.email, 'contact e-mail address')}</b>.</p>
 <p>We do not answer requests for personal tips: the site publishes the same predictions for everyone, for free.</p>
+<h2>Advertising and partnerships</h2>
+<p>Are you a brand, a company, a shop owner, a creator or an individual who wants to promote a product? Read the <a href="${rc.u('legal', 'annoncer')}">Advertise on PronoFlash IA</a> page, then write to us here.</p>
+${C.contactBox(rc)}
 <p>Publisher: ${fieldEn(rc.site.editeur, 'publisher name')}.</p>`),
+  }),
+  annoncer: (rc) => ({
+    title: 'Advertise on PronoFlash IA: your brand in front of football fans',
+    description: 'Brands, companies, shop owners, creators: promote your product on PronoFlash IA, a free football predictions site. Ad space, partnerships and sponsored content.',
+    body: prose(`<h1>Advertise on PronoFlash IA</h1>
+<p>Are you a <b>brand</b>, a <b>company</b>, a <b>shop owner</b>, a <b>creator</b> or an <b>individual</b> who wants to promote a product, a service or an app? PronoFlash IA offers advertising space directly, with no middleman.</p>
+<h2>Who reads us</h2>
+<p>PronoFlash IA is a free football predictions site with a special focus on African football. Our visitors come for the predictions of the day, slips, the AI's public track record and football news. Ask us for the current traffic figures: we give them to you as they are, never rounded in our favour.</p>
+<h2>What we offer</h2>
+<ul>
+<li><b>Sponsor box next to the slip of the day</b>: “brought to you by your brand”, with your logo, a sentence and a link.</li>
+<li><b>Banners</b> on the most visited pages: home, matches, slips, track record, news.</li>
+<li><b>Sponsored news or article</b>, always clearly labelled “Sponsored”.</li>
+<li><b>A mention in our notifications</b> (on request, in limited numbers so as not to tire our visitors).</li>
+<li><b>Long-term partnership</b>: several placements over several weeks.</li>
+</ul>
+<p>Prices depend on the placement and the duration: write to us and we will answer with a proposal.</p>
+<h2>Our rules</h2>
+<ul>
+<li>Every ad is identifiable as such (“Sponsored”).</li>
+<li>We refuse gambling, betting and casinos (the site is 18+ and promotes no betting), adult content, illegal or dangerous products, scams, promises of easy winnings and any ad that targets minors.</li>
+<li>Our predictions are never influenced by an advertiser: they are calculated the same way for everyone and their track record is public.</li>
+<li>We reserve the right to refuse or remove an ad.</li>
+</ul>
+<h2>How to proceed</h2>
+<p>Write to us with: your brand or company name, the product to present, the countries you target, the duration you want, an approximate budget and a link or a visual.</p>
+${C.contactBox(rc)}`),
   }),
   confidentialite: (rc) => ({
     title: 'Privacy policy · PronoFlash IA',

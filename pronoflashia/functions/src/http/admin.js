@@ -18,7 +18,7 @@ const { idOf: subId } = require('../push/subs');
 const buzz = require('../push/buzz');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'buildRecaps', 'sendPush', 'weeklyReport', 'aiHealthCheck'];
-const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
+const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'whatsappPub', 'telegram', 'googleVerification'];
 const NETWORKS = ['adsterra', 'monetag'];
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -65,6 +65,7 @@ function sanitizeSite(inp) {
   for (const k of ['whatsapp', 'telegram']) {
     if (out[k] && !/^https:\/\/[^\s"'<>]{4,300}$/i.test(out[k])) throw new HttpError(400, `Adresse du canal ${k === 'whatsapp' ? 'WhatsApp' : 'Telegram'} invalide (https://…).`);
   }
+  if (out.whatsappPub && !/^https:\/\/wa\.me\/\+?\d{6,16}(?:\?[^\s"'<>]{0,200})?$/i.test(out.whatsappPub)) throw new HttpError(400, 'Lien WhatsApp des annonceurs invalide : utilisez https://wa.me/ suivi du numéro avec l\'indicatif pays, sans espace (ex. https://wa.me/22890000000).');
   if (out.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.email)) throw new HttpError(400, 'Adresse e-mail invalide.');
   return out;
 }

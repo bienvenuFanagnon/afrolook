@@ -219,3 +219,49 @@ test('page « Toutes les actus foot » : toutes les actus gardées (96 h), 20 pa
   assert.match((await route(db, '/actus/info-n0', NOWS)).body, btn);
   assert.match((await route(db, '/en/coupon', NOWS)).body, /href="\/en\/football-news">See all football news/);
 });
+
+test('annonceurs : page « Annoncer », coordonnées (WhatsApp, e-mail pré-rempli, canal), information sur l\'accueil, À propos et pied de page, contact, plan du site, admin', async () => {
+  const D = require('../src/render/data');
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  const db = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  await db.seed('config', 'site', { email: 'pub@exemple.com', whatsappPub: 'https://wa.me/22890000000', whatsapp: 'https://whatsapp.com/channel/abc123' });
+  D.clearCache();
+  const fr = (await route(db, '/annoncer', NOWS)).body;
+  assert.match(fr, /<h1>Annoncer sur PronoFlash IA<\/h1>/);
+  assert.match(fr, /Nous refusons les jeux d'argent/);
+  assert.match(fr, /href="https:\/\/wa\.me\/22890000000"[^>]*data-chn="annonceurs">Nous écrire sur WhatsApp/);
+  assert.match(fr, /href="mailto:pub@exemple\.com\?subject=Publicit%C3%A9%20sur%20PronoFlash%20IA"/);
+  assert.match(fr, /href="https:\/\/whatsapp\.com\/channel\/abc123"[^>]*data-chn="annonceurs-canal">Suivre notre canal WhatsApp/);
+  assert.doesNotMatch(fr, /robots" content="noindex/);
+  const en = (await route(db, '/en/advertise', NOWS)).body;
+  assert.match(en, /<h1>Advertise on PronoFlash IA<\/h1>/);
+  assert.match(en, /Write to us on WhatsApp/);
+  // la page contact renvoie vers l'annonce et montre les mêmes coordonnées
+  const contact = (await route(db, '/contact', NOWS)).body;
+  assert.match(contact, /href="\/annoncer">Annoncer sur PronoFlash IA<\/a>/);
+  assert.match(contact, /class="box advc"/);
+  // information sur l'accueil, À propos et pied de page de toutes les pages
+  const home = (await route(db, '/', NOWS)).body;
+  assert.match(home, /class="box advb"/);
+  assert.match(home, /class="fadv">Une marque, une entreprise, un commerce \? <a href="\/annoncer">Annoncer sur PronoFlash IA →<\/a>/);
+  assert.match((await route(db, '/a-propos', NOWS)).body, /class="box advb"/);
+  assert.match((await route(db, '/coupon', NOWS)).body, /class="fadv"/);
+  assert.match((await route(db, '/en', NOWS)).body, /href="\/en\/advertise">Advertise on PronoFlash IA →/);
+  // plan du site
+  assert.match((await route(db, '/sitemap.xml', NOWS)).body, /\/annoncer<\/loc>/);
+  // sans coordonnées : message pour le propriétaire, pas de lien cassé
+  const bare = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  await bare.seed('config', 'site', { email: '', whatsappPub: '', whatsapp: '' });
+  D.clearCache();
+  const none = (await route(bare, '/annoncer', NOWS)).body;
+  assert.match(none, /class="todo">\[coordonnées de contact à renseigner dans l&#39;administration\]/);
+  assert.doesNotMatch(none, /wa\.me|mailto:/);
+  // admin : lien WhatsApp des annonceurs contrôlé
+  const { createAdmin } = require('../src/http/admin');
+  const admin = createAdmin({ db: new (require('./helpers/fakeDb').FakeDb)(), verifyToken: async () => ({ email: 'a@x.fr', email_verified: true }), bootstrap: ['a@x.fr'], tasks: {}, now: () => NOWS });
+  const save = (site) => admin.handle({ action: 'config-save', body: { site }, authorization: 'Bearer t' });
+  assert.equal((await save({ whatsappPub: 'https://wa.me/22890000000' })).status, 200);
+  assert.equal((await save({ whatsappPub: 'https://exemple.com/x' })).status, 400);
+  assert.equal((await save({ whatsappPub: 'https://wa.me/abc' })).status, 400);
+  assert.equal((await save({ whatsappPub: 'javascript:alert(1)' })).status, 400);
+});

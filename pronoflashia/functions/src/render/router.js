@@ -99,7 +99,7 @@ async function route(db, urlPath, now = new Date()) {
       if (r.arg === 'a-propos') {
         // partage : aperçu riche (titre, description, image 1200 × 630) et message WhatsApp qui résume le site
         const url = C.url(rc, lp.path);
-        lp.body += `<div class="wrap">${C.shareBox(rc, 'apropos', { url, text: rc.t.abShareMsg, title: rc.t.abShareTitle, p: rc.t.abShareP })}</div>`;
+        lp.body += `<div class="wrap">${C.advBox(rc)}${C.shareBox(rc, 'apropos', { url, text: rc.t.abShareMsg, title: rc.t.abShareTitle, p: rc.t.abShareP })}</div>`;
         lp.ogImage = rc.lang === 'en' ? '/img/og-about.png' : '/img/og-apropos.png';
       }
       return page(rc, Object.assign({ active: r.arg === 'a-propos' ? 'apropos' : '' }, lp), cc(3600, 86400));
@@ -168,7 +168,7 @@ async function sitemap(db, rc) {
   add('home', null, 'daily', '1.0'); add('day', 'aujourdhui', 'hourly', '0.9'); add('day', 'demain', 'hourly', '0.8');
   add('coupon', null, 'daily', '0.8'); add('bilan', null, 'daily', '0.7'); add('news', null, 'daily', '0.8');
   for (const a of await D.articles(db, 60)) add('article', a, 'monthly', '0.6', a.creeLe);
-  for (const [slug, prio] of [['a-propos', '0.4'], ['contact', '0.3'], ['jeu-responsable', '0.3'], ['confidentialite', '0.2'], ['conditions', '0.2'], ['cookies', '0.2'], ['mentions-legales', '0.2']]) add('legal', slug, 'monthly', prio);
+  for (const [slug, prio] of [['a-propos', '0.4'], ['annoncer', '0.4'], ['contact', '0.3'], ['jeu-responsable', '0.3'], ['confidentialite', '0.2'], ['conditions', '0.2'], ['cookies', '0.2'], ['mentions-legales', '0.2']]) add('legal', slug, 'monthly', prio);
   for (const l of rc.leagues) add('league', l.slug, 'daily', '0.8');
   const snap = await db.collection('matches').where('coupDEnvoi', '>=', addDays(rc.now, -30).toISOString()).get();
   for (const m of snap.docs.map((d) => d.data()).filter((x) => x.prono && x.prono.visible !== false && x.statut !== 'reporte')) {
