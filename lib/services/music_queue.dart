@@ -86,7 +86,13 @@ class MusicTrack {
   /// Part de l'artiste sur un achat (60 %).
   int get saleShare => (saleCoins * 60) ~/ 100;
 
-  bool get isMine => sound != null && sound!.userId == FirebaseAuth.instance.currentUser?.uid;
+  bool get isMine {
+    try {
+      return sound != null && sound!.userId == FirebaseAuth.instance.currentUser?.uid;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 class MusicQueue {
@@ -130,12 +136,20 @@ class MusicQueue {
   static bool get hasNext => _queue.length > 1;
 
   /// À appeler une fois (démarrage de l'interface) : écoute la fin des titres et les achats de la personne.
+  static bool _doneWired = false;
   static void start() {
+    if (!_doneWired) {
+      _doneWired = true;
+      SoundPreview.completed.listen(_onCompleted);
+    }
     if (_wired) return;
-    _wired = true;
-    SoundPreview.completed.listen(_onCompleted);
-    FirebaseAuth.instance.authStateChanges().listen(_watchOwned);
-    _watchOwned(FirebaseAuth.instance.currentUser);
+    try {
+      FirebaseAuth.instance.authStateChanges().listen(_watchOwned);
+      _watchOwned(FirebaseAuth.instance.currentUser);
+      _wired = true;
+    } catch (_) {
+      // Firebase pas encore prêt : on réessaiera au prochain lancement d'un titre
+    }
   }
 
   static void _watchOwned(User? u) {
@@ -275,16 +289,19 @@ class MusicQueue {
     _warmUpcoming();
   }
 
-  static int _pickNext() {
-    if (_queue.length <= 1) return _index;
-    if (shuffle.value) {
-      // Aléatoire sans répéter les derniers titres joués
-      final recent = _history.reversed.take(min(3, _queue.length - 1)).toSet()..add(_index);
-      final candidates = [for (var i = 0; i < _queue.length; i++) if (!recent.contains(i)) i];
-      if (candidates.isEmpty) return (_index + 1) % _queue.length;
-      return candidates[_rnd.nextInt(candidates.length)];
+  static int _pickNext() => pickNext(_queue.length, _index, shuffle.value, _history, _rnd);
+
+  /// Titre suivant : dans l'ordre (en boucle), ou au hasard sans répéter le titre en cours ni les 3 derniers joués.
+  @visibleForTesting
+  static int pickNext(int length, int index, bool shuffle, List<int> history, Random rnd) {
+    if (length <= 1) return index;
+    if (shuffle) {
+      final recent = history.reversed.take(min(3, length - 1)).toSet()..add(index);
+      final candidates = [for (var i = 0; i < length; i++) if (!recent.contains(i)) i];
+      if (candidates.isEmpty) return (index + 1) % length;
+      return candidates[rnd.nextInt(candidates.length)];
     }
-    return (_index + 1) % _queue.length;
+    return (index + 1) % length;
   }
 
   static Future<bool> next({bool interstitial = true}) async {

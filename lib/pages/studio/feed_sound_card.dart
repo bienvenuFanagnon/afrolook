@@ -328,7 +328,7 @@ class _FeedSoundCarouselState extends State<FeedSoundCarousel> {
         ]),
       ),
       SizedBox(
-        height: 214,
+        height: 226,
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           scrollDirection: Axis.horizontal,

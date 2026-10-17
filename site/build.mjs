@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { CARDS, PACKS, EARN, NATIONAL_DAYS, AFRICA, svgIcon } from './src/data.mjs';
 import { T } from './src/i18n.mjs';
+import { musicMocks } from './src/mock.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
@@ -185,6 +186,7 @@ function homePage(lang) {
  <div class="twocol"><div><span class="kicker">${t.music.teaserK}</span><h2 class="h2">${t.music.teaserH}</h2><p class="sub">${t.music.teaserP}</p>
   <div class="cta" style="margin-top:22px"><a class="btn btn-primary" href="${P[lang].music}">${t.music.teaserCta}</a></div></div>
   <div class="grp">${t.music.three.map((f) => `<div class="way">${svgIcon(f[0])}<div><b>${f[1]}</b><span style="margin:0;display:block">${f[2]}</span></div></div>`).join('')}</div></div>
+ <div style="margin-top:48px">${musicMocks(lang, ['page', 'sheet', 'feed'])}<p class="fine" style="text-align:center;margin-top:16px">${lang === 'fr' ? 'Les vrais écrans de l\'application : le disque tourne, le lecteur te suit dans le fil, et à la fin de l\'extrait gratuit tu peux acheter le titre ou soutenir l\'artiste.' : 'The real app screens: the record spins, the player follows you through the feed, and when the free preview ends you can buy the track or support the artist.'}</p></div>
  <div style="margin-top:56px"><span class="kicker">${t.music.gainK}</span><h2 class="h2" style="font-size:clamp(26px,3.6vw,40px)">${t.music.gainH}</h2><p class="sub">${t.music.gainP}</p>
   <div class="feats three">${t.music.gainEx.map((x) => `<article class="feat">${svgIcon('coin')}<h3>${x[0]}</h3><p>${x[1]}</p></article>`).join('')}</div>
   <p class="fine" style="text-align:left;margin-top:14px">${t.music.gainNote}</p></div>
@@ -234,6 +236,7 @@ function musicPage(lang) {
   const list = (items) => items.map((x) => `<div class="way">${svgIcon('music')}<div><span style="margin:0">${x}</span></div></div>`).join('');
   const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].music, t.nav.music]])}<h1>${m.h1}</h1><p>${m.lead}</p><div class="cta" style="margin-top:24px">${storeBtns(t)}</div><p class="fine" style="text-align:left;margin-top:14px">${m.note}</p></div></section>
 <section style="padding-block:40px"><div class="wrap"><div class="feats three">${m.three.map((f) => `<article class="feat">${svgIcon(f[0])}<h3>${f[1]}</h3><p>${f[2]}</p></article>`).join('')}</div></div></section>
+<section style="padding-block:28px 8px"><div class="wrap"><span class="kicker">${lang === 'fr' ? 'Dans l\'application' : 'In the app'}</span><h2 class="h2">${lang === 'fr' ? 'La Musique, écran par écran' : 'Music, screen by screen'}</h2><p class="sub">${lang === 'fr' ? 'La page Musique avec son disque, la fiche d\'un titre avec deux actions (poster ou acheter, en pièces), la feuille qui s\'ouvre à la fin de l\'extrait gratuit pour soutenir l\'artiste, et le lecteur qui reste dans ton fil.' : 'The Music page with its record, a track page with two actions (post or buy, in coins), the sheet that opens when the free preview ends so you can support the artist, and the player that stays in your feed.'}</p>${musicMocks(lang)}</div></section>
 <section><div class="wrap twocol"><div><span class="kicker">${m.listenK}</span><h2 class="h2">${m.listenH}</h2></div><div class="grp">${list(m.listen)}</div></div></section>
 <section style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap twocol"><div><span class="kicker">${m.artistK}</span><h2 class="h2">${m.artistH}</h2><p class="sub">${m.artistSub}</p><p class="fine" style="text-align:left">${m.ranges}</p><div class="feats three" style="margin-top:22px">${m.gainEx.map((x) => `<article class="feat">${svgIcon('coin')}<h3>${x[0]}</h3><p>${x[1]}</p></article>`).join('')}</div><p class="fine" style="text-align:left;margin-top:12px">${m.gainNote}</p></div>
 <div class="grp">${m.steps.map((s, i) => `<div class="way">${svgIcon('music')}<div><b>${i + 1}. ${s[0]}</b><span style="margin:0;display:block">${s[1]}</span></div></div>`).join('')}</div></div></section>

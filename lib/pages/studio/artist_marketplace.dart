@@ -678,16 +678,24 @@ Future<void> startPostWithSound(BuildContext context, ArtistSound s) => startPos
 /// [ownVideo] : « Ma vidéo avec ce son » — directement la vidéo de la personne et la musique, sans modèle ni habillage ;
 /// le son d'origine de la vidéo est coupé (seule la musique est jouée), la personne peut le garder dans l'éditeur.
 Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool ownVideo = false}) async {
-  await SoundPreview.stop();
-  if (!context.mounted) return;
-  final r = await Navigator.push<StudioResult>(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ownVideo ? MontageEditorPage(template: kPlainTemplate, presetMusic: music) : MontageGalleryPage(presetMusic: music),
-    ),
-  );
-  if (r == null || !context.mounted) return;
-  await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
+  // Le Studio joue sa propre musique : le lecteur flottant se met en pause et se masque, puis reprend au retour
+  final token = Object();
+  MusicQueue.suspend(token);
+  MusicOverlay.add(1);
+  try {
+    if (!context.mounted) return;
+    final r = await Navigator.push<StudioResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ownVideo ? MontageEditorPage(template: kPlainTemplate, presetMusic: music) : MontageGalleryPage(presetMusic: music),
+      ),
+    );
+    if (r == null || !context.mounted) return;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
+  } finally {
+    MusicOverlay.add(-1);
+    MusicQueue.release(token);
+  }
 }
 
 /// Ouvre la page d'un son à partir de son identifiant (puce « Musique : titre » sous un post).

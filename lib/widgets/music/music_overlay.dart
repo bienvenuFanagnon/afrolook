@@ -23,7 +23,8 @@ class MusicOverlay {
   MusicOverlay._();
   static final ValueNotifier<int> hidden = ValueNotifier<int>(0);
 
-  static void _add(int d) {
+  /// +1 : un écran masque le lecteur flottant ; -1 : il le rend.
+  static void add(int d) {
     WidgetsBinding.instance.addPostFrameCallback((_) => hidden.value = (hidden.value + d).clamp(0, 99));
   }
 }
@@ -43,13 +44,13 @@ class _HideMusicOverlayState extends State<HideMusicOverlay> {
   @override
   void initState() {
     super.initState();
-    MusicOverlay._add(1);
+    MusicOverlay.add(1);
     if (widget.pause) MusicQueue.suspend(this);
   }
 
   @override
   void dispose() {
-    MusicOverlay._add(-1);
+    MusicOverlay.add(-1);
     if (widget.pause) MusicQueue.release(this);
     super.dispose();
   }
@@ -64,13 +65,13 @@ mixin MusicSuspendMixin<T extends StatefulWidget> on State<T> {
   @override
   void initState() {
     super.initState();
-    MusicOverlay._add(1);
+    MusicOverlay.add(1);
     MusicQueue.suspend(this);
   }
 
   @override
   void dispose() {
-    MusicOverlay._add(-1);
+    MusicOverlay.add(-1);
     MusicQueue.release(this);
     super.dispose();
   }

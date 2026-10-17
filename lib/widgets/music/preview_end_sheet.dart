@@ -14,28 +14,28 @@ import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
 import 'vinyl.dart';
 
-enum _End { buy, topup, ad, post, later }
+enum PreviewEnd { buy, topup, ad, post, later }
 
 /// Ouvre la feuille. [ctx] doit être sous le Navigator (contexte de page ou de la clé de navigation).
 Future<void> showPreviewEndSheet(BuildContext ctx, MusicTrack t) async {
   final user = Provider.of<UserAuthProvider>(ctx, listen: false).loginUserData;
   final balance = user.giftCoinsBalance ?? 0;
-  final r = await showModalBottomSheet<_End>(
+  final r = await showModalBottomSheet<PreviewEnd>(
     context: ctx,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _PreviewEndSheet(track: t, balance: balance, canAd: t.sound != null && MusicAds.canOfferRewarded(user)),
+    builder: (_) => PreviewEndSheet(track: t, balance: balance, canAd: t.sound != null && MusicAds.canOfferRewarded(user)),
   );
-  if (r == null || r == _End.later || !ctx.mounted) return;
+  if (r == null || r == PreviewEnd.later || !ctx.mounted) return;
   final s = t.sound;
   switch (r) {
-    case _End.buy:
+    case PreviewEnd.buy:
       if (s == null) return;
       final ok = await buyTrack(ctx, s);
       if (ok) await MusicQueue.playTrack(MusicTrack.fromSound(s, owned: true), interstitial: false);
-    case _End.topup:
+    case PreviewEnd.topup:
       await Navigator.push(ctx, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-    case _End.ad:
+    case PreviewEnd.ad:
       final res = await MusicAds.listenWithAd(t.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
       if (!ctx.mounted) return;
       if (res.outcome != MusicAdOutcome.ok || res.url == null) {
@@ -43,15 +43,16 @@ Future<void> showPreviewEndSheet(BuildContext ctx, MusicTrack t) async {
         return;
       }
       await MusicQueue.playGranted(t, res.url!);
-    case _End.post:
+    case PreviewEnd.post:
       if (s != null) await startPostWithMusic(ctx, MontageMusic.artist(s));
-    case _End.later:
+    case PreviewEnd.later:
       break;
   }
 }
 
-class _PreviewEndSheet extends StatelessWidget {
-  const _PreviewEndSheet({required this.track, required this.balance, required this.canAd});
+/// Contenu de la feuille (public pour les tests).
+class PreviewEndSheet extends StatelessWidget {
+  const PreviewEndSheet({required this.track, required this.balance, required this.canAd});
   final MusicTrack track;
   final int balance;
   final bool canAd;
@@ -125,7 +126,7 @@ class _PreviewEndSheet extends StatelessWidget {
             SizedBox(
               height: 46,
               child: FilledButton.icon(
-                onPressed: () => Navigator.pop(context, enough ? _End.buy : _End.topup),
+                onPressed: () => Navigator.pop(context, enough ? PreviewEnd.buy : PreviewEnd.topup),
                 icon: Icon(enough ? Icons.library_add_rounded : Icons.add_circle_rounded, size: 20),
                 label: Text(enough ? 'Acheter le titre · ${t.saleCoins} 🪙' : 'Recharger mes pièces', style: const TextStyle(fontWeight: FontWeight.w800)),
                 style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -140,12 +141,12 @@ class _PreviewEndSheet extends StatelessWidget {
             const SizedBox(height: 10),
           ],
           if (canAd) ...[
-            _outlined(c, Icons.ondemand_video_rounded, 'Écouter en entier avec une pub', () => Navigator.pop(context, _End.ad)),
+            _outlined(c, Icons.ondemand_video_rounded, 'Écouter en entier avec une pub', () => Navigator.pop(context, PreviewEnd.ad)),
             const SizedBox(height: 8),
           ],
-          if (t.sound != null) _outlined(c, Icons.videocam_rounded, use > 0 ? 'Créer un post avec ce son · $use 🪙' : 'Créer un post avec ce son', () => Navigator.pop(context, _End.post)),
+          if (t.sound != null) _outlined(c, Icons.videocam_rounded, use > 0 ? 'Créer un post avec ce son · $use 🪙' : 'Créer un post avec ce son', () => Navigator.pop(context, PreviewEnd.post)),
           const SizedBox(height: 4),
-          TextButton(onPressed: () => Navigator.pop(context, _End.later), child: Text('Plus tard', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w800))),
+          TextButton(onPressed: () => Navigator.pop(context, PreviewEnd.later), child: Text('Plus tard', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w800))),
         ]),
       ),
     );

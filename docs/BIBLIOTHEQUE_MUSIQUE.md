@@ -139,6 +139,18 @@ Points d'attention : le comparateur d'empreintes parcourt tous les sons (limite 
 - **Menu** : entrée « Musique » dans le menu latéral (et dans la barre latérale large).
 - **Musique dans le fil** (`lib/pages/studio/feed_sound_card.dart`) : le bandeau figé sous les chroniques est supprimé. Trois présentations alternent : **l'affiche** (pochette en plein cadre 4:5, voile dégradé, grand bouton de lecture avec cercle d'avancement, titre, genre · durée · nombre de posts, boutons « Créer un post », « Ma vidéo avec ce son », « Toute la musique »), **« Musiques du moment »** (rangée de pochettes verticales avec lecture sur chaque pochette) et **« Top titres »** (liste numérotée façon lecteur : pochette, titre, genre · durée, prix, lecture). Elles reviennent entre le 5ᵉ et le 9ᵉ post puis tous les 11 à 19 posts, à des endroits qui changent à chaque ouverture (graine par session, `_musicPositions` dans `HomeConstPost.dart`) ; chaque carte propose d'autres titres que la précédente, filtrés par pays. Les extraits sont préchargés.
 
+## 9 quater. Refonte « disque » : file d'attente, lecteur flottant, fin d'extrait (17 octobre 2026)
+
+Maquettes validées par le propriétaire (page Musique, fiche du titre, feuille de fin d'extrait, lecteur flottant, widgets du fil), dans les écrans réels de l'application, en clair et en sombre.
+
+- **Prix en pièces, deux actions distinctes** : « Créer un post · 🪙 5 » (prix d'utilisation, 2 à 20 pièces, 60 % à l'artiste) et « Acheter · 🪙 100 » (prix de vente du titre complet, 50 à 500 pièces, 60 % à l'artiste). Gratuit : rien à payer.
+- `lib/services/music_queue.dart` : `MusicTrack` (titre gratuit, son d'artiste, titre de la bibliothèque), `MusicQueue` (file, suivant, précédent, aléatoire sans répéter les 3 derniers titres, fin d'extrait, préchargement des 2 titres suivants, pause devant une vidéo). Un seul lecteur reste `SoundPreview` ; il annonce la fin d'un titre (`completed`).
+- `lib/widgets/music/` : `vinyl.dart` (disque qui tourne, bras de lecture, anneau de progression), `music_overlay.dart` (lecteur flottant en capsule au-dessus de toutes les pages, via `MaterialApp.builder`, glissable verticalement, masqué quand le clavier est ouvert), `preview_end_sheet.dart` (feuille « Tu aimes ce titre ? » : acheter, écouter en entier avec une pub, créer un post, plus tard ; « Recharger mes pièces » si le solde ne suffit pas ; soutien de l'artiste).
+- **Visibilité** : le lecteur flottant est visible sur le fil, le détail d'un post sans vidéo, Quiz & Étude et toutes les pages sans média animé. Il est masqué, et la musique mise en pause puis reprise à la fermeture, sur les pages à vidéo, live, chronique, éditeur et Studio (`MusicSuspendMixin`, `HideMusicOverlay`) ; la page Musique le masque dans l'onglet « Pour toi » (la carte « en lecture » le remplace). Quand le son des vidéos du fil est ouvert (`SoundProvider`), la musique se met en pause.
+- **Page Musique** : carte « en lecture » avec disque, deux boutons (Post, Acheter), nouveautés en rangée, lignes avec bouton « Post » et lecture. **Fiche du titre** : disque, barre avec zone verrouillée, deux actions. **Fil** : affiche, rangée « Sons du moment », « Top 5 du pays », crédit « ♪ titre » avec le bouton « Utiliser · 🪙 5 ».
+- **Site afrolookmedia.com** : titre et texte d'accueil parlent de musique ; les vrais écrans (HTML/CSS, `site/src/mock.mjs`) sont dans la section Musique de l'accueil et sur la page Musique.
+- Tests : `test/music_player_test.dart` (prix, titre suivant, feuille de fin d'extrait, disque), `test/feed_sound_card_test.dart`.
+
 ## 10. Feuille de route
 
 1. Page Musique + favoris gratuits (1 semaine).
