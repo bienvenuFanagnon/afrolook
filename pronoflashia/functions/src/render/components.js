@@ -136,7 +136,7 @@ function partnerCard(rc, slot) {
  * Un encart Afrolook après la 2e carte (visible sans défiler loin), une annonce « native » après la 3e puis toutes les N cartes,
  * un encart Afrolook toutes les M cartes ensuite. Jamais deux pubs d'affilée, jamais une pub après la dernière carte.
  */
-function listWithAds(rc, cards) {
+function listWithAds(rc, cards, afterAd) {
   const nat = rc.ads.emplacements.native || {};
   const afl = rc.ads.afrolook || {};
   const natOn = slotOn(rc.ads, 'native') && nat.every;
@@ -150,9 +150,9 @@ function listWithAds(rc, cards) {
     out.push(c);
     const n = i + 1;
     if (n >= cards.length) return;
-    if (natOn && n === nextNat) { out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })); nextNat += nat.every; if (nextAfl === n) nextAfl = n + 1; if (nextPtn === n) nextPtn = n + 1; return; }
-    if (aflOn && n === nextAfl) { out.push(aflCard(rc, 'liste', a++)); nextAfl += afl.every; if (nextPtn === n) nextPtn = n + 1; return; }
-    if (ptnOn && n === nextPtn) { out.push(partnerCard(rc, 'liste')); nextPtn += ptn.every; }
+    if (natOn && n === nextNat) { out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })); if (afterAd) out.push(afterAd()); nextNat += nat.every; if (nextAfl === n) nextAfl = n + 1; if (nextPtn === n) nextPtn = n + 1; return; }
+    if (aflOn && n === nextAfl) { out.push(aflCard(rc, 'liste', a++)); if (afterAd) out.push(afterAd()); nextAfl += afl.every; if (nextPtn === n) nextPtn = n + 1; return; }
+    if (ptnOn && n === nextPtn) { out.push(partnerCard(rc, 'liste')); if (afterAd) out.push(afterAd()); nextPtn += ptn.every; }
   });
   return out.join('');
 }

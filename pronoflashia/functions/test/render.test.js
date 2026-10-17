@@ -153,7 +153,7 @@ test('CSS en ligne et script versionné ; aucune ressource externe', async () =>
   const r = (await get('/')).body;
   assert.ok(r.includes('<style>') && r.includes('--flash:#FFD60A'));
   assert.match(r, new RegExp(`/js/pf\\.js\\?v=${VERSION}`));
-  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/<a class="nw(?: has)?" href="[^"]*"/g, '').replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
+  assert.ok(!/(src|href)="https?:\/\/(?!pronoflashia)/.test(r.replace(/<a class="(?:nw(?: has)?|nbc)" href="[^"]*"/g, '').replace(/https:\/\/(play\.google\.com|apps\.apple\.com|wa\.me|crests\.football-data\.org)[^"]*/g, '')), 'aucune ressource externe chargée');
   assert.ok(r.length < 120000, `HTML léger (${r.length} octets)`);
 });
 
@@ -280,7 +280,7 @@ test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fi
   const h = await get('/');
   assert.match(h.body, /Actus foot/);
   assert.match(h.body, /class="nw( has)?" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
-  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 6, 'six actus au plus sur l\'accueil (liste verticale)');
+  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 14, 'actus de l\'accueil : liste du haut + une après chaque pub de la liste');
   assert.match(h.body, /class="nwv"/);
   const first = db.all('news')[0];
   const m = db.all('matches').find((x) => [x.domicile.teamId, x.exterieur.teamId].map(String).includes(first.teamIds[0]));
@@ -359,4 +359,25 @@ test('à propos et accueil : décrivent ce que fait réellement l\'IA, sans prom
   assert.match((await get('/')).body, /Notre IA apprend de chaque équipe/);
   assert.match((await get('/confidentialite')).body, /Notifications \(facultatives\)/);
   assert.match((await get('/en/privacy')).body, /Notifications \(optional\)/);
+});
+
+test('accueil : actus réparties sans doublon — liste du haut, une actu après chaque pub de la liste des matchs, le reste en grand format en bas', async () => {
+  const d2 = await buildSample(NOW);
+  for (let i = 0; i < 24; i++) await d2.seed('news', `x${i}`, { id: `x${i}`, titre: `Actu numéro ${i} du football`, lien: `https://exemple.invalid/x${i}`, source: 'Site', sourceId: 's', lang: 'fr', image: i % 3 ? '/img/afl1.jpg' : null, video: i % 5 === 0, date: new Date(NOW.getTime() - (i + 1) * 20 * 60e3).toISOString(), teamIds: [] });
+  D.clearCache();
+  const h = (await route(d2, '/', NOW)).body;
+  const links = [...h.matchAll(/class="(?:nw|nbc)[^"]*" href="(https:\/\/exemple\.invalid\/[^"]+)"/g)].map((m) => m[1]);
+  assert.equal(new Set(links).size, links.length, 'aucun article affiché deux fois');
+  assert.ok(links.length >= 12, `actus affichées : ${links.length}`);
+  // une actu juste après chaque pub (encart Afrolook) de la liste des matchs
+  const list = h.slice(h.indexOf('class="lbl" style="margin-top:6px">Les matchs'));
+  const afterAds = [...list.matchAll(/data-afl="liste"[\s\S]*?<\/a>(<div class="nwv one">)?/g)];
+  assert.ok(afterAds.length >= 2 && afterAds.every((m) => m[1]), 'chaque pub de la liste est suivie d\'une actu');
+  // fin de page : grand format
+  const big = h.indexOf('class="nwb nbig"');
+  assert.ok(big > h.lastIndexOf('class="mc"'), 'bloc en grand format après la liste des matchs');
+  assert.match(h.slice(big), /class="nbc"[^>]*>[\s\S]*?class="nbi/);
+  assert.match(h.slice(big), /Toutes les actus foot/);
+  assert.ok((h.slice(big).match(/class="nbc"/g) || []).length >= 4);
+  assert.match((await route(d2, '/en/', NOW)).body, /More football news/);
 });

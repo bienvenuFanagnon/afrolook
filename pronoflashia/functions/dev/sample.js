@@ -168,7 +168,7 @@ async function buildSample(now = new Date()) {
 
 /** Actualités fictives : titres d'exemple rattachés aux équipes des prochains matchs (aperçu seulement). */
 async function seedNews(db, now) {
-  const up = db.all('matches').filter((m) => m.statut === 'prevu').sort((a, b) => (a.coupDEnvoi < b.coupDEnvoi ? -1 : 1)).slice(0, 4);
+  const up = db.all('matches').filter((m) => m.statut === 'prevu').sort((a, b) => (a.coupDEnvoi < b.coupDEnvoi ? -1 : 1)).slice(0, 9);
   const T = (m, i) => (i ? m.exterieur : m.domicile);
   const src = [['Africa Top Sports', 'fr'], ['Afrik-Foot', 'fr'], ['Foot Mercato', 'fr'], ['Africanews', 'en']];
   const titres = [
