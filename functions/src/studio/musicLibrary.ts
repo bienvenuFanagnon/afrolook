@@ -50,7 +50,7 @@ export const musicBuy = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (
     tx.update(buyerRef, { giftCoinsBalance: FieldValue.increment(-price), totalGiftCoinsSpent: FieldValue.increment(price), updatedAt: now });
     const tb = db.collection("TransactionSoldes").doc();
     tx.set(tb, {
-      id: tb.id, user_id: uid, type: "DEPENSE", statut: "VALIDER", description: `Titre « ${title} » ajouté à ta bibliothèque — ${price} pièces`,
+      id: tb.id, user_id: uid, type: "DEPENSE", statut: "VALIDER", description: `Achat du titre « ${title} » — ${price} pièces`,
       montant: price, frais: 0, montant_total: price, methode_paiement: "pieces", createdAt: now, updatedAt: now,
       purchaseKind: "musique_achat", purchaseRefId: soundId,
     });
@@ -58,7 +58,7 @@ export const musicBuy = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (
       tx.update(artistRef, { giftCoinsBalance: FieldValue.increment(artistCoins), totalCoinsEarnedFromSales: FieldValue.increment(artistCoins), updatedAt: now });
       const ta = db.collection("TransactionSoldes").doc();
       tx.set(ta, {
-        id: ta.id, user_id: artistId, type: "GAIN_PIECES", statut: "VALIDER", description: `Ton titre « ${title} » a été acheté — ${artistCoins} pièces reçues`,
+        id: ta.id, user_id: artistId, type: "GAIN_PIECES", statut: "VALIDER", description: `Vente de ton titre « ${title} » — ${artistCoins} pièces reçues`,
         montant: artistCoins, frais: 0, montant_total: artistCoins, methode_paiement: "pieces", createdAt: now, updatedAt: now,
         purchaseKind: "musique_achat", purchaseRefId: soundId, payerId: uid,
       });
@@ -68,7 +68,7 @@ export const musicBuy = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (
       uid, soundId, artistId, title, coverImageUrl: sound.get("coverImageUrl") ?? null, genre: sound.get("genre") ?? null,
       price, artistCoins, percent: ARTIST_PERCENT, createdAt: now,
     });
-    tx.update(soundRef, { saleCount: FieldValue.increment(1), totalEarningsCoins: FieldValue.increment(artistCoins) });
+    tx.update(soundRef, { saleCount: FieldValue.increment(1), totalEarningsCoins: FieldValue.increment(artistCoins), saleEarnings: FieldValue.increment(artistCoins) });
     return { ok: true, price, artistCoins };
   });
 });

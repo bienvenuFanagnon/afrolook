@@ -343,6 +343,20 @@ service cloud.firestore {
     // Bibliothèque : titres achetés (écrits par musicBuy) ; chaque personne ne lit que les siens
     match /MusicLibrary/{libId} { allow read: if isAuth() && resource.data.uid == uid(); }
     match /MusicStreamLimits/{docId} { allow read: if isAdmin(); }
+    // Playlists : visibles par tous les connectés (contenu compris) tant qu'elles sont actives ; le créateur et ceux qui l'ont dans leur bibliothèque
+    // les lisent même retirées. Écriture par les fonctions playlistSave / playlistAdd / playlistDelete uniquement.
+    match /MusicPlaylists/{plId} {
+      allow read: if isAuth() && (resource.data.status == 'active' || resource.data.ownerId == uid()
+          || exists(/databases/$(database)/documents/MusicPlaylistLibrary/$(uid() + '_' + plId)));
+      allow write: if false;
+    }
+    // Bibliothèque de playlists : chacun lit et retire seulement les siennes ; l'ajout (et le paiement) passe par playlistAdd
+    match /MusicPlaylistLibrary/{libId} {
+      allow read, delete: if isAuth() && resource.data.uid == uid();
+      allow create, update: if false;
+    }
+    match /MusicStreamCounts/{docId} { allow read, write: if false; }
+    match /MusicStreamDaily/{docId} { allow read, write: if false; }
     // Licences de lecture hors ligne : contiennent les clés de chiffrement, serveur seul
     match /MusicLicenses/{docId} { allow read, write: if false; }
     // Écoutes accordées contre une pub (serveur seul) et revenus estimés des pubs de la page Musique (admin en lecture)
@@ -363,12 +377,12 @@ service cloud.firestore {
       // Quiz : questions, parties et progression sont secrètes (lues seulement par les Cloud Functions ; le joueur lit
       // sa propre progression et son historique grâce aux règles dédiées plus haut)
       allow read: if isAuth()
-          && !(collection in ['ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers', 'artist_sounds', 'ArtistSoundUses', 'ArtistSoundPrints', 'ArtistSoundReports', 'ArtistSoundDeletions', 'MusicFavorites', 'MusicLibrary', 'MusicStreamLimits', 'MusicLicenses', 'MusicAdListens', 'MusicAdStats']);
+          && !(collection in ['ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizCountryShards', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers', 'artist_sounds', 'ArtistSoundUses', 'ArtistSoundPrints', 'ArtistSoundReports', 'ArtistSoundDeletions', 'MusicFavorites', 'MusicLibrary', 'MusicStreamLimits', 'MusicLicenses', 'MusicAdListens', 'MusicAdStats', 'MusicPlaylists', 'MusicPlaylistLibrary', 'MusicStreamCounts', 'MusicStreamDaily']);
       // AppConfig (taux de change…) : écrit uniquement par les Cloud Functions
       // Stickers : catalogue, achats et compteurs écrits uniquement par les Cloud Functions
       // Follows : abonnements écrits uniquement par les Cloud Functions (followUser / unfollowUser)
       allow write: if isAuth() && collection != 'Posts' && collection != 'AppConfig'
-          && !(collection in ['ContesIndex', 'ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'CardUsage', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'EtudeCatalog', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers', 'artist_sounds', 'ArtistSoundUses', 'ArtistSoundPrints', 'ArtistSoundReports', 'ArtistSoundDeletions', 'MusicFavorites', 'MusicLibrary', 'MusicStreamLimits', 'MusicLicenses', 'MusicAdListens', 'MusicAdStats']);
+          && !(collection in ['ContesIndex', 'ContesStories', 'ContesText', 'ContesUsers', 'ContesStats', 'ContesStoryStats', 'ContesAds', 'Stickers', 'StickerPacks', 'StickerOwnership', 'StickerUsage', 'StickerRejections', 'AdminActions', 'UserStickers', 'StickerReports', 'Follows', 'SocialClicks', 'WeeklyTopPosts', 'WeeklyTopCreators', 'WeeklyTopCommentators', 'WeeklyRewardLocks', 'AdRewards', 'CardUsage', 'AdSsvTx', 'AdRewardsWeek', 'AdRewardStats', 'QuizLevels', 'QuizPool', 'EtudeContent', 'EtudeProgress', 'EtudeSessions', 'EtudeDiplomas', 'EtudeAds', 'EtudeCatalog', 'QuizSessions', 'QuizAttempts', 'QuizProgress', 'QuizWeekly', 'QuizCountryShards', 'QuizCountryBoard', 'QuizUsage', 'QuizReports', 'QuizConsent', 'ContactMessages', 'ContactRateLimits', 'LinkPreviews', 'LinkPreviewLimits', 'SlashAtlasStats', 'SlashAtlasSubscribers', 'artist_sounds', 'ArtistSoundUses', 'ArtistSoundPrints', 'ArtistSoundReports', 'ArtistSoundDeletions', 'MusicFavorites', 'MusicLibrary', 'MusicStreamLimits', 'MusicLicenses', 'MusicAdListens', 'MusicAdStats', 'MusicPlaylists', 'MusicPlaylistLibrary', 'MusicStreamCounts', 'MusicStreamDaily']);
     }
 
     // Taux de change : lisibles par tous (même avant la connexion), jamais écrits par l'app
