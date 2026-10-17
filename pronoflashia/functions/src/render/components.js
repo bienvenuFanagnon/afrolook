@@ -73,7 +73,7 @@ function matchCard(rc, m) {
   const p = m.prono;
   const href = matchPath(rc, m);
   const head = `<div class="hd"><span><b class="num">${timeEl(rc, m.coupDEnvoi)}</b>${esc(leagueName(rc, m))}</span><span>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</span></div>`;
-  const teams = `<div class="tm"><div class="tr">${crest(m.domicile)}${esc(m.domicile.nomCourt)}${formBadges(rc, p && p.formeDom)}</div><div class="tr">${crest(m.exterieur)}${esc(m.exterieur.nomCourt)}${formBadges(rc, p && p.formeExt)}</div></div>`;
+  const teams = `<div class="tm"><div class="tr">${crest(m.domicile)}${esc(m.domicile.nomCourt)}${formBadges(rc, p && p.formeDom)}</div><span class="vs2" aria-hidden="true">vs</span><div class="tr">${crest(m.exterieur)}${esc(m.exterieur.nomCourt)}${formBadges(rc, p && p.formeExt)}</div></div>`;
   if (m.statut === 'termine' && m.resultat) {
     const r = m.resultat;
     const mark = r.reussi === true ? '<span class="badge-ok">✅</span>' : r.reussi === false ? '<span class="badge-ko">❌</span>' : '';

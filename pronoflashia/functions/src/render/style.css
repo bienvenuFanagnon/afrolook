@@ -83,6 +83,7 @@ img{max-width:100%}
 .tm{display:flex;flex-direction:column;gap:7px}
 .tr{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px}
 .tr .fm{margin-left:auto;display:none;gap:3px}
+.tm .vs2{display:none}
 .fm i{font-style:normal;width:17px;height:17px;border-radius:4px;font-size:10px;font-weight:700;display:grid;place-items:center;color:var(--ink)}
 .fm .V{background:var(--ok)}.fm .N{background:#9aa6c4}.fm .D{background:var(--ko)}
 .cr{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;flex:none;letter-spacing:.3px;border:2px solid rgba(255,255,255,.15)}
@@ -345,6 +346,12 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .sbar[hidden]{display:none}
 .sbar button{position:absolute;right:6px;top:4px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--s1);font-size:11px;z-index:2}
 
+/* téléphone : les deux équipes sur une seule ligne (écusson au-dessus du nom), « vs » au centre */
+@media (max-width:599px){
+  .mc .tm{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:4px 6px;padding:2px 0 4px}
+  .mc .tm .tr{flex-direction:column;align-items:center;text-align:center;gap:6px;font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+  .mc .tm .vs2{display:block;align-self:center;color:var(--mut);font-family:var(--fd);font-size:15px;letter-spacing:1px;text-transform:uppercase}
+}
 @media (min-width:600px){
   .top3{grid-template-columns:repeat(3,1fr)}
   .t3{flex-direction:column;align-items:stretch;justify-content:flex-start}
@@ -389,7 +396,7 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .al a{text-decoration:none;color:var(--tx);display:grid;gap:1px}
 .al a b{font-size:14px}.al a em{font-style:normal;color:var(--flash);font-size:13px}
 .al a:hover b{color:var(--flash)}
-.tr{display:grid;gap:2px;margin-bottom:8px}.tr small{color:var(--mut);font-size:12.5px;padding-left:2px}
+.ctr{display:grid;gap:2px;margin-bottom:8px}.ctr small{color:var(--mut);font-size:12.5px;padding-left:2px}
 
 .pwa{position:fixed;left:10px;right:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:70;max-width:520px;margin:0 auto;display:grid;grid-template-columns:44px 1fr auto;gap:4px 12px;align-items:center;background:var(--s2);border:1px solid var(--flash);border-radius:14px;padding:10px 38px 10px 10px;box-shadow:0 10px 32px rgba(0,0,0,.6)}
 .pwa[hidden]{display:none}

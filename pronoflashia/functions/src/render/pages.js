@@ -522,7 +522,7 @@ function couponHistoryBox(rc, coupons) {
   const s = summarizeCoupons(coupons);
   const tiers = ['prudent', 'equilibre', 'audacieux'].filter((k) => s.parNiveau[k] && s.parNiveau[k].n).map((k) => {
     const v = s.parNiveau[k];
-    return `<div class="tr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux}\u00a0%</span></div><small>${esc(t.couponTierRow(v.gagnes, v.n, v.taux, v.annonce))}</small></div>`;
+    return `<div class="ctr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux}\u00a0%</span></div><small>${esc(t.couponTierRow(v.gagnes, v.n, v.taux, v.annonce))}</small></div>`;
   }).join('');
   return `<div class="box" id="coupons"><div class="lbl">${t.couponHistTitle}</div><p class="note" style="margin:8px 0">${t.couponHistP}</p>` +
     (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
