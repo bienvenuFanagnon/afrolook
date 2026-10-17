@@ -12,6 +12,7 @@ import '../../ads/admob_service.dart';
 import '../../ads/rewards_service.dart';
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
+import '../../services/template_link.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../chronique/chroniqueform.dart';
@@ -23,7 +24,10 @@ import 'card_text.dart';
 
 /// Carte prête à être publiée ou utilisée : l'image (JPEG 1080 px), la légende proposée et le style choisi.
 class CardResult {
-  CardResult({required this.image, required this.caption, required this.pro, required this.format, this.sourcePostId, this.voteLink});
+  CardResult({required this.image, required this.caption, required this.pro, required this.format, this.sourcePostId, this.voteLink, this.templateRef});
+
+  /// Style (et modèle) de la carte, pour « Essayer ce modèle » sous le post publié (voir template_link.dart).
+  final String? templateRef;
   final Uint8List image;
 
   /// Post d'origine de la carte (carte créée depuis un post existant) : la publication crée un NOUVEAU post, l'ancien n'est pas modifié.
@@ -225,10 +229,16 @@ class CardFlow {
   /// (images max, caractères, délai entre deux posts, pays…), le débit de la carte se fait à la vraie publication.
   /// [asDefi] : « Lancer un défi avec cette carte » : même écran, avec le type « Défi » déjà choisi (cagnotte, date de fin…).
   static Future<bool> publishAsPost(BuildContext context, CardResult r, CardQuote quote, {Canal? canal, String? defiPostId, bool asDefi = false, String? presetPostId}) async {
-    final done = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => _PostPublishPage(result: r, quote: quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi, presetPostId: presetPostId)),
-    );
+    PostTemplateLink.set(r.templateRef);
+    final bool? done;
+    try {
+      done = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => _PostPublishPage(result: r, quote: quote, canal: canal, defiPostId: defiPostId, asDefi: asDefi, presetPostId: presetPostId)),
+      );
+    } finally {
+      PostTemplateLink.set(null); // une carte non publiée ne doit pas marquer le prochain post
+    }
     return done == true;
   }
 

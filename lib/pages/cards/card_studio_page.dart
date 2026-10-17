@@ -1,3 +1,4 @@
+import '../../services/template_link.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -211,7 +212,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     await CardExport.precache(context, _source, _spec);
     final png = await CardExport.toPng(_boundaryKey, format: format);
     final jpeg = await CardFlow.toJpeg(png);
-    return CardResult(image: jpeg, caption: _spec.hasVote ? CardFlow.voteCaption(_spec.voteText!.trim(), _spec.voteLink!) : CardFlow.postCaption(_source), pro: _isPro, format: format, sourcePostId: _source.postId, voteLink: _spec.hasVote ? _spec.voteLink : null);
+    return CardResult(image: jpeg, caption: _spec.hasVote ? CardFlow.voteCaption(_spec.voteText!.trim(), _spec.voteLink!) : CardFlow.postCaption(_source), pro: _isPro, format: format, sourcePostId: _source.postId, voteLink: _spec.hasVote ? _spec.voteLink : null, templateRef: TemplateRef.fromCard(_spec.style, _spec.template).code);
   }
 
   Future<void> _publish() async {

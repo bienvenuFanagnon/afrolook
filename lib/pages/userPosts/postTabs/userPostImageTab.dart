@@ -1,3 +1,4 @@
+import '../../../services/template_link.dart';
 import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
@@ -1598,8 +1599,9 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             return;
           }
         } else {
-          await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
+          await FirebaseFirestore.instance.collection('Posts').doc(postId).set({...post.toJson(), ...PostTemplateLink.fields()});
           StudioSoundLink.linkIfPending(postId); // post fait avec un son d'artiste : lien vérifié par le serveur
+          PostTemplateLink.published(); // post fait avec un template : « Essayer ce template » sous le post
         }
         if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
           FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
