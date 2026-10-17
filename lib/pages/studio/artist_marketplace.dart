@@ -78,6 +78,9 @@ class ArtistSound {
   final int useCoins; // prix d'utilisation dans le Studio (2 à 20), 0 = prix par défaut
   final int saleCoins; // prix de vente du titre complet (50 à 500), 0 = pas en vente
   final int saleCount;
+  final int streamCount; // écoutes comptées (30 s), comme les « streams » d'une plateforme de musique
+  final int saleEarnings; // pièces gagnées sur les ventes du titre
+  final int useEarnings; // pièces gagnées quand le son est utilisé dans un post
   final Object? processed; // true | 'error' | null (analyse du serveur)
   final List<Map<String, dynamic>> duplicates;
   final List<String> availableCountries; // pays où le titre est proposé ('ALL' = tous ; vide = ancien titre, pour tous)
@@ -107,6 +110,9 @@ class ArtistSound {
     this.useCoins = 0,
     this.saleCoins = 0,
     this.saleCount = 0,
+    this.streamCount = 0,
+    this.saleEarnings = 0,
+    this.useEarnings = 0,
     this.processed,
     this.duplicates = const [],
     this.availableCountries = const [],
@@ -152,6 +158,9 @@ class ArtistSound {
       useCoins: (map['useCoins'] as num?)?.toInt() ?? 0,
       saleCoins: (map['saleCoins'] as num?)?.toInt() ?? 0,
       saleCount: (map['saleCount'] as num?)?.toInt() ?? 0,
+      streamCount: (map['streamCount'] as num?)?.toInt() ?? 0,
+      saleEarnings: (map['saleEarnings'] as num?)?.toInt() ?? 0,
+      useEarnings: (map['useEarnings'] as num?)?.toInt() ?? 0,
       processed: map['processed'],
       duplicates: [for (final d in (map['duplicates'] as List? ?? const [])) Map<String, dynamic>.from(d as Map)],
       availableCountries: [for (final x in (map['availableCountries'] as List? ?? const [])) '$x'],
@@ -978,10 +987,16 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
             const SizedBox(height: 16),
           ],
           Row(children: [
+            Expanded(child: _Stat(label: 'Écoutes', value: compactCount(s.streamCount), c: c)),
+            const SizedBox(width: 10),
             Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
             const SizedBox(width: 10),
-            Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${s.unitPrice} pièces', c: c)),
+            Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '🪙 ${s.unitPrice}', c: c)),
           ]),
+          if (MusicTrack.fromSound(s).isMine) ...[
+            const SizedBox(height: 10),
+            _earningsBox(c, s),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             height: 46,
@@ -1033,6 +1048,34 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   }
 
   /// Carte du lecteur : message (extrait gratuit / fin), barre avec la zone verrouillée du titre complet, temps.
+  /// Pour l'artiste : d'où viennent ses pièces sur ce titre (ventes du titre, utilisation dans des posts).
+  Widget _earningsBox(AppColors c, ArtistSound s) {
+    Widget line(String label, String detail, int coins) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(label, style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                Text(detail, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              ]),
+            ),
+            Text('🪙 $coins', style: TextStyle(color: c.primary, fontSize: 15, fontWeight: FontWeight.w900)),
+          ]),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('PIÈCES GAGNÉES SUR CE TITRE', style: TextStyle(color: c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 1)),
+        const SizedBox(height: 4),
+        line('Ventes du titre', '${s.saleCount} vente${s.saleCount > 1 ? 's' : ''} · 60 % du prix', s.saleEarnings),
+        line('Utilisations dans des posts', '${s.usageCount} utilisation${s.usageCount > 1 ? 's' : ''} · 60 % du prix', s.useEarnings),
+        Divider(color: c.border, height: 12),
+        line('Total', '${compactCount(s.streamCount)} écoute${s.streamCount > 1 ? 's' : ''} (30 s) — les écoutes ne rapportent pas de pièces', s.totalEarningsCoins),
+      ]),
+    );
+  }
+
   Widget _playerCard(AppColors c, ArtistSound s) {
     final total = s.durationMs > 0 ? s.durationMs : 204000;
     return Container(
@@ -1229,6 +1272,13 @@ Future<bool> buyTrack(BuildContext context, ArtistSound s) async {
   return done;
 }
 
+/// 1 234 → « 1,2 k » ; 1 500 000 → « 1,5 M ».
+String compactCount(int n) {
+  if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(n >= 10000000 ? 0 : 1).replaceAll('.', ',')} M';
+  if (n >= 1000) return '${(n / 1000).toStringAsFixed(n >= 10000 ? 0 : 1).replaceAll('.', ',')} k';
+  return '$n';
+}
+
 class _Stat extends StatelessWidget {
   final String label;
   final String value;
@@ -1283,8 +1333,9 @@ class MyArtistSoundsPage extends StatelessWidget {
           final sounds = [for (final d in snap.data!.docs) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)];
           final earned = sounds.fold<int>(0, (a, s) => a + s.totalEarningsCoins);
           final uses = sounds.fold<int>(0, (a, s) => a + s.usageCount);
+          final streams = sounds.fold<int>(0, (a, s) => a + s.streamCount);
           return ListView(padding: const EdgeInsets.all(16), children: [
-            _earningsCard(c, earned, uses),
+            _earningsCard(c, earned, uses, streams),
             const SizedBox(height: 14),
             _howItWorks(c),
             const SizedBox(height: 16),
@@ -1312,7 +1363,7 @@ class MyArtistSoundsPage extends StatelessWidget {
     );
   }
 
-  Widget _earningsCard(AppColors c, int earned, int uses) {
+  Widget _earningsCard(AppColors c, int earned, int uses, int streams) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFE91E63)]), borderRadius: BorderRadius.circular(16)),
@@ -1326,8 +1377,11 @@ class MyArtistSoundsPage extends StatelessWidget {
           ]),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          const Text('Écoutes', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(compactCount(streams), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 4),
           const Text('Utilisations', style: TextStyle(color: Colors.white70, fontSize: 12)),
-          Text('$uses', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+          Text('$uses', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
         ]),
       ]),
     );
@@ -1456,7 +1510,7 @@ class _MySoundTile extends StatelessWidget {
                 _pricingBadge(sound, colors),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('${sound.usageCount} util. · 🪙 ${sound.totalEarningsCoins} gagnées', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                  child: Text('${compactCount(sound.streamCount)} écoutes · ${sound.saleCount} ventes · ${sound.usageCount} util. · 🪙 ${sound.totalEarningsCoins}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
                 ),
               ]),
             ]),

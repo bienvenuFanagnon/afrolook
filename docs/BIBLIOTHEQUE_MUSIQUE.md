@@ -169,3 +169,18 @@ Estimations de travail, à confirmer.
 5. Validation : l'équipe seule au début.
 
 Reste ouvert : les pays supplémentaires coûtent-ils des pièces (même grille que les posts : gratuit 1 pays, Premium 20, Gold tous) ?
+
+## 9 quinquies. Playlists, écoutes et gains par titre
+
+**Playlists** (onglet « Playlists » de la page Musique, « Mes playlists ajoutées » dans Ma bibliothèque, « Ajouter à une playlist » dans le menu ⋮ d'un titre) :
+- Tout le monde voit une playlist et son contenu. Elle est **gratuite** ou **payante** (de 20 à 500 pièces, le créateur touche 60 %).
+- Ajouter une playlist à sa bibliothèque (gratuit ou payant) permet de la lancer en entier, même en quittant l'application (lecture en arrière-plan). Sans ajout : un titre à la fois.
+- Les titres payants d'artistes sont permis mais **signalés** (pastille « Titre payant », carte d'avertissement sur la page et dans l'éditeur, rappel dans la confirmation d'achat). Acheter la playlist ne les débloque pas : sans achat de chaque titre, seul l'extrait de 30 s est lu, que le créateur de la playlist l'ait acheté ou non. À la fin d'un extrait dans une playlist : la voix annonce le prix, puis le titre suivant démarre.
+- Transactions nommées : « Achat de la playlist « X » — N pièces » / « Vente de ta playlist « X » — N pièces reçues ».
+- Le créateur voit sur sa playlist : ajouts, écoutes, pièces gagnées.
+
+**Écoutes (streams)** : une écoute = 30 s de lecture (ou extrait de 30 s écouté en entier), comptée par le serveur (`musicStream`) : 1 par personne, par titre et par tranche de 10 min, 600 par jour, jamais sur son propre titre. Le compteur apparaît sur les lignes, la fiche du titre, les playlists et l'espace artiste.
+
+**Pièces gagnées par titre** (fiche du titre pour l'artiste, « Mes sons ») : ventes du titre (`saleEarnings`), utilisations dans des posts (`useEarnings`), total. Les écoutes ne rapportent pas de pièces.
+
+Serveur : `functions/src/studio/musicPlaylists.ts` (`playlistSave`, `playlistDelete`, `playlistAdd`, `musicStream`). Client : `lib/services/music_playlists.dart`, `lib/pages/music/playlists_pages.dart`.

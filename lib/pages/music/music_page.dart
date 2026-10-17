@@ -1,5 +1,5 @@
 // Page Musique d'Afrolook : écouter, aimer et utiliser les musiques gratuites d'Afrolook et les sons des artistes.
-// Onglets : Pour toi · Gratuites · Artistes · Ma bibliothèque · Favoris. Thèmes clair et sombre (AppColors).
+// Onglets : Pour toi · Gratuites · Artistes · Playlists · Ma bibliothèque · Favoris. Thèmes clair et sombre (AppColors).
 // Dans « Pour toi », la carte « en lecture » (disque vinyle) fait office de lecteur ; dans les autres onglets, le lecteur flottant reste visible.
 // Chaque ligne a son bouton « Post » (créer un post avec ce son) et son bouton lecture ; la file d'attente enchaîne les titres.
 
@@ -27,20 +27,26 @@ import '../studio/artist_sound_common.dart';
 import '../studio/sound_countries.dart';
 import '../studio/montage/montage_music.dart';
 import 'music_favorites.dart';
+import 'playlists_pages.dart';
+import '../../services/music_playlists.dart';
 
 class MusicPage extends StatefulWidget {
-  const MusicPage({super.key, this.preview});
+  const MusicPage({super.key, this.preview, this.previewPlaylists});
 
   /// Aperçu avec des titres fournis d'avance (captures d'écran et tests) : aucune connexion à Firebase.
   @visibleForTesting
   final ({List<MusicTrack> sounds, List<MusicTrack> free})? preview;
+
+  /// Playlists de l'aperçu (onglet Playlists).
+  @visibleForTesting
+  final ({List<MusicPlaylist> mine, List<MusicPlaylist> discover})? previewPlaylists;
 
   @override
   State<MusicPage> createState() => _MusicPageState();
 }
 
 class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 5, vsync: this);
+  late final TabController _tabs = TabController(length: 6, vsync: this);
   final _search = TextEditingController();
   bool _searching = false;
   String _q = '';
@@ -272,7 +278,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           unselectedLabelColor: c.textSecondary,
           indicatorColor: c.primary,
           labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-          tabs: const [Tab(text: 'Pour toi'), Tab(text: 'Gratuites'), Tab(text: 'Artistes'), Tab(text: 'Ma bibliothèque'), Tab(text: 'Favoris')],
+          tabs: const [Tab(text: 'Pour toi'), Tab(text: 'Gratuites'), Tab(text: 'Artistes'), Tab(text: 'Playlists'), Tab(text: 'Ma bibliothèque'), Tab(text: 'Favoris')],
         ),
       ),
       body: widget.preview != null
@@ -317,7 +323,8 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           _forYou(c, sounds, free, loading),
           _list(c, [...free, ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.'),
           _list(c, sounds.where(_match).toList(), loading ? '' : 'Aucun son d’artiste pour l’instant.', loading: loading, artistsCta: true),
-          _list(c, library.where(_match).toList(), 'Achète un titre : il reste ici, lisible en entier dans Afrolook.'),
+          PlaylistsTab(preview: widget.previewPlaylists ?? (widget.preview != null ? (mine: const [], discover: const []) : null), query: _q),
+          _list(c, library.where(_match).toList(), 'Achète un titre : il reste ici, lisible en entier dans Afrolook.', header: widget.preview == null ? const LibraryPlaylists() : null),
           _list(c, favItems.where(_match).toList(), 'Touche le ♡ d’un titre pour le retrouver ici.'),
         ]);
       },
@@ -421,8 +428,9 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
         ),
       );
 
-  Widget _list(AppColors c, List<MusicTrack> items, String empty, {bool loading = false, bool artistsCta = false}) {
+  Widget _list(AppColors c, List<MusicTrack> items, String empty, {bool loading = false, bool artistsCta = false, Widget? header}) {
     return ListView(padding: const EdgeInsets.fromLTRB(12, 10, 12, 24), children: [
+      if (header != null) header,
       if (artistsCta) _artistCta(c),
       if (loading) Padding(padding: const EdgeInsets.all(24), child: Center(child: CircularProgressIndicator(color: c.primary))),
       if (!loading && items.isEmpty)
@@ -544,7 +552,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                     Icon(Icons.download_done_rounded, size: 14, color: c.primary),
                   ],
                   const SizedBox(width: 6),
-                  Expanded(child: Text(it.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                  Expanded(child: Text((it.sound?.streamCount ?? 0) > 0 ? '${it.artist} · ${compactCount(it.sound!.streamCount)} écoutes' : it.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
                 ]),
               ]),
             ),
@@ -571,6 +579,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
               color: c.surface,
               onSelected: (v) {
                 if (v == 'fav') MusicFavorites.toggle(it.kind, it.id, title: it.title);
+                if (v == 'playlist') showAddToPlaylistSheet(context, it);
                 if (v == 'create') _create(it);
                 if (v == 'video') _create(it, ownVideo: true);
                 if (v == 'adlisten') _playWithAd(it);
@@ -582,6 +591,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
               },
               itemBuilder: (_) => [
                 PopupMenuItem(value: 'fav', child: Text(fav ? '💔 Retirer des favoris' : '❤️ Ajouter aux favoris')),
+                const PopupMenuItem(value: 'playlist', child: Text('📃 Ajouter à une playlist')),
                 PopupMenuItem(value: 'create', child: Text(it.useCoins > 0 ? '🎬 Créer un post (${it.useCoins} 🪙)' : '🎬 Créer un post avec ce son')),
                 PopupMenuItem(value: 'video', child: Text(it.useCoins > 0 ? '🎥 Ma vidéo avec ce son (${it.useCoins} 🪙)' : '🎥 Ma vidéo avec ce son')),
                 if (it.saleCoins > 0 && !it.isMine && !owned) PopupMenuItem(value: 'buy', child: Text('🛒 Acheter le titre · ${it.saleCoins} 🪙')),

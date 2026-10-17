@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:afrotok/pages/music/music_page.dart';
+import 'package:afrotok/pages/music/playlists_pages.dart';
+import 'package:afrotok/services/music_playlists.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/pages/studio/artist_sound_common.dart';
 import 'package:afrotok/pages/studio/feed_sound_card.dart';
@@ -46,6 +48,10 @@ void main() {
   final tracks = sounds.map((s) => MusicTrack.fromSound(s)).toList();
   final free = kStudioTracks.take(4).map(MusicTrack.fromStudio).toList();
 
+  MusicPlaylist pl(String id, String title, String pseudo, {bool paid = false, int price = 0, int tracks = 8, int paidCount = 0, int streams = 0, int adds = 0, int earned = 0}) => MusicPlaylist(
+        id: id, ownerId: 'o_$id', ownerPseudo: pseudo, title: title, description: 'Les titres qui font bouger les soirées d’Abidjan à Cotonou.', access: paid ? 'paid' : 'free', priceCoins: price,
+        trackIds: [for (var i = 0; i < tracks; i++) 'a:t$i'], paidCount: paidCount, streamCount: streams, addCount: adds, earnedCoins: earned);
+
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     await _loadFont('Nunito', 'assets/fonts/Nunito-Regular.ttf');
@@ -62,13 +68,17 @@ void main() {
     SoundPreview.playing.value = ended ? null : t.key;
   }
 
-  Future<void> shot(WidgetTester tester, String name, bool dark, Widget Function() build, {bool overlay = false, double scroll = 0}) async {
+  Future<void> shot(WidgetTester tester, String name, bool dark, Widget Function() build, {bool overlay = false, double scroll = 0, String? tap}) async {
     await tester.binding.setSurfaceSize(const Size(360, 744));
     tester.view.devicePixelRatio = 1;
     final key = GlobalKey();
     final app = MaterialApp(debugShowCheckedModeBanner: false, theme: dark ? AppTheme.dark : AppTheme.light, home: build(), builder: overlay ? (c, child) => MusicOverlayHost(child: child!) : null);
     await tester.pumpWidget(RepaintBoundary(key: key, child: app));
     await tester.pump(const Duration(milliseconds: 500));
+    if (tap != null) {
+      await tester.tap(find.text(tap).first);
+      await tester.pump(const Duration(milliseconds: 600));
+    }
     if (scroll != 0) {
       await tester.drag(find.byType(Scrollable).first, Offset(0, -scroll));
       await tester.pump(const Duration(milliseconds: 500));
@@ -129,6 +139,30 @@ void main() {
       playing(tracks.first, ended: true);
       await shot(t, '7_lecteur_flottant_fin', dark, () => Scaffold(appBar: AppBar(title: const Text('Quiz & Étude')), body: const Center(child: Text('Une page quelconque de l’application'))),
           overlay: true);
+    });
+    testWidgets('onglet Playlists (${dark ? 'sombre' : 'clair'})', (t) async {
+      playing(tracks.first);
+      final mine = [pl('m1', 'Mes soirées Zouk', 'moi', tracks: 12, streams: 1840, paidCount: 2)];
+      final disc = [
+        pl('d1', 'Afrobeat du matin', 'kofi_aya', tracks: 14, streams: 12400),
+        pl('d2', 'Amapiano Vibes', 'tobi_ade', paid: true, price: 80, tracks: 20, paidCount: 6, streams: 3150),
+        pl('d3', 'Calme pour réviser', 'awa_ndiaye', tracks: 9, streams: 870),
+      ];
+      await shot(t, '9_onglet_playlists', dark, () => MusicPage(preview: (sounds: tracks, free: free), previewPlaylists: (mine: mine, discover: disc)), tap: 'Playlists');
+    });
+    testWidgets('playlist payante à ajouter (${dark ? 'sombre' : 'clair'})', (t) async {
+      playing(tracks.first);
+      final p = pl('d2', 'Amapiano Vibes', 'tobi_ade', paid: true, price: 80, tracks: 5, paidCount: 3, streams: 3150, adds: 41);
+      await shot(t, '10_playlist_detail', dark, () => PlaylistDetailPage(playlist: p, preview: (load: PlaylistLoad([...tracks, free.first].take(5).toList(), 0), inLibrary: false, mine: false)));
+    });
+    testWidgets('créer une playlist payante (${dark ? 'sombre' : 'clair'})', (t) async {
+      playing(tracks.first);
+      await shot(t, '11_playlist_creation', dark, () => PlaylistEditorPage(firstTrack: tracks[2]), tap: 'Payante');
+    });
+    testWidgets('ma playlist, gains (${dark ? 'sombre' : 'clair'})', (t) async {
+      playing(tracks.first);
+      final p = pl('m1', 'Mes soirées Zouk', 'moi', paid: true, price: 60, tracks: 5, paidCount: 3, streams: 1840, adds: 23, earned: 828);
+      await shot(t, '12_ma_playlist', dark, () => PlaylistDetailPage(playlist: p, preview: (load: PlaylistLoad(tracks, 0), inLibrary: false, mine: true)));
     });
   }
 }

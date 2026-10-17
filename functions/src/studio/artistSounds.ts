@@ -122,7 +122,7 @@ export async function chargeArtistSound(uid: string, info: ArtistSoundInfo, jobI
       const tu = db.collection("TransactionSoldes").doc();
       tx.set(tu, {
         id: tu.id, user_id: uid, type: "DEPENSE", statut: "VALIDER",
-        description: `Son « ${info.title.slice(0, 40)} » dans le Studio — ${price} pièces`,
+        description: `Son « ${info.title.slice(0, 40)} » utilisé dans un post — ${price} pièces`,
         montant: price, frais: 0, montant_total: price, methode_paiement: "pieces", createdAt: now, updatedAt: now,
         purchaseKind: "studio_son_artiste", purchaseRefId: info.id,
       });
@@ -133,13 +133,13 @@ export async function chargeArtistSound(uid: string, info: ArtistSoundInfo, jobI
         const ta = db.collection("TransactionSoldes").doc();
         tx.set(ta, {
           id: ta.id, user_id: info.artistId, type: "GAIN_PIECES", statut: "VALIDER",
-          description: `Ton son « ${info.title.slice(0, 40)} » a été utilisé — ${artistCoins} pièces reçues`,
+          description: `Ton son « ${info.title.slice(0, 40)} » utilisé dans un post — ${artistCoins} pièces reçues`,
           montant: artistCoins, frais: 0, montant_total: artistCoins, methode_paiement: "pieces", createdAt: now, updatedAt: now,
           purchaseKind: "studio_son_artiste", purchaseRefId: info.id, payerId: uid,
         });
       }
       recordAppCommission(tx, "contenus", price - artistCoins, now);
-      tx.update(soundRef, { usageCount: FieldValue.increment(1), totalEarningsCoins: FieldValue.increment(artistCoins) });
+      tx.update(soundRef, { usageCount: FieldValue.increment(1), totalEarningsCoins: FieldValue.increment(artistCoins), useEarnings: FieldValue.increment(artistCoins) });
     } else {
       tx.update(soundRef, { usageCount: FieldValue.increment(1) });
     }

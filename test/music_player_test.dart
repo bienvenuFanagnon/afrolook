@@ -1,7 +1,11 @@
 import 'dart:math';
 
+import 'package:afrotok/pages/music/playlists_pages.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
+import 'package:afrotok/services/music_playlists.dart';
+import 'package:afrotok/pages/studio/montage/montage_music.dart';
 import 'package:afrotok/services/music_queue.dart';
+import 'package:afrotok/services/music_voice.dart';
 import 'package:afrotok/widgets/music/preview_end_sheet.dart';
 import 'package:afrotok/widgets/music/vinyl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -43,6 +47,16 @@ void main() {
       expect(t.owned, isTrue);
       expect(t.isFree, isFalse);
       expect(t.saleCoins, 0);
+    });
+  });
+
+  group('voix de fin d’extrait', () {
+    test('dit que l’extrait est fini et le prix en pièces', () {
+      expect(MusicVoice.endOfPreview(100, code: 'fr'), 'Extrait gratuit terminé. Pour écouter la suite, achetez ce titre pour 100 pièces.');
+      expect(MusicVoice.endOfPreview(100, code: 'en'), 'Free preview over. To hear the rest, buy this track for 100 coins.');
+    });
+    test('sans prix de vente : seulement « extrait terminé »', () {
+      expect(MusicVoice.endOfPreview(0, code: 'fr'), 'Extrait gratuit terminé.');
     });
   });
 
@@ -124,5 +138,64 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  });
+
+  group('playlists', () {
+    MusicPlaylist pl({bool paid = false, int price = 0, int paidCount = 0, List<String>? ids}) => MusicPlaylist.fromMap({
+          'ownerId': 'o1', 'ownerPseudo': 'tobi_ade', 'title': 'Amapiano Vibes', 'access': paid ? 'paid' : 'free', 'priceCoins': price,
+          'trackIds': ids ?? ['a:s1', 'f:amapiano'], 'paidCount': paidCount, 'streamCount': 3150,
+        }, 'p1');
+
+    test('accès, prix et part du créateur (60 %)', () {
+      final p = pl(paid: true, price: 80, paidCount: 1);
+      expect(p.isPaid, isTrue);
+      expect(p.ownerShare, 48);
+      expect(p.hasPaidTracks, isTrue);
+      expect(p.trackCount, 2);
+      expect(pl().isPaid, isFalse);
+    });
+
+    test('limites de prix de 20 à 500 pièces', () {
+      expect(kPlaylistMinPrice, 20);
+      expect(kPlaylistMaxPrice, 500);
+      expect(pl(paid: true, price: 500).ownerShare, 300);
+      expect(pl(paid: true, price: 20).ownerShare, 12);
+    });
+
+    test('référence d’un titre : « a: » pour un artiste, « f: » pour une musique gratuite', () {
+      expect(MusicPlaylists.ref(MusicTrack.fromSound(_sound())), 'a:s1');
+      expect(MusicPlaylists.ref(MusicTrack.fromStudio(kStudioTracks.first)), 'f:${kStudioTracks.first.id}');
+    });
+
+    test('écoutes en notation courte', () {
+      expect(compactCount(0), '0');
+      expect(compactCount(999), '999');
+      expect(compactCount(1234), '1,2 k');
+      expect(compactCount(12400), '12 k');
+      expect(compactCount(1500000), '1,5 M');
+    });
+
+    testWidgets('page d’une playlist payante : avertissement, lecture bloquée, bouton d’ajout au prix', (tester) async {
+      final p = pl(paid: true, price: 80, paidCount: 1);
+      final tracks = [MusicTrack.fromSound(_sound()), MusicTrack.fromStudio(kStudioTracks.first)];
+      await tester.pumpWidget(MaterialApp(home: PlaylistDetailPage(playlist: p, preview: (load: PlaylistLoad(tracks, 1), inLibrary: false, mine: false))));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('1 titre payant dans cette playlist'), findsOneWidget);
+      expect(find.textContaining('Ajouter à ma bibliothèque · 🪙 80'), findsOneWidget);
+      expect(find.textContaining('1 titre n’est plus disponible'), findsOneWidget);
+      final play = tester.widget<ButtonStyleButton>(find.widgetWithText(FilledButton, 'Lecture'));
+      expect(play.onPressed, isNull); // pas ajoutée : lecture de toute la playlist indisponible
+    });
+
+    testWidgets('playlist gratuite : lecture possible, pas d’avertissement', (tester) async {
+      final p = pl();
+      final tracks = [MusicTrack.fromStudio(kStudioTracks.first)];
+      await tester.pumpWidget(MaterialApp(home: PlaylistDetailPage(playlist: p, preview: (load: PlaylistLoad(tracks, 0), inLibrary: false, mine: false))));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('titre payant'), findsNothing);
+      final play = tester.widget<ButtonStyleButton>(find.widgetWithText(FilledButton, 'Lecture'));
+      expect(play.onPressed, isNotNull);
+      expect(find.textContaining('Ajouter à ma bibliothèque · gratuit'), findsOneWidget);
+    });
   });
 }
