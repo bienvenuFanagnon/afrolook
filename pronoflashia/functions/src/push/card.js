@@ -41,19 +41,19 @@ function cleanCard(c) {
   // la police embarquée n'a pas d'emoji : ils sont retirés du texte de l'image (ils restent dans le titre de la notification)
   const s = (v, n) => String(v == null ? '' : v).replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').replace(/\s+/g, ' ').trim().slice(0, n);
   const lignes = (Array.isArray(c && c.lignes) ? c.lignes : []).slice(0, 4).map((x) => ({ l: s(x && x.l, 60), v: s(x && x.v, 14) })).filter((x) => x.l);
-  return { badge: s(c && c.badge, 28), titre: s(c && c.titre, 120), lignes, pied: s(c && c.pied, 40) || 'PronoFlash IA' };
+  return { badge: s(c && c.badge, 28), titre: s(c && c.titre, 120), lignes, pied: s(c && c.pied, 60) || 'PronoFlash IA' };
 }
 
 /** Identifiant stable d'une carte : deux envois identiques partagent la même image. */
 const cardId = (c) => crypto.createHash('sha1').update(JSON.stringify(cleanCard(c))).digest('hex').slice(0, 16);
 
-function svgOf(card) {
+function svgOf(card, h = H) {
   const c = cleanCard(card);
   const Y = '#FFD60A';
   const parts = [];
-  parts.push(`<rect width="${W}" height="${H}" fill="#0B1220"/>`);
-  parts.push(`<polygon points="760,0 1200,0 1200,600 560,600" fill="#121C33"/>`);
-  parts.push(`<rect x="0" y="0" width="14" height="${H}" fill="${Y}"/>`);
+  parts.push(`<rect width="${W}" height="${h}" fill="#0B1220"/>`);
+  parts.push(`<polygon points="760,0 1200,0 1200,${h} 560,${h}" fill="#121C33"/>`);
+  parts.push(`<rect x="0" y="0" width="14" height="${h}" fill="${Y}"/>`);
   // éclair de la marque, très grand et discret, à droite
   parts.push(`<g transform="translate(900 60) scale(11)" opacity="0.13"><path d="M13 0 L0 28 H11 L7 48 L26 18 H14 L20 0 Z" fill="${Y}"/></g>`);
   let y = 78;
@@ -70,7 +70,7 @@ function svgOf(card) {
     y += 14;
   }
   if (c.lignes.length) {
-    const room = 500 - y;
+    const room = (h - 100) - y;
     const row = Math.min(84, Math.floor(room / c.lignes.length));
     const size = row >= 76 ? 44 : row >= 62 ? 38 : 32;
     for (const x of c.lignes) {
@@ -84,15 +84,15 @@ function svgOf(card) {
       }
     }
   }
-  parts.push(`<g transform="translate(64 538) scale(0.62)"><path d="M13 0 L0 28 H11 L7 48 L26 18 H14 L20 0 Z" fill="${Y}"/></g>`);
-  parts.push(`<text x="96" y="568" font-family="Inter" font-weight="500" font-size="28" fill="#8FA0C8">${esc(c.pied)}</text>`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${parts.join('')}</svg>`;
+  parts.push(`<g transform="translate(64 ${h - 62}) scale(0.62)"><path d="M13 0 L0 28 H11 L7 48 L26 18 H14 L20 0 Z" fill="${Y}"/></g>`);
+  parts.push(`<text x="96" y="${h - 32}" font-family="Inter" font-weight="500" font-size="28" fill="#8FA0C8">${esc(c.pied)}</text>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${h}" viewBox="0 0 ${W} ${h}">${parts.join('')}</svg>`;
 }
 
 /** PNG de la carte (Buffer). resvg est chargé à la demande : le reste du site n'en dépend pas. */
-function renderPng(card) {
+function renderPng(card, h) {
   const { Resvg } = require('@resvg/resvg-js');
-  return new Resvg(svgOf(card), { font: { fontFiles: FONTS, loadSystemFonts: false, defaultFontFamily: 'Inter' }, fitTo: { mode: 'width', value: W } }).render().asPng();
+  return new Resvg(svgOf(card, h || H), { font: { fontFiles: FONTS, loadSystemFonts: false, defaultFontFamily: 'Inter' }, fitTo: { mode: 'width', value: W } }).render().asPng();
 }
 
 const COL = 'push_cards';

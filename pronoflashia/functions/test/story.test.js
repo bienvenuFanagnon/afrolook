@@ -109,3 +109,29 @@ test('fin de liste : une seule publicité (jamais deux à la suite) ; page « Le
   const home = (await route(db, '/', new Date('2026-10-16T12:00:00Z'))).body;
   assert.doesNotMatch(home, /class="ad ad-end[^"]*"[^>]*>[^]*?<\/div>\s*<div class="mob-only"><a class="afl"/, 'pas d\'encart Afrolook collé à la pub de fin');
 });
+
+test('page « À propos » : aperçu riche pour WhatsApp (titre, description, image 1200 × 630 dédiée) et message de partage qui résume le site, en français et en anglais', async () => {
+  const fs = require('fs');
+  const db = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  for (const [path, en] of [['/a-propos', false], ['/en/about', true]]) {
+    const html = (await route(db, path, NOWS)).body;
+    assert.match(html, /<meta property="og:title" content="[^"]+PronoFlash IA/);
+    assert.match(html, /<meta property="og:description" content="[^"]{60,}"/);
+    assert.match(html, en ? /og:image" content="https:\/\/[^"]+\/img\/og-about\.png"/ : /og:image" content="https:\/\/[^"]+\/img\/og-apropos\.png"/);
+    assert.match(html, /og:image:width" content="1200"><meta property="og:image:height" content="630"/);
+    assert.match(html, /class="box shb" data-where="apropos"/);
+    const wa = /href="(https:\/\/wa\.me\/\?text=[^"]+)"/.exec(html)[1];
+    const text = decodeURIComponent(wa.split('text=')[1]);
+    assert.match(text, en ? /free football predictions/ : /pronostics de foot gratuits/);
+    assert.match(text, /18\+/);
+    assert.match(text, en ? /https:\/\/[^\s]+\/en\/about$/ : /https:\/\/[^\s]+\/a-propos$/, 'le lien de la page À propos termine le message');
+    assert.ok(!/gain garanti|guaranteed/i.test(text));
+  }
+  for (const f of ['og-apropos.png', 'og-about.png']) {
+    const png = fs.readFileSync(require('path').join(__dirname, '..', '..', 'site', 'img', f));
+    assert.deepEqual([...png.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47]);
+    assert.equal(png.readUInt32BE(16), 1200);
+    assert.equal(png.readUInt32BE(20), 630);
+  }
+});

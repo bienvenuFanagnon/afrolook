@@ -93,7 +93,16 @@ async function route(db, urlPath, now = new Date()) {
     }
     case 'bilan': return bilanPage(db, rc);
     case 'coupon': return page(rc, P.couponPage(rc, { pool: await D.pool(db, now) }), cc(300, 600));
-    case 'legal': return page(rc, Object.assign({ active: r.arg === 'a-propos' ? 'apropos' : '' }, legalPage(rc, r.arg)), cc(3600, 86400));
+    case 'legal': {
+      const lp = legalPage(rc, r.arg);
+      if (r.arg === 'a-propos') {
+        // partage : aperçu riche (titre, description, image 1200 × 630) et message WhatsApp qui résume le site
+        const url = C.url(rc, lp.path);
+        lp.body += `<div class="wrap">${C.shareBox(rc, 'apropos', { url, text: rc.t.abShareMsg, title: rc.t.abShareTitle, p: rc.t.abShareP })}</div>`;
+        lp.ogImage = rc.lang === 'en' ? '/img/og-about.png' : '/img/og-apropos.png';
+      }
+      return page(rc, Object.assign({ active: r.arg === 'a-propos' ? 'apropos' : '' }, lp), cc(3600, 86400));
+    }
     case 'day': {
       const jour = r.arg === 'aujourdhui' ? rc.today : r.arg === 'demain' ? rc.tomorrow : r.arg;
       const matches = await D.matchesByDay(db, jour);
