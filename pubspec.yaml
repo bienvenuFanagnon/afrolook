@@ -234,6 +234,7 @@ dependencies:
   just_audio: ^0.9.46
   just_audio_background: ^0.0.1-beta.17
   just_audio_platform_interface: ^4.6.0
+  flutter_tts: ^4.2.5
 #  ffmpeg_kit_flutter_new: ^4.2.1
 
 

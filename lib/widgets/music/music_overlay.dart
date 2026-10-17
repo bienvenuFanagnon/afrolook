@@ -13,6 +13,7 @@ import '../../pages/studio/artist_marketplace.dart';
 import '../../pages/studio/artist_sound_common.dart';
 import '../../providers/authProvider.dart';
 import '../../services/music_queue.dart';
+import '../../services/music_voice.dart';
 import '../../services/nav_cache_service.dart';
 import '../../theme/app_colors.dart';
 import 'preview_end_sheet.dart';
@@ -107,6 +108,7 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
     };
     _end = MusicQueue.ends.listen(_onEnd);
     MusicQueue.error.addListener(_onError);
+    MusicQueue.skippedPaid.addListener(_onSkipped);
   }
 
   @override
@@ -114,6 +116,7 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
     WidgetsBinding.instance.removeObserver(this);
     _end?.cancel();
     MusicQueue.error.removeListener(_onError);
+    MusicQueue.skippedPaid.removeListener(_onSkipped);
     super.dispose();
   }
 
@@ -154,6 +157,23 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
     if (ctx != null && ctx.mounted) ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(SnackBar(content: Text(m)));
   }
 
+  /// La lecture est passée au titre suivant après la voix : un message propose d'acheter le titre dont l'extrait vient de finir.
+  void _onSkipped() {
+    final t = MusicQueue.skippedPaid.value;
+    if (t == null) return;
+    MusicQueue.skippedPaid.value = null;
+    final ctx = _navCtx;
+    if (ctx == null || !ctx.mounted || !_resumed) return;
+    final m = ScaffoldMessenger.maybeOf(ctx);
+    if (m == null) return;
+    m.hideCurrentSnackBar();
+    m.showSnackBar(SnackBar(
+      duration: const Duration(seconds: 6),
+      content: Text(t.saleCoins > 0 ? '« ${t.title} » : extrait terminé. Pour écouter la suite, achète-le pour ${t.saleCoins} pièces.' : '« ${t.title} » : extrait terminé.'),
+      action: t.sound != null ? SnackBarAction(label: t.saleCoins > 0 ? 'Acheter' : 'Voir', onPressed: () => _openTrack(t)) : null,
+    ));
+  }
+
   void _openTrack(MusicTrack t) {
     final nav = NavigationCacheService().navigatorKey.currentState;
     if (nav == null) return;
@@ -171,6 +191,7 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final keyboard = mq.viewInsets.bottom > 0;
+    MusicVoice.lang = Localizations.maybeLocaleOf(context)?.languageCode ?? 'fr';
     return Stack(children: [
       widget.child,
       Positioned(

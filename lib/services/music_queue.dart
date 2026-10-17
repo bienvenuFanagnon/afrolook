@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import '../pages/studio/artist_marketplace.dart';
 import '../pages/studio/artist_sound_common.dart';
 import '../pages/studio/montage/montage_music.dart';
+import 'music_voice.dart';
 import 'offline_music_service.dart';
 
 /// Un titre de la file : musique gratuite d'Afrolook, son d'artiste, ou titre de la bibliothèque (acheté).
@@ -107,6 +108,10 @@ class MusicQueue {
 
   /// Vrai quand le titre en cours est un extrait (titre payant pas encore débloqué).
   static final ValueNotifier<bool> previewMode = ValueNotifier<bool>(false);
+
+  /// Titre payant dont l'extrait vient de se terminer et que la lecture a laissé derrière elle (la lecture est passée au suivant) :
+  /// l'interface propose alors de l'acheter.
+  static final ValueNotifier<MusicTrack?> skippedPaid = ValueNotifier<MusicTrack?>(null);
 
   /// Message d'erreur à montrer (une seule fois) : lecture impossible…
   static final ValueNotifier<String?> error = ValueNotifier<String?>(null);
@@ -347,6 +352,7 @@ class MusicQueue {
     loading.value = false;
     _suspenders.clear();
     _resumeAfter = false;
+    unawaited(MusicVoice.stop());
     await SoundPreview.stop();
     SoundPreview.now.value = null;
   }
@@ -357,12 +363,26 @@ class MusicQueue {
     final t = current.value;
     if (t == null || t.key != key) return;
     if (previewMode.value) {
-      previewEnded.value = true;
-      _ends.add(t);
+      unawaited(_onPreviewEnded(t));
       return;
     }
     if (_queue.length > 1 || shuffle.value) {
       unawaited(next(interstitial: false));
+    }
+  }
+
+  /// Fin de l'extrait gratuit : une voix annonce « Extrait gratuit terminé. Pour écouter la suite, achetez ce titre pour N pièces. »,
+  /// puis la lecture passe au titre suivant. Sans titre suivant (titre seul), la feuille d'achat s'ouvre après la voix.
+  static Future<void> _onPreviewEnded(MusicTrack t) async {
+    previewEnded.value = true;
+    final g = _gen;
+    await MusicVoice.say(MusicVoice.endOfPreview(t.saleCoins));
+    if (g != _gen || current.value?.key != t.key) return; // la personne a déjà fait autre chose
+    if (_queue.length > 1) {
+      skippedPaid.value = t;
+      await next(interstitial: false);
+    } else {
+      _ends.add(t);
     }
   }
 

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/services/music_queue.dart';
+import 'package:afrotok/services/music_voice.dart';
 import 'package:afrotok/widgets/music/preview_end_sheet.dart';
 import 'package:afrotok/widgets/music/vinyl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -43,6 +44,16 @@ void main() {
       expect(t.owned, isTrue);
       expect(t.isFree, isFalse);
       expect(t.saleCoins, 0);
+    });
+  });
+
+  group('voix de fin d’extrait', () {
+    test('dit que l’extrait est fini et le prix en pièces', () {
+      expect(MusicVoice.endOfPreview(100, code: 'fr'), 'Extrait gratuit terminé. Pour écouter la suite, achetez ce titre pour 100 pièces.');
+      expect(MusicVoice.endOfPreview(100, code: 'en'), 'Free preview over. To hear the rest, buy this track for 100 coins.');
+    });
+    test('sans prix de vente : seulement « extrait terminé »', () {
+      expect(MusicVoice.endOfPreview(0, code: 'fr'), 'Extrait gratuit terminé.');
     });
   });
 
