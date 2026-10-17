@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,7 +15,7 @@ import '../../../utils/count_format.dart';
 /// ou carte de fin de feed.
 enum SocialFollowVariant { top, slim, end }
 
-/// Invitation à suivre Afrolook sur Facebook et TikTok.
+/// Invitation à suivre Afrolook sur Facebook, TikTok et la chaîne WhatsApp.
 ///
 /// Le clic ouvre la vraie page. Aucune vérification n'est possible côté réseau :
 /// on affiche simplement « prise en compte en cours » puis le widget se masque 1 h.
@@ -24,6 +25,19 @@ class SocialFollowCard extends StatefulWidget {
 
   static const facebookUrl = 'https://www.facebook.com/share/18tutZomcK/';
   static const tiktokUrl = 'https://www.tiktok.com/@afrotechstudio';
+  static const whatsappUrl = 'https://whatsapp.com/channel/0029VaxfuwYISTkF3o42e60V';
+
+  /// Vert officiel WhatsApp et son logo (glyphe simple-icons, 24×24).
+  static const whatsappGreen = Color(0xFF25D366);
+  static const _waPath =
+      'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z';
+
+  /// Logo WhatsApp dans la couleur voulue (blanc sur fond vert, vert sur fond clair).
+  static Widget whatsappLogo({double size = 20, Color color = Colors.white}) => SvgPicture.string(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#${color.value.toRadixString(16).padLeft(8, '0').substring(2)}" d="$_waPath"/></svg>',
+        width: size,
+        height: size,
+      );
 
   static const _kHiddenUntil = 'social_follow_hidden_until';
   static const _kDismissedUntil = 'social_follow_dismissed_until';
@@ -46,6 +60,7 @@ class SocialFollowCard extends StatefulWidget {
       final d = doc.data() ?? {};
       _counts['facebook'] = (d['facebook'] as num?)?.toInt() ?? 0;
       _counts['tiktok'] = (d['tiktok'] as num?)?.toInt() ?? 0;
+      _counts['whatsapp'] = (d['whatsapp'] as num?)?.toInt() ?? 0;
       _countsAt = DateTime.now();
     } catch (_) {}
   }
@@ -162,36 +177,36 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
     }
   }
 
+  static const _labels = {'facebook': 'Facebook', 'tiktok': 'TikTok', 'whatsapp': 'WhatsApp'};
+
   Widget _netButton(BuildContext context, String network, String url) {
     final isFb = network == 'facebook';
-    return Expanded(
-      child: Material(
-        color: isFb ? const Color(0xFF1877F2) : Colors.white,
+    final isWa = network == 'whatsapp';
+    final bg = isWa ? SocialFollowCard.whatsappGreen : (isFb ? const Color(0xFF1877F2) : Colors.white);
+    final fg = isFb || isWa ? Colors.white : Colors.black;
+    final count = SocialFollowCard._counts[network] ?? 0;
+    final label = isWa ? context.tr('Chaîne WhatsApp') : _labels[network]!;
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _open(network, url),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(isFb ? Icons.facebook : Icons.music_note_rounded,
-                    size: 20, color: isFb ? Colors.white : Colors.black),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                      (SocialFollowCard._counts[network] ?? 0) > 0
-                          ? '${isFb ? 'Facebook' : 'TikTok'} · ${formatCompactCount(SocialFollowCard._counts[network]!)}'
-                          : (isFb ? 'Facebook' : 'TikTok'),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          color: isFb ? Colors.white : Colors.black)),
-                ),
-              ],
-            ),
+        onTap: () => _open(network, url),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isWa
+                  ? SocialFollowCard.whatsappLogo(size: 20, color: fg)
+                  : Icon(isFb ? Icons.facebook : Icons.music_note_rounded, size: 20, color: fg),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(count > 0 ? '$label · ${formatCompactCount(count)}' : label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: fg)),
+              ),
+            ],
           ),
         ),
       ),
@@ -231,14 +246,20 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
         _pendingRow(context, colors, context.tr('Facebook : prise en compte en cours…')),
       if (p.contains('tiktok'))
         _pendingRow(context, colors, context.tr('TikTok : prise en compte en cours…')),
+      if (p.contains('whatsapp'))
+        _pendingRow(context, colors, context.tr('WhatsApp : prise en compte en cours…')),
       if (!p.contains('facebook') || !p.contains('tiktok'))
         Row(children: [
           if (!p.contains('facebook'))
-            _netButton(context, 'facebook', SocialFollowCard.facebookUrl),
+            Expanded(child: _netButton(context, 'facebook', SocialFollowCard.facebookUrl)),
           if (!p.contains('facebook') && !p.contains('tiktok')) const SizedBox(width: 8),
           if (!p.contains('tiktok'))
-            _netButton(context, 'tiktok', SocialFollowCard.tiktokUrl),
+            Expanded(child: _netButton(context, 'tiktok', SocialFollowCard.tiktokUrl)),
         ]),
+      if (!p.contains('whatsapp')) ...[
+        if (!p.contains('facebook') || !p.contains('tiktok')) const SizedBox(height: 8),
+        _netButton(context, 'whatsapp', SocialFollowCard.whatsappUrl),
+      ],
     ]);
   }
 
@@ -342,13 +363,16 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
         const SizedBox(width: 6),
         _miniNet(Icons.music_note_rounded, Colors.white, Colors.black,
             () => _open('tiktok', SocialFollowCard.tiktokUrl)),
+        const SizedBox(width: 6),
+        _miniNet(null, SocialFollowCard.whatsappGreen, Colors.white,
+            () => _open('whatsapp', SocialFollowCard.whatsappUrl)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.tr('Retrouve Afrolook ailleurs'),
                 style: TextStyle(
                     color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
-            Text('Facebook · TikTok',
+            Text('Facebook · TikTok · WhatsApp',
                 style: TextStyle(color: colors.textSecondary, fontSize: 11)),
           ]),
         ),
@@ -363,14 +387,16 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
     );
   }
 
-  Widget _miniNet(IconData icon, Color bg, Color fg, VoidCallback onTap) {
+  Widget _miniNet(IconData? icon, Color bg, Color fg, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 32,
         height: 32,
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(9)),
-        child: Icon(icon, size: 20, color: fg),
+        child: icon == null
+            ? Center(child: SocialFollowCard.whatsappLogo(size: 20, color: fg))
+            : Icon(icon, size: 20, color: fg),
       ),
     );
   }

@@ -2,13 +2,13 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 
-const NETWORKS = ["facebook", "tiktok"];
+const NETWORKS = ["facebook", "tiktok", "whatsapp"];
 /** Un même utilisateur est compté au plus une fois par réseau et par heure. */
 const MIN_GAP_MS = 60 * 60 * 1000;
 
 /**
- * Widget « Rejoins-nous » : compte les clics sur Facebook / TikTok.
- * Le total est dans AppConfig/socialClicks ({facebook, tiktok}), écrit uniquement ici.
+ * Widget « Rejoins-nous » : compte les clics sur Facebook / TikTok / chaîne WhatsApp.
+ * Le total est dans AppConfig/socialClicks ({facebook, tiktok, whatsapp}), écrit uniquement ici.
  */
 export const recordSocialClick = onCall({ timeoutSeconds: 15 }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Auth requise");
