@@ -357,7 +357,7 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
   .mc .tm{grid-column:1;grid-row:2/6;align-self:center;gap:12px}
   .mc .tr{font-size:17px}
   .mc .pr{border-top:0;padding-top:0}
-  .afl{grid-template-columns:130px 1fr}
+  .afl{grid-template-columns:104px 1fr}
 }
 @media (min-width:900px){
   .nav{display:flex}
@@ -430,3 +430,18 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .follow button[aria-pressed=true]{border-color:var(--flash);background:#211c05;color:var(--flash)}
 .ptoast{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:75;max-width:420px;margin:0 auto;background:var(--s2);border:1px solid var(--flash);border-radius:12px;padding:11px 14px;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
 .fk{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:7px}.fk li{font-size:14px;line-height:1.4}.fk a{color:var(--cy);margin-left:2px}
+
+.nwv{display:grid;gap:8px}
+.nwv .nw{padding:9px;gap:12px;align-items:center}
+.nwv .nwi{width:92px;height:68px}
+.nwv .nwt{gap:4px}
+.nwv .nw span{font-size:15px;line-height:1.3;-webkit-line-clamp:3}
+.nwv .nw small{font-size:12px}
+@media(min-width:760px){.nwv .nwi{width:132px;height:84px}.nwv .nw span{font-size:16.5px}}
+.nwv .ad{margin:2px 0}
+/* encarts Afrolook de la liste : plus bas */
+.afl .im{min-height:72px}
+.afl .bd{padding:8px 12px;gap:4px}
+.afl p{font-size:17px}
+.afl .cta{font-size:11.5px;padding:4px 10px}
+.hero .hmore{color:var(--cy);white-space:nowrap;font-weight:600}

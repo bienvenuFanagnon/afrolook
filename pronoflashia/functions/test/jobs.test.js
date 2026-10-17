@@ -445,3 +445,19 @@ test('notes d\'équipes : saison précédente inaccessible (offre gratuite) → 
   await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: new Date(NOW.getTime() + 8 * 864e5), forceSeason: true }, r));
   assert.equal(denied, 2);
 });
+
+test('syncFixtures : saisons précédentes demandées au plus 2 par passage (limite de 10 appels par minute), le reste au passage suivant', async () => {
+  const db = new FakeDb();
+  for (const id of [61, 62, 63, 64]) await db.seed('leagues', String(id), Object.assign({}, LEAGUE, { apiId: id, slug: `lg-${id}`, suivi: true }));
+  const base = mockApi({ upcoming: UPCOMING });
+  const api = Object.assign({}, base, { singleCall: true, async fixtures(p) { base.calls.push(['fixtures', p]); return seasonFixtures().concat(UPCOMING); } });
+  const prevCalls = () => base.calls.filter((c) => c[0] === 'fixtures' && c[1].season === 2025).length;
+  await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: NOW }, r), () => NOW);
+  assert.equal(prevCalls(), 2, 'deux saisons précédentes au premier passage');
+  await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: new Date(NOW.getTime() + 24 * 3600e3) }, r));
+  assert.equal(prevCalls(), 4, 'les deux autres le lendemain');
+  await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now: new Date(NOW.getTime() + 48 * 3600e3) }, r));
+  assert.equal(prevCalls(), 4, 'ensuite plus jamais (gardées)');
+  assert.ok(db.all('league_history').every((h) => h.matches.every((x) => typeof x === 'string')), 'historique enregistré en chaînes');
+  assert.equal(db.all('league_ratings').length, 4, 'notes calculées pour tous les championnats, avec ou sans saison précédente');
+});

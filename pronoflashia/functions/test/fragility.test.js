@@ -55,7 +55,7 @@ test('affichage : pastille « Données limitées » sur la carte, explication su
   assert.match(page, /pas utilisé dans les coupons proposés/);
   const home = (await route(db, '/', NOW)).body;
   const flash = home.split('Flash du jour')[1].split('Coupons flash')[0];
-  assert.ok(!flash.includes(`${target.domicile.nomCourt} – ${target.exterieur.nomCourt}`), 'pas parmi les 3 pronostics les plus confiants');
+  assert.ok(!flash.includes(`/${target.leagueSlug}/${target.slug}"`), 'pas parmi les 3 pronostics les plus confiants (comparé par adresse : le jeu d\'exemple répète les mêmes affiches)');
   const en = (await route(db, `/en/football/${target.jour}`, NOW)).body;
   assert.match(en, /⚠ Limited data/);
 });

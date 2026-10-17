@@ -6,6 +6,7 @@ const { predictMatch, MODEL_VERSION } = require('../engine/model');
 const { buildCalibration, trackRecord } = require('../engine/learn');
 const { predictLambdas, describeTeam } = require('../engine/ratings');
 const { assess: assessFragility } = require('../engine/fragility');
+const { pack: packMatrix } = require('../engine/matrixStore');
 const { generateText } = require('../ai/generate');
 const { summarize } = require('../engine/bilan');
 const { dayStr, addDays } = require('./helpers');
@@ -210,7 +211,7 @@ async function buildOne({ db, api, providers, now, match, league, formCache, cal
   const masque = !!(match.prono && match.prono.masque);
   const prono = {
     principal: pred.principal, secondaires: pred.secondaires, probas: pred.probas, plus25: pred.plus25, bttsOui: pred.bttsOui,
-    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: pred.matrice, lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre, moteur: pred.moteur, notes: lamNotes ? notes : null, actu,
+    scoreProbable: pred.scoreProbable, marches: pred.marches, matrice: packMatrix(pred.matrice), lamHome: pred.lamHome, lamAway: pred.lamAway, lamBrutHome: pred.lamBrutHome, lamBrutAway: pred.lamBrutAway, calibre: pred.calibre, moteur: pred.moteur, notes: lamNotes ? notes : null, actu,
     source: pred.source, texte: texts.fr ? texts.fr.texte : null, sourceTexte: texts.fr ? texts.fr.sourceTexte : null,
     texteEn: texts.en ? texts.en.texte : null, sourceTexteEn: texts.en ? texts.en.sourceTexte : null,
     calculeLe: now.toISOString(), version: MODEL_VERSION, formeDom: base.formeDom, formeExt: base.formeExt, comparatif: buildComparatif(recentH, recentA, gsH, gsA),

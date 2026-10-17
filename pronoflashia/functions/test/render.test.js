@@ -279,8 +279,9 @@ test('PWA : manifeste, icône iOS et couleur du thème dans l\'en-tête, script 
 test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fiche du match, liens vers les sites d\'origine', async () => {
   const h = await get('/');
   assert.match(h.body, /Actus foot/);
-  assert.match(h.body, /class="nw" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
-  assert.ok((h.body.match(/class="nw"/g) || []).length <= 8);
+  assert.match(h.body, /class="nw( has)?" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
+  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 4, 'quatre actus au plus sur l\'accueil (liste verticale)');
+  assert.match(h.body, /class="nwv"/);
   const first = db.all('news')[0];
   const m = db.all('matches').find((x) => [x.domicile.teamId, x.exterieur.teamId].map(String).includes(first.teamIds[0]));
   const page = await get(`/football/${m.leagueSlug}/${m.slug}`);
@@ -296,7 +297,7 @@ test('actualités : coupées dans l\'admin ou trop peu de titres → aucun bloc'
   assert.ok(!(await route(d2, '/', NOW)).body.includes('Actus foot'));
 });
 
-test('accueil : bilan en tête seulement s\'il est bon, actualités au milieu des pronostics (pas avant le premier match)', async () => {
+test('accueil : bilan en tête seulement s\'il est bon, actualités verticales juste après les coupons flash', async () => {
   // le jeu d'exemple n'a que 28 pronostics terminés : on ajoute une semaine plus ancienne pour passer le seuil de 30
   await db.seed('bilan_days', '2026-10-10', { jour: '2026-10-10', delta: Object.assign({}, db.all('bilan_days')[0].delta, { matches: 20, principal: { n: 20, ok: 14 } }) });
   D.clearCache();
@@ -305,7 +306,7 @@ test('accueil : bilan en tête seulement s\'il est bon, actualités au milieu de
   assert.ok(h.indexOf('class="bhero"') < h.indexOf('Flash du jour') || h.indexOf('class="bhero"') < h.indexOf('class="lbl"'), 'bilan avant le reste');
   const firstCard = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
   const news = h.indexOf('class="nwb"');
-  assert.ok(news > firstCard && firstCard > 0, 'actualités après le début de la liste des matchs');
+  assert.ok(news > h.indexOf('Coupons flash') && news < firstCard, 'actualités juste après les coupons flash, avant la liste des matchs');
   assert.ok((h.match(/class="mc|class="match/g) || []).length >= 0);
   // images et aperçus vidéo
   assert.match(h, /class="nwi"><img src="\/img\/afl[14]\.jpg"/);
@@ -342,4 +343,20 @@ test('analyse : « Ce que l\'IA sait de ces équipes » (notes d\'équipes) en f
   const en = await get(`/en/football/${withNotes.leagueSlug}/${withNotes.slug}/analysis`);
   assert.match(en.body, /What the AI knows about these teams/);
   assert.match(en.body, /Attack: /);
+});
+
+test('à propos et accueil : décrivent ce que fait réellement l\'IA, sans promesse de gain ni affirmation invérifiable, en français et en anglais', async () => {
+  for (const path of ['/a-propos', '/en/about', '/', '/en/']) {
+    const r = (await get(path)).body;
+    const text = r.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ');
+    assert.ok(!/gagner plus|aid[ée]s? (des )?parieurs|win more|helped (punters|bettors)|presque s[uû]r|almost certain|fiabilit[ée] de \d|\d+ ?% de r[ée]ussite garantie|guaranteed/i.test(text.replace(/aucun gain garanti|no winnings guaranteed|promises no winnings|ne promet aucun gain|Aucun gain n'est garanti|No winnings? (is |are )?guaranteed/gi, '')), `promesse sur ${path}`);
+  }
+  const fr = (await get('/a-propos')).body;
+  for (const t of ['apprend de chaque équipe', 'suit l\'actualité', 'apprend de ses erreurs', 'testé avant d\'être utilisé', 'Tout est gratuit', 'publicités', 'ne promet aucun gain']) assert.ok(fr.includes(t), t);
+  assert.ok(!/connaît chaque joueur|suit chaque joueur|temps réel/i.test(fr), 'pas d\'affirmation sur les joueurs ni sur le « temps réel » : l\'IA lit la presse toutes les 2 heures');
+  const en = (await get('/en/about')).body;
+  for (const t of ['learns from every team', 'follows the news', 'learns from its mistakes', 'Everything is free', 'promises no winnings']) assert.ok(en.includes(t), t);
+  assert.match((await get('/')).body, /Notre IA apprend de chaque équipe/);
+  assert.match((await get('/confidentialite')).body, /Notifications \(facultatives\)/);
+  assert.match((await get('/en/privacy')).body, /Notifications \(optional\)/);
 });

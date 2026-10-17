@@ -70,7 +70,7 @@ function mergeMap(a, b) {
 function mergeDelta(a, b) {
   if (!a) return b;
   if (!b) return a;
-  return {
+  const out = {
     matches: (a.matches || 0) + (b.matches || 0),
     principal: { n: (a.principal.n || 0) + (b.principal.n || 0), ok: (a.principal.ok || 0) + (b.principal.ok || 0) },
     parLigue: mergeMap(a.parLigue, b.parLigue),
@@ -79,8 +79,11 @@ function mergeDelta(a, b) {
     parBin: mergeMap(a.parBin, b.parBin),
     parCle: mergeMap(a.parCle, b.parCle),
     parSignal: mergeMap(a.parSignal, b.parSignal),
-    buts: mergeButs(a.buts, b.buts),
   };
+  // Firestore refuse les champs « undefined » : « buts » n'existe que si au moins un des deux jours en a (anciens pronostics sans buts prévus)
+  const buts = mergeButs(a.buts, b.buts);
+  if (buts) out.buts = buts;
+  return out;
 }
 
 function mergeButs(a, b) {

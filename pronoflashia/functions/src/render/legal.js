@@ -12,19 +12,25 @@ const prose = (inner) => `<div class="wrap"><div class="layout"><div class="col 
 const PAGES = {
   'a-propos': (rc) => ({
     title: 'À propos de PronoFlash IA',
-    description: 'Qui édite PronoFlash IA et comment sont faits les pronostics : un calcul statistique, une analyse rédigée par une IA, un bilan public.',
+    description: "PronoFlash IA : une IA d'analyse construite par nos soins, qui apprend de chaque équipe, suit l'actualité et corrige ses erreurs grâce à un bilan public. Gratuit, sans inscription.",
     body: prose(`<h1>À propos de PronoFlash IA</h1>
-<p>PronoFlash IA est un site gratuit de pronostics sportifs, sans inscription. Il commence par le football, avec une place particulière pour le football africain, et s'ouvrira à d'autres sports.</p>
-<h2>Qui édite le site ?</h2>
-<p>Le site est édité par ${field(rc.site.editeur, 'nom de l\'éditeur')}. Il est financé par la publicité et par la promotion d'Afrolook, l'application sociale du même éditeur. Les pronostics ne sont jamais vendus et le site n'accepte aucune rémunération de la part des bookmakers pour orienter un pronostic.</p>
-<h2>Comment sont faits les pronostics ?</h2>
-<ul><li><b>Le calcul vient d'abord.</b> Pour chaque match, un modèle statistique estime les buts attendus de chaque équipe à partir de ses résultats récents, à domicile et à l'extérieur, et des moyennes du championnat. Il en déduit la probabilité de chaque issue : résultat, buts, handicap, mi-temps, corners, tirs, cartons.</li>
-<li><b>L'IA rédige ensuite.</b> Une intelligence artificielle reçoit les chiffres calculés et rédige l'analyse. Elle n'a pas le droit de modifier un chiffre ni d'en inventer : toute analyse qui s'écarte des chiffres fournis est refusée automatiquement.</li>
-<li><b>Les résultats sont publics.</b> Chaque pronostic est enregistré avant le match puis marqué réussi ou raté. Le <a href="/bilan">bilan</a> montre le taux réel, ratés compris.</li></ul>
+<p>PronoFlash IA est un site <b>gratuit</b> de pronostics sportifs, <b>sans inscription</b>. Il commence par le football, avec une place particulière pour le football africain, et s'ouvrira à d'autres sports.</p>
+<h2>Notre propre outil d'analyse</h2>
+<p>Nous développons notre propre moteur d'analyse. Il ne se contente pas de recopier des statistiques : il <b>apprend de chaque équipe</b>, <b>suit l'actualité</b> et <b>corrige ses calculs d'après ses propres résultats</b>. Voici, concrètement, ce qu'il fait.</p>
+<ul><li><b>Il apprend de chaque équipe.</b> Pour chaque club, l'IA tient une note d'attaque et une note de défense, recalculées chaque jour sur tous les matchs connus (saison précédente comprise). Les matchs récents comptent davantage et le niveau des adversaires affrontés est pris en compte. L'évolution de chaque équipe sur 60 jours est visible dans l'analyse complète d'un match.</li>
+<li><b>Il suit l'actualité.</b> Toutes les 2 heures, l'IA lit les titres de la presse sportive et repère les blessures, suspensions, retours de joueurs et changements d'entraîneur. Ces informations sont affichées sur la fiche du match avec leur source. Pour l'instant elles informent : aucune probabilité n'est modifiée à cause d'elles, car nous mesurons d'abord leur effet réel.</li>
+<li><b>Il apprend de ses erreurs.</b> Chaque pronostic est enregistré avant le match puis marqué réussi ou raté. Quand ses probabilités se révèlent trop optimistes ou trop prudentes sur un type de pari, elles sont corrigées automatiquement, et l'IA tient compte de ce bilan dans ses analyses.</li>
+<li><b>Il est testé avant d'être utilisé.</b> Chaque amélioration est jugée sur des matchs passés, sans jamais utiliser le futur. Notre moteur de notes d'équipes explique mieux les buts que notre ancien calcul sur plus de 1 500 matchs réels de cinq grands championnats ; s'il se révélait moins bon sur un championnat, l'ancien calcul serait rétabli automatiquement.</li>
+<li><b>Il propose des coupons.</b> Chaque jour, trois coupons (2, 3 et 5 sélections) sont enregistrés avant les matchs, jamais modifiés, puis réglés : les gagnants comme les perdants sont publiés sur la page <a href="/bilan">Bilan</a>. Tu peux aussi composer ton propre coupon et voir la vraie probabilité que tout passe.</li>
+<li><b>Il dit quand il est moins sûr.</b> Un pronostic fondé sur peu de matchs porte la mention « Données limitées » et n'entre pas dans les coupons proposés.</li></ul>
+<h2>Des résultats publics, bons ou mauvais</h2>
+<p>Nous publions tout, réussites <i>et</i> échecs, sur la page <a href="/bilan">Bilan</a> : taux de réussite, résultats par championnat et par type de pari, historique complet des coupons. C'est ce bilan qui fait progresser l'IA, et c'est à lui, pas à des promesses, que tu peux juger notre travail.</p>
 <h2>Ce que le site ne fait pas</h2>
-<p>PronoFlash IA ne prend aucun pari, n'affiche aucune cote, ne vend aucun pronostic et ne promet aucun gain. Un pronostic est une probabilité, pas une certitude. Voir la page <a href="/jeu-responsable">jeu responsable</a>.</p>
+<p>PronoFlash IA ne prend aucun pari, n'affiche aucune cote, ne vend aucun pronostic et <b>ne promet aucun gain</b>. Un pronostic est une probabilité, pas une certitude : le football garde une part d'imprévu que personne ne sait prévoir, et nos propres tests le confirment. Voir la page <a href="/jeu-responsable">jeu responsable</a>.</p>
+<h2>Qui édite le site ? Comment est-il financé ?</h2>
+<p>Le site est édité par ${field(rc.site.editeur, 'nom de l\'éditeur')}. <b>Tout est gratuit</b> : les publicités et la promotion d'Afrolook, l'application sociale du même éditeur, servent à couvrir les frais des serveurs et du développement. Les pronostics ne sont jamais vendus et le site n'accepte aucune rémunération de la part des bookmakers pour orienter un pronostic.</p>
 <h2>Données</h2>
-<p>Les calendriers, résultats et statistiques de matchs proviennent d'API-Football (api-sports.io). Les noms des équipes sont affichés en texte, avec leur logo fourni par le fournisseur de données (à défaut, un écusson généré). Les logos et noms des clubs appartiennent à leurs propriétaires respectifs et ne sont utilisés qu'à titre d'illustration ; aucun partenariat ni parrainage n'est suggéré.</p>`),
+<p>Les calendriers et résultats proviennent de fournisseurs de données sportives (football-data.org, API-Football selon les championnats). Les actualités viennent de flux publics de sites de presse sportive : seuls le titre, le nom du site et le lien vers l'article sont repris. Les noms des équipes sont affichés en texte, avec leur logo fourni par le fournisseur de données (à défaut, un écusson généré). Les logos et noms des clubs appartiennent à leurs propriétaires respectifs et ne sont utilisés qu'à titre d'illustration ; aucun partenariat ni parrainage n'est suggéré.</p>`),
   }),
 
   contact: (rc) => ({
@@ -44,7 +50,11 @@ const PAGES = {
 <h2>Mesure d'audience sans cookie</h2>
 <p>Nous comptons les visites avec un outil maison, sans cookie et sans identifiant stocké sur ton appareil. Seuls des <b>compteurs agrégés</b> sont enregistrés : nombre de visites et de pages vues, pays estimé, type d'appareil (téléphone, ordinateur), source de la visite (direct, moteur de recherche, réseau social), page consultée. Ton adresse IP n'est jamais enregistrée. Pour estimer le nombre de visiteurs uniques, une empreinte hachée avec un sel qui change chaque jour est calculée en mémoire puis jetée : elle ne peut pas être reliée à toi. Si ton navigateur envoie le signal « Do Not Track », aucune mesure n'est faite.</p>
 <h2>Ce qui reste sur ton appareil</h2>
-<p>Le site utilise le stockage local de ton navigateur (et non des cookies) pour retenir ton coupon en cours, ton choix sur les publicités et la fermeture des bannières. Rien de cela n'est envoyé à nos serveurs.</p>
+<p>Le site utilise le stockage local de ton navigateur (et non des cookies) pour retenir ton coupon en cours, ton choix sur les publicités, tes équipes suivies et la fermeture des bannières. Rien de cela n'est envoyé à nos serveurs, sauf si tu actives les notifications (voir ci-dessous).</p>
+<h2>Notifications (facultatives)</h2>
+<p>Si tu actives les notifications (cloche en haut de page), ton navigateur nous transmet une <b>adresse d'envoi anonyme</b> (fournie par Google, Apple ou Mozilla selon ton navigateur), les équipes que tu choisis de suivre et ta langue. Nous n'y associons ni nom, ni adresse e-mail, ni numéro de téléphone. Elle sert uniquement à t'envoyer les coupons du jour (jusqu'à trois par jour) et les alertes avant les matchs de tes équipes (deux par jour au plus). Tu peux tout couper en un clic avec la cloche, ou dans les réglages de ton navigateur ; l'adresse est alors supprimée de nos serveurs. Base légale : ton consentement.</p>
+<h2>Liens vers des sites d'actualité</h2>
+<p>Le site affiche des titres d'actualité avec un lien vers le site d'origine ; les miniatures sont chargées depuis ces sites. En cliquant, tu quittes PronoFlash IA et tu dépends de la politique de confidentialité du site visité.</p>
 <h2>Publicité</h2>
 <p>Le site affiche des publicités de réseaux tiers (notamment Adsterra et Monetag) et des encarts pour Afrolook. Ces réseaux peuvent déposer des cookies ou utiliser des identifiants pour choisir et mesurer les annonces. Pour les visiteurs de l'Union européenne et du Royaume-Uni, <b>aucune publicité tierce n'est chargée avant ton accord</b> ; tu peux changer d'avis à tout moment avec le bouton « Préférences publicitaires » en bas de page. Les politiques de ces réseaux s'appliquent à leurs traitements.</p>
 <h2>Liens vers Afrolook</h2>
@@ -120,19 +130,25 @@ const fieldEn = (v, label) => (v ? esc(v) : `<span class="todo">[${esc(label)} t
 const PAGES_EN = {
   'a-propos': (rc) => ({
     title: 'About PronoFlash IA',
-    description: 'Who runs PronoFlash IA and how predictions are made: a statistical model, an AI-written analysis, a public track record.',
+    description: 'PronoFlash IA: an analysis AI we build ourselves, which learns from every team, follows the news and corrects its mistakes thanks to a public track record. Free, no sign-up.',
     body: prose(`<h1>About PronoFlash IA</h1>
-<p>PronoFlash IA is a free sports predictions website with no sign-up. It starts with football, with a special focus on African football, and will expand to other sports.</p>
-<h2>Who runs the site?</h2>
-<p>The site is published by ${fieldEn(rc.site.editeur, 'publisher name')}. It is funded by advertising and by promoting Afrolook, the publisher's social app. Predictions are never sold, and the site accepts no payment from bookmakers to influence a prediction.</p>
-<h2>How are predictions made?</h2>
-<ul><li><b>The model comes first.</b> For each match, a statistical model estimates each team's expected goals from its recent results, home and away, and the league averages. From these it derives the probability of every outcome: result, goals, handicap, half-time, corners, shots, cards.</li>
-<li><b>The AI writes second.</b> An artificial intelligence receives the calculated figures and writes the analysis. It is not allowed to change or invent a figure: any analysis that strays from the figures provided is rejected automatically.</li>
-<li><b>Results are public.</b> Every prediction is recorded before the match, then marked won or lost. The <a href="/en/track-record">track record</a> shows the real rate, losses included.</li></ul>
+<p>PronoFlash IA is a <b>free</b> sports predictions website with <b>no sign-up</b>. It starts with football, with a special focus on African football, and will expand to other sports.</p>
+<h2>Our own analysis tool</h2>
+<p>We are building our own analysis engine. It does not simply copy statistics: it <b>learns from every team</b>, <b>follows the news</b> and <b>corrects its calculations from its own results</b>. Here is what it does, concretely.</p>
+<ul><li><b>It learns from every team.</b> For each club, the AI keeps an attack rating and a defence rating, recomputed every day on every known match (previous season included). Recent matches count more and the strength of the opponents faced is taken into account. Each team's 60-day trend is shown in a match's full analysis.</li>
+<li><b>It follows the news.</b> Every 2 hours, the AI reads sports press headlines and spots injuries, suspensions, returning players and coaching changes. This information is shown on the match page with its source. For now it informs: no probability is changed because of it, as we first measure its real effect.</li>
+<li><b>It learns from its mistakes.</b> Every prediction is recorded before the match, then marked won or lost. When its probabilities prove too optimistic or too cautious for a type of bet, they are corrected automatically, and the AI takes this track record into account in its analyses.</li>
+<li><b>It is tested before being used.</b> Every improvement is judged on past matches, never using the future. Our team-rating engine explains goals better than our previous calculation on more than 1,500 real matches from five top leagues; if it turned out worse in a league, the previous calculation would be restored automatically.</li>
+<li><b>It builds slips.</b> Every day, three slips (2, 3 and 5 selections) are recorded before the matches, never changed, then settled: winners and losers are both published on the <a href="/en/track-record">Track record</a> page. You can also build your own slip and see the real probability that everything wins.</li>
+<li><b>It says when it is less sure.</b> A prediction based on few matches carries a "Limited data" label and is not used in the suggested slips.</li></ul>
+<h2>Public results, good or bad</h2>
+<p>We publish everything, successes <i>and</i> failures, on the <a href="/en/track-record">Track record</a> page: success rate, results by league and by type of bet, the full history of slips. This track record is what makes the AI improve, and it, not promises, is how you can judge our work.</p>
 <h2>What the site does not do</h2>
-<p>PronoFlash IA takes no bets, shows no odds, sells no tips and promises no winnings. A prediction is a probability, not a certainty. See <a href="/en/responsible-gambling">responsible gambling</a>.</p>
+<p>PronoFlash IA takes no bets, shows no odds, sells no tips and <b>promises no winnings</b>. A prediction is a probability, not a certainty: football keeps an element of the unexpected that nobody can predict, and our own tests confirm it. See <a href="/en/responsible-gambling">responsible gambling</a>.</p>
+<h2>Who runs the site? How is it funded?</h2>
+<p>The site is published by ${fieldEn(rc.site.editeur, 'publisher name')}. <b>Everything is free</b>: advertising and the promotion of Afrolook, the publisher's social app, cover the cost of servers and development. Predictions are never sold, and the site accepts no payment from bookmakers to influence a prediction.</p>
 <h2>Data</h2>
-<p>Fixtures, results and match statistics come from API-Football (api-sports.io). Team names are shown as text, with the logo supplied by the data provider (a generated crest otherwise). Club logos and names belong to their respective owners and are used for illustration only; no partnership or sponsorship is implied.</p>`),
+<p>Fixtures and results come from sports data providers (football-data.org, API-Football depending on the league). News comes from public feeds of sports press sites: only the headline, the site name and the link to the article are reused. Team names are shown as text, with the logo supplied by the data provider (a generated crest otherwise). Club logos and names belong to their respective owners and are used for illustration only; no partnership or sponsorship is implied.</p>`),
   }),
   contact: (rc) => ({
     title: 'Contact · PronoFlash IA',
@@ -150,7 +166,11 @@ const PAGES_EN = {
 <h2>Cookie-free audience measurement</h2>
 <p>We count visits with our own tool, without cookies and without storing any identifier on your device. Only <b>aggregated counters</b> are recorded: number of visits and page views, estimated country, device type (phone, computer), visit source (direct, search engine, social network), page viewed. Your IP address is never stored. To estimate unique visitors, a fingerprint hashed with a salt that changes every day is computed in memory and then discarded: it cannot be linked to you. If your browser sends the "Do Not Track" signal, nothing is measured.</p>
 <h2>What stays on your device</h2>
-<p>The site uses your browser's local storage (not cookies) to remember your current slip, your advertising choice and closed banners. None of this is sent to our servers.</p>
+<p>The site uses your browser's local storage (not cookies) to remember your current slip, your advertising choice, the teams you follow and the banners you closed. None of this is sent to our servers, unless you turn on notifications (see below).</p>
+<h2>Notifications (optional)</h2>
+<p>If you turn on notifications (bell at the top of the page), your browser sends us an <b>anonymous delivery address</b> (provided by Google, Apple or Mozilla depending on your browser), the teams you choose to follow and your language. We link no name, e-mail address or phone number to it. It is used only to send you the slips of the day (up to three a day) and alerts before your teams' matches (two a day at most). You can turn everything off in one click with the bell, or in your browser settings; the address is then deleted from our servers. Legal basis: your consent.</p>
+<h2>Links to news sites</h2>
+<p>The site shows news headlines with a link to the original site; thumbnails are loaded from those sites. By clicking, you leave PronoFlash IA and are subject to the privacy policy of the site you visit.</p>
 <h2>Advertising</h2>
 <p>The site shows ads from third-party networks (including Adsterra and Monetag) and promotions for Afrolook. These networks may set cookies or use identifiers to choose and measure ads. For visitors in the European Union and the United Kingdom, <b>no third-party ad loads before you agree</b>; you can change your mind at any time with the "Ad preferences" button at the bottom of the page. These networks' own policies apply to their processing.</p>
 <h2>Links to Afrolook</h2>
