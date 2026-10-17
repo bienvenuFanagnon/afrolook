@@ -696,8 +696,11 @@ class _NowHero extends StatelessWidget {
 
 /// Commandes de la musique : aléatoire, précédent, lecture/pause, suivant.
 class MusicControls extends StatelessWidget {
-  const MusicControls({super.key, this.size = 1.0});
+  const MusicControls({super.key, this.size = 1.0, this.track});
   final double size;
+
+  /// Titre de la page (fiche d'un titre) : s'il n'est pas encore celui en cours, « lecture » le lance.
+  final MusicTrack? track;
 
   @override
   Widget build(BuildContext context) {
@@ -719,10 +722,16 @@ class MusicControls extends StatelessWidget {
         builder: (_, now, __) => ValueListenableBuilder<bool>(
           valueListenable: MusicQueue.loading,
           builder: (_, ld, __) {
-            final t = MusicQueue.current.value;
-            final on = t != null && now == t.key;
+            final key = track?.key ?? MusicQueue.current.value?.key;
+            final on = key != null && now == key;
             return GestureDetector(
-              onTap: MusicQueue.togglePlay,
+              onTap: () {
+                if (track != null && MusicQueue.current.value?.key != track!.key) {
+                  MusicQueue.playTrack(track!);
+                } else {
+                  MusicQueue.togglePlay();
+                }
+              },
               child: Container(
                 width: big,
                 height: big,

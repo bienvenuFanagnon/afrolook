@@ -45,6 +45,9 @@ import '../../utils/media_cdn.dart';
 import 'sound_countries.dart';
 import 'studio_models.dart';
 import '../music/music_page.dart';
+import '../../services/music_queue.dart';
+import '../../widgets/music/music_overlay.dart';
+import '../../widgets/music/vinyl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../coins/coin_recharge_screen.dart';
 
@@ -745,12 +748,9 @@ class ArtistSoundDetailPage extends StatefulWidget {
 }
 
 class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
-  Duration _pos = Duration.zero;
-  Duration _dur = const Duration(seconds: 30);
-  late final key = 'detail_${widget.sound.id}';
   bool _owned = false;
   bool _buying = false;
-  bool _loadingFull = false;
+  bool _loadingAd = false;
   bool _adGranted = false; // écoute complète ouverte une fois par une pub récompensée
 
   bool get _own => widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
@@ -758,18 +758,15 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   /// Écoute en entier : titre gratuit, acheté, ou à soi. Sinon, extrait de 30 s.
   bool get _full => widget.sound.isFree || _own || _owned || _adGranted;
 
+  MusicTrack get _track => MusicTrack.fromSound(widget.sound, owned: _owned);
+
   @override
   void initState() {
     super.initState();
+    MusicQueue.start();
     OfflineMusic.refresh();
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
-    });
-    SoundPreview.position.listen((p) {
-      if (mounted && SoundPreview.playing.value == key) setState(() => _pos = p);
-    });
-    SoundPreview.duration.listen((d) {
-      if (mounted && d.inMilliseconds > 0 && SoundPreview.playing.value == key) setState(() => _dur = d);
     });
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null && !_own) {
@@ -779,48 +776,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     }
   }
 
-  @override
-  void dispose() {
-    if (SoundPreview.playing.value == key) SoundPreview.stop();
-    super.dispose();
-  }
-
-  Future<void> _toggle() async {
-    final s = widget.sound;
-    if (SoundPreview.playing.value == key) {
-      await SoundPreview.pause();
-      return;
-    }
-    if (SoundPreview.now.value?.key == key) {
-      await SoundPreview.resume();
-      if (SoundPreview.playing.value == key) return;
-    }
-    if (_full && OfflineMusic.has(s.id)) {
-      setState(() => _loadingFull = true);
-      final err = await OfflineMusic.play(s.id, title: s.title, key: key);
-      if (!mounted) return;
-      setState(() {
-        _loadingFull = false;
-        _pos = Duration.zero;
-        _dur = Duration(milliseconds: s.durationMs > 0 ? s.durationMs : 30000);
-      });
-      if (err != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-      return;
-    }
-    String? url = s.previewUrl;
-    if (_full) {
-      setState(() => _loadingFull = true);
-      url = await fetchFullListenUrl(s.id) ?? s.previewUrl;
-      if (mounted) setState(() => _loadingFull = false);
-    }
-    if (url == null || !mounted) return;
-    setState(() {
-      _pos = Duration.zero;
-      _dur = Duration(milliseconds: s.durationMs > 0 && _full ? s.durationMs : 30000);
-    });
-    final ok = await SoundPreview.play(key, url, meta: NowPlaying(key: key, title: s.title, subtitle: _full ? 'Titre complet' : 'Extrait de 30 s', coverUrl: s.coverImageUrl));
-    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
-  }
+  // La musique continue quand on quitte la page (lecteur flottant) : rien n'est coupé ici.
 
   double? _dl; // avancement du téléchargement (null = pas en cours)
 
@@ -835,23 +791,16 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   }
 
   Future<void> _listenWithAd() async {
-    setState(() => _loadingFull = true);
+    setState(() => _loadingAd = true);
     final r = await MusicAds.listenWithAd(widget.sound.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
     if (!mounted) return;
+    setState(() => _loadingAd = false);
     if (r.outcome != MusicAdOutcome.ok || r.url == null) {
-      setState(() => _loadingFull = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicAds.message(r.outcome))));
       return;
     }
-    final s = widget.sound;
-    setState(() {
-      _adGranted = true;
-      _loadingFull = false;
-      _pos = Duration.zero;
-      _dur = Duration(milliseconds: s.durationMs > 0 ? s.durationMs : 30000);
-    });
-    final ok = await SoundPreview.play(key, r.url!, meta: NowPlaying(key: key, title: s.title, subtitle: 'Titre complet · écoute avec pub', coverUrl: s.coverImageUrl));
-    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
+    setState(() => _adGranted = true);
+    await MusicQueue.playGranted(_track, r.url!);
   }
 
   Future<void> _buy() async {
@@ -862,181 +811,302 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
       _buying = false;
       if (ok) _owned = true;
     });
+    if (ok) await MusicQueue.playTrack(_track, interstitial: false); // le titre complet démarre tout de suite
   }
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final s = widget.sound;
-    final total = _fmtDuration(s.durationMs);
-    return Scaffold(
-      backgroundColor: c.background,
-      appBar: AppBar(
+    final canBuy = s.forSale && !_own && !_owned;
+    return HideMusicOverlay(
+      child: Scaffold(
         backgroundColor: c.background,
-        elevation: 0,
-        iconTheme: IconThemeData(color: c.textPrimary),
-        actions: [
-          if (!_own)
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: c.textPrimary),
-              color: c.surface,
-              onSelected: (_) => reportArtistSound(context, s.id, s.title),
-              itemBuilder: (_) => const [PopupMenuItem(value: 'report', child: Text('🚩 Signaler ce son'))],
-            ),
-        ],
-      ),
-      body: ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 30), children: [
-        Center(child: _cover(s, 220, c, radius: 20)),
-        const SizedBox(height: 18),
-        Text(s.title, textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 4),
-        Text('par @${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13)),
-        const SizedBox(height: 12),
-        Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
-          _pricingBadge(s, c),
-          if (_owned)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: c.primary.withValues(alpha: .15), borderRadius: BorderRadius.circular(99)),
-              child: Text('✓ Dans ta bibliothèque', style: TextStyle(color: c.primary, fontSize: 11, fontWeight: FontWeight.w800)),
-            ),
-        ]),
-        const SizedBox(height: 18),
-        Container(
-          padding: const EdgeInsets.fromLTRB(8, 10, 14, 12),
-          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
-          child: Column(children: [
-            Row(children: [
-              ValueListenableBuilder<String?>(
-                valueListenable: SoundPreview.playing,
-                builder: (_, now, __) => IconButton(
-                  iconSize: 46,
-                  padding: EdgeInsets.zero,
-                  onPressed: s.previewUrl == null || _loadingFull ? null : _toggle,
-                  icon: _loadingFull
-                      ? SizedBox(width: 30, height: 30, child: CircularProgressIndicator(strokeWidth: 2.5, color: c.primary))
-                      : Icon(now == key ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: c.primary),
-                ),
+        appBar: AppBar(
+          backgroundColor: c.background,
+          elevation: 0,
+          iconTheme: IconThemeData(color: c.textPrimary),
+          actions: [
+            if (!_own)
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: c.textPrimary),
+                color: c.surface,
+                onSelected: (_) => reportArtistSound(context, s.id, s.title),
+                itemBuilder: (_) => const [PopupMenuItem(value: 'report', child: Text('🚩 Signaler ce son'))],
               ),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(_full ? 'Titre complet' : 'Extrait gratuit de 30 secondes', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
-                  Slider(
-                    value: _pos.inMilliseconds.clamp(0, _dur.inMilliseconds).toDouble(),
-                    max: _dur.inMilliseconds.toDouble(),
-                    activeColor: c.primary,
-                    onChanged: (v) {
-                      if (SoundPreview.playing.value == key) SoundPreview.seek(Duration(milliseconds: v.round()));
-                    },
-                  ),
-                ]),
-              ),
-            ]),
-            if (total.isNotEmpty)
-              Align(alignment: Alignment.centerRight, child: Text(_full ? 'Durée : $total' : 'Morceau complet : $total', style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
-          ]),
+          ],
         ),
-        if (_full && OfflineMusic.supported)
-          ValueListenableBuilder<Set<String>>(
-            valueListenable: OfflineMusic.ids,
-            builder: (_, ids, __) {
-              final has = ids.contains(s.id);
-              return Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: SizedBox(
-                  height: 44,
-                  child: OutlinedButton.icon(
-                    onPressed: _dl != null ? null : (has ? () async => await OfflineMusic.remove(s.id) : _download),
-                    icon: _dl != null
-                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, value: _dl! > 0 ? _dl : null, color: c.primary))
-                        : Icon(has ? Icons.download_done_rounded : Icons.download_rounded, color: c.primary),
-                    label: Text(has ? 'Disponible hors ligne · Retirer du téléphone' : 'Télécharger pour écouter sans internet', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
-                    style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  ),
-                ),
-              );
-            },
-          ),
-        const SizedBox(height: 14),
-        // Écoute complète unique contre une pub récompensée
-        if (!s.isFree && !_own && !_owned && !_adGranted && MusicAds.canOfferRewarded(Provider.of<UserAuthProvider>(context, listen: false).loginUserData))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+        body: ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 30), children: [
+          // Disque + anneau de progression + bras de lecture
+          Center(
             child: SizedBox(
-              height: 46,
-              child: OutlinedButton.icon(
-                onPressed: _loadingFull ? null : _listenWithAd,
-                icon: Icon(Icons.ondemand_video_rounded, color: c.primary),
-                label: Text('Écouter en entier avec une pub (une fois)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
-                style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              ),
+              width: 260,
+              height: 210,
+              child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+                ProgressRing(size: 196, color: c.primary, endedColor: c.warning, stroke: 3.5, child: TrackDisc(track: _track, size: 172)),
+                Positioned(
+                  right: 6,
+                  top: -10,
+                  child: ValueListenableBuilder<String?>(valueListenable: SoundPreview.playing, builder: (_, now, __) => Tonearm(height: 112, playing: now == _track.key)),
+                ),
+              ]),
             ),
           ),
-        // Achat du titre complet
-        if (s.forSale && !_own && !_owned)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: c.primary.withValues(alpha: .08), borderRadius: BorderRadius.circular(14), border: Border.all(color: c.primary.withValues(alpha: .35))),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Écoute le titre en entier', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
-              const SizedBox(height: 4),
-              Text('Il reste dans ta bibliothèque, lisible dans Afrolook. L’artiste touche ${s.saleShare} pièces sur ton achat.', style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35)),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: FilledButton.icon(
-                  onPressed: _buying ? null : _buy,
-                  icon: _buying ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.library_add_rounded),
-                  label: Text('Acheter · ${s.saleCoins} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
-                  style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                ),
+          const SizedBox(height: 10),
+          Text(s.title, textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 21, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 4),
+          Text('par @${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13)),
+          const SizedBox(height: 12),
+          Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+            _pricingBadge(s, c),
+            if (_owned)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: c.primary.withValues(alpha: .15), borderRadius: BorderRadius.circular(99)),
+                child: Text('✓ Dans ta bibliothèque', style: TextStyle(color: c.primary, fontSize: 11, fontWeight: FontWeight.w800)),
               ),
-            ]),
-          ),
-        const SizedBox(height: 14),
-        if (s.description != null && s.description!.isNotEmpty) ...[
-          Text(s.description!, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
+          ]),
           const SizedBox(height: 16),
-        ],
-        Row(children: [
-          Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
-          const SizedBox(width: 10),
-          Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${s.unitPrice} pièces', c: c)),
+          _playerCard(c, s),
+          const SizedBox(height: 6),
+          MusicControls(size: 1.15, track: _track),
+          const SizedBox(height: 8),
+          // Les deux actions : utiliser dans un post, acheter pour écouter en entier
+          Row(children: [
+            Expanded(child: _actionBtn(c, grad: true, icon: Icons.videocam_rounded, title: 'Créer un post', sub: s.isFree ? 'Gratuit' : '${s.unitPrice} 🪙', onTap: () => startPostWithSound(context, s))),
+            if (canBuy) ...[
+              const SizedBox(width: 10),
+              Expanded(child: _actionBtn(c, icon: Icons.library_add_rounded, title: 'Acheter', sub: '${s.saleCoins} 🪙', onTap: _buying ? null : _buy, busy: _buying)),
+            ],
+          ]),
+          if (canBuy) ...[
+            const SizedBox(height: 10),
+            Text('L’artiste touche ${s.saleShare} pièces sur ton achat. Le titre reste dans ta bibliothèque, lisible dans Afrolook.', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
+          ],
+          if (!s.isFree && !_own && !_owned && !_adGranted && MusicAds.canOfferRewarded(Provider.of<UserAuthProvider>(context, listen: false).loginUserData))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: TextButton.icon(
+                onPressed: _loadingAd ? null : _listenWithAd,
+                icon: _loadingAd ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: c.primary)) : Icon(Icons.ondemand_video_rounded, color: c.primary, size: 19),
+                label: Text('Écouter en entier avec une pub (une fois)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5)),
+              ),
+            ),
+          if (_full && OfflineMusic.supported)
+            ValueListenableBuilder<Set<String>>(
+              valueListenable: OfflineMusic.ids,
+              builder: (_, ids, __) {
+                final has = ids.contains(s.id);
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: _dl != null ? null : (has ? () async => await OfflineMusic.remove(s.id) : _download),
+                      icon: _dl != null
+                          ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, value: _dl! > 0 ? _dl : null, color: c.primary))
+                          : Icon(has ? Icons.download_done_rounded : Icons.download_rounded, color: c.primary),
+                      label: Text(has ? 'Disponible hors ligne · Retirer du téléphone' : 'Télécharger pour écouter sans internet', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+                      style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    ),
+                  ),
+                );
+              },
+            ),
+          const SizedBox(height: 16),
+          if (s.description != null && s.description!.isNotEmpty) ...[
+            Text(s.description!, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
+            const SizedBox(height: 16),
+          ],
+          Row(children: [
+            Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
+            const SizedBox(width: 10),
+            Expanded(child: _Stat(label: 'Dans le Studio', value: s.isFree ? 'Gratuit' : '${s.unitPrice} pièces', c: c)),
+          ]),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: () => startPostWithMusic(context, MontageMusic.artist(s), ownVideo: true),
+              icon: Icon(Icons.videocam_rounded, color: c.primary),
+              label: Text('Ma vidéo avec ce son (sans habillage)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+              style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.isFree
+                ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Avec « Ma vidéo », le son d’origine de ta vidéo est coupé : seule la musique est jouée.'
+                : 'Tu choisis un modèle : le prix (${s.unitPrice} pièces, dont ${s.unitShare} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 22),
+          SoundPostsSection(soundId: s.id, colors: c),
         ]),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 50,
-          child: FilledButton.icon(
-            onPressed: () => startPostWithSound(context, s),
-            icon: const Icon(Icons.add_circle_rounded),
-            label: Text(s.isFree ? 'Créer un post avec ce son' : 'Créer un post avec ce son · ${s.unitPrice} 🪙', style: const TextStyle(fontWeight: FontWeight.w800)),
-            style: FilledButton.styleFrom(backgroundColor: c.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 46,
-          child: OutlinedButton.icon(
-            onPressed: () => startPostWithMusic(context, MontageMusic.artist(s), ownVideo: true),
-            icon: Icon(Icons.videocam_rounded, color: c.primary),
-            label: Text('Ma vidéo avec ce son (sans habillage)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13)),
-            style: OutlinedButton.styleFrom(side: BorderSide(color: c.primary.withValues(alpha: .5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          s.isFree
-              ? 'Tu choisis un modèle, ta photo ou ta vidéo : le son est ajouté. Avec « Ma vidéo », le son d’origine de ta vidéo est coupé : seule la musique est jouée.'
-              : 'Tu choisis un modèle : le prix (${s.unitPrice} pièces, dont ${s.unitShare} pour l’artiste) et ton solde te sont annoncés avant. Rien n’est débité si la vidéo échoue.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
-        ),
-        const SizedBox(height: 22),
-        SoundPostsSection(soundId: s.id, colors: c),
-      ]),
+      ),
     );
   }
+
+  Widget _actionBtn(AppColors c, {required IconData icon, required String title, required String sub, required VoidCallback? onTap, bool grad = false, bool busy = false}) {
+    final fg = grad ? c.onAccent : c.onPrimary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: grad ? LinearGradient(colors: [c.primary, c.accent]) : null,
+          color: grad ? null : c.primary,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: busy
+            ? Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: fg)))
+            : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(icon, size: 18, color: fg),
+                  const SizedBox(width: 6),
+                  Text(title, style: TextStyle(color: fg, fontWeight: FontWeight.w900, fontSize: 13.5)),
+                ]),
+                Text(sub, style: TextStyle(color: fg.withValues(alpha: .9), fontWeight: FontWeight.w800, fontSize: 11.5)),
+              ]),
+      ),
+    );
+  }
+
+  /// Carte du lecteur : message (extrait gratuit / fin), barre avec la zone verrouillée du titre complet, temps.
+  Widget _playerCard(AppColors c, ArtistSound s) {
+    final total = s.durationMs > 0 ? s.durationMs : 204000;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: ValueListenableBuilder<MusicTrack?>(
+        valueListenable: MusicQueue.current,
+        builder: (_, cur, __) => ValueListenableBuilder<bool>(
+          valueListenable: MusicQueue.previewEnded,
+          builder: (_, ended, __) {
+            final mine = cur?.key == _track.key;
+            final preview = !_full;
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                if (preview) Icon(Icons.lock_rounded, size: 15, color: mine && ended ? c.warning : c.primary),
+                if (preview) const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    !preview ? 'Titre complet' : (mine && ended ? 'Extrait terminé' : 'Extrait gratuit de 30 secondes'),
+                    style: TextStyle(color: preview && mine && ended ? c.warning : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 6),
+              StreamBuilder<Duration>(
+                stream: SoundPreview.position,
+                builder: (_, p) => StreamBuilder<Duration>(
+                  stream: SoundPreview.duration,
+                  builder: (_, d) {
+                    final pos = mine ? (p.data?.inMilliseconds ?? 0) : 0;
+                    final fileMs = d.data?.inMilliseconds ?? (preview ? 30000 : total);
+                    final shown = (mine && ended) ? (preview ? 30000 : pos) : pos;
+                    final frac = (shown / total).clamp(0.0, 1.0);
+                    final lock = preview ? (30000 / total).clamp(0.0, 1.0) : 1.0;
+                    return Column(children: [
+                      _SeekBar(
+                        c: c,
+                        progress: frac,
+                        lockFrom: preview ? lock : null,
+                        onSeek: mine && !ended
+                            ? (f) => SoundPreview.seek(Duration(milliseconds: (f * total).round().clamp(0, fileMs)))
+                            : null,
+                      ),
+                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                        Text(_fmtMs(shown), style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700)),
+                        Text(preview ? '0:30 · titre complet ${_fmtMs(total)}' : _fmtMs(total), style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700)),
+                      ]),
+                    ]);
+                  },
+                ),
+              ),
+            ]);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+String _fmtMs(int ms) {
+  final s = (ms / 1000).floor();
+  return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+}
+
+/// Barre de lecture : la partie gratuite en couleur, la suite du titre (verrouillée) hachurée avec un cadenas.
+class _SeekBar extends StatelessWidget {
+  const _SeekBar({required this.c, required this.progress, this.lockFrom, this.onSeek});
+  final AppColors c;
+  final double progress;
+  final double? lockFrom;
+  final void Function(double fraction)? onSeek;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (_, box) {
+      final w = box.maxWidth;
+      void seek(double dx) {
+        if (onSeek == null) return;
+        final f = (dx / w).clamp(0.0, lockFrom ?? 1.0);
+        onSeek!(f);
+      }
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (d) => seek(d.localPosition.dx),
+        onHorizontalDragUpdate: (d) => seek(d.localPosition.dx),
+        child: SizedBox(
+          height: 28,
+          child: Stack(clipBehavior: Clip.none, children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 11,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  height: 6,
+                  child: Stack(children: [
+                    Container(color: c.border),
+                    if (lockFrom != null) Positioned(left: w * lockFrom!, right: 0, top: 0, bottom: 0, child: CustomPaint(painter: _HatchPainter(c.textSecondary.withValues(alpha: .45)))),
+                    FractionallySizedBox(widthFactor: progress.clamp(0.0, 1.0), child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [c.primary, c.accent])))),
+                  ]),
+                ),
+              ),
+            ),
+            Positioned(left: (w * progress.clamp(0.0, 1.0)) - 8, top: 6, child: Container(width: 16, height: 16, decoration: BoxDecoration(color: c.primary, shape: BoxShape.circle, boxShadow: [BoxShadow(color: c.primary.withValues(alpha: .3), spreadRadius: 4)]))),
+            if (lockFrom != null)
+              Positioned(
+                left: w * lockFrom! - 10,
+                top: 4,
+                child: Container(width: 20, height: 20, decoration: BoxDecoration(color: c.surface, shape: BoxShape.circle, border: Border.all(color: c.warning)), child: Icon(Icons.lock_rounded, size: 11, color: c.warning)),
+              ),
+          ]),
+        ),
+      );
+    });
+  }
+}
+
+class _HatchPainter extends CustomPainter {
+  _HatchPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = color..strokeWidth = 1.5;
+    for (double x = -size.height; x < size.width; x += 5) {
+      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HatchPainter old) => old.color != color;
 }
 
 /// Achat d'un titre : annonce le prix, la part de l'artiste et le solde ; recharge proposée si le solde est insuffisant.

@@ -1,18 +1,19 @@
 // Musique dans le fil : trois présentations qui reviennent de temps en temps, à des endroits différents (jamais figées en haut) :
-//  - [FeedSoundCard]     l'affiche : la pochette occupe toute la carte, lecture immédiate d'un extrait, boutons d'action ;
-//  - [FeedSoundCarousel] « Musiques du moment » : rangée de pochettes verticales à faire défiler ;
-//  - [FeedSoundList]     « Top titres » : liste de morceaux façon lecteur de musique (pochette, titre, durée, lecture).
-// Pas de pseudo de l'artiste dans le fil. Aucune carte n'apparaît s'il n'y a pas de titre proposé dans le pays de la personne.
+//  - [FeedSoundCard]     l'affiche : pochette plein cadre, disque vinyle qui déborde, bouton « Post avec ce son » ;
+//  - [FeedSoundCarousel] « Sons du moment » : pochettes dont le disque sort, avec lecture et « Post » ;
+//  - [FeedSoundList]     « Top 5 du pays » : classement, chaque ligne avec « Post » et lecture.
+// Un toucher sur « lecture » lance la file : le lecteur flottant prend le relais, avec suivant et aléatoire.
+// Aucune carte n'apparaît s'il n'y a pas de titre proposé dans le pays de la personne.
 
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
+import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/music/vinyl.dart';
 import '../music/music_page.dart';
 import 'artist_marketplace.dart';
 import 'artist_sound_common.dart';
@@ -48,30 +49,24 @@ class _FeedSounds {
   }
 }
 
-String _mmss(int ms) {
-  if (ms <= 0) return '';
-  final s = (ms / 1000).round();
-  return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+List<MusicTrack> _tracks(List<ArtistSound> l) => [for (final s in l) MusicTrack.fromSound(s)];
+
+/// Lance (ou met en pause) un titre de la rangée ; la file enchaîne ensuite les autres titres de la rangée.
+Future<void> _play(List<MusicTrack> list, int i) async {
+  final t = list[i];
+  if (MusicQueue.current.value?.key == t.key) {
+    await MusicQueue.togglePlay();
+  } else {
+    await MusicQueue.play(list, i);
+  }
 }
 
 Future<void> _openDetail(BuildContext context, ArtistSound s) async {
-  await SoundPreview.stop();
-  if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: s)));
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: s)));
 }
 
 Future<void> _openMusic(BuildContext context) async {
-  await SoundPreview.stop();
-  if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage()));
-}
-
-/// Lance (ou arrête) l'extrait d'un titre depuis le fil.
-Future<void> _togglePreview(BuildContext context, ArtistSound s, String key) async {
-  if (SoundPreview.playing.value == key) {
-    await SoundPreview.pause();
-    return;
-  }
-  final ok = await SoundPreview.play(key, s.previewUrl!, meta: NowPlaying(key: key, title: s.title, subtitle: 'Extrait de 30 s', coverUrl: s.coverImageUrl));
-  if (!ok && context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion et réessaie.')));
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage()));
 }
 
 // ── éléments communs ────────────────────────────────────────────────────────
@@ -116,121 +111,82 @@ class _Cover extends StatelessWidget {
   }
 }
 
-/// Barres d'égaliseur animées quand le titre joue.
-class _Equalizer extends StatefulWidget {
-  const _Equalizer({required this.color, this.height = 16});
-  final Color color;
-  final double height;
-
-  @override
-  State<_Equalizer> createState() => _EqualizerState();
+/// Prix pour utiliser le titre dans un post : « Gratuit » ou « 🪙 5 ».
+Widget _priceBadge(ArtistSound s, {bool onPhoto = false}) {
+  final free = s.isFree;
+  final color = free ? const Color(0xFF2ECC71) : const Color(0xFFFFB400);
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+    decoration: BoxDecoration(color: onPhoto ? Colors.black.withValues(alpha: .45) : color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99), border: onPhoto ? Border.all(color: color.withValues(alpha: .8)) : null),
+    child: Text(free ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
+  );
 }
 
-class _EqualizerState extends State<_Equalizer> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
+/// Bouton rond lecture / pause d'un titre.
+class _PlayDot extends StatelessWidget {
+  const _PlayDot({required this.track, required this.onTap, this.size = 34, this.glass = false});
+  final MusicTrack track;
+  final VoidCallback onTap;
+  final double size;
+  final bool glass;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: widget.height,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (_, __) => Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
-          for (var i = 0; i < 4; i++)
-            Padding(
-              padding: const EdgeInsets.only(right: 2.5),
-              child: Container(
-                width: 3.2,
-                height: widget.height * (.3 + .7 * (.5 + .5 * math.sin((_c.value * 2 * math.pi) + i * 1.4)).abs()),
-                decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(2)),
-              ),
+    final c = AppColors.of(context);
+    return ValueListenableBuilder<String?>(
+      valueListenable: SoundPreview.playing,
+      builder: (_, now, __) => ValueListenableBuilder<bool>(
+        valueListenable: MusicQueue.loading,
+        builder: (_, ld, __) {
+          final on = now == track.key;
+          final loading = ld && MusicQueue.current.value?.key == track.key;
+          return GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(color: glass ? Colors.white.withValues(alpha: .22) : c.primary, shape: BoxShape.circle, border: glass ? Border.all(color: Colors.white30) : null),
+              child: loading
+                  ? Padding(padding: EdgeInsets.all(size * .28), child: CircularProgressIndicator(strokeWidth: 2, color: glass ? Colors.white : c.onPrimary))
+                  : Icon(on ? Icons.pause_rounded : Icons.play_arrow_rounded, color: glass ? Colors.white : c.onPrimary, size: size * .62),
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Bouton « Post » : créer un post avec ce son (dégradé vert → jaune).
+class _PostPill extends StatelessWidget {
+  const _PostPill({required this.sound, this.label = 'Post', this.big = false, this.expand = false});
+  final ArtistSound sound;
+  final String label;
+  final bool big;
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final h = big ? 42.0 : 30.0;
+    return GestureDetector(
+      onTap: () => startPostWithMusic(context, MontageMusic.artist(sound)),
+      child: Container(
+        height: h,
+        padding: EdgeInsets.symmetric(horizontal: big ? 10 : 9),
+        alignment: expand ? Alignment.center : null,
+        decoration: BoxDecoration(gradient: LinearGradient(colors: [c.primary, c.accent]), borderRadius: BorderRadius.circular(big ? 12 : 99)),
+        child: Row(mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.videocam_rounded, size: big ? 18 : 16, color: c.onAccent),
+          const SizedBox(width: 5),
+          Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.onAccent, fontWeight: FontWeight.w900, fontSize: big ? 12.5 : 11.5))),
         ]),
       ),
     );
   }
 }
 
-Widget _priceChip(ArtistSound s, {bool dark = true}) {
-  final free = s.isFree;
-  final color = free ? const Color(0xFF2ECC71) : const Color(0xFFFFB400);
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-    decoration: BoxDecoration(color: dark ? Colors.black.withValues(alpha: .45) : color.withValues(alpha: .16), borderRadius: BorderRadius.circular(99), border: Border.all(color: color.withValues(alpha: .8), width: .8)),
-    child: Text(free ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900)),
-  );
-}
-
-/// Bouton de lecture rond, en verre, avec le cercle d'avancement pendant l'écoute.
-class _PlayGlass extends StatelessWidget {
-  const _PlayGlass({required this.playKey, required this.onTap, this.size = 64, this.progress});
-  final String playKey;
-  final VoidCallback onTap;
-  final double size;
-  final ValueListenable<double>? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<String?>(
-      valueListenable: SoundPreview.playing,
-      builder: (_, now, __) {
-        final on = now == playKey;
-        return GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Stack(alignment: Alignment.center, children: [
-              Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: .42), border: Border.all(color: Colors.white.withValues(alpha: .85), width: 2)),
-                child: Icon(on ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: size * .6),
-              ),
-              if (on && progress != null)
-                ValueListenableBuilder<double>(
-                  valueListenable: progress!,
-                  builder: (_, v, __) => SizedBox(width: size + 6, height: size + 6, child: CircularProgressIndicator(value: v, strokeWidth: 3, color: Colors.white, backgroundColor: Colors.white24)),
-                ),
-            ]),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Avancement de l'extrait en cours (0 à 1) pour un titre donné.
-class _Progress extends ValueNotifier<double> {
-  _Progress(this.key) : super(0) {
-    _p = SoundPreview.position.listen((p) {
-      if (SoundPreview.playing.value == key && _dur.inMilliseconds > 0) value = (p.inMilliseconds / _dur.inMilliseconds).clamp(0.0, 1.0);
-    });
-    _d = SoundPreview.duration.listen((d) {
-      if (d.inMilliseconds > 0) _dur = d;
-    });
-  }
-  final String key;
-  Duration _dur = const Duration(seconds: 30);
-  late final StreamSubscription<Duration> _p;
-  late final StreamSubscription<Duration> _d;
-
-  @override
-  void dispose() {
-    _p.cancel();
-    _d.cancel();
-    super.dispose();
-  }
-}
-
-// ── 1. L'affiche : une carte, la pochette en plein cadre ─────────────────────
+// ── 1. L'affiche ────────────────────────────────────────────────────────────
 
 class FeedSoundCard extends StatefulWidget {
   const FeedSoundCard({super.key, required this.slot, this.preset});
@@ -247,9 +203,6 @@ class FeedSoundCard extends StatefulWidget {
 
 class _FeedSoundCardState extends State<FeedSoundCard> {
   ArtistSound? _sound;
-  _Progress? _prog;
-
-  String get _key => 'feedcard_${_sound?.id}';
 
   @override
   void initState() {
@@ -259,27 +212,16 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
     });
     if (widget.preset != null) {
       _sound = widget.preset;
-      _prog = _Progress('feedcard_${widget.preset!.id}');
       return;
     }
     _FeedSounds.load().then((all) {
       if (!mounted) return;
       final l = _FeedSounds.pick(context, all, widget.slot, 1);
-      if (l.isEmpty) return;
-      setState(() {
-        _sound = l.first;
-        _prog = _Progress('feedcard_${l.first.id}');
-      });
-      // l'extrait est préchargé : le toucher sur ▶ démarre sans attente
-      if (l.first.previewUrl != null) MusicCache.warm(l.first.previewUrl!);
+      if (l.isNotEmpty) {
+        MusicCache.warm(l.first.previewUrl!); // départ immédiat au toucher
+        setState(() => _sound = l.first);
+      }
     });
-  }
-
-  @override
-  void dispose() {
-    _prog?.dispose();
-    if (SoundPreview.playing.value == _key) SoundPreview.stop();
-    super.dispose();
   }
 
   @override
@@ -287,107 +229,56 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
     final s = _sound;
     if (s == null) return const SizedBox.shrink();
     final c = AppColors.of(context);
+    final t = MusicTrack.fromSound(s);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .22), blurRadius: 16, offset: const Offset(0, 6))],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: AspectRatio(
-        aspectRatio: 4 / 5,
-        child: Stack(fit: StackFit.expand, children: [
-          // pochette en plein cadre
-          GestureDetector(onTap: () => _openDetail(context, s), child: _Cover(s, iconSize: 96)),
-          // voiles pour la lisibilité (haut léger, bas marqué)
-          IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black.withValues(alpha: .45), Colors.transparent, Colors.transparent, Colors.black.withValues(alpha: .86)],
-                  stops: const [0, .22, .45, 1],
-                ),
-              ),
-            ),
-          ),
-          // en-tête : étiquette + prix
-          Positioned(
-            left: 14,
-            right: 14,
-            top: 14,
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: .45), borderRadius: BorderRadius.circular(99)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  ValueListenableBuilder<String?>(
-                    valueListenable: SoundPreview.playing,
-                    builder: (_, now, __) => now == _key ? const _Equalizer(color: Colors.white, height: 12) : const Icon(Icons.graphic_eq_rounded, size: 14, color: Colors.white),
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      height: 236,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: c.border)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.black,
+          child: InkWell(
+            onTap: () => _openDetail(context, s),
+            child: Stack(fit: StackFit.expand, children: [
+              _Cover(s, iconSize: 72),
+              const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0x33000000), Color(0xE6030605)], stops: [.2, .5, 1]))),
+              // Disque vinyle qui déborde à droite
+              Positioned(right: -52, top: 22, child: TrackDisc(track: t, size: 170)),
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: 14,
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(('NOUVEAU${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}').toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.accent, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1.4)),
+                  const SizedBox(height: 3),
+                  SizedBox(
+                    width: 175,
+                    child: Text(s.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900, height: 1.04, shadows: [Shadow(color: Colors.black54, blurRadius: 12)])),
                   ),
-                  const SizedBox(width: 6),
-                  const Text('MUSIQUE', style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Flexible(child: Text('@${s.userPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFDBE4DE), fontSize: 12))),
+                    const SizedBox(width: 8),
+                    _priceBadge(s, onPhoto: true),
+                  ]),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    _PlayDot(track: t, size: 42, glass: true, onTap: () => _play([t], 0)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _PostPill(sound: s, label: s.isFree ? 'Post avec ce son' : 'Post avec ce son · 🪙 ${s.unitPrice}', big: true, expand: true)),
+                  ]),
                 ]),
               ),
-              const Spacer(),
-              _priceChip(s),
             ]),
           ),
-          // grand bouton de lecture au centre
-          Center(child: _PlayGlass(playKey: _key, size: 74, progress: _prog, onTap: () => _togglePreview(context, s, _key))),
-          // titre et actions en bas
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 14,
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, height: 1.1, shadows: [Shadow(color: Colors.black54, blurRadius: 8)])),
-              const SizedBox(height: 4),
-              Text(
-                [if (s.genre != null && s.genre!.isNotEmpty) s.genre!, if (_mmss(s.durationMs).isNotEmpty) _mmss(s.durationMs), if (s.postCount > 0) '🎬 ${s.postCount} post${s.postCount > 1 ? 's' : ''}'].join('  ·  '),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () => startPostWithSound(context, s),
-                    icon: const Icon(Icons.add_circle_rounded, size: 18),
-                    label: const Text('Créer un post', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5)),
-                    style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _roundAction(Icons.videocam_rounded, 'Ma vidéo avec ce son', () => startPostWithMusic(context, MontageMusic.artist(s), ownVideo: true)),
-                const SizedBox(width: 6),
-                _roundAction(Icons.library_music_rounded, 'Toute la musique', () => _openMusic(context)),
-              ]),
-            ]),
-          ),
-        ]),
+        ),
       ),
     );
   }
-
-  Widget _roundAction(IconData icon, String tip, VoidCallback onTap) => Tooltip(
-        message: tip,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: .18), border: Border.all(color: Colors.white54)),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-        ),
-      );
 }
 
-// ── 2. « Musiques du moment » : rangée de pochettes verticales ───────────────
+// ── 2. Sons du moment (rangée) ──────────────────────────────────────────────
 
 class FeedSoundCarousel extends StatefulWidget {
   const FeedSoundCarousel({super.key, required this.slot, this.presets});
@@ -401,115 +292,99 @@ class FeedSoundCarousel extends StatefulWidget {
 }
 
 class _FeedSoundCarouselState extends State<FeedSoundCarousel> {
-  List<ArtistSound> _items = const [];
+  List<ArtistSound> _sounds = const [];
 
   @override
   void initState() {
     super.initState();
-    ArtistSoundPricing.load();
+    ArtistSoundPricing.load().then((_) {
+      if (mounted) setState(() {});
+    });
     if (widget.presets != null) {
-      _items = widget.presets!;
+      _sounds = widget.presets!;
       return;
     }
     _FeedSounds.load().then((all) {
       if (!mounted) return;
       final l = _FeedSounds.pick(context, all, widget.slot, 6);
-      if (l.length < 2) return; // une rangée d'un seul titre n'a pas de sens : l'affiche prend le relais
-      setState(() => _items = l);
-      MusicCache.warmAll(l.map((x) => x.previewUrl ?? '').where((u) => u.isNotEmpty), max: 4);
+      if (l.isNotEmpty) {
+        MusicQueue.warmList(_tracks(l), max: 4);
+        setState(() => _sounds = l);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_items.isEmpty) return const SizedBox.shrink();
+    if (_sounds.isEmpty) return const SizedBox.shrink();
     final c = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
-          child: Row(children: [
-            const Text('🎵', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: 6),
-            Expanded(child: Text('Musiques du moment', style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w900))),
-            TextButton(onPressed: () => _openMusic(context), child: Text('Tout voir', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800))),
-          ]),
+    final list = _tracks(_sounds);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+        child: Row(children: [
+          Expanded(child: Text('🎵 Sons du moment', style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w900))),
+          GestureDetector(onTap: () => _openMusic(context), child: Text('Voir tout', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 11.5))),
+        ]),
+      ),
+      SizedBox(
+        height: 214,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          scrollDirection: Axis.horizontal,
+          itemCount: _sounds.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) => _CarouselTile(sound: _sounds[i], list: list, index: i),
         ),
-        SizedBox(
-          height: 230,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            scrollDirection: Axis.horizontal,
-            itemCount: _items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => _CarouselTile(sound: _items[i]),
-          ),
-        ),
-      ]),
-    );
+      ),
+    ]);
   }
 }
 
-class _CarouselTile extends StatefulWidget {
-  const _CarouselTile({required this.sound});
+class _CarouselTile extends StatelessWidget {
+  const _CarouselTile({required this.sound, required this.list, required this.index});
   final ArtistSound sound;
-
-  @override
-  State<_CarouselTile> createState() => _CarouselTileState();
-}
-
-class _CarouselTileState extends State<_CarouselTile> {
-  late final _Progress _prog = _Progress(_key);
-  String get _key => 'feedtile_${widget.sound.id}';
-
-  @override
-  void dispose() {
-    _prog.dispose();
-    if (SoundPreview.playing.value == _key) SoundPreview.stop();
-    super.dispose();
-  }
+  final List<MusicTrack> list;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    final s = widget.sound;
-    return GestureDetector(
-      onTap: () => _openDetail(context, s),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: SizedBox(
-          width: 158,
-          child: Stack(fit: StackFit.expand, children: [
-            _Cover(s, iconSize: 52),
-            IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withValues(alpha: .35), Colors.transparent, Colors.black.withValues(alpha: .85)], stops: const [0, .35, 1])),
-              ),
-            ),
-            Positioned(left: 8, top: 8, child: _priceChip(s)),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                    Text(s.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w900, height: 1.1)),
-                    if (s.genre != null && s.genre!.isNotEmpty) Text(s.genre!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                  ]),
-                ),
-                const SizedBox(width: 6),
-                _PlayGlass(playKey: _key, size: 40, progress: _prog, onTap: () => _togglePreview(context, s, _key)),
-              ]),
-            ),
+    final c = AppColors.of(context);
+    final t = list[index];
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _openDetail(context, sound),
+      child: Container(
+        width: 150,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(
+            height: 98,
+            child: Stack(clipBehavior: Clip.none, children: [
+              Positioned(left: 46, top: 8, child: TrackDisc(track: t, size: 82, glow: false)),
+              Positioned(left: 0, top: 0, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: SizedBox(width: 98, height: 98, child: _Cover(sound, iconSize: 36)))),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          Text(sound.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+          const SizedBox(height: 1),
+          Text('@${sound.userPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+          const SizedBox(height: 5),
+          Align(alignment: Alignment.centerLeft, child: _priceBadge(sound)),
+          const Spacer(),
+          Row(children: [
+            _PlayDot(track: t, size: 30, onTap: () => _play(list, index)),
+            const SizedBox(width: 6),
+            Expanded(child: _PostPill(sound: sound, expand: true)),
           ]),
-        ),
+        ]),
       ),
     );
   }
 }
 
-// ── 3. « Top titres » : liste façon lecteur de musique ────────────────────────
+// ── 3. Top 5 du pays (liste) ────────────────────────────────────────────────
 
 class FeedSoundList extends StatefulWidget {
   const FeedSoundList({super.key, required this.slot, this.presets});
@@ -523,119 +398,107 @@ class FeedSoundList extends StatefulWidget {
 }
 
 class _FeedSoundListState extends State<FeedSoundList> {
-  List<ArtistSound> _items = const [];
+  List<ArtistSound> _sounds = const [];
 
   @override
   void initState() {
     super.initState();
-    ArtistSoundPricing.load();
+    ArtistSoundPricing.load().then((_) {
+      if (mounted) setState(() {});
+    });
     if (widget.presets != null) {
-      _items = widget.presets!;
+      _sounds = widget.presets!;
       return;
     }
     _FeedSounds.load().then((all) {
       if (!mounted) return;
-      final l = _FeedSounds.pick(context, all, widget.slot, 4);
-      if (l.length < 2) return;
-      setState(() => _items = l);
-      MusicCache.warmAll(l.map((x) => x.previewUrl ?? '').where((u) => u.isNotEmpty), max: 4);
+      final l = _FeedSounds.pick(context, all, widget.slot, 5);
+      if (l.isNotEmpty) {
+        MusicQueue.warmList(_tracks(l), max: 3);
+        setState(() => _sounds = l);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_items.isEmpty) return const SizedBox.shrink();
+    if (_sounds.isEmpty) return const SizedBox.shrink();
     final c = AppColors.of(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      padding: const EdgeInsets.fromLTRB(14, 14, 8, 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surface, c.primary.withValues(alpha: .10)]),
-        border: Border.all(color: c.border),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: c.primary.withValues(alpha: .16)),
-            child: Icon(Icons.graphic_eq_rounded, color: c.primary, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Text('Top titres', style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w900))),
-          TextButton(onPressed: () => _openMusic(context), child: Text('Tout voir', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800))),
+    final list = _tracks(_sounds);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+        child: Row(children: [
+          Expanded(child: Text('🔥 Top ${_sounds.length} du pays', style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w900))),
+          Text('EN DIRECT', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 11.5)),
         ]),
-        const SizedBox(height: 4),
-        for (var i = 0; i < _items.length; i++) _ListRow(rank: i + 1, sound: _items[i]),
-      ]),
-    );
+      ),
+      Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Column(children: [
+            for (var i = 0; i < _sounds.length; i++) _ListRow(sound: _sounds[i], rank: i + 1, list: list, index: i),
+            InkWell(
+              onTap: () => _openMusic(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(border: Border(top: BorderSide(color: c.border, width: .5))),
+                child: Text('Ouvrir la page Musique ›', textAlign: TextAlign.center, style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12)),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ]);
   }
 }
 
-class _ListRow extends StatefulWidget {
-  const _ListRow({required this.rank, required this.sound});
-  final int rank;
+class _ListRow extends StatelessWidget {
+  const _ListRow({required this.sound, required this.rank, required this.list, required this.index});
   final ArtistSound sound;
-
-  @override
-  State<_ListRow> createState() => _ListRowState();
-}
-
-class _ListRowState extends State<_ListRow> {
-  String get _key => 'feedrow_${widget.sound.id}';
-
-  @override
-  void dispose() {
-    if (SoundPreview.playing.value == _key) SoundPreview.stop();
-    super.dispose();
-  }
+  final int rank;
+  final List<MusicTrack> list;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    final s = widget.sound;
     final c = AppColors.of(context);
-    return ValueListenableBuilder<String?>(
-      valueListenable: SoundPreview.playing,
-      builder: (_, now, __) {
-        final on = now == _key;
-        return InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _togglePreview(context, s, _key),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            child: Row(children: [
-              SizedBox(width: 20, child: Text('${widget.rank}', textAlign: TextAlign.center, style: TextStyle(color: on ? c.primary : c.textSecondary, fontWeight: FontWeight.w900, fontSize: 14))),
-              const SizedBox(width: 8),
-              ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 54, height: 54, child: _Cover(s, iconSize: 26))),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: on ? c.primary : c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 2),
-                  Row(children: [
-                    if (on) ...[const _Equalizer(color: Color(0xFF2ECC71), height: 11), const SizedBox(width: 6)],
-                    Flexible(
-                      child: Text(
-                        [if (s.genre != null && s.genre!.isNotEmpty) s.genre!, if (_mmss(s.durationMs).isNotEmpty) _mmss(s.durationMs)].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: c.textSecondary, fontSize: 12),
-                      ),
-                    ),
+    final t = list[index];
+    return ValueListenableBuilder<MusicTrack?>(
+      valueListenable: MusicQueue.current,
+      builder: (_, cur, __) {
+        final on = cur?.key == t.key;
+        return Container(
+          decoration: BoxDecoration(color: on ? c.primary.withValues(alpha: .10) : null, border: index == 0 ? null : Border(top: BorderSide(color: c.border, width: .5))),
+          child: InkWell(
+            onTap: () => _openDetail(context, sound),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Row(children: [
+                SizedBox(width: 16, child: Text('$rank', textAlign: TextAlign.center, style: TextStyle(color: on ? c.primary : c.textSecondary, fontWeight: FontWeight.w900, fontSize: 15))),
+                const SizedBox(width: 10),
+                ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 42, height: 42, child: _Cover(sound, iconSize: 20))),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(sound.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: on ? c.primary : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+                    const SizedBox(height: 2),
+                    Row(children: [
+                      _priceBadge(sound),
+                      const SizedBox(width: 6),
+                      Flexible(child: Text('@${sound.userPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11))),
+                    ]),
                   ]),
-                ]),
-              ),
-              _priceChip(s, dark: false),
-              IconButton(
-                tooltip: 'Créer un post avec ce son',
-                visualDensity: VisualDensity.compact,
-                onPressed: () => startPostWithSound(context, s),
-                icon: Icon(Icons.add_circle_outline_rounded, color: c.textSecondary),
-              ),
-              Icon(on ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: c.primary, size: 38),
-              const SizedBox(width: 4),
-            ]),
+                ),
+                const SizedBox(width: 6),
+                _PostPill(sound: sound),
+                const SizedBox(width: 6),
+                _PlayDot(track: t, onTap: () => _play(list, index)),
+              ]),
+            ),
           ),
         );
       },
