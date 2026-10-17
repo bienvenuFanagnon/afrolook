@@ -20,8 +20,8 @@ const visible = (m) => !m.prono || m.prono.visible !== false;
 
 async function loadConfig(db) {
   return cached('config', 60e3, async () => {
-    const [site, ads] = await Promise.all([db.collection('config').doc('site').get(), db.collection('config').doc('ads').get()]);
-    return { site: mergeSite(site.exists ? site.data() : {}), ads: mergeAds(ads.exists ? ads.data() : {}) };
+    const [site, ads, sp] = await Promise.all([db.collection('config').doc('site').get(), db.collection('config').doc('ads').get(), db.collection('config').doc('sponsors').get()]);
+    return { site: mergeSite(site.exists ? site.data() : {}), ads: mergeAds(ads.exists ? ads.data() : {}), sponsors: sp.exists && Array.isArray(sp.data().items) ? sp.data().items : [] };
   });
 }
 

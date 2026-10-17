@@ -47,7 +47,7 @@ async function handleEvent(req, deps) {
   const inc = deps.increment(1);
   const u = {};
   const t = clean(b.t, 14);
-  let newsId = null, newsKind = null;
+  let newsId = null, newsKind = null, sponsorId = null, sponsorKind = null;
 
   if (t === 'pv') {
     const page = PAGES.includes(b.p) ? b.p : 'autre';
@@ -76,6 +76,13 @@ async function handleEvent(req, deps) {
     newsId = nid; newsKind = b.n;
     if (b.n === 'vue') u.actusLues = inc; else u.clicsActus = inc;
   }
+  else if (t === 'sp') {
+    // sponsor direct : affichage (encart vu) ou clic ; un compteur par sponsor et par jour
+    const sid = String(b.id || '');
+    if (!/^s[a-f0-9]{10,16}$/.test(sid) || !['imp', 'clic'].includes(b.n)) return false;
+    sponsorId = sid; sponsorKind = b.n;
+    if (b.n === 'imp') u.spImps = inc; else u.spClics = inc;
+  }
   else if (t === 'afl_click') { u.clicsAfrolook = inc; u[`aflClics.${key(b.fmt || 'x')}`] = inc; }
   else if (t === 'adview') { u.pubVues = inc; u[`pub.${key(b.n || 'x')}`] = inc; }
   else if (t === 'wa') { u.partagesWa = inc; u[`wa.${key(b.n || 'x')}`] = inc; }
@@ -87,6 +94,9 @@ async function handleEvent(req, deps) {
     if (e.code === 5 || /NOT_FOUND/.test(String(e))) { await ref.set({ jour: day }, { merge: true }); await ref.update(u); } else throw e;
   }
 
+  if (sponsorId) {
+    await deps.db.collection('sponsor_stats').doc(`${sponsorId}_${day}`).set({ sponsor: sponsorId, jour: day, [sponsorKind === 'imp' ? 'imp' : 'clics']: deps.increment(1) }, { merge: true });
+  }
   if (newsId) {
     const field = newsKind === 'vue' ? 'vues' : 'clics';
     try { await deps.db.collection('news').doc(newsId).update({ [field]: deps.increment(1) }); } catch (e) { /* l'actu n'existe plus : seul l'historique compte */ }

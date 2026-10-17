@@ -59,6 +59,7 @@ ${C.contactBox(rc)}
 <li><b>Bannières</b> dans les pages les plus vues : accueil, matchs, coupon, bilan, actualités.</li>
 <li><b>Actualité ou article sponsorisé</b>, toujours clairement étiqueté « Sponsorisé ».</li>
 <li><b>Mention dans nos notifications</b> (sur demande, en nombre limité pour ne pas lasser nos visiteurs).</li>
+<li><b>Rapport de résultats</b> : le nombre d'affichages et de clics de votre encart, jour par jour, remis sur demande.</li>
 <li><b>Partenariat dans la durée</b> : plusieurs emplacements, sur plusieurs semaines.</li>
 </ul>
 <p>Les tarifs dépendent de l'emplacement et de la durée : écrivez-nous et nous vous répondons avec une proposition.</p>
@@ -210,6 +211,7 @@ ${C.contactBox(rc)}
 <li><b>Banners</b> on the most visited pages: home, matches, slips, track record, news.</li>
 <li><b>Sponsored news or article</b>, always clearly labelled “Sponsored”.</li>
 <li><b>A mention in our notifications</b> (on request, in limited numbers so as not to tire our visitors).</li>
+<li><b>Results report</b>: the number of displays and clicks of your box, day by day, provided on request.</li>
 <li><b>Long-term partnership</b>: several placements over several weeks.</li>
 </ul>
 <p>Prices depend on the placement and the duration: write to us and we will answer with a proposal.</p>

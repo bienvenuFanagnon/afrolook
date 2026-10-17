@@ -16,6 +16,7 @@ const crypto = require('crypto');
 const cardLib = require('../push/card');
 const { idOf: subId } = require('../push/subs');
 const buzz = require('../push/buzz');
+const sponsorsLib = require('../sponsors/store');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'buildRecaps', 'sendPush', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'whatsappPub', 'telegram', 'googleVerification'];
@@ -290,6 +291,66 @@ function createAdmin(deps) {
     const rows = (await db.collection('email_subs').get()).docs.map((d) => d.data()).sort((a, b2) => (a.creeLe < b2.creeLe ? 1 : -1));
     const actifs = rows.filter((x) => x.statut !== 'desinscrit');
     return { total: actifs.length, confirmes: actifs.filter((x) => x.confirme).length, desinscrits: rows.length - actifs.length, liste: actifs.slice(0, 5000).map((x) => ({ email: x.email, lang: x.lang, creeLe: x.creeLe, confirme: !!x.confirme, page: (x.consentement && x.consentement.page) || '' })) };
+  };
+
+  // ---------- sponsors directs ----------
+  const loadSponsors = async () => { const d = (await db.collection('config').doc('sponsors').get()).data() || {}; return Array.isArray(d.items) ? d.items : []; };
+
+  /** Sponsors avec leur mesure : affichages et clics sur 7 jours et sur 90 jours. */
+  A.sponsors = async () => {
+    const items = await loadSponsors();
+    const since = dayStr(addDays(nowD(), -89)), d7 = dayStr(addDays(nowD(), -6));
+    const stats = (await db.collection('sponsor_stats').where('jour', '>=', since).get()).docs.map((d) => d.data());
+    const sum = (id, from) => stats.filter((x) => x.sponsor === id && (!from || x.jour >= from)).reduce((a, x) => ({ imp: a.imp + (x.imp || 0), clics: a.clics + (x.clics || 0) }), { imp: 0, clics: 0 });
+    return { placements: sponsorsLib.PLACEMENTS, items: items.map((s2) => ({ ...s2, sept: sum(s2.id, d7), quatreVingtDix: sum(s2.id, null) })) };
+  };
+
+  /** Crée ou met à jour un sponsor (item.id présent = mise à jour). logo : image envoyée (JPEG ou PNG, 200 Ko au plus) ; retirerLogo : supprime le logo. */
+  A['sponsor-save'] = async (b, by) => {
+    const items = await loadSponsors();
+    const raw = b.item || {};
+    const prev = raw.id ? items.find((x) => x.id === raw.id) : null;
+    if (raw.id && !prev) throw new HttpError(404, 'Sponsor introuvable.');
+    if (!prev && items.length >= sponsorsLib.MAX_ITEMS) throw new HttpError(400, `Vingt sponsors au plus : supprimez-en un avant d'en ajouter.`);
+    let it;
+    try { it = sponsorsLib.clean(raw, prev); } catch (e) { throw new HttpError(400, e.message); }
+    it.creeLe = prev ? prev.creeLe : nowD().toISOString();
+    if (b.logo) {
+      const data = typeof b.logo === 'string' ? b.logo.replace(/^data:[^,]*,/, '') : '';
+      const buf = Buffer.from(data, 'base64');
+      const jpg = buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff, png = buf.length > 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+      if (!jpg && !png) throw new HttpError(400, 'Logo invalide (JPEG ou PNG).');
+      if (buf.length > 200 * 1024) throw new HttpError(400, 'Logo trop lourd (200 Ko au plus).');
+      const mid = `s${crypto.randomBytes(8).toString('hex')}`;
+      await db.collection('sponsor_media').doc(mid).set({ id: mid, img: buf.toString('base64'), type: png ? 'image/png' : 'image/jpeg', creeLe: nowD().toISOString() });
+      if (it.logo) await db.collection('sponsor_media').doc(it.logo).delete();
+      it.logo = mid; it.logoExt = png ? 'png' : 'jpg';
+    } else if (b.retirerLogo && it.logo) { await db.collection('sponsor_media').doc(it.logo).delete(); it.logo = ''; it.logoExt = ''; }
+    const next = prev ? items.map((x) => (x.id === it.id ? it : x)) : items.concat([it]);
+    await db.collection('config').doc('sponsors').set({ items: next });
+    await log(by, 'sponsor-save', { id: it.id, nom: it.nom, actif: it.actif, emplacements: it.emplacements });
+    if (deps.clearCache) deps.clearCache();
+    return { ok: true, id: it.id };
+  };
+
+  A['sponsor-delete'] = async (b, by) => {
+    const items = await loadSponsors();
+    const it = items.find((x) => x.id === b.id);
+    if (!it) throw new HttpError(404, 'Sponsor introuvable.');
+    if (it.logo) await db.collection('sponsor_media').doc(it.logo).delete();
+    await db.collection('config').doc('sponsors').set({ items: items.filter((x) => x.id !== b.id) });
+    await log(by, 'sponsor-delete', { id: it.id, nom: it.nom });
+    if (deps.clearCache) deps.clearCache();
+    return { ok: true };
+  };
+
+  /** Mesure jour par jour d'un sponsor (rapport à lui remettre) : { jour, imp, clics }. */
+  A['sponsor-stats'] = async (b) => {
+    const days = Math.min(365, Math.max(1, Math.round(Number(b.jours)) || 90));
+    const since = dayStr(addDays(nowD(), -(days - 1)));
+    const rows = (await db.collection('sponsor_stats').where('jour', '>=', since).get()).docs.map((d) => d.data()).filter((x) => x.sponsor === b.id)
+      .map((x) => ({ jour: x.jour, imp: x.imp || 0, clics: x.clics || 0 })).sort((a, b2) => (a.jour < b2.jour ? -1 : 1));
+    return { jours: rows };
   };
 
   A['push-save'] = async (b, by) => {

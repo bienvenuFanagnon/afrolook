@@ -265,3 +265,90 @@ test('annonceurs : page « Annoncer », coordonnées (WhatsApp, e-mail pré-remp
   assert.equal((await save({ whatsappPub: 'https://wa.me/abc' })).status, 400);
   assert.equal((await save({ whatsappPub: 'javascript:alert(1)' })).status, 400);
 });
+
+test('sponsors directs : validation (lien https, emplacements, dates), sponsors visibles par emplacement et dates, rotation toutes les 15 minutes', () => {
+  const S = require('../src/sponsors/store');
+  const ok = { nom: 'Ma Marque', phrase: 'Une phrase', lien: 'https://exemple.com/offre', emplacements: ['coupon', 'accueil', 'inconnu'], actif: true };
+  const c = S.clean(ok);
+  assert.match(c.id, /^s[a-f0-9]{12}$/);
+  assert.deepEqual(c.emplacements, ['coupon', 'accueil']);
+  assert.equal(c.lien, 'https://exemple.com/offre');
+  for (const bad of [{ nom: 'A' }, { lien: 'http://exemple.com' }, { lien: 'javascript:alert(1)' }, { lien: 'https://u:p@exemple.com' }, { lien: 'https://exemple.com/a b' }, { emplacements: [] }, { debut: '2026-13-45' }, { debut: '2026-10-20', fin: '2026-10-10' }]) {
+    assert.throws(() => S.clean(Object.assign({}, ok, bad)), /obligatoire|https|emplacement|Dates|fin est avant/, JSON.stringify(bad));
+  }
+  assert.equal(S.clean(Object.assign({}, ok, { id: c.id }), c).id, c.id, 'l\'identifiant ne change pas à la modification');
+  const items = [
+    Object.assign({}, c, { id: 'sa00000000aa', nom: 'A' }),
+    Object.assign({}, c, { id: 'sb00000000bb', nom: 'B', emplacements: ['coupon'] }),
+    Object.assign({}, c, { id: 'sc00000000cc', nom: 'C', actif: false }),
+    Object.assign({}, c, { id: 'sd00000000dd', nom: 'D', fin: '2026-10-01' }),
+    Object.assign({}, c, { id: 'se00000000ee', nom: 'E', debut: '2026-12-01' }),
+  ];
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  assert.deepEqual(S.activeFor(items, 'coupon', NOWS).map((x) => x.nom), ['A', 'B'], 'ni en pause, ni expiré, ni pas encore commencé');
+  assert.deepEqual(S.activeFor(items, 'accueil', NOWS).map((x) => x.nom), ['A']);
+  assert.equal(S.pick(items, 'actus', NOWS), null);
+  const seen = new Set();
+  for (let i = 0; i < 6; i++) seen.add(S.pick(items, 'coupon', new Date(NOWS.getTime() + i * 15 * 60e3)).nom);
+  assert.deepEqual([...seen].sort(), ['A', 'B'], 'les deux sponsors passent à tour de rôle');
+  assert.equal(S.pick(items, 'coupon', NOWS).id, S.pick(items, 'coupon', new Date(NOWS.getTime() + 60e3)).id, 'stable pendant 15 minutes');
+});
+
+test('sponsors directs : administration (création, logo contrôlé, mise à jour, suppression), encart sur le site, mesure des affichages et des clics', async () => {
+  const D = require('../src/render/data');
+  const { handleEvent } = require('../src/http/track');
+  const { handleImg } = require('../src/http/img');
+  const { createAdmin } = require('../src/http/admin');
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  const db = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  const admin = createAdmin({ db, verifyToken: async () => ({ email: 'a@x.fr', email_verified: true }), bootstrap: ['a@x.fr'], tasks: {}, now: () => NOWS, clearCache: D.clearCache });
+  const call = (action, body) => admin.handle({ action, body, authorization: 'Bearer t' });
+  const jpeg = 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(300)]).toString('base64');
+  assert.equal((await call('sponsor-save', { item: { nom: 'Ma Marque', lien: 'http://exemple.com', emplacements: ['coupon'], actif: true } })).status, 400, 'lien non https refusé');
+  assert.equal((await call('sponsor-save', { item: { nom: 'Ma Marque', lien: 'https://exemple.com', emplacements: ['coupon'], actif: true }, logo: 'data:image/png;base64,' + Buffer.from('pas une image').toString('base64') })).status, 400);
+  assert.equal((await call('sponsor-save', { item: { nom: 'Ma Marque', lien: 'https://exemple.com', emplacements: ['coupon'], actif: true }, logo: 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(210 * 1024)]).toString('base64') })).status, 400, 'logo trop lourd');
+  const saved = await call('sponsor-save', { item: { nom: 'Ma Marque', phrase: 'Livraison rapide', lien: 'https://exemple.com/offre', emplacements: ['coupon', 'accueil'], actif: true }, logo: jpeg });
+  assert.equal(saved.status, 200);
+  const id = saved.json.id;
+  let list = (await call('sponsors', {})).json;
+  assert.equal(list.items.length, 1);
+  assert.match(list.items[0].logo, /^s[a-f0-9]{16}$/);
+  const logoId = list.items[0].logo;
+  // logo servi par /api/img (collection à part)
+  const img = await handleImg({ path: `/api/img/${logoId}.jpg` }, { db });
+  assert.equal(img.status, 200);
+  assert.equal(img.type, 'image/jpeg');
+  // encart sur l'accueil, la page coupon ; absent des pages actus (non choisi)
+  D.clearCache();
+  const home = (await route(db, '/', NOWS)).body;
+  assert.match(home, new RegExp(`<aside class="spb" data-sp="${id}" aria-label="Sponsorisé"><span class="spl">Sponsorisé</span><a class="spa" href="https://exemple.com/offre" target="_blank" rel="sponsored nofollow noopener"><img src="/api/img/${logoId}.jpg"`));
+  assert.match(home, /<b>Ma Marque<\/b><small>Livraison rapide<\/small>/);
+  const coupon = (await route(db, '/coupon', NOWS)).body;
+  assert.match(coupon, /Coupon du jour offert par Ma Marque/);
+  assert.doesNotMatch((await route(db, '/actualites', NOWS)).body, /class="spb"/);
+  assert.match((await route(db, '/en/coupon', NOWS)).body, /Slip of the day brought to you by Ma Marque/);
+  // mesure : affichages et clics ; identifiant ou type invalides, bots ignorés
+  const mk = () => ({ db, increment: (n) => ({ __inc: n }), now: NOWS, salt: 's' });
+  const req = (body, extra) => Object.assign({ body, ua: 'Mozilla/5.0 (iPhone)', ip: '1.2.3.4', headers: {} }, extra);
+  assert.equal(await handleEvent(req({ t: 'sp', n: 'imp', id }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'sp', n: 'imp', id }, { ip: '5.5.5.5' }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'sp', n: 'clic', id }), mk()), true);
+  assert.equal(await handleEvent(req({ t: 'sp', n: 'imp', id: '../x' }), mk()), false);
+  assert.equal(await handleEvent(req({ t: 'sp', n: 'autre', id }), mk()), false);
+  assert.equal(await handleEvent(req({ t: 'sp', n: 'imp', id }, { ua: 'Googlebot/2.1' }), mk()), false);
+  list = (await call('sponsors', {})).json;
+  assert.deepEqual([list.items[0].sept.imp, list.items[0].sept.clics, list.items[0].quatreVingtDix.imp], [2, 1, 2]);
+  const rep = (await call('sponsor-stats', { id, jours: 30 })).json;
+  assert.deepEqual(rep.jours, [{ jour: '2026-10-16', imp: 2, clics: 1 }]);
+  // mise à jour : pause + retrait du logo ; l'encart disparaît du site
+  const upd = await call('sponsor-save', { item: { id, nom: 'Ma Marque', phrase: 'Livraison rapide', lien: 'https://exemple.com/offre', emplacements: ['coupon'], actif: false }, retirerLogo: true });
+  assert.equal(upd.status, 200);
+  assert.equal(db.read('sponsor_media', logoId), null, 'ancien logo supprimé');
+  D.clearCache();
+  assert.doesNotMatch((await route(db, '/', NOWS)).body, /class="spb"/);
+  assert.equal((await call('sponsor-save', { item: { id: 'sinconnu000000', nom: 'X', lien: 'https://exemple.com', emplacements: ['coupon'] } })).status, 404);
+  // suppression
+  assert.equal((await call('sponsor-delete', { id })).status, 200);
+  assert.equal((await call('sponsors', {})).json.items.length, 0);
+  assert.equal((await call('sponsor-delete', { id })).status, 404);
+});

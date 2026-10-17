@@ -151,6 +151,20 @@ function advBox(rc) {
   return `<div class="box advb"><div class="lbl">${t.advBoxTitle}</div><p>${t.advBoxP}</p><a class="more-btn" href="${rc.u('legal', 'annoncer')}">${t.advBoxBtn} <i aria-hidden="true">→</i></a></div>`;
 }
 
+/**
+ * Encart d'un sponsor direct (« offert par… ») sur un emplacement : coupon, accueil ou actus. Toujours étiqueté « Sponsorisé », lien marqué sponsored.
+ * Un seul sponsor à la fois, à tour de rôle par tranche de 15 minutes. pf.js compte l'affichage (quand l'encart est vu) et le clic.
+ */
+function sponsorBox(rc, placement) {
+  const sp = require('../sponsors/store').pick(rc.sponsors || [], placement, rc.now);
+  if (!sp) return '';
+  const t = rc.t;
+  const logo = sp.logo ? `<img src="/api/img/${esc(sp.logo)}.${sp.logoExt === 'jpg' ? 'jpg' : 'png'}" alt="" width="56" height="56" loading="lazy" decoding="async">` : `<span class="spi" aria-hidden="true">${esc(sp.nom.slice(0, 2).toUpperCase())}</span>`;
+  const title = placement === 'coupon' ? t.spCoupon(esc(sp.nom)) : esc(sp.nom);
+  return `<aside class="spb" data-sp="${esc(sp.id)}" aria-label="${esc(t.spLabel)}"><span class="spl">${t.spLabel}</span>` +
+    `<a class="spa" href="${esc(sp.lien)}" target="_blank" rel="sponsored nofollow noopener">${logo}<span class="spt"><b>${title}</b>${sp.phrase ? `<small>${esc(sp.phrase)}</small>` : ''}</span><span class="spgo">${t.spGo} ›</span></a></aside>`;
+}
+
 function channelBanner(rc, slot) {
   const u = rc.site.whatsapp;
   if (!u || !CHANNEL_RE.test(u)) return '';
@@ -273,5 +287,5 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, partnerCard, channelBanner, shareBox, mailBox, contactBox, advBox, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, adResponsive, aflCard, partnerCard, channelBanner, shareBox, mailBox, contactBox, advBox, sponsorBox, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

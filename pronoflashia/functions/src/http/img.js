@@ -10,7 +10,8 @@ const ID = /^\/api\/img\/([a-z0-9]{8,24})\.(png|jpg)$/;
 async function handleImg(req, deps) {
   const m = ID.exec(req.path);
   if (!m) return { status: 404, type: 'text/plain', body: 'Inconnu', cache: 'public, max-age=60' };
-  const d = await deps.db.collection(COL).doc(m[1]).get();
+  // logos des sponsors (identifiants commençant par « s ») : collection à part, jamais nettoyée
+  const d = await deps.db.collection(m[1][0] === 's' ? 'sponsor_media' : COL).doc(m[1]).get();
   if (!d.exists) return { status: 404, type: 'text/plain', body: 'Inconnu', cache: 'public, max-age=60' };
   const doc = d.data();
   const long = 'public, max-age=86400, s-maxage=2592000';

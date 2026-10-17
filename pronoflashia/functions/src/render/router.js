@@ -29,7 +29,7 @@ async function context(db, now, lang = 'fr') {
   const today = dayStr(now);
   const tomorrow = dayStr(addDays(now, 1));
   return {
-    now, lang, t: T[lang], site: cfg.site, ads: cfg.ads, leagues, css: CSS, version: VERSION, today, tomorrow,
+    now, lang, t: T[lang], site: cfg.site, ads: cfg.ads, sponsors: cfg.sponsors || [], leagues, css: CSS, version: VERSION, today, tomorrow,
     dayAliases: { [today]: 'aujourdhui', [tomorrow]: 'demain' },
     u: (name, arg) => pathFor(lang, name, arg),
     pathIn: (l, name, arg) => pathFor(l, name, arg),
