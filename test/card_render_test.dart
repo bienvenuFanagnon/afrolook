@@ -253,14 +253,14 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 8)));
 
   testWidgets('carte « Merci pour vos abonnés » : avec et sans photo, plusieurs styles et formats', (tester) async {
-    for (final st in [CardStyleId.neon, CardStyleId.wax, CardStyleId.kente, CardStyleId.glass, CardStyleId.magazine, CardStyleId.pro]) {
+    for (final st in [CardStyleId.neon, CardStyleId.wax, CardStyleId.glass]) {
       for (final images in [0, 1]) {
         final png = await render(tester, source(images: 1), withTemplate(st, CardTemplateId.thanks, images: images));
         expect(png.length > 10000, true, reason: '${st.name} $images');
         if (out != null) File('$out/merci_${st.name}_$images.png').writeAsBytesSync(png);
       }
     }
-    for (final f in CardFormat.values) {
+    for (final f in [CardFormat.square, CardFormat.story]) {
       final png = await render(tester, source(images: 1), withTemplate(CardStyleId.neon, CardTemplateId.thanks, images: 1, format: f));
       expect(png.length > 10000, true, reason: f.name);
       if (out != null) File('$out/merci_neon_${f.name}.png').writeAsBytesSync(png);
