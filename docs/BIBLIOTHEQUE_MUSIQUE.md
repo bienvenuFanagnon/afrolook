@@ -179,7 +179,9 @@ Reste ouvert : les pays supplémentaires coûtent-ils des pièces (même grille 
 - Transactions nommées : « Achat de la playlist « X » — N pièces » / « Vente de ta playlist « X » — N pièces reçues ».
 - Le créateur voit sur sa playlist : ajouts, écoutes, pièces gagnées.
 
-**Écoutes (streams)** : une écoute = 30 s de lecture (ou extrait de 30 s écouté en entier), comptée par le serveur (`musicStream`) : 1 par personne, par titre et par tranche de 10 min, 600 par jour, jamais sur son propre titre. Le compteur apparaît sur les lignes, la fiche du titre, les playlists et l'espace artiste.
+**Écoutes (streams)** : une écoute = 10 secondes de lecture (ou le titre / l'extrait écouté en entier s'il est plus court), comptée par le serveur (`musicStream`) : 1 par personne, par titre et par tranche de 10 min, 600 par jour. Les écoutes de l'artiste sur son propre titre comptent aussi (comme sur les plateformes). Les musiques gratuites d'Afrolook ont leur compteur (`MusicStudioStats`). Le nombre d'écoutes est affiché en direct partout où un titre apparaît (`StreamsText`) : lignes, fiche du titre, lecteur flottant, cartes du fil, crédit sous les posts, playlists, espace artiste, choix de musique du Studio.
+
+**Extrait gratuit** : sa durée dépend de celle du titre : un quart du titre, entre 8 et 30 secondes (30 s dès 2 minutes). Elle est enregistrée dans le son (`previewSec`) ; les anciens sons courts ont été refaits.
 
 **Pièces gagnées par titre** (fiche du titre pour l'artiste, « Mes sons ») : ventes du titre (`saleEarnings`), utilisations dans des posts (`useEarnings`), total. Les écoutes ne rapportent pas de pièces.
 
