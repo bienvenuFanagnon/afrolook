@@ -20,6 +20,7 @@ function pathFor(lang, name, arg) {
     case 'bilan': return en ? '/en/track-record' : '/bilan';
     case 'coupon': return `${pre}/coupon`;
     case 'news': return en ? '/en/news' : '/actus';
+    case 'notifs': return en ? '/en/notifications' : '/notifications';
     case 'article': return `${en ? '/en/news' : '/actus'}/${arg.slug}`;
     case 'legal': return en ? `/en/${LEGAL_SLUGS[arg]}` : `/${arg}`;
     case '404': return `${pre}/404`;
@@ -41,6 +42,7 @@ function parsePath(path) {
     if (seg[0] === 'track-record') return { lang, name: 'bilan' };
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
     if (seg[0] === 'news') return { lang, name: 'news' };
+    if (seg[0] === 'notifications') return { lang, name: 'notifs' };
     if (LEGAL_FR[seg[0]]) return { lang, name: 'legal', arg: LEGAL_FR[seg[0]] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -49,6 +51,7 @@ function parsePath(path) {
     if (seg[0] === 'bilan') return { lang, name: 'bilan' };
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
     if (seg[0] === 'actus') return { lang, name: 'news' };
+    if (seg[0] === 'notifications') return { lang, name: 'notifs' };
     if (LEGAL_SLUGS[seg[0]]) return { lang, name: 'legal', arg: seg[0] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -111,7 +114,8 @@ const T = {
     couponWon: 'Gagné', couponLost: 'Perdu', couponOpen: 'En cours', couponVoid: 'Annulé', couponProb: (p) => `Probabilité annoncée : ${p}\u00a0%`, couponOf: (d) => `Coupon du ${d}`,
     bilanHeroT: 'Notre bilan en toute transparence',
     newsMore: 'Toutes les actus foot', newsTitle: 'Actus foot', newsTeams: 'Actus des deux équipes', newsNote: "Titres et liens des sites d'origine : un clic ouvre l'article sur leur site.", newsNow: "à l'instant", newsHours: (h) => `il y a ${h} h`, newsDays: (d) => `il y a ${d} j`,
-    bellOff: 'Recevoir les coupons du jour en notification', bellOn: 'Notifications activées : toucher pour les couper', followLbl: 'Alertes avant leurs matchs :', followOn: (n) => `🔔 ${n} suivi`, followOff: (n) => `🔔 Suivre ${n}`,
+    ibxTitle: 'Mes notifications', ibxH1: 'Mes notifications', ibxP: "Retrouve ici les notifications reçues sur cet appareil, lues ou non. Pas de compte à créer : la liste est liée à ce navigateur.", ibxLoading: 'Chargement…',
+    bellOff: 'Recevoir les coupons du jour en notification', bellOn: 'Notifications activées : toucher pour voir tes notifications', followLbl: 'Alertes avant leurs matchs :', followOn: (n) => `🔔 ${n} suivi`, followOff: (n) => `🔔 Suivre ${n}`,
     notesTitle: "Ce que l'IA sait de ces équipes", notesP: "Notes calculées sur tous les matchs connus (saison précédente comprise), en comptant davantage les matchs récents et en tenant compte du niveau des adversaires. Elles sont jugées sur des matchs passés avant d'être utilisées dans le calcul.",
     notesAtk: (v) => (Math.abs(v) < 5 ? 'Attaque : dans la moyenne du championnat' : `Attaque : ${Math.abs(v)}\u00a0% ${v > 0 ? 'au-dessus' : 'en dessous'} de la moyenne du championnat`),
     notesDef: (v) => (Math.abs(v) < 5 ? 'Défense : dans la moyenne du championnat' : `Défense : encaisse ${Math.abs(v)}\u00a0% de buts ${v > 0 ? 'en plus' : 'en moins'} que la moyenne`),
@@ -214,7 +218,8 @@ const T = {
     couponWon: 'Won', couponLost: 'Lost', couponOpen: 'Open', couponVoid: 'Void', couponProb: (p) => `Announced probability: ${p}%`, couponOf: (d) => `Slip of ${d}`,
     bilanHeroT: 'Our track record, in full transparency',
     newsMore: 'More football news', newsTitle: 'Football news', newsTeams: 'News on both teams', newsNote: 'Headlines and links from the original sites: a click opens the article on their site.', newsNow: 'just now', newsHours: (h) => `${h}h ago`, newsDays: (d) => `${d}d ago`,
-    bellOff: "Get today's slips as notifications", bellOn: 'Notifications on: tap to turn them off', followLbl: 'Alerts before their matches:', followOn: (n) => `🔔 ${n} followed`, followOff: (n) => `🔔 Follow ${n}`,
+    ibxTitle: 'My notifications', ibxH1: 'My notifications', ibxP: 'Find here the notifications received on this device, read or not. No account needed: the list is tied to this browser.', ibxLoading: 'Loading…',
+    bellOff: "Get today's slips as notifications", bellOn: 'Notifications on: tap to see your notifications', followLbl: 'Alerts before their matches:', followOn: (n) => `🔔 ${n} followed`, followOff: (n) => `🔔 Follow ${n}`,
     notesTitle: 'What the AI knows about these teams', notesP: 'Ratings computed on every known match (previous season included), giving more weight to recent matches and accounting for the strength of opponents. They are tested on past matches before being used in the calculation.',
     notesAtk: (v) => (Math.abs(v) < 5 ? 'Attack: around the league average' : `Attack: ${Math.abs(v)}% ${v > 0 ? 'above' : 'below'} the league average`),
     notesDef: (v) => (Math.abs(v) < 5 ? 'Defence: around the league average' : `Defence: concedes ${Math.abs(v)}% ${v > 0 ? 'more' : 'fewer'} goals than average`),

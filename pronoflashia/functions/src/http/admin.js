@@ -276,7 +276,7 @@ function createAdmin(deps) {
     if (!subs.length) return { abonnes: 0, envoyes: 0, echecs: 0, retires: 0, cles, conseil: "Aucun abonné enregistré : l'activation de la cloche n'a pas abouti sur ce navigateur. Réactivez la cloche (🔔) sur le site, accordez l'autorisation, puis relancez ce test." };
     const send = await deps.pushSender();
     const lang = (s2) => (s2.lang === 'en' ? 'en' : 'fr');
-    const msg = { fr: { titre: '🔔 Test PronoFlash IA', corps: 'Les notifications fonctionnent : coupons du jour et alertes de vos équipes arriveront ici.', url: '/?source=push&slot=test', tag: 'pf-test' }, en: { titre: '🔔 PronoFlash IA test', corps: 'Notifications work: slips of the day and alerts for your teams will arrive here.', url: '/en?source=push&slot=test', tag: 'pf-test' } };
+    const msg = { fr: { titre: '🔔 Test PronoFlash IA', corps: 'Les notifications fonctionnent : coupons du jour et alertes de vos équipes arriveront ici.', url: '/?source=push&slot=test', tag: 'pf-test', inbox: false }, en: { titre: '🔔 PronoFlash IA test', corps: 'Notifications work: slips of the day and alerts for your teams will arrive here.', url: '/en?source=push&slot=test', tag: 'pf-test', inbox: false } };
     const r = await deliver(db, send, subs, (s2) => msg[lang(s2)]);
     await log(by, 'push-test', { abonnes: subs.length, envoyes: r.envoyes, echecs: r.echecs, retires: r.retires });
     return Object.assign({ abonnes: subs.length, cles }, r);

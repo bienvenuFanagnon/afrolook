@@ -10,6 +10,7 @@ const { dayStr } = require('./helpers');
 const M = require('../push/messages');
 const buzz = require('../push/buzz');
 const { saveCard, COL: CARDS } = require('../push/card');
+const inbox = require('../push/inbox');
 
 const SLOTS = [
   { id: 'matin', from: 7 * 60 + 30, to: 10 * 60 + 30 },
@@ -55,14 +56,21 @@ async function deliver(db, send, subs, payloadFor, deadline, track) {
       const sub = subs[next++];
       const payload = payloadFor(sub);
       if (!payload) continue;
+      inbox.prepare(payload);
       try {
         await send(sub, payload);
         out.envoyes++;
-        if (track) {
-          const n = usedToday(sub, track.jour) + 1, a = actuToday(sub, track.jour) + (track.kind === 'actu' ? 1 : 0);
-          Object.assign(sub, { nJour: track.jour, n, actuJour: track.jour, actuN: a, echecs: 0 });
-          await db.collection('push_subs').doc(sub.id).set(sub);
-        } else if (sub.echecs) await db.collection('push_subs').doc(sub.id).set(Object.assign({}, sub, { echecs: 0 }));
+        try { // le message est parti : une erreur d'écriture ci-dessous ne le transforme pas en échec d'envoi
+          let changed = !!sub.echecs;
+          sub.echecs = 0;
+          if (payload.inbox !== false) { await inbox.add(db, sub, payload); sub.nl = (sub.nl || 0) + 1; changed = true; }
+          if (track) {
+            const n = usedToday(sub, track.jour) + 1, a = actuToday(sub, track.jour) + (track.kind === 'actu' ? 1 : 0);
+            Object.assign(sub, { nJour: track.jour, n, actuJour: track.jour, actuN: a });
+            changed = true;
+          }
+          if (changed) await db.collection('push_subs').doc(sub.id).set(sub);
+        } catch (e2) { if (erreurs.length < 5) erreurs.push(`écriture ${String(e2 && e2.message).slice(0, 80)}`); }
       } catch (e) {
         const code = e && e.statusCode;
         if (erreurs.length < 5) erreurs.push(`${code || 'erreur'} ${String((e && (e.body || e.message)) || '').slice(0, 120)}`.trim());
@@ -211,6 +219,9 @@ async function sendPush(opts, report) {
   // nettoyage : les cartes d'images de plus de 20 jours ne servent plus
   const old = await db.collection(CARDS).where('creeLe', '<', new Date(now.getTime() - 20 * 864e5).toISOString()).limit(100).get();
   for (const d of old.docs) await db.collection(CARDS).doc(d.id).delete();
+  // boîtes de réception : tout ce qui a plus de 31 jours (abonnements disparus compris)
+  const oldBox = await db.collection(inbox.COL).where('au', '<', new Date(now.getTime() - 31 * 864e5).toISOString()).limit(200).get();
+  for (const d of oldBox.docs) await db.collection(inbox.COL).doc(d.id).delete();
 }
 
 module.exports = { sendPush, deliver, loadSubs, runActu, SLOTS, TEAM_MAX_PER_DAY, MAX_PER_DAY, ACTU_MAX_PER_DAY, isQuiet, localMinute };

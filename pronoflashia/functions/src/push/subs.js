@@ -32,7 +32,7 @@ async function subscribe(db, body, now) {
     lang: body.lang === 'en' ? 'en' : 'fr', equipes: body.equipes === undefined ? (prev ? prev.equipes || [] : []) : cleanTeams(body.equipes),
     tzo: Number.isFinite(body.tzo) && Math.abs(body.tzo) <= 840 ? Math.round(body.tzo) : (prev && Number.isFinite(prev.tzo) ? prev.tzo : 0),
     creeLe: prev ? prev.creeLe : now.toISOString(), majLe: now.toISOString(), echecs: 0,
-    nJour: prev ? prev.nJour || null : null, n: prev ? prev.n || 0 : 0, actuJour: prev ? prev.actuJour || null : null, actuN: prev ? prev.actuN || 0 : 0,
+    nJour: prev ? prev.nJour || null : null, n: prev ? prev.n || 0 : 0, nl: prev ? prev.nl || 0 : 0, actuJour: prev ? prev.actuJour || null : null, actuN: prev ? prev.actuN || 0 : 0,
     equipesJour: prev ? prev.equipesJour || null : null, equipesN: prev ? prev.equipesN || 0 : 0,
   });
   return { id, nouveau: !prev };

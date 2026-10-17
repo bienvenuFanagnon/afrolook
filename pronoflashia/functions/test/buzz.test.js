@@ -113,7 +113,7 @@ test('actu à heure variable : une seule, la plus forte, avec image et lien vers
   assert.equal(r.infos.actu.envoyes, 2);
   assert.equal(sent.length, 2);
   const p = sent[0].p;
-  assert.match(p.url, /^\/actus\/info-n[12]\?source=push&slot=actu$/);
+  assert.match(p.url, /^\/actus\/info-n[12]\?source=push&slot=actu&n=[a-f0-9]{12}$/);
   assert.match(p.image, /^\/api\/img\/[a-f0-9]{16}\.png$/);
   assert.ok(p.titre.length <= 62 && p.corps);
   assert.ok(db.read('push_cards', p.image.split('/').pop().replace('.png', '')), 'la carte est enregistrée');
@@ -202,7 +202,7 @@ test('admin : annonce — validation, essai sur un appareil, confirmation obliga
   const essai = await call('push-annonce', { titre: 'Titre', corps: 'Texte', url: '/coupon', essai: true, endpoint: EP(1), image: { mode: 'carte', titre: 'Titre' } });
   assert.equal(essai.json.envoyes, 1);
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].p.url, '/coupon?source=push&slot=annonce');
+  assert.match(sent[0].p.url, /^\/coupon\?source=push&slot=annonce&n=[a-f0-9]{12}$/);
   assert.match(sent[0].p.image, /^\/api\/img\//);
   assert.equal((await call('push-annonce', { titre: 'Titre', corps: 'Texte', id: 'abcdefgh1' })).status, 400, 'sans confirmation : rien ne part');
   assert.equal(sent.length, 1);

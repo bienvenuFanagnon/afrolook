@@ -35,6 +35,8 @@
     teamOn: function (n) { return 'You will get an alert before ' + n + ' play.'; }, teamOff: function (n) { return 'Alerts for ' + n + ' turned off.'; },
     pwaT: 'Install PronoFlash IA on your phone', pwaS: 'One tap access, nothing to download from a store', pwaBtn: 'Install', pwaClose: 'Not now',
     pwaIosBtn: 'How?', pwaIos: 'Tap the Share button <b>⎙</b>, then “Add to Home Screen”.',
+    ibxOpen: 'My notifications', ibxNone: 'Turn on notifications to get slips, big matches and football news here.', ibxEnable: 'Turn on notifications', ibxEmpty: 'No notification yet. They will appear here as soon as the next one is sent.',
+    ibxMore: 'Show 10 more', ibxAll: 'Mark all as read', ibxOff: 'Turn notifications off', ibxUnread: function (n) { return n > 9 ? '9+ unread' : n + (n > 1 ? ' unread' : ' unread'); }, ibxErr: 'Could not load your notifications. Try again later.', ibxDenied: 'Notifications are blocked in your browser settings.', ibxNoSupport: 'This browser cannot receive notifications. On iPhone, add the site to your home screen first.', ibxRead: 'Read', ibxNew: 'New',
     wmT: 'Never miss the football news that matters', wmS: 'Turn on notifications and we tell you when something happens. Free, and you can switch them off any time.', wmEx: 'Examples of notifications', wmNow: 'now',
     wmN1t: "⚡ Today's slips: Arsenal – Chelsea", wmN1b: 'Cautious 2 matches 76% · Balanced 3 matches 58% chance that everything wins.',
     wmN2t: '⚔️ Classico: Real Madrid – FC Barcelona', wmN2b: 'Our pick and the latest news are inside.',
@@ -59,6 +61,8 @@
     teamOn: function (n) { return 'Tu recevras une alerte avant les matchs de ' + n + '.'; }, teamOff: function (n) { return 'Alertes coupées pour ' + n + '.'; },
     pwaT: 'Installe PronoFlash IA sur ton téléphone', pwaS: 'Accès en un clic, rien à télécharger sur un store', pwaBtn: 'Installer', pwaClose: 'Plus tard',
     pwaIosBtn: 'Comment ?', pwaIos: 'Touche le bouton Partager <b>⎙</b>, puis « Sur l\'écran d\'accueil ».',
+    ibxOpen: 'Mes notifications', ibxNone: 'Active les notifications pour recevoir ici les coupons, les gros matchs et les actus du football.', ibxEnable: 'Activer les notifications', ibxEmpty: 'Aucune notification pour le moment. Elles apparaîtront ici dès la prochaine.',
+    ibxMore: 'Voir 10 de plus', ibxAll: 'Tout marquer comme lu', ibxOff: 'Désactiver les notifications', ibxUnread: function (n) { return n > 9 ? '9+ non lues' : n + (n > 1 ? ' non lues' : ' non lue'); }, ibxErr: 'Impossible de charger tes notifications. Réessaie plus tard.', ibxDenied: 'Les notifications sont bloquées dans les réglages de ton navigateur.', ibxNoSupport: "Ce navigateur ne peut pas recevoir de notifications. Sur iPhone, ajoute d'abord le site à l'écran d'accueil.", ibxRead: 'Lue', ibxNew: 'Nouveau',
     wmT: 'Ne rate plus les infos foot qui comptent', wmS: "Active les notifications : on te prévient quand ça bouge. Gratuit, et tu coupes quand tu veux.", wmEx: 'Exemples de notifications', wmNow: 'maintenant',
     wmN1t: '⚡ Coupons du jour : Arsenal – Chelsea', wmN1b: 'Prudent 2 matchs 76 % · Équilibré 3 matchs 58 % de chances que tout passe.',
     wmN2t: '⚔️ Classico : Real Madrid – FC Barcelone', wmN2b: "Notre pronostic et les dernières infos sont à l'intérieur.",
@@ -413,8 +417,9 @@
   })();
   /* ---------- notifications (coupons du jour, alertes des équipes suivies) ---------- */
   (function push() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in w) || !('Notification' in w)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in w) || !('Notification' in w)) { var nb = $('#pf-inbox'); if (nb) nb.innerHTML = '<div class="box"><p>' + L.ibxNoSupport + '</p></div>'; return; }
     var bell = $('#pf-bell');
+    var inboxPath = EN ? '/en/notifications' : '/notifications';
     var st = store.get('pf_push') || {};
     var teams = store.get('pf_teams') || [];
     var key = null;
@@ -425,8 +430,24 @@
     function post(path, body) { return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
     function u8(b64) { var p = '='.repeat((4 - b64.length % 4) % 4), s2 = (b64 + p).replace(/-/g, '+').replace(/_/g, '/'), r = atob(s2), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
     function current() { return navigator.serviceWorker.ready.then(function (r) { return r.pushManager.getSubscription(); }); }
+    function badge(n) {
+      if (!bell) return;
+      var b = $('.bellbadge', bell);
+      if (!n) { if (b) b.remove(); return; }
+      if (!b) { b = d.createElement('span'); b.className = 'bellbadge'; bell.appendChild(b); }
+      b.textContent = n > 9 ? '9+' : String(n);
+    }
+    /* nombre de notifications non lues (une demande par minute au plus et par navigateur) */
+    function refreshCount(force) {
+      current().then(function (sub) {
+        if (!sub) { badge(0); return; }
+        var c = store.sget('pf_nl'); c = c ? c.split('|') : null;
+        if (!force && c && Date.now() - Number(c[1]) < 60000) { badge(Number(c[0])); return; }
+        return post('/api/push/compte', { endpoint: sub.endpoint }).then(function (j) { var n = (j && j.nonLus) || 0; store.sset('pf_nl', n + '|' + Date.now()); badge(n); });
+      }).catch(function () { /* le compteur n'est pas essentiel */ });
+    }
     function paint(on) {
-      if (bell) { bell.hidden = false; bell.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+      if (bell) { bell.hidden = false; bell.setAttribute('aria-pressed', on ? 'true' : 'false'); if (on) { bell.setAttribute('aria-label', L.ibxOpen); bell.title = L.ibxOpen; } }
       $$('.follow').forEach(function (f) { f.hidden = !on && Notification.permission === 'denied'; });
       $$('.follow button').forEach(function (b) { var on2 = teams.indexOf(b.getAttribute('data-t')) >= 0; b.setAttribute('aria-pressed', on && on2 ? 'true' : 'false'); b.textContent = (on && on2 ? L.followOn : L.followOff)(b.getAttribute('data-n')); });
     }
@@ -449,7 +470,7 @@
     }
     function toggle() {
       return current().then(function (sub) {
-        if (sub) return disable().then(function () { paint(false); toast(L.pushOffT); });
+        if (sub) { if (location.pathname !== inboxPath) location.href = inboxPath; else w.scrollTo(0, 0); return; }
         return enable().then(function (ok) { paint(ok); if (ok) toast(L.pushOkT); });
       });
     }
@@ -476,9 +497,59 @@
     });
 
     w.__pf = w.__pf || {};
-    w.__pf.push = { enable: enable, paint: paint, toast: toast };
+    w.__pf.push = { enable: enable, disable: disable, paint: paint, toast: toast, current: current, post: post };
+    /* page « Mes notifications » : liste par 10, non lues en évidence */
+    var ibx = $('#pf-inbox');
+    function inboxPage() {
+      var offset = 0, endpoint = null;
+      function when(iso) { try { return new Date(iso).toLocaleString(LOC, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+      function empty(msg, withBtn) { ibx.innerHTML = '<div class="box"><p>' + msg + '</p>' + (withBtn ? '<button class="btn" type="button" data-a="on">' + L.ibxEnable + '</button>' : '') + '</div>'; }
+      function item(x) {
+        var href = typeof x.url === 'string' && x.url.charAt(0) === '/' && x.url.charAt(1) !== '/' ? x.url : '/';
+        var img = x.image && /^\/api\/img\/[a-z0-9]+\.(png|jpg)$/.test(x.image) ? '<img src="' + esc(x.image) + '" alt="" loading="lazy" width="96" height="48">' : '';
+        return '<a class="ibi' + (x.lu ? '' : ' nl') + '" href="' + esc(href) + '" data-n="' + esc(x.id) + '">' + img + '<span class="ibt"><small>' + (x.lu ? '' : '<i class="ibd" aria-hidden="true"></i><em>' + L.ibxNew + '</em> · ') + esc(when(x.au)) + '</small><b>' + esc(x.titre) + '</b><span>' + esc(x.corps) + '</span></span></a>';
+      }
+      function start() {
+        offset = 0;
+        current().then(function (sub) {
+          if (!sub) { empty(Notification.permission === 'denied' ? L.ibxDenied : L.ibxNone, Notification.permission !== 'denied'); return; }
+          endpoint = sub.endpoint;
+          return post('/api/push/inbox', { endpoint: endpoint, offset: 0 }).then(function (j) {
+            if (j.erreur) { empty(L.ibxNone, true); return; }
+            store.sset('pf_nl', j.nonLus + '|' + Date.now()); badge(j.nonLus);
+            offset = j.items.length;
+            ibx.innerHTML = '<div class="ibh"><b>' + (j.nonLus ? L.ibxUnread(j.nonLus) : '') + '</b>' + (j.nonLus ? '<button class="btn sec sm" type="button" data-a="all">' + L.ibxAll + '</button>' : '') + '</div>' +
+              (j.items.length ? '<div class="ibl">' + j.items.map(item).join('') + '</div>' : '<div class="box"><p>' + L.ibxEmpty + '</p></div>') +
+              (j.suite ? '<button class="btn sec ibm" type="button" data-a="more">' + L.ibxMore + '</button>' : '') + '<p class="ibo"><button type="button" class="wml" data-a="off">' + L.ibxOff + '</button></p>';
+          });
+        }).catch(function () { empty(L.ibxErr, false); });
+      }
+      function more() {
+        post('/api/push/inbox', { endpoint: endpoint, offset: offset }).then(function (j) {
+          offset += j.items.length;
+          $('.ibl', ibx).insertAdjacentHTML('beforeend', j.items.map(item).join(''));
+          var m = $('.ibm', ibx); if (m && !j.suite) m.remove();
+        }).catch(function () { toast(L.ibxErr); });
+      }
+      ibx.addEventListener('click', function (e) {
+        var it = e.target.closest('.ibi'), a = e.target.closest('[data-a]');
+        if (it) { if (endpoint) post('/api/push/lu', { endpoint: endpoint, id: it.getAttribute('data-n') }); return; } /* le lien s'ouvre ensuite */
+        if (!a) return;
+        var act = a.getAttribute('data-a');
+        if (act === 'on') enable().then(function (ok) { paint(ok); if (ok) start(); });
+        else if (act === 'more') more();
+        else if (act === 'all') post('/api/push/lu', { endpoint: endpoint, tous: true }).then(start);
+        else if (act === 'off') disable().then(function () { paint(false); badge(0); toast(L.pushOffT); start(); });
+      });
+      start();
+    }
+    if (ibx) inboxPage();
+    /* ouvrir une notification (lien avec n=…) la marque comme lue */
+    var nParam = /[?&]n=([a-f0-9]{8,16})/.exec(location.search);
     current().then(function (sub) {
       paint(!!sub);
+      if (sub && nParam) { post('/api/push/lu', { endpoint: sub.endpoint, id: nParam[1] }).then(function (j) { store.sset('pf_nl', ((j && j.nonLus) || 0) + '|' + Date.now()); badge((j && j.nonLus) || 0); }).catch(function () { /* pas grave */ }); }
+      else if (sub) refreshCount(false);
       if (!sub) st.on = 0;
       var visits = (store.get('pf_visits') || 0);
       if (!store.sget('pf_vs')) { store.sset('pf_vs', '1'); visits++; store.set('pf_visits', visits); }

@@ -23,6 +23,19 @@ const port = parseInt(process.argv[2] || process.env.PORT || '5173', 10);
   const db = await buildSample(now);
   if (process.env.PF_ADS_DEMO) await db.seed('config', 'ads', JSON.parse(fs.readFileSync(process.env.PF_ADS_DEMO, 'utf8')));
   await seedStats(db, now);
+  // abonné de démonstration (adresse https://fcm.googleapis.com/fcm/send/devdemo) avec 23 notifications dont 12 non lues : page /notifications
+  {
+    const subs = require('../functions/src/push/subs'), inbox = require('../functions/src/push/inbox');
+    const KEYS = { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' };
+    const { id } = await subs.subscribe(db, { subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/devdemo', keys: KEYS }, lang: 'fr' }, now);
+    const titles = ['⚡ Coupons du jour : Arsenal – Chelsea', '⚔️ Classico : Real Madrid – Barça', '🌟 Une pépite fait parler', '🔥 Mbappé fait l\'actu', '🔔 Match de vos équipes'];
+    for (let i = 0; i < 23; i++) {
+      const p = { titre: titles[i % 5], corps: 'Notre pronostic et les dernières infos sont à l\'intérieur.', url: '/coupon?source=push', image: i % 2 ? null : null, _nid: `d${String(i).padStart(11, '0')}` };
+      await inbox.add(db, { id }, p, new Date(now.getTime() - i * 5400e3));
+      if (i >= 12) await db.collection('push_inbox').doc(`${id}_${p._nid}`).set({ lu: true }, { merge: true });
+    }
+    await db.collection('push_subs').doc(id).set(Object.assign({}, (await db.collection('push_subs').doc(id).get()).data(), { nl: 12 }));
+  }
   const okProvider = { name: 'workers-ai', call: async () => '{"ok":true}' };
   const noop = (name) => () => runJob(db, name, async (r) => { r.traites = 0; });
   const admin = createAdmin({ db, verifyToken: async (t) => { if (t !== 'dev') throw new Error('non'); return { email: 'dev@local', email_verified: true }; }, bootstrap: ['dev@local'], clearCache: D.clearCache, secretsStatus: () => ({ apiFootball: true, cfToken: true, cfAccount: true, gemini: false, statsSalt: true }),

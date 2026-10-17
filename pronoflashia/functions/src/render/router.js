@@ -70,6 +70,7 @@ async function route(db, urlPath, now = new Date()) {
       return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now), coupons: await D.couponHistory(db, now, 30), news: await D.news(db, now), recap: (await D.newsEnabled(db)) ? (await D.articles(db, 1))[0] || null : null }), cc(300, 600));
     }
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
+    case 'notifs': return page(rc, P.notifPage(rc), cc(3600, 86400));
     case 'news': return page(rc, P.newsIndex(rc, { articles: await D.articles(db, 30) }), cc(300, 600));
     case 'article': {
       if (r.arg.startsWith('info-')) {

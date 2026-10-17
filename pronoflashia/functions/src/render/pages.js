@@ -350,6 +350,13 @@ function newsIndex(rc, { articles }) {
   return { title: t.pfIndexTitle, description: t.pfIndexDesc, path: rc.u('news'), alternates: alts(rc, 'news'), body, active: 'actus' };
 }
 
+/** Page « Mes notifications » : la liste est remplie dans le navigateur (elle dépend de son abonnement), la page elle-même est la même pour tous. */
+function notifPage(rc) {
+  const t = rc.t;
+  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.ibxH1}</h1><p>${t.ibxP}</p></div><div id="pf-inbox" class="ibx" data-path="${esc(rc.u('notifs'))}"><p class="note">${t.ibxLoading}</p></div>${adResponsive(rc, 'haut', 'ad-top')}</div>${sideColumn(rc, {})}</div></div>`;
+  return { title: t.ibxTitle, description: t.ibxP, path: rc.u('notifs'), body, active: '', noindex: true };
+}
+
 /** Page d'un article « Le point foot ». */
 function article(rc, { a }) {
   const t = rc.t;
@@ -585,4 +592,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { newsIndex, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { newsIndex, notifPage, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
