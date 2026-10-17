@@ -309,13 +309,13 @@ class _Capsule extends StatelessWidget {
       child: Container(
         height: 34,
         margin: const EdgeInsets.only(right: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 9),
         decoration: BoxDecoration(gradient: LinearGradient(colors: [c.primary, c.accent]), borderRadius: BorderRadius.circular(12)),
         alignment: Alignment.center,
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.lock_open_rounded, size: 16, color: c.onAccent),
-          const SizedBox(width: 5),
-          Text(price > 0 ? 'Débloquer · $price 🪙' : 'Débloquer', style: TextStyle(color: c.onAccent, fontWeight: FontWeight.w900, fontSize: 11.5)),
+          Icon(Icons.lock_open_rounded, size: 15, color: c.onAccent),
+          const SizedBox(width: 4),
+          Text(price > 0 ? 'Débloquer · $price 🪙' : 'Débloquer', style: TextStyle(color: c.onAccent, fontWeight: FontWeight.w900, fontSize: 11)),
         ]),
       ),
     );

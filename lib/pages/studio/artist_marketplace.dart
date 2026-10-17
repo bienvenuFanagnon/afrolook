@@ -795,7 +795,11 @@ class _PostSoundCreditState extends State<PostSoundCredit> {
 
 class ArtistSoundDetailPage extends StatefulWidget {
   final ArtistSound sound;
-  const ArtistSoundDetailPage({Key? key, required this.sound}) : super(key: key);
+
+  /// Aperçu sans Firebase (captures d'écran et tests).
+  @visibleForTesting
+  final bool preview;
+  const ArtistSoundDetailPage({Key? key, required this.sound, this.preview = false}) : super(key: key);
 
   @override
   State<ArtistSoundDetailPage> createState() => _ArtistSoundDetailPageState();
@@ -807,7 +811,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   bool _loadingAd = false;
   bool _adGranted = false; // écoute complète ouverte une fois par une pub récompensée
 
-  bool get _own => widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
+  bool get _own => !widget.preview && widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
 
   /// Écoute en entier : titre gratuit, acheté, ou à soi. Sinon, extrait de 30 s.
   bool get _full => widget.sound.isFree || _own || _owned || _adGranted;
@@ -818,6 +822,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   void initState() {
     super.initState();
     MusicQueue.start();
+    if (widget.preview) return;
     OfflineMusic.refresh();
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
@@ -895,12 +900,12 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           Center(
             child: SizedBox(
               width: 260,
-              height: 210,
+              height: 222,
               child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
-                ProgressRing(size: 196, color: c.primary, endedColor: c.warning, stroke: 3.5, child: TrackDisc(track: _track, size: 172)),
+                Align(alignment: const Alignment(0, .35), child: ProgressRing(size: 196, color: c.primary, endedColor: c.warning, stroke: 3.5, child: TrackDisc(track: _track, size: 172))),
                 Positioned(
                   right: 6,
-                  top: -10,
+                  top: 0,
                   child: ValueListenableBuilder<String?>(valueListenable: SoundPreview.playing, builder: (_, now, __) => Tonearm(height: 112, playing: now == _track.key)),
                 ),
               ]),
@@ -937,7 +942,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
             const SizedBox(height: 10),
             Text('L’artiste touche ${s.saleShare} pièces sur ton achat. Le titre reste dans ta bibliothèque, lisible dans Afrolook.', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
           ],
-          if (!s.isFree && !_own && !_owned && !_adGranted && MusicAds.canOfferRewarded(Provider.of<UserAuthProvider>(context, listen: false).loginUserData))
+          if (!widget.preview && !s.isFree && !_own && !_owned && !_adGranted && MusicAds.canOfferRewarded(Provider.of<UserAuthProvider>(context, listen: false).loginUserData))
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: TextButton.icon(
@@ -946,7 +951,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
                 label: Text('Écouter en entier avec une pub (une fois)', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5)),
               ),
             ),
-          if (_full && OfflineMusic.supported)
+          if (!widget.preview && _full && OfflineMusic.supported)
             ValueListenableBuilder<Set<String>>(
               valueListenable: OfflineMusic.ids,
               builder: (_, ids, __) {
@@ -996,7 +1001,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
             style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: 22),
-          SoundPostsSection(soundId: s.id, colors: c),
+          if (!widget.preview) SoundPostsSection(soundId: s.id, colors: c),
         ]),
       ),
     );

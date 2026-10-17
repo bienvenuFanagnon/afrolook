@@ -106,7 +106,7 @@ class _Cover extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(gradient: LinearGradient(colors: g, begin: Alignment.topLeft, end: Alignment.bottomRight)),
       alignment: Alignment.center,
-      child: Icon(Icons.music_note_rounded, color: Colors.white.withValues(alpha: .85), size: iconSize),
+      child: iconSize <= 0 ? null : Icon(Icons.music_note_rounded, color: Colors.white.withValues(alpha: .85), size: iconSize),
     );
   }
 }
@@ -241,7 +241,7 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
           child: InkWell(
             onTap: () => _openDetail(context, s),
             child: Stack(fit: StackFit.expand, children: [
-              _Cover(s, iconSize: 72),
+              _Cover(s, iconSize: 0),
               const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0x33000000), Color(0xE6030605)], stops: [.2, .5, 1]))),
               // Disque vinyle qui déborde à droite
               Positioned(right: -52, top: 22, child: TrackDisc(track: t, size: 170)),
