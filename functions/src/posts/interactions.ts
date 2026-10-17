@@ -3,7 +3,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 import { checkEmailRateLimit, generateInteractionEmailHTML } from "../shared/email_utils";
-import { EMAIL_FROM, APP_DOMAIN, PLAY_STORE_URL } from "../shared/config";
+import { EMAIL_FROM, EMAIL_REPLY_TO, APP_DOMAIN, PLAY_STORE_URL } from "../shared/config";
 
 /**
  * Génère le HTML pour les nouveaux posts (abonnements)
@@ -246,7 +246,7 @@ export const onPostInteraction = onDocumentCreated(
             type,
           }),
           from: EMAIL_FROM,
-          replyTo: EMAIL_FROM,
+          replyTo: EMAIL_REPLY_TO,
         },
         headers: {
           "X-Mailer": "Afrolook Media",
@@ -325,7 +325,7 @@ export const onNewPostFromSubscription = onDocumentCreated(
               postId: event.params.postId,
             }),
             from: EMAIL_FROM,
-            replyTo: EMAIL_FROM,
+            replyTo: EMAIL_REPLY_TO,
           },
           headers: {
             "X-Mailer": "Afrolook Media",

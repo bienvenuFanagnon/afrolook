@@ -4,6 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 import { EMAIL_FROM } from "../shared/config";
 import { emailTransporter } from "../shared/email_utils";
+import { notifyAdmins } from "../shared/admin_notify";
 
 /**
  * Suivi des paiements : chaque étape d'un paiement (démarrage, confirmation par l'opérateur, crédit des pièces, vérification
@@ -125,6 +126,7 @@ async function alertAdmins(e: PayLogInput, now: number): Promise<void> {
     ...(send > 0 ? [`${send} autre(s) erreur(s) de ce fournisseur depuis le dernier e-mail (non envoyées pour ne pas vous inonder).`, ""] : []),
     "Détails : application Afrolook, profil administrateur, « Suivi des paiements ».",
   ];
+  await notifyAdmins({ title: `⚠️ Paiement en échec — ${name}`, message: `${e.step} : ${cut(e.message ?? "erreur inconnue", 140)}`, refId: e.reference ?? undefined });
   try {
     await emailTransporter.sendMail({ from: EMAIL_FROM, to: ALERT_EMAILS, subject: `⚠️ Paiement en échec — ${name}`, text: lines.join("\n") });
   } catch (err) {

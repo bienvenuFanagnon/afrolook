@@ -10,6 +10,7 @@ import {
 } from "../shared/email_utils";
 import {
   EMAIL_FROM,
+  EMAIL_REPLY_TO,
   APP_DOMAIN,
   APP_PLAY_STORE_URL_AFRO,
   APP_WEB_URL_AFRO,
@@ -447,7 +448,7 @@ export const sendBulkEmail = onCall(
               priority,
             }),
             from: EMAIL_FROM,
-            replyTo: EMAIL_FROM,
+            replyTo: EMAIL_REPLY_TO,
           },
           headers: {
             "X-Priority": priority === "high" ? "1" : "3",
@@ -550,7 +551,7 @@ export const testEmail = onCall(async (request) => {
       subject: "Test système email Afrolook Media",
       html: "<h1>Test réussi !</h1><p>Votre système d'email fonctionne parfaitement.</p>",
       from: EMAIL_FROM,
-      replyTo: EMAIL_FROM,
+      replyTo: EMAIL_REPLY_TO,
     },
     createdAt: FieldValue.serverTimestamp(),
   });

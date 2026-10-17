@@ -792,8 +792,9 @@ class _TxGroupedList extends StatefulWidget {
 
 class _TxGroupedListState extends State<_TxGroupedList> {
   static const _groups = {
-    'Entrées':     ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
-    'Dépenses':    ['DEPENSE', 'PAIEMENT_PIECES', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
+    // Un achat de pièces ajoute des pièces au solde : c'est une entrée (recharge), pas une dépense.
+    'Entrées':     ['DEPOT', 'DEPOTADMIN', 'ACHAT_PIECES', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
+    'Dépenses':    ['DEPENSE', 'PAIEMENT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
     'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
     'Conversions': ['CONVERSION_PIECES'],
   };
