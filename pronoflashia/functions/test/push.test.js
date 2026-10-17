@@ -202,3 +202,31 @@ test('web-push réel : message chiffré et signé VAPID pour un abonnement navig
   assert.ok(!d.body.toString('utf8').includes('Corps'), 'le contenu est chiffré');
   resetMemo();
 });
+
+test('admin : notification de test — compte-rendu (abonnés, envoyées, refusées avec la cause, expirées supprimées) et conseil quand personne n\'est abonné', async () => {
+  const db = new FakeDb();
+  const mkAdmin = (sender) => createAdmin({ db, verifyToken: async () => ({ email: 'a@x.fr', email_verified: true }), bootstrap: ['a@x.fr'], tasks: {}, now: () => T0, pushSender: sender });
+  const call = (admin, action) => admin.handle({ action, body: {}, authorization: 'Bearer t' });
+  const vide = (await call(mkAdmin(async () => async () => {}), 'push-test')).json;
+  assert.equal(vide.abonnes, 0);
+  assert.match(vide.conseil, /Aucun abonné enregistré/);
+  await subs.subscribe(db, sub(1), T0);
+  await subs.subscribe(db, sub(2, { lang: 'en' }), T0);
+  await subs.subscribe(db, sub(3), T0);
+  const seen = [];
+  const send = async (s, p) => {
+    seen.push(p.titre);
+    if (s.id === subs.idOf(EP(2))) throw Object.assign(new Error('Gone'), { statusCode: 410 });
+    if (s.id === subs.idOf(EP(3))) throw Object.assign(new Error('Unauthorized'), { statusCode: 401, body: 'invalid vapid' });
+  };
+  const r = (await call(mkAdmin(async () => send), 'push-test')).json;
+  assert.equal(r.abonnes, 3);
+  assert.equal(r.envoyes, 1);
+  assert.equal(r.retires, 1, 'abonnement expiré supprimé');
+  assert.equal(r.echecs, 1);
+  assert.ok(r.erreurs.some((e) => /^401/.test(e)), 'la cause est renvoyée');
+  assert.ok(seen.includes('🔔 PronoFlash IA test') && seen.includes('🔔 Test PronoFlash IA'), 'langue de chaque abonné');
+  assert.equal(db.read('push_subs', subs.idOf(EP(2))), null);
+  const sans = createAdmin({ db, verifyToken: async () => ({ email: 'a@x.fr', email_verified: true }), bootstrap: ['a@x.fr'], tasks: {}, now: () => T0 });
+  assert.equal((await call(sans, 'push-test')).status, 501);
+});

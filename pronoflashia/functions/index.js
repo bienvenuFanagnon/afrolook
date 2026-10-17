@@ -113,6 +113,7 @@ const admin = createAdmin({
   verifyToken: (t) => getAuth().verifyIdToken(t),
   get bootstrap() { return ADMIN_EMAILS.value().split(',').map((x) => x.trim()).filter(Boolean); },
   tasks: TASKS,
+  pushSender,
   apiFactory: () => makeApi(secrets()),
   adsterraFactory: () => { const t = secrets().adsterra; return t ? createAdsterra({ token: t }) : null; },
   // présence des secrets (jamais leur valeur) pour l'écran « Connexions »
