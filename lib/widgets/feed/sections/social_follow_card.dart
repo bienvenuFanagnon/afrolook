@@ -34,7 +34,7 @@ class SocialFollowCard extends StatefulWidget {
 
   /// Logo WhatsApp dans la couleur voulue (blanc sur fond vert, vert sur fond clair).
   static Widget whatsappLogo({double size = 20, Color color = Colors.white}) => SvgPicture.string(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#${color.value.toRadixString(16).padLeft(8, '0').substring(2)}" d="$_waPath"/></svg>',
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}" d="$_waPath"/></svg>',
         width: size,
         height: size,
       );
