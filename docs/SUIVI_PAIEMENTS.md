@@ -17,3 +17,5 @@ Compteurs du jour (réussis / en erreur par fournisseur), journal filtrable (« 
 
 **Technique** : `functions/src/payments/paymentLog.ts` (`logPayment`, `withPaymentLog`, `paymentReport`, `paymentWatchdog`) ; `PaymentStats/{jour}` pour les compteurs ; `lib/services/payment_report.dart` côté application ; `lib/pages/admin/payment_logs_admin_page.dart`.
 **Pas encore suivis** : les achats de pièces avec le solde (`buyCoinsWithBalance`) et les retraits.
+
+Paiement par carte (site web) : étapes `card_start`, `card_check`, `card_settle`, `card_credit` du fournisseur FeexPay, voir `PAIEMENT_CARTE_WEB.md`.

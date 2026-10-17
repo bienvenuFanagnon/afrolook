@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'admin_palette.dart';
+import 'card_payments_admin.dart';
 
 const kPaymentProviders = <String, String>{
   'feexpay': 'FeexPay',
@@ -92,6 +93,14 @@ class _PaymentLogsAdminPageState extends State<PaymentLogsAdminPage> {
         elevation: 0,
         iconTheme: IconThemeData(color: AdminPalette.textP),
         title: Text('Suivi des paiements', style: TextStyle(color: AdminPalette.textP, fontWeight: FontWeight.w900)),
+        actions: [
+          if (widget.preview == null)
+            IconButton(
+              tooltip: 'Réglages du paiement par carte (web)',
+              icon: Icon(Icons.credit_card_rounded, color: AdminPalette.textP),
+              onPressed: () => CardPaymentsAdminDialog.open(context),
+            ),
+        ],
       ),
       body: widget.preview != null ? _body(widget.preview!.logs, widget.preview!.stats) : _live(),
     );

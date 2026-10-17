@@ -957,7 +957,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
               _buildDetailItem("Type", _formatTransactionType(transaction.type)),
               _buildDetailItem("Montant", _amountLabel(transaction)),
               if (transaction.netEstimate != null)
-                _buildDetailItem("Net estimé (après la part ${transaction.paymentMethod == 'Google Play' ? 'de Google' : "d'Apple"})",
+                _buildDetailItem(transaction.paymentMethod == 'Carte bancaire' ? 'Net estimé (après les frais FeexPay)' : "Net estimé (après la part ${transaction.paymentMethod == 'Google Play' ? 'de Google' : "d'Apple"})",
                     '${NumberFormat('#,##0.00', 'fr').format(transaction.netEstimate)} ${transaction.currency ?? ''}'),
               if ((transaction.beneficiaryPseudo ?? '').isNotEmpty)
                 _buildDetailItem("Bénéficiaire", '@${transaction.beneficiaryPseudo}'),

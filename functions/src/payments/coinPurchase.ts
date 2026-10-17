@@ -155,7 +155,9 @@ export const onPurchaseOrDepositNotify = onDocumentWritten(
         `Acheteur : @${user.pseudo ?? "?"} (${user.email ?? "e-mail inconnu"})`,
         `Pièces achetées : ${fmt(coins)}`,
         `Montant payé : ${amount}`,
-        ...(t.netEstimate !== undefined ? [`Net estimé après la part de ${String(t.paymentMethod ?? "").includes("Google") ? "Google" : "Apple"} (estimation à 70 %) : ${fmt(num(t.netEstimate))} ${t.currency ?? ""}`] : []),
+        ...(t.netEstimate !== undefined ? [String(t.paymentMethod ?? "").includes("Carte")
+          ? `Net estimé après les frais FeexPay : ${fmt(num(t.netEstimate))} ${t.currency ?? ""}`
+          : `Net estimé après la part de ${String(t.paymentMethod ?? "").includes("Google") ? "Google" : "Apple"} (estimation à 70 %) : ${fmt(num(t.netEstimate))} ${t.currency ?? ""}`] : []),
         `Moyen de paiement : ${t.paymentMethod ?? t.methode_paiement ?? "?"}`,
         ...(t.beneficiaryId && t.beneficiaryId !== t.user_id ? [`Bénéficiaire : @${t.beneficiaryPseudo ?? t.beneficiaryId}`] : []),
         `Date : ${date}`,

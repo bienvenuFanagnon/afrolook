@@ -1,4 +1,5 @@
 import '../cards/card_milestone.dart';
+import '../coins/card_coin_page.dart';
 import 'package:afrotok/pages/cards/card_events.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1048,6 +1049,12 @@ class _MyHomePageState extends State<MyHomePage>
       Future.delayed(const Duration(seconds: 9), () {
         if (mounted) CardEvents.maybeShow(context);
       });
+      // Web : retour de la page de paiement par carte → annonce du résultat (pièces créditées ou paiement échoué)
+      if (kIsWeb) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) CardCoinPage.resume(context);
+        });
+      }
       // Cap d'abonnés franchi (100, 500, 1 000…) : proposition de la carte de remerciement, une fois par cap
       Future.delayed(const Duration(seconds: 30), () {
         if (mounted) CardMilestone.maybeShow(context);

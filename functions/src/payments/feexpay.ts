@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import axios from "axios";
 import { db } from "../shared/firebase";
 import { logPayment } from "./paymentLog";
+import { cardWebhookReference } from "./feexpayCard";
 import {
   generateFeexpayTransKeyAfrolook,
   generateDepositNumberAfrolook,
@@ -322,6 +323,12 @@ export const afrolookFeexpayWebhook = onRequest(
       console.log(`Référence: ${reference}`);
       console.log(`Statut: ${status}`);
       console.log(`Montant payé: ${amountPaidByUser} FCFA`);
+
+      // Achat de pièces par carte (web) : le webhook ne fait que relancer la vérification de la commande
+      if (await cardWebhookReference(String(reference))) {
+        res.status(200).send("OK");
+        return;
+      }
 
       const existingTx = await db.collection("transactions")
         .where("idTransactionFeexPay", "==", reference)

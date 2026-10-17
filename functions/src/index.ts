@@ -25,6 +25,7 @@ export * from "./payments/coinConversion";
 export * from "./payments/coinPayments";
 export * from "./payments/coinInteractions";
 export * from "./payments/coinPurchase";
+export { cardCoinQuote, cardCoinStart, cardCoinStatus, cardCoinReconcile, cardCoinAdminConfig, cardCoinAdminChargeback } from "./payments/feexpayCard";
 export { paymentReport, paymentWatchdog } from "./payments/paymentLog";
 
 export * from "./payments/appleIap";

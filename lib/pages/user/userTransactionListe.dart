@@ -848,7 +848,7 @@ class _TxDetailSheet extends StatelessWidget {
         _Row(context.tr('Montant'),     '$amount $unit'),
         if (TxAmount.paidLabel(tx) != null) _Row(context.tr('Payé'), TxAmount.paidLabel(tx)!.replaceFirst(context.tr('payé '), '')),
         if (tx.netEstimate != null)
-          _Row(context.tr('Net estimé'), context.tr(tx.paymentMethod == 'Google Play' ? '{a} {b} (après Google)' : '{a} {b} (après Apple)', {'a': tx.netEstimate!.toStringAsFixed(2), 'b': tx.currency ?? ''})),
+          _Row(context.tr('Net estimé'), context.tr(tx.paymentMethod == 'Carte bancaire' ? '{a} {b} (après frais bancaires)' : tx.paymentMethod == 'Google Play' ? '{a} {b} (après Google)' : '{a} {b} (après Apple)', {'a': tx.netEstimate!.toStringAsFixed(2), 'b': tx.currency ?? ''})),
         if ((tx.beneficiaryPseudo ?? '').isNotEmpty) _Row(context.tr('Bénéficiaire'), '@${tx.beneficiaryPseudo}'),
         if ((tx.frais ?? 0) > 0)
           _Row(context.tr('Frais'), '${tx.frais!.toStringAsFixed(2)} FCFA'),
