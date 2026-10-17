@@ -18,6 +18,7 @@ const { createClient: createAdsterra } = require('./src/data/adsterra');
 const { syncResults } = require('./src/jobs/syncResults');
 const { syncNews } = require('./src/jobs/syncNews');
 const { sendPush } = require('./src/jobs/sendPush');
+const { buildRecaps } = require('./src/jobs/buildRecaps');
 const { handlePush } = require('./src/http/push');
 const { ensureVapid } = require('./src/push/keys');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
@@ -83,6 +84,7 @@ const TASKS = {
     } catch (e) { r.erreurs.push(`IndexNow : ${e.message}`); }
   }),
   syncResults: (o = {}) => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
+  buildRecaps: (o = {}) => runJob(db, 'buildRecaps', (r) => buildRecaps({ db, providers: makeProviders(secrets()), force: !!o.manuel }, r)),
   sendPush: () => runJob(db, 'sendPush', async (r) => sendPush({ db, send: await pushSender(), budgetMs: 420000 }, r)),
   syncNews: () => runJob(db, 'syncNews', (r) => syncNews({ db, providers: makeProviders(secrets()) }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
@@ -97,6 +99,8 @@ exports.buildPredictions = onSchedule(sched(cron('buildPredictions')), async () 
 exports.syncResults = onSchedule(sched(cron('syncResults')), async () => { await TASKS.syncResults(); });
 // Actualités : flux des sites de football, toutes les 2 heures.
 exports.syncNews = onSchedule(sched(cron('syncNews'), { memory: '256MiB', timeoutSeconds: 120 }), async () => { await TASKS.syncNews(); });
+// « Le point foot » : l'article du jour, chaque soir.
+exports.buildRecaps = onSchedule(sched(cron('buildRecaps'), { memory: '256MiB', timeoutSeconds: 300 }), async () => { await TASKS.buildRecaps(); });
 // Notifications : toutes les 15 minutes, décide seule quoi envoyer (voir sendPush).
 exports.sendPush = onSchedule(sched(cron('sendPush'), { memory: '512MiB', timeoutSeconds: 540 }), async () => { await TASKS.sendPush(); });
 // Bilan hebdomadaire figé chaque lundi.

@@ -103,4 +103,4 @@ function validateOutput(raw, faits, lang) {
   return { ok: true, errors: [], value: { analyse, pointsCles: pts.slice(0, 3), resume } };
 }
 
-module.exports = { hasUnnegatedPromise, extractJson, numbersIn, allowedNumbers, checkNumbers, validateOutput, FORBIDDEN };
+module.exports = { hasUnnegatedPromise, extractJson, numbersIn, allowedNumbers, checkNumbers, validateOutput, FORBIDDEN, FORBIDDEN_EN, FR_WORDS, EN_WORDS, sentences };

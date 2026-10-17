@@ -99,10 +99,28 @@ async function news(db, now) {
   });
 }
 
+/** L'interrupteur général des actualités (admin) est-il sur « oui » ? */
+async function newsEnabled(db) {
+  return cached('news-enabled', 60e3, async () => { const d = await db.collection('config').doc('news').get(); return !(d.exists && d.data().actif === false); });
+}
+
+/** Derniers articles « Le point foot » (les plus récents d'abord). */
+async function articles(db, n = 30) {
+  return cached(`articles:${n}`, 300e3, async () => {
+    const snap = await db.collection('articles').orderBy('jour', 'desc').limit(n).get();
+    return snap.docs.map((d) => d.data());
+  });
+}
+
+async function articleBySlug(db, slug) {
+  const snap = await db.collection('articles').where('slug', '==', slug).get();
+  return snap.docs[0] ? snap.docs[0].data() : null;
+}
+
 /** Tous les matchs à venir avec pronostic (pour le compositeur de coupon et les coupons proposés). */
 async function pool(db, now, hours = 96) {
   const list = await matchesBetween(db, now.toISOString(), new Date(now.getTime() + hours * 3600e3).toISOString());
   return list.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
 }
 
-module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, pool };
+module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, newsEnabled, articles, articleBySlug, pool };
