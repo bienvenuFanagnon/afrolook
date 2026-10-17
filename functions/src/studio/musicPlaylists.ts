@@ -174,25 +174,30 @@ export const playlistAdd = onCall({ timeoutSeconds: 30, memory: "256MiB" }, asyn
 export const musicStream = onCall({ timeoutSeconds: 15, memory: "256MiB" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
-  const d = (request.data ?? {}) as { soundId?: unknown; playlistId?: unknown };
-  if (!okId(d.soundId)) throw new HttpsError("invalid-argument", "Titre invalide.");
+  const d = (request.data ?? {}) as { soundId?: unknown; studioId?: unknown; playlistId?: unknown };
+  const studioId = typeof d.studioId === "string" && STUDIO_TRACK_IDS.has(d.studioId) ? d.studioId : null;
+  if (!studioId && !okId(d.soundId)) throw new HttpsError("invalid-argument", "Titre invalide.");
   const playlistId = okId(d.playlistId) ? d.playlistId : null;
 
-  const soundRef = db.collection("artist_sounds").doc(d.soundId);
-  const lastRef = db.collection("MusicStreamCounts").doc(`${uid}_${d.soundId}`);
+  // Musique gratuite d'Afrolook (studioId) ou son d'artiste (soundId) : même règle d'écoute (30 s, 1 par 10 min, plafond par jour)
+  const key = studioId ? `f_${studioId}` : String(d.soundId);
+  const soundRef = studioId ? db.collection("MusicStudioStats").doc(studioId) : db.collection("artist_sounds").doc(String(d.soundId));
+  const lastRef = db.collection("MusicStreamCounts").doc(`${uid}_${key}`);
   const dayRef = db.collection("MusicStreamDaily").doc(`${uid}_${day()}`);
   return db.runTransaction(async (tx) => {
     const plRef = playlistId ? db.collection("MusicPlaylists").doc(playlistId) : null;
     // Toutes les lectures avant les écritures (règle des transactions Firestore)
     const [sound, last, daily, pl] = await Promise.all([tx.get(soundRef), tx.get(lastRef), tx.get(dayRef), plRef ? tx.get(plRef) : Promise.resolve(null)]);
-    if (!sound.exists || sound.get("status") !== "validated") return { ok: true, counted: false };
-    if (sound.get("userId") === uid) return { ok: true, counted: false }; // pas d'écoute comptée sur son propre titre
+    if (!studioId) {
+      if (!sound.exists || sound.get("status") !== "validated") return { ok: true, counted: false };
+    }
     const now = Date.now();
     if (now - num(last.get("lastAt")) < STREAM_GAP_MS) return { ok: true, counted: false };
     if (num(daily.get("n")) >= STREAM_PER_DAY) return { ok: true, counted: false };
-    tx.set(lastRef, { uid, soundId: d.soundId, lastAt: now });
+    tx.set(lastRef, { uid, soundId: key, lastAt: now });
     tx.set(dayRef, { uid, day: day(), n: FieldValue.increment(1) }, { merge: true });
-    tx.update(soundRef, { streamCount: FieldValue.increment(1) });
+    if (studioId) tx.set(soundRef, { streamCount: FieldValue.increment(1) }, { merge: true });
+    else tx.update(soundRef, { streamCount: FieldValue.increment(1) });
     if (plRef && pl?.exists) tx.update(plRef, { streamCount: FieldValue.increment(1) });
     return { ok: true, counted: true };
   });

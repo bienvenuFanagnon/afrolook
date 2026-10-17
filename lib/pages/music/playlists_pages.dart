@@ -14,6 +14,7 @@ import '../../providers/authProvider.dart';
 import '../../services/music_playlists.dart';
 import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/music/streams_text.dart';
 import '../../widgets/music/vinyl.dart';
 import '../coins/coin_recharge_screen.dart';
 import '../studio/artist_marketplace.dart';
@@ -188,11 +189,14 @@ class PlaylistCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(child: Text('${_plural(p.trackCount, 'titre')} · @${p.ownerPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
                 ]),
-                if (p.streamCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text('${compactCount(p.streamCount)} écoutes', style: TextStyle(color: c.textSecondary, fontSize: 11)),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.headphones_rounded, size: 12, color: c.textSecondary),
+                    const SizedBox(width: 3),
+                    Text('${compactCount(p.streamCount)} écoute${p.streamCount > 1 ? 's' : ''}', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                  ]),
+                ),
               ]),
             ),
             Icon(Icons.chevron_right_rounded, color: c.textSecondary),
@@ -367,7 +371,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             Text('Ton solde : $balance pièces → ${balance - p.priceCoins} après.', style: TextStyle(color: c.textSecondary)),
             if (p.hasPaidTracks) ...[
               const SizedBox(height: 10),
-              _noticeBox(c, '${_plural(p.paidCount, 'titre payant', 'titres payants')} dans cette playlist. Les acheter reste à ta charge : sans achat, seul l’extrait de 30 s est lu.'),
+              _noticeBox(c, '${_plural(p.paidCount, 'titre payant', 'titres payants')} dans cette playlist. Les acheter reste à ta charge : sans achat, seul l’extrait gratuit est lu.'),
             ],
           ]),
           actions: [
@@ -504,7 +508,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       ],
       if (p.hasPaidTracks) ...[
         const SizedBox(height: 12),
-        _noticeBox(c, '${_plural(p.paidCount, 'titre payant', 'titres payants')} dans cette playlist. Ajouter la playlist ne les débloque pas : sans achat de chaque titre, seul l’extrait de 30 s est lu.'),
+        _noticeBox(c, '${_plural(p.paidCount, 'titre payant', 'titres payants')} dans cette playlist. Ajouter la playlist ne les débloque pas : sans achat de chaque titre, seul l’extrait gratuit est lu.'),
       ],
       const SizedBox(height: 14),
       // Lecture / aléatoire : réservés à la playlist ajoutée, gratuite ou à soi
@@ -603,7 +607,6 @@ class _TrackRow extends StatelessWidget {
           final mine = owned.contains(t.id) || t.owned || t.isMine;
           final color = free || mine ? const Color(0xFF2ECC71) : const Color(0xFFFFB400);
           final label = free ? 'Gratuit' : (mine ? '✓ Acheté' : '🪙 Titre payant');
-          final streams = t.sound?.streamCount ?? 0;
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
@@ -630,12 +633,14 @@ class _TrackRow extends StatelessWidget {
                           child: Text(label, style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800)),
                         ),
                         const SizedBox(width: 6),
-                        Expanded(child: Text(streams > 0 ? '${t.artist} · ${compactCount(streams)} écoutes' : t.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                        Expanded(child: Text(t.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                        const SizedBox(width: 6),
+                        Flexible(child: StreamsText(track: t, color: c.textSecondary, fontSize: 10.5)),
                       ]),
                       if (!free && !mine)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
-                          child: Text('Extrait de 30 s tant qu’il n’est pas acheté', style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
+                          child: Text('Extrait gratuit tant qu’il n’est pas acheté', style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
                         ),
                     ]),
                   ),
@@ -821,7 +826,7 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${_plural(_paidTracks, 'titre payant', 'titres payants')} : c’est signalé dans ta playlist. Ceux qui l’ajoutent doivent acheter chaque titre payant pour l’écouter en entier ; sinon seul l’extrait de 30 s est lu — même si tu l’as acheté toi-même.',
+                    '${_plural(_paidTracks, 'titre payant', 'titres payants')} : c’est signalé dans ta playlist. Ceux qui l’ajoutent doivent acheter chaque titre payant pour l’écouter en entier ; sinon seul l’extrait gratuit est lu — même si tu l’as acheté toi-même.',
                     style: TextStyle(color: c.textPrimary, fontSize: 12.5, height: 1.35),
                   ),
                 ),

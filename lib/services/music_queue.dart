@@ -74,6 +74,9 @@ class MusicTrack {
   final bool owned;
 
   String get key => 'music_$kind:$id';
+
+  /// Durée de l'extrait gratuit (secondes), calculée d'après la durée du titre.
+  int get previewSec => sound?.previewSec ?? 30;
   bool get isArtist => kind == 'artist';
 
   /// Gratuit (musique Afrolook ou son d'artiste gratuit). Un titre de la bibliothèque est « payé ».
@@ -203,12 +206,15 @@ class MusicQueue {
     return play([t], 0, interstitial: interstitial);
   }
 
-  // ── Écoutes (streams) : une écoute = 30 secondes de lecture, comptée une fois par lecture ; le serveur limite à 1 par 10 min et par titre ──
+  // ── Écoutes (streams) : une écoute = 10 secondes de lecture (ou le titre ou l'extrait écouté en entier s'il est plus court),
+  // comptée une fois par lecture ; le serveur limite à 1 par personne, par titre et par tranche de 10 minutes ──
+
+  static const streamAfterSeconds = 10;
 
   static void _onPosition(Duration p) {
-    if (p.inSeconds < 30) return;
+    if (p.inSeconds < streamAfterSeconds) return;
     final t = current.value;
-    if (t == null || !t.isArtist || t.isMine || _streamCountedKey == t.key) return;
+    if (t == null || _streamCountedKey == t.key) return;
     if (SoundPreview.playing.value != t.key) return;
     _countStream(t);
   }
@@ -216,7 +222,10 @@ class MusicQueue {
   static void _countStream(MusicTrack t) {
     _streamCountedKey = t.key;
     if (FirebaseAuth.instance.currentUser == null) return;
-    unawaited(FirebaseFunctions.instance.httpsCallable('musicStream').call<dynamic>({'soundId': t.id, 'playlistId': _playlistId}).then<void>((_) {}, onError: (_) {}));
+    final data = <String, dynamic>{'playlistId': _playlistId, if (t.kind == 'free') 'studioId': t.id else 'soundId': t.id};
+    unawaited(FirebaseFunctions.instance.httpsCallable('musicStream').call<dynamic>(data).then<void>((_) {}, onError: (Object e) {
+      if (kDebugMode) debugPrint('musicStream : $e');
+    }));
   }
 
   static Future<bool> _startCurrent({required bool interstitial}) async {
@@ -257,7 +266,7 @@ class MusicQueue {
         if (gen != _gen) return false;
         previewMode.value = t.isArtist && !full && !(t.sound?.isFree ?? false) && !own;
         if (url != null) {
-          ok = await SoundPreview.play(t.key, url, meta: _meta(t, full ? 'Titre complet' : (t.isArtist ? 'Extrait de 30 s' : (t.genre ?? 'Musique Afrolook'))));
+          ok = await SoundPreview.play(t.key, url, meta: _meta(t, full ? 'Titre complet' : (t.isArtist ? 'Extrait de ${t.previewSec} s' : (t.genre ?? 'Musique Afrolook'))));
         }
       }
     } catch (_) {
@@ -388,7 +397,7 @@ class MusicQueue {
   static void _onCompleted(String key) {
     final t = current.value;
     if (t == null || t.key != key) return;
-    if (t.isArtist && !t.isMine && _streamCountedKey != t.key) _countStream(t); // l'extrait de 30 s est écouté en entier
+    if (_streamCountedKey != t.key) _countStream(t); // titre ou extrait court écouté en entier
     if (previewMode.value) {
       unawaited(_onPreviewEnded(t));
       return;

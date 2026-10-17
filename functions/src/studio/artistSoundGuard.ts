@@ -53,6 +53,13 @@ async function pcm8k(file: string): Promise<Int16Array> {
   return new Int16Array(copy);
 }
 
+/** Durée de l'extrait gratuit selon la durée du titre : un quart du titre, entre 8 et 30 secondes (30 s pour un titre de 2 minutes ou plus). */
+export function previewPlan(duration: number): { start: number; sec: number } {
+  const sec = Math.min(30, Math.max(8, Math.round(duration * 0.25)));
+  const start = duration > sec + 15 ? Math.min(duration * 0.25, duration - sec - 2) : 0;
+  return { start, sec };
+}
+
 export type SoundDup = { id: string; title: string; artist: string; kind: "same_file" | "same_track" | "similar"; ber?: number };
 
 /** Compare une empreinte à celles de tous les sons déjà enregistrés. */
@@ -128,12 +135,12 @@ export async function processArtistSound(id: string, data: FirebaseFirestore.Doc
       f = bucket().file(priv);
     }
 
-    // Extrait public de 30 s (jamais l'original)
-    const start = info.duration > 45 ? Math.min(info.duration * 0.25, info.duration - 32) : 0;
+    // Extrait public (jamais l'original) : sa durée dépend de celle du titre (un son de 30 s n'est pas offert en entier)
+    const { start, sec: previewSec } = previewPlan(info.duration);
     const prev = join(dir, "preview.m4a");
     await run(ffmpegPath as string, [
-      "-y", "-loglevel", "error", "-ss", start.toFixed(2), "-t", "30", "-i", local, "-vn", "-ac", "1", "-ar", "44100",
-      "-af", "afade=t=in:st=0:d=0.5,afade=t=out:st=28.5:d=1.5", "-c:a", "aac", "-b:a", "80k", "-movflags", "+faststart", prev,
+      "-y", "-loglevel", "error", "-ss", start.toFixed(2), "-t", String(previewSec), "-i", local, "-vn", "-ac", "1", "-ar", "44100",
+      "-af", `afade=t=in:st=0:d=0.5,afade=t=out:st=${Math.max(0, previewSec - 1.5).toFixed(1)}:d=1.5`, "-c:a", "aac", "-b:a", "80k", "-movflags", "+faststart", prev,
     ], { timeout: 120_000 });
     const previewPath = `artist_sound_previews/${id}.m4a`;
     const token = randomUUID();
@@ -149,7 +156,7 @@ export async function processArtistSound(id: string, data: FirebaseFirestore.Doc
 
     const same = dups.find((d) => d.kind === "same_file");
     const update: Record<string, unknown> = {
-      audioPath: path, previewUrl, previewStart: start, durationMs: Math.round(info.duration * 1000), audioSha256: sha,
+      audioPath: path, previewUrl, previewStart: start, previewSec, durationMs: Math.round(info.duration * 1000), audioSha256: sha,
       duplicates: dups, processed: true, processedAt: Date.now(),
       audioUrl: FieldValue.delete(), // l'ancien lien public n'existe plus
       availableCountries: await normalizedCountries(uid, data["availableCountries"]), // grille des posts (1 / 20 / tous)
@@ -162,6 +169,41 @@ export async function processArtistSound(id: string, data: FirebaseFirestore.Doc
   } catch (e) {
     console.error("[processArtistSound]", id, e);
     await ref.update({ processed: "error", processedAt: Date.now() }).catch(() => undefined);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
+/** Refait l'extrait public d'un son déjà validé avec la durée calculée d'après celle du titre (anciens sons : extrait fixe de 30 s). */
+export async function rebuildPreview(id: string): Promise<{ ok: boolean; sec?: number; reason?: string }> {
+  const ref = db.collection("artist_sounds").doc(id);
+  const snap = await ref.get();
+  const data = snap.data();
+  if (!data || !data["audioPath"]) return { ok: false, reason: "pas de fichier original" };
+  const dir = join(tmpdir(), `prev_${id}`);
+  await fs.mkdir(dir, { recursive: true });
+  try {
+    const local = join(dir, "original");
+    await bucket().file(String(data["audioPath"])).download({ destination: local });
+    const info = await probe(local);
+    if (!info.hasAudio || info.duration == null) return { ok: false, reason: "fichier illisible" };
+    const { start, sec } = previewPlan(info.duration);
+    const prev = join(dir, "preview.m4a");
+    await run(ffmpegPath as string, [
+      "-y", "-loglevel", "error", "-ss", start.toFixed(2), "-t", String(sec), "-i", local, "-vn", "-ac", "1", "-ar", "44100",
+      "-af", `afade=t=in:st=0:d=0.5,afade=t=out:st=${Math.max(0, sec - 1.5).toFixed(1)}:d=1.5`, "-c:a", "aac", "-b:a", "80k", "-movflags", "+faststart", prev,
+    ], { timeout: 120_000 });
+    const previewPath = `artist_sound_previews/${id}.m4a`;
+    const token = randomUUID();
+    await bucket().file(previewPath).save(await fs.readFile(prev), {
+      contentType: "audio/mp4",
+      metadata: { metadata: { firebaseStorageDownloadTokens: token }, cacheControl: "public, max-age=31536000" },
+    });
+    const previewUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket().name}/o/${encodeURIComponent(previewPath)}?alt=media&token=${token}`;
+    await ref.update({ previewUrl, previewStart: start, previewSec: sec, durationMs: Math.round(info.duration * 1000) });
+    return { ok: true, sec };
+  } catch (e) {
+    return { ok: false, reason: String(e) };
   } finally {
     await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
   }

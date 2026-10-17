@@ -91,7 +91,7 @@ class PreviewEndSheet extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Tu aimes ce titre ?', style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 2),
-                Text('L’extrait gratuit de 30 secondes est terminé.', style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.3)),
+                Text('L’extrait gratuit de ${t.previewSec} secondes est terminé.', style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.3)),
               ]),
             ),
           ]),
