@@ -1,3 +1,4 @@
+import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 // models/live_models.dart
@@ -68,7 +69,7 @@ class LivePage extends StatefulWidget {
   _LivePageState createState() => _LivePageState();
 }
 
-class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin {
+class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin, MusicSuspendMixin {
 
   // NOUVEAUX ÉTATS
   String? _passiveStreamUrl; // L'URL HLS/RTMP pour les spectateurs passifs

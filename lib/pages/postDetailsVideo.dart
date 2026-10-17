@@ -1,3 +1,4 @@
+import '../widgets/music/music_overlay.dart';
 import 'defi/defi_boost.dart';
 import 'pub/ad_actions.dart';
 import 'package:afrotok/ads/admob_service.dart';
@@ -140,7 +141,7 @@ class VideoYoutubePageDetails extends StatefulWidget {
   _VideoYoutubePageDetailsState createState() => _VideoYoutubePageDetailsState();
 }
 
-class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> {
+class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with MusicSuspendMixin {
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

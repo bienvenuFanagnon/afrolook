@@ -1,5 +1,6 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import '../../widgets/music/music_overlay.dart';
 import '../pub/ad_actions.dart';
 import '../../ads/ad_gate.dart';
 import '../../ads/admob_widgets.dart';
@@ -130,7 +131,7 @@ class ChroniqueDetailPage extends StatefulWidget {
   State<ChroniqueDetailPage> createState() => _ChroniqueDetailPageState();
 }
 
-class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTickerProviderStateMixin {
+class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTickerProviderStateMixin, MusicSuspendMixin {
   late PageController _pageController;
   int _currentPage = 0;
   VideoPlayerController? _videoController;

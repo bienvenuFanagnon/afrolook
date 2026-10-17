@@ -1,3 +1,4 @@
+import '../widgets/music/music_overlay.dart';
 import 'defi/defi_boost.dart';
 import 'pub/ad_actions.dart';
 import 'package:afrotok/ads/admob_service.dart';
@@ -145,8 +146,7 @@ class PostDetailsVideoFormatTel extends StatefulWidget {
   _PostDetailsVideoFormatTelState createState() => _PostDetailsVideoFormatTelState();
 }
 
-class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel>
-    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver, MusicSuspendMixin {
   @override
   bool get wantKeepAlive => true;
 

@@ -114,6 +114,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:afrotok/services/currency_service.dart';
+import 'widgets/music/music_overlay.dart';
 
 late List<CameraDescription> _cameras;
 bool _shouldRestart = false;
@@ -500,6 +501,8 @@ class _MyAppState extends State<MyApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        // Lecteur flottant de la musique : au-dessus de toutes les pages (voir widgets/music/music_overlay.dart)
+        builder: (context, child) => MusicOverlayHost(child: child ?? const SizedBox.shrink()),
         home: RemoteConfigService.instance.isPageActive('app_active')
             ? const SplashChargement()
             : const MaintenancePage(
@@ -512,7 +515,7 @@ class _MyAppState extends State<MyApp> {
             case '/home':
               return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
             case '/videos':
-              return PageTransition(child: HomeConstPostPage(type: '', isVideoPage: true), type: PageTransitionType.fade);
+              return PageTransition(child: HideMusicOverlay(pause: true, child: HomeConstPostPage(type: '', isVideoPage: true)), type: PageTransitionType.fade);
             case '/home_profile_user':
               return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
             case '/profile_entreprise':

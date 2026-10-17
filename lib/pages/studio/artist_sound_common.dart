@@ -159,6 +159,12 @@ class SoundPreview {
   static final ValueNotifier<NowPlaying?> now = ValueNotifier<NowPlaying?>(null);
   static bool _wired = false;
   static String? _key; // son en cours (avec ou sans fiche d'affichage)
+
+  /// Un titre arrive à sa fin (renvoie sa clé) : la file d'attente enchaîne ou propose le titre complet.
+  static final StreamController<String> _done = StreamController<String>.broadcast();
+  static Stream<String> get completed => _done.stream;
+  static String? get currentKey => _key;
+  static bool _wasDone = false;
   static int _gen = 0; // numéro de lancement : un lancement plus récent annule le précédent
 
   static void _wire() {
@@ -168,9 +174,12 @@ class SoundPreview {
       final key = _key;
       if (st.processingState == ProcessingState.completed) {
         playing.value = null;
-      } else if (key != null) {
-        playing.value = st.playing ? key : null;
+        if (key != null && !_wasDone) _done.add(key); // une seule fois par fin de titre
+        _wasDone = true;
+        return;
       }
+      _wasDone = false;
+      if (key != null) playing.value = st.playing ? key : null;
     }, onError: (_) => playing.value = null);
   }
 
@@ -190,7 +199,7 @@ class SoundPreview {
     final gen = ++_gen;
     try {
       _key = key;
-      if (meta != null) now.value = meta;
+      now.value = meta; // sans fiche d'affichage, on n'affiche pas un ancien titre
       try {
         await _player.stop().timeout(const Duration(seconds: 2), onTimeout: () {});
       } catch (_) {}

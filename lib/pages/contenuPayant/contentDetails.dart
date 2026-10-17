@@ -1,3 +1,4 @@
+import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -49,7 +50,7 @@ class ContentDetailScreen extends StatefulWidget {
   _ContentDetailScreenState createState() => _ContentDetailScreenState();
 }
 
-class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTickerProviderStateMixin {
+class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTickerProviderStateMixin, MusicSuspendMixin {
   AppColors get _colors => AppColors.of(context);
 
   // Lecteur vidéo principal (NE SERT QUE POUR LES ACHETEURS)
