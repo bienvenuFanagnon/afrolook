@@ -1,5 +1,6 @@
 // lib/pages/studio/studio_video_editor.dart
 
+import '../../widgets/music/music_overlay.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,7 +18,7 @@ class StudioVideoEditor extends StatefulWidget {
   State<StudioVideoEditor> createState() => _StudioVideoEditorState();
 }
 
-class _StudioVideoEditorState extends State<StudioVideoEditor> {
+class _StudioVideoEditorState extends State<StudioVideoEditor> with MusicSuspendMixin {
   File? _videoFile;
   VideoPlayerController? _controller;
   bool _isInitialized = false;

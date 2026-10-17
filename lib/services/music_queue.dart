@@ -394,7 +394,7 @@ class MusicQueue {
 
   /// Une page avec une vidéo (ou un appel) s'ouvre : la musique se met en pause, puis reprend à [release].
   static void suspend(Object owner) {
-    if (_suspenders.isEmpty && current.value != null && SoundPreview.playing.value == current.value!.key) {
+    if (current.value != null && SoundPreview.playing.value == current.value!.key) {
       _resumeAfter = true;
       unawaited(SoundPreview.pause());
     }

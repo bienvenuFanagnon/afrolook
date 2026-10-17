@@ -1,3 +1,4 @@
+import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
@@ -39,7 +40,7 @@ class ContentDetailPage extends StatefulWidget {
   State<ContentDetailPage> createState() => _ContentDetailPageState();
 }
 
-class _ContentDetailPageState extends State<ContentDetailPage> {
+class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspendMixin {
   late ContentPaie _content;
   int _coverIndex = 0;
   bool _hasPurchased = false;

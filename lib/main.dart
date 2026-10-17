@@ -515,7 +515,7 @@ class _MyAppState extends State<MyApp> {
             case '/home':
               return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
             case '/videos':
-              return PageTransition(child: HomeConstPostPage(type: '', isVideoPage: true), type: PageTransitionType.fade);
+              return PageTransition(child: HideMusicOverlay(pause: true, child: HomeConstPostPage(type: '', isVideoPage: true)), type: PageTransitionType.fade);
             case '/home_profile_user':
               return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
             case '/profile_entreprise':

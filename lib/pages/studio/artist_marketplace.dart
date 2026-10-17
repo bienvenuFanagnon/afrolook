@@ -705,34 +705,80 @@ Future<void> openArtistSoundById(BuildContext context, String soundId) async {
   }
 }
 
-/// Crédit automatique sous un post fait avec le son d'un artiste : « 🎵 Musique : titre », qui mène à la page du titre.
-class PostSoundCredit extends StatelessWidget {
+/// Crédit automatique sous un post fait avec le son d'un artiste : « ♪ titre » (mène à la page du titre) et le bouton
+/// « Utiliser · 🪙 5 » pour créer son propre post avec ce son.
+class PostSoundCredit extends StatefulWidget {
   const PostSoundCredit({super.key, required this.soundId, required this.title});
   final String soundId;
   final String title;
 
+  static final Map<String, Future<ArtistSound?>> _cache = {};
+
+  static Future<ArtistSound?> _load(String id) => _cache[id] ??= FirebaseFirestore.instance.collection('artist_sounds').doc(id).get().then((d) {
+        if (!d.exists || d.data()!['status'] != 'validated') return null;
+        return ArtistSound.fromMap(d.data()!, d.id);
+      }).catchError((_) {
+        _cache.remove(id);
+        return null as ArtistSound?;
+      });
+
+  @override
+  State<PostSoundCredit> createState() => _PostSoundCreditState();
+}
+
+class _PostSoundCreditState extends State<PostSoundCredit> {
+  ArtistSound? _sound;
+
+  @override
+  void initState() {
+    super.initState();
+    PostSoundCredit._load(widget.soundId).then((s) {
+      if (mounted && s != null) setState(() => _sound = s);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final s = _sound;
+    final t = s == null ? null : MusicTrack.fromSound(s);
+    final title = widget.title.isEmpty ? 'voir le titre' : widget.title;
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 2),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(99),
-          onTap: () => openArtistSoundById(context, soundId),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: c.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(99), border: Border.all(color: c.primary.withValues(alpha: .35))),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.music_note_rounded, size: 15, color: c.primary),
-              const SizedBox(width: 4),
-              Flexible(child: Text('Musique : ${title.isEmpty ? 'voir le titre' : title}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w800))),
-              Icon(Icons.chevron_right_rounded, size: 15, color: c.primary),
-            ]),
+      child: Row(children: [
+        Flexible(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(99),
+            onTap: () => s != null ? Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: s))) : openArtistSoundById(context, widget.soundId),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(5, 4, 9, 4),
+              decoration: BoxDecoration(color: c.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(99), border: Border.all(color: c.primary.withValues(alpha: .35))),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (t != null) TrackDisc(track: t, size: 20, glow: false) else Icon(Icons.music_note_rounded, size: 18, color: c.primary),
+                const SizedBox(width: 5),
+                Flexible(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w800))),
+                Icon(Icons.chevron_right_rounded, size: 15, color: c.primary),
+              ]),
+            ),
           ),
         ),
-      ),
+        if (s != null) ...[
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => startPostWithSound(context, s),
+            child: Container(
+              height: 26,
+              padding: const EdgeInsets.symmetric(horizontal: 9),
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [c.primary, c.accent]), borderRadius: BorderRadius.circular(99)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.videocam_rounded, size: 14, color: c.onAccent),
+                const SizedBox(width: 4),
+                Text(s.isFree ? 'Utiliser' : 'Utiliser · 🪙 ${s.unitPrice}', style: TextStyle(color: c.onAccent, fontSize: 10.5, fontWeight: FontWeight.w900)),
+              ]),
+            ),
+          ),
+        ],
+      ]),
     );
   }
 }

@@ -1,6 +1,7 @@
 // Éditeur d'un template « prêt à poster » : tout est déjà rempli, la personne change ce qu'elle veut,
 // retire les éléments qui ne l'intéressent pas, puis publie (image fixe ou vidéo animée).
 
+import '../../../widgets/music/music_overlay.dart';
 import 'dart:io';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -36,7 +37,7 @@ class MontageEditorPage extends StatefulWidget {
   State<MontageEditorPage> createState() => _MontageEditorPageState();
 }
 
-class _MontageEditorPageState extends State<MontageEditorPage> with SingleTickerProviderStateMixin {
+class _MontageEditorPageState extends State<MontageEditorPage> with SingleTickerProviderStateMixin, MusicSuspendMixin {
   late final MontageState s = MontageState(widget.template)
     ..post = !widget.forChronique
     // Sans habillage : on ne garde que la vidéo (le filigrane « Créé sur Afrolook » reste, comme partout)

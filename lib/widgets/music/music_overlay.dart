@@ -58,6 +58,24 @@ class _HideMusicOverlayState extends State<HideMusicOverlay> {
   Widget build(BuildContext context) => widget.child;
 }
 
+/// Pour les pages à vidéo, live ou éditeur : à ajouter aux `with` de leur State. Le lecteur flottant est masqué et la musique
+/// se met en pause tant que la page est ouverte ; elle reprend à la fermeture.
+mixin MusicSuspendMixin<T extends StatefulWidget> on State<T> {
+  @override
+  void initState() {
+    super.initState();
+    MusicOverlay._add(1);
+    MusicQueue.suspend(this);
+  }
+
+  @override
+  void dispose() {
+    MusicOverlay._add(-1);
+    MusicQueue.release(this);
+    super.dispose();
+  }
+}
+
 /// Placé autour du Navigator (MaterialApp.builder) : affiche la capsule et la feuille de fin d'extrait.
 class MusicOverlayHost extends StatefulWidget {
   const MusicOverlayHost({super.key, required this.child});

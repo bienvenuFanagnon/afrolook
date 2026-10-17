@@ -1,3 +1,4 @@
+import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
 import 'package:afrotok/pages/socialVideos/afrovideos/afrovideo.dart';
@@ -52,7 +53,7 @@ class OnlyPostVideo extends StatefulWidget {
   _PostVideosState createState() => _PostVideosState();
 }
 
-class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver, TickerProviderStateMixin{
+class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver, TickerProviderStateMixin, MusicSuspendMixin {
 
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
