@@ -1,3 +1,4 @@
+import '../../services/template_link.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -55,6 +56,7 @@ class _UserPostFormState extends State<UserPostForm> {
   @override
   void dispose() {
     StudioSoundLink.clear(); // un montage abandonné ne doit pas se lier à un autre post
+    PostTemplateLink.clear();
     super.dispose();
   }
   late UserAuthProvider authProvider =
@@ -100,6 +102,7 @@ class _UserPostFormState extends State<UserPostForm> {
     if (!mounted) return;
     // Montage fait avec un son d'artiste : le post sera relié au son une fois publié (vérifié par le serveur)
     StudioSoundLink.set(result.artistSoundId != null ? result.soundJobId : null);
+    PostTemplateLink.set(TemplateRef.fromStudioId(result.templateId)?.code); // le post affichera « Essayer ce template »
     switch (result.type) {
       case StudioContentType.image:
         if (result.mediaFile != null) {

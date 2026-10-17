@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:afrotok/pages/cards/card_events.dart';
 import 'package:afrotok/pages/cards/card_models.dart';
+import 'package:afrotok/pages/studio/montage/montage_catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,5 +71,72 @@ void main() {
     expect(find.text('Créer ma carte'), findsOneWidget);
     expect(find.text('Plus tard'), findsOneWidget);
     expect(find.textContaining('drapeau offerts'), findsOneWidget);
+  });
+
+  group('fêtes qui approchent (3 jours ou moins)', () {
+    int? left(String? country, DateTime d) => CardEvents.upcoming(country, d)?.daysLeft;
+
+    test('Noël est compté jusqu\'au 25, pas jusqu\'à la veille', () {
+      expect(left(null, DateTime(2026, 12, 21)), isNull); // 4 jours : trop tôt
+      expect(left(null, DateTime(2026, 12, 22)), 3);
+      expect(left(null, DateTime(2026, 12, 23)), 2);
+      expect(left(null, DateTime(2026, 12, 24)), 1);
+      expect(left(null, DateTime(2026, 12, 25)), 0);
+      expect(CardEvents.upcoming(null, DateTime(2026, 12, 22))!.kind, 'noel');
+    });
+
+    test('Nouvel An : jusqu\'au 1er janvier', () {
+      expect(left(null, DateTime(2026, 12, 29)), 3);
+      expect(left(null, DateTime(2026, 12, 31)), 1);
+      expect(left(null, DateTime(2027, 1, 1)), 0);
+    });
+
+    test('fête nationale du pays de la personne, Saint-Valentin, fête des mères, Aïd', () {
+      expect(left('TG', DateTime(2027, 4, 24)), 3);
+      expect(left('TG', DateTime(2027, 4, 27)), 0);
+      expect(left('SN', DateTime(2027, 4, 24)), isNull); // le Sénégal fête le 4 avril
+      expect(left(null, DateTime(2027, 2, 11)), 3);
+      expect(left(null, DateTime(2027, 2, 10)), isNull);
+      expect(left(null, DateTime(2026, 5, 8)), 2); // fête des mères le 10 mai 2026
+      expect(left(null, DateTime(2028, 2, 24)), 3); // Aïd el-Fitr 2028 (27 février)
+      expect(left(null, DateTime(2028, 2, 28)), 0); // le lendemain : encore là
+      expect(CardEvents.upcoming(null, DateTime(2027, 3, 7))!.kind, 'femmes'); // le 8 mars passe avant l'Aïd du 10 mars
+    });
+
+    test('hors fête : rien ; l\'heure du jour ne change pas le décompte', () {
+      expect(CardEvents.upcoming('TG', DateTime(2026, 10, 11)), isNull);
+      expect(left(null, DateTime(2026, 12, 22, 23, 59)), 3);
+    });
+
+    test('titre : « Noël dans 3 jours », « demain », ou le titre de la fête le jour J', () {
+      expect(CardEvents.upcoming(null, DateTime(2026, 12, 22))!.headline, 'Noël dans 3 jours');
+      expect(CardEvents.upcoming(null, DateTime(2026, 12, 24))!.headline, 'Noël demain');
+      expect(CardEvents.upcoming(null, DateTime(2026, 12, 25))!.headline, 'Joyeux Noël !');
+    });
+
+    test('chaque type de fête a un template du Studio qui existe', () {
+      final days = {
+        'national': ('TG', DateTime(2027, 4, 27)), 'africaday': (null, DateTime(2027, 5, 25)), 'fitr': (null, DateTime(2027, 3, 10)), 'adha': (null, DateTime(2027, 5, 17)),
+        'newyear': (null, DateTime(2027, 1, 1)), 'noel': (null, DateTime(2026, 12, 25)), 'valentin': (null, DateTime(2027, 2, 14)), 'femmes': (null, DateTime(2027, 3, 8)),
+        'travail': (null, DateTime(2027, 5, 1)), 'paques': (null, DateTime(2027, 3, 28)), 'meres': (null, DateTime(2026, 5, 10)), 'peres': (null, DateTime(2026, 6, 21)),
+      };
+      for (final e in days.entries) {
+        final soon = CardEvents.upcoming(e.value.$1, e.value.$2);
+        expect(soon, isNotNull, reason: e.key);
+        expect(soon!.kind, e.key);
+        expect(kMontageTemplates.any((t) => t.id == soon.studioTemplateId), isTrue, reason: '${e.key} → ${soon.studioTemplateId}');
+      }
+    });
+  });
+
+  testWidgets('invitation d\'une fête qui approche : titre « dans 3 jours », template et carte, pas d\'offre drapeau', (t) async {
+    final soon = CardEvents.upcoming('TG', DateTime(2027, 4, 24))!;
+    await t.pumpWidget(MaterialApp(home: Scaffold(body: CardEventDialog(event: soon.event, daysLeft: soon.daysLeft, headline: soon.headline, templateId: soon.studioTemplateId))));
+    await t.pump(const Duration(milliseconds: 200));
+    expect(find.textContaining('dans 3 jours'), findsOneWidget);
+    expect(find.text('Créer un post avec le template'), findsOneWidget);
+    expect(find.text('Créer ma carte'), findsOneWidget);
+    expect(find.textContaining('drapeau offerts'), findsNothing); // l'offre n'existe que le jour J
+    expect(find.textContaining('à l\'avance'), findsOneWidget);
   });
 }

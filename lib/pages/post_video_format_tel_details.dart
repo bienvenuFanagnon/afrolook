@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/studio/post_template_try.dart';
 import '../widgets/music/music_overlay.dart';
 import 'defi/defi_boost.dart';
 import 'pub/ad_actions.dart';
@@ -2574,12 +2575,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Pièces reçues (likes + commentaires + cadeaux), visible par tous
-          if (post.isAdvertisement != true)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: PostCoinsChip(post: post),
-            ),
           if (post.isRepost == true)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
@@ -2636,7 +2631,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               ),
             ),
           PostGiftsList(postId: post.id!, compactLevel: CompactLevel.light, maxDisplayItems: 10),
+          // Musique et template du post : « Utiliser · 🪙 5 », « Essayer ce template »
+          PostCtaRow(post: post, dark: true),
           _buildPostScoreBadge(post),
+          // Pièces reçues (likes + commentaires + cadeaux), tout petit sous le score
+          if (post.isAdvertisement != true)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: PostCoinsChip(post: post, mini: true),
+            ),
 
           // ── Section DÉFI — card info ──────────────────────────────
           if (post.type == PostType.DEFI.name)

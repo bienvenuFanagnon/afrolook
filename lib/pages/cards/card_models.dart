@@ -376,7 +376,8 @@ enum CardTemplateId {
   birthday,
   wedding,
   congrats,
-  condolence
+  condolence,
+  thanks
 }
 
 /// Un champ d'un modèle : [key] est la clé stockée dans [CardSpec.fields] ; [example] pré-remplit le champ.
@@ -405,6 +406,7 @@ extension CardTemplateX on CardTemplateId {
         CardTemplateId.wedding => 'Mariage',
         CardTemplateId.congrats => 'Félicitations',
         CardTemplateId.condolence => 'Condoléances',
+        CardTemplateId.thanks => 'Merci abonnés',
       };
 
   IconData get icon => switch (this) {
@@ -417,13 +419,14 @@ extension CardTemplateX on CardTemplateId {
         CardTemplateId.wedding => Icons.favorite_rounded,
         CardTemplateId.congrats => Icons.emoji_events_rounded,
         CardTemplateId.condolence => Icons.local_florist_rounded,
+        CardTemplateId.thanks => Icons.volunteer_activism_rounded,
       };
 
   /// Carte de visite : photo de profil ronde, nom, métier, présentation, coordonnées.
   bool get isCreator => this == CardTemplateId.creator;
 
   /// Cartes de vœux et de messages personnels : photo ronde, prénom en grand, message et signature.
-  bool get isWish => index >= CardTemplateId.birthday.index;
+  bool get isWish => index >= CardTemplateId.birthday.index && this != CardTemplateId.thanks;
 
   /// Champs du modèle, dans l'ordre d'affichage. Le premier est le champ principal.
   List<TemplateField> get fields => switch (this) {
@@ -576,10 +579,34 @@ extension CardTemplateX on CardTemplateId {
                 Icons.favorite_border_rounded,
                 max: 40),
           ],
+        CardTemplateId.thanks => const [
+            TemplateField('heading', 'Intitulé', 'Merci à vous !',
+                Icons.title_rounded,
+                max: 40, main: true),
+            TemplateField('count', 'Nombre atteint', '10 000',
+                Icons.groups_rounded,
+                max: 12),
+            TemplateField('unit', 'Ce que vous êtes', 'abonnés',
+                Icons.people_alt_rounded,
+                max: 20),
+            TemplateField(
+                'message',
+                'Message',
+                'Grâce à vous, nous avons franchi ce cap. Merci pour vos j\'aime, vos partages et votre confiance !',
+                Icons.notes_rounded,
+                max: 160,
+                lines: 3),
+            TemplateField('from', 'Signature', 'Avec tout mon cœur, Koffi',
+                Icons.favorite_border_rounded,
+                max: 40),
+          ],
       };
 
+  /// Carte de remerciement : le grand nombre d'abonnés atteint, au centre.
+  bool get isThanks => this == CardTemplateId.thanks;
+
   /// Le champ « lien » facultatif (le QR code l'ouvre) est commun à tous les modèles sauf la citation.
-  bool get hasLink => !isWish && this != CardTemplateId.quote;
+  bool get hasLink => !isWish && !isThanks && this != CardTemplateId.quote;
 }
 
 /// Les réglages choisis dans le studio.

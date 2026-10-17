@@ -1,3 +1,4 @@
+import '../../../widgets/studio/post_template_try.dart';
 import '../../defi/defi_boost.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -1064,6 +1065,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
                       if (!widget.isAdContext) ...[
                         if (widget.post.artistSoundId != null && widget.post.artistSoundId!.isNotEmpty)
                           PostSoundCredit(soundId: widget.post.artistSoundId!, title: widget.post.artistSoundTitle ?? ''),
+                          PostTemplateTry(post: widget.post),
                         const SizedBox(height: 10),
                         _buildPostActions(hasAccess),
                         _buildCommentPreview(hasAccess),

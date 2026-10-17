@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../services/template_link.dart';
+import '../../widgets/studio/post_template_try.dart';
 import 'card_entry.dart';
 import 'card_flags.dart';
 import 'card_models.dart';
@@ -40,6 +42,48 @@ class CardEvent {
 
   /// Les styles « drapeau » sont offerts toute la journée.
   final bool flagFree;
+}
+
+/// Une fête qui arrive (ou qui est là) : [daysLeft] jours avant la date officielle, 0 = aujourd'hui.
+class CardEventSoon {
+  const CardEventSoon(this.event, this.daysLeft);
+  final CardEvent event;
+  final int daysLeft;
+
+  /// Type de fête : national, africaday, fitr, adha, newyear, noel, valentin, femmes, travail, paques, meres, peres.
+  String get kind => event.id.split('-').first;
+
+  /// Template du Studio qui correspond à cette fête (id du catalogue du Studio).
+  String? get studioTemplateId => _studioTemplates[kind];
+
+  static const Map<String, String> _studioTemplates = {
+    'national': 'indep', 'africaday': 'afrique', 'fitr': 'ramadan', 'adha': 'tabaski', 'newyear': 'nouvelan', 'noel': 'noel',
+    'valentin': 'valentin', 'femmes': 'femmes', 'travail': 'travail', 'paques': 'paques', 'meres': 'meres', 'peres': 'peres',
+  };
+
+  /// Nom court de la fête, pour « Noël dans 3 jours ».
+  String get name => switch (kind) {
+        'national' => tr('Fête nationale · {pays}', {'pays': CardFlags.name(event.country ?? '')}),
+        'africaday' => tr('Journée de l\'Afrique'),
+        'fitr' => tr('Aïd el-Fitr'),
+        'adha' => tr('Tabaski'),
+        'newyear' => tr('Nouvel An'),
+        'noel' => tr('Noël'),
+        'valentin' => tr('Saint-Valentin'),
+        'femmes' => tr('Journée de la femme'),
+        'travail' => tr('Fête du travail'),
+        'paques' => tr('Pâques'),
+        'meres' => tr('Fête des mères'),
+        'peres' => tr('Fête des pères'),
+        _ => event.title,
+      };
+
+  /// « Noël dans 3 jours », « Noël demain », ou le titre de la fête le jour J.
+  String get headline => daysLeft <= 0
+      ? event.title
+      : daysLeft == 1
+          ? tr('{fete} demain', {'fete': name})
+          : tr('{fete} dans {n} jours', {'fete': name, 'n': daysLeft});
 }
 
 /// Fêtes nationales, fêtes de l'Afrique et fêtes internationales : calcul de la fête du jour et invitation dans l'application.
@@ -192,31 +236,65 @@ class CardEvents {
     return null;
   }
 
+  /// Fêtes dont la date officielle tombe dans les [maxDays] prochains jours (aujourd'hui compris) : la plus proche d'abord.
+  /// Noël (25 décembre) et le Nouvel An (1er janvier) sont comptés jusqu'à leur date officielle, pas jusqu'à la veille.
+  static CardEventSoon? upcoming(String? country, DateTime now, {int maxDays = 3}) {
+    final today = DateTime(now.year, now.month, now.day);
+    for (var d = 0; d <= maxDays + 1; d++) {
+      final day = DateTime(today.year, today.month, today.day + d);
+      final ev = forToday(country, day);
+      if (ev == null) continue;
+      final kind = ev.id.split('-').first;
+      final official = switch (kind) {
+        'noel' => DateTime(day.year, 12, 25),
+        'newyear' => DateTime(day.month == 12 ? day.year + 1 : day.year, 1, 1),
+        _ => day,
+      };
+      var left = DateTime.utc(official.year, official.month, official.day).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+      if (left < 0) left = 0; // Aïd : le lendemain de la date officielle
+      return left > maxDays ? null : CardEventSoon(ev, left);
+    }
+    return null;
+  }
+
   static String _key(String id) => 'card_event_seen_$id';
 
-  /// À appeler depuis l'accueil : si c'est la fête et que l'invitation n'a pas encore été vue, l'affiche (une fois par fête et par an).
+  /// À appeler depuis l'accueil : si une fête arrive (dans 3 jours ou moins) ou est là, et que l'invitation n'a pas encore été vue,
+  /// l'affiche : une fois quand la fête approche, une fois le jour J. Elle propose le template du Studio ou une carte.
   static Future<void> maybeShow(BuildContext context, {DateTime? now}) async {
     if (kIsWeb) return;
     final me = context.read<UserAuthProvider>().loginUserData;
-    final ev = forToday(me.countryData?['countryCode'], now ?? DateTime.now());
-    if (ev == null) return;
+    final soon = upcoming(me.countryData?['countryCode'], now ?? DateTime.now());
+    if (soon == null) return;
+    final ev = soon.event;
     try {
       final sp = await SharedPreferences.getInstance();
-      if (sp.getBool(_key(ev.id)) == true) return;
-      await sp.setBool(_key(ev.id), true);
+      // « jour J » garde l'ancienne clé : personne ne revoit l'invitation d'une fête déjà vue
+      final key = soon.daysLeft == 0 ? _key(ev.id) : '${_key(ev.id)}_soon';
+      if (sp.getBool(key) == true) return;
+      await sp.setBool(key, true);
     } catch (_) {}
     if (!context.mounted) return;
-    final go = await showDialog<bool>(context: context, barrierDismissible: true, builder: (_) => CardEventDialog(event: ev));
-    if (go == true && context.mounted) {
+    final template = soon.studioTemplateId;
+    final choice = await showDialog<String>(context: context, barrierDismissible: true, builder: (_) => CardEventDialog(event: ev, daysLeft: soon.daysLeft, headline: soon.headline, templateId: template));
+    if (!context.mounted) return;
+    if (choice == 'card') {
       await CardEntry.openCompose(context, text: ev.text, style: ev.style, country: ev.country);
+    } else if (choice == 'template' && template != null) {
+      await TemplateTry.open(context, TemplateRef.montage(template));
     }
   }
 }
 
 /// L'invitation : le drapeau (ou un emoji) en grand, ce qui se passe aujourd'hui et un bouton pour créer la carte.
 class CardEventDialog extends StatelessWidget {
-  const CardEventDialog({super.key, required this.event});
+  const CardEventDialog({super.key, required this.event, this.daysLeft = 0, this.headline, this.templateId});
   final CardEvent event;
+
+  /// Jours avant la fête (0 = aujourd'hui) ; [headline] : « Noël dans 3 jours » ; [templateId] : le template du Studio à proposer.
+  final int daysLeft;
+  final String? headline;
+  final String? templateId;
 
   @override
   Widget build(BuildContext context) {
@@ -248,10 +326,10 @@ class CardEventDialog extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 18, 22, 8),
               child: Column(children: [
-                Text(e.title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, height: 1.2)),
+                Text(headline ?? e.title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, height: 1.2)),
                 const SizedBox(height: 10),
-                Text(e.body, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14.5, height: 1.4)),
-                if (e.flagFree) ...[
+                Text(daysLeft > 0 ? tr('Prépare ton post à l\'avance avec un template tout prêt, ou crée une carte, et publie-le le jour J.') : e.body, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14.5, height: 1.4)),
+                if (e.flagFree && daysLeft == 0) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -264,16 +342,37 @@ class CardEventDialog extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 10, 22, 18),
               child: Column(children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), backgroundColor: const Color(0xFF2ECC71), foregroundColor: const Color(0xFF0E0E0E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
-                    onPressed: () => Navigator.pop(context, true),
-                    icon: const Icon(Icons.auto_awesome_rounded),
-                    label: Text(tr('Créer ma carte'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                if (templateId != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), backgroundColor: const Color(0xFF2ECC71), foregroundColor: const Color(0xFF0E0E0E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
+                      onPressed: () => Navigator.pop(context, 'template'),
+                      icon: const Icon(Icons.movie_filter_rounded),
+                      label: Text(tr('Créer un post avec le template'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    ),
                   ),
-                ),
-                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('Plus tard'), style: const TextStyle(color: Color(0xFF9E9E9E)))),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 13), foregroundColor: Colors.white, side: const BorderSide(color: Color(0xFF3A3A3A)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
+                      onPressed: () => Navigator.pop(context, 'card'),
+                      icon: const Icon(Icons.auto_awesome_rounded),
+                      label: Text(tr('Créer ma carte'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+                    ),
+                  ),
+                ] else
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), backgroundColor: const Color(0xFF2ECC71), foregroundColor: const Color(0xFF0E0E0E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
+                      onPressed: () => Navigator.pop(context, 'card'),
+                      icon: const Icon(Icons.auto_awesome_rounded),
+                      label: Text(tr('Créer ma carte'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    ),
+                  ),
+                TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Plus tard'), style: const TextStyle(color: Color(0xFF9E9E9E)))),
               ]),
             ),
           ]),

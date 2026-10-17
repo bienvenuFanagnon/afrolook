@@ -1,3 +1,4 @@
+import '../../widgets/studio/post_template_try.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:flutter/services.dart';
 import '../cards/card_entry.dart';
@@ -2886,6 +2887,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   if (_isLockedContent) _buildPostContent() else _buildEventBadge(),
                   if (widget.post.artistSoundId != null && widget.post.artistSoundId!.isNotEmpty)
                     PostSoundCredit(soundId: widget.post.artistSoundId!, title: widget.post.artistSoundTitle ?? ''),
+                    PostTemplateTry(post: widget.post),
                   const SizedBox(height: 12),
                   _buildPostActions(),
                   _buildCommentPreview(),
@@ -2935,6 +2937,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                       _buildVideoContent(),
                       if (widget.post.artistSoundId != null && widget.post.artistSoundId!.isNotEmpty)
                         PostSoundCredit(soundId: widget.post.artistSoundId!, title: widget.post.artistSoundTitle ?? ''),
+                        PostTemplateTry(post: widget.post),
                       const SizedBox(height: 10),
                       _buildPostActions(),
                       _buildCommentPreview(),

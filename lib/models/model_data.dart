@@ -1570,6 +1570,8 @@ class Post {
   String? thumbnail;
   String? artistSoundId; // son d'artiste du montage (écrit par le serveur uniquement : jamais dans toJson)
   String? artistSoundTitle;
+  String? studioTemplate; // template Studio / modèle de carte du post (« Essayer ce template »), voir template_link.dart
+  int templateTries = 0; // personnes qui ont publié avec ce template depuis ce post
   String? contact_whatsapp;
   int? nombreCollaborateur;
   double? publiCashTotal;
@@ -1795,6 +1797,8 @@ class Post {
     thumbnail = json['thumbnail'] ?? "";
     artistSoundId = json['artistSoundId'] as String?;
     artistSoundTitle = json['artistSoundTitle'] as String?;
+    studioTemplate = json['studioTemplate'] as String?;
+    templateTries = (json['templateTries'] as num?)?.toInt() ?? 0;
     typeTabbar = json['typeTabbar'] ?? "";
     isPostLink = json['isPostLink'] ?? "NON";
     colorSecondaire = json['colorSecondaire'];
