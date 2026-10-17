@@ -11,6 +11,7 @@ const { summarize } = require('../engine/bilan');
 const { summarizeCoupons } = require('../jobs/coupons');
 const { isFragile } = require('../engine/fragility');
 const buzz = require('../push/buzz');
+const CL_MIN = require('../engine/couponLearn').MIN_N;
 const { unpack: unpackMatrix } = require('../engine/matrixStore');
 
 const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
@@ -535,6 +536,19 @@ function learningBox(rc, L) {
     (lines.length ? `<ul class="ck">${lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(t.learnNone)}</p>`) + '</div>';
 }
 
+/** Bilan : ce que l'IA a appris de ses propres coupons (réussite des sélections par type de pari, correction appliquée aux coupons suivants). */
+function couponLearningBox(rc, L) {
+  if (!L) return '';
+  const t = rc.t;
+  const head = `<div class="lbl">${t.cLearnTitle}</div><p class="note" style="margin:8px 0">${t.cLearnIntro}</p>`;
+  if (!L.actif) return `<div class="box">${head}<p>${esc(t.cLearnWait(L.n || 0, CL_MIN))}</p></div>`;
+  const rows = Object.entries(L.familles || {}).sort((a, b) => b[1].n - a[1].n).map(([name, f]) => {
+    const pts = Math.round(f.bias * 100);
+    return `<li>${esc(t.cLearnRow(famLabel(rc, name), f.reel, f.annonce, f.n, pts))}</li>`;
+  });
+  return `<div class="box">${head}${rows.length ? `<ul class="ck">${rows.join('')}</ul>` : ''}<p class="note" style="margin-top:8px">${esc(t.cLearnGlobal(L.n, Math.round((L.global || 0) * 100)))}</p></div>`;
+}
+
 const LEVEL_KEY = { prudent: 'prudent', equilibre: 'balanced', audacieux: 'bold' };
 const STATUS_ICON = { gagne: '✅', perdu: '❌', ouvert: '•', annule: '↺' };
 
@@ -576,7 +590,7 @@ function couponHistoryBox(rc, coupons) {
     (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
 }
 
-function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, signaux, news }) {
+function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, signaux, news, couponLearn }) {
   const t = rc.t;
   const W = 560, H = 140;
   const pts = weeks.map((w) => w.taux);
@@ -600,7 +614,7 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, s
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    couponHistoryBox(rc, coupons) + signalBox(rc, signaux) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
+    couponHistoryBox(rc, coupons) + couponLearningBox(rc, couponLearn) + signalBox(rc, signaux) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `${newsStrip(rc, news)}${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };

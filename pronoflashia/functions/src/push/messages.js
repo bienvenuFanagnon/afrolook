@@ -5,6 +5,7 @@ const coupon = require('../shared/coupon');
 const { pathFor } = require('../render/i18n');
 const { pickLabel } = require('../render/components');
 const { isFragile } = require('../engine/fragility');
+const CL = require('../engine/couponLearn');
 
 const NB = ' ';
 const pc = (lang, v) => (lang === 'en' ? `${v}%` : `${v}${NB}%`);
@@ -45,11 +46,11 @@ function midi(matches, lang) {
 }
 
 /** Soir : un coupon construit avec les matchs qui restent à jouer. */
-function soir(matches, lang) {
+function soir(matches, lang, learning) {
   const live = matches.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches && !isFragile(m));
   const poolMap = {};
   for (const m of live) poolMap[m.id] = m.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite }));
-  const sel = coupon.suggest(poolMap, 3);
+  const sel = coupon.suggest(CL.applyToPool(poolMap, learning), 3); // probabilités corrigées par ce que l'IA a appris de ses coupons
   if (sel.length < 2) return null;
   const prob = Math.round(coupon.couponProbability(sel.map((s) => ({ matchId: s.matchId, key: s.key, pct: s.pct })), null).prob * 100);
   const rows = sel.map((x) => ({ pct: x.pct, titre: titreOf(live.find((m) => String(m.id) === String(x.matchId)) || live[0]) }));

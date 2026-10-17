@@ -104,7 +104,8 @@ async function runSlot(db, send, slot, now, jour, subs, report, deadline) {
     built = (lang) => M.matin(coupons, lang);
   } else {
     const matches = (await db.collection('matches').where('jour', '==', jour).get()).docs.map((d) => d.data()).filter((m) => m.coupDEnvoi > now.toISOString());
-    built = (lang) => (slot.id === 'midi' ? M.midi(matches, lang) : M.soir(matches, lang));
+    const L = slot.id === 'soir' ? await require('./coupons').loadLearning(db) : null;
+    built = (lang) => (slot.id === 'midi' ? M.midi(matches, lang) : M.soir(matches, lang, L));
   }
   const msgs = { fr: built('fr'), en: built('en') };
   if (msgs.fr) await attachImages(db, msgs, now);

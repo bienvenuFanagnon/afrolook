@@ -6,8 +6,16 @@
 const coupon = require('../shared/coupon');
 const { dayStr } = require('./helpers');
 const { isFragile } = require('../engine/fragility');
+const CL = require('../engine/couponLearn');
 
 const COL = 'coupons_flash';
+const LEARN_DOC = ['config', 'coupon_learning'];
+
+/** Apprentissage des coupons en vigueur (document config/coupon_learning, mis à jour à chaque règlement). null si aucun. */
+async function loadLearning(db) {
+  const d = await db.collection(LEARN_DOC[0]).doc(LEARN_DOC[1]).get();
+  return d.exists ? d.data() : null;
+}
 const TIERS = [{ n: 2, nom: 'prudent' }, { n: 3, nom: 'equilibre' }, { n: 5, nom: 'audacieux' }];
 const STALE_MS = 3 * 864e5; // un match jamais terminé 3 jours après son coup d'envoi rend sa sélection non évaluable
 
@@ -33,20 +41,22 @@ async function archiveCoupons(db, now) {
     byId[m.id] = m;
     poolMap[m.id] = m.prono.marches.map((mk) => ({ key: mk.cle, libelle: mk.libelle, famille: mk.famille, pct: mk.pct, fiabilite: mk.fiabilite }));
   }
+  const L = await loadLearning(db);
+  const learned = CL.applyToPool(poolMap, L); // probabilités corrigées par ce que l'IA a appris de ses coupons (aucun changement tant que l'échantillon est trop petit)
   let created = 0;
   for (let i = 0; i < TIERS.length; i++) {
     if (existing[i].exists) continue;
     const { n, nom } = TIERS[i];
-    const sel = coupon.suggest(poolMap, n);
+    const sel = coupon.suggest(learned, n);
     if (sel.length !== n) continue;
     const { prob, approx } = coupon.couponProbability(sel.map((s) => ({ matchId: s.matchId, key: s.key, pct: s.pct })), null);
     const doc = {
-      id: ids[i], jour, n, nom, creeLe: now.toISOString(), statut: 'ouvert',
+      id: ids[i], jour, n, nom, creeLe: now.toISOString(), statut: 'ouvert', appris: !!(L && L.actif),
       prob: Math.round(prob * 1000) / 1000, approx: !!approx,
       selections: sel.map((s) => {
         const m = byId[s.matchId];
         return {
-          matchId: s.matchId, key: s.key, libelle: s.libelle, famille: s.famille, pct: s.pct, titre: titleOf(m),
+          matchId: s.matchId, key: s.key, libelle: s.libelle, famille: s.famille, pct: s.pct, pctBrut: typeof s.pctBrut === 'number' ? s.pctBrut : s.pct, titre: titleOf(m),
           dom: m.domicile.nomCourt, ext: m.exterieur.nomCourt, slug: m.slug, leagueSlug: m.leagueSlug, coupDEnvoi: m.coupDEnvoi, ok: null,
         };
       }),
@@ -92,7 +102,16 @@ async function settleCoupons(db, now) {
     await db.collection(COL).doc(c.id).set(Object.assign({}, c, { selections, statut, reglesLe: statut === 'ouvert' ? null : now.toISOString() }));
     if (statut !== 'ouvert') settled++;
   }
+  await relearn(db, now);
   return settled;
+}
+
+/** Recalcule ce que l'IA apprend de ses coupons des 60 derniers jours et l'enregistre (config/coupon_learning). */
+async function relearn(db, now) {
+  const snap = await db.collection(COL).where('jour', '>=', dayStr(new Date(now.getTime() - CL.DAYS * 864e5))).get();
+  const L = CL.build(snap.docs.map((d) => d.data()), now);
+  await db.collection(LEARN_DOC[0]).doc(LEARN_DOC[1]).set(L);
+  return L;
 }
 
 /** Statistiques d'une liste de coupons : réglés (gagnés + perdus), taux, probabilité annoncée moyenne, par niveau. */
@@ -115,4 +134,4 @@ function summarizeCoupons(list) {
   return out;
 }
 
-module.exports = { COL, TIERS, archiveCoupons, settleCoupons, summarizeCoupons, selectionOutcome };
+module.exports = { COL, TIERS, archiveCoupons, settleCoupons, summarizeCoupons, selectionOutcome, relearn, loadLearning };
