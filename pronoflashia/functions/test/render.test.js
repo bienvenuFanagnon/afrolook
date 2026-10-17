@@ -280,7 +280,7 @@ test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fi
   const h = await get('/');
   assert.match(h.body, /Actus foot/);
   assert.match(h.body, /class="nw( has)?" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
-  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 14, 'actus de l\'accueil : liste du haut + une après chaque pub de la liste');
+  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 14, 'actus de l\'accueil : 2 en haut + une après chaque pub de la liste');
   assert.match(h.body, /class="nwv"/);
   const first = db.all('news')[0];
   const m = db.all('matches').find((x) => [x.domicile.teamId, x.exterieur.teamId].map(String).includes(first.teamIds[0]));
@@ -361,14 +361,16 @@ test('à propos et accueil : décrivent ce que fait réellement l\'IA, sans prom
   assert.match((await get('/en/privacy')).body, /Notifications \(optional\)/);
 });
 
-test('accueil : actus réparties sans doublon — liste du haut, une actu après chaque pub de la liste des matchs, le reste en grand format en bas', async () => {
+test('accueil : actus réparties sans doublon — deux sous les coupons flash, une après chaque pub de la liste des matchs, le reste en grand format en bas', async () => {
   const d2 = await buildSample(NOW);
   for (let i = 0; i < 24; i++) await d2.seed('news', `x${i}`, { id: `x${i}`, titre: `Actu numéro ${i} du football`, lien: `https://exemple.invalid/x${i}`, source: 'Site', sourceId: 's', lang: 'fr', image: i % 3 ? '/img/afl1.jpg' : null, video: i % 5 === 0, date: new Date(NOW.getTime() - (i + 1) * 20 * 60e3).toISOString(), teamIds: [] });
   D.clearCache();
   const h = (await route(d2, '/', NOW)).body;
   const links = [...h.matchAll(/class="(?:nw|nbc)[^"]*" href="(https:\/\/exemple\.invalid\/[^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(links).size, links.length, 'aucun article affiché deux fois');
-  assert.ok(links.length >= 12, `actus affichées : ${links.length}`);
+  assert.ok(links.length >= 10, `actus affichées : ${links.length}`);
+  const top = h.slice(h.indexOf('class="nwb"'), h.indexOf('class="lbl" style="margin-top:6px">Les matchs'));
+  assert.equal((top.match(/class="nw( has)?"/g) || []).length, 2, 'deux actus exactement sous les coupons flash');
   // une actu juste après chaque pub (encart Afrolook) de la liste des matchs
   const list = h.slice(h.indexOf('class="lbl" style="margin-top:6px">Les matchs'));
   const afterAds = [...list.matchAll(/data-afl="liste"[\s\S]*?<\/a>(<div class="nwv one">)?/g)];

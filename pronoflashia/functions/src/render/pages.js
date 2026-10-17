@@ -80,18 +80,13 @@ function timeAgo(rc, iso) {
 }
 
 /**
- * Accueil : liste verticale d'actus (jusqu'à 6 cartes avec miniature, hauteur contrôlée) avec une pub toutes les 2 cartes, juste après les coupons flash.
+ * Accueil : deux actus (cartes avec miniature, hauteur contrôlée) juste après les coupons flash, sans pub entre elles.
  * Chaque carte renvoie vers le site d'origine.
  */
 function newsList(rc, list) {
-  if (!list || list.length < 3) return '';
-  // une pub après chaque paire de cartes (jamais en dernier, jamais deux pubs d'affilée)
-  const out = [];
-  list.forEach((x, i) => {
-    out.push(newsLink(rc, x));
-    if (i % 2 === 1 && i < list.length - 1) out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }));
-  });
-  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${out.join('')}</div></div>`;
+  if (!list || !list.length) return '';
+  // sous les coupons flash : deux actus au plus, l'une sous l'autre, sans pub entre elles (les autres sont réparties plus bas)
+  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${list.slice(0, 2).map((x) => newsLink(rc, x)).join('')}</div></div>`;
 }
 
 /** Une actu seule, juste après une pub de la liste des matchs. */
@@ -137,15 +132,15 @@ function flashCoupons(rc, pool) {
 function home(rc, { matches, bilan, pool: couponPool, coupons, news }) {
   const t = rc.t;
   const pool = matches.filter((m) => (m.prono && m.prono.visible !== false) || m.statut !== 'prevu');
-  // les actus sont réparties sans doublon : 6 sous les coupons flash, une après chaque pub de la liste des matchs, le reste en grand format en bas
+  // les actus sont réparties sans doublon : 2 sous les coupons flash, une après chaque pub de la liste des matchs, le reste en grand format en bas
   const allNews = pickNews(rc, news, 30);
-  const newsTop = allNews.slice(0, 6);
-  const newsInList = allNews.slice(6, 12);
+  const newsTop = allNews.slice(0, 2);
+  const newsInList = allNews.slice(2, 8);
   const body = `<div class="wrap">${C.sportTabs(rc)}${C.dayRail(rc, null)}${C.leagueRail(rc, null)}` +
     `<div class="layout"><div class="col"><div class="hero"><h1>${t.heroH1}</h1><p>${t.heroP} <a href="${rc.u('legal', 'a-propos')}" class="hmore">${t.heroMore} →</a></p></div>` +
     // ordre : bilan (s'il est bon), pub du haut (dans le premier écran du téléphone), coupons gagnants, canal WhatsApp, flash du jour, coupons flash,
     // puis les actus verticales (avec une pub au milieu), puis les matchs
-    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}${newsList(rc, newsTop)}<div class="mob-only">${aflCard(rc, 'accueil-coupons', 0)}</div><h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, null, () => newsOne(rc, newsInList.shift())) + listEnd(rc, 'accueil-fin') + newsBig(rc, newsInList.splice(0).concat(allNews.slice(12, 20))) : emptyDay(rc)}` +
+    `${bilanHero(rc, bilan)}${adResponsive(rc, 'haut', 'ad-top')}${exploitsBox(rc, coupons)}${channelBanner(rc, 'accueil')}${flashBlock(rc, pool)}${flashCoupons(rc, couponPool)}${newsList(rc, newsTop)}<h2 class="lbl" style="margin-top:6px">${t.theMatches}</h2>${pool.length ? groupedCards(rc, pool, null, () => newsOne(rc, newsInList.shift())) + listEnd(rc, 'accueil-fin') + newsBig(rc, newsInList.splice(0).concat(allNews.slice(8, 16))) : emptyDay(rc)}` +
     `</div>${sideColumn(rc, { bilan })}</div></div>`;
   return {
     title: t.homeTitle, description: t.homeDesc, path: rc.u('home'), alternates: alts(rc, 'home'), body, active: 'football',

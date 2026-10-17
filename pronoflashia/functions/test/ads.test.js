@@ -267,15 +267,13 @@ test('accueil téléphone : la bannière du haut reste dans le premier écran, u
   const h = (await route(db, '/', NOW)).body;
   const iHaut = h.indexOf('data-ad="haut"'), iExploit = h.indexOf('Nos derniers coupons gagnants'), iFlash = h.indexOf('Flash du jour'), iCoupons = h.indexOf('Coupons flash');
   assert.ok(iHaut > 0 && (iExploit < 0 || iHaut < iExploit), 'bannière du haut avant les coupons gagnants');
-  // pubs natives DANS la liste verticale d'actus (une toutes les 2 cartes), après les coupons flash, jamais deux d'affilée ni en dernier
+  // sous les coupons flash : deux actus au plus, SANS pub entre elles ni autour ; la première pub de la page (hors haut de page) vient avec la liste des matchs
   const nwv = h.indexOf('class="nwv"');
   const iMatchs = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
-  assert.ok(nwv > iCoupons, 'liste d\'actus après les coupons flash');
+  assert.ok(nwv > iCoupons, 'actus après les coupons flash');
   const block = h.slice(nwv, iMatchs);
-  const seq = [...block.matchAll(/class="nw( has)?"|data-ad="native"/g)].map((m) => (m[0].startsWith('class') ? 'actu' : 'pub'));
-  assert.equal(seq.filter((x) => x === 'actu').length, 6, 'six actus');
-  assert.equal(seq.join(','), 'actu,actu,pub,actu,actu,pub,actu,actu');
-  assert.equal((h.slice(0, nwv).match(/data-ad="native"/g) || []).length, 0, 'aucune pub native avant la liste d\'actus');
+  const seq = [...block.matchAll(/class="nw( has)?"|data-ad="native"|class="afl"/g)].map((m) => (m[0].startsWith('class="nw') ? 'actu' : 'pub'));
+  assert.equal(seq.join(','), 'actu,actu', 'deux actus, aucune pub entre elles ni avant la liste des matchs');
   const b = (await route(db, '/bilan', NOW)).body;
   assert.ok((b.match(/data-ad="/g) || []).length >= 3, 'haut, milieu et fin sur la page Bilan');
   assert.match(b, /data-ad="fin"/);
