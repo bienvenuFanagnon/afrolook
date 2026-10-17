@@ -20,6 +20,7 @@ const { syncNews } = require('./src/jobs/syncNews');
 const { sendPush } = require('./src/jobs/sendPush');
 const { buildRecaps } = require('./src/jobs/buildRecaps');
 const { handlePush } = require('./src/http/push');
+const { handleImg } = require('./src/http/img');
 const { ensureVapid } = require('./src/push/keys');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
 const { aiHealthCheck } = require('./src/jobs/aiHealth');
@@ -66,7 +67,7 @@ async function pushSender() {
     })().catch((e) => { webpushReady = null; throw e; });
   }
   const webpush = await webpushReady;
-  return (sub, p) => webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify({ t: p.titre, b: p.corps, u: p.url, g: p.tag }), { TTL: 6 * 3600, urgency: 'normal' });
+  return (sub, p) => webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, JSON.stringify({ t: p.titre, b: p.corps, u: p.url, g: p.tag, i: p.image || undefined }), { TTL: 6 * 3600, urgency: 'normal' });
 }
 
 /** Les tâches, réutilisées par le planificateur et par le bouton « Relancer » de l'admin. */
@@ -85,7 +86,7 @@ const TASKS = {
   }),
   syncResults: (o = {}) => runJob(db, 'syncResults', (r) => syncResults({ db, api: makeApi(secrets(), o.manuel ? { maxWaitMs: 20000 } : {}) }, r)),
   buildRecaps: (o = {}) => runJob(db, 'buildRecaps', (r) => buildRecaps({ db, providers: makeProviders(secrets()), force: !!o.manuel }, r)),
-  sendPush: () => runJob(db, 'sendPush', async (r) => sendPush({ db, send: await pushSender(), budgetMs: 420000 }, r)),
+  sendPush: () => runJob(db, 'sendPush', async (r) => sendPush({ db, send: await pushSender(), providers: makeProviders(secrets()), budgetMs: 420000 }, r)),
   syncNews: () => runJob(db, 'syncNews', (r) => syncNews({ db, providers: makeProviders(secrets()) }, r)),
   weeklyReport: () => runJob(db, 'weeklyReport', (r) => weeklyReport({ db }, r)),
   aiHealthCheck: () => runJob(db, 'aiHealthCheck', (r) => aiHealthCheck({ db, providers: makeProviders(secrets()) }, r)),
@@ -145,6 +146,12 @@ exports.pfWeb = onRequest({ region: REGION, invoker: 'public', memory: '512MiB',
       const r = await handlePush({ method: req.method, path, body: bodyOf(req), ip: clientIp(req) }, { db, publicKey: async () => (await ensureVapid(db, require('web-push'))).publicKey });
       res.set('Cache-Control', r.cache || 'no-store');
       return void res.status(r.status).json(r.json);
+    }
+    if (path.startsWith('/api/img/')) {
+      const r = await handleImg({ path }, { db });
+      res.set('Cache-Control', r.cache);
+      res.set('Content-Type', r.type);
+      return void res.status(r.status).send(r.body);
     }
     if (path === '/api/config') {
       const cfg = await D.loadConfig(db);

@@ -35,6 +35,11 @@
     teamOn: function (n) { return 'You will get an alert before ' + n + ' play.'; }, teamOff: function (n) { return 'Alerts for ' + n + ' turned off.'; },
     pwaT: 'Install PronoFlash IA on your phone', pwaS: 'One tap access, nothing to download from a store', pwaBtn: 'Install', pwaClose: 'Not now',
     pwaIosBtn: 'How?', pwaIos: 'Tap the Share button <b>⎙</b>, then “Add to Home Screen”.',
+    wmT: 'Never miss the football news that matters', wmS: 'Turn on notifications and we tell you when something happens. Free, and you can switch them off any time.', wmEx: 'Examples of notifications', wmNow: 'now',
+    wmN1t: "⚡ Today's slips: Arsenal – Chelsea", wmN1b: 'Cautious 2 matches 76% · Balanced 3 matches 58% chance that everything wins.',
+    wmN2t: '⚔️ Classico: Real Madrid – FC Barcelona', wmN2b: 'Our pick and the latest news are inside.',
+    wmN3t: '🌟 A rising talent is making noise', wmN3b: 'The press is talking about it. Our summary and the source link are inside.',
+    wmBtn: 'Turn on notifications', wmInst: 'Install the app', wmLater: 'Maybe later', wmIosBtn: 'How to install?', wmIosNote: 'On iPhone, notifications work once the site is added to your home screen.',
     disclaimer: 'PronoFlash IA takes no bets, shows no odds and promises no winnings. 18+ · Play responsibly.', pct: '%'
   } : {
     tzTitle: 'Heure locale', tzYou: 'ton fuseau', tzNote: 'Heures affichées dans ton fuseau horaire : ',
@@ -54,6 +59,11 @@
     teamOn: function (n) { return 'Tu recevras une alerte avant les matchs de ' + n + '.'; }, teamOff: function (n) { return 'Alertes coupées pour ' + n + '.'; },
     pwaT: 'Installe PronoFlash IA sur ton téléphone', pwaS: 'Accès en un clic, rien à télécharger sur un store', pwaBtn: 'Installer', pwaClose: 'Plus tard',
     pwaIosBtn: 'Comment ?', pwaIos: 'Touche le bouton Partager <b>⎙</b>, puis « Sur l\'écran d\'accueil ».',
+    wmT: 'Ne rate plus les infos foot qui comptent', wmS: "Active les notifications : on te prévient quand ça bouge. Gratuit, et tu coupes quand tu veux.", wmEx: 'Exemples de notifications', wmNow: 'maintenant',
+    wmN1t: '⚡ Coupons du jour : Arsenal – Chelsea', wmN1b: 'Prudent 2 matchs 76 % · Équilibré 3 matchs 58 % de chances que tout passe.',
+    wmN2t: '⚔️ Classico : Real Madrid – FC Barcelone', wmN2b: "Notre pronostic et les dernières infos sont à l'intérieur.",
+    wmN3t: '🌟 Une pépite fait parler', wmN3b: "La presse en parle. Notre résumé et le lien de la source sont à l'intérieur.",
+    wmBtn: 'Activer les notifications', wmInst: "Installer l'appli", wmLater: 'Plus tard', wmIosBtn: 'Comment installer ?', wmIosNote: "Sur iPhone, les notifications fonctionnent une fois le site ajouté à l'écran d'accueil.",
     disclaimer: 'PronoFlash IA ne prend aucun pari, n\'affiche aucune cote et ne promet aucun gain. 18+ · Jouez de façon responsable.', pct: ' %'
   };
   var couponPath = (w.PF && w.PF.coupon) || (EN ? '/en/coupon' : '/coupon');
@@ -366,6 +376,13 @@
     if (standalone || !mobile || inApp || st.ok) return;
     if (st.no && Date.now() - st.no < 14 * 864e5) return;
     var deferred = null, box = null, shown = false;
+    w.__pf = w.__pf || {};
+    w.__pf.canInstall = function () { return !!deferred; };
+    w.__pf.install = function () {
+      if (!deferred) return Promise.resolve(false);
+      var p = deferred; deferred = null; p.prompt(); send({ t: 'pwa', n: 'clic' });
+      return p.userChoice ? p.userChoice.then(function (c) { var ok = !!(c && c.outcome === 'accepted'); if (ok) { st.ok = 1; store.set('pf_pwa', st); close(false); } return ok; }) : Promise.resolve(false);
+    };
     var iosSafari = IOS && /Safari/.test(UA) && !/CriOS|FxiOS|EdgiOS/.test(UA);
     function close(remember) { if (box) box.hidden = true; if (remember) { st.no = Date.now(); store.set('pf_pwa', st); } }
     function show() {
@@ -419,7 +436,7 @@
         if (perm !== 'granted') { if (perm === 'denied') toast(L.pushBlocked); return false; }
         return (key ? Promise.resolve(key) : fetch('/api/push/key').then(function (r) { return r.json(); }).then(function (j) { key = j.publicKey; return key; })).then(function (k) {
           return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(k) }); });
-        }).then(function (sub) { return post('/api/push/subscribe', { subscription: sub.toJSON(), lang: LANG, equipes: teams }); })
+        }).then(function (sub) { return post('/api/push/subscribe', { subscription: sub.toJSON(), lang: LANG, equipes: teams, tzo: new Date().getTimezoneOffset() }); })
           .then(function (j) { if (j && j.erreur) throw new Error(j.erreur); send({ t: 'push', n: 'on' }); st.on = 1; store.set('pf_push', st); return true; });
       }).catch(function () { toast(L.pushErr); return false; });
     }
@@ -458,26 +475,68 @@
       });
     });
 
+    w.__pf = w.__pf || {};
+    w.__pf.push = { enable: enable, paint: paint, toast: toast };
     current().then(function (sub) {
       paint(!!sub);
       if (!sub) st.on = 0;
-      /* invitation : une seule fois par quinzaine, jamais pendant l'invitation d'installation ni le bandeau de consentement, jamais avant la 2e visite */
       var visits = (store.get('pf_visits') || 0);
       if (!store.sget('pf_vs')) { store.sset('pf_vs', '1'); visits++; store.set('pf_visits', visits); }
-      var standalone = (w.matchMedia && w.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-      if (sub || Notification.permission !== 'default' || (st.no && Date.now() - st.no < 14 * 864e5) || (visits < 2 && !standalone)) return;
-      setTimeout(function () {
-        var busy = $('.pwa') && !$('.pwa').hidden, cmpOn = cmp && !cmp.hidden;
-        if (busy || cmpOn) return;
-        var box = d.createElement('div'); box.className = 'pwa'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', L.pushT);
-        box.innerHTML = '<span class="bellbig" aria-hidden="true" style="font-size:34px;text-align:center;grid-row:span 2">🔔</span><b>' + L.pushT + '</b><small>' + L.pushS + '</small><button class="btn" type="button" data-i="1">' + L.pushBtn + '</button><button class="pwa-x" type="button" aria-label="' + esc(L.pwaClose) + '" data-x="1">✕</button>';
-        d.body.appendChild(box);
-        send({ t: 'push', n: 'vu' });
-        box.addEventListener('click', function (e) {
-          if (e.target.closest('[data-x]')) { box.hidden = true; st.no = Date.now(); store.set('pf_push', st); return; }
-          if (e.target.closest('[data-i]')) { box.hidden = true; enable().then(function (ok) { paint(ok); if (ok) toast(L.pushOkT); else { st.no = Date.now(); store.set('pf_push', st); } }); }
-        });
-      }, 9000);
     });
+  })();
+  /* ---------- rappel : fenêtre avec des exemples de notifications ----------
+     Pour le visiteur qui revient (2e visite ou plus) et n'a ni activé les notifications ni installé le site. Jamais à l'arrivée sur la page :
+     après 12 secondes et un geste (défilement, toucher). Une fois par session ; refus : on attend 7 jours, 3 refus au plus. */
+  (function welcome() {
+    if (!store.sget('pf_vs')) { store.sset('pf_vs', '1'); store.set('pf_visits', (store.get('pf_visits') || 0) + 1); }
+    var canPush = 'serviceWorker' in navigator && 'PushManager' in w && 'Notification' in w;
+    var standalone = (w.matchMedia && w.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    var iosTab = IOS && /Safari/.test(UA) && !/CriOS|FxiOS|EdgiOS/.test(UA) && !standalone;
+    var inApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|Snapchat|; wv\)/.test(UA);
+    if (inApp || (!canPush && !iosTab) || (canPush && Notification.permission === 'denied')) return;
+    var st = store.get('pf_wm') || {};
+    if ((st.n || 0) >= 3 || (st.no && Date.now() - st.no < 7 * 864e5) || store.sget('pf_wm')) return;
+    var touched = false, due = false, tries = 0;
+    ['scroll', 'touchstart', 'click'].forEach(function (ev) { w.addEventListener(ev, function () { touched = true; }, { once: true, passive: true }); });
+    setTimeout(function () { due = true; }, 12000);
+    function ready() { return canPush ? navigator.serviceWorker.ready.then(function (r) { return r.pushManager.getSubscription(); }).then(function (sub) { return !sub; }) : Promise.resolve(true); }
+    function open() {
+      var box = d.createElement('div'); box.className = 'wm'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', L.wmT);
+      function ex(t, b) { return '<div class="wmn"><img src="/img/icon-192.png" alt="" width="34" height="34"><div><small>PronoFlash IA · ' + L.wmNow + '</small><b>' + esc(t) + '</b><span>' + esc(b) + '</span></div></div>'; }
+      var canInst = !standalone && (iosTab || (w.__pf && w.__pf.canInstall && w.__pf.canInstall()));
+      var primary = canPush ? '<button class="btn" type="button" data-a="on">' + L.wmBtn + '</button>' : '<button class="btn" type="button" data-a="how">' + L.wmIosBtn + '</button>';
+      var second = canPush && canInst ? '<button class="btn sec" type="button" data-a="' + (iosTab ? 'how' : 'inst') + '">' + (iosTab ? L.wmIosBtn : L.wmInst) + '</button>' : '';
+      box.innerHTML = '<div class="wmc"><button class="wm-x" type="button" data-a="x" aria-label="' + esc(L.pwaClose) + '">✕</button><h2>' + L.wmT + '</h2><p>' + L.wmS + '</p><div class="lbl">' + L.wmEx + '</div>' +
+        ex(L.wmN1t, L.wmN1b) + ex(L.wmN2t, L.wmN2b) + ex(L.wmN3t, L.wmN3b) + (!canPush ? '<p class="wmnote">' + L.wmIosNote + '</p>' : '') +
+        '<div class="wma">' + primary + second + '</div><div class="pwa-how" hidden></div><button class="wml" type="button" data-a="later">' + L.wmLater + '</button></div>';
+      d.body.appendChild(box);
+      d.documentElement.style.overflow = 'hidden';
+      store.sset('pf_wm', '1');
+      send({ t: 'push', n: 'mvu' });
+      var first = box.querySelector('.btn'); if (first) first.focus();
+      function close(refused) {
+        d.documentElement.style.overflow = ''; d.removeEventListener('keydown', onKey); if (box.parentNode) box.parentNode.removeChild(box);
+        if (refused) { st.no = Date.now(); st.n = (st.n || 0) + 1; store.set('pf_wm', st); send({ t: 'push', n: 'mno' }); }
+      }
+      function onKey(e) { if (e.key === 'Escape') close(true); }
+      d.addEventListener('keydown', onKey);
+      box.addEventListener('click', function (e) {
+        var a = e.target.closest('[data-a]');
+        if (!a) { if (e.target === box) close(true); return; }
+        var act = a.getAttribute('data-a');
+        if (act === 'x' || act === 'later') close(true);
+        else if (act === 'on') { var P = w.__pf && w.__pf.push; if (!P) { close(true); return; } P.enable().then(function (ok) { P.paint(ok); if (ok) { close(false); P.toast(L.pushOkT); } }); }
+        else if (act === 'inst') { w.__pf.install().then(function (ok) { if (ok) close(false); }); }
+        else if (act === 'how') { var how = $('.pwa-how', box); how.innerHTML = L.pwaIos; how.hidden = false; }
+      });
+    }
+    function tick() {
+      if ((store.get('pf_visits') || 0) < 2 && !standalone) return;
+      if (!(touched && due)) { if (++tries < 40) setTimeout(tick, 3000); return; }
+      var busy = ($('.pwa') && !$('.pwa').hidden) || (cmp && !cmp.hidden);
+      if (busy) { if (++tries < 40) setTimeout(tick, 4000); return; }
+      ready().then(function (ok) { if (ok && !$('.wm')) open(); });
+    }
+    setTimeout(tick, 3000);
   })();
 })();
