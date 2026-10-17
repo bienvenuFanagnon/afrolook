@@ -280,7 +280,7 @@ test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fi
   const h = await get('/');
   assert.match(h.body, /Actus foot/);
   assert.match(h.body, /class="nw( has)?" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
-  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 4, 'quatre actus au plus sur l\'accueil (liste verticale)');
+  assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 6, 'six actus au plus sur l\'accueil (liste verticale)');
   assert.match(h.body, /class="nwv"/);
   const first = db.all('news')[0];
   const m = db.all('matches').find((x) => [x.domicile.teamId, x.exterieur.teamId].map(String).includes(first.teamIds[0]));

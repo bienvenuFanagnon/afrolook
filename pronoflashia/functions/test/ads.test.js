@@ -267,15 +267,15 @@ test('accueil téléphone : la bannière du haut reste dans le premier écran, u
   const h = (await route(db, '/', NOW)).body;
   const iHaut = h.indexOf('data-ad="haut"'), iExploit = h.indexOf('Nos derniers coupons gagnants'), iFlash = h.indexOf('Flash du jour'), iCoupons = h.indexOf('Coupons flash');
   assert.ok(iHaut > 0 && (iExploit < 0 || iHaut < iExploit), 'bannière du haut avant les coupons gagnants');
-  // une seule pub native dans le haut de l'accueil, DANS la liste verticale d'actus (jamais deux pubs d'affilée), après les coupons flash
-  const nativeTop = h.indexOf('data-ad="native"');
+  // pubs natives DANS la liste verticale d'actus (une toutes les 2 cartes), après les coupons flash, jamais deux d'affilée ni en dernier
   const nwv = h.indexOf('class="nwv"');
   const iMatchs = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
-  assert.ok(nwv > iCoupons && nativeTop > nwv && nativeTop < iMatchs, 'pub native dans la liste d\'actus, après les coupons flash');
-  const cardsBefore = (h.slice(nwv, nativeTop).match(/class="nw( has)?"/g) || []).length;
-  const cardsAfter = (h.slice(nativeTop, iMatchs).match(/class="nw( has)?"/g) || []).length;
-  assert.ok(cardsBefore >= 1 && cardsAfter >= 1, 'la pub est entourée d\'actus');
-  assert.equal((h.slice(0, iMatchs).match(/data-ad="native"/g) || []).length, 1, 'pas de deuxième pub native dans le haut de page');
+  assert.ok(nwv > iCoupons, 'liste d\'actus après les coupons flash');
+  const block = h.slice(nwv, iMatchs);
+  const seq = [...block.matchAll(/class="nw( has)?"|data-ad="native"/g)].map((m) => (m[0].startsWith('class') ? 'actu' : 'pub'));
+  assert.equal(seq.filter((x) => x === 'actu').length, 6, 'six actus');
+  assert.equal(seq.join(','), 'actu,actu,pub,actu,actu,pub,actu,actu');
+  assert.equal((h.slice(0, nwv).match(/data-ad="native"/g) || []).length, 0, 'aucune pub native avant la liste d\'actus');
   const b = (await route(db, '/bilan', NOW)).body;
   assert.ok((b.match(/data-ad="/g) || []).length >= 3, 'haut, milieu et fin sur la page Bilan');
   assert.match(b, /data-ad="fin"/);

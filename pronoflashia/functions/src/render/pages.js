@@ -80,15 +80,19 @@ function timeAgo(rc, iso) {
 }
 
 /**
- * Accueil : liste verticale d'actus (4 cartes avec miniature, hauteur contrôlée) avec une pub au milieu, juste après la pub du haut
- * et le widget du canal WhatsApp. Chaque carte renvoie vers le site d'origine.
+ * Accueil : liste verticale d'actus (jusqu'à 6 cartes avec miniature, hauteur contrôlée) avec une pub toutes les 2 cartes, juste après les coupons flash.
+ * Chaque carte renvoie vers le site d'origine.
  */
 function newsList(rc, items) {
-  const list = pickNews(rc, items, 4);
+  const list = pickNews(rc, items, 6);
   if (list.length < 3) return '';
-  const cards = list.map((x) => newsLink(rc, x));
-  cards.splice(2, 0, adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }));
-  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${cards.join('')}</div></div>`;
+  // une pub après chaque paire de cartes (jamais en dernier, jamais deux pubs d'affilée)
+  const out = [];
+  list.forEach((x, i) => {
+    out.push(newsLink(rc, x));
+    if (i % 2 === 1 && i < list.length - 1) out.push(adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }));
+  });
+  return `<div class="nwb"><div class="lbl">${rc.t.newsTitle}</div><div class="nwv">${out.join('')}</div></div>`;
 }
 
 /** Fiche d'un match : infos lues par l'IA (avec source) puis jusqu'à 3 titres qui parlent d'une des deux équipes. */
