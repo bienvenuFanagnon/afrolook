@@ -164,7 +164,7 @@ class FeedRepository {
       final snap = await _db
           .collection('Posts')
           .orderBy('created_at', descending: true)
-          .limit(limit * 5)
+          .limit(limit * 3)
           .get()
           .timeout(const Duration(seconds: 20));
       return _parsePosts(
@@ -191,7 +191,7 @@ class FeedRepository {
           .where('created_at', isGreaterThanOrEqualTo: sixMonthsAgo)
           .where('created_at', isLessThanOrEqualTo: twoMonthsAgo)
           .orderBy('created_at', descending: true)
-          .limit(limit * 6)
+          .limit(limit * 4)
           .get()
           .timeout(const Duration(seconds: 20));
       final qualityDocs = snap.docs
