@@ -347,6 +347,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           ),
         ),
       ],
+      _artistCta(c),
       _section(c, '🎵 Musiques Afrolook'),
       for (var i = 0; i < min(8, free.length); i++) _row(c, free.take(8).toList(), i),
       const SizedBox(height: 10),
@@ -438,22 +439,58 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     ]);
   }
 
-  Widget _artistCta(AppColors c) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: InkWell(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
-            child: Row(children: [
-              const Text('🎤', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 10),
-              Expanded(child: Text('Tu es artiste ? Propose ton son et gagne des pièces.', style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w700))),
-              Icon(Icons.chevron_right_rounded, color: c.textSecondary),
-            ]),
-          ),
+  /// Appel à l'action pour les artistes : mettre en ligne SA musique, seulement si les droits sont détenus.
+  Widget _artistCta(AppColors c) => Container(
+        margin: const EdgeInsets.only(top: 18, bottom: 2),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: c.surface,
+          border: Border.all(color: c.primary.withValues(alpha: .45), width: 1.4),
+          gradient: LinearGradient(colors: [c.primary.withValues(alpha: .12), c.accent.withValues(alpha: .08)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [c.primary, c.accent]), borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.cloud_upload_rounded, color: c.onAccent, size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Mets ta musique en ligne', style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text('Tu touches 60 % à chaque utilisation et chaque vente, en pièces.', style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.3)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.verified_user_rounded, size: 16, color: c.supportAccent),
+            const SizedBox(width: 6),
+            Expanded(child: Text('Seulement une musique dont tu es l’auteur ou dont tu détiens tous les droits. Tu le certifies avant l’envoi.', style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35))),
+          ]),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ArtistSoundSubmitPage())),
+              icon: const Icon(Icons.upload_rounded, size: 20),
+              label: const Text('Mettre ma musique en ligne', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5)),
+              style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
+              child: Text('Voir mes sons et mes gains', style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5)),
+            ),
+          ),
+        ]),
       );
 
   Widget _section(AppColors c, String t) => Padding(
