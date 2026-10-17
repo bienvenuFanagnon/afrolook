@@ -8,6 +8,7 @@ require('./build-site');
 const { buildSample, seedStats } = require('../functions/dev/sample');
 const { createAdmin } = require('../functions/src/http/admin');
 const { handleMail } = require('../functions/src/http/mail');
+const { handleImg } = require('../functions/src/http/img');
 const { runJob } = require('../functions/src/jobs/helpers');
 const { aiHealthCheck } = require('../functions/src/jobs/aiHealth');
 const { route } = require('../functions/src/render/router');
@@ -46,6 +47,7 @@ const port = parseInt(process.argv[2] || process.env.PORT || '5173', 10);
     const url = new URL(req.url, 'http://x');
     try {
       if (url.pathname === '/api/event') { let b = ''; req.on('data', (c) => (b += c)); req.on('end', () => { events.push(b); res.writeHead(204); res.end(); }); return; }
+      if (url.pathname.startsWith('/api/img/')) { const r = await handleImg({ path: url.pathname }, { db }); res.writeHead(r.status, { 'Content-Type': r.type, 'Cache-Control': 'no-store' }); res.end(r.body); return; }
       if (url.pathname.startsWith('/api/mail/')) { let b = ''; req.on('data', (c) => (b += c)); req.on('end', async () => { let body = {}; try { body = JSON.parse(b || '{}'); } catch (e) { /* vide */ } const r = await handleMail({ method: req.method, path: url.pathname, body, ip: 'dev' }, { db }); res.writeHead(r.status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(r.json)); }); return; }
       if (url.pathname.startsWith('/api/push/')) { let b = ''; req.on('data', (c) => (b += c)); req.on('end', async () => { let body = {}; try { body = JSON.parse(b || '{}'); } catch (e) { /* vide */ } const r = await handlePush({ method: req.method, path: url.pathname, body, ip: 'dev' }, { db, publicKey: async () => 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U' }); res.writeHead(r.status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(r.json)); }); return; }
       if (url.pathname === '/api/events') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(events)); return; }

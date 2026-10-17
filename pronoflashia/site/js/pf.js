@@ -277,6 +277,18 @@
         .catch(function () { m.textContent = b.getAttribute('data-err'); m.className = 'mlm ko'; btn.disabled = false; });
     });
   });
+  /* sponsors directs : l'affichage est compté quand l'encart est vu à moitié (une fois par page), le clic à l'ouverture du lien */
+  (function sponsors() {
+    var boxes = $$('.spb[data-sp]');
+    if (!boxes.length) return;
+    var seen = {};
+    function imp(b) { var id = b.getAttribute('data-sp'); if (seen[id]) return; seen[id] = 1; send({ t: 'sp', n: 'imp', id: id }); }
+    if ('IntersectionObserver' in w) {
+      var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { imp(e.target); io.unobserve(e.target); } }); }, { threshold: 0.5 });
+      boxes.forEach(function (b) { io.observe(b); });
+    } else boxes.forEach(imp);
+    boxes.forEach(function (b) { var a = $('a.spa', b); if (a) a.addEventListener('click', function () { send({ t: 'sp', n: 'clic', id: b.getAttribute('data-sp') }); }); });
+  })();
   /* partage du site : partage natif du téléphone et copie du lien (WhatsApp est un simple lien) */
   $$('.shb').forEach(function (b) {
     var url = b.getAttribute('data-url') || location.origin, text = b.getAttribute('data-text') || '';

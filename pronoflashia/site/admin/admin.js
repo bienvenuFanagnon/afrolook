@@ -12,6 +12,7 @@ const DEV = location.hostname === 'localhost' && new URLSearchParams(location.se
 let auth = null;
 let user = null;
 let tab = 'vue';
+let SP = [];
 
 /* ---------- connexion ---------- */
 async function initAuth() {
@@ -53,7 +54,7 @@ async function start() {
   renderTabs(); show(tab);
 }
 
-const TABS = [['vue', "Vue d'ensemble"], ['connexions', 'Connexions'], ['fonctionnement', 'Fonctionnement'], ['semaines', 'Semaines'], ['ia', 'IA et tâches'], ['pronos', 'Pronostics'], ['bilan', 'Bilan'], ['pubs', 'Publicités'], ['reglages', 'Réglages'], ['journal', 'Journal']];
+const TABS = [['vue', "Vue d'ensemble"], ['connexions', 'Connexions'], ['fonctionnement', 'Fonctionnement'], ['semaines', 'Semaines'], ['ia', 'IA et tâches'], ['pronos', 'Pronostics'], ['bilan', 'Bilan'], ['pubs', 'Publicités'], ['sponsors', 'Sponsors'], ['reglages', 'Réglages'], ['journal', 'Journal']];
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([k, l]) => `<button class="tab" role="tab" data-t="${k}" aria-selected="${k === tab}">${l}</button>`).join('');
   $('#tabs').onclick = (e) => { const b = e.target.closest('.tab'); if (b) show(b.dataset.t); };
@@ -212,7 +213,7 @@ const VIEWS = {
     const s = c.site;
     const fld = (k, label, ph) => `<label class="f">${label}<input data-site="${k}" value="${esc(s[k])}" placeholder="${esc(ph || '')}"></label>`;
     return `<h2>Réglages</h2>${c.legalIncomplet.length ? `<div class="warn">Pages légales incomplètes : ${c.legalIncomplet.map((k) => esc(k)).join(', ')}. Les réseaux publicitaires exigent des mentions légales renseignées.</div>` : ''}
-    <div class="card"><h3>Informations légales et contact</h3><div class="grid">${fld('editeur', 'Éditeur (nom ou raison sociale)')}${fld('statutJuridique', 'Statut juridique')}${fld('adresse', 'Adresse')}${fld('email', 'Adresse e-mail de contact public')}${fld('loi', 'Pays dont le droit s\'applique')}${fld('hebergeur', 'Hébergeur')}${fld('whatsapp', 'Lien canal WhatsApp (facultatif)')}${fld('telegram', 'Lien canal Telegram (facultatif)')}${fld('googleVerification', 'Code de vérification Google Search Console (balise HTML)', 'collez la balise meta ou la valeur de content')}</div><label class="c"><input type="checkbox" id="site-idx" ${s.indexable ? 'checked' : ''}>Site indexable par les moteurs de recherche (décocher pendant les tests)</label><div class="row"><button class="btn" id="site-save">Enregistrer</button><span class="msg" id="m-site"></span></div></div>
+    <div class="card"><h3>Informations légales et contact</h3><div class="grid">${fld('editeur', 'Éditeur (nom ou raison sociale)')}${fld('statutJuridique', 'Statut juridique')}${fld('adresse', 'Adresse')}${fld('email', 'Adresse e-mail de contact public')}${fld('loi', 'Pays dont le droit s\'applique')}${fld('hebergeur', 'Hébergeur')}${fld('whatsapp', 'Lien canal WhatsApp (facultatif)')}${fld('whatsappPub', 'WhatsApp des annonceurs : lien wa.me/numéro (facultatif)', 'https://wa.me/22890000000')}${fld('telegram', 'Lien canal Telegram (facultatif)')}${fld('googleVerification', 'Code de vérification Google Search Console (balise HTML)', 'collez la balise meta ou la valeur de content')}</div><label class="c"><input type="checkbox" id="site-idx" ${s.indexable ? 'checked' : ''}>Site indexable par les moteurs de recherche (décocher pendant les tests)</label><div class="row"><button class="btn" id="site-save">Enregistrer</button><span class="msg" id="m-site"></span></div></div>
     <div class="card"><h3>Notifications</h3><p class="note">Entièrement automatique : coupons du jour vers 07:30 UTC, pronostic le plus confiant vers 12:30, coupon du soir vers 16:30, une alerte environ une heure avant les matchs des équipes que l'abonné suit, et des notifications d'actualité à heure variable (stars, pépites, classicos, mercato, vie des vedettes) : une toutes les 3 heures au plus, jamais la nuit. Chaque notification porte une image dessinée par PronoFlash IA. Rien à faire de votre côté : les clés d'envoi se créent toutes seules.</p><div class="kpis">${kpi(nf(ps.abonnes), 'Abonnés', 'navigateurs inscrits')}</div><label class="c"><input type="checkbox" id="ps-on" ${ps.actif ? 'checked' : ''}>Envoyer les notifications (décocher pour tout suspendre)</label><div class="grid"><label class="f">Notifications par jour et par abonné (tous types, 1 à 8)<input type="number" id="ps-max" min="1" max="8" value="${ps.maxJour}"></label><label class="f">Seuil des actus (3 à 20 : plus haut = moins d'actus, seulement les plus fortes)<input type="number" id="ps-seuil" min="3" max="20" value="${ps.seuil}"></label></div><label class="f">Noms de plus à repérer (un par ligne : joueur, pépite, club…). La liste de base couvre déjà les grandes stars, africaines comprises.<textarea id="ps-ved" rows="3" placeholder="Nom d'un joueur ou d'un club">${esc((ps.vedettes || []).join('\n'))}</textarea></label><div class="tw"><table><thead><tr><th>Quand</th><th>Envoi</th><th>Abonnés</th><th>Envoyées</th><th>Échecs</th><th>Retirés</th></tr></thead><tbody>${ps.envois.map((e) => `<tr><td>${fdate(e.au)}</td><td>${esc(e.slot)}${e.sujet || e.titre ? ' · ' + esc(e.sujet || e.titre) : ''}${e.ignore ? ' · ' + esc(e.ignore) : ''}</td><td>${nf(e.abonnes || 0)}</td><td>${nf(e.envoyes || 0)}</td><td>${nf(e.echecs || 0)}</td><td>${nf(e.retires || 0)}</td></tr>`).join('') || '<tr><td colspan="6">Aucun envoi pour le moment.</td></tr>'}</tbody></table></div><div class="row"><button class="btn" id="ps-save">Enregistrer</button><button class="btn sec" id="ps-test">Envoyer une notification de test</button><span class="msg" id="m-ps"></span></div></div>
     <div class="card"><h3>Envoyer une annonce</h3><p class="note">Une notification écrite par vous, envoyée tout de suite à vos abonnés (nouveauté, événement, message important). Vérifiez l'aperçu, faites d'abord un essai sur cet appareil, puis envoyez à tous. Une annonce ne compte pas dans le plafond quotidien : à vous de ne pas en abuser.</p>
       <div class="grid"><label class="f">Titre (65 caractères au plus)<input id="an-titre" maxlength="65" placeholder="⚡ Le coupon du week-end est prêt"></label><label class="f">Page à ouvrir<input id="an-url" list="an-pages" value="/" maxlength="200"><datalist id="an-pages"><option value="/"><option value="/coupon"><option value="/bilan"><option value="/actus"><option value="/en"><option value="/en/coupon"></datalist></label></div>
@@ -230,6 +231,27 @@ const VIEWS = {
     <div class="card"><h3>Administrateurs</h3><div class="tw"><table><thead><tr><th>Adresse Google</th><th></th></tr></thead><tbody>${ad.bootstrap.map((e) => `<tr><td>${esc(e)} <span class="pill">propriétaire</span></td><td></td></tr>`).join('')}${ad.admins.map((x) => `<tr><td>${esc(x.email)}</td><td><button class="btn sec sm" data-adrm="${esc(x.email)}">Retirer</button></td></tr>`).join('')}</tbody></table></div><div class="row"><input type="email" id="ad-new" placeholder="adresse@gmail.com" style="width:260px"><button class="btn sm" id="ad-add">Ajouter</button><span class="msg" id="m-ad"></span></div></div>`;
   },
 
+  async sponsors() {
+    const d = await api('sponsors');
+    SP = d.items;
+    const PL = { coupon: 'Près du coupon du jour', accueil: 'Accueil', actus: 'Pages actus' };
+    const ctr = (m) => (m.imp ? (Math.round((m.clics / m.imp) * 1000) / 10).toLocaleString('fr-FR') + ' %' : '–');
+    const rows = d.items.map((x) => `<tr><td><b>${esc(x.nom)}</b><br><span class="note">${esc(x.phrase || '')}</span></td><td>${x.emplacements.map((p) => esc(PL[p] || p)).join('<br>')}</td><td>${x.debut || x.fin ? esc((x.debut || '…') + ' → ' + (x.fin || '…')) : 'sans limite'}</td><td>${x.actif ? '<span class="pill g">actif</span>' : '<span class="pill">en pause</span>'}</td><td>${nf(x.sept.imp)} / ${nf(x.sept.clics)}<br><span class="note">${ctr(x.sept)}</span></td><td>${nf(x.quatreVingtDix.imp)} / ${nf(x.quatreVingtDix.clics)}<br><span class="note">${ctr(x.quatreVingtDix)}</span></td><td class="act"><button class="btn sec sm" data-spe="${esc(x.id)}">Modifier</button> <button class="btn sec sm" data-spr="${esc(x.id)}">Rapport CSV</button> <button class="btn sec sm" data-spd="${esc(x.id)}">Supprimer</button></td></tr>`).join('');
+    return `<h2>Sponsors</h2><p class="note">Encarts « offert par… » vendus directement à des marques : aucun code, vous remplissez un formulaire. Chaque encart porte la mention « Sponsorisé ». Un seul sponsor est montré à la fois par emplacement, à tour de rôle toutes les 15 minutes. La mesure compte les affichages (encart vu à moitié, une fois par page) et les clics. Les pages sont gardées en mémoire quelques minutes : un changement peut mettre un peu de temps à apparaître.</p>
+    <div class="card"><h3>Vos sponsors</h3><div class="tw"><table><thead><tr><th>Sponsor</th><th>Emplacements</th><th>Période</th><th>Statut</th><th>7 jours<br><span class="note">affichages / clics</span></th><th>90 jours<br><span class="note">affichages / clics</span></th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="7">Aucun sponsor pour le moment.</td></tr>'}</tbody></table></div></div>
+    <div class="card"><h3 id="sp-ft">Nouveau sponsor</h3><input type="hidden" id="sp-id">
+      <div class="grid"><label class="f">Nom de la marque (40 caractères au plus)<input id="sp-nom" maxlength="40" placeholder="Ma Marque"></label><label class="f">Lien (https://…)<input id="sp-lien" maxlength="300" placeholder="https://www.exemple.com"></label></div>
+      <label class="f">Phrase d'accroche (90 caractères au plus)<input id="sp-phrase" maxlength="90" placeholder="Livraison rapide dans toute la ville"></label>
+      <div class="grid"><label class="f">Début (facultatif)<input type="date" id="sp-debut"></label><label class="f">Fin (facultatif)<input type="date" id="sp-fin"></label></div>
+      <div class="lbl2">Emplacements</div>
+      <div class="row">${d.placements.map((p) => `<label class="c"><input type="checkbox" data-spp="${p}">${esc(PL[p] || p)}</label>`).join('')}<label class="c"><input type="checkbox" id="sp-actif" checked>Actif</label></div>
+      <label class="f">Logo (JPEG ou PNG, réduit automatiquement)<input type="file" id="sp-logo" accept="image/png,image/jpeg"></label>
+      <label class="c" id="sp-rl" hidden><input type="checkbox" id="sp-nologo">Retirer le logo actuel</label>
+      <div class="lbl2">Aperçu</div>
+      <aside class="spb" style="max-width:460px"><span class="spl">Sponsorisé</span><a class="spa" href="#" onclick="return false"><img id="sp-pimg" alt="" width="56" height="56" hidden><span class="spi" id="sp-pini">MA</span><span class="spt"><b id="sp-pt">Coupon du jour offert par Ma Marque</b><small id="sp-pp">Votre phrase d'accroche</small></span><span class="spgo">Découvrir ›</span></a></aside>
+      <div class="row"><button class="btn" id="sp-save">Enregistrer</button><button class="btn sec" id="sp-reset">Nouveau</button><span class="msg" id="m-sp"></span></div></div>`;
+  },
+
   async journal() {
     const d = await api('journal');
     return `<h2>Journal des actions</h2><div class="tw"><table><thead><tr><th>Quand</th><th>Qui</th><th>Action</th><th>Détail</th></tr></thead><tbody>${d.journal.map((j) => `<tr><td>${fdate(j.le)}</td><td>${esc(j.par)}</td><td>${esc(j.action)}</td><td class="note">${esc(JSON.stringify(j.detail || ''))}</td></tr>`).join('') || '<tr><td colspan="4">Aucune action enregistrée.</td></tr>'}</tbody></table></div>`;
@@ -238,6 +260,73 @@ const VIEWS = {
 
 /* ---------- actions après affichage ---------- */
 const AFTER = {
+  sponsors() {
+    let logo = null; // image réduite prête à l'envoi (data URL)
+    const PLS = () => [...document.querySelectorAll('[data-spp]')];
+    const val = (id) => $(id).value.trim();
+    const preview = () => {
+      const nom = val('#sp-nom') || 'Ma Marque';
+      const first = PLS().find((c) => c.checked);
+      $('#sp-pt').textContent = (first && first.dataset.spp !== 'coupon') ? nom : 'Coupon du jour offert par ' + nom;
+      $('#sp-pp').textContent = val('#sp-phrase') || "Votre phrase d'accroche";
+      $('#sp-pini').textContent = nom.slice(0, 2).toUpperCase();
+      const im = $('#sp-pimg'); im.hidden = !logo; $('#sp-pini').hidden = !!logo; if (logo) im.src = logo;
+    };
+    const fill = (x) => {
+      $('#sp-ft').textContent = x ? 'Modifier ' + x.nom : 'Nouveau sponsor';
+      $('#sp-id').value = x ? x.id : ''; $('#sp-nom').value = x ? x.nom : ''; $('#sp-lien').value = x ? x.lien : ''; $('#sp-phrase').value = x ? x.phrase : '';
+      $('#sp-debut').value = x ? x.debut : ''; $('#sp-fin').value = x ? x.fin : ''; $('#sp-actif').checked = x ? x.actif : true;
+      PLS().forEach((c) => { c.checked = x ? x.emplacements.includes(c.dataset.spp) : c.dataset.spp === 'coupon'; });
+      logo = x && x.logo ? '/api/img/' + x.logo + '.' + (x.logoExt === 'jpg' ? 'jpg' : 'png') : null; $('#sp-file') && ($('#sp-file').value = '');
+      $('#sp-logo').value = ''; $('#sp-nologo').checked = false; $('#sp-rl').hidden = !(x && x.logo);
+      msg('#m-sp', ''); preview();
+    };
+    fill(null);
+    ['#sp-nom', '#sp-phrase'].forEach((id) => $(id).addEventListener('input', preview));
+    PLS().forEach((c) => c.addEventListener('change', preview));
+    $('#sp-logo').addEventListener('change', (ev) => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f), im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 256 / Math.max(im.width, im.height)), w = Math.max(1, Math.round(im.width * k)), h = Math.max(1, Math.round(im.height * k));
+        const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h);
+        let out = c.toDataURL('image/png');
+        if (out.length * 0.75 > 190 * 1024) out = c.toDataURL('image/jpeg', 0.85);
+        URL.revokeObjectURL(url);
+        if (out.length * 0.75 > 200 * 1024) { logo = null; msg('#m-sp', 'Logo trop lourd même réduit : choisissez une image plus simple.', true); preview(); return; }
+        logo = out; $('#sp-nologo').checked = false; msg('#m-sp', 'Logo prêt.'); preview();
+      };
+      im.onerror = () => msg('#m-sp', 'Image illisible.', true);
+      im.src = url;
+    });
+    $('#sp-reset').addEventListener('click', () => fill(null));
+    $('#sp-save').addEventListener('click', async () => {
+      try {
+        const item = { id: val('#sp-id') || undefined, nom: val('#sp-nom'), lien: val('#sp-lien'), phrase: val('#sp-phrase'), debut: val('#sp-debut'), fin: val('#sp-fin'), actif: $('#sp-actif').checked, emplacements: PLS().filter((c) => c.checked).map((c) => c.dataset.spp) };
+        const body = { item };
+        if (logo && logo.startsWith('data:')) body.logo = logo;
+        if ($('#sp-nologo').checked) body.retirerLogo = true;
+        await api('sponsor-save', body);
+        msg('#m-sp', 'Enregistré.'); show('sponsors');
+      } catch (e) { msg('#m-sp', e.message, true); }
+    });
+    document.querySelectorAll('[data-spe]').forEach((b) => b.addEventListener('click', () => { fill(SP.find((x) => x.id === b.dataset.spe)); $('#sp-ft').scrollIntoView({ behavior: 'smooth' }); }));
+    document.querySelectorAll('[data-spd]').forEach((b) => b.addEventListener('click', async () => {
+      const x = SP.find((y) => y.id === b.dataset.spd);
+      if (!x || !confirm(`Supprimer le sponsor « ${x.nom} » ? Son encart disparaît du site.`)) return;
+      try { await api('sponsor-delete', { id: x.id }); show('sponsors'); } catch (e) { msg('#m-sp', e.message, true); }
+    }));
+    document.querySelectorAll('[data-spr]').forEach((b) => b.addEventListener('click', async () => {
+      const x = SP.find((y) => y.id === b.dataset.spr);
+      try {
+        const r = await api('sponsor-stats', { id: x.id, jours: 90 });
+        const tot = r.jours.reduce((a, j) => ({ imp: a.imp + j.imp, clics: a.clics + j.clics }), { imp: 0, clics: 0 });
+        download(`rapport-${x.nom.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.csv`, csv([['Sponsor', x.nom], ['Jour', 'Affichages', 'Clics', 'Taux de clic %'], ...r.jours.map((j) => [j.jour, j.imp, j.clics, j.imp ? Math.round((j.clics / j.imp) * 1000) / 10 : '']), ['Total', tot.imp, tot.clics, tot.imp ? Math.round((tot.clics / tot.imp) * 1000) / 10 : '']]));
+        msg('#m-sp', 'Rapport exporté.');
+      } catch (e) { msg('#m-sp', e.message, true); }
+    }));
+  },
   fonctionnement() { AFTER.ia(); },
   vue() { document.querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => { days = +b.dataset.days; show('vue'); })); },
   semaines() {

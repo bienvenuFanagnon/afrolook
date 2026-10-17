@@ -29,7 +29,7 @@ async function context(db, now, lang = 'fr') {
   const today = dayStr(now);
   const tomorrow = dayStr(addDays(now, 1));
   return {
-    now, lang, t: T[lang], site: cfg.site, ads: cfg.ads, leagues, css: CSS, version: VERSION, today, tomorrow,
+    now, lang, t: T[lang], site: cfg.site, ads: cfg.ads, sponsors: cfg.sponsors || [], leagues, css: CSS, version: VERSION, today, tomorrow,
     dayAliases: { [today]: 'aujourdhui', [tomorrow]: 'demain' },
     u: (name, arg) => pathFor(lang, name, arg),
     pathIn: (l, name, arg) => pathFor(l, name, arg),
@@ -99,7 +99,7 @@ async function route(db, urlPath, now = new Date()) {
       if (r.arg === 'a-propos') {
         // partage : aperçu riche (titre, description, image 1200 × 630) et message WhatsApp qui résume le site
         const url = C.url(rc, lp.path);
-        lp.body += `<div class="wrap">${C.shareBox(rc, 'apropos', { url, text: rc.t.abShareMsg, title: rc.t.abShareTitle, p: rc.t.abShareP })}</div>`;
+        lp.body += `<div class="wrap">${C.advBox(rc)}${C.shareBox(rc, 'apropos', { url, text: rc.t.abShareMsg, title: rc.t.abShareTitle, p: rc.t.abShareP })}</div>`;
         lp.ogImage = rc.lang === 'en' ? '/img/og-about.png' : '/img/og-apropos.png';
       }
       return page(rc, Object.assign({ active: r.arg === 'a-propos' ? 'apropos' : '' }, lp), cc(3600, 86400));
@@ -158,7 +158,7 @@ async function bilanPage(db, rc) {
   const familles = Object.values(s30.parFamille).filter((f) => f.n >= 10).sort((a, b) => b.n - a.n);
   const s90 = summarize((await D.bilanDays(db, rc.now, 90)).map((d) => d.delta).filter(Boolean));
   const learning = Object.assign(learn.describe(learn.buildCalibration(s90)), { suivis: s90.n, seuil: learn.MIN_TOTAL });
-  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons: await D.couponHistory(db, rc.now, 30), signaux: s90.parSignal, news: await D.news(db, rc.now) }), cc(600, 1800));
+  return page(rc, P.bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons: await D.couponHistory(db, rc.now, 30), signaux: s90.parSignal, news: await D.news(db, rc.now), couponLearn: await D.couponLearning(db) }), cc(600, 1800));
 }
 
 /** Sitemap bilingue : chaque adresse française et anglaise, avec ses alternatives hreflang. */
@@ -168,7 +168,7 @@ async function sitemap(db, rc) {
   add('home', null, 'daily', '1.0'); add('day', 'aujourdhui', 'hourly', '0.9'); add('day', 'demain', 'hourly', '0.8');
   add('coupon', null, 'daily', '0.8'); add('bilan', null, 'daily', '0.7'); add('news', null, 'daily', '0.8');
   for (const a of await D.articles(db, 60)) add('article', a, 'monthly', '0.6', a.creeLe);
-  for (const [slug, prio] of [['a-propos', '0.4'], ['contact', '0.3'], ['jeu-responsable', '0.3'], ['confidentialite', '0.2'], ['conditions', '0.2'], ['cookies', '0.2'], ['mentions-legales', '0.2']]) add('legal', slug, 'monthly', prio);
+  for (const [slug, prio] of [['a-propos', '0.4'], ['annoncer', '0.4'], ['contact', '0.3'], ['jeu-responsable', '0.3'], ['confidentialite', '0.2'], ['conditions', '0.2'], ['cookies', '0.2'], ['mentions-legales', '0.2']]) add('legal', slug, 'monthly', prio);
   for (const l of rc.leagues) add('league', l.slug, 'daily', '0.8');
   const snap = await db.collection('matches').where('coupDEnvoi', '>=', addDays(rc.now, -30).toISOString()).get();
   for (const m of snap.docs.map((d) => d.data()).filter((x) => x.prono && x.prono.visible !== false && x.statut !== 'reporte')) {

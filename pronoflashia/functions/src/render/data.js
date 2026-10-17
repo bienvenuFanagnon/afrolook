@@ -20,8 +20,8 @@ const visible = (m) => !m.prono || m.prono.visible !== false;
 
 async function loadConfig(db) {
   return cached('config', 60e3, async () => {
-    const [site, ads] = await Promise.all([db.collection('config').doc('site').get(), db.collection('config').doc('ads').get()]);
-    return { site: mergeSite(site.exists ? site.data() : {}), ads: mergeAds(ads.exists ? ads.data() : {}) };
+    const [site, ads, sp] = await Promise.all([db.collection('config').doc('site').get(), db.collection('config').doc('ads').get(), db.collection('config').doc('sponsors').get()]);
+    return { site: mergeSite(site.exists ? site.data() : {}), ads: mergeAds(ads.exists ? ads.data() : {}), sponsors: sp.exists && Array.isArray(sp.data().items) ? sp.data().items : [] };
   });
 }
 
@@ -88,6 +88,11 @@ async function couponHistory(db, now, days = 30) {
   });
 }
 
+/** Ce que l'IA a appris de ses coupons (config/coupon_learning) ; null si rien n'est encore enregistré. */
+async function couponLearning(db) {
+  return cached('coupon-learning', 300e3, async () => { const d = await db.collection('config').doc('coupon_learning').get(); return d.exists ? d.data() : null; });
+}
+
 /** Actualités des dernières 48 h, les plus récentes d'abord (réglage config/news : interrupteur général). */
 async function news(db, now) {
   return cached(`news:${now.toISOString().slice(0, 15)}`, 300e3, async () => {
@@ -143,4 +148,4 @@ async function pool(db, now, hours = 96) {
   return list.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
 }
 
-module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, newsAll, newsById, newsEnabled, articles, articleBySlug, pool };
+module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, couponLearning, news, newsAll, newsById, newsEnabled, articles, articleBySlug, pool };

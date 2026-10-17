@@ -17,6 +17,7 @@ const DEFAULT_SITE = {
   googleVerification: '', // code de vérification de propriété Google Search Console (balise HTML)
   analyticsGa: '',
   whatsapp: '',
+  whatsappPub: 'https://wa.me/22871645403', // WhatsApp des annonceurs (modifiable dans l'admin) ; lien wa.me d'un numéro WhatsApp pour les annonceurs (un canal WhatsApp ne permet pas d'écrire)
   telegram: '',
 };
 
