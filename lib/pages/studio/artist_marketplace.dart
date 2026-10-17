@@ -725,9 +725,12 @@ Future<void> openArtistSoundById(BuildContext context, String soundId) async {
 /// Crédit automatique sous un post fait avec le son d'un artiste : « ♪ titre » (mène à la page du titre) et le bouton
 /// « Utiliser · 🪙 5 » pour créer son propre post avec ce son.
 class PostSoundCredit extends StatefulWidget {
-  const PostSoundCredit({super.key, required this.soundId, required this.title});
+  const PostSoundCredit({super.key, required this.soundId, required this.title, this.dark = false});
   final String soundId;
   final String title;
+
+  /// Sur une vidéo plein écran : fond sombre translucide et texte blanc.
+  final bool dark;
 
   static final Map<String, Future<ArtistSound?>> _cache = {};
 
@@ -769,12 +772,12 @@ class _PostSoundCreditState extends State<PostSoundCredit> {
             onTap: () => s != null ? Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: s))) : openArtistSoundById(context, widget.soundId),
             child: Container(
               padding: const EdgeInsets.fromLTRB(5, 4, 9, 4),
-              decoration: BoxDecoration(color: c.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(99), border: Border.all(color: c.primary.withValues(alpha: .35))),
+              decoration: BoxDecoration(color: widget.dark ? const Color(0x73000000) : c.primary.withValues(alpha: .1), borderRadius: BorderRadius.circular(99), border: Border.all(color: c.primary.withValues(alpha: .35))),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (t != null) TrackDisc(track: t, size: 20, glow: false) else Icon(Icons.music_note_rounded, size: 18, color: c.primary),
                 const SizedBox(width: 5),
-                Flexible(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w800))),
-                Icon(Icons.chevron_right_rounded, size: 15, color: c.primary),
+                Flexible(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: widget.dark ? Colors.white : c.primary, fontSize: 12, fontWeight: FontWeight.w800))),
+                Icon(Icons.chevron_right_rounded, size: 15, color: widget.dark ? Colors.white : c.primary),
               ]),
             ),
           ),

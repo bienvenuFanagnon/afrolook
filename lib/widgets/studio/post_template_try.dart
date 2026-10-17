@@ -11,6 +11,7 @@ import '../../pages/studio/montage/montage_editor_page.dart';
 import '../../pages/studio/studio_models.dart';
 import '../../pages/userPosts/userPostForm.dart';
 import '../../services/template_link.dart';
+import '../../pages/studio/artist_marketplace.dart' show PostSoundCredit;
 import '../../theme/app_colors.dart';
 
 class TemplateTry {
@@ -38,21 +39,46 @@ class TemplateTry {
   static bool available(Post post) => !kIsWeb && TemplateRef.parse(post.studioTemplate) != null && post.isAdvertisement != true;
 }
 
-class PostTemplateTry extends StatelessWidget {
-  const PostTemplateTry({super.key, required this.post});
+/// Appels à l'action d'un post, dans toutes ses pages de détails : le son d'un artiste (« ♪ titre », « Utiliser · 🪙 5 »)
+/// et le template ou la carte qui l'a servi (« Essayer ce template »). Rien ne s'affiche si le post n'en a pas.
+/// [dark] : sur une vidéo plein écran.
+class PostCtaRow extends StatelessWidget {
+  const PostCtaRow({super.key, required this.post, this.dark = false});
   final Post post;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    if (post.isAdvertisement == true) return const SizedBox.shrink();
+    final hasSound = post.artistSoundId != null && post.artistSoundId!.isNotEmpty;
+    final hasTemplate = TemplateTry.available(post);
+    if (!hasSound && !hasTemplate) return const SizedBox.shrink();
+    final col = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      if (hasSound) PostSoundCredit(soundId: post.artistSoundId!, title: post.artistSoundTitle ?? '', dark: dark),
+      if (hasTemplate) PostTemplateTry(post: post, dark: dark),
+    ]);
+    // sur la vidéo plein écran, le bloc est posé sans largeur imposée : on la borne
+    return dark ? ConstrainedBox(constraints: const BoxConstraints(maxWidth: 300), child: col) : col;
+  }
+}
+
+class PostTemplateTry extends StatelessWidget {
+  const PostTemplateTry({super.key, required this.post, this.dark = false});
+  final Post post;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
     if (!TemplateTry.available(post)) return const SizedBox.shrink();
     final ref = TemplateRef.parse(post.studioTemplate)!;
-    return TemplateTryPill(ref: ref, tries: post.templateTries, onTap: () => TemplateTry.open(context, ref, fromPostId: post.id));
+    return TemplateTryPill(ref: ref, tries: post.templateTries, dark: dark, onTap: () => TemplateTry.open(context, ref, fromPostId: post.id));
   }
 }
 
 /// La pastille elle-même (utilisée aussi dans les aperçus et les tests).
 class TemplateTryPill extends StatelessWidget {
-  const TemplateTryPill({super.key, required this.ref, required this.onTap, this.tries = 0});
+  const TemplateTryPill({super.key, required this.ref, required this.onTap, this.tries = 0, this.dark = false});
+  final bool dark;
   final TemplateRef ref;
   final int tries;
   final VoidCallback onTap;
@@ -73,7 +99,8 @@ class TemplateTryPill extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(10, 6, 12, 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(99),
-                gradient: LinearGradient(colors: [c.primary.withValues(alpha: .16), c.accent.withValues(alpha: .18)]),
+                color: dark ? const Color(0x73000000) : null,
+                gradient: dark ? null : LinearGradient(colors: [c.primary.withValues(alpha: .16), c.accent.withValues(alpha: .18)]),
                 border: Border.all(color: c.primary.withValues(alpha: .5)),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -87,8 +114,8 @@ class TemplateTryPill extends StatelessWidget {
                 Flexible(
                   child: Text.rich(
                     TextSpan(children: [
-                      TextSpan(text: context.tr(ref.isCard ? 'Essayer ce modèle' : 'Essayer ce template'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 12.5)),
-                      TextSpan(text: '  ·  ${ref.label}', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 12)),
+                      TextSpan(text: context.tr(ref.isCard ? 'Essayer ce modèle' : 'Essayer ce template'), style: TextStyle(color: dark ? Colors.white : c.textPrimary, fontWeight: FontWeight.w900, fontSize: 12.5)),
+                      TextSpan(text: '  ·  ${ref.label}', style: TextStyle(color: dark ? Colors.white70 : c.textSecondary, fontWeight: FontWeight.w700, fontSize: 12)),
                       if (tries > 0) TextSpan(text: '  ·  ${context.tr(tries > 1 ? '{n} essais' : '{n} essai', {'n': tries > 999 ? '${(tries / 1000).toStringAsFixed(1).replaceAll('.', ',')} k' : tries})}', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
                     ]),
                     maxLines: 1,

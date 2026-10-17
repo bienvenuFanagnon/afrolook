@@ -170,38 +170,50 @@ class PostCoinsBanner extends StatelessWidget {
   }
 }
 
-/// Pastille de la vidéo portrait (fond vidéo sombre), au-dessus du pseudo.
+/// Pastille de la vidéo portrait (fond vidéo sombre). En version [mini] : toute petite, sous la ligne « Score ».
 class PostCoinsChip extends StatelessWidget {
   final Post post;
+  final bool mini;
 
-  const PostCoinsChip({super.key, required this.post});
+  const PostCoinsChip({super.key, required this.post, this.mini = false});
 
   @override
   Widget build(BuildContext context) {
     if (post.isAdvertisement == true) return const SizedBox.shrink();
     final total = PostCoins.total(post);
+    final label = total > 0 ? context.tr('🪙 {a} pièces reçues', {'a': PostCoins.fmt(total)}) : context.tr('🪙 1 like = 1 pièce au créateur');
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => showPostCoinsBreakdown(context, post),
       child: Padding(
         // Zone de tap plus large que la pastille elle-même
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFAEEDA),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: PostCoins.border, width: 0.8),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(
-            total > 0 ? context.tr('🪙 {a} pièces reçues', {'a': PostCoins.fmt(total)}) : context.tr('🪙 1 like = 1 pièce au créateur'),
-            style: const TextStyle(color: Color(0xFF633806), fontSize: 11.5, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(width: 2),
-          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF633806)),
-        ]),
-      ),
+        padding: EdgeInsets.symmetric(vertical: mini ? 4 : 6),
+        child: mini
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: const Color(0x40EF9F27),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: PostCoins.border.withValues(alpha: 0.55), width: 0.6),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(label, style: const TextStyle(color: Color(0xFFFAC775), fontSize: 9.5, fontWeight: FontWeight.w700, height: 1.2)),
+                  const Icon(Icons.chevron_right_rounded, size: 11, color: Color(0xFFFAC775)),
+                ]),
+              )
+            : Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAEEDA),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: PostCoins.border, width: 0.8),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(label, style: const TextStyle(color: Color(0xFF633806), fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF633806)),
+                ]),
+              ),
       ),
     );
   }

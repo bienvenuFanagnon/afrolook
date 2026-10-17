@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/studio/post_template_try.dart';
 import '../widgets/music/music_overlay.dart';
 import 'defi/defi_boost.dart';
 import 'pub/ad_actions.dart';
@@ -2184,6 +2185,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Musique et template du post : « Utiliser · 🪙 5 », « Essayer ce template »
+        PostCtaRow(post: _currentPost),
         // Pièces reçues : likes + commentaires + cadeaux (visible par tous)
         PostCoinsBanner(post: _currentPost, margin: const EdgeInsets.only(bottom: 10)),
         Row(

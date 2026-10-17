@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/studio/post_template_try.dart';
 import 'defi/defi_boost.dart';
 import 'pub/ad_actions.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
@@ -5083,6 +5084,8 @@ class _DetailsPostState extends State<DetailsPost>
                       // Bouton d'abonnement si contenu verrouillé
                       if (isLocked) _buildSubscribeButton(),
 
+                      // Musique et template du post : « Utiliser · 🪙 5 », « Essayer ce template »
+                      PostCtaRow(post: updatedPost),
                       SizedBox(height: 20),
                       Divider(color: _colors.divider),
                       _buildCommentPreview(_hasAccessToContent()),

@@ -85,5 +85,18 @@ void main() {
       await t.pumpWidget(MaterialApp(home: Scaffold(body: PostTemplateTry(post: p))));
       expect(find.byType(TemplateTryPill), findsNothing);
     });
+
+    testWidgets('PostCtaRow : rien sans son ni template ; la pastille apparaît avec un template (clair et sombre)', (t) async {
+      Future<void> show(Post p, {bool dark = false}) => t.pumpWidget(MaterialApp(home: Scaffold(body: Align(alignment: Alignment.topLeft, child: PostCtaRow(post: p, dark: dark)))));
+      await show(Post());
+      expect(find.byType(TemplateTryPill), findsNothing);
+      await show(Post()..studioTemplate = 'm:noel');
+      expect(find.byType(TemplateTryPill), findsOneWidget);
+      await show(Post()..studioTemplate = 'm:noel', dark: true); // posé sans largeur imposée sur la vidéo : pas d'erreur de mise en page
+      expect(find.byType(TemplateTryPill), findsOneWidget);
+      expect(t.takeException(), isNull);
+      await show(Post()..studioTemplate = 'm:noel'..isAdvertisement = true);
+      expect(find.byType(TemplateTryPill), findsNothing);
+    });
   });
 }
