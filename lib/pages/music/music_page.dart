@@ -19,6 +19,7 @@ import '../../services/music_queue.dart';
 import '../../services/offline_music_service.dart';
 import '../../utils/media_cdn.dart';
 import '../../widgets/music/music_overlay.dart';
+import '../../widgets/music/streams_text.dart';
 import '../../widgets/music/vinyl.dart';
 import '../pub/afrolook_inline_ad.dart';
 import '../../theme/app_colors.dart';
@@ -68,8 +69,12 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
     _syncOverlay();
   }
 
+  bool _routeCurrent = true;
+
   void _syncOverlay() {
-    final hide = _tabs.index == 0;
+    // « Pour toi » a son propre lecteur (le disque) : le lecteur flottant n'y est masqué que si la page est celle qu'on voit.
+    // Quand une autre page s'ouvre par-dessus (fiche d'un titre, éditeur, fil…), la capsule revient.
+    final hide = _tabs.index == 0 && _routeCurrent;
     if (hide == _hidingOverlay) return;
     _hidingOverlay = hide;
     MusicOverlay.hidden.value = (MusicOverlay.hidden.value + (hide ? 1 : -1)).clamp(0, 99);
@@ -238,6 +243,13 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final current = ModalRoute.of(context)?.isCurrent ?? true;
+    if (current != _routeCurrent) {
+      _routeCurrent = current;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncOverlay();
+      });
+    }
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -345,7 +357,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       if (sounds.isNotEmpty) ...[
         _section(c, '🎤 Nouveautés des artistes'),
         SizedBox(
-          height: 150,
+          height: 166,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: min(10, sounds.length),
@@ -413,6 +425,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           const SizedBox(height: 6),
           Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
           Text(t.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+          StreamsText(track: t, color: c.textSecondary, fontSize: 10),
         ]),
       ),
     );
@@ -552,7 +565,9 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                     Icon(Icons.download_done_rounded, size: 14, color: c.primary),
                   ],
                   const SizedBox(width: 6),
-                  Expanded(child: Text((it.sound?.streamCount ?? 0) > 0 ? '${it.artist} · ${compactCount(it.sound!.streamCount)} écoutes' : it.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                  Expanded(child: Text(it.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                  const SizedBox(width: 6),
+                  Flexible(child: StreamsText(track: it, color: c.textSecondary, fontSize: 10.5)),
                 ]),
               ]),
             ),
@@ -674,7 +689,9 @@ class _NowHero extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text('${t.artist}${t.genre != null && t.genre!.isNotEmpty ? ' · ${t.genre}' : ''}', textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        Center(child: StreamsText(track: t, color: c.textSecondary, fontSize: 12)),
+        const SizedBox(height: 6),
         _status(c),
         const SizedBox(height: 6),
         const MusicControls(size: 1.0),
@@ -699,7 +716,7 @@ class _NowHero extends StatelessWidget {
             if (!pv) return const SizedBox(height: 0);
             return StreamBuilder<Duration>(
               stream: SoundPreview.position,
-              builder: (_, p) => _tag(c.primary, Icons.lock_rounded, 'Extrait gratuit · encore ${(30 - (p.data?.inSeconds ?? 0)).clamp(0, 30)} s'),
+              builder: (_, p) => _tag(c.primary, Icons.lock_rounded, 'Extrait gratuit · encore ${(track.previewSec - (p.data?.inSeconds ?? 0)).clamp(0, track.previewSec)} s'),
             );
           },
         ),

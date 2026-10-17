@@ -17,6 +17,7 @@ import '../../services/music_voice.dart';
 import '../../services/nav_cache_service.dart';
 import '../../theme/app_colors.dart';
 import 'preview_end_sheet.dart';
+import 'streams_text.dart';
 import 'vinyl.dart';
 
 /// Pages qui masquent le lecteur flottant.
@@ -314,11 +315,15 @@ class _Capsule extends StatelessWidget {
               ? StreamBuilder<Duration>(
                   stream: SoundPreview.position,
                   builder: (_, p) {
-                    final left = (30 - (p.data?.inSeconds ?? 0)).clamp(0, 30);
+                    final left = (track.previewSec - (p.data?.inSeconds ?? 0)).clamp(0, track.previewSec);
                     return Text('Extrait · $left s', maxLines: 1, style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 10.5));
                   },
                 )
-              : Text(track.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 10.5)),
+              : Row(children: [
+                  Flexible(child: Text(track.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 10.5))),
+                  const SizedBox(width: 6),
+                  Flexible(child: StreamsText(track: track, color: c.textSecondary, fontSize: 10)),
+                ]),
         ),
     ]);
   }

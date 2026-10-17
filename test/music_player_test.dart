@@ -1,6 +1,10 @@
 import 'dart:math';
 
+import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/pages/music/playlists_pages.dart';
+import 'package:afrotok/services/stream_counts.dart';
+import 'package:afrotok/widgets/music/music_overlay.dart';
+import 'package:afrotok/widgets/music/streams_text.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/services/music_playlists.dart';
 import 'package:afrotok/pages/studio/montage/montage_music.dart';
@@ -197,5 +201,58 @@ void main() {
       expect(play.onPressed, isNotNull);
       expect(find.textContaining('Ajouter à ma bibliothèque · gratuit'), findsOneWidget);
     });
+  });
+
+  group('écoutes affichées partout', () {
+    test('format : 0 écoute, 1 écoute, 950 écoutes, 1,2 k écoutes', () {
+      expect(StreamCounts.label(0), '0 écoute');
+      expect(StreamCounts.label(1), '1 écoute');
+      expect(StreamCounts.label(950), '950 écoutes');
+      expect(StreamCounts.label(1234), '1,2 k écoutes');
+      expect(StreamCounts.label(12400), '12 k écoutes');
+    });
+
+    test('l\'écoute compte après 10 secondes', () {
+      expect(MusicQueue.streamAfterSeconds, 10);
+    });
+
+    test('durée de l\'extrait lue dans le son (30 s pour un ancien son)', () {
+      expect(_sound().previewSec, 30);
+      final s = ArtistSound.fromMap({'userId': 'u', 'userPseudo': 'a', 'title': 't', 'previewSec': 8, 'durationMs': 30000, 'status': 'validated', 'usageCount': 0, 'totalEarningsCoins': 0, 'createdAt': Timestamp.now()}, 'x');
+      expect(s.previewSec, 8);
+      expect(MusicTrack.fromSound(s).previewSec, 8);
+      expect(MusicTrack.fromStudio(kStudioTracks.first).previewSec, 30);
+    });
+
+    testWidgets('chaque titre montre ses écoutes, même à zéro, et se met à jour en direct', (tester) async {
+      final t = MusicTrack.fromSound(_sound());
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: StreamsText(track: t, color: Colors.black))));
+      expect(find.text('0 écoute'), findsOneWidget);
+      StreamCounts.counts.value = {...StreamCounts.counts.value, t.key: 1500};
+      await tester.pump();
+      expect(find.text('1,5 k écoutes'), findsOneWidget);
+      // une musique gratuite d'Afrolook aussi
+      final f = MusicTrack.fromStudio(kStudioTracks.first);
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: StreamsText(track: f, color: Colors.black))));
+      expect(find.text('0 écoute'), findsOneWidget);
+      StreamCounts.counts.value = const {};
+    });
+  });
+
+  testWidgets('page Musique : le lecteur flottant revient quand une autre page s\'ouvre par-dessus', (tester) async {
+    MusicOverlay.hidden.value = 0;
+    final nav = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(navigatorKey: nav, home: MusicPage(preview: (sounds: [MusicTrack.fromSound(_sound())], free: const []), previewPlaylists: (mine: const [], discover: const []))));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(MusicOverlay.hidden.value, 1); // « Pour toi » : le disque fait office de lecteur
+    nav.currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('autre page'))));
+    await tester.pumpAndSettle();
+    expect(MusicOverlay.hidden.value, 0); // la page est cachée sous une autre : la capsule doit se voir
+    nav.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(MusicOverlay.hidden.value, 1);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    expect(MusicOverlay.hidden.value, 0);
   });
 }

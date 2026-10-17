@@ -10,7 +10,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
+import '../../../services/music_queue.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/music/streams_text.dart';
 import '../artist_marketplace.dart';
 import '../../../utils/media_cdn.dart';
 import '../artist_sound_common.dart';
@@ -321,11 +323,15 @@ class _MusicSheetState extends State<_MusicSheet> {
                       ? CachedNetworkImage(imageUrl: s.coverImageUrl!, width: 44, height: 44, fit: BoxFit.cover)
                       : _emojiBox('🎤'),
                 ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(color: s.isFree ? const Color(0x332ECC71) : const Color(0x33FFD400), borderRadius: BorderRadius.circular(99)),
-                  child: Text(s.isFree ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
-                ),
+                trailing: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(color: s.isFree ? const Color(0x332ECC71) : const Color(0x33FFD400), borderRadius: BorderRadius.circular(99)),
+                    child: Text(s.isFree ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(height: 3),
+                  StreamsText(track: MusicTrack.fromSound(s), color: _c.textSecondary, fontSize: 10),
+                ]),
               );
             }),
         ]);

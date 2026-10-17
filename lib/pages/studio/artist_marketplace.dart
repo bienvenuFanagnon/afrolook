@@ -47,7 +47,9 @@ import 'studio_models.dart';
 import '../music/music_page.dart';
 import '../../services/music_queue.dart';
 import '../../widgets/music/music_overlay.dart';
+import '../../widgets/music/streams_text.dart';
 import '../../widgets/music/vinyl.dart';
+import '../../services/stream_counts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../coins/coin_recharge_screen.dart';
 
@@ -78,6 +80,7 @@ class ArtistSound {
   final int useCoins; // prix d'utilisation dans le Studio (2 à 20), 0 = prix par défaut
   final int saleCoins; // prix de vente du titre complet (50 à 500), 0 = pas en vente
   final int saleCount;
+  final int previewSec; // durée de l'extrait gratuit (selon la durée du titre ; 30 pour les anciens sons)
   final int streamCount; // écoutes comptées (30 s), comme les « streams » d'une plateforme de musique
   final int saleEarnings; // pièces gagnées sur les ventes du titre
   final int useEarnings; // pièces gagnées quand le son est utilisé dans un post
@@ -110,6 +113,7 @@ class ArtistSound {
     this.useCoins = 0,
     this.saleCoins = 0,
     this.saleCount = 0,
+    this.previewSec = 30,
     this.streamCount = 0,
     this.saleEarnings = 0,
     this.useEarnings = 0,
@@ -158,6 +162,7 @@ class ArtistSound {
       useCoins: (map['useCoins'] as num?)?.toInt() ?? 0,
       saleCoins: (map['saleCoins'] as num?)?.toInt() ?? 0,
       saleCount: (map['saleCount'] as num?)?.toInt() ?? 0,
+      previewSec: ((map['previewSec'] as num?)?.toInt() ?? 30).clamp(5, 60),
       streamCount: (map['streamCount'] as num?)?.toInt() ?? 0,
       saleEarnings: (map['saleEarnings'] as num?)?.toInt() ?? 0,
       useEarnings: (map['useEarnings'] as num?)?.toInt() ?? 0,
@@ -457,7 +462,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ton fichier original reste privé : les autres n’entendent qu’un extrait de 30 secondes. '
+                  'Ton fichier original reste privé : les autres n’entendent qu’un court extrait (jusqu’à 30 secondes, selon la durée du titre). '
                   'Notre système repère les doublons et l’équipe écoute ton son avant de le valider (48 h maximum).',
                   style: TextStyle(fontSize: 12, color: c.textSecondary, height: 1.4),
                 ),
@@ -777,6 +782,10 @@ class _PostSoundCreditState extends State<PostSoundCredit> {
                 if (t != null) TrackDisc(track: t, size: 20, glow: false) else Icon(Icons.music_note_rounded, size: 18, color: c.primary),
                 const SizedBox(width: 5),
                 Flexible(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: widget.dark ? Colors.white : c.primary, fontSize: 12, fontWeight: FontWeight.w800))),
+                if (t != null) ...[
+                  const SizedBox(width: 6),
+                  StreamsText(track: t, color: widget.dark ? Colors.white70 : c.primary, fontSize: 10.5),
+                ],
                 Icon(Icons.chevron_right_rounded, size: 15, color: widget.dark ? Colors.white : c.primary),
               ]),
             ),
@@ -927,7 +936,9 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           Text(s.title, textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 21, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
           Text('par @${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          Center(child: StreamsText(track: _track, color: c.textSecondary, fontSize: 12.5, weight: FontWeight.w700)),
+          const SizedBox(height: 10),
           Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
             _pricingBadge(s, c),
             if (_owned)
@@ -990,7 +1001,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
             const SizedBox(height: 16),
           ],
           Row(children: [
-            Expanded(child: _Stat(label: 'Écoutes', value: compactCount(s.streamCount), c: c)),
+            Expanded(child: ValueListenableBuilder<Map<String, int>>(valueListenable: StreamCounts.counts, builder: (_, __, ___) => _Stat(label: 'Écoutes', value: StreamCounts.fmt(StreamCounts.of(_track)), c: c))),
             const SizedBox(width: 10),
             Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
             const SizedBox(width: 10),
@@ -1074,7 +1085,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
         line('Ventes du titre', '${s.saleCount} vente${s.saleCount > 1 ? 's' : ''} · 60 % du prix', s.saleEarnings),
         line('Utilisations dans des posts', '${s.usageCount} utilisation${s.usageCount > 1 ? 's' : ''} · 60 % du prix', s.useEarnings),
         Divider(color: c.border, height: 12),
-        line('Total', '${compactCount(s.streamCount)} écoute${s.streamCount > 1 ? 's' : ''} (30 s) — les écoutes ne rapportent pas de pièces', s.totalEarningsCoins),
+        line('Total', '${compactCount(s.streamCount)} écoute${s.streamCount > 1 ? 's' : ''} (10 s d’écoute) — les écoutes ne rapportent pas de pièces', s.totalEarningsCoins),
       ]),
     );
   }
@@ -1097,7 +1108,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
                 if (preview) const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    !preview ? 'Titre complet' : (mine && ended ? 'Extrait terminé' : 'Extrait gratuit de 30 secondes'),
+                    !preview ? 'Titre complet' : (mine && ended ? 'Extrait terminé' : 'Extrait gratuit de ${s.previewSec} secondes'),
                     style: TextStyle(color: preview && mine && ended ? c.warning : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ),
@@ -1402,7 +1413,7 @@ class MyArtistSoundsPage extends StatelessWidget {
         line('• Les pièces arrivent tout de suite dans ton solde de pièces (Monétisation → Mes pièces). Ce sont des pièces gagnées : tu peux les convertir en argent '
             '(25 pièces = 10 FCFA) et les retirer, ou les dépenser dans l’app.'),
         line('• Son gratuit : pas de gain. Et si tu utilises ton propre son, c’est gratuit pour toi mais il ne te rapporte rien non plus.'),
-        line('• Ton fichier original reste privé : les autres n’entendent qu’un extrait de 30 secondes.'),
+        line('• Ton fichier original reste privé : les autres n’entendent qu’un court extrait (jusqu’à 30 secondes, selon la durée du titre).'),
       ]),
     );
   }
@@ -1789,7 +1800,7 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
         // Écoute : extrait de 30 s et original en entier
         Row(children: [
           SoundPlayButton(soundKey: 'admin_${s.id}', url: s.previewUrl, size: 32),
-          Text('Extrait 30 s', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+          Text('Extrait ${s.previewSec} s', style: TextStyle(color: c.textSecondary, fontSize: 12)),
           const Spacer(),
           OutlinedButton.icon(
             onPressed: _loading ? null : _toggleFull,
