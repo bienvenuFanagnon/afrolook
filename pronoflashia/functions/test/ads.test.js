@@ -272,7 +272,7 @@ test('accueil téléphone : la bannière du haut reste dans le premier écran, u
   const iMatchs = h.indexOf('class="lbl" style="margin-top:6px">Les matchs');
   assert.ok(nwv > iCoupons, 'actus après les coupons flash');
   const block = h.slice(nwv, iMatchs);
-  const seq = [...block.matchAll(/class="nw( has)?"|data-ad="native"|class="afl"/g)].map((m) => (m[0].startsWith('class="nw') ? 'actu' : 'pub'));
+  const seq = [...block.matchAll(/class="(?:nw( has)?|rcp)"|data-ad="native"|class="afl"/g)].map((m) => (/^class="(?:nw|rcp)/.test(m[0]) ? 'actu' : 'pub'));
   assert.equal(seq.join(','), 'actu,actu', 'deux actus, aucune pub entre elles ni avant la liste des matchs');
   const b = (await route(db, '/bilan', NOW)).body;
   assert.ok((b.match(/data-ad="/g) || []).length >= 3, 'haut, milieu et fin sur la page Bilan');

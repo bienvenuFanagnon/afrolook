@@ -18,7 +18,7 @@ const idOf = (lien) => crypto.createHash('sha1').update(lien).digest('hex').slic
 async function loadNewsConfig(db) {
   const d = await db.collection('config').doc('news').get();
   const c = d.exists ? d.data() : {};
-  return { actif: c.actif !== false, images: c.images !== false, sources: c.sources || {} };
+  return { actif: c.actif !== false, images: c.images !== false, recaps: c.recaps !== false, sources: c.sources || {} };
 }
 const isOn = (cfg, s) => (cfg.sources[s.id] === undefined ? s.actif : !!cfg.sources[s.id]);
 

@@ -166,7 +166,7 @@ function header(rc, active, alternates) {
   const other = rc.lang === 'en' ? 'fr' : 'en';
   const switchHref = (alternates && alternates[other]) || (other === 'en' ? '/en' : '/');
   return `<header class="hdr"><div class="wrap"><a class="logo" href="${rc.u('home')}" aria-label="${esc(t.homeAria)}"><span class="bolt" aria-hidden="true">⚡</span><span>Prono<em>Flash</em><small>IA</small></span></a>` +
-    `<nav class="nav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}>${t.navAbout}</a></nav>` +
+    `<nav class="nav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}>${t.navBilan}</a><a href="${rc.u('news')}"${a('actus')}>${t.pfNav}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}>${t.navAbout}</a></nav>` +
     `<span class="sp"></span><a class="cpn" id="pf-cpn" href="${rc.u('coupon')}" hidden>${t.myCoupon}</a><button type="button" class="bell" id="pf-bell" aria-pressed="false" aria-label="${esc(t.bellOff)}" title="${esc(t.bellOff)}" hidden>🔔</button><a class="lang" href="${esc(switchHref)}" hreflang="${other}" lang="${other}" aria-label="${esc(t.langSwitchAria)}">${t.langSwitch}</a></div>` +
     // téléphone : le menu principal est masqué sous 900 px, cette barre prend le relais, toujours visible sous l'en-tête
     `<nav class="mnav" aria-label="${esc(t.navMain)}"><a href="${rc.u('day', 'aujourdhui')}"${a('football')}><i aria-hidden="true">${t.navIcons.football}</i>${t.navFootball}</a><a href="${rc.u('coupon')}"${a('coupon')}><i aria-hidden="true">${t.navIcons.coupon}</i>${t.navCoupon}</a><a href="${rc.u('bilan')}"${a('bilan')}><i aria-hidden="true">${t.navIcons.bilan}</i>${t.navBilan}</a><a href="${rc.u('legal', 'a-propos')}"${a('apropos')}><i aria-hidden="true">${t.navIcons.about}</i>${t.navAbout}</a></nav></header>`;
@@ -197,7 +197,7 @@ function footer(rc) {
   const t = rc.t;
   const legal = Object.entries(t.footerLegal).map(([slug, lab]) => `<a href="${rc.u('legal', slug)}">${lab}</a>`).join('');
   return `<footer class="ftr"><div class="wrap" style="display:grid;gap:10px"><div class="r18"><b>18+</b>${t.footer18}</div><p>${t.footerInfo}</p>` +
-    `<nav aria-label="${esc(t.footerNav)}">${legal}<button type="button" id="pf-prefs">${t.adPrefs}</button></nav>` +
+    `<nav aria-label="${esc(t.footerNav)}"><a href="${rc.u('news')}">${t.pfTitle}</a>${legal}<button type="button" id="pf-prefs">${t.adPrefs}</button></nav>` +
     `<p class="cpy">© ${rc.now.getUTCFullYear()} ${esc(rc.site.nom)} · ${esc(rc.site.domaine)}<a class="adm" href="/admin" rel="nofollow noopener">Hub</a></p></div></footer>`;
 }
 

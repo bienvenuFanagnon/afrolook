@@ -47,11 +47,14 @@ async function submitNewUrls({ db, site, now, fetchImpl, max }) {
   const seo = (await db.collection('config').doc('seo').get()).data() || {};
   const staticDue = !seo.staticEnvoyeLe;
   const batch = todo.slice(0, max || 100);
-  if (!batch.length && !staticDue) return { envoyees: 0, matchs: 0 };
+  // articles « Le point foot » des 3 derniers jours, signalés une seule fois
+  const arts = (await db.collection('articles').where('jour', '>=', addDays(now, -3).toISOString().slice(0, 10)).get()).docs.map((d) => d.data()).filter((a) => !a.indexNow);
+  if (!batch.length && !staticDue && !arts.length) return { envoyees: 0, matchs: 0 };
 
   const urls = new Set();
   for (const { pages } of batch) for (const p of pages) for (const path of p.paths) urls.add(origin + path);
-  if (staticDue) for (const n of ['home', 'coupon', 'bilan']) for (const l of ['fr', 'en']) urls.add(origin + pathFor(l, n));
+  for (const a of arts) for (const l of ['fr', 'en']) urls.add(origin + pathFor(l, 'article', a));
+  if (staticDue) for (const n of ['home', 'coupon', 'bilan', 'news']) for (const l of ['fr', 'en']) urls.add(origin + pathFor(l, n));
 
   const key = await getKey(db);
   let res;
@@ -66,6 +69,7 @@ async function submitNewUrls({ db, site, now, fetchImpl, max }) {
     for (const p of pages) indexNow[p.kind] = stamp;
     await db.collection('matches').doc(m.id).set({ indexNow }, { merge: true });
   }
+  for (const a of arts) await db.collection('articles').doc(a.id).set({ indexNow: stamp }, { merge: true });
   if (staticDue) await db.collection('config').doc('seo').set({ staticEnvoyeLe: stamp }, { merge: true });
   return { envoyees: urls.size, matchs: batch.length };
 }

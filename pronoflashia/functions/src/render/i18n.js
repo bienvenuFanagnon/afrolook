@@ -19,6 +19,8 @@ function pathFor(lang, name, arg) {
     case 'analysis': return `${pre}/football/${arg.leagueSlug}/${arg.slug}/${en ? 'analysis' : 'analyse'}`;
     case 'bilan': return en ? '/en/track-record' : '/bilan';
     case 'coupon': return `${pre}/coupon`;
+    case 'news': return en ? '/en/news' : '/actus';
+    case 'article': return `${en ? '/en/news' : '/actus'}/${arg.slug}`;
     case 'legal': return en ? `/en/${LEGAL_SLUGS[arg]}` : `/${arg}`;
     case '404': return `${pre}/404`;
     default: return pre || '/';
@@ -38,6 +40,7 @@ function parsePath(path) {
   if (lang === 'en' && seg.length === 1) {
     if (seg[0] === 'track-record') return { lang, name: 'bilan' };
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
+    if (seg[0] === 'news') return { lang, name: 'news' };
     if (LEGAL_FR[seg[0]]) return { lang, name: 'legal', arg: LEGAL_FR[seg[0]] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -45,10 +48,12 @@ function parsePath(path) {
   if (lang === 'fr' && seg.length === 1) {
     if (seg[0] === 'bilan') return { lang, name: 'bilan' };
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
+    if (seg[0] === 'actus') return { lang, name: 'news' };
     if (LEGAL_SLUGS[seg[0]]) return { lang, name: 'legal', arg: seg[0] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
   }
+  if (seg[0] === (lang === 'en' ? 'news' : 'actus') && seg.length === 2 && /^[a-z0-9-]{3,80}$/.test(seg[1])) return { lang, name: 'article', arg: seg[1] };
   if (seg[0] !== 'football') return { lang, name: 'unknown' };
   if (seg.length === 1) return { lang, name: 'football' };
   if (seg.length === 2) {
@@ -116,6 +121,15 @@ const T = {
     fact: (f) => { const who = f.joueur ? ` de ${f.joueur}` : ''; const base = { absence: `🩹 Absence${who} signalée côté ${f.equipe}`, suspension: `🟥 Suspension${who} signalée côté ${f.equipe}`, retour: `✅ Retour${who} signalé côté ${f.equipe}`, entraineur: `🧢 Changement d'entraîneur signalé chez ${f.equipe}` }[f.type]; return base ? base + (f.certitude === 'rumeur' ? ' (à confirmer)' : '') + ' · ' : ''; },
     sigTitle: 'Nos pronostics selon les signaux affichés', sigP: "Les mentions « Données limitées » et « Infos récentes » informent mais ne changent aucune probabilité. Ce tableau mesure, avec nos propres résultats, si les pronostics concernés réussissent vraiment moins souvent.",
     sigLabel: { aucun: 'Aucun signal', actu: 'Infos récentes signalées', limite: 'Données limitées' },
+    pfTitle: 'Le point foot', pfNav: 'Le point foot', pfIndexTitle: 'Le point foot : l\'actualité du football résumée chaque jour · PronoFlash IA',
+    pfIndexDesc: "Chaque soir, le point sur le football : résultats, nos pronostics, matchs à suivre et infos de la presse, avec les sources citées. Rédigé par l'IA de PronoFlash.",
+    pfIndexH1: 'Le point foot', pfIndexP: "Chaque soir, notre IA résume la journée de football : résultats, nos pronostics réussis ou ratés, matchs à suivre et infos de la presse, toujours avec les sources.",
+    pfEmpty: "Le premier « point foot » sera publié ce soir.", pfSeeAll: 'Tous les « points foot »', pfRead: 'Lire',
+    pfBy: "Rédigé par l'IA de PronoFlash à partir de nos données et de sources citées.", pfRetain: "Ce qu'il faut retenir", pfWatch: 'Matchs à surveiller', pfWatchP: "Notre pronostic reste une probabilité : les infos de la presse sont signalées sur la fiche du match mais ne modifient aucune probabilité.",
+    pfResults: 'Les résultats et nos pronostics', pfSources: 'Sources', pfSourcesP: "Informations de presse reprises avec leur source ; seules les informations factuelles sont résumées, avec nos propres mots. Un clic ouvre l'article d'origine sur le site de la source.",
+    pfDetails: 'Voir le détail', pfOk: 'pronostic réussi', pfKo: 'pronostic raté', pfDisclaimer: "Contenu informatif. PronoFlash IA ne prend aucun pari et ne promet aucun gain : un pronostic est une probabilité, pas une certitude. 18+ · Jouez de façon responsable.",
+    pfShare: 'Partager sur WhatsApp', pfCoverKicker: 'LE POINT FOOT',
+    pfDesc: (d) => `Le point foot du ${d} : résultats, nos pronostics, matchs à suivre et infos de la presse, sources citées.`,
     learnTitle: "Ce que l'IA a appris", learnIntro: "L'IA compare chacun de ses pronostics au résultat réel et corrige ses calculs quand elle se trompe de façon régulière. Voici ses corrections actuelles.",
     learnWait: (n, seuil) => `L'IA commence à se corriger dès ${seuil} pronostics terminés (${n} pour l'instant).`,
     learnNone: 'Pour le moment, nos probabilités sont proches des résultats réels : aucune correction n\'est nécessaire.',
@@ -207,6 +221,15 @@ const T = {
     fact: (f) => { const who = f.joueur ? ` of ${f.joueur}` : ''; const base = { absence: `🩹 Absence${who} reported for ${f.equipe}`, suspension: `🟥 Suspension${who} reported for ${f.equipe}`, retour: `✅ Return${who} reported for ${f.equipe}`, entraineur: `🧢 Coaching change reported at ${f.equipe}` }[f.type]; return base ? base + (f.certitude === 'rumeur' ? ' (to be confirmed)' : '') + ' · ' : ''; },
     sigTitle: 'Our predictions by displayed signal', sigP: '"Limited data" and "Recent news" inform but never change a probability. This table measures, with our own results, whether the predictions concerned really succeed less often.',
     sigLabel: { aucun: 'No signal', actu: 'Recent news flagged', limite: 'Limited data' },
+    pfTitle: 'Football roundup', pfNav: 'Roundup', pfIndexTitle: 'Football roundup: the day in football, every evening · PronoFlash IA',
+    pfIndexDesc: "Every evening, the football day in a nutshell: results, our predictions, matches to watch and press news, with sources cited. Written by PronoFlash's AI.",
+    pfIndexH1: 'Football roundup', pfIndexP: 'Every evening, our AI sums up the football day: results, our predictions that succeeded or missed, matches to watch and press news, always with sources.',
+    pfEmpty: 'The first roundup will be published this evening.', pfSeeAll: 'All roundups', pfRead: 'Read',
+    pfBy: "Written by PronoFlash's AI from our data and cited sources.", pfRetain: 'Key takeaways', pfWatch: 'Matches to watch', pfWatchP: 'Our prediction remains a probability: press news is flagged on the match page but changes no probability.',
+    pfResults: 'Results and our predictions', pfSources: 'Sources', pfSourcesP: 'Press information is credited to its source; only factual information is summarised, in our own words. A click opens the original article on the source site.',
+    pfDetails: 'See details', pfOk: 'prediction succeeded', pfKo: 'prediction missed', pfDisclaimer: 'Informational content. PronoFlash IA takes no bets and promises no winnings: a prediction is a probability, not a certainty. 18+ · Play responsibly.',
+    pfShare: 'Share on WhatsApp', pfCoverKicker: 'FOOTBALL ROUNDUP',
+    pfDesc: (d) => `Football roundup, ${d}: results, our predictions, matches to watch and press news, sources cited.`,
     learnTitle: 'What the AI has learned', learnIntro: 'The AI compares each of its predictions with the real result and corrects its calculations when it is wrong in a consistent way. Here are its current corrections.',
     learnWait: (n, seuil) => `The AI starts correcting itself after ${seuil} finished predictions (${n} so far).`,
     learnNone: 'For now our probabilities are close to the real results: no correction is needed.',

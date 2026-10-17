@@ -370,7 +370,7 @@ test('accueil : actus réparties sans doublon — deux sous les coupons flash, u
   assert.equal(new Set(links).size, links.length, 'aucun article affiché deux fois');
   assert.ok(links.length >= 10, `actus affichées : ${links.length}`);
   const top = h.slice(h.indexOf('class="nwb"'), h.indexOf('class="lbl" style="margin-top:6px">Les matchs'));
-  assert.equal((top.match(/class="nw( has)?"/g) || []).length, 2, 'deux actus exactement sous les coupons flash');
+  assert.equal((top.match(/class="(?:nw( has)?|rcp)"/g) || []).length, 2, 'deux éléments exactement sous les coupons flash (notre point foot + une actu)');
   // une actu juste après chaque pub (encart Afrolook) de la liste des matchs
   const list = h.slice(h.indexOf('class="lbl" style="margin-top:6px">Les matchs'));
   const afterAds = [...list.matchAll(/data-afl="liste"[\s\S]*?<\/a>(<div class="nwv one">)?/g)];

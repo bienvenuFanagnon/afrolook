@@ -7,6 +7,7 @@ const { runJob, dayStr, addDays } = require('../src/jobs/helpers');
 const { syncFixtures } = require('../src/jobs/syncFixtures');
 const { buildPredictions } = require('../src/jobs/buildPredictions');
 const { syncResults } = require('../src/jobs/syncResults');
+const { buildDailyRecap } = require('../src/recap/build');
 
 const LEAGUES = [
   { apiId: 61, nom: 'Ligue 1', slug: 'ligue-1', pays: 'France', ordre: 3, teams: [[85, 'Paris Saint Germain', 2.1], [81, 'Olympique De Marseille', 1.5], [80, 'Olympique Lyonnais', 1.4], [91, 'AS Monaco', 1.45], [79, 'Lille', 1.3], [84, 'Nice', 1.2]] },
@@ -162,6 +163,8 @@ async function buildSample(now = new Date()) {
   await runJob(db, 'syncFixtures', (r) => syncFixtures({ db, api, now, days: 7, forceSeason: true }, r), () => now);
   await runJob(db, 'buildPredictions', (r) => buildPredictions({ db, api, providers: prov, now, maxMatches: 200, maxExternal: 6 }, r), () => now);
   await seedNews(db, now);
+  // « Le point foot » du jour : sans IA dans l'aperçu (article de secours construit avec nos données)
+  await buildDailyRecap({ db, providers: [], now });
   await db.seed('config', 'site', { email: 'contact@pronoflashia.com', editeur: 'À renseigner', statutJuridique: 'À renseigner', adresse: 'À renseigner' });
   return db;
 }

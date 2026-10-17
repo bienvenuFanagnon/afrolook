@@ -13,7 +13,7 @@ const learn = require('../engine/learn');
 const { SOURCES } = require('../news/sources');
 const { loadNewsConfig, isOn } = require('../jobs/syncNews');
 
-const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'sendPush', 'weeklyReport', 'aiHealthCheck'];
+const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'buildRecaps', 'sendPush', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
 const NETWORKS = ['adsterra', 'monetag'];
 
@@ -238,14 +238,14 @@ function createAdmin(deps) {
       const st = (await db.collection('news_sources').doc(s.id).get()).data() || {};
       return { id: s.id, nom: s.nom, lang: s.lang, url: s.url, actif: isOn(cfg, s), ok: st.ok == null ? null : st.ok, erreur: st.erreur || null, essaiLe: st.essaiLe || null, reussiLe: st.reussiLe || null, articles: st.articles == null ? null : st.articles };
     }));
-    return { actif: cfg.actif, images: cfg.images, sources: rows };
+    return { actif: cfg.actif, images: cfg.images, recaps: cfg.recaps, sources: rows };
   };
 
   A['actus-save'] = async (b, by) => {
     const sources = {};
     for (const s of SOURCES) if (b.sources && b.sources[s.id] !== undefined) sources[s.id] = !!b.sources[s.id];
-    await db.collection('config').doc('news').set({ actif: b.actif !== false, images: b.images !== false, sources }, { merge: true });
-    await log(by, 'actus-save', { actif: b.actif !== false, images: b.images !== false, sources });
+    await db.collection('config').doc('news').set({ actif: b.actif !== false, images: b.images !== false, recaps: b.recaps !== false, sources }, { merge: true });
+    await log(by, 'actus-save', { actif: b.actif !== false, images: b.images !== false, recaps: b.recaps !== false, sources });
     if (deps.clearCache) deps.clearCache();
     return { ok: true };
   };
