@@ -2911,8 +2911,8 @@ class TransactionSolde {
   int? coins;             // pièces reçues
   double? amountPaid;     // montant réellement payé
   String? currency;       // XOF, USD, EUR…
-  String? paymentMethod;  // Dépôt FCFA, Gains à retirer, App Store
-  double? netEstimate;    // net estimé après la part d'Apple
+  String? paymentMethod;  // Dépôt FCFA, Gains à retirer, App Store, Google Play
+  double? netEstimate;    // net estimé après la part de la boutique (Apple ou Google)
   String? beneficiaryPseudo;
 
   TransactionSolde();

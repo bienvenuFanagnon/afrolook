@@ -822,7 +822,9 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     // Unité réelle du montant (pièces ou FCFA), y compris les achats payés en pièces
     final String amountDisplay = _amountLabel(transaction);
 
-    final prefix = isDepot || isGain ? "+ " : "- ";
+    // Un achat de pièces ajoute des pièces au solde : « + »
+    final isCredit = isDepot || isGain || transaction.type == 'ACHAT_PIECES';
+    final prefix = isCredit ? "+ " : "- ";
 
     return Card(
       color: AdminPalette.card,
@@ -843,14 +845,19 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '$prefix$amountDisplay',
-              style: TextStyle(
-                color: isDepot || isGain ? Colors.green : Colors.orange,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                '$prefix$amountDisplay',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isCredit ? Colors.green : Colors.orange,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -947,7 +954,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
               _buildDetailItem("Type", _formatTransactionType(transaction.type)),
               _buildDetailItem("Montant", _amountLabel(transaction)),
               if (transaction.netEstimate != null)
-                _buildDetailItem("Net estimé (après la part d'Apple)",
+                _buildDetailItem("Net estimé (après la part ${transaction.paymentMethod == 'Google Play' ? 'de Google' : "d'Apple"})",
                     '${NumberFormat('#,##0.00', 'fr').format(transaction.netEstimate)} ${transaction.currency ?? ''}'),
               if ((transaction.beneficiaryPseudo ?? '').isNotEmpty)
                 _buildDetailItem("Bénéficiaire", '@${transaction.beneficiaryPseudo}'),
