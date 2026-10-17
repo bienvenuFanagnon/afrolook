@@ -235,6 +235,20 @@
 
   /* ---------- clics de partage ---------- */
   $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = L.copied; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
+  /* vidéo d'une actu : le lecteur YouTube (mode sans cookie) ne se charge qu'au clic */
+  $$('.stvid').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('data-v');
+      if (!/^[A-Za-z0-9_-]{11}$/.test(id || '')) return;
+      var f = d.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1';
+      f.title = b.getAttribute('aria-label') || '';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      f.setAttribute('allowfullscreen', '');
+      f.referrerPolicy = 'strict-origin-when-cross-origin';
+      b.parentNode.replaceChild(f, b);
+    });
+  });
   /* inscription par e-mail (coupons VIP gratuits) */
   $$('.mlb').forEach(function (b) {
     var f = $('form', b), m = $('.mlm', b), btn = $('button', f);
@@ -393,7 +407,7 @@
     insertPickerAds();
   }
   /* miniature d'actualité qui ne charge pas : on la retire, le titre reste */
-  d.addEventListener('error', function (e) { var t = e.target; if (t && t.tagName === 'IMG' && t.closest) { var w = t.closest('.nwi, .nbi'); if (w) w.style.display = 'none'; } }, true);
+  d.addEventListener('error', function (e) { var t = e.target; if (t && t.tagName === 'IMG' && t.closest) { var w = t.closest('.nwi, .nbi, .stm'); if (w) w.style.display = 'none'; } }, true);
 
   /* ---------- application installable (PWA) ---------- */
   if ('serviceWorker' in navigator) { w.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () { /* pas grave : le site marche sans */ }); }); }

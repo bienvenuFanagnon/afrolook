@@ -116,11 +116,12 @@ function aflCard(rc, slot, i = 0) {
 /** Bannière du canal WhatsApp : n'apparaît que si l'adresse du canal est renseignée dans l'admin (Réglages). */
 const CHANNEL_RE = /^https:\/\/(www\.)?(whatsapp\.com|wa\.me|chat\.whatsapp\.com)\/[^\s"'<>]{2,300}$/i;
 /** Remerciement et appel à partager le site (WhatsApp, partage du téléphone, copie du lien). Les boutons sont activés par pf.js. */
-function shareBox(rc, where) {
-  const t = rc.t;
-  const url = `${(rc.site && rc.site.origine) || ''}${rc.lang === 'en' ? '/en' : '/'}`;
-  return `<div class="box shb" data-where="${esc(where || 'page')}" data-url="${esc(url)}" data-text="${esc(t.shMsg)}"><div class="lbl">${t.shTitle}</div><p>${t.shP}</p>` +
-    `<div class="sh"><a class="wa" href="https://wa.me/?text=${encodeURIComponent(`${t.shMsg} ${url}`)}" target="_blank" rel="noopener">${t.shWa}</a><button type="button" data-sh="nat" hidden>${t.shNat}</button><button type="button" data-sh="copy" data-ok="${esc(t.shCopied)}">${t.shCopy}</button></div></div>`;
+function shareBox(rc, where, opts) {
+  const t = rc.t, o = opts || {};
+  const url = o.url || `${(rc.site && rc.site.origine) || ''}${rc.lang === 'en' ? '/en' : '/'}`;
+  const text = o.text || t.shMsg;
+  return `<div class="box shb" data-where="${esc(where || 'page')}" data-url="${esc(url)}" data-text="${esc(text)}"><div class="lbl">${o.title || t.shTitle}</div><p>${o.p || t.shP}</p>` +
+    `<div class="sh"><a class="wa" href="https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}" target="_blank" rel="noopener">${t.shWa}</a><button type="button" data-sh="nat" hidden>${t.shNat}</button><button type="button" data-sh="copy" data-ok="${esc(t.shCopied)}">${t.shCopy}</button></div></div>`;
 }
 
 /** Inscription par e-mail aux coupons VIP gratuits (consentement explicite ; aucun envoi pour l'instant). Envoyée par pf.js à /api/mail/subscribe. */
@@ -175,7 +176,11 @@ function listWithAds(rc, cards, afterAd) {
 }
 
 /** Fin de liste : bannière puis, sur téléphone, un encart Afrolook (la colonne de droite n'existe que sur ordinateur). */
-const listEnd = (rc, slot) => adResponsive(rc, 'fin', 'ad-end') + (rc.ads.afrolook && rc.ads.afrolook.actif ? `<div class="mob-only">${aflCard(rc, slot || 'fin', 1)}</div>` : '');
+// fin de liste : UNE seule publicité (jamais deux à la suite) : l'emplacement publicitaire s'il existe (il se replie lui-même sur l'encart Afrolook), sinon l'encart Afrolook seul.
+const listEnd = (rc, slot) => {
+  const ad = adResponsive(rc, 'fin', 'ad-end');
+  return ad || (rc.ads.afrolook && rc.ads.afrolook.actif ? `<div class="mob-only">${aflCard(rc, slot || 'fin', 1)}</div>` : '');
+};
 
 function header(rc, active, alternates) {
   const t = rc.t;

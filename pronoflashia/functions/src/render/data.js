@@ -102,7 +102,10 @@ async function news(db, now) {
 /** Une actu par identifiant (page de détail). */
 async function newsById(db, id) {
   const d = await db.collection('news').doc(String(id)).get();
-  return d.exists ? d.data() : null;
+  if (!d.exists) return null;
+  const cfg = await db.collection('config').doc('news').get();
+  // réglage admin « images » désactivé : ni image ni vidéo intégrée, seulement le texte
+  return cfg.exists && cfg.data().images === false ? Object.assign({}, d.data(), { image: null, videoId: null }) : d.data();
 }
 
 /** L'interrupteur général des actualités (admin) est-il sur « oui » ? */

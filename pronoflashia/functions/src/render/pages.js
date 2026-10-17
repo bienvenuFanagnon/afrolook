@@ -10,6 +10,7 @@ const { isoWeek } = require('../jobs/helpers');
 const { summarize } = require('../engine/bilan');
 const { summarizeCoupons } = require('../jobs/coupons');
 const { isFragile } = require('../engine/fragility');
+const buzz = require('../push/buzz');
 const { unpack: unpackMatrix } = require('../engine/matrixStore');
 
 const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
@@ -344,7 +345,7 @@ function recapCard(rc, a) {
 function newsIndex(rc, { articles }) {
   const t = rc.t;
   const list = articles.length
-    ? articles.map((a, i) => recapCard(rc, a) + (i === 1 ? adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) : '')).join('')
+    ? articles.map((a, i) => recapCard(rc, a) + (i === 1 && articles.length > 3 ? adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) : '')).join('')
     : `<div class="box"><p>${t.pfEmpty}</p></div>`;
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.pfIndexH1}</h1><p>${t.pfIndexP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}<div class="rcl">${list}</div>${listEnd(rc, 'actus-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.pfIndexTitle, description: t.pfIndexDesc, path: rc.u('news'), alternates: alts(rc, 'news'), body, active: 'actus' };
@@ -397,6 +398,17 @@ function story(rc, { n, matches, related, recap, flash }) {
   const first = (matches || [])[0];
   const colors = first && first.domicile.couleurs && first.domicile.couleurs.length >= 2 ? first.domicile.couleurs : ['#1b3a8a', '#0a1f4d'];
   const cover = `<div class="cover" style="background:linear-gradient(135deg,${esc(colors[0])},${esc(colors[1])})"><i aria-hidden="true">⚡</i><small>${t.stKicker}</small><b>${esc(n.source)} · ${esc(timeAgo(rc, n.date))}</b></div>`;
+  // média : vidéo YouTube (lecteur chargé au clic, mode sans cookie), sinon image d'aperçu du site d'origine (créditée, avec lien), sinon bandeau coloré
+  const credit = `<figcaption>${esc(t.stCredit(n.source))} · <a href="${esc(n.lien)}" target="_blank" rel="nofollow noopener noreferrer">${esc(n.source)} ↗</a></figcaption>`;
+  const vid = /^[A-Za-z0-9_-]{11}$/.test(n.videoId || '') ? n.videoId : null;
+  const media = vid
+    ? `<figure class="stm"><button type="button" class="stvid" data-v="${vid}" aria-label="${esc(t.stPlay)}" style="background-image:url(https://i.ytimg.com/vi/${vid}/hqdefault.jpg)"><i aria-hidden="true">▶</i><span>${t.stPlay}</span></button>${credit}</figure>`
+    : n.image
+      ? `<figure class="stm"><a class="stimg${n.video ? ' vid' : ''}" href="${esc(n.lien)}" target="_blank" rel="nofollow noopener noreferrer"><img src="${esc(n.image)}" alt="${esc(n.titre)}" width="1200" height="630" referrerpolicy="no-referrer" decoding="async"></a>${credit}</figure>`
+      : cover;
+  const a = buzz.assess(n, new Date(n.date));
+  const topics = a.themes.filter((k) => t.stTopicNames[k]).map((k) => `<span class="chip">${esc(t.stTopicNames[k])}</span>`).join('') + (a.star ? `<span class="chip s">${esc(a.star)}</span>` : '') + (a.club && a.club !== a.star ? `<span class="chip s">${esc(a.club)}</span>` : '');
+  const essential = `<div class="box stess"><div class="lbl">${t.stEssential}</div><dl><dt>${t.stSource}</dt><dd><a href="${esc(n.lien)}" target="_blank" rel="nofollow noopener noreferrer">${esc(n.source)} ↗</a></dd><dt>${t.stPublished}</dt><dd>${esc(date)} · ${esc(timeAgo(rc, n.date))}</dd>${topics ? `<dt>${t.stTopics}</dt><dd>${topics}</dd>` : ''}</dl><p class="note">${t.stEvery}</p></div>`;
   const factHtml = n.fait ? `<p class="stfact">${esc(t.fact(Object.assign({ lien: n.lien, source: n.source }, n.fait)).replace(/ · $/, ''))}</p>` : '';
   const excerpt = n.resume ? `<blockquote class="stq"><p>« ${esc(n.resume)} »</p><cite>${t.stSource} <b>${esc(n.source)}</b></cite></blockquote>` : '';
   const out = `<a class="more-btn stout" href="${esc(n.lien)}" target="_blank" rel="nofollow noopener noreferrer">${t.stRead(esc(n.source))} <i aria-hidden="true">↗</i></a>`;
@@ -406,14 +418,14 @@ function story(rc, { n, matches, related, recap, flash }) {
   const ours = (matches || []).length
     ? `<div class="box"><div class="lbl">${t.stOurs}</div><p class="note" style="margin:8px 0">${t.stOursP}</p><div class="oml">${matches.map((m) => `<a class="om" href="${rc.u('match', m)}"><b>${esc(titleOf(m))}</b><span class="pk">${m.prono && m.prono.principal && m.prono.visible !== false ? `${esc(pickLabel(rc, m))} · ${pct(rc, m.prono.principal.confiance)}${isFragile(m) ? ` · ⚠ ${t.fragileLbl}` : ''}` : esc(t.inPrep)}</span><span class="more sm">${t.pfDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div>${notes(first)}</div>`
     : '';
-  const rel = (related || []).length ? `<div class="box"><div class="lbl">${t.stRelated}</div><div class="nwl">${related.map((x) => newsLink(rc, x)).join('')}</div></div>` : '';
+  const rel = (related || []).length ? `<div class="box"><div class="lbl">${t.stMore}</div><div class="nwl">${related.map((x) => newsLink(rc, x)).join('')}</div></div>` : '';
   const more = !ours && (flash || []).length
     ? `<div class="box"><div class="lbl">${t.stFlash}</div><div class="oml">${flash.map((m) => `<a class="om" href="${rc.u('match', m)}"><b>${esc(titleOf(m))}</b><span class="pk">${esc(pickLabel(rc, m))} · ${pct(rc, m.prono.principal.confiance)}</span><span class="more sm">${t.pfDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div></div>`
     : '';
   const pf = recap ? `<div class="box"><div class="lbl">${t.pfTitle}</div>${recapCard(rc, recap)}<a class="more-btn" href="${rc.u('news')}">${t.pfSeeAll} <i aria-hidden="true">→</i></a></div>` : '';
   const wa = `https://wa.me/?text=${encodeURIComponent(`${n.titre} ${C.url(rc, path)}`)}`;
   const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('home')}">${esc(rc.site.nom)}</a> › <a href="${rc.u('news')}">${t.newsTitle}</a> › ${esc(n.source)}</nav>` +
-    `<div class="layout"><div class="col"><article class="art">${cover}<h1>${esc(n.titre)}</h1><p class="meta">${esc(date)} · ${t.stSource} ${esc(n.source)}</p>${factHtml}${excerpt}${out}` +
+    `<div class="layout"><div class="col"><article class="art">${media}<h1>${esc(n.titre)}</h1><p class="meta">${esc(date)} · ${t.stSource} ${esc(n.source)}</p>${factHtml}${excerpt}${out}${essential}` +
     `<p class="note">${t.stNote(esc(n.source))}</p>${adResponsive(rc, 'haut', 'ad-top')}${ours}${more}${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}${rel}${pf}${aflCard(rc, 'actu', 0)}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.pfShare}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div><p class="note">${t.pfDisclaimer}</p></article>${listEnd(rc, 'actu-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   // page d'accompagnement : utile aux lecteurs, mais l'article de référence est celui de la source : pas d'indexation

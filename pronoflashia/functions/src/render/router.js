@@ -7,6 +7,7 @@ const nodePath = require('path');
 const D = require('./data');
 const { KEY_RE } = require('../jobs/indexNow');
 const P = require('./pages');
+const buzz = require('../push/buzz');
 const { legalPage } = require('./legal');
 const C = require('./components');
 const { T, pathFor, parsePath } = require('./i18n');
@@ -80,7 +81,10 @@ async function route(db, urlPath, now = new Date()) {
         const upcoming = await D.matchesBetween(db, now.toISOString(), new Date(now.getTime() + 6 * 864e5).toISOString());
         const matches = upcoming.filter((m) => m.statut === 'prevu' && [m.domicile.teamId, m.exterieur.teamId].map(String).some((x) => ids.includes(x))).slice(0, 3);
         const all = await D.news(db, now);
-        const related = all.filter((x) => x.id !== n.id && (n.teamIds || []).length && (x.teamIds || []).some((t) => ids.includes(String(t)))).slice(0, 4);
+        // mêmes équipes d'abord, puis même vedette ou même grand club, puis les dernières actus pour toujours proposer la suite
+        const me = buzz.assess(n, new Date(n.date));
+        const rank = (x) => ((n.teamIds || []).length && (x.teamIds || []).some((t) => ids.includes(String(t)))) ? 0 : (() => { const o = buzz.assess(x, new Date(x.date)); return (me.star && o.star === me.star) || (me.club && o.club === me.club) ? 1 : 2; })();
+        const related = all.filter((x) => x.id !== n.id).map((x) => ({ x, r: rank(x) })).sort((p, q) => p.r - q.r || (p.x.date < q.x.date ? 1 : -1)).slice(0, 6).map((o) => o.x);
         const flash = P.topFlash(upcoming.filter((m) => m.prono && m.prono.principal)).slice(0, 3);
         return page(rc, P.story(rc, { n, matches, related, recap: (await D.articles(db, 1))[0] || null, flash }), cc(900, 3600));
       }
@@ -89,7 +93,16 @@ async function route(db, urlPath, now = new Date()) {
     }
     case 'bilan': return bilanPage(db, rc);
     case 'coupon': return page(rc, P.couponPage(rc, { pool: await D.pool(db, now) }), cc(300, 600));
-    case 'legal': return page(rc, Object.assign({ active: r.arg === 'a-propos' ? 'apropos' : '' }, legalPage(rc, r.arg)), cc(3600, 86400));
+    case 'legal': {
+      const lp = legalPage(rc, r.arg);
+      if (r.arg === 'a-propos') {
+        // partage : aperçu riche (titre, description, image 1200 × 630) et message WhatsApp qui résume le site
+        const url = C.url(rc, lp.path);
+        lp.body += `<div class="wrap">${C.shareBox(rc, 'apropos', { url, text: rc.t.abShareMsg, title: rc.t.abShareTitle, p: rc.t.abShareP })}</div>`;
+        lp.ogImage = rc.lang === 'en' ? '/img/og-about.png' : '/img/og-apropos.png';
+      }
+      return page(rc, Object.assign({ active: r.arg === 'a-propos' ? 'apropos' : '' }, lp), cc(3600, 86400));
+    }
     case 'day': {
       const jour = r.arg === 'aujourdhui' ? rc.today : r.arg === 'demain' ? rc.tomorrow : r.arg;
       const matches = await D.matchesByDay(db, jour);

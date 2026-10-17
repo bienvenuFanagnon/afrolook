@@ -67,6 +67,22 @@ function videoThumb(link) {
   return y ? `https://i.ytimg.com/vi/${y[1]}/hqdefault.jpg` : null;
 }
 
+/** Identifiant d'une vidéo YouTube (lien watch, embed, shorts, youtu.be) ou null. */
+function youtubeId(s) {
+  const y = /(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^"'\s]*&)?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/.exec(decode(String(s || '')));
+  return y ? y[1] : null;
+}
+
+/** Extrait d'un flux : mentions ajoutées par les sites (« L'article … est apparu en premier sur … », « [...] »), puis coupe propre à 600 caractères. */
+function cleanExcerpt(s, max = 600) {
+  let t = String(s || '')
+    .replace(/\s*(?:The post .{1,200}? appeared first on .{1,120}?\.?|L['’]article .{1,200}? est apparu en premier sur .{1,120}?\.?|Cet article .{1,200}? est apparu en premier sur .{1,120}?\.?)\s*$/i, '')
+    .replace(/\s*(?:\[(?:…|\.\.\.|&#8230;)\]|(?:Lire la suite|Read more|Continue reading)[^.]{0,60})\s*$/i, '')
+    .trim();
+  if (t.length > max) { t = t.slice(0, max); t = t.slice(0, Math.max(t.lastIndexOf(' '), max - 40)).replace(/[\s,;:.-]+$/, '') + '…'; }
+  return t;
+}
+
 /** { image, video } d'un élément : balises media:*, enclosure, première image du contenu ; video = vrai si l'article est une vidéo. */
 function mediaOf(block, lien) {
   const isVideoAttrs = (a) => /type\s*=\s*["']video|medium\s*=\s*["']video/i.test(a);
@@ -82,7 +98,9 @@ function mediaOf(block, lien) {
     const m = /<img\b[^>]*?\bsrc\s*=\s*["']([^"']+)["']/i.exec(raw);
     if (m) img = decode(m[1]);
   }
-  return { image: httpsImage(img) || videoThumb(lien), video };
+  const html2 = tag(block, 'content:encoded') || tag(block, 'description') || '';
+  const videoId = youtubeId(lien) || youtubeId(attrOf(block, 'media:content', 'url')) || youtubeId(attrOf(block, 'media:player', 'url')) || youtubeId(attrOf(block, 'enclosure', 'url')) || youtubeId((/<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i.exec((/<!\[CDATA\[([\s\S]*?)\]\]>/.exec(html2) || [null, decode(html2)])[1]) || [])[1]);
+  return { image: httpsImage(img) || (videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null) || videoThumb(lien), video: video || !!videoId, videoId };
 }
 
 /** Éléments d'un flux : [{ titre, lien, date, resume }] (les éléments sans titre, sans lien web ou sans date sont ignorés). */
@@ -93,7 +111,7 @@ function parseFeed(xml) {
     const titre = text(tag(b, 'title'));
     const lien = safeUrl(text(tag(b, 'link')) || atomLink(b) || text(tag(b, 'guid')));
     const date = isoDate(tag(b, 'pubDate') || tag(b, 'dc:date') || tag(b, 'published') || tag(b, 'updated'));
-    const resume = text(tag(b, 'description') || tag(b, 'summary')).slice(0, 220);
+    const resume = cleanExcerpt(text(tag(b, 'description') || tag(b, 'summary')));
     if (titre && lien && date) out.push(Object.assign({ titre: titre.slice(0, 200), lien, date, resume }, mediaOf(b, lien)));
   }
   return out;
@@ -109,4 +127,4 @@ async function fetchFeed(url, fetchImpl) {
   return parseFeed(buf);
 }
 
-module.exports = { mediaOf, parseFeed, fetchFeed, text, decode, safeUrl };
+module.exports = { youtubeId, cleanExcerpt, httpsImage, mediaOf, parseFeed, fetchFeed, text, decode, safeUrl };
