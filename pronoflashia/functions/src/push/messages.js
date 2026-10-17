@@ -12,14 +12,22 @@ const titreOf = (m) => `${m.domicile.nomCourt} – ${m.exterieur.nomCourt}`;
 const withSource = (url, slot) => `${url}${url.includes('?') ? '&' : '?'}source=push&slot=${slot}`;
 const LEVEL = { fr: { prudent: 'Prudent', equilibre: 'Équilibré', audacieux: 'Audacieux' }, en: { prudent: 'Cautious', equilibre: 'Balanced', audacieux: 'Bold' } };
 
+/** Match mis en avant dans un coupon : celui dont la sélection est la plus probable. */
+function vedette(sels) {
+  const best = (sels || []).slice().sort((a, b) => (b.pct || 0) - (a.pct || 0))[0];
+  return best ? (best.titre || (best.dom && best.ext ? `${best.dom} – ${best.ext}` : null)) : null;
+}
+
 /** Matin : les coupons archivés du jour. coupons : documents coupons_flash du jour. */
 function matin(coupons, lang) {
   const list = coupons.filter((c) => c.statut === 'ouvert').sort((a, b) => a.n - b.n);
   if (!list.length) return null;
-  const parts = list.map((c) => `${LEVEL[lang][c.nom]} ${pc(lang, Math.round(c.prob * 100))}`).join(' · ');
-  return lang === 'en'
-    ? { titre: "⚡ Today's slips", corps: `${parts} chance that everything wins.`, url: withSource(pathFor('en', 'coupon'), 'matin'), tag: 'pf-matin' }
-    : { titre: '⚡ Coupons du jour', corps: `${parts} de chances que tout passe.`, url: withSource(pathFor('fr', 'coupon'), 'matin'), tag: 'pf-matin' };
+  const en = lang === 'en';
+  const parts = list.map((c) => `${LEVEL[lang][c.nom]} ${c.n} ${en ? 'matches' : 'matchs'} ${pc(lang, Math.round(c.prob * 100))}`).join(' · ');
+  const star = vedette(list[0].selections);
+  return en
+    ? { titre: `⚡ Today's slips${star ? `: ${star}` : ''}`, corps: `${parts} chance that everything wins.`, url: withSource(pathFor('en', 'coupon'), 'matin'), tag: 'pf-matin' }
+    : { titre: `⚡ Coupons du jour${star ? ` : ${star}` : ''}`, corps: `${parts} de chances que tout passe.`, url: withSource(pathFor('fr', 'coupon'), 'matin'), tag: 'pf-matin' };
 }
 
 /** Midi : le pronostic le plus confiant parmi les matchs à venir. */
@@ -42,9 +50,10 @@ function soir(matches, lang) {
   const sel = coupon.suggest(poolMap, 3);
   if (sel.length < 2) return null;
   const prob = Math.round(coupon.couponProbability(sel.map((s) => ({ matchId: s.matchId, key: s.key, pct: s.pct })), null).prob * 100);
+  const star = vedette(sel.map((x) => ({ pct: x.pct, titre: titreOf(live.find((m) => String(m.id) === String(x.matchId)) || live[0]) })));
   return lang === 'en'
-    ? { titre: "🌙 Tonight's slip", corps: `${sel.length} bets on tonight's matches: ${pc(lang, prob)} chance that everything wins.`, url: withSource(pathFor('en', 'coupon'), 'soir'), tag: 'pf-soir' }
-    : { titre: '🌙 Coupon du soir', corps: `${sel.length} paris sur les matchs de ce soir : ${pc(lang, prob)} de chances que tout passe.`, url: withSource(pathFor('fr', 'coupon'), 'soir'), tag: 'pf-soir' };
+    ? { titre: `🌙 Tonight's slip${star ? `: ${star}` : ''}`, corps: `${sel.length} bets on tonight's matches: ${pc(lang, prob)} chance that everything wins.`, url: withSource(pathFor('en', 'coupon'), 'soir'), tag: 'pf-soir' }
+    : { titre: `🌙 Coupon du soir${star ? ` : ${star}` : ''}`, corps: `${sel.length} paris sur les matchs de ce soir : ${pc(lang, prob)} de chances que tout passe.`, url: withSource(pathFor('fr', 'coupon'), 'soir'), tag: 'pf-soir' };
 }
 
 /** Alerte avant un match d'une équipe suivie. */

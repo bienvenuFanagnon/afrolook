@@ -82,12 +82,13 @@ test('clés VAPID : créées une fois, gardées côté serveur, jamais régéné
 });
 
 test('messages : coupons du jour, pronostic le plus confiant, coupon du soir, alerte équipe ; français et anglais, sans promesse de gain', () => {
-  const coupons = [{ n: 3, nom: 'equilibre', prob: 0.585, statut: 'ouvert' }, { n: 2, nom: 'prudent', prob: 0.71, statut: 'ouvert' }, { n: 5, nom: 'audacieux', prob: 0.364, statut: 'perdu' }];
+  const coupons = [{ n: 3, nom: 'equilibre', prob: 0.585, statut: 'ouvert' }, { n: 2, nom: 'prudent', prob: 0.71, statut: 'ouvert', selections: [{ titre: 'Lens – Nice', pct: 70 }, { titre: 'Arsenal – Chelsea', pct: 82 }] }, { n: 5, nom: 'audacieux', prob: 0.364, statut: 'perdu' }];
   const m1 = M.matin(coupons, 'fr');
-  assert.match(m1.corps, /Prudent 71 % · Équilibré 59 % de chances que tout passe/);
+  assert.match(m1.corps, /^Prudent 2 matchs 71\s%\s·\sÉquilibré 3 matchs 59\s%\sde chances que tout passe/);
+  assert.equal(m1.titre, '⚡ Coupons du jour : Arsenal – Chelsea', 'le match le plus probable du coupon prudent est nommé');
   assert.ok(!/Audacieux/.test(m1.corps), 'les coupons déjà réglés ne sont pas annoncés');
   assert.equal(m1.url, '/coupon?source=push&slot=matin');
-  assert.match(M.matin(coupons, 'en').corps, /Cautious 71% · Balanced 59% chance that everything wins/);
+  assert.match(M.matin(coupons, 'en').corps, /Cautious 2 matches 71% · Balanced 3 matches 59% chance that everything wins/);
   assert.equal(M.matin([], 'fr'), null);
   const ms = [mk('1', '15', [1, 2]), mk('3', '17', [3, 4]), mk('2', '18', [5, 6])];
   const mid = M.midi(ms, 'fr');
