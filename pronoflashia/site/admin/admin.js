@@ -208,12 +208,23 @@ const VIEWS = {
   },
 
   async reglages() {
-    const [c, l, ad, nw, ps] = await Promise.all([api('config'), api('ligues'), api('admins'), api('actus'), api('push')]);
+    const [c, l, ad, nw, ps, em] = await Promise.all([api('config'), api('ligues'), api('admins'), api('actus'), api('push'), api('emails')]);
     const s = c.site;
     const fld = (k, label, ph) => `<label class="f">${label}<input data-site="${k}" value="${esc(s[k])}" placeholder="${esc(ph || '')}"></label>`;
     return `<h2>Réglages</h2>${c.legalIncomplet.length ? `<div class="warn">Pages légales incomplètes : ${c.legalIncomplet.map((k) => esc(k)).join(', ')}. Les réseaux publicitaires exigent des mentions légales renseignées.</div>` : ''}
     <div class="card"><h3>Informations légales et contact</h3><div class="grid">${fld('editeur', 'Éditeur (nom ou raison sociale)')}${fld('statutJuridique', 'Statut juridique')}${fld('adresse', 'Adresse')}${fld('email', 'Adresse e-mail de contact public')}${fld('loi', 'Pays dont le droit s\'applique')}${fld('hebergeur', 'Hébergeur')}${fld('whatsapp', 'Lien canal WhatsApp (facultatif)')}${fld('telegram', 'Lien canal Telegram (facultatif)')}${fld('googleVerification', 'Code de vérification Google Search Console (balise HTML)', 'collez la balise meta ou la valeur de content')}</div><label class="c"><input type="checkbox" id="site-idx" ${s.indexable ? 'checked' : ''}>Site indexable par les moteurs de recherche (décocher pendant les tests)</label><div class="row"><button class="btn" id="site-save">Enregistrer</button><span class="msg" id="m-site"></span></div></div>
-    <div class="card"><h3>Notifications</h3><p class="note">Entièrement automatique : coupons du jour vers 07:30 UTC, pronostic le plus confiant vers 12:30, coupon du soir vers 16:30, plus une alerte environ une heure avant les matchs des équipes que l'abonné suit. Rien à faire de votre côté : les clés d'envoi se créent toutes seules.</p><div class="kpis">${kpi(nf(ps.abonnes), 'Abonnés', 'navigateurs inscrits')}</div><label class="c"><input type="checkbox" id="ps-on" ${ps.actif ? 'checked' : ''}>Envoyer les notifications (décocher pour tout suspendre)</label><div class="tw"><table><thead><tr><th>Quand</th><th>Envoi</th><th>Abonnés</th><th>Envoyées</th><th>Échecs</th><th>Retirés</th></tr></thead><tbody>${ps.envois.map((e) => `<tr><td>${fdate(e.au)}</td><td>${esc(e.slot)}${e.ignore ? ' · ' + esc(e.ignore) : ''}</td><td>${nf(e.abonnes || 0)}</td><td>${nf(e.envoyes || 0)}</td><td>${nf(e.echecs || 0)}</td><td>${nf(e.retires || 0)}</td></tr>`).join('') || '<tr><td colspan="6">Aucun envoi pour le moment.</td></tr>'}</tbody></table></div><div class="row"><button class="btn" id="ps-save">Enregistrer</button><button class="btn sec" id="ps-test">Envoyer une notification de test</button><span class="msg" id="m-ps"></span></div></div>
+    <div class="card"><h3>Notifications</h3><p class="note">Entièrement automatique : coupons du jour vers 07:30 UTC, pronostic le plus confiant vers 12:30, coupon du soir vers 16:30, une alerte environ une heure avant les matchs des équipes que l'abonné suit, et des notifications d'actualité à heure variable (stars, pépites, classicos, mercato, vie des vedettes) : une toutes les 3 heures au plus, jamais la nuit. Chaque notification porte une image dessinée par PronoFlash IA. Rien à faire de votre côté : les clés d'envoi se créent toutes seules.</p><div class="kpis">${kpi(nf(ps.abonnes), 'Abonnés', 'navigateurs inscrits')}</div><label class="c"><input type="checkbox" id="ps-on" ${ps.actif ? 'checked' : ''}>Envoyer les notifications (décocher pour tout suspendre)</label><div class="grid"><label class="f">Notifications par jour et par abonné (tous types, 1 à 8)<input type="number" id="ps-max" min="1" max="8" value="${ps.maxJour}"></label><label class="f">Seuil des actus (3 à 20 : plus haut = moins d'actus, seulement les plus fortes)<input type="number" id="ps-seuil" min="3" max="20" value="${ps.seuil}"></label></div><label class="f">Noms de plus à repérer (un par ligne : joueur, pépite, club…). La liste de base couvre déjà les grandes stars, africaines comprises.<textarea id="ps-ved" rows="3" placeholder="Nom d'un joueur ou d'un club">${esc((ps.vedettes || []).join('\n'))}</textarea></label><div class="tw"><table><thead><tr><th>Quand</th><th>Envoi</th><th>Abonnés</th><th>Envoyées</th><th>Échecs</th><th>Retirés</th></tr></thead><tbody>${ps.envois.map((e) => `<tr><td>${fdate(e.au)}</td><td>${esc(e.slot)}${e.sujet || e.titre ? ' · ' + esc(e.sujet || e.titre) : ''}${e.ignore ? ' · ' + esc(e.ignore) : ''}</td><td>${nf(e.abonnes || 0)}</td><td>${nf(e.envoyes || 0)}</td><td>${nf(e.echecs || 0)}</td><td>${nf(e.retires || 0)}</td></tr>`).join('') || '<tr><td colspan="6">Aucun envoi pour le moment.</td></tr>'}</tbody></table></div><div class="row"><button class="btn" id="ps-save">Enregistrer</button><button class="btn sec" id="ps-test">Envoyer une notification de test</button><span class="msg" id="m-ps"></span></div></div>
+    <div class="card"><h3>Envoyer une annonce</h3><p class="note">Une notification écrite par vous, envoyée tout de suite à vos abonnés (nouveauté, événement, message important). Vérifiez l'aperçu, faites d'abord un essai sur cet appareil, puis envoyez à tous. Une annonce ne compte pas dans le plafond quotidien : à vous de ne pas en abuser.</p>
+      <div class="grid"><label class="f">Titre (65 caractères au plus)<input id="an-titre" maxlength="65" placeholder="⚡ Le coupon du week-end est prêt"></label><label class="f">Page à ouvrir<input id="an-url" list="an-pages" value="/" maxlength="200"><datalist id="an-pages"><option value="/"><option value="/coupon"><option value="/bilan"><option value="/actus"><option value="/en"><option value="/en/coupon"></datalist></label></div>
+      <label class="f">Texte (140 caractères au plus)<textarea id="an-corps" rows="2" maxlength="140" placeholder="Ce que la personne va découvrir en cliquant."></textarea></label>
+      <details style="margin-top:8px"><summary class="note" style="cursor:pointer">Version anglaise (facultatif : sinon le même texte part à tous)</summary><div class="grid"><label class="f">Title (EN)<input id="an-titre-en" maxlength="65"></label><label class="f">Text (EN)<input id="an-corps-en" maxlength="140"></label></div></details>
+      <div class="grid"><label class="f">Pour qui<select id="an-cible"><option value="tous">Tous les abonnés</option><option value="fr">Abonnés français</option><option value="en">Abonnés anglais</option></select></label><label class="f">Image<select id="an-img"><option value="aucune">Aucune</option><option value="carte" selected>Carte PronoFlash dessinée automatiquement</option><option value="fichier">Mon image (JPEG ou PNG)</option></select></label></div>
+      <div id="an-carte-opt"><label class="f">Étiquette de la carte (facultatif, ex. : Annonce, Nouveauté)<input id="an-badge" maxlength="28" placeholder="Annonce"></label></div>
+      <div id="an-file-opt" hidden><label class="f">Image (réduite automatiquement à 1200 px de large)<input type="file" id="an-file" accept="image/jpeg,image/png"></label></div>
+      <div class="lbl2">Aperçu sur un téléphone</div>
+      <div class="npv" id="an-prev"><div class="npv-h"><img src="/img/icon-192.png" alt="" width="18" height="18"><span>PronoFlash IA · maintenant</span></div><b id="pv-t">Titre de la notification</b><span id="pv-b">Texte de la notification</span><img id="pv-i" alt="" hidden></div>
+      <div class="row"><button class="btn sec" id="an-prevbtn">Actualiser l'aperçu de l'image</button><button class="btn sec" id="an-essai">Essai sur cet appareil</button><button class="btn" id="an-send">Envoyer à tous</button><span class="msg" id="m-an"></span></div></div>
+    <div class="card"><h3>Inscrits par e-mail (coupons VIP gratuits)</h3><p class="note">Adresses laissées sur le site avec accord explicite (page Mes notifications et page Coupon). Aucun e-mail n'est envoyé pour l'instant : il faut d'abord un nom de domaine et un service d'envoi. Le premier message sera une confirmation (double accord), et chaque envoi portera un lien de désinscription.</p><div class="kpis">${kpi(nf(em.total), 'Inscrits', 'adresses actives')}${kpi(nf(em.confirmes), 'Confirmés', 'double accord')}${kpi(nf(em.desinscrits), 'Désinscrits', '')}</div><div class="row"><button class="btn sec" id="em-csv">Exporter la liste (CSV)</button><span class="msg" id="m-em"></span></div></div>
     <div class="card"><h3>Actualités foot</h3><p class="note">Une bande « Actus foot » (titres, nom du site et lien vers l'article) sur l'accueil et les fiches de match. Rien de l'article n'est copié. Mise à jour toutes les 2 heures. Une source qui refuse nos robots affiche son erreur : décochez-la ou réessayez plus tard.</p><label class="c"><input type="checkbox" id="nw-on" ${nw.actif ? 'checked' : ''}>Afficher les actualités sur le site</label><label class="c"><input type="checkbox" id="nw-rec" ${nw.recaps ? 'checked' : ''}>Publier « Le point foot » chaque soir (article rédigé par l'IA, sources citées)</label><label class="c"><input type="checkbox" id="nw-img" ${nw.images ? 'checked' : ''}>Afficher les images et aperçus vidéo (miniatures chargées depuis le site d'origine)</label><div class="tw"><table><thead><tr><th>Actif</th><th>Source</th><th>Langue</th><th>Dernier essai</th><th>État</th></tr></thead><tbody>${nw.sources.map((x) => `<tr><td><input type="checkbox" data-nw="${esc(x.id)}" ${x.actif ? 'checked' : ''}></td><td>${esc(x.nom)}</td><td>${esc(x.lang)}</td><td>${x.essaiLe ? fdate(x.essaiLe) : '–'}</td><td>${x.ok == null ? '<span class="pill">pas encore essayée</span>' : x.ok ? `<span class="pill g">${x.articles} articles</span>` : `<span class="pill r">${esc(x.erreur || 'erreur')}</span>`}</td></tr>`).join('')}</tbody></table></div><div class="row"><button class="btn" id="nw-save">Enregistrer</button><span class="msg" id="m-nw"></span></div></div>
     <div class="card"><h3>Championnats suivis</h3><div class="tw"><table><thead><tr><th>Championnat</th><th>Nom FR</th><th>Name EN</th><th>Pays</th><th>Saison</th><th>Ordre</th><th>Suivi</th></tr></thead><tbody>${l.ligues.map((x) => `<tr><td>${esc(x.nom)} <span class="note">#${x.apiId}</span><br><span class="note">${esc(moteurTxt(x))}</span></td><td><input type="text" data-lg="${x.apiId}" data-k="nomfr" value="${esc((x.noms && x.noms.fr) || '')}" placeholder="${esc(x.nom)}" style="width:150px"></td><td><input type="text" data-lg="${x.apiId}" data-k="nomen" value="${esc((x.noms && x.noms.en) || '')}" placeholder="${esc(x.nom)}" style="width:150px"></td><td>${esc(x.pays || '')}</td><td><input type="number" data-lg="${x.apiId}" data-k="saison" value="${x.saison}" style="width:80px"></td><td><input type="number" data-lg="${x.apiId}" data-k="ordre" value="${x.ordre}" style="width:70px"></td><td><input type="checkbox" data-lg="${x.apiId}" data-k="suivi" ${x.suivi ? 'checked' : ''}></td></tr>`).join('') || '<tr><td colspan="7">Aucun championnat.</td></tr>'}</tbody></table></div><div class="row"><button class="btn sec sm" id="lg-save">Enregistrer les championnats</button><input type="number" id="lg-new" placeholder="Identifiant du championnat" style="width:200px"><button class="btn sm" id="lg-add">Ajouter</button><span class="msg" id="m-lg"></span></div><p class="note">L'ajout vérifie l'identifiant auprès du fournisseur de données (nom, pays, saison en cours). football-data.org (gratuit) : 2015 Ligue 1, 2021 Premier League, 2014 Liga, 2019 Serie A, 2002 Bundesliga, 2001 Ligue des champions. API-Football (payant) : 61 Ligue 1, 39 Premier League, 12 Ligue des champions CAF.</p></div>
     <div class="card"><h3>Administrateurs</h3><div class="tw"><table><thead><tr><th>Adresse Google</th><th></th></tr></thead><tbody>${ad.bootstrap.map((e) => `<tr><td>${esc(e)} <span class="pill">propriétaire</span></td><td></td></tr>`).join('')}${ad.admins.map((x) => `<tr><td>${esc(x.email)}</td><td><button class="btn sec sm" data-adrm="${esc(x.email)}">Retirer</button></td></tr>`).join('')}</tbody></table></div><div class="row"><input type="email" id="ad-new" placeholder="adresse@gmail.com" style="width:260px"><button class="btn sm" id="ad-add">Ajouter</button><span class="msg" id="m-ad"></span></div></div>`;
@@ -303,7 +314,75 @@ const AFTER = {
         msg('#m-ps', bits.join(' · ') + (r.erreurs ? ' — causes : ' + r.erreurs.join(' | ') : '') + (r.envoyes ? ' — la notification doit apparaître sur votre appareil dans quelques secondes.' : ''), !r.envoyes);
       } catch (e) { msg('#m-ps', e.message, true); }
     });
-    $('#ps-save').addEventListener('click', async () => { try { await api('push-save', { actif: $('#ps-on').checked }); msg('#m-ps', 'Enregistré.'); } catch (e) { msg('#m-ps', e.message, true); } });
+    /* annonce manuelle : aperçu, essai sur cet appareil, envoi à tous */
+    (() => {
+      let fileData = null, cible = null, sendId = null;
+      const val = (id) => ($(id) ? $(id).value.trim() : '');
+      const mode = () => $('#an-img').value;
+      const prev = $('#an-prev');
+      const setImg = (src) => { const i = $('#pv-i'); if (src) { i.src = src; i.hidden = false; } else { i.hidden = true; i.removeAttribute('src'); } };
+      const text = () => { $('#pv-t').textContent = val('#an-titre') || 'Titre de la notification'; $('#pv-b').textContent = val('#an-corps') || 'Texte de la notification'; };
+      async function cardPreview() {
+        if (mode() === 'carte') {
+          if (val('#an-titre').length < 3) { setImg(null); return; }
+          try { const r = await api('push-carte', { carte: { badge: val('#an-badge'), titre: val('#an-titre'), lignes: [], pied: 'PronoFlash IA' } }); setImg('data:image/png;base64,' + r.png); } catch (e) { msg('#m-an', e.message, true); }
+        } else if (mode() === 'fichier') setImg(fileData);
+        else setImg(null);
+      }
+      const refresh = () => { $('#an-carte-opt').hidden = mode() !== 'carte'; $('#an-file-opt').hidden = mode() !== 'fichier'; text(); cardPreview(); };
+      ['#an-titre', '#an-corps'].forEach((id) => $(id).addEventListener('input', text));
+      $('#an-titre').addEventListener('change', cardPreview); $('#an-badge').addEventListener('change', cardPreview);
+      $('#an-img').addEventListener('change', refresh);
+      $('#an-prevbtn').addEventListener('click', cardPreview);
+      $('#an-file').addEventListener('change', (ev) => {
+        const f = ev.target.files && ev.target.files[0];
+        if (!f) { fileData = null; setImg(null); return; }
+        const url = URL.createObjectURL(f), im = new Image();
+        im.onload = () => {
+          const w = Math.min(1200, im.width), h = Math.round(im.height * (w / im.width));
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const g = c.getContext('2d'); g.fillStyle = '#0B1220'; g.fillRect(0, 0, w, h); g.drawImage(im, 0, 0, w, h);
+          fileData = c.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(url); setImg(fileData);
+          msg('#m-an', `Image prête (${Math.round(fileData.length * 0.75 / 1024)} Ko).`);
+        };
+        im.onerror = () => { fileData = null; msg('#m-an', 'Image illisible.', true); };
+        im.src = url;
+      });
+      const body = (extra) => {
+        const image = mode() === 'carte' ? { mode: 'carte', badge: val('#an-badge'), titre: val('#an-titre') } : mode() === 'fichier' ? { mode: 'fichier', data: fileData } : { mode: 'aucune' };
+        return Object.assign({ titre: val('#an-titre'), corps: val('#an-corps'), url: val('#an-url') || '/', cible: $('#an-cible').value, titreEn: val('#an-titre-en'), corpsEn: val('#an-corps-en'), image }, extra);
+      };
+      $('#an-essai').addEventListener('click', async () => {
+        msg('#m-an', 'Essai en cours…');
+        try {
+          const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration('/') : null;
+          const sub = reg ? await reg.pushManager.getSubscription() : null;
+          if (!sub) { msg('#m-an', "Cet appareil n'est pas abonné : ouvrez le site (pas l'admin), activez la cloche 🔔 avec ce navigateur, puis revenez ici.", true); return; }
+          const r = await api('push-annonce', body({ essai: true, endpoint: sub.endpoint }));
+          msg('#m-an', r.envoyes ? 'Essai envoyé : la notification arrive sur cet appareil dans quelques secondes.' : 'Essai refusé : ' + ((r.erreurs || []).join(' | ') || 'cause inconnue'), !r.envoyes);
+        } catch (e) { msg('#m-an', e.message, true); }
+      });
+      $('#an-send').addEventListener('click', async () => {
+        try {
+          if (val('#an-titre').length < 3 || val('#an-corps').length < 3) { msg('#m-an', 'Le titre et le texte sont obligatoires.', true); return; }
+          if (mode() === 'fichier' && !fileData) { msg('#m-an', 'Choisissez une image.', true); return; }
+          const c = await api('push-cible', {});
+          const n = $('#an-cible').value === 'fr' ? c.fr : $('#an-cible').value === 'en' ? c.en : c.abonnes;
+          if (!n) { msg('#m-an', 'Aucun abonné pour cette cible.', true); return; }
+          if (!confirm(`Envoyer « ${val('#an-titre')} » à ${n} abonné(s) ? Une fois partie, une notification ne peut plus être retirée.`)) return;
+          sendId = sendId || ('a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+          msg('#m-an', 'Envoi en cours…');
+          const r = await api('push-annonce', body({ confirmer: true, id: sendId }));
+          sendId = null;
+          msg('#m-an', `Envoyée à ${r.envoyes} sur ${r.abonnes} abonné(s)` + (r.echecs ? ` · ${r.echecs} refusée(s)` : '') + (r.retires ? ` · ${r.retires} abonnement(s) expiré(s) supprimé(s)` : '') + (r.erreurs ? ' — causes : ' + r.erreurs.join(' | ') : ''), !r.envoyes);
+        } catch (e) { msg('#m-an', e.message, true); }
+      });
+      refresh();
+    })();
+    $('#em-csv').addEventListener('click', async () => {
+      try { const r = await api('emails'); download('inscrits-email-pronoflashia.csv', csv([['Adresse', 'Langue', 'Inscrit le', 'Confirmé', 'Page'], ...r.liste.map((x) => [/^[=+\-@]/.test(x.email) ? "'" + x.email : x.email, x.lang, x.creeLe, x.confirme ? 'oui' : 'non', x.page])])); msg('#m-em', `${r.liste.length} adresse(s) exportée(s).`); } catch (e) { msg('#m-em', e.message, true); }
+    });
+    $('#ps-save').addEventListener('click', async () => { try { await api('push-save', { actif: $('#ps-on').checked, maxJour: $('#ps-max').value, seuil: $('#ps-seuil').value, vedettes: $('#ps-ved').value }); msg('#m-ps', 'Enregistré.'); } catch (e) { msg('#m-ps', e.message, true); } });
     $('#nw-save').addEventListener('click', async () => {
       const sources = {};
       document.querySelectorAll('[data-nw]').forEach((i) => { sources[i.dataset.nw] = i.checked; });

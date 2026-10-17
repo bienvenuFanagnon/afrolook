@@ -12,6 +12,10 @@ const adsterra = require('../data/adsterra');
 const learn = require('../engine/learn');
 const { SOURCES } = require('../news/sources');
 const { loadNewsConfig, isOn } = require('../jobs/syncNews');
+const crypto = require('crypto');
+const cardLib = require('../push/card');
+const { idOf: subId } = require('../push/subs');
+const buzz = require('../push/buzz');
 
 const TASKS = ['syncFixtures', 'buildPredictions', 'syncResults', 'syncNews', 'buildRecaps', 'sendPush', 'weeklyReport', 'aiHealthCheck'];
 const SITE_KEYS = ['nom', 'domaine', 'origine', 'email', 'editeur', 'adresse', 'statutJuridique', 'loi', 'hebergeur', 'indexable', 'whatsapp', 'telegram', 'googleVerification'];
@@ -257,7 +261,7 @@ function createAdmin(deps) {
     let abonnes;
     try { abonnes = col.count ? (await col.count().get()).data().count : (await col.get()).size; } catch { abonnes = (await col.get()).size; }
     const logs = (await db.collection('push_log').orderBy('au', 'desc').limit(12).get()).docs.map((d) => d.data());
-    return { actif: cfg.actif !== false, abonnes, envois: logs };
+    return { actif: cfg.actif !== false, abonnes, envois: logs, maxJour: Number(cfg.maxJour) || 4, seuil: Number(cfg.seuil) || buzz.SEUIL, vedettes: Array.isArray(cfg.vedettes) ? cfg.vedettes : [] };
   };
 
   /**
@@ -272,16 +276,89 @@ function createAdmin(deps) {
     if (!subs.length) return { abonnes: 0, envoyes: 0, echecs: 0, retires: 0, cles, conseil: "Aucun abonné enregistré : l'activation de la cloche n'a pas abouti sur ce navigateur. Réactivez la cloche (🔔) sur le site, accordez l'autorisation, puis relancez ce test." };
     const send = await deps.pushSender();
     const lang = (s2) => (s2.lang === 'en' ? 'en' : 'fr');
-    const msg = { fr: { titre: '🔔 Test PronoFlash IA', corps: 'Les notifications fonctionnent : coupons du jour et alertes de vos équipes arriveront ici.', url: '/?source=push&slot=test', tag: 'pf-test' }, en: { titre: '🔔 PronoFlash IA test', corps: 'Notifications work: slips of the day and alerts for your teams will arrive here.', url: '/en?source=push&slot=test', tag: 'pf-test' } };
+    const msg = { fr: { titre: '🔔 Test PronoFlash IA', corps: 'Les notifications fonctionnent : coupons du jour et alertes de vos équipes arriveront ici.', url: '/?source=push&slot=test', tag: 'pf-test', inbox: false }, en: { titre: '🔔 PronoFlash IA test', corps: 'Notifications work: slips of the day and alerts for your teams will arrive here.', url: '/en?source=push&slot=test', tag: 'pf-test', inbox: false } };
     const r = await deliver(db, send, subs, (s2) => msg[lang(s2)]);
     await log(by, 'push-test', { abonnes: subs.length, envoyes: r.envoyes, echecs: r.echecs, retires: r.retires });
     return Object.assign({ abonnes: subs.length, cles }, r);
   };
 
+  /** Inscrits par e-mail : totaux et liste (pour l'export CSV). Aucun envoi n'est fait depuis ici. */
+  A.emails = async () => {
+    const rows = (await db.collection('email_subs').get()).docs.map((d) => d.data()).sort((a, b2) => (a.creeLe < b2.creeLe ? 1 : -1));
+    const actifs = rows.filter((x) => x.statut !== 'desinscrit');
+    return { total: actifs.length, confirmes: actifs.filter((x) => x.confirme).length, desinscrits: rows.length - actifs.length, liste: actifs.slice(0, 5000).map((x) => ({ email: x.email, lang: x.lang, creeLe: x.creeLe, confirme: !!x.confirme, page: (x.consentement && x.consentement.page) || '' })) };
+  };
+
   A['push-save'] = async (b, by) => {
-    await db.collection('config').doc('push').set({ actif: b.actif !== false }, { merge: true });
-    await log(by, 'push-save', { actif: b.actif !== false });
+    const set = { actif: b.actif !== false };
+    if (b.maxJour !== undefined) set.maxJour = Math.min(8, Math.max(1, Math.round(Number(b.maxJour)) || 4));
+    if (b.seuil !== undefined) set.seuil = Math.min(20, Math.max(3, Math.round(Number(b.seuil)) || buzz.SEUIL));
+    if (b.vedettes !== undefined) set.vedettes = [...new Set((Array.isArray(b.vedettes) ? b.vedettes : String(b.vedettes).split(/\r?\n/)).map((x) => str(x, 40)).filter((x) => x.length >= 3))].slice(0, 80);
+    await db.collection('config').doc('push').set(set, { merge: true });
+    await log(by, 'push-save', set);
     return { ok: true };
+  };
+
+  /** Nombre d'abonnés qui recevraient une annonce (total, français, anglais). */
+  A['push-cible'] = async () => {
+    const { loadSubs } = require('../jobs/sendPush');
+    const subs = await loadSubs(db);
+    return { abonnes: subs.length, fr: subs.filter((x) => x.lang !== 'en').length, en: subs.filter((x) => x.lang === 'en').length };
+  };
+
+  /** Aperçu exact d'une carte image (PNG en base64), tel que l'abonné la verra. */
+  A['push-carte'] = async (b) => ({ png: Buffer.from(cardLib.renderPng(b.carte)).toString('base64') });
+
+  /**
+   * Annonce envoyée à la main : titre, texte, page à ouvrir, image (carte dessinée automatiquement, image envoyée ou aucune).
+   * essai + endpoint : envoi à un seul appareil (celui de l'administrateur). Sinon envoi à tous les abonnés (confirmer: true obligatoire, id unique
+   * pour qu'un double clic n'envoie pas deux fois). Une annonce ne compte pas dans les plafonds quotidiens : c'est le propriétaire qui décide.
+   */
+  A['push-annonce'] = async (b, by) => {
+    if (!deps.pushSender) throw new HttpError(501, 'Envoi de notifications non configuré.');
+    const titre = str(b.titre, 65), corps = str(b.corps, 140);
+    if (titre.length < 3 || corps.length < 3) throw new HttpError(400, 'Le titre et le texte sont obligatoires.');
+    const page = str(b.url, 200) || '/';
+    if (!/^\/(?!\/)[A-Za-z0-9\-._~/?=&%#]*$/.test(page)) throw new HttpError(400, "La page à ouvrir doit être une adresse de ce site, par exemple /coupon ou /actus.");
+    const cible = ['fr', 'en', 'tous'].includes(b.cible) ? b.cible : 'tous';
+    const img = b.image && typeof b.image === 'object' ? b.image : { mode: 'aucune' };
+    let image = null;
+    if (img.mode === 'carte') {
+      image = await cardLib.saveCard(db, { badge: img.badge, titre: img.titre || titre, lignes: [], pied: 'PronoFlash IA' });
+    } else if (img.mode === 'fichier') {
+      const raw = typeof img.data === 'string' ? img.data.replace(/^data:[^,]*,/, '') : '';
+      const buf = Buffer.from(raw, 'base64');
+      const jpg = buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff, png = buf.length > 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
+      if (!jpg && !png) throw new HttpError(400, 'Image invalide (JPEG ou PNG).');
+      if (buf.length > 600 * 1024) throw new HttpError(400, 'Image trop lourde (600 Ko au plus) : réduisez-la.');
+      const id = `u${crypto.randomBytes(8).toString('hex')}`;
+      const type = jpg ? 'image/jpeg' : 'image/png';
+      await db.collection(cardLib.COL).doc(id).set({ id, img: buf.toString('base64'), type, creeLe: new Date().toISOString() });
+      image = cardLib.imageUrl(id, type);
+    }
+    const sep = page.includes('?') ? '&' : '?';
+    const url = `${page}${sep}source=push&slot=annonce`;
+    const titreEn = str(b.titreEn, 65), corpsEn = str(b.corpsEn, 140);
+    const msgs = { fr: { titre, corps, url, tag: 'pf-annonce', image }, en: titreEn && corpsEn ? { titre: titreEn, corps: corpsEn, url, tag: 'pf-annonce', image } : { titre, corps, url, tag: 'pf-annonce', image } };
+    const { deliver, loadSubs } = require('../jobs/sendPush');
+    const send = await deps.pushSender();
+    if (b.essai) {
+      const d = await db.collection('push_subs').doc(subId(String(b.endpoint || ''))).get();
+      if (!d.exists) throw new HttpError(404, "Cet appareil n'est pas abonné aux notifications : activez la cloche 🔔 sur le site avec ce navigateur, puis relancez l'essai.");
+      const r = await deliver(db, send, [d.data()], (s2) => msgs[s2.lang === 'en' ? 'en' : 'fr']);
+      return Object.assign({ essai: true, abonnes: 1 }, r);
+    }
+    if (b.confirmer !== true) throw new HttpError(400, "Confirmation manquante : l'envoi à tous demande une confirmation.");
+    const sendId = /^[A-Za-z0-9_-]{8,40}$/.test(String(b.id || '')) ? `annonce_${b.id}` : null;
+    if (!sendId) throw new HttpError(400, "Identifiant d'envoi manquant.");
+    if ((await db.collection('push_log').doc(sendId).get()).exists) throw new HttpError(409, 'Cette annonce a déjà été envoyée.');
+    const subs = (await loadSubs(db)).filter((x) => cible === 'tous' || (cible === 'en') === (x.lang === 'en'));
+    if (!subs.length) throw new HttpError(400, 'Aucun abonné pour cette cible.');
+    await db.collection('push_log').doc(sendId).set({ id: sendId, slot: 'annonce', jour: dayStr(new Date()), au: new Date().toISOString(), abonnes: subs.length, envoyes: 0, titre });
+    const r = await deliver(db, send, subs, (s2) => msgs[s2.lang === 'en' ? 'en' : 'fr']);
+    await db.collection('push_log').doc(sendId).set({ id: sendId, slot: 'annonce', jour: dayStr(new Date()), au: new Date().toISOString(), abonnes: subs.length, titre, ...r });
+    await log(by, 'push-annonce', { titre, cible, abonnes: subs.length, envoyes: r.envoyes, echecs: r.echecs, retires: r.retires });
+    return Object.assign({ abonnes: subs.length }, r);
   };
 
   A.ligues = async () => {

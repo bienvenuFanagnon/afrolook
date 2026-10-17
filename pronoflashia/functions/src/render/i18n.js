@@ -20,6 +20,7 @@ function pathFor(lang, name, arg) {
     case 'bilan': return en ? '/en/track-record' : '/bilan';
     case 'coupon': return `${pre}/coupon`;
     case 'news': return en ? '/en/news' : '/actus';
+    case 'notifs': return en ? '/en/notifications' : '/notifications';
     case 'article': return `${en ? '/en/news' : '/actus'}/${arg.slug}`;
     case 'legal': return en ? `/en/${LEGAL_SLUGS[arg]}` : `/${arg}`;
     case '404': return `${pre}/404`;
@@ -41,6 +42,7 @@ function parsePath(path) {
     if (seg[0] === 'track-record') return { lang, name: 'bilan' };
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
     if (seg[0] === 'news') return { lang, name: 'news' };
+    if (seg[0] === 'notifications') return { lang, name: 'notifs' };
     if (LEGAL_FR[seg[0]]) return { lang, name: 'legal', arg: LEGAL_FR[seg[0]] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -49,6 +51,7 @@ function parsePath(path) {
     if (seg[0] === 'bilan') return { lang, name: 'bilan' };
     if (seg[0] === 'coupon') return { lang, name: 'coupon' };
     if (seg[0] === 'actus') return { lang, name: 'news' };
+    if (seg[0] === 'notifications') return { lang, name: 'notifs' };
     if (LEGAL_SLUGS[seg[0]]) return { lang, name: 'legal', arg: seg[0] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -111,7 +114,10 @@ const T = {
     couponWon: 'Gagné', couponLost: 'Perdu', couponOpen: 'En cours', couponVoid: 'Annulé', couponProb: (p) => `Probabilité annoncée : ${p}\u00a0%`, couponOf: (d) => `Coupon du ${d}`,
     bilanHeroT: 'Notre bilan en toute transparence',
     newsMore: 'Toutes les actus foot', newsTitle: 'Actus foot', newsTeams: 'Actus des deux équipes', newsNote: "Titres et liens des sites d'origine : un clic ouvre l'article sur leur site.", newsNow: "à l'instant", newsHours: (h) => `il y a ${h} h`, newsDays: (d) => `il y a ${d} j`,
-    bellOff: 'Recevoir les coupons du jour en notification', bellOn: 'Notifications activées : toucher pour les couper', followLbl: 'Alertes avant leurs matchs :', followOn: (n) => `🔔 ${n} suivi`, followOff: (n) => `🔔 Suivre ${n}`,
+    shTitle: 'Merci, et fais connaître PronoFlash IA', shP: "PronoFlash IA est gratuit. Chaque visite, et chaque publicité que tu regardes par choix, finance déjà nos serveurs et nos données de football : un grand merci à toi, et merci de nous faire connaître. Plus on est nombreux, plus on peut suivre de championnats, publier de pronostics et de coupons et améliorer l'IA. Partage le site à tes amis, à ta famille et dans tes groupes !", shMsg: 'PronoFlash IA : pronostics de foot gratuits, coupons du jour et actus, sans inscription.', shWa: 'Partager sur WhatsApp', shNat: 'Partager', shCopy: 'Copier le lien', shCopied: 'Lien copié ✓',
+    mlTitle: 'Coupons VIP par e-mail, toujours gratuits', mlP: "Bientôt : chaque matin, un récapitulatif complet dans ta boîte mail (les coupons du jour, les matchs à suivre et le point foot). Aucun paiement, aucun abonnement payant. Laisse ton adresse pour être prévenu(e) dès l'ouverture des envois.", mlEmail: 'Ton adresse e-mail', mlConsent: "J'accepte de recevoir par e-mail les coupons, pronostics et actus de PronoFlash IA. Je peux me désinscrire à tout moment. Mes données sont traitées selon la", mlPriv: 'politique de confidentialité', mlBtn: "Je m'inscris", mlOk: "Merci ! Ton adresse est enregistrée : on te prévient dès que les envois démarrent.", mlBad: 'Vérifie ton adresse e-mail et coche la case d\'accord.', mlErr: 'Inscription impossible pour le moment. Réessaie plus tard.',
+    ibxTitle: 'Mes notifications', ibxH1: 'Mes notifications', ibxP: "Retrouve ici les notifications reçues sur cet appareil, lues ou non. Pas de compte à créer : la liste est liée à ce navigateur.", ibxLoading: 'Chargement…',
+    bellOff: 'Recevoir les coupons du jour en notification', bellOn: 'Notifications activées : toucher pour voir tes notifications', followLbl: 'Alertes avant leurs matchs :', followOn: (n) => `🔔 ${n} suivi`, followOff: (n) => `🔔 Suivre ${n}`,
     notesTitle: "Ce que l'IA sait de ces équipes", notesP: "Notes calculées sur tous les matchs connus (saison précédente comprise), en comptant davantage les matchs récents et en tenant compte du niveau des adversaires. Elles sont jugées sur des matchs passés avant d'être utilisées dans le calcul.",
     notesAtk: (v) => (Math.abs(v) < 5 ? 'Attaque : dans la moyenne du championnat' : `Attaque : ${Math.abs(v)}\u00a0% ${v > 0 ? 'au-dessus' : 'en dessous'} de la moyenne du championnat`),
     notesDef: (v) => (Math.abs(v) < 5 ? 'Défense : dans la moyenne du championnat' : `Défense : encaisse ${Math.abs(v)}\u00a0% de buts ${v > 0 ? 'en plus' : 'en moins'} que la moyenne`),
@@ -214,7 +220,10 @@ const T = {
     couponWon: 'Won', couponLost: 'Lost', couponOpen: 'Open', couponVoid: 'Void', couponProb: (p) => `Announced probability: ${p}%`, couponOf: (d) => `Slip of ${d}`,
     bilanHeroT: 'Our track record, in full transparency',
     newsMore: 'More football news', newsTitle: 'Football news', newsTeams: 'News on both teams', newsNote: 'Headlines and links from the original sites: a click opens the article on their site.', newsNow: 'just now', newsHours: (h) => `${h}h ago`, newsDays: (d) => `${d}d ago`,
-    bellOff: "Get today's slips as notifications", bellOn: 'Notifications on: tap to turn them off', followLbl: 'Alerts before their matches:', followOn: (n) => `🔔 ${n} followed`, followOff: (n) => `🔔 Follow ${n}`,
+    shTitle: 'Thank you, and spread the word about PronoFlash IA', shP: 'PronoFlash IA is free. Every visit, and every ad you choose to watch, already pays for our servers and football data: a big thank you, and thanks for helping us get known. The more of us there are, the more leagues we can follow, the more predictions and slips we can publish, and the better the AI gets. Share the site with your friends, your family and your groups!', shMsg: 'PronoFlash IA: free football predictions, slips of the day and news, no sign-up.', shWa: 'Share on WhatsApp', shNat: 'Share', shCopy: 'Copy the link', shCopied: 'Link copied ✓',
+    mlTitle: 'VIP slips by e-mail, always free', mlP: 'Coming soon: every morning, a full roundup in your inbox (the slips of the day, the matches to watch and the football roundup). No payment, no paid subscription. Leave your address to be told as soon as sending starts.', mlEmail: 'Your e-mail address', mlConsent: 'I agree to receive PronoFlash IA slips, predictions and news by e-mail. I can unsubscribe at any time. My data is handled according to the', mlPriv: 'privacy policy', mlBtn: 'Sign me up', mlOk: 'Thank you! Your address is saved: we will tell you as soon as sending starts.', mlBad: 'Check your e-mail address and tick the consent box.', mlErr: 'Sign-up is not possible right now. Try again later.',
+    ibxTitle: 'My notifications', ibxH1: 'My notifications', ibxP: 'Find here the notifications received on this device, read or not. No account needed: the list is tied to this browser.', ibxLoading: 'Loading…',
+    bellOff: "Get today's slips as notifications", bellOn: 'Notifications on: tap to see your notifications', followLbl: 'Alerts before their matches:', followOn: (n) => `🔔 ${n} followed`, followOff: (n) => `🔔 Follow ${n}`,
     notesTitle: 'What the AI knows about these teams', notesP: 'Ratings computed on every known match (previous season included), giving more weight to recent matches and accounting for the strength of opponents. They are tested on past matches before being used in the calculation.',
     notesAtk: (v) => (Math.abs(v) < 5 ? 'Attack: around the league average' : `Attack: ${Math.abs(v)}% ${v > 0 ? 'above' : 'below'} the league average`),
     notesDef: (v) => (Math.abs(v) < 5 ? 'Defence: around the league average' : `Defence: concedes ${Math.abs(v)}% ${v > 0 ? 'more' : 'fewer'} goals than average`),

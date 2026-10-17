@@ -1,0 +1,2 @@
+Inter (Inter-ExtraBold.otf, Inter-Medium.otf) : © The Inter Project Authors, licence SIL Open Font License 1.1 (https://openfontlicense.org).
+Utilisée uniquement pour dessiner les images de notifications.

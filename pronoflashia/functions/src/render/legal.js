@@ -53,6 +53,10 @@ const PAGES = {
 <p>Le site utilise le stockage local de ton navigateur (et non des cookies) pour retenir ton coupon en cours, ton choix sur les publicités, tes équipes suivies et la fermeture des bannières. Rien de cela n'est envoyé à nos serveurs, sauf si tu actives les notifications (voir ci-dessous).</p>
 <h2>Notifications (facultatives)</h2>
 <p>Si tu actives les notifications (cloche en haut de page), ton navigateur nous transmet une <b>adresse d'envoi anonyme</b> (fournie par Google, Apple ou Mozilla selon ton navigateur), les équipes que tu choisis de suivre et ta langue. Nous n'y associons ni nom, ni adresse e-mail, ni numéro de téléphone. Elle sert uniquement à t'envoyer les coupons du jour (jusqu'à trois par jour) et les alertes avant les matchs de tes équipes (deux par jour au plus). Tu peux tout couper en un clic avec la cloche, ou dans les réglages de ton navigateur ; l'adresse est alors supprimée de nos serveurs. Base légale : ton consentement.</p>
+<h2>Historique des notifications</h2>
+<p>Pour afficher la page « Mes notifications », nous gardons pendant 30 jours (50 notifications au plus) les notifications envoyées à ton adresse d'envoi anonyme, et savoir si tu les as ouvertes. Cette liste n'est liée à aucun nom ni compte : elle disparaît si tu désactives les notifications ou après 30 jours.</p>
+<h2>Inscription par e-mail (facultative)</h2>
+<p>Si tu laisses ton adresse e-mail pour recevoir nos coupons et actus, nous enregistrons cette adresse, ta langue, la date et la page de ton inscription ainsi que le texte que tu as accepté (preuve de ton consentement). Nous ne la vendons ni ne la cédons à personne et nous l'utilisons seulement pour t'envoyer les e-mails de PronoFlash IA. Un message de confirmation te sera d'abord envoyé ; chaque e-mail contiendra un lien de désinscription, et tu peux aussi demander la suppression de ton adresse en écrivant à l'adresse de contact. Base légale : ton consentement ; conservation : jusqu'à ta désinscription.</p>
 <h2>Liens vers des sites d'actualité</h2>
 <p>Le site affiche des titres d'actualité avec un lien vers le site d'origine ; les miniatures sont chargées depuis ces sites. En cliquant, tu quittes PronoFlash IA et tu dépends de la politique de confidentialité du site visité.</p>
 <h2>Publicité</h2>
@@ -169,6 +173,10 @@ const PAGES_EN = {
 <p>The site uses your browser's local storage (not cookies) to remember your current slip, your advertising choice, the teams you follow and the banners you closed. None of this is sent to our servers, unless you turn on notifications (see below).</p>
 <h2>Notifications (optional)</h2>
 <p>If you turn on notifications (bell at the top of the page), your browser sends us an <b>anonymous delivery address</b> (provided by Google, Apple or Mozilla depending on your browser), the teams you choose to follow and your language. We link no name, e-mail address or phone number to it. It is used only to send you the slips of the day (up to three a day) and alerts before your teams' matches (two a day at most). You can turn everything off in one click with the bell, or in your browser settings; the address is then deleted from our servers. Legal basis: your consent.</p>
+<h2>Notification history</h2>
+<p>To show the “My notifications” page, we keep for 30 days (50 notifications at most) the notifications sent to your anonymous delivery address, and whether you opened them. This list is linked to no name and no account: it disappears when you turn notifications off or after 30 days.</p>
+<h2>E-mail sign-up (optional)</h2>
+<p>If you leave your e-mail address to receive our slips and news, we record that address, your language, the date and page of your sign-up and the text you accepted (proof of your consent). We never sell or share it and use it only to send you PronoFlash IA e-mails. A confirmation message will be sent first; every e-mail will contain an unsubscribe link, and you can also ask for your address to be deleted by writing to the contact address. Legal basis: your consent; retention: until you unsubscribe.</p>
 <h2>Links to news sites</h2>
 <p>The site shows news headlines with a link to the original site; thumbnails are loaded from those sites. By clicking, you leave PronoFlash IA and are subject to the privacy policy of the site you visit.</p>
 <h2>Advertising</h2>

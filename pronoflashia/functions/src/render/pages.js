@@ -350,6 +350,13 @@ function newsIndex(rc, { articles }) {
   return { title: t.pfIndexTitle, description: t.pfIndexDesc, path: rc.u('news'), alternates: alts(rc, 'news'), body, active: 'actus' };
 }
 
+/** Page « Mes notifications » : la liste est remplie dans le navigateur (elle dépend de son abonnement), la page elle-même est la même pour tous. */
+function notifPage(rc) {
+  const t = rc.t;
+  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.ibxH1}</h1><p>${t.ibxP}</p></div><div id="pf-inbox" class="ibx" data-path="${esc(rc.u('notifs'))}"><p class="note">${t.ibxLoading}</p></div>${C.shareBox(rc, 'notifs')}${C.mailBox(rc, 'notifs')}${adResponsive(rc, 'haut', 'ad-top')}</div>${sideColumn(rc, {})}</div></div>`;
+  return { title: t.ibxTitle, description: t.ibxP, path: rc.u('notifs'), body, active: '', noindex: true };
+}
+
 /** Page d'un article « Le point foot ». */
 function article(rc, { a }) {
   const t = rc.t;
@@ -515,7 +522,7 @@ function couponHistoryBox(rc, coupons) {
   const s = summarizeCoupons(coupons);
   const tiers = ['prudent', 'equilibre', 'audacieux'].filter((k) => s.parNiveau[k] && s.parNiveau[k].n).map((k) => {
     const v = s.parNiveau[k];
-    return `<div class="tr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux}\u00a0%</span></div><small>${esc(t.couponTierRow(v.gagnes, v.n, v.taux, v.annonce))}</small></div>`;
+    return `<div class="ctr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux}\u00a0%</span></div><small>${esc(t.couponTierRow(v.gagnes, v.n, v.taux, v.annonce))}</small></div>`;
   }).join('');
   return `<div class="box" id="coupons"><div class="lbl">${t.couponHistTitle}</div><p class="note" style="margin:8px 0">${t.couponHistP}</p>` +
     (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
@@ -563,7 +570,7 @@ function couponPage(rc, { pool }) {
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.couponH1}</h1><p>${t.couponP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}` +
     `<div class="box"><div class="lbl">${t.proposed}</div><div class="sg">${sugg || `<p class="note">${t.proposedEmpty}</p>`}</div><p class="note" style="margin-top:8px">${t.neverWeak}</p></div>` +
     `${adResponsive(rc, 'fin', 'ad-end')}${channelBanner(rc, 'coupon')}` +
-    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}<p class="note">${t.couponDisclaimer}</p></div>` +
+    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${C.shareBox(rc, 'coupon')}${C.mailBox(rc, 'coupon')}<p class="note">${t.couponDisclaimer}</p></div>` +
     `<aside class="side"><div class="sticky"><div class="cp" id="pf-cpanel"></div>${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, 'coupon', 0)}</div></aside></div></div>${jsonScript('pf-pool', data)}`;
   return { title: t.couponTitle, description: t.couponDesc, path: rc.u('coupon'), alternates: alts(rc, 'coupon'), body, active: 'coupon' };
 }
@@ -585,4 +592,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { newsIndex, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { newsIndex, notifPage, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
