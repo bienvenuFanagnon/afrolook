@@ -90,7 +90,7 @@ void main() {
     });
     testWidgets('page Musique, liste (${dark ? 'sombre' : 'clair'})', (t) async {
       playing(tracks.first);
-      await shot(t, '1b_page_musique_liste', dark, () => MusicPage(preview: (sounds: tracks, free: free)), scroll: 620);
+      await shot(t, '1b_page_musique_liste', dark, () => MusicPage(preview: (sounds: tracks, free: free)), scroll: 520);
     });
     testWidgets('fiche du titre (${dark ? 'sombre' : 'clair'})', (t) async {
       playing(tracks.first);
