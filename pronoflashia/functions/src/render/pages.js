@@ -353,7 +353,7 @@ function newsIndex(rc, { articles }) {
 /** Page « Mes notifications » : la liste est remplie dans le navigateur (elle dépend de son abonnement), la page elle-même est la même pour tous. */
 function notifPage(rc) {
   const t = rc.t;
-  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.ibxH1}</h1><p>${t.ibxP}</p></div><div id="pf-inbox" class="ibx" data-path="${esc(rc.u('notifs'))}"><p class="note">${t.ibxLoading}</p></div>${adResponsive(rc, 'haut', 'ad-top')}</div>${sideColumn(rc, {})}</div></div>`;
+  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.ibxH1}</h1><p>${t.ibxP}</p></div><div id="pf-inbox" class="ibx" data-path="${esc(rc.u('notifs'))}"><p class="note">${t.ibxLoading}</p></div>${C.shareBox(rc, 'notifs')}${C.mailBox(rc, 'notifs')}${adResponsive(rc, 'haut', 'ad-top')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.ibxTitle, description: t.ibxP, path: rc.u('notifs'), body, active: '', noindex: true };
 }
 
@@ -570,7 +570,7 @@ function couponPage(rc, { pool }) {
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.couponH1}</h1><p>${t.couponP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}` +
     `<div class="box"><div class="lbl">${t.proposed}</div><div class="sg">${sugg || `<p class="note">${t.proposedEmpty}</p>`}</div><p class="note" style="margin-top:8px">${t.neverWeak}</p></div>` +
     `${adResponsive(rc, 'fin', 'ad-end')}${channelBanner(rc, 'coupon')}` +
-    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}<p class="note">${t.couponDisclaimer}</p></div>` +
+    `<div id="pf-coupon"><noscript><div class="box"><p>${t.noJs}</p></div></noscript></div>${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${C.shareBox(rc, 'coupon')}${C.mailBox(rc, 'coupon')}<p class="note">${t.couponDisclaimer}</p></div>` +
     `<aside class="side"><div class="sticky"><div class="cp" id="pf-cpanel"></div>${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, 'coupon', 0)}</div></aside></div></div>${jsonScript('pf-pool', data)}`;
   return { title: t.couponTitle, description: t.couponDesc, path: rc.u('coupon'), alternates: alts(rc, 'coupon'), body, active: 'coupon' };
 }

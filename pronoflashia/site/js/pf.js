@@ -235,6 +235,31 @@
 
   /* ---------- clics de partage ---------- */
   $$('[data-copy]').forEach(function (b) { b.addEventListener('click', function () { var u = b.getAttribute('data-copy'); var done = function () { var o = b.textContent; b.textContent = L.copied; setTimeout(function () { b.textContent = o; }, 1800); }; try { navigator.clipboard.writeText(u).then(done, function () { }); } catch (e) { /* pas de presse-papiers */ } }); });
+  /* inscription par e-mail (coupons VIP gratuits) */
+  $$('.mlb').forEach(function (b) {
+    var f = $('form', b), m = $('.mlm', b), btn = $('button', f);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = f.elements.email.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || !f.elements.consent.checked) { m.textContent = b.getAttribute('data-bad'); m.className = 'mlm ko'; return; }
+      btn.disabled = true; m.textContent = ''; m.className = 'mlm';
+      fetch('/api/mail/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, consent: true, lang: LANG, source: b.getAttribute('data-where'), site: f.elements.site.value }) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (x) { if (x.ok) { m.textContent = b.getAttribute('data-ok'); m.className = 'mlm ok'; f.elements.email.value = ''; send({ t: 'mail', n: 'ok' }); } else { m.textContent = x.j && x.j.erreur ? x.j.erreur : b.getAttribute('data-err'); m.className = 'mlm ko'; btn.disabled = false; } })
+        .catch(function () { m.textContent = b.getAttribute('data-err'); m.className = 'mlm ko'; btn.disabled = false; });
+    });
+  });
+  /* partage du site : partage natif du téléphone et copie du lien (WhatsApp est un simple lien) */
+  $$('.shb').forEach(function (b) {
+    var url = b.getAttribute('data-url') || location.origin, text = b.getAttribute('data-text') || '';
+    var nat = $('[data-sh=nat]', b), cp = $('[data-sh=copy]', b);
+    if (nat && navigator.share) { nat.hidden = false; nat.addEventListener('click', function () { send({ t: 'wa', n: 'site-natif' }); navigator.share({ title: d.title, text: text, url: url }).catch(function () { /* fermé sans partager */ }); }); }
+    if (cp) cp.addEventListener('click', function () {
+      var o = cp.textContent, done = function () { cp.textContent = cp.getAttribute('data-ok') || L.copied; setTimeout(function () { cp.textContent = o; }, 1800); };
+      send({ t: 'wa', n: 'site-copie' });
+      try { navigator.clipboard.writeText(url).then(done, function () { /* refusé */ }); } catch (e) { /* pas de presse-papiers */ }
+    });
+  });
   $$('a.wa').forEach(function (a) { a.addEventListener('click', function () { send({ t: 'wa', n: pageType() }); }); });
 
   /* ---------- liste « toutes les familles » de la page d'analyse ---------- */

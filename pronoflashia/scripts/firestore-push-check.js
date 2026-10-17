@@ -12,6 +12,8 @@ const subs = require('../functions/src/push/subs');
 const { sendPush } = require('../functions/src/jobs/sendPush');
 const { createAdmin } = require('../functions/src/http/admin');
 const { handleImg } = require('../functions/src/http/img');
+const inbox = require('../functions/src/push/inbox');
+const mail = require('../functions/src/mail/subs');
 
 const KEYS = { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' };
 const NOW = new Date('2026-10-17T12:00:00Z');
@@ -42,5 +44,13 @@ const NOW = new Date('2026-10-17T12:00:00Z');
     await call('push-save', { actif: true, maxJour: 4, seuil: 7, vedettes: 'Kenan Yildiz' }), await call('push', {}),
   ];
   console.log(outs.map((o) => o.status).join(' '), (await db.collection('push_log').get()).size, 'journaux', (await db.collection('push_cards').get()).size, 'cartes');
+  const ep = 'https://fcm.googleapis.com/fcm/send/zz1';
+  const box = await inbox.list(db, ep, 0, NOW);
+  console.log('boîte', box.total, 'notifications,', box.nonLus, 'non lues,', (await inbox.count(db, ep)).nonLus, 'au compteur');
+  await inbox.markRead(db, ep, box.items[0].id, false); await inbox.markRead(db, ep, null, true);
+  await mail.subscribe(db, { email: 'Fan@Exemple.com', consent: true, lang: 'fr', source: 'coupon' }, NOW);
+  const m = (await db.collection('email_subs').get()).docs[0].data();
+  await mail.unsubscribe(db, m.id, m.jeton, NOW);
+  console.log('e-mail', (await db.collection('email_subs').doc(m.id).get()).data().statut, (await call('emails', {})).json.total);
   process.exit(outs.every((o) => o.status === 200) ? 0 : 1);
 })().catch((e) => { console.error('ÉCHEC', e.message); process.exit(1); });

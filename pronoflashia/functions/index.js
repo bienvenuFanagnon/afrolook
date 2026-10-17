@@ -21,6 +21,7 @@ const { sendPush } = require('./src/jobs/sendPush');
 const { buildRecaps } = require('./src/jobs/buildRecaps');
 const { handlePush } = require('./src/http/push');
 const { handleImg } = require('./src/http/img');
+const { handleMail } = require('./src/http/mail');
 const { ensureVapid } = require('./src/push/keys');
 const { weeklyReport } = require('./src/jobs/weeklyReport');
 const { aiHealthCheck } = require('./src/jobs/aiHealth');
@@ -145,6 +146,11 @@ exports.pfWeb = onRequest({ region: REGION, invoker: 'public', memory: '512MiB',
     if (path.startsWith('/api/push/')) {
       const r = await handlePush({ method: req.method, path, body: bodyOf(req), ip: clientIp(req) }, { db, publicKey: async () => (await ensureVapid(db, require('web-push'))).publicKey });
       res.set('Cache-Control', r.cache || 'no-store');
+      return void res.status(r.status).json(r.json);
+    }
+    if (path.startsWith('/api/mail/')) {
+      const r = await handleMail({ method: req.method, path, body: bodyOf(req), ip: clientIp(req) }, { db });
+      res.set('Cache-Control', 'no-store');
       return void res.status(r.status).json(r.json);
     }
     if (path.startsWith('/api/img/')) {

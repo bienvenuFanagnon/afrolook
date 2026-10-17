@@ -282,6 +282,13 @@ function createAdmin(deps) {
     return Object.assign({ abonnes: subs.length, cles }, r);
   };
 
+  /** Inscrits par e-mail : totaux et liste (pour l'export CSV). Aucun envoi n'est fait depuis ici. */
+  A.emails = async () => {
+    const rows = (await db.collection('email_subs').get()).docs.map((d) => d.data()).sort((a, b2) => (a.creeLe < b2.creeLe ? 1 : -1));
+    const actifs = rows.filter((x) => x.statut !== 'desinscrit');
+    return { total: actifs.length, confirmes: actifs.filter((x) => x.confirme).length, desinscrits: rows.length - actifs.length, liste: actifs.slice(0, 5000).map((x) => ({ email: x.email, lang: x.lang, creeLe: x.creeLe, confirme: !!x.confirme, page: (x.consentement && x.consentement.page) || '' })) };
+  };
+
   A['push-save'] = async (b, by) => {
     const set = { actif: b.actif !== false };
     if (b.maxJour !== undefined) set.maxJour = Math.min(8, Math.max(1, Math.round(Number(b.maxJour)) || 4));
