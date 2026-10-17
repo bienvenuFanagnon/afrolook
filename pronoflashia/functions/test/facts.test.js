@@ -93,7 +93,7 @@ test('syncNews : un fait par article utile, stocké avec l\'article ; plafond d\
   assert.ok(withFact.some((n) => n.fait.methode === 'ia' && n.fait.joueur === 'Mbappé'));
   assert.ok(withFact.some((n) => n.fait.methode === 'regles' && n.fait.equipe === 'PSG'));
   assert.ok(!all.find((n) => /conférence/.test(n.titre)).fait);
-  assert.ok(!JSON.stringify(all).includes('Résumé'), 'le résumé de l\'article n\'est pas conservé');
+  assert.ok(all.every((n) => typeof n.resume === 'string' && n.resume.length <= 220), 'seul un court extrait du flux est conservé (220 caractères au plus), jamais l\'article');
 });
 
 test('actualité d\'un match : faits des deux équipes, sans doublon, du plus récent au plus ancien, 4 au plus', () => {

@@ -484,3 +484,9 @@ table.t td:last-child{font-family:var(--fd);font-weight:700;font-size:16px}
 .art .box{margin-top:14px}
 .srcl{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:14px}.srcl a{color:var(--cy)}
 .art h2+p,.art p+p{margin-top:8px}
+
+.stq{margin:10px 0 12px;padding:12px 14px;border-left:3px solid var(--flash);background:var(--s1);border-radius:0 10px 10px 0}
+.stq p{font-size:17px;line-height:1.55;margin:0}
+.stq cite{display:block;margin-top:6px;font-style:normal;color:var(--mut);font-size:13px}
+.stfact{font-size:16px;margin:6px 0}
+.stout{margin:6px 0}

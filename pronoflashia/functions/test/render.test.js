@@ -279,7 +279,8 @@ test('PWA : manifeste, icône iOS et couleur du thème dans l\'en-tête, script 
 test('actualités : bande compacte sur l\'accueil, titres des équipes sur la fiche du match, liens vers les sites d\'origine', async () => {
   const h = await get('/');
   assert.match(h.body, /Actus foot/);
-  assert.match(h.body, /class="nw( has)?" href="https:\/\/exemple\.invalid\/n\d" target="_blank" rel="nofollow noopener noreferrer"/);
+  assert.match(h.body, /class="nw( has)?" href="\/actus\/info-n\d+"/, 'une actu ouvre NOTRE page de détail');
+  assert.ok(!/class="nw( has)?" href="https?:/.test(h.body), 'plus de lien direct vers le site d\'origine sur les cartes');
   assert.ok((h.body.match(/class="nw( has)?"/g) || []).length <= 14, 'actus de l\'accueil : 2 en haut + une après chaque pub de la liste');
   assert.match(h.body, /class="nwv"/);
   const first = db.all('news')[0];
@@ -366,7 +367,7 @@ test('accueil : actus réparties sans doublon — deux sous les coupons flash, u
   for (let i = 0; i < 24; i++) await d2.seed('news', `x${i}`, { id: `x${i}`, titre: `Actu numéro ${i} du football`, lien: `https://exemple.invalid/x${i}`, source: 'Site', sourceId: 's', lang: 'fr', image: i % 3 ? '/img/afl1.jpg' : null, video: i % 5 === 0, date: new Date(NOW.getTime() - (i + 1) * 20 * 60e3).toISOString(), teamIds: [] });
   D.clearCache();
   const h = (await route(d2, '/', NOW)).body;
-  const links = [...h.matchAll(/class="(?:nw|nbc)[^"]*" href="(https:\/\/exemple\.invalid\/[^"]+)"/g)].map((m) => m[1]);
+  const links = [...h.matchAll(/class="(?:nw|nbc)[^"]*" href="(\/actus\/info-[^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(links).size, links.length, 'aucun article affiché deux fois');
   assert.ok(links.length >= 10, `actus affichées : ${links.length}`);
   const top = h.slice(h.indexOf('class="nwb"'), h.indexOf('class="lbl" style="margin-top:6px">Les matchs'));
@@ -384,4 +385,44 @@ test('accueil : actus réparties sans doublon — deux sous les coupons flash, u
   assert.match(h.slice(big), /Toutes les actus foot/);
   assert.ok((h.slice(big).match(/class="nbc"/g) || []).length >= 4);
   assert.match((await route(d2, '/en/', NOW)).body, /More football news/);
+});
+
+test('page de détail d\'une actu : titre et extrait cités avec la source, lien vers l\'article complet, éclairage avec nos matchs et pronostics, pubs, noindex, français et anglais', async () => {
+  const d2 = await buildSample(NOW);
+  const up = d2.all('matches').filter((m) => m.statut === 'prevu' && m.prono).sort((a, b) => (a.coupDEnvoi < b.coupDEnvoi ? -1 : 1))[0];
+  await d2.seed('news', 'zz1', { id: 'zz1', titre: `${up.domicile.nomCourt} : un joueur forfait pour le prochain match`, lien: 'https://exemple.invalid/source-zz1', source: 'Foot Mercato', sourceId: 'fm', lang: 'fr', date: NOW.toISOString(), image: '/img/afl1.jpg', video: false,
+    resume: 'Le milieu de terrain est touché à la cuisse et ne sera pas du déplacement.', teamIds: [String(up.domicile.teamId)], fait: { equipeId: String(up.domicile.teamId), equipe: up.domicile.nomCourt, type: 'absence', joueur: null, certitude: 'confirme', methode: 'regles' } });
+  D.clearCache();
+  const p = await route(d2, '/actus/info-zz1', NOW);
+  assert.equal(p.status, 200);
+  assert.match(p.body, /<meta name="robots" content="noindex,nofollow">/, 'page d\'accompagnement non indexée');
+  assert.match(p.body, /<h1>[^<]*un joueur forfait/);
+  assert.match(p.body, /« Le milieu de terrain est touché à la cuisse et ne sera pas du déplacement\. »/);
+  assert.match(p.body, /Source :<\/cite>|Source :.*<b>Foot Mercato<\/b>/);
+  assert.match(p.body, /<a class="more-btn stout" href="https:\/\/exemple\.invalid\/source-zz1" target="_blank" rel="nofollow noopener noreferrer">Lire l'article complet sur Foot Mercato/);
+  assert.match(p.body, /Ce que ça change pour nos pronostics/);
+  assert.ok(p.body.includes(`href="/football/${up.leagueSlug}/${up.slug}"`), 'lien vers la fiche du match concerné');
+  assert.match(p.body, /Absence/);
+  assert.match(p.body, /appartiennent à Foot Mercato/);
+  assert.match(p.body, /Attaque : |Défense : /);
+  const en = await route(d2, '/en/news/info-zz1', NOW);
+  assert.equal(en.status, 200);
+  assert.match(en.body, /Read the full article on Foot Mercato/);
+  assert.match(en.body, /What it means for our predictions/);
+  // inconnue → 404 ; actualités coupées → 404 ; jamais dans le plan du site
+  assert.equal((await route(d2, '/actus/info-nexistepas', NOW)).status, 404);
+  assert.ok(!(await route(d2, '/sitemap.xml', NOW)).body.includes('info-zz1'));
+  await d2.seed('config', 'news', { actif: false });
+  D.clearCache();
+  assert.equal((await route(d2, '/actus/info-zz1', NOW)).status, 404);
+});
+
+test('page de détail d\'une actu sans match lié : nos pronostics les plus confiants à la place', async () => {
+  const d2 = await buildSample(NOW);
+  await d2.seed('news', 'zz2', { id: 'zz2', titre: 'La Ligue des champions CAF dévoile son calendrier', lien: 'https://exemple.invalid/zz2', source: 'Afrik-Foot', sourceId: 'af', lang: 'fr', date: NOW.toISOString(), image: null, video: false, resume: '', teamIds: [] });
+  D.clearCache();
+  const p = (await route(d2, '/actus/info-zz2', NOW)).body;
+  assert.match(p, /Nos pronostics les plus confiants du jour/);
+  assert.ok(!p.includes('Ce que ça change pour nos pronostics'));
+  assert.ok(!p.includes('class="stq"'), 'pas d\'extrait vide');
 });

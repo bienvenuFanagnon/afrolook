@@ -31,6 +31,7 @@ async function claim(db, id, doc) {
 /** Envoie `payloadFor(sub)` à chaque abonné de la liste ; renvoie { envoyes, echecs, retires }. */
 async function deliver(db, send, subs, payloadFor, deadline) {
   const out = { envoyes: 0, echecs: 0, retires: 0 };
+  const erreurs = []; // quelques causes (code et message), pour comprendre un envoi qui n'arrive pas
   let next = 0;
   const worker = async () => {
     while (next < subs.length) {
@@ -44,6 +45,7 @@ async function deliver(db, send, subs, payloadFor, deadline) {
         if (sub.echecs) await db.collection('push_subs').doc(sub.id).set(Object.assign({}, sub, { echecs: 0 }));
       } catch (e) {
         const code = e && e.statusCode;
+        if (erreurs.length < 5) erreurs.push(`${code || 'erreur'} ${String((e && (e.body || e.message)) || '').slice(0, 120)}`.trim());
         if (code === 404 || code === 410) { await db.collection('push_subs').doc(sub.id).delete(); out.retires++; }
         else {
           out.echecs++;
@@ -54,6 +56,7 @@ async function deliver(db, send, subs, payloadFor, deadline) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(1, subs.length)) }, worker));
+  if (erreurs.length) out.erreurs = erreurs;
   return out;
 }
 
@@ -125,4 +128,4 @@ async function sendPush(opts, report) {
   await runTeams(db, send, now, jour, subs.filter((x) => (x.equipes || []).length), report, deadline);
 }
 
-module.exports = { sendPush, SLOTS, TEAM_MAX_PER_DAY };
+module.exports = { sendPush, deliver, loadSubs, SLOTS, TEAM_MAX_PER_DAY };
