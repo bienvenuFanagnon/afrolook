@@ -72,6 +72,17 @@ async function route(db, urlPath, now = new Date()) {
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
     case 'news': return page(rc, P.newsIndex(rc, { articles: await D.articles(db, 30) }), cc(300, 600));
     case 'article': {
+      if (r.arg.startsWith('info-')) {
+        const n = (await D.newsEnabled(db)) ? await D.newsById(db, r.arg.slice(5)) : null;
+        if (!n) return notFound(rc);
+        const ids = (n.teamIds || []).map(String);
+        const upcoming = await D.matchesBetween(db, now.toISOString(), new Date(now.getTime() + 6 * 864e5).toISOString());
+        const matches = upcoming.filter((m) => m.statut === 'prevu' && [m.domicile.teamId, m.exterieur.teamId].map(String).some((x) => ids.includes(x))).slice(0, 3);
+        const all = await D.news(db, now);
+        const related = all.filter((x) => x.id !== n.id && (n.teamIds || []).length && (x.teamIds || []).some((t) => ids.includes(String(t)))).slice(0, 4);
+        const flash = P.topFlash(upcoming.filter((m) => m.prono && m.prono.principal)).slice(0, 3);
+        return page(rc, P.story(rc, { n, matches, related, recap: (await D.articles(db, 1))[0] || null, flash }), cc(900, 3600));
+      }
       const a = await D.articleBySlug(db, r.arg);
       return a ? page(rc, P.article(rc, { a }), cc(1800, 7200)) : notFound(rc);
     }

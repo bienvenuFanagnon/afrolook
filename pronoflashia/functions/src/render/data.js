@@ -99,6 +99,12 @@ async function news(db, now) {
   });
 }
 
+/** Une actu par identifiant (page de détail). */
+async function newsById(db, id) {
+  const d = await db.collection('news').doc(String(id)).get();
+  return d.exists ? d.data() : null;
+}
+
 /** L'interrupteur général des actualités (admin) est-il sur « oui » ? */
 async function newsEnabled(db) {
   return cached('news-enabled', 60e3, async () => { const d = await db.collection('config').doc('news').get(); return !(d.exists && d.data().actif === false); });
@@ -123,4 +129,4 @@ async function pool(db, now, hours = 96) {
   return list.filter((m) => m.statut === 'prevu' && m.prono && m.prono.visible !== false && m.prono.marches);
 }
 
-module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, newsEnabled, articles, articleBySlug, pool };
+module.exports = { clearCache, loadConfig, loadLeagues, matchesByDay, matchesBetween, matchBySlug, recentResults, bilanDays, bilan30, teamRecent, couponHistory, news, newsById, newsEnabled, articles, articleBySlug, pool };

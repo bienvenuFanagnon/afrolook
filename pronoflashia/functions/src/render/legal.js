@@ -30,7 +30,7 @@ const PAGES = {
 <h2>Qui édite le site ? Comment est-il financé ?</h2>
 <p>Le site est édité par ${field(rc.site.editeur, 'nom de l\'éditeur')}. <b>Tout est gratuit</b> : les publicités et la promotion d'Afrolook, l'application sociale du même éditeur, servent à couvrir les frais des serveurs et du développement. Les pronostics ne sont jamais vendus et le site n'accepte aucune rémunération de la part des bookmakers pour orienter un pronostic.</p>
 <h2>Données</h2>
-<p>Les calendriers et résultats proviennent de fournisseurs de données sportives (football-data.org, API-Football selon les championnats). Les actualités viennent de flux publics de sites de presse sportive : seuls le titre, le nom du site et le lien vers l'article sont repris. Les noms des équipes sont affichés en texte, avec leur logo fourni par le fournisseur de données (à défaut, un écusson généré). Les logos et noms des clubs appartiennent à leurs propriétaires respectifs et ne sont utilisés qu'à titre d'illustration ; aucun partenariat ni parrainage n'est suggéré.</p>`),
+<p>Les calendriers et résultats proviennent de fournisseurs de données sportives (football-data.org, API-Football selon les championnats). Les actualités viennent de flux publics de sites de presse sportive : seuls le titre, un court extrait (une ou deux phrases), le nom du site et le lien vers l'article sont repris, avec renvoi vers l'article complet chez la source. Les noms des équipes sont affichés en texte, avec leur logo fourni par le fournisseur de données (à défaut, un écusson généré). Les logos et noms des clubs appartiennent à leurs propriétaires respectifs et ne sont utilisés qu'à titre d'illustration ; aucun partenariat ni parrainage n'est suggéré.</p>`),
   }),
 
   contact: (rc) => ({
@@ -148,7 +148,7 @@ const PAGES_EN = {
 <h2>Who runs the site? How is it funded?</h2>
 <p>The site is published by ${fieldEn(rc.site.editeur, 'publisher name')}. <b>Everything is free</b>: advertising and the promotion of Afrolook, the publisher's social app, cover the cost of servers and development. Predictions are never sold, and the site accepts no payment from bookmakers to influence a prediction.</p>
 <h2>Data</h2>
-<p>Fixtures and results come from sports data providers (football-data.org, API-Football depending on the league). News comes from public feeds of sports press sites: only the headline, the site name and the link to the article are reused. Team names are shown as text, with the logo supplied by the data provider (a generated crest otherwise). Club logos and names belong to their respective owners and are used for illustration only; no partnership or sponsorship is implied.</p>`),
+<p>Fixtures and results come from sports data providers (football-data.org, API-Football depending on the league). News comes from public feeds of sports press sites: only the headline, a short excerpt (one or two sentences), the site name and the link to the article are reused, with a link to the full article at the source. Team names are shown as text, with the logo supplied by the data provider (a generated crest otherwise). Club logos and names belong to their respective owners and are used for illustration only; no partnership or sponsorship is implied.</p>`),
   }),
   contact: (rc) => ({
     title: 'Contact · PronoFlash IA',

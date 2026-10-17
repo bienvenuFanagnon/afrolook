@@ -193,7 +193,7 @@ async function seedNews(db, now) {
     for (let k = 0; k < 2; k++) {
       const [source, lang] = src[(n + k) % 4];
       const id = `n${n}`;
-      await db.seed('news', id, { id, titre: lang === 'en' ? titres[3](m) : titres[(n + k) % 3](m), lien: `https://exemple.invalid/${id}`, source, sourceId: 'x', lang, image: n % 3 === 2 ? null : (n % 2 ? '/img/afl4.jpg' : '/img/afl1.jpg'), video: n % 4 === 1, date: new Date(now.getTime() - (n * 45 + 20) * 60e3).toISOString(), teamIds: [String(T(m, k).teamId)] });
+      await db.seed('news', id, { id, titre: lang === 'en' ? titres[3](m) : titres[(n + k) % 3](m), lien: `https://exemple.invalid/${id}`, resume: lang === 'en' ? 'A short excerpt of the story, as published in the source feed.' : "Un court extrait de l'actualité, tel que publié dans le flux de la source.", source, sourceId: 'x', lang, image: n % 3 === 2 ? null : (n % 2 ? '/img/afl4.jpg' : '/img/afl1.jpg'), video: n % 4 === 1, date: new Date(now.getTime() - (n * 45 + 20) * 60e3).toISOString(), teamIds: [String(T(m, k).teamId)] });
       n++;
     }
   }

@@ -69,7 +69,7 @@ async function syncNews(opts, report) {
         if (known.has(id)) continue;
         known.add(id);
         const teamIds = teamsInTitle(x.titre, teams);
-        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, image: x.image || null, video: !!x.video, teamIds });
+        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, image: x.image || null, video: !!x.video, resume: x.resume ? String(x.resume).slice(0, 220) : '', teamIds });
         if (teamIds.length) fresh.push({ id, titre: x.titre, resume: x.resume, lang: s.lang, teamIds });
         n++;
       }

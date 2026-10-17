@@ -69,9 +69,12 @@ function pickNews(rc, items, n, teamIds) {
   return same.concat(other).slice(0, n);
 }
 
+/** Page de détail d'une actu sur notre site (/actus/info-{id}) : l'article d'origine y est cité, avec sa source et son lien. */
+const storyPath = (rc, x) => rc.u('article', { slug: `info-${x.id}` });
+
 const newsLink = (rc, x) => {
   const thumb = x.image ? `<span class="nwi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="72" height="72" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
-  return `<a class="nw${x.image ? ' has' : ''}" href="${esc(x.lien)}" target="_blank" rel="nofollow noopener noreferrer">${thumb}<span class="nwt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></span></a>`;
+  return `<a class="nw${x.image ? ' has' : ''}" href="${storyPath(rc, x)}">${thumb}<span class="nwt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><span>${esc(x.titre)}</span></span></a>`;
 };
 
 function timeAgo(rc, iso) {
@@ -99,7 +102,7 @@ function newsBig(rc, list) {
   if (!list || !list.length) return '';
   const card = (x) => {
     const img = x.image ? `<span class="nbi${x.video ? ' vid' : ''}"><img src="${esc(x.image)}" alt="" width="640" height="360" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>` : '';
-    return `<a class="nbc" href="${esc(x.lien)}" target="_blank" rel="nofollow noopener noreferrer">${img}<span class="nbt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><b>${esc(x.titre)}</b></span></a>`;
+    return `<a class="nbc" href="${storyPath(rc, x)}">${img}<span class="nbt"><small>${x.video ? '▶ ' : ''}${esc(x.source)} · ${esc(timeAgo(rc, x.date))}</small><b>${esc(x.titre)}</b></span></a>`;
   };
   return `<div class="nwb nbig"><div class="lbl">${rc.t.newsMore}</div><div class="nbg">${list.map(card).join('')}</div></div>`;
 }
@@ -379,6 +382,37 @@ function article(rc, { a }) {
   return { title: `${x.titre} · ${rc.site.nom}`, description: t.pfDesc(date), path, alternates: alts(rc, 'article', a), body, ld, active: 'actus' };
 }
 
+/** Page de détail d'une actu : titre et extrait cités avec leur source, lien vers l'article d'origine, puis NOTRE éclairage (matchs, pronostics, notes d'équipes). */
+function story(rc, { n, matches, related, recap, flash }) {
+  const t = rc.t;
+  const path = storyPath(rc, n);
+  const date = dateLongue(n.date, rc.lang);
+  const first = (matches || [])[0];
+  const colors = first && first.domicile.couleurs && first.domicile.couleurs.length >= 2 ? first.domicile.couleurs : ['#1b3a8a', '#0a1f4d'];
+  const cover = `<div class="cover" style="background:linear-gradient(135deg,${esc(colors[0])},${esc(colors[1])})"><i aria-hidden="true">⚡</i><small>${t.stKicker}</small><b>${esc(n.source)} · ${esc(timeAgo(rc, n.date))}</b></div>`;
+  const factHtml = n.fait ? `<p class="stfact">${esc(t.fact(Object.assign({ lien: n.lien, source: n.source }, n.fait)).replace(/ · $/, ''))}</p>` : '';
+  const excerpt = n.resume ? `<blockquote class="stq"><p>« ${esc(n.resume)} »</p><cite>${t.stSource} <b>${esc(n.source)}</b></cite></blockquote>` : '';
+  const out = `<a class="more-btn stout" href="${esc(n.lien)}" target="_blank" rel="nofollow noopener noreferrer">${t.stRead(esc(n.source))} <i aria-hidden="true">↗</i></a>`;
+  const notes = (m) => (m.prono && m.prono.notes && (m.prono.notes.dom || m.prono.notes.ext)
+    ? `<div class="two">${[[m.domicile.nomCourt, m.prono.notes.dom], [m.exterieur.nomCourt, m.prono.notes.ext]].map(([nm, d]) => (d ? `<div><b style="font-family:var(--fd);font-size:17px">${esc(nm)}</b><ul class="ck"><li>${esc(t.notesAtk(d.attaque))}</li><li>${esc(t.notesDef(d.defense))}</li></ul></div>` : '')).join('')}</div>`
+    : '');
+  const ours = (matches || []).length
+    ? `<div class="box"><div class="lbl">${t.stOurs}</div><p class="note" style="margin:8px 0">${t.stOursP}</p><div class="oml">${matches.map((m) => `<a class="om" href="${rc.u('match', m)}"><b>${esc(titleOf(m))}</b><span class="pk">${m.prono && m.prono.principal && m.prono.visible !== false ? `${esc(pickLabel(rc, m))} · ${pct(rc, m.prono.principal.confiance)}${isFragile(m) ? ` · ⚠ ${t.fragileLbl}` : ''}` : esc(t.inPrep)}</span><span class="more sm">${t.pfDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div>${notes(first)}</div>`
+    : '';
+  const rel = (related || []).length ? `<div class="box"><div class="lbl">${t.stRelated}</div><div class="nwl">${related.map((x) => newsLink(rc, x)).join('')}</div></div>` : '';
+  const more = !ours && (flash || []).length
+    ? `<div class="box"><div class="lbl">${t.stFlash}</div><div class="oml">${flash.map((m) => `<a class="om" href="${rc.u('match', m)}"><b>${esc(titleOf(m))}</b><span class="pk">${esc(pickLabel(rc, m))} · ${pct(rc, m.prono.principal.confiance)}</span><span class="more sm">${t.pfDetails} <i aria-hidden="true">›</i></span></a>`).join('')}</div></div>`
+    : '';
+  const pf = recap ? `<div class="box"><div class="lbl">${t.pfTitle}</div>${recapCard(rc, recap)}<a class="more-btn" href="${rc.u('news')}">${t.pfSeeAll} <i aria-hidden="true">→</i></a></div>` : '';
+  const wa = `https://wa.me/?text=${encodeURIComponent(`${n.titre} ${C.url(rc, path)}`)}`;
+  const body = `<div class="wrap"><nav class="crumb" aria-label="${esc(t.crumb)}"><a href="${rc.u('home')}">${esc(rc.site.nom)}</a> › <a href="${rc.u('news')}">${t.newsTitle}</a> › ${esc(n.source)}</nav>` +
+    `<div class="layout"><div class="col"><article class="art">${cover}<h1>${esc(n.titre)}</h1><p class="meta">${esc(date)} · ${t.stSource} ${esc(n.source)}</p>${factHtml}${excerpt}${out}` +
+    `<p class="note">${t.stNote(esc(n.source))}</p>${adResponsive(rc, 'haut', 'ad-top')}${ours}${more}${adSlot(rc, 'native', { cls: 'ad-nat', variant: '' })}${rel}${pf}${aflCard(rc, 'actu', 0)}` +
+    `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.pfShare}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div><p class="note">${t.pfDisclaimer}</p></article>${listEnd(rc, 'actu-fin')}</div>${sideColumn(rc, {})}</div></div>`;
+  // page d'accompagnement : utile aux lecteurs, mais l'article de référence est celui de la source : pas d'indexation
+  return { title: `${n.titre} · ${rc.site.nom}`, description: t.stDesc(n.source), path, alternates: alts(rc, 'article', { slug: `info-${n.id}` }), body, active: 'actus', noindex: true };
+}
+
 /** Page « analyse complète » : tout pour préparer un coupon. */
 function details(rc, { m, formH, formA, h2h, rates, pool }) {
   const t = rc.t;
@@ -551,4 +585,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { newsIndex, article, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { newsIndex, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
