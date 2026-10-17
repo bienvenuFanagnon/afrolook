@@ -15,6 +15,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../utils/fnv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
@@ -147,11 +148,7 @@ class OfflineMusic {
 
   static String _hash(String s) {
     // Nom de fichier sans rapport avec le titre (empreinte simple, sans importance de sécurité)
-    var h = 0xcbf29ce484222325;
-    for (final c in s.codeUnits) {
-      h = ((h ^ c) * 0x100000001b3) & 0x7fffffffffffffff;
-    }
-    return h.toRadixString(36).padLeft(10, '0');
+    return fnv63(s).padLeft(10, '0');
   }
 
   /// Efface le titre de cet appareil.

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import '../../utils/fnv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -84,11 +85,7 @@ class MusicCache {
   }
 
   static String _name(String url) {
-    var h = 0xcbf29ce484222325;
-    for (final c in url.codeUnits) {
-      h = ((h ^ c) * 0x100000001b3) & 0x7fffffffffffffff;
-    }
-    return '${h.toRadixString(36)}.m4a';
+    return '${fnv63(url)}.m4a';
   }
 
   /// Fichier déjà en cache pour [url], sinon null.
