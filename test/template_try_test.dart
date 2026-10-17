@@ -59,7 +59,7 @@ void main() {
 
   group('bouton « Essayer ce template »', () {
     Future<void> show(WidgetTester t, TemplateRef r, {int tries = 0, VoidCallback? onTap}) async {
-      await t.pumpWidget(MaterialApp(home: Scaffold(body: Padding(padding: const EdgeInsets.all(12), child: TemplateTryPill(ref: r, tries: tries, onTap: onTap ?? () {})))));
+      await t.pumpWidget(MaterialApp(home: Builder(builder: (ctx) => Localizations.override(context: ctx, locale: const Locale('fr'), child: Scaffold(body: Padding(padding: const EdgeInsets.all(12), child: TemplateTryPill(ref: r, tries: tries, onTap: onTap ?? () {})))))));
     }
 
     testWidgets('template du Studio', (t) async {

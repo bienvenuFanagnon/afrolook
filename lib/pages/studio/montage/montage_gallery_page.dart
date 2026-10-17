@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../cards/card_events.dart';
 import '../../../theme/app_colors.dart';
+import '../../../l10n/tr.dart';
 import '../studio_models.dart';
 import 'montage_canvas.dart';
 import 'montage_catalog.dart';
@@ -67,8 +69,12 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     final pseudo = me.pseudo ?? '';
     _followers = me.followersCount;
     _avatar = me.imageUrl;
+    // Fête dans 3 jours ou moins (ou aujourd'hui) : son template est mis en avant, et la galerie s'ouvre sur « Fêtes »
+    final fete = widget.presetMusic == null ? CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now()) : null;
+    final feteTemplate = fete?.studioTemplateId == null ? null : kMontageTemplates.where((t) => t.id == fete!.studioTemplateId).firstOrNull;
     return DefaultTabController(
       length: MontageCat.values.length,
+      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes),
       child: Scaffold(
         backgroundColor: _c.background,
         appBar: AppBar(
@@ -77,9 +83,10 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
           elevation: 0,
           title: const Text('Templates prêts à poster', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(widget.presetMusic == null ? 48 : 88),
+            preferredSize: Size.fromHeight(widget.presetMusic != null ? 88 : (feteTemplate != null ? 104 : 48)),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               if (widget.presetMusic != null) _presetBanner(widget.presetMusic!),
+              if (feteTemplate != null) _feteBanner(fete!, feteTemplate),
               TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
@@ -116,6 +123,30 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
           onPressed: () => _open(kPlainTemplate),
           style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 8)),
           child: Text('🎬 Ma vidéo', style: TextStyle(color: _c.primary, fontWeight: FontWeight.w800, fontSize: 12.5)),
+        ),
+      ]),
+    );
+  }
+
+  /// Fête qui arrive : « Noël dans 2 jours » et le template prêt à utiliser.
+  Widget _feteBanner(CardEventSoon f, MontageTemplate t) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+      decoration: BoxDecoration(color: _c.accent.withValues(alpha: .14), borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent.withValues(alpha: .55))),
+      child: Row(children: [
+        Text(f.event.emoji, style: const TextStyle(fontSize: 22)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            Text(f.headline, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontSize: 13, fontWeight: FontWeight.w800)),
+            Text(tr('Template prêt : {nom}', {'nom': t.name}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
+          ]),
+        ),
+        TextButton(
+          onPressed: () => _open(t),
+          style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 10)),
+          child: Text(tr('Utiliser'), style: TextStyle(color: _c.accent, fontWeight: FontWeight.w900, fontSize: 13)),
         ),
       ]),
     );

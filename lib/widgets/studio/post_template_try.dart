@@ -4,6 +4,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../pages/cards/card_entry.dart';
 import '../../pages/studio/montage/montage_editor_page.dart';
@@ -59,7 +60,6 @@ class TemplateTryPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final what = ref.isCard ? 'modèle' : 'template';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Align(
@@ -87,9 +87,9 @@ class TemplateTryPill extends StatelessWidget {
                 Flexible(
                   child: Text.rich(
                     TextSpan(children: [
-                      TextSpan(text: 'Essayer ce $what', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 12.5)),
+                      TextSpan(text: context.tr(ref.isCard ? 'Essayer ce modèle' : 'Essayer ce template'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 12.5)),
                       TextSpan(text: '  ·  ${ref.label}', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 12)),
-                      if (tries > 0) TextSpan(text: '  ·  ${tries > 999 ? '${(tries / 1000).toStringAsFixed(1).replaceAll('.', ',')} k' : tries} essai${tries > 1 ? 's' : ''}', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+                      if (tries > 0) TextSpan(text: '  ·  ${context.tr(tries > 1 ? '{n} essais' : '{n} essai', {'n': tries > 999 ? '${(tries / 1000).toStringAsFixed(1).replaceAll('.', ',')} k' : tries})}', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
                     ]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
