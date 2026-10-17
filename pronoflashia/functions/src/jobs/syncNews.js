@@ -7,9 +7,12 @@ const { SOURCES } = require('../news/sources');
 const { fetchFeed } = require('../news/rss');
 const { teamsInTitle } = require('../news/match');
 const { extractFact } = require('../news/facts');
+const { fetchPreview } = require('../news/preview');
+const { cleanExcerpt } = require('../news/rss');
 
 const KEEP_HOURS = 96;
 const MAX_PER_SOURCE = 25;
+const MAX_PREVIEWS = 10; // pages d'articles lues par passage pour compléter l'image ou l'extrait (aperçu de lien)
 const MAX_AI_CALLS = 6; // appels à l'IA par passage (12 passages par jour) : quelques centaines de neurons par jour au plus
 
 const idOf = (lien) => crypto.createHash('sha1').update(lien).digest('hex').slice(0, 20);
@@ -54,6 +57,7 @@ async function syncNews(opts, report) {
   const known = new Set((await db.collection('news').where('date', '>=', cutoff).get()).docs.map((d) => d.id));
   let nouveaux = 0;
   const pannes = [];
+  const toPreview = []; // nouveaux articles sans image ou avec un extrait très court : on lit l'aperçu publié par le site
   const fresh = []; // nouveaux articles qui parlent d'une équipe suivie : candidats à la lecture par l'IA
   const nameOf = new Map(teams.map((t) => [t.id, t.noms[0]]));
 
@@ -69,7 +73,8 @@ async function syncNews(opts, report) {
         if (known.has(id)) continue;
         known.add(id);
         const teamIds = teamsInTitle(x.titre, teams);
-        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, image: x.image || null, video: !!x.video, resume: x.resume ? String(x.resume).slice(0, 220) : '', teamIds });
+        await db.collection('news').doc(id).set({ id, titre: x.titre, lien: x.lien, source: s.nom, sourceId: s.id, lang: s.lang, date: x.date, image: x.image || null, video: !!x.video, videoId: x.videoId || null, resume: x.resume ? cleanExcerpt(x.resume) : '', teamIds });
+        if (!x.image || (x.resume || '').length < 80) toPreview.push({ id, lien: x.lien, image: x.image || null, resume: x.resume || '' });
         if (teamIds.length) fresh.push({ id, titre: x.titre, resume: x.resume, lang: s.lang, teamIds });
         n++;
       }
@@ -81,6 +86,23 @@ async function syncNews(opts, report) {
     }
     await db.collection('news_sources').doc(s.id).set(st, { merge: true });
   }));
+
+  // aperçu des pages (image et description publiées par le site d'origine pour les aperçus de liens) : quelques articles par passage
+  let apercus = 0;
+  const queue = toPreview.slice(0, MAX_PREVIEWS);
+  await Promise.all(Array.from({ length: Math.min(4, queue.length) }, async () => {
+    while (queue.length) {
+      const a = queue.shift();
+      const pv = await fetchPreview(a.lien, opts.previewFetch || opts.fetchImpl);
+      if (!pv) continue;
+      const patch = {};
+      if (!a.image && pv.image) patch.image = pv.image;
+      if (pv.description && pv.description.length > (a.resume || '').length + 20) patch.resume = pv.description;
+      if (pv.videoId) { patch.videoId = pv.videoId; patch.video = true; }
+      if (Object.keys(patch).length) { await db.collection('news').doc(a.id).set(patch, { merge: true }); apercus++; }
+    }
+  }));
+  report.infos.apercus = apercus;
 
   // lecture par l'IA : un fait structuré (absence, suspension, retour, entraîneur) par article qui parle d'une équipe suivie
   let aiLeft = opts.maxAiCalls == null ? MAX_AI_CALLS : opts.maxAiCalls;

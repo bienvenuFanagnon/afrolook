@@ -175,7 +175,11 @@ function listWithAds(rc, cards, afterAd) {
 }
 
 /** Fin de liste : bannière puis, sur téléphone, un encart Afrolook (la colonne de droite n'existe que sur ordinateur). */
-const listEnd = (rc, slot) => adResponsive(rc, 'fin', 'ad-end') + (rc.ads.afrolook && rc.ads.afrolook.actif ? `<div class="mob-only">${aflCard(rc, slot || 'fin', 1)}</div>` : '');
+// fin de liste : UNE seule publicité (jamais deux à la suite) : l'emplacement publicitaire s'il existe (il se replie lui-même sur l'encart Afrolook), sinon l'encart Afrolook seul.
+const listEnd = (rc, slot) => {
+  const ad = adResponsive(rc, 'fin', 'ad-end');
+  return ad || (rc.ads.afrolook && rc.ads.afrolook.actif ? `<div class="mob-only">${aflCard(rc, slot || 'fin', 1)}</div>` : '');
+};
 
 function header(rc, active, alternates) {
   const t = rc.t;
