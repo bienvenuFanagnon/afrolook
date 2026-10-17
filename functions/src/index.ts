@@ -25,7 +25,7 @@ export * from "./payments/coinConversion";
 export * from "./payments/coinPayments";
 export * from "./payments/coinInteractions";
 export * from "./payments/coinPurchase";
-export { r2MirrorOnUpload, r2MirrorOnMetadata, r2MirrorOnDelete } from "./media/r2Mirror";
+export { r2MirrorSweep } from "./media/r2Mirror";
 export { cardCoinQuote, cardCoinStart, cardCoinStatus, cardCoinReconcile, cardCoinAdminConfig, cardCoinAdminChargeback } from "./payments/feexpayCard";
 export { paymentReport, paymentWatchdog } from "./payments/paymentLog";
 

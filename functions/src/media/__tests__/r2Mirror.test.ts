@@ -1,7 +1,6 @@
-jest.mock("firebase-functions/v2/storage", () => ({ onObjectFinalized: jest.fn(() => ({})), onObjectDeleted: jest.fn(() => ({})), onObjectMetadataUpdated: jest.fn(() => ({})) }));
-jest.mock("firebase-functions/params", () => ({ defineSecret: jest.fn(() => ({ value: () => "x" })) }));
+jest.mock("firebase-functions/v2/scheduler", () => ({ onSchedule: jest.fn(() => ({})) }));
 jest.mock("firebase-admin/storage", () => ({ getStorage: jest.fn() }));
-jest.mock("../../shared/firebase", () => ({}));
+jest.mock("../../shared/firebase", () => ({ db: {} }));
 
 import { shouldMirror } from "../r2Mirror";
 
