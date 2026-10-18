@@ -31,6 +31,20 @@ class MediaShrink {
     }
   }
 
+  /// Miniature JPEG (480 px au plus, qualité 70, quelques dizaines de Ko) d'une image locale, pour les rangées et les cartes.
+  /// Null si impossible (web, format illisible) : l'appelant se contente alors de l'image entière.
+  static Future<File?> thumbnail(File f, {int maxSide = 480, int quality = 70}) async {
+    if (kIsWeb) return null;
+    try {
+      final target = p.join(Directory.systemTemp.path, 'thumb_${DateTime.now().microsecondsSinceEpoch}.jpg');
+      final out = await FlutterImageCompress.compressAndGetFile(f.path, target, minWidth: maxSide, minHeight: maxSide, quality: quality, format: CompressFormat.jpeg);
+      return out == null ? null : File(out.path);
+    } catch (e) {
+      debugPrint('MediaShrink.thumbnail: $e');
+      return null;
+    }
+  }
+
   /// Vidéo → 720p maximum (mobile uniquement). Renvoie le fichier d'origine pour les petites vidéos, sur le web, en cas d'échec,
   /// ou si le résultat n'est pas au moins 15 % plus léger.
   static Future<File> video(File src) async {

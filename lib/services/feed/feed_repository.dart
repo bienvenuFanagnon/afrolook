@@ -6,6 +6,7 @@ import '../../models/model_data.dart';
 
 import '../../pages/chronique/chroniqueform.dart';
 
+import '../chronique_first_page.dart';
 import '../postService/feed_scoring_service.dart';
 
 /// Types de feed disponibles dans l'application.
@@ -358,19 +359,22 @@ class FeedRepository {
 
   Future<List<Chronique>> fetchChroniques({int limit = 8}) async {
     try {
+      // Le serveur ne renvoie que les chroniques encore actives : on lit `limit` documents, plus `limit * 2` dont une partie périmée.
+      // Même requête (et même index) que la page « Chroniques » : la page lit ensuite la suite à partir du curseur gardé ici.
       final snap = await _db
           .collection('chroniques')
+          .where('expiresAt', isGreaterThan: Timestamp.now())
           .orderBy('createdAt', descending: true)
-          .limit(limit * 2)
+          .limit(limit)
           .get();
       final valid = <Chronique>[];
       for (final doc in snap.docs) {
         try {
           final c = Chronique.fromMap(doc.data(), doc.id);
           if (!c.isExpired) valid.add(c);
-          if (valid.length >= limit) break;
         } catch (_) {}
       }
+      ChroniqueFirstPage.save(valid, snap.docs.isEmpty ? null : snap.docs.last, hasMore: snap.docs.length >= limit);
       return valid;
     } catch (e) {
       printVm('⚠️ [FeedRepository] fetchChroniques: $e');

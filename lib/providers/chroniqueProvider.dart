@@ -1,5 +1,6 @@
 ﻿// providers/chronique_provider.dart
 
+import '../services/chronique_first_page.dart';
 import '../services/media_shrink.dart';
 import '../services/video_poster.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -33,6 +34,8 @@ class ChroniqueProvider with ChangeNotifier {
     int? audioStartMs,
     int? audioEndMs,
     ChroniqueMusic? music,
+    double? textX,
+    double? textY,
     required Function(double) onProgress,
   }) async {
     try {
@@ -53,6 +56,8 @@ class ChroniqueProvider with ChangeNotifier {
           posterUrl = await _uploadPoster(mediaFile);
         } else if (type == ChroniqueType.IMAGE) {
           duration = 5;
+          // Miniature de 480 px : les rangées et les cartes ne téléchargent plus l'image entière
+          posterUrl = await _uploadImageThumb(mediaFile);
         } else if (type == ChroniqueType.AUDIO) {
           duration = await _getAudioDuration(mediaFile);
         }
@@ -123,9 +128,12 @@ class ChroniqueProvider with ChangeNotifier {
         musicEndMs: music?.endMs,
         musicVolume: music?.volume ?? 0.7,
         videoSoundKept: music?.keepVideoSound ?? false,
+        textX: (type == ChroniqueType.IMAGE || type == ChroniqueType.VIDEO) && (textContent ?? '').trim().isNotEmpty ? textX : null,
+        textY: (type == ChroniqueType.IMAGE || type == ChroniqueType.VIDEO) && (textContent ?? '').trim().isNotEmpty ? textY : null,
       );
 
       await ref.set(chronique.toMap());
+      ChroniqueFirstPage.clear();
       await _updateUserChroniqueCount(userId);
 
       return mediaUrl;
@@ -181,6 +189,18 @@ class ChroniqueProvider with ChangeNotifier {
       return await _uploadMedia(poster, (_) {}, folder: 'chronique_posters');
     } catch (e) {
       printVm('Aperçu chronique non envoyé: $e');
+      return null;
+    }
+  }
+
+  /// Miniature d'une image envoyée en même temps qu'elle ; sans miniature, la chronique se publie quand même (l'image entière sert d'aperçu).
+  Future<String?> _uploadImageThumb(File image) async {
+    try {
+      final thumb = await MediaShrink.thumbnail(image);
+      if (thumb == null) return null;
+      return await _uploadMedia(thumb, (_) {}, folder: 'chronique_posters');
+    } catch (e) {
+      printVm('Miniature chronique non envoyée: $e');
       return null;
     }
   }
@@ -416,6 +436,7 @@ class ChroniqueProvider with ChangeNotifier {
         printVm('Erreur suppression commentaires: $e');
       }
       await _firestore.collection('chroniques').doc(chroniqueId).delete();
+      ChroniqueFirstPage.clear();
       if (userId != null) await _decrementUserChroniqueCount(userId);
     } catch (error) {
       throw Exception('Erreur suppression chronique: $error');

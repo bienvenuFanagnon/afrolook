@@ -5,6 +5,7 @@ import 'dart:async';
 import '../../widgets/video_poster_image.dart';
 import 'chronique_comments_sheet.dart';
 import 'chronique_reply_sheet.dart';
+import 'chronique_overlay_text.dart';
 import 'chronique_text_view.dart';
 import 'chronique_widgets.dart';
 import '../../widgets/music/music_overlay.dart';
@@ -2124,12 +2125,18 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       case ChroniqueType.IMAGE:
         return ClipRRect(
           borderRadius: BorderRadius.circular(15),
-          child: CachedNetworkImage(
-            imageUrl: chronique.mediaUrl!,
-            fit: BoxFit.contain,
-            width: double.infinity,
-            height: double.infinity,
-            placeholder: (context, url) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: chronique.mediaUrl!,
+                fit: BoxFit.contain,
+                width: double.infinity,
+                height: double.infinity,
+                placeholder: (context, url) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))),
+              ),
+              _overlayTextOf(chronique),
+            ],
           ),
         );
 
@@ -2157,6 +2164,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                     ],
                   ),
                 ),
+              _overlayTextOf(chronique),
               Center(
                 child: IconButton(
                   icon: Icon(_videoController?.value.isPlaying == true ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white.withOpacity(0.7), size: 50),
@@ -2177,6 +2185,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       case ChroniqueType.AUDIO:
         return _buildAudioContent(chronique);
     }
+  }
+
+  /// Texte que l'auteur a posé sur son image ou sa vidéo, à l'endroit qu'il a choisi.
+  Widget _overlayTextOf(Chronique c) {
+    final t = (c.textContent ?? '').trim();
+    if (t.isEmpty) return const SizedBox.shrink();
+    return Positioned.fill(child: ChroniqueOverlayText(text: t, x: c.textX ?? kOverlayDefaultX, y: c.textY ?? kOverlayDefaultY));
   }
 
   Widget _buildAudioContent(Chronique chronique) {

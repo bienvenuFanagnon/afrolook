@@ -49,3 +49,16 @@ Paiement par la fonction `chroniqueMusicCharge` (une seule fois par chronique). 
 - Liste des sons d'artistes : une lecture gardée 10 minutes au lieu d'une écoute en direct.
 - Nettoyage des chroniques expirées : `chroniqueExpiryCleanup` toutes les heures sur le serveur (média, aperçu, commentaires, compteur), au lieu d'un nettoyage lancé par chaque téléphone qui ouvre la liste.
 - Aucun flou ni effet coûteux dans les listes ; images en cache disque et en mémoire réduite.
+
+## Chargement rapide (fil et page liste)
+
+- **Une seule requête filtrée** : `where expiresAt > maintenant` + `orderBy createdAt desc` + `limit` (même index que la page liste). Le fil lisait 12 documents pour en garder 6 ; il en lit 6.
+- **Première page partagée** (`ChroniqueFirstPage`, 2 min) : le fil garde sa page et son curseur ; la page « Chroniques » s'affiche immédiatement avec, sans lecture, puis ne lit que la suite. Vidée à la publication / suppression.
+- **Plus de lecture `Users` bloquante** dans le fil : les anneaux utilisent la photo et le pseudo recopiés dans la chronique.
+- **Préchargement** des photos d'auteurs et des aperçus des premières chroniques dès la réponse du serveur.
+- **Miniature de 480 px** (`posterUrl`, dossier `chronique_posters`, nettoyée par le ménage horaire) pour les chroniques image : anneaux et cartes ne téléchargent plus l'image entière (anciennes chroniques : repli sur l'image).
+
+## Aperçu dans les anneaux et texte sur image
+
+- L'anneau montre l'aperçu de la **dernière chronique** de la personne (image, aperçu vidéo, texte, pochette) ; sa photo passe en pastille en bas à droite.
+- Chronique image/vidéo : le texte tapé s'affiche sur le média et se **glisse où l'on veut** (`textX`/`textY`, 0 à 1, centre du texte) ; le lecteur le replace au même endroit.

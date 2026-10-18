@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../ads/ad_slot.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
+import '../../services/chronique_first_page.dart';
 import '../../theme/app_colors.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'chronique_filters.dart';
@@ -49,7 +50,24 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
     _scroll.addListener(() {
       if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) _loadMore();
     });
-    _loadMore(reset: true);
+    final warm = ChroniqueFirstPage.fresh();
+    if (warm != null) {
+      // Première page déjà lue par le fil : affichée tout de suite, sans lecture ; on ne va chercher que la suite
+      for (final c in warm.items) {
+        _groups.putIfAbsent(c.userId, () => []).add(c);
+      }
+      _last = warm.last;
+      _hasMore = warm.hasMore;
+      _firstLoad = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) precacheChroniqueImages(context, warm.items);
+      });
+      if (_hasMore) WidgetsBinding.instance.addPostFrameCallback((_) => _loadMore());
+      final id = widget.initialChroniqueId;
+      if (id != null && id.isNotEmpty) WidgetsBinding.instance.addPostFrameCallback((_) => _openFromNotification(id));
+    } else {
+      _loadMore(reset: true);
+    }
   }
 
   @override

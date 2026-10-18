@@ -25,6 +25,27 @@ Color chroniqueBackground(Chronique c) {
 }
 
 /// Toutes les chroniques de cette personne ont-elles déjà été vues par [uid] ?
+/// Image légère (480 px, quelques Ko) d'une chronique-image pour les rangées et les cartes ; les anciennes chroniques n'en ont pas
+/// et affichent l'image entière.
+String? chroniqueThumbUrl(Chronique c) => (c.posterUrl ?? '').isNotEmpty ? c.posterUrl : c.mediaUrl;
+
+/// Télécharge d'avance les photos des auteurs et les aperçus des premières chroniques (ce que montrent les anneaux) : elles s'affichent sans attente.
+void precacheChroniqueImages(BuildContext context, List<Chronique> chroniques) {
+  final urls = <String>{};
+  for (final c in chroniques) {
+    if (c.userImageUrl.isNotEmpty) urls.add(c.userImageUrl);
+  }
+  for (final c in chroniques.take(8)) {
+    if (c.type == ChroniqueType.IMAGE || c.type == ChroniqueType.VIDEO) {
+      final u = chroniqueThumbUrl(c);
+      if (u != null && u.isNotEmpty && (c.type == ChroniqueType.IMAGE || (c.posterUrl ?? '').isNotEmpty)) urls.add(u);
+    }
+  }
+  for (final u in urls) {
+    precacheImage(CachedNetworkImageProvider(MediaCdn.url(u)), context).catchError((_) {});
+  }
+}
+
 bool chroniqueGroupSeen(List<Chronique> group, String? uid) => uid != null && group.isNotEmpty && group.every((c) => c.viewers.contains(uid));
 
 IconData chroniqueTypeIcon(ChroniqueType t) {
@@ -69,8 +90,11 @@ String chroniqueDurationLabel(Chronique c) {
 
 /// Remplit son espace avec l'aperçu de la chronique : texte sur sa couleur, image, aperçu de la vidéo, pochette du son.
 class ChroniquePreviewFill extends StatelessWidget {
-  const ChroniquePreviewFill({super.key, required this.chronique, this.textSize = 13.5, this.maxTextLines = 5});
+  const ChroniquePreviewFill({super.key, required this.chronique, this.textSize = 13.5, this.maxTextLines = 5, this.compact = false});
   final Chronique chronique;
+
+  /// Petite pastille (anneau) : marges réduites pour qu'un texte tienne dans le cercle.
+  final bool compact;
   final double textSize;
   final int maxTextLines;
 
@@ -87,7 +111,7 @@ class ChroniquePreviewFill extends StatelessWidget {
           ),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 40, 12, 40),
+              padding: compact ? const EdgeInsets.all(5) : const EdgeInsets.fromLTRB(12, 40, 12, 40),
               child: Text(
                 c.textContent ?? '',
                 maxLines: maxTextLines,
@@ -100,7 +124,7 @@ class ChroniquePreviewFill extends StatelessWidget {
         );
       case ChroniqueType.IMAGE:
         return CachedNetworkImage(
-          imageUrl: MediaCdn.url(c.mediaUrl),
+          imageUrl: MediaCdn.url(chroniqueThumbUrl(c)),
           fit: BoxFit.cover,
           memCacheWidth: 480,
           fadeInDuration: const Duration(milliseconds: 100),
@@ -252,19 +276,28 @@ class ChroniqueRing extends StatelessWidget {
                   builder: (_, __) => CustomPaint(painter: _RingPainter(segments: group.length, seen: false, rotation: spin!.value * math.pi * 2, dim: Colors.grey)),
                 ),
         ),
-        ChroniqueAvatar(imageUrl: first.userImageUrl, name: first.userPseudo, size: inner),
+        // L'anneau montre la dernière chronique de la personne (pas sa photo), pour qu'on voie ce qu'elle a publié
+        ClipOval(
+          child: SizedBox(
+            width: inner,
+            height: inner,
+            child: ChroniquePreviewFill(chronique: first, textSize: (inner * .17).clamp(7, 12).toDouble(), maxTextLines: 3, compact: true),
+          ),
+        ),
         Positioned(
           right: 0,
           bottom: 0,
           child: Container(
-            width: 21,
-            height: 21,
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(color: colors.background, shape: BoxShape.circle),
             padding: const EdgeInsets.all(2),
-            child: DecoratedBox(
-              decoration: BoxDecoration(shape: BoxShape.circle, gradient: addBadge ? null : const LinearGradient(colors: [kRingGreen, kRingYellow]), color: addBadge ? colors.accent : null),
-              child: Icon(addBadge ? Icons.add_rounded : chroniqueTypeIcon(first.type), size: 12, color: const Color(0xFF07120B)),
-            ),
+            child: addBadge
+                ? DecoratedBox(
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: colors.accent),
+                    child: const Icon(Icons.add_rounded, size: 13, color: Color(0xFF07120B)),
+                  )
+                : ChroniqueAvatar(imageUrl: first.userImageUrl, name: first.userPseudo, size: 20),
           ),
         ),
       ]),

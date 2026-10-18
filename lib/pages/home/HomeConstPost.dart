@@ -23,6 +23,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../providers/sound_provider.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../auth/authTest/Screens/updateUserData.dart';
+import '../chronique/chronique_widgets.dart';
 import '../chronique/chroniqueform.dart';
 import '../component/showUserDetails.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
@@ -3098,10 +3099,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (validChroniques != null) {
         // Résultat réel reçu : mettre à jour (même si vide = toutes expirées)
         setState(() => _chroniques = validChroniques!);
-        if (validChroniques.isNotEmpty) {
-          await _loadChroniqueUserDataInBackground(validChroniques);
-        }
+        // Les anneaux affichent la photo et le pseudo enregistrés dans la chronique : plus de lecture « Users » à attendre
         _saveFeedToCache();
+        _precacheChroniqueImages(validChroniques);
       }
       // Si null (timeout) : on garde _chroniques tel quel
     } catch (e) {
@@ -3111,43 +3111,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Future<void> _loadChroniqueUserDataInBackground(List<Chronique> chroniques) async {
-    try {
-      final userIds = chroniques
-          .map((c) => c.userId)
-          .toSet()
-          .where((id) => !_userDataCache.containsKey(id))
-          .toList();
-
-      if (userIds.isEmpty) return;
-
-      // Firestore whereIn supporte au maximum 30 ids par requête -> on chunk
-      const chunkSize = 30;
-      for (var i = 0; i < userIds.length; i += chunkSize) {
-        final chunk = userIds.sublist(
-          i,
-          (i + chunkSize > userIds.length) ? userIds.length : i + chunkSize,
-        );
-
-        final snapshot = await _firestore
-            .collection('Users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .get();
-
-        for (final doc in snapshot.docs) {
-          final userData = UserData.fromJson(doc.data());
-          _userDataCache[doc.id] = userData;
-          _userVerificationStatus[doc.id] = userData.isVerify ?? false;
-        }
-      }
-
-      // Mettre à jour l'UI si nécessaire
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      printVm('❌ Erreur chargement données chroniques: $e');
-    }
+  /// Les images des premiers anneaux sont téléchargées dès la réponse du serveur : elles sont déjà là quand les anneaux se dessinent.
+  void _precacheChroniqueImages(List<Chronique> chroniques) {
+    if (!mounted) return;
+    precacheChroniqueImages(context, chroniques.take(6).toList());
   }
 
   // ===========================================================================

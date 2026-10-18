@@ -20,6 +20,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
 import 'chronique_music.dart';
+import 'chronique_overlay_text.dart';
 import 'chronique_music_sheet.dart';
 import '../studio/studio_entry_page.dart';
 import '../studio/studio_models.dart';
@@ -69,6 +70,10 @@ class Chronique {
   double musicVolume = 0.7;
   bool videoSoundKept = false; // vidéo : le son d'origine est gardé et mélangé à la musique (sinon la musique le remplace)
 
+  // Texte posé sur une image ou une vidéo : centre du texte (0 à 1) dans l'écran, choisi par l'auteur
+  double? textX;
+  double? textY;
+
   bool get hasMusic => (musicUrl ?? '').isNotEmpty;
 
   Chronique({
@@ -109,6 +114,8 @@ class Chronique {
     this.musicEndMs,
     this.musicVolume = 0.7,
     this.videoSoundKept = false,
+    this.textX,
+    this.textY,
   });
 
   // Convertir en Map pour Firestore
@@ -141,6 +148,7 @@ class Chronique {
       'audioEndMs': audioEndMs,
       if (lastCommentText != null) 'lastCommentPseudo': lastCommentPseudo,
       if (lastCommentText != null) 'lastCommentText': lastCommentText,
+      if (textX != null && textY != null) ...{'textX': textX, 'textY': textY},
       if (hasMusic) ...{
         'musicKind': musicKind,
         'musicId': musicId,
@@ -195,6 +203,8 @@ class Chronique {
       musicEndMs: (map['musicEndMs'] as num?)?.toInt(),
       musicVolume: (map['musicVolume'] as num?)?.toDouble() ?? 0.7,
       videoSoundKept: map['videoSoundKept'] == true,
+      textX: (map['textX'] as num?)?.toDouble(),
+      textY: (map['textY'] as num?)?.toDouble(),
     );
   }
 
@@ -311,6 +321,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   int? _audioStartMs;    // trim audio — début
   int? _audioEndMs;      // trim audio — fin
   ChroniqueMusic? _music; // musique de la chronique (texte, image, vidéo)
+  double _overlayX = kOverlayDefaultX; // place du texte sur l'image ou la vidéo
+  double _overlayY = kOverlayDefaultY;
   static const int _maxTextLength = 1000;
   VideoPlayerController? _videoController;
   bool _isUploading = false;
@@ -584,6 +596,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         audioStartMs: _audioStartMs,
         audioEndMs: _audioEndMs,
         music: _selectedType == ChroniqueType.AUDIO ? null : _music,
+        textX: _overlayX,
+        textY: _overlayY,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
@@ -952,14 +966,30 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             aspectRatio: 9 / 16,
             child: _selectedMedia == null
                 ? _buildMediaPlaceholder(colors)
-                : _selectedType == ChroniqueType.IMAGE
-                    ? Image.file(_selectedMedia!, fit: BoxFit.cover)
-                    : (_videoController != null && _videoController!.value.isInitialized
-                        ? VideoPlayer(_videoController!)
-                        : Container(
-                            color: colors.surfaceVariant,
-                            child: Center(child: CircularProgressIndicator(color: colors.primary)),
-                          )),
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_selectedType == ChroniqueType.IMAGE)
+                        Image.file(_selectedMedia!, fit: BoxFit.cover)
+                      else if (_videoController != null && _videoController!.value.isInitialized)
+                        VideoPlayer(_videoController!)
+                      else
+                        Container(
+                          color: colors.surfaceVariant,
+                          child: Center(child: CircularProgressIndicator(color: colors.primary)),
+                        ),
+                      // Le texte tapé apparaît sur l'image : on le fait glisser où l'on veut
+                      ChroniqueOverlayText(
+                        text: _textController.text,
+                        x: _overlayX,
+                        y: _overlayY,
+                        onMove: (nx, ny) => setState(() {
+                          _overlayX = nx;
+                          _overlayY = ny;
+                        }),
+                      ),
+                    ],
+                  ),
           ),
         ),
         const SizedBox(height: 16),
@@ -1003,7 +1033,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             maxLength: 100,
             style: TextStyle(color: colors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Description (optionnelle)',
+              hintText: 'Texte sur la chronique (optionnel)',
               hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1011,6 +1041,15 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             ),
           ),
         ),
+        if (_selectedMedia != null && _textController.text.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              Icon(Icons.open_with_rounded, size: 14, color: colors.textPrimary.withOpacity(0.5)),
+              const SizedBox(width: 6),
+              Expanded(child: Text('Glissez le texte sur l\'image pour le placer où vous voulez.', style: TextStyle(color: colors.textPrimary.withOpacity(0.55), fontSize: 11.5))),
+            ]),
+          ),
       ],
     );
   }

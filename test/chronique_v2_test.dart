@@ -1,5 +1,7 @@
 import 'package:afrotok/pages/chronique/chronique_filters.dart';
 import 'package:afrotok/pages/chronique/chronique_music.dart';
+import 'package:afrotok/pages/chronique/chronique_overlay_text.dart';
+import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/pages/chronique/chronique_text_view.dart';
 import 'package:afrotok/pages/chronique/chronique_widgets.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -201,6 +203,61 @@ void main() {
         expect(find.text('1.2K'), findsOneWidget);
         expect(tester(t), isNull);
       }
+    });
+  });
+
+  group('texte sur image et chargement', () {
+    test('la place du texte fait l\'aller-retour dans Firestore et reste absente sans texte placé', () {
+      final c = _c('aicha', text: 'Bonjour')..textX = .3..textY = .6;
+      final back = Chronique.fromMap(c.toMap(), 'x');
+      expect(back.textX, closeTo(.3, 1e-9));
+      expect(back.textY, closeTo(.6, 1e-9));
+      expect(Chronique.fromMap(_c('yao').toMap(), 'y').textX, isNull);
+      expect(_c('yao').toMap().containsKey('textX'), isFalse);
+    });
+
+    testWidgets('le texte se dessine et se déplace au glissement', (t) async {
+      var x = .5, y = .74;
+      await t.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 300,
+            height: 500,
+            child: StatefulBuilder(
+              builder: (_, set) => ChroniqueOverlayText(text: 'Salut', x: x, y: y, onMove: (nx, ny) => set(() {
+                    x = nx;
+                    y = ny;
+                  })),
+            ),
+          ),
+        ),
+      ));
+      expect(find.text('Salut'), findsOneWidget);
+      await t.drag(find.text('Salut'), const Offset(-60, -100));
+      await t.pump();
+      expect(x, lessThan(.5));
+      expect(y, lessThan(.74));
+    });
+
+    test('la première page des chroniques gardée par le fil sert à la liste, puis se vide à la publication', () {
+      expect(ChroniqueFirstPage.fresh(), isNull);
+      ChroniqueFirstPage.save([_c('aicha'), _c('yao')], null, hasMore: true);
+      final f = ChroniqueFirstPage.fresh();
+      expect(f, isNotNull);
+      expect(f!.items.length, 2);
+      expect(f.hasMore, isTrue);
+      ChroniqueFirstPage.clear();
+      expect(ChroniqueFirstPage.fresh(), isNull);
+    });
+
+    testWidgets('l\'anneau montre l\'aperçu de la chronique et la photo de l\'auteur en pastille', (t) async {
+      await t.pumpWidget(MaterialApp(
+        home: Scaffold(body: ChroniqueRing(group: [_c('mariam', type: ChroniqueType.TEXT, text: 'Bonne fête')], seen: false, onTap: () {})),
+      ));
+      await t.pump();
+      expect(find.byType(ChroniquePreviewFill), findsOneWidget);
+      expect(find.text('Bonne fête'), findsOneWidget);
+      expect(find.byType(ChroniqueAvatar), findsOneWidget);
     });
   });
 }
