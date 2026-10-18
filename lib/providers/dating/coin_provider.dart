@@ -1,5 +1,6 @@
 ﻿// lib/providers/dating/coin_gift_provider.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -37,7 +38,7 @@ class CoinProvider extends ChangeNotifier {
           .collection('coin_packages')
           .where('isActive', isEqualTo: true)
           .orderBy('priceXof')
-          .get();
+          .getM('coin_provider.dart:40');
 
       _availablePackages = snapshot.docs
           .map((doc) => CoinPackage.fromJson(doc.data()))

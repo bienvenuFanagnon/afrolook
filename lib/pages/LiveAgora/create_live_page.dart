@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import '../../utils/platform_guard.dart';
@@ -82,7 +83,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           .where('hostId', isEqualTo: user.uid)
           .where('isLive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('create_live_page.dart:85');
       if (snap.docs.isEmpty || !mounted) return;
       final doc = snap.docs.first;
       final data = doc.data();
@@ -1783,7 +1784,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           .where('hostId', isEqualTo: user.uid)
           .where('isLive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('create_live_page.dart:1786');
 
       if (activeLiveQuery.docs.isNotEmpty) {
         final existingLiveId = activeLiveQuery.docs.first.id;
@@ -2434,7 +2435,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //           .where('hostId', isEqualTo: user.uid)
 //           .where('isLive', isEqualTo: true)
 //           .limit(1)
-//           .get();
+//           .getM('create_live_page.dart:2437');
 //
 //       if (activeLiveQuery.docs.isNotEmpty) {
 //         // L'utilisateur a déjà un live actif

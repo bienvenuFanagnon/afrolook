@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -120,7 +121,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   /// Prévient l'auteur du commentaire (une lecture de son profil pour retrouver son identifiant de notification).
   Future<void> _notifyLike(ChroniqueMessage m) async {
     final me = _auth.loginUserData;
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(m.userId).get();
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(m.userId).getM('chronique_comments_sheet.dart:123');
     final player = doc.data()?['oneIgnalUserid'];
     if (player == null) return;
     await _auth.sendNotification(

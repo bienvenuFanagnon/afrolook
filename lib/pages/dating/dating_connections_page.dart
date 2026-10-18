@@ -1,5 +1,6 @@
 ﻿// lib/pages/dating/dating_connections_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,7 +43,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
           .where('userId', isEqualTo: _currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_connections_page.dart:45');
 
       if (snapshot.docs.isNotEmpty) {
         final subscription = snapshot.docs.first;
@@ -578,7 +579,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_connections_page.dart:581');
       if (snapshot.docs.isNotEmpty) {
         return DatingProfile.fromJson(snapshot.docs.first.data());
       }
@@ -593,7 +594,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
         .collection('dating_connections')
         .where('userId1', isEqualTo: userId)
         .where('isActive', isEqualTo: true)
-        .snapshots()
+        .snapshotsM('dating_connections_page.dart:596')
         .map((snapshot) => snapshot.docs
         .map((doc) => DatingConnection.fromJson(doc.data()))
         .toList())
@@ -602,7 +603,7 @@ class _DatingConnectionsPageState extends State<DatingConnectionsPage> {
           .collection('dating_connections')
           .where('userId2', isEqualTo: userId)
           .where('isActive', isEqualTo: true)
-          .get();
+          .getM('dating_connections_page.dart:605');
 
       final otherConnections = snapshot2.docs
           .map((doc) => DatingConnection.fromJson(doc.data()))

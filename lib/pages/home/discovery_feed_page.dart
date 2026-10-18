@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -70,7 +71,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
         query = query.startAfterDocument(_lastDoc!);
       }
 
-      final snap = await query.get();
+      final snap = await query.getM('discovery_feed_page.dart:73');
       final fetched = snap.docs.map((d) {
         try {
           return Post.fromJson(d.data() as Map<String, dynamic>)..id = d.id;

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 
@@ -141,14 +142,14 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         if (entry.key == 'Autres') continue;
         final types = entry.value;
         if (types.isEmpty) { counts[entry.key] = 0; continue; }
-        final snap = await base.where("type", whereIn: types).count().get();
+        final snap = await base.where("type", whereIn: types).count().getM('adminprofil.dart:144');
         final c = snap.count ?? 0;
         counts[entry.key] = c;
         knownTotal += c;
       }
 
       // Autres = total - groupes connus
-      final totalSnap = await base.count().get();
+      final totalSnap = await base.count().getM('adminprofil.dart:151');
       counts['Autres'] = ((totalSnap.count ?? 0) - knownTotal).clamp(0, 999999);
 
       if (mounted) setState(() => _txGroupCounts.addAll(counts));
@@ -178,7 +179,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       Query query = _buildBaseQuery();
       query = query.limit(_pageSize);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('adminprofil.dart:181');
       printVm("📊 Nombre de documents reçus: ${snapshot.docs.length}");
 
       _allDocs = snapshot.docs;
@@ -223,7 +224,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       Query query = _buildBaseQuery();
       query = query.startAfterDocument(_lastDocument!).limit(_pageSize);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('adminprofil.dart:226');
       printVm("📊 Nouveaux documents reçus: ${snapshot.docs.length}");
 
       if (snapshot.docs.isNotEmpty) {
@@ -323,7 +324,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
           .collection("Users")
           .where("email", isEqualTo: _emailController.text.trim())
           .limit(1)
-          .get();
+          .getM('adminprofil.dart:326');
 
       if (userQuery.docs.isNotEmpty) {
         final userId = userQuery.docs.first.id;
@@ -919,7 +920,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         final userDoc = await FirebaseFirestore.instance
             .collection("Users")
             .doc(transaction.user_id)
-            .get();
+            .getM('adminprofil.dart:922');
 
         if (userDoc.exists) {
           userData = UserData.fromJson(userDoc.data()!);
@@ -1274,7 +1275,7 @@ class _StatChip extends StatelessWidget {
 //         .collection("Users")
 //         .where("email", isEqualTo: _emailController.text.trim())
 //         .limit(1)
-//         .get();
+//         .getM('adminprofil.dart:1277');
 //
 //     if (userQuery.docs.isNotEmpty) {
 //       final userData = UserData.fromJson(userQuery.docs.first.data());
@@ -1323,7 +1324,7 @@ class _StatChip extends StatelessWidget {
 //       return Stream.value([]);
 //     }
 //
-//     return query.snapshots().map((snapshot) {
+//     return query.snapshotsM('adminprofil.dart:1326').map((snapshot) {
 //       List<TransactionSolde> transactions = snapshot.docs.map((e) {
 //         final data = e.data() as Map<String, dynamic>;
 //         data['id'] = e.id;
@@ -1364,7 +1365,7 @@ class _StatChip extends StatelessWidget {
 //         .collection("Users")
 //         .where("email", isEqualTo: _selectedUserEmail)
 //         .limit(1)
-//         .snapshots()
+//         .snapshotsM('adminprofil.dart:1367')
 //         .asyncMap((userSnapshot) async {
 //       if (userSnapshot.docs.isEmpty) return [];
 //
@@ -1375,7 +1376,7 @@ class _StatChip extends StatelessWidget {
 //           .collection("TransactionSoldes")
 //           .where("user_id", isEqualTo: userId)
 //           .orderBy("createdAt", descending: true)
-//           .get();
+//           .getM('adminprofil.dart:1378');
 //
 //       List<TransactionSolde> transactions = transactionsSnapshot.docs.map((e) {
 //         final data = e.data() as Map<String, dynamic>;
@@ -1422,7 +1423,7 @@ class _StatChip extends StatelessWidget {
 //       final userDoc = await FirebaseFirestore.instance
 //           .collection("Users")
 //           .doc(transaction.user_id)
-//           .get();
+//           .getM('adminprofil.dart:1425');
 //
 //       if (userDoc.exists) {
 //         userData = UserData.fromJson(userDoc.data()!);
@@ -1943,7 +1944,7 @@ class _StatChip extends StatelessWidget {
 //     return StreamBuilder<QuerySnapshot>(
 //       stream: FirebaseFirestore.instance
 //           .collection("TransactionSoldes")
-//           .snapshots(),
+//           .snapshotsM('adminprofil.dart:1946'),
 //       builder: (context, snapshot) {
 //         if (!snapshot.hasData) {
 //           return SizedBox.shrink();

@@ -1,4 +1,5 @@
-﻿import 'dart:math';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,7 +36,7 @@ class AdPreloadService {
           .collection('Advertisements')
           .where('status', isEqualTo: 'active')
           .limit(10)
-          .get();
+          .getM('ad_preload_service.dart:38');
 
       for (final doc in snap.docs) {
         final ad = Advertisement.fromJson(doc.data());
@@ -46,7 +47,7 @@ class AdPreloadService {
         final postDoc = await FirebaseFirestore.instance
             .collection('Posts')
             .doc(ad.postId)
-            .get();
+            .getM('ad_preload_service.dart:49');
         if (!postDoc.exists) continue;
 
         final postData = postDoc.data()!;

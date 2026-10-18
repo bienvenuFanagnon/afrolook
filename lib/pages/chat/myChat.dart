@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import '../../services/chat_request.dart';
 import '../chronique/chroniquedetails.dart';
@@ -318,7 +319,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           .orderBy('createdAt', descending: false)
           .where('createdAt', isLessThan: oldest.createdAt)
           .limitToLast(_pageSize)
-          .get();
+          .getM('myChat.dart:321');
 
       final older = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
       await _decryptMessages(older);
@@ -412,7 +413,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _loadEphemeralSettings() async {
     try {
-      final doc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final doc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:415');
       final dur = (doc.data()?['ephemeral_duration'] as int?) ?? 0;
       if (mounted) {
         setState(() => _ephemeralDuration = dur);
@@ -564,7 +565,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         .where('is_valide', isEqualTo: true)
         .orderBy('createdAt', descending: false)
         .limitToLast(_pageSize)
-        .snapshots()
+        .snapshotsM('myChat.dart:567')
         .asyncMap((snapshot) async {
       final messages = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
       await _decryptMessages(messages);
@@ -709,7 +710,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     try {
       final today = DateTime.now();
       final todayStr = '${today.year}-${today.month}-${today.day}';
-      final doc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final doc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:712');
       final data = doc.data();
       if (data == null) return;
       final lastDate = data['lastStreakDate'] as String?;
@@ -1417,7 +1418,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           : widget.chat.senderId!;
 
       // Si le destinataire est activement dans CE chat → pas de notif
-      final chatDoc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final chatDoc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:1420');
       final activeViewers = List<String>.from(chatDoc.data()?['activeViewers'] ?? []);
       if (activeViewers.contains(receiverId)) return;
 
@@ -1755,7 +1756,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _openSharedItem(String messageId) async {
     try {
-      final doc = await _firestore.collection('Messages').doc(messageId).get();
+      final doc = await _firestore.collection('Messages').doc(messageId).getM('myChat.dart:1758');
       if (!doc.exists || !mounted) return;
       final data = doc.data()!;
       final itemType = data['item_type'] as String? ?? '';
@@ -1770,13 +1771,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           Navigator.push(context, MaterialPageRoute(builder: (_) => ChroniqueDetailPage(initialChroniqueId: itemId)));
           break;
         case 'vip':
-          final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).get();
+          final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).getM('myChat.dart:1773');
           if (!contentDoc.exists || !mounted) return;
           final content = ContentPaie.fromJson(contentDoc.data()!);
           Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
           break;
         case 'live':
-          final liveDoc = await _firestore.collection('lives').doc(itemId).get();
+          final liveDoc = await _firestore.collection('lives').doc(itemId).getM('myChat.dart:1779');
           if (!liveDoc.exists || !mounted) return;
           final live = PostLive.fromMap(liveDoc.data()!);
           if (live.isLive) {
@@ -1800,14 +1801,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _openSharedPost(String messageId) async {
     try {
-      final msgDoc = await _firestore.collection('Messages').doc(messageId).get();
+      final msgDoc = await _firestore.collection('Messages').doc(messageId).getM('myChat.dart:1803');
       if (!msgDoc.exists || !mounted) return;
       final data = msgDoc.data()!;
       final postId = data['post_id'] as String?;
       final dataType = data['post_data_type'] as String? ?? 'IMAGE';
       if (postId == null || postId.isEmpty) return;
 
-      final postDoc = await _firestore.collection('Posts').doc(postId).get();
+      final postDoc = await _firestore.collection('Posts').doc(postId).getM('myChat.dart:1810');
       if (!postDoc.exists || !mounted) return;
       final post = Post.fromJson(postDoc.data()!);
 
@@ -2305,8 +2306,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
     try {
       final results = await Future.wait([
-        _firestore.collection('BlockedUsers').doc(blockByMe).get(),
-        _firestore.collection('BlockedUsers').doc(blockByOther).get(),
+        _firestore.collection('BlockedUsers').doc(blockByMe).getM('myChat.dart:2308'),
+        _firestore.collection('BlockedUsers').doc(blockByOther).getM('myChat.dart:2309'),
       ]);
 
       if (!mounted) return;
@@ -2322,7 +2323,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   Future<void> _loadMyPrivacySettings() async {
     final myId = _authProvider.loginUserData.id!;
     try {
-      final doc = await _firestore.collection('Users').doc(myId).get();
+      final doc = await _firestore.collection('Users').doc(myId).getM('myChat.dart:2325');
       final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
       if (mounted) setState(() => _hideReadReceipts = privacy['hideReadReceipts'] == true);
     } catch (e) {

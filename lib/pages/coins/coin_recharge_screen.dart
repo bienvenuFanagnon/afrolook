@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:afrotok/pages/coins/play_coin_store_view.dart';
@@ -65,7 +66,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           .collection('Users')
           .where('email', isEqualTo: email)
           .limit(1)
-          .get();
+          .getM('coin_recharge_screen.dart:68');
       if (query.docs.isEmpty) {
         setState(() { _isSearching = false; _userFound = false; });
         _showErrorDialog(context.tr('Aucun utilisateur trouvé avec cet email'));

@@ -1,5 +1,6 @@
 ﻿// lib/pages/dating/dating_notifications_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 
@@ -48,7 +49,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
           .where('receiver_id', isEqualTo: _currentUserId)
           .where('type', whereIn: _datingTypes)
           .where('is_open', isEqualTo: false)
-          .get();
+          .getM('dating_notifications_page.dart:51');
       setState(() {
         _unreadCount = snapshot.docs.length;
       });
@@ -71,7 +72,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
             .where('type', whereIn: _datingTypes)
             .limit(500);
         if (lastDoc != null) q = q.startAfterDocument(lastDoc);
-        final snap = await q.get();
+        final snap = await q.getM('dating_notifications_page.dart:74');
         if (snap.docs.isEmpty) break;
 
         final batch = FirebaseFirestore.instance.batch();
@@ -279,7 +280,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
         .collection('dating_profiles')
         .where('userId', isEqualTo: userId)
         .limit(1)
-        .get()
+        .getM('dating_notifications_page.dart:282')
         .then((snapshot) {
       if (snapshot.docs.isNotEmpty) {
         final profile = DatingProfile.fromJson(snapshot.docs.first.data());
@@ -367,7 +368,7 @@ class _DatingNotificationsPageState extends State<DatingNotificationsPage> {
             .where('receiver_id', isEqualTo: _currentUserId)
             .where('type', whereIn: _datingTypes)
             .orderBy('createdAt', descending: true)
-            .snapshots(),
+            .snapshotsM('dating_notifications_page.dart:370'),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(

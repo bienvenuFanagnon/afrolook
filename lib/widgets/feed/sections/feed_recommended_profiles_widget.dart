@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +41,7 @@ class _FeedRecommendedProfilesWidgetState
           .collection('Users')
           .where('isCreator', isEqualTo: true)
           .limit(50)
-          .get();
+          .getM('feed_recommended_profiles_widget.dart:43');
 
       final results = snap.docs
           .map((d) {

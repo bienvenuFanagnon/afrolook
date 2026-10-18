@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -164,7 +165,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final doc = await firestore
           .collection('Users')
           .doc(authProvider.loginUserData.id)
-          .get();
+          .getM('profile_page.dart:167');
       final data = doc.data();
       final serverPseudo = (data?['pseudo'] as String?) ?? (authProvider.loginUserData.pseudo ?? '');
       final lastChanged = data?['pseudo_last_changed_at'] as int?;
@@ -229,7 +230,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _pseudoStatus = 'checking');
     _pseudoDebounce = Timer(const Duration(milliseconds: 600), () async {
       try {
-        final snap = await firestore.collection('Pseudo').get();
+        final snap = await firestore.collection('Pseudo').getM('profile_page.dart:232');
         final taken = snap.docs.any((doc) {
           final name = normalizePseudo(doc.data()['name'] as String? ?? '');
           return name == formatted;
@@ -448,7 +449,7 @@ class _ProfilePageState extends State<ProfilePage> {
             .collection('Pseudo')
             .where('name', isEqualTo: _originalPseudo)
             .limit(1)
-            .get();
+            .getM('profile_page.dart:451');
         for (final doc in oldSnap.docs) {
           await doc.reference.delete();
         }

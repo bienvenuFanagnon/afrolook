@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -38,7 +39,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
           .collection('lives')
           .where('hostId', isEqualTo: user.uid)
           .orderBy('startTime', descending: true)
-          .get();
+          .getM('mesLives.dart:41');
       setState(() {
         _userLives = querySnapshot.docs.map((doc) => PostLive.fromMap(doc.data())).toList();
         _isLoading = false;

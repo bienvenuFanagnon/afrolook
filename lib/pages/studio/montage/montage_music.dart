@@ -1,6 +1,7 @@
 // Musique des templates : pistes gratuites d'Afrolook (Storage studio_music/{id}.m4a, créées par
 // functions/scripts/gen_studio_music.cjs, sans droits d'auteur) et sons des artistes validés (payants, l'artiste est payé).
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -305,7 +306,7 @@ class _MusicSheetState extends State<_MusicSheet> {
         .where('status', isEqualTo: 'validated')
         .orderBy('validatedAt', descending: true)
         .limit(100)
-        .get();
+        .getM('montage_music.dart:308');
     f.then((_) {}, onError: (Object _) {
       _artistsFuture = null; // échec : on réessaiera à la prochaine ouverture
       _artistsAt = null;

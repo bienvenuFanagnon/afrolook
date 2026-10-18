@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -131,7 +132,7 @@ class DiscoveryBoostService {
           .collection('Posts')
           .orderBy('postScore', descending: true)
           .limit(limit * 6)
-          .get();
+          .getM('discovery_boost_service.dart:134');
 
       // Pool B : nouveaux posts < 72h (cold start)
       final freshSnap = await _db
@@ -139,7 +140,7 @@ class DiscoveryBoostService {
           .where('created_at', isGreaterThan: freshCutoffUs)
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
-          .get();
+          .getM('discovery_boost_service.dart:142');
 
       bool _isEligible(String docId, String uid) {
         if (docId.isEmpty || seenIds.contains(docId)) return false;
@@ -222,7 +223,7 @@ class DiscoveryBoostService {
           .where('created_at', isGreaterThan: sinceUs)
           .orderBy('created_at', descending: true)
           .limit(globalLimit)
-          .get();
+          .getM('discovery_boost_service.dart:225');
 
       // 2. Grouper par créateur — garder seulement le post le plus récent
       //    Exclure : suivis, soi-même, posts vus
@@ -286,7 +287,7 @@ class DiscoveryBoostService {
         final snap = await _db
             .collection('Users')
             .where(FieldPath.documentId, whereIn: chunk)
-            .get();
+            .getM('discovery_boost_service.dart:289');
         for (final d in snap.docs) {
           final data = Map<String, dynamic>.from(d.data());
           data['id'] = d.id;

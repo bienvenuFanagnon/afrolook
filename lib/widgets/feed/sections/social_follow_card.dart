@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -56,7 +57,7 @@ class SocialFollowCard extends StatefulWidget {
     final at = _countsAt;
     if (at != null && DateTime.now().difference(at) < const Duration(minutes: 2)) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('socialClicks').get();
+      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('socialClicks').getM('social_follow_card.dart:59');
       final d = doc.data() ?? {};
       _counts['facebook'] = (d['facebook'] as num?)?.toInt() ?? 0;
       _counts['tiktok'] = (d['tiktok'] as num?)?.toInt() ?? 0;

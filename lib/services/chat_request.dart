@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +22,7 @@ class ChatRequestService {
   static Future<Invitation?> _invitation(Chat chat) async {
     final id = chat.requestInvitationId;
     if (id == null || id.isEmpty) return null;
-    final doc = await FirebaseFirestore.instance.collection('Invitations').doc(id).get();
+    final doc = await FirebaseFirestore.instance.collection('Invitations').doc(id).getM('chat_request.dart:24');
     if (!doc.exists) return null;
     return Invitation.fromJson(doc.data()!, reference: doc.reference)..id = doc.id;
   }
@@ -52,7 +53,7 @@ class ChatRequestService {
       await _setStatus(chat, 'accepted');
       if (senderId != null) {
         try {
-          final other = (await fs.collection('Users').doc(senderId).get()).data();
+          final other = (await fs.collection('Users').doc(senderId).getM('chat_request.dart:55')).data();
           final player = other?['oneIgnalUserid'];
           if (player != null && player.toString().isNotEmpty) {
             await auth.sendNotification(

@@ -130,3 +130,12 @@ extension DocReadMeter<T extends Object?> on DocumentReference<T> {
     });
   }
 }
+
+/// Comptage d'un agrégat (`count()`, `sum()`…) : facturé une lecture par tranche de 1 000 entrées d'index, comptée ici pour une.
+extension AggregateReadMeter on AggregateQuery {
+  Future<AggregateQuerySnapshot> getM(String tag) async {
+    final s = await get();
+    ReadMeter.add(tag, 1);
+    return s;
+  }
+}

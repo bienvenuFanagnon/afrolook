@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -115,7 +116,7 @@ class _ReplySheetState extends State<_ReplySheet> {
     final myId = me.id!;
     final other = c.userId;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final found = await fs.collection('Chats').where('docId', whereIn: ['$other$myId', '$myId$other']).limit(1).get();
+    final found = await fs.collection('Chats').where('docId', whereIn: ['$other$myId', '$myId$other']).limit(1).getM('chronique_reply_sheet.dart:118');
     Chat chat;
     if (found.docs.isNotEmpty) {
       chat = Chat.fromJson(found.docs.first.data());
@@ -145,7 +146,7 @@ class _ReplySheetState extends State<_ReplySheet> {
     await batch.commit();
     Map<String, dynamic>? owner;
     try {
-      owner = (await fs.collection('Users').doc(other).get()).data();
+      owner = (await fs.collection('Users').doc(other).getM('chronique_reply_sheet.dart:148')).data();
       if (owner != null) chat.receiver = UserData.fromJson({...owner, 'id': other});
       final player = owner?['oneIgnalUserid'];
       if (player != null && mounted) {
@@ -168,14 +169,14 @@ class _ReplySheetState extends State<_ReplySheet> {
     try {
       DocumentSnapshot<Map<String, dynamic>>? doc;
       if (chatId != null && chatId.isNotEmpty) {
-        doc = await fs.collection('Chats').doc(chatId).get();
+        doc = await fs.collection('Chats').doc(chatId).getM('chronique_reply_sheet.dart:171');
       } else {
-        final q = await fs.collection('Chats').where('docId', whereIn: ['${c.userId}$myId', '$myId${c.userId}']).limit(1).get();
+        final q = await fs.collection('Chats').where('docId', whereIn: ['${c.userId}$myId', '$myId${c.userId}']).limit(1).getM('chronique_reply_sheet.dart:173');
         if (q.docs.isNotEmpty) doc = q.docs.first;
       }
       if (doc == null || !doc.exists) return;
       final chat = Chat.fromJson(doc.data()!);
-      final owner = (await fs.collection('Users').doc(c.userId).get()).data();
+      final owner = (await fs.collection('Users').doc(c.userId).getM('chronique_reply_sheet.dart:178')).data();
       if (owner != null) chat.receiver = UserData.fromJson({...owner, 'id': c.userId});
       if (!mounted) return;
       final nav = Navigator.of(context);

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -187,7 +188,7 @@ class _MusicSheetState extends State<_MusicSheet> {
       _errorLibrary = false;
     });
     try {
-      final snap = await FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: uid).limit(50).get();
+      final snap = await FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: uid).limit(50).getM('chronique_music_sheet.dart:190');
       if (!mounted) return;
       setState(() => _library = [
             for (final d in snap.docs)
@@ -204,7 +205,7 @@ class _MusicSheetState extends State<_MusicSheet> {
     setState(() => _busyKey = p.key);
     try {
       final id = p.key.substring(4);
-      final doc = await FirebaseFirestore.instance.collection('artist_sounds').doc(id).get();
+      final doc = await FirebaseFirestore.instance.collection('artist_sounds').doc(id).getM('chronique_music_sheet.dart:207');
       if (!doc.exists || doc.data()!['status'] != 'validated' || ((doc.data()!['previewUrl'] ?? '') as String).isEmpty) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre n\'est plus disponible.')));
         return;

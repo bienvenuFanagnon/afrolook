@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
@@ -35,7 +36,7 @@ class UserService {
           .collection('Users')
           .where('id', isNotEqualTo: userId)
           .limit(20)
-          .get();
+          .getM('userService.dart:38');
 
       // Afficher la liste
       snapshot.docs.forEach((doc) {
@@ -64,7 +65,7 @@ class UserService {
       CollectionReference userCollect =
       FirebaseFirestore.instance.collection('Users');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: userId!).get();
+      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: userId!).getM('userService.dart:67');
       // Afficher la liste
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -74,7 +75,7 @@ class UserService {
       CollectionReference collectionRef =
       FirebaseFirestore.instance.collection('Invitations');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userId!).get();
+      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userId!).getM('userService.dart:77');
 
       List<Invitation> inviteList = querySnapshotInv.docs.map((doc) =>
           Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -84,7 +85,7 @@ class UserService {
       CollectionReference collectionRefAutreInv =
       FirebaseFirestore.instance.collection('Invitations');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userId!).get();
+      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userId!).getM('userService.dart:87');
 
       List<Invitation> autreinviteList = querySnapshotInv.docs.map((doc) =>
           Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -95,7 +96,7 @@ class UserService {
       CollectionReference userCollectAbonnes =
       FirebaseFirestore.instance.collection('Abonnements');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userId).get();
+      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userId).getM('userService.dart:98');
       // Afficher la liste
       List<UserAbonnes> userListAbonnes = querySnapshotAbone.docs.map((doc) =>
           UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -126,7 +127,7 @@ class UserService {
       CollectionReference userCollect =
       FirebaseFirestore.instance.collection('Users');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect.where("numero_de_telephone",isEqualTo: phone!).get();
+      QuerySnapshot querySnapshotUser = await userCollect.where("numero_de_telephone",isEqualTo: phone!).getM('userService.dart:129');
       // Afficher la liste
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -136,7 +137,7 @@ class UserService {
       CollectionReference collectionRef =
       FirebaseFirestore.instance.collection('Invitations');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userData.id!).get();
+      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userData.id!).getM('userService.dart:139');
 
       List<Invitation> inviteList = querySnapshotInv.docs.map((doc) =>
           Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -146,7 +147,7 @@ class UserService {
       CollectionReference collectionRefAutreInv =
       FirebaseFirestore.instance.collection('Invitations');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userData.id!!).get();
+      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userData.id!!).getM('userService.dart:149');
 
       List<Invitation> autreinviteList = querySnapshotInv.docs.map((doc) =>
           Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -157,7 +158,7 @@ class UserService {
       CollectionReference userCollectAbonnes =
       FirebaseFirestore.instance.collection('Abonnements');
       // Get docs from collection reference
-      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userData.id!).get();
+      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userData.id!).getM('userService.dart:160');
       // Afficher la liste
       List<UserAbonnes> userListAbonnes = querySnapshotAbone.docs.map((doc) =>
           UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();

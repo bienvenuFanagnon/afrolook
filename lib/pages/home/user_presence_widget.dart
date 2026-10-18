@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -75,7 +76,7 @@ class UserPresenceWidget extends StatelessWidget {
       stream: FirebaseFirestore.instance
           .collection('UserPresence')
           .doc(userId)
-          .snapshots(),
+          .snapshotsM('user_presence_widget.dart:78'),
       builder: (context, presence) {
         if (presence.hasData && presence.data!.exists) {
           return _render(
@@ -94,7 +95,7 @@ class UserPresenceWidget extends StatelessWidget {
       stream: FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .snapshots(),
+          .snapshotsM('user_presence_widget.dart:97'),
       builder: (context, snapshot) {
         // En cas d'erreur sur le flux
         if (snapshot.hasError) {

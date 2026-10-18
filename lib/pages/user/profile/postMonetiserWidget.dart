@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +39,7 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
     DocumentSnapshot postMonetiserSnapshot = await FirebaseFirestore.instance
         .collection('PostsMonetiser')
         .doc(postMonetiserId)
-        .get();
+        .getM('postMonetiserWidget.dart:41');
 
     if (!postMonetiserSnapshot.exists) {
       printVm("PostMonetiser introuvable");
@@ -78,7 +79,7 @@ class _PostMonetiserWidgetState extends State<PostMonetiserWidget> {
     DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .doc(userId)
-        .get();
+        .getM('postMonetiserWidget.dart:81');
 
     if (!userSnapshot.exists) {
       printVm("Utilisateur introuvable");

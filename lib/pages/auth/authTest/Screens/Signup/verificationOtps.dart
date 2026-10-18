@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/language_selector.dart';
 import 'dart:async';
 
@@ -54,7 +55,7 @@ class _VerificationOtpState extends State<VerificationOtp> {
       QuerySnapshot querySnapshot = await firestore
           .collection('Reservation.Utilisateur') // Remplacez par le nom de votre collection
           .where('email', isEqualTo: email)
-          .get();
+          .getM('verificationOtps.dart:57');
 
       if (querySnapshot.docs.isNotEmpty) {
         QueryDocumentSnapshot userDocument = querySnapshot.docs.first;

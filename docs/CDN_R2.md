@@ -55,3 +55,11 @@ de documents isolés). Seulement 4 à 7 connexions actives en moyenne, 15 à 60 
 - **À surveiller** : `paymentWatchdog` relit toutes les 15 min les 116 dépôts FeexPay jamais confirmés (≈ 11 000 lectures/jour, 2 %) ; l'écoute
   `GroupChats` de l'accueil sans limite ; la source principale du reste (≈ 400 000 lectures) n'est pas isolée : il faut compter les lectures par
   écran dans l'application (compteur de debug) ou activer les journaux d'accès aux données Firestore pendant une heure.
+
+### Mesure des lectures par écran (version 2.0.14, tâche #94)
+Tous les `get()` et `snapshots()` de l'application passent par `getM('fichier:ligne')` / `snapshotsM('fichier:ligne')` (`lib/services/read_meter.dart`) :
+mêmes résultats, avec comptage des documents reçus du serveur (cache et écritures locales gratuits). Toutes les 10 min et en passant en arrière-plan,
+les 60 sources les plus actives partent vers la fonction `readStatsReport`, qui les additionne dans `ReadStats/{jour}` (lecture admin).
+Écran : Admin → « Mesure des lectures » (session en cours, et jour pour tous les téléphones). Coupure à distance : `AppConfig/readMeter` → `enabled: false`.
+Retrait quand l'audit est fini : `git revert` du commit de remplacement (le remplacement est un seul commit mécanique, script
+`codemod_meter.py` : `.getM('x')` → `.get()` et `.snapshotsM('x')` → `.snapshots()`).

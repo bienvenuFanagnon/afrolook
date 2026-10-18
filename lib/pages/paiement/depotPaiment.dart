@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -37,7 +38,7 @@ class _PaiementPageState extends State<PaiementPage> {
       if (user == null) throw Exception("Utilisateur non authentifié");
 
       final userRef = FirebaseFirestore.instance.collection("Users").doc(user.uid);
-      final userDoc = await userRef.get();
+      final userDoc = await userRef.getM('depotPaiment.dart:40');
       if (!userDoc.exists) throw Exception("Utilisateur non trouvé");
 
       // Montant et frais

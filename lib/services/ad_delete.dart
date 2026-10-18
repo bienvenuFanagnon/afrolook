@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -21,7 +22,7 @@ class AdDeletion {
     if (postId == null || postId.isEmpty) return;
     try {
       final ref = db.collection('Posts').doc(postId);
-      final snap = await ref.get();
+      final snap = await ref.getM('ad_delete.dart:24');
       final data = snap.data();
       if (data == null) return;
       // Post relié à une autre publicité, ou jamais marqué par celle-ci (défi boosté) : on n'y touche pas

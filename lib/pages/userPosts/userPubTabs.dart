@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
@@ -123,7 +124,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //           .where('user_id', isEqualTo: authProvider.loginUserData.id)
 //           .orderBy('created_at', descending: true)
 //           .limit(1)
-//           .get();
+//           .getM('userPubTabs.dart:126');
 //
 //       if (userPosts.docs.isNotEmpty) {
 //         final lastPost = userPosts.docs.first;
@@ -939,7 +940,7 @@ import 'hashtag/textHashTag/views/widgets/search_result_overlay.dart';
 //           .where('user_id', isEqualTo: authProvider.loginUserData.id)
 //           .orderBy('created_at', descending: true)
 //           .limit(1)
-//           .get();
+//           .getM('userPubTabs.dart:942');
 //
 //       if (userPosts.docs.isNotEmpty) {
 //         final lastPost = userPosts.docs.first;

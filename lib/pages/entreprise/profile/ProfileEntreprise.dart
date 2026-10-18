@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/pages/admin/new_category.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/pages/admin/new_category.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
@@ -108,7 +109,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
       CollectionReference collectionRef = firestore.collection('Entreprises');
       QuerySnapshot querySnapshot = await collectionRef
           .where("userId", isEqualTo: userId)
-          .get();
+          .getM('ProfileEntreprise.dart:111');
 
       List<EntrepriseData> listEntreprise = querySnapshot.docs.map((doc) {
         final entreprise = EntrepriseData.fromJson(doc.data() as Map<String, dynamic>);
@@ -171,7 +172,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('ProfileEntreprise.dart:174');
 
       if (snapshot.docs.isNotEmpty) {
         _lastDocument = snapshot.docs.last;

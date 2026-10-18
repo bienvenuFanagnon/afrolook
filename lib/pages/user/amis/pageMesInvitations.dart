@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -156,7 +157,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('pageMesInvitations.dart:159');
 
       if (snapshot.docs.isEmpty) {
         setState(() {
@@ -180,7 +181,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               .collection('Users')
               .where('id', isEqualTo: invitation.senderId)
               .limit(1)
-              .get();
+              .getM('pageMesInvitations.dart:183');
 
           if (userSnapshot.docs.isNotEmpty) {
             invitation.inviteUser = UserData.fromJson(

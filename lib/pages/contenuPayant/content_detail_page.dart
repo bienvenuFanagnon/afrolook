@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -107,7 +108,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
   Future<void> _loadCreatorData() async {
     final ownerId = _content.ownerId;
     if (ownerId == null || ownerId.isEmpty) return;
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('content_detail_page.dart:110');
     if (doc.exists && mounted) {
       setState(() => _creatorData = UserData.fromJson({...doc.data()!, 'id': doc.id}));
     }
@@ -394,7 +395,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
           .where('affiliateId', isEqualTo: affiliateId)
           .where('contentId', isEqualTo: _content.id)
           .limit(1)
-          .get();
+          .getM('content_detail_page.dart:397');
       if (snap.docs.isNotEmpty) {
         await snap.docs.first.reference
             .update({'clicks': FieldValue.increment(1)});
@@ -430,7 +431,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
         .where('userId', isEqualTo: uid)
         .where('contentId', isEqualTo: _content.id)
         .limit(1)
-        .get();
+        .getM('content_detail_page.dart:433');
     if (mounted) {
       setState(() {
         _hasPurchased = snap.docs.isNotEmpty;
@@ -1412,7 +1413,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
               .collection('Episodes')
               .where('seriesId', isEqualTo: _content.id)
               .orderBy('episodeNumber')
-              .snapshots(),
+              .snapshotsM('content_detail_page.dart:1415'),
           builder: (context, snap) {
             if (!snap.hasData) {
               return const Center(

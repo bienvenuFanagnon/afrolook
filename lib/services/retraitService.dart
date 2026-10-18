@@ -1,5 +1,6 @@
 // services/retraitService.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/model_data.dart';
@@ -118,7 +119,7 @@ class RetraitService {
       final retraitDoc = await _firestore
           .collection(_collectionRetraits)
           .doc(retraitId)
-          .get();
+          .getM('retraitService.dart:121');
 
       if (!retraitDoc.exists) {
         throw Exception('Transaction non trouvée');
@@ -159,7 +160,7 @@ class RetraitService {
         .collection(_collectionRetraits)
         .where('user_id', isEqualTo: userId)
         .orderBy('created_at', descending: true)
-        .snapshots()
+        .snapshotsM('retraitService.dart:162')
         .map((snapshot) => snapshot.docs
         .map((doc) {
       final data = doc.data();
@@ -175,7 +176,7 @@ class RetraitService {
         .collection(_collectionRetraits)
         .where('user_email', isEqualTo: email)
         .orderBy('created_at', descending: true)
-        .snapshots()
+        .snapshotsM('retraitService.dart:178')
         .map((snapshot) => snapshot.docs
         .map((doc) {
       final data = doc.data();
@@ -190,7 +191,7 @@ class RetraitService {
     return _firestore
         .collection(_collectionRetraits)
         .orderBy('created_at', descending: true)
-        .snapshots()
+        .snapshotsM('retraitService.dart:193')
         .map((snapshot) => snapshot.docs
         .map((doc) {
       final data = doc.data();

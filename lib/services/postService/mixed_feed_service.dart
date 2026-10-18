@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:math';
@@ -217,7 +218,7 @@ class MixedFeedService {
 
       // 🔥 ÉTAPE 1: ESSAYER LES ABONNEMENTS
       try {
-        final userDoc = await firestore.collection('Users').doc(currentUserId).get();
+        final userDoc = await firestore.collection('Users').doc(currentUserId).getM('mixed_feed_service.dart:220');
         if (userDoc.exists) {
           final userData = userDoc.data()!;
           final newPostsFromSubscriptions = List<String>.from(userData['newPostsFromSubscriptions'] ?? []);
@@ -294,7 +295,7 @@ class MixedFeedService {
           .collection('Posts')
           .orderBy('created_at', descending: true)
           .limit(limit * 2)
-          .get();
+          .getM('mixed_feed_service.dart:297');
 
       final allPosts = snapshot.docs.map((doc) => doc.id).toList();
       final filteredPosts = allPosts.where((id) => !excludeIds.contains(id)).toList();
@@ -334,7 +335,7 @@ class MixedFeedService {
 // 🔥 PRÉPARATION PROGRESSIVE EN BACKGROUND
   void _startProgressivePreparation(String currentUserId) async {
     try {
-      final userDoc = await firestore.collection('Users').doc(currentUserId).get();
+      final userDoc = await firestore.collection('Users').doc(currentUserId).getM('mixed_feed_service.dart:337');
       if (!userDoc.exists) {
         _isPreparingPosts = false;
         return;
@@ -606,7 +607,7 @@ class MixedFeedService {
     try {
       printVm('🎯 Préparation des IDs de posts - Cible: $_preloadBatchSize posts...');
 
-      final userDoc = await firestore.collection('Users').doc(currentUserId).get();
+      final userDoc = await firestore.collection('Users').doc(currentUserId).getM('mixed_feed_service.dart:609');
       if (!userDoc.exists) return;
 
       final userData = userDoc.data()!;
@@ -799,7 +800,7 @@ class MixedFeedService {
           .orderBy('created_at', descending: true)
           .limit(effectiveLimit);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('mixed_feed_service.dart:802');
 
       // Filtrage manuel
       final allPosts = snapshot.docs.map((doc) => doc.id).toList();
@@ -835,7 +836,7 @@ class MixedFeedService {
           .orderBy('feedScore', descending: minScore > 0.5)
           .limit(effectiveLimit);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('mixed_feed_service.dart:838');
 
       // Filtrage manuel
       final allPosts = snapshot.docs.map((doc) => doc.id).toList();
@@ -858,7 +859,7 @@ class MixedFeedService {
           .collection('Posts')
           .orderBy('created_at', descending: true)
           .limit(limit * 2)
-          .get();
+          .getM('mixed_feed_service.dart:861');
 
       final allPosts = snapshot.docs.map((doc) => doc.id).toList();
       final filteredPosts = allPosts.where((id) => !excludedIds.contains(id)).toList();
@@ -1114,7 +1115,7 @@ class MixedFeedService {
         final snapshot = await firestore
             .collection('Posts')
             .where(FieldPath.documentId, whereIn: batchIds)
-            .get();
+            .getM('mixed_feed_service.dart:1117');
 
         final batchPosts = snapshot.docs.map((doc) {
           try {
@@ -1142,7 +1143,7 @@ class MixedFeedService {
           .collection('chroniques')
           .orderBy('createdAt', descending: true)
           .limit(FeedConfig.chroniquesLoadLimit)
-          .get();
+          .getM('mixed_feed_service.dart:1145');
 
       final now = DateTime.now();
       final List<Chronique> validChroniques = [];
@@ -1226,7 +1227,7 @@ class MixedFeedService {
           .collection('Articles')
           .where('isBoosted', isEqualTo: true)
           .limit(FeedConfig.articlesLoadLimit)
-          .get();
+          .getM('mixed_feed_service.dart:1229');
 
       _globalArticles = snapshot.docs.map((doc) {
         return ArticleData.fromJson({'id': doc.id, ...doc.data()});
@@ -1242,7 +1243,7 @@ class MixedFeedService {
       final snapshot = await firestore
           .collection('Canaux')
           .limit(FeedConfig.canauxLoadLimit)
-          .get();
+          .getM('mixed_feed_service.dart:1245');
 
       _globalCanaux = snapshot.docs.map((doc) {
         return Canal.fromJson(doc.data());
@@ -1277,7 +1278,7 @@ class MixedFeedService {
       final currentUserId = authProvider.loginUserData.id;
       if (currentUserId == null) return;
 
-      final userDoc = await firestore.collection('Users').doc(currentUserId).get();
+      final userDoc = await firestore.collection('Users').doc(currentUserId).getM('mixed_feed_service.dart:1280');
       if (!userDoc.exists) return;
 
       final data = userDoc.data()!;
@@ -1386,7 +1387,7 @@ class MassNotificationService {
         query = query.startAfterDocument(lastDoc);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('mixed_feed_service.dart:1389');
       final subscriberIds = snapshot.docs.map((doc) => doc.id).toList();
 
       if (subscriberIds.isNotEmpty) {

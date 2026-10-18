@@ -1,4 +1,5 @@
-﻿import '../../../utils/count_format.dart';
+import 'package:afrotok/services/read_meter.dart';
+import '../../../utils/count_format.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -144,7 +145,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('addListAmis.dart:147');
 
       if (snapshot.docs.isNotEmpty) {
         // Filtrer l'utilisateur connecté localement
@@ -231,7 +232,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
           .collection('Users')
           .where('pseudo', isEqualTo: searchQuery) // ✅ Recherche exacte sur le pseudo
           .limit(10) // Au cas où plusieurs utilisateurs ont le même pseudo
-          .get();
+          .getM('addListAmis.dart:234');
 
       // Filtrer pour enlever l'utilisateur connecté
       List<UserData> results = snapshot.docs
@@ -274,7 +275,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('Users')
           .limit(30)
-          .get();
+          .getM('addListAmis.dart:277');
 
       // Éviter les doublons avec les résultats existants
       final existingIds = _searchResults.map((u) => u.id).toSet();
@@ -940,7 +941,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
 //       if (localResults.length < 5) {
 //         QuerySnapshot snapshot = await FirebaseFirestore.instance
 //             .collection('Users')
-//             .get();
+//             .getM('addListAmis.dart:943');
 //
 //         List<UserData> firebaseResults = snapshot.docs
 //             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -1618,7 +1619,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
 //                   .collection('Users')
 //                   .where('id', isNotEqualTo: authProvider.loginUserData.id!)
 //                   .limit(20)
-//                   .snapshots(),
+//                   .snapshotsM('addListAmis.dart:1621'),
 //               builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
 //                 if (snapshot.hasData) {
 //                   QuerySnapshot data = snapshot.requireData;

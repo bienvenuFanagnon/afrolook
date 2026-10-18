@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 // lib/pages/dating/dating_swipe_page.dart
 
@@ -352,7 +353,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         .where('receiver_id', isEqualTo: _currentUserId)
         .where('type', whereIn: datingTypes)
         .where('is_open', isEqualTo: false)
-        .snapshots()
+        .snapshotsM('dating_entry_page.dart:355')
         .listen((snapshot) {
       printVm('📬 Snapshot reçu: ${snapshot.docs.length} documents');
       for (var doc in snapshot.docs) {
@@ -374,14 +375,14 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .where('receiver_id', isEqualTo: _currentUserId)
           .where('type', isEqualTo: 'DATING_MATCH')
           .where('is_open', isEqualTo: false)
-          .get();
+          .getM('dating_entry_page.dart:377');
 
       final likeSnap = await firestore
           .collection('Notifications')
           .where('receiver_id', isEqualTo: _currentUserId)
           .where('type', whereIn: ['DATING_LIKE', 'DATING_SUPER_LIKE'])
           .where('is_open', isEqualTo: false)
-          .get();
+          .getM('dating_entry_page.dart:384');
 
       final matchCount = matchSnap.docs.length;
       final likeCount = likeSnap.docs.length;
@@ -538,7 +539,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .collection('user_dating_subscriptions')
           .where('userId', isEqualTo: _currentUserId)
           .where('isActive', isEqualTo: true)
-          .get();
+          .getM('dating_entry_page.dart:541');
 
       final nowDateTime = DateTime.now();
       final todayStart = DateTime(nowDateTime.year, nowDateTime.month, nowDateTime.day).millisecondsSinceEpoch;
@@ -732,10 +733,10 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       final passedIds = <String>{};
 
       final results = await Future.wait([
-        firestore.collection('dating_likes').where('fromUserId', isEqualTo: _currentUserId).get(),
-        firestore.collection('dating_connections').where('userId1', isEqualTo: _currentUserId).get(),
-        firestore.collection('dating_connections').where('userId2', isEqualTo: _currentUserId).get(),
-        firestore.collection('dating_passes').where('fromUserId', isEqualTo: _currentUserId).get(),
+        firestore.collection('dating_likes').where('fromUserId', isEqualTo: _currentUserId).getM('dating_entry_page.dart:735'),
+        firestore.collection('dating_connections').where('userId1', isEqualTo: _currentUserId).getM('dating_entry_page.dart:736'),
+        firestore.collection('dating_connections').where('userId2', isEqualTo: _currentUserId).getM('dating_entry_page.dart:737'),
+        firestore.collection('dating_passes').where('fromUserId', isEqualTo: _currentUserId).getM('dating_entry_page.dart:738'),
       ]);
 
       for (var doc in results[0].docs) {
@@ -770,7 +771,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .collection('dating_profiles')
           .where('userId', isEqualTo: _currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:773');
 
       if (snapshot.docs.isEmpty) {
         if (mounted) {
@@ -920,7 +921,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.limit(_batchSize).get();
+      final snapshot = await query.limit(_batchSize).getM('dating_entry_page.dart:923');
 
       // Une page incomplète signifie qu'on a atteint la fin de la collection
       // côté Firestore : plus rien de nouveau à charger pour ces critères.
@@ -1382,7 +1383,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         .collection('dating_profiles')
         .where('userId', isEqualTo: _currentUserId)
         .limit(1)
-        .get();
+        .getM('dating_entry_page.dart:1385');
     if (docSnapshot.docs.isEmpty || !mounted) return;
     final profileDoc = docSnapshot.docs.first;
 
@@ -1810,7 +1811,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .where('fromUserId', isEqualTo: _currentUserId)
           .where('toUserId', isEqualTo: profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:1813');
 
       if (existingLike.docs.isEmpty) {
         final now = DateTime.now().millisecondsSinceEpoch;
@@ -1826,7 +1827,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         await firestore
             .collection('dating_profiles')
             .where('userId', isEqualTo: profile.userId)
-            .get()
+            .getM('dating_entry_page.dart:1829')
             .then((snapshot) {
           if (snapshot.docs.isNotEmpty) {
             snapshot.docs.first.reference.update({'likesCount': FieldValue.increment(1)});
@@ -1843,7 +1844,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .where('fromUserId', isEqualTo: profile.userId)
           .where('toUserId', isEqualTo: _currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:1846');
 
       if (mutualLike.docs.isNotEmpty) {
         // Récupérer le profil de l'utilisateur courant pour vérifier la compatibilité
@@ -1903,7 +1904,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .collection('dating_profiles')
           .where('userId', isEqualTo: _currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:1906');
       if (snapshot.docs.isNotEmpty) {
         return DatingProfile.fromJson(snapshot.docs.first.data());
       }
@@ -1941,7 +1942,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .where('userId1', isEqualTo: _currentUserId)
           .where('userId2', isEqualTo: otherUserId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:1944');
       if (snapshot.docs.isNotEmpty) return DatingConnection.fromJson(snapshot.docs.first.data());
 
       final snapshot2 = await firestore
@@ -1949,7 +1950,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
           .where('userId1', isEqualTo: otherUserId)
           .where('userId2', isEqualTo: _currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:1952');
       if (snapshot2.docs.isNotEmpty) return DatingConnection.fromJson(snapshot2.docs.first.data());
 
       return null;
@@ -2018,7 +2019,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: profile.userId)
-          .get()
+          .getM('dating_entry_page.dart:2021')
           .then((snapshot) {
         if (snapshot.docs.isNotEmpty) {
           snapshot.docs.first.reference.update({'coupsDeCoeurCount': FieldValue.increment(1)});
@@ -2067,27 +2068,27 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
         .where('userId1', isEqualTo: _currentUserId)
         .where('userId2', isEqualTo: otherUserId)
         .limit(1)
-        .get();
+        .getM('dating_entry_page.dart:2070');
     if (snapshot.docs.isNotEmpty) return true;
     final snapshot2 = await firestore
         .collection('dating_connections')
         .where('userId1', isEqualTo: otherUserId)
         .where('userId2', isEqualTo: _currentUserId)
         .limit(1)
-        .get();
+        .getM('dating_entry_page.dart:2077');
     return snapshot2.docs.isNotEmpty;
   }
   Future<void> _updatePopularityScore(String userId) async {
     try {
-      final likes = await firestore.collection('dating_likes').where('toUserId', isEqualTo: userId).count().get();
-      final coups = await firestore.collection('dating_coup_de_coeurs').where('toUserId', isEqualTo: userId).count().get();
-      final conn = await firestore.collection('dating_connections').where('userId1', isEqualTo: userId).count().get();
+      final likes = await firestore.collection('dating_likes').where('toUserId', isEqualTo: userId).count().getM('dating_entry_page.dart:2082');
+      final coups = await firestore.collection('dating_coup_de_coeurs').where('toUserId', isEqualTo: userId).count().getM('dating_entry_page.dart:2083');
+      final conn = await firestore.collection('dating_connections').where('userId1', isEqualTo: userId).count().getM('dating_entry_page.dart:2084');
       final score = (likes.count! * 1) + (coups.count! * 2) + (conn.count! * 3);
       final profileSnapshot = await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_entry_page.dart:2090');
       if (profileSnapshot.docs.isNotEmpty) {
         await profileSnapshot.docs.first.reference.update({
           'popularityScore': score,
@@ -2141,7 +2142,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
       'status': 'VALIDE',
     });
 
-    final toUserDoc = await firestore.collection('Users').doc(toUserId).get();
+    final toUserDoc = await firestore.collection('Users').doc(toUserId).getM('dating_entry_page.dart:2144');
     final toUser = UserData.fromJson(toUserDoc.data() ?? {});
     if (toUser.oneIgnalUserid != null && toUser.oneIgnalUserid!.isNotEmpty) {
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
@@ -2160,7 +2161,7 @@ class _DatingSwipePageState extends State<DatingSwipePage> with TickerProviderSt
   }
 
   Future<UserData?> _getCurrentUser() async {
-    final doc = await firestore.collection('Users').doc(_currentUserId).get();
+    final doc = await firestore.collection('Users').doc(_currentUserId).getM('dating_entry_page.dart:2163');
     return doc.exists ? UserData.fromJson(doc.data() as Map<String, dynamic>) : null;
   }
 

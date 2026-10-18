@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -59,7 +60,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
           .where('isActive', isEqualTo: true)
           .where('creatorId', isEqualTo: widget.content.ownerId)
           .limit(1)
-          .get();
+          .getM('promo_code_modal.dart:62');
 
       if (snap.docs.isEmpty) {
         setState(() => _errorMsg = 'Code introuvable ou expiré');

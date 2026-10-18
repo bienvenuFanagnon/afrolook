@@ -1,5 +1,6 @@
 
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -272,7 +273,7 @@ class _MesAmisState extends State<MesAmis> {
         Filter('current_user_id', isEqualTo:  currentUserId),
         Filter('friend_id', isEqualTo:  currentUserId),
 
-    )).snapshots();
+    )).snapshotsM('mesAmis.dart:275');
 
     await for (var friendSnapshot in friendsStream) {
       if (friendSnapshot.docs.isEmpty) {
@@ -299,7 +300,7 @@ class _MesAmisState extends State<MesAmis> {
       for (int i = 0; i < ids.length; i += 10) {
         final batch = ids.skip(i).take(10).toList();
         batchFutures.add(
-          FirebaseFirestore.instance.collection('Users').where('id', whereIn: batch).get(),
+          FirebaseFirestore.instance.collection('Users').where('id', whereIn: batch).getM('mesAmis.dart:302'),
         );
       }
       final batchResults = await Future.wait(batchFutures);
@@ -333,7 +334,7 @@ class _MesAmisState extends State<MesAmis> {
       Filter('docId', isEqualTo:  '${amigo.friendId}${amigo.currentUserId}'),
       Filter('docId', isEqualTo:  '${amigo.currentUserId}${amigo.friendId}'),
 
-    )).snapshots();
+    )).snapshotsM('mesAmis.dart:336');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -392,7 +393,7 @@ if (await friendsStream.isEmpty) {
 
   });
   CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-  QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+  QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('mesAmis.dart:395');
   // Afficher la liste
   List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
       Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -410,9 +411,9 @@ if (await friendsStream.isEmpty) {
 
   /////////////ami//////////
   CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-  QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').get();
+  QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').getM('mesAmis.dart:413');
   // Afficher la liste
-  QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').get();
+  QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').getM('mesAmis.dart:415');
 
 
   List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -67,7 +68,7 @@ class _UserProfilState extends State<UserProfil> {
   Future<bool> _checkTeamMember(String uid) async {
     if (uid.isEmpty) return false;
     try {
-      final doc = await FirebaseFirestore.instance.collection('TeamMembers').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('TeamMembers').doc(uid).getM('profile.dart:70');
       return doc.exists;
     } catch (_) {
       return false;

@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/home_afroshop.dart';
@@ -70,7 +71,7 @@ class _MesNotificationState extends State<MesNotification> {
           .where('receiver_id', isEqualTo: userId)
           .orderBy('created_at', descending: true)
           .limit(_pageSize)
-          .get();
+          .getM('mes_notifications.dart:73');
 
       final items = snap.docs
           .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
@@ -122,7 +123,7 @@ class _MesNotificationState extends State<MesNotification> {
           .orderBy('created_at', descending: true)
           .startAfterDocument(_lastDoc!)
           .limit(_pageSize)
-          .get();
+          .getM('mes_notifications.dart:125');
 
       final items = snap.docs
           .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
@@ -165,7 +166,7 @@ class _MesNotificationState extends State<MesNotification> {
             .where('is_open', isEqualTo: false)
             .where('type', whereIn: entry.value)
             .count()
-            .get();
+            .getM('mes_notifications.dart:168');
         if (mounted) setState(() => _groupUnreadCounts[entry.key] = snap.count ?? 0);
       } catch (_) {}
     }));
@@ -185,7 +186,7 @@ class _MesNotificationState extends State<MesNotification> {
             .where('receiver_id', isEqualTo: userId)
             .where('type', whereIn: entry.value)
             .limit(10)
-            .get();
+            .getM('mes_notifications.dart:188');
         final items = snap.docs
             .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
             .toList()
@@ -298,7 +299,7 @@ class _MesNotificationState extends State<MesNotification> {
           .collection('Users')
           .where("id", isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('mes_notifications.dart:301');
 
       if (userSnapshot.docs.isNotEmpty) {
         final userData = UserData.fromJson(userSnapshot.docs.first.data() as Map<String, dynamic>);
@@ -325,7 +326,7 @@ class _MesNotificationState extends State<MesNotification> {
           .collection('Canaux')
           .where("id", isEqualTo: canalId)
           .limit(1)
-          .get();
+          .getM('mes_notifications.dart:328');
 
       if (canalSnapshot.docs.isNotEmpty) {
         final canalData = Canal.fromJson(canalSnapshot.docs.first.data() as Map<String, dynamic>);
@@ -572,7 +573,7 @@ class _MesNotificationState extends State<MesNotification> {
           // Sinon, ouvrir le profil de l'abonné.
           final abonnerCanalId = notification.canal_id;
           if (abonnerCanalId != null && abonnerCanalId.isNotEmpty) {
-            final canalDoc = await _firestore.collection('Canaux').doc(abonnerCanalId).get();
+            final canalDoc = await _firestore.collection('Canaux').doc(abonnerCanalId).getM('mes_notifications.dart:575');
             _hideLoadingOverlay();
             if (!mounted) return;
             if (canalDoc.exists) {
@@ -591,7 +592,7 @@ class _MesNotificationState extends State<MesNotification> {
                 final userSnap = await _firestore.collection('Users')
                     .where('id', isEqualTo: subscriberUserId)
                     .limit(1)
-                    .get();
+                    .getM('mes_notifications.dart:594');
                 if (userSnap.docs.isNotEmpty) {
                   _userCache[subscriberUserId] = UserData.fromJson(
                     userSnap.docs.first.data() as Map<String, dynamic>,
@@ -610,7 +611,7 @@ class _MesNotificationState extends State<MesNotification> {
         case 'FOLLOW_CANAL':
           final canalId = notification.canal_id;
           if (canalId != null && canalId.isNotEmpty) {
-            final doc = await _firestore.collection('Canaux').doc(canalId).get();
+            final doc = await _firestore.collection('Canaux').doc(canalId).getM('mes_notifications.dart:613');
             _hideLoadingOverlay();
             if (!mounted) return;
             if (doc.exists) {
@@ -670,7 +671,7 @@ class _MesNotificationState extends State<MesNotification> {
         setState(() => _isHandlingNotification = false);
         return;
       }
-      final doc = await _firestore.collection('lives').doc(liveId).get();
+      final doc = await _firestore.collection('lives').doc(liveId).getM('mes_notifications.dart:673');
       _hideLoadingOverlay();
       if (!mounted) return;
       if (doc.exists) {
@@ -707,7 +708,7 @@ class _MesNotificationState extends State<MesNotification> {
       final doc = await FirebaseFirestore.instance
           .collection('Posts')
           .doc(postId)
-          .get()
+          .getM('mes_notifications.dart:710')
           .timeout(const Duration(seconds: 8));
       if (!doc.exists) return null;
       final post = Post.fromJson(doc.data()!);
@@ -720,7 +721,7 @@ class _MesNotificationState extends State<MesNotification> {
             final userDoc = await FirebaseFirestore.instance
                 .collection('Users')
                 .doc(userId)
-                .get()
+                .getM('mes_notifications.dart:723')
                 .timeout(const Duration(seconds: 5));
             if (userDoc.exists) post.user = UserData.fromJson(userDoc.data()!);
           } catch (_) {}
@@ -1211,7 +1212,7 @@ class _MesNotificationState extends State<MesNotification> {
             .where('receiver_id', isEqualTo: userId)
             .limit(500);
         if (lastDoc != null) q = q.startAfterDocument(lastDoc);
-        snap = await q.get();
+        snap = await q.getM('mes_notifications.dart:1214');
 
         if (snap.docs.isEmpty) break;
 
@@ -1736,7 +1737,7 @@ class _MesNotificationState extends State<MesNotification> {
 //       query = query.startAfterDocument(_lastDocument!);
 //     }
 //
-//     final snapshot = await query.get();
+//     final snapshot = await query.getM('mes_notifications.dart:1739');
 //
 //     if (snapshot.docs.isEmpty) {
 //       setState(() {
@@ -1779,7 +1780,7 @@ class _MesNotificationState extends State<MesNotification> {
 //           .collection('Users')
 //           .where("id", isEqualTo: userId)
 //           .limit(1)
-//           .get();
+//           .getM('mes_notifications.dart:1782');
 //
 //       if (userSnapshot.docs.isNotEmpty) {
 //         final userData = UserData.fromJson(userSnapshot.docs.first.data() as Map<String, dynamic>);
@@ -1806,7 +1807,7 @@ class _MesNotificationState extends State<MesNotification> {
 //           .collection('Canaux')
 //           .where("id", isEqualTo: canalId)
 //           .limit(1)
-//           .get();
+//           .getM('mes_notifications.dart:1809');
 //
 //       if (canalSnapshot.docs.isNotEmpty) {
 //         final canalData = Canal.fromJson(canalSnapshot.docs.first.data() as Map<String, dynamic>);

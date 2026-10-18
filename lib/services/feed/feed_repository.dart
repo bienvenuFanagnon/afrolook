@@ -1,4 +1,5 @@
-﻿import 'dart:math';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -126,8 +127,8 @@ class FeedRepository {
         q2 = q2.where('typeTabbar', isEqualTo: tabbarType);
       }
       final results = await Future.wait([
-        q1.limit(limit * 2).get().timeout(const Duration(seconds: 20)),
-        q2.limit(limit).get().timeout(const Duration(seconds: 20)),
+        q1.limit(limit * 2).getM('feed_repository.dart:129').timeout(const Duration(seconds: 20)),
+        q2.limit(limit).getM('feed_repository.dart:130').timeout(const Duration(seconds: 20)),
       ]).catchError((_) => <QuerySnapshot<Map<String, dynamic>>>[]);
       if (results.isEmpty) return [];
       final allDocs = {...results[0].docs, ...results[1].docs}.toList();
@@ -146,7 +147,7 @@ class FeedRepository {
           .where('feedScore', isGreaterThanOrEqualTo: 0.3)
           .orderBy('feedScore', descending: true)
           .limit(limit * 3)
-          .get()
+          .getM('feed_repository.dart:149')
           .timeout(const Duration(seconds: 20));
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
@@ -166,7 +167,7 @@ class FeedRepository {
           .collection('Posts')
           .orderBy('created_at', descending: true)
           .limit(limit * 3)
-          .get()
+          .getM('feed_repository.dart:169')
           .timeout(const Duration(seconds: 20));
       return _parsePosts(
         snap.docs.where((d) => !followedPostIds.contains(d.id)).toList(),
@@ -193,7 +194,7 @@ class FeedRepository {
           .where('created_at', isLessThanOrEqualTo: twoMonthsAgo)
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
-          .get()
+          .getM('feed_repository.dart:196')
           .timeout(const Duration(seconds: 20));
       final qualityDocs = snap.docs
           .where((d) => (d.data()['feedScore'] as num? ?? 0) >= 0.3)
@@ -218,7 +219,7 @@ class FeedRepository {
           .where('typeTabbar', isEqualTo: tabbarType)
           .orderBy('created_at', descending: true)
           .limit(limit * 2)
-          .get();
+          .getM('feed_repository.dart:221');
       final posts = _parsePosts(snap.docs, excluded, limit);
       // Priorité aux posts du pays de l'utilisateur
       if (countryCode.isNotEmpty) {
@@ -248,7 +249,7 @@ class FeedRepository {
           .where('dataType', isEqualTo: mediaType)
           .orderBy('created_at', descending: true)
           .limit(limit * 2)
-          .get();
+          .getM('feed_repository.dart:251');
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
       printVm('⚠️ [FeedRepository] fetchByMediaType($mediaType): $e');
@@ -269,7 +270,7 @@ class FeedRepository {
           .orderBy('created_at', descending: true);
       if (mediaType != null) q = q.where('dataType', isEqualTo: mediaType);
       if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-      final snap = await q.limit(limit * 2).get();
+      final snap = await q.limit(limit * 2).getM('feed_repository.dart:272');
       return _parsePosts(snap.docs, excluded, limit);
     } catch (e) {
       printVm('⚠️ [FeedRepository] fetchRecentPosts: $e');
@@ -291,7 +292,7 @@ class FeedRepository {
           .orderBy('created_at', descending: true);
       if (mediaType != null) q = q.where('dataType', isEqualTo: mediaType);
       if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-      final snap = await q.limit(limit * 4).get();
+      final snap = await q.limit(limit * 4).getM('feed_repository.dart:294');
       final posts = <Post>[];
       for (final doc in snap.docs) {
         if (excluded.contains(doc.id)) continue;
@@ -333,7 +334,7 @@ class FeedRepository {
               .collection('Posts')
               .where(FieldPath.documentId, whereIn: batch);
           if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-          final snap = await q.get();
+          final snap = await q.getM('feed_repository.dart:336');
           final posts = snap.docs.map((doc) {
             try {
               return Post.fromJson({'id': doc.id, ...doc.data()});
@@ -366,7 +367,7 @@ class FeedRepository {
           .where('expiresAt', isGreaterThan: Timestamp.now())
           .orderBy('createdAt', descending: true)
           .limit(limit)
-          .get();
+          .getM('feed_repository.dart:369');
       final valid = <Chronique>[];
       for (final doc in snap.docs) {
         try {
@@ -388,7 +389,7 @@ class FeedRepository {
           .collection('Canal')
           .orderBy('followers', descending: true)
           .limit(limit)
-          .get();
+          .getM('feed_repository.dart:391');
       final result = <Canal>[];
       for (final doc in snap.docs) {
         try {
@@ -408,7 +409,7 @@ class FeedRepository {
           .collection('Articles')
           .orderBy('created_at', descending: true)
           .limit(limit)
-          .get();
+          .getM('feed_repository.dart:411');
       final result = <ArticleData>[];
       for (final doc in snap.docs) {
         try {
@@ -479,7 +480,7 @@ class FeedRepository {
             .where('user_id', whereIn: chunk)
             .orderBy('created_at', descending: true)
             .limit(limit * 2)
-            .get();
+            .getM('feed_repository.dart:482');
         for (final doc in snap.docs) {
           if (posts.length >= limit) break;
           if (seen.contains(doc.id)) continue;
@@ -511,7 +512,7 @@ class FeedRepository {
           .where('created_at', isGreaterThanOrEqualTo: since)
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
-          .get();
+          .getM('feed_repository.dart:514');
       final candidates = _parsePosts(snap.docs, excluded, limit * 4);
       // Priorité aux posts les moins vus → ceux qui ont besoin d'exposition
       candidates.sort((a, b) => (a.vues ?? 0).compareTo(b.vues ?? 0));
@@ -588,7 +589,7 @@ class FeedRepository {
       final snap = await q
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
-          .get();
+          .getM('feed_repository.dart:591');
       final queryMs = _swT2.elapsedMilliseconds;
       printVm('⏱️ [T2] fetchInterestPosts: query terminée — ${queryMs}ms — ${snap.docs.length} docs bruts');
 

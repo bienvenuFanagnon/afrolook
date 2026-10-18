@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
@@ -1267,7 +1268,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       // 5. Limite
       query = query.limit(limit * 2);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('HomePostType.dart:1270');
       printVm('snapshot.docs.length: ${snapshot.docs.length}');
 
       if (snapshot.docs.isNotEmpty) {
@@ -1525,7 +1526,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
       final snapshot = await _firestore.collection('chroniques')
           .orderBy('createdAt', descending: true)
           .limit(6)
-          .get();
+          .getM('HomePostType.dart:1528');
 
       final List<Chronique> validChroniques = [];
 
@@ -1563,7 +1564,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
       for (final userId in userIds) {
         if (!_userDataCache.containsKey(userId)) {
-          final userDoc = await _firestore.collection('Users').doc(userId).get();
+          final userDoc = await _firestore.collection('Users').doc(userId).getM('HomePostType.dart:1566');
           if (userDoc.exists) {
             final userData = UserData.fromJson(userDoc.data()!);
             _userDataCache[userId] = userData;

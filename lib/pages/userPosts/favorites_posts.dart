@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -58,7 +59,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
     setState(() { _isLoading = true; _hasError = false; _allIds = []; _favoritePosts = []; _loadedCount = 0; });
     try {
       final userId = _authProvider.loginUserData.id!;
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('favorites_posts.dart:61');
       final ids = List<String>.from(userDoc.data()?['favoritePostsIds'] ?? []);
       _allIds = ids.reversed.toList(); // plus récent en premier
       await _fetchNextPage();
@@ -76,7 +77,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
       return;
     }
     try {
-      final snap = await _firestore.collection('Posts').where(FieldPath.documentId, whereIn: chunk).get();
+      final snap = await _firestore.collection('Posts').where(FieldPath.documentId, whereIn: chunk).getM('favorites_posts.dart:79');
       final posts = <Post>[];
       for (final doc in snap.docs) {
         try {

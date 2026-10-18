@@ -1,5 +1,6 @@
 ﻿// lib/pages/creator/creator_profile_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -55,7 +56,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
       final profileDoc = await _firestore
           .collection('creator_profiles')
           .doc(widget.creatorId)
-          .get();
+          .getM('creator_other_profil.dart:58');
       if (profileDoc.exists) {
         _profile = CreatorProfile.fromJson(profileDoc.data()!);
       }
@@ -66,7 +67,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
           .where('creatorId', isEqualTo: widget.creatorId)
           .where('isPublished', isEqualTo: true)
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('creator_other_profil.dart:69');
       _contents = contentsSnapshot.docs
           .map((doc) => CreatorContent.fromJson(doc.data()))
           .toList();
@@ -79,7 +80,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
             .where('creatorId', isEqualTo: widget.creatorId)
             .where('isActive', isEqualTo: true)
             .limit(1)
-            .get();
+            .getM('creator_other_profil.dart:82');
         _isSubscribed = subSnapshot.docs.isNotEmpty;
       }
 
@@ -88,7 +89,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
           .collection('creator_coin_wallets')
           .where('creatorId', isEqualTo: widget.creatorId)
           .limit(1)
-          .get();
+          .getM('creator_other_profil.dart:91');
       if (walletSnapshot.docs.isNotEmpty) {
         _wallet = CreatorCoinWallet.fromJson(walletSnapshot.docs.first.data());
       } else {
@@ -133,7 +134,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
           .where('creatorId', isEqualTo: widget.creatorId)
           .where('viewedAt', isGreaterThanOrEqualTo: dayStart)
           .limit(1)
-          .get();
+          .getM('creator_other_profil.dart:136');
 
       if (existingVisit.docs.isNotEmpty) {
         _hasRecordedView = true;
@@ -231,7 +232,7 @@ class _CreatorOtherProfilePageState extends State<CreatorOtherProfilePage> {
             .collection('creator_coin_wallets')
             .where('creatorId', isEqualTo: widget.creatorId)
             .limit(1)
-            .get();
+            .getM('creator_other_profil.dart:234');
         if (newWallet.docs.isNotEmpty) {
           _wallet = CreatorCoinWallet.fromJson(newWallet.docs.first.data());
         }

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'ad_gate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -43,7 +44,7 @@ class RewardsService {
     final at = _cfgAt;
     if (!force && at != null && DateTime.now().difference(at) < const Duration(minutes: 5)) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('rewards').get();
+      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('rewards').getM('rewards_service.dart:46');
       _cfg = doc.data() ?? {};
       _cfgAt = DateTime.now();
     } catch (_) {}
@@ -99,7 +100,7 @@ class RewardsService {
 
   static Future<RewardsStatus> status(String uid) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('AdRewards').doc('${uid}_${_utcDay()}').get();
+      final doc = await FirebaseFirestore.instance.collection('AdRewards').doc('${uid}_${_utcDay()}').getM('rewards_service.dart:102');
       final d = doc.data() ?? {};
       final claims = <String, int>{};
       final raw = d['claims'];
@@ -137,7 +138,7 @@ class RewardsService {
   /// Pièces déjà gagnées avec des pubs cette semaine.
   static Future<int> coinsThisWeek(String uid) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('AdRewardsWeek').doc('${uid}_${weekKey()}').get();
+      final doc = await FirebaseFirestore.instance.collection('AdRewardsWeek').doc('${uid}_${weekKey()}').getM('rewards_service.dart:140');
       return (doc.data()?['coins'] as num?)?.toInt() ?? 0;
     } catch (_) {
       return 0;

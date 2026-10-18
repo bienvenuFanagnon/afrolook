@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../ads/ad_slot.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
@@ -247,7 +248,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           .collection('CommentGifts')
           .where('postId', isEqualTo: widget.post.id)
           .limit(300)
-          .get();
+          .getM('postComments.dart:250');
       final docs = snap.docs.where((d) => (d.data()['stickerId'] ?? '').toString().isNotEmpty).toList()
         ..sort((a, b) {
           final x = (a.data()['createdAt'] as num?) ?? 0;
@@ -388,7 +389,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   void _ensureCanalLoaded() {
     final canalId = widget.post.canal_id;
     if (canalId == null || canalId.isEmpty || widget.post.canal != null) return;
-    FirebaseFirestore.instance.collection('Canaux').doc(canalId).get().then((doc) {
+    FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postComments.dart:391').then((doc) {
       if (doc.exists && mounted) {
         setState(() => widget.post.canal = Canal.fromJson(doc.data()!));
       }
@@ -704,7 +705,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       final snapshot = await firestore
           .collection('PostGifts')
           .where('postId', isEqualTo: widget.post.id!)
-          .get();
+          .getM('postComments.dart:707');
 
       final Map<String, _GifterEntry> byUser = {};
       for (var doc in snapshot.docs) {
@@ -737,7 +738,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       for (var entry in sorted.take(10)) {
         try {
           final userDoc =
-              await firestore.collection('Users').doc(entry.senderId).get();
+              await firestore.collection('Users').doc(entry.senderId).getM('postComments.dart:740');
           if (userDoc.exists) entry.userData = UserData.fromJson(userDoc.data()!);
         } catch (_) {}
       }
@@ -1598,10 +1599,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               (canalName != null && postCanal.titre == canalName))) {
         canal = postCanal;
       } else if (canalId != null && canalId.isNotEmpty) {
-        final d = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).get();
+        final d = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postComments.dart:1601');
         if (d.exists) canal = Canal.fromJson(d.data()!);
       } else if (canalName != null && canalName.isNotEmpty) {
-        final q = await FirebaseFirestore.instance.collection('Canaux').where('titre', isEqualTo: canalName).limit(1).get();
+        final q = await FirebaseFirestore.instance.collection('Canaux').where('titre', isEqualTo: canalName).limit(1).getM('postComments.dart:1604');
         if (q.docs.isNotEmpty) canal = Canal.fromJson(q.docs.first.data());
       }
       if (canal != null && mounted) {
@@ -1617,7 +1618,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     try {
       var u = user;
       if (u == null && userId != null && userId.isNotEmpty) {
-        final d = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+        final d = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('postComments.dart:1620');
         if (d.exists) u = UserData.fromJson(d.data()!);
       }
       if (u != null && mounted) {
@@ -2275,7 +2276,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       final doc = await FirebaseFirestore.instance
           .collection('PostComments')
           .doc(parentComment.id)
-          .get();
+          .getM('postComments.dart:2278');
 
       if (!doc.exists) throw Exception('Commentaire parent non trouve');
 

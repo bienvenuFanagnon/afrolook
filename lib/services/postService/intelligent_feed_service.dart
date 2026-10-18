@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -37,7 +38,7 @@ class IntelligentFeedService {
         .where('status', isNotEqualTo: 'SUPPRIMER')
         .orderBy('feedScore', descending: true)
         .limit(limit)
-        .get();
+        .getM('intelligent_feed_service.dart:40');
 
     final posts = snapshot.docs.map((doc) {
       final post = Post.fromJson(doc.data());
@@ -63,7 +64,7 @@ class IntelligentFeedService {
         .where('status', isNotEqualTo: 'SUPPRIMER')
         .orderBy('created_at', descending: true)
         .limit(limit)
-        .get();
+        .getM('intelligent_feed_service.dart:66');
 
     return snapshot.docs.map((doc) {
       final post = Post.fromJson(doc.data() as Map<String, dynamic>);

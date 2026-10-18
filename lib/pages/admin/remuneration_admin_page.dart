@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -82,10 +83,10 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> {
     try {
       final (start, end) = _range();
       final results = await Future.wait([
-        _tx('GAIN', start, end).get(),
-        _tx('ENCAISSEMENT_VUES_POST', start, end).get(),
-        _tx('GAIN_PIECES', start, end).get(),
-        _tx('CONVERSION_PIECES', start, end).get(),
+        _tx('GAIN', start, end).getM('remuneration_admin_page.dart:85'),
+        _tx('ENCAISSEMENT_VUES_POST', start, end).getM('remuneration_admin_page.dart:86'),
+        _tx('GAIN_PIECES', start, end).getM('remuneration_admin_page.dart:87'),
+        _tx('CONVERSION_PIECES', start, end).getM('remuneration_admin_page.dart:88'),
         MonetizationConfig.load(force: true).then((_) => null),
       ]);
 
@@ -111,7 +112,7 @@ class _RemunerationAdminPageState extends State<RemunerationAdminPage> {
       final idList = ids.toList();
       for (var i = 0; i < idList.length; i += 30) {
         final chunk = idList.sublist(i, i + 30 > idList.length ? idList.length : i + 30);
-        final snap = await _db.collection('Users').where(FieldPath.documentId, whereIn: chunk).get();
+        final snap = await _db.collection('Users').where(FieldPath.documentId, whereIn: chunk).getM('remuneration_admin_page.dart:114');
         for (final u in snap.docs) {
           _pseudos[u.id] = u.data()['pseudo'] as String? ?? 'Sans pseudo';
         }

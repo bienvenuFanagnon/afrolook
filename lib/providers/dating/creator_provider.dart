@@ -1,5 +1,6 @@
 ﻿// lib/providers/creator_provider.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +60,7 @@ class CreatorProvider extends ChangeNotifier {
       final snapshot = await FirebaseFirestore.instance
           .collection('creator_profiles')
           .doc(creatorId)
-          .get();
+          .getM('creator_provider.dart:62');
 
       if (snapshot.exists) {
         _currentCreatorProfile = CreatorProfile.fromJson(snapshot.data()!);

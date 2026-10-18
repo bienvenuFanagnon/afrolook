@@ -1,5 +1,6 @@
 ﻿// lib/services/coin_service.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/widgetGlobal.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,7 +29,7 @@ class CoinService {
       printVm('📱 Achat de pièces pour l\'utilisateur: $userId');
       printVm('📦 Pack: ${package.name} - ${package.coinsAmount} pièces - ${package.priceXof} FCFA');
 
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('coin_service.dart:31');
       final userData = UserData.fromJson(userDoc.data() ?? {});
 
       // Vérifier si l'utilisateur a assez de solde
@@ -98,7 +99,7 @@ class CoinService {
         printVm('⚠️ Tentative de dépense pour un autre utilisateur');
       }
 
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('coin_service.dart:101');
       final userData = UserData.fromJson(userDoc.data() ?? {});
 
       if ((userData.coinsBalance ?? 0) < amount) {
@@ -184,7 +185,7 @@ class CoinService {
             .collection('creator_coin_wallets')
             .where('creatorId', isEqualTo: creatorId)
             .limit(1)
-            .get();
+            .getM('coin_service.dart:187');
 
         CreatorCoinWallet wallet;
         if (walletQuery.docs.isEmpty) {
@@ -255,7 +256,7 @@ class CoinService {
     try {
       printVm('📱 Conversion de $amount pièces en FCFA pour $creatorId');
 
-      final appDataDoc = await _firestore.collection('AppData').doc(appId).get();
+      final appDataDoc = await _firestore.collection('AppData').doc(appId).getM('coin_service.dart:258');
       final appData = AppDefaultData.fromJson(appDataDoc.data() ?? {});
 
       final conversionRate = appData.tarifPubliCash_to_xof ?? 250.0; // 100 pièces = 250 FCFA
@@ -269,7 +270,7 @@ class CoinService {
             .collection('creator_coin_wallets')
             .where('creatorId', isEqualTo: creatorId)
             .limit(1)
-            .get();
+            .getM('coin_service.dart:272');
 
         if (walletQuery.docs.isEmpty) {
           throw Exception('Wallet du créateur introuvable');
@@ -348,7 +349,7 @@ class CoinService {
           .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .limit(100)
-          .get();
+          .getM('coin_service.dart:351');
 
       printVm('✅ ${snapshot.docs.length} transactions trouvées');
       return snapshot.docs
@@ -377,7 +378,7 @@ class CoinService {
           .collection('creator_coin_wallets')
           .where('creatorId', isEqualTo: creatorId)
           .limit(1)
-          .get();
+          .getM('coin_service.dart:380');
 
       if (snapshot.docs.isNotEmpty) {
         return CreatorCoinWallet.fromJson(snapshot.docs.first.data());
@@ -399,7 +400,7 @@ class CoinService {
   // Vérifier si un utilisateur a assez de pièces
   Future<bool> hasEnoughCoins(String userId, int requiredAmount) async {
     try {
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('coin_service.dart:402');
       final userData = UserData.fromJson(userDoc.data() ?? {});
       final hasEnough = (userData.coinsBalance ?? 0) >= requiredAmount;
       printVm('💰 Vérification solde pour $userId: ${userData.coinsBalance} >= $requiredAmount → $hasEnough');

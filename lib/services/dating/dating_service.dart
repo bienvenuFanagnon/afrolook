@@ -1,5 +1,6 @@
 ﻿// lib/services/dating_service.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,7 +21,7 @@ class DatingService {
   //     final usersSnapshot = await _firestore
   //         .collection('users')
   //         .where('genre', isEqualTo: 'femme')
-  //         .get();
+  //         .getM('dating_service.dart:23');
   //
   //     for (var userDoc in usersSnapshot.docs) {
   //       final userData = UserData.fromJson(userDoc.data());
@@ -30,7 +31,7 @@ class DatingService {
   //           .collection('dating_profiles')
   //           .where('userId', isEqualTo: userData.id)
   //           .limit(1)
-  //           .get();
+  //           .getM('dating_service.dart:33');
   //
   //       if (existingProfile.docs.isEmpty) {
   //         // Créer un profil dating minimal
@@ -109,7 +110,7 @@ class DatingService {
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_service.dart:112');
 
       if (profileSnapshot.docs.isNotEmpty) {
         await profileSnapshot.docs.first.reference.update({
@@ -132,7 +133,7 @@ class DatingService {
         .collection('dating_likes')
         .where('toUserId', isEqualTo: userId)
         .count()
-        .get();
+        .getM('dating_service.dart:135');
     return snapshot.count!;
   }
 
@@ -142,7 +143,7 @@ class DatingService {
         .collection('dating_coup_de_coeurs')
         .where('toUserId', isEqualTo: userId)
         .count()
-        .get();
+        .getM('dating_service.dart:145');
     return snapshot.count!;
   }
 
@@ -152,7 +153,7 @@ class DatingService {
         .collection('dating_connections')
         .where('userId1', isEqualTo: userId)
         .count()
-        .get();
+        .getM('dating_service.dart:155');
     return snapshot.count!;
   }
 
@@ -200,7 +201,7 @@ class DatingService {
       query = query.where('age', isGreaterThanOrEqualTo: minAge)
           .where('age', isLessThanOrEqualTo: maxAge);
 
-      final snapshot = await query.limit(limit).get();
+      final snapshot = await query.limit(limit).getM('dating_service.dart:203');
 
       return snapshot.docs
           .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
@@ -235,7 +236,7 @@ class DatingService {
       query = query.where('age', isGreaterThanOrEqualTo: minAge)
           .where('age', isLessThanOrEqualTo: maxAge);
 
-      final snapshot = await query.limit(limit).get();
+      final snapshot = await query.limit(limit).getM('dating_service.dart:238');
 
       return snapshot.docs
           .map((doc) => DatingProfile.fromJson(doc.data() as Map<String, dynamic>))
@@ -310,7 +311,7 @@ class DatingService {
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_service.dart:313');
 
       if (snapshot.docs.isEmpty) {
         return null; // Aucun profil
@@ -359,7 +360,7 @@ class DatingService {
           .where('fromUserId', isEqualTo: fromUserId)
           .where('toUserId', isEqualTo: toUserId)
           .limit(1)
-          .get();
+          .getM('dating_service.dart:362');
 
       if (existingLike.docs.isNotEmpty) {
         return true; // Like déjà existant
@@ -385,7 +386,7 @@ class DatingService {
             .collection('dating_profiles')
             .where('userId', isEqualTo: toUserId)
             .limit(1)
-            .get();
+            .getM('dating_service.dart:388');
 
         if (targetProfileQuery.docs.isNotEmpty) {
           transaction.update(
@@ -400,7 +401,7 @@ class DatingService {
             .where('fromUserId', isEqualTo: toUserId)
             .where('toUserId', isEqualTo: fromUserId)
             .limit(1)
-            .get();
+            .getM('dating_service.dart:403');
 
         if (mutualLike.docs.isNotEmpty) {
           // Créer une connexion (match)
@@ -424,7 +425,7 @@ class DatingService {
           .where('userId1', isEqualTo: userId1)
           .where('userId2', isEqualTo: userId2)
           .limit(1)
-          .get();
+          .getM('dating_service.dart:427');
 
       if (existingConnection.docs.isNotEmpty) {
         return true;
@@ -564,7 +565,7 @@ class DatingService {
         .where('isActive', isEqualTo: true)
         .where('isProfileComplete', isEqualTo: true)
         .limit(50)
-        .snapshots()
+        .snapshotsM('dating_service.dart:567')
         .map((snapshot) => snapshot.docs
         .map((doc) => DatingProfile.fromJson(doc.data()))
         .toList());
@@ -627,7 +628,7 @@ class DatingService {
         .collection('dating_profiles')
         .where('userId', isEqualTo: userId)
         .limit(1)
-        .get();
+        .getM('dating_service.dart:630');
 
     if (profileQuery.docs.isNotEmpty) {
       await profileQuery.docs.first.reference.update({

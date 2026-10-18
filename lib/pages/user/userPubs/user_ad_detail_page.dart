@@ -1,5 +1,6 @@
 ﻿// user_ad_detail_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
@@ -76,12 +77,12 @@ class _UserAdDetailPageState extends State<UserAdDetailPage> {
   }
 
   Future<Map<String, dynamic>> _loadData() async {
-    final adDoc = await FirebaseFirestore.instance.collection('Advertisements').doc(widget.advertisementId).get();
+    final adDoc = await FirebaseFirestore.instance.collection('Advertisements').doc(widget.advertisementId).getM('user_ad_detail_page.dart:79');
     if (!adDoc.exists) throw Exception('Publicité introuvable');
     final ad = Advertisement.fromJson(adDoc.data()!);
     DocumentSnapshot? postDoc;
     if (ad.postId != null) {
-      postDoc = await FirebaseFirestore.instance.collection('Posts').doc(ad.postId).get();
+      postDoc = await FirebaseFirestore.instance.collection('Posts').doc(ad.postId).getM('user_ad_detail_page.dart:84');
     }
     // Initialiser les contrôleurs avec les valeurs existantes
     Map<String, dynamic>? postData = postDoc?.data() as Map<String, dynamic>?;

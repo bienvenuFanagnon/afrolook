@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -44,7 +45,7 @@ class _SeriesEpisodesScreenState extends State<SeriesEpisodesScreen> {
           .collection('episodes')
           .where('seriesId', isEqualTo: widget.series.id)
           .orderBy('episodeNumber', descending: false)
-          .get();
+          .getM('contentSerie.dart:47');
       setState(() {
         _episodes = snapshot.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;

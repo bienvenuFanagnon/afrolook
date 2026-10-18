@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -64,7 +65,7 @@ class _ExamplePageState extends State<UserCards> {
     var invitationsStream =FirebaseFirestore.instance.collection('Invitations')
         .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
         .where('status', isEqualTo: "${InvitationStatus.ENCOURS.name}")
-        .snapshots();
+        .snapshotsM('allUsersCard.dart:67');
 
     await for (var invitationsSnapshot in invitationsStream) {
 

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:collection';
 
@@ -86,7 +87,7 @@ class CommentsPrefetch {
         .orderBy('created_at', descending: true)
         .limit(limit);
     if (after != null) q = q.startAfterDocument(after);
-    final snap = await q.get();
+    final snap = await q.getM('comments_prefetch.dart:89');
     final comments = snap.docs.map((d) {
       final data = Map<String, dynamic>.from(d.data());
       data['id'] = d.id;
@@ -115,7 +116,7 @@ class CommentsPrefetch {
     final hit = _users[userId];
     if (hit != null && DateTime.now().difference(hit.at) < _userTtl) return hit.user;
     try {
-      final doc = await _db.collection('Users').doc(userId).get();
+      final doc = await _db.collection('Users').doc(userId).getM('comments_prefetch.dart:118');
       final u = doc.exists ? UserData.fromJson(doc.data()!) : null;
       _users.remove(userId);
       _users[userId] = _CachedUser(u, DateTime.now());

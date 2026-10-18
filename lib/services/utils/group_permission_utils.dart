@@ -12,6 +12,7 @@
 //   member_permissions   : Map<userId, {can_write: bool, can_share: bool}>
 //   allow_hidden_msgs    : bool  — messages invisibles activés (Gold)
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GroupPermissionUtils {
@@ -113,7 +114,7 @@ class GroupPermissionUtils {
       final doc = await FirebaseFirestore.instance
           .collection('GroupChats')
           .doc(groupId)
-          .get();
+          .getM('group_permission_utils.dart:116');
       return doc.data() ?? {};
     } catch (_) {
       return {};

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'dart:async';
@@ -1480,7 +1481,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     .where('status', isEqualTo: 'validated')
                     .orderBy('validatedAt', descending: true)
                     .limit(30)
-                    .snapshots(),
+                    .snapshotsM('userPostAudioTab.dart:1483'),
                 builder: (_, snap) {
                   if (!snap.hasData) return Center(child: CircularProgressIndicator(color: _c.primary));
                   final docs = snap.data!.docs;

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -100,7 +101,7 @@ class _PacksTabState extends State<_PacksTab> with AutomaticKeepAliveClientMixin
           q = col.orderBy('createdAt', descending: true).limit(300);
           break;
       }
-      final snap = await q.get();
+      final snap = await q.getM('admin_stickers_page.dart:103');
       final l = snap.docs.toList();
       if (widget.mode != _PackMode.all) {
         l.sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
@@ -236,7 +237,7 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
       _error = false;
     });
     try {
-      final snap = await FirebaseFirestore.instance.collection('StickerReports').where('status', isEqualTo: 'open').limit(200).get();
+      final snap = await FirebaseFirestore.instance.collection('StickerReports').where('status', isEqualTo: 'open').limit(200).getM('admin_stickers_page.dart:239');
       final l = snap.docs.toList()..sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
       if (!mounted) return;
       setState(() {
@@ -304,7 +305,7 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
       child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: FirebaseFirestore.instance.collection('Stickers').doc(stickerId.isEmpty ? '_' : stickerId).get(),
+        future: FirebaseFirestore.instance.collection('Stickers').doc(stickerId.isEmpty ? '_' : stickerId).getM('admin_stickers_page.dart:307'),
         builder: (ctx, snap) {
           final s = snap.data?.data();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -473,7 +474,7 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
       }
       var q = _buildQuery().limit(_pageSize);
       if (!reset && _cursor != null) q = q.startAfterDocument(_cursor!);
-      final snap = await q.get();
+      final snap = await q.getM('admin_stickers_page.dart:476');
       if (!mounted) return;
       final page = snap.docs.toList();
       if (_filter != _CatFilter.all) {
@@ -512,16 +513,16 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
       // 1. Identifiant
       guard(() async {
         if (q.length < 8 || q.contains(' ')) return;
-        final d = await _col.doc(q).get();
+        final d = await _col.doc(q).getM('admin_stickers_page.dart:515');
         if (d.exists) found[d.id] = d;
       }),
       // 2. Nom de pack (filtre côté app sur les packs, puis stickers de ces packs)
       guard(() async {
-        final packs = await db.collection('StickerPacks').limit(500).get();
+        final packs = await db.collection('StickerPacks').limit(500).getM('admin_stickers_page.dart:520');
         final ids = packs.docs.where((p) => (p.data()['name'] ?? '').toString().toLowerCase().contains(lower)).map((p) => p.id).take(6).toList();
         for (var i = 0; i < ids.length; i += 10) {
           final part = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
-          final s = await _col.where('packId', whereIn: part).limit(100).get();
+          final s = await _col.where('packId', whereIn: part).limit(100).getM('admin_stickers_page.dart:524');
           for (final d in s.docs) {
             found[d.id] = d;
           }
@@ -531,12 +532,12 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
       guard(() async {
         final p = lower.startsWith('@') ? lower.substring(1) : lower;
         if (p.isEmpty) return;
-        final users = await db.collection('Users').orderBy('pseudo').startAt([p]).endAt(['$p']).limit(8).get();
+        final users = await db.collection('Users').orderBy('pseudo').startAt([p]).endAt(['$p']).limit(8).getM('admin_stickers_page.dart:534');
         final ids = users.docs.map((u) => u.id).toList();
         if (lower == 'afrolook') ids.add('afrolook');
         for (var i = 0; i < ids.length; i += 10) {
           final part = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
-          final s = await _col.where('creatorId', whereIn: part).limit(100).get();
+          final s = await _col.where('creatorId', whereIn: part).limit(100).getM('admin_stickers_page.dart:539');
           for (final d in s.docs) {
             found[d.id] = d;
           }
@@ -547,7 +548,7 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
         final variants = <String>{q, lower, lower.isEmpty ? '' : lower[0].toUpperCase() + lower.substring(1)};
         for (final v in variants) {
           if (v.isEmpty) continue;
-          final s = await _col.orderBy('captions.fr').startAt([v]).endAt(['$v']).limit(60).get();
+          final s = await _col.orderBy('captions.fr').startAt([v]).endAt(['$v']).limit(60).getM('admin_stickers_page.dart:550');
           for (final d in s.docs) {
             found[d.id] = d;
           }

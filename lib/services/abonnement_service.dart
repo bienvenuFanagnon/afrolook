@@ -1,5 +1,6 @@
 ﻿// services/abonnement_service.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -119,7 +120,7 @@ class AbonnementService {
 
   Future<void> verifierEtMettreAJourAbonnement(String userId) async {
     try {
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('abonnement_service.dart:122');
       final userData = userDoc.data();
       if (userData == null || userData['abonnement'] == null) return;
 

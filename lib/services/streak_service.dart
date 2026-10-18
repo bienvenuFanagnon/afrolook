@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -59,7 +60,7 @@ class StreakService {
 
     // ── Lire l'état courant depuis Firestore ──────────────────────────────────
     final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
-    final doc = await userRef.get();
+    final doc = await userRef.getM('streak_service.dart:62');
     final data = doc.data() ?? {};
 
     int currentStreak = (data['commentStreak'] as num?)?.toInt() ?? 0;
@@ -146,7 +147,7 @@ class StreakService {
     if (lastChecked == today) return; // déjà vérifié aujourd'hui
 
     final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
-    final doc = await userRef.get();
+    final doc = await userRef.getM('streak_service.dart:149');
     final data = doc.data();
     if (data == null) return;
 
@@ -201,7 +202,7 @@ class StreakService {
   /// Migration douce : crée les champs streak si absents en Firestore.
   static Future<void> initIfNeeded(String userId) async {
     final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
-    final doc = await userRef.get();
+    final doc = await userRef.getM('streak_service.dart:204');
     if (!doc.exists) return;
 
     final data = doc.data()!;

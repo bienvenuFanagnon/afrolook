@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/media_cdn.dart';
 import '../../services/comments_prefetch.dart';
@@ -704,7 +705,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         final canalDoc = await _firestore
             .collection('Canaux')
             .doc(widget.post.canal_id)
-            .get();
+            .getM('youTube_video_card.dart:707');
         if (canalDoc.exists) {
           _creatorCanal = Canal.fromJson(canalDoc.data() as Map<String, dynamic>);
           widget.post.canal = _creatorCanal;
@@ -726,7 +727,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         final userDoc = await _firestore
             .collection('Users')
             .doc(widget.post.user_id)
-            .get();
+            .getM('youTube_video_card.dart:729');
         if (userDoc.exists) {
           _creatorUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
           widget.post.user = _creatorUser;
@@ -1131,7 +1132,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Future<void> _sendLikeNotifications() async {
     final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
-    final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).get();
+    final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).getM('youTube_video_card.dart:1134');
 
     if (userDoc.exists) {
       final lastNotificationTime = userDoc.data()?['lastNotificationTime'] ?? 0;
@@ -2291,7 +2292,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         FirebaseFirestore.instance
             .collection('Posts')
             .doc(post.defiResponseToPostId)
-            .get()
+            .getM('youTube_video_card.dart:2294')
             .then((doc) {
           if (doc.exists && mounted) {
             final defiPost = Post.fromJson(doc.data()!);

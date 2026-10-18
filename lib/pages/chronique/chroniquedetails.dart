@@ -1,5 +1,6 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import '../../utils/media_cdn.dart';
 import 'dart:async';
 import '../../widgets/video_poster_image.dart';
@@ -286,7 +287,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           newLastDocument = await FirebaseFirestore.instance
               .collection('chroniques')
               .doc(result.last.id)
-              .get();
+              .getM('chroniquedetails.dart:289');
         }
 
         setState(() {
@@ -365,7 +366,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           newLastDocument = await FirebaseFirestore.instance
               .collection('chroniques')
               .doc(result.last.id)
-              .get();
+              .getM('chroniquedetails.dart:368');
         }
 
         setState(() {
@@ -411,7 +412,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       if (mounted) setState(() => _chroniqueOwner = cached);
       return;
     }
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentChronique.userId).get();
+    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentChronique.userId).getM('chroniquedetails.dart:414');
     if (userDoc.exists && mounted) {
       final owner = UserData.fromJson(userDoc.data()!);
       _ownerCache[currentChronique.userId] = owner;
@@ -636,7 +637,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     }
   }
   Future<void> _sendNotification(UserAuthProvider authProvider, Chronique chronique, String message, String type) async {
-    final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(chronique.userId).get();
+    final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(chronique.userId).getM('chroniquedetails.dart:639');
     if (ownerDoc.exists && ownerDoc.data()!['oneIgnalUserid'] != null) {
       await authProvider.sendNotification(
         appName: '@${authProvider.loginUserData.pseudo!}',
@@ -756,7 +757,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   }
 
   void _showUserProfile(String userId) async {
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('chroniquedetails.dart:759');
     if (userDoc.exists) {
       showUserDetailsModalDialog(UserData.fromJson(userDoc.data()!), MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
     }
@@ -782,7 +783,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           .collection('Advertisements')
           .where('status', isEqualTo: 'active')
           .limit(5)
-          .get();
+          .getM('chroniquedetails.dart:785');
 
       final ads = <Advertisement>[];
       final futures = <Future<void>>[];
@@ -794,7 +795,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
 
         if (ad.postId != null) {
           futures.add(
-            FirebaseFirestore.instance.collection('Posts').doc(ad.postId).get().then((postDoc) {
+            FirebaseFirestore.instance.collection('Posts').doc(ad.postId).getM('chroniquedetails.dart:797').then((postDoc) {
               if (!postDoc.exists) return;
               final post = Post.fromJson(postDoc.data()!);
               post.id = postDoc.id;
@@ -869,7 +870,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       final fs = FirebaseFirestore.instance;
       switch (ad.ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(id).get();
+          final doc = await fs.collection('Canaux').doc(id).getM('chroniquedetails.dart:872');
           if (!doc.exists || !context.mounted) return;
           final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
           Navigator.push(context, MaterialPageRoute(
@@ -887,7 +888,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           ));
           break;
         default:
-          final doc = await fs.collection('Users').doc(id).get();
+          final doc = await fs.collection('Users').doc(id).getM('chroniquedetails.dart:890');
           if (!doc.exists || !context.mounted) return;
           final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
           Navigator.push(context, MaterialPageRoute(

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 
@@ -89,11 +90,11 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
     try {
       var q = _buildQuery().limit(_pageSize);
       if (!reset && _cursor != null) q = q.startAfterDocument(_cursor!);
-      final snap = await q.get();
+      final snap = await q.getM('admin_canaux_page.dart:92');
       // Recherche par identifiant exact (un identifiant de canal fait 20 caractères)
       var extra = <DocumentSnapshot<Map<String, dynamic>>>[];
       if (reset && _query.length >= 15 && !_query.contains(' ')) {
-        final byId = await FirebaseFirestore.instance.collection('Canaux').doc(_query).get();
+        final byId = await FirebaseFirestore.instance.collection('Canaux').doc(_query).getM('admin_canaux_page.dart:96');
         if (byId.exists) extra = [byId];
       }
       if (!mounted) return;

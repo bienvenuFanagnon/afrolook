@@ -1,5 +1,6 @@
 ﻿// models/live_models.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -618,7 +619,7 @@ class LiveProvider extends ChangeNotifier {
     return _firestore
         .collection('lives')
         .where('isLive', isEqualTo: true)
-        .snapshots()
+        .snapshotsM('livesAgora.dart:621')
         .map((snapshot) => snapshot.docs.length);
   }
   Future<void> fetchAllLivesBatch({bool reset = false}) async {
@@ -651,7 +652,7 @@ class LiveProvider extends ChangeNotifier {
         printVm("📥 Premier chargement de tous les lives");
       }
 
-      QuerySnapshot snapshot = await query.get();
+      QuerySnapshot snapshot = await query.getM('livesAgora.dart:654');
       printVm("📊 ${snapshot.docs.length} lives récupérés");
 
       if (snapshot.docs.isEmpty) {
@@ -717,7 +718,7 @@ class LiveProvider extends ChangeNotifier {
     if (_lastEndedLiveDoc != null) query = query.startAfterDocument(_lastEndedLiveDoc!);
 
     try {
-      QuerySnapshot snapshot = await query.get();
+      QuerySnapshot snapshot = await query.getM('livesAgora.dart:720');
       if (snapshot.docs.isEmpty) {
         _endedLivesFinished = true;
         return;
@@ -759,7 +760,7 @@ class LiveProvider extends ChangeNotifier {
     if (_lastActiveLiveDoc != null) query = query.startAfterDocument(_lastActiveLiveDoc!);
 
     try {
-      QuerySnapshot snapshot = await query.get();
+      QuerySnapshot snapshot = await query.getM('livesAgora.dart:762');
       if (snapshot.docs.isEmpty) {
         _activeLivesFinished = true;
         return;
@@ -790,7 +791,7 @@ class LiveProvider extends ChangeNotifier {
       QuerySnapshot snapshot = await _firestore
           .collection('lives')
           .orderBy('startTime', descending: true)
-          .get();
+          .getM('livesAgora.dart:793');
       for (var doc in snapshot.docs) {
         try {
           final live = PostLive.fromMap(doc.data() as Map<String, dynamic>);
@@ -813,7 +814,7 @@ class LiveProvider extends ChangeNotifier {
           .where('isLive', isEqualTo: true)
           .orderBy('viewerCount', descending: true)
           .limit(3)
-          .get();
+          .getM('livesAgora.dart:816');
 
       _activeLives = [];
 
@@ -847,7 +848,7 @@ class LiveProvider extends ChangeNotifier {
 
   Future<bool> checkUserPaymentStatus(String liveId, String userId) async {
     try {
-      final doc = await _firestore.collection('lives').doc(liveId).get();
+      final doc = await _firestore.collection('lives').doc(liveId).getM('livesAgora.dart:850');
       if (doc.exists) {
         final data = doc.data()!;
         final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
@@ -918,7 +919,7 @@ class LiveProvider extends ChangeNotifier {
 
   Future<bool> joinAsParticipant(String liveId, String userId) async {
     try {
-      final liveDoc = await _firestore.collection('lives').doc(liveId).get();
+      final liveDoc = await _firestore.collection('lives').doc(liveId).getM('livesAgora.dart:921');
       if (liveDoc.exists) {
         final live = PostLive.fromMap(liveDoc.data()!);
 

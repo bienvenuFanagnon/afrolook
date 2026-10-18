@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
@@ -146,7 +147,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
             .where('isAdvertisement', isEqualTo: false)
             .orderBy('createdAt', descending: true)
             .limit(3)
-            .get();
+            .getM('user_profile_boost_page.dart:149');
         for (final doc in snap.docs) {
           final d = doc.data();
           final isVideo = (d['dataType'] as String? ?? '').toUpperCase() == 'VIDEO';

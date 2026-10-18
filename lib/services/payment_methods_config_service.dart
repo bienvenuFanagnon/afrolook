@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Lit et écrit la config d'activation des opérateurs de paiement
@@ -15,7 +16,7 @@ class PaymentMethodsConfigService {
 
   Future<void> load() async {
     try {
-      final doc = await FirebaseFirestore.instance.doc(_docPath).get();
+      final doc = await FirebaseFirestore.instance.doc(_docPath).getM('payment_methods_config_service.dart:18');
       if (doc.exists) {
         final ops = (doc.data()?['operators'] as Map<String, dynamic>?) ?? {};
         _cache = ops.map((code, v) {

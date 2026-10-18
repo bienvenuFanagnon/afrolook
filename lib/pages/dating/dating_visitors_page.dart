@@ -1,4 +1,5 @@
 ﻿// lib/pages/dating/dating_visitors_page.dart
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:ui';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -38,7 +39,7 @@ class _DatingVisitorsPageState extends State<DatingVisitorsPage> {
           .where('userId', isEqualTo: _currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_visitors_page.dart:41');
       if (snapshot.docs.isNotEmpty) {
         final plan = snapshot.docs.first['planCode'];
         if (mounted) {
@@ -96,7 +97,7 @@ class _DatingVisitorsPageState extends State<DatingVisitorsPage> {
           .collection('dating_profile_visits')
           .where('visitedUserId', isEqualTo: _currentUserId)
           .orderBy('createdAt', descending: true)
-          .snapshots(),
+          .snapshotsM('dating_visitors_page.dart:99'),
       builder: (context, snapshot) {
         printVm('Erreur: ${snapshot.error}');
         if (snapshot.hasError) {
@@ -479,7 +480,7 @@ class _DatingVisitorsPageState extends State<DatingVisitorsPage> {
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_visitors_page.dart:482');
       if (snapshot.docs.isNotEmpty) {
         return DatingProfile.fromJson(snapshot.docs.first.data());
       }

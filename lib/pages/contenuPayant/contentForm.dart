@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import '../../utils/count_format.dart';
 import 'dart:async';
@@ -494,7 +495,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       final docSnapshot = await FirebaseFirestore.instance
           .collection('ContentPaies')
           .doc(serieId)
-          .get();
+          .getM('contentForm.dart:497');
 
       if (!docSnapshot.exists) {
         printVm('Document $serieId non trouvé');

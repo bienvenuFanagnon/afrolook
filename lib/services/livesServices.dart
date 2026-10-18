@@ -1,5 +1,6 @@
 ﻿// services/live_service.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,7 +23,7 @@ class LiveService {
       }
 
       // Récupérer les stats de live de l'utilisateur
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('livesServices.dart:25');
       final userData = UserData.fromJson(userDoc.data()!);
 
       // Si admin, toujours autorisé
@@ -82,7 +83,7 @@ class LiveService {
       final userId = _auth.currentUser?.uid;
       if (userId == null) return;
 
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('livesServices.dart:85');
       final userData = UserData.fromJson(userDoc.data()!);
 
       // Si admin, ne pas incrémenter
@@ -109,7 +110,7 @@ class LiveService {
         return _getDefaultRestrictions(false);
       }
 
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('livesServices.dart:112');
       final userData = UserData.fromJson(userDoc.data()!);
 
       // Si admin, toutes les fonctionnalités

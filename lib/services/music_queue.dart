@@ -1,6 +1,7 @@
 // File d'attente de la musique d'Afrolook : suivant, précédent, aléatoire, préchargement, fin d'extrait gratuit.
 // Un seul lecteur dans toute l'application (SoundPreview) ; ce fichier décide QUOI jouer ensuite et prévient l'interface.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -176,7 +177,7 @@ class MusicQueue {
     _ownedSub?.cancel();
     ownedIds.value = <String>{};
     if (u == null) return;
-    _ownedSub = FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: u.uid).snapshots().listen((s) {
+    _ownedSub = FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: u.uid).snapshotsM('music_queue.dart:179').listen((s) {
       ownedIds.value = {for (final d in s.docs) '${d.data()['soundId']}'};
     }, onError: (_) {});
   }

@@ -1,4 +1,5 @@
 // afrolookAdminPubPage.dart — dashboard admin v2
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/ad_delete.dart';
 import 'package:afrotok/pages/pub/ad_route_picker.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -99,7 +100,7 @@ class _AdvertisementManagementPageState
     setState(() => _loadingStats = true);
     try {
       final snapshot =
-          await FirebaseFirestore.instance.collection('Advertisements').get();
+          await FirebaseFirestore.instance.collection('Advertisements').getM('afrolookAdminPubPage.dart:102');
       final now = DateTime.now().microsecondsSinceEpoch;
 
       int totalViews = 0, totalClicks = 0, totalUniqueViews = 0;
@@ -720,7 +721,7 @@ class _AdvertisementManagementPageState
           final doc = await FirebaseFirestore.instance
               .collection('Canaux')
               .doc(id)
-              .get();
+              .getM('afrolookAdminPubPage.dart:723');
           if (!doc.exists || !mounted) return;
           final canalData = Map<String, dynamic>.from(doc.data()!);
           canalData['id'] = doc.id;
@@ -745,7 +746,7 @@ class _AdvertisementManagementPageState
           final doc = await FirebaseFirestore.instance
               .collection('Users')
               .doc(id)
-              .get();
+              .getM('afrolookAdminPubPage.dart:748');
           if (!doc.exists || !mounted) return;
           final userData = Map<String, dynamic>.from(doc.data()!);
           userData['id'] = doc.id;
@@ -760,7 +761,7 @@ class _AdvertisementManagementPageState
           final doc = await FirebaseFirestore.instance
               .collection('Posts')
               .doc(ad.postId)
-              .get();
+              .getM('afrolookAdminPubPage.dart:763');
           if (!doc.exists || !mounted) return;
           final postData = Map<String, dynamic>.from(doc.data()!);
           postData['id'] = doc.id;
@@ -1094,7 +1095,7 @@ class _AdvertisementManagementPageState
       future: FirebaseFirestore.instance
           .collection('Posts')
           .doc(ad.postId)
-          .get(),
+          .getM('afrolookAdminPubPage.dart:1097'),
       builder: (context, snap) {
         final postData = snap.hasData && snap.data!.exists
             ? snap.data!.data() as Map<String, dynamic>
@@ -2081,7 +2082,7 @@ class _AdvertisementManagementPageState
               .collection('Advertisements')
               .where('status', isEqualTo: status)
               .orderBy('createdAt', descending: true)
-              .snapshots(),
+              .snapshotsM('afrolookAdminPubPage.dart:2084'),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(

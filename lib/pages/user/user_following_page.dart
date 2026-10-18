@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
@@ -60,7 +61,7 @@ class _UserFollowingPageState extends State<UserFollowingPage>
   Future<void> _loadFollowingIds() async {
     try {
       final doc =
-          await _firestore.collection('Users').doc(widget.userId).get();
+          await _firestore.collection('Users').doc(widget.userId).getM('user_following_page.dart:63');
       final data = doc.data();
       if (data != null && data['followingIds'] is List) {
         _followingIds = List<String>.from(data['followingIds']);
@@ -93,7 +94,7 @@ class _UserFollowingPageState extends State<UserFollowingPage>
         final snap = await _firestore
             .collection('Users')
             .where(FieldPath.documentId, whereIn: sub)
-            .get();
+            .getM('user_following_page.dart:96');
         for (final doc in snap.docs) {
           final data = doc.data();
           data['id'] = doc.id;
@@ -127,7 +128,7 @@ class _UserFollowingPageState extends State<UserFollowingPage>
           .where('usersSuiviId', arrayContains: widget.userId)
           .limit(20);
 
-      final snap = await query.get();
+      final snap = await query.getM('user_following_page.dart:130');
       final list = snap.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id;
@@ -156,7 +157,7 @@ class _UserFollowingPageState extends State<UserFollowingPage>
           .where('usersSuiviId', arrayContains: widget.userId)
           .startAfterDocument(_lastCanalDoc!)
           .limit(20)
-          .get();
+          .getM('user_following_page.dart:159');
 
       final list = snap.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;

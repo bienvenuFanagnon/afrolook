@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
@@ -34,7 +35,7 @@ class AuthService {
 
     try {
       // Vérifier si le document existe
-      DocumentSnapshot snapshot = await docRef.get();
+      DocumentSnapshot snapshot = await docRef.getM('authService.dart:37');
 
       if (snapshot.exists) {
         // Si trouvé → on récupère
@@ -62,7 +63,7 @@ class AuthService {
     AppDefaultData appData=AppDefaultData();
     try {
       // Obtenir les documents de la collection
-      QuerySnapshot querySnapshot = await collection.get();
+      QuerySnapshot querySnapshot = await collection.getM('authService.dart:65');
 
       // Vérifier s'il y a des documents
       if (querySnapshot.docs.isNotEmpty) {

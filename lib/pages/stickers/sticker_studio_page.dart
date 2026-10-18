@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,8 +43,8 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
     try {
       final db = FirebaseFirestore.instance;
       final res = await Future.wait([
-        db.collection('TransactionSoldes').where('user_id', isEqualTo: uid).limit(300).get(),
-        db.collection('StickerPacks').where('creatorId', isEqualTo: uid).get(),
+        db.collection('TransactionSoldes').where('user_id', isEqualTo: uid).limit(300).getM('sticker_studio_page.dart:45'),
+        db.collection('StickerPacks').where('creatorId', isEqualTo: uid).getM('sticker_studio_page.dart:46'),
       ]);
       final now = DateTime.now();
       final start = DateTime(now.year, now.month, 1).millisecondsSinceEpoch;

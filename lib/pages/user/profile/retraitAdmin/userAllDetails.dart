@@ -1,5 +1,6 @@
 // pages/admin/user_management_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +62,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   Future<void> _loadUserData() async {
     try {
-      final doc = await _firestore.collection('Users').doc(widget.userId).get();
+      final doc = await _firestore.collection('Users').doc(widget.userId).getM('userAllDetails.dart:64');
       if (doc.exists) {
         final data = doc.data()!;
         data['id'] = doc.id;
@@ -146,7 +147,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     if (_isSendingReminder || _userData == null) return;
     setState(() => _isSendingReminder = true);
     try {
-      final userDoc = await _firestore.collection('Users').doc(widget.userId).get();
+      final userDoc = await _firestore.collection('Users').doc(widget.userId).getM('userAllDetails.dart:149');
       if (!userDoc.exists) {
         throw Exception('Utilisateur non trouvé');
       }
@@ -159,7 +160,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
       final postsSnapshot = await _firestore
           .collection('Posts')
           .where('user_id', isEqualTo: widget.userId)
-          .get();
+          .getM('userAllDetails.dart:162');
 
       int newLikesCount = 0;
       for (var postDoc in postsSnapshot.docs) {
@@ -463,14 +464,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
             .where('user_id', isEqualTo: widget.userId)
             .orderBy('created_at', descending: true)
             .limit(30)
-            .get();
+            .getM('userAllDetails.dart:466');
       } catch (_) {
         // Index manquant : récupération puis tri côté client
         snap = await _firestore
             .collection('Posts')
             .where('user_id', isEqualTo: widget.userId)
             .limit(200)
-            .get();
+            .getM('userAllDetails.dart:473');
       }
       result = snap.docs.map((d) {
         final m = Map<String, dynamic>.from(d.data());

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:io' show Platform;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -48,7 +49,7 @@ class AdConfig {
     final at = _loadedAt;
     if (!force && at != null && DateTime.now().difference(at) < const Duration(minutes: 10)) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('ads').get();
+      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('ads').getM('ad_config.dart:51');
       current = AdConfig._(doc.data() ?? {});
       _loadedAt = DateTime.now();
     } catch (_) {/* garde la configuration précédente (par défaut : pubs coupées) */}

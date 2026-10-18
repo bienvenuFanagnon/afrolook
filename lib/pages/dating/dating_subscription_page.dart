@@ -1,5 +1,6 @@
 // lib/pages/dating/dating_subscription_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -157,7 +158,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           .where('userId', isEqualTo: userId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_subscription_page.dart:160');
 
       if (snapshot.docs.isNotEmpty) {
         final subscription = UserDatingSubscription.fromJson(snapshot.docs.first.data());
@@ -241,7 +242,7 @@ class _DatingSubscriptionPageState extends State<DatingSubscriptionPage> {
           .collection('user_dating_subscriptions')
           .where('userId', isEqualTo: userId)
           .where('isActive', isEqualTo: true)
-          .get();
+          .getM('dating_subscription_page.dart:244');
 
       printVm('🔄 Exécution de la transaction Firestore...');
 

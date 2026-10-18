@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../utils/count_format.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
@@ -136,7 +137,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     setState(() => _loading = true);
     try {
       // On charge plus de docs par page pour compenser le filtre côté client
-      final snap = await _baseQuery.limit(_pageSize * 3).get();
+      final snap = await _baseQuery.limit(_pageSize * 3).getM('creator_unseen_posts_page.dart:139');
 
       if (mounted) {
         final unseen = _filterUnseen(snap.docs);
@@ -159,7 +160,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
       final snap = await _baseQuery
           .startAfterDocument(_lastDoc!)
           .limit(_pageSize * 3)
-          .get();
+          .getM('creator_unseen_posts_page.dart:162');
 
       if (mounted) {
         final newPosts = _filterUnseen(snap.docs);

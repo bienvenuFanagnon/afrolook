@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 
@@ -358,7 +359,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       Filter('docId', isEqualTo:  '${post.id}${authProvider.loginUserData!.id}'),
       Filter('docId', isEqualTo:  '${authProvider.loginUserData!.id}${post.id}'),
 
-    )).snapshots();
+    )).snapshotsM('afrovideo.dart:361');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -419,7 +420,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
 
       });
       CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('afrovideo.dart:422');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
           Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -437,9 +438,9 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
 
       /////////////ami//////////
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id!?'${amigo.id}':'${authProvider.loginUserData!.id}').get();
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id!?'${amigo.id}':'${authProvider.loginUserData!.id}').getM('afrovideo.dart:440');
       // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData!.id}':'${amigo.id}').get();
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData!.id}':'${amigo.id}').getM('afrovideo.dart:442');
 
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
@@ -452,7 +453,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
 
       /////////////entreprise//////////
       CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-      QuerySnapshot querySnapshotentreprise = await entrepriseCollect.where("id",isEqualTo:'${post.entreprise_id}').get();
+      QuerySnapshot querySnapshotentreprise = await entrepriseCollect.where("id",isEqualTo:'${post.entreprise_id}').getM('afrovideo.dart:455');
       List<EntrepriseData> entrepriseList = querySnapshotentreprise.docs.map((doc) =>
           EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       usersChat.entreprise=entrepriseList.first;
@@ -666,7 +667,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
               onPressed: () async {
                 try {
                   CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('afrovideo.dart:669');
 
                   List<UserData> listUsers = querySnapshotUser.docs.map(
                         (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
@@ -762,7 +763,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
 
                     try {
                       CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('afrovideo.dart:765');
 
                       List<UserData> listUsers = querySnapshotUser.docs.map(
                             (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
@@ -1425,7 +1426,7 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                                                     CollectionReference userCollect =
                                                     FirebaseFirestore.instance.collection('Users');
                                                     // Get docs from collection reference
-                                                    QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
+                                                    QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).getM('afrovideo.dart:1428');
                                                     // Afficher la liste
                                                     List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                                         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();

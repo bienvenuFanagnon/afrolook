@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -111,7 +112,7 @@ class PostProvider extends ChangeNotifier {
         ])
             .orderBy(field, descending: desc)
             .limit(limit)
-            .get();
+            .getM('postProvider.dart:114');
 
         return snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
@@ -129,7 +130,7 @@ class PostProvider extends ChangeNotifier {
           PostDataType.VIDEO.name,
         ])
             .limit(50)
-            .get();
+            .getM('postProvider.dart:132');
 
         List<Post> posts = snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
@@ -268,7 +269,7 @@ class PostProvider extends ChangeNotifier {
       }
 
       // Exécuter la requête
-      QuerySnapshot querySnapshot = await query.get();
+      QuerySnapshot querySnapshot = await query.getM('postProvider.dart:271');
 
       if (querySnapshot.docs.isEmpty) {
         _hasMoreServices = false;
@@ -292,7 +293,7 @@ class PostProvider extends ChangeNotifier {
               DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
                   .collection('Users')
                   .doc(service.userId)
-                  .get();
+                  .getM('postProvider.dart:295');
 
               if (userSnapshot.exists) {
                 UserData user = UserData.fromJson(
@@ -415,7 +416,7 @@ class PostProvider extends ChangeNotifier {
   //       query = query.startAfterDocument(_lastServiceDocument!);
   //     }
   //
-  //     QuerySnapshot querySnapshot = await query.get();
+  //     QuerySnapshot querySnapshot = await query.getM('postProvider.dart:418');
   //
   //     if (querySnapshot.docs.isEmpty) {
   //       _hasMoreServices = false;
@@ -434,7 +435,7 @@ class PostProvider extends ChangeNotifier {
   //           DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
   //               .collection('Users')
   //               .doc(service.userId)
-  //               .get();
+  //               .getM('postProvider.dart:437');
   //
   //           if (userSnapshot.exists) {
   //             UserData user = UserData.fromJson(
@@ -489,7 +490,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('UserServices')
           .where("id", isEqualTo: id)
-          .get();
+          .getM('postProvider.dart:492');
 
       List<UserServiceData> services = querySnapshot.docs.map((doc) =>
           UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -498,7 +499,7 @@ class PostProvider extends ChangeNotifier {
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('Users')
             .doc(service.userId)
-            .get();
+            .getM('postProvider.dart:501');
 
         if (userSnapshot.exists) {
           UserData user = UserData.fromJson(
@@ -541,7 +542,7 @@ class PostProvider extends ChangeNotifier {
           .where("disponible", isEqualTo: true)
           .where("city", isNotEqualTo: null)
           .where("city", isNotEqualTo: "")
-          .get();
+          .getM('postProvider.dart:544');
 
       Set<String> cities = {};
       for (var doc in snapshot.docs) {
@@ -573,7 +574,7 @@ class PostProvider extends ChangeNotifier {
   
   /// Profil d'une personne, lu une seule fois (null si introuvable).
   Future<UserData?> _readUserOnce(String userId) async {
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('postProvider.dart:576');
     final data = doc.data();
     return data == null ? null : UserData.fromJson(data);
   }
@@ -594,7 +595,7 @@ class PostProvider extends ChangeNotifier {
 
         .orderBy('created_at', descending: true)
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:597');
     // Les posts de la liste sont tous ceux de [userId] : son profil est lu une seule fois (et non une requête par post à chaque
     // changement d'un compteur), et la liste est reconstruite à chaque instantané (elle grossissait de doublons auparavant).
     UserData? owner;
@@ -606,7 +607,7 @@ class PostProvider extends ChangeNotifier {
         final p = Post.fromJson(post.data());
         if (p.type == PostType.PUB.name && (p.entreprise_id ?? '').isNotEmpty) {
           if (!entreprises.containsKey(p.entreprise_id)) {
-            final q = await FirebaseFirestore.instance.collection('Entreprises').where("id", isEqualTo: '${p.entreprise_id}').limit(1).get();
+            final q = await FirebaseFirestore.instance.collection('Entreprises').where("id", isEqualTo: '${p.entreprise_id}').limit(1).getM('postProvider.dart:609');
             entreprises[p.entreprise_id!] = q.docs.isEmpty ? null : EntrepriseData.fromJson(q.docs.first.data());
           }
           final e = entreprises[p.entreprise_id];
@@ -628,7 +629,7 @@ class PostProvider extends ChangeNotifier {
         .where("dataType",isEqualTo:'${PostDataType.IMAGE.name}')
         .orderBy('created_at', descending: true)
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:631');
     List<Post> posts = [];
     //listConstposts =[];
     //  UserData userData=UserData();
@@ -638,7 +639,7 @@ class PostProvider extends ChangeNotifier {
         //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:641');
         // Afficher la liste
 
 
@@ -646,7 +647,7 @@ class PostProvider extends ChangeNotifier {
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
         if (p.type==PostType.PUB.name) {
           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:649');
 
           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -669,7 +670,7 @@ class PostProvider extends ChangeNotifier {
         .where("dataType",isEqualTo:'${PostDataType.IMAGE.name}')
         .orderBy('created_at', descending: true)
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:672');
     List<Post> posts = [];
     //listConstposts =[];
     //  UserData userData=UserData();
@@ -679,7 +680,7 @@ class PostProvider extends ChangeNotifier {
         //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:682');
         // Afficher la liste
 
 
@@ -687,7 +688,7 @@ class PostProvider extends ChangeNotifier {
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
         if (p.type==PostType.PUB.name) {
           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:690');
 
           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -710,7 +711,7 @@ class PostProvider extends ChangeNotifier {
         .orderBy('created_at', descending: true)
 
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:713');
     List<Post> posts = [];
     //listConstposts =[];
     //  UserData userData=UserData();
@@ -720,7 +721,7 @@ class PostProvider extends ChangeNotifier {
         //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:723');
         // Afficher la liste
 
 
@@ -728,7 +729,7 @@ class PostProvider extends ChangeNotifier {
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
         if (p.type==PostType.PUB.name) {
           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:731');
 
           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -753,7 +754,7 @@ class PostProvider extends ChangeNotifier {
         .where("dataType",isEqualTo:'${PostDataType.VIDEO.name}')
         .orderBy('created_at', descending: true)
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:756');
     // Les posts de la liste sont tous ceux de [userId] : son profil est lu une seule fois (et non une requête par post à chaque
     // changement d'un compteur), et la liste est reconstruite à chaque instantané (elle grossissait de doublons auparavant).
     UserData? owner;
@@ -765,7 +766,7 @@ class PostProvider extends ChangeNotifier {
         final p = Post.fromJson(post.data());
         if (p.type == PostType.PUB.name && (p.entreprise_id ?? '').isNotEmpty) {
           if (!entreprises.containsKey(p.entreprise_id)) {
-            final q = await FirebaseFirestore.instance.collection('Entreprises').where("id", isEqualTo: '${p.entreprise_id}').limit(1).get();
+            final q = await FirebaseFirestore.instance.collection('Entreprises').where("id", isEqualTo: '${p.entreprise_id}').limit(1).getM('postProvider.dart:768');
             entreprises[p.entreprise_id!] = q.docs.isEmpty ? null : EntrepriseData.fromJson(q.docs.first.data());
           }
           final e = entreprises[p.entreprise_id];
@@ -783,7 +784,7 @@ class PostProvider extends ChangeNotifier {
         .collection('PostsMonetiser')
         .where("user_id", isEqualTo: user_id)
         .orderBy('solde', descending: true)
-        .snapshots();
+        .snapshotsM('postProvider.dart:786');
 
     await for (var snapshot in postStream) {
       List<PostMonetiser> postMonetiserList = [];
@@ -818,7 +819,7 @@ class PostProvider extends ChangeNotifier {
         .collection('PostsMonetiser')
         .where("user_id", isEqualTo: user_id)
         .orderBy('solde', descending: true)
-        .snapshots();
+        .snapshotsM('postProvider.dart:821');
 
     await for (var snapshot in postStream) {
       List<PostMonetiser> postMonetiserList = [];
@@ -841,7 +842,7 @@ class PostProvider extends ChangeNotifier {
         .where("user_id", isEqualTo: user_id)
         .orderBy('solde', descending: true)
         // .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:844');
 
     await for (var snapshot in postStream) {
       for (var post in snapshot.docs) {
@@ -883,7 +884,7 @@ class PostProvider extends ChangeNotifier {
     var collection = FirebaseFirestore.instance.collection('PostsMonetiser');
 
     // Rechercher le post par son ID
-    var doc = await collection.doc(postId).get();
+    var doc = await collection.doc(postId).getM('postProvider.dart:886');
 
     if (doc.exists) {
       // Si le post existe, le retourner
@@ -919,7 +920,7 @@ class PostProvider extends ChangeNotifier {
     // Rechercher le post par son ID
     var doc = await collection
         .where("post_id", isEqualTo: postId)
-        .get();
+        .getM('postProvider.dart:922');
 
     PostMonetiser post;
 
@@ -1002,7 +1003,7 @@ class PostProvider extends ChangeNotifier {
         .where("receiver_id", isEqualTo: user_id)
         .orderBy('created_at', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:1005');
 
     await for (var snapshot in postStream) {
       for (var post in snapshot.docs) {
@@ -1012,7 +1013,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
             .collection('Users')
             .where("id", isEqualTo: notification.user_id)
-            .get();
+            .getM('postProvider.dart:1015');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) {
           return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1034,7 +1035,7 @@ class PostProvider extends ChangeNotifier {
         .where("user_id", isEqualTo: user_id)
         .orderBy('createdAt', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:1037');
 
     await for (var snapshot in postStream) {
       for (var post in snapshot.docs) {
@@ -1044,7 +1045,7 @@ class PostProvider extends ChangeNotifier {
         // QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
         //     .collection('Users')
         //     .where("id", isEqualTo: notification.user_id)
-        //     .get();
+        //     .getM('postProvider.dart:1047');
         //
         // List<UserData> userList = querySnapshotUser.docs.map((doc) {
         //   return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1065,7 +1066,7 @@ class PostProvider extends ChangeNotifier {
         .where("user_id", isEqualTo: user_id)
         .orderBy('createdAt', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:1068');
 
     List<TransactionSolde> transactions = [];
 
@@ -1085,7 +1086,7 @@ class PostProvider extends ChangeNotifier {
         .collection('Canaux')
         .orderBy('updated_at', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:1088');
 
     await for (var snapshot in postStream) {
       for (var post in snapshot.docs) {
@@ -1096,7 +1097,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
             .collection('Users')
             .where("id", isEqualTo: canal.userId)
-            .get();
+            .getM('postProvider.dart:1099');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) {
           return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1117,7 +1118,7 @@ class PostProvider extends ChangeNotifier {
         .collection('Canaux')
         .orderBy('updatedAt', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:1120');
 
     await for (var snapshot in postStream) {
       List<Canal> canals = [];
@@ -1129,7 +1130,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
             .collection('Users')
             .where("id", isEqualTo: canal.userId)
-            .get();
+            .getM('postProvider.dart:1132');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) {
           return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1153,7 +1154,7 @@ class PostProvider extends ChangeNotifier {
         .where("userId", isEqualTo: user_id)
         .orderBy('updatedAt', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('postProvider.dart:1156');
 
     await for (var snapshot in postStream) {
       for (var post in snapshot.docs) {
@@ -1163,7 +1164,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
             .collection('Users')
             .where("id", isEqualTo: canal.userId)
-            .get();
+            .getM('postProvider.dart:1166');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) {
           return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1188,7 +1189,7 @@ class PostProvider extends ChangeNotifier {
           .where("adminIds", arrayContains: userId)
           .orderBy('updatedAt', descending: true)
           .limit(100)
-          .snapshots();
+          .snapshotsM('postProvider.dart:1191');
 
       await for (var snapshot in adminStream) {
         for (var doc in snapshot.docs) {
@@ -1204,7 +1205,7 @@ class PostProvider extends ChangeNotifier {
               final creatorDoc = await firestore
                   .collection('Users')
                   .doc(canal.userId)
-                  .get();
+                  .getM('postProvider.dart:1207');
 
               if (creatorDoc.exists) {
                 canal.user = UserData.fromJson(creatorDoc.data()!);
@@ -1231,7 +1232,7 @@ class PostProvider extends ChangeNotifier {
         .orderBy('created_at', descending: true)
    .limit(100)
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:1234');
     List<NotificationData> notifications = [];
     // //listConstposts =[];
     //  UserData userData=UserData();
@@ -1245,7 +1246,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
             .collection('Users')
             .where("id", isEqualTo: '${notification.user_id}')
-            .get();
+            .getM('postProvider.dart:1248');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) {
           return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1269,7 +1270,7 @@ class PostProvider extends ChangeNotifier {
         .where("dataType",isEqualTo:'${PostDataType.VIDEO.name}')
         .orderBy('created_at', descending: true)
 
-        .snapshots();
+        .snapshotsM('postProvider.dart:1272');
     List<Post> posts = [];
     //listConstposts =[];
     //  UserData userData=UserData();
@@ -1279,7 +1280,7 @@ class PostProvider extends ChangeNotifier {
         //  printVm("post : ${jsonDecode(post.toString())}");
         Post p=Post.fromJson(post.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:1282');
         // Afficher la liste
 
 
@@ -1287,7 +1288,7 @@ class PostProvider extends ChangeNotifier {
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
         if (p.type==PostType.PUB.name) {
           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:1290');
 
           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -1335,7 +1336,7 @@ class PostProvider extends ChangeNotifier {
 
         .limit(limite)
 
-        .get();
+        .getM('postProvider.dart:1338');
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -1353,7 +1354,7 @@ class PostProvider extends ChangeNotifier {
         }   else{
           //get user
           CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-          QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+          QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:1356');
 
           List<UserData> userList = querySnapshotUser.docs.map((doc) =>
               UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -1361,7 +1362,7 @@ class PostProvider extends ChangeNotifier {
 //get entreprise
 //         if (p.type==PostType.PUB.name) {
 //           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:1364');
 //
 //           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
 //               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -1408,7 +1409,7 @@ class PostProvider extends ChangeNotifier {
         query = query.startAfterDocument(lastDoc);
       }
 
-      QuerySnapshot snapshot = await query.get();
+      QuerySnapshot snapshot = await query.getM('postProvider.dart:1411');
 
       List<Post> newPosts = snapshot.docs.map((doc) {
         return Post.fromJson(doc as Map<String,dynamic>);
@@ -1497,9 +1498,9 @@ class PostProvider extends ChangeNotifier {
         .limit(limite);
 
     // Effectuer les requêtes en parallèle
-    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
-    List<DocumentSnapshot> weekPosts = (await queryWeek.get()).docs;
-    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+    List<DocumentSnapshot> todayPosts = (await queryToday.getM('postProvider.dart:1500')).docs;
+    List<DocumentSnapshot> weekPosts = (await queryWeek.getM('postProvider.dart:1501')).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.getM('postProvider.dart:1502')).docs;
 
     // Traiter les documents de la journée
     for (var doc in todayPosts) {
@@ -1535,7 +1536,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:1538');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1545,7 +1546,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${post.canal_id}')
-            .get();
+            .getM('postProvider.dart:1548');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -1584,7 +1585,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:1587');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1594,7 +1595,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${post.canal_id}')
-            .get();
+            .getM('postProvider.dart:1597');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -1633,7 +1634,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:1636');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1643,7 +1644,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${post.canal_id}')
-            .get();
+            .getM('postProvider.dart:1646');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -1764,17 +1765,17 @@ class PostProvider extends ChangeNotifier {
     //     .limit(limite);
 
     // Effectuer les deux requêtes en parallèle
-    // List<DocumentSnapshot> pubPosts = (await queryPub.get()).docs;
-    // List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
-    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+    // List<DocumentSnapshot> pubPosts = (await queryPub.getM('postProvider.dart:1767')).docs;
+    // List<DocumentSnapshot> todayPosts = (await queryToday.getM('postProvider.dart:1768')).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.getM('postProvider.dart:1769')).docs;
 
     // Combiner les résultats
     List<DocumentSnapshot> querySnapshotPosts = [ ...otherPosts];
     // List<DocumentSnapshot> querySnapshotPosts = [...pubPosts,...todayPosts, ...otherPosts];
 
-    // QuerySnapshot querySnapshotPost = await query.get();
+    // QuerySnapshot querySnapshotPost = await query.getM('postProvider.dart:1775');
 
-    // QuerySnapshot querySnapshotPost = await query.get();
+    // QuerySnapshot querySnapshotPost = await query.getM('postProvider.dart:1777');
 
     // List<Post> postList = querySnapshotPost.docs.map((doc) {
     //   Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
@@ -1795,7 +1796,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:1798');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -1804,7 +1805,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
           .collection('Canaux')
           .where("id", isEqualTo: '${post.canal_id}')
-          .get();
+          .getM('postProvider.dart:1807');
 
       List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
         return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -1853,7 +1854,7 @@ class PostProvider extends ChangeNotifier {
         .limit(limite);
     if(getLast){
 
-      query.get().then(
+      query.getM('postProvider.dart:1856').then(
             (documentSnapshots) {
           // Get the last visible document
           final lastVisible = documentSnapshots.docs[documentSnapshots.size - 1];
@@ -1878,7 +1879,7 @@ class PostProvider extends ChangeNotifier {
       );
     }else{
 
-      query.get().then(
+      query.getM('postProvider.dart:1881').then(
             (documentSnapshots) {
           // Get the last visible document
           // final lastVisible = documentSnapshots.docs[documentSnapshots.size - 1];
@@ -1903,7 +1904,7 @@ class PostProvider extends ChangeNotifier {
       );
     }
 
-    query.get().then(
+    query.getM('postProvider.dart:1906').then(
           (documentSnapshots) {
         // Get the last visible document
         final lastVisible = documentSnapshots.docs[documentSnapshots.size - 1];
@@ -1947,7 +1948,7 @@ class PostProvider extends ChangeNotifier {
     // }
 
     // Exécuter la requête
-    QuerySnapshot querySnapshotPost = await query.get();
+    QuerySnapshot querySnapshotPost = await query.getM('postProvider.dart:1950');
     lastDocumentData= querySnapshotPost.docs.last;
 
     // Traiter les documents récupérés
@@ -1958,7 +1959,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:1961');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -2008,7 +2009,7 @@ class PostProvider extends ChangeNotifier {
     // .orderBy('updated_at', descending: true)
         .limit(limite)
 
-        .get();
+        .getM('postProvider.dart:2011');
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2026,7 +2027,7 @@ class PostProvider extends ChangeNotifier {
       }   else{
         //get user
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:2029');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) =>
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2034,7 +2035,7 @@ class PostProvider extends ChangeNotifier {
 //get entreprise
 //         if (p.type==PostType.PUB.name) {
 //           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:2037');
 //
 //           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
 //               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2100,7 +2101,7 @@ class PostProvider extends ChangeNotifier {
     // .orderBy('updated_at', descending: true)
         .limit(limite)
 
-        .get();
+        .getM('postProvider.dart:2103');
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2118,7 +2119,7 @@ class PostProvider extends ChangeNotifier {
       }   else{
         //get user
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:2121');
 
         List<UserData> userList = querySnapshotUser.docs.map((doc) =>
             UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2126,7 +2127,7 @@ class PostProvider extends ChangeNotifier {
 //get entreprise
 //         if (p.type==PostType.PUB.name) {
 //           CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+//           QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:2129');
 //
 //           List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
 //               EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2182,7 +2183,7 @@ class PostProvider extends ChangeNotifier {
    .where("id",isEqualTo:'${post_id}')
 
 
-        .get();
+        .getM('postProvider.dart:2185');
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2196,7 +2197,7 @@ class PostProvider extends ChangeNotifier {
 
       //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:2199');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2207,7 +2208,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${p.canal_id}')
-            .get();
+            .getM('postProvider.dart:2210');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -2224,7 +2225,7 @@ class PostProvider extends ChangeNotifier {
 //get entreprise
       if (p.type==PostType.PUB.name) {
         CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:2227');
 
         List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
             EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2267,7 +2268,7 @@ class PostProvider extends ChangeNotifier {
         .where("id",isEqualTo:'${id}')
 
 
-        .get();
+        .getM('postProvider.dart:2270');
 
     List<ArticleData> postList = querySnapshotPost.docs.map((doc) =>
         ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2281,7 +2282,7 @@ class PostProvider extends ChangeNotifier {
 
       //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:2284');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2335,7 +2336,7 @@ class PostProvider extends ChangeNotifier {
         .where("disponible",isEqualTo:true)
 
 
-        .get();
+        .getM('postProvider.dart:2338');
 
     List<UserServiceData> postList = querySnapshotPost.docs.map((doc) =>
         UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2349,7 +2350,7 @@ class PostProvider extends ChangeNotifier {
 
       //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').get();
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').getM('postProvider.dart:2352');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2386,13 +2387,13 @@ class PostProvider extends ChangeNotifier {
           .where("disponible",isEqualTo: true)
           .orderBy('createdAt', descending: true)
           .limit(150)
-          .get();
+          .getM('postProvider.dart:2389');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
           UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2395');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         // printVm(' UserServices user ${user.toJson()}');
 
@@ -2431,7 +2432,7 @@ class PostProvider extends ChangeNotifier {
       // orderBy('canalScore') exclut les canaux sans ce champ — on trie client-side
       QuerySnapshot querySnapshotUser = await userCollect
           .limit(20)
-          .get();
+          .getM('postProvider.dart:2434');
 
       // Tri client-side par canalScore (descend) — les canaux sans ce champ passent en dernier
       listArticles = querySnapshotUser.docs.map((doc) =>
@@ -2443,7 +2444,7 @@ class PostProvider extends ChangeNotifier {
       });
       listArticles = listArticles.take(8).toList();
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2446');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         article.user = user;
       }
@@ -2476,13 +2477,13 @@ class PostProvider extends ChangeNotifier {
           .where("disponible",isEqualTo: true)
           .orderBy('createdAt', descending: true)
           .limit(10)
-          .get();
+          .getM('postProvider.dart:2479');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
           UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2485');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         // printVm(' UserServices user ${user.toJson()}');
 
@@ -2522,13 +2523,13 @@ class PostProvider extends ChangeNotifier {
           .where("userId",isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .limit(150)
-          .get();
+          .getM('postProvider.dart:2525');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
           UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2531');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         // printVm(' UserServices user ${user.toJson()}');
 
@@ -2605,7 +2606,7 @@ class PostProvider extends ChangeNotifier {
         .where("userId",isEqualTo:'${userId}')
 
 
-        .get();
+        .getM('postProvider.dart:2608');
 
     List<EntrepriseData> postList = querySnapshotPost.docs.map((doc) =>
         EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2619,7 +2620,7 @@ class PostProvider extends ChangeNotifier {
 
       //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').get();
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').getM('postProvider.dart:2622');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2658,7 +2659,7 @@ class PostProvider extends ChangeNotifier {
        // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
        //  .orderBy('updated_at', descending: true)
         .orderBy('created_at', descending: true)
-        .get();
+        .getM('postProvider.dart:2661');
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2672,7 +2673,7 @@ class PostProvider extends ChangeNotifier {
 
       //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:2675');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2680,7 +2681,7 @@ class PostProvider extends ChangeNotifier {
 //get entreprise
       if (p.type==PostType.PUB.name) {
         CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:2683');
 
         List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
             EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2768,9 +2769,9 @@ class PostProvider extends ChangeNotifier {
         .limit(limite);
 
     // Effectuer les requêtes en parallèle
-    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
-    List<DocumentSnapshot> weekPosts = (await queryWeek.get()).docs;
-    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+    List<DocumentSnapshot> todayPosts = (await queryToday.getM('postProvider.dart:2771')).docs;
+    List<DocumentSnapshot> weekPosts = (await queryWeek.getM('postProvider.dart:2772')).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.getM('postProvider.dart:2773')).docs;
 
     // Traiter les documents de la journée
     for (var doc in todayPosts) {
@@ -2788,7 +2789,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:2791');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -2798,7 +2799,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${post.canal_id}')
-            .get();
+            .getM('postProvider.dart:2801');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -2837,7 +2838,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:2840');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -2847,7 +2848,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${post.canal_id}')
-            .get();
+            .getM('postProvider.dart:2850');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -2886,7 +2887,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:2889');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -2896,7 +2897,7 @@ class PostProvider extends ChangeNotifier {
         QuerySnapshot querySnapshotCanal = await FirebaseFirestore.instance
             .collection('Canaux')
             .where("id", isEqualTo: '${post.canal_id}')
-            .get();
+            .getM('postProvider.dart:2899');
 
         List<Canal> canalList = querySnapshotCanal.docs.map((doc) {
           return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -2993,15 +2994,15 @@ class PostProvider extends ChangeNotifier {
     //     .limit(limite);
 
     // Effectuer les deux requêtes en parallèle
-    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
-    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+    List<DocumentSnapshot> todayPosts = (await queryToday.getM('postProvider.dart:2996')).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.getM('postProvider.dart:2997')).docs;
 
     // Combiner les résultats
     List<DocumentSnapshot> querySnapshotPosts = [...todayPosts, ...otherPosts];
 
-    // QuerySnapshot querySnapshotPost = await query.get();
+    // QuerySnapshot querySnapshotPost = await query.getM('postProvider.dart:3002');
 
-    // QuerySnapshot querySnapshotPost = await query.get();
+    // QuerySnapshot querySnapshotPost = await query.getM('postProvider.dart:3004');
 
     // List<Post> postList = querySnapshotPost.docs.map((doc) {
     //   Post post = Post.fromJson(doc.data() as Map<String, dynamic>);
@@ -3022,7 +3023,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:3025');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -3076,8 +3077,8 @@ class PostProvider extends ChangeNotifier {
         .limit(limite);
 
     // Effectuer les deux requêtes en parallèle
-    List<DocumentSnapshot> todayPosts = (await queryToday.get()).docs;
-    List<DocumentSnapshot> otherPosts = (await queryOthers.get()).docs;
+    List<DocumentSnapshot> todayPosts = (await queryToday.getM('postProvider.dart:3079')).docs;
+    List<DocumentSnapshot> otherPosts = (await queryOthers.getM('postProvider.dart:3080')).docs;
 
     // Combiner les résultats
     List<DocumentSnapshot> querySnapshotPosts = [...todayPosts, ...otherPosts];
@@ -3089,7 +3090,7 @@ class PostProvider extends ChangeNotifier {
       QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
           .collection('Users')
           .where("id", isEqualTo: '${post.user_id}')
-          .get();
+          .getM('postProvider.dart:3092');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) {
         return UserData.fromJson(doc.data() as Map<String, dynamic>);
@@ -3119,7 +3120,7 @@ class PostProvider extends ChangeNotifier {
     // .where("status",isNotEqualTo:'${PostStatus.SIGNALER.name}')
      .where("id",isEqualTo:'${post_id}')
        // .orderBy('created_at', descending: true)
-        .get();
+        .getM('postProvider.dart:3122');
 
     List<Post> postList = querySnapshotPost.docs.map((doc) =>
         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -3133,7 +3134,7 @@ class PostProvider extends ChangeNotifier {
 
       //get user
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
+      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:3136');
 
       List<UserData> userList = querySnapshotUser.docs.map((doc) =>
           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -3141,7 +3142,7 @@ class PostProvider extends ChangeNotifier {
 //get entreprise
       if (p.type==PostType.PUB.name) {
         CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
+        QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').getM('postProvider.dart:3144');
 
         List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
             EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -3269,7 +3270,7 @@ class PostProvider extends ChangeNotifier {
     QuerySnapshot querySnapshotUser = await userCollect
         .where("post_id",isEqualTo:'${p.id}')
         .orderBy('created_at', descending: true)
-        .get();
+        .getM('postProvider.dart:3272');
 
     // Afficher la liste
     listConstpostsComment = querySnapshotUser.docs.map((doc) =>
@@ -3284,7 +3285,7 @@ class PostProvider extends ChangeNotifier {
         //  printVm("post : ${jsonDecode(post.toString())}");
         //PostComment pm=PostComment.fromJson(postcmt.data());
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${postcmt.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${postcmt.user_id}').getM('postProvider.dart:3287');
         // Afficher la liste
 
 
@@ -3315,7 +3316,7 @@ class PostProvider extends ChangeNotifier {
         query = query.startAfterDocument(lastDocument);
       }
 
-      QuerySnapshot querySnapshot = await query.get();
+      QuerySnapshot querySnapshot = await query.getM('postProvider.dart:3318');
 
       if (querySnapshot.docs.isEmpty) {
         return [];
@@ -3344,7 +3345,7 @@ class PostProvider extends ChangeNotifier {
           .collection('Users')
           .where("id", isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('postProvider.dart:3347');
 
       if (querySnapshot.docs.isNotEmpty) {
         return UserData.fromJson(querySnapshot.docs.first.data());
@@ -3362,14 +3363,14 @@ class PostProvider extends ChangeNotifier {
     QuerySnapshot querySnapshotPost = await postCollect
         .where("post_id",isEqualTo:'${p.id}')
         .orderBy('created_at', descending: true)
-        .get();
+        .getM('postProvider.dart:3365');
 
     List<PostComment> commentList = querySnapshotPost.docs.map((doc) =>
         PostComment.fromJson(doc.data() as Map<String, dynamic>)).toList();
     var postStream = FirebaseFirestore.instance.collection('PostComments')
         .where("post_id",isEqualTo:'${p.id}')
         .orderBy('created_at', descending: true)
-        .snapshots();
+        .snapshotsM('postProvider.dart:3372');
     List<PostComment> postComment = [];
     listConstpostsComment = [];
     //  UserData userData=UserData();
@@ -3378,7 +3379,7 @@ class PostProvider extends ChangeNotifier {
       for (PostComment pm in commentList) {
         //  printVm("post : ${jsonDecode(post.toString())}");
         CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${pm.user_id}').get();
+        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${pm.user_id}').getM('postProvider.dart:3381');
         // Afficher la liste
 
 
@@ -3456,7 +3457,7 @@ class PostProvider extends ChangeNotifier {
           .orderBy('updatedAt', descending: true)
           // .orderBy('createdAt', descending: true)
           .limit(limit)
-          .get();
+          .getM('postProvider.dart:3459');
 
       return snapshot.docs.map((doc) {
         return Canal.fromJson(doc.data() as Map<String, dynamic>);
@@ -3475,7 +3476,7 @@ class PostProvider extends ChangeNotifier {
           .where('canal_id', isEqualTo: canal.id)
           .orderBy('created_at', descending: true)
           .limit(limit)
-          .get();
+          .getM('postProvider.dart:3478');
 
       return snapshot.docs.map((doc) {
         return Post.fromJson(doc.data() as Map<String, dynamic>);

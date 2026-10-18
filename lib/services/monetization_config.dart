@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Palier de rémunération des vues selon le score créateur.
@@ -43,7 +44,7 @@ class MonetizationConfig {
       return;
     }
     try {
-      final data = (await _doc.get()).data() ?? {};
+      final data = (await _doc.getM('monetization_config.dart:46')).data() ?? {};
       baseViewRate = (data['baseViewRate'] as num?)?.toDouble() ?? defaultBaseViewRate;
       final raw = data['scoreTiers'] as List?;
       tiers = raw != null && raw.isNotEmpty

@@ -1,5 +1,6 @@
 ﻿// lib/pages/admin/dating/admin_profile_detail_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -44,45 +45,45 @@ class _AdminProfileDetailPageState extends State<AdminProfileDetailPage> {
         .collection('dating_likes')
         .where('toUserId', isEqualTo: _profile.userId)
         .count()
-        .get();
+        .getM('admin_profile_detail_page.dart:47');
     _likesCount = likesSnapshot.count ?? 0;
 
     final coupsSnapshot = await _firestore
         .collection('dating_coup_de_coeurs')
         .where('toUserId', isEqualTo: _profile.userId)
         .count()
-        .get();
+        .getM('admin_profile_detail_page.dart:54');
     _coupsDeCoeurCount = coupsSnapshot.count ?? 0;
 
     final connSnapshot = await _firestore
         .collection('dating_connections')
         .where('userId1', isEqualTo: _profile.userId)
         .count()
-        .get();
+        .getM('admin_profile_detail_page.dart:61');
     final connSnapshot2 = await _firestore
         .collection('dating_connections')
         .where('userId2', isEqualTo: _profile.userId)
         .count()
-        .get();
+        .getM('admin_profile_detail_page.dart:66');
     _connectionsCount = (connSnapshot.count ?? 0) + (connSnapshot2.count ?? 0);
 
     final messagesSnapshot = await _firestore
         .collection('dating_messages')
         .where('senderUserId', isEqualTo: _profile.userId)
         .count()
-        .get();
+        .getM('admin_profile_detail_page.dart:73');
     final messagesSnapshot2 = await _firestore
         .collection('dating_messages')
         .where('receiverUserId', isEqualTo: _profile.userId)
         .count()
-        .get();
+        .getM('admin_profile_detail_page.dart:78');
     _messagesCount = (messagesSnapshot.count ?? 0) + (messagesSnapshot2.count ?? 0);
 
     if (mounted) setState(() {});
   }
 
   Future<void> _loadUserData() async {
-    final doc = await _firestore.collection('Users').doc(_profile.userId).get();
+    final doc = await _firestore.collection('Users').doc(_profile.userId).getM('admin_profile_detail_page.dart:85');
     if (doc.exists) {
       setState(() {
         _userData = UserData.fromJson(doc.data()!);
@@ -100,7 +101,7 @@ class _AdminProfileDetailPageState extends State<AdminProfileDetailPage> {
           .where('userId', isEqualTo: _profile.userId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('admin_profile_detail_page.dart:103');
       if (snapshot.docs.isNotEmpty && mounted) {
         setState(() => _subscriptionPlan = snapshot.docs.first.data()['planCode']?.toString());
       }

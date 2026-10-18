@@ -1,5 +1,6 @@
 ﻿// lib/pages/dating/dating_profile_detail_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 
@@ -114,7 +115,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:117');
       if (snapshot.docs.isNotEmpty && mounted) {
         setState(() {
           _verificationRequested = snapshot.docs.first.data()['verificationRequested'] == true;
@@ -147,7 +148,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:150');
       if (snapshot.docs.isEmpty) return;
       await snapshot.docs.first.reference.update({
         'verificationRequested': true,
@@ -252,7 +253,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       final doc = await firestore
           .collection('Users')
           .doc(widget.profile.userId)
-          .get();
+          .getM('dating_profile_detail_page.dart:255');
 
       if (doc.exists) {
         setState(() {
@@ -293,7 +294,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('receiver_id', isEqualTo: currentUserId)
           .where('type', whereIn: datingTypes)
           .where('is_open', isEqualTo: false)
-          .get();
+          .getM('dating_profile_detail_page.dart:296');
 
       printVm('📊 ${snapshot.docs.length} notifications non lues trouvées');
       for (var doc in snapshot.docs) {
@@ -321,14 +322,14 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('receiver_id', isEqualTo: currentUserId)
           .where('type', isEqualTo: 'DATING_MATCH')
           .where('is_open', isEqualTo: false)
-          .get();
+          .getM('dating_profile_detail_page.dart:324');
 
       final likeSnap = await firestore
           .collection('Notifications')
           .where('receiver_id', isEqualTo: currentUserId)
           .where('type', whereIn: ['DATING_LIKE', 'DATING_SUPER_LIKE'])
           .where('is_open', isEqualTo: false)
-          .get();
+          .getM('dating_profile_detail_page.dart:331');
 
       if (mounted) {
         setState(() {
@@ -348,7 +349,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId', isEqualTo: widget.profile.userId)
           .where('isCreatorActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:351');
 
       setState(() {
         _isCreator = snapshot.docs.isNotEmpty;
@@ -375,7 +376,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId', isEqualTo: currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:378');
 
       if (subSnapshot.docs.isNotEmpty) {
         final subscription = subSnapshot.docs.first;
@@ -405,7 +406,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('creatorId', isEqualTo: widget.profile.userId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:408');
 
       setState(() {
         _isSubscribed = creatorSnapshot.docs.isNotEmpty;
@@ -429,7 +430,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId', isEqualTo: widget.profile.userId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:432');
 
       String plan = 'gratuit';
       if (snapshot.docs.isNotEmpty) {
@@ -500,7 +501,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId', isEqualTo: currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:503');
 
       if (snapshot.docs.isNotEmpty) {
         await snapshot.docs.first.reference.update({
@@ -520,23 +521,23 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .collection('dating_likes')
           .where('toUserId', isEqualTo: userId)
           .count()
-          .get();
+          .getM('dating_profile_detail_page.dart:523');
       final coupsCount = await firestore
           .collection('dating_coup_de_coeurs')
           .where('toUserId', isEqualTo: userId)
           .count()
-          .get();
+          .getM('dating_profile_detail_page.dart:528');
       final connectionsCount = await firestore
           .collection('dating_connections')
           .where('userId1', isEqualTo: userId)
           .count()
-          .get();
+          .getM('dating_profile_detail_page.dart:533');
       final score = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
       final profileSnapshot = await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:539');
       if (profileSnapshot.docs.isNotEmpty) {
         await profileSnapshot.docs.first.reference.update({
           'popularityScore': score,
@@ -563,7 +564,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId', isEqualTo: currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:566');
       if (subSnapshot.docs.isNotEmpty) {
         final subData = subSnapshot.docs.first.data();
         if (subData['planCode'] == 'gold' && subData['incognitoMode'] == true) {
@@ -580,7 +581,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('visitedUserId', isEqualTo: widget.profile.userId)
           .where('createdAt', isGreaterThanOrEqualTo: dayStart)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:583');
 
       if (existingVisit.docs.isNotEmpty) return;
 
@@ -594,7 +595,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
-          .get()
+          .getM('dating_profile_detail_page.dart:597')
           .then((snapshot) {
         if (snapshot.docs.isNotEmpty) {
           snapshot.docs.first.reference.update({
@@ -613,7 +614,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:616');
       if (snapshot.docs.isNotEmpty) {
         setState(() {
           _visitorsCount = snapshot.docs.first.data()['visitorsCount'] ?? 0;
@@ -635,7 +636,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('fromUserId', isEqualTo: currentUserId)
           .where('toUserId', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:638');
       setState(() => _isLiked = snapshot.docs.isNotEmpty);
     } catch (e) {
       printVm('❌ Erreur vérification like: $e');
@@ -653,7 +654,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('fromUserId', isEqualTo: currentUserId)
           .where('toUserId', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:656');
       setState(() => _isCoupDeCoeur = snapshot.docs.isNotEmpty);
     } catch (e) {
       printVm('❌ Erreur vérification coup de cœur: $e');
@@ -700,7 +701,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('fromUserId', isEqualTo: currentUserId)
           .where('toUserId', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:703');
       if (existingLike.docs.isNotEmpty) {
         setState(() {
           _isLiked = true;
@@ -732,7 +733,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
-          .get()
+          .getM('dating_profile_detail_page.dart:735')
           .then((snapshot) {
         if (snapshot.docs.isNotEmpty) {
           snapshot.docs.first.reference.update({'likesCount': FieldValue.increment(1)});
@@ -749,7 +750,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('fromUserId', isEqualTo: widget.profile.userId)
           .where('toUserId', isEqualTo: currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:752');
 
       if (mutualLike.docs.isNotEmpty) {
         _showMatchDialog();
@@ -769,7 +770,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         .collection('dating_profiles')
         .where('userId', isEqualTo: currentUserId)
         .limit(1)
-        .get();
+        .getM('dating_profile_detail_page.dart:772');
     if (snapshot.docs.isNotEmpty) {
       return DatingProfile.fromJson(snapshot.docs.first.data());
     }
@@ -809,7 +810,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         .where('userId1', isEqualTo: currentUserId)
         .where('userId2', isEqualTo: widget.profile.userId)
         .limit(1)
-        .get();
+        .getM('dating_profile_detail_page.dart:812');
     if (snapshot.docs.isNotEmpty) return true;
 
     final snapshot2 = await firestore
@@ -817,7 +818,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
         .where('userId1', isEqualTo: widget.profile.userId)
         .where('userId2', isEqualTo: currentUserId)
         .limit(1)
-        .get();
+        .getM('dating_profile_detail_page.dart:820');
     return snapshot2.docs.isNotEmpty;
   }
   Future<void> _handleCoupDeCoeur() async {
@@ -1012,7 +1013,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       await firestore
           .collection('dating_profiles')
           .where('userId', isEqualTo: widget.profile.userId)
-          .get()
+          .getM('dating_profile_detail_page.dart:1015')
           .then((snapshot) {
         if (snapshot.docs.isNotEmpty) {
           snapshot.docs.first.reference.update({'coupsDeCoeurCount': FieldValue.increment(1)});
@@ -1029,7 +1030,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('fromUserId', isEqualTo: widget.profile.userId)
           .where('toUserId', isEqualTo: currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:1032');
 
       if (mutualLike.docs.isNotEmpty) {
         _showMatchDialog();
@@ -1073,7 +1074,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
       'status': 'VALIDE',
     });
 
-    final toUserDoc = await firestore.collection('Users').doc(toUserId).get();
+    final toUserDoc = await firestore.collection('Users').doc(toUserId).getM('dating_profile_detail_page.dart:1076');
     final toUser = UserData.fromJson(toUserDoc.data() ?? {});
 
     if (toUser.oneIgnalUserid != null && toUser.oneIgnalUserid!.isNotEmpty) {
@@ -1248,7 +1249,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId1', isEqualTo: currentUserId)
           .where('userId2', isEqualTo: widget.profile.userId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:1251');
       if (snapshot.docs.isNotEmpty) return DatingConnection.fromJson(snapshot.docs.first.data());
 
       final snapshot2 = await firestore
@@ -1256,7 +1257,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('userId1', isEqualTo: widget.profile.userId)
           .where('userId2', isEqualTo: currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_profile_detail_page.dart:1259');
       if (snapshot2.docs.isNotEmpty) return DatingConnection.fromJson(snapshot2.docs.first.data());
 
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -2148,7 +2149,7 @@ class _DatingProfileDetailPageState extends State<DatingProfileDetailPage>
           .where('creatorUserId', isEqualTo: widget.profile.userId)
           .where('isPublished', isEqualTo: true)
           .orderBy('createdAt', descending: true)
-          .snapshots(),
+          .snapshotsM('dating_profile_detail_page.dart:2151'),
       builder: (context, snapshot) {
         if (snapshot.hasError) return Center(child: Text('Erreur: ${snapshot.error}'));
         if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());

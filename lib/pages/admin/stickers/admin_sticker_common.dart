@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +68,7 @@ Future<String> stickerPseudo(String? uid) async {
   final cached = _pseudoCache[uid];
   if (cached != null) return cached;
   try {
-    final u = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+    final u = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('admin_sticker_common.dart:70');
     final p = (u.data()?['pseudo'] ?? '').toString();
     final v = p.isEmpty ? uid : '@$p';
     _pseudoCache[uid] = v;
@@ -82,7 +83,7 @@ Future<String> stickerPackName(String? packId) async {
   final cached = _packNameCache[packId];
   if (cached != null) return cached;
   try {
-    final p = await FirebaseFirestore.instance.collection('StickerPacks').doc(packId).get();
+    final p = await FirebaseFirestore.instance.collection('StickerPacks').doc(packId).getM('admin_sticker_common.dart:85');
     final v = (p.data()?['name'] ?? packId).toString();
     _packNameCache[packId] = v;
     return v;
@@ -263,7 +264,7 @@ class StickerCompareView extends StatelessWidget {
     final originId = (sticker['copyOf'] ?? '').toString();
     if (originId.isEmpty) return const SizedBox.shrink();
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('Stickers').doc(originId).get(),
+      future: FirebaseFirestore.instance.collection('Stickers').doc(originId).getM('admin_sticker_common.dart:266'),
       builder: (ctx, snap) {
         final origin = snap.data?.data();
         final myAt = (sticker['createdAt'] as num?)?.toInt() ?? 0;

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
@@ -179,7 +180,7 @@ class CurrencyService extends ChangeNotifier {
 
   /// Écoute les taux du jour (à appeler une fois au démarrage).
   void listenRates() {
-    _sub ??= FirebaseFirestore.instance.collection('AppConfig').doc('exchangeRates').snapshots().listen((doc) {
+    _sub ??= FirebaseFirestore.instance.collection('AppConfig').doc('exchangeRates').snapshotsM('currency_service.dart:182').listen((doc) {
       final data = doc.data();
       final rates = data?['rates'];
       if (rates is Map) {

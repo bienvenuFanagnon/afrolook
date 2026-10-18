@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/services/creation_fee.dart';
@@ -99,7 +100,7 @@ class _NewCanalState extends State<NewCanal> {
     final snapshot = await firestore.collection("CanalNames")
         .where('name', whereIn: [n, n.replaceAll('.', '_')])
         .limit(1)
-        .get();
+        .getM('newCanal.dart:102');
     bool existe = snapshot.docs.isNotEmpty;
 
     if (!existe) {
@@ -855,7 +856,7 @@ class _NewCanalState extends State<NewCanal> {
 //
 //   Future<bool> verifierCanalName(String nom) async {
 //     CollectionReference pseudos = firestore.collection("CanalNames");
-//     QuerySnapshot snapshot = await pseudos.get();
+//     QuerySnapshot snapshot = await pseudos.getM('newCanal.dart:858');
 //     final list = snapshot.docs.map((doc) => UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
 //     bool existe = list.any((e) => e.name!.toLowerCase() == nom.toLowerCase());
 //

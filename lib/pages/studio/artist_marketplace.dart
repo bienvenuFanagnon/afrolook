@@ -17,6 +17,7 @@
 //     (serveur) previewUrl, durationMs, audioSha256, duplicates[], processed, reportCount
 //     usageCount, totalEarningsCoins, createdAt, validatedAt
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -585,7 +586,7 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
           .where('status', isEqualTo: 'validated')
           .orderBy('validatedAt', descending: true)
           .limit(40)
-          .snapshots(),
+          .snapshotsM('artist_marketplace.dart:588'),
       builder: (_, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
         final docs = SoundCountries.forViewer<ArtistSound>(
@@ -715,7 +716,7 @@ Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool 
 /// Ouvre la page d'un son à partir de son identifiant (puce « Musique : titre » sous un post).
 Future<void> openArtistSoundById(BuildContext context, String soundId) async {
   try {
-    final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(soundId).get();
+    final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(soundId).getM('artist_marketplace.dart:718');
     if (!context.mounted) return;
     if (!d.exists || d.data()!['status'] != 'validated') {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce son n’est plus disponible.')));
@@ -739,7 +740,7 @@ class PostSoundCredit extends StatefulWidget {
 
   static final Map<String, Future<ArtistSound?>> _cache = {};
 
-  static Future<ArtistSound?> _load(String id) => _cache[id] ??= FirebaseFirestore.instance.collection('artist_sounds').doc(id).get().then((d) {
+  static Future<ArtistSound?> _load(String id) => _cache[id] ??= FirebaseFirestore.instance.collection('artist_sounds').doc(id).getM('artist_marketplace.dart:742').then((d) {
         if (!d.exists || d.data()!['status'] != 'validated') return null;
         return ArtistSound.fromMap(d.data()!, d.id);
       }).catchError((_) {
@@ -850,7 +851,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     });
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null && !_own) {
-      FirebaseFirestore.instance.collection('MusicLibrary').doc('${uid}_${widget.sound.id}').get().then((d) {
+      FirebaseFirestore.instance.collection('MusicLibrary').doc('${uid}_${widget.sound.id}').getM('artist_marketplace.dart:853').then((d) {
         if (mounted && d.exists) setState(() => _owned = true);
       }).catchError((_) {});
     }
@@ -1340,7 +1341,7 @@ class MyArtistSoundsPage extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('artist_sounds').where('userId', isEqualTo: uid).orderBy('createdAt', descending: true).snapshots(),
+        stream: FirebaseFirestore.instance.collection('artist_sounds').where('userId', isEqualTo: uid).orderBy('createdAt', descending: true).snapshotsM('artist_marketplace.dart:1343'),
         builder: (_, snap) {
           if (snap.hasError) return Center(child: Text('Impossible de charger tes sons.', style: TextStyle(color: c.textSecondary)));
           if (!snap.hasData) return Center(child: CircularProgressIndicator(color: c.primary));
@@ -1612,7 +1613,7 @@ class AdminArtistSoundsPage extends StatelessWidget {
 
   Widget _list(AppColors c, Query q, String empty, bool reports) {
     return StreamBuilder<QuerySnapshot>(
-      stream: q.snapshots(),
+      stream: q.snapshotsM('artist_marketplace.dart:1615'),
       builder: (_, snap) {
         if (snap.hasError) return Center(child: Text('Chargement impossible (index en cours de création ?).', style: TextStyle(color: c.textSecondary)));
         if (!snap.hasData) return Center(child: CircularProgressIndicator(color: c.primary));
@@ -1863,7 +1864,7 @@ class _ReportsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = {for (final r in kReportReasons) r.$1: r.$2};
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('ArtistSoundReports').where('soundId', isEqualTo: soundId).snapshots(),
+      stream: FirebaseFirestore.instance.collection('ArtistSoundReports').where('soundId', isEqualTo: soundId).snapshotsM('artist_marketplace.dart:1866'),
       builder: (_, snap) {
         final docs = snap.data?.docs ?? const [];
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1918,7 +1919,7 @@ class _SoundPostsSectionState extends State<SoundPostsSection> {
     try {
       var q = FirebaseFirestore.instance.collection('Posts').where('artistSoundId', isEqualTo: widget.soundId).orderBy('created_at', descending: true).limit(_page);
       if (_last != null) q = q.startAfterDocument(_last!);
-      final snap = await q.get();
+      final snap = await q.getM('artist_marketplace.dart:1921');
       for (final d in snap.docs) {
         final p = Post.fromJson(d.data());
         p.id = d.id;

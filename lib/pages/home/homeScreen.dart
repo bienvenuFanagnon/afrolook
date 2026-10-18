@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../coins/card_coin_page.dart';
 import 'package:afrotok/pages/cards/card_events.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -370,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage>
         .where('is_open', isEqualTo: false)
         .orderBy('createdAt', descending: true)
         .limit(100) // pastille « 99+ » : inutile de relire des milliers de notifications à chaque ouverture (coût Firestore)
-        .snapshots()
+        .snapshotsM('homeScreen.dart:373')
         .listen((snapshot) {
       if (!mounted) return;
       const datingTypes = {'DATING_LIKE', 'DATING_MATCH', 'DATING_SUPER_LIKE', 'DATING_MESSAGE'};
@@ -769,7 +770,7 @@ class _MyHomePageState extends State<MyHomePage>
         .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
         .where('status', isEqualTo: "${InvitationStatus.ENCOURS.name}")
         .limit(100) // pastille : inutile de relire davantage
-        .snapshots();
+        .snapshotsM('homeScreen.dart:772');
 
     await for (var invitationsSnapshot in invitationsStream) {
       final n = invitationsSnapshot.docs.length;
@@ -813,7 +814,7 @@ class _MyHomePageState extends State<MyHomePage>
         .where('receiverBy', isEqualTo: userId)
         .where('message_state', isEqualTo: MessageState.NONLU.name)
         .limit(100) // pastille « 99+ » : inutile de relire des milliers de messages non lus à chaque ouverture
-        .snapshots()
+        .snapshotsM('homeScreen.dart:816')
         .listen((snap) {
       directCount = snap.docs.length;
       printVm("messages directs non lus: $directCount");
@@ -823,7 +824,7 @@ class _MyHomePageState extends State<MyHomePage>
     final groupSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('member_ids', arrayContains: userId)
-        .snapshots()
+        .snapshotsM('homeScreen.dart:826')
         .listen((snap) {
       groupCount = 0;
       for (final doc in snap.docs) {
@@ -872,7 +873,7 @@ class _MyHomePageState extends State<MyHomePage>
     ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
-        .snapshots();
+        .snapshotsM('homeScreen.dart:875');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -889,7 +890,7 @@ class _MyHomePageState extends State<MyHomePage>
             authProvider.loginUserData.id == chatDoc["receiver_id"]
                 ? chatDoc["sender_id"]
                 : chatDoc["receiver_id"]!)
-            .get();
+            .getM('homeScreen.dart:892');
         // Afficher la liste
         List<UserData> userList = querySnapshotUser.docs
             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -1028,6 +1029,8 @@ class _MyHomePageState extends State<MyHomePage>
     CurrencyService.instance.setCountry(authProvider.loginUserData.countryData?['countryCode']);
     // Devise choisie par la personne (compte, sinon ce téléphone)
     CurrencyService.instance.loadOverride(serverValue: authProvider.loginUserData.displayCurrency);
+    // Mesure des lectures Firestore par écran (diagnostic temporaire) : envoi groupé toutes les 10 minutes.
+    ReadMeter.instance.start();
     // Utilisateurs bloqués : leurs contenus sont masqués immédiatement dans le fil.
     BlockService.instance.start();
     _headerCtrl = AnimationController(
@@ -1179,7 +1182,7 @@ class _MyHomePageState extends State<MyHomePage>
       case 'creator':
         final userId = data['userId'] as String?;
         if (userId != null && userId.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
+          FirebaseFirestore.instance.collection('Users').doc(userId).getM('homeScreen.dart:1182').then((doc) {
             if (!mounted || !doc.exists) return;
             final user = UserData.fromJson(doc.data()!);
             Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
@@ -1189,7 +1192,7 @@ class _MyHomePageState extends State<MyHomePage>
       case 'canal':
         final canalId = data['canalId'] as String?;
         if (canalId != null && canalId.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Canaux').doc(canalId).get().then((doc) {
+          FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('homeScreen.dart:1192').then((doc) {
             if (!mounted || !doc.exists) return;
             final canal = Canal.fromJson({...doc.data()!, 'id': doc.id});
             Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
@@ -1252,7 +1255,7 @@ class _MyHomePageState extends State<MyHomePage>
       case 'creator':
         if (dest.creatorId != null) {
           _navigateViaNotifications(() {
-            FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).get().then((doc) {
+            FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).getM('homeScreen.dart:1255').then((doc) {
               if (!mounted || !doc.exists) return;
               final user = UserData.fromJson(doc.data()!);
               Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
@@ -1342,7 +1345,7 @@ class _MyHomePageState extends State<MyHomePage>
       final doc = await FirebaseFirestore.instance
           .collection('lives')
           .doc(liveId)
-          .get();
+          .getM('homeScreen.dart:1345');
       if (!mounted) return;
       if (!doc.exists) {
         Navigator.pushNamed(context, '/list_live');

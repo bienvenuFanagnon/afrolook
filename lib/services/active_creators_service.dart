@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/model_data.dart';
 
@@ -143,7 +144,7 @@ class ActiveCreatorsService {
               .where('created_at', isGreaterThan: sinceUs)
               .orderBy('created_at', descending: true)
               .limit(chunk.length * postsPerCreator)
-              .get();
+              .getM('active_creators_service.dart:146');
           for (final doc in snap.docs) {
             final data = doc.data();
             final uid = data['user_id'] as String? ?? '';
@@ -201,7 +202,7 @@ class ActiveCreatorsService {
             q = q.where('created_at', isLessThan: beforeUs);
           }
           q = q.limit(limit * 3);
-          final snap = await q.get();
+          final snap = await q.getM('active_creators_service.dart:204');
 
           for (final doc in snap.docs) {
             final data = doc.data();
@@ -255,7 +256,7 @@ class ActiveCreatorsService {
           .where('created_at', isGreaterThan: sinceUs)
           .orderBy('created_at', descending: true)
           .limit(100)
-          .get();
+          .getM('active_creators_service.dart:258');
 
       final Map<String, int> latestUs = {};
       for (final doc in snap.docs) {
@@ -297,7 +298,7 @@ class ActiveCreatorsService {
         final snap = await _db
             .collection('Canaux')
             .where(FieldPath.documentId, whereIn: chunk)
-            .get();
+            .getM('active_creators_service.dart:300');
         for (final d in snap.docs) {
           final data = Map<String, dynamic>.from(d.data());
           data['id'] = d.id;
@@ -329,7 +330,7 @@ class ActiveCreatorsService {
             .where('canal_id', whereIn: chunk)
             .where('created_at', isGreaterThan: sinceUs)
             .orderBy('created_at', descending: true)
-            .get();
+            .getM('active_creators_service.dart:332');
 
         for (final doc in snap.docs) {
           final data = doc.data();
@@ -382,7 +383,7 @@ class ActiveCreatorsService {
       final snap = await _db
           .collection('Abonnements')
           .where('compte_user_id', isEqualTo: userId)
-          .get();
+          .getM('active_creators_service.dart:385');
       return snap.docs
           .map((d) => d.data()['abonne_user_id'] as String? ?? '')
           .where((id) => id.isNotEmpty)
@@ -398,7 +399,7 @@ class ActiveCreatorsService {
       final snap = await _db
           .collection('Canaux')
           .where('usersSuiviId', arrayContains: userId)
-          .get();
+          .getM('active_creators_service.dart:401');
       return snap.docs.map((d) => d.id).toList();
     } catch (_) {
       return [];
@@ -462,7 +463,7 @@ class ActiveCreatorsService {
           if (sinceUs > 0) {
             q = q.where('created_at', isGreaterThanOrEqualTo: sinceUs);
           }
-          final snap = await q.get();
+          final snap = await q.getM('active_creators_service.dart:465');
           for (final doc in snap.docs) {
             final uid = doc.data()['user_id'] as String? ?? '';
             if (uid.isEmpty) continue;
@@ -511,7 +512,7 @@ class ActiveCreatorsService {
         }
         if (lastDoc != null) q = q.startAfterDocument(lastDoc!);
 
-        final snap = await q.get();
+        final snap = await q.getM('active_creators_service.dart:514');
         for (final doc in snap.docs) {
           if (!alreadyViewedIds.contains(doc.id)) {
             newIds.add(doc.id);
@@ -551,7 +552,7 @@ class ActiveCreatorsService {
         final snap = await _db
             .collection('Users')
             .where(FieldPath.documentId, whereIn: chunk)
-            .get();
+            .getM('active_creators_service.dart:554');
         for (final d in snap.docs) {
           final data = Map<String, dynamic>.from(d.data());
           data['id'] = d.id;

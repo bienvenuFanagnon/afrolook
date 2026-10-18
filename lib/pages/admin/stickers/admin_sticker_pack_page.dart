@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -20,7 +21,7 @@ class _AdminStickerPackPageState extends State<AdminStickerPackPage> {
   int _reload = 0;
 
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _stickers() async {
-    final q = await FirebaseFirestore.instance.collection('Stickers').where('packId', isEqualTo: widget.packId).get();
+    final q = await FirebaseFirestore.instance.collection('Stickers').where('packId', isEqualTo: widget.packId).getM('admin_sticker_pack_page.dart:23');
     final l = q.docs.toList()..sort((a, b) => ((a.data()['order'] as num?) ?? 0).compareTo((b.data()['order'] as num?) ?? 0));
     return l;
   }
@@ -81,7 +82,7 @@ class _AdminStickerPackPageState extends State<AdminStickerPackPage> {
       ),
       body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         key: ValueKey('p$_reload'),
-        future: FirebaseFirestore.instance.collection('StickerPacks').doc(widget.packId).get(),
+        future: FirebaseFirestore.instance.collection('StickerPacks').doc(widget.packId).getM('admin_sticker_pack_page.dart:84'),
         builder: (ctx, snap) {
           if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
           final p = snap.data?.data();

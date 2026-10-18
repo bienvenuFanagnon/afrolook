@@ -1,5 +1,6 @@
 // lib/pages/remuneration/mes_gains_publicite_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -29,7 +30,7 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
   }
 
   Future<UserData> _loadUserData() async {
-    final doc = await _firestore.collection('Users').doc(widget.userId).get();
+    final doc = await _firestore.collection('Users').doc(widget.userId).getM('mes_gains_publicite_page.dart:32');
     if (doc.exists) {
       return UserData.fromJson(doc.data() as Map<String, dynamic>);
     } else {

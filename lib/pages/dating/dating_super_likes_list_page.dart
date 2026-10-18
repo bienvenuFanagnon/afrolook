@@ -1,4 +1,5 @@
 ﻿// lib/pages/dating/dating_super_likes_page.dart
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -115,7 +116,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
           .collection(collection)
           .where(field, isEqualTo: _currentUserId)
           .orderBy('createdAt', descending: true)
-          .snapshots(),
+          .snapshotsM('dating_super_likes_list_page.dart:118'),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           printVm('Erreur: ${snapshot.error}');
@@ -456,7 +457,7 @@ class _DatingSuperLikesPageState extends State<DatingSuperLikesPage>
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_super_likes_list_page.dart:459');
       if (snapshot.docs.isNotEmpty) {
         return DatingProfile.fromJson(snapshot.docs.first.data());
       }

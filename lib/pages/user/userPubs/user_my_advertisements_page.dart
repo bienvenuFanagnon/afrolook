@@ -1,4 +1,5 @@
 // user_my_advertisements_page.dart — refonte UI session 48
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/ad_delete.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -65,7 +66,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
       final snapshot = await FirebaseFirestore.instance
           .collection('Advertisements')
           .where('createdBy', isEqualTo: userId)
-          .get();
+          .getM('user_my_advertisements_page.dart:68');
 
       int pending = 0, active = 0, expired = 0, rejected = 0, cancelled = 0;
       final now = DateTime.now().microsecondsSinceEpoch;
@@ -128,7 +129,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
     if (_selectedStatus != 'all') {
       query = query.where('status', isEqualTo: _selectedStatus);
     }
-    return query.snapshots();
+    return query.snapshotsM('user_my_advertisements_page.dart:131');
   }
 
   String _effectiveStatus(Map<String, dynamic> data) {
@@ -567,7 +568,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
 
     // Chaque card charge son post indépendamment → pas de blocage global
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('Posts').doc(ad.postId).get(),
+      future: FirebaseFirestore.instance.collection('Posts').doc(ad.postId).getM('user_my_advertisements_page.dart:570'),
       builder: (context, snap) {
         final postData =
             snap.hasData && snap.data!.exists ? snap.data!.data() as Map<String, dynamic> : null;

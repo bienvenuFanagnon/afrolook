@@ -1,5 +1,6 @@
 ﻿// lib/services/creator_service.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -48,7 +49,7 @@ class CreatorService {
           .where('creatorId', isEqualTo: creatorId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('creator_service.dart:51');
 
       if (existingSubscription.docs.isNotEmpty) {
         return true; // Déjà abonné
@@ -159,7 +160,7 @@ class CreatorService {
           .where('contentId', isEqualTo: contentId)
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('creator_service.dart:162');
 
       return await _firestore.runTransaction((transaction) async {
         final now = DateTime.now().millisecondsSinceEpoch;
@@ -223,7 +224,7 @@ class CreatorService {
           .where('contentId', isEqualTo: contentId)
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('creator_service.dart:226');
 
       if (existingView.docs.isNotEmpty) {
         return true; // Vue déjà enregistrée
@@ -328,7 +329,7 @@ class CreatorService {
           .where('buyerUserId', isEqualTo: buyerUserId)
           .where('status', isEqualTo: 'paid')
           .limit(1)
-          .get();
+          .getM('creator_service.dart:331');
 
       if (existingPurchase.docs.isNotEmpty) {
         return true; // Déjà acheté
@@ -418,7 +419,7 @@ class CreatorService {
         .where('creatorId', isEqualTo: creatorId)
         .where('isPublished', isEqualTo: true)
         .orderBy('createdAt', descending: true)
-        .snapshots()
+        .snapshotsM('creator_service.dart:421')
         .map((snapshot) => snapshot.docs
         .map((doc) => CreatorContent.fromJson(doc.data()))
         .toList());
@@ -433,7 +434,7 @@ class CreatorService {
           .where('creatorId', isEqualTo: creatorId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('creator_service.dart:436');
 
       return snapshot.docs.isNotEmpty;
     } catch (e) {

@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:afrotok/utils/platform_guard.dart';
@@ -34,7 +35,7 @@ class ContentProvider with ChangeNotifier {
   Future<void> loadOtherUserContentPaies(String userId) async {
     try {
       // Charger les données de l'utilisateur
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('contenuPayantProvider.dart:37');
       if (userDoc.exists) {
         _otherUserData = UserData.fromJson({...userDoc.data()!, 'id': userDoc.id});
       }
@@ -44,7 +45,7 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaies')
           .where('ownerId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('contenuPayantProvider.dart:47');
 
       _otherUserContentPaies = snapshot.docs
           .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
@@ -230,7 +231,7 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaies')
           .orderBy('createdAt', descending: true)
           .limit(limit)
-          .get();
+          .getM('contenuPayantProvider.dart:233');
 
       final List<ContentPaie> recent = snapshot.docs
           .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
@@ -419,7 +420,7 @@ class ContentProvider with ChangeNotifier {
 // 3. Fonctions pour vérifier l'état du like/dislike
   Future<bool> isContentLikedByUser(String contentId, String userId) async {
     try {
-      final doc = await _firestore.collection('ContentPaies').doc(contentId).get();
+      final doc = await _firestore.collection('ContentPaies').doc(contentId).getM('contenuPayantProvider.dart:422');
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -435,7 +436,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<bool> isContentDislikedByUser(String contentId, String userId) async {
     try {
-      final doc = await _firestore.collection('ContentPaies').doc(contentId).get();
+      final doc = await _firestore.collection('ContentPaies').doc(contentId).getM('contenuPayantProvider.dart:438');
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -593,7 +594,7 @@ class ContentProvider with ChangeNotifier {
 // 5. Fonctions pour vérifier l'état des épisodes
   Future<bool> isEpisodeLikedByUser(String episodeId, String userId) async {
     try {
-      final doc = await _firestore.collection('episodes').doc(episodeId).get();
+      final doc = await _firestore.collection('episodes').doc(episodeId).getM('contenuPayantProvider.dart:596');
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -609,7 +610,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<bool> isEpisodeDislikedByUser(String episodeId, String userId) async {
     try {
-      final doc = await _firestore.collection('episodes').doc(episodeId).get();
+      final doc = await _firestore.collection('episodes').doc(episodeId).getM('contenuPayantProvider.dart:612');
 
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -628,7 +629,7 @@ class ContentProvider with ChangeNotifier {
       final snapshot = await _firestore
           .collection('ContentPaies')
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('contenuPayantProvider.dart:631');
 
       if (_isDisposed) return;
       _allContentPaies = snapshot.docs
@@ -673,7 +674,7 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaies')
           .orderBy('createdAt', descending: true)
           .limit(10)
-          .get();
+          .getM('contenuPayantProvider.dart:676');
 
       if (_isDisposed) return;
       _featuredContentPaies = snapshot.docs
@@ -692,7 +693,7 @@ class ContentProvider with ChangeNotifier {
           .where('isFree', isEqualTo: true)
           .orderBy('views', descending: true)
           .limit(10)
-          .get();
+          .getM('contenuPayantProvider.dart:695');
 
       _featuredContentPaies = snapshot.docs
           .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
@@ -715,7 +716,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<void> loadCategories2() async {
     try {
-      final snapshot = await _firestore.collection('categories').get();
+      final snapshot = await _firestore.collection('categories').getM('contenuPayantProvider.dart:718');
       _categories = snapshot.docs
           .map((doc) => ContentCategory.fromJson({...doc.data(), 'id': doc.id}))
           .toList();
@@ -734,7 +735,7 @@ class ContentProvider with ChangeNotifier {
             .where('categories', arrayContains: category.id)
             .orderBy('views', descending: true)
             .limit(10)
-            .get();
+            .getM('contenuPayantProvider.dart:737');
 
         _contentPaiesByCategory[category.id!] = snapshot.docs
             .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
@@ -755,7 +756,7 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaies')
           .where('ownerId', isEqualTo: currentUser!.id)
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('contenuPayantProvider.dart:758');
 
       _userContentPaies = snapshot.docs
           .map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id}))
@@ -777,7 +778,7 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaie_purchases')
           .where('userId', isEqualTo: currentUser!.id)
           .orderBy('purchaseDate', descending: true)
-          .get();
+          .getM('contenuPayantProvider.dart:780');
 
       _userPurchases = snapshot.docs
           .map((doc) => ContentPurchase.fromJson({...doc.data(), 'id': doc.id}))
@@ -794,7 +795,7 @@ class ContentProvider with ChangeNotifier {
       final snapshot = await _firestore
           .collection('episodes')
           .orderBy('episodeNumber', descending: false)
-          .get();
+          .getM('contenuPayantProvider.dart:797');
 
       _episodes = snapshot.docs
           .map((doc) => Episode.fromJson({...doc.data(), 'id': doc.id}))
@@ -812,7 +813,7 @@ class ContentProvider with ChangeNotifier {
           .collection('episodes')
           .where('seriesId', isEqualTo: seriesId)
           .orderBy('episodeNumber', descending: false)
-          .get();
+          .getM('contenuPayantProvider.dart:815');
 
       return snapshot.docs
           .map((doc) => Episode.fromJson({...doc.data(), 'id': doc.id}))
@@ -829,7 +830,7 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaie_purchases')
           .where('userId', isEqualTo: currentUser.id)
           .where('contentId', isEqualTo: contentPaie.id)
-          .get();
+          .getM('contenuPayantProvider.dart:832');
 
       if (existingPurchase.docs.isNotEmpty) {
         return PurchaseResult.alreadyPurchased;
@@ -845,7 +846,7 @@ class ContentProvider with ChangeNotifier {
 
       // 🔹 Récupérer le solde en temps réel depuis Firestore
       final userDoc =
-      await _firestore.collection('Users').doc(currentUser.id).get();
+      await _firestore.collection('Users').doc(currentUser.id).getM('contenuPayantProvider.dart:848');
 
       if (!userDoc.exists) {
         _showErrorModal(context, "Utilisateur introuvable !");
@@ -944,7 +945,7 @@ class ContentProvider with ChangeNotifier {
 
 
 // 🔹 Envoyer la notification au créateur
-      final ownerDoc = await _firestore.collection('Users').doc(contentPaie.ownerId).get();
+      final ownerDoc = await _firestore.collection('Users').doc(contentPaie.ownerId).getM('contenuPayantProvider.dart:947');
       if (ownerDoc.exists) {
         final ownerData = ownerDoc.data()!;
         await _authProvider?.sendNotification(
@@ -1261,7 +1262,7 @@ class ContentProvider with ChangeNotifier {
           .collection('episodes')
           .where('seriesId', isEqualTo: episode.seriesId)
           .where('episodeNumber', isEqualTo: episode.episodeNumber)
-          .get();
+          .getM('contenuPayantProvider.dart:1264');
 
       if (existingEpisode.docs.isNotEmpty) {
         printVm('Un épisode avec ce numéro existe déjà pour cette série');
@@ -1322,7 +1323,7 @@ class ContentProvider with ChangeNotifier {
       final episodes = await _firestore
           .collection('episodes')
           .where('seriesId', isEqualTo: contentPaieId)
-          .get();
+          .getM('contenuPayantProvider.dart:1325');
 
       for (var doc in episodes.docs) {
         await doc.reference.delete();
@@ -1339,7 +1340,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<bool> deleteEpisode(String episodeId) async {
     try {
-      final doc = await _firestore.collection('episodes').doc(episodeId).get();
+      final doc = await _firestore.collection('episodes').doc(episodeId).getM('contenuPayantProvider.dart:1342');
       if (doc.exists) {
         final episode = Episode.fromJson({...doc.data()!, 'id': doc.id});
 
@@ -1367,13 +1368,13 @@ class ContentProvider with ChangeNotifier {
           .collection('ContentPaies')
           .where('title', isGreaterThanOrEqualTo: query)
           .where('title', isLessThan: query + 'z')
-          .get();
+          .getM('contenuPayantProvider.dart:1370');
 
       // Recherche par hashtags
       final hashtagSnapshot = await _firestore
           .collection('ContentPaies')
           .where('hashtags', arrayContains: query)
-          .get();
+          .getM('contenuPayantProvider.dart:1376');
 
       final results = [
         ...titleSnapshot.docs.map((doc) => ContentPaie.fromJson({...doc.data(), 'id': doc.id})),
@@ -1399,14 +1400,14 @@ class ContentProvider with ChangeNotifier {
   //           .where('seriesId', isEqualTo: seriesId)
   //           .where('title', isGreaterThanOrEqualTo: query)
   //           .where('title', isLessThan: query + 'z')
-  //           .get();
+  //           .getM('contenuPayantProvider.dart:1402');
   //     } else {
   //       // Recherche globale
   //       snapshot = await _firestore
   //           .collection('episodes')
   //           .where('title', isGreaterThanOrEqualTo: query)
   //           .where('title', isLessThan: query + 'z')
-  //           .get();
+  //           .getM('contenuPayantProvider.dart:1409');
   //     }
   //
   //     return snapshot.docs
@@ -1475,7 +1476,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<ContentPaie?> getContentPaieById(String contentId) async {
     try {
-      final doc = await _firestore.collection('ContentPaies').doc(contentId).get();
+      final doc = await _firestore.collection('ContentPaies').doc(contentId).getM('contenuPayantProvider.dart:1478');
       if (doc.exists) {
         return ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
       }
@@ -1488,7 +1489,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<Episode?> getEpisodeById(String episodeId) async {
     try {
-      final doc = await _firestore.collection('episodes').doc(episodeId).get();
+      final doc = await _firestore.collection('episodes').doc(episodeId).getM('contenuPayantProvider.dart:1491');
       if (doc.exists) {
         return Episode.fromJson({...doc.data()!, 'id': doc.id});
       }

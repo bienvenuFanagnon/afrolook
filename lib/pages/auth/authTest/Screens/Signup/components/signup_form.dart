@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/language_selector.dart';
 import 'package:afrotok/pages/auth/authTest/components/google_sign_in_button.dart';
 import 'package:afrotok/services/auth/google_auth_service.dart';
@@ -79,7 +80,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final snap = await firestore.collection("Pseudo")
         .where('name', whereIn: [n, n.replaceAll('.', '_')])
         .limit(1)
-        .get();
+        .getM('signup_form.dart:82');
 
     if (snap.docs.isEmpty) return false;
 

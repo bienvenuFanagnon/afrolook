@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -23,7 +24,7 @@ class _MyPurchasesPageState extends State<MyPurchasesPage> {
         .collection('ContentPaie_purchases')
         .where('userId', isEqualTo: uid)
         .orderBy('purchaseDate', descending: true)
-        .get();
+        .getM('my_purchases_page.dart:26');
 
     if (purchaseSnap.docs.isEmpty) return [];
 
@@ -43,7 +44,7 @@ class _MyPurchasesPageState extends State<MyPurchasesPage> {
       final snap = await FirebaseFirestore.instance
           .collection('ContentPaies')
           .where(FieldPath.documentId, whereIn: chunk)
-          .get();
+          .getM('my_purchases_page.dart:46');
       for (final doc in snap.docs) {
         contents.add(ContentPaie.fromJson({...doc.data(), 'id': doc.id}));
       }

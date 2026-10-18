@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -232,12 +233,12 @@ class _SplashChargementState extends State<SplashChargement> {
     if (_pendingPostId == null) return;
     setState(() { _isLoadingTarget = true; _loadingText = "Chargement du post..."; });
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(_pendingPostId).get();
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(_pendingPostId).getM('splashChargement.dart:235');
       if (doc.exists) {
         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
         post.id = doc.id;
         if (post.user_id != null && post.user_id!.isNotEmpty) {
-          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).get();
+          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).getM('splashChargement.dart:240');
           if (userDoc.exists) post.user = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
         }
         _loadedPost = post;
@@ -250,19 +251,19 @@ class _SplashChargementState extends State<SplashChargement> {
     if (_pendingChatId == null || _pendingSendUserId == null) return;
     setState(() { _isLoadingTarget = true; _loadingText = "Chargement du chat..."; });
     try {
-      final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).get();
+      final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).getM('splashChargement.dart:253');
       if (!chatDoc.exists) return;
       final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
 
       // User + messages en parallèle (indépendants)
       final results = await Future.wait([
-        FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).get(),
+        FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).getM('splashChargement.dart:259'),
         FirebaseFirestore.instance
             .collection('Messages')
             .where('chat_id', isEqualTo: _pendingChatId)
             .orderBy('createdAt', descending: true)
             .limit(25)
-            .get(),
+            .getM('splashChargement.dart:265'),
       ]);
 
       final userDoc = results[0] as DocumentSnapshot;
@@ -284,7 +285,7 @@ class _SplashChargementState extends State<SplashChargement> {
       final doc = await FirebaseFirestore.instance
           .collection('ContentPaies')
           .doc(_pendingContentId)
-          .get();
+          .getM('splashChargement.dart:287');
       if (doc.exists) {
         _loadedContent = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
       }
@@ -297,7 +298,7 @@ class _SplashChargementState extends State<SplashChargement> {
       final doc = await FirebaseFirestore.instance
           .collection('Canaux')
           .doc(_pendingCanalId)
-          .get();
+          .getM('splashChargement.dart:300');
       if (doc.exists && doc.data() != null) {
         _loadedCanal = Canal.fromJson({...doc.data()!, 'id': doc.id});
       }
@@ -534,7 +535,7 @@ class _SplashChargementState extends State<SplashChargement> {
         final doc = await FirebaseFirestore.instance
             .collection('Users')
             .doc(userId)
-            .get()
+            .getM('splashChargement.dart:537')
             .timeout(const Duration(seconds: 2));
         final data = doc.data();
         if (data != null) {
@@ -613,13 +614,13 @@ class _SplashChargementState extends State<SplashChargement> {
       final groupRef = FirebaseFirestore.instance
           .collection('GroupChats')
           .doc(kAfrolookGroupId);
-      final groupDoc = await groupRef.get();
+      final groupDoc = await groupRef.getM('splashChargement.dart:616');
       if (!groupDoc.exists) return; // groupe pas encore créé
 
       final memberIds = (groupDoc.data()?['member_ids'] as List<dynamic>? ?? []).cast<String>();
       if (memberIds.contains(userId)) return; // déjà membre
 
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('splashChargement.dart:622');
       final ud = userDoc.data();
       final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -1040,12 +1041,12 @@ class _SplashChargementState extends State<SplashChargement> {
 //     if (_pendingPostId == null) return;
 //     setState(() { _isLoadingTarget = true; _loadingText = "Chargement du post..."; });
 //     try {
-//       final doc = await FirebaseFirestore.instance.collection('Posts').doc(_pendingPostId).get();
+//       final doc = await FirebaseFirestore.instance.collection('Posts').doc(_pendingPostId).getM('splashChargement.dart:1043');
 //       if (doc.exists) {
 //         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
 //         post.id = doc.id;
 //         if (post.user_id != null && post.user_id!.isNotEmpty) {
-//           final userDoc = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).get();
+//           final userDoc = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).getM('splashChargement.dart:1048');
 //           if (userDoc.exists) post.user = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
 //         }
 //         _loadedPost = post;
@@ -1058,10 +1059,10 @@ class _SplashChargementState extends State<SplashChargement> {
 //     if (_pendingChatId == null || _pendingSendUserId == null) return;
 //     setState(() { _isLoadingTarget = true; _loadingText = "Chargement du chat..."; });
 //     try {
-//       final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).get();
+//       final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).getM('splashChargement.dart:1061');
 //       if (!chatDoc.exists) return;
 //       final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-//       final userDoc = await FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).get();
+//       final userDoc = await FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).getM('splashChargement.dart:1064');
 //       if (userDoc.exists) {
 //         chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
 //         chat.receiver = chat.chatFriend;
@@ -1071,7 +1072,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //           .where('chat_id', isEqualTo: _pendingChatId)
 //           .orderBy('createdAt', descending: true)
 //           .limit(25)
-//           .get();
+//           .getM('splashChargement.dart:1074');
 //       chat.messages = messagesSnapshot.docs.map((d) => Message.fromJson(d.data() as Map<String, dynamic>)).toList();
 //       _loadedChat = chat;
 //     } catch (e) { printVm("❌ Erreur chargement chat : $e"); }

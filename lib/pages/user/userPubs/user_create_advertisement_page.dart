@@ -1,5 +1,6 @@
 ﻿// user_create_advertisement_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
@@ -534,7 +535,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
             .where('isAdvertisement', isEqualTo: false)
             .orderBy('createdAt', descending: true)
             .limit(4)
-            .get();
+            .getM('user_create_advertisement_page.dart:537');
         for (final doc in recentPostsSnap.docs) {
           if (doc.id == postId) continue; // exclure le post boosté lui-même
           if (ownerRecentPosts.length >= 3) break;

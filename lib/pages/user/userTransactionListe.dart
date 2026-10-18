@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -127,7 +128,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   Future<void> _loadUserData() async {
     try {
-      final doc = await _db.collection('Users').doc(widget.userId).get();
+      final doc = await _db.collection('Users').doc(widget.userId).getM('userTransactionListe.dart:130');
       if (doc.exists) setState(() => _userData = UserData.fromJson(doc.data()!));
     } catch (e) { printVm('UserTx user load error: $e'); }
     setState(() => _isLoadingUser = false);
@@ -141,7 +142,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
           .collection('TransactionSoldes')
           .where('user_id', isEqualTo: widget.userId)
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('userTransactionListe.dart:144');
       _allTx = snap.docs.map((d) {
         final data = d.data();
         data['id'] = d.id;

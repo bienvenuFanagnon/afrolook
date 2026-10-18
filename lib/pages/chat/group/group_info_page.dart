@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -74,7 +75,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       final groupDoc = await FirebaseFirestore.instance
           .collection('GroupChats')
           .doc(widget.groupId)
-          .get();
+          .getM('group_info_page.dart:77');
 
       // Charger les 10 premiers membres + le membre courant (pour connaître son rôle)
       final membersRef = FirebaseFirestore.instance
@@ -85,7 +86,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       final firstPageSnap = await membersRef
           .orderBy('joined_at')
           .limit(_pageSize)
-          .get();
+          .getM('group_info_page.dart:88');
 
       final members = firstPageSnap.docs.map((d) => d.data()).toList();
 
@@ -95,7 +96,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       if (myInPage.isNotEmpty) {
         myRole = myInPage.first['role'] as String? ?? 'member';
       } else {
-        final myDoc = await membersRef.doc(myId).get();
+        final myDoc = await membersRef.doc(myId).getM('group_info_page.dart:98');
         if (myDoc.exists) myRole = myDoc.data()?['role'] as String? ?? 'member';
       }
 
@@ -125,7 +126,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           .orderBy('joined_at')
           .startAfterDocument(_lastMemberDoc!)
           .limit(_pageSize)
-          .get();
+          .getM('group_info_page.dart:128');
 
       if (mounted) {
         setState(() {
@@ -160,7 +161,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           .where('pseudo', isGreaterThanOrEqualTo: query)
           .where('pseudo', isLessThanOrEqualTo: '$query')
           .limit(20)
-          .get();
+          .getM('group_info_page.dart:163');
       for (final d in pseudoSnap.docs) {
         final uid = d.data()['user_id'] as String? ?? d.id;
         if (!seen.contains(uid)) { seen.add(uid); results.add(d.data()); }
@@ -173,12 +174,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           .collection('Users')
           .where('email', isEqualTo: query.toLowerCase())
           .limit(5)
-          .get();
+          .getM('group_info_page.dart:176');
       for (final d in emailSnap.docs) {
         final uid = d.id;
         if (!seen.contains(uid) && memberIds.contains(uid)) {
           // Récupérer la fiche member pour avoir le rôle
-          final memberDoc = await membersRef.doc(uid).get();
+          final memberDoc = await membersRef.doc(uid).getM('group_info_page.dart:181');
           final memberData = memberDoc.data();
           if (memberData != null) {
             seen.add(uid);
@@ -337,7 +338,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                                   .collection('GroupChats')
                                   .where('name', isEqualTo: newName)
                                   .limit(2)
-                                  .get();
+                                  .getM('group_info_page.dart:340');
 
                               // Exclure le groupe courant
                               final conflicts = snap.docs
@@ -491,7 +492,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     try {
       final ownerId = _groupData['owner_id'] as String?;
       if (ownerId == null || ownerId == leaverId) return;
-      final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+      final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('group_info_page.dart:494');
       final oneSignalId = ownerDoc.data()?['oneIgnalUserid'] as String?;
       if (oneSignalId == null || oneSignalId.length <= 5) return;
       final groupName = _groupData['name'] as String? ?? widget.groupName;
@@ -808,7 +809,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   Future<void> _deleteBatchQuery(Query<Map<String, dynamic>> query) async {
     const batchSize = 400;
     while (true) {
-      final snap = await query.limit(batchSize).get();
+      final snap = await query.limit(batchSize).getM('group_info_page.dart:811');
       if (snap.docs.isEmpty) break;
       final batch = FirebaseFirestore.instance.batch();
       for (final doc in snap.docs) {

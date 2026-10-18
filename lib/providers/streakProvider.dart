@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,7 +20,7 @@ class StreakProvider extends ChangeNotifier {
     _subscription = FirebaseFirestore.instance
         .collection('Users')
         .doc(userId)
-        .snapshots()
+        .snapshotsM('streakProvider.dart:22')
         .listen((doc) {
       if (!doc.exists) return;
       final data = doc.data()!;

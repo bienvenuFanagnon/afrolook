@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -78,7 +79,7 @@ class _AfrolookGroupMigrationPageState
       final doc = await FirebaseFirestore.instance
           .collection('GroupChats')
           .doc(kAfrolookGroupId)
-          .get();
+          .getM('afrolook_group_migration_page.dart:81');
       if (mounted) {
         setState(() {
           _groupExists = doc.exists;
@@ -97,7 +98,7 @@ class _AfrolookGroupMigrationPageState
       final snap = await FirebaseFirestore.instance
           .collection('GroupChats')
           .where('is_official', isEqualTo: true)
-          .get();
+          .getM('afrolook_group_migration_page.dart:100');
       if (mounted) {
         setState(() {
           _officialGroups = snap.docs
@@ -223,7 +224,7 @@ class _AfrolookGroupMigrationPageState
         .collection('GroupChats')
         .where('name', isEqualTo: name)
         .limit(1)
-        .get();
+        .getM('afrolook_group_migration_page.dart:226');
     if (!mounted) return;
     if (existing.docs.isNotEmpty) {
       setState(() => _createStatus = '❌ Ce nom est déjà pris — choisissez un autre.');
@@ -327,13 +328,13 @@ class _AfrolookGroupMigrationPageState
     final db = FirebaseFirestore.instance;
 
     try {
-      final groupDoc = await db.collection('GroupChats').doc(groupId).get();
+      final groupDoc = await db.collection('GroupChats').doc(groupId).getM('afrolook_group_migration_page.dart:330');
       final existingIds =
           (groupDoc.data()?['member_ids'] as List<dynamic>? ?? [])
               .cast<String>()
               .toSet();
 
-      final countSnap = await db.collection('Users').count().get();
+      final countSnap = await db.collection('Users').count().getM('afrolook_group_migration_page.dart:336');
       final total = countSnap.count ?? 0;
       if (mounted) setState(() { _totalUsers = total; _statusMessage = 'Migration de $total utilisateurs...'; });
 
@@ -345,7 +346,7 @@ class _AfrolookGroupMigrationPageState
         Query query = db.collection('Users').limit(batchSize);
         if (lastDoc != null) query = query.startAfterDocument(lastDoc);
 
-        final snap = await query.get();
+        final snap = await query.getM('afrolook_group_migration_page.dart:348');
         if (snap.docs.isEmpty) break;
 
         lastDoc = snap.docs.last;
@@ -451,7 +452,7 @@ class _AfrolookGroupMigrationPageState
       final adminSnap = await db
           .collection('Users')
           .where('role', isEqualTo: 'ADM')
-          .get();
+          .getM('afrolook_group_migration_page.dart:454');
 
       final admins = adminSnap.docs;
       if (admins.isEmpty) {
@@ -506,7 +507,7 @@ class _AfrolookGroupMigrationPageState
       while (true) {
         Query q = db.collection('GroupChats').orderBy('created_at').limit(100);
         if (lastDoc != null) q = q.startAfterDocument(lastDoc);
-        final snap = await q.get();
+        final snap = await q.getM('afrolook_group_migration_page.dart:509');
         if (snap.docs.isEmpty) break;
         for (final doc in snap.docs) {
           allGroups.add({'__id': doc.id, ...doc.data() as Map<String, dynamic>});

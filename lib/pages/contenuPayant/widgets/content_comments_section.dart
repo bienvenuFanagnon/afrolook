@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -160,7 +161,7 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
               .where('contentId', isEqualTo: widget.contentId)
               .orderBy('createdAt', descending: true)
               .limit(30)
-              .snapshots(),
+              .snapshotsM('content_comments_section.dart:163'),
           builder: (context, snap) {
             if (!snap.hasData || snap.data!.docs.isEmpty) {
               return Padding(

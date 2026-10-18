@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/chatmodels/message.dart';
@@ -40,7 +41,7 @@ import 'package:afrotok/models/model_data.dart';
 //           .where("type", isEqualTo: ChatType.USER.name)
 //           .orderBy('updated_at', descending: true)
 //           .limit(limit)
-//           .snapshots()
+//           .snapshotsM('chat_service.dart:43')
 //           .asyncMap((chatSnapshot) async {
 //         printVm('📨 [CHAT_SERVICE] Reçu ${chatSnapshot.docs.length} chats de Firestore');
 //
@@ -129,7 +130,7 @@ import 'package:afrotok/models/model_data.dart';
 //           .where('is_valide', isEqualTo: true)
 //           .orderBy('create_at_time_spam', descending: true)
 //           .limit(1)
-//           .get();
+//           .getM('chat_service.dart:132');
 //
 //       printVm('📊 [LAST_MESSAGE] Résultat Firestore: ${querySnapshot.docs.length} messages trouvés');
 //
@@ -192,7 +193,7 @@ import 'package:afrotok/models/model_data.dart';
 //       final userDoc = await _firestore
 //           .collection('Users')
 //           .doc(userId)
-//           .get();
+//           .getM('chat_service.dart:195');
 //
 //       if (userDoc.exists) {
 //         final userData = UserData.fromJson(userDoc.data()!);
@@ -228,12 +229,12 @@ import 'package:afrotok/models/model_data.dart';
 //           Filter('sender_id', isEqualTo: currentUserId),
 //         ))
 //             .where("type", isEqualTo: ChatType.USER.name)
-//             .get(),
+//             .getM('chat_service.dart:231'),
 //         _firestore
 //             .collection('Users')
 //             .where('pseudo', isGreaterThanOrEqualTo: query)
 //             .where('pseudo', isLessThan: query + 'z')
-//             .get(),
+//             .getM('chat_service.dart:236'),
 //       ]);
 //
 //       printVm('📊 [SEARCH] Résultats: ${chatsSnapshot.docs.length} chats, ${usersSnapshot.docs.length} users');
@@ -312,7 +313,7 @@ import 'package:afrotok/models/model_data.dart';
 //         Filter('docId', isEqualTo: '${chat.receiverId}${chat.senderId}'),
 //       ))
 //           .limit(1)
-//           .get();
+//           .getM('chat_service.dart:315');
 //
 //       if (existingChats.docs.isNotEmpty) {
 //         printVm('✅ [CREATE_CHAT] Chat existant trouvé');
@@ -406,7 +407,7 @@ class ChatService {
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final chatSnapshot = await query.get();
+      final chatSnapshot = await query.getM('chat_service.dart:409');
 
       if (chatSnapshot.docs.isEmpty) {
         _hasMore = false;
@@ -442,7 +443,7 @@ class ChatService {
         .collection('Messages')
         .where('receiverBy', isEqualTo: currentUserId)
         .where('is_valide', isEqualTo: true)
-        .snapshots()
+        .snapshotsM('chat_service.dart:445')
         .map((snapshot) {
       Map<String, dynamic> updates = {};
       for (var doc in snapshot.docs) {
@@ -505,7 +506,7 @@ class ChatService {
           .where('is_valide', isEqualTo: true)
           .orderBy('create_at_time_spam', descending: true)
           .limit(1)
-          .get();
+          .getM('chat_service.dart:508');
 
       if (querySnapshot.docs.isNotEmpty) {
         final message = Message.fromJson(querySnapshot.docs.first.data());
@@ -529,7 +530,7 @@ class ChatService {
       final userDoc = await _firestore
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('chat_service.dart:532');
 
       if (userDoc.exists) {
         final userData = UserData.fromJson(userDoc.data()!);
@@ -563,7 +564,7 @@ class ChatService {
         Filter('sender_id', isEqualTo: currentUserId),
       ))
           .where("type", isEqualTo: ChatType.USER.name)
-          .get();
+          .getM('chat_service.dart:566');
 
       // Rechercher les utilisateurs
       final usersFuture = _firestore
@@ -571,7 +572,7 @@ class ChatService {
           .where('pseudo', isGreaterThanOrEqualTo: query)
           .where('pseudo', isLessThan: query + 'z')
           .limit(20)
-          .get();
+          .getM('chat_service.dart:574');
 
       futures.add(chatsFuture);
       futures.add(usersFuture);
@@ -661,7 +662,7 @@ class ChatService {
         Filter('docId', isEqualTo: docId2),
       ))
           .limit(1)
-          .get();
+          .getM('chat_service.dart:664');
 
       if (existingChats.docs.isNotEmpty) {
         printVm('✅ [CREATE_CHAT] Chat existant trouvé');
@@ -716,7 +717,7 @@ class ChatService {
       Filter('docId', isEqualTo: docId2),
     ))
         .limit(1)
-        .get();
+        .getM('chat_service.dart:719');
 
     if (existingChats.docs.isNotEmpty) {
       Chat existingChat = Chat.fromJson(existingChats.docs.first.data());

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -89,7 +90,7 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
       final snap = await FirebaseFirestore.instance
           .collection('Articles')
           .doc(widget.articleId)
-          .get();
+          .getM('shop_product_comments.dart:92');
       if (!snap.exists) return;
 
       final data = snap.data()!;
@@ -200,7 +201,7 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
                   .collection('ArticleComments')
                   .where('article_id', isEqualTo: widget.articleId)
                   .orderBy('createdAt', descending: false)
-                  .snapshots(),
+                  .snapshotsM('shop_product_comments.dart:203'),
               builder: (ctx, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return Center(

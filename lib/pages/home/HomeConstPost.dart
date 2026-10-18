@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -656,7 +657,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         final userDoc = await FirebaseFirestore.instance
             .collection('Users')
             .doc(userId)
-            .get();
+            .getM('HomeConstPost.dart:659');
         final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
         authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
         authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
@@ -2112,7 +2113,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('HomeConstPost.dart:2115');
       final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
       authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
       authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
@@ -2288,7 +2289,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         query = query.where("available_countries", arrayContains: countryCode);
       }
       query = query.limit((limit * 1.5).ceil());
-      final snapshot = await query.get();
+      final snapshot = await query.getM('HomeConstPost.dart:2291');
       final tempEvents = <Post>[];
       for (final doc in snapshot.docs) {
         if (tempEvents.length >= limit) break;
@@ -2640,7 +2641,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           .collection('Posts')
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
-          .get();
+          .getM('HomeConstPost.dart:2643');
 
       for (final doc in snap.docs) {
         try {
@@ -2674,7 +2675,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           .orderBy('created_at', descending: true)
           .startAfterDocument(_recentLastDoc!)
           .limit(limit * 3)
-          .get();
+          .getM('HomeConstPost.dart:2677');
 
       for (final doc in snap.docs) {
         try {
@@ -2972,7 +2973,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           final doc = await FirebaseFirestore.instance
               .collection('Users')
               .doc(userId)
-              .get();
+              .getM('HomeConstPost.dart:2975');
           final raw = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
           freshCounts = Map<String, int>.fromEntries(
             raw.entries
@@ -3918,7 +3919,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                         final userId = authProvider.loginUserData.id;
                         if (userId != null) {
                           try {
-                            final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+                            final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('HomeConstPost.dart:3921');
                             final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
                             authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
                             authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);

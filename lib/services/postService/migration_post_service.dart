@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -11,7 +12,7 @@ class MigrationPostService {
     // ✅ SUPPRIMÉ: plus besoin de vérifier le statut
     final snapshot = await FirebaseFirestore.instance
         .collection('Posts')
-        .get();
+        .getM('migration_post_service.dart:14');
 
     int processed = 0;
     var batch = FirebaseFirestore.instance.batch();
@@ -60,7 +61,7 @@ class MigrationPostService {
 
     final snapshot = await FirebaseFirestore.instance
         .collection('Users')
-        .get();
+        .getM('migration_post_service.dart:63');
 
     final batch = FirebaseFirestore.instance.batch();
     final defaultTime = DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;

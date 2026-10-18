@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
@@ -52,7 +53,7 @@ setMessageNonLu(int nbr){
           .where('pseudo', isGreaterThanOrEqualTo: query)
           .where('pseudo', isLessThanOrEqualTo: query + 'z')
           .limit(10)
-          .get();
+          .getM('userProvider.dart:55');
       return snapshot.docs
           .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
@@ -141,7 +142,7 @@ setMessageNonLu(int nbr){
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      QuerySnapshot querySnapshot = await query.get();
+      QuerySnapshot querySnapshot = await query.getM('userProvider.dart:144');
 
       if (querySnapshot.docs.isEmpty) {
         _hasMore = false;
@@ -187,7 +188,7 @@ setMessageNonLu(int nbr){
       final likeDoc = await FirebaseFirestore.instance
           .collection('InformationLikes')
           .doc('${infoId}_$userId')
-          .get();
+          .getM('userProvider.dart:190');
 
       if (likeDoc.exists) {
         // Unlike
@@ -216,7 +217,7 @@ setMessageNonLu(int nbr){
       final likeDoc = await FirebaseFirestore.instance
           .collection('InformationLikes')
           .doc('${infoId}_$userId')
-          .get();
+          .getM('userProvider.dart:219');
       return likeDoc.exists;
     } catch (e) {
       printVm('Error checking like: $e');
@@ -270,7 +271,7 @@ setMessageNonLu(int nbr){
     QuerySnapshot querySnapshotPost = await postCollect
         .where("status",isEqualTo:'${PostStatus.VALIDE.name}')
         .orderBy('created_at', descending: true)
-        .get();
+        .getM('userProvider.dart:273');
 
  annonces = querySnapshotPost.docs.map((doc) =>
         Annonce.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -312,7 +313,7 @@ setMessageNonLu(int nbr){
     .where("type",isEqualTo:'${InfoType.GRATUIT.name}')
         .where("status",isEqualTo:'${PostStatus.VALIDE.name}')
         .orderBy('created_at', descending: true)
-        .get();
+        .getM('userProvider.dart:315');
 
     // listInfos = querySnapshotPost.docs.map((doc) =>
     //     Information.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -338,7 +339,7 @@ setMessageNonLu(int nbr){
           //.orderBy('popularite', descending: true)
           .limit(3)
 
-          .get();
+          .getM('userProvider.dart:341');
 
       // Afficher la liste
       listUsers = querySnapshotUser.docs.map((doc) =>
@@ -387,7 +388,7 @@ setMessageNonLu(int nbr){
          // .where("id",isNotEqualTo: currentUserId)
           .orderBy('popularite', descending: true)
           .limit(30)
-          .get();
+          .getM('userProvider.dart:390');
 
       // Afficher la liste
       listUsers = querySnapshotUser.docs.map((doc) =>
@@ -433,7 +434,7 @@ setMessageNonLu(int nbr){
           .collection('Users')
           .orderBy('totalPoints', descending: true)
           .limit(10)
-          .get();
+          .getM('userProvider.dart:436');
 
       topUsers = querySnapshot.docs
           .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -490,7 +491,7 @@ setMessageNonLu(int nbr){
           .orderBy('totalPoints', descending: true)
           // .orderBy('popularite', descending: true)
           .limit(10)
-          .get();
+          .getM('userProvider.dart:493');
 
       // Afficher la liste
       listAllUsers = querySnapshotUser.docs.map((doc) =>
@@ -521,7 +522,7 @@ setMessageNonLu(int nbr){
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('userProvider.dart:524');
 
       if (!userDoc.exists) return [];
 
@@ -548,7 +549,7 @@ setMessageNonLu(int nbr){
         QuerySnapshot batchSnapshot = await FirebaseFirestore.instance
             .collection('Users')
             .where('id', whereIn: batchIds)
-            .get();
+            .getM('userProvider.dart:551');
 
         abonnesList.addAll(
           batchSnapshot.docs.map((doc) =>
@@ -592,7 +593,7 @@ setMessageNonLu(int nbr){
         try {
           QuerySnapshot querySnapshotUser = await userCollect
               .where('id', whereIn: batchIds)
-              .get();
+              .getM('userProvider.dart:595');
 
           printVm('📊 Documents trouvés: ${querySnapshotUser.docs.length}');
 
@@ -672,7 +673,7 @@ setMessageNonLu(int nbr){
     CollectionReference userCollect =
     FirebaseFirestore.instance.collection('Users');
 
-    return userCollect.snapshots().map((snapshot) {
+    return userCollect.snapshotsM('userProvider.dart:675').map((snapshot) {
       List<DocumentSnapshot> users = snapshot.docs;
       users.shuffle(); // mélanger
       List<DocumentSnapshot> usersDocs = users.take(limit).toList();
@@ -702,7 +703,7 @@ setMessageNonLu(int nbr){
       //  .orderBy('createdAt', descending: true)
       //     .where('id', whereIn: alphabet)
       //      .limit(limit)
-      //      .get();
+      //      .getM('userProvider.dart:705');
 
       // Générer une valeur aléatoire pour le point de départ
       // double randomStartPoint = Random().nextDouble();
@@ -711,9 +712,9 @@ setMessageNonLu(int nbr){
       //     // .orderBy('createdAt', descending: true)
       //     .startAt([randomStartPoint])
       //     .limit(limit)
-      //     .get();
+      //     .getM('userProvider.dart:714');
 
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Users').get();
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Users').getM('userProvider.dart:716');
       List<DocumentSnapshot> users = querySnapshot.docs;
       users.shuffle(); // Mélanger la liste pour obtenir des utilisateurs aléatoires
       List<DocumentSnapshot> usersDocs= users.take(limit).toList();
@@ -754,7 +755,7 @@ setMessageNonLu(int nbr){
     final users = FirebaseFirestore.instance.collection('Users')
         .where('id', isNotEqualTo: userId)
         .limit(100)
-        .get();
+        .getM('userProvider.dart:757');
 
     // Afficher la liste
     users.then((snapshot) {
@@ -771,7 +772,7 @@ setMessageNonLu(int nbr){
   Stream<UserData> getStreamUser(String user_id) async* {
 
     // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance.collection('Users').where("id",isEqualTo:user_id ).snapshots();
+    var friendsStream = FirebaseFirestore.instance.collection('Users').where("id",isEqualTo:user_id ).snapshotsM('userProvider.dart:774');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -792,7 +793,7 @@ setMessageNonLu(int nbr){
   Stream<Chat> getStreamChat(String chat_id) async* {
 
     // Définissez la requête
-    var chatsStream = FirebaseFirestore.instance.collection('Chats').where("id",isEqualTo:chat_id ).snapshots();
+    var chatsStream = FirebaseFirestore.instance.collection('Chats').where("id",isEqualTo:chat_id ).snapshotsM('userProvider.dart:795');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -818,7 +819,7 @@ setMessageNonLu(int nbr){
     CollectionReference userCollect =
     FirebaseFirestore.instance.collection('Abonnements');
     // Get docs from collection reference
-    QuerySnapshot querySnapshotUser = await userCollect.where("abonne_user_id",isEqualTo: userId).get();
+    QuerySnapshot querySnapshotUser = await userCollect.where("abonne_user_id",isEqualTo: userId).getM('userProvider.dart:821');
     // Afficher la liste
     List<UserAbonnes> userListAbonnes = querySnapshotUser.docs.map((doc) =>
         UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -838,7 +839,7 @@ setMessageNonLu(int nbr){
     CollectionReference collectionRef =
     FirebaseFirestore.instance.collection('Entreprises');
     // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("userId",isEqualTo: userId!).get()
+    QuerySnapshot querySnapshot = await collectionRef.where("userId",isEqualTo: userId!).getM('userProvider.dart:841')
         .then((value){
 
       return value;
@@ -867,7 +868,7 @@ setMessageNonLu(int nbr){
 
   Future<List<Message>> getUsersMessage(Chat chat) async {
     CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-    QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:chat.id!).get();
+    QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:chat.id!).getM('userProvider.dart:870');
     // Afficher la liste
     List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
         Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -907,7 +908,7 @@ setMessageNonLu(int nbr){
         .where('receiver_id', isEqualTo: invitation.receiverId)
         .where('status', isEqualTo: InvitationStatus.ENCOURS.name)
         .limit(1)
-        .get();
+        .getM('userProvider.dart:910');
 
     if (existing.docs.isNotEmpty) {
       return false; // doublon — invitation déjà en cours

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 // lib/pages/dating/dating_chat_page.dart
@@ -150,7 +151,7 @@ class _DatingChatPageState extends State<DatingChatPage>
         .collection('dating_profiles')
         .where('userId', isEqualTo: widget.otherUserId)
         .limit(1)
-        .get();
+        .getM('dating_chat_page.dart:153');
     if (snapshot.docs.isNotEmpty) {
       setState(() {
         _otherDatingProfile = DatingProfile.fromJson(snapshot.docs.first.data());
@@ -172,7 +173,7 @@ class _DatingChatPageState extends State<DatingChatPage>
           .collection('dating_conversations')
           .where('connectionId', isEqualTo: widget.connectionId)
           .limit(1)
-          .get();
+          .getM('dating_chat_page.dart:175');
 
       if (snapshot.docs.isNotEmpty) {
         setState(() {
@@ -508,7 +509,7 @@ class _DatingChatPageState extends State<DatingChatPage>
   // ----------------------------------------------------------------------
   Future<void> _sendNotification(String message) async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final toUserDoc = await _firestore.collection('Users').doc(widget.otherUserId).get();
+    final toUserDoc = await _firestore.collection('Users').doc(widget.otherUserId).getM('dating_chat_page.dart:511');
     final toUser = UserData.fromJson(toUserDoc.data() ?? {});
 
     if (toUser.oneIgnalUserid != null && toUser.oneIgnalUserid!.isNotEmpty) {
@@ -1078,7 +1079,7 @@ class _DatingChatPageState extends State<DatingChatPage>
                   .collection('dating_messages')
                   .where('conversationId', isEqualTo: _conversationId)
                   .orderBy('createdAt', descending: false)
-                  .snapshots(),
+                  .snapshotsM('dating_chat_page.dart:1081'),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('Erreur: ${snapshot.error}'));
@@ -1650,7 +1651,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //         .collection('dating_profiles')
 //         .where('userId', isEqualTo: widget.otherUserId)
 //         .limit(1)
-//         .get();
+//         .getM('dating_chat_page.dart:1653');
 //     if (snapshot.docs.isNotEmpty) {
 //       setState(() {
 //         _otherDatingProfile = DatingProfile.fromJson(snapshot.docs.first.data());
@@ -1672,7 +1673,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //           .collection('dating_conversations')
 //           .where('connectionId', isEqualTo: widget.connectionId)
 //           .limit(1)
-//           .get();
+//           .getM('dating_chat_page.dart:1675');
 //
 //       if (snapshot.docs.isNotEmpty) {
 //         setState(() {
@@ -2009,7 +2010,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //   // ----------------------------------------------------------------------
 //   Future<void> _sendNotification(String message) async {
 //     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-//     final toUserDoc = await _firestore.collection('Users').doc(widget.otherUserId).get();
+//     final toUserDoc = await _firestore.collection('Users').doc(widget.otherUserId).getM('dating_chat_page.dart:2012');
 //     final toUser = UserData.fromJson(toUserDoc.data() ?? {});
 //
 //     if (toUser.oneIgnalUserid != null && toUser.oneIgnalUserid!.isNotEmpty) {
@@ -2657,7 +2658,7 @@ class _AudioMessageWidgetState extends State<_AudioMessageWidget> {
 //                   .collection('dating_messages')
 //                   .where('conversationId', isEqualTo: _conversationId)
 //                   .orderBy('createdAt', descending: false)
-//                   .snapshots(),
+//                   .snapshotsM('dating_chat_page.dart:2660'),
 //               builder: (context, snapshot) {
 //                 if (snapshot.hasError) {
 //                   printVm('Erreur: ${snapshot.error}');

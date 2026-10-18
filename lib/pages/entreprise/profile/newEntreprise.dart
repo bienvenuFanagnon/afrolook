@@ -1,4 +1,5 @@
-﻿import '../../../services/media_shrink.dart';
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/media_shrink.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -57,7 +58,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
 
     // Récupérer la liste des utilisateurs
     CollectionReference pseudos = firestore.collection("EntrepriseNames");
-    QuerySnapshot snapshot = await pseudos.get();
+    QuerySnapshot snapshot = await pseudos.getM('newEntreprise.dart:60');
     final list = snapshot.docs.map((doc) =>
         UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
     bool existe= list.any((e) => e.name!.toLowerCase()==nom.toLowerCase());

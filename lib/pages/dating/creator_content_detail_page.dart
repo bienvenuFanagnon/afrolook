@@ -1,5 +1,6 @@
 ﻿// lib/pages/creator/creator_content_detail_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +95,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
 
   Future<void> _loadCreatorProfile() async {
     try {
-      final doc = await _firestore.collection('creator_profiles').doc(widget.content.creatorId).get();
+      final doc = await _firestore.collection('creator_profiles').doc(widget.content.creatorId).getM('creator_content_detail_page.dart:97');
       if (doc.exists) {
         setState(() => _creatorProfile = CreatorProfile.fromJson(doc.data()!));
       }
@@ -115,7 +116,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .where('creatorId', isEqualTo: widget.content.creatorId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('creator_content_detail_page.dart:118');
       setState(() => _isSubscribed = snapshot.docs.isNotEmpty);
     } catch (e) {
       printVm('❌ Erreur vérification abonnement: $e');
@@ -136,7 +137,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .where('buyerUserId', isEqualTo: currentUserId)
           .where('status', isEqualTo: 'paid')
           .limit(1)
-          .get();
+          .getM('creator_content_detail_page.dart:139');
       setState(() => _isPurchased = snapshot.docs.isNotEmpty);
     } catch (e) {
       printVm('❌ Erreur vérification achat: $e');
@@ -155,7 +156,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .where('userId', isEqualTo: currentUserId)
           .where('reactionType', isEqualTo: 'like')
           .limit(1)
-          .get();
+          .getM('creator_content_detail_page.dart:158');
       setState(() => _isLiked = snapshot.docs.isNotEmpty);
     } catch (e) {
       printVm('❌ Erreur vérification like: $e');
@@ -175,7 +176,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
           .where('contentId', isEqualTo: widget.content.id)
           .where('userId', isEqualTo: currentUserId)
           .limit(1)
-          .get();
+          .getM('creator_content_detail_page.dart:178');
 
       if (existing.docs.isEmpty) {
         await _firestore.collection('creator_content_views').add({
@@ -217,7 +218,7 @@ class _CreatorContentDetailPageState extends State<CreatorContentDetailPage> {
             .where('userId', isEqualTo: currentUserId)
             .where('reactionType', isEqualTo: 'like')
             .limit(1)
-            .get();
+            .getM('creator_content_detail_page.dart:220');
         if (likeDoc.docs.isNotEmpty) {
           await likeDoc.docs.first.reference.delete();
           await _firestore

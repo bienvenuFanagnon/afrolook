@@ -1,5 +1,6 @@
 ﻿// Service de préparation des posts - VERSION CORRIGÉE
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:math' as Math;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -179,7 +180,7 @@ class PostPreparationService {
 
   static Future<UserData> _getUserData(String userId) async {
     try {
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('postPrepareService.dart:182');
       return userDoc.exists
           ? UserData.fromJson(userDoc.data() as Map<String, dynamic>)
           : UserData(viewedPostIds: [], userAbonnesIds: []);
@@ -200,7 +201,7 @@ class PostPreparationService {
           .where("created_at", isGreaterThan: oneMonthAgo)
           .orderBy("created_at", descending: true)
           .limit(limit)
-          .get();
+          .getM('postPrepareService.dart:203');
 
       return postsSnapshot.docs.map((doc) {
         final post = Post.fromJson(doc.data());
@@ -215,7 +216,7 @@ class PostPreparationService {
           .where("type", isEqualTo: PostType.POST.name)
           .orderBy("created_at", descending: true)
           .limit(limit)
-          .get();
+          .getM('postPrepareService.dart:218');
 
       return postsSnapshot.docs.map((doc) {
         final post = Post.fromJson(doc.data());
@@ -233,7 +234,7 @@ class PostPreparationService {
         .where("type", isEqualTo: PostType.POST.name)
         .orderBy("created_at", descending: true)
         .limit(maxPosts)
-        .get();
+        .getM('postPrepareService.dart:236');
 
     return posts.docs.map((doc) => doc.id).toList();
   }
@@ -246,7 +247,7 @@ class PostPreparationService {
         .where("type", isEqualTo: PostType.POST.name)
         .orderBy("created_at", descending: true)
         .limit(maxPosts)
-        .get();
+        .getM('postPrepareService.dart:249');
 
     return posts.docs.map((doc) => doc.id).toList();
   }
@@ -323,7 +324,7 @@ class AppInitializer {
         .where("type", isEqualTo: PostType.POST.name)
         .orderBy("created_at", descending: true)
         .limit(16)
-        .get();
+        .getM('postPrepareService.dart:326');
 
     return posts.docs.map((doc) => doc.id).toList();
   }

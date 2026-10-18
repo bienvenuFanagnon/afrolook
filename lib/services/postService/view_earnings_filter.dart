@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Vues à exclure du calcul des gains : celles des posts NON monétisés du créateur
@@ -8,8 +9,8 @@ class ViewEarningsFilter {
     try {
       final db = FirebaseFirestore.instance;
       final results = await Future.wait([
-        db.collection('Users').doc(userId).get(),
-        db.collection('Posts').where('user_id', isEqualTo: userId).where('monetized', isEqualTo: false).get(),
+        db.collection('Users').doc(userId).getM('view_earnings_filter.dart:11'),
+        db.collection('Posts').where('user_id', isEqualTo: userId).where('monetized', isEqualTo: false).getM('view_earnings_filter.dart:12'),
       ]);
       final perPost = ((results[0] as DocumentSnapshot<Map<String, dynamic>>).data()?['postViewsPerPost'] as Map?) ?? {};
       var total = 0;

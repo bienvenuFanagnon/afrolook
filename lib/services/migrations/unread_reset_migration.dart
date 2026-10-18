@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,7 +26,7 @@ Future<void> runUnreadResetMigrationIfNeeded(String userId) async {
     final groupSnap = await firestore
         .collection('GroupChats')
         .where('member_ids', arrayContains: userId)
-        .get();
+        .getM('unread_reset_migration.dart:28');
 
     final groupBatch = firestore.batch();
     for (final doc in groupSnap.docs) {
@@ -43,7 +44,7 @@ Future<void> runUnreadResetMigrationIfNeeded(String userId) async {
         .collection('Messages')
         .where('receiverBy', isEqualTo: userId)
         .where('message_state', isEqualTo: 'NONLU')
-        .get();
+        .getM('unread_reset_migration.dart:46');
 
     // Firestore batch max 500 opérations — on découpe si besoin
     const chunkSize = 450;

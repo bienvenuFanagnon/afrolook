@@ -1,5 +1,6 @@
 ﻿// lib/pages/creator/creator_content_form_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
@@ -243,7 +244,7 @@ class _CreatorContentFormPageState extends State<CreatorContentFormPage>
           .collection('creator_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('creator_content_form_page.dart:246');
 
       if (creatorSnapshot.docs.isEmpty) {
         _showError('Vous n\'êtes pas enregistré comme créateur');

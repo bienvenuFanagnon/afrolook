@@ -2,6 +2,7 @@
 // compteurs du jour par fournisseur, filtre « erreurs seulement ». Le journal est écrit par le serveur (PaymentLogs) ;
 // chaque erreur envoie aussi un e-mail d'alerte à l'administration.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,11 +113,11 @@ class _PaymentLogsAdminPageState extends State<PaymentLogsAdminPage> {
     if (_errorsOnly) q = q.where('ok', isEqualTo: false);
     q = q.orderBy('at', descending: true).limit(200);
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: db.collection('PaymentStats').doc(_today()).snapshots(),
+      stream: db.collection('PaymentStats').doc(_today()).snapshotsM('payment_logs_admin_page.dart:115'),
       builder: (_, st) {
         final stats = <String, int>{for (final e in (st.data?.data() ?? const {}).entries) if (e.value is num) e.key: (e.value as num).toInt()};
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: q.snapshots(),
+          stream: q.snapshotsM('payment_logs_admin_page.dart:119'),
           builder: (_, snap) {
             if (snap.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('Impossible de lire le journal : ${snap.error}', style: TextStyle(color: AdminPalette.red))));
             if (!snap.hasData) return Center(child: CircularProgressIndicator(color: AdminPalette.green));

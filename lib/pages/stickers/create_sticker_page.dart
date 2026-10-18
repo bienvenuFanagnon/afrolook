@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:io' show File;
 import 'dart:typed_data';
@@ -282,7 +283,7 @@ class _CreateStickerPageState extends State<CreateStickerPage> {
   Future<String> _waitVerdict(DocumentReference<Map<String, dynamic>> ref) async {
     final done = Completer<String>();
     var seen = false;
-    final sub = ref.snapshots().listen((s) {
+    final sub = ref.snapshotsM('create_sticker_page.dart:285').listen((s) {
       if (done.isCompleted) return;
       if (s.exists) {
         seen = true;

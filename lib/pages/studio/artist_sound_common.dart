@@ -1,6 +1,7 @@
 // ignore_for_file: experimental_member_use
 // Éléments communs aux pages des sons d'artistes : prix, lecture d'un extrait, signalement.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'dart:io';
@@ -32,7 +33,7 @@ class ArtistSoundPricing {
   static Future<void> load() async {
     if (_loaded) return;
     try {
-      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('studio').get()).data() ?? {};
+      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('studio').getM('artist_sound_common.dart:35')).data() ?? {};
       final p = (d['artistSoundPrice'] as num?)?.round();
       final s = (d['artistSoundShare'] as num?)?.round();
       if (p != null && p > 0) price = p;

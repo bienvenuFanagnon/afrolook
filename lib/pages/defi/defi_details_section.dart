@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
@@ -298,7 +299,7 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
       final snap = await FirebaseFirestore.instance
           .collection('TransactionSoldes')
           .where('defiPostId', isEqualTo: widget.defiPostId)
-          .get();
+          .getM('defi_details_section.dart:301');
       var vC = 0, vN = 0, pC = 0, pN = 0;
       for (final d in snap.docs) {
         final t = d.data();
@@ -418,7 +419,7 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
           .collection('Posts')
           .where('defi_response_to_post_id', isEqualTo: widget.defiPostId)
           .limit(50)
-          .get();
+          .getM('defi_details_section.dart:421');
 
       final posts = snap.docs.map((d) => Post.fromJson(d.data())).toList();
 
@@ -657,7 +658,7 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
     final parentId = widget.responsePost.defiResponseToPostId;
     if (parentId == null) { setState(() => _loading = false); return; }
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(parentId).get();
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(parentId).getM('defi_details_section.dart:660');
       if (doc.exists && mounted) {
         setState(() { _defiPost = Post.fromJson(doc.data()!); _loading = false; });
       } else {

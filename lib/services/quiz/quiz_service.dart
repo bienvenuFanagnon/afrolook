@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -308,7 +309,7 @@ class QuizService {
     final at = _configAt;
     if (!force && at != null && DateTime.now().difference(at).inMinutes < 10) return _config;
     try {
-      final snap = await FirebaseFirestore.instance.collection('AppConfig').doc('quiz').get();
+      final snap = await FirebaseFirestore.instance.collection('AppConfig').doc('quiz').getM('quiz_service.dart:311');
       _config = QuizConfig.fromMap(snap.data() ?? {});
       _configAt = DateTime.now();
     } catch (e) {
@@ -407,7 +408,7 @@ class QuizService {
     try {
       final sp = await SharedPreferences.getInstance();
       if (sp.getBool(_consentKey) == true) return true;
-      final d = await FirebaseFirestore.instance.collection('QuizConsent').doc(id).get();
+      final d = await FirebaseFirestore.instance.collection('QuizConsent').doc(id).getM('quiz_service.dart:410');
       final v = d.data()?['version'];
       if (v is num && v >= consentVersion) {
         await sp.setBool(_consentKey, true);
@@ -576,7 +577,7 @@ class QuizService {
         .where('weekId', isEqualTo: currentWeekId())
         .orderBy('points', descending: true)
         .limit(limit)
-        .get();
+        .getM('quiz_service.dart:579');
     return snap.docs.map((d) {
       final x = d.data();
       return QuizWeeklyEntry(
@@ -592,7 +593,7 @@ class QuizService {
   }
 
   Future<List<QuizCountryRow>> countryBoard() async {
-    final snap = await FirebaseFirestore.instance.collection('QuizCountryBoard').doc(currentWeekId()).get();
+    final snap = await FirebaseFirestore.instance.collection('QuizCountryBoard').doc(currentWeekId()).getM('quiz_service.dart:595');
     final list = (snap.data()?['countries'] as List?) ?? const [];
     return list.map((e) {
       final m = Map<String, dynamic>.from(e as Map);
@@ -608,7 +609,7 @@ class QuizService {
         .where('uid', isEqualTo: u)
         .orderBy('at', descending: true)
         .limit(limit)
-        .get();
+        .getM('quiz_service.dart:611');
     return snap.docs.map((d) {
       final x = d.data();
       return QuizAttempt(

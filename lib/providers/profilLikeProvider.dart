@@ -1,4 +1,5 @@
 // providers/profile_like_provider.dart
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // models/profile_like_model.dart
@@ -48,7 +49,7 @@ class ProfileLikeProvider with ChangeNotifier {
           .collection('profile_likes')
           .where('likedUserId', isEqualTo: likedUserId)
           .where('likerUserId', isEqualTo: likerUserId)
-          .get();
+          .getM('profilLikeProvider.dart:51');
 
       if (existingLike.docs.isEmpty) {
         final like = ProfileLike(
@@ -74,7 +75,7 @@ class ProfileLikeProvider with ChangeNotifier {
           .collection('profile_likes')
           .where('likedUserId', isEqualTo: likedUserId)
           .where('likerUserId', isEqualTo: likerUserId)
-          .get();
+          .getM('profilLikeProvider.dart:77');
 
       for (var doc in likeQuery.docs) {
         await doc.reference.delete();
@@ -94,7 +95,7 @@ class ProfileLikeProvider with ChangeNotifier {
           .collection('profile_likes')
           .where('likedUserId', isEqualTo: likedUserId)
           .where('likerUserId', isEqualTo: likerUserId)
-          .get();
+          .getM('profilLikeProvider.dart:97');
 
       return likeQuery.docs.isNotEmpty;
     } catch (error) {
@@ -105,7 +106,7 @@ class ProfileLikeProvider with ChangeNotifier {
   // Obtenir le nombre de likes d'un profil
   Future<int> getProfileLikesCount(String userId) async {
     try {
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('profilLikeProvider.dart:108');
       return userDoc.data()?['profileLikesCount'] ?? 0;
     } catch (error) {
       throw Exception('Erreur comptage likes: $error');
@@ -133,7 +134,7 @@ class ProfileLikeProvider with ChangeNotifier {
     return _firestore
         .collection('Users')
         .doc(userId)
-        .snapshots()
+        .snapshotsM('profilLikeProvider.dart:136')
         .map((snapshot) => snapshot.data()?['profileLikesCount'] ?? 0);
   }
 }

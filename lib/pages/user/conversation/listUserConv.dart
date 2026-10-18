@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -287,7 +288,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _groupsStreamSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('member_ids', arrayContains: myId)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:290')
         .listen((snap) {
       _memberGroups = snap.docs.map((d) => d.data()).toList();
       _mergeAndSetGroups();
@@ -300,7 +301,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _ownedGroupsStreamSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('owner_id', isEqualTo: myId)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:303')
         .listen((snap) {
       _ownedGroups = snap.docs.map((d) => d.data()).toList();
       _mergeAndSetGroups();
@@ -315,7 +316,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       final snap = await FirebaseFirestore.instance
           .collection('GroupChats')
           .where('member_ids', arrayContains: myId)
-          .get();
+          .getM('listUserConv.dart:318');
       // Met à jour _memberGroups et passe par _mergeAndSetGroups pour ne pas
       // écraser les _ownedGroups (groupes propriétaire non dans member_ids)
       _memberGroups = snap.docs.map((d) => d.data()).toList();
@@ -341,7 +342,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           .collection('GroupChats')
           .where('join_code', isEqualTo: trimmed)
           .limit(1)
-          .get();
+          .getM('listUserConv.dart:344');
 
       if (snap.docs.isEmpty) {
         if (mounted) setState(() { _codeSearchError = 'Aucun groupe trouvé pour ce code.'; _codeSearching = false; });
@@ -366,7 +367,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       // Vérifier que le propriétaire est toujours Gold
       final ownerId = groupData['owner_id'] as String?;
       if (ownerId != null) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('listUserConv.dart:369');
         final ab = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
         if (ab == null || ab['type'] != 'gold') {
           if (mounted) setState(() { _codeSearchError = 'Le propriétaire de ce groupe n\'est plus Gold.'; _codeSearching = false; });
@@ -404,7 +405,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final ownerId = groupData['owner_id'] as String? ?? '';
     if (ownerId.isNotEmpty) {
       try {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('listUserConv.dart:407');
         if (ownerDoc.exists) {
           final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
           final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
@@ -535,7 +536,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     try {
       final uid = authProvider.loginUserData.id;
       if (uid == null) return;
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('listUserConv.dart:538');
       final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
       final isPremium = authProvider.loginUserData.abonnement?.estPremium == true;
       if (isPremium && privacy['biometricLock'] == true) {
@@ -574,7 +575,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
         .limit(50)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:577')
         .asyncMap(_processChatsSnapshot);
   }
 
@@ -604,7 +605,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           final snap = await FirebaseFirestore.instance
               .collection('Users')
               .where(FieldPath.documentId, whereIn: chunk)
-              .get();
+              .getM('listUserConv.dart:607');
           for (final d in snap.docs) {
             final data = Map<String, dynamic>.from(d.data() as Map<String, dynamic>);
             data['id'] = d.id;
@@ -651,7 +652,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       Filter('sendBy', isEqualTo: authProvider.loginUserData.id!),
     ))
         .where('is_valide', isEqualTo: true)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:654')
         .listen((snapshot) {
       if (!mounted) return;
 
@@ -1934,7 +1935,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           .collection('Messages')
           .where('receiverBy', isEqualTo: userId)
           .where('message_state', isEqualTo: MessageState.NONLU.name)
-          .get();
+          .getM('listUserConv.dart:1937');
 
       final batch = firestore.batch();
       for (final doc in directSnap.docs) {
@@ -1945,7 +1946,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       final groupSnap = await firestore
           .collection('GroupChats')
           .where('member_ids', arrayContains: userId)
-          .get();
+          .getM('listUserConv.dart:1948');
 
       for (final doc in groupSnap.docs) {
         final data = doc.data() as Map<String, dynamic>;

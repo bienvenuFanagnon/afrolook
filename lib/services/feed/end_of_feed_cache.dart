@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -87,13 +88,13 @@ class EndOfFeedCache {
             .collection('Users')
             .where('mainCategory', isEqualTo: pageType)
             .limit(60)
-            .get();
+            .getM('end_of_feed_cache.dart:90');
       } else {
         userSnap = await FirebaseFirestore.instance
             .collection('Users')
             .orderBy('creatorScore', descending: true)
             .limit(60)
-            .get();
+            .getM('end_of_feed_cache.dart:96');
       }
       final creators = userSnap.docs
           .map((d) {
@@ -110,7 +111,7 @@ class EndOfFeedCache {
           .collection('Canaux')
           .orderBy('canalScore', descending: true)
           .limit(40)
-          .get();
+          .getM('end_of_feed_cache.dart:113');
       final canaux = canalSnap.docs
           .map((d) {
             try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; }

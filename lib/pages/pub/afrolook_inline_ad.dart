@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'ad_actions.dart';
 import '../../ads/ad_gate.dart';
 import 'dart:async';
@@ -126,15 +127,15 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       int? count;
       switch (ad.ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(ad.ownerId).get();
+          final doc = await fs.collection('Canaux').doc(ad.ownerId).getM('afrolook_inline_ad.dart:129');
           count = doc.data()?['suivi'] as int?;
           break;
         case 'group':
-          final doc = await fs.collection('Groups').doc(ad.ownerId).get();
+          final doc = await fs.collection('Groups').doc(ad.ownerId).getM('afrolook_inline_ad.dart:133');
           count = doc.data()?['member_count'] as int?;
           break;
         default:
-          final doc = await fs.collection('Users').doc(ad.ownerId).get();
+          final doc = await fs.collection('Users').doc(ad.ownerId).getM('afrolook_inline_ad.dart:137');
           count = doc.data()?['abonnes'] as int?;
       }
       if (mounted && count != null) setState(() => _liveFollowers = count);
@@ -198,7 +199,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         'dailyStats.$today.views': FieldValue.increment(1),
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
-      final doc = await ref.get();
+      final doc = await ref.getM('afrolook_inline_ad.dart:201');
       if (doc.exists) {
         final viewers = List<String>.from(doc.data()?['viewersIds'] ?? []);
         if (!viewers.contains(uid)) {
@@ -225,7 +226,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         'dailyStats.$today.clicks': FieldValue.increment(1),
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
-      final doc = await ref.get();
+      final doc = await ref.getM('afrolook_inline_ad.dart:228');
       if (doc.exists) {
         final clickers = List<String>.from(doc.data()?['clickersIds'] ?? []);
         if (!clickers.contains(uid)) {

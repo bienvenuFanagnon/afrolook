@@ -1,5 +1,6 @@
 ﻿// lib/pages/dating/dating_explore_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -105,7 +106,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
           .where('userId', isEqualTo: _currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_explore_page.dart:108');
       if (snapshot.docs.isNotEmpty) {
         final subscription = snapshot.docs.first;
         _subscriptionPlan = subscription['planCode'];
@@ -134,7 +135,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
           .collection('dating_profiles')
           .where('userId', isEqualTo: _currentUserId)
           .limit(1)
-          .get();
+          .getM('dating_explore_page.dart:137');
       if (snapshot.docs.isNotEmpty) {
         _currentUserProfile = DatingProfile.fromJson(snapshot.docs.first.data());
       } else {
@@ -158,9 +159,9 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       final ids = <String>{};
 
       final results = await Future.wait([
-        firestore.collection('dating_likes').where('fromUserId', isEqualTo: _currentUserId).get(),
-        firestore.collection('dating_connections').where('userId1', isEqualTo: _currentUserId).get(),
-        firestore.collection('dating_connections').where('userId2', isEqualTo: _currentUserId).get(),
+        firestore.collection('dating_likes').where('fromUserId', isEqualTo: _currentUserId).getM('dating_explore_page.dart:161'),
+        firestore.collection('dating_connections').where('userId1', isEqualTo: _currentUserId).getM('dating_explore_page.dart:162'),
+        firestore.collection('dating_connections').where('userId2', isEqualTo: _currentUserId).getM('dating_explore_page.dart:163'),
       ]);
 
       for (var doc in results[0].docs) {
@@ -215,7 +216,7 @@ class _DatingExplorePageState extends State<DatingExplorePage> {
       if (!reset && _lastDocument != null) {
         query = query.startAfterDocument(_lastDocument!);
       }
-      final snapshot = await query.limit(_batchSize).get();
+      final snapshot = await query.limit(_batchSize).getM('dating_explore_page.dart:218');
       if (snapshot.docs.isEmpty) {
         // Fin de la collection atteinte : si on excluait encore les profils
         // déjà explorés, on relance le cycle depuis le début pour ne jamais

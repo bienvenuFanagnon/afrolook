@@ -1,4 +1,5 @@
 // Dart imports:
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/media_shrink.dart';
 import 'dart:async';
 import 'dart:io';
@@ -198,7 +199,7 @@ class _PostLookImageTabState extends State<PostLookImageTab> with TickerProvider
           .where('user_id', isEqualTo: authProvider.loginUserData.id)
           .orderBy('created_at', descending: true)
           .limit(1)
-          .get();
+          .getM('postLookImageTab.dart:201');
 
       if (userPosts.docs.isNotEmpty) {
         final lastPost = userPosts.docs.first;

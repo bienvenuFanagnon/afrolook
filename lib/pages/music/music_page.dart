@@ -3,6 +3,7 @@
 // Dans « Pour toi », la carte « en lecture » (disque vinyle) fait office de lecteur ; dans les autres onglets, le lecteur flottant reste visible.
 // Chaque ligne a son bouton « Post » (créer un post avec ce son) et son bouton lecture ; la file d'attente enchaîne les titres.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -200,7 +201,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
   Future<ArtistSound?> _soundOf(MusicTrack it) async {
     if (it.sound != null) return it.sound;
     try {
-      final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(it.id).get();
+      final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(it.id).getM('music_page.dart:203');
       if (!d.exists || d.data()!['status'] != 'validated') {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre n’est plus disponible.')));
         return null;
@@ -296,7 +297,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       body: widget.preview != null
           ? _tabsView(c, widget.preview!.sounds, widget.preview!.free, const [], false)
           : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).snapshots(),
+              stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).snapshotsM('music_page.dart:299'),
               builder: (_, snap) {
                 final loading = !snap.hasData && !snap.hasError;
                 // Titres proposés dans le pays de la personne (ou à tous) ; ceux visés pour son pays passent devant
@@ -309,7 +310,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                 final free = kStudioTracks.map(MusicTrack.fromStudio).toList();
                 WidgetsBinding.instance.addPostFrameCallback((_) => MusicQueue.warmList([...sounds, ...free]));
                 return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshots(),
+                  stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshotsM('music_page.dart:312'),
                   builder: (_, libSnap) {
                     final libDocs = [for (final d in libSnap.data?.docs ?? const <QueryDocumentSnapshot>[]) d.data() as Map<String, dynamic>]
                       ..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));

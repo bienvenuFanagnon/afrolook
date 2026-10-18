@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +62,7 @@ class _DefiFeedCardState extends State<DefiFeedCard> {
           .where('type', isEqualTo: PostType.DEFI.name)
           .where('defi_config.status', isEqualTo: 'en_cours')
           .limit(40)
-          .get();
+          .getM('defi_feed_card.dart:64');
       final now = DateTime.now().millisecondsSinceEpoch;
       final list = <Post>[];
       for (final d in snap.docs) {

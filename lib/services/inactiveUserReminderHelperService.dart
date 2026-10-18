@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -115,7 +116,7 @@ class InactiveUserReminderService {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('inactiveUserReminderHelperService.dart:118');
 
       if (!userDoc.exists) return false;
 
@@ -146,7 +147,7 @@ class InactiveUserReminderService {
           .where('userId', isEqualTo: userId)
           .where('sentAt', isGreaterThanOrEqualTo: startOfMonthTimestamp)
           .count()
-          .get();
+          .getM('inactiveUserReminderHelperService.dart:149');
 
       final count = remindersSnapshot.count ?? 0;
       final canReceive = count < MAX_EMAILS_PER_MONTH;
@@ -166,7 +167,7 @@ class InactiveUserReminderService {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('inactiveUserReminderHelperService.dart:169');
 
       if (!userDoc.exists) return null;
 
@@ -179,7 +180,7 @@ class InactiveUserReminderService {
       final postsSnapshot = await FirebaseFirestore.instance
           .collection('Posts')
           .where('user_id', isEqualTo: userId)
-          .get();
+          .getM('inactiveUserReminderHelperService.dart:182');
 
       int newLikesCount = 0;
       for (var postDoc in postsSnapshot.docs) {
@@ -225,7 +226,7 @@ class InactiveUserReminderService {
     try {
       final usersSnapshot = await FirebaseFirestore.instance
           .collection('Users')
-          .get();
+          .getM('inactiveUserReminderHelperService.dart:228');
 
       int updatedCount = 0;
 

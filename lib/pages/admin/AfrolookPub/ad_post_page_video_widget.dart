@@ -1,4 +1,5 @@
-﻿import '../../pub/ad_actions.dart';
+import 'package:afrotok/services/read_meter.dart';
+import '../../pub/ad_actions.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
@@ -136,7 +137,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       });
 
       // Vérifier si c’est une vue unique
-      final doc = await adRef.get();
+      final doc = await adRef.getM('ad_post_page_video_widget.dart:139');
       if (doc.exists) {
         final viewersIds = List<String>.from(doc.data()?['viewersIds'] ?? []);
         if (!viewersIds.contains(currentUserId)) {
@@ -166,7 +167,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
         'updatedAt': DateTime.now().microsecondsSinceEpoch,
       });
 
-      final doc = await adRef.get();
+      final doc = await adRef.getM('ad_post_page_video_widget.dart:169');
       if (doc.exists) {
         final clickersIds = List<String>.from(doc.data()?['clickersIds'] ?? []);
         if (!clickersIds.contains(currentUserId)) {

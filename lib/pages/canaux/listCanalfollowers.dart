@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -69,7 +70,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
         try {
           QuerySnapshot querySnapshotUser = await userCollect
               .where(FieldPath.documentId, whereIn: batchIds)
-              .get();
+              .getM('listCanalfollowers.dart:72');
 
           for (var doc in querySnapshotUser.docs) {
             try {

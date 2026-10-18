@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -257,7 +258,7 @@ bool _isLoading=false;
               onPressed: () async {
                 try {
                   CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('profileVideosTab.dart:260');
 
                   List<UserData> listUsers = querySnapshotUser.docs.map(
                         (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
@@ -353,7 +354,7 @@ bool _isLoading=false;
 
                     try {
                       CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('profileVideosTab.dart:356');
 
                       List<UserData> listUsers = querySnapshotUser.docs.map(
                             (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
@@ -829,7 +830,7 @@ bool _isLoading=false;
                                 await userCollect
                                     .where("id",
                                     isEqualTo: post.user!.id!)
-                                    .get();
+                                    .getM('profileVideosTab.dart:832');
                                 // Afficher la liste
                                 List<UserData> listUsers = querySnapshotUser
                                     .docs
@@ -1107,7 +1108,7 @@ bool _isLoading=false;
                                 await userCollect
                                     .where("id",
                                     isEqualTo: post.user!.id!)
-                                    .get();
+                                    .getM('profileVideosTab.dart:1110');
                                 // Afficher la liste
                                 List<UserData> listUsers = querySnapshotUser
                                     .docs
@@ -1213,7 +1214,7 @@ bool _isLoading=false;
                               //   await userCollect
                               //       .where("id",
                               //       isEqualTo: post.user!.id!)
-                              //       .get();
+                              //       .getM('profileVideosTab.dart:1216');
                               //   // Afficher la liste
                               //   List<UserData> listUsers = querySnapshotUser
                               //       .docs
