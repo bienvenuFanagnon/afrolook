@@ -15,6 +15,9 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
+import '../studio/montage/montage_music.dart';
+import 'chronique_music.dart';
+import 'chronique_music_sheet.dart';
 import '../studio/studio_entry_page.dart';
 import '../studio/studio_models.dart';
 
@@ -48,6 +51,23 @@ class Chronique {
   int? audioStartMs; // début du clip audio (trim)
   int? audioEndMs;   // fin du clip audio (trim)
 
+  // Dernier commentaire, recopié ici pour l'afficher sans lire la liste des commentaires
+  String? lastCommentPseudo;
+  String? lastCommentText;
+
+  // Musique de la chronique (texte, image, vidéo) : extrait de 5 à 30 s lu en boucle pendant l'affichage
+  String? musicKind; // 'free' | 'artist'
+  String? musicId;
+  String? musicTitle;
+  String? musicArtist;
+  String? musicUrl; // extrait public (jamais l'original)
+  int? musicStartMs;
+  int? musicEndMs;
+  double musicVolume = 0.7;
+  bool videoSoundKept = false; // vidéo : le son d'origine est gardé et mélangé à la musique (sinon la musique le remplace)
+
+  bool get hasMusic => (musicUrl ?? '').isNotEmpty;
+
   Chronique({
     this.id,
     required this.userId,
@@ -75,6 +95,17 @@ class Chronique {
     this.totalReactions = 0,
     this.audioStartMs,
     this.audioEndMs,
+    this.lastCommentPseudo,
+    this.lastCommentText,
+    this.musicKind,
+    this.musicId,
+    this.musicTitle,
+    this.musicArtist,
+    this.musicUrl,
+    this.musicStartMs,
+    this.musicEndMs,
+    this.musicVolume = 0.7,
+    this.videoSoundKept = false,
   });
 
   // Convertir en Map pour Firestore
@@ -105,6 +136,19 @@ class Chronique {
       'totalReactions': totalReactions,
       'audioStartMs': audioStartMs,
       'audioEndMs': audioEndMs,
+      if (lastCommentText != null) 'lastCommentPseudo': lastCommentPseudo,
+      if (lastCommentText != null) 'lastCommentText': lastCommentText,
+      if (hasMusic) ...{
+        'musicKind': musicKind,
+        'musicId': musicId,
+        'musicTitle': musicTitle,
+        'musicArtist': musicArtist,
+        'musicUrl': musicUrl,
+        'musicStartMs': musicStartMs,
+        'musicEndMs': musicEndMs,
+        'musicVolume': musicVolume,
+        'videoSoundKept': videoSoundKept,
+      },
     };
   }
 
@@ -137,6 +181,17 @@ class Chronique {
       totalReactions: map['totalReactions'] ?? 0,
       audioStartMs: map['audioStartMs'],
       audioEndMs: map['audioEndMs'],
+      lastCommentPseudo: map['lastCommentPseudo'],
+      lastCommentText: map['lastCommentText'],
+      musicKind: map['musicKind'],
+      musicId: map['musicId'],
+      musicTitle: map['musicTitle'],
+      musicArtist: map['musicArtist'],
+      musicUrl: map['musicUrl'],
+      musicStartMs: (map['musicStartMs'] as num?)?.toInt(),
+      musicEndMs: (map['musicEndMs'] as num?)?.toInt(),
+      musicVolume: (map['musicVolume'] as num?)?.toDouble() ?? 0.7,
+      videoSoundKept: map['videoSoundKept'] == true,
     );
   }
 
@@ -225,7 +280,10 @@ class ChroniqueMessage {
 }
 
 class AddChroniquePage extends StatefulWidget {
-  AddChroniquePage({this.initialImage, this.initialText, this.beforePublish});
+  AddChroniquePage({this.initialImage, this.initialText, this.beforePublish, this.initialType});
+
+  /// Ouvre le formulaire directement sur ce type (raccourcis de la liste vide).
+  final ChroniqueType? initialType;
 
   /// Studio Cartes : la carte (image Story) est déjà prête ; la chronique suit les MÊMES règles qu'une chronique image.
   final File? initialImage;
@@ -249,6 +307,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   String? _templateId;   // Template Studio utilisé
   int? _audioStartMs;    // trim audio — début
   int? _audioEndMs;      // trim audio — fin
+  ChroniqueMusic? _music; // musique de la chronique (texte, image, vidéo)
+  static const int _maxTextLength = 1000;
   VideoPlayerController? _videoController;
   bool _isUploading = false;
   double _uploadProgress = 0.0;
@@ -280,6 +340,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialType != null && widget.initialImage == null) _selectedType = widget.initialType!;
     if (widget.initialImage != null) {
       _selectedType = ChroniqueType.IMAGE;
       _selectedMedia = widget.initialImage;
@@ -517,6 +578,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         templateId: _templateId,
         audioStartMs: _audioStartMs,
         audioEndMs: _audioEndMs,
+        music: _selectedType == ChroniqueType.AUDIO ? null : _music,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
@@ -638,6 +700,11 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             if (_selectedType == ChroniqueType.IMAGE || _selectedType == ChroniqueType.VIDEO) _buildMediaContent(colors),
             if (_selectedType == ChroniqueType.AUDIO) _buildAudioContent(colors),
 
+            if (_selectedType != ChroniqueType.AUDIO) ...[
+              const SizedBox(height: 16),
+              _buildMusicRow(colors),
+            ],
+
             const SizedBox(height: 24),
 
             // Barre de progression
@@ -710,6 +777,69 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     );
   }
 
+  Future<void> _pickMusic() async {
+    final pick = await showMontageMusicPicker(context, current: null, onArtistCta: () => openArtistSpace(context));
+    if (pick == null || !mounted) return;
+    final src = pick.music;
+    if (src == null) {
+      setState(() => _music = null);
+      return;
+    }
+    final url = src.url ?? await MontageMusicPlayer.urlOf(src);
+    if (!mounted) return;
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cette musique est indisponible pour le moment.')));
+      return;
+    }
+    final cm = ChroniqueMusic.from(src, url);
+    final ok = await showChroniqueMusicOptions(context, src, cm, isVideo: _selectedType == ChroniqueType.VIDEO);
+    if (ok == true && mounted) setState(() => _music = cm);
+  }
+
+  Widget _buildMusicRow(AppColors colors) {
+    final m = _music;
+    return GestureDetector(
+      onTap: _pickMusic,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: m == null ? colors.surface : colors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: m == null ? colors.border : colors.primary),
+        ),
+        child: Row(children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(11)),
+            child: Icon(Icons.music_note_rounded, color: colors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(m == null ? 'Ajouter une musique' : m.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(
+                m == null ? 'Gratuite ou d\'un artiste, 5 à 30 secondes' : '${m.artist} · ${(m.clipMs / 1000).round()} s · ${m.coins > 0 ? '${m.coins} pièces' : 'gratuite'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
+              ),
+            ]),
+          ),
+          if (m != null)
+            IconButton(
+              tooltip: 'Retirer la musique',
+              onPressed: () => setState(() => _music = null),
+              icon: Icon(Icons.close_rounded, color: colors.textSecondary, size: 20),
+            )
+          else
+            Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+        ]),
+      ),
+    );
+  }
+
   Widget _buildTextContent(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,10 +854,12 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           child: TextField(
             controller: _textController,
             maxLines: 5,
+            maxLength: _maxTextLength,
             style: TextStyle(color: colors.textPrimary, fontSize: 15),
             decoration: InputDecoration(
               hintText: 'Écrivez votre chronique...',
               hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
+              counterStyle: TextStyle(color: colors.textSecondary, fontSize: 11),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
             ),

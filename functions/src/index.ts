@@ -26,6 +26,9 @@ export * from "./payments/coinPayments";
 export * from "./payments/coinInteractions";
 export * from "./payments/coinPurchase";
 export { r2MirrorSweep } from "./media/r2Mirror";
+export { chroniqueReplyInvite, onChroniqueInviteAccepted } from "./chroniques/chroniqueReply";
+export { chroniqueMusicCharge } from "./chroniques/chroniqueMusic";
+export { chroniqueExpiryCleanup } from "./chroniques/chroniqueCleanup";
 export { cardCoinQuote, cardCoinStart, cardCoinStatus, cardCoinReconcile, cardCoinAdminConfig, cardCoinAdminChargeback } from "./payments/feexpayCard";
 export { paymentReport, paymentWatchdog } from "./payments/paymentLog";
 

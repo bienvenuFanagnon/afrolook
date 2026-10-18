@@ -2,6 +2,8 @@
 
 import '../services/media_shrink.dart';
 import '../services/video_poster.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import '../pages/chronique/chronique_music.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +12,10 @@ import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../pages/chronique/chroniqueform.dart';
 class ChroniqueProvider with ChangeNotifier {
+  /// Longueur maximale d'un commentaire public.
+  static const int maxCommentLength = 120;
+  static const int commentsPageSize = 20;
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
@@ -26,6 +32,7 @@ class ChroniqueProvider with ChangeNotifier {
     String? templateId,
     int? audioStartMs,
     int? audioEndMs,
+    ChroniqueMusic? music,
     required Function(double) onProgress,
   }) async {
     try {
@@ -62,6 +69,21 @@ class ChroniqueProvider with ChangeNotifier {
         );
       }
 
+      // Identifiant choisi d'avance : le paiement de la musique est lié à cette chronique (une seule fois, côté serveur)
+      final ref = _firestore.collection('chroniques').doc();
+      var musicArtist = music?.artist;
+      var musicUrl = music?.url;
+      if (music != null && music.isArtist && type != ChroniqueType.AUDIO) {
+        try {
+          final r = (await FirebaseFunctions.instance.httpsCallable('chroniqueMusicCharge').call({'soundId': music.id, 'chroniqueId': ref.id})).data as Map;
+          musicUrl = (r['previewUrl'] as String?) ?? musicUrl;
+          final a = (r['artist'] as String?) ?? '';
+          if (a.isNotEmpty) musicArtist = '@$a';
+        } on FirebaseFunctionsException catch (e) {
+          throw Exception(e.code == 'resource-exhausted' ? 'Solde de pièces insuffisant pour cette musique.' : (e.message ?? 'Musique indisponible.'));
+        }
+      }
+
       final chronique = Chronique(
         userId: userId,
         userPseudo: userPseudo,
@@ -87,9 +109,18 @@ class ChroniqueProvider with ChangeNotifier {
         totalReactions: 0,
         audioStartMs: audioStartMs,
         audioEndMs: audioEndMs,
+        musicKind: music?.kind,
+        musicId: music?.id,
+        musicTitle: music?.title,
+        musicArtist: musicArtist,
+        musicUrl: musicUrl,
+        musicStartMs: music?.startMs,
+        musicEndMs: music?.endMs,
+        musicVolume: music?.volume ?? 0.7,
+        videoSoundKept: music?.keepVideoSound ?? false,
       );
 
-      await _firestore.collection('chroniques').add(chronique.toMap());
+      await ref.set(chronique.toMap());
       await _updateUserChroniqueCount(userId);
 
       return mediaUrl;
@@ -269,6 +300,22 @@ class ChroniqueProvider with ChangeNotifier {
     }
   }
 
+  /// Une page de chroniques actives (les plus récentes d'abord), avec le curseur de la page suivante : pas de lecture en plus pour le retrouver.
+  Future<({List<Chronique> items, DocumentSnapshot? last, bool hasMore})> getChroniquesPage({required int limit, DocumentSnapshot? after}) async {
+    Query<Map<String, dynamic>> q = _firestore
+        .collection('chroniques')
+        .where('expiresAt', isGreaterThan: Timestamp.now())
+        .orderBy('createdAt', descending: true) // même requête (et même index) que getActiveChroniquesBatch
+        .limit(limit);
+    if (after != null) q = q.startAfterDocument(after);
+    final snap = await q.get();
+    return (
+      items: [for (final d in snap.docs) Chronique.fromMap(d.data(), d.id)],
+      last: snap.docs.isEmpty ? null : snap.docs.last,
+      hasMore: snap.docs.length >= limit,
+    );
+  }
+
   // 🔥 NOUVELLE MÉTHODE : Obtenir une chronique par son ID
   Future<Chronique?> getChroniqueById(String chroniqueId) async {
     try {
@@ -340,19 +387,50 @@ class ChroniqueProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteChronique(String chroniqueId, String mediaUrl) async {
+  /// Supprime la chronique, son média et son aperçu, ses commentaires (200 au plus) et décrémente le compteur de son auteur.
+  Future<void> deleteChronique(String chroniqueId, String mediaUrl, {String? userId, String? posterUrl}) async {
     try {
-      if (mediaUrl.isNotEmpty) {
+      for (final url in [mediaUrl, posterUrl ?? '']) {
+        if (url.isEmpty) continue;
         try {
-          await _storage.refFromURL(mediaUrl).delete();
+          await _storage.refFromURL(url).delete();
         } catch (e) {
           printVm('Erreur suppression média: $e');
         }
       }
+      try {
+        final msgs = await _firestore.collection('chronique_messages').where('chroniqueId', isEqualTo: chroniqueId).limit(200).get();
+        if (msgs.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          for (final d in msgs.docs) {
+            batch.delete(d.reference);
+          }
+          await batch.commit();
+        }
+      } catch (e) {
+        printVm('Erreur suppression commentaires: $e');
+      }
       await _firestore.collection('chroniques').doc(chroniqueId).delete();
+      if (userId != null) await _decrementUserChroniqueCount(userId);
     } catch (error) {
       throw Exception('Erreur suppression chronique: $error');
     }
+  }
+
+  /// Une page de commentaires (du plus récent au plus ancien), lue à la demande : plus d'écoute en direct de toute la liste.
+  Future<({List<ChroniqueMessage> items, DocumentSnapshot? last, bool hasMore})> getMessagesPage(String chroniqueId, {DocumentSnapshot? after}) async {
+    Query<Map<String, dynamic>> q = _firestore
+        .collection('chronique_messages')
+        .where('chroniqueId', isEqualTo: chroniqueId)
+        .orderBy('createdAt', descending: true)
+        .limit(commentsPageSize);
+    if (after != null) q = q.startAfterDocument(after);
+    final snap = await q.get();
+    return (
+      items: [for (final d in snap.docs) ChroniqueMessage.fromMap(d.data(), d.id)],
+      last: snap.docs.isEmpty ? null : snap.docs.last,
+      hasMore: snap.docs.length >= commentsPageSize,
+    );
   }
 
   Future<bool> hasLiked(String chroniqueId, String userId) async {
@@ -437,6 +515,9 @@ class ChroniqueProvider with ChangeNotifier {
   Future<void> deleteMessage(String chroniqueId, String messageId) async {
     try {
       await _firestore.collection('chronique_messages').doc(messageId).delete();
+      try {
+        await _firestore.collection('chroniques').doc(chroniqueId).update({'commentCount': FieldValue.increment(-1)});
+      } catch (_) {}
       notifyListeners();
     } catch (error) {
       throw Exception('Erreur suppression message: $error');
@@ -495,8 +576,8 @@ class ChroniqueProvider with ChangeNotifier {
     required String message,
   }) async {
     try {
-      if (message.length > 20) {
-        throw Exception('Le message ne doit pas dépasser 20 caractères');
+      if (message.length > maxCommentLength) {
+        throw Exception('Le commentaire ne doit pas dépasser $maxCommentLength caractères');
       }
 
       final chroniqueMessage = ChroniqueMessage(
@@ -517,6 +598,9 @@ class ChroniqueProvider with ChangeNotifier {
         final chroniqueRef = _firestore.collection('chroniques').doc(chroniqueId);
         transaction.update(chroniqueRef, {
           'commentCount': FieldValue.increment(1),
+          // Dernier commentaire recopié dans la chronique : aperçu affiché sans lire la liste des commentaires
+          'lastCommentPseudo': userPseudo,
+          'lastCommentText': message,
         });
       });
     } catch (error) {

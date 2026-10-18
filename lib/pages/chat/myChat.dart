@@ -1,4 +1,5 @@
 import '../../services/media_shrink.dart';
+import '../chronique/chroniquedetails.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -1631,6 +1632,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         actionLabel = 'Voir le produit';
         typeColor = isMe ? Colors.white70 : _colors.primary;
         break;
+      case 'chronique':
+        icon = Icons.auto_stories_rounded;
+        typeLabel = 'Chronique';
+        actionLabel = 'Voir la chronique';
+        typeColor = isMe ? Colors.white70 : _colors.primary;
+        break;
       case 'vip':
         icon = Icons.star_rounded;
         typeLabel = 'Contenu VIP';
@@ -1750,6 +1757,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       switch (itemType) {
         case 'product':
           Navigator.push(context, MaterialPageRoute(builder: (_) => ProduitDetail(productId: itemId)));
+          break;
+        case 'chronique':
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ChroniqueDetailPage(initialChroniqueId: itemId)));
           break;
         case 'vip':
           final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).get();

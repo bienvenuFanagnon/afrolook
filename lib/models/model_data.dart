@@ -234,6 +234,11 @@ class Invitation {
   UserData? inviteUser;
   final DocumentReference? reference;
 
+  // Invitation née d'une réponse privée à une chronique (écrite par le serveur, jamais réécrite par l'application)
+  String? chroniqueId;
+  String? chroniqueThumb;
+  String? chroniqueType;
+
   Invitation(
       {this.reference,
       this.id,
@@ -258,6 +263,9 @@ class Invitation {
     receiverId = json['receiver_id'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
+    chroniqueId = json['chronique_id'] as String?;
+    chroniqueThumb = json['chronique_thumb'] as String?;
+    chroniqueType = json['chronique_type'] as String?;
 
     inviteUser = json['user_invite'] != null
         ? new UserData.fromJson(json['user_invite'])

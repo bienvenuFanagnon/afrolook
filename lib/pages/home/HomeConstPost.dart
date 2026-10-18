@@ -3428,40 +3428,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildFilterChips() {
     final colors = AppColors.of(context);
-    // Bouton "Nouvelle chronique" injecté dans la barre de filtre quand pas encore de chroniques
-    final List<Widget> trailing = _chroniques.isEmpty && !_isLoadingChroniques
-        ? [
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AddChroniquePage()),
-              ).then((_) {
-                if (!mounted) return;
-                setState(() => _hasStartedLoadChroniques = false);
-                _loadChroniquesInBackground();
-              }),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: colors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colors.primary.withOpacity(0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_circle_outline, size: 14, color: colors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Nouvelle chronique',
-                      style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ]
-        : [];
+    final List<Widget> trailing = [];
 
     return FeedFilterBar(
       currentFilter: _currentFilter,
@@ -3478,59 +3445,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildChroniquesSection() {
-    if (_isLoadingChroniques) {
-      // Skeleton stories — même hauteur que ChroniqueSectionComponent
-      return SizedBox(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 5,
-          itemBuilder: (_, __) => Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: 50,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    if (_chroniques.isEmpty) {
-      // Bouton affiché dans la barre de filtre (_buildFilterChips), pas ici
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ChroniqueSectionComponent(
-          videoThumbnails: _videoThumbnails,
-          userVerificationStatus: _userVerificationStatus,
-          userDataCache: _userDataCache,
-          isLoadingChroniques: _isLoadingChroniques,
-          groupedChroniques: _groupChroniquesByUser(_chroniques),
-        ),
-      ],
+    // Le bloc gère lui-même le chargement (anneaux en attente) et l'absence de chronique (invitation à publier)
+    return ChroniqueSectionComponent(
+      videoThumbnails: _videoThumbnails,
+      userVerificationStatus: _userVerificationStatus,
+      userDataCache: _userDataCache,
+      isLoadingChroniques: _isLoadingChroniques && _chroniques.isEmpty,
+      groupedChroniques: _groupChroniquesByUser(_chroniques),
     );
   }
 

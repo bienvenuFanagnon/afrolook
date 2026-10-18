@@ -968,6 +968,7 @@ setMessageNonLu(int nbr){
 
     try {
       invitation.status=InvitationStatus.ACCEPTER.name;
+      invitation.updatedAt=DateTime.now().millisecondsSinceEpoch;
 
       await  firestore.collection('Invitations').doc(invitation.id).update(invitation.toJson());
       String id = firestore
@@ -1023,6 +1024,7 @@ setMessageNonLu(int nbr){
 
     try {
       invitation.status=InvitationStatus.REFUSER.name;
+      invitation.updatedAt=DateTime.now().millisecondsSinceEpoch; // sert au délai de 7 jours avant une nouvelle invitation
 
       await  firestore.collection('Invitations').doc(invitation.id).update(invitation.toJson());
 

@@ -1,38 +1,20 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:typed_data';
 
-import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/pages/chronique/chroniquehome.dart';
-import 'package:afrotok/pages/chronique/chroniquedetails.dart';
-import '../../chronique/chroniqueform.dart';
+import 'package:provider/provider.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:flutter/material.dart';
-
-import 'package:shimmer/shimmer.dart';
-
-import 'package:cached_network_image/cached_network_image.dart';
-
-import '../../../widgets/video_poster_image.dart';
-
-import 'package:afrotok/models/model_data.dart';
-
-import 'package:afrotok/pages/chronique/chroniquehome.dart';
-
-import 'package:afrotok/pages/chronique/chroniquedetails.dart';
-
-import '../../chronique/chroniqueform.dart';
-
+import '../../../models/model_data.dart';
+import '../../../pages/chronique/chroniquedetails.dart';
+import '../../../pages/chronique/chroniqueform.dart';
+import '../../../pages/chronique/chroniquehome.dart';
+import '../../../pages/chronique/chronique_widgets.dart';
+import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 
-import 'package:flutter_animate/flutter_animate.dart';
-
+/// Bloc « Chroniques » du fil : des anneaux, un par personne.
+/// - anneau vert et jaune qui tourne doucement = chroniques pas encore vues (un segment par chronique) ; gris = déjà vues ;
+/// - « Moi » toujours en premier : mon anneau si j'ai une chronique active, sinon « + Ma chronique » ;
+/// - jamais de bloc vide : sans chronique, une invitation à publier la première.
 class ChroniqueSectionComponent extends StatefulWidget {
   final Map<String, Uint8List> videoThumbnails;
   final Map<String, bool> userVerificationStatus;
@@ -53,998 +35,121 @@ class ChroniqueSectionComponent extends StatefulWidget {
   State<ChroniqueSectionComponent> createState() => _ChroniqueSectionComponentState();
 }
 
-class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
+class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> with SingleTickerProviderStateMixin {
+  late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(seconds: 8));
+
+  @override
+  void initState() {
+    super.initState();
+    _spin.repeat();
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  void _create() => Navigator.push(context, MaterialPageRoute(builder: (_) => AddChroniquePage()));
+
+  void _openAll() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChroniqueHomePage()));
+
+  void _open(List<Chronique> group, List<List<Chronique>> all) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChroniqueDetailPage(initialChroniqueId: group.first.id!, allGroups: all, startUserId: group.first.userId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.isLoadingChroniques) {
-      return _buildChroniquesShimmer();
-    }
-
-    if (widget.groupedChroniques.isEmpty) {
-      return const SizedBox();
-    }
-
-    final groupedList = widget.groupedChroniques.values.toList();
-
-    groupedList.sort((a, b) {
-      final latestA = a.isNotEmpty ? a.first.createdAt : Timestamp.now();
-      final latestB = b.isNotEmpty ? b.first.createdAt : Timestamp.now();
-      return latestB.compareTo(latestA);
-    });
-
-    return Container(
-      height: 215,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader(context),
-          _buildChroniquesList(groupedList),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context) {
     final colors = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Chroniques Actives',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
+    final uid = context.read<UserAuthProvider>().loginUserData.id;
+    final reduce = MediaQuery.of(context).disableAnimations;
+    final groups = [
+      for (final g in widget.groupedChroniques.values)
+        if (g.isNotEmpty) ([...g]..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+    ];
+    final mine = groups.where((g) => g.first.userId == uid).toList();
+    final others = groups.where((g) => g.first.userId != uid).toList()
+      ..sort((a, b) {
+        final sa = chroniqueGroupSeen(a, uid) ? 1 : 0;
+        final sb = chroniqueGroupSeen(b, uid) ? 1 : 0;
+        if (sa != sb) return sa - sb; // les neuves d'abord
+        return b.first.createdAt.compareTo(a.first.createdAt);
+      });
+    final ordered = [...mine, ...others];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+          child: Row(children: [
+            Text('Chroniques', style: TextStyle(color: colors.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(width: 10),
+            if (!widget.isLoadingChroniques && others.isNotEmpty)
+              Row(children: [
+                Container(width: 7, height: 7, decoration: BoxDecoration(color: colors.primary, shape: BoxShape.circle)),
+                const SizedBox(width: 5),
+                Text('${others.length} active${others.length > 1 ? 's' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+              ]),
+            const Spacer(),
+            GestureDetector(
+              onTap: _openAll,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Row(children: [
+                  Text('Tout voir', style: TextStyle(color: colors.primary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 3),
+                  Icon(Icons.arrow_forward_rounded, color: colors.primary, size: 14),
+                ]),
               ),
             ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Bouton + pour ajouter une chronique
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddChroniquePage(),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: colors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: colors.accent),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.add,
-                        color: colors.accent,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Ajouter',
-                        style: TextStyle(
-                          color: colors.accent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Bouton Voir tout
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ChroniqueHomePage(),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: colors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: colors.accent),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Voir tout',
-                        style: TextStyle(
-                          color: colors.accent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward,
-                        color: colors.accent,
-                        size: 12,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
-  }
-  Widget _buildChroniquesList(List<List<Chronique>> groupedList) {
-    return Expanded(
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: groupedList.length,
-        itemBuilder: (context, index) {
-          return _buildChroniqueItem(groupedList[index], context);
-        },
-      ),
-    );
-  }
-
-  Widget _buildChroniqueItem(List<Chronique> userChroniques, BuildContext context) {
-    if (userChroniques.isEmpty) return const SizedBox();
-
-    final colors = AppColors.of(context);
-    final firstChronique = userChroniques.first;
-    final chroniqueCount = userChroniques.length;
-    final hasMultiple = chroniqueCount > 1;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChroniqueDetailPage(
-              initialChroniqueId: firstChronique.id!,
-              allGroups: widget.groupedChroniques.values.toList(),
-              startUserId: firstChronique.userId,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        width: 116,
-        margin: const EdgeInsets.only(right: 8),
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  width: 116,
-                  height: 132,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colors.accent,
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(2, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: _buildChroniquePreview(firstChronique),
-                  ),
-                ),
-                if (_isUserVerified(firstChronique.userId))
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: colors.info,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 3,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.verified,
-                        color: Colors.white,
-                        size: 12,
-                      ),
-                    ),
-                  ),
-                if (hasMultiple)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: colors.accent),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 3,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        '+${chroniqueCount - 1}',
-                        style: TextStyle(
-                          color: colors.accent,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  bottom: 6,
-                  left: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.remove_red_eye, color: Colors.white, size: 12),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatCount(firstChronique.viewCount),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 130),
-              child: PseudoTag(label: '@${firstChronique.userPseudo}',
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center),
-            ),
-          ],
+          ]),
         ),
-      ),
-    ).animate().fadeIn(duration: 350.ms).slideX(begin: 0.08, end: 0, duration: 350.ms, curve: Curves.easeOut);
-  }
-
-  Widget _buildChroniquePreview(Chronique chronique) {
-    final colors = AppColors.of(context);
-    switch (chronique.type) {
-      case ChroniqueType.TEXT:
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(int.parse(chronique.backgroundColor!, radix: 16)),
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                chronique.textContent ?? '',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        );
-
-      case ChroniqueType.IMAGE:
-        return Stack(
-          children: [
-            CachedNetworkImage(
-              imageUrl: chronique.mediaUrl!,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              placeholder: (context, url) => Container(
-                color: colors.shimmerBase,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: colors.accent,
-                    strokeWidth: 2,
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: colors.shimmerBase,
-                child: Icon(
-                  Icons.error,
-                  color: colors.accent,
-                  size: 30,
-                ),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.4),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-
-      case ChroniqueType.VIDEO:
-        final shared = widget.videoThumbnails[chronique.id];
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            // Aperçu enregistré à la création : affiché tout de suite, sans toucher à la vidéo
-            if (shared != null)
-              Image.memory(shared, fit: BoxFit.cover, width: double.infinity, height: double.infinity)
-            else
-              VideoPosterImage(
-                cacheKey: 'chronique_${chronique.id}',
-                posterUrl: chronique.posterUrl,
-                videoUrl: chronique.mediaUrl,
-                placeholder: Container(
-                  color: colors.shimmerBase,
-                  child: Center(child: Icon(Icons.play_circle_filled, color: colors.accent.withOpacity(0.8), size: 30)),
-                ),
-              ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.4),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-
-      case ChroniqueType.AUDIO:
-        return Container(
-          color: colors.shimmerBase,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.music_note, color: colors.accent, size: 28),
-                const SizedBox(height: 4),
-                Icon(Icons.mic, color: colors.accent, size: 14),
-              ],
-            ),
-          ),
-        );
-    }
-  }
-
-  bool _isUserVerified(String userId) {
-    return widget.userVerificationStatus[userId] ?? false;
-  }
-
-  String _formatCount(int count) {
-    if (count < 1000) return count.toString();
-    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return '${(count / 1000000).toStringAsFixed(1)}M';
-  }
-
-  Widget _buildChroniquesShimmer() {
-    final colors = AppColors.of(context);
-    return Container(
-      height: 155,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Shimmer.fromColors(
-                  baseColor: colors.shimmerBase,
-                  highlightColor: colors.shimmerHighlight,
-                  child: Container(
-                    width: 120,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: colors.shimmerBase,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                Shimmer.fromColors(
-                  baseColor: colors.shimmerBase,
-                  highlightColor: colors.shimmerHighlight,
-                  child: Container(
-                    width: 60,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: colors.shimmerBase,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
+        if (widget.isLoadingChroniques)
+          const ChroniqueRingsSkeleton()
+        else
+          SizedBox(
+            height: 96,
+            child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: 5,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 116,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    children: [
-                      Shimmer.fromColors(
-                        baseColor: colors.shimmerBase,
-                        highlightColor: colors.shimmerHighlight,
-                        child: Container(
-                          width: 116,
-                          height: 132,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: colors.shimmerBase,
-                          ),
-                        ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                if (mine.isEmpty)
+                  ChroniqueAddRing(onTap: _create)
+                else
+                  ChroniqueRing(group: mine.first, seen: false, spin: null, label: 'Moi', addBadge: false, onTap: () => _open(mine.first, ordered)),
+                const SizedBox(width: 12),
+                if (others.isEmpty)
+                  SizedBox(
+                    width: 200,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Text(
+                        mine.isEmpty ? 'Personne n\'a publié aujourd\'hui. Sois le premier à raconter ta journée.' : 'Pas d\'autre chronique pour le moment.',
+                        style: TextStyle(color: colors.textSecondary, fontSize: 12.5, height: 1.3),
                       ),
-                      const SizedBox(height: 8),
-                      Shimmer.fromColors(
-                        baseColor: colors.shimmerBase,
-                        highlightColor: colors.shimmerHighlight,
-                        child: Container(
-                          width: 100,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: colors.shimmerBase,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                );
-              },
+                for (final g in others) ...[
+                  ChroniqueRing(
+                    group: g,
+                    seen: chroniqueGroupSeen(g, uid),
+                    spin: reduce ? null : _spin,
+                    onTap: () => _open(g, ordered),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ],
             ),
           ),
-        ],
-      ),
+        const SizedBox(height: 6),
+      ],
     );
   }
 }
-// class ChroniqueSectionComponent extends StatelessWidget {
-//   final Map<String, Uint8List> videoThumbnails;
-//   final Map<String, bool> userVerificationStatus;
-//   final Map<String, UserData> userDataCache;
-//   final bool isLoadingChroniques;
-//   final Map<String, List<Chronique>> groupedChroniques;
-//
-//   const ChroniqueSectionComponent({
-//     Key? key,
-//     required this.videoThumbnails,
-//     required this.userVerificationStatus,
-//     required this.userDataCache,
-//     required this.isLoadingChroniques,
-//     required this.groupedChroniques,
-//   }) : super(key: key);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     if (isLoadingChroniques) {
-//       return _buildChroniquesShimmer();
-//     }
-//
-//     if (groupedChroniques.isEmpty) {
-//       return SizedBox();
-//     }
-//
-//     final groupedList = groupedChroniques.values.toList();
-//     groupedList.sort((a, b) {
-//       final latestA = a.isNotEmpty ? a.first.createdAt : Timestamp.now();
-//       final latestB = b.isNotEmpty ? b.first.createdAt : Timestamp.now();
-//       return latestB.compareTo(latestA);
-//     });
-//
-//     return Container(
-//       height: 250,
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           _buildSectionHeader(context),
-//           _buildChroniquesList(groupedList),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildSectionHeader(BuildContext context) {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-//       child: Row(
-//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         children: [
-//           Text(
-//             'Chroniques Actives',
-//             style: TextStyle(
-//               fontSize: 18,
-//               fontWeight: FontWeight.bold,
-//               color: Colors.white,
-//             ),
-//           ),
-//           GestureDetector(
-//             onTap: () {
-//               Navigator.push(
-//                 context!,
-//                 MaterialPageRoute(
-//                   builder: (context) => ChroniqueHomePage(),
-//                 ),
-//               );
-//             },
-//             child: Container(
-//               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//               decoration: BoxDecoration(
-//                 color: Color(0xFFFFD700).withOpacity(0.1),
-//                 borderRadius: BorderRadius.circular(15),
-//                 border: Border.all(color: Color(0xFFFFD700)),
-//               ),
-//               child: Row(
-//                 mainAxisSize: MainAxisSize.min,
-//                 children: [
-//                   Text(
-//                     'Voir tout',
-//                     style: TextStyle(
-//                       color: Color(0xFFFFD700),
-//                       fontSize: 12,
-//                       fontWeight: FontWeight.w600,
-//                     ),
-//                   ),
-//                   SizedBox(width: 4),
-//                   Icon(
-//                     Icons.arrow_forward,
-//                     color: Color(0xFFFFD700),
-//                     size: 12,
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   Widget _buildChroniquesList(List<List<Chronique>> groupedList) {
-//     return Expanded(
-//       child: ListView.builder(
-//         scrollDirection: Axis.horizontal,
-//         padding: EdgeInsets.symmetric(horizontal: 12),
-//         itemCount: groupedList.length,
-//         itemBuilder: (context, index) {
-//           return _buildChroniqueItem(groupedList[index],context);
-//         },
-//       ),
-//     );
-//   }
-//
-//   Widget _buildChroniqueItem(List<Chronique> userChroniques,BuildContext context) {
-//     if (userChroniques.isEmpty) return SizedBox();
-//
-//     final firstChronique = userChroniques.first;
-//     final chroniqueCount = userChroniques.length;
-//     final hasMultiple = chroniqueCount > 1;
-//
-//     return GestureDetector(
-//       onTap: () {
-//         Navigator.push(
-//           context!,
-//           MaterialPageRoute(
-//             builder: (context) => ChroniqueDetailPage(
-//               userChroniques: userChroniques,
-//             ),
-//           ),
-//         );
-//       },
-//       child: Container(
-//         width: 140,
-//         margin: EdgeInsets.only(right: 8),
-//         child: Column(
-//           children: [
-//             Stack(
-//               children: [
-//                 Container(
-//                   width: 140,
-//                   height: 160,
-//                   decoration: BoxDecoration(
-//                     borderRadius: BorderRadius.circular(12),
-//                     border: Border.all(
-//                       color: Color(0xFFFFD700),
-//                       width: 2,
-//                     ),
-//                     boxShadow: [
-//                       BoxShadow(
-//                         color: Colors.black.withOpacity(0.4),
-//                         blurRadius: 8,
-//                         offset: Offset(2, 4),
-//                       ),
-//                     ],
-//                   ),
-//                   child: ClipRRect(
-//                     borderRadius: BorderRadius.circular(10),
-//                     child: _buildChroniquePreview(firstChronique),
-//                   ),
-//                 ),
-//                 if (_isUserVerified(firstChronique.userId))
-//                   Positioned(
-//                     top: 6,
-//                     left: 6,
-//                     child: Container(
-//                       padding: EdgeInsets.all(4),
-//                       decoration: BoxDecoration(
-//                         color: Colors.blue,
-//                         shape: BoxShape.circle,
-//                         boxShadow: [
-//                           BoxShadow(
-//                             color: Colors.black.withOpacity(0.3),
-//                             blurRadius: 3,
-//                             offset: Offset(1, 1),
-//                           ),
-//                         ],
-//                       ),
-//                       child: Icon(
-//                         Icons.verified,
-//                         color: Colors.white,
-//                         size: 12,
-//                       ),
-//                     ),
-//                   ),
-//                 if (hasMultiple)
-//                   Positioned(
-//                     top: 6,
-//                     right: 6,
-//                     child: Container(
-//                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-//                       decoration: BoxDecoration(
-//                         color: Colors.black.withOpacity(0.9),
-//                         borderRadius: BorderRadius.circular(10),
-//                         border: Border.all(color: Color(0xFFFFD700)),
-//                         boxShadow: [
-//                           BoxShadow(
-//                             color: Colors.black.withOpacity(0.3),
-//                             blurRadius: 3,
-//                             offset: Offset(1, 1),
-//                           ),
-//                         ],
-//                       ),
-//                       child: Text(
-//                         '+${chroniqueCount - 1}',
-//                         style: TextStyle(
-//                           color: Color(0xFFFFD700),
-//                           fontSize: 10,
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                 Positioned(
-//                   bottom: 6,
-//                   left: 6,
-//                   right: 6,
-//                   child: Container(
-//                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//                     decoration: BoxDecoration(
-//                       color: Colors.black.withOpacity(0.1),
-//                       borderRadius: BorderRadius.circular(8),
-//                       boxShadow: [
-//                         BoxShadow(
-//                           color: Colors.black.withOpacity(0.2),
-//                           blurRadius: 4,
-//                           offset: Offset(0, 2),
-//                         ),
-//                       ],
-//                     ),
-//                     child: Row(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       children: [
-//                         Icon(Icons.remove_red_eye, color: Colors.white, size: 12),
-//                         SizedBox(width: 4),
-//                         Text(
-//                           _formatCount(firstChronique.viewCount),
-//                           style: TextStyle(
-//                             color: Colors.white,
-//                             fontSize: 10,
-//                             fontWeight: FontWeight.bold,
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             SizedBox(height: 6),
-//             Container(
-//               constraints: BoxConstraints(maxWidth: 130),
-//               child: Text(
-//                 '@${firstChronique.userPseudo}',
-//                 style: TextStyle(
-//                   color: Colors.white,
-//                   fontSize: 11,
-//                   fontWeight: FontWeight.bold,
-//                 ),
-//                 maxLines: 1,
-//                 overflow: TextOverflow.ellipsis,
-//                 textAlign: TextAlign.center,
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildChroniquePreview(Chronique chronique) {
-//     switch (chronique.type) {
-//       case ChroniqueType.TEXT:
-//         return Container(
-//           decoration: BoxDecoration(
-//             color: Color(int.parse(chronique.backgroundColor!, radix: 16)),
-//           ),
-//           child: Center(
-//             child: Padding(
-//               padding: const EdgeInsets.all(8.0),
-//               child: Text(
-//                 chronique.textContent ?? '',
-//                 style: TextStyle(
-//                   color: Colors.white,
-//                   fontSize: 12,
-//                   fontWeight: FontWeight.w600,
-//                 ),
-//                 maxLines: 4,
-//                 overflow: TextOverflow.ellipsis,
-//                 textAlign: TextAlign.center,
-//               ),
-//             ),
-//           ),
-//         );
-//
-//       case ChroniqueType.IMAGE:
-//         return Stack(
-//           children: [
-//             CachedNetworkImage(
-//               imageUrl: chronique.mediaUrl!,
-//               fit: BoxFit.cover,
-//               width: double.infinity,
-//               height: double.infinity,
-//               placeholder: (context, url) => Container(
-//                 color: Colors.grey[800],
-//                 child: Center(
-//                   child: CircularProgressIndicator(
-//                     color: Color(0xFFFFD700),
-//                     strokeWidth: 2,
-//                   ),
-//                 ),
-//               ),
-//               errorWidget: (context, url, error) => Container(
-//                 color: Colors.grey[800],
-//                 child: Icon(
-//                   Icons.error,
-//                   color: Color(0xFFFFD700),
-//                   size: 30,
-//                 ),
-//               ),
-//             ),
-//             Container(
-//               decoration: BoxDecoration(
-//                 gradient: LinearGradient(
-//                   begin: Alignment.bottomCenter,
-//                   end: Alignment.topCenter,
-//                   colors: [
-//                     Colors.black.withOpacity(0.4),
-//                     Colors.transparent,
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ],
-//         );
-//
-//       case ChroniqueType.VIDEO:
-//         return Stack(
-//           children: [
-//             if (videoThumbnails.containsKey(chronique.id!))
-//               Image.memory(
-//                 videoThumbnails[chronique.id!]!,
-//                 fit: BoxFit.cover,
-//                 width: double.infinity,
-//                 height: double.infinity,
-//               )
-//             else
-//               Container(
-//                 color: Colors.grey[900],
-//                 child: Center(
-//                   child: Column(
-//                     mainAxisAlignment: MainAxisAlignment.center,
-//                     children: [
-//                       Icon(
-//                         Icons.play_circle_filled,
-//                         color: Color(0xFFFFD700),
-//                         size: 30,
-//                       ),
-//                       SizedBox(height: 4),
-//                       Text(
-//                         'Vidéo',
-//                         style: TextStyle(
-//                           color: Colors.white,
-//                           fontSize: 10,
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//             Container(
-//               decoration: BoxDecoration(
-//                 gradient: LinearGradient(
-//                   begin: Alignment.bottomCenter,
-//                   end: Alignment.topCenter,
-//                   colors: [
-//                     Colors.black.withOpacity(0.4),
-//                     Colors.transparent,
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           ],
-//         );
-//     }
-//   }
-//
-//   bool _isUserVerified(String userId) {
-//     return userVerificationStatus[userId] ?? false;
-//   }
-//
-//   String _formatCount(int count) {
-//     if (count < 1000) return count.toString();
-//     if (count < 1000000) return '${(count / 1000).toStringAsFixed(1)}K';
-//     return '${(count / 1000000).toStringAsFixed(1)}M';
-//   }
-//
-//   Widget _buildChroniquesShimmer() {
-//     return Container(
-//       height: 180,
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Padding(
-//             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-//             child: Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 Shimmer.fromColors(
-//                   baseColor: Colors.grey[800]!,
-//                   highlightColor: Colors.grey[700]!,
-//                   child: Container(
-//                     width: 120,
-//                     height: 20,
-//                     decoration: BoxDecoration(
-//                       color: Colors.grey[800],
-//                       borderRadius: BorderRadius.circular(4),
-//                     ),
-//                   ),
-//                 ),
-//                 Shimmer.fromColors(
-//                   baseColor: Colors.grey[800]!,
-//                   highlightColor: Colors.grey[700]!,
-//                   child: Container(
-//                     width: 60,
-//                     height: 30,
-//                     decoration: BoxDecoration(
-//                       color: Colors.grey[800],
-//                       borderRadius: BorderRadius.circular(15),
-//                     ),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           Expanded(
-//             child: ListView.builder(
-//               scrollDirection: Axis.horizontal,
-//               padding: EdgeInsets.symmetric(horizontal: 12),
-//               itemCount: 5,
-//               itemBuilder: (context, index) {
-//                 return Container(
-//                   width: 80,
-//                   margin: EdgeInsets.only(right: 12),
-//                   child: Column(
-//                     children: [
-//                       Shimmer.fromColors(
-//                         baseColor: Colors.grey[800]!,
-//                         highlightColor: Colors.grey[700]!,
-//                         child: Container(
-//                           width: 80,
-//                           height: 80,
-//                           decoration: BoxDecoration(
-//                             shape: BoxShape.circle,
-//                             color: Colors.grey[800],
-//                           ),
-//                         ),
-//                       ),
-//                       SizedBox(height: 8),
-//                       Shimmer.fromColors(
-//                         baseColor: Colors.grey[800]!,
-//                         highlightColor: Colors.grey[700]!,
-//                         child: Container(
-//                           width: 60,
-//                           height: 12,
-//                           decoration: BoxDecoration(
-//                             color: Colors.grey[800],
-//                             borderRadius: BorderRadius.circular(4),
-//                           ),
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 );
-//               },
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-//
-// // Clé de navigation globale si nécessaire
-// final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
