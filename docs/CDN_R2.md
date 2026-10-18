@@ -20,6 +20,16 @@ R2 n'a pas de frais de sortie : les lectures y sont gratuites (10 millions de le
 - L'application continue d'envoyer vers Firebase Storage (aucune version à publier). Interrupteur : Remote Config `cdn_active`.
 - Copie initiale des 15 747 fichiers (25,2 Go) faite le 17 octobre 2026 (0 échec) : script ponctuel, reprenable (saute ce qui existe déjà).
 
+## Mesures du 18 octobre (après la mise en place)
+- Sortie de Cloud Storage : ≈ 0,15 Go/h la nuit, ≈ 0,7 Go/h en journée (≈ 10 à 14 Go/jour), contre ≈ 33 Go/jour le 16 octobre.
+- 90 liens réels (posts, photos de profil, chroniques) testés : 90 servis par R2 (`x-served-from: r2`).
+- Reste chez Google : ≈ 25 % était la **liste complète des fichiers relue toutes les 10 minutes** par `r2MirrorSweep` (≈ 1,2 Mo par page de
+  1 000 fichiers, ≈ 3 Go/jour). Corrigé : la liste ne demande plus que le nom et les dates (≈ 5 Ko par page). À grande échelle (centaines de
+  milliers de fichiers), remplacer le balayage par un déclencheur `onObjectFinalized` et ne garder le balayage que la nuit.
+- Le reste vient de lectures directes (écrans qui n'utilisent pas encore le CDN, anciennes versions, titres complets, lectures partielles annulées).
+- Fonctions serveur : ≈ 0,3 $/jour au total (0,17 vCPU par fonction) ; `syncFollowsFromLegacy` représente ≈ 89 % du temps facturé
+  (déclenchée à chaque écriture du profil, inutile pour les versions récentes) : à supprimer quand les anciennes versions auront disparu.
+
 ## Poids des envois (application, prochaine version)
 `lib/services/media_shrink.dart` : images 1600 px max (même format), vidéos 720p ; branché sur tous les envois vers Storage
 (sauf stickers et exports du studio).

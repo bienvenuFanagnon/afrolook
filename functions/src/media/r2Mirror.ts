@@ -1,6 +1,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getStorage } from "firebase-admin/storage";
+import type { GetFilesOptions } from "@google-cloud/storage";
 import { db } from "../shared/firebase";
 
 /**
@@ -63,6 +64,16 @@ async function mirror(name: string): Promise<void> {
   }));
 }
 
+/** Date de dernière modification d'un fichier de la liste. Avec la liste allégée (`fields`), la bibliothèque pose les dates sur le fichier
+ *  lui-même et non dans `metadata` : on lit les deux. */
+export function updatedMs(f: unknown): number {
+  const o = f as { metadata?: { updated?: string; timeCreated?: string }; updated?: string; timeCreated?: string };
+  const iso = o.metadata?.updated ?? o.metadata?.timeCreated ?? o.updated ?? o.timeCreated;
+  if (!iso) return 0;
+  const ms = Date.parse(String(iso));
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
 const CURSOR_DOC = "AppConfig/r2Mirror";
 
 /** Balayage : copie les fichiers créés ou modifiés depuis le dernier passage (jamais plus de 2 h en arrière sans reprise manuelle). */
@@ -74,8 +85,13 @@ export const r2MirrorSweep = onSchedule(
     const last = Number((await ref.get()).data()?.["lastRunMs"] ?? now - 30 * 60 * 1000);
     const since = Math.max(last - 2 * 60 * 1000, now - 2 * 3600 * 1000); // marge de recouvrement
     const bucket = getStorage().bucket(BUCKET);
-    const [files] = await bucket.getFiles({ autoPaginate: true });
-    const todo = files.filter((f) => shouldMirror(f.name) && Date.parse(String(f.metadata.updated ?? f.metadata.timeCreated ?? 0)) >= since);
+    // On ne demande que le nom et les dates : la liste complète avec toutes les métadonnées (jetons, URL…) pesait ~1,2 Mo par page de 1 000
+    // fichiers, relue 144 fois par jour (≈ 3 Go/jour sortant de Cloud Storage). Le détail d'un fichier est lu seulement s'il faut le copier.
+    const [files] = await bucket.getFiles({
+      autoPaginate: true,
+      fields: "items(name,updated,timeCreated),nextPageToken",
+    } as unknown as GetFilesOptions);
+    const todo = files.filter((f) => shouldMirror(f.name) && updatedMs(f) >= since);
     let done = 0, failed = 0;
     for (const f of todo) {
       try {
