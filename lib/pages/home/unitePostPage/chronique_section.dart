@@ -19,7 +19,7 @@ import 'package:shimmer/shimmer.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:video_thumbnail/video_thumbnail.dart';
+import '../../../widgets/video_poster_image.dart';
 
 import 'package:afrotok/models/model_data.dart';
 
@@ -54,51 +54,6 @@ class ChroniqueSectionComponent extends StatefulWidget {
 }
 
 class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
-  // Bytes en mémoire : évite le conflit de fichiers temporaires partagés
-  final Map<String, Uint8List> _generatedThumbnails = {};
-  final Map<String, bool> _isGenerating = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _generateMissingThumbnails();
-  }
-
-  Future<void> _generateMissingThumbnails() async {
-    for (var userChroniques in widget.groupedChroniques.values) {
-      for (var chronique in userChroniques) {
-        if (chronique.type == ChroniqueType.VIDEO &&
-            chronique.mediaUrl != null &&
-            !widget.videoThumbnails.containsKey(chronique.id) &&
-            !_generatedThumbnails.containsKey(chronique.id) &&
-            !_isGenerating.containsKey(chronique.id)) {
-
-          _isGenerating[chronique.id!] = true;
-
-          try {
-            final thumbnailBytes = await VideoThumbnail.thumbnailData(
-              video: chronique.mediaUrl!,
-              imageFormat: ImageFormat.JPEG,
-              maxWidth: 200,
-              quality: 60,
-              timeMs: 1000,
-            );
-
-            if (thumbnailBytes != null && mounted) {
-              setState(() {
-                _generatedThumbnails[chronique.id!] = thumbnailBytes;
-              });
-            }
-          } catch (e) {
-            printVm('Erreur génération thumbnail: $e');
-          } finally {
-            _isGenerating.remove(chronique.id);
-          }
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.isLoadingChroniques) {
@@ -462,65 +417,23 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> {
         );
 
       case ChroniqueType.VIDEO:
-        final hasThumbnail = widget.videoThumbnails.containsKey(chronique.id);
-        final hasGeneratedThumbnail = _generatedThumbnails.containsKey(chronique.id);
-        final isGenerating = _isGenerating.containsKey(chronique.id);
-
+        final shared = widget.videoThumbnails[chronique.id];
         return Stack(
+          fit: StackFit.expand,
           children: [
-            if (hasThumbnail)
-              Image.memory(
-                widget.videoThumbnails[chronique.id!]!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              )
-            else if (hasGeneratedThumbnail)
-              Image.memory(
-                _generatedThumbnails[chronique.id!]!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              )
-            else if (isGenerating)
-                Container(
+            // Aperçu enregistré à la création : affiché tout de suite, sans toucher à la vidéo
+            if (shared != null)
+              Image.memory(shared, fit: BoxFit.cover, width: double.infinity, height: double.infinity)
+            else
+              VideoPosterImage(
+                cacheKey: 'chronique_${chronique.id}',
+                posterUrl: chronique.posterUrl,
+                videoUrl: chronique.mediaUrl,
+                placeholder: Container(
                   color: colors.shimmerBase,
-                  child: Center(
-                    child: SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colors.accent,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  color: colors.shimmerBase,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.play_circle_filled,
-                          color: colors.accent,
-                          size: 30,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Vidéo',
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: Center(child: Icon(Icons.play_circle_filled, color: colors.accent.withOpacity(0.8), size: 30)),
                 ),
+              ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

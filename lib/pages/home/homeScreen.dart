@@ -18,6 +18,7 @@ import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/ads/rewards_service.dart';
+import 'package:afrotok/ads/admob_native_pool.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/quiz/quiz_home_page.dart';
 import 'package:afrotok/pages/music/music_page.dart';
@@ -1044,6 +1045,8 @@ class _MyHomePageState extends State<MyHomePage>
     // 🔥 Lancer la présence automatique dès l'accès à la Home
     _loadVersionInfo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Pubs AdMob du fil chargées d'avance : prêtes avant qu'on arrive à leur emplacement
+      AdmobNativePool.warmUpWhenReady(context, authProvider.loginUserData);
       _handleInitialDestination();
       // Gestion des notifications à chaud (app déjà ouverte)
       // Décalé de 3s pour laisser les posts charger sans concurrence Firestore

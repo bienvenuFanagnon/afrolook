@@ -16,6 +16,21 @@ const CORS = {
   'access-control-expose-headers': 'Content-Length, Content-Range, Accept-Ranges, Content-Type, ETag',
 };
 
+// Certains fichiers ont été rangés sans type (« application/octet-stream ») : iPhone et iPad ne lisent pas un son ou une vidéo sans type.
+// Le type est donc déduit de l'extension du fichier quand il manque.
+const TYPES = {
+  mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', flac: 'audio/flac', ogg: 'audio/ogg',
+  mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
+};
+function fixType(headers, key) {
+  const t = (headers.get('content-type') || '').toLowerCase();
+  if (t && t !== 'application/octet-stream' && t !== 'binary/octet-stream') return;
+  const m = /\.([a-z0-9]+)$/i.exec(key);
+  const type = m && TYPES[m[1].toLowerCase()];
+  if (type) headers.set('content-type', type);
+}
+
 function validToken(obj, token) {
   if (!token) return false;
   const tokens = String((obj.customMetadata && obj.customMetadata.tokens) || '').split(',').map((t) => t.trim()).filter(Boolean);
@@ -30,6 +45,7 @@ async function fromR2(request, env, key, token) {
       if (!head || !validToken(head, token)) return null;
       const headers = new Headers(CORS);
       head.writeHttpMetadata(headers);
+      fixType(headers, key);
       headers.set('etag', head.httpEtag);
       headers.set('accept-ranges', 'bytes');
       headers.set('content-length', String(head.size));
@@ -44,6 +60,7 @@ async function fromR2(request, env, key, token) {
     }
     const headers = new Headers(CORS);
     obj.writeHttpMetadata(headers);
+    fixType(headers, key);
     headers.set('etag', obj.httpEtag);
     headers.set('accept-ranges', 'bytes');
     headers.set('x-served-from', 'r2');

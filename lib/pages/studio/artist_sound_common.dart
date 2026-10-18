@@ -5,7 +5,10 @@ import 'dart:async';
 
 import 'dart:io';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:dio/dio.dart';
+import '../../services/music_head.dart';
+import '../../utils/audio_format.dart';
 import '../../utils/fnv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -190,16 +193,31 @@ class SoundPreview {
         artUri: (meta?.coverUrl != null && meta!.coverUrl!.isNotEmpty) ? Uri.tryParse(meta.coverUrl!) : null,
       );
 
+  /// Dernière raison d'échec d'une lecture (pour l'afficher à la personne et nous aider à comprendre sur iPhone / iPad).
+  static String? lastError;
+
+  /// Session audio de l'iPhone / iPad : « lecture de musique » (son même en mode silencieux, reprise après un appel).
+  /// D'autres lecteurs de l'application (messages vocaux, montage) la changent ; on la remet avant chaque titre.
+  static Future<void> _ensureSession() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      await session.setActive(true);
+    } catch (_) {}
+  }
+
   /// Charge puis lance une source. Ne reste jamais bloqué : délai maximum, et un lancement plus récent annule celui-ci.
   static Future<bool> _start(String key, Future<AudioSource> Function() build, bool loop, NowPlaying? meta) async {
     _wire();
     final gen = ++_gen;
+    lastError = null;
     try {
       _key = key;
       now.value = meta; // sans fiche d'affichage, on n'affiche pas un ancien titre
       try {
         await _player.stop().timeout(const Duration(seconds: 2), onTimeout: () {});
       } catch (_) {}
+      await _ensureSession();
       final source = await build();
       if (gen != _gen) return false;
       await _player.setLoopMode(loop ? LoopMode.one : LoopMode.off).timeout(const Duration(seconds: 3));
@@ -208,8 +226,38 @@ class SoundPreview {
       unawaited(_player.play());
       playing.value = key;
       return true;
-    } catch (_) {
+    } catch (e) {
+      lastError = e is PlayerException ? 'lecteur ${e.code} : ${e.message}' : '$e';
+      if (kDebugMode) debugPrint('[SoundPreview] $key : $lastError');
       if (gen == _gen) playing.value = null;
+      return false;
+    }
+  }
+
+  /// Dernier recours quand le lecteur refuse l'adresse (iPhone / iPad exigent un fichier au format annoncé) : le titre est téléchargé
+  /// (40 Mo au plus), reconnu à son contenu, rangé sous la bonne extension, puis lu depuis le disque.
+  static Future<bool> _viaFile(String key, String url, bool loop, NowPlaying? meta) async {
+    if (kIsWeb) return false;
+    try {
+      final dir = await getTemporaryDirectory();
+      final tmp = File('${dir.path}/snd_${fnv63(url)}.part');
+      await Dio().download(url, tmp.path, options: Options(receiveTimeout: const Duration(seconds: 40)));
+      final len = await tmp.length();
+      if (len < 2000 || len > 40 * 1024 * 1024) {
+        await tmp.delete().catchError((_) => tmp);
+        return false;
+      }
+      final head = await tmp.openRead(0, 16).fold<List<int>>(<int>[], (a, b) => a..addAll(b));
+      final kind = AudioKind.sniff(head);
+      if (!kind.appleCompatible && defaultTargetPlatform == TargetPlatform.iOS) {
+        lastError = 'format ${kind.ext} non pris en charge sur iPhone / iPad';
+        await tmp.delete().catchError((_) => tmp);
+        return false;
+      }
+      final f = await tmp.rename('${dir.path}/snd_${fnv63(url)}.${kind.ext}');
+      return await _start(key, () async => AudioSource.file(f.path, tag: _item(key, meta)), loop, meta);
+    } catch (e) {
+      lastError = '$e';
       return false;
     }
   }
@@ -228,11 +276,17 @@ class SoundPreview {
       }, loop, meta);
       if (ok) return true;
       final fb = MediaCdn.original(url);
-      if (fb != null) return _start(key, () async => AudioSource.uri(Uri.parse(fb), tag: item), loop, meta);
-      return false;
+      if (fb != null && await _start(key, () async => AudioSource.uri(Uri.parse(fb), tag: item), loop, meta)) return true;
+      return _viaFile(key, fb ?? url, loop, meta);
     }
-    return _start(key, () async => AudioSource.uri(Uri.parse(url), tag: item), loop, meta);
+    if (await _start(key, () async => AudioSource.uri(Uri.parse(url), tag: item), loop, meta)) return true;
+    return _viaFile(key, url, loop, meta);
   }
+
+  /// Démarrage éclair d'un titre dont le début est déjà sur l'appareil (voir [MusicHead]) : le son part tout de suite, la suite arrive
+  /// du réseau pendant qu'on écoute (le lien d'écoute n'est demandé qu'au moment où il devient nécessaire).
+  static Future<bool> playHead(String key, MusicHeadData head, Future<String?> Function() urlProvider, {NowPlaying? meta}) =>
+      _start(key, () async => HeadStartSource(head: head.bytes, total: head.total, kind: head.kind, urlProvider: urlProvider, tag: _item(key, meta)), false, meta);
 
   /// Joue un titre déchiffré en mémoire (téléchargement protégé) : rien n'est écrit en clair sur l'appareil.
   static Future<bool> playBytes(String key, Uint8List bytes, {NowPlaying? meta}) =>
@@ -271,8 +325,9 @@ class SoundPreview {
 
 /// Source audio servie depuis la mémoire (octets déjà déchiffrés), avec lecture par morceaux demandée par le lecteur.
 class _BytesSource extends StreamAudioSource {
-  _BytesSource(this._bytes, MediaItem tag) : super(tag: tag);
+  _BytesSource(this._bytes, MediaItem tag) : _mime = AudioKind.sniffBytes(_bytes).mime, super(tag: tag);
   final Uint8List _bytes;
+  final String _mime; // le vrai type du fichier : iPhone et iPad refusent un mp3 annoncé comme « audio/mp4 »
 
   @override
   Future<StreamAudioResponse> request([int? start, int? end]) async {
@@ -283,7 +338,7 @@ class _BytesSource extends StreamAudioSource {
       contentLength: e - s,
       offset: s,
       stream: Stream.value(_bytes.sublist(s, e)),
-      contentType: 'audio/mp4',
+      contentType: _mime,
     );
   }
 }

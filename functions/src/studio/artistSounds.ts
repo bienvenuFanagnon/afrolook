@@ -2,6 +2,13 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { randomUUID } from "crypto";
+import { execFile } from "child_process";
+import { promises as fs } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { promisify } from "util";
+import ffmpegPath from "ffmpeg-static";
+import { sniffAudio } from "../media/audioFormat";
 import { db } from "../shared/firebase";
 import { num, recordAppCommission } from "../payments/coinShares";
 
@@ -156,10 +163,45 @@ export async function chargeArtistSound(uid: string, info: ArtistSoundInfo, jobI
 export async function tempListenUrl(path: string): Promise<string> {
   const bucket = getStorage().bucket();
   const token = randomUUID();
-  const dest = `artist_sound_tmp/${Date.now()}_${randomUUID()}.m4a`;
-  const copy = bucket.file(dest);
-  await bucket.file(path).copy(copy);
-  await copy.setMetadata({ contentType: "audio/mp4", metadata: { firebaseStorageDownloadTokens: token } });
+  const src = bucket.file(path);
+  // Le vrai format du fichier (et non « m4a » par défaut) : iPhone et iPad refusent un mp3 annoncé comme « audio/mp4 ».
+  let kind = sniffAudio(new Uint8Array());
+  try {
+    const [head] = await src.download({ start: 0, end: 15 });
+    kind = sniffAudio(head);
+  } catch {
+    /* format inconnu : m4a par défaut, comme avant */
+  }
+  const base = `artist_sound_tmp/${Date.now()}_${randomUUID()}`;
+  let dest = `${base}.${kind.ext}`;
+  let mime = kind.mime;
+  let converted = false;
+  if (!kind.apple) {
+    // ogg, webm, amr : illisibles sur iPhone / iPad → copie convertie en AAC (m4a)
+    const dir = join(tmpdir(), `listen_${randomUUID()}`);
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      const input = join(dir, "original");
+      const out = join(dir, "listen.m4a");
+      await src.download({ destination: input });
+      await promisify(execFile)(ffmpegPath as string, ["-y", "-loglevel", "error", "-i", input, "-vn", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out], { timeout: 90_000 });
+      dest = `${base}.m4a`;
+      mime = "audio/mp4";
+      await bucket.file(dest).save(await fs.readFile(out), { contentType: mime, metadata: { metadata: { firebaseStorageDownloadTokens: token } } });
+      converted = true;
+    } catch (e) {
+      console.error("[tempListenUrl] conversion impossible, copie telle quelle", e);
+      dest = `${base}.${kind.ext}`;
+      mime = kind.mime;
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+  if (!converted) {
+    const copy = bucket.file(dest);
+    await src.copy(copy);
+    await copy.setMetadata({ contentType: mime, metadata: { firebaseStorageDownloadTokens: token } });
+  }
   return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(dest)}?alt=media&token=${token}`;
 }
 

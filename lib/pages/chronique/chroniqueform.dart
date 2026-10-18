@@ -29,6 +29,7 @@ class Chronique {
   String? textContent;
   String? mediaUrl;
   String? coverImageUrl; // Pochette pour audio, image de fond pour texte
+  String? posterUrl; // Aperçu d'une vidéo, tiré à la création (affiché avant que la vidéo soit prête)
   String? backgroundColor;
   String? templateId; // Template Studio utilisé
   int duration; // en secondes
@@ -56,6 +57,7 @@ class Chronique {
     this.textContent,
     this.mediaUrl,
     this.coverImageUrl,
+    this.posterUrl,
     this.backgroundColor,
     this.templateId,
     this.duration = 0,
@@ -85,6 +87,7 @@ class Chronique {
       'textContent': textContent,
       'mediaUrl': mediaUrl,
       'coverImageUrl': coverImageUrl,
+      'posterUrl': posterUrl,
       'backgroundColor': backgroundColor,
       'templateId': templateId,
       'duration': duration,
@@ -116,6 +119,7 @@ class Chronique {
       textContent: map['textContent'],
       mediaUrl: map['mediaUrl'],
       coverImageUrl: map['coverImageUrl'],
+      posterUrl: map['posterUrl'],
       backgroundColor: map['backgroundColor'],
       templateId: map['templateId'],
       duration: map['duration'] ?? 0,

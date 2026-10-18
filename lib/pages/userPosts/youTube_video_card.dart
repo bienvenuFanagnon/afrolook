@@ -1,3 +1,5 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../utils/media_cdn.dart';
 import '../../services/comments_prefetch.dart';
 import '../../services/media_shrink.dart';
 import '../../widgets/studio/post_template_try.dart';
@@ -586,6 +588,19 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final lastDate = _prefs!.getString(_lastInteractionDateKey!);
     final today = DateTime.now().toIso8601String().split('T').first;
     _hasRecordedInteraction = lastDate == today;
+  }
+
+  /// Aperçu de la vidéo : image mise en cache sur le téléphone et servie par le CDN (plus de re-téléchargement à chaque affichage).
+  Widget _posterImage({required double width, required double height, required Widget fallback}) {
+    return CachedNetworkImage(
+      imageUrl: MediaCdn.url(_thumbnailUrl),
+      fit: BoxFit.cover,
+      width: width,
+      height: height,
+      fadeInDuration: const Duration(milliseconds: 100),
+      placeholder: (_, __) => fallback,
+      errorWidget: (_, __, ___) => fallback,
+    );
   }
 
   Future<void> _generateAndUploadThumbnail() async {
@@ -1888,14 +1903,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ? Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: const Center(child: CircularProgressIndicator()))
                   : _thumbnailUrl != null
-                  ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.38, width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
+                  ? _posterImage(height: h * 0.38, width: double.infinity, fallback: Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                       child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)))
                   : Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)),
             ),
+            // L'aperçu reste visible pendant que la vidéo se prépare : voile léger + petit indicateur
             if (_isVideoLoading)
-              Container(height: h * 0.38, width: double.infinity, color: Colors.black.withOpacity(0.7),
+              Container(height: h * 0.38, width: double.infinity, color: Colors.black.withOpacity(0.18),
                   child: Center(child: CircularProgressIndicator(color: colors.primary))),
             // Verrou canal privé — s'affiche après 10s de lecture
             if (_showCanalLockCta)
@@ -1962,16 +1977,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                         ),
                       )
                     : _thumbnailUrl != null
-                        ? Image.network(_thumbnailUrl!, fit: BoxFit.cover,
-                            width: pW, height: pH,
-                            errorBuilder: (_, __, ___) => Icon(
+                        ? _posterImage(width: pW, height: pH, fallback: Icon(
                                 Icons.videocam, size: 40, color: colors.textSecondary))
                         : Center(child: Icon(Icons.videocam,
                             size: 40, color: colors.textSecondary)),
               ),
               if (_isVideoLoading)
                 Container(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.15),
                   child: Center(child: CircularProgressIndicator(color: colors.primary)),
                 ),
               if (_showCanalLockCta) _buildCanalLockOverlay(colors),
@@ -2084,12 +2097,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               child: const Center(child: CircularProgressIndicator()),
             )
           : _thumbnailUrl != null
-          ? Image.network(
-              _thumbnailUrl!,
-              fit: BoxFit.cover,
+          ? _posterImage(
               height: videoHeight,
               width: videoW,
-              errorBuilder: (context, error, stackTrace) => Container(
+              fallback: Container(
                 height: videoHeight,
                 width: videoW,
                 color: colors.shimmerBase,
@@ -2118,7 +2129,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               Container(
                 height: videoHeight,
                 width: videoW,
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withOpacity(0.18),
                 child: Center(child: CircularProgressIndicator(color: colors.primary)),
               ),
             // --- Verrou canal privé — s'affiche après 10s de lecture ---

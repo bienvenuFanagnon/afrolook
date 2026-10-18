@@ -244,7 +244,7 @@ export const artistSoundDelete = onCall({ timeoutSeconds: 60, memory: "256MiB" }
 });
 
 /** Lien signé de 15 minutes vers l'original, pour l'écoute de l'administrateur avant validation. */
-export const artistSoundAdminUrl = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+export const artistSoundAdminUrl = onCall({ timeoutSeconds: 120, memory: "512MiB" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
   if ((await db.collection("Users").doc(uid).get()).get("role") !== "ADM") throw new HttpsError("permission-denied", "Réservé aux administrateurs.");

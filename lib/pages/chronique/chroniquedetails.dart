@@ -1,5 +1,7 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import '../../utils/media_cdn.dart';
+import '../../widgets/video_poster_image.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../pub/ad_actions.dart';
 import '../../ads/ad_gate.dart';
@@ -450,6 +452,24 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     _markAsViewed(currentChronique);
     _updateCurrentLikeStatus(currentChronique);
     _startStoryTimer(currentChronique);
+    _prefetchNext();
+  }
+
+  /// La chronique suivante est préparée pendant qu'on regarde celle-ci : vidéo en cache disque, image dans le cache d'images.
+  void _prefetchNext() {
+    final next = _currentPage + 1;
+    if (next >= _allChroniques.length) return;
+    final c = _allChroniques[next];
+    final url = c.mediaUrl;
+    if (url == null || url.isEmpty) return;
+    if (c.type == ChroniqueType.VIDEO) {
+      MediaCacheService.prefetchVideo(url);
+      if ((c.posterUrl ?? '').isNotEmpty && mounted) {
+        precacheImage(CachedNetworkImageProvider(MediaCdn.url(c.posterUrl)), context).catchError((_) {});
+      }
+    } else if (c.type == ChroniqueType.IMAGE && mounted) {
+      precacheImage(CachedNetworkImageProvider(url), context).catchError((_) {});
+    }
   }
 
   // ── Timer story ────────────────────────────────────────────────────────────
@@ -2207,7 +2227,22 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               if (_videoController != null && _isVideoInitialized)
                 AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!)),
               if (!_isVideoInitialized)
-                Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))),
+                Positioned.fill(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // L'aperçu reste affiché jusqu'à ce que la vidéo soit prête et lancée
+                      VideoPosterImage(
+                        cacheKey: 'chronique_${chronique.id}',
+                        posterUrl: chronique.posterUrl,
+                        videoUrl: chronique.mediaUrl,
+                        fit: BoxFit.contain,
+                        placeholder: Container(color: Colors.grey[800]),
+                      ),
+                      Center(child: CircularProgressIndicator(color: Color(0xFFFFD700))),
+                    ],
+                  ),
+                ),
               Center(
                 child: IconButton(
                   icon: Icon(_videoController?.value.isPlaying == true ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white.withOpacity(0.7), size: 50),

@@ -1,6 +1,7 @@
 ﻿// providers/chronique_provider.dart
 
 import '../services/media_shrink.dart';
+import '../services/video_poster.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,6 +31,7 @@ class ChroniqueProvider with ChangeNotifier {
     try {
       String? mediaUrl;
       String? coverImageUrl;
+      String? posterUrl;
       double? fileSize;
       int duration = 0;
 
@@ -40,6 +42,8 @@ class ChroniqueProvider with ChangeNotifier {
 
         if (type == ChroniqueType.VIDEO) {
           duration = await _getVideoDuration(mediaFile);
+          // Aperçu tiré de la vidéo encore sur le téléphone : tout le monde l'affiche tout de suite (quelques Ko), sans toucher à la vidéo
+          posterUrl = await _uploadPoster(mediaFile);
         } else if (type == ChroniqueType.IMAGE) {
           duration = 5;
         } else if (type == ChroniqueType.AUDIO) {
@@ -66,6 +70,7 @@ class ChroniqueProvider with ChangeNotifier {
         textContent: textContent,
         mediaUrl: mediaUrl,
         coverImageUrl: coverImageUrl,
+        posterUrl: posterUrl,
         backgroundColor: backgroundColor,
         templateId: templateId,
         duration: duration,
@@ -129,6 +134,18 @@ class ChroniqueProvider with ChangeNotifier {
       return await snapshot.ref.getDownloadURL();
     } catch (error) {
       throw Exception('Erreur upload média: $error');
+    }
+  }
+
+  /// Aperçu de la vidéo envoyé en même temps qu'elle ; sans aperçu, la chronique se publie quand même (les appareils le tireront eux-mêmes).
+  Future<String?> _uploadPoster(File video) async {
+    try {
+      final poster = await VideoPoster.fromFile(video);
+      if (poster == null) return null;
+      return await _uploadMedia(poster, (_) {}, folder: 'chronique_posters');
+    } catch (e) {
+      printVm('Aperçu chronique non envoyé: $e');
+      return null;
     }
   }
 

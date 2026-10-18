@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+import '../../widgets/video_poster_image.dart';
 
 import '../../providers/chroniqueProvider.dart';
 import '../../providers/authProvider.dart';
@@ -50,8 +50,6 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
   DocumentSnapshot? _lastDocument;
   final int _batchSize = 10;
   bool _isFirstLoad = true;
-  final Map<String, String> _videoThumbnails = {};
-  final Map<String, bool> _generatingThumbnails = {};
 
   @override
   void initState() {
@@ -80,7 +78,6 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       final result = await provider.getGroupedChroniquesBatch(limit: _batchSize);
 
       // Charger les thumbnails pour les vidéos
-      await _loadVideoThumbnails(result);
 
       // Mettre à jour le lastDocument pour la pagination (HORS setState)
       DocumentSnapshot? newLastDocument;
@@ -159,43 +156,6 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
     }
   }
 
-  Future<void> _loadVideoThumbnails(Map<String, List<Chronique>> chroniques) async {
-    for (var userChroniques in chroniques.values) {
-      for (var chronique in userChroniques) {
-        if (chronique.type == ChroniqueType.VIDEO && chronique.mediaUrl != null) {
-          await _generateThumbnail(chronique);
-        }
-      }
-    }
-  }
-
-  Future<void> _generateThumbnail(Chronique chronique) async {
-    if (_generatingThumbnails.containsKey(chronique.id)) return;
-    if (_videoThumbnails.containsKey(chronique.id)) return;
-
-    _generatingThumbnails[chronique.id!] = true;
-
-    try {
-      final thumbnail = await VideoThumbnail.thumbnailFile(
-        video: chronique.mediaUrl!,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 300,
-        quality: 70,
-        timeMs: 1000,
-      );
-
-      if (thumbnail != null && mounted) {
-        setState(() {
-          _videoThumbnails[chronique.id!] = thumbnail;
-        });
-      }
-    } catch (e) {
-      printVm('Erreur génération thumbnail pour ${chronique.id}: $e');
-    } finally {
-      _generatingThumbnails.remove(chronique.id);
-    }
-  }
-
   void _loadMoreChroniques() async {
     if (_isLoading || !_hasMore) return;
 
@@ -217,7 +177,6 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
       }
 
       // Charger les thumbnails
-      await _loadVideoThumbnails(result);
 
       // Mettre à jour le lastDocument (HORS setState)
       DocumentSnapshot? newLastDocument;
@@ -586,43 +545,20 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> {
         );
 
       case ChroniqueType.VIDEO:
-        final isGenerating = _generatingThumbnails.containsKey(chronique.id);
-        final hasThumbnail = _videoThumbnails.containsKey(chronique.id);
-
         return Stack(
+          fit: StackFit.expand,
           children: [
-            if (hasThumbnail)
-              Image.file(
-                File(_videoThumbnails[chronique.id!]!),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              )
-            else if (isGenerating)
-              Container(
-                color: Colors.grey[900],
-                child: const Center(
-                  child: SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFFFFD700),
-                    ),
-                  ),
-                ),
-              )
-            else
-              Container(
+            VideoPosterImage(
+              cacheKey: 'chronique_${chronique.id}',
+              posterUrl: chronique.posterUrl,
+              videoUrl: chronique.mediaUrl,
+              placeholder: Container(
                 color: Colors.grey[900],
                 child: Center(
-                  child: Icon(
-                    Icons.play_circle_filled,
-                    color: const Color(0xFFFFD700).withOpacity(0.7),
-                    size: 40,
-                  ),
+                  child: Icon(Icons.play_circle_filled, color: const Color(0xFFFFD700).withOpacity(0.7), size: 40),
                 ),
               ),
+            ),
 
             Container(
               decoration: BoxDecoration(

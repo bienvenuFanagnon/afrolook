@@ -73,7 +73,7 @@ export const musicBuy = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (
   });
 });
 
-export const musicStreamUrl = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+export const musicStreamUrl = onCall({ timeoutSeconds: 120, memory: "512MiB" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
   const soundId = (request.data as { soundId?: unknown })?.soundId;
@@ -190,7 +190,7 @@ const LICENSE_DAYS = 30;
 const MAX_DEVICES = 3;
 const DOWNLOADS_PER_DAY = 20;
 
-export const musicLicense = onCall({ timeoutSeconds: 30, memory: "256MiB" }, async (request) => {
+export const musicLicense = onCall({ timeoutSeconds: 120, memory: "512MiB" }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Authentification requise.");
   const d = (request.data ?? {}) as { soundId?: unknown; deviceId?: unknown; renew?: unknown };

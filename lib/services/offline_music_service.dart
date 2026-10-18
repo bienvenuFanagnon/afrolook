@@ -224,10 +224,8 @@ class OfflineMusic {
   }
 
   // ── Chiffrement (exécuté dans un autre processus léger pour ne pas figer l'écran) ──
-  @visibleForTesting
   static Future<Uint8List> seal(Uint8List data, List<int> key) => _seal(_Job(data, key));
 
-  @visibleForTesting
   static Future<Uint8List?> open(Uint8List data, List<int> key) => _open(_Job(data, key));
 
   static Future<Uint8List> _seal(_Job j) async {
