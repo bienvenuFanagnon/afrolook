@@ -35,6 +35,8 @@ import '../../../models/model_data.dart';
 import '../../../services/utils/abonnement_utils.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../providers/userProvider.dart';
+import '../amis/pageMesInvitations.dart';
 import '../../../providers/gold_groups_provider.dart';
 
 import '../../../theme/app_colors.dart';
@@ -584,6 +586,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final otherIds = <String>{};
     for (final doc in snapshot.docs) {
       final chat = Chat.fromJson(doc.data() as Map<String, dynamic>);
+      // Demande refusée : disparaît de la liste de la personne qui l'a refusée (l'autre voit « refusée » dans la discussion)
+      if (chat.requestStatus == 'refused' && chat.requestFrom != null && chat.requestFrom != myId) continue;
       chats.add(chat);
       final oid = myId == chat.receiverId ? chat.senderId : chat.receiverId;
       if (oid != null) otherIds.add(oid);
@@ -1089,6 +1093,41 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   /// Contenu de la liste des conversations (mobile + panneau gauche desktop).
+  /// Bannière « N invitations en attente » : un appui ouvre la page Invitations (accepter ou refuser). Le compteur est celui de l'accueil, déjà à jour.
+  Widget _buildInvitationsBanner() {
+    final n = context.read<UserProvider>().countInvitations;
+    if (n <= 0) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => MesInvitationsPage(context: ctx))).then((_) {
+        if (mounted) setState(() {});
+      }),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: _colors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _colors.primary.withOpacity(0.35)),
+        ),
+        child: Row(children: [
+          Icon(Icons.mail_rounded, color: _colors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('$n invitation${n > 1 ? 's' : ''} en attente', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+          ),
+          Text('Voir', style: TextStyle(color: _colors.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+          Icon(Icons.chevron_right_rounded, color: _colors.primary, size: 18),
+        ]),
+      ),
+    );
+  }
+
+  /// Aperçu d'une conversation : « Demande · … » quand quelqu'un vous a écrit depuis une chronique et que vous n'avez pas encore répondu à l'invitation.
+  String _previewOf(Chat chat, String text) {
+    final me = authProvider.loginUserData.id;
+    return chat.requestStatus == 'pending' && chat.requestFrom != null && chat.requestFrom != me ? 'Demande · $text' : text;
+  }
+
   Widget _buildChatListContent() {
     return Column(
       children: [
@@ -1103,6 +1142,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           ),
         if (!_isSearching) _buildFilterPills(),
         if (!_isSearching) _buildHeader(),
+        if (!_isSearching) _buildInvitationsBanner(),
         Expanded(
           child: _isSearching
               ? _buildSearchResults()
@@ -2110,9 +2150,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         onTap: () => _openChat(chat),
         child: ConversationList(
           name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-          messageText: lastMessage != null
+          messageText: _previewOf(chat, lastMessage != null
               ? _getMessagePreview(lastMessage)
-              : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage),
+              : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage)),
           imageUrl: chat.chatFriend?.imageUrl ?? '',
           time: _formatTime(chat.updatedAt),
           isMessageRead: unreadCount == 0,
@@ -2327,9 +2367,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             onTap: () => _openChat(chat),
             child: ConversationList(
               name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-              messageText: lastMessage != null
+              messageText: _previewOf(chat, lastMessage != null
                   ? _getMessagePreview(lastMessage)
-                  : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage),
+                  : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage)),
               imageUrl: chat.chatFriend?.imageUrl ?? '',
               time: _formatTime(chat.updatedAt),
               isMessageRead: unreadCount == 0,

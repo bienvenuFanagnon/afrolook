@@ -2,7 +2,9 @@ import 'package:afrotok/pages/chronique/chronique_filters.dart';
 import 'package:afrotok/pages/chronique/chronique_music.dart';
 import 'package:afrotok/pages/chronique/chronique_text_view.dart';
 import 'package:afrotok/pages/chronique/chronique_widgets.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/chronique/chroniqueform.dart';
+import 'package:afrotok/services/chat_request.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -124,6 +126,31 @@ void main() {
       final plain = _c('kofi').toMap();
       expect(plain.containsKey('musicUrl'), isFalse);
       expect(Chronique.fromMap(plain, 'y').hasMusic, isFalse);
+    });
+  });
+
+  group('demande de discussion', () {
+    test('l\'état de la demande fait l\'aller-retour, et un chat ordinaire n\'en écrit jamais', () {
+      final plain = Chat(id: 'c1', docId: 'ab', senderId: 'a', receiverId: 'b').toJson();
+      expect(plain.containsKey('request_status'), isFalse); // une mise à jour complète ne peut pas effacer une demande
+      final chat = Chat.fromJson({'id': 'c1', 'docId': 'ab', 'sender_id': 'a', 'receiver_id': 'b', 'request_status': 'pending', 'request_from': 'a', 'request_invitation_id': 'i1'});
+      expect(ChatRequestService.isPending(chat), isTrue);
+      expect(ChatRequestService.iAmRequester(chat, 'a'), isTrue);
+      expect(ChatRequestService.iAmRequester(chat, 'b'), isFalse);
+      final out = chat.toJson();
+      expect(out['request_status'], 'pending');
+      expect(out['request_invitation_id'], 'i1');
+      chat.requestStatus = 'refused';
+      expect(ChatRequestService.isRefused(chat), isTrue);
+      expect(ChatRequestService.isPending(chat), isFalse);
+    });
+
+    test('l\'invitation garde la chronique et le message, sans les réécrire', () {
+      final inv = Invitation.fromJson({'id': 'i1', 'sender_id': 'a', 'receiver_id': 'b', 'status': 'ENCOURS', 'message': 'Bonjour', 'chronique_id': 'ch1', 'chronique_thumb': 'https://x/y.jpg'});
+      expect(inv.chroniqueId, 'ch1');
+      expect(inv.message, 'Bonjour');
+      // acceptInvitation réécrit toJson() : les champs de la chronique n'y sont pas, ils ne sont donc jamais effacés
+      expect(inv.toJson().containsKey('chronique_id'), isFalse);
     });
   });
 

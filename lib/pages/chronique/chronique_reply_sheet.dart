@@ -15,8 +15,8 @@ import 'chroniqueform.dart';
 
 /// Réponse privée à une chronique.
 /// - Amis : le message part dans la discussion, avec la chronique citée en premier.
-/// - Pas encore amis : le message devient une invitation (le serveur applique les règles : une seule invitation en attente, 7 jours après un refus,
-///   10 par jour). On n'écrit à personne qui n'a pas accepté : la discussion ne s'ouvre qu'après acceptation.
+/// - Pas encore amis : demande de discussion temporaire, comme sur TikTok. Le message est visible tout de suite dans une discussion en attente ;
+///   la suite n'est possible qu'après acceptation (le serveur applique les règles : une seule invitation en attente, 7 jours après un refus, 10 par jour).
 Future<void> showChroniqueReply(BuildContext context, Chronique chronique) {
   return showModalBottomSheet<void>(
     context: context,
@@ -85,6 +85,7 @@ class _ReplySheetState extends State<_ReplySheet> {
       switch (r['status']) {
         case 'sent':
           context.read<UserAuthProvider>().loginUserData.mesInvitationsEnvoyerId?.add(c.userId);
+          _chatId = r['chatId'] as String?;
           setState(() => _step = _Step.sent);
           break;
         case 'pending':
@@ -123,8 +124,9 @@ class _ReplySheetState extends State<_ReplySheet> {
       chat = Chat(docId: '$other$myId', id: id, senderId: myId, receiverId: other, lastMessage: text, type: ChatType.USER.name, createdAt: now, updatedAt: now);
       await fs.collection('Chats').doc(id).set(chat.toJson());
     }
+    final chatDocId = chat.docId ?? chat.id; // les messages d'une discussion portent son « docId » (voir myChat._chatId)
     Map<String, dynamic> base(String id, int at) => {
-          'id': id, 'send_by': myId, 'receiverBy': other, 'chat_id': chat.id, 'is_valide': true, 'is_deleted': false, 'is_encrypted': false,
+          'id': id, 'send_by': myId, 'receiverBy': other, 'chat_id': chatDocId, 'is_valide': true, 'is_deleted': false, 'is_encrypted': false,
           'message_state': 'NONLU', 'create_at_time_spam': at, 'createdAt': FieldValue.serverTimestamp(), 'status': 'delivered',
           'reply_message': {'message': '', 'message_type': 'text', 'id': '', 'replyTo': '', 'replyBy': ''},
           'reaction': {'reactions': <String>[], 'reactedUserIds': <String>[]}, 'send_sending': false, 'receiver_sending': false,
@@ -141,8 +143,10 @@ class _ReplySheetState extends State<_ReplySheet> {
       'last_message': text, 'updated_at': now, (chat.senderId == myId ? 'your_msg_not_read' : 'my_msg_not_read'): FieldValue.increment(2),
     });
     await batch.commit();
+    Map<String, dynamic>? owner;
     try {
-      final owner = (await fs.collection('Users').doc(other).get()).data();
+      owner = (await fs.collection('Users').doc(other).get()).data();
+      if (owner != null) chat.receiver = UserData.fromJson({...owner, 'id': other});
       final player = owner?['oneIgnalUserid'];
       if (player != null && mounted) {
         await context.read<UserAuthProvider>().sendNotification(
@@ -156,6 +160,46 @@ class _ReplySheetState extends State<_ReplySheet> {
     nav.pop();
     nav.push(MaterialPageRoute(builder: (_) => MyChat(title: 'Chat avec ${c.userPseudo}', chat: chat)));
   }
+
+  /// Ouvre la discussion temporaire (par son identifiant, sinon en la cherchant) : le premier message y est visible, la suite attend l'acceptation.
+  Future<void> _openPendingChat({String? chatId}) async {
+    final fs = FirebaseFirestore.instance;
+    final myId = context.read<UserAuthProvider>().loginUserData.id!;
+    try {
+      DocumentSnapshot<Map<String, dynamic>>? doc;
+      if (chatId != null && chatId.isNotEmpty) {
+        doc = await fs.collection('Chats').doc(chatId).get();
+      } else {
+        final q = await fs.collection('Chats').where('docId', whereIn: ['${c.userId}$myId', '$myId${c.userId}']).limit(1).get();
+        if (q.docs.isNotEmpty) doc = q.docs.first;
+      }
+      if (doc == null || !doc.exists) return;
+      final chat = Chat.fromJson(doc.data()!);
+      final owner = (await fs.collection('Users').doc(c.userId).get()).data();
+      if (owner != null) chat.receiver = UserData.fromJson({...owner, 'id': c.userId});
+      if (!mounted) return;
+      final nav = Navigator.of(context);
+      nav.pop();
+      nav.push(MaterialPageRoute(builder: (_) => MyChat(title: 'Chat avec ${c.userPseudo}', chat: chat)));
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Discussion introuvable pour le moment.');
+    }
+  }
+
+  String? _chatId;
+
+  Widget _openChatButton(AppColors colors) => Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _openPendingChat(chatId: _chatId),
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+            label: const Text('Voir la discussion', style: TextStyle(fontWeight: FontWeight.w700)),
+            style: OutlinedButton.styleFrom(foregroundColor: colors.textPrimary, side: BorderSide(color: colors.border), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -174,8 +218,14 @@ class _ReplySheetState extends State<_ReplySheet> {
             _quoted(colors),
             const SizedBox(height: 12),
             if (_step == _Step.form) ..._form(colors, left),
-            if (_step == _Step.pending) _state(colors, Icons.hourglass_top_rounded, 'En attente de sa réponse', 'Votre invitation est envoyée. Vous pourrez lui écrire dès qu\'elle sera acceptée.'),
-            if (_step == _Step.sent) _state(colors, Icons.check_circle_rounded, 'Invitation envoyée', '@${c.userPseudo} lit votre message et décide d\'accepter ou non. Vous serez prévenu.'),
+            if (_step == _Step.pending) ...[
+              _state(colors, Icons.hourglass_top_rounded, 'En attente de sa réponse', 'Votre message est visible dans la discussion. Vous pourrez continuer dès que @${c.userPseudo} aura accepté.'),
+              _openChatButton(colors),
+            ],
+            if (_step == _Step.sent) ...[
+              _state(colors, Icons.check_circle_rounded, 'Message envoyé', '@${c.userPseudo} le voit dans ses demandes et choisit d\'accepter ou non. Vous serez prévenu.'),
+              _openChatButton(colors),
+            ],
             if (_step == _Step.incoming) ...[
               _state(colors, Icons.mail_rounded, '@${c.userPseudo} vous a déjà invité', 'Acceptez son invitation pour ouvrir la discussion.'),
               const SizedBox(height: 10),
@@ -231,7 +281,7 @@ class _ReplySheetState extends State<_ReplySheet> {
             decoration: BoxDecoration(color: colors.accent.withValues(alpha: .12), borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.accent.withValues(alpha: .5))),
             child: Text.rich(TextSpan(style: TextStyle(color: colors.textPrimary, fontSize: 12.5, height: 1.35), children: [
               const TextSpan(text: 'Vous n\'êtes pas encore amis. ', style: TextStyle(fontWeight: FontWeight.w800)),
-              TextSpan(text: 'Votre message part avec une invitation. @${c.userPseudo} le lit, puis accepte ou refuse. Tant qu\'elle n\'a pas accepté, vous ne pouvez pas lui écrire d\'autres messages.'),
+              TextSpan(text: 'Votre message arrive comme une demande de discussion : @${c.userPseudo} le lit puis accepte ou refuse. Tant qu\'il n\'a pas accepté, vous ne pouvez pas lui écrire d\'autres messages.'),
             ])),
           ),
         if (!_friends) const SizedBox(height: 12),
@@ -261,7 +311,7 @@ class _ReplySheetState extends State<_ReplySheet> {
             style: FilledButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
             child: _busy
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2))
-                : Text(_friends ? 'Envoyer' : 'Envoyer l\'invitation avec mon message', style: const TextStyle(fontWeight: FontWeight.w800)),
+                : Text(_friends ? 'Envoyer' : 'Envoyer ma demande', style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ),
       ];

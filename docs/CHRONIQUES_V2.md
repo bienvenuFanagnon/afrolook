@@ -19,12 +19,19 @@ Choix dans la liste existante du Studio (gratuites d'Afrolook, sons d'artistes).
 Paiement à la publication par la fonction `chroniqueMusicCharge` (une seule fois par chronique, 60 % pour l'artiste, gratuit pour ses propres sons et les sons gratuits).
 La musique est lue en boucle par le lecteur ; la musique globale de l'application se met en pause pendant la chronique.
 
-## Réponse privée
+## Réponse privée : demande de discussion temporaire (comme TikTok)
 - Déjà amis : le message part dans la discussion, avec la chronique citée (message `link_share`, type `chronique`).
-- Sinon : fonction `chroniqueReplyInvite` crée une invitation (message 1 à 200 caractères, chronique, miniature). Règles dans `functions/src/chroniques/replyGate.ts` :
-  bloqué = refus, déjà amis = discussion, invitation en attente = rien, invitation reçue d'elle = on l'accepte, refus de moins de 7 jours = attente, 10 par jour.
-- À l'acceptation, `onChroniqueInviteAccepted` ouvre la discussion côté serveur : chronique citée puis message d'invitation, messages non lus pour la personne qui a accepté.
-- La page Invitations affiche la chronique et le message.
+- Sinon : la fonction `chroniqueReplyInvite` crée une invitation **et** une discussion temporaire (`request_status = pending`) avec la chronique citée et le premier
+  message, visibles tout de suite par le destinataire. Une discussion déjà existante entre les deux personnes est réutilisée.
+  Règles dans `functions/src/chroniques/replyGate.ts` : bloqué = refus, déjà amis = discussion, invitation en attente = rien, invitation reçue d'elle = on l'accepte,
+  refus de moins de 7 jours = attente, 10 par jour.
+- **Destinataire** : la discussion apparaît dans sa liste (aperçu « Demande · … »). Dans la discussion, la barre du bas propose Accepter ou Refuser.
+  Accepter : l'invitation passe à ACCEPTER (amis), la discussion devient normale, l'autre est prévenu. Refuser : l'invitation passe à REFUSER, la discussion disparaît de sa liste.
+- **Personne qui a écrit** : elle voit son message ; la saisie est remplacée par « En attente de la réponse… » (ou « refusé, réessayez dans 7 jours »).
+- Accepter ou refuser depuis la page Invitations donne le même résultat : `onInvitationAnswered` recopie l'état de l'invitation dans la discussion.
+- La liste des conversations affiche aussi une bannière « N invitations en attente » qui ouvre la page Invitations.
+- Limite connue : l'interdiction d'écrire avant acceptation est appliquée par l'application (saisie remplacée). Les messages n'ont pas de règle serveur dédiée, car
+  une règle qui lirait la discussion à chaque message coûterait une lecture par message pour tout le monde.
 
 ## Économie de lectures et de stockage
 - Commentaires lus à la demande (20 par page) au lieu d'une écoute en direct de toute la liste ; dernier commentaire recopié dans la chronique (`lastCommentPseudo`, `lastCommentText`).

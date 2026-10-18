@@ -1,4 +1,5 @@
 import '../../services/media_shrink.dart';
+import '../../services/chat_request.dart';
 import '../chronique/chroniquedetails.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -257,6 +258,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final streakVal = chat.streak ?? 0;
       if (streakVal != _streak && mounted) {
         setState(() => _streak = streakVal);
+      }
+      // Demande de discussion acceptée ou refusée (depuis cette page, la page Invitations ou le serveur)
+      if (chat.requestStatus != widget.chat.requestStatus && mounted) {
+        setState(() {
+          widget.chat.requestStatus = chat.requestStatus;
+          widget.chat.requestFrom = chat.requestFrom;
+        });
       }
     });
 
@@ -2628,6 +2636,90 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     );
   }
 
+  // ── Demande de discussion (réponse à une chronique) ──────────────────────────
+
+  bool _requestBusy = false;
+
+  /// Barre du bas pendant une demande : accepter ou refuser pour le destinataire, attente ou refus pour la personne qui a écrit.
+  /// null = discussion normale (la saisie habituelle s'affiche).
+  Widget? _buildRequestBar() {
+    final chat = widget.chat;
+    final myId = _authProvider.loginUserData.id;
+    final pending = ChatRequestService.isPending(chat);
+    final refused = ChatRequestService.isRefused(chat);
+    if (!pending && !refused) return null;
+    final pseudo = chat.receiver?.pseudo ?? chat.chatFriend?.pseudo ?? 'cette personne';
+    final mine = ChatRequestService.iAmRequester(chat, myId);
+
+    Widget box(List<Widget> children) => Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+          decoration: BoxDecoration(color: _colors.background, border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3)))),
+          child: SafeArea(top: false, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: children)),
+        );
+
+    if (mine) {
+      return box([
+        Row(children: [
+          Icon(refused ? Icons.block_rounded : Icons.hourglass_top_rounded, color: _colors.textSecondary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              refused
+                  ? '@$pseudo a refusé votre invitation. Vous pourrez réessayer dans 7 jours.'
+                  : 'En attente de la réponse de @$pseudo. Vous pourrez continuer la discussion dès qu\'elle sera acceptée.',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 13, height: 1.3),
+            ),
+          ),
+        ]),
+      ]);
+    }
+    if (refused) return null;
+    return box([
+      Text('@$pseudo veut discuter avec vous', style: TextStyle(color: _colors.textPrimary, fontSize: 14.5, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 3),
+      Text('Si vous acceptez, vous pourrez vous écrire librement. Sinon, rien ne lui sera envoyé.', style: TextStyle(color: _colors.textSecondary, fontSize: 12.5, height: 1.3)),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _requestBusy ? null : _refuseRequest,
+            style: OutlinedButton.styleFrom(foregroundColor: _colors.textSecondary, side: BorderSide(color: _colors.border), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            child: const Text('Refuser', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FilledButton(
+            onPressed: _requestBusy ? null : _acceptRequest,
+            style: FilledButton.styleFrom(backgroundColor: _colors.primary, foregroundColor: _colors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            child: _requestBusy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Accepter', style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ),
+      ]),
+    ]);
+  }
+
+  Future<void> _acceptRequest() async {
+    setState(() => _requestBusy = true);
+    final ok = await ChatRequestService.accept(context, widget.chat);
+    if (!mounted) return;
+    setState(() => _requestBusy = false);
+    if (!ok) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Action impossible. Réessayez.')));
+  }
+
+  Future<void> _refuseRequest() async {
+    setState(() => _requestBusy = true);
+    final ok = await ChatRequestService.refuse(context, widget.chat);
+    if (!mounted) return;
+    setState(() => _requestBusy = false);
+    if (ok) {
+      Navigator.of(context).maybePop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Action impossible. Réessayez.')));
+    }
+  }
+
   // ── Input bar complète ──────────────────────────────────────────────────────
 
   Widget _buildMessageInput() {
@@ -3607,7 +3699,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           _buildBlockBanner(),
           (_isBlockedByMe || _isBlockedByOther)
               ? _buildBlockedInputBar()
-              : _buildMessageInput(),
+              : (_buildRequestBar() ?? _buildMessageInput()),
         ],
         ),
         ),
