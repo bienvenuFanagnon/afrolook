@@ -67,7 +67,7 @@ test('boîte : liste par pages de 10 (la plus récente d\'abord), 50 au plus, 30
   const big = await inbox.list(db, EP(1), 0, NOW);
   assert.equal(big.total, 50);
   // plus de 30 jours : supprimées
-  const later = new Date(NOW.getTime() + 31 * 864e5);
+  const later = new Date(Date.now() + 31 * 864e5); // les notifications portent la date réelle d'envoi
   assert.equal((await inbox.list(db, EP(1), 0, later)).total, 0);
   // un message marqué inbox:false (test, essai) n'entre pas dans la boîte
   const db2 = new FakeDb();

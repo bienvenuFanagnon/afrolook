@@ -352,3 +352,74 @@ test('sponsors directs : administration (création, logo contrôlé, mise à jou
   assert.equal((await call('sponsors', {})).json.items.length, 0);
   assert.equal((await call('sponsor-delete', { id })).status, 404);
 });
+
+test('cote équivalente : 1 / probabilité, formatée (virgule en français, point en anglais), jamais présentée comme une cote de bookmaker', () => {
+  const C = require('../src/shared/coupon');
+  assert.equal(C.fairOdds(0.5), 2);
+  assert.equal(C.fairOdds(0), null);
+  assert.equal(C.fairOdds(1.5), null);
+  assert.equal(C.formatOdds(2, 'fr'), '2,00');
+  assert.equal(C.formatOdds(2, 'en'), '2.00');
+  assert.equal(C.formatOdds(1 / 0.0833, 'fr'), '12,0');
+  assert.equal(C.formatOdds(250.4, 'fr'), '250');
+  assert.equal(C.formatOdds(null, 'fr'), '–');
+});
+
+test('bilan des coupons : page dédiée (résumé, niveaux, cote équivalente, série, gagnés et perdus par jour, pagination, filtres), reliée depuis le bilan, le coupon et le plan du site', async () => {
+  const D = require('../src/render/data');
+  const db = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  const NOWS = new Date('2026-10-16T12:00:00Z');
+  for (const [id] of [...(db.data.get('coupons_flash') || [])]) await db.collection('coupons_flash').doc(id).delete(); // on part d'une base de coupons connue
+  const TIERS = [['prudent', 2, 0.5], ['equilibre', 3, 0.25], ['audacieux', 5, 0.1]];
+  // 12 jours de coupons : tout gagné sauf les « audacieux » (perdus), le dernier jour reste ouvert
+  for (let d = 0; d < 12; d++) {
+    const jour = new Date(Date.UTC(2026, 9, 15 - d)).toISOString().slice(0, 10);
+    for (const [nom, n, prob] of TIERS) {
+      const open = d === 0;
+      const statut = open ? 'ouvert' : nom === 'audacieux' ? 'perdu' : 'gagne';
+      await db.seed('coupons_flash', `${jour}_${n}`, { id: `${jour}_${n}`, jour, n, nom, prob, statut, creeLe: `${jour}T06:00:00Z`, selections: Array.from({ length: n }, (_, i) => ({ matchId: `m${i}`, key: 'res:1', libelle: 'A gagne', famille: 'Résultat', pct: 70, titre: `A${i} – B${i}`, dom: `A${i}`, ext: `B${i}`, slug: `a${i}-b${i}`, leagueSlug: 'ligue-1', coupDEnvoi: `${jour}T15:00:00Z`, ok: open ? null : (statut === 'gagne' ? true : i === 0 ? false : true) })) });
+    }
+  }
+  D.clearCache();
+  const p1 = (await route(db, '/bilan-coupons', NOWS)).body;
+  assert.match(p1, /<h1>Bilan des <b>coupons<\/b><\/h1>/);
+  assert.match(p1, /<nav class="bt"[^>]*><a href="\/bilan">Pronostics<\/a><a href="\/bilan-coupons" aria-current="page">Coupons<\/a>/);
+  assert.match(p1, /<div class="kpi"><b class="num">33<\/b><span>coupons réglés<\/span>/);
+  assert.match(p1, /<b class="num">22<\/b><span>gagnés<\/span>/, 'gagnés');
+  assert.match(p1, /<b class="num">11<\/b><span>perdus<\/span>/, 'perdus');
+  assert.match(p1, /67\u00a0%/, 'taux 22 sur 33');
+  assert.match(p1, /cote équivalente ≈ 2,00/, 'prudent : probabilité 50 % = cote équivalente 2,00');
+  assert.match(p1, /cote équivalente ≈ 4,00/);
+  assert.match(p1, /cote équivalente ≈ 10,0/);
+  assert.match(p1, /Plus grosse cote gagnée ≈ 4,00/);
+  assert.match(p1, /Ce n'est pas une cote de bookmaker/);
+  assert.match(p1, /class="ac ac-gagne"/);
+  assert.match(p1, /class="ac ac-perdu"/);
+  assert.match(p1, /class="ac ac-ouvert"/);
+  assert.match(p1, /data-f="gagne"/);
+  assert.equal((p1.match(/class="bcd"/g) || []).length, 10, '10 jours par page');
+  assert.match(p1, /href="\/bilan-coupons\/2" rel="next"/);
+  const p2 = (await route(db, '/bilan-coupons/2', NOWS)).body;
+  assert.equal((p2.match(/class="bcd"/g) || []).length, 2);
+  assert.match(p2, /href="\/bilan-coupons" rel="prev"/);
+  assert.match(p2, /Page 2 sur 2/);
+  const en = (await route(db, '/en/slips-track-record', NOWS)).body;
+  assert.match(en, /<h1>Slips <b>track record<\/b><\/h1>/);
+  assert.match(en, /equivalent odds ≈ 2\.00/);
+  assert.match(en, /not bookmaker odds|Not a bookmaker odds|They are not bookmaker odds/);
+  // reliée depuis le bilan (onglets + encadré + historique), le plan du site
+  const bilan = (await route(db, '/bilan', NOWS)).body;
+  assert.match(bilan, /<a href="\/bilan" aria-current="page">Pronostics<\/a><a href="\/bilan-coupons">Coupons<\/a>/);
+  assert.match(bilan, /class="box cbl"/);
+  assert.match(bilan, /href="\/bilan-coupons">Voir le bilan des coupons/);
+  assert.match((await route(db, '/sitemap.xml', NOWS)).body, /\/bilan-coupons<\/loc>/);
+  // cote estimée sur les coupons proposés (accueil, page coupon)
+  assert.match((await route(db, '/coupon', NOWS)).body, /<small>cote ≈ \d+,\d{2}<\/small>/);
+  // sans aucun coupon : message, pas d'erreur
+  const vide = await buildSample(new Date('2026-10-16T08:00:00Z'));
+  for (const [id] of vide.data.get('coupons_flash') || []) await vide.collection('coupons_flash').doc(id).delete();
+  D.clearCache();
+  const none = await route(vide, '/bilan-coupons', NOWS);
+  assert.equal(none.status, 200);
+  assert.match(none.body, /Aucun coupon enregistré pour le moment/);
+});

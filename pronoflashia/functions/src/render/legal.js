@@ -27,7 +27,7 @@ const PAGES = {
 <h2>Des résultats publics, bons ou mauvais</h2>
 <p>Nous publions tout, réussites <i>et</i> échecs, sur la page <a href="/bilan">Bilan</a> : taux de réussite, résultats par championnat et par type de pari, historique complet des coupons. C'est ce bilan qui fait progresser l'IA, et c'est à lui, pas à des promesses, que tu peux juger notre travail.</p>
 <h2>Ce que le site ne fait pas</h2>
-<p>PronoFlash IA ne prend aucun pari, n'affiche aucune cote, ne vend aucun pronostic et <b>ne promet aucun gain</b>. Un pronostic est une probabilité, pas une certitude : le football garde une part d'imprévu que personne ne sait prévoir, et nos propres tests le confirment. Voir la page <a href="/jeu-responsable">jeu responsable</a>.</p>
+<p>PronoFlash IA ne prend aucun pari, n'affiche aucune cote de bookmaker, ne vend aucun pronostic et <b>ne promet aucun gain</b>. Un pronostic est une probabilité, pas une certitude : le football garde une part d'imprévu que personne ne sait prévoir, et nos propres tests le confirment. Voir la page <a href="/jeu-responsable">jeu responsable</a>.</p>
 <h2>Qui édite le site ? Comment est-il financé ?</h2>
 <p>Le site est édité par ${field(rc.site.editeur, 'nom de l\'éditeur')}. <b>Tout est gratuit</b> : les publicités et la promotion d'Afrolook, l'application sociale du même éditeur, servent à couvrir les frais des serveurs et du développement. Les pronostics ne sont jamais vendus et le site n'accepte aucune rémunération de la part des bookmakers pour orienter un pronostic.</p>
 <h2>Données</h2>
@@ -181,7 +181,7 @@ const PAGES_EN = {
 <h2>Public results, good or bad</h2>
 <p>We publish everything, successes <i>and</i> failures, on the <a href="/en/track-record">Track record</a> page: success rate, results by league and by type of bet, the full history of slips. This track record is what makes the AI improve, and it, not promises, is how you can judge our work.</p>
 <h2>What the site does not do</h2>
-<p>PronoFlash IA takes no bets, shows no odds, sells no tips and <b>promises no winnings</b>. A prediction is a probability, not a certainty: football keeps an element of the unexpected that nobody can predict, and our own tests confirm it. See <a href="/en/responsible-gambling">responsible gambling</a>.</p>
+<p>PronoFlash IA takes no bets, shows no bookmaker odds, sells no tips and <b>promises no winnings</b>. A prediction is a probability, not a certainty: football keeps an element of the unexpected that nobody can predict, and our own tests confirm it. See <a href="/en/responsible-gambling">responsible gambling</a>.</p>
 <h2>Who runs the site? How is it funded?</h2>
 <p>The site is published by ${fieldEn(rc.site.editeur, 'publisher name')}. <b>Everything is free</b>: advertising and the promotion of Afrolook, the publisher's social app, cover the cost of servers and development. Predictions are never sold, and the site accepts no payment from bookmakers to influence a prediction.</p>
 <h2>Data</h2>

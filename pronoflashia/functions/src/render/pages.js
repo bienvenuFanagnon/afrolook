@@ -72,6 +72,9 @@ function pickNews(rc, items, n, teamIds) {
 }
 
 /** Page de détail d'une actu sur notre site (/actus/info-{id}) : l'article d'origine y est cité, avec sa source et son lien. */
+/** Cote équivalente d'un coupon (1 / probabilité), formatée dans la langue de la page ; vide si la probabilité est inconnue. */
+const oddsOf = (rc, prob) => { const o = coupon.fairOdds(prob); return o ? coupon.formatOdds(o, rc.lang) : ''; };
+
 /** Nombre de lectures d'une actu, abrégé (1 250 → 1,2 k) ; vide s'il n'y en a pas encore. */
 const readsTag = (rc, x) => {
   const n = Number(x && x.vues) || 0;
@@ -153,6 +156,63 @@ function matchNews(rc, items, m) {
   if (!list.length && !facts.length) return '';
   const factsHtml = facts.length ? `<ul class="fk">${facts.map((f) => `<li>${esc(rc.t.fact(f))}<a href="${esc(f.lien)}" target="_blank" rel="nofollow noopener noreferrer">${esc(f.source)}</a></li>`).join('')}</ul><p class="note" style="margin:6px 0 10px">${rc.t.newsFactsNote}</p>` : '';
   return `<div class="box"><div class="lbl">${facts.length ? rc.t.newsFacts : rc.t.newsTeams}</div>${factsHtml}${list.length ? `<div class="nwl">${list.map((x) => newsLink(rc, x)).join('')}</div><p class="note" style="margin-top:8px">${rc.t.newsNote}</p>${newsAllBtn(rc)}` : ''}</div>`;
+}
+
+/** Onglets « Pronostics | Coupons » en tête des deux pages de bilan. */
+const bilanTabs = (rc, active) => `<nav class="bt" aria-label="${esc(rc.t.bcLinkTitle)}"><a href="${rc.u('bilan')}"${active === 'p' ? ' aria-current="page"' : ''}>${rc.t.bcTabP}</a><a href="${rc.u('bilancoupons')}"${active === 'c' ? ' aria-current="page"' : ''}>${rc.t.bcTabC}</a></nav>`;
+
+/** Encadré de la page Bilan qui renvoie vers le bilan des coupons, avec le chiffre clé. */
+function couponsBilanLink(rc, coupons) {
+  const t = rc.t;
+  const s = summarizeCoupons(coupons || []);
+  return `<div class="box cbl"><div class="lbl">${t.bcLinkTitle}</div><p>${s.n ? esc(t.bcLinkP(s.n, s.taux)) : t.bcLinkPNone}</p><a class="more-btn" href="${rc.u('bilancoupons')}">${t.bcLinkBtn} <i aria-hidden="true">→</i></a></div>`;
+}
+
+/** Page « Bilan des coupons » : tous les coupons archivés (gagnés, perdus, en cours), par jour, avec cote équivalente estimée. 10 jours par page. */
+const BC_DAYS_PER_PAGE = 10;
+function couponsBilan(rc, { coupons, page, learn }) {
+  const t = rc.t;
+  const list = coupons || [];
+  const s = summarizeCoupons(list);
+  const settled = list.filter((c) => c.statut === 'gagne' || c.statut === 'perdu');
+  const odds = (c) => coupon.fairOdds(c.prob) || 0;
+  const avg = (arr) => (arr.length ? arr.reduce((a, c) => a + odds(c), 0) / arr.length : 0);
+  const won = settled.filter((c) => c.statut === 'gagne');
+  const best = won.slice().sort((a, b) => odds(b) - odds(a))[0];
+  // série en cours : coupons réglés les plus récents de même issue
+  const recent = settled.slice().sort((a, b) => (a.jour === b.jour ? a.n - b.n : a.jour < b.jour ? 1 : -1));
+  let streak = 0;
+  for (const c of recent) { if (c.statut === recent[0].statut) streak++; else break; }
+  const o = (x) => (x ? coupon.formatOdds(x, rc.lang) : '–');
+  const kpi = (big, label) => `<div class="kpi"><b class="num">${big}</b><span>${label}</span></div>`;
+  const kpis = `<div class="kpis">${kpi(s.n, t.bcSettled)}${kpi(s.gagnes, t.bcWon)}${kpi(s.perdus, t.bcLost)}${kpi(s.taux == null ? '–' : `${s.taux} %`, t.bcRate)}</div>`;
+  const last10 = `<div class="l10" aria-label="${esc(t.bcLast10)}">${recent.slice(0, 10).map((c) => `<span class="${c.statut}" title="${esc(`${t[LEVEL_KEY[c.nom]] || c.nom} · ${dateCourte(c.jour + 'T12:00:00Z', rc.lang)}`)}">${c.statut === 'gagne' ? '✅' : '❌'}</span>`).join('')}</div>`;
+  const tiers = ['prudent', 'equilibre', 'audacieux'].filter((k) => s.parNiveau[k] && s.parNiveau[k].n).map((k) => {
+    const v = s.parNiveau[k];
+    const arr = settled.filter((c) => c.nom === k);
+    return `<div class="ctr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux} %</span></div><small>${esc(t.bcTierRow(v.gagnes, v.n, v.taux, v.annonce, o(avg(arr))))}</small></div>`;
+  }).join('');
+  const summary = s.n
+    ? `<div class="box"><div class="lbl">${t.bcSettled}</div>${kpis}<div class="note" style="margin:6px 0 10px">${[
+      s.annonce != null ? `${s.annonce} % ${t.bcAnnounced}` : '', `${t.bcOddsAvg} ≈ ${o(avg(settled))}`, won.length ? `${t.bcOddsWon} ≈ ${o(avg(won))}` : '',
+      best ? `${t.bcBest} ≈ ${o(odds(best))} (${dateCourte(best.jour + 'T12:00:00Z', rc.lang)})` : '',
+    ].filter(Boolean).map(esc).join(' · ')}</div>` +
+      `${streak >= 2 ? `<p class="stk2">${esc((recent[0].statut === 'gagne' ? t.bcStreakWon : t.bcStreakLost)(streak))}</p>` : ''}${last10}` +
+      `<div class="lbl" style="margin-top:12px">${t.bcTiers}</div><div class="hb">${tiers}</div><p class="note" style="margin-top:10px">${t.bcOddsNote}</p></div>`
+    : `<div class="box"><p>${t.bcEmpty}</p></div>`;
+  // liste : par jour, du plus récent au plus ancien, 10 jours par page
+  const days = [...new Set(list.map((c) => c.jour))].sort().reverse();
+  const pages = Math.max(1, Math.ceil(days.length / BC_DAYS_PER_PAGE));
+  const pg = Math.min(Math.max(1, page || 1), pages);
+  const shown = days.slice((pg - 1) * BC_DAYS_PER_PAGE, pg * BC_DAYS_PER_PAGE);
+  const blocks = shown.map((d, i) => `<section class="bcd"><h3>${esc(t.bcDay(dateCourte(d + 'T12:00:00Z', rc.lang)))}</h3><div class="acs">${list.filter((c) => c.jour === d).sort((a, b) => a.n - b.n).map((c) => archivedCoupon(rc, c)).join('')}</div></section>${i === 1 ? adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) : ''}`).join('');
+  const pager = pages > 1
+    ? `<nav class="pgr" aria-label="${esc(t.naPage(pg, pages))}">${pg > 1 ? `<a class="btn sec" href="${rc.u('bilancoupons', pg - 1)}" rel="prev">${t.naPrev}</a>` : '<span></span>'}<span class="note">${t.naPage(pg, pages)}</span>${pg < pages ? `<a class="btn sec" href="${rc.u('bilancoupons', pg + 1)}" rel="next">${t.naNext}</a>` : '<span></span>'}</nav>`
+    : '';
+  const filters = list.length ? `<div class="cfl" role="group" aria-label="${esc(t.bcSettled)}"><button type="button" aria-pressed="true" data-f="">${t.bcAll}</button><button type="button" aria-pressed="false" data-f="gagne">${t.bcFWon}</button><button type="button" aria-pressed="false" data-f="perdu">${t.bcFLost}</button><button type="button" aria-pressed="false" data-f="ouvert">${t.bcFOpen}</button></div>` : '';
+  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero">${bilanTabs(rc, 'c')}<h1>${t.bcH1}</h1><p>${t.bcP}</p></div>${adResponsive(rc, 'haut', 'ad-top')}${summary}${couponLearningBox(rc, learn)}${filters}<div id="bcl">${blocks}</div>${pager}` +
+    `<div class="sh"><a class="btn sec" href="${rc.u('bilan')}">${t.bcBack}</a><a class="btn" href="${rc.u('coupon')}">${t.bcBuild}</a></div>${listEnd(rc, 'bilan-coupons-fin')}</div>${sideColumn(rc, {})}</div></div>`;
+  return { title: pg > 1 ? `${t.bcTitle.split(' · ')[0]} · ${t.naPage(pg, pages)}` : t.bcTitle.split(' · ')[0], description: t.bcDesc, path: rc.u('bilancoupons', pg), alternates: alts(rc, 'bilancoupons'), body, active: 'bilan' };
 }
 
 /** Bilan : réussite selon les signaux affichés (seulement quand il y a assez de pronostics concernés). */
@@ -362,7 +422,7 @@ function suggestions(rc, pool, withNames) {
     const hash = esc(sel.map((s) => s.matchId + '|' + s.key).join(','));
     const ids = [...new Set(sel.map((x) => x.matchId))];
     const details = ids.map((id) => `<a href="${rc.u('analysis', byId[id])}">${esc(titleOf(byId[id]))} <i aria-hidden="true">›</i></a>`).join('');
-    return `<div class="sgi"><a href="${rc.u('coupon')}#${hash}" data-sug="${hash}"><b>${nom} · ${sel.length} ${t.selections}</b><span>${esc(sel.map(lab).join(' · '))}</span><em class="num">${pct(rc, Math.round(pr * 100))}</em></a><div class="sgd"><small>${t.moreDetails}${colon(rc)}</small>${details}</div></div>`;
+    return `<div class="sgi"><a href="${rc.u('coupon')}#${hash}" data-sug="${hash}"><b>${nom} · ${sel.length} ${t.selections}</b><span>${esc(sel.map(lab).join(' · '))}</span><em class="num">${pct(rc, Math.round(pr * 100))}<small>${esc(t.sgOdds(oddsOf(rc, pr)))}</small></em></a><div class="sgd"><small>${t.moreDetails}${colon(rc)}</small>${details}</div></div>`;
   }).join('');
 }
 
@@ -562,7 +622,7 @@ function archivedCoupon(rc, c) {
     return `<li><span aria-hidden="true">${icon}</span><a href="${rc.u('match', s)}"><b>${esc(s.titre)}</b><em>${esc(betLabel(rc, m, { cle: s.key, libelle: s.libelle }))}</em></a></li>`;
   }).join('');
   return `<div class="ac ac-${c.statut}"><div class="ac-h"><b>${esc(t[LEVEL_KEY[c.nom]] || c.nom)} · ${c.selections.length} ${t.selections}</b><span class="pill ${c.statut === 'gagne' ? 'g' : c.statut === 'perdu' ? 'r' : ''}">${STATUS_ICON[c.statut]} ${esc(stLabel)}</span></div>` +
-    `<small>${esc(t.couponOf(dateCourte(c.jour + 'T12:00:00Z', rc.lang)))} · ${esc(t.couponProb(Math.round(c.prob * 100)))}</small><ul class="al">${lines}</ul></div>`;
+    `<small>${esc(t.couponOf(dateCourte(c.jour + 'T12:00:00Z', rc.lang)))} · ${esc(t.couponProb(Math.round(c.prob * 100)))} · ${esc(t.bcOddsCoupon(oddsOf(rc, c.prob)))}</small><ul class="al">${lines}</ul></div>`;
 }
 
 /** Accueil : derniers coupons gagnants, uniquement s'il y en a eu récemment, avec le taux global à côté. */
@@ -587,7 +647,7 @@ function couponHistoryBox(rc, coupons) {
     return `<div class="ctr"><div class="row"><span>${esc(t[LEVEL_KEY[k]])}</span><div class="tk"><i style="width:${v.taux}%"></i></div><span class="num">${v.taux}\u00a0%</span></div><small>${esc(t.couponTierRow(v.gagnes, v.n, v.taux, v.annonce))}</small></div>`;
   }).join('');
   return `<div class="box" id="coupons"><div class="lbl">${t.couponHistTitle}</div><p class="note" style="margin:8px 0">${t.couponHistP}</p>` +
-    (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div></div>`;
+    (tiers ? `<div class="hb">${tiers}</div>` : `<p>${t.couponNoSettled}</p>`) + `<div class="acs" style="margin-top:12px">${coupons.slice(0, 24).map((c) => archivedCoupon(rc, c)).join('')}</div><a class="more-btn" href="${rc.u('bilancoupons')}">${t.bcLinkBtn} <i aria-hidden="true">→</i></a></div>`;
 }
 
 function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, signaux, news, couponLearn }) {
@@ -607,14 +667,14 @@ function bilan(rc, { s30, weeks, recent, leagues, familles, learning, coupons, s
   }
   const row = (l, v, n) => `<div class="row"><span>${esc(l)}</span><div class="tk"><i style="width:${v == null ? 0 : v}%"></i></div><span class="num">${v == null ? '–' : pct(rc, v)} · ${n}</span></div>`;
   const empty = !s30 || !s30.n;
-  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.bilanH1}</h1><p>${t.bilanP}</p></div>` +
+  const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero">${bilanTabs(rc, 'p')}<h1>${t.bilanH1}</h1><p>${t.bilanP}</p></div>` +
     (empty ? `<div class="box"><p><b>${t.bilanEmptyB}</b></p><p class="note" style="margin-top:6px">${t.bilanEmptyP}</p></div>` :
       `<div class="kpis"><div class="kpi"><small>${t.kpiRate}</small><b class="g num">${pct(rc, s30.taux)}</b></div><div class="kpi"><small>${t.kpiN}</small><b class="num">${s30.n}</b></div><div class="kpi"><small>${t.kpiOk}</small><b class="g num">${s30.ok}</b></div><div class="kpi"><small>${t.kpiKo}</small><b class="r num">${s30.ko}</b></div></div>` +
       (svg ? `<div class="box"><div class="lbl">${t.weekly}</div>${svg}</div>` : '') + adResponsive(rc, 'haut', 'ad-top') +
       (s30.parConfiance.length ? `<div class="box"><div class="lbl">${t.byConf}</div><div class="hb">${s30.parConfiance.map((r) => row(t.confRange(r.k), r.taux, r.n)).join('')}</div><p class="note" style="margin-top:10px">${t.byConfNote}</p></div>` : '') +
       (leagues.length ? `<div class="box"><div class="lbl">${t.byLeague}</div><div class="hb">${leagues.map((l) => row(l.nom, l.taux, l.n)).join('')}</div></div>` : '') +
       (familles.length ? `<div class="box"><div class="lbl">${t.byFamily}</div><div class="hb">${familles.map((f) => `<div class="row"><span>${esc(famLabel(rc, f.k.replace(/_/g, ' ')))}</span><div class="tk"><i style="width:${f.taux == null ? 0 : f.taux}%"></i></div><span class="num">${esc(t.famRow(f.taux, f.annonce))}</span></div>`).join('')}</div><p class="note" style="margin-top:10px">${t.byFamilyNote}</p></div>` : '')) +
-    couponHistoryBox(rc, coupons) + couponLearningBox(rc, couponLearn) + signalBox(rc, signaux) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
+    couponsBilanLink(rc, coupons) + couponHistoryBox(rc, coupons) + couponLearningBox(rc, couponLearn) + signalBox(rc, signaux) + adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) + learningBox(rc, learning) +
     (recent.length ? `<div class="box"><div class="lbl">${t.lastResults}</div><div class="rl">${recent.map((m) => `<a href="${rc.u('match', m)}"><span>${m.resultat.reussi === true ? '✅' : m.resultat.reussi === false ? '❌' : '•'}</span><span>${esc(m.domicile.nomCourt)} ${m.resultat.scoreDom}-${m.resultat.scoreExt} ${esc(m.exterieur.nomCourt)}<br><em>${t.ourPick}${colon(rc)} ${esc(m.prono ? pickLabel(rc, m) : '–')}</em></span><em>${esc(dateCourte(m.coupDEnvoi, rc.lang))}</em><i class="chev" aria-hidden="true">›</i></a>`).join('')}</div></div>` : '') +
     `${newsStrip(rc, news)}${listEnd(rc, 'bilan-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.bilanTitle, description: t.bilanDesc, path: rc.u('bilan'), alternates: alts(rc, 'bilan'), body, active: 'bilan' };
@@ -654,4 +714,4 @@ function weeklyRates(days) {
   return [...by.entries()].sort().map(([w, deltas]) => { const s = summarize(deltas); return { semaine: w, label: 'S' + w.split('-W')[1], taux: s.taux, n: s.n }; }).filter((x) => x.taux != null);
 }
 
-module.exports = { newsIndex, newsAll, notifPage, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };
+module.exports = { newsIndex, newsAll, couponsBilan, notifPage, article, story, recapCard, home, day, league, match, details, bilan, couponPage, notFound, topFlash, weeklyRates, solidMarkets, moreMarkets, matchJson, FAMILLES_ORDRE, labels };

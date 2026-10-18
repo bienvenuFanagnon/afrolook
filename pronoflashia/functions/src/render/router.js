@@ -71,6 +71,7 @@ async function route(db, urlPath, now = new Date()) {
       return page(rc, P.home(rc, { matches, bilan: await D.bilan30(db, now), pool: await D.pool(db, now), coupons: await D.couponHistory(db, now, 30), news: await D.news(db, now), recap: (await D.newsEnabled(db)) ? (await D.articles(db, 1))[0] || null : null }), cc(300, 600));
     }
     case 'football': return redirect(rc.u('day', 'aujourdhui'));
+    case 'bilancoupons': return page(rc, P.couponsBilan(rc, { coupons: await D.couponHistory(db, now, 90), page: r.arg, learn: await D.couponLearning(db) }), cc(600, 1800));
     case 'newsall': return page(rc, P.newsAll(rc, { items: await D.newsAll(db, now), page: r.arg }), cc(300, 600));
     case 'notifs': return page(rc, P.notifPage(rc), cc(3600, 86400));
     case 'news': return page(rc, P.newsIndex(rc, { articles: await D.articles(db, 30) }), cc(300, 600));
@@ -166,7 +167,7 @@ async function sitemap(db, rc) {
   const entries = [];
   const add = (name, arg, freq, prio, lm) => entries.push({ fr: pathFor('fr', name, arg), en: pathFor('en', name, arg), freq, prio, lm });
   add('home', null, 'daily', '1.0'); add('day', 'aujourdhui', 'hourly', '0.9'); add('day', 'demain', 'hourly', '0.8');
-  add('coupon', null, 'daily', '0.8'); add('bilan', null, 'daily', '0.7'); add('news', null, 'daily', '0.8');
+  add('coupon', null, 'daily', '0.8'); add('bilan', null, 'daily', '0.7'); add('bilancoupons', null, 'daily', '0.7'); add('news', null, 'daily', '0.8');
   for (const a of await D.articles(db, 60)) add('article', a, 'monthly', '0.6', a.creeLe);
   for (const [slug, prio] of [['a-propos', '0.4'], ['annoncer', '0.4'], ['contact', '0.3'], ['jeu-responsable', '0.3'], ['confidentialite', '0.2'], ['conditions', '0.2'], ['cookies', '0.2'], ['mentions-legales', '0.2']]) add('legal', slug, 'monthly', prio);
   for (const l of rc.leagues) add('league', l.slug, 'daily', '0.8');

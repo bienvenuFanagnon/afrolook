@@ -95,7 +95,7 @@ test('coupon : coupons proposés rendus côté serveur et données du compositeu
   assert.ok(pool.length >= 3);
   assert.ok(pool[0].matrice.length === 7);
   assert.ok(pool[0].marches.every((m) => m.r !== 'f' && m.p >= 50));
-  assert.ok(!/cote|mise de/i.test(r.body.replace(/Aucune mise, aucune cote/g, '').replace(/Sans mise, sans cote/g, '').replace(/n'affiche aucune cote/g, '')), 'aucune cote ni mise');
+  assert.ok(!/cote|mise de/i.test(r.body.replace(/Aucune mise, aucune cote/g, '').replace(/Sans mise, sans cote/g, '').replace(/n'affiche aucune cote de bookmaker/g, '').replace(/[Cc]ote équivalente(?: \(estimation\))?/g, '').replace(/cote ≈ [\d,]+/g, '').replace(/Pas une cote de bookmaker/g, '').replace(/pas une cote de bookmaker/gi, '')), 'aucune cote ni mise');
 });
 
 test('jours, championnat, pages légales, 404 et redirection', async () => {

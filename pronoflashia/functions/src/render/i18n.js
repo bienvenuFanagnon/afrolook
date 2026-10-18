@@ -20,6 +20,7 @@ function pathFor(lang, name, arg) {
     case 'bilan': return en ? '/en/track-record' : '/bilan';
     case 'coupon': return `${pre}/coupon`;
     case 'news': return en ? '/en/news' : '/actus';
+    case 'bilancoupons': return `${en ? '/en/slips-track-record' : '/bilan-coupons'}${arg && arg > 1 ? `/${arg}` : ''}`;
     case 'newsall': return `${en ? '/en/football-news' : '/actualites'}${arg && arg > 1 ? `/${arg}` : ''}`;
     case 'notifs': return en ? '/en/notifications' : '/notifications';
     case 'article': return `${en ? '/en/news' : '/actus'}/${arg.slug}`;
@@ -45,6 +46,7 @@ function parsePath(path) {
     if (seg[0] === 'news') return { lang, name: 'news' };
     if (seg[0] === 'notifications') return { lang, name: 'notifs' };
     if (seg[0] === 'football-news') return { lang, name: 'newsall', arg: 1 };
+    if (seg[0] === 'slips-track-record') return { lang, name: 'bilancoupons', arg: 1 };
     if (LEGAL_FR[seg[0]]) return { lang, name: 'legal', arg: LEGAL_FR[seg[0]] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
@@ -55,11 +57,13 @@ function parsePath(path) {
     if (seg[0] === 'actus') return { lang, name: 'news' };
     if (seg[0] === 'notifications') return { lang, name: 'notifs' };
     if (seg[0] === 'actualites') return { lang, name: 'newsall', arg: 1 };
+    if (seg[0] === 'bilan-coupons') return { lang, name: 'bilancoupons', arg: 1 };
     if (LEGAL_SLUGS[seg[0]]) return { lang, name: 'legal', arg: seg[0] };
     if (seg[0] === 'football') return { lang, name: 'football' };
     return { lang, name: 'unknown' };
   }
   if (seg[0] === (lang === 'en' ? 'news' : 'actus') && seg.length === 2 && /^[a-z0-9-]{3,80}$/.test(seg[1])) return { lang, name: 'article', arg: seg[1] };
+  if (seg[0] === (lang === 'en' ? 'slips-track-record' : 'bilan-coupons') && seg.length === 2 && /^\d{1,3}$/.test(seg[1])) return { lang, name: 'bilancoupons', arg: Math.max(1, Number(seg[1])) };
   if (seg[0] === (lang === 'en' ? 'football-news' : 'actualites') && seg.length === 2 && /^\d{1,3}$/.test(seg[1])) return { lang, name: 'newsall', arg: Math.max(1, Number(seg[1])) };
   if (seg[0] !== 'football') return { lang, name: 'unknown' };
   if (seg.length === 1) return { lang, name: 'football' };
@@ -127,6 +131,13 @@ const T = {
     cLearnTitle: "Ce que l'IA apprend de ses coupons", cLearnIntro: "Chaque sélection de nos coupons est suivie, réussie ou ratée. L'IA compare ce taux de réussite à la probabilité qu'elle avait annoncée, type de pari par type de pari, et corrige les coupons suivants (de 10 points au plus, et seulement quand assez de sélections sont terminées).", cLearnWait: (n, m) => `Pas encore assez de sélections terminées (${n} sur ${m}) : aucune correction pour l'instant.`, cLearnRow: (fam, reel, annonce, n, pts) => `${fam} : ${reel} % de réussite pour ${annonce} % annoncés (${n} sélections) → ${pts === 0 ? 'conforme, aucune correction' : pts < 0 ? `annoncé ${-pts} point${-pts > 1 ? 's' : ''} plus bas dans les coupons` : `annoncé ${pts} point${pts > 1 ? 's' : ''} plus haut dans les coupons`}`, cLearnGlobal: (n, pts) => `Sur ${n} sélections terminées, l'écart moyen entre le réel et l'annoncé est de ${pts > 0 ? '+' : ''}${pts} point${Math.abs(pts) > 1 ? 's' : ''}. Les paris qui déçoivent sont moins choisis ; ceux qui tiennent leurs promesses le sont davantage.`,
     advBoxTitle: 'Une marque, une entreprise, un commerce ?', advBoxP: "Vous voulez faire connaître votre produit, votre service ou votre application auprès des amateurs de football ? Nous vendons des espaces publicitaires sur PronoFlash IA : écrivez-nous.", advBoxBtn: 'Annoncer sur PronoFlash IA', advContactTitle: 'Nous contacter', advWa: 'Nous écrire sur WhatsApp', advMail: 'Écrire par e-mail', advMailSubject: 'Publicité sur PronoFlash IA', advChannel: 'Suivre notre canal WhatsApp', advTodo: "coordonnées de contact à renseigner dans l'administration", advToContact: 'Page de contact',
     spLabel: 'Sponsorisé', spCoupon: (n) => `Coupon du jour offert par ${n}`, spGo: 'Découvrir',
+    bcTitle: 'Bilan des coupons : combinaisons gagnantes et perdantes · PronoFlash IA', bcH1: 'Bilan des <b>coupons</b>', bcP: "Chaque jour, l'IA crée trois coupons (prudent, équilibré, audacieux) avant les matchs. Ils sont enregistrés automatiquement, gagnés comme perdus, puis réglés quand les matchs sont terminés : voici le résultat de chacun, sans tri.", bcDesc: "Le bilan public des coupons de PronoFlash IA : combinaisons gagnées et perdues, taux de réussite par niveau, probabilité annoncée et cote équivalente estimée.",
+    bcTabP: 'Pronostics', bcTabC: 'Coupons', bcSettled: 'coupons réglés', bcWon: 'gagnés', bcLost: 'perdus', bcOpen: 'en cours', bcRate: 'taux de réussite', bcAnnounced: 'annoncé en moyenne', bcOddsAvg: 'cote équivalente moyenne', bcOddsWon: 'cote équivalente moyenne des gagnants', bcBest: 'Plus grosse cote gagnée', bcLast10: 'Les 10 derniers coupons réglés',
+    bcStreakWon: (n) => `Série en cours : ${n} coupon${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''} d'affilée`, bcStreakLost: (n) => `Série en cours : ${n} coupon${n > 1 ? 's' : ''} perdu${n > 1 ? 's' : ''} d'affilée`,
+    bcTiers: 'Par niveau', bcTierRow: (w, n, rate, ann, odds) => `${w} gagné${w > 1 ? 's' : ''} sur ${n} (${rate} %) · annoncé ${ann} % · cote équivalente moyenne ${odds}`,
+    bcOddsLbl: 'Cote équivalente', bcOddsCoupon: (o) => `cote équivalente ≈ ${o}`, bcOddsNote: "La cote équivalente est notre estimation : 1 divisé par la probabilité que tout passe, sans marge. Ce n'est pas une cote de bookmaker (les cotes réelles sont plus basses, car le bookmaker prend une marge), et elle ne promet aucun gain.",
+    bcAll: 'Tous', bcFWon: 'Gagnés', bcFLost: 'Perdus', bcFOpen: 'En cours', bcEmpty: "Aucun coupon enregistré pour le moment : les premiers arrivent avec les prochains matchs.", bcDay: (d) => `Coupons du ${d}`,
+    bcLinkTitle: 'Bilan des coupons', bcLinkP: (n, rate) => `Nos combinaisons aussi sont suivies : ${n} coupon${n > 1 ? 's' : ''} réglé${n > 1 ? 's' : ''}, ${rate} % gagné${rate > 1 ? 's' : ''}. Gagnants et perdants, avec la cote équivalente de chacun.`, bcLinkPNone: "Nos combinaisons aussi sont suivies : gagnantes comme perdantes, avec la cote équivalente de chacune.", bcLinkBtn: 'Voir le bilan des coupons', bcBack: '← Bilan des pronostics', bcBuild: 'Composer mon coupon', sgOdds: (o) => `cote ≈ ${o}`,
     ibxTitle: 'Mes notifications', ibxH1: 'Mes notifications', ibxP: "Retrouve ici les notifications reçues sur cet appareil, lues ou non. Pas de compte à créer : la liste est liée à ce navigateur.", ibxLoading: 'Chargement…',
     bellOff: 'Recevoir les coupons du jour en notification', bellOn: 'Notifications activées : toucher pour voir tes notifications', followLbl: 'Alertes avant leurs matchs :', followOn: (n) => `🔔 ${n} suivi`, followOff: (n) => `🔔 Suivre ${n}`,
     notesTitle: "Ce que l'IA sait de ces équipes", notesP: "Notes calculées sur tous les matchs connus (saison précédente comprise), en comptant davantage les matchs récents et en tenant compte du niveau des adversaires. Elles sont jugées sur des matchs passés avant d'être utilisées dans le calcul.",
@@ -182,7 +193,7 @@ const T = {
     couponH1: 'Compose ton <b>coupon</b>, sans engagement', couponP: 'Combine 2 à 5 matchs et mélange les types de pari : résultat, buts, handicap, corners, tirs, cartons. Le site calcule la probabilité que le coupon passe en entier. Aucune mise, aucune cote, aucun gain promis.',
     proposed: 'Coupons proposés par le calcul', proposedEmpty: 'Les coupons proposés apparaissent dès que plusieurs matchs ont un pronostic.', neverWeak: 'Les paris à fiabilité faible ne sont jamais proposés.',
     noJs: 'Le compositeur de coupon demande JavaScript. Les coupons proposés ci-dessus restent consultables.',
-    couponDisclaimer: "PronoFlash IA ne prend aucun pari, n'affiche aucune cote et ne promet aucun gain. Les probabilités sont calculées et ne garantissent rien. 18+ · Jouez de façon responsable.",
+    couponDisclaimer: "PronoFlash IA ne prend aucun pari, n'affiche aucune cote de bookmaker et ne promet aucun gain. Les probabilités sont calculées et ne garantissent rien. 18+ · Jouez de façon responsable.",
     couponTitle: 'Coupon de paris : compose ta combinaison, sans engagement · PronoFlash IA', couponDesc: 'Compose un coupon de 2 à 5 sélections (résultat, buts, handicap, corners, tirs, cartons) et vois la probabilité que tout passe. Sans mise, sans cote, sans compte.',
     nfH1: 'Page <b>introuvable</b>', nfP: "Cette page n'existe pas ou le match n'est plus affiché.", nfToday: 'Pronos du jour', nfTitle: 'Page introuvable · PronoFlash IA',
     footerLegal: { 'a-propos': 'À propos', annoncer: 'Annoncer', contact: 'Contact', confidentialite: 'Confidentialité', conditions: 'Conditions', cookies: 'Cookies', 'mentions-legales': 'Mentions légales', 'jeu-responsable': 'Jeu responsable' },
@@ -240,6 +251,13 @@ const T = {
     cLearnTitle: 'What the AI learns from its slips', cLearnIntro: 'Every selection in our slips is tracked, hit or missed. The AI compares that hit rate with the probability it announced, bet type by bet type, and corrects the next slips (by 10 points at most, and only when enough selections are finished).', cLearnWait: (n, m) => `Not enough finished selections yet (${n} of ${m}): no correction for now.`, cLearnRow: (fam, reel, annonce, n, pts) => `${fam}: ${reel}% hit rate for ${annonce}% announced (${n} selections) → ${pts === 0 ? 'in line, no correction' : pts < 0 ? `announced ${-pts} point${-pts > 1 ? 's' : ''} lower in slips` : `announced ${pts} point${pts > 1 ? 's' : ''} higher in slips`}`, cLearnGlobal: (n, pts) => `Over ${n} finished selections, the average gap between real and announced is ${pts > 0 ? '+' : ''}${pts} point${Math.abs(pts) > 1 ? 's' : ''}. Bets that disappoint are picked less; bets that keep their promises are picked more.`,
     advBoxTitle: 'A brand, a company, a business?', advBoxP: 'Want to promote your product, service or app to football fans? We sell advertising space on PronoFlash IA: write to us.', advBoxBtn: 'Advertise on PronoFlash IA', advContactTitle: 'Contact us', advWa: 'Write to us on WhatsApp', advMail: 'Send an e-mail', advMailSubject: 'Advertising on PronoFlash IA', advChannel: 'Follow our WhatsApp channel', advTodo: 'contact details to fill in from the admin', advToContact: 'Contact page',
     spLabel: 'Sponsored', spCoupon: (n) => `Slip of the day brought to you by ${n}`, spGo: 'Discover',
+    bcTitle: 'Slips track record: winning and losing combinations · PronoFlash IA', bcH1: 'Slips <b>track record</b>', bcP: 'Every day the AI builds three slips (cautious, balanced, bold) before the matches. They are saved automatically, winners and losers alike, then settled when the matches are over: here is the result of each one, with no cherry-picking.', bcDesc: "PronoFlash IA's public slips track record: won and lost combinations, hit rate by level, announced probability and estimated equivalent odds.",
+    bcTabP: 'Predictions', bcTabC: 'Slips', bcSettled: 'settled slips', bcWon: 'won', bcLost: 'lost', bcOpen: 'open', bcRate: 'hit rate', bcAnnounced: 'announced on average', bcOddsAvg: 'average equivalent odds', bcOddsWon: 'average equivalent odds of winners', bcBest: 'Biggest odds won', bcLast10: 'The last 10 settled slips',
+    bcStreakWon: (n) => `Current streak: ${n} slip${n > 1 ? 's' : ''} won in a row`, bcStreakLost: (n) => `Current streak: ${n} slip${n > 1 ? 's' : ''} lost in a row`,
+    bcTiers: 'By level', bcTierRow: (w, n, rate, ann, odds) => `${w} won out of ${n} (${rate}%) · announced ${ann}% · average equivalent odds ${odds}`,
+    bcOddsLbl: 'Equivalent odds', bcOddsCoupon: (o) => `equivalent odds ≈ ${o}`, bcOddsNote: 'Equivalent odds are our estimate: 1 divided by the probability that everything wins, with no margin. They are not bookmaker odds (real odds are lower because the bookmaker takes a margin), and they promise no winnings.',
+    bcAll: 'All', bcFWon: 'Won', bcFLost: 'Lost', bcFOpen: 'Open', bcEmpty: 'No slip saved yet: the first ones arrive with the next matches.', bcDay: (d) => `Slips of ${d}`,
+    bcLinkTitle: 'Slips track record', bcLinkP: (n, rate) => `Our combinations are tracked too: ${n} slip${n > 1 ? 's' : ''} settled, ${rate}% won. Winners and losers, with the equivalent odds of each.`, bcLinkPNone: 'Our combinations are tracked too: winners and losers, with the equivalent odds of each.', bcLinkBtn: 'See the slips track record', bcBack: '← Predictions track record', bcBuild: 'Build my slip', sgOdds: (o) => `odds ≈ ${o}`,
     ibxTitle: 'My notifications', ibxH1: 'My notifications', ibxP: 'Find here the notifications received on this device, read or not. No account needed: the list is tied to this browser.', ibxLoading: 'Loading…',
     bellOff: "Get today's slips as notifications", bellOn: 'Notifications on: tap to see your notifications', followLbl: 'Alerts before their matches:', followOn: (n) => `🔔 ${n} followed`, followOff: (n) => `🔔 Follow ${n}`,
     notesTitle: 'What the AI knows about these teams', notesP: 'Ratings computed on every known match (previous season included), giving more weight to recent matches and accounting for the strength of opponents. They are tested on past matches before being used in the calculation.',
@@ -295,7 +313,7 @@ const T = {
     couponH1: 'Build your <b>slip</b>, no commitment', couponP: 'Combine 2 to 5 matches and mix bet types: result, goals, handicap, corners, shots, cards. The site calculates the probability that the whole slip comes in. No stake, no odds, no promised winnings.',
     proposed: 'Slips suggested by the model', proposedEmpty: 'Suggested slips appear as soon as several matches have a prediction.', neverWeak: 'Low-reliability bets are never suggested.',
     noJs: 'The slip builder needs JavaScript. The suggested slips above remain available.',
-    couponDisclaimer: 'PronoFlash IA takes no bets, shows no odds and promises no winnings. Probabilities are calculated and guarantee nothing. 18+ · Please gamble responsibly.',
+    couponDisclaimer: 'PronoFlash IA takes no bets, shows no bookmaker odds and promises no winnings. Probabilities are calculated and guarantee nothing. 18+ · Please gamble responsibly.',
     couponTitle: 'Bet builder: build your accumulator, no commitment · PronoFlash IA', couponDesc: 'Build a slip of 2 to 5 selections (result, goals, handicap, corners, shots, cards) and see the probability that it all comes in. No stake, no odds, no account.',
     nfH1: 'Page <b>not found</b>', nfP: 'This page does not exist or the match is no longer listed.', nfToday: "Today's tips", nfTitle: 'Page not found · PronoFlash IA',
     footerLegal: { 'a-propos': 'About', annoncer: 'Advertise', contact: 'Contact', confidentialite: 'Privacy', conditions: 'Terms', cookies: 'Cookies', 'mentions-legales': 'Legal notice', 'jeu-responsable': 'Responsible gambling' },

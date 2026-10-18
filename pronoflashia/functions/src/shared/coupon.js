@@ -132,5 +132,18 @@
     return out;
   }
 
-  return { MAX_USEFUL_PCT, MAX_SELECTIONS, MIN_SELECTIONS, couponProbability, riskLevel, pickLevel, warnings, weakestSwap, suggest };
+  /**
+   * Cote équivalente d'un coupon : 1 divisé par la probabilité que tout passe (0 à 1), sans marge de bookmaker.
+   * C'est une estimation à partir de nos probabilités, pas une cote proposée : les cotes réelles sont plus basses (marge du bookmaker).
+   */
+  function fairOdds(prob) { return prob > 0 && prob <= 1 ? 1 / prob : null; }
+
+  /** Cote formatée : 2 décimales sous 10, 1 décimale sous 100, entier au-delà (virgule en français, point en anglais). */
+  function formatOdds(o, lang) {
+    if (!o || !isFinite(o)) return '–';
+    const s = o < 10 ? o.toFixed(2) : o < 100 ? o.toFixed(1) : String(Math.round(o));
+    return lang === 'en' ? s : s.replace('.', ',');
+  }
+
+  return { fairOdds, formatOdds, MAX_USEFUL_PCT, MAX_SELECTIONS, MIN_SELECTIONS, couponProbability, riskLevel, pickLevel, warnings, weakestSwap, suggest };
 });

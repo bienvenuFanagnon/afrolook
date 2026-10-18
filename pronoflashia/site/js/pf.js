@@ -27,6 +27,7 @@
     empty: 'Pick 2 to 5 bets. You can take several in the same match: the calculation accounts for it.',
     replace: function (a, b) { return 'Replace “' + a + '” with “' + b + '”'; }, moves: function (a, b) { return 'The slip goes from ' + a + '% to ' + b + '%'; },
     share: function (pc) { return 'My PronoFlash IA slip (' + pc + '% chance that everything wins):'; },
+    oddsEq: 'Equivalent odds (estimate)', oddsNote: 'Not a bookmaker odds: 1 divided by the probability, with no margin.',
     probAll: 'Probability that everything wins', out100: function (pc) { return 'Out of 100 identical slips, about ' + pc + ' would win'; },
     wa: 'Share on WhatsApp', clear: 'Clear',
     followOn: function (n) { return '🔔 ' + n + ' followed'; }, followOff: function (n) { return '🔔 Follow ' + n; },
@@ -42,7 +43,7 @@
     wmN2t: '⚔️ Classico: Real Madrid – FC Barcelona', wmN2b: 'Our pick and the latest news are inside.',
     wmN3t: '🌟 A rising talent is making noise', wmN3b: 'The press is talking about it. Our summary and the source link are inside.',
     wmBtn: 'Turn on notifications', wmInst: 'Install the app', wmLater: 'Maybe later', wmIosBtn: 'How to install?', wmIosNote: 'On iPhone, notifications work once the site is added to your home screen.',
-    disclaimer: 'PronoFlash IA takes no bets, shows no odds and promises no winnings. 18+ · Play responsibly.', pct: '%'
+    disclaimer: 'PronoFlash IA takes no bets, shows no bookmaker odds and promises no winnings. 18+ · Play responsibly.', pct: '%'
   } : {
     tzTitle: 'Heure locale', tzYou: 'ton fuseau', tzNote: 'Heures affichées dans ton fuseau horaire : ',
     cmp: '<p><b>Publicités</b><br>Ce site est gratuit grâce à la publicité. Les publicités de nos partenaires peuvent utiliser des cookies pour choisir et mesurer les annonces. Tu peux accepter ou refuser ; les pronostics restent les mêmes. <a href="/confidentialite" style="color:var(--cy)">En savoir plus</a></p><div class="row"><button class="btn" type="button" data-c="1">Accepter</button><button class="btn sec" type="button" data-c="0">Refuser</button></div>',
@@ -53,6 +54,7 @@
     empty: 'Choisis 2 à 5 paris. Tu peux en prendre plusieurs dans un même match : le calcul en tient compte.',
     replace: function (a, b) { return 'Remplacer « ' + a + ' » par « ' + b + ' »'; }, moves: function (a, b) { return 'Le coupon passe de ' + a + ' % à ' + b + ' %'; },
     share: function (pc) { return 'Mon coupon PronoFlash IA (' + pc + ' % de chances que tout passe) :'; },
+    oddsEq: 'Cote équivalente (estimation)', oddsNote: 'Pas une cote de bookmaker : 1 divisé par la probabilité, sans marge.',
     probAll: 'Probabilité que tout passe', out100: function (pc) { return 'Sur 100 coupons identiques, environ ' + pc + ' passeraient'; },
     wa: 'Partager sur WhatsApp', clear: 'Vider',
     followOn: function (n) { return '🔔 ' + n + ' suivi'; }, followOff: function (n) { return '🔔 Suivre ' + n; },
@@ -68,7 +70,7 @@
     wmN2t: '⚔️ Classico : Real Madrid – FC Barcelone', wmN2b: "Notre pronostic et les dernières infos sont à l'intérieur.",
     wmN3t: '🌟 Une pépite fait parler', wmN3b: "La presse en parle. Notre résumé et le lien de la source sont à l'intérieur.",
     wmBtn: 'Activer les notifications', wmInst: "Installer l'appli", wmLater: 'Plus tard', wmIosBtn: 'Comment installer ?', wmIosNote: "Sur iPhone, les notifications fonctionnent une fois le site ajouté à l'écran d'accueil.",
-    disclaimer: 'PronoFlash IA ne prend aucun pari, n\'affiche aucune cote et ne promet aucun gain. 18+ · Jouez de façon responsable.', pct: ' %'
+    disclaimer: 'PronoFlash IA ne prend aucun pari, n\'affiche aucune cote de bookmaker et ne promet aucun gain. 18+ · Jouez de façon responsable.', pct: ' %'
   };
   var couponPath = (w.PF && w.PF.coupon) || (EN ? '/en/coupon' : '/coupon');
 
@@ -289,6 +291,18 @@
     } else boxes.forEach(imp);
     boxes.forEach(function (b) { var a = $('a.spa', b); if (a) a.addEventListener('click', function () { send({ t: 'sp', n: 'clic', id: b.getAttribute('data-sp') }); }); });
   })();
+  /* bilan des coupons : filtre Tous / Gagnés / Perdus / En cours (sur les coupons de la page) */
+  (function couponFilters() {
+    var bar = $('.cfl');
+    if (!bar) return;
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-f]'); if (!b) return;
+      var f = b.getAttribute('data-f');
+      $$('button', bar).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      $$('#bcl .ac').forEach(function (c) { c.hidden = !!f && !c.classList.contains('ac-' + f); });
+      $$('#bcl .bcd').forEach(function (d) { d.hidden = !$$('.ac', d).some(function (c) { return !c.hidden; }); });
+    });
+  })();
   /* partage du site : partage natif du téléphone et copie du lien (WhatsApp est un simple lien) */
   $$('.shb').forEach(function (b) {
     var url = b.getAttribute('data-url') || location.origin, text = b.getAttribute('data-text') || '';
@@ -415,7 +429,7 @@
       }
       var txt = encodeURIComponent(L.share(pc) + '\n' + sel.map(function (s) { return '• ' + s.n + (EN ? ': ' : ' : ') + s.l + ' (' + s.p + L.pct + ')'; }).join('\n') + '\n' + location.origin + couponPath);
       return '<div class="box rk"><div class="lbl">' + L.myCoupon + ' · ' + n + '/5</div>' + rows +
-        (n ? '<div style="margin-top:10px"><small class="note">' + L.probAll + '</small><div class="big num" style="color:' + col + '">' + pc + L.pct + '</div><div class="meter"><i style="left:calc(' + Math.min(pc, 99) + '% - 2px)"></i></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--mut);margin-top:6px"><b style="color:' + col + '">' + esc(risk.label) + '</b><span>' + L.out100(pc) + '</span></div></div>' : '') +
+        (n ? '<div style="margin-top:10px"><small class="note">' + L.probAll + '</small><div class="big num" style="color:' + col + '">' + pc + L.pct + '</div><div class="meter"><i style="left:calc(' + Math.min(pc, 99) + '% - 2px)"></i></div><div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--mut);margin-top:6px"><b style="color:' + col + '">' + esc(risk.label) + '</b><span>' + L.out100(pc) + '</span></div>' + (PFc.fairOdds ? '<div class="note" style="margin-top:8px"><b>' + L.oddsEq + ' ≈ ' + PFc.formatOdds(PFc.fairOdds(r.prob), LANG) + '</b><br><small>' + L.oddsNote + '</small></div>' : '') + '</div>' : '') +
         '<div class="wr">' + warns + '</div>' + swap + (n ? '<div class="sh" style="margin-top:10px"><a class="wa" href="https://wa.me/?text=' + txt + '" target="_blank" rel="noopener">' + L.wa + '</a><button type="button" data-clr="1">' + L.clear + '</button></div>' : '') + '</div>' +
         '<p class="note">' + L.disclaimer + '</p>';
     };
