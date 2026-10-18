@@ -42,3 +42,16 @@ dans l'historique des versions du Worker). Sans R2, rien ne casse : le Worker re
 - Octets sortant de Cloud Storage (`storage.googleapis.com/network/sent_bytes_count`) : doivent redescendre vers quelques Go/jour.
 - Facture : SKU « Cloud Storage Download Worldwide » (Facturation → Rapports).
 - Jetons Cloudflare créés pour la mise en place (`afrolook-cache`, `afrolook-worker`) : à supprimer (Mon profil → Jetons API).
+
+## Audit des lectures Firestore (18 octobre, tâche #94, première passe)
+Mesure sur 24 h : 553 000 lectures de documents (≈ 5 700 par actif), dont **98,9 % viennent de requêtes et d'écoutes** (seulement 1 % de lectures
+de documents isolés). Seulement 4 à 7 connexions actives en moyenne, 15 à 60 écoutes ouvertes.
+- **Corrigé côté serveur** : `recalculateScoresOnInteraction` relisait 30 posts (60 pour un post de canal) à chaque vue ou like (1 172 recalculs
+  réels par jour ; un post populaire 185 fois). Le score du créateur / du canal n'est plus recalculé que si le score du post a changé d'au moins
+  0,25 point et 10 % depuis la dernière propagation (`propagatedScore`, `src/posts/scorePropagation.ts`) ; le calcul du lundi remet tout à jour.
+  Gain estimé : 30 000 à 60 000 lectures par jour (6 à 11 %).
+- **Corrigé dans l'application (prochaine version)** : les écoutes `getPostsImagesByUser` / `getPostsVideoByUser` (onglets du profil) faisaient une
+  requête `Users` par post à chaque changement d'un compteur et accumulaient des doublons ; le profil est lu une fois, la liste reconstruite.
+- **À surveiller** : `paymentWatchdog` relit toutes les 15 min les 116 dépôts FeexPay jamais confirmés (≈ 11 000 lectures/jour, 2 %) ; l'écoute
+  `GroupChats` de l'accueil sans limite ; la source principale du reste (≈ 400 000 lectures) n'est pas isolée : il faut compter les lectures par
+  écran dans l'application (compteur de debug) ou activer les journaux d'accès aux données Firestore pendant une heure.

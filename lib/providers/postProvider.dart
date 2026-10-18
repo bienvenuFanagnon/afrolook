@@ -570,6 +570,14 @@ class PostProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  
+  /// Profil d'une personne, lu une seule fois (null si introuvable).
+  Future<UserData?> _readUserOnce(String userId) async {
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final data = doc.data();
+    return data == null ? null : UserData.fromJson(data);
+  }
+
   Stream<List<Post>> getPostsImagesByUser(String userId) async* {
     var postStream = FirebaseFirestore.instance.collection('Posts')
         .where("user_id",isEqualTo:'${userId}')
@@ -587,27 +595,27 @@ class PostProvider extends ChangeNotifier {
         .orderBy('created_at', descending: true)
 
         .snapshots();
-    List<Post> posts = [];
-    //listConstposts =[];
-    //  UserData userData=UserData();
+    // Les posts de la liste sont tous ceux de [userId] : son profil est lu une seule fois (et non une requête par post à chaque
+    // changement d'un compteur), et la liste est reconstruite à chaque instantané (elle grossissait de doublons auparavant).
+    UserData? owner;
+    final Map<String, EntrepriseData?> entreprises = {};
     await for (var snapshot in postStream) {
-
-      for (var post in snapshot.docs) {
-        //  printVm("post : ${jsonDecode(post.toString())}");
-        Post p=Post.fromJson(post.data());
-        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
-        // Afficher la liste
-
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-        p.user=userList.first;
-        posts.add(p);
-        listConstposts=posts;
-
-
+      owner ??= await _readUserOnce(userId);
+      final fresh = <Post>[];
+      for (final post in snapshot.docs) {
+        final p = Post.fromJson(post.data());
+        if (p.type == PostType.PUB.name && (p.entreprise_id ?? '').isNotEmpty) {
+          if (!entreprises.containsKey(p.entreprise_id)) {
+            final q = await FirebaseFirestore.instance.collection('Entreprises').where("id", isEqualTo: '${p.entreprise_id}').limit(1).get();
+            entreprises[p.entreprise_id!] = q.docs.isEmpty ? null : EntrepriseData.fromJson(q.docs.first.data());
+          }
+          final e = entreprises[p.entreprise_id];
+          if (e != null) p.entrepriseData = e;
+        }
+        if (owner != null) p.user = owner;
+        fresh.add(p);
       }
+      listConstposts = fresh;
       yield listConstposts;
     }
   }
@@ -746,35 +754,27 @@ class PostProvider extends ChangeNotifier {
         .orderBy('created_at', descending: true)
 
         .snapshots();
-    List<Post> posts = [];
-    //listConstposts =[];
-    //  UserData userData=UserData();
+    // Les posts de la liste sont tous ceux de [userId] : son profil est lu une seule fois (et non une requête par post à chaque
+    // changement d'un compteur), et la liste est reconstruite à chaque instantané (elle grossissait de doublons auparavant).
+    UserData? owner;
+    final Map<String, EntrepriseData?> entreprises = {};
     await for (var snapshot in postStream) {
-
-      for (var post in snapshot.docs) {
-        //  printVm("post : ${jsonDecode(post.toString())}");
-        Post p=Post.fromJson(post.data());
-        CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').get();
-        // Afficher la liste
-
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-            UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-        if (p.type==PostType.PUB.name) {
-          CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-          QuerySnapshot querySnapshotEntreprise = await entrepriseCollect.where("id",isEqualTo:'${p.entreprise_id}').get();
-
-          List<EntrepriseData> entrepriseList = querySnapshotEntreprise.docs.map((doc) =>
-              EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-          p.entrepriseData=entrepriseList.first;
+      owner ??= await _readUserOnce(userId);
+      final fresh = <Post>[];
+      for (final post in snapshot.docs) {
+        final p = Post.fromJson(post.data());
+        if (p.type == PostType.PUB.name && (p.entreprise_id ?? '').isNotEmpty) {
+          if (!entreprises.containsKey(p.entreprise_id)) {
+            final q = await FirebaseFirestore.instance.collection('Entreprises').where("id", isEqualTo: '${p.entreprise_id}').limit(1).get();
+            entreprises[p.entreprise_id!] = q.docs.isEmpty ? null : EntrepriseData.fromJson(q.docs.first.data());
+          }
+          final e = entreprises[p.entreprise_id];
+          if (e != null) p.entrepriseData = e;
         }
-        p.user=userList.first;
-        posts.add(p);
-        listConstposts=posts;
-
-
+        if (owner != null) p.user = owner;
+        fresh.add(p);
       }
+      listConstposts = fresh;
       yield listConstposts;
     }
   }
